@@ -1,0 +1,16 @@
+1
+00:00:01,000 --> 00:00:04,000
+Welcome to the sample subtitle file.
+
+2
+00:00:05,000 --> 00:00:09,000
+This is the second cue,
+spanning two lines.
+
+3
+00:00:10,500 --> 00:00:15,000
+And here is the third cue.
+
+4
+00:01:02,034 --> 00:01:05,678
+A cue with non-trivial timing values.
