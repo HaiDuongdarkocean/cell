@@ -451,8 +451,11 @@ export class BackgroundService {
 
   private async loadSettings(): Promise<Settings> {
     const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);
-    const stored = result[STORAGE_KEYS.SETTINGS] as Settings | undefined;
-    return stored ?? DEFAULT_SETTINGS;
+    const stored = result[STORAGE_KEYS.SETTINGS] as Partial<Settings> | undefined;
+    // Merge with defaults so that settings saved before new fields were added
+    // (e.g. parallelConversion, manualWorkerCount, parallelFallback) get
+    // sensible default values instead of `undefined`.
+    return { ...DEFAULT_SETTINGS, ...stored };
   }
 
   private async saveSettings(settings: Settings): Promise<void> {
@@ -627,6 +630,9 @@ export class BackgroundService {
     if (payload.settings.convertToMp4 !== undefined) {
       this.downloader.setConvertMode(payload.settings.convertToMp4);
     }
+    // parallelConversion / manualWorkerCount / parallelFallback are read by
+    // the offscreen conversion path when a conversion starts; no immediate
+    // side-effect to apply here.
 
     return { success: true, data: merged };
   };

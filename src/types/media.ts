@@ -154,6 +154,25 @@ export interface DownloadProgress {
 /** Conversion behavior for M3U8 downloads. */
 export type ConvertToMp4Mode = 'always' | 'small-only' | 'never';
 
+/**
+ * Parallel conversion scaling mode for TS→MP4 transmuxing.
+ *
+ * - `'auto'`   — runtime decides worker count based on file size, CPU cores,
+ *                 and safety analysis. Default.
+ * - `'manual'` — user specifies a worker count; runtime still clamps to safe
+ *                 bounds and may fallback to sequential if input is ineligible.
+ * - `'off'`    — always use the current sequential transmuxer.
+ */
+export type ParallelConversionMode = 'auto' | 'manual' | 'off';
+
+/**
+ * Fallback strategy when parallel conversion fails.
+ *
+ * - `'sequential'` — retry the entire conversion sequentially.
+ * - `'save-ts'`    — skip conversion, save the `.ts` file directly.
+ */
+export type ParallelFallbackMode = 'sequential' | 'save-ts';
+
 export interface Settings {
   readonly concurrentDownloads: number;
   readonly defaultQuality: VideoQuality;
@@ -161,6 +180,23 @@ export interface Settings {
   readonly theme: 'light' | 'dark';
   /** When to attempt TS→MP4 conversion during M3U8 downloads. */
   readonly convertToMp4: ConvertToMp4Mode;
+  /**
+   * Parallel conversion scaling mode. Controls whether the offscreen
+   * document attempts parallel segment-group transmuxing or uses the
+   * sequential path. Default: `'auto'` (but auto only does dry-run
+   * planning until experimental parallel is proven safe).
+   */
+  readonly parallelConversion: ParallelConversionMode;
+  /**
+   * User-requested worker count for manual mode. Clamped at runtime to
+   * `[MIN_PARALLEL_WORKERS, MAX_PARALLEL_WORKERS]`. Default: 4.
+   */
+  readonly manualWorkerCount: number;
+  /**
+   * Fallback strategy when parallel conversion fails after partial work.
+   * Default: `'save-ts'` for large files to avoid wasting time.
+   */
+  readonly parallelFallback: ParallelFallbackMode;
 }
 
 // === Network Request Types (for detectors) ===

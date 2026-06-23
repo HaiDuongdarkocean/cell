@@ -8,6 +8,9 @@ const mockSettings: Settings = {
   defaultSubtitleLanguage: 'en',
   theme: 'light',
   convertToMp4: 'always',
+  parallelConversion: 'auto',
+  manualWorkerCount: 4,
+  parallelFallback: 'save-ts',
 };
 
 describe('SettingsPanel', () => {

@@ -443,6 +443,9 @@ describe('Background integration', () => {
       defaultSubtitleLanguage: 'ja',
       theme: 'dark',
       convertToMp4: 'always',
+      parallelConversion: 'auto',
+      manualWorkerCount: 4,
+      parallelFallback: 'save-ts',
     };
     mockChrome.storage.local.get.mockResolvedValue({
       [STORAGE_KEYS.SETTINGS]: storedSettings,
@@ -467,6 +470,33 @@ describe('Background integration', () => {
 
     expect(response.success).toBe(true);
     expect(response.data).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('GET_SETTINGS merges defaults for old settings missing parallel fields', async () => {
+    // Simulate settings saved before parallel conversion fields existed.
+    mockChrome.storage.local.get.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: {
+        concurrentDownloads: 3,
+        defaultQuality: 'highest',
+        defaultSubtitleLanguage: 'en',
+        theme: 'light',
+        convertToMp4: 'always',
+        // parallelConversion, manualWorkerCount, parallelFallback missing
+      },
+    });
+
+    const request: MessageRequest = { type: MESSAGE_TYPES.GET_SETTINGS };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'popup',
+    })) as MessageResponse<Settings>;
+
+    expect(response.success).toBe(true);
+    expect(response.data?.concurrentDownloads).toBe(3);
+    expect(response.data?.convertToMp4).toBe('always');
+    // Missing fields should be filled with defaults.
+    expect(response.data?.parallelConversion).toBe('auto');
+    expect(response.data?.manualWorkerCount).toBe(4);
+    expect(response.data?.parallelFallback).toBe('save-ts');
   });
 
   // 7. UPDATE_SETTINGS saves to storage + applies to queue
