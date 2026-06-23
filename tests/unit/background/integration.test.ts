@@ -1,0 +1,693 @@
+import { BackgroundService } from '@/background/index';
+import { OffscreenManager } from '@/background/offscreenManager';
+import { NetworkInterceptor } from '@/background/networkInterceptor';
+import { MessageBus } from '@/background/messageBus';
+import { MESSAGE_TYPES } from '@/constants/messages';
+import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
+import type { DownloadItem, Settings } from '@/types/media';
+import type {
+  MessageRequest,
+  MessageResponse,
+  DetectedMediaUpdatePayload,
+  DownloadListResponse,
+} from '@/types/message';
+
+// --- Types for mocked chrome APIs ---
+
+interface MockListener {
+  addListener: jest.Mock;
+  removeListener: jest.Mock;
+  hasListener: jest.Mock;
+}
+
+interface MockStorageArea {
+  get: jest.Mock;
+  set: jest.Mock;
+  remove: jest.Mock;
+}
+
+interface MockChrome {
+  runtime: {
+    sendMessage: jest.Mock;
+    onMessage: MockListener;
+    getURL: jest.Mock;
+  };
+  tabs: {
+    query: jest.Mock;
+  };
+  storage: {
+    local: MockStorageArea;
+  };
+  webRequest: {
+    onBeforeRequest: MockListener;
+  };
+  offscreen: {
+    hasDocument: jest.Mock;
+    createDocument: jest.Mock;
+    closeDocument: jest.Mock;
+    Reason: {
+      WORKERS: string;
+      BLOBS: string;
+    };
+  };
+  downloads: {
+    download: jest.Mock;
+  };
+}
+
+function createMockListener(): MockListener {
+  return {
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    hasListener: jest.fn(),
+  };
+}
+
+function createMockChrome(): MockChrome {
+  return {
+    runtime: {
+      sendMessage: jest.fn().mockResolvedValue({ success: true }),
+      onMessage: createMockListener(),
+      getURL: jest.fn((path: string) => `chrome-extension://fake-id/${path}`),
+    },
+    tabs: {
+      query: jest.fn().mockResolvedValue([{ id: 123 }]),
+    },
+    storage: {
+      local: {
+        get: jest.fn().mockResolvedValue({}),
+        set: jest.fn().mockResolvedValue(undefined),
+        remove: jest.fn().mockResolvedValue(undefined),
+      },
+    },
+    webRequest: {
+      onBeforeRequest: createMockListener(),
+    },
+    offscreen: {
+      hasDocument: jest.fn().mockResolvedValue(false),
+      createDocument: jest.fn().mockResolvedValue(undefined),
+      closeDocument: jest.fn().mockResolvedValue(undefined),
+      Reason: { WORKERS: 'WORKERS', BLOBS: 'BLOBS' },
+    },
+    downloads: {
+      download: jest.fn().mockResolvedValue(1),
+    },
+  };
+}
+
+// --- Mock Downloader (avoids real fetch / ffmpeg) ---
+
+interface MockDownloader {
+  onProgress: jest.Mock;
+  setConvertCallback: jest.Mock;
+  downloadVideo: jest.Mock;
+  downloadSubtitle: jest.Mock;
+  cancel: jest.Mock;
+}
+
+function createMockDownloader(): MockDownloader {
+  return {
+    onProgress: jest.fn(),
+    setConvertCallback: jest.fn(),
+    downloadVideo: jest.fn().mockResolvedValue(undefined),
+    downloadSubtitle: jest.fn().mockResolvedValue(undefined),
+    cancel: jest.fn(),
+  };
+}
+
+// --- Mock DownloadQueue ---
+
+interface MockDownloadQueue {
+  setExecutor: jest.Mock;
+  add: jest.Mock;
+  addAll: jest.Mock;
+  cancel: jest.Mock;
+  pause: jest.Mock;
+  resume: jest.Mock;
+  getAll: jest.Mock;
+  getById: jest.Mock;
+  updateProgress: jest.Mock;
+  onProgress: jest.Mock;
+  setMaxConcurrent: jest.Mock;
+  getMaxConcurrent: jest.Mock;
+  processNext: jest.Mock;
+}
+
+function createMockDownloadQueue(): MockDownloadQueue {
+  const items: DownloadItem[] = [];
+  return {
+    setExecutor: jest.fn(),
+    add: jest.fn((item: DownloadItem) => items.push(item)),
+    addAll: jest.fn((newItems: DownloadItem[]) => items.push(...newItems)),
+    cancel: jest.fn(),
+    pause: jest.fn(),
+    resume: jest.fn(),
+    getAll: jest.fn(() => items),
+    getById: jest.fn((id: string) => items.find((i) => i.id === id)),
+    updateProgress: jest.fn(),
+    onProgress: jest.fn(() => () => {}),
+    setMaxConcurrent: jest.fn(),
+    getMaxConcurrent: jest.fn(() => 3),
+    processNext: jest.fn(),
+  };
+}
+
+// --- Helpers ---
+
+/** Build a webRequest details object for feeding the NetworkInterceptor. */
+function makeWebRequestDetails(
+  url: string,
+  tabId: number,
+): chrome.webRequest.OnBeforeRequestDetails {
+  return {
+    url,
+    method: 'GET',
+    tabId,
+    type: 'media',
+    timeStamp: 1000,
+    documentLifecycle: 'active',
+    frameId: 0,
+    frameType: 'outermost_frame',
+    parentFrameId: -1,
+    requestId: `req-${tabId}-${url}`,
+  } as chrome.webRequest.OnBeforeRequestDetails;
+}
+
+// =====================================================================
+// Background integration tests
+// =====================================================================
+
+describe('Background integration', () => {
+  let mockChrome: MockChrome;
+  let service: BackgroundService;
+  let interceptor: NetworkInterceptor;
+  let messageBus: MessageBus;
+  let mockQueue: MockDownloadQueue;
+  let mockDownloader: MockDownloader;
+  let mockOffscreen: OffscreenManager;
+
+  beforeEach(async () => {
+    mockChrome = createMockChrome();
+    (globalThis as unknown as { chrome: unknown }).chrome = mockChrome;
+
+    interceptor = new NetworkInterceptor();
+    messageBus = new MessageBus();
+    mockQueue = createMockDownloadQueue();
+    mockDownloader = createMockDownloader();
+    mockOffscreen = {
+      ensureOffscreenDocument: jest.fn().mockResolvedValue(undefined),
+      closeOffscreenDocument: jest.fn().mockResolvedValue(undefined),
+      hasDocument: jest.fn().mockReturnValue(false),
+    } as unknown as OffscreenManager;
+
+    service = new BackgroundService({
+      networkInterceptor: interceptor,
+      messageBus,
+      downloadQueue: mockQueue as unknown as never,
+      downloader: mockDownloader as unknown as never,
+      offscreenManager: mockOffscreen,
+    });
+
+    await service.init();
+  });
+
+  afterEach(() => {
+    service.stop();
+    delete (globalThis as unknown as { chrome?: unknown }).chrome;
+  });
+
+  // 1. Background initializes
+  it('initializes and creates interceptor, messageBus, downloadQueue, downloader', () => {
+    expect(service.networkInterceptor).toBeInstanceOf(NetworkInterceptor);
+    expect(service.messageBus).toBeInstanceOf(MessageBus);
+    expect(service.downloadQueue).toBeDefined();
+    expect(service.downloader).toBeDefined();
+    expect(service.offscreenManager).toBeDefined();
+  });
+
+  it('starts the networkInterceptor and messageBus on init when active', () => {
+    expect(mockChrome.webRequest.onBeforeRequest.addListener).toHaveBeenCalledTimes(1);
+    expect(mockChrome.runtime.onMessage.addListener).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads settings from storage and applies maxConcurrent to the queue', () => {
+    expect(mockChrome.storage.local.get).toHaveBeenCalledWith(
+      STORAGE_KEYS.SETTINGS,
+    );
+    expect(mockQueue.setMaxConcurrent).toHaveBeenCalledWith(
+      DEFAULT_SETTINGS.concurrentDownloads,
+    );
+  });
+
+  // 2. GET_DETECTED_MEDIA returns videos + subtitles for active tab
+  it('GET_DETECTED_MEDIA returns videos + subtitles for the active tab', async () => {
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/video.mp4', 123),
+    );
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.GET_DETECTED_MEDIA,
+    };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'tab',
+    })) as MessageResponse<DetectedMediaUpdatePayload>;
+
+    expect(response.success).toBe(true);
+    expect(response.data?.videos).toHaveLength(1);
+    expect(response.data?.videos[0]?.url).toBe(
+      'https://example.com/video.mp4',
+    );
+    expect(response.data?.subtitles).toEqual([]);
+  });
+
+  it('GET_DETECTED_MEDIA returns error when no active tab is found', async () => {
+    mockChrome.tabs.query.mockResolvedValue([]);
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.GET_DETECTED_MEDIA,
+    };
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+
+    expect(response.success).toBe(false);
+    expect(response.error).toContain('No active tab');
+  });
+
+  // 3. DOWNLOAD_VIDEO creates download item + adds to queue
+  it('DOWNLOAD_VIDEO creates a download item and adds it to the queue', async () => {
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/movie.mp4', 123),
+    );
+    const video = interceptor.getVideos(123)[0];
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.DOWNLOAD_VIDEO,
+      payload: { videoId: video.id },
+    };
+    const response = await messageBus.handleMessage(request, { id: 'popup' });
+
+    expect(response.success).toBe(true);
+    expect(mockQueue.add).toHaveBeenCalledTimes(1);
+    const addedItem = mockQueue.add.mock.calls[0][0] as DownloadItem;
+    expect(addedItem.mediaType).toBe('video');
+    expect(addedItem.url).toBe('https://example.com/movie.mp4');
+    expect(addedItem.status).toBe('queued');
+    expect(addedItem.videoId).toBe(video.id);
+  });
+
+  it('DOWNLOAD_VIDEO returns error when video is not found', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.DOWNLOAD_VIDEO,
+      payload: { videoId: 'nonexistent' },
+    };
+    const response = await messageBus.handleMessage(request, { id: 'popup' });
+
+    expect(response.success).toBe(false);
+    expect(mockQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('DOWNLOAD_SUBTITLE creates a download item and adds it to the queue', async () => {
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/sub.vtt', 123),
+    );
+    const subtitle = interceptor.getSubtitles(123)[0];
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.DOWNLOAD_SUBTITLE,
+      payload: { subtitleId: subtitle.id },
+    };
+    const response = await messageBus.handleMessage(request, { id: 'popup' });
+
+    expect(response.success).toBe(true);
+    expect(mockQueue.add).toHaveBeenCalledTimes(1);
+    const addedItem = mockQueue.add.mock.calls[0][0] as DownloadItem;
+    expect(addedItem.mediaType).toBe('subtitle');
+    expect(addedItem.url).toBe('https://example.com/sub.vtt');
+  });
+
+  // 4. DOWNLOAD_ALL downloads all videos + subtitles
+  it('DOWNLOAD_ALL downloads all detected videos + subtitles for a tab', async () => {
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/a.mp4', 123),
+    );
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/b.m3u8', 123),
+    );
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/c.vtt', 123),
+    );
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.DOWNLOAD_ALL,
+      payload: { tabId: 123 },
+    };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'popup',
+    })) as MessageResponse<DownloadListResponse>;
+
+    expect(response.success).toBe(true);
+    expect(mockQueue.addAll).toHaveBeenCalledTimes(1);
+    const items = mockQueue.addAll.mock.calls[0][0] as DownloadItem[];
+    // 2 videos + 1 subtitle
+    expect(items).toHaveLength(3);
+    expect(items.filter((i) => i.mediaType === 'video')).toHaveLength(2);
+    expect(items.filter((i) => i.mediaType === 'subtitle')).toHaveLength(1);
+  });
+
+  // 5. CANCEL_DOWNLOAD calls queue.cancel
+  it('CANCEL_DOWNLOAD calls queue.cancel and downloader.cancel', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.CANCEL_DOWNLOAD,
+      payload: { downloadId: 'dl-1' },
+    };
+    const response = await messageBus.handleMessage(request, { id: 'popup' });
+
+    expect(response.success).toBe(true);
+    expect(mockQueue.cancel).toHaveBeenCalledWith('dl-1');
+    expect(mockDownloader.cancel).toHaveBeenCalledWith('dl-1');
+  });
+
+  it('PAUSE_DOWNLOAD calls queue.pause', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.PAUSE_DOWNLOAD,
+      payload: { downloadId: 'dl-1' },
+    };
+    await messageBus.handleMessage(request, { id: 'popup' });
+
+    expect(mockQueue.pause).toHaveBeenCalledWith('dl-1');
+  });
+
+  it('RESUME_DOWNLOAD calls queue.resume', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.RESUME_DOWNLOAD,
+      payload: { downloadId: 'dl-1' },
+    };
+    await messageBus.handleMessage(request, { id: 'popup' });
+
+    expect(mockQueue.resume).toHaveBeenCalledWith('dl-1');
+  });
+
+  it('GET_DOWNLOAD_PROGRESS returns all downloads from the queue', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.GET_DOWNLOAD_PROGRESS,
+    };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'popup',
+    })) as MessageResponse<DownloadListResponse>;
+
+    expect(response.success).toBe(true);
+    expect(mockQueue.getAll).toHaveBeenCalled();
+    expect(Array.isArray(response.data?.downloads)).toBe(true);
+  });
+
+  // 6. GET_SETTINGS returns from storage
+  it('GET_SETTINGS returns settings from storage', async () => {
+    const storedSettings: Settings = {
+      concurrentDownloads: 5,
+      defaultQuality: '720p',
+      defaultSubtitleLanguage: 'ja',
+      theme: 'dark',
+    };
+    mockChrome.storage.local.get.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: storedSettings,
+    });
+
+    const request: MessageRequest = { type: MESSAGE_TYPES.GET_SETTINGS };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'popup',
+    })) as MessageResponse<Settings>;
+
+    expect(response.success).toBe(true);
+    expect(response.data).toEqual(storedSettings);
+  });
+
+  it('GET_SETTINGS returns DEFAULT_SETTINGS when storage is empty', async () => {
+    mockChrome.storage.local.get.mockResolvedValue({});
+
+    const request: MessageRequest = { type: MESSAGE_TYPES.GET_SETTINGS };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'popup',
+    })) as MessageResponse<Settings>;
+
+    expect(response.success).toBe(true);
+    expect(response.data).toEqual(DEFAULT_SETTINGS);
+  });
+
+  // 7. UPDATE_SETTINGS saves to storage + applies to queue
+  it('UPDATE_SETTINGS saves to storage and applies concurrentDownloads to queue', async () => {
+    mockChrome.storage.local.get.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: DEFAULT_SETTINGS,
+    });
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.UPDATE_SETTINGS,
+      payload: { settings: { concurrentDownloads: 7 } },
+    };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'popup',
+    })) as MessageResponse<Settings>;
+
+    expect(response.success).toBe(true);
+    expect(response.data?.concurrentDownloads).toBe(7);
+    expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
+      [STORAGE_KEYS.SETTINGS]: expect.objectContaining({ concurrentDownloads: 7 }),
+    });
+    expect(mockQueue.setMaxConcurrent).toHaveBeenCalledWith(7);
+  });
+
+  // 8. TOGGLE_EXTENSION toggles + persists
+  it('TOGGLE_EXTENSION toggles active state and persists to storage', async () => {
+    // Initial state is active (default true from empty storage)
+    const request: MessageRequest = { type: MESSAGE_TYPES.TOGGLE_EXTENSION };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'popup',
+    })) as MessageResponse<{ active: boolean }>;
+
+    expect(response.success).toBe(true);
+    expect(response.data?.active).toBe(false);
+    expect(mockChrome.storage.local.set).toHaveBeenCalledWith({
+      [STORAGE_KEYS.EXTENSION_STATUS]: false,
+    });
+    // Interceptor should be stopped when inactive
+    expect(mockChrome.webRequest.onBeforeRequest.removeListener).toHaveBeenCalled();
+  });
+
+  it('TOGGLE_EXTENSION re-starts interceptor when toggled back to active', async () => {
+    // First toggle: active → inactive
+    await messageBus.handleMessage(
+      { type: MESSAGE_TYPES.TOGGLE_EXTENSION },
+      { id: 'popup' },
+    );
+    // Second toggle: inactive → active
+    const response = (await messageBus.handleMessage(
+      { type: MESSAGE_TYPES.TOGGLE_EXTENSION },
+      { id: 'popup' },
+    )) as MessageResponse<{ active: boolean }>;
+
+    expect(response.data?.active).toBe(true);
+    // start() adds a listener; should have been called twice total (init + re-start)
+    expect(mockChrome.webRequest.onBeforeRequest.addListener).toHaveBeenCalledTimes(2);
+  });
+
+  it('GET_EXTENSION_STATUS returns the current active state', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.GET_EXTENSION_STATUS,
+    };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'popup',
+    })) as MessageResponse<{ active: boolean }>;
+
+    expect(response.success).toBe(true);
+    expect(response.data?.active).toBe(true);
+  });
+
+  // 9. PAGE_SCAN_RESULT merges URLs with network detection
+  it('PAGE_SCAN_RESULT merges scanned URLs with network detection and broadcasts', async () => {
+    // Pre-populate via network interception
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/net.mp4', 123),
+    );
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
+      payload: {
+        tabId: 123,
+        videoUrls: ['https://example.com/scanned.m3u8'],
+        subtitleUrls: ['https://example.com/sub.srt'],
+      },
+    };
+    const response = await messageBus.handleMessage(request, {
+      id: 'content',
+    });
+
+    expect(response.success).toBe(true);
+    const videos = interceptor.getVideos(123);
+    const subtitles = interceptor.getSubtitles(123);
+    // Original network video + scanned video
+    expect(videos.length).toBeGreaterThanOrEqual(2);
+    expect(subtitles).toHaveLength(1);
+    expect(subtitles[0]?.url).toBe('https://example.com/sub.srt');
+
+    // Should have broadcast a DETECTED_MEDIA_UPDATE
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
+      }),
+    );
+  });
+
+  it('PAGE_SCAN_RESULT deduplicates URLs already detected by network', async () => {
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/dup.mp4', 123),
+    );
+    const initialCount = interceptor.getVideos(123).length;
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
+      payload: {
+        tabId: 123,
+        videoUrls: ['https://example.com/dup.mp4'],
+        subtitleUrls: [],
+      },
+    };
+    await messageBus.handleMessage(request, { id: 'content' });
+
+    // No new video should be added
+    expect(interceptor.getVideos(123).length).toBe(initialCount);
+  });
+
+  // 12. Progress updates broadcast to popup
+  it('broadcasts DOWNLOAD_PROGRESS_UPDATE when queue emits progress', async () => {
+    // Grab the onProgress callback registered with the mock queue.
+    const onProgressCall = mockQueue.onProgress.mock.calls[0][0] as (
+      progress: { itemId: string; status: string; progress: number },
+    ) => void;
+
+    onProgressCall({ itemId: 'dl-1', status: 'downloading', progress: 42 });
+
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.DOWNLOAD_PROGRESS_UPDATE,
+        payload: expect.objectContaining({
+          progress: expect.objectContaining({
+            itemId: 'dl-1',
+            progress: 42,
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('broadcasts DETECTED_MEDIA_UPDATE when network interceptor detects new media', async () => {
+    // Clear previous sendMessage calls from init.
+    mockChrome.runtime.sendMessage.mockClear();
+
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/new.m3u8', 123),
+    );
+
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
+      }),
+    );
+  });
+
+  // --- convert callback wiring ---
+
+  it('sets a convert callback on the downloader that uses the offscreen document', async () => {
+    expect(mockDownloader.setConvertCallback).toHaveBeenCalledTimes(1);
+    const convertCallback = mockDownloader.setConvertCallback.mock
+      .calls[0][0] as (segments: ArrayBuffer[], downloadId: string) => Promise<ArrayBuffer>;
+
+    const mp4Buffer = new ArrayBuffer(10);
+    mockChrome.runtime.sendMessage.mockResolvedValueOnce({
+      success: true,
+      data: { downloadId: 'dl-1', mp4Data: mp4Buffer, success: true },
+    });
+
+    const result = await convertCallback([new ArrayBuffer(4)], 'dl-1');
+
+    expect(mockOffscreen.ensureOffscreenDocument).toHaveBeenCalled();
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: MESSAGE_TYPES.CONVERT_TS_TO_MP4 }),
+    );
+    expect(result).toBe(mp4Buffer);
+  });
+
+  it('convert callback throws when offscreen conversion fails', async () => {
+    const convertCallback = mockDownloader.setConvertCallback.mock
+      .calls[0][0] as (segments: ArrayBuffer[], downloadId: string) => Promise<ArrayBuffer>;
+
+    mockChrome.runtime.sendMessage.mockResolvedValueOnce({
+      success: false,
+      error: 'ffmpeg error',
+    });
+
+    await expect(convertCallback([new ArrayBuffer(4)], 'dl-1')).rejects.toThrow(
+      'ffmpeg error',
+    );
+  });
+});
+
+// =====================================================================
+// OffscreenManager tests
+// =====================================================================
+
+describe('OffscreenManager', () => {
+  let mockChrome: MockChrome;
+  let manager: OffscreenManager;
+
+  beforeEach(() => {
+    mockChrome = createMockChrome();
+    (globalThis as unknown as { chrome: unknown }).chrome = mockChrome;
+    manager = new OffscreenManager();
+  });
+
+  afterEach(() => {
+    delete (globalThis as unknown as { chrome?: unknown }).chrome;
+  });
+
+  // 10. OffscreenManager creates document on demand
+  it('creates an offscreen document on demand', async () => {
+    await manager.ensureOffscreenDocument();
+
+    expect(mockChrome.offscreen.hasDocument).toHaveBeenCalled();
+    expect(mockChrome.offscreen.createDocument).toHaveBeenCalledWith({
+      url: 'src/offscreen/ffmpeg.html',
+      reasons: ['WORKERS', 'BLOBS'],
+      justification: expect.any(String),
+    });
+    expect(manager.hasDocument()).toBe(true);
+  });
+
+  it('does not create a document when one already exists', async () => {
+    mockChrome.offscreen.hasDocument.mockResolvedValue(true);
+
+    await manager.ensureOffscreenDocument();
+
+    expect(mockChrome.offscreen.createDocument).not.toHaveBeenCalled();
+    expect(manager.hasDocument()).toBe(true);
+  });
+
+  it('does not create a duplicate document on repeated calls', async () => {
+    await manager.ensureOffscreenDocument();
+    await manager.ensureOffscreenDocument();
+
+    expect(mockChrome.offscreen.createDocument).toHaveBeenCalledTimes(1);
+  });
+
+  // 11. OffscreenManager closes document
+  it('closes the offscreen document', async () => {
+    await manager.ensureOffscreenDocument();
+    await manager.closeOffscreenDocument();
+
+    expect(mockChrome.offscreen.closeDocument).toHaveBeenCalled();
+    expect(manager.hasDocument()).toBe(false);
+  });
+
+  it('close is a no-op when no document exists', async () => {
+    await manager.closeOffscreenDocument();
+
+    expect(mockChrome.offscreen.closeDocument).not.toHaveBeenCalled();
+  });
+});
