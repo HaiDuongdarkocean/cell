@@ -21,6 +21,7 @@ import {
   readFile as opfsReadFile,
   deleteDownloadSubdir,
   isOpfsAvailable,
+  isQuotaExceededError,
 } from '@/lib/storage/opfsStorage';
 
 /**
@@ -380,7 +381,23 @@ export class Downloader {
           this.throwIfCancelled(downloadId);
           const blob = blobs[j];
           totalBytes += blob.size;
-          await writer.write(blob);
+          try {
+            await writer.write(blob);
+          } catch (writeErr: unknown) {
+            if (isQuotaExceededError(writeErr)) {
+              // Clean up partial OPFS data and surface a clear error.
+              await deleteDownloadSubdir(downloadId).catch((cleanupErr) => {
+                console.warn(
+                  `[downloader] OPFS cleanup after quota error failed:`,
+                  cleanupErr,
+                );
+              });
+              throw new Error(
+                'Không đủ dung lượng lưu tạm thời. Hãy giải phóng ổ đĩa và thử lại.',
+              );
+            }
+            throw writeErr;
+          }
 
           const current = start + j + 1;
           const pct = Math.floor((current / totalSegments) * 80);

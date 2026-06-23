@@ -28,6 +28,9 @@ jest.mock('@/lib/storage/opfsStorage', () => {
     deleteFile: jest.fn(),
     deleteDownloadSubdir: jest.fn().mockResolvedValue(undefined),
     isOpfsAvailable: jest.fn().mockReturnValue(false),
+    isQuotaExceededError: jest.fn((err: unknown) =>
+      err instanceof DOMException && err.name === 'QuotaExceededError',
+    ),
   };
 });
 
@@ -966,6 +969,49 @@ describe('Downloader', () => {
     // readFile was NOT called on the save path.
     expect(readFile).not.toHaveBeenCalled();
     expect(chromeDownloadsDownloadMock).not.toHaveBeenCalled();
+
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+  });
+
+  // 18. OPFS quota exceeded during segment write → clear error + cleanup.
+  test('quota exceeded during write throws clear error and cleans up OPFS', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
+    const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+      if (url.endsWith('seg0.ts')) return makeResponse(makeTextBlob('seg0'));
+      if (url.endsWith('seg1.ts')) return makeResponse(makeTextBlob('seg1'));
+      if (url.endsWith('seg2.ts')) return makeResponse(makeTextBlob('seg2'));
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    // Writer.write throws QuotaExceededError on the first write.
+    const quotaWriter = {
+      write: jest.fn().mockRejectedValue(
+        new DOMException('Quota exceeded', 'QuotaExceededError'),
+      ),
+      close: jest.fn().mockResolvedValue(undefined),
+    };
+    createOpfsWriter.mockResolvedValue(quotaWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+
+    await expect(
+      downloader.downloadVideo(makeM3u8Video(), 'dl-quota'),
+    ).rejects.toThrow(/đủ dung lượng/i);
+
+    // OPFS cleanup should have been called.
+    expect(deleteDownloadSubdir).toHaveBeenCalledWith('dl-quota');
 
     (isOpfsAvailable as jest.Mock).mockReturnValue(false);
   });
