@@ -23,6 +23,10 @@ describe('timeUtils', () => {
     it('treats the fractional part as centiseconds (2 digits)', () => {
       expect(assTimeToMs('0:00:01.99')).toBe(1990);
     });
+
+    it('throws on an invalid ASS time format', () => {
+      expect(() => assTimeToMs('invalid')).toThrow('Invalid ASS time format');
+    });
   });
 
   describe('vttTimeToMs', () => {
@@ -41,6 +45,10 @@ describe('timeUtils', () => {
     it('treats the fractional part as milliseconds (3 digits)', () => {
       expect(vttTimeToMs('00:00:01.005')).toBe(1005);
     });
+
+    it('throws on an invalid VTT time format', () => {
+      expect(() => vttTimeToMs('not-a-time')).toThrow('Invalid VTT time format');
+    });
   });
 
   describe('srtTimeToMs', () => {
@@ -58,6 +66,10 @@ describe('timeUtils', () => {
 
     it('treats the fractional part as milliseconds (3 digits)', () => {
       expect(srtTimeToMs('00:00:01,005')).toBe(1005);
+    });
+
+    it('throws on an invalid SRT time format', () => {
+      expect(() => srtTimeToMs('bad')).toThrow('Invalid SRT time format');
     });
   });
 

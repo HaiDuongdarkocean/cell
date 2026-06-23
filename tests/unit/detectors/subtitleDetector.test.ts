@@ -103,4 +103,58 @@ describe('detectSubtitle', () => {
     expect(result2).not.toBeNull();
     expect(result1?.id).not.toBe(result2?.id);
   });
+
+  it('returns null when the URL matches a subtitle pattern but has no subtitle extension in its path', () => {
+    // The ".ass" appears in the query string, so the URL pattern matches, but
+    // detectFormat inspects the pathname only and finds no subtitle extension.
+    const request = makeRequest('https://example.com/page?url=sub.ass');
+    expect(detectSubtitle(request)).toBeNull();
+  });
+
+  it('defaults language to "unknown" when the filename suffix is not a language code', () => {
+    // "movie.123.srt": parts.length >= 2 but "123" fails the language pattern,
+    // and the path segment "example.com" also fails, so it falls back to unknown.
+    const request = makeRequest('https://example.com/movie.123.srt');
+    const result = detectSubtitle(request);
+
+    expect(result).not.toBeNull();
+    expect(result?.language).toBe('unknown');
+  });
+
+  it('defaults language to "unknown" for a relative URL with no path segments', () => {
+    // "movie.srt" matches the pattern and has a valid extension, but there are
+    // fewer than 2 path segments, so neither language-detection branch matches.
+    const request = makeRequest('movie.srt');
+    const result = detectSubtitle(request);
+
+    expect(result).not.toBeNull();
+    expect(result?.format).toBe('srt');
+    expect(result?.language).toBe('unknown');
+  });
+
+  describe('generateId fallback', () => {
+    it('uses the timestamp+random fallback when crypto.randomUUID is unavailable', () => {
+      const realRandomUUID = crypto.randomUUID;
+      Object.defineProperty(crypto, 'randomUUID', {
+        value: undefined,
+        configurable: true,
+      });
+
+      try {
+        const request = makeRequest('https://example.com/movie.srt');
+        const result = detectSubtitle(request);
+
+        expect(result).not.toBeNull();
+        expect(typeof result?.id).toBe('string');
+        expect(result?.id).not.toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+        );
+      } finally {
+        Object.defineProperty(crypto, 'randomUUID', {
+          value: realRandomUUID,
+          configurable: true,
+        });
+      }
+    });
+  });
 });

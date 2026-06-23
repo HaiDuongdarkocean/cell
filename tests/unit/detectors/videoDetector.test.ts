@@ -85,4 +85,65 @@ describe('detectVideo', () => {
 
     expect(result1?.id).not.toBe(result2?.id);
   });
+
+  describe('extractExtension / extractTitle edge cases', () => {
+    it('returns null when the last path segment is only an extension (dot at index 0)', () => {
+      // ".mp4" as the last segment: dotIndex === 0, so extractExtension returns
+      // null in the try block and detectVideo returns null.
+      const request = makeRequest('https://example.com/.mp4');
+      expect(detectVideo(request)).toBeNull();
+    });
+
+    it('falls back to manual extraction for a malformed URL with a valid extension', () => {
+      // "not-a-url.mp4" cannot be parsed by new URL(), so both extractExtension
+      // and extractTitle fall back to the manual catch-block path.
+      const request = makeRequest('not-a-url.mp4');
+      const result = detectVideo(request);
+
+      expect(result).not.toBeNull();
+      expect(result?.format).toBe('mp4');
+      expect(result?.title).toBe('not-a-url');
+      expect(result?.url).toBe('not-a-url.mp4');
+    });
+
+    it('returns null for a malformed URL whose last segment has no real extension', () => {
+      // ".mp4" alone matches the video pattern but, after the URL parse fails,
+      // the manual fallback also finds dotIndex === 0 and returns null.
+      const request = makeRequest('.mp4');
+      expect(detectVideo(request)).toBeNull();
+    });
+
+    it('returns null when extractExtension yields null (e.g. hidden-file segment)', () => {
+      const request = makeRequest('https://example.com/.ts');
+      expect(detectVideo(request)).toBeNull();
+    });
+  });
+
+  describe('generateId fallback', () => {
+    it('uses the timestamp+random fallback when crypto.randomUUID is unavailable', () => {
+      const realRandomUUID = crypto.randomUUID;
+      Object.defineProperty(crypto, 'randomUUID', {
+        value: undefined,
+        configurable: true,
+      });
+
+      try {
+        const request = makeRequest('https://example.com/movie.mp4');
+        const result = detectVideo(request);
+
+        expect(result).not.toBeNull();
+        expect(typeof result?.id).toBe('string');
+        expect(result?.id.length).toBeGreaterThan(0);
+        // Fallback ids are "timestamp-random" form, not UUID form.
+        expect(result?.id).not.toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+        );
+      } finally {
+        Object.defineProperty(crypto, 'randomUUID', {
+          value: realRandomUUID,
+          configurable: true,
+        });
+      }
+    });
+  });
 });
