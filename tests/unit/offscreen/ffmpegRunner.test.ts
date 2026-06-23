@@ -120,7 +120,8 @@ beforeAll(() => {
     let counter = 0;
     URL.createObjectURL = function (obj: Blob | MediaSource): string {
       const id = ++counter;
-      return `blob:fake-${id}-${obj.size ?? 0}`;
+      const size = obj instanceof Blob ? obj.size : 0;
+      return `blob:fake-${id}-${size}`;
     };
     URL.revokeObjectURL = function () {
       // no-op
