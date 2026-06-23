@@ -245,9 +245,12 @@ export class BackgroundService {
    * Returns `undefined` when no active tab is found.
    */
   private async getActiveTabId(): Promise<number | undefined> {
+    // Query the last focused window (the browser window, not the popup window).
+    // Using lastFocusedWindow instead of currentWindow because when the popup
+    // is open, currentWindow refers to the popup's window, not the browser.
     const tabs = await chrome.tabs.query({
       active: true,
-      currentWindow: true,
+      lastFocusedWindow: true,
     });
     return tabs[0]?.id;
   }
@@ -663,4 +666,16 @@ export function resetBackgroundService(): void {
     backgroundService.stop();
     backgroundService = null;
   }
+}
+
+// --- auto-initialise on service worker startup ---
+
+// Service workers in MV3 can be terminated and restarted at any time.
+// This top-level call ensures the background service is (re)initialised
+// every time the service worker wakes up.
+// Guard against running in non-extension environments (e.g. Jest tests).
+if (typeof chrome !== 'undefined' && chrome.runtime?.id) {
+  initBackground().catch((err) => {
+    console.error('[Video Downloader] Failed to initialise background service:', err);
+  });
 }
