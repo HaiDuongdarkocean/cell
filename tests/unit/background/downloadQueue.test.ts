@@ -1,0 +1,241 @@
+import {
+  DownloadQueue,
+  type DownloadExecutor,
+} from '@/background/downloadQueue';
+import type { DownloadItem, DownloadProgress } from '@/types/media';
+import {
+  DEFAULT_CONCURRENT_DOWNLOADS,
+  MAX_CONCURRENT_DOWNLOADS,
+  MIN_CONCURRENT_DOWNLOADS,
+} from '@/constants/config';
+
+function makeItem(id: string, title = `item-${id}`): DownloadItem {
+  return {
+    id,
+    mediaType: 'video',
+    url: `https://example.com/${id}.mp4`,
+    title,
+    status: 'queued',
+    progress: 0,
+  };
+}
+
+/**
+ * Creates a controllable mock executor. Each call returns a promise that is
+ * only resolved/rejected when the test explicitly triggers it, allowing us to
+ * keep downloads "in flight" while inspecting queue state.
+ */
+function createControllableExecutor() {
+  const resolvers: Array<{
+    resolve: () => void;
+    reject: (err: Error) => void;
+  }> = [];
+  const calls: DownloadItem[] = [];
+
+  const executor: DownloadExecutor = (item) => {
+    calls.push(item);
+    return new Promise<void>((resolve, reject) => {
+      resolvers.push({ resolve, reject });
+    });
+  };
+
+  /** Resolve the oldest in-flight download. */
+  function resolveNext(): void {
+    const r = resolvers.shift();
+    if (r) r.resolve();
+  }
+
+  /** Reject the oldest in-flight download. */
+  function rejectNext(err: Error): void {
+    const r = resolvers.shift();
+    if (r) r.reject(err);
+  }
+
+  return { executor, calls, resolveNext, rejectNext, inFlight: () => resolvers.length };
+}
+
+describe('DownloadQueue', () => {
+  let queue: DownloadQueue;
+
+  beforeEach(() => {
+    queue = new DownloadQueue();
+  });
+
+  afterEach(() => {
+    queue = undefined as unknown as DownloadQueue;
+  });
+
+  it('add() adds an item with status "queued"', () => {
+    const item = makeItem('1');
+    queue.add(item);
+
+    const stored = queue.getById('1');
+    expect(stored).toBeDefined();
+    expect(stored?.status).toBe('queued');
+    expect(queue.getAll()).toHaveLength(1);
+  });
+
+  it('processNext() starts a download when an executor is set', () => {
+    const { executor, calls } = createControllableExecutor();
+    queue.setExecutor(executor);
+
+    queue.add(makeItem('1'));
+    // processNext is invoked internally by add(); the executor should be called.
+    expect(calls).toHaveLength(1);
+    expect(queue.getById('1')?.status).toBe('downloading');
+  });
+
+  it('respects the concurrent limit: only maxConcurrent items are active at once', () => {
+    const { executor, calls } = createControllableExecutor();
+    queue.setExecutor(executor);
+
+    // Default maxConcurrent = 3
+    queue.addAll([makeItem('1'), makeItem('2'), makeItem('3'), makeItem('4'), makeItem('5')]);
+
+    expect(calls).toHaveLength(DEFAULT_CONCURRENT_DOWNLOADS);
+    const downloading = queue.getAll().filter((i) => i.status === 'downloading');
+    expect(downloading).toHaveLength(DEFAULT_CONCURRENT_DOWNLOADS);
+    const queued = queue.getAll().filter((i) => i.status === 'queued');
+    expect(queued).toHaveLength(2);
+  });
+
+  it('starts the next queued item when one download completes', async () => {
+    const { executor, calls, resolveNext } = createControllableExecutor();
+    queue.setExecutor(executor);
+
+    queue.addAll([makeItem('1'), makeItem('2'), makeItem('3'), makeItem('4')]);
+    expect(calls).toHaveLength(3);
+
+    // Complete the first in-flight download.
+    resolveNext();
+    // Allow microtasks (promise resolution) to flush.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(queue.getById('1')?.status).toBe('done');
+    // The 4th item should now have started.
+    expect(calls).toHaveLength(4);
+    expect(queue.getById('4')?.status).toBe('downloading');
+  });
+
+  it('sets status to "error" when the executor rejects', async () => {
+    const { executor, rejectNext } = createControllableExecutor();
+    queue.setExecutor(executor);
+
+    queue.add(makeItem('1'));
+    rejectNext(new Error('network failure'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const stored = queue.getById('1');
+    expect(stored?.status).toBe('error');
+    expect(stored?.error).toBe('network failure');
+  });
+
+  it('cancel() sets status to "cancelled"', () => {
+    const { executor } = createControllableExecutor();
+    queue.setExecutor(executor);
+
+    queue.add(makeItem('1'));
+    expect(queue.getById('1')?.status).toBe('downloading');
+
+    queue.cancel('1');
+    expect(queue.getById('1')?.status).toBe('cancelled');
+  });
+
+  it('pause() sets status to "paused" and resume() sets it back to "queued"', async () => {
+    const { executor, calls, resolveNext } = createControllableExecutor();
+    queue.setExecutor(executor);
+
+    // Use an item that is still queued (not yet started) to test pause/resume.
+    queue.addAll([makeItem('1'), makeItem('2'), makeItem('3'), makeItem('4')]);
+    const target = queue.getById('4');
+    expect(target?.status).toBe('queued');
+
+    queue.pause('4');
+    expect(queue.getById('4')?.status).toBe('paused');
+
+    queue.resume('4');
+    expect(queue.getById('4')?.status).toBe('queued');
+
+    // Free up a slot so the resumed item can start.
+    resolveNext();
+    // Allow the executor's .then handler (which calls processNext) to flush.
+    await Promise.resolve();
+    await Promise.resolve();
+    // resume() calls processNext internally; the item should now be picked up.
+    expect(calls).toContainEqual(expect.objectContaining({ id: '4' }));
+  });
+
+  it('addAll() adds multiple items to the queue', () => {
+    const items = [makeItem('a'), makeItem('b'), makeItem('c')];
+    queue.addAll(items);
+
+    expect(queue.getAll()).toHaveLength(3);
+    expect(queue.getById('a')).toBeDefined();
+    expect(queue.getById('b')).toBeDefined();
+    expect(queue.getById('c')).toBeDefined();
+  });
+
+  it('onProgress() callback is invoked when updateProgress() is called', () => {
+    const received: DownloadProgress[] = [];
+    const unsubscribe = queue.onProgress((p) => received.push(p));
+
+    queue.add(makeItem('1'));
+    const progress: DownloadProgress = {
+      itemId: '1',
+      status: 'downloading',
+      progress: 42,
+      currentSegment: 5,
+      totalSegments: 10,
+    };
+    queue.updateProgress(progress);
+
+    expect(received).toHaveLength(1);
+    expect(received[0]).toEqual(progress);
+    expect(queue.getById('1')?.progress).toBe(42);
+    expect(queue.getById('1')?.status).toBe('downloading');
+
+    unsubscribe();
+    queue.updateProgress({ itemId: '1', status: 'downloading', progress: 50 });
+    expect(received).toHaveLength(1);
+  });
+
+  it('setMaxConcurrent() clamps between MIN and MAX', () => {
+    queue.setMaxConcurrent(0);
+    expect(queue.getMaxConcurrent()).toBe(MIN_CONCURRENT_DOWNLOADS);
+
+    queue.setMaxConcurrent(MAX_CONCURRENT_DOWNLOADS + 100);
+    expect(queue.getMaxConcurrent()).toBe(MAX_CONCURRENT_DOWNLOADS);
+
+    queue.setMaxConcurrent(5);
+    expect(queue.getMaxConcurrent()).toBe(5);
+  });
+
+  it('getAll() returns all items and getById() returns a specific item', () => {
+    queue.addAll([makeItem('x'), makeItem('y'), makeItem('z')]);
+    expect(queue.getAll()).toHaveLength(3);
+
+    const y = queue.getById('y');
+    expect(y?.id).toBe('y');
+    expect(queue.getById('nope')).toBeUndefined();
+  });
+
+  it('uses the default concurrent value when none is provided', () => {
+    expect(queue.getMaxConcurrent()).toBe(DEFAULT_CONCURRENT_DOWNLOADS);
+  });
+
+  it('setMaxConcurrent() triggers processing of queued items when capacity increases', () => {
+    const { executor, calls } = createControllableExecutor();
+    queue.setExecutor(executor);
+
+    // Start with capacity 1.
+    queue.setMaxConcurrent(1);
+    queue.addAll([makeItem('1'), makeItem('2'), makeItem('3')]);
+    expect(calls).toHaveLength(1);
+
+    // Increase capacity; processNext should pick up more items.
+    queue.setMaxConcurrent(3);
+    expect(calls).toHaveLength(3);
+  });
+});
