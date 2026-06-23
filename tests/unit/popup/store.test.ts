@@ -10,7 +10,7 @@ import type {
 // --- Mocks for global chrome.storage.local ---
 
 const storageLocalSetMock = jest.fn<
-  (items: Record<string, unknown>) => Promise<void>,
+  Promise<void>,
   [Record<string, unknown>]
 >();
 

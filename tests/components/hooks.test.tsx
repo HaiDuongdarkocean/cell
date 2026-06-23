@@ -26,10 +26,12 @@ type MessageListener = (
 ) => boolean;
 
 interface ChromeRuntimeMock {
-  sendMessage: jest.Mock;
+  sendMessage: jest.MockedFunction<
+    (message: MessageRequest) => Promise<MessageResponse>
+  >;
   onMessage: {
-    addListener: jest.Mock;
-    removeListener: jest.Mock;
+    addListener: jest.MockedFunction<(l: MessageListener) => void>;
+    removeListener: jest.MockedFunction<(l: MessageListener) => void>;
     listeners: MessageListener[];
   };
 }
@@ -51,7 +53,9 @@ function createChromeMock(): ChromeRuntimeMock {
   return {
     // Default to a resolved empty-success response so hooks that call
     // `.then()` on mount don't blow up when a test doesn't care about it.
-    sendMessage: jest.fn().mockResolvedValue({ success: true }),
+    sendMessage: jest.fn((_msg: MessageRequest): Promise<MessageResponse> =>
+      Promise.resolve({ success: true }),
+    ),
     onMessage,
   };
 }
@@ -63,14 +67,23 @@ beforeEach(() => {
   (global as unknown as {
     chrome: {
       runtime: ChromeRuntimeMock;
-      storage: { local: { set: jest.Mock; get: jest.Mock } };
+      storage: {
+        local: {
+          set: jest.MockedFunction<(items: Record<string, unknown>) => Promise<void>>;
+          get: jest.MockedFunction<(keys: string[]) => Promise<Record<string, unknown>>>;
+        };
+      };
     };
   }).chrome = {
     runtime: chromeMock,
     storage: {
       local: {
-        set: jest.fn().mockResolvedValue(undefined),
-        get: jest.fn().mockResolvedValue({}),
+        set: jest.fn((_items: Record<string, unknown>): Promise<void> =>
+          Promise.resolve(),
+        ),
+        get: jest.fn((_keys: string[]): Promise<Record<string, unknown>> =>
+          Promise.resolve({}),
+        ),
       },
     },
   };
@@ -149,7 +162,7 @@ describe('useDetectedMedia', () => {
   });
 
   it('subscribes to DETECTED_MEDIA_UPDATE messages and updates the store', () => {
-    chromeMock.sendMessage.mockResolvedValue({ success: true });
+    chromeMock.sendMessage.mockResolvedValue({ success: true } as MessageResponse);
 
     renderHook(() => useDetectedMedia());
 
@@ -174,7 +187,7 @@ describe('useDetectedMedia', () => {
   });
 
   it('removes the listener on unmount', () => {
-    chromeMock.sendMessage.mockResolvedValue({ success: true });
+    chromeMock.sendMessage.mockResolvedValue({ success: true } as MessageResponse);
 
     const { unmount } = renderHook(() => useDetectedMedia());
 
@@ -271,7 +284,7 @@ describe('useExtensionStatus', () => {
   });
 
   it('toggle sends a TOGGLE_EXTENSION message and updates the store', () => {
-    chromeMock.sendMessage.mockResolvedValue({ success: true });
+    chromeMock.sendMessage.mockResolvedValue({ success: true } as MessageResponse);
 
     const { result } = renderHook(() => useExtensionStatus());
 
@@ -287,7 +300,7 @@ describe('useExtensionStatus', () => {
 
   it('toggle flips the active state back to true when already inactive', () => {
     usePopupStore.getState().setExtensionActive(false);
-    chromeMock.sendMessage.mockResolvedValue({ success: true });
+    chromeMock.sendMessage.mockResolvedValue({ success: true } as MessageResponse);
 
     const { result } = renderHook(() => useExtensionStatus());
 

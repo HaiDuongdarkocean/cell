@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import type { DetectedVideo, DetectedSubtitle, DownloadItem, Settings } from '@/types/media';
-import type { MessageRequest } from '@/types/message';
+import type { MessageRequest, MessageResponse } from '@/types/message';
 
 // --- Hook + store mocks ---------------------------------------------------
 
@@ -84,10 +84,10 @@ jest.mock('@/popup/hooks/useExtensionStatus', () => ({
 // --- chrome runtime mock --------------------------------------------------
 
 interface ChromeRuntimeMock {
-  sendMessage: jest.Mock;
+  sendMessage: jest.MockedFunction<(msg: MessageRequest) => Promise<MessageResponse>>;
   onMessage: {
-    addListener: jest.Mock;
-    removeListener: jest.Mock;
+    addListener: jest.MockedFunction<(listener: unknown) => void>;
+    removeListener: jest.MockedFunction<(listener: unknown) => void>;
   };
 }
 
@@ -95,7 +95,9 @@ let chromeMock: ChromeRuntimeMock;
 
 beforeEach(() => {
   chromeMock = {
-    sendMessage: jest.fn().mockResolvedValue({ success: true }),
+    sendMessage: jest.fn((_msg: MessageRequest): Promise<MessageResponse> =>
+      Promise.resolve({ success: true }),
+    ),
     onMessage: {
       addListener: jest.fn(),
       removeListener: jest.fn(),
@@ -106,8 +108,12 @@ beforeEach(() => {
     runtime: chromeMock,
     storage: {
       local: {
-        set: jest.fn().mockResolvedValue(undefined),
-        get: jest.fn().mockResolvedValue({}),
+        set: jest.fn((_items: Record<string, unknown>): Promise<void> =>
+          Promise.resolve(),
+        ),
+        get: jest.fn((_keys: string[]): Promise<Record<string, unknown>> =>
+          Promise.resolve({}),
+        ),
       },
     },
   };

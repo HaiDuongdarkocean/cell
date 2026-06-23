@@ -8,10 +8,10 @@ import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/constants/config';
 // --- Mocks for global browser APIs ---
 
 const fetchMock = jest.fn() as jest.MockedFunction<typeof fetch>;
-const createObjectURLMock = jest.fn<(blob: Blob) => string, [Blob]>();
-const revokeObjectURLMock = jest.fn<(url: string) => void, [string]>();
+const createObjectURLMock = jest.fn<string, [Blob]>();
+const revokeObjectURLMock = jest.fn<void, [string]>();
 const chromeDownloadsDownloadMock = jest.fn<
-  (options: chrome.downloads.DownloadOptions) => Promise<number>,
+  Promise<number>,
   [chrome.downloads.DownloadOptions]
 >();
 
@@ -22,8 +22,8 @@ beforeAll(() => {
       download: chromeDownloadsDownloadMock as unknown as typeof chrome.downloads.download,
     },
   } as unknown as typeof chrome;
-  URL.createObjectURL = createObjectURLMock;
-  URL.revokeObjectURL = revokeObjectURLMock;
+  URL.createObjectURL = createObjectURLMock as unknown as typeof URL.createObjectURL;
+  URL.revokeObjectURL = revokeObjectURLMock as unknown as typeof URL.revokeObjectURL;
 });
 
 beforeEach(() => {
@@ -87,7 +87,7 @@ function makeResponse(body: Blob, ok = true, status = 200): Response {
     clone: function () {
       return makeResponse(body, ok, status);
     },
-  } as Response;
+  } as unknown as Response;
 }
 
 function makeMp4Video(overrides: Partial<DetectedVideo> = {}): DetectedVideo {
@@ -183,10 +183,12 @@ describe('Downloader', () => {
       throw new Error(`unexpected fetch ${url}`);
     });
 
-    const convertMock: ConvertCallback = jest.fn(async (_segments: ArrayBuffer[], _id: string) => {
-      // simulate ffmpeg conversion
-      return new ArrayBuffer(42);
-    });
+    const convertMock: jest.MockedFunction<ConvertCallback> = jest.fn(
+      async (_segments: ArrayBuffer[], _id: string) => {
+        // simulate ffmpeg conversion
+        return new ArrayBuffer(42);
+      },
+    );
     downloader.setConvertCallback(convertMock);
 
     await downloader.downloadVideo(makeM3u8Video(), 'dl2');

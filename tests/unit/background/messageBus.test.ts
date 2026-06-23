@@ -66,7 +66,7 @@ describe('MessageBus', () => {
 
       // Handler should be invoked via handleMessage
       const request: MessageRequest = { type: 'DETECT_MEDIA', payload: 1 };
-      void bus.handleMessage(request, { id: 1 });
+      void bus.handleMessage(request, { id: '1' });
       expect(handler).toHaveBeenCalledWith(request);
     });
 
@@ -78,7 +78,7 @@ describe('MessageBus', () => {
       off();
 
       const request: MessageRequest = { type: 'DETECT_MEDIA', payload: 1 };
-      return bus.handleMessage(request, { id: 1 }).then((response) => {
+      return bus.handleMessage(request, { id: '1' }).then((response) => {
         expect(handler).not.toHaveBeenCalled();
         expect(response.success).toBe(false);
         expect(response.error).toContain('No handler');
@@ -161,7 +161,7 @@ describe('MessageBus', () => {
       bus.on('DETECT_MEDIA', handler);
 
       const request: MessageRequest = { type: 'DETECT_MEDIA', payload: 42 };
-      return bus.handleMessage(request, { id: 1 }).then((response) => {
+      return bus.handleMessage(request, { id: '1' }).then((response) => {
         expect(handler).toHaveBeenCalledWith(request);
         expect(response).toEqual({ success: true, data: 'ok' });
       });
@@ -171,7 +171,7 @@ describe('MessageBus', () => {
       const bus = new MessageBus();
       const request: MessageRequest = { type: 'GET_SETTINGS' };
 
-      return bus.handleMessage(request, { id: 1 }).then((response) => {
+      return bus.handleMessage(request, { id: '1' }).then((response) => {
         expect(response.success).toBe(false);
         expect(response.error).toBe('No handler for type: GET_SETTINGS');
       });
@@ -186,7 +186,7 @@ describe('MessageBus', () => {
       bus.on('DOWNLOAD_VIDEO', handler);
 
       const request: MessageRequest = { type: 'DOWNLOAD_VIDEO' };
-      return bus.handleMessage(request, { id: 1 }).then((response) => {
+      return bus.handleMessage(request, { id: '1' }).then((response) => {
         expect(response.success).toBe(false);
         expect(response.error).toBe('boom');
       });
@@ -229,7 +229,7 @@ describe('MessageBus', () => {
       const request: MessageRequest = { type: 'DETECT_MEDIA', payload: 7 };
 
       // Returning true means sendResponse will be called asynchronously
-      const result = listener(request, { id: 1 }, sendResponse);
+      const result = listener(request, { id: '1' }, sendResponse);
 
       expect(result).toBe(true);
       // Flush the async handler chain (mockResolvedValue + handleMessage await).
