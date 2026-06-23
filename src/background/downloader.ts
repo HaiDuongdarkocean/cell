@@ -199,11 +199,15 @@ export class Downloader {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT_MS);
       try {
-        // Include credentials and the page's origin so segment servers that
-        // check auth/referer return real data instead of empty responses.
+        // Use `credentials: 'same-origin'` for segment fetches. Most HLS
+        // segment CDNs are cross-origin and do NOT send
+        // `Access-Control-Allow-Credentials: true` — using `'include'` here
+        // would cause the browser to BLOCK the response. Segment URLs rarely
+        // need cookies; the playlist fetch (which may need auth from the
+        // page's origin) still uses `'include'`.
         const response = await fetch(url, {
           signal: controller.signal,
-          credentials: 'include',
+          credentials: 'same-origin',
         });
         if (!response.ok) {
           throw new Error(`Segment fetch failed: ${response.status}`);

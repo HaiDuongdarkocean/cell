@@ -275,7 +275,7 @@ describe('Downloader', () => {
 
     await downloader.downloadVideo(makeM3u8Video(), 'dl2');
 
-    // playlist + 3 segments fetched (all with credentials included)
+    // playlist fetched with credentials:'include'; segments use 'same-origin'
     expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/playlist.m3u8', {
       credentials: 'include',
@@ -453,6 +453,12 @@ describe('Downloader', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(result).toBeInstanceOf(Blob);
+    // Segment fetches use 'same-origin' (not 'include') to avoid CORS issues
+    // on cross-origin CDNs that don't send Access-Control-Allow-Credentials.
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/seg.ts', {
+      signal: expect.any(AbortSignal),
+      credentials: 'same-origin',
+    });
   });
 
   // 8. fetchSegment times out after SEGMENT_TIMEOUT_MS
