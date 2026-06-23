@@ -1,5 +1,14 @@
 import type { ChangeEvent } from 'react';
-import type { Settings, VideoQuality } from '@/types/media';
+import type {
+  Settings,
+  VideoQuality,
+  ParallelConversionMode,
+  ParallelFallbackMode,
+} from '@/types/media';
+import {
+  MIN_PARALLEL_WORKERS,
+  MAX_PARALLEL_WORKERS,
+} from '@/constants/config';
 import styles from './SettingsPanel.module.css';
 
 interface SettingsPanelProps {
@@ -18,6 +27,10 @@ const QUALITY_OPTIONS: readonly VideoQuality[] = [
 ];
 
 const THEME_OPTIONS: readonly Settings['theme'][] = ['light', 'dark'];
+
+const PARALLEL_OPTIONS: readonly ParallelConversionMode[] = ['off', 'auto', 'manual'];
+
+const FALLBACK_OPTIONS: readonly ParallelFallbackMode[] = ['sequential', 'save-ts'];
 
 export function SettingsPanel({ settings, onChange }: SettingsPanelProps): React.JSX.Element {
   const update = <K extends keyof Settings>(key: K, value: Settings[K]): void => {
@@ -38,6 +51,22 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps): React
 
   const handleTheme = (e: ChangeEvent<HTMLSelectElement>): void => {
     update('theme', e.target.value as Settings['theme']);
+  };
+
+  const handleParallelMode = (e: ChangeEvent<HTMLSelectElement>): void => {
+    update('parallelConversion', e.target.value as ParallelConversionMode);
+  };
+
+  const handleManualWorkers = (e: ChangeEvent<HTMLInputElement>): void => {
+    const clamped = Math.max(
+      MIN_PARALLEL_WORKERS,
+      Math.min(MAX_PARALLEL_WORKERS, Number(e.target.value) || MIN_PARALLEL_WORKERS),
+    );
+    update('manualWorkerCount', clamped);
+  };
+
+  const handleParallelFallback = (e: ChangeEvent<HTMLSelectElement>): void => {
+    update('parallelFallback', e.target.value as ParallelFallbackMode);
   };
 
   return (
@@ -109,6 +138,64 @@ export function SettingsPanel({ settings, onChange }: SettingsPanelProps): React
           ))}
         </select>
       </div>
+
+      <div className={styles.field}>
+        <label className={styles.label} htmlFor="parallel-mode-select">
+          Parallel conversion (experimental)
+        </label>
+        <select
+          id="parallel-mode-select"
+          className={styles.input}
+          value={settings.parallelConversion}
+          onChange={handleParallelMode}
+          data-testid="parallel-mode-select"
+        >
+          {PARALLEL_OPTIONS.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {settings.parallelConversion === 'manual' && (
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="manual-workers-input">
+            Worker count ({MIN_PARALLEL_WORKERS}–{MAX_PARALLEL_WORKERS})
+          </label>
+          <input
+            id="manual-workers-input"
+            className={styles.input}
+            type="number"
+            min={MIN_PARALLEL_WORKERS}
+            max={MAX_PARALLEL_WORKERS}
+            value={settings.manualWorkerCount}
+            onChange={handleManualWorkers}
+            data-testid="manual-workers-input"
+          />
+        </div>
+      )}
+
+      {settings.parallelConversion !== 'off' && (
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="parallel-fallback-select">
+            Fallback if parallel fails
+          </label>
+          <select
+            id="parallel-fallback-select"
+            className={styles.input}
+            value={settings.parallelFallback}
+            onChange={handleParallelFallback}
+            data-testid="parallel-fallback-select"
+          >
+            {FALLBACK_OPTIONS.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }
