@@ -12,6 +12,17 @@ import type {
   DownloadListResponse,
 } from '@/types/message';
 
+// Mock OPFS so cleanupOrphanedDownloads doesn't fail in jsdom.
+jest.mock('@/lib/storage/opfsStorage', () => ({
+  ensureDownloadSubdir: jest.fn(),
+  appendChunk: jest.fn(),
+  readFile: jest.fn(),
+  deleteFile: jest.fn(),
+  deleteDownloadSubdir: jest.fn(),
+  cleanupOrphanedDownloads: jest.fn().mockResolvedValue([]),
+  isOpfsAvailable: jest.fn().mockReturnValue(false),
+}));
+
 // --- Types for mocked chrome APIs ---
 
 interface MockListener {
@@ -52,6 +63,7 @@ interface MockChrome {
   };
   downloads: {
     download: jest.Mock;
+    onChanged: MockListener;
   };
 }
 
@@ -91,6 +103,7 @@ function createMockChrome(): MockChrome {
     },
     downloads: {
       download: jest.fn().mockResolvedValue(1),
+      onChanged: createMockListener(),
     },
   };
 }
@@ -100,6 +113,8 @@ function createMockChrome(): MockChrome {
 interface MockDownloader {
   onProgress: jest.Mock;
   setConvertCallback: jest.Mock;
+  setSaveOpfsFileCallback: jest.Mock;
+  setConvertMode: jest.Mock;
   downloadVideo: jest.Mock;
   downloadSubtitle: jest.Mock;
   cancel: jest.Mock;
@@ -109,6 +124,8 @@ function createMockDownloader(): MockDownloader {
   return {
     onProgress: jest.fn(),
     setConvertCallback: jest.fn(),
+    setSaveOpfsFileCallback: jest.fn(),
+    setConvertMode: jest.fn(),
     downloadVideo: jest.fn().mockResolvedValue(undefined),
     downloadSubtitle: jest.fn().mockResolvedValue(undefined),
     cancel: jest.fn(),
@@ -424,6 +441,7 @@ describe('Background integration', () => {
       defaultQuality: '720p',
       defaultSubtitleLanguage: 'ja',
       theme: 'dark',
+      convertToMp4: 'always',
     };
     mockChrome.storage.local.get.mockResolvedValue({
       [STORAGE_KEYS.SETTINGS]: storedSettings,
@@ -615,34 +633,46 @@ describe('Background integration', () => {
   it('sets a convert callback on the downloader that uses the offscreen document', async () => {
     expect(mockDownloader.setConvertCallback).toHaveBeenCalledTimes(1);
     const convertCallback = mockDownloader.setConvertCallback.mock
-      .calls[0][0] as (segments: ArrayBuffer[], downloadId: string) => Promise<ArrayBuffer>;
+      .calls[0][0] as (
+      dirHandle: FileSystemDirectoryHandle,
+      downloadId: string,
+    ) => Promise<{ outputName: string; mimeType: string }>;
 
-    const mp4Buffer = new ArrayBuffer(10);
     mockChrome.runtime.sendMessage.mockResolvedValueOnce({
       success: true,
-      data: { downloadId: 'dl-1', mp4Data: mp4Buffer, success: true },
+      data: {
+        downloadId: 'dl-1',
+        outputName: 'output.mp4',
+        mimeType: 'video/mp4',
+        success: true,
+      },
     });
 
-    const result = await convertCallback([new ArrayBuffer(4)], 'dl-1');
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    const result = await convertCallback(mockDirHandle, 'dl-1');
 
     expect(mockOffscreen.ensureOffscreenDocument).toHaveBeenCalled();
     expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: MESSAGE_TYPES.CONVERT_TS_TO_MP4 }),
+      expect.objectContaining({ type: MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2 }),
     );
-    expect(result).toBe(mp4Buffer);
+    expect(result).toEqual({ outputName: 'output.mp4', mimeType: 'video/mp4' });
   });
 
   it('convert callback throws when offscreen conversion fails', async () => {
     const convertCallback = mockDownloader.setConvertCallback.mock
-      .calls[0][0] as (segments: ArrayBuffer[], downloadId: string) => Promise<ArrayBuffer>;
+      .calls[0][0] as (
+      dirHandle: FileSystemDirectoryHandle,
+      downloadId: string,
+    ) => Promise<{ outputName: string; mimeType: string }>;
 
     mockChrome.runtime.sendMessage.mockResolvedValueOnce({
       success: false,
-      error: 'ffmpeg error',
+      error: 'transmux error',
     });
 
-    await expect(convertCallback([new ArrayBuffer(4)], 'dl-1')).rejects.toThrow(
-      'ffmpeg error',
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    await expect(convertCallback(mockDirHandle, 'dl-1')).rejects.toThrow(
+      'transmux error',
     );
   });
 });

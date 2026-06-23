@@ -846,7 +846,10 @@ describe('Downloader', () => {
     } as unknown as File);
 
     const convertMock: jest.MockedFunction<ConvertCallback> = jest.fn(
-      async (): Promise<ConvertResult> => ({
+      async (
+        _dirHandle: FileSystemDirectoryHandle,
+        _downloadId: string,
+      ): Promise<ConvertResult> => ({
         outputName: 'output.mp4',
         mimeType: 'video/mp4',
       }),
@@ -923,7 +926,10 @@ describe('Downloader', () => {
 
     // Convert callback that throws → triggers .ts fallback.
     const convertMock: jest.MockedFunction<ConvertCallback> = jest.fn(
-      async (): Promise<ConvertResult> => {
+      async (
+        _dirHandle: FileSystemDirectoryHandle,
+        _downloadId: string,
+      ): Promise<ConvertResult> => {
         throw new Error('transmux failed');
       },
     );

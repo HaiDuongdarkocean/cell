@@ -16,10 +16,11 @@
 import { NetworkInterceptor } from './networkInterceptor';
 import { MessageBus } from './messageBus';
 import { DownloadQueue } from './downloadQueue';
-import { Downloader } from './downloader';
+import { Downloader, type ConvertResult } from './downloader';
 import { OffscreenManager } from './offscreenManager';
 import { MESSAGE_TYPES } from '@/constants/messages';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
+import { cleanupOrphanedDownloads } from '@/lib/storage/opfsStorage';
 import { detectVideo } from '@/lib/detectors/videoDetector';
 import { detectSubtitle } from '@/lib/detectors/subtitleDetector';
 import type {
@@ -43,10 +44,13 @@ import type {
   CancelDownloadPayload,
   DownloadProgressUpdatePayload,
   UpdateSettingsPayload,
-  ConvertTsToMp4Payload,
-  ConvertTsToMp4ResultPayload,
   PageScanResultPayload,
   DownloadListResponse,
+  ConvertTsToMp4V2Payload,
+  ConvertTsToMp4V2ResultPayload,
+  CreateOpfsBlobUrlPayload,
+  CreateOpfsBlobUrlResultPayload,
+  RevokeOpfsBlobUrlPayload,
 } from '@/types/message';
 
 /** Optional dependency overrides (used for testing). */
@@ -114,6 +118,7 @@ export class BackgroundService {
     // 2. Load persisted settings and apply to the download queue.
     const settings = await this.loadSettings();
     this.downloadQueue.setMaxConcurrent(settings.concurrentDownloads);
+    this.downloader.setConvertMode(settings.convertToMp4);
 
     // 3. Load persisted extension active state.
     const status = await this.loadExtensionStatus();
@@ -126,6 +131,11 @@ export class BackgroundService {
     if (this.extensionActive) {
       this.networkInterceptor.start();
     }
+
+    // 6. Clean up orphaned OPFS temp files from crashed sessions.
+    void cleanupOrphanedDownloads().catch((err: unknown) => {
+      console.warn('[background] OPFS orphan cleanup failed:', err);
+    });
   }
 
   /**
@@ -173,25 +183,104 @@ export class BackgroundService {
       this.downloadQueue.updateProgress(progress);
     });
 
-    // Convert callback → offscreen ffmpeg.
+    // Convert callback → offscreen mux.js transmuxer (V2: OPFS-based).
+    // The callback receives the OPFS directory handle; the offscreen document
+    // reads `input.ts` from the same OPFS and writes `output.mp4` there.
+    // Only the downloadId is sent via message (no large ArrayBuffer payloads).
     this.downloader.setConvertCallback(
-      async (segments: ArrayBuffer[], downloadId: string): Promise<ArrayBuffer> => {
+      async (
+        _dirHandle: FileSystemDirectoryHandle,
+        downloadId: string,
+      ): Promise<ConvertResult> => {
         await this.offscreenManager.ensureOffscreenDocument();
 
         const request: MessageRequest = {
-          type: MESSAGE_TYPES.CONVERT_TS_TO_MP4,
-          payload: { segments, downloadId } satisfies ConvertTsToMp4Payload,
+          type: MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2,
+          payload: { downloadId } satisfies ConvertTsToMp4V2Payload,
         };
 
         const response = (await chrome.runtime.sendMessage(
           request,
-        )) as MessageResponse<ConvertTsToMp4ResultPayload>;
+        )) as MessageResponse<ConvertTsToMp4V2ResultPayload>;
 
         if (!response.success || !response.data) {
-          throw new Error(response.error ?? 'ffmpeg conversion failed');
+          throw new Error(response.error ?? 'transmux conversion failed');
         }
 
-        return response.data.mp4Data;
+        return {
+          outputName: response.data.outputName,
+          mimeType: response.data.mimeType,
+        };
+      },
+    );
+
+    // Save-OPFS-file callback → offscreen-owned Blob URL.
+    //
+    // MV3 service workers cannot use `URL.createObjectURL` (per MDN, it is
+    // unavailable in Service Workers). The offscreen document reads the OPFS
+    // file directly, creates a Blob URL (tied to the offscreen document's
+    // lifetime), and returns the URL string. The background then calls
+    // `chrome.downloads.download` with that URL and revokes it via
+    // `chrome.downloads.onChanged` when the download completes or is
+    // interrupted — no `setTimeout` (which is unreliable in a SW that may be
+    // killed).
+    this.downloader.setSaveOpfsFileCallback(
+      async (
+        downloadId: string,
+        opfsFilename: string,
+        downloadFilename: string,
+        mimeType: string,
+      ): Promise<void> => {
+        await this.offscreenManager.ensureOffscreenDocument();
+
+        const createRequest: MessageRequest = {
+          type: MESSAGE_TYPES.CREATE_OPFS_BLOB_URL,
+          payload: {
+            downloadId,
+            opfsFilename,
+            mimeType,
+          } satisfies CreateOpfsBlobUrlPayload,
+        };
+
+        const createResponse = (await chrome.runtime.sendMessage(
+          createRequest,
+        )) as MessageResponse<CreateOpfsBlobUrlResultPayload>;
+
+        if (!createResponse.success || !createResponse.data) {
+          throw new Error(
+            createResponse.error ?? 'Failed to create Blob URL for save',
+          );
+        }
+
+        const blobUrl = createResponse.data.url;
+        const chromeDownloadId = await chrome.downloads.download({
+          url: blobUrl,
+          filename: downloadFilename,
+          saveAs: false,
+        });
+
+        // Revoke the Blob URL when the download reaches a terminal state.
+        // Using `onChanged` (not `setTimeout`) because the SW may be killed
+        // before a timer fires.
+        const revokeListener = (
+          delta: chrome.downloads.DownloadDelta,
+        ): void => {
+          if (delta.id !== chromeDownloadId) return;
+          if (
+            delta.state?.current === 'complete' ||
+            delta.state?.current === 'interrupted'
+          ) {
+            chrome.downloads.onChanged.removeListener(revokeListener);
+            const revokeRequest: MessageRequest = {
+              type: MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL,
+              payload: { url: blobUrl } satisfies RevokeOpfsBlobUrlPayload,
+            };
+            void chrome.runtime.sendMessage(revokeRequest).catch((err) => {
+              console.warn('[background] Failed to revoke Blob URL:', err);
+            });
+          }
+        };
+        chrome.downloads.onChanged.addListener(revokeListener);
       },
     );
 
@@ -202,16 +291,24 @@ export class BackgroundService {
         throw new Error(`No media found for download ${item.id}`);
       }
 
-      if (item.mediaType === 'video') {
-        await this.downloader.downloadVideo(
-          media as DetectedVideo,
-          item.id,
+      try {
+        if (item.mediaType === 'video') {
+          await this.downloader.downloadVideo(
+            media as DetectedVideo,
+            item.id,
+          );
+        } else {
+          await this.downloader.downloadSubtitle(
+            media as DetectedSubtitle,
+            item.id,
+          );
+        }
+      } catch (err: unknown) {
+        console.error(
+          `[background] Download ${item.id} (${item.mediaType}) failed:`,
+          err instanceof Error ? err.message : err,
         );
-      } else {
-        await this.downloader.downloadSubtitle(
-          media as DetectedSubtitle,
-          item.id,
-        );
+        throw err;
       }
     });
 
@@ -398,7 +495,7 @@ export class BackgroundService {
   /** DOWNLOAD_VIDEO: create a download item for the requested video. */
   private handleDownloadVideo = async (
     request: MessageRequest,
-  ): Promise<MessageResponse<{ downloadId: string }>> => {
+  ): Promise<MessageResponse<DownloadItem>> => {
     const payload = request.payload as DownloadVideoPayload;
     const video = await this.findVideoById(payload.videoId);
 
@@ -409,17 +506,20 @@ export class BackgroundService {
     const item = this.createDownloadItem(video, 'video');
     this.downloadQueue.add(item);
 
-    return { success: true, data: { downloadId: item.id } };
+    return { success: true, data: item };
   };
 
   /** DOWNLOAD_SUBTITLE: create a download item for the requested subtitle. */
   private handleDownloadSubtitle = async (
     request: MessageRequest,
-  ): Promise<MessageResponse<{ downloadId: string }>> => {
+  ): Promise<MessageResponse<DownloadItem>> => {
     const payload = request.payload as DownloadSubtitlePayload;
     const subtitle = await this.findSubtitleById(payload.subtitleId);
 
     if (!subtitle) {
+      console.error(
+        `[background] Subtitle not found: ${payload.subtitleId}`,
+      );
       return {
         success: false,
         error: `Subtitle not found: ${payload.subtitleId}`,
@@ -429,7 +529,7 @@ export class BackgroundService {
     const item = this.createDownloadItem(subtitle, 'subtitle');
     this.downloadQueue.add(item);
 
-    return { success: true, data: { downloadId: item.id } };
+    return { success: true, data: item };
   };
 
   /** DOWNLOAD_ALL: download every detected video + subtitle for a tab. */
@@ -512,6 +612,9 @@ export class BackgroundService {
     if (payload.settings.concurrentDownloads !== undefined) {
       this.downloadQueue.setMaxConcurrent(payload.settings.concurrentDownloads);
     }
+    if (payload.settings.convertToMp4 !== undefined) {
+      this.downloader.setConvertMode(payload.settings.convertToMp4);
+    }
 
     return { success: true, data: merged };
   };
@@ -549,6 +652,12 @@ export class BackgroundService {
   ): Promise<MessageResponse> => {
     const payload = request.payload as PageScanResultPayload;
     const tabId = payload.tabId;
+
+    // Guard against missing tabId
+    if (tabId === undefined) {
+      console.error('PAGE_SCAN_RESULT received without tabId');
+      return { success: false, error: 'Missing tabId in PAGE_SCAN_RESULT payload' };
+    }
 
     const existingVideos = this.networkInterceptor.getVideos(tabId);
     const existingSubtitles = this.networkInterceptor.getSubtitles(tabId);

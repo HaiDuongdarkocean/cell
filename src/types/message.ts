@@ -30,6 +30,10 @@ export type MessageType =
   | 'EXTENSION_STATUS_UPDATE'
   | 'CONVERT_TS_TO_MP4'
   | 'CONVERT_TS_TO_MP4_RESULT'
+  | 'CONVERT_TS_TO_MP4_V2'
+  | 'CONVERT_TS_TO_MP4_V2_RESULT'
+  | 'CREATE_OPFS_BLOB_URL'
+  | 'REVOKE_OPFS_BLOB_URL'
   | 'PAGE_SCAN_RESULT';
 
 // === Message Request ===
@@ -99,6 +103,46 @@ export interface ConvertTsToMp4ResultPayload {
   readonly mp4Data: ArrayBuffer;
   readonly success: boolean;
   readonly error?: string;
+}
+
+/**
+ * V2 conversion request: the offscreen document reads `input.ts` from OPFS
+ * (shared within the extension origin) and writes `output.mp4` to OPFS.
+ * No large ArrayBuffer payloads are sent via message.
+ */
+export interface ConvertTsToMp4V2Payload {
+  readonly downloadId: string;
+}
+
+export interface ConvertTsToMp4V2ResultPayload {
+  readonly downloadId: string;
+  readonly outputName: string;
+  readonly mimeType: string;
+  readonly success: boolean;
+  readonly error?: string;
+}
+
+/**
+ * Request the offscreen document to read an OPFS file and create a Blob URL
+ * for it. The offscreen document owns the Blob URL (it is tied to the
+ * offscreen document's lifetime) and tracks it until {@link REVOKE_OPFS_BLOB_URL}
+ * is received.
+ *
+ * This avoids materializing large video files into `data:` URLs or
+ * `ArrayBuffer`s in the service worker.
+ */
+export interface CreateOpfsBlobUrlPayload {
+  readonly downloadId: string;
+  readonly opfsFilename: string;
+  readonly mimeType: string;
+}
+
+export interface CreateOpfsBlobUrlResultPayload {
+  readonly url: string;
+}
+
+export interface RevokeOpfsBlobUrlPayload {
+  readonly url: string;
 }
 
 export interface PageScanResultPayload {

@@ -1,25 +1,31 @@
 /**
- * ffmpeg.wasm runner that executes inside an MV3 offscreen document.
+ * Offscreen document runner: MPEG-TS → fragmented MP4 transmuxer.
  *
- * MV3 service workers cannot run WebAssembly, so all ffmpeg.wasm work is
- * delegated to this offscreen document. The background script creates the
- * offscreen document and communicates with it via `chrome.runtime` messages
- * of type `CONVERT_TS_TO_MP4`.
+ * MV3 service workers cannot run WebAssembly or do heavy processing, so all
+ * transmuxing work is delegated to this offscreen document. The background
+ * script streams downloaded `.ts` segments into OPFS (`downloads/{id}/input.ts`),
+ * then sends a `CONVERT_TS_TO_MP4_V2` message containing only the download id.
+ *
+ * This module reads `input.ts` from OPFS, transmuxes it to `output.mp4` using
+ * mux.js (chunk-by-chunk, ~10MB memory regardless of video size), writes the
+ * result back to OPFS, and responds with the output file name.
  */
 
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import type { FileData } from '@ffmpeg/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
 import { MESSAGE_TYPES } from '@/constants/messages';
+import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
+import {
+  ensureDownloadSubdir,
+  readFile as opfsReadFile,
+} from '@/lib/storage/opfsStorage';
 import type {
-  ConvertTsToMp4Payload,
-  ConvertTsToMp4ResultPayload,
+  ConvertTsToMp4V2Payload,
+  ConvertTsToMp4V2ResultPayload,
+  CreateOpfsBlobUrlPayload,
+  CreateOpfsBlobUrlResultPayload,
+  RevokeOpfsBlobUrlPayload,
   MessageRequest,
   MessageResponse,
 } from '@/types/message';
-
-/** Singleton ffmpeg.wasm instance. */
-let ffmpeg: FFmpeg | null = null;
 
 /** Currently-registered message listener (kept so it can be removed). */
 let messageListener:
@@ -31,85 +37,121 @@ let messageListener:
   | null = null;
 
 /**
- * Initialize the ffmpeg.wasm core (idempotent / singleton).
+ * Active Blob URLs created by this offscreen document, keyed by URL string.
  *
- * On first call a new {@link FFmpeg} instance is created and the core is
- * loaded from the bundled `ffmpeg/ffmpeg-core.js` resource. Subsequent calls
- * return the existing instance without reloading.
- *
- * @returns The ready-to-use {@link FFmpeg} instance.
+ * Blob URLs are tied to the document that created them. The offscreen document
+ * must stay alive while any Blob URL is active, and must revoke them when the
+ * background signals that `chrome.downloads.download` has consumed the URL.
  */
-export async function initFFmpeg(): Promise<FFmpeg> {
-  if (ffmpeg) {
-    return ffmpeg;
-  }
-
-  const instance = new FFmpeg();
-  const coreURL = chrome.runtime.getURL('ffmpeg/ffmpeg-core.js');
-  await instance.load({ coreURL });
-  ffmpeg = instance;
-  return instance;
-}
+const activeBlobUrls = new Map<string, true>();
 
 /**
- * Convert an ordered list of `.ts` segment buffers into a single MP4 file
- * using ffmpeg.wasm.
+ * Convert a `.ts` file stored in OPFS (`downloads/{downloadId}/input.ts`) into
+ * a fragmented MP4 file (`output.mp4`) in the same OPFS directory.
  *
- * Steps:
- *  1. Ensure ffmpeg is initialized.
- *  2. Write each segment to the virtual FS as `segment_<i>.ts`.
- *  3. Concat + transcode to `output.mp4` with stream copy (`-c copy`).
- *  4. Read `output.mp4` back from the virtual FS.
- *  5. Delete all temporary files (segments + output).
- *  6. Return the MP4 data as an `ArrayBuffer`.
- *
- * @param segments - Ordered `.ts` segment buffers (segments[0] first).
- * @param downloadId - Identifier for the originating download (for logging).
- * @returns MP4 file content as an `ArrayBuffer`.
+ * @returns The result payload `{ downloadId, outputName, mimeType, success }`.
  */
-export async function convertTsToMp4(
-  segments: ArrayBuffer[],
+export async function convertTsToMp4V2(
   downloadId: string,
-): Promise<ArrayBuffer> {
-  const instance = await initFFmpeg();
+): Promise<ConvertTsToMp4V2ResultPayload> {
+  console.debug(`[offscreen-runner] Starting V2 conversion for ${downloadId}`);
 
-  const segmentNames: string[] = [];
+  const dirHandle = await ensureDownloadSubdir(downloadId);
+  console.debug(`[offscreen-runner] OPFS dir ready for ${downloadId}`);
 
-  // 1. Write each segment to the virtual FS.
-  for (let i = 0; i < segments.length; i++) {
-    const name = `segment_${i}.ts`;
-    segmentNames.push(name);
-    const data = await fetchFile(new Blob([segments[i]]));
-    await instance.writeFile(name, data as FileData);
+  const inputFile = await opfsReadFile(dirHandle, 'input.ts');
+  console.debug(
+    `[offscreen-runner] Read input.ts (${inputFile.size} bytes) for ${downloadId}`,
+  );
+
+  const result = await transmuxTsToFmp4(inputFile, dirHandle, 'output.mp4');
+
+  if (!result.success) {
+    console.error(
+      `[offscreen-runner] Transmux failed for ${downloadId}: ${result.error}`,
+    );
+    return {
+      downloadId,
+      outputName: result.outputName,
+      mimeType: 'video/mp4',
+      success: false,
+      error: result.error,
+    };
   }
 
-  // 2. Concat + transcode.
-  const concatInput = `concat:${segmentNames.join('|')}`;
-  await instance.exec(['-i', concatInput, '-c', 'copy', 'output.mp4']);
-
-  // 3. Read the resulting mp4.
-  const output = await instance.readFile('output.mp4');
-
-  // 4. Clean up temp files.
-  for (const name of segmentNames) {
-    await instance.deleteFile(name);
-  }
-  await instance.deleteFile('output.mp4');
-
-  console.debug(`[ffmpegRunner] Converted ${segments.length} segments for ${downloadId}`);
-
-  return fileDataToArrayBuffer(output);
+  console.debug(`[offscreen-runner] Transmux succeeded for ${downloadId}`);
+  return {
+    downloadId,
+    outputName: result.outputName,
+    mimeType: 'video/mp4',
+    success: true,
+  };
 }
 
 /**
- * Start listening for `CONVERT_TS_TO_MP4` messages from the background script.
+ * Read an OPFS file and create a Blob URL for it.
  *
- * On receipt, runs {@link convertTsToMp4} with the payload's segments and
- * responds with a {@link MessageResponse} containing the
- * {@link ConvertTsToMp4ResultPayload}. The listener returns `true` so the
- * message channel stays open for the asynchronous response.
+ * The Blob URL is owned by this offscreen document (Blob URLs are tied to the
+ * document that created them). The caller must later send a
+ * `REVOKE_OPFS_BLOB_URL` message to release the URL once
+ * `chrome.downloads.download` has consumed it.
+ *
+ * This avoids materializing large video files into `data:` URLs or
+ * `ArrayBuffer`s in the service worker.
  */
-export function startMessageListener(): void {
+export async function createOpfsBlobUrl(
+  downloadId: string,
+  opfsFilename: string,
+  mimeType: string,
+): Promise<CreateOpfsBlobUrlResultPayload> {
+  const dirHandle = await ensureDownloadSubdir(downloadId);
+  const file = await opfsReadFile(dirHandle, opfsFilename);
+
+  // If the File already has the right type, use it directly; otherwise slice
+  // to override the mime type (slicing a File returns a Blob backed by the
+  // same data — no copy).
+  const blob =
+    file.type === mimeType
+      ? file
+      : file.slice(0, file.size, mimeType);
+
+  const url = URL.createObjectURL(blob);
+  activeBlobUrls.set(url, true);
+  console.debug(
+    `[offscreen-runner] Created Blob URL for ${downloadId}/${opfsFilename} (${file.size} bytes)`,
+  );
+  return { url };
+}
+
+/**
+ * Revoke a previously-created Blob URL and remove it from the active set.
+ * Safe to call multiple times; no-op if the URL was already revoked.
+ */
+export function revokeOpfsBlobUrl(url: string): void {
+  if (activeBlobUrls.has(url)) {
+    URL.revokeObjectURL(url);
+    activeBlobUrls.delete(url);
+    console.debug('[offscreen-runner] Revoked Blob URL');
+  }
+}
+
+/** Returns the number of currently-active (un-revoked) Blob URLs. */
+export function activeBlobUrlCount(): number {
+  return activeBlobUrls.size;
+}
+
+/**
+ * Start listening for offscreen messages from the background script.
+ *
+ * Handles three message types:
+ *  - `CONVERT_TS_TO_MP4_V2`: transmux `input.ts` → `output.mp4` in OPFS.
+ *  - `CREATE_OPFS_BLOB_URL`: read an OPFS file and return a Blob URL.
+ *  - `REVOKE_OPFS_BLOB_URL`: revoke a previously-created Blob URL.
+ *
+ * The listener returns `true` for handled messages so the message channel
+ * stays open for the asynchronous response.
+ */
+export async function startMessageListener(): Promise<void> {
   if (messageListener) {
     return;
   }
@@ -120,37 +162,68 @@ export function startMessageListener(): void {
     sendResponse: (response?: unknown) => void,
   ): boolean | undefined => {
     const request = message as MessageRequest;
-    if (request?.type !== MESSAGE_TYPES.CONVERT_TS_TO_MP4) {
-      return false;
+    const type = request?.type;
+
+    if (type === MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2) {
+      const payload = request.payload as ConvertTsToMp4V2Payload;
+      convertTsToMp4V2(payload.downloadId)
+        .then((result: ConvertTsToMp4V2ResultPayload): void => {
+          const response: MessageResponse<ConvertTsToMp4V2ResultPayload> = {
+            success: result.success,
+            data: result,
+          };
+          sendResponse(response);
+        })
+        .catch((error: unknown): void => {
+          console.error(
+            `[offscreen-runner] Conversion failed for ${payload.downloadId}:`,
+            error,
+          );
+          const messageText = error instanceof Error ? error.message : String(error);
+          const response: MessageResponse<ConvertTsToMp4V2ResultPayload> = {
+            success: false,
+            error: messageText || 'Unknown conversion error',
+          };
+          sendResponse(response);
+        });
+      return true;
     }
 
-    const payload = request.payload as ConvertTsToMp4Payload;
+    if (type === MESSAGE_TYPES.CREATE_OPFS_BLOB_URL) {
+      const payload = request.payload as CreateOpfsBlobUrlPayload;
+      createOpfsBlobUrl(payload.downloadId, payload.opfsFilename, payload.mimeType)
+        .then((result: CreateOpfsBlobUrlResultPayload): void => {
+          const response: MessageResponse<CreateOpfsBlobUrlResultPayload> = {
+            success: true,
+            data: result,
+          };
+          sendResponse(response);
+        })
+        .catch((error: unknown): void => {
+          console.error(
+            `[offscreen-runner] createOpfsBlobUrl failed for ${payload.downloadId}:`,
+            error,
+          );
+          const messageText = error instanceof Error ? error.message : String(error);
+          const response: MessageResponse<CreateOpfsBlobUrlResultPayload> = {
+            success: false,
+            error: messageText || 'Failed to create Blob URL',
+          };
+          sendResponse(response);
+        });
+      return true;
+    }
 
-    convertTsToMp4(payload.segments, payload.downloadId)
-      .then((mp4Data: ArrayBuffer): void => {
-        const result: ConvertTsToMp4ResultPayload = {
-          downloadId: payload.downloadId,
-          mp4Data,
-          success: true,
-        };
-        const response: MessageResponse<ConvertTsToMp4ResultPayload> = {
-          success: true,
-          data: result,
-        };
-        sendResponse(response);
-      })
-      .catch((error: unknown): void => {
-        const messageText =
-          error instanceof Error ? error.message : 'Unknown conversion error';
-        const response: MessageResponse<ConvertTsToMp4ResultPayload> = {
-          success: false,
-          error: messageText,
-        };
-        sendResponse(response);
-      });
+    if (type === MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL) {
+      const payload = request.payload as RevokeOpfsBlobUrlPayload;
+      revokeOpfsBlobUrl(payload.url);
+      const response: MessageResponse = { success: true };
+      sendResponse(response);
+      return true;
+    }
 
-    // Keep the message channel open for the async response.
-    return true;
+    // Not a message we handle.
+    return false;
   };
 
   messageListener = listener;
@@ -158,37 +231,25 @@ export function startMessageListener(): void {
 }
 
 /**
- * Stop listening for conversion messages and clear the registered listener.
+ * Stop listening for messages and revoke all active Blob URLs.
  */
 export function stopMessageListener(): void {
-  if (!messageListener) {
-    return;
+  if (messageListener) {
+    chrome.runtime.onMessage.removeListener(messageListener);
+    messageListener = null;
   }
-  chrome.runtime.onMessage.removeListener(messageListener);
-  messageListener = null;
+  // Revoke any Blob URLs that were never explicitly revoked.
+  for (const url of activeBlobUrls.keys()) {
+    URL.revokeObjectURL(url);
+  }
+  activeBlobUrls.clear();
 }
 
 /**
- * Reset the ffmpeg singleton and message listener.
+ * Reset the message listener.
  *
  * Intended for unit-test isolation; not part of the public runtime API.
  */
 export function resetFFmpeg(): void {
   stopMessageListener();
-  ffmpeg = null;
-}
-
-/**
- * Convert an ffmpeg.wasm {@link FileData} result (Uint8Array | string) into
- * an `ArrayBuffer`.
- */
-function fileDataToArrayBuffer(data: FileData): ArrayBuffer {
-  if (typeof data === 'string') {
-    return new TextEncoder().encode(data).buffer as ArrayBuffer;
-  }
-  // Copy the Uint8Array's underlying bytes into a standalone ArrayBuffer so
-  // the returned buffer is not backed by the (transient) wasm memory view.
-  const copy = new Uint8Array(data.byteLength);
-  copy.set(data);
-  return copy.buffer as ArrayBuffer;
 }
