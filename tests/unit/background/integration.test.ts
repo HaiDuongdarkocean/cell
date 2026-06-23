@@ -285,8 +285,9 @@ describe('Background integration', () => {
 
     // Should succeed and return the media from tab 99 via the all-tabs fallback.
     expect(response.success).toBe(true);
-    expect(response.data?.videos).toHaveLength(1);
-    expect(response.data?.videos[0].url).toContain('fallback.m3u8');
+    const data = response.data as DetectedMediaUpdatePayload | undefined;
+    expect(data?.videos).toHaveLength(1);
+    expect(data?.videos[0].url).toContain('fallback.m3u8');
   });
 
   // 3. DOWNLOAD_VIDEO creates download item + adds to queue

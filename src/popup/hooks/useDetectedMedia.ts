@@ -28,15 +28,32 @@ export function useDetectedMedia(): {
 
   useEffect(() => {
     const request: MessageRequest = { type: 'GET_DETECTED_MEDIA' };
+    let cancelled = false;
 
-    void chrome.runtime
-      .sendMessage(request)
-      .then((response: MessageResponse<DetectedMediaUpdatePayload>) => {
-        if (response?.success && response.data) {
-          setVideos(response.data.videos);
-          setSubtitles(response.data.subtitles);
+    // Retry sending the message — the service worker may need a moment to
+    // wake up and register its listeners ("Receiving end does not exist").
+    const sendWithRetry = async (retries = 3, delayMs = 500): Promise<void> => {
+      for (let attempt = 0; attempt < retries; attempt++) {
+        if (cancelled) return;
+        try {
+          const response = (await chrome.runtime.sendMessage(
+            request,
+          )) as MessageResponse<DetectedMediaUpdatePayload>;
+          if (cancelled) return;
+          if (response?.success && response.data) {
+            setVideos(response.data.videos);
+            setSubtitles(response.data.subtitles);
+          }
+          return; // success — stop retrying
+        } catch {
+          if (attempt < retries - 1) {
+            await new Promise((r) => setTimeout(r, delayMs));
+          }
         }
-      });
+      }
+    };
+
+    void sendWithRetry();
 
     const listener = (
       request: MessageRequest,
@@ -56,6 +73,7 @@ export function useDetectedMedia(): {
     chrome.runtime.onMessage.addListener(listener);
 
     return () => {
+      cancelled = true;
       chrome.runtime.onMessage.removeListener(listener);
     };
   }, [setVideos, setSubtitles]);

@@ -100,29 +100,32 @@ export class BackgroundService {
   }
 
   /**
-   * Initialise the background service: load persisted settings, wire event
-   * streams, register all message handlers, and start listeners.
+   * Initialise the background service: register message handlers
+   * synchronously first (so the popup never hits "receiving end does not
+   * exist"), then load persisted settings and wire event streams.
    */
   async init(): Promise<void> {
-    // 1. Load persisted settings and apply to the download queue.
+    // 1. Register message handlers + start the message bus IMMEDIATELY
+    //    (synchronous) so that any message from the popup is handled even
+    //    if the service worker was just woken up.
+    this.registerHandlers();
+    this.messageBus.start();
+
+    // 2. Load persisted settings and apply to the download queue.
     const settings = await this.loadSettings();
     this.downloadQueue.setMaxConcurrent(settings.concurrentDownloads);
 
-    // 2. Load persisted extension active state.
+    // 3. Load persisted extension active state.
     const status = await this.loadExtensionStatus();
     this.extensionActive = status;
 
-    // 3. Wire event streams.
+    // 4. Wire event streams (network → broadcast, queue → broadcast, etc.)
     this.wireEvents();
 
-    // 4. Register all message handlers.
-    this.registerHandlers();
-
-    // 5. Start listeners.
+    // 5. Start the network interceptor if the extension is active.
     if (this.extensionActive) {
       this.networkInterceptor.start();
     }
-    this.messageBus.start();
   }
 
   /**
