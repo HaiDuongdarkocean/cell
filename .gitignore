@@ -29,3 +29,6 @@ npm-debug.log*
 
 # Binaries (not part of extension)
 bin/
+
+# Temp commit message
+.git-commit-msg.txt
