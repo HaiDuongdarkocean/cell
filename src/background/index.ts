@@ -119,6 +119,10 @@ export class BackgroundService {
     const settings = await this.loadSettings();
     this.downloadQueue.setMaxConcurrent(settings.concurrentDownloads);
     this.downloader.setConvertMode(settings.convertToMp4);
+    this.downloader.setParallelSettings({
+      parallelConversion: settings.parallelConversion,
+      manualWorkerCount: settings.manualWorkerCount,
+    });
 
     // 3. Load persisted extension active state.
     const status = await this.loadExtensionStatus();
@@ -630,9 +634,17 @@ export class BackgroundService {
     if (payload.settings.convertToMp4 !== undefined) {
       this.downloader.setConvertMode(payload.settings.convertToMp4);
     }
-    // parallelConversion / manualWorkerCount / parallelFallback are read by
-    // the offscreen conversion path when a conversion starts; no immediate
-    // side-effect to apply here.
+    if (
+      payload.settings.parallelConversion !== undefined ||
+      payload.settings.manualWorkerCount !== undefined
+    ) {
+      this.downloader.setParallelSettings({
+        parallelConversion: merged.parallelConversion,
+        manualWorkerCount: merged.manualWorkerCount,
+      });
+    }
+    // parallelFallback is read by the offscreen conversion path when a
+    // conversion starts; no immediate side-effect to apply here.
 
     return { success: true, data: merged };
   };

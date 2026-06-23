@@ -3,6 +3,7 @@ import { convertAssToSrt } from '@/lib/converters/assToSrt';
 import { convertVttToSrt } from '@/lib/converters/vttToSrt';
 import { normalizeSrt } from '@/lib/converters/srtNormalizer';
 import { ConversionTimer } from '@/lib/converters/conversionTimer';
+import { planParallelConversion } from '@/lib/converters/parallelPlanner';
 import { generateFileName } from '@/lib/utils/fileUtils';
 import type {
   DetectedVideo,
@@ -17,7 +18,7 @@ import {
   MAX_CONVERT_BYTES,
   DEFAULT_SEGMENT_CONCURRENCY,
 } from '@/constants/config';
-import type { ConvertToMp4Mode } from '@/types/media';
+import type { ConvertToMp4Mode, Settings } from '@/types/media';
 import {
   ensureDownloadSubdir,
   createOpfsWriter,
@@ -89,6 +90,14 @@ export class Downloader {
   private cancelledIds: Set<string> = new Set();
   private convertMode: ConvertToMp4Mode = 'always';
   /**
+   * Current settings for parallel conversion planning. Updated via
+   * `setParallelSettings()` when the user changes settings.
+   */
+  private parallelSettings: Pick<Settings, 'parallelConversion' | 'manualWorkerCount'> = {
+    parallelConversion: 'auto',
+    manualWorkerCount: 4,
+  };
+  /**
    * Segment byte ranges for the most recent download. Keyed by downloadId.
    * Used by the parallel conversion engine to split `input.ts` at safe
    * segment boundaries. Populated during `downloadM3u8Streaming`.
@@ -121,6 +130,16 @@ export class Downloader {
   /** Set the conversion mode (always / small-only / never). */
   setConvertMode(mode: ConvertToMp4Mode): void {
     this.convertMode = mode;
+  }
+
+  /**
+   * Update parallel conversion settings. Called when the user changes
+   * settings via the popup. Used for dry-run planning (Task 9).
+   */
+  setParallelSettings(
+    settings: Pick<Settings, 'parallelConversion' | 'manualWorkerCount'>,
+  ): void {
+    this.parallelSettings = settings;
   }
 
   /**
@@ -481,6 +500,17 @@ export class Downloader {
 
     // Determine whether to attempt conversion based on mode + size.
     const shouldConvert = this.shouldAttemptConversion(totalBytes);
+
+    // Dry-run parallel planning: log what would happen without enabling
+    // parallel. This is diagnostic only — the actual conversion still
+    // uses the sequential transmuxer.
+    const parallelPlan = planParallelConversion(
+      this.parallelSettings,
+      segmentRanges,
+      totalBytes,
+      typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined,
+    );
+    console.debug(parallelPlan.summary);
 
     // Phase 2: Attempt conversion (85–98%) or save .ts directly.
     //

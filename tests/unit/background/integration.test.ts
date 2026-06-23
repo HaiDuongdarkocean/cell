@@ -115,6 +115,7 @@ interface MockDownloader {
   setConvertCallback: jest.Mock;
   setSaveOpfsFileCallback: jest.Mock;
   setConvertMode: jest.Mock;
+  setParallelSettings: jest.Mock;
   downloadVideo: jest.Mock;
   downloadSubtitle: jest.Mock;
   cancel: jest.Mock;
@@ -126,6 +127,7 @@ function createMockDownloader(): MockDownloader {
     setConvertCallback: jest.fn(),
     setSaveOpfsFileCallback: jest.fn(),
     setConvertMode: jest.fn(),
+    setParallelSettings: jest.fn(),
     downloadVideo: jest.fn().mockResolvedValue(undefined),
     downloadSubtitle: jest.fn().mockResolvedValue(undefined),
     cancel: jest.fn(),
