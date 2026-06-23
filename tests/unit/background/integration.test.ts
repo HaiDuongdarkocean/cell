@@ -260,16 +260,33 @@ describe('Background integration', () => {
     expect(response.data?.subtitles).toEqual([]);
   });
 
-  it('GET_DETECTED_MEDIA returns error when no active tab is found', async () => {
+  it('GET_DETECTED_MEDIA falls back to all-tab media when no active tab is found', async () => {
+    // No focused tab available.
     mockChrome.tabs.query.mockResolvedValue([]);
+
+    // Inject a video via a different tab (tabId 99).
+    interceptor.handleRequest({
+      url: 'https://cdn.example.com/fallback.m3u8',
+      method: 'GET',
+      tabId: 99,
+      type: 'media',
+      timeStamp: Date.now(),
+      documentLifecycle: 'active',
+      frameId: 0,
+      frameType: 'outermost_frame',
+      parentFrameId: -1,
+      requestId: 'req-fallback',
+    } as chrome.webRequest.OnBeforeRequestDetails);
 
     const request: MessageRequest = {
       type: MESSAGE_TYPES.GET_DETECTED_MEDIA,
     };
     const response = await messageBus.handleMessage(request, { id: 'tab' });
 
-    expect(response.success).toBe(false);
-    expect(response.error).toContain('No active tab');
+    // Should succeed and return the media from tab 99 via the all-tabs fallback.
+    expect(response.success).toBe(true);
+    expect(response.data?.videos).toHaveLength(1);
+    expect(response.data?.videos[0].url).toContain('fallback.m3u8');
   });
 
   // 3. DOWNLOAD_VIDEO creates download item + adds to queue

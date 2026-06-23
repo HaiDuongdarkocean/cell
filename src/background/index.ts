@@ -301,14 +301,11 @@ export class BackgroundService {
    * popup's use case. This fallback is a best-effort safety net.
    */
   private findAllVideos(): DetectedVideo[] {
-    // The interceptor stores videos keyed by id; getVideos filters by tabId.
-    // We cannot enumerate tab ids directly, so return empty as a fallback —
-    // the active-tab path above handles the common case.
-    return [];
+    return this.networkInterceptor.getAllVideos();
   }
 
   private findAllSubtitles(): DetectedSubtitle[] {
-    return [];
+    return this.networkInterceptor.getAllSubtitles();
   }
 
   /**
@@ -373,11 +370,25 @@ export class BackgroundService {
     const payload = request.payload as GetDetectedMediaPayload | undefined;
     const tabId = payload?.tabId ?? (await this.getActiveTabId());
 
-    if (tabId === undefined) {
-      return { success: false, error: 'No active tab found' };
+    let videos: DetectedVideo[];
+    let subtitles: DetectedSubtitle[];
+
+    if (tabId !== undefined) {
+      ({ videos, subtitles } = this.networkInterceptor.getMedia(tabId));
+    } else {
+      videos = [];
+      subtitles = [];
     }
 
-    const { videos, subtitles } = this.networkInterceptor.getMedia(tabId);
+    // If the active-tab lookup returned nothing, fall back to all detected
+    // media across all tabs. This handles the case where the popup is opened
+    // while the browser window does not have a focused tab (e.g. in automated
+    // tests or when the popup HTML is navigated to directly).
+    if (videos.length === 0 && subtitles.length === 0) {
+      videos = this.networkInterceptor.getAllVideos();
+      subtitles = this.networkInterceptor.getAllSubtitles();
+    }
+
     return { success: true, data: { videos, subtitles } };
   };
 

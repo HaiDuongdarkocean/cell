@@ -129,6 +129,20 @@ export class NetworkInterceptor {
   }
 
   /**
+   * Get ALL detected videos across every tab.
+   */
+  getAllVideos(): DetectedVideo[] {
+    return [...this.videos.values()];
+  }
+
+  /**
+   * Get ALL detected subtitles across every tab.
+   */
+  getAllSubtitles(): DetectedSubtitle[] {
+    return [...this.subtitles.values()];
+  }
+
+  /**
    * Clear all detected media for a tab.
    */
   clearTab(tabId: number): void {
