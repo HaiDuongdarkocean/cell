@@ -189,7 +189,7 @@ export type ParallelConversionMode = 'auto' | 'manual' | 'off';
  * - `'sequential'` — retry the entire conversion sequentially.
  * - `'save-ts'`    — skip conversion, save the `.ts` file directly.
  */
-export type ParallelFallbackMode = 'sequential' | 'save-ts';
+export type ParallelFallbackMode = 'sequential' | 'retry-reduced' | 'save-ts' | 'fail';
 
 export interface Settings {
   readonly concurrentDownloads: number;
