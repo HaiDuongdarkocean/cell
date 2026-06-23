@@ -120,6 +120,8 @@ jest.mock('@/lib/storage/opfsStorage', () => ({
     const writable = await fileHandle.createWritable();
     return {
       async write(chunk: ArrayBuffer | Blob | Uint8Array): Promise<void> {
+        // Pass directly to the mock writable, which accepts Blob.
+        // Wrap non-Blob chunks for the mock's Blob.arrayBuffer() call.
         const blob =
           chunk instanceof Blob
             ? chunk
@@ -181,8 +183,8 @@ describe('tsTransmuxer', () => {
   });
 
   it('reads input in chunks, pushes to transmuxer, flushes, and writes output', async () => {
-    // 2.5 MB input → should be read in 3 chunks (1MB + 1MB + 0.5MB)
-    const inputSize = 2.5 * 1024 * 1024;
+    // 10 MB input → with 4MB chunks, should be read in 3 chunks (4+4+2MB)
+    const inputSize = 10 * 1024 * 1024;
     const file = makeTsFile(inputSize);
     const progressCalls: Array<{ processed: number; total: number }> = [];
 
@@ -207,8 +209,8 @@ describe('tsTransmuxer', () => {
     const totalWritten = outFile.writtenChunks.reduce((s, c) => s + c.length, 0);
     expect(totalWritten).toBe(7);
 
-    // Verify progress was reported.
-    expect(progressCalls.length).toBe(3); // 3 chunks
+    // Verify progress was reported — 3 chunks for 10MB at 4MB chunk size.
+    expect(progressCalls.length).toBe(3);
     expect(progressCalls[0].total).toBe(inputSize);
     expect(progressCalls[progressCalls.length - 1].processed).toBe(inputSize);
   });

@@ -64,16 +64,10 @@ export async function appendChunk(
     // overwriting from offset 0.
     await writable.seek(writeOffset);
 
-    // Normalize everything to a Blob to satisfy the FileSystemWriteChunkType
-    // signature (which accepts Blob | ArrayBuffer | ArrayBufferView but the
-    // TS lib types are stricter about SharedArrayBuffer vs ArrayBuffer).
-    const blob =
-      chunk instanceof Blob
-        ? chunk
-        : chunk instanceof ArrayBuffer
-          ? new Blob([chunk])
-          : new Blob([chunk.buffer as ArrayBuffer]);
-    await writable.write(blob);
+    // Pass the chunk directly — FileSystemWritableFileStream.write() accepts
+    // BufferSource (Uint8Array) and Blob without wrapping. Cast to satisfy
+    // the TS lib's strict SharedArrayBuffer vs ArrayBuffer distinction.
+    await writable.write(chunk as unknown as ArrayBuffer);
   } finally {
     await writable.close();
   }
@@ -113,13 +107,19 @@ export async function createOpfsWriter(
 
   return {
     async write(chunk: ArrayBuffer | Blob | Uint8Array): Promise<void> {
-      const blob =
-        chunk instanceof Blob
-          ? chunk
-          : chunk instanceof ArrayBuffer
-            ? new Blob([chunk])
-            : new Blob([chunk.buffer as ArrayBuffer]);
-      await writable.write(blob);
+      // FileSystemWritableFileStream.write() accepts BufferSource (Uint8Array)
+      // or Blob directly. Passing the raw Uint8Array avoids creating a Blob
+      // object per write — for a 430MB file this saves thousands of Blob
+      // allocations and significant GC pressure.
+      if (chunk instanceof Blob) {
+        await writable.write(chunk);
+      } else if (chunk instanceof ArrayBuffer) {
+        await writable.write(chunk);
+      } else {
+        // Uint8Array — pass directly as BufferSource. Cast to satisfy the
+        // TS lib's strict SharedArrayBuffer vs ArrayBuffer distinction.
+        await writable.write(chunk as unknown as ArrayBuffer);
+      }
     },
     async close(): Promise<void> {
       await writable.close();

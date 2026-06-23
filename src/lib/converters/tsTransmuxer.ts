@@ -15,8 +15,9 @@ import { createOpfsWriter } from '@/lib/storage/opfsStorage';
 
 const { Transmuxer } = muxjs.mp4;
 
-/** Chunk size for reading the input file (1 MB). */
-const READ_CHUNK_SIZE = 1024 * 1024;
+/** Chunk size for reading the input file (4 MB — larger chunks reduce loop
+ * overhead and arrayBuffer() calls; 430MB = 108 iterations instead of 430). */
+const READ_CHUNK_SIZE = 4 * 1024 * 1024;
 
 export interface TransmuxResult {
   readonly success: boolean;
@@ -94,15 +95,35 @@ export async function transmuxTsToFmp4(
   );
 
   try {
-    // Read + push the input in chunks to keep memory low.
+    // Pipeline reads: prefetch the next chunk's ArrayBuffer while the
+    // current chunk is being transmuxed. This overlaps I/O (OPFS read) with
+    // CPU work (mux.js parsing), which is the main bottleneck for large files.
+    //
+    // Pattern: start reading chunk[i+1] immediately, then push chunk[i] to
+    // the transmuxer (synchronous CPU work). By the time push() returns,
+    // chunk[i+1] is likely already read — no I/O wait.
+    let nextChunkPromise: Promise<ArrayBuffer> | null = null;
+
     for (let offset = 0; offset < totalBytes; offset += READ_CHUNK_SIZE) {
-      const slice = inputFile.slice(
-        offset,
-        Math.min(offset + READ_CHUNK_SIZE, totalBytes),
-      );
-      const chunkBuffer = await slice.arrayBuffer();
+      const end = Math.min(offset + READ_CHUNK_SIZE, totalBytes);
+
+      // Use the prefetched chunk (if any) or read now.
+      const chunkBuffer = nextChunkPromise
+        ? await nextChunkPromise
+        : await inputFile.slice(offset, end).arrayBuffer();
+
+      // Prefetch the next chunk NOW, before the synchronous transmuxer.push()
+      // — so I/O overlaps with CPU work.
+      const nextOffset = offset + READ_CHUNK_SIZE;
+      if (nextOffset < totalBytes) {
+        const nextEnd = Math.min(nextOffset + READ_CHUNK_SIZE, totalBytes);
+        nextChunkPromise = inputFile.slice(nextOffset, nextEnd).arrayBuffer();
+      } else {
+        nextChunkPromise = null;
+      }
+
       transmuxer.push(new Uint8Array(chunkBuffer));
-      processedBytes = Math.min(offset + READ_CHUNK_SIZE, totalBytes);
+      processedBytes = end;
       onProgress?.(processedBytes, totalBytes);
     }
 

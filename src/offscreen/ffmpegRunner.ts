@@ -64,7 +64,17 @@ export async function convertTsToMp4V2(
     `[offscreen-runner] Read input.ts (${inputFile.size} bytes) for ${downloadId}`,
   );
 
-  const result = await transmuxTsToFmp4(inputFile, dirHandle, 'output.mp4');
+  const result = await transmuxTsToFmp4(
+    inputFile,
+    dirHandle,
+    'output.mp4',
+    (processedBytes, totalBytes) => {
+      const pct = Math.floor((processedBytes / totalBytes) * 100);
+      console.debug(
+        `[offscreen-runner] Convert progress for ${downloadId}: ${pct}% (${processedBytes}/${totalBytes})`,
+      );
+    },
+  );
 
   if (!result.success) {
     console.error(
