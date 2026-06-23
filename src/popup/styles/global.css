@@ -14,6 +14,7 @@
 html,
 body {
   height: 100%;
+  width: 650px;
 }
 
 /* ============================================================
@@ -33,9 +34,8 @@ body {
    Container — popup width
    ============================================================ */
 #root {
-  max-width: 400px;
-  width: 100%;
-  min-height: 100vh;
+  width: 650px;
+  min-height: 650px;
   margin: 0 auto;
 }
 

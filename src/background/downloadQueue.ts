@@ -162,11 +162,19 @@ export class DownloadQueue {
         })
         .catch((err: unknown) => {
           const current = this.items.get(next.id);
+          const errorMsg = err instanceof Error ? err.message : String(err);
           if (current && current.status !== 'cancelled') {
             this.items.set(next.id, {
               ...current,
               status: 'error',
-              error: err instanceof Error ? err.message : String(err),
+              error: errorMsg,
+            });
+            // Notify listeners so the popup sees the error.
+            this.updateProgress({
+              itemId: next.id,
+              status: 'error',
+              progress: current.progress,
+              error: errorMsg,
             });
           }
           this.activeCount = Math.max(0, this.activeCount - 1);

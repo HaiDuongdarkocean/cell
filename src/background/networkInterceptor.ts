@@ -76,6 +76,19 @@ export class NetworkInterceptor {
    * without needing a real `chrome.webRequest` implementation.
    */
   handleRequest(details: chrome.webRequest.OnBeforeRequestDetails): void {
+    // Ignore requests initiated by the extension itself (background service
+    // worker, offscreen documents, etc.). Without this filter, a `fetch()` call
+    // made by the downloader to retrieve a subtitle would be re-detected as a new
+    // subtitle, causing duplicate entries in the popup.
+    const isExtensionRequest =
+      details.tabId === -1 ||
+      (details.initiator !== undefined &&
+        details.initiator.startsWith('chrome-extension://'));
+
+    if (isExtensionRequest) {
+      return;
+    }
+
     const request: NetworkRequest = {
       url: details.url,
       method: details.method,

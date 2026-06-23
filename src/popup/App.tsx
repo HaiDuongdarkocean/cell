@@ -8,8 +8,8 @@ import { SubtitleItem } from '@/popup/components/SubtitleItem';
 import { ProgressBar } from '@/popup/components/ProgressBar';
 import { StatusBadge } from '@/popup/components/StatusBadge';
 import { SettingsPanel } from '@/popup/components/SettingsPanel';
-import type { Settings, VideoQuality } from '@/types/media';
-import type { MessageRequest } from '@/types/message';
+import type { Settings, VideoQuality, DownloadItem } from '@/types/media';
+import type { MessageRequest, MessageResponse } from '@/types/message';
 import styles from './App.module.css';
 
 /**
@@ -27,13 +27,30 @@ export function App(): React.JSX.Element {
 
   const settings = usePopupStore((state) => state.settings);
   const updateSettings = usePopupStore((state) => state.updateSettings);
+  const addDownload = usePopupStore((state) => state.addDownload);
+  const setError = usePopupStore((state) => state.setError);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Apply the configured theme on mount and whenever it changes.
+  const loadPersistedSettings = usePopupStore((state) => state.loadPersistedSettings);
+  const loadExtensionStatus = usePopupStore((state) => state.loadExtensionStatus);
+  const isSettingsLoaded = usePopupStore((state) => state.isSettingsLoaded);
+
+  // Load persisted settings and extension status on mount.
   useEffect(() => {
-    document.documentElement.dataset.theme = settings.theme;
-  }, [settings.theme]);
+    const load = async (): Promise<void> => {
+      await loadPersistedSettings();
+      await loadExtensionStatus();
+    };
+    void load();
+  }, [loadPersistedSettings, loadExtensionStatus]);
+
+  // Apply the configured theme whenever settings are loaded or theme changes.
+  useEffect(() => {
+    if (isSettingsLoaded) {
+      document.documentElement.dataset.theme = settings.theme;
+    }
+  }, [settings.theme, isSettingsLoaded]);
 
   const handleDownloadAll = (): void => {
     const request: MessageRequest = { type: 'DOWNLOAD_ALL' };
@@ -45,7 +62,14 @@ export function App(): React.JSX.Element {
       type: 'DOWNLOAD_VIDEO',
       payload: { videoId },
     };
-    void chrome.runtime.sendMessage(request);
+    void chrome.runtime.sendMessage(request).then((response) => {
+      const res = response as MessageResponse<DownloadItem> | undefined;
+      if (res?.success && res.data) {
+        addDownload(res.data);
+      } else if (res && !res.success) {
+        setError(res.error ?? 'Failed to start video download');
+      }
+    });
   };
 
   const handleQualitySelect = (videoId: string, quality: VideoQuality): void => {
@@ -53,7 +77,14 @@ export function App(): React.JSX.Element {
       type: 'DOWNLOAD_VIDEO',
       payload: { videoId, quality },
     };
-    void chrome.runtime.sendMessage(request);
+    void chrome.runtime.sendMessage(request).then((response) => {
+      const res = response as MessageResponse<DownloadItem> | undefined;
+      if (res?.success && res.data) {
+        addDownload(res.data);
+      } else if (res && !res.success) {
+        setError(res.error ?? 'Failed to start video download');
+      }
+    });
   };
 
   const handleSubtitleDownload = (subtitleId: string): void => {
@@ -61,7 +92,14 @@ export function App(): React.JSX.Element {
       type: 'DOWNLOAD_SUBTITLE',
       payload: { subtitleId },
     };
-    void chrome.runtime.sendMessage(request);
+    void chrome.runtime.sendMessage(request).then((response) => {
+      const res = response as MessageResponse<DownloadItem> | undefined;
+      if (res?.success && res.data) {
+        addDownload(res.data);
+      } else if (res && !res.success) {
+        setError(res.error ?? 'Failed to start subtitle download');
+      }
+    });
   };
 
   const handleThemeToggle = (): void => {
@@ -72,6 +110,14 @@ export function App(): React.JSX.Element {
 
   const handleSettingsChange = (nextSettings: Settings): void => {
     updateSettings(nextSettings);
+
+    // Notify the background service worker so it can apply settings that
+    // affect download behavior (e.g. concurrentDownloads).
+    const request: MessageRequest = {
+      type: 'UPDATE_SETTINGS',
+      payload: { settings: nextSettings },
+    };
+    void chrome.runtime.sendMessage(request);
   };
 
   const hasMedia = videos.length > 0 || subtitles.length > 0;

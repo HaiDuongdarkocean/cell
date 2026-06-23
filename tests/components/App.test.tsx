@@ -46,6 +46,7 @@ const mockSettings: Settings = {
   defaultQuality: 'highest',
   defaultSubtitleLanguage: 'en',
   theme: 'light',
+  convertToMp4: 'always',
 };
 
 const mockUpdateSettings = jest.fn();
@@ -54,11 +55,24 @@ const mockToggle = jest.fn();
 interface StoreState {
   settings: Settings;
   updateSettings: (partial: Partial<Settings>) => void;
+  extensionActive: boolean;
+  setExtensionActive: (active: boolean) => void;
+  loadPersistedSettings: () => Promise<void>;
+  loadExtensionStatus: () => Promise<void>;
+  isSettingsLoaded: boolean;
 }
+
+const mockLoadPersistedSettings = jest.fn(() => Promise.resolve());
+const mockLoadExtensionStatus = jest.fn(() => Promise.resolve());
 
 const storeState: StoreState = {
   settings: mockSettings,
   updateSettings: mockUpdateSettings,
+  extensionActive: true,
+  setExtensionActive: jest.fn(),
+  loadPersistedSettings: mockLoadPersistedSettings,
+  loadExtensionStatus: mockLoadExtensionStatus,
+  isSettingsLoaded: true,
 };
 
 jest.mock('@/popup/store/popupStore', () => ({

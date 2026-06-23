@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { convertVttToSrt } from '@/lib/converters/vttToSrt';
+import { convertVttToSrt, stripInlineTagsOnly } from '@/lib/converters/vttToSrt';
 
 const fixturePath = join(__dirname, '..', 'fixtures', 'sample.vtt');
 
@@ -103,6 +103,121 @@ describe('convertVttToSrt', () => {
     ].join('\n');
 
     expect(srt).toBe(expected);
+  });
+
+  it('strips VTT/ASS positioning tags (\\an8) from cue text', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      '00:00:01.000 --> 00:00:05.000',
+      '{\\an8}Stay with me.',
+      '',
+    ].join('\n');
+
+    const srt = convertVttToSrt(vtt);
+
+    expect(srt).not.toContain('{\\an8}');
+    expect(srt).toContain('Stay with me.');
+  });
+
+  it('strips all HTML/VTT tags (<c>, <v>, <i>, <b>, <u>, <lang>, <ruby>, <rt>)', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      '00:00:01.000 --> 00:00:05.000',
+      '<c.yellow>Yellow text</c>',
+      '',
+      '00:00:06.000 --> 00:00:10.000',
+      '<v Bob>Hi, I am Bob</v>',
+      '',
+      '00:00:11.000 --> 00:00:15.000',
+      '<i>Italic text</i>',
+      '',
+      '00:00:16.000 --> 00:00:20.000',
+      '<b>Bold text</b> and <u>underlined</u>',
+      '',
+    ].join('\n');
+
+    const srt = convertVttToSrt(vtt);
+
+    expect(srt).not.toContain('<c');
+    expect(srt).not.toContain('</c>');
+    expect(srt).not.toContain('<v');
+    expect(srt).not.toContain('</v>');
+    expect(srt).not.toContain('<i>');
+    expect(srt).not.toContain('</i>');
+    expect(srt).not.toContain('<b>');
+    expect(srt).not.toContain('</b>');
+    expect(srt).not.toContain('<u>');
+    expect(srt).not.toContain('</u>');
+    expect(srt).toContain('Yellow text');
+    expect(srt).toContain('Hi, I am Bob');
+    expect(srt).toContain('Italic text');
+    expect(srt).toContain('Bold text and underlined');
+  });
+
+  it('strips multiple VTT override tags and HTML tags, keeping only text', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      '00:00:01.000 --> 00:00:05.000',
+      '{\\an8}<i>Trouble coming in the dead of night</i>',
+      '',
+      '00:00:06.000 --> 00:00:10.000',
+      '{\\an8}<i>Trouble making everythin\' all right</i>',
+      '',
+    ].join('\n');
+
+    const srt = convertVttToSrt(vtt);
+
+    expect(srt).not.toContain('{\\an8}');
+    expect(srt).not.toContain('<i>');
+    expect(srt).not.toContain('</i>');
+    expect(srt).toContain('Trouble coming in the dead of night');
+    expect(srt).toContain('Trouble making everythin\' all right');
+  });
+
+  it('skips cues that become empty after stripping VTT tags', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      '00:00:01.000 --> 00:00:05.000',
+      '{\\an8}',
+      '',
+      '00:00:06.000 --> 00:00:10.000',
+      'Real subtitle text',
+      '',
+    ].join('\n');
+
+    const srt = convertVttToSrt(vtt);
+
+    // The empty cue should be skipped; the remaining cue should be index 1.
+    expect(srt).toContain('1\n00:00:06,000 --> 00:00:10,000\nReal subtitle text');
+    expect(srt).not.toContain('00:00:01,000');
+  });
+
+  it('stripInlineTagsOnly: strips tags but preserves blank lines (for raw SRT content)', () => {
+    const rawSrt = [
+      '1',
+      '00:00:01,000 --> 00:00:05,000',
+      '{\\an8}<i>Stay with me.</i>',
+      '',
+      '2',
+      '00:00:06,000 --> 00:00:10,000',
+      '<i>I won\'t let you!</i>',
+      '',
+    ].join('\n');
+
+    const result = stripInlineTagsOnly(rawSrt);
+
+    // Tags removed but blank lines preserved.
+    expect(result).not.toContain('{\\an8}');
+    expect(result).not.toContain('<i>');
+    expect(result).not.toContain('</i>');
+    expect(result).toContain('Stay with me.');
+    expect(result).toContain('I won\'t let you!');
+    // Blank line between cues must remain intact.
+    expect(result).toContain('\n\n');
   });
 
   it('converts the sample.vtt fixture correctly', () => {

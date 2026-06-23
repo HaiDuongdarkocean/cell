@@ -7,6 +7,7 @@ const mockSettings: Settings = {
   defaultQuality: 'highest',
   defaultSubtitleLanguage: 'en',
   theme: 'light',
+  convertToMp4: 'always',
 };
 
 describe('SettingsPanel', () => {

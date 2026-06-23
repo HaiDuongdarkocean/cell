@@ -262,6 +262,54 @@ describe('useDownloadProgress', () => {
     expect(updated?.progress).toBe(75);
   });
 
+  it('adds a stub for unknown downloads and merges when the real item arrives', () => {
+    renderHook(() => useDownloadProgress());
+
+    const listener = chromeMock.onMessage.listeners[0];
+
+    // A progress update arrives before the popup response has been processed.
+    const progress: DownloadProgress = {
+      itemId: 'dl-new',
+      status: 'downloading',
+      progress: 10,
+    };
+    const message: MessageRequest = {
+      type: 'DOWNLOAD_PROGRESS_UPDATE',
+      payload: { progress },
+    };
+
+    act(() => {
+      listener(message, {} as chrome.runtime.MessageSender, jest.fn());
+    });
+
+    // A stub was created.
+    let downloads = usePopupStore.getState().downloads;
+    expect(downloads).toHaveLength(1);
+    expect(downloads[0].title).toBe('Download');
+    expect(downloads[0].status).toBe('downloading');
+    expect(downloads[0].progress).toBe(10);
+
+    // The real response from the background arrives.
+    const realItem: DownloadItem = {
+      id: 'dl-new',
+      mediaType: 'subtitle',
+      url: 'https://example.com/sub.srt',
+      title: 'e29ac9d2ef1f849eb73428410d055c26.en',
+      status: 'queued',
+      progress: 0,
+    };
+    act(() => {
+      usePopupStore.getState().addDownload(realItem);
+    });
+
+    // Only one item remains, with real metadata and stub progress.
+    downloads = usePopupStore.getState().downloads;
+    expect(downloads).toHaveLength(1);
+    expect(downloads[0].title).toBe('e29ac9d2ef1f849eb73428410d055c26.en');
+    expect(downloads[0].status).toBe('downloading');
+    expect(downloads[0].progress).toBe(10);
+  });
+
   it('removes the listener on unmount', () => {
     const { unmount } = renderHook(() => useDownloadProgress());
 

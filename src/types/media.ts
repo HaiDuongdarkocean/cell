@@ -12,6 +12,7 @@ export interface VideoVariant {
   readonly resolution?: string;
   readonly bandwidth?: number;
   readonly playlistUrl?: string;
+  readonly size?: number; // File size in bytes
 }
 
 export interface DetectedVideo {
@@ -62,6 +63,7 @@ export interface DetectedSubtitle {
   readonly tabId: number;
   readonly detectedAt: number;
   readonly videoId?: string;
+  readonly size?: number; // File size in bytes
 }
 
 // Parsed subtitle structures
@@ -149,11 +151,16 @@ export interface DownloadProgress {
 
 // === Settings Types ===
 
+/** Conversion behavior for M3U8 downloads. */
+export type ConvertToMp4Mode = 'always' | 'small-only' | 'never';
+
 export interface Settings {
   readonly concurrentDownloads: number;
   readonly defaultQuality: VideoQuality;
   readonly defaultSubtitleLanguage: string;
   readonly theme: 'light' | 'dark';
+  /** When to attempt TS→MP4 conversion during M3U8 downloads. */
+  readonly convertToMp4: ConvertToMp4Mode;
 }
 
 // === Network Request Types (for detectors) ===

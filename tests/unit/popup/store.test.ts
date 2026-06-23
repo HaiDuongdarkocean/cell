@@ -13,12 +13,17 @@ const storageLocalSetMock = jest.fn<
   Promise<void>,
   [Record<string, unknown>]
 >();
+const storageLocalGetMock = jest.fn<
+  Promise<Record<string, unknown>>,
+  [string | string[] | Record<string, unknown> | null]
+>();
 
 beforeAll(() => {
   global.chrome = {
     storage: {
       local: {
         set: storageLocalSetMock as unknown as typeof chrome.storage.local.set,
+        get: storageLocalGetMock as unknown as typeof chrome.storage.local.get,
       },
     },
   } as unknown as typeof chrome;
@@ -112,6 +117,69 @@ describe('usePopupStore', () => {
 
     expect(usePopupStore.getState().downloads).toHaveLength(1);
     expect(usePopupStore.getState().downloads[0]).toEqual(item);
+  });
+
+  it('addDownload merges duplicate ids instead of creating two items', () => {
+    // Simulate the race condition: a progress-stub is added first, then the
+    // real download item from the background response arrives.
+    const stub: DownloadItem = {
+      id: 'sub-1',
+      mediaType: 'subtitle',
+      url: '',
+      title: 'Download',
+      status: 'downloading',
+      progress: 25,
+      startedAt: 1000,
+    };
+    const real: DownloadItem = {
+      id: 'sub-1',
+      mediaType: 'subtitle',
+      url: 'https://example.com/sub.srt',
+      title: 'e29ac9d2ef1f849eb73428410d055c26.en',
+      status: 'queued',
+      progress: 0,
+      startedAt: 2000,
+    };
+
+    usePopupStore.getState().addDownload(stub);
+    usePopupStore.getState().addDownload(real);
+
+    const downloads = usePopupStore.getState().downloads;
+    expect(downloads).toHaveLength(1);
+
+    // Should keep the real metadata (title, url) and the stub's progress.
+    const merged = downloads[0];
+    expect(merged.title).toBe('e29ac9d2ef1f849eb73428410d055c26.en');
+    expect(merged.url).toBe('https://example.com/sub.srt');
+    expect(merged.status).toBe('downloading');
+    expect(merged.progress).toBe(25);
+    expect(merged.startedAt).toBe(1000);
+  });
+
+  it('addDownload keeps the most advanced status when merging', () => {
+    const a: DownloadItem = {
+      id: '1',
+      mediaType: 'video',
+      url: 'https://example.com/a.mp4',
+      title: 'a',
+      status: 'downloading',
+      progress: 50,
+    };
+    const b: DownloadItem = {
+      id: '1',
+      mediaType: 'video',
+      url: 'https://example.com/b.mp4',
+      title: 'b',
+      status: 'done',
+      progress: 100,
+    };
+
+    usePopupStore.getState().addDownload(a);
+    usePopupStore.getState().addDownload(b);
+
+    expect(usePopupStore.getState().downloads).toHaveLength(1);
+    expect(usePopupStore.getState().downloads[0].status).toBe('done');
+    expect(usePopupStore.getState().downloads[0].progress).toBe(100);
   });
 
   it('updateDownload updates a specific download by id', () => {
@@ -222,5 +290,52 @@ describe('usePopupStore', () => {
     expect(state.extensionActive).toBe(true);
     expect(state.isLoading).toBe(false);
     expect(state.error).toBeNull();
+  });
+
+  it('loadPersistedSettings loads saved settings from chrome.storage.local', async () => {
+    const savedSettings: Settings = {
+      ...DEFAULT_SETTINGS,
+      theme: 'dark',
+      concurrentDownloads: 5,
+    };
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: savedSettings,
+    });
+
+    await usePopupStore.getState().loadPersistedSettings();
+
+    const state = usePopupStore.getState();
+    expect(state.settings.theme).toBe('dark');
+    expect(state.settings.concurrentDownloads).toBe(5);
+    expect(state.isSettingsLoaded).toBe(true);
+    expect(storageLocalGetMock).toHaveBeenCalledWith(STORAGE_KEYS.SETTINGS);
+  });
+
+  it('loadPersistedSettings keeps defaults when no saved settings exist', async () => {
+    storageLocalGetMock.mockResolvedValue({});
+
+    await usePopupStore.getState().loadPersistedSettings();
+
+    const state = usePopupStore.getState();
+    expect(state.settings).toEqual(DEFAULT_SETTINGS);
+    expect(state.isSettingsLoaded).toBe(true);
+  });
+
+  it('loadExtensionStatus loads saved status from chrome.storage.local', async () => {
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.EXTENSION_STATUS]: false,
+    });
+
+    await usePopupStore.getState().loadExtensionStatus();
+
+    expect(usePopupStore.getState().extensionActive).toBe(false);
+  });
+
+  it('loadExtensionStatus keeps default when no saved status exists', async () => {
+    storageLocalGetMock.mockResolvedValue({});
+
+    await usePopupStore.getState().loadExtensionStatus();
+
+    expect(usePopupStore.getState().extensionActive).toBe(true);
   });
 });

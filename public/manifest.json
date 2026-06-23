@@ -8,7 +8,8 @@
     "downloads",
     "storage",
     "offscreen",
-    "activeTab"
+    "activeTab",
+    "tabs"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -24,7 +25,8 @@
   ],
   "action": {
     "default_popup": "src/popup/index.html",
-    "default_title": "Video Downloader"
+    "default_title": "Video Downloader",
+    "default_icon": "public/icons/icon-48.png"
   },
   "icons": {
     "16": "public/icons/icon-16.png",

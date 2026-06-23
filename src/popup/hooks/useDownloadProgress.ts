@@ -19,6 +19,7 @@ export function useDownloadProgress(): {
 } {
   const downloads = usePopupStore((state) => state.downloads);
   const updateDownload = usePopupStore((state) => state.updateDownload);
+  const addDownload = usePopupStore((state) => state.addDownload);
 
   useEffect(() => {
     const listener = (
@@ -30,11 +31,32 @@ export function useDownloadProgress(): {
         const payload = request.payload as DownloadProgressUpdatePayload;
         if (payload?.progress) {
           const { itemId, status, progress, error } = payload.progress;
-          updateDownload(itemId, {
-            status,
-            progress,
-            ...(error !== undefined ? { error } : {}),
-          });
+
+          // If this download isn't in the store yet, add a stub entry so the
+          // popup can display progress/error state. This handles cases where
+          // the download was started by DOWNLOAD_ALL or the addDownload call
+          // from the popup hasn't been processed yet.
+          const exists = usePopupStore
+            .getState()
+            .downloads.some((d) => d.id === itemId);
+          if (!exists) {
+            addDownload({
+              id: itemId,
+              mediaType: 'subtitle',
+              url: '',
+              title: 'Download',
+              status,
+              progress,
+              startedAt: Date.now(),
+              ...(error !== undefined ? { error } : {}),
+            });
+          } else {
+            updateDownload(itemId, {
+              status,
+              progress,
+              ...(error !== undefined ? { error } : {}),
+            });
+          }
         }
       }
       return false;
@@ -45,7 +67,7 @@ export function useDownloadProgress(): {
     return () => {
       chrome.runtime.onMessage.removeListener(listener);
     };
-  }, [updateDownload]);
+  }, [updateDownload, addDownload]);
 
   const totalProgress = useMemo(() => {
     if (downloads.length === 0) {

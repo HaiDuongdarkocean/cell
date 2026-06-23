@@ -157,6 +157,32 @@ describe('NetworkInterceptor', () => {
     });
   });
 
+  describe('handleRequest - extension-initiated requests', () => {
+    it('ignores requests with tabId -1', () => {
+      const callback = jest.fn();
+      interceptor.onMediaDetected(callback);
+
+      interceptor.handleRequest(makeDetails('https://example.com/subs/en.srt', -1));
+
+      expect(interceptor.getSubtitles(-1)).toHaveLength(0);
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('ignores requests with chrome-extension initiator', () => {
+      const callback = jest.fn();
+      interceptor.onMediaDetected(callback);
+
+      interceptor.handleRequest(
+        makeDetails('https://example.com/subs/en.srt', 1, {
+          initiator: 'chrome-extension://fake-extension-id',
+        }),
+      );
+
+      expect(interceptor.getSubtitles(1)).toHaveLength(0);
+      expect(callback).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getVideos / getSubtitles per-tab filtering', () => {
     it('getVideos(tabId) returns only videos for that tab', () => {
       interceptor.handleRequest(makeDetails('https://example.com/a.mp4', 1));

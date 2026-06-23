@@ -70,6 +70,9 @@ test.describe('hoathinh3d video download', () => {
       if (videoCount > 0) {
         await popup.locator('[data-testid="download-button"]').first().click();
 
+        // Switch to the Downloads tab to see the active download.
+        await popup.locator('[data-testid="tab-downloads"]').click();
+
         const downloadsSection = popup.locator('[data-testid="downloads-section"]');
         await expect(downloadsSection).toBeVisible({ timeout: 10_000 });
 
