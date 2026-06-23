@@ -151,6 +151,100 @@ export async function deleteFile(
   }
 }
 
+/**
+ * Write a JSON-serializable value to a file in OPFS as UTF-8 text.
+ * Overwrites the file if it already exists.
+ */
+export async function writeJsonFile(
+  dirHandle: FileSystemDirectoryHandle,
+  filename: string,
+  data: unknown,
+): Promise<void> {
+  const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+  const writable = await fileHandle.createWritable();
+  try {
+    const json = JSON.stringify(data);
+    await writable.write(json);
+  } finally {
+    await writable.close();
+  }
+}
+
+/**
+ * Read and parse a JSON file from OPFS.
+ * Returns `undefined` if the file does not exist or cannot be parsed.
+ */
+export async function readJsonFile<T>(
+  dirHandle: FileSystemDirectoryHandle,
+  filename: string,
+): Promise<T | undefined> {
+  try {
+    const fileHandle = await dirHandle.getFileHandle(filename);
+    const file = await fileHandle.getFile();
+    // Prefer Blob.text() when available (browser + modern jsdom).
+    // Fall back to arrayBuffer + manual decode for older environments.
+    let text: string;
+    if (typeof (file as Blob).text === 'function') {
+      text = await (file as Blob).text();
+    } else {
+      const buffer = await file.arrayBuffer();
+      text = decodeUtf8(new Uint8Array(buffer));
+    }
+    return JSON.parse(text) as T;
+  } catch (err: unknown) {
+    if (err instanceof DOMException && err.name === 'NotFoundError') {
+      return undefined;
+    }
+    // Corrupt JSON or other read error — return undefined so caller can
+    // fallback gracefully.
+    console.warn(`[opfs] Failed to read JSON file ${filename}:`, err);
+    return undefined;
+  }
+}
+
+/**
+ * Minimal UTF-8 decoder for environments without TextDecoder.
+ * Handles ASCII and basic multibyte sequences.
+ */
+function decodeUtf8(bytes: Uint8Array): string {
+  let result = '';
+  let i = 0;
+  while (i < bytes.length) {
+    const b = bytes[i++];
+    if (b < 0x80) {
+      result += String.fromCharCode(b);
+    } else if (b < 0xc0) {
+      // Invalid continuation byte — skip.
+      continue;
+    } else if (b < 0xe0) {
+      const b2 = bytes[i++];
+      result += String.fromCharCode(((b & 0x1f) << 6) | (b2 & 0x3f));
+    } else if (b < 0xf0) {
+      const b2 = bytes[i++];
+      const b3 = bytes[i++];
+      result += String.fromCharCode(
+        ((b & 0x0f) << 12) | ((b2 & 0x3f) << 6) | (b3 & 0x3f),
+      );
+    } else {
+      const b2 = bytes[i++];
+      const b3 = bytes[i++];
+      const b4 = bytes[i++];
+      const codePoint =
+        ((b & 0x07) << 18) |
+        ((b2 & 0x3f) << 12) |
+        ((b3 & 0x3f) << 6) |
+        (b4 & 0x3f);
+      // Convert to UTF-16 surrogate pair.
+      const adjusted = codePoint - 0x10000;
+      result += String.fromCharCode(
+        0xd800 | (adjusted >> 10),
+        0xdc00 | (adjusted & 0x3ff),
+      );
+    }
+  }
+  return result;
+}
+
 /** Recursively delete a per-download subdirectory. No-op if missing. */
 export async function deleteDownloadSubdir(
   downloadId: string,

@@ -25,6 +25,7 @@ import {
   deleteDownloadSubdir,
   isOpfsAvailable,
   isQuotaExceededError,
+  writeJsonFile,
 } from '@/lib/storage/opfsStorage';
 
 /**
@@ -461,6 +462,20 @@ export class Downloader {
     // Store segment ranges for this download so the conversion phase
     // (and future parallel engine) can access them.
     this.segmentRangesMap.set(downloadId, segmentRanges);
+
+    // Persist segment ranges to OPFS so the offscreen document can read
+    // them without receiving a large payload via message passing.
+    try {
+      await writeJsonFile(dirHandle, 'segment-ranges.json', segmentRanges);
+    } catch (err: unknown) {
+      // Non-fatal: if persistence fails, the in-memory map is still available
+      // for the current download. The offscreen conversion will fallback to
+      // sequential if it can't read the metadata.
+      console.warn(
+        `[downloader] Failed to persist segment ranges for ${downloadId}:`,
+        err,
+      );
+    }
 
     this.throwIfCancelled(downloadId);
 

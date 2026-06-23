@@ -38,7 +38,7 @@ class MockFileHandle {
    * `close()` commits the buffer to the file handle.
    */
   async createWritable(opts?: { keepExistingData?: boolean }): Promise<{
-    write: (data: ArrayBuffer | Blob | Uint8Array) => Promise<void>;
+    write: (data: ArrayBuffer | Blob | Uint8Array | string) => Promise<void>;
     seek: (position: number) => Promise<void>;
     close: () => Promise<void>;
   }> {
@@ -50,10 +50,12 @@ class MockFileHandle {
     const handle = this;
 
     return {
-      async write(data: ArrayBuffer | Blob | Uint8Array): Promise<void> {
+      async write(data: ArrayBuffer | Blob | Uint8Array | string): Promise<void> {
         if (closed) throw new DOMException('Writable closed', 'InvalidStateError');
         let bytes: Uint8Array;
-        if (data instanceof Uint8Array) {
+        if (typeof data === 'string') {
+          bytes = new Uint8Array(data.split('').map((c) => c.charCodeAt(0)));
+        } else if (data instanceof Uint8Array) {
           bytes = data;
         } else if (typeof Blob !== 'undefined' && data instanceof Blob) {
           const ab = await data.arrayBuffer();
@@ -185,6 +187,8 @@ import {
   deleteDownloadSubdir,
   cleanupOrphanedDownloads,
   isOpfsAvailable,
+  writeJsonFile,
+  readJsonFile,
 } from '@/lib/storage/opfsStorage';
 
 describe('opfsStorage', () => {
@@ -372,6 +376,46 @@ describe('opfsStorage', () => {
       await ensureDownloadSubdir('dl-empty');
       const removed = await cleanupOrphanedDownloads(60_000);
       expect(removed).toContain('dl-empty');
+    });
+  });
+
+  describe('writeJsonFile / readJsonFile', () => {
+    it('writes and reads back a JSON object', async () => {
+      const sub = await ensureDownloadSubdir('dl-json');
+      const data = { name: 'test', count: 42, nested: { a: 1 } };
+      await writeJsonFile(sub, 'meta.json', data);
+
+      const result = await readJsonFile<typeof data>(sub, 'meta.json');
+      expect(result).toEqual(data);
+    });
+
+    it('writes and reads back an array of objects', async () => {
+      const sub = await ensureDownloadSubdir('dl-json-arr');
+      const ranges = [
+        { index: 0, startByte: 0, endByte: 100, size: 100 },
+        { index: 1, startByte: 100, endByte: 250, size: 150 },
+        { index: 2, startByte: 250, endByte: 400, size: 150 },
+      ];
+      await writeJsonFile(sub, 'segment-ranges.json', ranges);
+
+      const result = await readJsonFile<typeof ranges>(sub, 'segment-ranges.json');
+      expect(result).toEqual(ranges);
+      expect(result).toHaveLength(3);
+    });
+
+    it('overwrites existing file on second write', async () => {
+      const sub = await ensureDownloadSubdir('dl-json-overwrite');
+      await writeJsonFile(sub, 'meta.json', { version: 1 });
+      await writeJsonFile(sub, 'meta.json', { version: 2 });
+
+      const result = await readJsonFile<{ version: number }>(sub, 'meta.json');
+      expect(result).toEqual({ version: 2 });
+    });
+
+    it('readJsonFile returns undefined when file does not exist', async () => {
+      const sub = await ensureDownloadSubdir('dl-json-missing');
+      const result = await readJsonFile<unknown>(sub, 'nonexistent.json');
+      expect(result).toBeUndefined();
     });
   });
 });
