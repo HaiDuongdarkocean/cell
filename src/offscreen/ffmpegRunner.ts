@@ -54,16 +54,19 @@ const activeBlobUrls = new Map<string, true>();
 export async function convertTsToMp4V2(
   downloadId: string,
 ): Promise<ConvertTsToMp4V2ResultPayload> {
+  const startedAt = performance.now();
   console.debug(`[offscreen-runner] Starting V2 conversion for ${downloadId}`);
 
   const dirHandle = await ensureDownloadSubdir(downloadId);
   console.debug(`[offscreen-runner] OPFS dir ready for ${downloadId}`);
 
   const inputFile = await opfsReadFile(dirHandle, 'input.ts');
+  const readMs = Math.round(performance.now() - startedAt);
   console.debug(
-    `[offscreen-runner] Read input.ts (${inputFile.size} bytes) for ${downloadId}`,
+    `[offscreen-runner] Read input.ts (${inputFile.size} bytes) for ${downloadId} in ${readMs}ms`,
   );
 
+  const transmuxStartedAt = performance.now();
   const result = await transmuxTsToFmp4(
     inputFile,
     dirHandle,
@@ -74,6 +77,10 @@ export async function convertTsToMp4V2(
         `[offscreen-runner] Convert progress for ${downloadId}: ${pct}% (${processedBytes}/${totalBytes})`,
       );
     },
+  );
+  const transmuxMs = Math.round(performance.now() - transmuxStartedAt);
+  console.debug(
+    `[offscreen-runner] Transmux ${result.success ? 'completed' : 'failed'} for ${downloadId} in ${transmuxMs}ms`,
   );
 
   if (!result.success) {

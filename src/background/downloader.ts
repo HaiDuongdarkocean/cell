@@ -2,6 +2,7 @@ import { parseM3u8 } from '@/lib/parsers/m3u8Parser';
 import { convertAssToSrt } from '@/lib/converters/assToSrt';
 import { convertVttToSrt } from '@/lib/converters/vttToSrt';
 import { normalizeSrt } from '@/lib/converters/srtNormalizer';
+import { ConversionTimer } from '@/lib/converters/conversionTimer';
 import { generateFileName } from '@/lib/utils/fileUtils';
 import type {
   DetectedVideo,
@@ -350,6 +351,8 @@ export class Downloader {
     const totalSegments = segments.length;
     const dirHandle = await ensureDownloadSubdir(downloadId);
     let totalBytes = 0;
+    const timer = new ConversionTimer(downloadId);
+    timer.start('download');
     const downloadStartedAt = performance.now();
 
     // Phase 1: Fetch segments in parallel batches, write sequentially to OPFS
@@ -418,6 +421,7 @@ export class Downloader {
     }
 
     const downloadMs = Math.round(performance.now() - downloadStartedAt);
+    timer.end('download');
     console.debug(
       `[downloader] Downloaded ${totalSegments} segments (${totalBytes} bytes) in ${downloadMs}ms`,
     );
@@ -439,23 +443,29 @@ export class Downloader {
 
     if (shouldConvert && this.convertCallback) {
       this.reportProgress(downloadId, 'converting', 85);
+      timer.start('convert');
       const convertStartedAt = performance.now();
       try {
         const result = await this.convertCallback(dirHandle, downloadId);
         const convertMs = Math.round(performance.now() - convertStartedAt);
+        timer.end('convert');
         console.debug(`[downloader] Conversion succeeded in ${convertMs}ms`);
         savedFilename = generateFileName(video.title, 'mp4');
         this.reportProgress(downloadId, 'converting', 98);
 
         this.throwIfCancelled(downloadId);
+        timer.start('save');
         await this.saveOpfsFile(
           downloadId,
           result.outputName,
           savedFilename,
           result.mimeType,
         );
+        timer.end('save');
       } catch (convertError) {
         const convertMs = Math.round(performance.now() - convertStartedAt);
+        timer.end('convert');
+        timer.start('fallback');
         console.warn(
           `[downloader] MP4 conversion failed after ${convertMs}ms for ${downloadId}, saving .ts fallback:`,
           convertError instanceof Error ? convertError.message : convertError,
@@ -469,6 +479,7 @@ export class Downloader {
           savedFilename,
           'video/mp2t',
         );
+        timer.end('fallback');
       }
     } else {
       // No conversion: save .ts directly from OPFS.
@@ -485,10 +496,13 @@ export class Downloader {
     this.throwIfCancelled(downloadId);
 
     // Phase 3: Cleanup OPFS temp files.
+    timer.start('cleanup');
     await deleteDownloadSubdir(downloadId).catch((err: unknown) => {
       console.warn(`[downloader] OPFS cleanup failed for ${downloadId}:`, err);
     });
+    timer.end('cleanup');
 
+    timer.logSummary();
     this.reportProgress(downloadId, 'done', 100);
   }
 
