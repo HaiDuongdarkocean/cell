@@ -1,9 +1,43 @@
 import {
   Downloader,
   type ConvertCallback,
+  type ConvertResult,
 } from '@/background/downloader';
 import type { DetectedVideo, DetectedSubtitle, DownloadProgress } from '@/types/media';
 import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/constants/config';
+
+// Mock OPFS helpers so we can control whether the streaming path is used.
+// `createOpfsWriter` returns a mock writer that records all write calls in
+// order, so tests can verify segment ordering.
+//
+// Note: `jest.mock` factories are hoisted above all declarations, so we cannot
+// reference variables declared outside the factory. We create the mock writer
+// inside the factory and attach it to `globalThis` so tests can access it.
+jest.mock('@/lib/storage/opfsStorage', () => {
+  const mockWriter = {
+    write: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+  };
+  // Expose via globalThis so tests can access it after import.
+  (globalThis as Record<string, unknown>).__mockWriter = mockWriter;
+  return {
+    ensureDownloadSubdir: jest.fn(),
+    appendChunk: jest.fn(),
+    createOpfsWriter: jest.fn().mockResolvedValue(mockWriter),
+    readFile: jest.fn(),
+    deleteFile: jest.fn(),
+    deleteDownloadSubdir: jest.fn().mockResolvedValue(undefined),
+    isOpfsAvailable: jest.fn().mockReturnValue(false),
+  };
+});
+
+import { isOpfsAvailable } from '@/lib/storage/opfsStorage';
+
+// Convenience accessor for the mock writer (populated by the jest.mock factory).
+const mockWriter = (globalThis as Record<string, unknown>).__mockWriter as {
+  write: jest.Mock;
+  close: jest.Mock;
+};
 
 // --- Mocks for global browser APIs ---
 
@@ -24,6 +58,20 @@ beforeAll(() => {
   } as unknown as typeof chrome;
   URL.createObjectURL = createObjectURLMock as unknown as typeof URL.createObjectURL;
   URL.revokeObjectURL = revokeObjectURLMock as unknown as typeof URL.revokeObjectURL;
+
+  // jsdom does not implement Blob.prototype.arrayBuffer; polyfill it via
+  // FileReader so saveBlob's data-URL conversion can run in tests. Real MV3
+  // service workers provide Blob.arrayBuffer natively.
+  if (typeof Blob.prototype.arrayBuffer !== 'function') {
+    Blob.prototype.arrayBuffer = function arrayBuffer(): Promise<ArrayBuffer> {
+      return new Promise<ArrayBuffer>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as ArrayBuffer);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsArrayBuffer(this);
+      });
+    };
+  }
 });
 
 beforeEach(() => {
@@ -159,16 +207,23 @@ describe('Downloader', () => {
     await downloader.downloadVideo(makeMp4Video(), 'dl1');
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith('https://example.com/video.mp4');
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/video.mp4', {
+      credentials: 'include',
+    });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
     expect(opts.filename).toBe('My_Video.mp4');
     expect(opts.saveAs).toBe(false);
-    expect(revokeObjectURLMock).toHaveBeenCalledTimes(1);
+    // MV3 service workers lack URL.createObjectURL, so the blob is saved as a
+    // base64 data URL instead.
+    expect(opts.url).toMatch(/^data:.*;base64,/);
   });
 
-  // 2. m3u8 media playlist download
-  test('downloadVideo with m3u8 fetches playlist, segments, merges, converts, saves', async () => {
+  // 2. m3u8 media playlist download with conversion (streaming + OPFS path)
+  test('downloadVideo with m3u8 streams to OPFS, converts, saves mp4', async () => {
+    // Enable OPFS for this test so the streaming path is used.
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
     const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
     const seg0 = makeTextBlob('seg0');
     const seg1 = makeTextBlob('seg1');
@@ -183,27 +238,64 @@ describe('Downloader', () => {
       throw new Error(`unexpected fetch ${url}`);
     });
 
+    // Mock OPFS: simulate reading a converted mp4 file.
+    const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        readFile: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = { name: 'dl2' } as unknown as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    mockWriter.write.mockClear();
+    mockWriter.close.mockClear();
+    createOpfsWriter.mockResolvedValue(mockWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+
+    // readFile returns a mock File for the converted output.
+    const mockMp4File = {
+      arrayBuffer: async () => new ArrayBuffer(42),
+    } as unknown as File;
+    readFile.mockResolvedValue(mockMp4File);
+
     const convertMock: jest.MockedFunction<ConvertCallback> = jest.fn(
-      async (_segments: ArrayBuffer[], _id: string) => {
-        // simulate ffmpeg conversion
-        return new ArrayBuffer(42);
+      async (
+        _dirHandle: FileSystemDirectoryHandle,
+        _id: string,
+      ): Promise<ConvertResult> => {
+        return { outputName: 'output.mp4', mimeType: 'video/mp4' };
       },
     );
     downloader.setConvertCallback(convertMock);
 
     await downloader.downloadVideo(makeM3u8Video(), 'dl2');
 
-    // playlist + 3 segments fetched
+    // playlist + 3 segments fetched (all with credentials included)
     expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/playlist.m3u8', {
+      credentials: 'include',
+    });
+    // Writer opened once, 3 segments written, writer closed once
+    expect(createOpfsWriter).toHaveBeenCalledTimes(1);
+    expect(mockWriter.write).toHaveBeenCalledTimes(3);
+    expect(mockWriter.close).toHaveBeenCalledTimes(1);
+    // Convert callback called with dirHandle + downloadId
     expect(convertMock).toHaveBeenCalledTimes(1);
-    expect(convertMock.mock.calls[0][0]).toHaveLength(3);
+    expect(convertMock.mock.calls[0][1]).toBe('dl2');
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
     expect(opts.filename).toBe('HLS_Video.mp4');
+    // OPFS cleanup called
+    expect(deleteDownloadSubdir).toHaveBeenCalledWith('dl2');
+
+    // Reset OPFS availability for subsequent tests
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
   });
 
-  // 3. m3u8 master playlist
-  test('downloadVideo with m3u8 master playlist picks first variant, fetches, saves', async () => {
+  // 3. m3u8 master playlist (no ffmpeg converter: saves merged TS as .ts)
+  test('downloadVideo with m3u8 master playlist picks first variant, fetches, saves as .ts', async () => {
     const masterBlob = makeTextBlob(MASTER_PLAYLIST);
     const variantBlob = makeTextBlob(MEDIA_PLAYLIST);
     const seg0 = makeTextBlob('seg0');
@@ -224,9 +316,12 @@ describe('Downloader', () => {
 
     // master + variant playlist + 3 segments
     expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/playlist.m3u8', {
+      credentials: 'include',
+    });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
-    expect(opts.filename).toBe('HLS_Video.mp4');
+    expect(opts.filename).toBe('HLS_Video.ts');
   });
 
   // 4. subtitle .ass
@@ -257,6 +352,9 @@ describe('Downloader', () => {
     await downloader.downloadSubtitle(sub, 'dl4');
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/sub.ass', {
+      credentials: 'include',
+    });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
     expect(opts.filename).toBe('sub.srt');
@@ -284,14 +382,26 @@ describe('Downloader', () => {
     await downloader.downloadSubtitle(sub, 'dl5');
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/sub.vtt', {
+      credentials: 'include',
+    });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
     expect(opts.filename).toBe('sub.srt');
   });
 
-  // 6. subtitle .srt
-  test('downloadSubtitle with .srt fetches and saves as-is', async () => {
-    const srtContent = '1\n00:00:01,000 --> 00:00:02,000\nHello\n';
+  // 6. subtitle .srt (strips leftover VTT/HTML inline tags)
+  test('downloadSubtitle with .srt fetches and strips VTT/HTML tags', async () => {
+    const srtContent = [
+      '1',
+      '00:00:01,000 --> 00:00:02,000',
+      '{\\an8}<i>Hello</i>',
+      '',
+      '2',
+      '00:00:03,000 --> 00:00:04,000',
+      '<b>World</b>',
+      '',
+    ].join('\n');
     fetchMock.mockResolvedValue(makeResponse(makeTextBlob(srtContent)));
 
     const sub: DetectedSubtitle = {
@@ -306,9 +416,26 @@ describe('Downloader', () => {
     await downloader.downloadSubtitle(sub, 'dl6');
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/sub.srt', {
+      credentials: 'include',
+    });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
     expect(opts.filename).toBe('sub.srt');
+
+    // Verify tags are stripped but blank lines preserved.
+    const dataUrl = opts.url as string;
+    const base64 = dataUrl.split(',')[1];
+    const decoded = atob(base64);
+    expect(decoded).not.toContain('{\\an8}');
+    expect(decoded).not.toContain('<i>');
+    expect(decoded).not.toContain('</i>');
+    expect(decoded).not.toContain('<b>');
+    expect(decoded).not.toContain('</b>');
+    expect(decoded).toContain('Hello');
+    expect(decoded).toContain('World');
+    // Blank lines between cues preserved.
+    expect(decoded).toContain('\n\n');
   });
 
   // 7. fetchSegment retries on network error then succeeds
@@ -374,5 +501,466 @@ describe('Downloader', () => {
     expect(last.itemId).toBe('dl10');
     expect(last.progress).toBe(100);
     expect(last.status).toBe('done');
+  });
+
+  // 11. convertMode 'never' saves .ts even when convertCallback is set
+  test('convertMode "never" saves .ts even with convertCallback set', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
+    const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+    const seg0 = makeTextBlob('seg0');
+    const seg1 = makeTextBlob('seg1');
+    const seg2 = makeTextBlob('seg2');
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+      if (url.endsWith('seg0.ts')) return makeResponse(seg0);
+      if (url.endsWith('seg1.ts')) return makeResponse(seg1);
+      if (url.endsWith('seg2.ts')) return makeResponse(seg2);
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        readFile: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    mockWriter.write.mockClear();
+    mockWriter.close.mockClear();
+    createOpfsWriter.mockResolvedValue(mockWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+
+    const mockTsFile = {
+      arrayBuffer: async () => new ArrayBuffer(9),
+    } as unknown as File;
+    readFile.mockResolvedValue(mockTsFile);
+
+    const convertMock: jest.MockedFunction<ConvertCallback> = jest.fn();
+    downloader.setConvertCallback(convertMock);
+    downloader.setConvertMode('never');
+
+    await downloader.downloadVideo(makeM3u8Video(), 'dl-never');
+
+    // Convert callback should NOT be called
+    expect(convertMock).not.toHaveBeenCalled();
+    // Should save as .ts
+    const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
+    expect(opts.filename).toBe('HLS_Video.ts');
+
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+  });
+
+  // 12. convertMode 'small-only' skips conversion for large files
+  test('convertMode "small-only" skips conversion when total exceeds threshold', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
+    // Create segments that exceed MAX_CONVERT_BYTES (150MB)
+    // Use small mock blobs but mock the arrayBuffer to report large sizes
+    const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+    const bigBuffer = new ArrayBuffer(160 * 1024 * 1024); // 160MB > 150MB threshold
+    const bigBlob = { size: 160 * 1024 * 1024, arrayBuffer: async () => bigBuffer, type: 'video/mp2t' } as unknown as Blob;
+    const makeBigResponse = (blob: Blob): Response =>
+      ({
+        ok: true,
+        status: 200,
+        blob: async () => blob,
+        text: async () => MEDIA_PLAYLIST,
+        arrayBuffer: async () => bigBuffer,
+        headers: new Headers(),
+        redirected: false,
+        statusText: '',
+        trailer: Promise.resolve(new Headers()),
+        type: 'basic',
+        url: '',
+        clone: function () { return makeBigResponse(blob); },
+      }) as unknown as Response;
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+      if (url.endsWith('seg0.ts')) return makeBigResponse(bigBlob);
+      if (url.endsWith('seg1.ts')) return makeBigResponse(bigBlob);
+      if (url.endsWith('seg2.ts')) return makeBigResponse(bigBlob);
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        readFile: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    mockWriter.write.mockClear();
+    mockWriter.close.mockClear();
+    createOpfsWriter.mockResolvedValue(mockWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+
+    const mockTsFile = {
+      arrayBuffer: async () => new ArrayBuffer(100),
+    } as unknown as File;
+    readFile.mockResolvedValue(mockTsFile);
+
+    const convertMock: jest.MockedFunction<ConvertCallback> = jest.fn();
+    downloader.setConvertCallback(convertMock);
+    downloader.setConvertMode('small-only');
+
+    await downloader.downloadVideo(makeM3u8Video(), 'dl-large');
+
+    // Convert callback should NOT be called (total > 150MB)
+    expect(convertMock).not.toHaveBeenCalled();
+    // Should save as .ts
+    const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
+    expect(opts.filename).toBe('HLS_Video.ts');
+
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+  });
+
+  // 13. Segments are written to OPFS in playlist order even if network
+  // resolves out of order (parallel fetch).
+  test('parallel fetch writes segments in playlist order regardless of network resolution order', async () => {
+    // This test uses real setTimeout delays to simulate out-of-order network
+    // resolution, so we need real timers (not the fake timers from beforeEach).
+    jest.useRealTimers();
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
+    const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+
+    // Mock fetch so segments resolve out of order: seg1 first, seg0 last.
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+      if (url.endsWith('seg0.ts')) {
+        // Delay seg0 so it resolves after seg1 and seg2.
+        await new Promise((r) => setTimeout(r, 50));
+        return makeResponse(makeTextBlob('seg0'));
+      }
+      if (url.endsWith('seg1.ts')) {
+        return makeResponse(makeTextBlob('seg1'));
+      }
+      if (url.endsWith('seg2.ts')) {
+        await new Promise((r) => setTimeout(r, 20));
+        return makeResponse(makeTextBlob('seg2'));
+      }
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        readFile: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    mockWriter.write.mockClear();
+    mockWriter.close.mockClear();
+    createOpfsWriter.mockResolvedValue(mockWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+
+    const mockTsFile = {
+      arrayBuffer: async () => new ArrayBuffer(15),
+    } as unknown as File;
+    readFile.mockResolvedValue(mockTsFile);
+
+    // No convert callback → saves .ts directly.
+    await downloader.downloadVideo(makeM3u8Video(), 'dl-order');
+
+    // Writer should have been called 3 times (3 segments).
+    expect(mockWriter.write).toHaveBeenCalledTimes(3);
+    // Writer should have been closed exactly once.
+    expect(mockWriter.close).toHaveBeenCalledTimes(1);
+
+    // Verify write order: the Blob content must be seg0, seg1, seg2
+    // (playlist order), NOT seg1, seg2, seg0 (network resolution order).
+    const writeCalls = mockWriter.write.mock.calls;
+    const writtenContents = await Promise.all(
+      writeCalls.map(async (call: unknown[]) => {
+        const blob = call[0] as Blob;
+        return blob.text();
+      }),
+    );
+    expect(writtenContents).toEqual(['seg0', 'seg1', 'seg2']);
+
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+  });
+
+  // 14. Writer is closed even when a segment fetch fails.
+  test('writer is closed on fetch error', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
+    const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+      if (url.endsWith('seg0.ts')) return makeResponse(makeTextBlob('seg0'));
+      if (url.endsWith('seg1.ts')) throw new Error('Network error on seg1');
+      if (url.endsWith('seg2.ts')) return makeResponse(makeTextBlob('seg2'));
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    mockWriter.write.mockClear();
+    mockWriter.close.mockClear();
+    createOpfsWriter.mockResolvedValue(mockWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+
+    await expect(downloader.downloadVideo(makeM3u8Video(), 'dl-err')).rejects.toThrow();
+
+    // Writer must have been closed despite the error (via finally block).
+    expect(mockWriter.close).toHaveBeenCalledTimes(1);
+
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+  });
+
+  // 15. When saveOpfsFileCallback is set, the downloader saves via that
+  // callback and does NOT call opfsReadFile().arrayBuffer() — avoiding the
+  // ~1.4GB memory spike on a 430MB file.
+  test('saveOpfsFileCallback is used and arrayBuffer() is not called on save path', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
+    const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+      if (url.endsWith('seg0.ts')) return makeResponse(makeTextBlob('seg0'));
+      if (url.endsWith('seg1.ts')) return makeResponse(makeTextBlob('seg1'));
+      if (url.endsWith('seg2.ts')) return makeResponse(makeTextBlob('seg2'));
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        readFile: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    mockWriter.write.mockClear();
+    mockWriter.close.mockClear();
+    createOpfsWriter.mockResolvedValue(mockWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+
+    // readFile should NOT be called on the save path when the callback is set.
+    const arrayBufferSpy = jest.fn(async () => new ArrayBuffer(9));
+    readFile.mockResolvedValue({
+      arrayBuffer: arrayBufferSpy,
+    } as unknown as File);
+
+    // Wire the saveOpfsFileCallback — captures the args and does NOT
+    // materialize the file.
+    const saveOpfsFileCalls: Array<{
+      downloadId: string;
+      opfsFilename: string;
+      downloadFilename: string;
+      mimeType: string;
+    }> = [];
+    downloader.setSaveOpfsFileCallback(
+      async (downloadId, opfsFilename, downloadFilename, mimeType) => {
+        saveOpfsFileCalls.push({
+          downloadId,
+          opfsFilename,
+          downloadFilename,
+          mimeType,
+        });
+      },
+    );
+
+    // No convert callback → saves .ts directly via saveOpfsFile.
+    await downloader.downloadVideo(makeM3u8Video(), 'dl-saveopfs');
+
+    // saveOpfsFileCallback called once with the .ts file.
+    expect(saveOpfsFileCalls).toHaveLength(1);
+    expect(saveOpfsFileCalls[0]).toEqual({
+      downloadId: 'dl-saveopfs',
+      opfsFilename: 'input.ts',
+      downloadFilename: 'HLS_Video.ts',
+      mimeType: 'video/mp2t',
+    });
+
+    // readFile was NOT called on the save path (no arrayBuffer materialization).
+    expect(readFile).not.toHaveBeenCalled();
+    expect(arrayBufferSpy).not.toHaveBeenCalled();
+
+    // chrome.downloads.download was NOT called directly — the callback owns
+    // that responsibility.
+    expect(chromeDownloadsDownloadMock).not.toHaveBeenCalled();
+
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+  });
+
+  // 16. When conversion succeeds and saveOpfsFileCallback is set, the
+  // downloader saves the .mp4 via the callback (not data URL).
+  test('saveOpfsFileCallback saves converted mp4 without arrayBuffer()', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
+    const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+      if (url.endsWith('seg0.ts')) return makeResponse(makeTextBlob('seg0'));
+      if (url.endsWith('seg1.ts')) return makeResponse(makeTextBlob('seg1'));
+      if (url.endsWith('seg2.ts')) return makeResponse(makeTextBlob('seg2'));
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        readFile: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    mockWriter.write.mockClear();
+    mockWriter.close.mockClear();
+    createOpfsWriter.mockResolvedValue(mockWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+    readFile.mockResolvedValue({
+      arrayBuffer: jest.fn(async () => new ArrayBuffer(42)),
+    } as unknown as File);
+
+    const convertMock: jest.MockedFunction<ConvertCallback> = jest.fn(
+      async (): Promise<ConvertResult> => ({
+        outputName: 'output.mp4',
+        mimeType: 'video/mp4',
+      }),
+    );
+    downloader.setConvertCallback(convertMock);
+
+    const saveOpfsFileCalls: Array<{
+      downloadId: string;
+      opfsFilename: string;
+      downloadFilename: string;
+      mimeType: string;
+    }> = [];
+    downloader.setSaveOpfsFileCallback(
+      async (downloadId, opfsFilename, downloadFilename, mimeType) => {
+        saveOpfsFileCalls.push({
+          downloadId,
+          opfsFilename,
+          downloadFilename,
+          mimeType,
+        });
+      },
+    );
+
+    await downloader.downloadVideo(makeM3u8Video(), 'dl-mp4-saveopfs');
+
+    expect(convertMock).toHaveBeenCalledTimes(1);
+    expect(saveOpfsFileCalls).toHaveLength(1);
+    expect(saveOpfsFileCalls[0]).toEqual({
+      downloadId: 'dl-mp4-saveopfs',
+      opfsFilename: 'output.mp4',
+      downloadFilename: 'HLS_Video.mp4',
+      mimeType: 'video/mp4',
+    });
+    // readFile was NOT called on the save path.
+    expect(readFile).not.toHaveBeenCalled();
+    expect(chromeDownloadsDownloadMock).not.toHaveBeenCalled();
+
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+  });
+
+  // 17. When conversion fails and saveOpfsFileCallback is set, the fallback
+  // .ts is saved via the callback (not data URL), so the fallback path is
+  // also memory-safe.
+  test('conversion failure with saveOpfsFileCallback saves .ts fallback without arrayBuffer()', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
+    const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+      if (url.endsWith('seg0.ts')) return makeResponse(makeTextBlob('seg0'));
+      if (url.endsWith('seg1.ts')) return makeResponse(makeTextBlob('seg1'));
+      if (url.endsWith('seg2.ts')) return makeResponse(makeTextBlob('seg2'));
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        readFile: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    mockWriter.write.mockClear();
+    mockWriter.close.mockClear();
+    createOpfsWriter.mockResolvedValue(mockWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+    readFile.mockResolvedValue({
+      arrayBuffer: jest.fn(async () => new ArrayBuffer(9)),
+    } as unknown as File);
+
+    // Convert callback that throws → triggers .ts fallback.
+    const convertMock: jest.MockedFunction<ConvertCallback> = jest.fn(
+      async (): Promise<ConvertResult> => {
+        throw new Error('transmux failed');
+      },
+    );
+    downloader.setConvertCallback(convertMock);
+
+    const saveOpfsFileCalls: Array<{
+      downloadId: string;
+      opfsFilename: string;
+      downloadFilename: string;
+      mimeType: string;
+    }> = [];
+    downloader.setSaveOpfsFileCallback(
+      async (downloadId, opfsFilename, downloadFilename, mimeType) => {
+        saveOpfsFileCalls.push({
+          downloadId,
+          opfsFilename,
+          downloadFilename,
+          mimeType,
+        });
+      },
+    );
+
+    await downloader.downloadVideo(makeM3u8Video(), 'dl-fallback-saveopfs');
+
+    expect(convertMock).toHaveBeenCalledTimes(1);
+    // Fallback saved .ts via the callback.
+    expect(saveOpfsFileCalls).toHaveLength(1);
+    expect(saveOpfsFileCalls[0]).toEqual({
+      downloadId: 'dl-fallback-saveopfs',
+      opfsFilename: 'input.ts',
+      downloadFilename: 'HLS_Video.ts',
+      mimeType: 'video/mp2t',
+    });
+    // readFile was NOT called on the save path.
+    expect(readFile).not.toHaveBeenCalled();
+    expect(chromeDownloadsDownloadMock).not.toHaveBeenCalled();
+
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
   });
 });

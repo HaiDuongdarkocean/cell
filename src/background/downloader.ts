@@ -1,14 +1,27 @@
 import { parseM3u8 } from '@/lib/parsers/m3u8Parser';
-import { mergeTsSegments } from '@/lib/converters/segmentMerger';
 import { convertAssToSrt } from '@/lib/converters/assToSrt';
 import { convertVttToSrt } from '@/lib/converters/vttToSrt';
+import { normalizeSrt } from '@/lib/converters/srtNormalizer';
 import { generateFileName } from '@/lib/utils/fileUtils';
 import type {
   DetectedVideo,
   DetectedSubtitle,
   DownloadProgress,
 } from '@/types/media';
-import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/constants/config';
+import {
+  MAX_RETRY,
+  SEGMENT_TIMEOUT_MS,
+  MAX_CONVERT_BYTES,
+  DEFAULT_SEGMENT_CONCURRENCY,
+} from '@/constants/config';
+import type { ConvertToMp4Mode } from '@/types/media';
+import {
+  ensureDownloadSubdir,
+  createOpfsWriter,
+  readFile as opfsReadFile,
+  deleteDownloadSubdir,
+  isOpfsAvailable,
+} from '@/lib/storage/opfsStorage';
 
 /**
  * Callback invoked with progress updates during a download.
@@ -16,14 +29,49 @@ import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/constants/config';
 export type ProgressCallback = (progress: DownloadProgress) => void;
 
 /**
- * Callback invoked to convert merged TS segments (ArrayBuffers) into the final
- * container format (e.g. mp4 via offscreen ffmpeg). Returns the converted
- * ArrayBuffer.
+ * Result of a conversion: the converted file is in OPFS, identified by name.
+ * The caller reads it from the same OPFS directory.
+ */
+export interface ConvertResult {
+  readonly outputName: string;
+  readonly mimeType: string;
+}
+
+/**
+ * Callback invoked to convert a `.ts` file (stored in OPFS) into the final
+ * container format (e.g. mp4 via mux.js transmuxer in the offscreen document).
+ *
+ * The callback receives the OPFS directory handle (so it can read `input.ts`)
+ * and the download id. It writes the converted file into the same directory
+ * and returns its name + mime type. If conversion fails, it should throw — the
+ * downloader will fall back to saving the `.ts` file.
  */
 export type ConvertCallback = (
-  segments: ArrayBuffer[],
+  dirHandle: FileSystemDirectoryHandle,
   downloadId: string,
-) => Promise<ArrayBuffer>;
+) => Promise<ConvertResult>;
+
+/**
+ * Callback invoked to save an OPFS file (already written by the download or
+ * convert phase) to the user's Downloads folder via `chrome.downloads.download`.
+ *
+ * This indirection exists because:
+ *  - MV3 service workers cannot use `URL.createObjectURL` (per MDN, it is
+ *    unavailable in Service Workers), so a Blob URL must be created in the
+ *    offscreen document.
+ *  - We must NOT materialize a 430MB file into a `data:` URL or an
+ *    `ArrayBuffer` in the service worker — that creates a ~1.4GB memory spike.
+ *
+ * The callback receives only identifiers (downloadId + OPFS filename) plus the
+ * final download filename and mime type. The implementor reads the file from
+ * OPFS directly (in the offscreen document) and creates a Blob URL there.
+ */
+export type SaveOpfsFileCallback = (
+  downloadId: string,
+  opfsFilename: string,
+  downloadFilename: string,
+  mimeType: string,
+) => Promise<void>;
 
 /**
  * Orchestrates downloading a video or subtitle: fetch segments → merge →
@@ -32,7 +80,9 @@ export type ConvertCallback = (
 export class Downloader {
   private progressCallback: ProgressCallback | null = null;
   private convertCallback: ConvertCallback | null = null;
+  private saveOpfsFileCallback: SaveOpfsFileCallback | null = null;
   private cancelledIds: Set<string> = new Set();
+  private convertMode: ConvertToMp4Mode = 'always';
 
   constructor() {}
 
@@ -44,6 +94,22 @@ export class Downloader {
   /** Set the convert callback used for offscreen ffmpeg ts→mp4 conversion. */
   setConvertCallback(callback: ConvertCallback): void {
     this.convertCallback = callback;
+  }
+
+  /**
+   * Set the callback used to save an OPFS file to the user's Downloads folder
+   * without materializing it into a `data:` URL or `ArrayBuffer` in the
+   * service worker. Required for large M3U8 downloads; if unset, the
+   * downloader falls back to `saveBlob` (data URL) which is only safe for
+   * small files.
+   */
+  setSaveOpfsFileCallback(callback: SaveOpfsFileCallback): void {
+    this.saveOpfsFileCallback = callback;
+  }
+
+  /** Set the conversion mode (always / small-only / never). */
+  setConvertMode(mode: ConvertToMp4Mode): void {
+    this.convertMode = mode;
   }
 
   /**
@@ -74,7 +140,7 @@ export class Downloader {
     this.throwIfCancelled(downloadId);
     this.reportProgress(downloadId, 'downloading', 0);
 
-    const response = await fetch(subtitle.url);
+    const response = await fetch(subtitle.url, { credentials: 'include' });
     if (!response.ok) {
       throw new Error(`Failed to fetch subtitle: ${response.status}`);
     }
@@ -94,6 +160,13 @@ export class Downloader {
       throw new Error(`Unsupported subtitle format: ${subtitle.format}`);
     }
 
+    // Always normalize the final output to clean, standard-compliant SRT —
+    // regardless of source format. This catches non-standard SRT from
+    // servers (VTT tags in .srt, dot timestamps, missing sequence numbers,
+    // WEBVTT header in .srt, etc.) and also guards against any tags that
+    // slip through the upstream converters.
+    srtContent = normalizeSrt(srtContent);
+
     this.throwIfCancelled(downloadId);
 
     const blob = new Blob([srtContent], { type: 'application/x-subrip' });
@@ -106,6 +179,10 @@ export class Downloader {
   /** Cancel a download by id. Subsequent steps for that id will throw. */
   cancel(downloadId: string): void {
     this.cancelledIds.add(downloadId);
+    // Best-effort OPFS cleanup for the cancelled download.
+    void deleteDownloadSubdir(downloadId).catch((err: unknown) => {
+      console.warn(`[downloader] OPFS cleanup on cancel failed for ${downloadId}:`, err);
+    });
   }
 
   /**
@@ -121,11 +198,20 @@ export class Downloader {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT_MS);
       try {
-        const response = await fetch(url, { signal: controller.signal });
+        // Include credentials and the page's origin so segment servers that
+        // check auth/referer return real data instead of empty responses.
+        const response = await fetch(url, {
+          signal: controller.signal,
+          credentials: 'include',
+        });
         if (!response.ok) {
           throw new Error(`Segment fetch failed: ${response.status}`);
         }
-        return await response.blob();
+        const blob = await response.blob();
+        if (blob.size === 0) {
+          throw new Error('Segment response was empty');
+        }
+        return blob;
       } catch (err: unknown) {
         lastError = err;
       } finally {
@@ -147,7 +233,7 @@ export class Downloader {
     playlistUrl: string,
     onSegmentProgress: (current: number, total: number) => void,
   ): Promise<Blob[]> {
-    const response = await fetch(playlistUrl);
+    const response = await fetch(playlistUrl, { credentials: 'include' });
     if (!response.ok) {
       throw new Error(`Failed to fetch playlist: ${response.status}`);
     }
@@ -165,20 +251,20 @@ export class Downloader {
   }
 
   /**
-   * Save a Blob via chrome.downloads.download. Creates an object URL, triggers
-   * the download, then revokes the object URL.
+   * Save a Blob via chrome.downloads.download.
+   *
+   * NOTE: In Manifest V3 the background runs as a service worker, where
+   * `URL.createObjectURL` is unavailable. We therefore convert the blob to a
+   * base64 `data:` URL (using `btoa`, which IS available in service workers)
+   * and hand that to chrome.downloads.download.
    */
   async saveBlob(blob: Blob, filename: string): Promise<void> {
-    const url = URL.createObjectURL(blob);
-    try {
-      await chrome.downloads.download({
-        url,
-        filename,
-        saveAs: false,
-      });
-    } finally {
-      URL.revokeObjectURL(url);
-    }
+    const url = await blobToDataUrl(blob);
+    await chrome.downloads.download({
+      url,
+      filename,
+      saveAs: false,
+    });
   }
 
   // --- internals ---
@@ -189,7 +275,7 @@ export class Downloader {
   ): Promise<void> {
     this.reportProgress(downloadId, 'downloading', 0);
 
-    const response = await fetch(video.url);
+    const response = await fetch(video.url, { credentials: 'include' });
     if (!response.ok) {
       throw new Error(`Failed to fetch video: ${response.status}`);
     }
@@ -212,7 +298,7 @@ export class Downloader {
     this.reportProgress(downloadId, 'downloading', 0);
 
     // Fetch + parse the (possibly master) playlist.
-    const response = await fetch(video.url);
+    const response = await fetch(video.url, { credentials: 'include' });
     if (!response.ok) {
       throw new Error(`Failed to fetch playlist: ${response.status}`);
     }
@@ -226,7 +312,7 @@ export class Downloader {
       }
       const variantUrl = playlist.variants[0].url;
       this.throwIfCancelled(downloadId);
-      const variantResponse = await fetch(variantUrl);
+      const variantResponse = await fetch(variantUrl, { credentials: 'include' });
       if (!variantResponse.ok) {
         throw new Error(`Failed to fetch variant playlist: ${variantResponse.status}`);
       }
@@ -236,39 +322,236 @@ export class Downloader {
 
     this.throwIfCancelled(downloadId);
 
-    const totalSegments = playlist.segments.length;
+    const opfsAvailable = isOpfsAvailable();
+
+    if (opfsAvailable) {
+      await this.downloadM3u8Streaming(video, downloadId, playlist.segments);
+    } else {
+      // Fallback: legacy in-memory flow for browsers without OPFS.
+      await this.downloadM3u8Legacy(video, downloadId, playlist.segments);
+    }
+  }
+
+  /**
+   * Streaming download: fetch each segment and append it to OPFS `input.ts`,
+   * keeping only ~1 segment in memory. Then attempt conversion (best-effort)
+   * and save the result. If conversion fails, the `.ts` backup is saved.
+   */
+  private async downloadM3u8Streaming(
+    video: DetectedVideo,
+    downloadId: string,
+    segments: { url: string }[],
+  ): Promise<void> {
+    const totalSegments = segments.length;
+    const dirHandle = await ensureDownloadSubdir(downloadId);
+    let totalBytes = 0;
+    const downloadStartedAt = performance.now();
+
+    // Phase 1: Fetch segments in parallel batches, write sequentially to OPFS
+    // via a single open writable stream (0–80%).
+    //
+    // - Fetch: `DEFAULT_SEGMENT_CONCURRENCY` segments are fetched concurrently
+    //   via `Promise.all` to utilize network bandwidth.
+    // - Write: segments are written to OPFS in original playlist order to
+    //   preserve the MPEG-TS stream. Writing is sequential because the single
+    //   writable stream is not safe for concurrent writes.
+    // - The writable stream is opened once and closed once, avoiding the
+    //   per-segment open/seek/write/close overhead of `appendChunk()`.
+    console.debug(
+      `[downloader] Starting parallel download: ${totalSegments} segments, concurrency=${DEFAULT_SEGMENT_CONCURRENCY}`,
+    );
+    const writer = await createOpfsWriter(dirHandle, 'input.ts');
+    try {
+      for (let start = 0; start < totalSegments; start += DEFAULT_SEGMENT_CONCURRENCY) {
+        this.throwIfCancelled(downloadId);
+
+        const batch = segments.slice(start, start + DEFAULT_SEGMENT_CONCURRENCY);
+        const batchStart = performance.now();
+
+        // Fetch all segments in the batch concurrently.
+        const blobs = await Promise.all(
+          batch.map((segment) => this.fetchSegment(segment.url)),
+        );
+
+        const fetchMs = Math.round(performance.now() - batchStart);
+
+        // Write in original playlist order.
+        for (let j = 0; j < blobs.length; j++) {
+          this.throwIfCancelled(downloadId);
+          const blob = blobs[j];
+          totalBytes += blob.size;
+          await writer.write(blob);
+
+          const current = start + j + 1;
+          const pct = Math.floor((current / totalSegments) * 80);
+          this.reportProgress(downloadId, 'downloading', pct, current, totalSegments);
+        }
+
+        const batchEnd = start + blobs.length;
+        console.debug(
+          `[downloader] Fetched+wrote batch ${start}-${batchEnd - 1} in ${fetchMs}ms, total=${totalBytes} bytes`,
+        );
+      }
+    } finally {
+      await writer.close();
+    }
+
+    const downloadMs = Math.round(performance.now() - downloadStartedAt);
+    console.debug(
+      `[downloader] Downloaded ${totalSegments} segments (${totalBytes} bytes) in ${downloadMs}ms`,
+    );
+
+    this.throwIfCancelled(downloadId);
+
+    // Determine whether to attempt conversion based on mode + size.
+    const shouldConvert = this.shouldAttemptConversion(totalBytes);
+
+    // Phase 2: Attempt conversion (85–98%) or save .ts directly.
+    //
+    // When `saveOpfsFileCallback` is set, the file is saved directly from OPFS
+    // (via an offscreen-owned Blob URL) WITHOUT reading it into an ArrayBuffer
+    // or converting to a data: URL. This avoids a ~1.4GB memory spike on a
+    // 430MB file. If the callback is unset (e.g. in unit tests or browsers
+    // without offscreen support), we fall back to the legacy `saveBlob` path
+    // which materializes the file — acceptable only for small files.
+    let savedFilename: string;
+
+    if (shouldConvert && this.convertCallback) {
+      this.reportProgress(downloadId, 'converting', 85);
+      const convertStartedAt = performance.now();
+      try {
+        const result = await this.convertCallback(dirHandle, downloadId);
+        const convertMs = Math.round(performance.now() - convertStartedAt);
+        console.debug(`[downloader] Conversion succeeded in ${convertMs}ms`);
+        savedFilename = generateFileName(video.title, 'mp4');
+        this.reportProgress(downloadId, 'converting', 98);
+
+        this.throwIfCancelled(downloadId);
+        await this.saveOpfsFile(
+          downloadId,
+          result.outputName,
+          savedFilename,
+          result.mimeType,
+        );
+      } catch (convertError) {
+        const convertMs = Math.round(performance.now() - convertStartedAt);
+        console.warn(
+          `[downloader] MP4 conversion failed after ${convertMs}ms for ${downloadId}, saving .ts fallback:`,
+          convertError instanceof Error ? convertError.message : convertError,
+        );
+        // Fallback: save the .ts file from OPFS (without materializing it).
+        savedFilename = generateFileName(video.title, 'ts');
+        this.throwIfCancelled(downloadId);
+        await this.saveOpfsFile(
+          downloadId,
+          'input.ts',
+          savedFilename,
+          'video/mp2t',
+        );
+      }
+    } else {
+      // No conversion: save .ts directly from OPFS.
+      savedFilename = generateFileName(video.title, 'ts');
+      this.throwIfCancelled(downloadId);
+      await this.saveOpfsFile(
+        downloadId,
+        'input.ts',
+        savedFilename,
+        'video/mp2t',
+      );
+    }
+
+    this.throwIfCancelled(downloadId);
+
+    // Phase 3: Cleanup OPFS temp files.
+    await deleteDownloadSubdir(downloadId).catch((err: unknown) => {
+      console.warn(`[downloader] OPFS cleanup failed for ${downloadId}:`, err);
+    });
+
+    this.reportProgress(downloadId, 'done', 100);
+  }
+
+  /**
+   * Save an OPFS file to the user's Downloads folder.
+   *
+   * Uses `saveOpfsFileCallback` (offscreen-owned Blob URL) when available to
+   * avoid materializing large files into memory. Falls back to `saveBlob`
+   * (data URL) only when the callback is unset — which is only safe for small
+   * files and is primarily used in unit tests.
+   */
+  private async saveOpfsFile(
+    downloadId: string,
+    opfsFilename: string,
+    downloadFilename: string,
+    mimeType: string,
+  ): Promise<void> {
+    if (this.saveOpfsFileCallback) {
+      await this.saveOpfsFileCallback(
+        downloadId,
+        opfsFilename,
+        downloadFilename,
+        mimeType,
+      );
+      return;
+    }
+
+    // Legacy fallback: read the OPFS file into memory and save via data URL.
+    // This path is only safe for small files; large M3U8 downloads must wire
+    // `saveOpfsFileCallback` to avoid a memory spike.
+    const dirHandle = await ensureDownloadSubdir(downloadId);
+    const file = await opfsReadFile(dirHandle, opfsFilename);
+    const blob = new Blob([await file.arrayBuffer()], { type: mimeType });
+    await this.saveBlob(blob, downloadFilename);
+  }
+
+  /**
+   * Legacy in-memory flow for browsers without OPFS support.
+   * Fetches all segments into memory, merges, and saves.
+   */
+  private async downloadM3u8Legacy(
+    video: DetectedVideo,
+    downloadId: string,
+    segments: { url: string }[],
+  ): Promise<void> {
+    const totalSegments = segments.length;
     const blobs: Blob[] = [];
     for (let i = 0; i < totalSegments; i++) {
       this.throwIfCancelled(downloadId);
-      const blob = await this.fetchSegment(playlist.segments[i].url);
+      const blob = await this.fetchSegment(segments[i].url);
       blobs.push(blob);
-      // Map segment fetching to 0–80% of overall progress.
       const pct = Math.floor(((i + 1) / totalSegments) * 80);
       this.reportProgress(downloadId, 'downloading', pct, i + 1, totalSegments);
     }
 
     this.throwIfCancelled(downloadId);
-    const merged = mergeTsSegments(blobs);
-    this.reportProgress(downloadId, 'converting', 85);
 
-    let finalBlob: Blob;
-    if (this.convertCallback) {
-      const buffers: ArrayBuffer[] = [];
-      for (const b of blobs) {
-        buffers.push(await b.arrayBuffer());
-      }
-      const converted = await this.convertCallback(buffers, downloadId);
-      finalBlob = new Blob([converted], { type: 'video/mp4' });
-    } else {
-      finalBlob = merged;
-    }
-
-    this.throwIfCancelled(downloadId);
-    const filename = generateFileName(video.title, 'mp4');
-    await this.saveBlob(finalBlob, filename);
+    // Merge all segments into a single Blob (in-memory).
+    const merged = new Blob(blobs, { type: 'video/mp2t' });
+    const filename = generateFileName(video.title, 'ts');
+    await this.saveBlob(merged, filename);
 
     this.throwIfCancelled(downloadId);
     this.reportProgress(downloadId, 'done', 100);
+  }
+
+  /**
+   * Determine whether to attempt TS→MP4 conversion based on the current
+   * `convertMode` setting and the total downloaded size.
+   *
+   * - `'always'`: always attempt (conversion may still fail → .ts fallback)
+   * - `'small-only'`: only attempt if totalBytes ≤ MAX_CONVERT_BYTES
+   * - `'never'`: never attempt, save .ts directly
+   */
+  private shouldAttemptConversion(totalBytes: number): boolean {
+    switch (this.convertMode) {
+      case 'never':
+        return false;
+      case 'small-only':
+        return totalBytes <= MAX_CONVERT_BYTES;
+      case 'always':
+      default:
+        return true;
+    }
   }
 
   private throwIfCancelled(downloadId: string): void {
@@ -307,4 +590,28 @@ function extractBaseName(url: string): string {
   } catch {
     return 'subtitle';
   }
+}
+
+/**
+ * Convert a Blob to a base64 `data:` URL.
+ *
+ * Used instead of `URL.createObjectURL`, which is unavailable in Manifest V3
+ * service workers. `btoa` and `Blob.arrayBuffer()` are both available in the
+ * service worker global scope.
+ */
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+
+  // Base64-encode in chunks to avoid call-stack overflow on large inputs.
+  let binary = '';
+  const CHUNK_SIZE = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    const chunk = bytes.subarray(i, i + CHUNK_SIZE);
+    binary += String.fromCharCode(...chunk);
+  }
+  const base64 = btoa(binary);
+
+  const mimeType = blob.type || 'application/octet-stream';
+  return `data:${mimeType};base64,${base64}`;
 }
