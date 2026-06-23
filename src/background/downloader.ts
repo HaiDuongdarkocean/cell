@@ -8,6 +8,8 @@ import type {
   DetectedVideo,
   DetectedSubtitle,
   DownloadProgress,
+  SegmentRange,
+  TsSegment,
 } from '@/types/media';
 import {
   MAX_RETRY,
@@ -85,6 +87,12 @@ export class Downloader {
   private saveOpfsFileCallback: SaveOpfsFileCallback | null = null;
   private cancelledIds: Set<string> = new Set();
   private convertMode: ConvertToMp4Mode = 'always';
+  /**
+   * Segment byte ranges for the most recent download. Keyed by downloadId.
+   * Used by the parallel conversion engine to split `input.ts` at safe
+   * segment boundaries. Populated during `downloadM3u8Streaming`.
+   */
+  private readonly segmentRangesMap = new Map<string, SegmentRange[]>();
 
   constructor() {}
 
@@ -112,6 +120,15 @@ export class Downloader {
   /** Set the conversion mode (always / small-only / never). */
   setConvertMode(mode: ConvertToMp4Mode): void {
     this.convertMode = mode;
+  }
+
+  /**
+   * Get the segment byte ranges recorded during the most recent download
+   * for the given downloadId. Returns an empty array if no ranges were
+   * recorded (e.g. non-M3U8 download or download not yet started).
+   */
+  getSegmentRanges(downloadId: string): SegmentRange[] {
+    return this.segmentRangesMap.get(downloadId) ?? [];
   }
 
   /**
@@ -346,11 +363,12 @@ export class Downloader {
   private async downloadM3u8Streaming(
     video: DetectedVideo,
     downloadId: string,
-    segments: { url: string }[],
+    segments: TsSegment[],
   ): Promise<void> {
     const totalSegments = segments.length;
     const dirHandle = await ensureDownloadSubdir(downloadId);
     let totalBytes = 0;
+    const segmentRanges: SegmentRange[] = [];
     const timer = new ConversionTimer(downloadId);
     timer.start('download');
     const downloadStartedAt = performance.now();
@@ -387,6 +405,8 @@ export class Downloader {
         for (let j = 0; j < blobs.length; j++) {
           this.throwIfCancelled(downloadId);
           const blob = blobs[j];
+          const segmentIndex = start + j;
+          const segmentStartByte = totalBytes;
           totalBytes += blob.size;
           try {
             await writer.write(blob);
@@ -405,6 +425,15 @@ export class Downloader {
             }
             throw writeErr;
           }
+
+          // Record the byte range for this segment.
+          segmentRanges.push({
+            index: segmentIndex,
+            startByte: segmentStartByte,
+            endByte: totalBytes,
+            size: blob.size,
+            duration: segments[segmentIndex]?.duration,
+          });
 
           const current = start + j + 1;
           const pct = Math.floor((current / totalSegments) * 80);
@@ -425,6 +454,13 @@ export class Downloader {
     console.debug(
       `[downloader] Downloaded ${totalSegments} segments (${totalBytes} bytes) in ${downloadMs}ms`,
     );
+    console.debug(
+      `[downloader] Recorded ${segmentRanges.length} segment ranges for ${downloadId}`,
+    );
+
+    // Store segment ranges for this download so the conversion phase
+    // (and future parallel engine) can access them.
+    this.segmentRangesMap.set(downloadId, segmentRanges);
 
     this.throwIfCancelled(downloadId);
 
@@ -501,6 +537,7 @@ export class Downloader {
       console.warn(`[downloader] OPFS cleanup failed for ${downloadId}:`, err);
     });
     timer.end('cleanup');
+    this.segmentRangesMap.delete(downloadId);
 
     timer.logSummary();
     this.reportProgress(downloadId, 'done', 100);
@@ -546,7 +583,7 @@ export class Downloader {
   private async downloadM3u8Legacy(
     video: DetectedVideo,
     downloadId: string,
-    segments: { url: string }[],
+    segments: TsSegment[],
   ): Promise<void> {
     const totalSegments = segments.length;
     const blobs: Blob[] = [];

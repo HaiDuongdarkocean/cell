@@ -35,6 +35,24 @@ export interface TsSegment {
   readonly sequence?: number;
 }
 
+/**
+ * Byte range metadata for a single HLS segment after it has been appended
+ * to `input.ts` in OPFS. Used by the parallel conversion engine to split
+ * the merged file at safe segment boundaries.
+ */
+export interface SegmentRange {
+  /** Zero-based index in the original playlist order. */
+  readonly index: number;
+  /** Byte offset where this segment starts in `input.ts`. */
+  readonly startByte: number;
+  /** Byte offset where this segment ends (exclusive) in `input.ts`. */
+  readonly endByte: number;
+  /** Size of this segment in bytes (`endByte - startByte`). */
+  readonly size: number;
+  /** Segment duration in seconds from `#EXTINF`, if available. */
+  readonly duration?: number;
+}
+
 export interface M3u8Playlist {
   readonly version: number;
   readonly targetDuration: number;

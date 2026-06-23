@@ -3,7 +3,7 @@ import {
   type ConvertCallback,
   type ConvertResult,
 } from '@/background/downloader';
-import type { DetectedVideo, DetectedSubtitle, DownloadProgress } from '@/types/media';
+import type { DetectedVideo, DetectedSubtitle, DownloadProgress, SegmentRange } from '@/types/media';
 import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/constants/config';
 
 // Mock OPFS helpers so we can control whether the streaming path is used.
@@ -297,7 +297,141 @@ describe('Downloader', () => {
     (isOpfsAvailable as jest.Mock).mockReturnValue(false);
   });
 
-  // 3. m3u8 master playlist (no ffmpeg converter: saves merged TS as .ts)
+  // 2b. Segment byte ranges are recorded during streaming download
+  test('downloadVideo with m3u8 records segment byte ranges', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
+    const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+    // Create segments with known sizes: seg0=4 bytes, seg1=4 bytes, seg2=4 bytes
+    const seg0 = makeTextBlob('seg0'); // 4 bytes
+    const seg1 = makeTextBlob('seg1'); // 4 bytes
+    const seg2 = makeTextBlob('seg2'); // 4 bytes
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+      if (url.endsWith('seg0.ts')) return makeResponse(seg0);
+      if (url.endsWith('seg1.ts')) return makeResponse(seg1);
+      if (url.endsWith('seg2.ts')) return makeResponse(seg2);
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        readFile: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = { name: 'dl-ranges' } as unknown as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    mockWriter.write.mockClear();
+    mockWriter.close.mockClear();
+    createOpfsWriter.mockResolvedValue(mockWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+
+    const mockTsFile = {
+      arrayBuffer: async () => new ArrayBuffer(12),
+    } as unknown as File;
+    readFile.mockResolvedValue(mockTsFile);
+
+    // No convert callback → saves .ts directly, but ranges should still be recorded.
+    await downloader.downloadVideo(makeM3u8Video(), 'dl-ranges');
+
+    // Verify segment ranges were recorded (before cleanup deletes them).
+    // Note: getSegmentRanges returns [] after cleanup because the map is
+    // cleared. So we need to check during the download. Instead, verify
+    // via the writer.write calls that segments were written in order.
+    expect(mockWriter.write).toHaveBeenCalledTimes(3);
+
+    // After download completes, segmentRangesMap is cleaned up.
+    expect(downloader.getSegmentRanges('dl-ranges')).toEqual([]);
+
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+  });
+
+  // 2c. Segment ranges are contiguous and sum to total bytes
+  test('getSegmentRanges returns contiguous ranges during download', async () => {
+    (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+
+    const playlistBlob = makeTextBlob(MEDIA_PLAYLIST);
+    const seg0 = makeTextBlob('AAAA'); // 4 bytes
+    const seg1 = makeTextBlob('BBBB'); // 4 bytes
+    const seg2 = makeTextBlob('CCCC'); // 4 bytes
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(playlistBlob);
+      if (url.endsWith('seg0.ts')) return makeResponse(seg0);
+      if (url.endsWith('seg1.ts')) return makeResponse(seg1);
+      if (url.endsWith('seg2.ts')) return makeResponse(seg2);
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
+      require('@/lib/storage/opfsStorage') as {
+        ensureDownloadSubdir: jest.Mock;
+        createOpfsWriter: jest.Mock;
+        readFile: jest.Mock;
+        deleteDownloadSubdir: jest.Mock;
+      };
+
+    const mockDirHandle = { name: 'dl-contig' } as unknown as FileSystemDirectoryHandle;
+    ensureDownloadSubdir.mockResolvedValue(mockDirHandle);
+    mockWriter.write.mockClear();
+    mockWriter.close.mockClear();
+    createOpfsWriter.mockResolvedValue(mockWriter);
+    deleteDownloadSubdir.mockResolvedValue(undefined);
+
+    const mockTsFile = {
+      arrayBuffer: async () => new ArrayBuffer(12),
+    } as unknown as File;
+    readFile.mockResolvedValue(mockTsFile);
+
+    // Capture segment ranges mid-download by intercepting the convert callback.
+    let capturedRanges: SegmentRange[] = [];
+    const convertMock: jest.MockedFunction<ConvertCallback> = jest.fn(
+      async (_dirHandle: FileSystemDirectoryHandle, _id: string): Promise<ConvertResult> => {
+        // Ranges should be available at this point (before cleanup).
+        capturedRanges = downloader.getSegmentRanges('dl-contig');
+        return { outputName: 'output.mp4', mimeType: 'video/mp4' };
+      },
+    );
+    downloader.setConvertCallback(convertMock);
+
+    await downloader.downloadVideo(makeM3u8Video(), 'dl-contig');
+
+    // Verify contiguous byte ranges.
+    expect(capturedRanges).toHaveLength(3);
+    expect(capturedRanges[0]).toEqual({
+      index: 0,
+      startByte: 0,
+      endByte: 4,
+      size: 4,
+      duration: 10.0,
+    });
+    expect(capturedRanges[1]).toEqual({
+      index: 1,
+      startByte: 4,
+      endByte: 8,
+      size: 4,
+      duration: 10.0,
+    });
+    expect(capturedRanges[2]).toEqual({
+      index: 2,
+      startByte: 8,
+      endByte: 12,
+      size: 4,
+      duration: 10.0,
+    });
+
+    // Sum of sizes = total
+    const totalSize = capturedRanges.reduce((sum, r) => sum + r.size, 0);
+    expect(totalSize).toBe(12);
+
+    (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+  });
   test('downloadVideo with m3u8 master playlist picks first variant, fetches, saves as .ts', async () => {
     const masterBlob = makeTextBlob(MASTER_PLAYLIST);
     const variantBlob = makeTextBlob(MEDIA_PLAYLIST);
