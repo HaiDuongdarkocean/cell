@@ -36,7 +36,7 @@ export interface TransmuxResult {
  * @returns `{ success, outputName, error? }`.
  */
 export async function transmuxTsToFmp4(
-  inputFile: File,
+  inputFile: Blob,
   dirHandle: FileSystemDirectoryHandle,
   outputName: string = 'output.mp4',
   onProgress?: (processedBytes: number, totalBytes: number) => void,
