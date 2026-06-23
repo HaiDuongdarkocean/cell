@@ -34,6 +34,7 @@ export type MessageType =
   | 'CONVERT_TS_TO_MP4_V2_RESULT'
   | 'CREATE_OPFS_BLOB_URL'
   | 'REVOKE_OPFS_BLOB_URL'
+  | 'OFFSCREEN_PING'
   | 'PAGE_SCAN_RESULT';
 
 // === Message Request ===

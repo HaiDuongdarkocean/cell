@@ -192,7 +192,7 @@ export class BackgroundService {
         _dirHandle: FileSystemDirectoryHandle,
         downloadId: string,
       ): Promise<ConvertResult> => {
-        await this.offscreenManager.ensureOffscreenDocument();
+        await this.offscreenManager.ensureOffscreenReady();
 
         const request: MessageRequest = {
           type: MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2,
@@ -237,7 +237,7 @@ export class BackgroundService {
         downloadFilename: string,
         mimeType: string,
       ): Promise<void> => {
-        await this.offscreenManager.ensureOffscreenDocument();
+        await this.offscreenManager.ensureOffscreenReady();
 
         const createRequest: MessageRequest = {
           type: MESSAGE_TYPES.CREATE_OPFS_BLOB_URL,

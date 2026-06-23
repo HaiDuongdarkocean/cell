@@ -536,4 +536,26 @@ describe('offscreen ffmpegRunner (V2)', () => {
       expect(activeBlobUrlCount()).toBe(0);
     });
   });
+
+  describe('message listener: OFFSCREEN_PING', () => {
+    it('responds synchronously with success for ping handshake', async () => {
+      await startMessageListener();
+      const listener = onMessageListeners[0];
+
+      const message = { type: MESSAGE_TYPES.OFFSCREEN_PING };
+      const sendResponse = jest.fn();
+
+      const returnValue = listener(
+        message,
+        {} as chrome.runtime.MessageSender,
+        sendResponse,
+      );
+
+      // Ping is synchronous — sendResponse called immediately.
+      expect(sendResponse).toHaveBeenCalledTimes(1);
+      const response = sendResponse.mock.calls[0][0] as { success: boolean };
+      expect(response.success).toBe(true);
+      expect(returnValue).toBe(true);
+    });
+  });
 });

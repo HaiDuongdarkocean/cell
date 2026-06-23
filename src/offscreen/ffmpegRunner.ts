@@ -222,6 +222,14 @@ export async function startMessageListener(): Promise<void> {
       return true;
     }
 
+    if (type === MESSAGE_TYPES.OFFSCREEN_PING) {
+      // Synchronous handshake — respond immediately so the background knows
+      // the offscreen document's listener is registered and ready.
+      const response: MessageResponse = { success: true };
+      sendResponse(response);
+      return true;
+    }
+
     // Not a message we handle.
     return false;
   };

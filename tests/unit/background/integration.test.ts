@@ -213,6 +213,7 @@ describe('Background integration', () => {
     mockDownloader = createMockDownloader();
     mockOffscreen = {
       ensureOffscreenDocument: jest.fn().mockResolvedValue(undefined),
+      ensureOffscreenReady: jest.fn().mockResolvedValue(undefined),
       closeOffscreenDocument: jest.fn().mockResolvedValue(undefined),
       hasDocument: jest.fn().mockReturnValue(false),
     } as unknown as OffscreenManager;
@@ -651,7 +652,7 @@ describe('Background integration', () => {
     const mockDirHandle = {} as FileSystemDirectoryHandle;
     const result = await convertCallback(mockDirHandle, 'dl-1');
 
-    expect(mockOffscreen.ensureOffscreenDocument).toHaveBeenCalled();
+    expect(mockOffscreen.ensureOffscreenReady).toHaveBeenCalled();
     expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2 }),
     );
@@ -769,5 +770,38 @@ describe('OffscreenManager', () => {
     await manager.closeOffscreenDocument();
 
     expect(mockChrome.offscreen.closeDocument).not.toHaveBeenCalled();
+  });
+
+  // 12. ensureOffscreenReady does ping-pong handshake
+  it('ensureOffscreenReady pings until listener responds', async () => {
+    // First ping fails (listener not ready), second succeeds.
+    mockChrome.runtime.sendMessage
+      .mockRejectedValueOnce(new Error('Could not establish connection'))
+      .mockResolvedValueOnce({ success: true });
+
+    await manager.ensureOffscreenReady();
+
+    // Should have called sendMessage at least twice (retry).
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('ensureOffscreenReady throws after max retries if listener never responds', async () => {
+    mockChrome.runtime.sendMessage.mockRejectedValue(
+      new Error('Could not establish connection'),
+    );
+
+    await expect(manager.ensureOffscreenReady()).rejects.toThrow(
+      /did not respond to ping/i,
+    );
+  });
+
+  it('ensureOffscreenReady is cached after first success', async () => {
+    mockChrome.runtime.sendMessage.mockResolvedValue({ success: true });
+
+    await manager.ensureOffscreenReady();
+    await manager.ensureOffscreenReady();
+
+    // Second call should not re-ping (cached).
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
   });
 });
