@@ -675,6 +675,38 @@ describe('Background integration', () => {
       'transmux error',
     );
   });
+
+  it('convert callback throws clear error when offscreen returns undefined (listener not registered)', async () => {
+    const convertCallback = mockDownloader.setConvertCallback.mock
+      .calls[0][0] as (
+      dirHandle: FileSystemDirectoryHandle,
+      downloadId: string,
+    ) => Promise<{ outputName: string; mimeType: string }>;
+
+    // Simulate offscreen listener not registered → sendMessage returns undefined.
+    mockChrome.runtime.sendMessage.mockResolvedValueOnce(undefined);
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    await expect(convertCallback(mockDirHandle, 'dl-1')).rejects.toThrow(
+      /did not respond to CONVERT_TS_TO_MP4_V2/i,
+    );
+  });
+
+  it('saveOpfsFile callback throws clear error when offscreen returns undefined', async () => {
+    const saveCallback = mockDownloader.setSaveOpfsFileCallback.mock
+      .calls[0][0] as (
+      downloadId: string,
+      opfsFilename: string,
+      downloadFilename: string,
+      mimeType: string,
+    ) => Promise<void>;
+
+    mockChrome.runtime.sendMessage.mockResolvedValueOnce(undefined);
+
+    await expect(
+      saveCallback('dl-1', 'input.ts', 'video.ts', 'video/mp2t'),
+    ).rejects.toThrow(/did not respond to CREATE_OPFS_BLOB_URL/i);
+  });
 });
 
 // =====================================================================

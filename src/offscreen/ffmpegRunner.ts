@@ -253,3 +253,41 @@ export function stopMessageListener(): void {
 export function resetFFmpeg(): void {
   stopMessageListener();
 }
+
+// ---------------------------------------------------------------------------
+// Runtime bootstrap
+//
+// When this module is loaded by `ffmpeg.html` as the offscreen document's
+// entry point, it must self-register the message listener. Without this,
+// `chrome.runtime.sendMessage` from the background returns `undefined`
+// (no listener handled the message), and the background crashes with
+// "Cannot read properties of undefined (reading 'success')".
+//
+// Unit tests import this module directly and call `startMessageListener()`
+// / `resetFFmpeg()` themselves, so we must NOT double-register. We guard
+// with a module-level flag AND only auto-register when running in a real
+// extension context (chrome.runtime.onMessage exists and we're not in a
+// Jest test environment).
+// ---------------------------------------------------------------------------
+
+let bootstrapped = false;
+
+/**
+ * Auto-register the message listener when loaded in an offscreen document.
+ * Safe to call multiple times — only registers once. Skipped in test
+ * environments (Jest sets `process.env.JEST_WORKER_ID`).
+ */
+function bootstrapOffscreenListener(): void {
+  if (bootstrapped) return;
+  // Skip in Jest/test environments where tests control listener lifecycle.
+  if (typeof process !== 'undefined' && process.env?.JEST_WORKER_ID) return;
+  // Skip if chrome.runtime.onMessage is unavailable (not an extension context).
+  if (typeof chrome === 'undefined' || !chrome?.runtime?.onMessage) return;
+
+  bootstrapped = true;
+  void startMessageListener().then(() => {
+    console.debug('[offscreen-runner] Message listener bootstrapped');
+  });
+}
+
+bootstrapOffscreenListener();

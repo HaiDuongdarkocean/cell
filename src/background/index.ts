@@ -201,8 +201,14 @@ export class BackgroundService {
 
         const response = (await chrome.runtime.sendMessage(
           request,
-        )) as MessageResponse<ConvertTsToMp4V2ResultPayload>;
+        )) as MessageResponse<ConvertTsToMp4V2ResultPayload> | undefined;
 
+        if (!response) {
+          throw new Error(
+            'Offscreen document did not respond to CONVERT_TS_TO_MP4_V2. ' +
+              'The offscreen listener may not have registered.',
+          );
+        }
         if (!response.success || !response.data) {
           throw new Error(response.error ?? 'transmux conversion failed');
         }
@@ -244,8 +250,14 @@ export class BackgroundService {
 
         const createResponse = (await chrome.runtime.sendMessage(
           createRequest,
-        )) as MessageResponse<CreateOpfsBlobUrlResultPayload>;
+        )) as MessageResponse<CreateOpfsBlobUrlResultPayload> | undefined;
 
+        if (!createResponse) {
+          throw new Error(
+            'Offscreen document did not respond to CREATE_OPFS_BLOB_URL. ' +
+              'The offscreen listener may not have registered.',
+          );
+        }
         if (!createResponse.success || !createResponse.data) {
           throw new Error(
             createResponse.error ?? 'Failed to create Blob URL for save',

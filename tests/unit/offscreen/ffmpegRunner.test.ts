@@ -334,6 +334,70 @@ describe('offscreen ffmpegRunner (V2)', () => {
     });
   });
 
+  describe('runtime bootstrap', () => {
+    it('auto-registers listener when imported in extension context (no JEST_WORKER_ID)', async () => {
+      // Temporarily clear JEST_WORKER_ID to simulate non-test environment,
+      // then dynamically re-import the module to trigger bootstrap.
+      const originalWorkerId = process.env.JEST_WORKER_ID;
+      delete process.env.JEST_WORKER_ID;
+
+      // Clear the module cache so bootstrap runs again on re-import.
+      jest.resetModules();
+      // Re-mock dependencies after resetModules.
+      jest.doMock('@/lib/storage/opfsStorage', () => ({
+        ensureDownloadSubdir: jest.fn(),
+        readFile: jest.fn(),
+        deleteFile: jest.fn(),
+        deleteDownloadSubdir: jest.fn(),
+        isOpfsAvailable: jest.fn().mockReturnValue(true),
+        createOpfsWriter: jest.fn(),
+      }));
+      jest.doMock('@/lib/converters/tsTransmuxer', () => ({
+        transmuxTsToFmp4: jest.fn(),
+      }));
+
+      // chrome mock is on globalThis; resetModules doesn't clear globals.
+      // The addListener mock should capture the bootstrap registration.
+      const addListenerSpy = chromeMock.runtime.onMessage.addListener;
+      addListenerSpy.mockClear();
+
+      await import('@/offscreen/ffmpegRunner');
+
+      // Bootstrap calls startMessageListener() which calls addListener.
+      // Wait a microtask for the async startMessageListener to resolve.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(addListenerSpy).toHaveBeenCalled();
+
+      // Restore test environment.
+      process.env.JEST_WORKER_ID = originalWorkerId;
+    });
+
+    it('does NOT auto-register in test environment (JEST_WORKER_ID set)', async () => {
+      // JEST_WORKER_ID is set by Jest, so bootstrap should skip.
+      jest.resetModules();
+      jest.doMock('@/lib/storage/opfsStorage', () => ({
+        ensureDownloadSubdir: jest.fn(),
+        readFile: jest.fn(),
+        deleteFile: jest.fn(),
+        deleteDownloadSubdir: jest.fn(),
+        isOpfsAvailable: jest.fn().mockReturnValue(true),
+        createOpfsWriter: jest.fn(),
+      }));
+      jest.doMock('@/lib/converters/tsTransmuxer', () => ({
+        transmuxTsToFmp4: jest.fn(),
+      }));
+
+      const addListenerSpy = chromeMock.runtime.onMessage.addListener;
+      const callCountBefore = addListenerSpy.mock.calls.length;
+
+      await import('@/offscreen/ffmpegRunner');
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // No new addListener calls from bootstrap (JEST_WORKER_ID is set).
+      expect(addListenerSpy.mock.calls.length).toBe(callCountBefore);
+    });
+  });
+
   describe('createOpfsBlobUrl', () => {
     it('reads an OPFS file and returns a Blob URL', async () => {
       const dir = new MockDirHandle();
