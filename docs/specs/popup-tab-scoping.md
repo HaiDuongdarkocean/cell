@@ -136,34 +136,38 @@ Task 5 (architecture doc) → phụ thuộc Task 2,3,4
 
 # Phase 3: Tasks
 
-### Task 1: Thêm `tabId` vào `DetectedMediaUpdatePayload`
+### Task 1: Thêm `tabId` vào `DetectedMediaUpdatePayload` — ✅ DONE
 - **Acceptance:** `DetectedMediaUpdatePayload` có field `tabId: number` (non-optional). Typecheck pass.
 - **Verify:** `npm run typecheck` — TS sẽ báo lỗi ở mọi chỗ construct payload chưa có `tabId` (dẫn đường tới Task 2).
 - **Files:** `src/types/message.ts`
+- **Commit:** `799f4f2`
 
-### Task 2: Sửa `handleGetDetectedMedia` + broadcast — bỏ fallback all-media, thêm `tabId` vào payload
+### Task 2: Sửa `handleGetDetectedMedia` + broadcast — bỏ fallback all-media, thêm `tabId` vào payload — ✅ DONE
 - **Acceptance:**
   - `handleGetDetectedMedia` trả empty khi `tabId` không có hoặc tab trống — KHÔNG fallback `getAllVideos`/`getAllSubtitles`.
   - Broadcast `DETECTED_MEDIA_UPDATE` (background/index.ts:189-195) thêm `tabId` của tab phát hiện vào payload.
   - Broadcast re-enrich (background/index.ts:535) cũng thêm `tabId`.
   - Broadcast page-scan (background/index.ts:970) cũng thêm `tabId`.
 - **Verify:** Unit test `handleGetDetectedMedia`: tab A trống + tab B có media → response chỉ `{videos:[], subtitles:[]}`. Test broadcast payload có `tabId`.
-- **Files:** `src/background/index.ts`, `tests/unit/background/integration.test.ts` (hoặc `index.test.ts` nếu có)
+- **Files:** `src/background/index.ts`, `tests/unit/background/integration.test.ts`
+- **Commit:** `799f4f2`
 
-### Task 3: Sửa `useDetectedMedia` — query active tab, gửi `tabId`, filter broadcast
+### Task 3: Sửa `useDetectedMedia` — query active tab, gửi `tabId`, filter broadcast — ✅ DONE
 - **Acceptance:**
-  - Hook query active tab khi mount (pattern `App.redesigned.tsx:164-176`), lưu `tabId` vào ref/state.
+  - Hook query active tab khi mount (pattern `App.redesigned.tsx:164-176`), lưu `tabId` vào ref.
   - `GET_DETECTED_MEDIA` request kèm `tabId`.
   - Listener `DETECTED_MEDIA_UPDATE` chỉ `setVideos`/`setSubtitles` khi `payload.tabId === tabId` của popup.
 - **Verify:** Unit test hook: broadcast `tabId=B` khi hook ở `tabId=A` → store không đổi. Broadcast `tabId=A` → store update.
-- **Files:** `src/popup/hooks/useDetectedMedia.ts`, `tests/unit/popup/useDetectedMedia.test.ts` (tạo mới — hiện chưa có)
+- **Files:** `src/popup/hooks/useDetectedMedia.ts`, `tests/components/hooks.test.tsx`
+- **Commit:** `df3cea1`
 
-### Task 4: Sửa `handleDownloadAll` — bỏ fallback all-media
+### Task 4: Sửa `handleDownloadAll` — bỏ fallback all-media — ✅ DONE
 - **Acceptance:** `handleDownloadAll` với `tabId=A` (A trống) → trả `{success: false, error: 'No media found for this tab'}`, KHÔNG tải all-media.
 - **Verify:** Unit test: tab A trống + tab B có media → `handleDownloadAll({tabId:A})` trả error, `downloadQueue.addAll` không được gọi với media B.
 - **Files:** `src/background/index.ts`, `tests/unit/background/integration.test.ts`
+- **Commit:** `799f4f2`
 
-### Task 5: Cập nhật `docs/architechture-system.md`
+### Task 5: Cập nhật `docs/architechture-system.md` — ✅ DONE
 - **Acceptance:** Document note về tab-scoping: popup filter broadcast theo `tabId`, không fallback all-media, capture vẫn global per-tab.
 - **Verify:** Đọc lại file, confirm phản ánh đúng code sau Task 2-4.
 - **Files:** `docs/architechture-system.md`

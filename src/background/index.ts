@@ -511,6 +511,29 @@ export class BackgroundService {
   }
 
   /**
+   * Reload the active tab so the content script re-injects and re-scans
+   * the page. Used when the extension is re-enabled, so media detection
+   * starts fresh instead of relying on stale state from before disable.
+   *
+   * Silently skips chrome:// and other restricted URLs where `tabs.reload`
+   * is not permitted.
+   */
+  private async reloadActiveTab(): Promise<void> {
+    const tabId = await this.getActiveTabId();
+    if (tabId === undefined) return;
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      // Skip restricted URLs that cannot be reloaded.
+      if (tab.url && /^(chrome|edge|about|chrome-extension):/i.test(tab.url)) {
+        return;
+      }
+      await chrome.tabs.reload(tabId);
+    } catch {
+      // Tab may have been closed or be restricted; ignore.
+    }
+  }
+
+  /**
    * Enrich a detected video with the actual page URL and title from the tab
    * it was detected on. The video detector only has the stream URL (e.g.
    * `https://cdn.example.com/index.m3u8`), which is useless for filename
@@ -876,6 +899,10 @@ export class BackgroundService {
     if (this.extensionActive) {
       this.networkInterceptor.start();
       void this.updateBadgeForActiveTab();
+      // Reload the active tab so the content script re-scans the page with
+      // the network interceptor active. Without this, media detected before
+      // the extension was disabled stays stale until the next navigation.
+      void this.reloadActiveTab();
     } else {
       this.networkInterceptor.stop();
       this.clearBadge();

@@ -170,10 +170,14 @@ Trang web load
   → Dedup theo url+tabId
   → videos.set(id, video)
   → notifyListeners(tabId)
-  → broadcast DETECTED_MEDIA_UPDATE
+  → broadcast DETECTED_MEDIA_UPDATE { videos, subtitles, tabId }  ← tab-scoped payload
   → enrichVideo() (async: chrome.tabs.get → update title+tabUrl)
-  → re-broadcast DETECTED_MEDIA_UPDATE
-  → popup useDetectedMedia → setVideos/setSubtitles
+  → re-broadcast DETECTED_MEDIA_UPDATE { ..., tabId: video.tabId }
+  → popup useDetectedMedia:
+      - query active tab → tabIdRef
+      - GET_DETECTED_MEDIA { tabId } → background trả chỉ media tab đó (KHÔNG fallback all-tab)
+      - listener filter: payload.tabId === tabIdRef → setVideos/setSubtitles
+      - broadcast từ tab nền (tabId ≠ active) → IGNORE
   → VideoCard/SubtitleCard render với displayTitle
 ```
 
@@ -182,7 +186,8 @@ Trang web load
 User click Download All
   → App.redesigned: query active tab → send DOWNLOAD_ALL {tabId}
   → background handleDownloadAll
-  → getMedia(tabId) hoặc fallback getAllVideos/getAllSubtitles
+  → getMedia(tabId) — KHÔNG fallback getAllVideos/getAllSubtitles
+  → nếu tab trống → return error "No media found for this tab"
   → createDownloadItem() cho mỗi media
   → downloadQueue.addAll(items)
   → queue executor: downloader.downloadVideo() / downloadSubtitle()

@@ -102,6 +102,7 @@ function createMockChrome(): MockChrome {
     tabs: {
       query: jest.fn().mockResolvedValue([{ id: 123 }]),
       get: jest.fn().mockResolvedValue({ id: 123, url: 'https://example.com/page', title: 'Test Page' }),
+      reload: jest.fn().mockResolvedValue(undefined),
       onUpdated: createMockListener(),
       onRemoved: createMockListener(),
       onActivated: createMockListener(),
@@ -708,6 +709,52 @@ describe('Background integration', () => {
     expect(response.data?.active).toBe(true);
     // start() adds a listener; should have been called twice total (init + re-start)
     expect(mockChrome.webRequest.onBeforeRequest.addListener).toHaveBeenCalledTimes(2);
+  });
+
+  it('TOGGLE_EXTENSION reloads the active tab when toggled back to active', async () => {
+    // First toggle: active → inactive (no reload on disable)
+    await messageBus.handleMessage(
+      { type: MESSAGE_TYPES.TOGGLE_EXTENSION },
+      { id: 'popup' },
+    );
+    mockChrome.tabs.reload.mockClear();
+
+    // Second toggle: inactive → active (should reload active tab)
+    await messageBus.handleMessage(
+      { type: MESSAGE_TYPES.TOGGLE_EXTENSION },
+      { id: 'popup' },
+    );
+
+    expect(mockChrome.tabs.reload).toHaveBeenCalledWith(123);
+  });
+
+  it('TOGGLE_EXTENSION does not reload the active tab when disabled', async () => {
+    mockChrome.tabs.reload.mockClear();
+    await messageBus.handleMessage(
+      { type: MESSAGE_TYPES.TOGGLE_EXTENSION },
+      { id: 'popup' },
+    );
+    expect(mockChrome.tabs.reload).not.toHaveBeenCalled();
+  });
+
+  it('TOGGLE_EXTENSION skips reload on restricted chrome:// URLs', async () => {
+    // First toggle: active → inactive
+    await messageBus.handleMessage(
+      { type: MESSAGE_TYPES.TOGGLE_EXTENSION },
+      { id: 'popup' },
+    );
+    // Make the active tab a restricted URL
+    mockChrome.tabs.get.mockResolvedValueOnce({
+      id: 123,
+      url: 'chrome://settings/',
+      title: 'Settings',
+    });
+    // Second toggle: inactive → active (should NOT reload)
+    await messageBus.handleMessage(
+      { type: MESSAGE_TYPES.TOGGLE_EXTENSION },
+      { id: 'popup' },
+    );
+    expect(mockChrome.tabs.reload).not.toHaveBeenCalled();
   });
 
   it('GET_EXTENSION_STATUS returns the current active state', async () => {
