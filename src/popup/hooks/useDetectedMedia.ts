@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePopupStore } from '@/popup/store/popupStore';
 import type {
   DetectedVideo,
@@ -11,11 +11,17 @@ import type {
 } from '@/types/message';
 
 /**
- * Subscribes to detected media from the background script.
+ * Subscribes to detected media from the background script, scoped to the
+ * active tab.
  *
- * On mount it requests the current detected media via `GET_DETECTED_MEDIA`
- * and subscribes to live `DETECTED_MEDIA_UPDATE` broadcasts. The hook returns
- * the latest `{ videos, subtitles }` from the popup store.
+ * On mount it queries the active browser tab, stores its id, then requests
+ * the current detected media via `GET_DETECTED_MEDIA` (passing the tabId so
+ * the background returns only that tab's media). It also subscribes to live
+ * `DETECTED_MEDIA_UPDATE` broadcasts and ignores any whose `tabId` does not
+ * match the active tab — this prevents media from background tabs leaking
+ * into the popup of the focused tab.
+ *
+ * The hook returns the latest `{ videos, subtitles }` from the popup store.
  */
 export function useDetectedMedia(): {
   videos: DetectedVideo[];
@@ -26,34 +32,12 @@ export function useDetectedMedia(): {
   const setVideos = usePopupStore((state) => state.setVideos);
   const setSubtitles = usePopupStore((state) => state.setSubtitles);
 
+  // Keep the active tabId in a ref so the broadcast listener (created once)
+  // always reads the latest value without re-subscribing.
+  const tabIdRef = useRef<number | undefined>(undefined);
+
   useEffect(() => {
-    const request: MessageRequest = { type: 'GET_DETECTED_MEDIA' };
     let cancelled = false;
-
-    // Retry sending the message — the service worker may need a moment to
-    // wake up and register its listeners ("Receiving end does not exist").
-    const sendWithRetry = async (retries = 3, delayMs = 500): Promise<void> => {
-      for (let attempt = 0; attempt < retries; attempt++) {
-        if (cancelled) return;
-        try {
-          const response = (await chrome.runtime.sendMessage(
-            request,
-          )) as MessageResponse<DetectedMediaUpdatePayload>;
-          if (cancelled) return;
-          if (response?.success && response.data) {
-            setVideos(response.data.videos);
-            setSubtitles(response.data.subtitles);
-          }
-          return; // success — stop retrying
-        } catch {
-          if (attempt < retries - 1) {
-            await new Promise((r) => setTimeout(r, delayMs));
-          }
-        }
-      }
-    };
-
-    void sendWithRetry();
 
     const listener = (
       request: MessageRequest,
@@ -62,7 +46,8 @@ export function useDetectedMedia(): {
     ): boolean => {
       if (request.type === 'DETECTED_MEDIA_UPDATE') {
         const payload = request.payload as DetectedMediaUpdatePayload;
-        if (payload) {
+        // Only apply updates for the active tab; ignore background tabs.
+        if (payload && payload.tabId === tabIdRef.current) {
           setVideos(payload.videos);
           setSubtitles(payload.subtitles);
         }
@@ -71,6 +56,71 @@ export function useDetectedMedia(): {
     };
 
     chrome.runtime.onMessage.addListener(listener);
+
+    // Query the active tab in the browser window (not the popup window),
+    // then send GET_DETECTED_MEDIA scoped to that tab.
+    const init = async (): Promise<void> => {
+      let activeTabId: number | undefined;
+      try {
+        const tabs = await chrome.tabs.query({
+          active: true,
+          currentWindow: false,
+        });
+        activeTabId = tabs[0]?.id;
+        if (activeTabId === undefined) {
+          const [tab] = await chrome.tabs.query({
+            active: true,
+            lastFocusedWindow: true,
+          });
+          activeTabId = tab?.id;
+        }
+      } catch {
+        // leave activeTabId undefined
+      }
+
+      if (cancelled) return;
+      tabIdRef.current = activeTabId;
+
+      if (activeTabId === undefined) {
+        // No active tab → nothing to fetch. Leave the store empty.
+        return;
+      }
+
+      const request: MessageRequest = {
+        type: 'GET_DETECTED_MEDIA',
+        payload: { tabId: activeTabId },
+      };
+
+      // Retry sending the message — the service worker may need a moment to
+      // wake up and register its listeners ("Receiving end does not exist").
+      const sendWithRetry = async (
+        retries = 3,
+        delayMs = 500,
+      ): Promise<void> => {
+        for (let attempt = 0; attempt < retries; attempt++) {
+          if (cancelled) return;
+          try {
+            const response = (await chrome.runtime.sendMessage(
+              request,
+            )) as MessageResponse<DetectedMediaUpdatePayload>;
+            if (cancelled) return;
+            if (response?.success && response.data) {
+              setVideos(response.data.videos);
+              setSubtitles(response.data.subtitles);
+            }
+            return; // success — stop retrying
+          } catch {
+            if (attempt < retries - 1) {
+              await new Promise((r) => setTimeout(r, delayMs));
+            }
+          }
+        }
+      };
+
+      void sendWithRetry();
+    };
+
+    void init();
 
     return () => {
       cancelled = true;

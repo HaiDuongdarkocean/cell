@@ -60,13 +60,27 @@ function createChromeMock(): ChromeRuntimeMock {
   };
 }
 
+interface ChromeTabsMock {
+  query: jest.MockedFunction<
+    (queryInfo: chrome.tabs.QueryInfo) => Promise<chrome.tabs.Tab[]>
+  >;
+}
+
 let chromeMock: ChromeRuntimeMock;
+let tabsMock: ChromeTabsMock;
 
 beforeEach(() => {
   chromeMock = createChromeMock();
+  tabsMock = {
+    // Default active tab id = 1 (matches mockVideo.tabId).
+    query: jest.fn((_q: chrome.tabs.QueryInfo): Promise<chrome.tabs.Tab[]> =>
+      Promise.resolve([{ id: 1 } as chrome.tabs.Tab]),
+    ),
+  };
   (global as unknown as {
     chrome: {
       runtime: ChromeRuntimeMock;
+      tabs: ChromeTabsMock;
       storage: {
         local: {
           set: jest.MockedFunction<(items: Record<string, unknown>) => Promise<void>>;
@@ -76,6 +90,7 @@ beforeEach(() => {
     };
   }).chrome = {
     runtime: chromeMock,
+    tabs: tabsMock,
     storage: {
       local: {
         set: jest.fn((_items: Record<string, unknown>): Promise<void> =>
@@ -137,7 +152,7 @@ describe('useDetectedMedia', () => {
     expect(result.current.subtitles).toEqual([mockSubtitle]);
   });
 
-  it('sends GET_DETECTED_MEDIA on mount and updates the store with the response', async () => {
+  it('sends GET_DETECTED_MEDIA with the active tabId on mount and updates the store with the response', async () => {
     const mediaPayload: DetectedMediaUpdatePayload = {
       videos: [mockVideo],
       subtitles: [mockSubtitle],
@@ -151,21 +166,28 @@ describe('useDetectedMedia', () => {
 
     renderHook(() => useDetectedMedia());
 
-    // Wait for the sendMessage promise to resolve.
+    // Wait for the async tab query + sendMessage promise to resolve.
+    await Promise.resolve();
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
     expect(chromeMock.sendMessage).toHaveBeenCalledWith({
       type: 'GET_DETECTED_MEDIA',
+      payload: { tabId: 1 },
     });
     expect(usePopupStore.getState().videos).toEqual([mockVideo]);
     expect(usePopupStore.getState().subtitles).toEqual([mockSubtitle]);
   });
 
-  it('subscribes to DETECTED_MEDIA_UPDATE messages and updates the store', () => {
+  it('subscribes to DETECTED_MEDIA_UPDATE messages and updates the store when tabId matches', async () => {
     chromeMock.sendMessage.mockResolvedValue({ success: true } as MessageResponse);
 
     renderHook(() => useDetectedMedia());
+
+    // Wait for the async tab query to resolve so tabIdRef is populated.
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect(chromeMock.onMessage.addListener).toHaveBeenCalledTimes(1);
     const listener = chromeMock.onMessage.listeners[0];
@@ -186,6 +208,60 @@ describe('useDetectedMedia', () => {
 
     expect(usePopupStore.getState().videos).toEqual([mockVideo]);
     expect(usePopupStore.getState().subtitles).toEqual([mockSubtitle]);
+  });
+
+  it('ignores DETECTED_MEDIA_UPDATE messages from a different tab', async () => {
+    chromeMock.sendMessage.mockResolvedValue({ success: true } as MessageResponse);
+
+    renderHook(() => useDetectedMedia());
+
+    // Wait for the async tab query to resolve so tabIdRef is populated (tabId=1).
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const listener = chromeMock.onMessage.listeners[0];
+
+    // Seed the store with tab-1 media so we can detect a (wrong) overwrite.
+    usePopupStore.getState().setVideos([mockVideo]);
+    usePopupStore.getState().setSubtitles([mockSubtitle]);
+
+    const otherTabVideo: DetectedVideo = { ...mockVideo, id: 'video-99', tabId: 99 };
+    const otherTabSub: DetectedSubtitle = { ...mockSubtitle, id: 'sub-99', tabId: 99 };
+    const updatePayload: DetectedMediaUpdatePayload = {
+      videos: [otherTabVideo],
+      subtitles: [otherTabSub],
+      tabId: 99,
+    };
+    const message: MessageRequest = {
+      type: 'DETECTED_MEDIA_UPDATE',
+      payload: updatePayload,
+    };
+
+    act(() => {
+      listener(message, {} as chrome.runtime.MessageSender, jest.fn());
+    });
+
+    // Store must NOT be overwritten by tab-99 media.
+    expect(usePopupStore.getState().videos).toEqual([mockVideo]);
+    expect(usePopupStore.getState().subtitles).toEqual([mockSubtitle]);
+  });
+
+  it('does not update the store when active tab query returns no tab', async () => {
+    tabsMock.query.mockResolvedValue([]);
+    chromeMock.sendMessage.mockResolvedValue({
+      success: true,
+      data: { videos: [mockVideo], subtitles: [], tabId: 0 },
+    } as MessageResponse<DetectedMediaUpdatePayload>);
+
+    renderHook(() => useDetectedMedia());
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // No tabId → no GET_DETECTED_MEDIA sent → store stays empty.
+    expect(chromeMock.sendMessage).not.toHaveBeenCalled();
+    expect(usePopupStore.getState().videos).toEqual([]);
   });
 
   it('removes the listener on unmount', () => {
