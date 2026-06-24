@@ -15,8 +15,8 @@ Popup opened for tab A showed media from background tab B. Root cause: `handleGe
 ### Key insight
 Chrome MV3 `chrome.runtime.sendMessage` cannot target a specific tab — broadcasts fan out to every listener. Since only one popup is active at a time, the popup filters by `tabId` in the payload rather than the background trying to target a tab.
 
-### Pre-existing e2e issues (NOT regressions)
-- `redesigned-popup.spec.ts:24` and `m3u8-local.spec.ts:65` fail with strict mode violation: `[data-testid="empty-media"]` resolves to 2 elements (media-section + downloads-section share the same testid). Fix: scope the locator, e.g. `getByTestId('media-section').getByTestId('empty-media')`.
+### Pre-existing e2e issues (fixed)
+- `redesigned-popup.spec.ts` and `m3u8-local.spec.ts` previously failed with strict mode violation: `[data-testid="empty-media"]` resolved to 2 elements (media-section + downloads-section share the same testid). Fixed by scoping the locator: `[data-testid="media-section"] [data-testid="empty-media"]`.
 
 ## Commands
 ```
