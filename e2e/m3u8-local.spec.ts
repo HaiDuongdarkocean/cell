@@ -48,7 +48,10 @@ test.describe('M3U8 download (local fixture)', () => {
         // Either video cards are shown (detection succeeded) or empty state.
         // We primarily check that the popup doesn't crash.
         const videoCards = popup.locator('[data-testid="video-card"]');
-        const emptyState = popup.locator('[data-testid="empty-media"]');
+        // Scope to media-section — downloads-section also has empty-media testid.
+        const emptyState = popup.locator(
+          '[data-testid="media-section"] [data-testid="empty-media"]',
+        );
 
         const videoCount = await videoCards.count();
         if (videoCount > 0) {

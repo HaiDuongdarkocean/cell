@@ -21,7 +21,10 @@ test.describe('redesigned popup UI', () => {
       await expect(popup.locator('[data-testid="downloads-section"]')).toBeVisible();
 
       // Empty state should be visible (no media detected on blank tab).
-      await expect(popup.locator('[data-testid="empty-media"]')).toBeVisible();
+      // Scope to media-section — downloads-section also has empty-media testid.
+      await expect(
+        popup.locator('[data-testid="media-section"] [data-testid="empty-media"]'),
+      ).toBeVisible();
 
       await popup.close();
     } finally {
