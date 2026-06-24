@@ -902,7 +902,7 @@ export class BackgroundService {
       // Reload the active tab so the content script re-scans the page with
       // the network interceptor active. Without this, media detected before
       // the extension was disabled stays stale until the next navigation.
-      void this.reloadActiveTab();
+      await this.reloadActiveTab();
     } else {
       this.networkInterceptor.stop();
       this.clearBadge();

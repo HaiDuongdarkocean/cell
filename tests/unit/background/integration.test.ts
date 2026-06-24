@@ -51,6 +51,7 @@ interface MockChrome {
   tabs: {
     query: jest.Mock;
     get: jest.Mock;
+    reload: jest.Mock;
     onUpdated: MockListener;
     onRemoved: MockListener;
     onActivated: MockListener;
