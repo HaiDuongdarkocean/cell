@@ -1,68 +1,285 @@
+/* === Card container — vertical stack: main row + optional URL panel === */
 .card {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
-  margin-bottom: var(--spacing-sm);
-  transition: border-color var(--transition-fast) var(--ease-standard),
-    box-shadow var(--transition-fast) var(--ease-standard);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition);
+  border: 2px solid transparent;
+  animation: fade-in 300ms ease;
+  overflow: hidden;
 }
 
 .card:hover {
-  border-color: var(--color-border-focus);
-  box-shadow: var(--shadow-sm);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
 }
 
-.cardHeader {
+/* Selected state */
+.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.selected:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+/* Downloading state */
+.downloading {
+  opacity: 0.5;
+  cursor: default;
+  border-color: var(--color-border);
+}
+
+.downloading:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* === Fade-in animation === */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* === Main row — horizontal: icon | body | actions === */
+.mainRow {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-sm);
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  cursor: pointer;
 }
 
-.cardTitle {
+.downloading .mainRow {
+  cursor: default;
+}
+
+/* === Icon — 40px circular === */
+.icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.subtitleIcon {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+}
+
+/* === Body === */
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: var(--spacing-xs);
+}
+
+.tagRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.languageTag {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+/* === Actions — expand chevron + download button === */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.expandBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  padding: 0;
+}
+
+.expandBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.expandBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
+}
+
+.expandChevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 200ms ease;
+}
+
+.expandChevronOpen {
+  transform: rotate(180deg);
+}
+
+.action {
+  flex-shrink: 0;
+}
+
+.downloadBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.downloadBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+}
+
+.downloadBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.downloadBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
+}
+
+/* Downloading spinner */
+.downloadingIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--color-text-muted);
+}
+
+.downloadingIndicator svg {
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* === URL panel — expands below main row === */
+.urlPanel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-background);
+  animation: slide-down 200ms ease;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 60px; }
+}
+
+.copyBtn {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
   flex: 1;
   min-width: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font-family);
+  text-align: left;
+  transition: color var(--transition);
 }
 
-.subtitleIcon {
-  color: var(--color-secondary);
+.copyBtn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-muted);
   flex-shrink: 0;
+  transition: color var(--transition);
 }
 
-.title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  margin: 0;
-  color: var(--color-text);
+.copyBtn:hover svg {
+  color: var(--color-primary);
+}
+
+.urlText {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: var(--font-family);
+  user-select: all;
+  transition: color var(--transition);
+}
+
+.copyBtn:hover .urlText {
+  color: var(--color-primary);
+}
+
+.copiedBadge {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-inverse);
+  background: var(--color-success);
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--radius-sm);
   white-space: nowrap;
-}
-
-.cardBody {
-  margin-bottom: var(--spacing-md);
-}
-
-.metadata {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.metadataItem {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
-.cardFooter {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.downloadButton {
-  width: 100%;
+  flex-shrink: 0;
+  animation: fade-in 150ms ease;
 }

@@ -1,4 +1,7 @@
 import type {
+  ByteRange,
+  HlsEncryption,
+  HlsInitSegment,
   M3u8Playlist,
   M3u8Variant,
   TsSegment,
@@ -27,9 +30,14 @@ export function parseM3u8(content: string, baseUrl?: string): M3u8Playlist {
   let isMasterPlaylist = false;
   const segments: TsSegment[] = [];
   const variants: M3u8Variant[] = [];
+  let encryption: HlsEncryption | undefined;
+  let initSegment: HlsInitSegment | undefined;
+  let hasEndlist = false;
 
   let pendingExtinfDuration: number | null = null;
   let pendingStreamInfAttrs: Record<string, string> | null = null;
+  let pendingByteRange: ByteRange | null = null;
+  let pendingDiscontinuity = false;
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
@@ -75,6 +83,47 @@ export function parseM3u8(content: string, baseUrl?: string): M3u8Playlist {
         continue;
       }
 
+      if (line.startsWith('#EXT-X-KEY:')) {
+        const attrs = parseAttributes(line.slice('#EXT-X-KEY:'.length));
+        const method = attrs['METHOD'] ?? 'NONE';
+        const keyUri = attrs['URI'] ? resolveUrl(attrs['URI'], baseUrl) : '';
+        const iv = attrs['IV'];
+        if (method === 'NONE') {
+          encryption = undefined;
+        } else {
+          encryption = { method, keyUri, iv };
+        }
+        continue;
+      }
+
+      if (line.startsWith('#EXT-X-MAP:')) {
+        const attrs = parseAttributes(line.slice('#EXT-X-MAP:'.length));
+        const uri = attrs['URI'] ? resolveUrl(attrs['URI'], baseUrl) : '';
+        const byteRangeStr = attrs['BYTERANGE'];
+        let mapByteRange: ByteRange | undefined;
+        if (byteRangeStr) {
+          mapByteRange = parseByteRange(byteRangeStr);
+        }
+        initSegment = { uri, byteRange: mapByteRange };
+        continue;
+      }
+
+      if (line.startsWith('#EXT-X-BYTERANGE:')) {
+        const value = line.slice('#EXT-X-BYTERANGE:'.length).trim();
+        pendingByteRange = parseByteRange(value);
+        continue;
+      }
+
+      if (line.startsWith('#EXT-X-DISCONTINUITY')) {
+        pendingDiscontinuity = true;
+        continue;
+      }
+
+      if (line.startsWith('#EXT-X-ENDLIST')) {
+        hasEndlist = true;
+        continue;
+      }
+
       // Unknown / other tags: skip gracefully
       continue;
     }
@@ -102,8 +151,12 @@ export function parseM3u8(content: string, baseUrl?: string): M3u8Playlist {
       segments.push({
         url: resolvedUrl,
         duration: pendingExtinfDuration,
+        byteRange: pendingByteRange ?? undefined,
+        discontinuity: pendingDiscontinuity || undefined,
       });
       pendingExtinfDuration = null;
+      pendingByteRange = null;
+      pendingDiscontinuity = false;
       continue;
     }
 
@@ -120,7 +173,26 @@ export function parseM3u8(content: string, baseUrl?: string): M3u8Playlist {
     segments,
     isMasterPlaylist,
     variants,
+    encryption,
+    initSegment,
+    hasEndlist,
   };
+}
+
+/**
+ * Parses a byte-range string (e.g. "1000000@500000" or "1000000") into a
+ * ByteRange object. The offset is optional — when absent, it equals the
+ * byte after the previous segment in the same media file.
+ */
+function parseByteRange(value: string): ByteRange {
+  const atIdx = value.indexOf('@');
+  if (atIdx >= 0) {
+    const length = Number.parseInt(value.slice(0, atIdx).trim(), 10);
+    const offset = Number.parseInt(value.slice(atIdx + 1).trim(), 10);
+    return { length: Number.isNaN(length) ? 0 : length, offset: Number.isNaN(offset) ? undefined : offset };
+  }
+  const length = Number.parseInt(value.trim(), 10);
+  return { length: Number.isNaN(length) ? 0 : length };
 }
 
 /**
@@ -216,11 +288,25 @@ function assignVariantQualities(variants: M3u8Variant[]): void {
 /**
  * Resolves a possibly-relative URL against a base URL.
  * Absolute URLs (http/https) are returned unchanged.
+ *
+ * **Query param carry-over:** If the resolved URL has no query params but
+ * the base URL does, the base URL's query params are appended. This is
+ * critical for signed HLS URLs (e.g. streamfree.vip) where auth tokens
+ * live in the master playlist's query string and must be present on all
+ * segment/variant requests.
  */
 function resolveUrl(url: string, baseUrl?: string): string {
   if (!baseUrl) return url;
   try {
-    return new URL(url, baseUrl).href;
+    const resolved = new URL(url, baseUrl);
+    // Carry over query params from base URL if resolved URL has none.
+    if (!resolved.search && baseUrl.includes('?')) {
+      const baseQuery = baseUrl.slice(baseUrl.indexOf('?') + 1);
+      if (baseQuery) {
+        resolved.search = baseQuery;
+      }
+    }
+    return resolved.href;
   } catch {
     return url;
   }

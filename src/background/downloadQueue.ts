@@ -83,6 +83,39 @@ export class DownloadQueue {
     this.processNext();
   }
 
+  /**
+   * Retry a failed download by resetting its state and re-queuing it.
+   * Clears error, resets progress to 0, and sets status back to 'queued'.
+   * No-op if the item doesn't exist or isn't in an error/cancelled state.
+   */
+  retry(id: string): void {
+    const item = this.items.get(id);
+    if (!item) return;
+    if (item.status !== 'error' && item.status !== 'cancelled') return;
+
+    this.items.set(id, {
+      ...item,
+      status: 'queued',
+      progress: 0,
+      error: undefined,
+      downloadProgress: undefined,
+      convertProgress: undefined,
+      startedAt: undefined,
+      completedAt: undefined,
+    });
+    this.processNext();
+  }
+
+  /**
+   * Remove a download item from the queue entirely. Used for cleaning up
+   * completed or errored downloads from the UI. No-op if the item doesn't
+   * exist. Does NOT cancel an active download — use `cancel()` first if the
+   * item is still running.
+   */
+  remove(id: string): void {
+    this.items.delete(id);
+  }
+
   /** Get all download items. */
   getAll(): DownloadItem[] {
     return Array.from(this.items.values());
@@ -102,7 +135,15 @@ export class DownloadQueue {
       ...item,
       progress: progress.progress,
       status: progress.status,
-      error: progress.error,
+      ...(progress.error !== undefined ? { error: progress.error } : {}),
+      ...(progress.fileSize !== undefined ? { fileSize: progress.fileSize } : {}),
+      ...(progress.downloadedBytes !== undefined ? { downloadedBytes: progress.downloadedBytes } : {}),
+      ...(progress.processedBytes !== undefined ? { processedBytes: progress.processedBytes } : {}),
+      ...(progress.conversionPhase !== undefined ? { conversionPhase: progress.conversionPhase } : {}),
+      ...(progress.workerCount !== undefined ? { workerCount: progress.workerCount } : {}),
+      ...(progress.usedWorkers !== undefined ? { usedWorkers: progress.usedWorkers } : {}),
+      ...(progress.downloadProgress !== undefined ? { downloadProgress: progress.downloadProgress } : {}),
+      ...(progress.convertProgress !== undefined ? { convertProgress: progress.convertProgress } : {}),
     });
 
     for (const listener of this.listeners) {

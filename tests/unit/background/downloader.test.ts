@@ -1,5 +1,6 @@
 import {
   Downloader,
+  buildFetchHeaders,
   type ConvertCallback,
   type ConvertResult,
 } from '@/background/downloader';
@@ -75,6 +76,19 @@ beforeAll(() => {
       });
     };
   }
+
+  // jsdom does not implement crypto.subtle; polyfill with Node's WebCrypto.
+  // This is required for AES-128 decryption tests (importKey, encrypt, decrypt).
+  const { webcrypto } = require('crypto');
+  if (!global.crypto) {
+    global.crypto = webcrypto as unknown as Crypto;
+  } else if (!global.crypto.subtle) {
+    Object.defineProperty(global.crypto, 'subtle', {
+      value: webcrypto.subtle,
+      writable: false,
+      configurable: true,
+    });
+  }
 });
 
 beforeEach(() => {
@@ -107,6 +121,23 @@ function makeTextBlob(text: string): Blob {
   patched.text = async () => text;
   patched.arrayBuffer = async () => buf;
   responseTexts.set(blob, text);
+  responseBuffers.set(blob, buf);
+  return blob;
+}
+
+/**
+ * Creates a Blob backed by raw bytes, with patched `.arrayBuffer()` for jsdom.
+ */
+function makeBlob(data: Uint8Array, type: string = 'application/octet-stream'): Blob {
+  const buf = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+  const blob = new Blob([buf], { type });
+  const patched = blob as Blob & {
+    text(): Promise<string>;
+    arrayBuffer(): Promise<ArrayBuffer>;
+  };
+  patched.text = async () => '';
+  patched.arrayBuffer = async () => buf;
+  responseTexts.set(blob, '');
   responseBuffers.set(blob, buf);
   return blob;
 }
@@ -212,6 +243,7 @@ describe('Downloader', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/video.mp4', {
       credentials: 'include',
+      headers: buildFetchHeaders('https://example.com'),
     });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
@@ -279,6 +311,7 @@ describe('Downloader', () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/playlist.m3u8', {
       credentials: 'include',
+      headers: buildFetchHeaders('https://example.com'),
     });
     // Writer opened once, 3 segments written, writer closed once
     expect(createOpfsWriter).toHaveBeenCalledTimes(1);
@@ -455,10 +488,28 @@ describe('Downloader', () => {
     expect(fetchMock).toHaveBeenCalledTimes(5);
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/playlist.m3u8', {
       credentials: 'include',
+      headers: buildFetchHeaders('https://example.com'),
     });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
     expect(opts.filename).toBe('HLS_Video.ts');
+  });
+
+  // 3b. Playlist with 0 segments throws error instead of saving 0-byte file
+  test('downloadVideo with m3u8 with 0 segments throws error', async () => {
+    const emptyPlaylist = '#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:10\n#EXT-X-ENDLIST';
+    const emptyBlob = makeTextBlob(emptyPlaylist);
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('playlist.m3u8')) return makeResponse(emptyBlob);
+      throw new Error(`unexpected fetch ${url}`);
+    });
+
+    await expect(downloader.downloadVideo(makeM3u8Video(), 'dl-empty')).rejects.toThrow(
+      'No segments found in playlist',
+    );
+    expect(chromeDownloadsDownloadMock).not.toHaveBeenCalled();
   });
 
   // 4. subtitle .ass
@@ -592,10 +643,29 @@ describe('Downloader', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/seg.ts', {
       signal: expect.any(AbortSignal),
       credentials: 'same-origin',
+      headers: undefined,
     });
   });
 
-  // 8. fetchSegment times out after SEGMENT_TIMEOUT_MS
+  // 8. fetchSegment with tabUrl sends Referer/Origin headers
+  test('fetchSegment with tabUrl sends Referer and Origin headers', async () => {
+    const goodBlob = makeTextBlob('ok');
+    fetchMock.mockResolvedValue(makeResponse(goodBlob));
+
+    await downloader.fetchSegment('https://example.com/seg.ts', 'https://themoviebox.org/movies/avatar');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('https://example.com/seg.ts', {
+      signal: expect.any(AbortSignal),
+      credentials: 'same-origin',
+      headers: {
+        Referer: 'https://themoviebox.org/movies/avatar',
+        Origin: 'https://themoviebox.org',
+      },
+    });
+  });
+
+  // 9. fetchSegment times out after SEGMENT_TIMEOUT_MS
   test('fetchSegment times out after SEGMENT_TIMEOUT_MS', async () => {
     // A fetch that never resolves; should be aborted by timeout.
     fetchMock.mockImplementation(
@@ -1154,5 +1224,513 @@ describe('Downloader', () => {
     expect(deleteDownloadSubdir).toHaveBeenCalledWith('dl-quota');
 
     (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+  });
+
+  // ============================================================
+  // T4-T5: AES-128 Decryption
+  // ============================================================
+  describe('AES-128 decryption', () => {
+    beforeEach(() => {
+      (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+    });
+    afterEach(() => {
+      (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+    });
+
+    it('fetchKey fetches a 16-byte key and caches it', async () => {
+      const keyBytes = new Uint8Array(16).fill(0xAB);
+      const keyBuf = keyBytes.buffer.slice(0);
+      fetchMock.mockImplementation(async (url: string | URL | Request) => {
+        const u = typeof url === 'string' ? url : url.toString();
+        if (u === 'https://cdn.example.com/key.bin') {
+          return makeResponse(makeBlob(new Uint8Array(keyBuf), 'application/octet-stream'), true, 200);
+        }
+        throw new Error(`unexpected fetch ${u}`);
+      });
+
+      const key1 = await downloader.fetchKey('https://cdn.example.com/key.bin', 'https://example.com');
+      expect(key1).toBeDefined();
+      // Second call should use cache (no additional fetch)
+      const fetchCountBefore = fetchMock.mock.calls.length;
+      const key2 = await downloader.fetchKey('https://cdn.example.com/key.bin', 'https://example.com');
+      expect(fetchMock.mock.calls.length).toBe(fetchCountBefore);
+      expect(key2).toBe(key1);
+    });
+
+    it('fetchKey throws on non-16-byte key', async () => {
+      fetchMock.mockImplementation(async () =>
+        makeResponse(makeBlob(new Uint8Array(10), 'application/octet-stream'), true, 200),
+      );
+      await expect(
+        downloader.fetchKey('https://cdn.example.com/badkey.bin', 'https://example.com'),
+      ).rejects.toThrow(/16 bytes/);
+    });
+
+    it('fetchKey throws on HTTP error', async () => {
+      fetchMock.mockImplementation(async () =>
+        makeResponse(makeTextBlob('Forbidden'), false, 403),
+      );
+      await expect(
+        downloader.fetchKey('https://cdn.example.com/forbidden.bin', 'https://example.com'),
+      ).rejects.toThrow(/403/);
+    });
+
+    it('decryptSegment decrypts AES-128-CBC with playlist IV', async () => {
+      // Generate a real key + IV + ciphertext using WebCrypto.
+      const key = await crypto.subtle.importKey(
+        'raw',
+        new Uint8Array(16).fill(0x42),
+        { name: 'AES-CBC' },
+        false,
+        ['encrypt', 'decrypt'],
+      );
+      const iv = new Uint8Array(16).fill(0x11);
+      const plaintext = new Uint8Array(32);
+      for (let i = 0; i < 32; i++) plaintext[i] = i;
+      const ciphertext = await crypto.subtle.encrypt({ name: 'AES-CBC', iv }, key, plaintext);
+      const encBlob = new Blob([ciphertext], { type: 'application/octet-stream' });
+
+      const decrypted = await downloader.decryptSegment(
+        encBlob,
+        key,
+        { method: 'AES-128', keyUri: 'https://cdn.example.com/key.bin', iv: '0x' + Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('') },
+        0,
+      );
+      const decData = new Uint8Array(await decrypted.arrayBuffer());
+      expect(decData).toEqual(plaintext);
+    });
+
+    it('decryptSegment derives IV from sequence when IV absent', async () => {
+      const key = await crypto.subtle.importKey(
+        'raw',
+        new Uint8Array(16).fill(0x99),
+        { name: 'AES-CBC' },
+        false,
+        ['encrypt', 'decrypt'],
+      );
+      // Derive IV for sequence 5
+      const iv = new Uint8Array(16);
+      const view = new DataView(iv.buffer);
+      view.setUint32(12, 0);
+      view.setUint32(8, 5);
+      const plaintext = new Uint8Array(16).fill(0xFF);
+      const ciphertext = await crypto.subtle.encrypt({ name: 'AES-CBC', iv }, key, plaintext);
+      const encBlob = new Blob([ciphertext], { type: 'application/octet-stream' });
+
+      const decrypted = await downloader.decryptSegment(
+        encBlob,
+        key,
+        { method: 'AES-128', keyUri: 'https://cdn.example.com/key.bin' },
+        5,
+      );
+      const decData = new Uint8Array(await decrypted.arrayBuffer());
+      expect(decData).toEqual(plaintext);
+    });
+
+    it('downloadM3u8Video decrypts encrypted segments end-to-end', async () => {
+      // Setup: encrypted playlist with 2 segments.
+      const keyBytes = new Uint8Array(16).fill(0x42);
+      const key = await crypto.subtle.importKey(
+        'raw',
+        keyBytes,
+        { name: 'AES-CBC' },
+        false,
+        ['encrypt', 'decrypt'],
+      );
+      const iv0 = new Uint8Array(16);
+      const iv1 = new Uint8Array(16);
+      new DataView(iv1.buffer).setUint32(8, 1);
+      const seg0Plain = new Uint8Array(16).fill(0xAA);
+      const seg1Plain = new Uint8Array(16).fill(0xBB);
+      const seg0Cipher = await crypto.subtle.encrypt({ name: 'AES-CBC', iv: iv0 }, key, seg0Plain);
+      const seg1Cipher = await crypto.subtle.encrypt({ name: 'AES-CBC', iv: iv1 }, key, seg1Plain);
+
+      const encPlaylist = [
+        '#EXTM3U',
+        '#EXT-X-VERSION:3',
+        '#EXT-X-TARGETDURATION:10',
+        '#EXT-X-KEY:METHOD=AES-128,URI="https://cdn.example.com/key.bin"',
+        '#EXTINF:10.0,',
+        'https://cdn.example.com/seg0.ts',
+        '#EXTINF:10.0,',
+        'https://cdn.example.com/seg1.ts',
+        '#EXT-X-ENDLIST',
+      ].join('\n');
+
+      fetchMock.mockImplementation(async (url: string | URL | Request) => {
+        const u = typeof url === 'string' ? url : url.toString();
+        if (u === 'https://example.com/playlist.m3u8') {
+          return makeResponse(makeTextBlob(encPlaylist), true, 200);
+        }
+        if (u === 'https://cdn.example.com/key.bin') {
+          return makeResponse(makeBlob(keyBytes, 'application/octet-stream'), true, 200);
+        }
+        if (u === 'https://cdn.example.com/seg0.ts') {
+          return makeResponse(makeBlob(new Uint8Array(seg0Cipher), 'video/mp2t'), true, 200);
+        }
+        if (u === 'https://cdn.example.com/seg1.ts') {
+          return makeResponse(makeBlob(new Uint8Array(seg1Cipher), 'video/mp2t'), true, 200);
+        }
+        throw new Error(`unexpected fetch ${u}`);
+      });
+
+      const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
+        require('@/lib/storage/opfsStorage') as {
+          ensureDownloadSubdir: jest.Mock;
+          createOpfsWriter: jest.Mock;
+          deleteDownloadSubdir: jest.Mock;
+        };
+      ensureDownloadSubdir.mockResolvedValue({} as FileSystemDirectoryHandle);
+      mockWriter.write.mockClear();
+      mockWriter.close.mockClear();
+      createOpfsWriter.mockResolvedValue(mockWriter);
+      deleteDownloadSubdir.mockResolvedValue(undefined);
+
+      // No convert callback — should save .ts
+      await downloader.downloadVideo(makeM3u8Video(), 'dl-aes');
+
+      // Verify 2 segments were written (decrypted)
+      expect(mockWriter.write).toHaveBeenCalledTimes(2);
+      // Verify the decrypted data matches plaintext
+      const w0 = mockWriter.write.mock.calls[0][0] as Blob;
+      const w1 = mockWriter.write.mock.calls[1][0] as Blob;
+      const d0 = new Uint8Array(await w0.arrayBuffer());
+      const d1 = new Uint8Array(await w1.arrayBuffer());
+      expect(d0).toEqual(seg0Plain);
+      expect(d1).toEqual(seg1Plain);
+    });
+  });
+
+  // ============================================================
+  // T6: fMP4 / CMAF concat path
+  // ============================================================
+  describe('fMP4 concat path', () => {
+    beforeEach(() => {
+      (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+    });
+    afterEach(() => {
+      (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+    });
+
+    it('downloadM3u8Video fetches init segment + .m4s segments and saves as .mp4', async () => {
+      const fmp4Playlist = [
+        '#EXTM3U',
+        '#EXT-X-VERSION:6',
+        '#EXT-X-TARGETDURATION:10',
+        '#EXT-X-MAP:URI="https://cdn.example.com/init.mp4"',
+        '#EXTINF:10.0,',
+        'https://cdn.example.com/seg0.m4s',
+        '#EXTINF:10.0,',
+        'https://cdn.example.com/seg1.m4s',
+        '#EXT-X-ENDLIST',
+      ].join('\n');
+
+      const initData = new Uint8Array([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]); // ftyp box
+      const seg0Data = new Uint8Array([0x00, 0x00, 0x00, 0x20, 0x6D, 0x6F, 0x6F, 0x76]); // moof box
+      const seg1Data = new Uint8Array([0x00, 0x00, 0x00, 0x1C, 0x6D, 0x64, 0x61, 0x74]); // mdat box
+
+      fetchMock.mockImplementation(async (url: string | URL | Request) => {
+        const u = typeof url === 'string' ? url : url.toString();
+        if (u === 'https://example.com/playlist.m3u8') {
+          return makeResponse(makeTextBlob(fmp4Playlist), true, 200);
+        }
+        if (u === 'https://cdn.example.com/init.mp4') {
+          return makeResponse(makeBlob(initData, 'video/mp4'), true, 200);
+        }
+        if (u === 'https://cdn.example.com/seg0.m4s') {
+          return makeResponse(makeBlob(seg0Data, 'video/iso.segment'), true, 200);
+        }
+        if (u === 'https://cdn.example.com/seg1.m4s') {
+          return makeResponse(makeBlob(seg1Data, 'video/iso.segment'), true, 200);
+        }
+        throw new Error(`unexpected fetch ${u}`);
+      });
+
+      const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
+        require('@/lib/storage/opfsStorage') as {
+          ensureDownloadSubdir: jest.Mock;
+          createOpfsWriter: jest.Mock;
+          deleteDownloadSubdir: jest.Mock;
+        };
+      ensureDownloadSubdir.mockResolvedValue({} as FileSystemDirectoryHandle);
+      mockWriter.write.mockClear();
+      mockWriter.close.mockClear();
+      createOpfsWriter.mockResolvedValue(mockWriter);
+      deleteDownloadSubdir.mockResolvedValue(undefined);
+
+      const saveOpfsFileCalls: Array<{ opfsFilename: string; downloadFilename: string; mimeType: string }> = [];
+      downloader.setSaveOpfsFileCallback(async (_id, opfsFilename, downloadFilename, mimeType) => {
+        saveOpfsFileCalls.push({ opfsFilename, downloadFilename, mimeType });
+      });
+
+      await downloader.downloadVideo(makeM3u8Video(), 'dl-fmp4');
+
+      // Init segment written first (separate writer), then 2 segments in main writer
+      // createOpfsWriter called twice: once for init, once for main
+      expect(createOpfsWriter).toHaveBeenCalledTimes(2);
+      // First call: init segment to input.mp4
+      expect(createOpfsWriter.mock.calls[0][1]).toBe('input.mp4');
+      // Second call: main segments to input.mp4
+      expect(createOpfsWriter.mock.calls[1][1]).toBe('input.mp4');
+      // Init segment + 2 segments written (same mock writer, 3 total writes)
+      expect(mockWriter.write).toHaveBeenCalledTimes(3);
+      // Saved as .mp4 (not .ts, no transmux)
+      expect(saveOpfsFileCalls).toHaveLength(1);
+      expect(saveOpfsFileCalls[0].opfsFilename).toBe('input.mp4');
+      expect(saveOpfsFileCalls[0].downloadFilename).toMatch(/\.mp4$/);
+      expect(saveOpfsFileCalls[0].mimeType).toBe('video/mp4');
+    });
+
+    it('fMP4 init segment fetch error throws clear error', async () => {
+      const fmp4Playlist = [
+        '#EXTM3U',
+        '#EXT-X-VERSION:6',
+        '#EXT-X-TARGETDURATION:10',
+        '#EXT-X-MAP:URI="https://cdn.example.com/init.mp4"',
+        '#EXTINF:10.0,',
+        'https://cdn.example.com/seg0.m4s',
+        '#EXT-X-ENDLIST',
+      ].join('\n');
+
+      fetchMock.mockImplementation(async (url: string | URL | Request) => {
+        const u = typeof url === 'string' ? url : url.toString();
+        if (u === 'https://example.com/playlist.m3u8') {
+          return makeResponse(makeTextBlob(fmp4Playlist), true, 200);
+        }
+        if (u === 'https://cdn.example.com/init.mp4') {
+          return makeResponse(makeTextBlob('Not Found'), false, 404);
+        }
+        throw new Error(`unexpected fetch ${u}`);
+      });
+
+      const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
+        require('@/lib/storage/opfsStorage') as {
+          ensureDownloadSubdir: jest.Mock;
+          createOpfsWriter: jest.Mock;
+          deleteDownloadSubdir: jest.Mock;
+        };
+      ensureDownloadSubdir.mockResolvedValue({} as FileSystemDirectoryHandle);
+      createOpfsWriter.mockResolvedValue(mockWriter);
+      deleteDownloadSubdir.mockResolvedValue(undefined);
+
+      await expect(downloader.downloadVideo(makeM3u8Video(), 'dl-fmp4-fail')).rejects.toThrow();
+    });
+  });
+
+  // ============================================================
+  // T7: Byte-range segment fetch
+  // ============================================================
+  describe('byte-range fetch', () => {
+    it('fetchSegmentWithRange adds Range header', async () => {
+      const data = new Uint8Array(100).fill(0xCC);
+      fetchMock.mockImplementation(async () =>
+        makeResponse(makeBlob(data, 'video/mp2t'), true, 206),
+      );
+
+      const blob = await downloader.fetchSegmentWithRange(
+        'https://cdn.example.com/segments.ts',
+        'https://example.com',
+        { length: 100, offset: 500 },
+      );
+      expect(blob.size).toBe(100);
+
+      const call = fetchMock.mock.calls[0];
+      const headers = (call[1] as RequestInit | undefined)?.headers as Record<string, string> | undefined;
+      expect(headers?.['Range']).toBe('bytes=500-599');
+    });
+
+    it('fetchSegmentWithRange accepts 206 Partial Content', async () => {
+      const data = new Uint8Array(50).fill(0xDD);
+      fetchMock.mockImplementation(async () =>
+        makeResponse(makeBlob(data, 'video/mp2t'), true, 206),
+      );
+
+      const blob = await downloader.fetchSegmentWithRange(
+        'https://cdn.example.com/segments.ts',
+        undefined,
+        { length: 50, offset: 0 },
+      );
+      expect(blob.size).toBe(50);
+    });
+
+    it('fetchSegmentWithRange without byteRange delegates to fetchSegment', async () => {
+      const data = new Uint8Array(200).fill(0xEE);
+      fetchMock.mockImplementation(async () =>
+        makeResponse(makeBlob(data, 'video/mp2t'), true, 200),
+      );
+
+      const blob = await downloader.fetchSegmentWithRange(
+        'https://cdn.example.com/seg.ts',
+        'https://example.com',
+      );
+      expect(blob.size).toBe(200);
+      // Should NOT have Range header
+      const call = fetchMock.mock.calls[0];
+      const headers = (call[1] as RequestInit | undefined)?.headers as Record<string, string> | undefined;
+      expect(headers?.['Range']).toBeUndefined();
+    });
+  });
+
+  // ============================================================
+  // T8: Ad skip via DISCONTINUITY
+  // ============================================================
+  describe('ad skip via discontinuity', () => {
+    beforeEach(() => {
+      (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+    });
+    afterEach(() => {
+      (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+    });
+
+    it('skips segments marked with discontinuity', async () => {
+      const adPlaylist = [
+        '#EXTM3U',
+        '#EXT-X-VERSION:3',
+        '#EXT-X-TARGETDURATION:10',
+        '#EXTINF:10.0,',
+        'https://cdn.example.com/content0.ts',
+        '#EXT-X-DISCONTINUITY',
+        '#EXTINF:5.0,',
+        'https://cdn.example.com/ad0.ts',
+        '#EXT-X-DISCONTINUITY',
+        '#EXTINF:10.0,',
+        'https://cdn.example.com/content1.ts',
+        '#EXT-X-ENDLIST',
+      ].join('\n');
+
+      fetchMock.mockImplementation(async (url: string | URL | Request) => {
+        const u = typeof url === 'string' ? url : url.toString();
+        if (u === 'https://example.com/playlist.m3u8') {
+          return makeResponse(makeTextBlob(adPlaylist), true, 200);
+        }
+        if (u === 'https://cdn.example.com/content0.ts') {
+          return makeResponse(makeBlob(new Uint8Array(100).fill(0xC0), 'video/mp2t'), true, 200);
+        }
+        if (u === 'https://cdn.example.com/content1.ts') {
+          return makeResponse(makeBlob(new Uint8Array(100).fill(0xC1), 'video/mp2t'), true, 200);
+        }
+        if (u === 'https://cdn.example.com/ad0.ts') {
+          return makeResponse(makeBlob(new Uint8Array(50).fill(0xAD), 'video/mp2t'), true, 200);
+        }
+        throw new Error(`unexpected fetch ${u}`);
+      });
+
+      const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
+        require('@/lib/storage/opfsStorage') as {
+          ensureDownloadSubdir: jest.Mock;
+          createOpfsWriter: jest.Mock;
+          deleteDownloadSubdir: jest.Mock;
+        };
+      ensureDownloadSubdir.mockResolvedValue({} as FileSystemDirectoryHandle);
+      mockWriter.write.mockClear();
+      mockWriter.close.mockClear();
+      createOpfsWriter.mockResolvedValue(mockWriter);
+      deleteDownloadSubdir.mockResolvedValue(undefined);
+
+      await downloader.downloadVideo(makeM3u8Video(), 'dl-ads');
+
+      // Only 2 content segments written (ad0 skipped)
+      expect(mockWriter.write).toHaveBeenCalledTimes(2);
+      // Verify ad segment was NOT fetched
+      const fetchedUrls = fetchMock.mock.calls.map(c => c[0] as string);
+      expect(fetchedUrls).not.toContain('https://cdn.example.com/ad0.ts');
+    });
+
+    it('throws when all segments are in ad breaks (no content)', async () => {
+      // Section 0: empty (no segments before first DISCONTINUITY)
+      // Section 1: ad0.ts (ad — odd section)
+      const allAdPlaylist = [
+        '#EXTM3U',
+        '#EXT-X-VERSION:3',
+        '#EXT-X-TARGETDURATION:10',
+        '#EXT-X-DISCONTINUITY',
+        '#EXTINF:5.0,',
+        'https://cdn.example.com/ad0.ts',
+        '#EXT-X-ENDLIST',
+      ].join('\n');
+
+      fetchMock.mockImplementation(async (url: string | URL | Request) => {
+        const u = typeof url === 'string' ? url : url.toString();
+        if (u === 'https://example.com/playlist.m3u8') {
+          return makeResponse(makeTextBlob(allAdPlaylist), true, 200);
+        }
+        throw new Error(`unexpected fetch ${u}`);
+      });
+
+      const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
+        require('@/lib/storage/opfsStorage') as {
+          ensureDownloadSubdir: jest.Mock;
+          createOpfsWriter: jest.Mock;
+          deleteDownloadSubdir: jest.Mock;
+        };
+      ensureDownloadSubdir.mockResolvedValue({} as FileSystemDirectoryHandle);
+      createOpfsWriter.mockResolvedValue(mockWriter);
+      deleteDownloadSubdir.mockResolvedValue(undefined);
+
+      await expect(downloader.downloadVideo(makeM3u8Video(), 'dl-all-ads')).rejects.toThrow(/discontinuity|content/i);
+    });
+  });
+
+  // ============================================================
+  // T9: Nested master playlist
+  // ============================================================
+  describe('nested master playlist', () => {
+    beforeEach(() => {
+      (isOpfsAvailable as jest.Mock).mockReturnValue(true);
+    });
+    afterEach(() => {
+      (isOpfsAvailable as jest.Mock).mockReturnValue(false);
+    });
+
+    it('handles nested master (master → master → media)', async () => {
+      const nestedMaster = [
+        '#EXTM3U',
+        '#EXT-X-VERSION:3',
+        '#EXT-X-STREAM-INF:BANDWIDTH=1000000',
+        'https://cdn.example.com/sub-master.m3u8',
+      ].join('\n');
+
+      const subMaster = [
+        '#EXTM3U',
+        '#EXT-X-VERSION:3',
+        '#EXT-X-STREAM-INF:BANDWIDTH=500000',
+        'https://cdn.example.com/media.m3u8',
+      ].join('\n');
+
+      const mediaPlaylist = [
+        '#EXTM3U',
+        '#EXT-X-VERSION:3',
+        '#EXT-X-TARGETDURATION:10',
+        '#EXTINF:10.0,',
+        'https://cdn.example.com/seg0.ts',
+        '#EXT-X-ENDLIST',
+      ].join('\n');
+
+      fetchMock.mockImplementation(async (url: string | URL | Request) => {
+        const u = typeof url === 'string' ? url : url.toString();
+        if (u === 'https://example.com/playlist.m3u8') return makeResponse(makeTextBlob(nestedMaster), true, 200);
+        if (u === 'https://cdn.example.com/sub-master.m3u8') return makeResponse(makeTextBlob(subMaster), true, 200);
+        if (u === 'https://cdn.example.com/media.m3u8') return makeResponse(makeTextBlob(mediaPlaylist), true, 200);
+        if (u === 'https://cdn.example.com/seg0.ts') return makeResponse(makeBlob(new Uint8Array(100).fill(0x01), 'video/mp2t'), true, 200);
+        throw new Error(`unexpected fetch ${u}`);
+      });
+
+      const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
+        require('@/lib/storage/opfsStorage') as {
+          ensureDownloadSubdir: jest.Mock;
+          createOpfsWriter: jest.Mock;
+          deleteDownloadSubdir: jest.Mock;
+        };
+      ensureDownloadSubdir.mockResolvedValue({} as FileSystemDirectoryHandle);
+      mockWriter.write.mockClear();
+      mockWriter.close.mockClear();
+      createOpfsWriter.mockResolvedValue(mockWriter);
+      deleteDownloadSubdir.mockResolvedValue(undefined);
+
+      await downloader.downloadVideo(makeM3u8Video(), 'dl-nested');
+
+      // 1 segment written
+      expect(mockWriter.write).toHaveBeenCalledTimes(1);
+    });
   });
 });

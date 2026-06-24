@@ -128,7 +128,7 @@ export async function executeParallelConversion(
     const result = await executeWithFallback(
       async (_workers) => {
         token.throwIfCancelled();
-        return await transmuxTsToFmp4ParallelExperimental({
+        const parallelResult = await transmuxTsToFmp4ParallelExperimental({
           downloadId,
           groups,
           segmentRanges: segmentRanges ?? [],
@@ -137,6 +137,14 @@ export async function executeParallelConversion(
             progressTracker.update(processed / total);
           },
         });
+        // executeWithFallback only catches THROWN errors. If the parallel
+        // transmuxer returns {success: false} without throwing, the fallback
+        // would never be triggered. Convert failed results to thrown errors
+        // so that executeWithFallback can decide what to do.
+        if (!parallelResult.success) {
+          throw new Error(parallelResult.error ?? 'Parallel transmux failed');
+        }
+        return parallelResult;
       },
       async () => {
         token.throwIfCancelled();

@@ -29,10 +29,45 @@ export interface DetectedVideo {
 
 // === M3U8 Playlist Types ===
 
+/**
+ * Byte range specification for `#EXT-X-BYTERANGE`.
+ * `offset` is optional — when absent, it equals the byte after the
+ * previous segment in the same media file (per RFC 8216 §4.3.2.2).
+ */
+export interface ByteRange {
+  readonly length: number;
+  readonly offset?: number;
+}
+
+/**
+ * Encryption metadata parsed from `#EXT-X-KEY`.
+ * Only `AES-128` is supported for decryption; other methods (SAMPLE-AES,
+ * Widevine, etc.) are parsed but not decrypted.
+ */
+export interface HlsEncryption {
+  readonly method: string;
+  readonly keyUri: string;
+  readonly iv?: string;
+}
+
+/**
+ * Init segment metadata parsed from `#EXT-X-MAP` (fMP4 / CMAF).
+ * The init segment must be fetched and prepended to the .m4s segments
+ * to produce a valid fragmented MP4 file.
+ */
+export interface HlsInitSegment {
+  readonly uri: string;
+  readonly byteRange?: ByteRange;
+}
+
 export interface TsSegment {
   readonly url: string;
   readonly duration: number;
   readonly sequence?: number;
+  /** Byte range for `#EXT-X-BYTERANGE` segments. */
+  readonly byteRange?: ByteRange;
+  /** `true` if preceded by `#EXT-X-DISCONTINUITY` (ad break / codec change). */
+  readonly discontinuity?: boolean;
 }
 
 /**
@@ -59,6 +94,12 @@ export interface M3u8Playlist {
   readonly segments: TsSegment[];
   readonly isMasterPlaylist: boolean;
   readonly variants: M3u8Variant[];
+  /** Encryption info from `#EXT-X-KEY` (undefined if no encryption). */
+  readonly encryption?: HlsEncryption;
+  /** Init segment for fMP4/CMAF from `#EXT-X-MAP` (undefined for plain .ts). */
+  readonly initSegment?: HlsInitSegment;
+  /** `true` if `#EXT-X-ENDLIST` present (VOD). `false` for LIVE streams. */
+  readonly hasEndlist?: boolean;
 }
 
 export interface M3u8Variant {
@@ -150,13 +191,43 @@ export interface DownloadItem {
   readonly url: string;
   readonly title: string;
   readonly status: DownloadStatus;
-  readonly progress: number; // 0-100
+  readonly progress: number; // 0-100 (overall)
   readonly error?: string;
   readonly startedAt?: number;
   readonly completedAt?: number;
   readonly savedFilename?: string;
   readonly videoId?: string;
+  /** Quality label for badge display (e.g. "1080p"). Set at creation time. */
+  readonly quality?: VideoQuality;
+  /** Download phase progress (0-100), separate from conversion. */
+  readonly downloadProgress?: number;
+  /** Conversion phase progress (0-100), separate from download. */
+  readonly convertProgress?: number;
+  /** Total file size in bytes (set during download/conversion). */
+  readonly fileSize?: number;
+  /** Bytes downloaded so far (during `downloading` status). */
+  readonly downloadedBytes?: number;
+  /** Bytes processed by the transmuxer (during `converting` status). */
+  readonly processedBytes?: number;
+  /** Current conversion phase (during `converting` status). */
+  readonly conversionPhase?: ConversionPhase;
+  /** Number of Web Workers actively transmuxing (parallel mode only). */
+  readonly workerCount?: number;
+  /** Whether parallel (Web Worker) conversion was used. */
+  readonly usedWorkers?: boolean;
 }
+
+/**
+ * Phase of the TS→MP4 conversion pipeline, reported during the `converting`
+ * status. Matches `ParallelConversionPhase` from the parallel progress tracker
+ * but is duplicated here to avoid a cross-module import cycle in the type layer.
+ */
+export type ConversionPhase =
+  | 'planning'
+  | 'transmuxing'
+  | 'merging'
+  | 'validating'
+  | 'done';
 
 export interface DownloadProgress {
   readonly itemId: string;
@@ -165,6 +236,22 @@ export interface DownloadProgress {
   readonly currentSegment?: number;
   readonly totalSegments?: number;
   readonly error?: string;
+  /** Total size of the downloaded file in bytes (input.ts size). */
+  readonly fileSize?: number;
+  /** Bytes downloaded so far (during `downloading` status). */
+  readonly downloadedBytes?: number;
+  /** Bytes processed by the transmuxer so far (during `converting` status). */
+  readonly processedBytes?: number;
+  /** Current conversion phase (during `converting` status). */
+  readonly conversionPhase?: ConversionPhase;
+  /** Number of Web Workers actively transmuxing (parallel mode only). */
+  readonly workerCount?: number;
+  /** Whether parallel (Web Worker) conversion was used for this item. */
+  readonly usedWorkers?: boolean;
+  /** Download phase progress (0-100), separate from conversion. */
+  readonly downloadProgress?: number;
+  /** Conversion phase progress (0-100), separate from download. */
+  readonly convertProgress?: number;
 }
 
 // === Settings Types ===
@@ -191,6 +278,19 @@ export type ParallelConversionMode = 'auto' | 'manual' | 'off';
  */
 export type ParallelFallbackMode = 'sequential' | 'retry-reduced' | 'save-ts' | 'fail';
 
+/**
+ * Source for naming downloaded files (video + subtitle).
+ *
+ * - `'title-fallback'` — Use the detected media title; if it is empty or
+ *   generic ("video", "untitled", etc.), fall back to a beautified base
+ *   name extracted from the URL. Default.
+ * - `'title-only'`     — Always use the detected title; if empty/generic,
+ *   use "untitled" as the base name.
+ * - `'url-only'`       — Always use a beautified base name extracted from
+ *   the URL path, ignoring the detected title entirely.
+ */
+export type FilenameSource = 'title-fallback' | 'title-only' | 'url-only';
+
 export interface Settings {
   readonly concurrentDownloads: number;
   readonly defaultQuality: VideoQuality;
@@ -215,6 +315,17 @@ export interface Settings {
    * Default: `'save-ts'` for large files to avoid wasting time.
    */
   readonly parallelFallback: ParallelFallbackMode;
+  /**
+   * Number of M3U8 segments to fetch in parallel during a single download.
+   * Higher values utilize network bandwidth better but risk server
+   * throttling (403/429). Clamped to `[MIN_SEGMENT_CONCURRENCY,
+   * MAX_SEGMENT_CONCURRENCY]`. Default: 6.
+   */
+  readonly segmentConcurrency: number;
+  /**
+   * Source for naming downloaded files. Default: `'title-fallback'`.
+   */
+  readonly filenameSource: FilenameSource;
 }
 
 // === Network Request Types (for detectors) ===

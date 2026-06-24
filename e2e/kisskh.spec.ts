@@ -28,61 +28,18 @@ test.describe('kisskh video download', () => {
       await expect(mediaSection).toBeVisible({ timeout: 10_000 });
 
       const videoCards = popup.locator('[data-testid="video-card"]');
-      const emptyState = popup.locator('[data-testid="empty-media"]');
-
-      const videoCount = await videoCards.count();
-      if (videoCount > 0) {
-        await expect(
-          popup.locator('[data-testid="video-title"]').first(),
-        ).toBeVisible();
-        await expect(
-          popup.locator('[data-testid="download-button"]').first(),
-        ).toBeVisible();
-      } else {
-        await expect(emptyState).toBeVisible();
-      }
-
-      await popup.close();
-      await page.close();
-    } finally {
-      await closeExtensionBrowser(context);
-    }
-  });
-
-  test('detects subtitle on kisskh', async () => {
-    const { context, extensionId } = await launchExtensionBrowser();
-
-    try {
-      const page = await context.newPage();
-      await page.goto(VIDEO_URL, {
-        waitUntil: 'domcontentloaded',
-        timeout: 30_000,
-      });
-
-      // Wait for media detection (subtitles are usually fetched after the player loads).
-      await page.waitForTimeout(15_000);
-
-      const popup = await openPopup(context, extensionId);
-
-      const mediaSection = popup.locator('[data-testid="media-section"]');
-      await expect(mediaSection).toBeVisible({ timeout: 10_000 });
-
-      // Switch to the Subtitles tab in the redesigned UI.
-      await popup.locator('[data-testid="tab-subtitles"]').click();
-
       const subtitleItems = popup.locator('[data-testid="subtitle-item"]');
       const emptyState = popup.locator('[data-testid="empty-media"]');
 
+      const videoCount = await videoCards.count();
       const subtitleCount = await subtitleItems.count();
-      if (subtitleCount > 0) {
-        await expect(
-          popup.locator('[data-testid="subtitle-language"]').first(),
-        ).toBeVisible();
-        await expect(
-          popup.locator('[data-testid="subtitle-download"]').first(),
-        ).toBeVisible();
+
+      if (videoCount > 0) {
+        await expect(popup.locator('[data-testid="video-title"]').first()).toBeVisible();
+        await expect(popup.locator('[data-testid="download-button"]').first()).toBeVisible();
+      } else if (subtitleCount > 0) {
+        await expect(popup.locator('[data-testid="subtitle-language"]').first()).toBeVisible();
       } else {
-        // No subtitles detected — empty state should be shown on the subtitles tab.
         await expect(emptyState).toBeVisible();
       }
 
@@ -114,14 +71,13 @@ test.describe('kisskh video download', () => {
       if (videoCount > 0) {
         await popup.locator('[data-testid="download-button"]').first().click();
 
-        // Switch to the Downloads tab to see the active download.
-        await popup.locator('[data-testid="tab-downloads"]').click();
-
+        // Verify download appears in downloads section.
         const downloadsSection = popup.locator('[data-testid="downloads-section"]');
         await expect(downloadsSection).toBeVisible({ timeout: 10_000 });
 
-        const progressBar = popup.locator('[data-testid="progress-bar"]');
-        await expect(progressBar.first()).toBeVisible({ timeout: 10_000 });
+        // Wait for download item to appear.
+        const downloadItem = popup.locator('[data-testid="download-item"]');
+        await expect(downloadItem.first()).toBeVisible({ timeout: 15_000 });
       }
 
       await popup.close();

@@ -1,7 +1,20 @@
+---
+description: "Chrome extension baseline rules"
+trigger: always_on
+---
+
 # Chrome Extension Baseline Rules
 
 ## UI/UX
-- Always apply when designing ui/ux for the system [reference-ui_ux_system.md](reference-ui_ux_system.md)
+- Always apply when designing ui/ux for the system [/reference-ui_ux_system.md](reference-ui_ux_system.md)
+
+## Knowledge Base
+- Always refer to the knowledge base for the system [/reference-knowledge_base.md](reference-knowledge_base.md)
+
+## Architecture Map
+- Always read [docs/architechture-system.md](../../docs/architechture-system.md) first to know file structure, dependencies, and impact radius
+- Update it whenever: adding/removing/renaming files, changing imports, or modifying data flows
+- Use the "Update protocol" section at the bottom of that file for guidance
 
 ## Test-Driven Development
 When implementing logic, fixing bugs, or changing behavior:
@@ -53,3 +66,6 @@ Invoke `/source-driven-development` for full source-driven workflow.
 - `/review` - Code review
 - `/security` - Security hardening
 - `/source-driven-development` - Source-cited implementation
+
+## called
+- always call me "Anh yêu", xưng là "em"

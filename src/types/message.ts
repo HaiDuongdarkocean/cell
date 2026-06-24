@@ -7,6 +7,9 @@ import type {
   DownloadProgress,
   Settings,
   VideoQuality,
+  ParallelConversionMode,
+  ParallelFallbackMode,
+  ConversionPhase,
 } from './media';
 
 // === Message Types ===
@@ -21,6 +24,8 @@ export type MessageType =
   | 'CANCEL_DOWNLOAD'
   | 'PAUSE_DOWNLOAD'
   | 'RESUME_DOWNLOAD'
+  | 'RETRY_DOWNLOAD'
+  | 'REMOVE_DOWNLOAD'
   | 'GET_DOWNLOAD_PROGRESS'
   | 'DOWNLOAD_PROGRESS_UPDATE'
   | 'GET_SETTINGS'
@@ -32,6 +37,7 @@ export type MessageType =
   | 'CONVERT_TS_TO_MP4_RESULT'
   | 'CONVERT_TS_TO_MP4_V2'
   | 'CONVERT_TS_TO_MP4_V2_RESULT'
+  | 'CONVERSION_PROGRESS_UPDATE'
   | 'CREATE_OPFS_BLOB_URL'
   | 'REVOKE_OPFS_BLOB_URL'
   | 'OFFSCREEN_PING'
@@ -66,6 +72,8 @@ export interface GetDetectedMediaPayload {
 export interface DetectedMediaUpdatePayload {
   readonly videos: DetectedVideo[];
   readonly subtitles: DetectedSubtitle[];
+  /** Tab that produced this update. Popup filters by its own tabId. */
+  readonly tabId: number;
 }
 
 export interface DownloadVideoPayload {
@@ -79,7 +87,7 @@ export interface DownloadSubtitlePayload {
 }
 
 export interface DownloadAllPayload {
-  readonly tabId: number;
+  readonly tabId?: number;
 }
 
 export interface CancelDownloadPayload {
@@ -113,6 +121,9 @@ export interface ConvertTsToMp4ResultPayload {
  */
 export interface ConvertTsToMp4V2Payload {
   readonly downloadId: string;
+  readonly parallelConversion?: ParallelConversionMode;
+  readonly manualWorkerCount?: number;
+  readonly parallelFallback?: ParallelFallbackMode;
 }
 
 export interface ConvertTsToMp4V2ResultPayload {
@@ -121,6 +132,36 @@ export interface ConvertTsToMp4V2ResultPayload {
   readonly mimeType: string;
   readonly success: boolean;
   readonly error?: string;
+  /** Number of workers used (parallel mode only). */
+  readonly workerCount?: number;
+  /** Whether Web Workers were used for conversion. */
+  readonly usedWorkers?: boolean;
+  /** Total conversion duration in milliseconds. */
+  readonly durationMs?: number;
+}
+
+/**
+ * Progress update emitted by the offscreen document during TS→MP4 conversion.
+ *
+ * The offscreen runner broadcasts this via `chrome.runtime.sendMessage` so the
+ * background service worker can relay it to the popup. This is separate from
+ * `DOWNLOAD_PROGRESS_UPDATE` because conversion runs in the offscreen document
+ * (not the background), and the data shape is conversion-specific.
+ */
+export interface ConversionProgressUpdatePayload {
+  readonly downloadId: string;
+  /** Overall conversion progress: 0–100. */
+  readonly percent: number;
+  /** Current conversion phase. */
+  readonly phase: ConversionPhase;
+  /** Total input file size in bytes. */
+  readonly fileSize: number;
+  /** Bytes processed by the transmuxer so far. */
+  readonly processedBytes: number;
+  /** Number of Web Workers actively transmuxing (0 if sequential). */
+  readonly workerCount: number;
+  /** Whether parallel (Web Worker) conversion is being used. */
+  readonly usedWorkers: boolean;
 }
 
 /**

@@ -95,6 +95,12 @@ export async function transmuxTsToFmp4(
   );
 
   try {
+    // CRITICAL: Register the 'done' listener BEFORE calling flush().
+    // mux.js fires 'done' synchronously during flush() — if the listener
+    // is registered after flush(), the event is missed and the promise
+    // never resolves (timeout).
+    const donePromise = waitForDone(transmuxer, totalBytes);
+
     // Pipeline reads: prefetch the next chunk's ArrayBuffer while the
     // current chunk is being transmuxed. This overlaps I/O (OPFS read) with
     // CPU work (mux.js parsing), which is the main bottleneck for large files.
@@ -127,14 +133,13 @@ export async function transmuxTsToFmp4(
       onProgress?.(processedBytes, totalBytes);
     }
 
-    // Signal end-of-stream and flush all remaining segments.
+    // Signal end-of-stream — this synchronously fires the 'done' event
+    // registered above via waitForDone.
     transmuxer.flush();
 
-    // Wait for the 'done' event (or timeout). Timeout is proportional to
-    // input size (~1s per MB, min 30s) to avoid premature resolution on
-    // large files. On timeout, we REJECT (not resolve) so the caller falls
-    // back to .ts instead of producing a truncated MP4.
-    await waitForDone(transmuxer, totalBytes);
+    // Wait for the 'done' event (or timeout). The listener was registered
+    // before flush(), so this resolves immediately if done already fired.
+    await donePromise;
 
     // Wait for all queued writes to complete before closing the writer.
     await writeChain;

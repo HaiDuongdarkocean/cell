@@ -9,17 +9,6 @@ import { msToSrtTime } from '@/lib/utils/timeUtils';
  *   are removed, keeping only the inner text.
  * - Each line is trimmed and empty lines within a cue are collapsed.
  */
-/**
- * Strip VTT/HTML inline tags from text without touching line structure.
- *
- * Use this for raw SRT content that may contain leftover VTT tags
- * (`{\an8}`, `<i>`, etc.). Unlike `stripVttInlineTags`, this preserves
- * blank lines between cues.
- */
-export function stripInlineTagsOnly(text: string): string {
-  return text.replace(/\{[^}]*\}/g, '').replace(/<[^>]*>/g, '');
-}
-
 export function stripVttInlineTags(text: string): string {
   // Remove VTT/ASS override tags: {\an8}, {\b1}, etc.
   let result = text.replace(/\{[^}]*\}/g, '');

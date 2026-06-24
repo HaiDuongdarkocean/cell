@@ -2,82 +2,87 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--color-border);
-  background-color: var(--color-surface);
+  padding: var(--spacing-lg) var(--spacing-lg) var(--spacing-md);
+  flex-shrink: 0;
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
+  min-width: 0;
 }
 
-.logo {
+.headerIcon {
+  width: 22px;
+  height: 22px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.headerTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.headerRight {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--color-primary);
+  gap: 2px;
+  flex-shrink: 0;
 }
 
-.title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  margin: 0;
+/* === Icon Button — matches prototype exactly === */
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: all var(--transition);
+}
+
+.iconBtn:hover {
+  background: var(--color-surface-hover);
   color: var(--color-text);
 }
 
-.status {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background-color: var(--color-surface-elevated);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
+.iconBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
 }
 
-.statusDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--color-text-muted);
-  transition: background-color var(--transition-fast) var(--ease-standard);
+/* Extension disabled state — red icon */
+.extDisabled {
+  color: var(--color-error);
 }
 
-.statusDot.active {
-  background-color: var(--color-success);
+.extDisabled:hover {
+  color: var(--color-error);
+  background: rgba(239, 68, 68, 0.08);
 }
 
-.statusText {
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
+/* Icon sizing */
+.icon {
+  width: 18px;
+  height: 18px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-/* Responsive design */
-@media (max-width: 360px) {
-  .title {
-    font-size: var(--font-size-sm);
-  }
-
-  .status {
-    display: none;
-  }
-}
-
-@media (max-width: 320px) {
-  .logo {
-    gap: var(--spacing-xs);
-  }
-
-  .logo svg {
-    width: 20px;
-    height: 20px;
-  }
+.iconSun,
+.iconMoon {
+  width: 18px;
+  height: 18px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

@@ -4,11 +4,14 @@ import { convertVttToSrt } from '@/lib/converters/vttToSrt';
 import { normalizeSrt } from '@/lib/converters/srtNormalizer';
 import { ConversionTimer } from '@/lib/converters/conversionTimer';
 import { planParallelConversion } from '@/lib/converters/parallelPlanner';
-import { generateFileName } from '@/lib/utils/fileUtils';
+import { generateFileName, resolveFilenameBase } from '@/lib/utils/fileUtils';
 import type {
+  ByteRange,
   DetectedVideo,
   DetectedSubtitle,
   DownloadProgress,
+  HlsEncryption,
+  M3u8Playlist,
   SegmentRange,
   TsSegment,
 } from '@/types/media';
@@ -17,8 +20,10 @@ import {
   SEGMENT_TIMEOUT_MS,
   MAX_CONVERT_BYTES,
   DEFAULT_SEGMENT_CONCURRENCY,
+  MIN_SEGMENT_CONCURRENCY,
+  MAX_SEGMENT_CONCURRENCY,
 } from '@/constants/config';
-import type { ConvertToMp4Mode, Settings } from '@/types/media';
+import type { ConvertToMp4Mode, Settings, FilenameSource } from '@/types/media';
 import {
   ensureDownloadSubdir,
   createOpfsWriter,
@@ -80,6 +85,65 @@ export type SaveOpfsFileCallback = (
 ) => Promise<void>;
 
 /**
+ * Build request headers that match the browser's page context.
+ *
+ * Many streaming CDNs return 403 when the video URL is fetched without the
+ * same `Referer` and `Origin` as the page that loaded the player. This helper
+ * derives both headers from the original tab URL so the extension's fetch
+ * requests look like they came from the browser tab.
+ *
+ * @param tabUrl - URL of the tab where the media was detected
+ * @returns Headers object with `Referer` and `Origin`, or `undefined` if tabUrl is missing/invalid
+ */
+export function buildFetchHeaders(tabUrl?: string): Record<string, string> | undefined {
+  if (!tabUrl) return undefined;
+  try {
+    const origin = new URL(tabUrl).origin;
+    return {
+      Referer: tabUrl,
+      Origin: origin,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Parse an IV hex string (e.g. "0x1234567890ABCDEF...") into a 16-byte Uint8Array.
+ * The "0x" prefix is stripped if present. The hex string must be exactly 32 chars
+ * (16 bytes) after stripping the prefix.
+ */
+function parseIvFromHex(ivHex: string): Uint8Array {
+  const hex = ivHex.startsWith('0x') || ivHex.startsWith('0X')
+    ? ivHex.slice(2)
+    : ivHex;
+  if (hex.length !== 32) {
+    throw new Error(
+      `AES-128 IV must be 16 bytes (32 hex chars), got ${hex.length} chars`,
+    );
+  }
+  const bytes = new Uint8Array(16);
+  for (let i = 0; i < 16; i++) {
+    bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+/**
+ * Derive a 16-byte IV from a segment sequence number per RFC 8216 §4.3.2.4.
+ * The sequence number is placed in the rightmost (least significant) bytes
+ * of a 16-byte big-endian integer, with all preceding bytes set to zero.
+ */
+function deriveIvFromSequence(sequence: number): Uint8Array {
+  const bytes = new Uint8Array(16);
+  // Write sequence as big-endian in the last 8 bytes (safe for sequences < 2^53)
+  const view = new DataView(bytes.buffer);
+  view.setUint32(12, Math.floor(sequence / 0x100000000));
+  view.setUint32(8, sequence >>> 0);
+  return bytes;
+}
+
+/**
  * Orchestrates downloading a video or subtitle: fetch segments → merge →
  * ffmpeg convert (optional) → chrome.downloads.
  */
@@ -89,6 +153,17 @@ export class Downloader {
   private saveOpfsFileCallback: SaveOpfsFileCallback | null = null;
   private cancelledIds: Set<string> = new Set();
   private convertMode: ConvertToMp4Mode = 'always';
+  /**
+   * Current filename source mode. Updated via `setFilenameSource()` when the
+   * user changes settings. Controls whether downloads use the detected title,
+   * a beautified URL base name, or title-with-URL-fallback.
+   */
+  private filenameSource: FilenameSource = 'title-fallback';
+  /**
+   * Number of segments to fetch in parallel during M3U8 downloads.
+   * Configurable via settings; defaults to DEFAULT_SEGMENT_CONCURRENCY.
+   */
+  private segmentConcurrency: number = DEFAULT_SEGMENT_CONCURRENCY;
   /**
    * Current settings for parallel conversion planning. Updated via
    * `setParallelSettings()` when the user changes settings.
@@ -103,6 +178,11 @@ export class Downloader {
    * segment boundaries. Populated during `downloadM3u8Streaming`.
    */
   private readonly segmentRangesMap = new Map<string, SegmentRange[]>();
+  /**
+   * Cache for AES-128 decryption keys, keyed by key URI.
+   * Avoids re-fetching the same key for every segment in an encrypted stream.
+   */
+  private readonly keyCache = new Map<string, CryptoKey>();
 
   constructor() {}
 
@@ -130,6 +210,22 @@ export class Downloader {
   /** Set the conversion mode (always / small-only / never). */
   setConvertMode(mode: ConvertToMp4Mode): void {
     this.convertMode = mode;
+  }
+
+  /** Set the filename source mode (title-fallback / title-only / url-only). */
+  setFilenameSource(mode: FilenameSource): void {
+    this.filenameSource = mode;
+  }
+
+  /**
+   * Set the number of segments to fetch in parallel during M3U8 downloads.
+   * Clamped to [MIN_SEGMENT_CONCURRENCY, MAX_SEGMENT_CONCURRENCY].
+   */
+  setSegmentConcurrency(count: number): void {
+    this.segmentConcurrency = Math.max(
+      MIN_SEGMENT_CONCURRENCY,
+      Math.min(MAX_SEGMENT_CONCURRENCY, count || DEFAULT_SEGMENT_CONCURRENCY),
+    );
   }
 
   /**
@@ -209,7 +305,12 @@ export class Downloader {
     this.throwIfCancelled(downloadId);
 
     const blob = new Blob([srtContent], { type: 'application/x-subrip' });
-    const filename = generateFileName(extractBaseName(subtitle.url), 'srt');
+    const filename = generateFileName(
+      // Subtitles: language is a code (e.g. "en"), not a meaningful filename.
+      // Pass undefined so resolveFilenameBase always uses the URL base name.
+      resolveFilenameBase(this.filenameSource, undefined, subtitle.url),
+      'srt',
+    );
     await this.saveBlob(blob, filename);
 
     this.reportProgress(downloadId, 'done', 100);
@@ -225,12 +326,45 @@ export class Downloader {
   }
 
   /**
+   * Pause a download by id. Adds the id to `cancelledIds` so the current
+   * fetch/convert loop throws and stops. The queue will set the item's status
+   * to 'paused'. To resume, call `resume()` which clears the cancel flag and
+   * lets the queue re-queue the item (it will restart from the beginning).
+   */
+  pause(downloadId: string): void {
+    this.cancelledIds.add(downloadId);
+  }
+
+  /**
+   * Resume a paused download. Clears the cancel flag so the downloader can
+   * process the item again. The queue's `resume()` method re-queues the item,
+   * which triggers a fresh download from segment 0.
+   */
+  resume(downloadId: string): void {
+    this.cancelledIds.delete(downloadId);
+  }
+
+  /**
+   * Retry a failed download. Clears the cancel flag (in case it was set by a
+   * prior cancel/pause) and cleans up any partial OPFS files so the retry
+   * starts fresh. The queue's `retry()` method resets the item state and
+   * re-queues it.
+   */
+  retry(downloadId: string): void {
+    this.cancelledIds.delete(downloadId);
+    // Best-effort OPFS cleanup for the failed download's partial files.
+    void deleteDownloadSubdir(downloadId).catch((err: unknown) => {
+      console.warn(`[downloader] OPFS cleanup on retry failed for ${downloadId}:`, err);
+    });
+  }
+
+  /**
    * Fetch a single segment with retry and timeout.
    *
    * Retries up to MAX_RETRY times on network/abort error. Each attempt is
    * aborted after SEGMENT_TIMEOUT_MS.
    */
-  async fetchSegment(url: string): Promise<Blob> {
+  async fetchSegment(url: string, tabUrl?: string): Promise<Blob> {
     let lastError: unknown = null;
 
     for (let attempt = 0; attempt < MAX_RETRY; attempt++) {
@@ -243,9 +377,13 @@ export class Downloader {
         // would cause the browser to BLOCK the response. Segment URLs rarely
         // need cookies; the playlist fetch (which may need auth from the
         // page's origin) still uses `'include'`.
+        //
+        // Add Referer/Origin headers from the source tab to avoid 403 hotlink
+        // protection on some CDNs.
         const response = await fetch(url, {
           signal: controller.signal,
           credentials: 'same-origin',
+          headers: buildFetchHeaders(tabUrl),
         });
         if (!response.ok) {
           throw new Error(`Segment fetch failed: ${response.status}`);
@@ -268,6 +406,123 @@ export class Downloader {
   }
 
   /**
+   * Fetch an AES-128 decryption key from the URI specified in `#EXT-X-KEY`.
+   * The key is a 16-byte raw ArrayBuffer. Uses the same headers as the
+   * playlist fetch (Referer/Origin) to pass hotlink protection on key CDNs.
+   *
+   * Results are cached per `cacheKey` (typically the keyUri) to avoid
+   * re-fetching the same key for every segment.
+   */
+  async fetchKey(
+    keyUri: string,
+    tabUrl?: string,
+    cacheKey?: string,
+  ): Promise<CryptoKey> {
+    const cacheMap = this.keyCache;
+    const ck = cacheKey ?? keyUri;
+    const cached = cacheMap.get(ck);
+    if (cached) return cached;
+
+    const response = await fetch(keyUri, {
+      credentials: 'include',
+      headers: buildFetchHeaders(tabUrl),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch AES-128 key: ${response.status}`);
+    }
+    const keyBuffer = await response.arrayBuffer();
+    if (keyBuffer.byteLength !== 16) {
+      throw new Error(
+        `AES-128 key must be 16 bytes, got ${keyBuffer.byteLength}`,
+      );
+    }
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyBuffer,
+      { name: 'AES-CBC' },
+      false,
+      ['decrypt'],
+    );
+    cacheMap.set(ck, cryptoKey);
+    return cryptoKey;
+  }
+
+  /**
+   * Decrypt an AES-128-CBC encrypted segment blob.
+   *
+   * IV handling:
+   * - If `encryption.iv` is present, parse it as a hex string → 16-byte Uint8Array.
+   * - If absent, derive from segment sequence number (16-byte big-endian per RFC 8216 §4.3.2.4).
+   *
+   * @returns Decrypted Blob (video/mp2t)
+   */
+  async decryptSegment(
+    encryptedBlob: Blob,
+    key: CryptoKey,
+    encryption: HlsEncryption,
+    sequence?: number,
+  ): Promise<Blob> {
+    const encryptedData = new Uint8Array(await encryptedBlob.arrayBuffer());
+
+    let iv: Uint8Array;
+    if (encryption.iv) {
+      iv = parseIvFromHex(encryption.iv);
+    } else {
+      iv = deriveIvFromSequence(sequence ?? 0);
+    }
+
+    const decryptedBuffer = await crypto.subtle.decrypt(
+      { name: 'AES-CBC', iv: iv as BufferSource },
+      key,
+      encryptedData,
+    );
+
+    return new Blob([decryptedBuffer], { type: 'video/mp2t' });
+  }
+
+  /**
+   * Fetch a segment with optional byte-range support.
+   *
+   * When `byteRange` is provided, adds a `Range: bytes=start-end` header.
+   * Accepts both 206 (Partial Content) and 200 (full content) responses.
+   */
+  async fetchSegmentWithRange(
+    url: string,
+    tabUrl: string | undefined,
+    byteRange?: ByteRange,
+  ): Promise<Blob> {
+    if (!byteRange) {
+      return this.fetchSegment(url, tabUrl);
+    }
+
+    const start = byteRange.offset ?? 0;
+    const end = start + byteRange.length - 1;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        credentials: 'same-origin',
+        headers: {
+          ...buildFetchHeaders(tabUrl),
+          Range: `bytes=${start}-${end}`,
+        },
+      });
+      if (!response.ok && response.status !== 206) {
+        throw new Error(`Byte-range fetch failed: ${response.status}`);
+      }
+      const blob = await response.blob();
+      if (blob.size === 0) {
+        throw new Error('Byte-range response was empty');
+      }
+      return blob;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /**
    * Fetch all .ts segments from an m3u8 media playlist.
    *
    * Calls `onSegmentProgress(current, total)` after each segment is fetched.
@@ -275,8 +530,12 @@ export class Downloader {
   async fetchAllSegments(
     playlistUrl: string,
     onSegmentProgress: (current: number, total: number) => void,
+    tabUrl?: string,
   ): Promise<Blob[]> {
-    const response = await fetch(playlistUrl, { credentials: 'include' });
+    const response = await fetch(playlistUrl, {
+      credentials: 'include',
+      headers: buildFetchHeaders(tabUrl),
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch playlist: ${response.status}`);
     }
@@ -286,7 +545,7 @@ export class Downloader {
     const segments = playlist.segments;
     const blobs: Blob[] = [];
     for (let i = 0; i < segments.length; i++) {
-      const blob = await this.fetchSegment(segments[i].url);
+      const blob = await this.fetchSegment(segments[i].url, tabUrl);
       blobs.push(blob);
       onSegmentProgress(i + 1, segments.length);
     }
@@ -318,7 +577,10 @@ export class Downloader {
   ): Promise<void> {
     this.reportProgress(downloadId, 'downloading', 0);
 
-    const response = await fetch(video.url, { credentials: 'include' });
+    const response = await fetch(video.url, {
+      credentials: 'include',
+      headers: buildFetchHeaders(video.tabUrl),
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch video: ${response.status}`);
     }
@@ -327,7 +589,10 @@ export class Downloader {
     this.throwIfCancelled(downloadId);
     this.reportProgress(downloadId, 'converting', 50);
 
-    const filename = generateFileName(video.title, 'mp4');
+    const filename = generateFileName(
+      resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
+      'mp4',
+    );
     await this.saveBlob(blob, filename);
 
     this.throwIfCancelled(downloadId);
@@ -340,8 +605,13 @@ export class Downloader {
   ): Promise<void> {
     this.reportProgress(downloadId, 'downloading', 0);
 
+    const videoHeaders = buildFetchHeaders(video.tabUrl);
+
     // Fetch + parse the (possibly master) playlist.
-    const response = await fetch(video.url, { credentials: 'include' });
+    const response = await fetch(video.url, {
+      credentials: 'include',
+      headers: videoHeaders,
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch playlist: ${response.status}`);
     }
@@ -349,18 +619,37 @@ export class Downloader {
     let playlist = parseM3u8(content, video.url);
 
     // If master playlist, pick the first variant (highest quality) and parse it.
-    if (playlist.isMasterPlaylist) {
+    // Handle nested master playlists (master → master → media) with max depth 3.
+    const MAX_MASTER_DEPTH = 3;
+    let masterDepth = 0;
+    while (playlist.isMasterPlaylist && masterDepth < MAX_MASTER_DEPTH) {
       if (playlist.variants.length === 0) {
         throw new Error('Master playlist has no variants');
       }
       const variantUrl = playlist.variants[0].url;
       this.throwIfCancelled(downloadId);
-      const variantResponse = await fetch(variantUrl, { credentials: 'include' });
+      const variantResponse = await fetch(variantUrl, {
+        credentials: 'include',
+        headers: videoHeaders,
+      });
       if (!variantResponse.ok) {
         throw new Error(`Failed to fetch variant playlist: ${variantResponse.status}`);
       }
       content = await variantResponse.text();
       playlist = parseM3u8(content, variantUrl);
+      masterDepth++;
+    }
+    if (playlist.isMasterPlaylist) {
+      throw new Error(`Nested playlist depth exceeded (${MAX_MASTER_DEPTH}) — unable to find media playlist`);
+    }
+
+    // Guard: if no segments were found, the playlist may be invalid or the
+    // server returned an error page (e.g. HTML instead of m3u8). Abort early
+    // instead of saving a 0-byte file.
+    if (playlist.segments.length === 0) {
+      throw new Error(
+        'No segments found in playlist — the URL may be expired or invalid',
+      );
     }
 
     this.throwIfCancelled(downloadId);
@@ -368,7 +657,7 @@ export class Downloader {
     const opfsAvailable = isOpfsAvailable();
 
     if (opfsAvailable) {
-      await this.downloadM3u8Streaming(video, downloadId, playlist.segments);
+      await this.downloadM3u8Streaming(video, downloadId, playlist);
     } else {
       // Fallback: legacy in-memory flow for browsers without OPFS.
       await this.downloadM3u8Legacy(video, downloadId, playlist.segments);
@@ -383,8 +672,9 @@ export class Downloader {
   private async downloadM3u8Streaming(
     video: DetectedVideo,
     downloadId: string,
-    segments: TsSegment[],
+    playlist: M3u8Playlist,
   ): Promise<void> {
+    const segments = playlist.segments;
     const totalSegments = segments.length;
     const dirHandle = await ensureDownloadSubdir(downloadId);
     let totalBytes = 0;
@@ -392,6 +682,48 @@ export class Downloader {
     const timer = new ConversionTimer(downloadId);
     timer.start('download');
     const downloadStartedAt = performance.now();
+
+    // --- AES-128 decryption setup ---
+    // If the playlist is encrypted, fetch the key once before the segment loop.
+    // Each segment will be decrypted after fetch and before OPFS write.
+    let aesKey: CryptoKey | undefined;
+    if (playlist.encryption && playlist.encryption.method === 'AES-128') {
+      this.throwIfCancelled(downloadId);
+      console.debug(`[downloader] Playlist is AES-128 encrypted, fetching key: ${playlist.encryption.keyUri}`);
+      aesKey = await this.fetchKey(
+        playlist.encryption.keyUri,
+        video.tabUrl,
+        downloadId,
+      );
+      console.debug('[downloader] AES-128 key fetched and cached');
+    }
+
+    // --- fMP4 / CMAF setup ---
+    // If the playlist has an init segment (#EXT-X-MAP), fetch it and write it
+    // to OPFS first. The .m4s segments are concatenated after the init segment
+    // to produce a valid fragmented MP4 file — no transmuxing needed.
+    const isFmp4 = !!playlist.initSegment;
+    const opfsFilename = isFmp4 ? 'input.mp4' : 'input.ts';
+    const outputMimeType = isFmp4 ? 'video/mp4' : 'video/mp2t';
+
+    if (isFmp4 && playlist.initSegment) {
+      this.throwIfCancelled(downloadId);
+      console.debug(`[downloader] fMP4 playlist detected, fetching init segment: ${playlist.initSegment.uri}`);
+      const initBlob = await this.fetchSegmentWithRange(
+        playlist.initSegment.uri,
+        video.tabUrl,
+        playlist.initSegment.byteRange,
+      );
+      // Write init segment to OPFS first (before any .m4s segments)
+      const initWriter = await createOpfsWriter(dirHandle, opfsFilename);
+      try {
+        await initWriter.write(initBlob);
+        totalBytes += initBlob.size;
+      } finally {
+        await initWriter.close();
+      }
+      console.debug(`[downloader] Init segment written (${initBlob.size} bytes)`);
+    }
 
     // Phase 1: Fetch segments in parallel batches, write sequentially to OPFS
     // via a single open writable stream (0–80%).
@@ -403,20 +735,41 @@ export class Downloader {
     //   writable stream is not safe for concurrent writes.
     // - The writable stream is opened once and closed once, avoiding the
     //   per-segment open/seek/write/close overhead of `appendChunk()`.
+    // Filter out ad segments using discontinuity-based ad break detection.
+    // #EXT-X-DISCONTINUITY separates sections. Even sections (0, 2, 4...) are
+    // content; odd sections (1, 3, 5...) are ad breaks. A segment with
+    // `discontinuity: true` starts a new section.
+    let sectionIndex = 0;
+    const contentSegments = segments.filter((s) => {
+      if (s.discontinuity) sectionIndex++;
+      return sectionIndex % 2 === 0;
+    });
+    const skippedAds = totalSegments - contentSegments.length;
+    if (skippedAds > 0) {
+      console.debug(`[downloader] Skipping ${skippedAds} ad segments (${Math.floor(sectionIndex / 2)} ad breaks detected)`);
+    }
+    if (contentSegments.length === 0) {
+      throw new Error('All segments are in ad breaks — no content to download');
+    }
+    const effectiveTotal = contentSegments.length;
+
     console.debug(
-      `[downloader] Starting parallel download: ${totalSegments} segments, concurrency=${DEFAULT_SEGMENT_CONCURRENCY}`,
+      `[downloader] Starting parallel download: ${effectiveTotal} segments (${skippedAds} ads skipped), concurrency=${this.segmentConcurrency}`,
     );
-    const writer = await createOpfsWriter(dirHandle, 'input.ts');
+    const writer = await createOpfsWriter(dirHandle, opfsFilename);
     try {
-      for (let start = 0; start < totalSegments; start += DEFAULT_SEGMENT_CONCURRENCY) {
+      for (let start = 0; start < effectiveTotal; start += this.segmentConcurrency) {
         this.throwIfCancelled(downloadId);
 
-        const batch = segments.slice(start, start + DEFAULT_SEGMENT_CONCURRENCY);
+        const batch = contentSegments.slice(start, start + this.segmentConcurrency);
         const batchStart = performance.now();
 
         // Fetch all segments in the batch concurrently.
+        // Use fetchSegmentWithRange for byte-range support.
         const blobs = await Promise.all(
-          batch.map((segment) => this.fetchSegment(segment.url)),
+          batch.map((segment) =>
+            this.fetchSegmentWithRange(segment.url, video.tabUrl, segment.byteRange),
+          ),
         );
 
         const fetchMs = Math.round(performance.now() - batchStart);
@@ -424,8 +777,22 @@ export class Downloader {
         // Write in original playlist order.
         for (let j = 0; j < blobs.length; j++) {
           this.throwIfCancelled(downloadId);
-          const blob = blobs[j];
+          let blob = blobs[j];
           const segmentIndex = start + j;
+
+          // Decrypt if AES-128 encryption is active.
+          if (aesKey && playlist.encryption) {
+            blob = await this.decryptSegment(
+              blob,
+              aesKey,
+              playlist.encryption,
+              segmentIndex,
+            );
+            if (blob.size === 0) {
+              throw new Error('Decrypted segment was empty');
+            }
+          }
+
           const segmentStartByte = totalBytes;
           totalBytes += blob.size;
           try {
@@ -452,12 +819,12 @@ export class Downloader {
             startByte: segmentStartByte,
             endByte: totalBytes,
             size: blob.size,
-            duration: segments[segmentIndex]?.duration,
+            duration: contentSegments[segmentIndex]?.duration,
           });
 
           const current = start + j + 1;
-          const pct = Math.floor((current / totalSegments) * 80);
-          this.reportProgress(downloadId, 'downloading', pct, current, totalSegments);
+          const pct = Math.floor((current / effectiveTotal) * 80);
+          this.reportProgress(downloadId, 'downloading', pct, current, effectiveTotal, totalBytes, totalBytes);
         }
 
         const batchEnd = start + blobs.length;
@@ -512,18 +879,34 @@ export class Downloader {
     );
     console.debug(parallelPlan.summary);
 
-    // Phase 2: Attempt conversion (85–98%) or save .ts directly.
+    // Phase 2: Save the file.
     //
-    // When `saveOpfsFileCallback` is set, the file is saved directly from OPFS
-    // (via an offscreen-owned Blob URL) WITHOUT reading it into an ArrayBuffer
-    // or converting to a data: URL. This avoids a ~1.4GB memory spike on a
-    // 430MB file. If the callback is unset (e.g. in unit tests or browsers
-    // without offscreen support), we fall back to the legacy `saveBlob` path
-    // which materializes the file — acceptable only for small files.
+    // For fMP4 (.m4s) playlists: the concatenated init + segments already form
+    // a valid fragmented MP4 file — NO transmuxing needed. Save as .mp4 directly.
+    //
+    // For .ts playlists: attempt transmux conversion (TS→MP4) if configured.
+    // Fallback to .ts if conversion fails or is disabled.
     let savedFilename: string;
 
-    if (shouldConvert && this.convertCallback) {
-      this.reportProgress(downloadId, 'converting', 85);
+    if (isFmp4) {
+      // fMP4 path: save directly as .mp4 (no transmux needed).
+      this.reportProgress(downloadId, 'converting', 98, undefined, undefined, totalBytes, totalBytes);
+      savedFilename = generateFileName(
+        resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
+        'mp4',
+      );
+      this.throwIfCancelled(downloadId);
+      timer.start('save');
+      await this.saveOpfsFile(
+        downloadId,
+        opfsFilename,
+        savedFilename,
+        outputMimeType,
+      );
+      timer.end('save');
+      console.debug(`[downloader] fMP4 saved directly as .mp4 (${totalBytes} bytes, no transmux)`);
+    } else if (shouldConvert && this.convertCallback) {
+      this.reportProgress(downloadId, 'converting', 85, undefined, undefined, totalBytes, totalBytes);
       timer.start('convert');
       const convertStartedAt = performance.now();
       try {
@@ -531,8 +914,11 @@ export class Downloader {
         const convertMs = Math.round(performance.now() - convertStartedAt);
         timer.end('convert');
         console.debug(`[downloader] Conversion succeeded in ${convertMs}ms`);
-        savedFilename = generateFileName(video.title, 'mp4');
-        this.reportProgress(downloadId, 'converting', 98);
+        savedFilename = generateFileName(
+          resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
+          'mp4',
+        );
+        this.reportProgress(downloadId, 'converting', 98, undefined, undefined, totalBytes, totalBytes);
 
         this.throwIfCancelled(downloadId);
         timer.start('save');
@@ -552,11 +938,14 @@ export class Downloader {
           convertError instanceof Error ? convertError.message : convertError,
         );
         // Fallback: save the .ts file from OPFS (without materializing it).
-        savedFilename = generateFileName(video.title, 'ts');
+        savedFilename = generateFileName(
+          resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
+          'ts',
+        );
         this.throwIfCancelled(downloadId);
         await this.saveOpfsFile(
           downloadId,
-          'input.ts',
+          opfsFilename,
           savedFilename,
           'video/mp2t',
         );
@@ -564,11 +953,14 @@ export class Downloader {
       }
     } else {
       // No conversion: save .ts directly from OPFS.
-      savedFilename = generateFileName(video.title, 'ts');
+      savedFilename = generateFileName(
+        resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
+        'ts',
+      );
       this.throwIfCancelled(downloadId);
       await this.saveOpfsFile(
         downloadId,
-        'input.ts',
+        opfsFilename,
         savedFilename,
         'video/mp2t',
       );
@@ -632,19 +1024,24 @@ export class Downloader {
   ): Promise<void> {
     const totalSegments = segments.length;
     const blobs: Blob[] = [];
+    let legacyTotalBytes = 0;
     for (let i = 0; i < totalSegments; i++) {
       this.throwIfCancelled(downloadId);
-      const blob = await this.fetchSegment(segments[i].url);
+      const blob = await this.fetchSegment(segments[i].url, video.tabUrl);
       blobs.push(blob);
+      legacyTotalBytes += blob.size;
       const pct = Math.floor(((i + 1) / totalSegments) * 80);
-      this.reportProgress(downloadId, 'downloading', pct, i + 1, totalSegments);
+      this.reportProgress(downloadId, 'downloading', pct, i + 1, totalSegments, legacyTotalBytes, legacyTotalBytes);
     }
 
     this.throwIfCancelled(downloadId);
 
     // Merge all segments into a single Blob (in-memory).
     const merged = new Blob(blobs, { type: 'video/mp2t' });
-    const filename = generateFileName(video.title, 'ts');
+    const filename = generateFileName(
+      resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
+      'ts',
+    );
     await this.saveBlob(merged, filename);
 
     this.throwIfCancelled(downloadId);
@@ -683,29 +1080,37 @@ export class Downloader {
     progress: number,
     currentSegment?: number,
     totalSegments?: number,
+    fileSize?: number,
+    downloadedBytes?: number,
   ): void {
     if (!this.progressCallback) return;
+    // Set downloadProgress / convertProgress based on the current phase.
+    // During 'downloading': downloadProgress = progress, convertProgress = 0.
+    // During 'converting': downloadProgress = 100, convertProgress is NOT set
+    //   here — the offscreen document broadcasts actual convert progress via
+    //   CONVERSION_PROGRESS_UPDATE, which the background relays with
+    //   convertProgress set. For subtitles (no offscreen), convertProgress
+    //   stays undefined and DownloadCard renders single-phase (acceptable
+    //   since subtitle conversion is instant).
+    // During 'done': both = 100.
+    const downloadProgress =
+      status === 'downloading' ? progress :
+      status === 'converting' || status === 'done' ? 100 :
+      undefined;
+    const convertProgress =
+      status === 'done' ? 100 :
+      undefined;
     this.progressCallback({
       itemId,
       status,
       progress,
       currentSegment,
       totalSegments,
+      ...(fileSize !== undefined ? { fileSize } : {}),
+      ...(downloadedBytes !== undefined ? { downloadedBytes } : {}),
+      ...(downloadProgress !== undefined ? { downloadProgress } : {}),
+      ...(convertProgress !== undefined ? { convertProgress } : {}),
     });
-  }
-}
-
-/**
- * Extract a base filename (without extension) from a URL path.
- */
-function extractBaseName(url: string): string {
-  try {
-    const path = new URL(url).pathname;
-    const file = path.slice(path.lastIndexOf('/') + 1);
-    const dot = file.lastIndexOf('.');
-    return dot > 0 ? file.slice(0, dot) : file;
-  } catch {
-    return 'subtitle';
   }
 }
 

@@ -43,8 +43,20 @@ interface MockChrome {
     onMessage: MockListener;
     getURL: jest.Mock;
   };
+  action: {
+    setBadgeText: jest.Mock;
+    setBadgeBackgroundColor: jest.Mock;
+    setBadgeTextColor: jest.Mock;
+  };
   tabs: {
     query: jest.Mock;
+    get: jest.Mock;
+    onUpdated: MockListener;
+    onRemoved: MockListener;
+    onActivated: MockListener;
+  };
+  windows: {
+    onFocusChanged: MockListener;
   };
   storage: {
     local: MockStorageArea;
@@ -82,8 +94,20 @@ function createMockChrome(): MockChrome {
       onMessage: createMockListener(),
       getURL: jest.fn((path: string) => `chrome-extension://fake-id/${path}`),
     },
+    action: {
+      setBadgeText: jest.fn().mockResolvedValue(undefined),
+      setBadgeBackgroundColor: jest.fn().mockResolvedValue(undefined),
+      setBadgeTextColor: jest.fn().mockResolvedValue(undefined),
+    },
     tabs: {
       query: jest.fn().mockResolvedValue([{ id: 123 }]),
+      get: jest.fn().mockResolvedValue({ id: 123, url: 'https://example.com/page', title: 'Test Page' }),
+      onUpdated: createMockListener(),
+      onRemoved: createMockListener(),
+      onActivated: createMockListener(),
+    },
+    windows: {
+      onFocusChanged: createMockListener(),
     },
     storage: {
       local: {
@@ -115,10 +139,15 @@ interface MockDownloader {
   setConvertCallback: jest.Mock;
   setSaveOpfsFileCallback: jest.Mock;
   setConvertMode: jest.Mock;
+  setSegmentConcurrency: jest.Mock;
   setParallelSettings: jest.Mock;
+  setFilenameSource: jest.Mock;
   downloadVideo: jest.Mock;
   downloadSubtitle: jest.Mock;
   cancel: jest.Mock;
+  pause: jest.Mock;
+  resume: jest.Mock;
+  retry: jest.Mock;
 }
 
 function createMockDownloader(): MockDownloader {
@@ -127,10 +156,15 @@ function createMockDownloader(): MockDownloader {
     setConvertCallback: jest.fn(),
     setSaveOpfsFileCallback: jest.fn(),
     setConvertMode: jest.fn(),
+    setSegmentConcurrency: jest.fn(),
     setParallelSettings: jest.fn(),
+    setFilenameSource: jest.fn(),
     downloadVideo: jest.fn().mockResolvedValue(undefined),
     downloadSubtitle: jest.fn().mockResolvedValue(undefined),
     cancel: jest.fn(),
+    pause: jest.fn(),
+    resume: jest.fn(),
+    retry: jest.fn(),
   };
 }
 
@@ -143,6 +177,8 @@ interface MockDownloadQueue {
   cancel: jest.Mock;
   pause: jest.Mock;
   resume: jest.Mock;
+  retry: jest.Mock;
+  remove: jest.Mock;
   getAll: jest.Mock;
   getById: jest.Mock;
   updateProgress: jest.Mock;
@@ -161,6 +197,8 @@ function createMockDownloadQueue(): MockDownloadQueue {
     cancel: jest.fn(),
     pause: jest.fn(),
     resume: jest.fn(),
+    retry: jest.fn(),
+    remove: jest.fn(),
     getAll: jest.fn(() => items),
     getById: jest.fn((id: string) => items.find((i) => i.id === id)),
     updateProgress: jest.fn(),
@@ -280,7 +318,36 @@ describe('Background integration', () => {
     expect(response.data?.subtitles).toEqual([]);
   });
 
-  it('GET_DETECTED_MEDIA falls back to all-tab media when no active tab is found', async () => {
+  it('GET_DETECTED_MEDIA does NOT fall back to all-tab media when active tab is empty', async () => {
+    // Active tab (123) has no media; a different tab (99) has media.
+    mockChrome.tabs.query.mockResolvedValue([{ id: 123 }]);
+
+    interceptor.handleRequest({
+      url: 'https://cdn.example.com/other-tab.m3u8',
+      method: 'GET',
+      tabId: 99,
+      type: 'media',
+      timeStamp: Date.now(),
+      documentLifecycle: 'active',
+      frameId: 0,
+      frameType: 'outermost_frame',
+      parentFrameId: -1,
+      requestId: 'req-other',
+    } as chrome.webRequest.OnBeforeRequestDetails);
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.GET_DETECTED_MEDIA,
+    };
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+
+    // Must return empty — NOT leak media from tab 99.
+    expect(response.success).toBe(true);
+    const data = response.data as DetectedMediaUpdatePayload | undefined;
+    expect(data?.videos).toHaveLength(0);
+    expect(data?.subtitles).toHaveLength(0);
+  });
+
+  it('GET_DETECTED_MEDIA returns empty when no active tab is found', async () => {
     // No focused tab available.
     mockChrome.tabs.query.mockResolvedValue([]);
 
@@ -303,11 +370,43 @@ describe('Background integration', () => {
     };
     const response = await messageBus.handleMessage(request, { id: 'tab' });
 
-    // Should succeed and return the media from tab 99 via the all-tabs fallback.
+    // No active tab → empty, NOT all-tab fallback.
     expect(response.success).toBe(true);
     const data = response.data as DetectedMediaUpdatePayload | undefined;
-    expect(data?.videos).toHaveLength(1);
-    expect(data?.videos[0].url).toContain('fallback.m3u8');
+    expect(data?.videos).toHaveLength(0);
+    expect(data?.subtitles).toHaveLength(0);
+  });
+
+  it('GET_DETECTED_MEDIA returns only the requested tab media when tabId is provided', async () => {
+    // Media on tab 123 and tab 99.
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/tabA.mp4', 123),
+    );
+    interceptor.handleRequest({
+      url: 'https://cdn.example.com/tabB.m3u8',
+      method: 'GET',
+      tabId: 99,
+      type: 'media',
+      timeStamp: Date.now(),
+      documentLifecycle: 'active',
+      frameId: 0,
+      frameType: 'outermost_frame',
+      parentFrameId: -1,
+      requestId: 'req-tabB',
+    } as chrome.webRequest.OnBeforeRequestDetails);
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.GET_DETECTED_MEDIA,
+      payload: { tabId: 123 },
+    };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'tab',
+    })) as MessageResponse<DetectedMediaUpdatePayload>;
+
+    expect(response.success).toBe(true);
+    expect(response.data?.videos).toHaveLength(1);
+    expect(response.data?.videos[0]?.url).toBe('https://example.com/tabA.mp4');
+    expect(response.data?.tabId).toBe(123);
   });
 
   // 3. DOWNLOAD_VIDEO creates download item + adds to queue
@@ -391,6 +490,35 @@ describe('Background integration', () => {
     expect(items.filter((i) => i.mediaType === 'subtitle')).toHaveLength(1);
   });
 
+  it('DOWNLOAD_ALL does NOT fall back to all-tab media when the requested tab is empty', async () => {
+    // Tab 123 (active) has no media; tab 99 has media.
+    interceptor.handleRequest({
+      url: 'https://cdn.example.com/other-tab.m3u8',
+      method: 'GET',
+      tabId: 99,
+      type: 'media',
+      timeStamp: Date.now(),
+      documentLifecycle: 'active',
+      frameId: 0,
+      frameType: 'outermost_frame',
+      parentFrameId: -1,
+      requestId: 'req-other',
+    } as chrome.webRequest.OnBeforeRequestDetails);
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.DOWNLOAD_ALL,
+      payload: { tabId: 123 },
+    };
+    const response = (await messageBus.handleMessage(request, {
+      id: 'popup',
+    })) as MessageResponse<DownloadListResponse>;
+
+    // Must fail — NOT leak/download media from tab 99.
+    expect(response.success).toBe(false);
+    expect(response.error).toContain('No media');
+    expect(mockQueue.addAll).not.toHaveBeenCalled();
+  });
+
   // 5. CANCEL_DOWNLOAD calls queue.cancel
   it('CANCEL_DOWNLOAD calls queue.cancel and downloader.cancel', async () => {
     const request: MessageRequest = {
@@ -404,7 +532,7 @@ describe('Background integration', () => {
     expect(mockDownloader.cancel).toHaveBeenCalledWith('dl-1');
   });
 
-  it('PAUSE_DOWNLOAD calls queue.pause', async () => {
+  it('PAUSE_DOWNLOAD calls queue.pause and downloader.pause', async () => {
     const request: MessageRequest = {
       type: MESSAGE_TYPES.PAUSE_DOWNLOAD,
       payload: { downloadId: 'dl-1' },
@@ -412,9 +540,10 @@ describe('Background integration', () => {
     await messageBus.handleMessage(request, { id: 'popup' });
 
     expect(mockQueue.pause).toHaveBeenCalledWith('dl-1');
+    expect(mockDownloader.pause).toHaveBeenCalledWith('dl-1');
   });
 
-  it('RESUME_DOWNLOAD calls queue.resume', async () => {
+  it('RESUME_DOWNLOAD calls queue.resume and downloader.resume', async () => {
     const request: MessageRequest = {
       type: MESSAGE_TYPES.RESUME_DOWNLOAD,
       payload: { downloadId: 'dl-1' },
@@ -422,6 +551,28 @@ describe('Background integration', () => {
     await messageBus.handleMessage(request, { id: 'popup' });
 
     expect(mockQueue.resume).toHaveBeenCalledWith('dl-1');
+    expect(mockDownloader.resume).toHaveBeenCalledWith('dl-1');
+  });
+
+  it('RETRY_DOWNLOAD calls queue.retry and downloader.retry', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.RETRY_DOWNLOAD,
+      payload: { downloadId: 'dl-1' },
+    };
+    await messageBus.handleMessage(request, { id: 'popup' });
+
+    expect(mockQueue.retry).toHaveBeenCalledWith('dl-1');
+    expect(mockDownloader.retry).toHaveBeenCalledWith('dl-1');
+  });
+
+  it('REMOVE_DOWNLOAD calls queue.remove', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.REMOVE_DOWNLOAD,
+      payload: { downloadId: 'dl-1' },
+    };
+    await messageBus.handleMessage(request, { id: 'popup' });
+
+    expect(mockQueue.remove).toHaveBeenCalledWith('dl-1');
   });
 
   it('GET_DOWNLOAD_PROGRESS returns all downloads from the queue', async () => {
@@ -448,6 +599,8 @@ describe('Background integration', () => {
       parallelConversion: 'auto',
       manualWorkerCount: 4,
       parallelFallback: 'save-ts',
+      segmentConcurrency: 6,
+      filenameSource: 'title-fallback',
     };
     mockChrome.storage.local.get.mockResolvedValue({
       [STORAGE_KEYS.SETTINGS]: storedSettings,
@@ -498,7 +651,7 @@ describe('Background integration', () => {
     // Missing fields should be filled with defaults.
     expect(response.data?.parallelConversion).toBe('auto');
     expect(response.data?.manualWorkerCount).toBe(4);
-    expect(response.data?.parallelFallback).toBe('save-ts');
+    expect(response.data?.parallelFallback).toBe('sequential');
   });
 
   // 7. UPDATE_SETTINGS saves to storage + applies to queue
@@ -661,6 +814,58 @@ describe('Background integration', () => {
     );
   });
 
+  it('sets toolbar badge to media count when network interceptor detects new media', async () => {
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/new.m3u8', 123),
+    );
+
+    expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({
+      text: '1',
+      tabId: 123,
+    });
+    expect(mockChrome.action.setBadgeBackgroundColor).toHaveBeenCalledWith({
+      color: '#2563eb',
+      tabId: 123,
+    });
+    expect(mockChrome.action.setBadgeTextColor).toHaveBeenCalledWith({
+      color: '#ffffff',
+      tabId: 123,
+    });
+  });
+
+  it('clears toolbar badge when TOGGLE_EXTENSION disables the extension', async () => {
+    mockChrome.action.setBadgeText.mockClear();
+
+    const request: MessageRequest = { type: MESSAGE_TYPES.TOGGLE_EXTENSION };
+    await messageBus.handleMessage(request, { id: 'sender-1' });
+
+    expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({ text: '' });
+  });
+
+  it('clears toolbar badge when tab navigates to a new page', async () => {
+    // Add media first so there is a badge to clear.
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/new.m3u8', 123),
+    );
+    expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({
+      text: '1',
+      tabId: 123,
+    });
+
+    mockChrome.action.setBadgeText.mockClear();
+
+    const onUpdated = mockChrome.tabs.onUpdated.addListener.mock.calls[0][0] as (
+      tabId: number,
+      changeInfo: chrome.tabs.OnUpdatedInfo,
+    ) => void;
+    onUpdated(123, { status: 'loading' });
+
+    expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({
+      text: '',
+      tabId: 123,
+    });
+  });
+
   // --- convert callback wiring ---
 
   it('sets a convert callback on the downloader that uses the offscreen document', async () => {
@@ -739,6 +944,66 @@ describe('Background integration', () => {
     await expect(
       saveCallback('dl-1', 'input.ts', 'video.ts', 'video/mp2t'),
     ).rejects.toThrow(/did not respond to CREATE_OPFS_BLOB_URL/i);
+  });
+
+  // --- CONVERSION_PROGRESS_UPDATE handler ---
+
+  it('CONVERSION_PROGRESS_UPDATE broadcasts DOWNLOAD_PROGRESS_UPDATE with conversion detail', async () => {
+    mockChrome.runtime.sendMessage.mockClear();
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE,
+      payload: {
+        downloadId: 'dl-conv-1',
+        percent: 90,
+        phase: 'transmuxing',
+        fileSize: 424 * 1024 * 1024,
+        processedBytes: 212 * 1024 * 1024,
+        workerCount: 4,
+        usedWorkers: true,
+      },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'offscreen' });
+
+    expect(response.success).toBe(true);
+    expect(mockQueue.updateProgress).toHaveBeenCalledWith(
+      expect.objectContaining({
+        itemId: 'dl-conv-1',
+        status: 'converting',
+        progress: 90,
+        conversionPhase: 'transmuxing',
+        workerCount: 4,
+        usedWorkers: true,
+      }),
+    );
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.DOWNLOAD_PROGRESS_UPDATE,
+        payload: expect.objectContaining({
+          progress: expect.objectContaining({
+            itemId: 'dl-conv-1',
+            status: 'converting',
+            progress: 90,
+            conversionPhase: 'transmuxing',
+            workerCount: 4,
+            usedWorkers: true,
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('CONVERSION_PROGRESS_UPDATE returns error when downloadId is missing', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE,
+      payload: {},
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'offscreen' });
+
+    expect(response.success).toBe(false);
+    expect(response.error).toMatch(/downloadId/i);
   });
 });
 

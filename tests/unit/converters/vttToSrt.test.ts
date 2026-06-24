@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { convertVttToSrt, stripInlineTagsOnly } from '@/lib/converters/vttToSrt';
+import { convertVttToSrt } from '@/lib/converters/vttToSrt';
 
 const fixturePath = join(__dirname, '..', 'fixtures', 'sample.vtt');
 
@@ -194,30 +194,6 @@ describe('convertVttToSrt', () => {
     // The empty cue should be skipped; the remaining cue should be index 1.
     expect(srt).toContain('1\n00:00:06,000 --> 00:00:10,000\nReal subtitle text');
     expect(srt).not.toContain('00:00:01,000');
-  });
-
-  it('stripInlineTagsOnly: strips tags but preserves blank lines (for raw SRT content)', () => {
-    const rawSrt = [
-      '1',
-      '00:00:01,000 --> 00:00:05,000',
-      '{\\an8}<i>Stay with me.</i>',
-      '',
-      '2',
-      '00:00:06,000 --> 00:00:10,000',
-      '<i>I won\'t let you!</i>',
-      '',
-    ].join('\n');
-
-    const result = stripInlineTagsOnly(rawSrt);
-
-    // Tags removed but blank lines preserved.
-    expect(result).not.toContain('{\\an8}');
-    expect(result).not.toContain('<i>');
-    expect(result).not.toContain('</i>');
-    expect(result).toContain('Stay with me.');
-    expect(result).toContain('I won\'t let you!');
-    // Blank line between cues must remain intact.
-    expect(result).toContain('\n\n');
   });
 
   it('converts the sample.vtt fixture correctly', () => {

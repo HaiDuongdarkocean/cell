@@ -13,6 +13,8 @@
 
 import { MESSAGE_TYPES } from '@/constants/messages';
 import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
+import { executeParallelConversion } from '@/lib/converters/parallelCoordinator';
+import { readSegmentRanges } from '@/lib/converters/parallelTransmuxer';
 import {
   ensureDownloadSubdir,
   readFile as opfsReadFile,
@@ -20,12 +22,14 @@ import {
 import type {
   ConvertTsToMp4V2Payload,
   ConvertTsToMp4V2ResultPayload,
+  ConversionProgressUpdatePayload,
   CreateOpfsBlobUrlPayload,
   CreateOpfsBlobUrlResultPayload,
   RevokeOpfsBlobUrlPayload,
   MessageRequest,
   MessageResponse,
 } from '@/types/message';
+import type { Settings, ConversionPhase } from '@/types/media';
 
 /** Currently-registered message listener (kept so it can be removed). */
 let messageListener:
@@ -46,8 +50,70 @@ let messageListener:
 const activeBlobUrls = new Map<string, true>();
 
 /**
+ * Current parallel conversion settings. Updated via setParallelSettings().
+ * Default to 'off' so the sequential path remains active until the user
+ * or auto-enablement gates turn on parallel.
+ */
+let parallelSettings: Pick<Settings, 'parallelConversion' | 'manualWorkerCount' | 'parallelFallback'> = {
+  parallelConversion: 'off',
+  manualWorkerCount: 4,
+  parallelFallback: 'sequential',
+};
+
+/**
+ * Update parallel conversion settings. Called when the background script
+ * receives updated settings from the popup.
+ */
+export function setParallelSettings(
+  settings: Pick<Settings, 'parallelConversion' | 'manualWorkerCount' | 'parallelFallback'>,
+): void {
+  parallelSettings = settings;
+  console.debug(`[offscreen-runner] Parallel settings updated: mode=${settings.parallelConversion}, workers=${settings.manualWorkerCount}`);
+}
+
+/**
+ * Broadcast conversion progress to the background script so it can relay
+ * the update to the popup.
+ *
+ * Uses `chrome.runtime.sendMessage` (fire-and-forget). The background
+ * listener handles `CONVERSION_PROGRESS_UPDATE` and re-broadcasts it as a
+ * progress update to the popup.
+ */
+function broadcastConversionProgress(
+  downloadId: string,
+  percent: number,
+  phase: ConversionPhase,
+  fileSize: number,
+  processedBytes: number,
+  workerCount: number,
+  usedWorkers: boolean,
+): void {
+  const payload: ConversionProgressUpdatePayload = {
+    downloadId,
+    percent,
+    phase,
+    fileSize,
+    processedBytes,
+    workerCount,
+    usedWorkers,
+  };
+  const request: MessageRequest = {
+    type: MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE,
+    payload,
+  };
+  // Fire-and-forget — the popup may not be open, and that's fine.
+  void chrome.runtime.sendMessage(request).catch(() => {
+    // Popup/background may not be listening — ignore.
+  });
+}
+
+/**
  * Convert a `.ts` file stored in OPFS (`downloads/{downloadId}/input.ts`) into
  * a fragmented MP4 file (`output.mp4`) in the same OPFS directory.
+ *
+ * Uses the parallel conversion coordinator when parallel mode is enabled.
+ * Falls back to the sequential transmuxer when parallel is 'off' or when
+ * the safety analyzer determines the input is not eligible.
  *
  * @returns The result payload `{ downloadId, outputName, mimeType, success }`.
  */
@@ -58,14 +124,97 @@ export async function convertTsToMp4V2(
   console.debug(`[offscreen-runner] Starting V2 conversion for ${downloadId}`);
 
   const dirHandle = await ensureDownloadSubdir(downloadId);
-  console.debug(`[offscreen-runner] OPFS dir ready for ${downloadId}`);
-
   const inputFile = await opfsReadFile(dirHandle, 'input.ts');
+  const fileSize = inputFile.size;
   const readMs = Math.round(performance.now() - startedAt);
   console.debug(
-    `[offscreen-runner] Read input.ts (${inputFile.size} bytes) for ${downloadId} in ${readMs}ms`,
+    `[offscreen-runner] Read input.ts (${fileSize} bytes) for ${downloadId} in ${readMs}ms`,
   );
 
+  // Try parallel conversion if enabled
+  if (parallelSettings.parallelConversion !== 'off') {
+    console.debug(`[offscreen-runner] Parallel mode: ${parallelSettings.parallelConversion}`);
+
+    // Read segment ranges from OPFS
+    const segmentRanges = await readSegmentRanges(downloadId);
+    if (segmentRanges && segmentRanges.length > 0) {
+      const hardwareConcurrency = typeof navigator !== 'undefined'
+        ? navigator.hardwareConcurrency
+        : undefined;
+
+      // Track the worker count outside the callback so it can be updated
+      // after the plan is created. Using `parallelResult?.workerCount` inside
+      // the callback would be a TDZ violation — `parallelResult` is not yet
+      // initialized while `executeParallelConversion` is still running.
+      let currentWorkerCount = 0;
+
+      const parallelResult = await executeParallelConversion(
+        parallelSettings,
+        downloadId,
+        segmentRanges,
+        fileSize,
+        hardwareConcurrency,
+        0,
+        (percent, phase) => {
+          // Estimate processed bytes from percent (transmuxing phase is 86–95%)
+          const processedBytes = Math.floor((percent / 100) * fileSize);
+
+          broadcastConversionProgress(
+            downloadId,
+            percent,
+            phase,
+            fileSize,
+            processedBytes,
+            currentWorkerCount,
+            true,
+          );
+
+          console.debug(
+            `[offscreen-runner] Parallel progress for ${downloadId}: ${phase} ${percent}%`,
+          );
+        },
+      );
+
+      // Update the worker count for any final progress broadcasts.
+      currentWorkerCount = parallelResult.workerCount ?? 0;
+
+      const totalMs = Math.round(performance.now() - startedAt);
+      console.debug(
+        `[offscreen-runner] Conversion ${parallelResult.success ? 'completed' : 'failed'} for ${downloadId} in ${totalMs}ms (parallel=${parallelResult.usedParallel}, workers=${parallelResult.workerCount ?? 0})`,
+      );
+
+      if (!parallelResult.success) {
+        console.error(
+          `[offscreen-runner] Conversion failed for ${downloadId}: ${parallelResult.error}`,
+        );
+        return {
+          downloadId,
+          outputName: parallelResult.outputName,
+          mimeType: 'video/mp4',
+          success: false,
+          error: parallelResult.error,
+          workerCount: parallelResult.workerCount,
+          usedWorkers: parallelResult.usedParallel,
+          durationMs: totalMs,
+        };
+      }
+
+      return {
+        downloadId,
+        outputName: parallelResult.outputName,
+        mimeType: 'video/mp4',
+        success: true,
+        workerCount: parallelResult.workerCount,
+        usedWorkers: parallelResult.usedParallel,
+        durationMs: totalMs,
+      };
+    }
+
+    // No segment ranges — fall back to sequential
+    console.debug(`[offscreen-runner] No segment ranges, falling back to sequential for ${downloadId}`);
+  }
+
+  // Sequential conversion (default or fallback)
   const transmuxStartedAt = performance.now();
   const result = await transmuxTsToFmp4(
     inputFile,
@@ -73,6 +222,15 @@ export async function convertTsToMp4V2(
     'output.mp4',
     (processedBytes, totalBytes) => {
       const pct = Math.floor((processedBytes / totalBytes) * 100);
+      broadcastConversionProgress(
+        downloadId,
+        pct,
+        'transmuxing',
+        fileSize,
+        processedBytes,
+        0,
+        false,
+      );
       console.debug(
         `[offscreen-runner] Convert progress for ${downloadId}: ${pct}% (${processedBytes}/${totalBytes})`,
       );
@@ -80,7 +238,7 @@ export async function convertTsToMp4V2(
   );
   const transmuxMs = Math.round(performance.now() - transmuxStartedAt);
   console.debug(
-    `[offscreen-runner] Transmux ${result.success ? 'completed' : 'failed'} for ${downloadId} in ${transmuxMs}ms`,
+    `[offscreen-runner] Sequential transmux ${result.success ? 'completed' : 'failed'} for ${downloadId} in ${transmuxMs}ms`,
   );
 
   if (!result.success) {
@@ -93,6 +251,9 @@ export async function convertTsToMp4V2(
       mimeType: 'video/mp4',
       success: false,
       error: result.error,
+      workerCount: 0,
+      usedWorkers: false,
+      durationMs: transmuxMs,
     };
   }
 
@@ -102,6 +263,9 @@ export async function convertTsToMp4V2(
     outputName: result.outputName,
     mimeType: 'video/mp4',
     success: true,
+    workerCount: 0,
+    usedWorkers: false,
+    durationMs: transmuxMs,
   };
 }
 
@@ -183,6 +347,14 @@ export async function startMessageListener(): Promise<void> {
 
     if (type === MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2) {
       const payload = request.payload as ConvertTsToMp4V2Payload;
+      // Update parallel settings from the payload before conversion
+      if (payload.parallelConversion !== undefined) {
+        setParallelSettings({
+          parallelConversion: payload.parallelConversion,
+          manualWorkerCount: payload.manualWorkerCount ?? 4,
+          parallelFallback: payload.parallelFallback ?? 'sequential',
+        });
+      }
       convertTsToMp4V2(payload.downloadId)
         .then((result: ConvertTsToMp4V2ResultPayload): void => {
           const response: MessageResponse<ConvertTsToMp4V2ResultPayload> = {

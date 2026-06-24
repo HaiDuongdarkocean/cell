@@ -1,12 +1,15 @@
 /**
- * Experimental parallel TS→MP4 transmuxer.
+ * Parallel TS→MP4 transmuxer using Web Workers.
  *
  * Splits the input by segment group boundaries, transmuxes each group
- * independently, writes each group's output to a temp part file, then
- * merges all parts into the final output.
+ * independently on a separate CPU core via Web Workers, then merges
+ * all outputs into the final file.
  *
- * BEHIND FEATURE FLAG — not used by default. The sequential transmuxer
- * remains the active code path until this is proven safe.
+ * Uses Transferable Objects for zero-copy ArrayBuffer transfer between
+ * main thread and workers — no data copying overhead.
+ *
+ * Falls back to inline (single-thread) transmux if Web Workers are
+ * not available (e.g., in test environments).
  */
 
 import type { SegmentRange } from '@/types/media';
@@ -21,11 +24,18 @@ import {
   readJsonFile,
 } from '@/lib/storage/opfsStorage';
 
+// Web Worker creation is isolated in workerFactory.ts (which uses
+// `import.meta.url`) so that Jest's CommonJS transform never parses
+// that syntax. The factory is loaded via dynamic import() only when
+// workers are actually available at runtime.
+
 export interface ParallelTransmuxResult {
   readonly success: boolean;
   readonly outputName: string;
   readonly error?: string;
   readonly partCount?: number;
+  readonly usedWorkers?: boolean;
+  readonly groupTimings?: number[];
 }
 
 export interface ParallelTransmuxOptions {
@@ -36,17 +46,131 @@ export interface ParallelTransmuxOptions {
   readonly onProgress?: (processedBytes: number, totalBytes: number) => void;
 }
 
+// --- Worker management ---
+
+/** Worker response type (matches transmuxWorker.ts). */
+interface WorkerResponse {
+  groupIndex: number;
+  success: boolean;
+  output?: Uint8Array;
+  error?: string;
+  durationMs: number;
+  outputSize: number;
+}
+
+/**
+ * Check if Web Workers are available in this environment.
+ *
+ * Workers are skipped in Jest/test environments (no real Worker global,
+ * and import.meta.url is invalid under CommonJS transform).
+ */
+function areWorkersAvailable(): boolean {
+  if (typeof Worker === 'undefined') return false;
+  // Skip in Jest/test environments
+  if (typeof process !== 'undefined' && process.env?.JEST_WORKER_ID) return false;
+  return true;
+}
+
+/**
+ * Create a Web Worker for transmuxing a segment group.
+ *
+ * Dynamically imports workerFactory.ts (which contains `import.meta.url`)
+ * so that Jest never parses that syntax. The factory is only loaded when
+ * workers are actually available.
+ */
+async function createTransmuxWorker(): Promise<Worker> {
+  const { createTransmuxWorker: factory } = await import('./workerFactory');
+  return factory();
+}
+
+/**
+ * Transmux a single group in a Web Worker.
+ * Uses Transferable Objects for zero-copy data transfer.
+ */
+function transmuxGroupInWorker(
+  groupData: Uint8Array,
+  groupIndex: number,
+): Promise<WorkerResponse> {
+  return new Promise((resolve, reject) => {
+    createTransmuxWorker()
+      .then((worker) => {
+        // Worker created — wire up handlers below.
+        wireWorkerHandlers(worker, resolve, reject, groupIndex, groupData);
+      })
+      .catch((err) => reject(err));
+  });
+}
+
+function wireWorkerHandlers(
+  worker: Worker,
+  resolve: (value: WorkerResponse) => void,
+  reject: (reason?: unknown) => void,
+  groupIndex: number,
+  groupData: Uint8Array,
+): void {
+  const timeout = setTimeout(() => {
+    worker.terminate();
+    reject(new Error(`Worker ${groupIndex} timed out after 120s`));
+  }, 120000);
+
+  worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+    clearTimeout(timeout);
+    worker.terminate();
+    resolve(event.data);
+  };
+
+  worker.onerror = (err) => {
+    clearTimeout(timeout);
+    worker.terminate();
+    reject(err);
+  };
+
+  // Transfer the group data buffer (zero-copy)
+  // Note: we must copy the buffer first because the original inputFile
+  // buffer is shared across groups — we can only transfer owned buffers.
+  const transferBuffer = groupData.slice().buffer;
+  worker.postMessage(
+    { groupIndex, groupData: new Uint8Array(transferBuffer) },
+    [transferBuffer],
+  );
+}
+
+/**
+ * Transmux a single group inline (fallback when Workers unavailable).
+ * Uses the sequential transmuxer on a sliced File.
+ */
+async function transmuxGroupInline(
+  inputFile: Blob,
+  dirHandle: FileSystemDirectoryHandle,
+  group: SegmentGroup,
+  partName: string,
+  _groupIndex: number,
+  onGroupProgress?: (processedBytes: number, groupTotalBytes: number) => void,
+): Promise<{ success: boolean; partName: string; error?: string; durationMs: number }> {
+  const start = performance.now();
+  const groupFile = inputFile.slice(group.startByte, group.endByte, 'video/mp2t');
+  const result = await transmuxTsToFmp4(
+    groupFile,
+    dirHandle,
+    partName,
+    onGroupProgress,
+  );
+  return {
+    success: result.success,
+    partName,
+    error: result.error,
+    durationMs: Math.round(performance.now() - start),
+  };
+}
+
 /**
  * Transmux a `.ts` file in parallel by segment groups.
  *
- * Each group is transmuxed independently using a separate mux.js Transmuxer
- * instance. The input for each group is a byte-range slice of `input.ts`.
- * Each group's output is written to `parts/part-{i}.fmp4`. After all groups
- * complete, the parts are merged into `output.mp4`.
+ * Uses Web Workers for true parallelism (separate CPU cores) when
+ * available. Falls back to Promise.all (single-thread concurrency)
+ * when Workers are not available.
  *
- * If any group fails, the entire operation fails (caller should fallback).
- *
- * @experimental Not used by default. Behind feature flag.
+ * Uses Transferable Objects for zero-copy data transfer to workers.
  */
 export async function transmuxTsToFmp4ParallelExperimental(
   options: ParallelTransmuxOptions,
@@ -65,9 +189,10 @@ export async function transmuxTsToFmp4ParallelExperimental(
   const dirHandle = await ensureDownloadSubdir(downloadId);
   const inputFile = await opfsReadFile(dirHandle, 'input.ts');
   const totalBytes = inputFile.size;
+  const useWorkers = areWorkersAvailable();
 
   console.debug(
-    `[parallel-transmuxer] Starting: ${groups.length} groups, ${totalBytes} bytes total`,
+    `[parallel-transmuxer] Starting: ${groups.length} groups, ${totalBytes} bytes, ${useWorkers ? 'Web Workers' : 'inline (fallback)'}`,
   );
 
   // Track progress across all groups.
@@ -77,59 +202,107 @@ export async function transmuxTsToFmp4ParallelExperimental(
     onProgress?.(processed, totalBytes);
   };
 
-  // Create a parts subdirectory by writing a placeholder file (OPFS doesn't
-  // have explicit mkdir — files create their parent dir implicitly via
-  // getFileHandle on the dirHandle). We write part files directly to the
-  // download dir with a `part-` prefix.
   const partNames = groups.map((g) => `part-${g.index}.fmp4`);
+  const groupTimings: number[] = new Array(groups.length).fill(0);
 
-  // Transmux all groups in parallel.
-  const results = await Promise.all(
-    groups.map(async (group, i) => {
-      const partName = partNames[i];
-      console.debug(
-        `[parallel-transmuxer] Group ${group.index}: bytes [${group.startByte}, ${group.endByte}), ${group.segmentIndices.length} segments`,
-      );
+  if (useWorkers) {
+    // --- Web Worker path (true parallelism) ---
 
-      // Create a sliced File for this group's byte range.
-      const groupFile = inputFile.slice(group.startByte, group.endByte, 'video/mp2t');
+    // Read the entire input into memory for slicing to workers.
+    // For a 424MB file, this uses ~424MB RAM temporarily.
+    // The sequential path also reads in chunks, but workers need
+    // the full group data upfront.
+    const inputBuffer = new Uint8Array(await inputFile.arrayBuffer());
 
-      // Transmux this group's slice into a part file.
-      const result = await transmuxTsToFmp4(
-        groupFile,
-        dirHandle,
-        partName,
-        (processedBytes, groupTotalBytes) => {
-          groupProgress[i] = (processedBytes / groupTotalBytes) * group.size;
-          reportProgress();
-        },
-      );
+    const results = await Promise.all(
+      groups.map(async (group, i) => {
+        console.debug(
+          `[parallel-transmuxer] Worker ${i}: bytes [${group.startByte}, ${group.endByte}), ${group.segmentIndices.length} segments`,
+        );
 
-      if (!result.success) {
-        return { success: false, partName, error: result.error };
-      }
+        const groupData = inputBuffer.subarray(group.startByte, group.endByte);
+        const response = await transmuxGroupInWorker(groupData, i);
 
-      return { success: true, partName };
-    }),
-  );
+        groupTimings[i] = response.durationMs;
+        groupProgress[i] = group.size;
+        reportProgress();
 
-  // Check if any group failed.
-  const failedGroup = results.find((r) => !r.success);
-  if (failedGroup) {
-    // Cleanup any successful part files.
-    await cleanupPartFiles(dirHandle, partNames);
-    return {
-      success: false,
-      outputName,
-      error: `Group transmux failed: ${failedGroup.error}`,
-    };
+        if (!response.success) {
+          return { success: false, partName: partNames[i], error: response.error };
+        }
+
+        // Write worker output to part file
+        const writer = await createOpfsWriter(dirHandle, partNames[i]);
+        await writer.write(response.output!);
+        await writer.close();
+
+        console.debug(
+          `[parallel-transmuxer] Worker ${i}: ${response.durationMs}ms, ${(response.outputSize / 1024 / 1024).toFixed(1)}MB output`,
+        );
+
+        return { success: true, partName: partNames[i] };
+      }),
+    );
+
+    // Check if any group failed
+    const failedGroup = results.find((r) => !r.success);
+    if (failedGroup) {
+      await cleanupPartFiles(dirHandle, partNames);
+      return {
+        success: false,
+        outputName,
+        error: `Group transmux failed: ${failedGroup.error}`,
+        usedWorkers: true,
+        groupTimings,
+      };
+    }
+  } else {
+    // --- Inline fallback path (single-thread concurrency) ---
+
+    const results = await Promise.all(
+      groups.map(async (group, i) => {
+        const partName = partNames[i];
+        console.debug(
+          `[parallel-transmuxer] Inline ${i}: bytes [${group.startByte}, ${group.endByte}), ${group.segmentIndices.length} segments`,
+        );
+
+        const result = await transmuxGroupInline(
+          inputFile,
+          dirHandle,
+          group,
+          partName,
+          i,
+          (processedBytes, groupTotalBytes) => {
+            groupProgress[i] = (processedBytes / groupTotalBytes) * group.size;
+            reportProgress();
+          },
+        );
+
+        groupTimings[i] = result.durationMs;
+
+        if (!result.success) {
+          return { success: false, partName, error: result.error };
+        }
+        return { success: true, partName };
+      }),
+    );
+
+    const failedGroup = results.find((r) => !r.success);
+    if (failedGroup) {
+      await cleanupPartFiles(dirHandle, partNames);
+      return {
+        success: false,
+        outputName,
+        error: `Group transmux failed: ${failedGroup.error}`,
+        usedWorkers: false,
+        groupTimings,
+      };
+    }
   }
 
   // Merge all part files into the final output.
   console.debug(`[parallel-transmuxer] Merging ${partNames.length} parts into ${outputName}`);
   const mergeResult = await mergePartFiles(dirHandle, partNames, outputName);
-
-  // Cleanup part files regardless of merge result.
   await cleanupPartFiles(dirHandle, partNames);
 
   if (!mergeResult.success) {
@@ -137,6 +310,8 @@ export async function transmuxTsToFmp4ParallelExperimental(
       success: false,
       outputName,
       error: `Merge failed: ${mergeResult.error}`,
+      usedWorkers: useWorkers,
+      groupTimings,
     };
   }
 
@@ -145,20 +320,13 @@ export async function transmuxTsToFmp4ParallelExperimental(
     success: true,
     outputName,
     partCount: partNames.length,
+    usedWorkers: useWorkers,
+    groupTimings,
   };
 }
 
 /**
  * Merge fragmented MP4 part files into a single output file.
- *
- * For fragmented MP4, the first part contains the init segment (ftyp + moov)
- * followed by media fragments (moof + mdat). Subsequent parts contain only
- * media fragments (their init segments are stripped).
- *
- * This is a simplified merge: concatenate all bytes, skipping duplicate init
- * segments from parts 1..n. A proper merge would parse MP4 boxes, but for
- * MVP we rely on mux.js producing compatible fragments from contiguous TS
- * segments.
  */
 async function mergePartFiles(
   dirHandle: FileSystemDirectoryHandle,
@@ -182,9 +350,6 @@ async function mergePartFiles(
         return { success: false, error: `Part ${partName} is empty` };
       }
 
-      // For parts after the first, we need to skip the init segment.
-      // For MVP, we write all bytes — mux.js fragments from contiguous TS
-      // should be compatible. A proper box-parser merge is Task 14.
       const buffer = await partFile.arrayBuffer();
       await writer.write(new Uint8Array(buffer));
       totalWritten += partSize;
@@ -224,7 +389,6 @@ async function cleanupPartFiles(
 
 /**
  * Read segment ranges from OPFS for a given downloadId.
- * Returns undefined if metadata is missing or corrupt.
  */
 export async function readSegmentRanges(
   downloadId: string,

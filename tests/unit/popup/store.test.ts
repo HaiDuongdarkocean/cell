@@ -324,7 +324,7 @@ describe('usePopupStore', () => {
   it('DEFAULT_SETTINGS includes parallel conversion defaults', () => {
     expect(DEFAULT_SETTINGS.parallelConversion).toBe('auto');
     expect(DEFAULT_SETTINGS.manualWorkerCount).toBe(4);
-    expect(DEFAULT_SETTINGS.parallelFallback).toBe('save-ts');
+    expect(DEFAULT_SETTINGS.parallelFallback).toBe('sequential');
   });
 
   it('loadPersistedSettings applies saved parallel conversion settings', async () => {

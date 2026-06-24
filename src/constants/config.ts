@@ -1,4 +1,4 @@
-import type { Settings } from '../types/media';
+import type { Settings, FilenameSource } from '../types/media';
 
 // === Default Configuration ===
 
@@ -55,6 +55,30 @@ export const MAX_PARALLEL_WORKERS = 6;
 export const DEFAULT_MANUAL_WORKER_COUNT = 4;
 
 /**
+ * Default filename source mode. `'title-fallback'` uses the detected media
+ * title and falls back to a beautified URL base name when the title is empty
+ * or generic.
+ */
+export const DEFAULT_FILENAME_SOURCE: FilenameSource = 'title-fallback';
+
+/**
+ * Titles that are considered "generic" / non-informative and should trigger
+ * the URL fallback in `'title-fallback'` mode.
+ */
+export const GENERIC_TITLES = new Set([
+  'video',
+  'untitled',
+  'unknown',
+  'media',
+  'movie',
+  'clip',
+  'stream',
+  'player',
+  'video player',
+  'html5 video',
+]);
+
+/**
  * File size threshold (in bytes) below which parallel conversion is not
  * attempted even in auto mode — sequential is fast enough for small files.
  */
@@ -76,7 +100,9 @@ export const DEFAULT_SETTINGS: Settings = {
   convertToMp4: 'always',
   parallelConversion: 'auto',
   manualWorkerCount: DEFAULT_MANUAL_WORKER_COUNT,
-  parallelFallback: 'save-ts',
+  parallelFallback: 'sequential',
+  segmentConcurrency: DEFAULT_SEGMENT_CONCURRENCY,
+  filenameSource: DEFAULT_FILENAME_SOURCE,
 };
 
 // === Storage Keys ===

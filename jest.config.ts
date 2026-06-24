@@ -9,6 +9,10 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.module\\.css$': '<rootDir>/tests/styleMock.ts',
+    // Mock Vite ?worker imports — returns a no-op Worker class for tests
+    '\\?worker$': '<rootDir>/tests/workerMock.ts',
+    // Mock workerFactory (uses import.meta.url which is invalid in Jest's CJS)
+    '@/lib/converters/workerFactory': '<rootDir>/tests/workerMock.ts',
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {

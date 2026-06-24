@@ -103,13 +103,28 @@ export class NetworkInterceptor {
     let detectedNewMedia = false;
 
     if (video !== null) {
-      this.videos.set(video.id, video);
-      detectedNewMedia = true;
+      // Deduplicate by URL+tabId: if a video with the same URL already exists
+      // for this tab, skip it. Without this, every page reload or repeated
+      // request to the same m3u8 URL creates a new entry (with a new UUID),
+      // causing unbounded accumulation of duplicate media in the popup.
+      const existing = this.getVideos(details.tabId).find(
+        (v) => v.url === video.url,
+      );
+      if (existing === undefined) {
+        this.videos.set(video.id, video);
+        detectedNewMedia = true;
+      }
     }
 
     if (subtitle !== null) {
-      this.subtitles.set(subtitle.id, subtitle);
-      detectedNewMedia = true;
+      // Same dedup for subtitles: skip if the same URL is already stored.
+      const existingSub = this.getSubtitles(details.tabId).find(
+        (s) => s.url === subtitle.url,
+      );
+      if (existingSub === undefined) {
+        this.subtitles.set(subtitle.id, subtitle);
+        detectedNewMedia = true;
+      }
     }
 
     if (detectedNewMedia) {
@@ -122,6 +137,25 @@ export class NetworkInterceptor {
    */
   getVideos(tabId: number): DetectedVideo[] {
     return [...this.videos.values()].filter((video) => video.tabId === tabId);
+  }
+
+  /**
+   * Update a stored video in-place (e.g. to enrich it with the real tab URL
+   * and page title after detection). No-op if the video id is not known.
+   */
+  updateVideo(id: string, updated: DetectedVideo): void {
+    if (this.videos.has(id)) {
+      this.videos.set(id, updated);
+    }
+  }
+
+  /**
+   * Update a stored subtitle in-place. No-op if the subtitle id is not known.
+   */
+  updateSubtitle(id: string, updated: DetectedSubtitle): void {
+    if (this.subtitles.has(id)) {
+      this.subtitles.set(id, updated);
+    }
   }
 
   /**

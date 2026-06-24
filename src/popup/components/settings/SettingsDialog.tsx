@@ -1,7 +1,10 @@
-import { useEffect, useRef } from 'react';
-import type { ChangeEvent } from 'react';
-import type { Settings, VideoQuality } from '@/types/media';
-import { Button } from '../ui/Button';
+import { useEffect, useRef, useState } from 'react';
+import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource } from '@/types/media';
+import {
+  MIN_PARALLEL_WORKERS,
+  MAX_PARALLEL_WORKERS,
+  MAX_CONVERT_BYTES,
+} from '@/constants/config';
 import styles from './SettingsDialog.module.css';
 
 interface SettingsDialogProps {
@@ -11,62 +14,234 @@ interface SettingsDialogProps {
   onClose: () => void;
 }
 
-const QUALITY_OPTIONS: readonly VideoQuality[] = [
-  'highest',
-  '1080p',
-  '720p',
-  '480p',
-  '360p',
-  'lowest',
-  'auto',
+const QUALITY_OPTIONS: readonly VideoQuality[] = ['highest', '1080p', '720p', '480p', '360p', 'lowest', 'auto'];
+const QUALITY_LABELS: Record<VideoQuality, string> = {
+  highest: 'Highest', '1080p': '1080p', '720p': '720p', '480p': '480p',
+  '360p': '360p', lowest: 'Lowest', auto: 'Auto (best)',
+};
+
+const CONVERT_OPTIONS: readonly ConvertToMp4Mode[] = ['always', 'small-only', 'never'];
+const CONVERT_LABELS: Record<ConvertToMp4Mode, string> = {
+  always: 'Always', 'small-only': `Small only (≤${Math.round(MAX_CONVERT_BYTES / 1024 / 1024)}MB)`, never: 'Never',
+};
+
+const PARALLEL_OPTIONS: readonly ParallelConversionMode[] = ['off', 'auto', 'manual'];
+const PARALLEL_LABELS: Record<ParallelConversionMode, string> = { off: 'Off', auto: 'Auto', manual: 'Manual' };
+
+const WORKER_OPTIONS = [2, 3, 4, 5, 6];
+
+const FILENAME_SOURCE_OPTIONS: readonly FilenameSource[] = ['title-fallback', 'title-only', 'url-only'];
+const FILENAME_SOURCE_LABELS: Record<FilenameSource, string> = {
+  'title-fallback': 'Title (fallback URL)',
+  'title-only': 'Title only',
+  'url-only': 'URL only',
+};
+
+/**
+ * Full ISO 639-1 subtitle language list (~184 codes).
+ * Format: native name + (English) where they differ.
+ * Ordered alphabetically by English name for findability.
+ * "All languages" is always first.
+ */
+const SUBTITLE_LANGUAGES: { value: string; label: string }[] = [
+  { value: 'all', label: 'All languages' },
+  { value: 'aa', label: 'Afar' },
+  { value: 'ab', label: 'Аҧсуа (Abkhazian)' },
+  { value: 'af', label: 'Afrikaans' },
+  { value: 'ak', label: 'Akan' },
+  { value: 'am', label: 'አማርኛ (Amharic)' },
+  { value: 'ar', label: 'العربية (Arabic)' },
+  { value: 'as', label: 'অসমীয়া (Assamese)' },
+  { value: 'av', label: 'Авар (Avaric)' },
+  { value: 'ay', label: 'Aymar aru (Aymara)' },
+  { value: 'az', label: 'Azərbaycan (Azerbaijani)' },
+  { value: 'ba', label: 'Башҡорт (Bashkir)' },
+  { value: 'be', label: 'Беларуская (Belarusian)' },
+  { value: 'bg', label: 'Български (Bulgarian)' },
+  { value: 'bh', label: 'भोजपुरी (Bihari)' },
+  { value: 'bi', label: 'Bislama' },
+  { value: 'bm', label: 'Bambara' },
+  { value: 'bn', label: 'বাংলা (Bengali)' },
+  { value: 'bo', label: 'བོད་སྐད་ (Tibetan)' },
+  { value: 'br', label: 'Brezhoneg (Breton)' },
+  { value: 'bs', label: 'Bosanski (Bosnian)' },
+  { value: 'ca', label: 'Català (Catalan)' },
+  { value: 'ce', label: 'Нохчийн (Chechen)' },
+  { value: 'ch', label: 'Chamoru (Chamorro)' },
+  { value: 'co', label: 'Corsu (Corsican)' },
+  { value: 'cr', label: 'ᓀᐦᐃᔭᐍᐏᐣ (Cree)' },
+  { value: 'cs', label: 'Čeština (Czech)' },
+  { value: 'cu', label: 'Славе́нскїй (Church Slavic)' },
+  { value: 'cv', label: 'Чӑвашла (Chuvash)' },
+  { value: 'cy', label: 'Cymraeg (Welsh)' },
+  { value: 'da', label: 'Dansk (Danish)' },
+  { value: 'de', label: 'Deutsch (German)' },
+  { value: 'dv', label: 'ދިވެހި (Dhivehi)' },
+  { value: 'dz', label: 'རྫོང་ཁ (Dzongkha)' },
+  { value: 'ee', label: 'Eʋegbe (Ewe)' },
+  { value: 'el', label: 'Ελληνικά (Greek)' },
+  { value: 'en', label: 'English' },
+  { value: 'eo', label: 'Esperanto' },
+  { value: 'es', label: 'Español (Spanish)' },
+  { value: 'et', label: 'Eesti (Estonian)' },
+  { value: 'eu', label: 'Euskara (Basque)' },
+  { value: 'fa', label: 'فارسی (Persian)' },
+  { value: 'ff', label: 'Fulfulde (Fulah)' },
+  { value: 'fi', label: 'Suomi (Finnish)' },
+  { value: 'fj', label: 'Vosa Vakaviti (Fijian)' },
+  { value: 'fo', label: 'Føroyskt (Faroese)' },
+  { value: 'fr', label: 'Français (French)' },
+  { value: 'fy', label: 'Frysk (Western Frisian)' },
+  { value: 'ga', label: 'Gaeilge (Irish)' },
+  { value: 'gd', label: 'Gàidhlig (Scottish Gaelic)' },
+  { value: 'gl', label: 'Galego (Galician)' },
+  { value: 'gn', label: 'Avañeẽ (Guarani)' },
+  { value: 'gu', label: 'ગુજરાતી (Gujarati)' },
+  { value: 'gv', label: 'Gaelg (Manx)' },
+  { value: 'ha', label: 'Hausa' },
+  { value: 'he', label: 'עברית (Hebrew)' },
+  { value: 'hi', label: 'हिन्दी (Hindi)' },
+  { value: 'ho', label: 'Hiri Motu' },
+  { value: 'hr', label: 'Hrvatski (Croatian)' },
+  { value: 'ht', label: 'Kreyòl Ayisyen (Haitian Creole)' },
+  { value: 'hu', label: 'Magyar (Hungarian)' },
+  { value: 'hy', label: 'Հայերեն (Armenian)' },
+  { value: 'hz', label: 'Oshiwambo (Herero)' },
+  { value: 'ia', label: 'Interlingua' },
+  { value: 'id', label: 'Bahasa Indonesia' },
+  { value: 'ie', label: 'Interlingue' },
+  { value: 'ig', label: 'Igbo' },
+  { value: 'ii', label: 'ꆈꌠꉙ (Sichuan Yi)' },
+  { value: 'ik', label: 'Iñupiaq' },
+  { value: 'io', label: 'Ido' },
+  { value: 'is', label: 'Íslenska (Icelandic)' },
+  { value: 'it', label: 'Italiano (Italian)' },
+  { value: 'iu', label: 'ᐃᓄᒃᑎᑐᑦ (Inuktitut)' },
+  { value: 'ja', label: '日本語 (Japanese)' },
+  { value: 'jv', label: 'Basa Jawa (Javanese)' },
+  { value: 'ka', label: 'ქართული (Georgian)' },
+  { value: 'kg', label: 'Kikongo (Kongo)' },
+  { value: 'ki', label: 'Gĩkũyũ (Kikuyu)' },
+  { value: 'kj', label: 'Kuanyama (Kwanyama)' },
+  { value: 'kk', label: 'Қазақ (Kazakh)' },
+  { value: 'kl', label: 'Kalaallisut (Greenlandic)' },
+  { value: 'km', label: 'ខ្មែរ (Khmer)' },
+  { value: 'kn', label: 'ಕನ್ನಡ (Kannada)' },
+  { value: 'ko', label: '한국어 (Korean)' },
+  { value: 'kr', label: 'Kanuri' },
+  { value: 'ks', label: 'कश्मीरी (Kashmiri)' },
+  { value: 'ku', label: 'Kurdî (Kurdish)' },
+  { value: 'kv', label: 'Коми (Komi)' },
+  { value: 'kw', label: 'Kernewek (Cornish)' },
+  { value: 'ky', label: 'Кыргызча (Kyrgyz)' },
+  { value: 'la', label: 'Latina (Latin)' },
+  { value: 'lb', label: 'Lëtzebuergesch (Luxembourgish)' },
+  { value: 'lg', label: 'Luganda (Ganda)' },
+  { value: 'li', label: 'Limburgs (Limburgan)' },
+  { value: 'ln', label: 'Lingála' },
+  { value: 'lo', label: 'ລາວ (Lao)' },
+  { value: 'lt', label: 'Lietuvių (Lithuanian)' },
+  { value: 'lu', label: 'Tshiluba (Luba-Katanga)' },
+  { value: 'lv', label: 'Latviešu (Latvian)' },
+  { value: 'mg', label: 'Malagasy' },
+  { value: 'mh', label: 'Kajin M̧ajeļ (Marshallese)' },
+  { value: 'mi', label: 'Te Reo Māori (Maori)' },
+  { value: 'mk', label: 'Македонски (Macedonian)' },
+  { value: 'ml', label: 'മലയാളം (Malayalam)' },
+  { value: 'mn', label: 'Монгол (Mongolian)' },
+  { value: 'mr', label: 'मराठी (Marathi)' },
+  { value: 'ms', label: 'Bahasa Melayu (Malay)' },
+  { value: 'mt', label: 'Malti (Maltese)' },
+  { value: 'my', label: 'ဗမာ (Burmese)' },
+  { value: 'na', label: 'Dorerin Naoero (Nauru)' },
+  { value: 'nb', label: 'Norsk Bokmål (Norwegian Bokmål)' },
+  { value: 'nd', label: 'isiNdebele (North Ndebele)' },
+  { value: 'ne', label: 'नेपाली (Nepali)' },
+  { value: 'ng', label: 'Owambo (Ndonga)' },
+  { value: 'nl', label: 'Nederlands (Dutch)' },
+  { value: 'nn', label: 'Norsk Nynorsk (Norwegian Nynorsk)' },
+  { value: 'no', label: 'Norsk (Norwegian)' },
+  { value: 'nr', label: 'isiNdebele (South Ndebele)' },
+  { value: 'nv', label: 'Diné bizaad (Navajo)' },
+  { value: 'ny', label: 'Chichewa (Nyanja)' },
+  { value: 'oc', label: 'Occitan' },
+  { value: 'oj', label: 'ᐊᓂᔑᓈᐯᒧᐎᓐ (Ojibwa)' },
+  { value: 'om', label: 'Afaan Oromoo (Oromo)' },
+  { value: 'or', label: 'ଓଡ଼ିଆ (Oriya)' },
+  { value: 'os', label: 'Ирон (Ossetian)' },
+  { value: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)' },
+  { value: 'pi', label: 'पालि (Pali)' },
+  { value: 'pl', label: 'Polski (Polish)' },
+  { value: 'ps', label: 'پښتو (Pashto)' },
+  { value: 'pt', label: 'Português (Portuguese)' },
+  { value: 'qu', label: 'Runa Simi (Quechua)' },
+  { value: 'rm', label: 'Rumantsch (Romansh)' },
+  { value: 'rn', label: 'Ikirundi (Kirundi)' },
+  { value: 'ro', label: 'Română (Romanian)' },
+  { value: 'ru', label: 'Русский (Russian)' },
+  { value: 'rw', label: 'Kinyarwanda' },
+  { value: 'sa', label: 'संस्कृतम् (Sanskrit)' },
+  { value: 'sc', label: 'Sardu (Sardinian)' },
+  { value: 'sd', label: 'سنڌي (Sindhi)' },
+  { value: 'se', label: 'Davvisámegiella (Northern Sami)' },
+  { value: 'sg', label: 'Sängö (Sango)' },
+  { value: 'si', label: 'සිංහල (Sinhala)' },
+  { value: 'sk', label: 'Slovenčina (Slovak)' },
+  { value: 'sl', label: 'Slovenščina (Slovenian)' },
+  { value: 'sm', label: 'Gagana Samoa (Samoan)' },
+  { value: 'sn', label: 'ChiShona (Shona)' },
+  { value: 'so', label: 'Soomaali (Somali)' },
+  { value: 'sq', label: 'Shqip (Albanian)' },
+  { value: 'sr', label: 'Српски (Serbian)' },
+  { value: 'ss', label: 'SiSwati (Swati)' },
+  { value: 'st', label: 'Sesotho (Southern Sotho)' },
+  { value: 'su', label: 'Basa Sunda (Sundanese)' },
+  { value: 'sv', label: 'Svenska (Swedish)' },
+  { value: 'sw', label: 'Kiswahili (Swahili)' },
+  { value: 'ta', label: 'தமிழ் (Tamil)' },
+  { value: 'te', label: 'తెలుగు (Telugu)' },
+  { value: 'tg', label: 'Тоҷикӣ (Tajik)' },
+  { value: 'th', label: 'ไทย (Thai)' },
+  { value: 'ti', label: 'ትግርኛ (Tigrinya)' },
+  { value: 'tk', label: 'Türkmen (Turkmen)' },
+  { value: 'tl', label: 'Filipino (Tagalog)' },
+  { value: 'tn', label: 'Setswana (Tswana)' },
+  { value: 'to', label: 'Lea Faka-Tonga (Tonga)' },
+  { value: 'tr', label: 'Türkçe (Turkish)' },
+  { value: 'ts', label: 'Xitsonga (Tsonga)' },
+  { value: 'tt', label: 'Татар (Tatar)' },
+  { value: 'tw', label: 'Twi' },
+  { value: 'ty', label: 'Reo Tahiti (Tahitian)' },
+  { value: 'ug', label: 'ئۇيغۇرچە (Uyghur)' },
+  { value: 'uk', label: 'Українська (Ukrainian)' },
+  { value: 'ur', label: 'اردو (Urdu)' },
+  { value: 'uz', label: 'Oʻzbek (Uzbek)' },
+  { value: 've', label: 'Tshivenḓa (Venda)' },
+  { value: 'vi', label: 'Tiếng Việt' },
+  { value: 'vo', label: 'Volapük' },
+  { value: 'wa', label: 'Walon (Walloon)' },
+  { value: 'wo', label: 'Wolof' },
+  { value: 'xh', label: 'isiXhosa (Xhosa)' },
+  { value: 'yi', label: 'ייִדיש (Yiddish)' },
+  { value: 'yo', label: 'Yorùbá' },
+  { value: 'za', label: 'Vahcuengh (Zhuang)' },
+  { value: 'zh', label: '中文 (Chinese)' },
+  { value: 'zu', label: 'isiZulu (Zulu)' },
 ];
 
-const THEME_OPTIONS: readonly Settings['theme'][] = ['light', 'dark'];
-
-export function SettingsDialog({
-  isOpen,
-  settings,
-  onChange,
-  onClose,
-}: SettingsDialogProps): React.JSX.Element {
-  const dialogRef = useRef<HTMLDivElement>(null);
+export function SettingsDialog({ isOpen, settings, onChange, onClose }: SettingsDialogProps): React.JSX.Element {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Focus management
   useEffect(() => {
     if (isOpen) {
       closeButtonRef.current?.focus();
-      // Trap focus within dialog
-      const handleTab = (e: KeyboardEvent): void => {
-        if (e.key === 'Tab') {
-          const focusableElements = dialogRef.current?.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-          );
-          if (focusableElements && focusableElements.length > 0) {
-            const firstElement = focusableElements[0] as HTMLElement;
-            const lastElement = focusableElements[
-              focusableElements.length - 1
-            ] as HTMLElement;
-
-            if (e.shiftKey) {
-              if (document.activeElement === firstElement) {
-                e.preventDefault();
-                lastElement.focus();
-              }
-            } else {
-              if (document.activeElement === lastElement) {
-                e.preventDefault();
-                firstElement.focus();
-              }
-            }
-          }
-        }
+      const handleEscape = (e: KeyboardEvent): void => {
+        if (e.key === 'Escape') onClose();
       };
-
-      document.addEventListener('keydown', handleTab);
-      return () => document.removeEventListener('keydown', handleTab);
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
     }
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return <div />;
 
@@ -74,134 +249,182 @@ export function SettingsDialog({
     onChange({ ...settings, [key]: value });
   };
 
-  const handleConcurrent = (e: ChangeEvent<HTMLInputElement>): void => {
-    update('concurrentDownloads', Number(e.target.value));
-  };
-
-  const handleQuality = (e: ChangeEvent<HTMLSelectElement>): void => {
-    update('defaultQuality', e.target.value as VideoQuality);
-  };
-
-  const handleLanguage = (e: ChangeEvent<HTMLInputElement>): void => {
-    update('defaultSubtitleLanguage', e.target.value);
-  };
-
-  const handleTheme = (e: ChangeEvent<HTMLSelectElement>): void => {
-    update('theme', e.target.value as Settings['theme']);
-  };
-
   return (
-    <div className={styles.overlay} onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="settings-title">
-      <div className={styles.dialog} onClick={(e) => e.stopPropagation()} ref={dialogRef}>
-        <div className={styles.dialogHeader}>
-          <h2 id="settings-title" className={styles.dialogTitle}>Settings</h2>
+    <>
+      {/* Overlay */}
+      <div className={`${styles.overlay} ${styles.open}`} onClick={onClose} />
+
+      {/* Popover — centered, 320px */}
+      <div
+        className={`${styles.popover} ${styles.open}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-title"
+      >
+        <div className={styles.popoverHeader}>
+          <h3 id="settings-title" className={styles.popoverTitle}>Settings</h3>
           <button
             ref={closeButtonRef}
             type="button"
-            className={styles.closeButton}
+            className={`${styles.iconBtn} ${styles.iconBtnSm}`}
             onClick={onClose}
             aria-label="Close settings"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+            <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className={styles.dialogBody}>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="concurrent-input">
-              Concurrent downloads
-            </label>
-            <input
-              id="concurrent-input"
-              className={styles.input}
-              type="number"
-              min={1}
-              max={10}
-              value={settings.concurrentDownloads}
-              onChange={handleConcurrent}
-              data-testid="concurrent-input"
+        <div className={styles.popoverBody}>
+          {/* Downloads at once */}
+          <SettingField label="Downloads at once" htmlFor="set-concurrent">
+            <CustomSelect
+              testId="concurrent-select"
+              value={String(settings.concurrentDownloads)}
+              options={[1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: String(n) }))}
+              onSelect={(val) => update('concurrentDownloads', Number(val))}
             />
-            <span className={styles.helper}>
-              Number of simultaneous downloads (1-10)
-            </span>
-          </div>
+          </SettingField>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="quality-select">
-              Default quality
-            </label>
-            <select
-              id="quality-select"
-              className={styles.select}
+          {/* Convert to MP4 */}
+          <SettingField label="Convert to MP4" htmlFor="set-convert">
+            <CustomSelect
+              testId="convert-select"
+              value={settings.convertToMp4}
+              options={CONVERT_OPTIONS.map((m) => ({ value: m, label: CONVERT_LABELS[m] }))}
+              onSelect={(val) => update('convertToMp4', val as ConvertToMp4Mode)}
+            />
+          </SettingField>
+
+          {/* Parallel conversion */}
+          <SettingField label="Parallel conversion" htmlFor="set-parallel">
+            <CustomSelect
+              testId="parallel-select"
+              value={settings.parallelConversion}
+              options={PARALLEL_OPTIONS.map((m) => ({ value: m, label: PARALLEL_LABELS[m] }))}
+              onSelect={(val) => update('parallelConversion', val as ParallelConversionMode)}
+            />
+          </SettingField>
+
+          {/* Workers (only when manual) */}
+          {settings.parallelConversion === 'manual' && (
+            <SettingField label="Workers" htmlFor="set-workers">
+              <CustomSelect
+                testId="workers-select"
+                value={String(settings.manualWorkerCount)}
+                options={WORKER_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
+                onSelect={(val) => update('manualWorkerCount', Math.max(MIN_PARALLEL_WORKERS, Math.min(MAX_PARALLEL_WORKERS, Number(val))))}
+              />
+            </SettingField>
+          )}
+
+          {/* Default quality */}
+          <SettingField label="Default quality" htmlFor="set-quality">
+            <CustomSelect
+              testId="quality-select"
               value={settings.defaultQuality}
-              onChange={handleQuality}
-              data-testid="quality-select"
-            >
-              {QUALITY_OPTIONS.map((q) => (
-                <option key={q} value={q}>
-                  {q}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="language-input">
-              Default subtitle language
-            </label>
-            <input
-              id="language-input"
-              className={styles.input}
-              type="text"
-              value={settings.defaultSubtitleLanguage}
-              onChange={handleLanguage}
-              data-testid="language-input"
-              placeholder="e.g., en, vi, ja"
+              options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABELS[q] }))}
+              onSelect={(val) => update('defaultQuality', val as VideoQuality)}
             />
-            <span className={styles.helper}>
-              Language code for preferred subtitles
-            </span>
-          </div>
+          </SettingField>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="theme-select">
-              Theme
-            </label>
-            <select
-              id="theme-select"
-              className={styles.select}
-              value={settings.theme}
-              onChange={handleTheme}
-              data-testid="theme-select"
-            >
-              {THEME_OPTIONS.map((t) => (
-                <option key={t} value={t}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+          {/* Subtitle language */}
+          <SettingField label="Subtitle language" htmlFor="set-subtitle-lang">
+            <CustomSelect
+              testId="subtitle-lang-select"
+              value={settings.defaultSubtitleLanguage}
+              options={SUBTITLE_LANGUAGES}
+              onSelect={(val) => update('defaultSubtitleLanguage', val)}
+            />
+          </SettingField>
 
-        <div className={styles.dialogFooter}>
-          <Button variant="primary" size="md" onClick={onClose}>
-            Done
-          </Button>
+          {/* Filename source */}
+          <SettingField label="Filename source" htmlFor="set-filename-source">
+            <CustomSelect
+              testId="filename-source-select"
+              value={settings.filenameSource}
+              options={FILENAME_SOURCE_OPTIONS.map((m) => ({ value: m, label: FILENAME_SOURCE_LABELS[m] }))}
+              onSelect={(val) => update('filenameSource', val as FilenameSource)}
+            />
+          </SettingField>
+
+          {/* Hint */}
+          <p className={styles.hint}>
+            Parallel conversion: {settings.parallelConversion} (số lượng tùy vào GPU của máy tính hiện có)
+          </p>
         </div>
       </div>
+    </>
+  );
+}
+
+/* === Setting field wrapper === */
+function SettingField({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }): React.JSX.Element {
+  return (
+    <div className={styles.field}>
+      <label className={styles.label} htmlFor={htmlFor}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+/* === Custom Dropdown — matches prototype exactly === */
+interface DropdownOption { value: string; label: string }
+interface CustomSelectProps {
+  testId: string;
+  value: string;
+  options: DropdownOption[];
+  onSelect: (value: string) => void;
+}
+
+function CustomSelect({ testId, value, options, onSelect }: CustomSelectProps): React.JSX.Element {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent): void => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [open]);
+
+  const selected = options.find((o) => o.value === value) ?? options[0];
+
+  return (
+    <div className={`${styles.customSelect} ${open ? styles.open : ''}`} ref={wrapperRef} data-testid={testId}>
+      <button
+        type="button"
+        className={styles.customSelectTrigger}
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={styles.customSelectValue}>{selected?.label}</span>
+        <svg className={styles.customSelectChevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className={`${styles.customSelectMenu} ${styles.menuOpen}`} role="listbox">
+          {options.map((opt) => (
+            <div
+              key={opt.value}
+              className={`${styles.customSelectOption} ${opt.value === value ? styles.selected : ''}`}
+              role="option"
+              aria-selected={opt.value === value}
+              onClick={() => { onSelect(opt.value); setOpen(false); }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

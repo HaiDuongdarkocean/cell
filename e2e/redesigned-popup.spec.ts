@@ -6,42 +6,21 @@ import {
 } from './fixtures/extension';
 
 test.describe('redesigned popup UI', () => {
-  test('renders tabs and defaults to the videos tab', async () => {
+  test('renders sections (media + downloads) with empty states', async () => {
     const { context, extensionId } = await launchExtensionBrowser();
 
     try {
       const popup = await openPopup(context, extensionId);
 
       await expect(popup.locator('[data-testid="app-root"]')).toBeVisible();
-      await expect(popup.locator('[data-testid="tab-videos"]')).toBeVisible();
-      await expect(popup.locator('[data-testid="tab-subtitles"]')).toBeVisible();
-      await expect(popup.locator('[data-testid="tab-downloads"]')).toBeVisible();
 
-      // Default tab should be videos (empty state visible).
-      await expect(popup.locator('[data-testid="empty-media"]')).toBeVisible();
+      // Media section visible.
+      await expect(popup.locator('[data-testid="media-section"]')).toBeVisible();
 
-      await popup.close();
-    } finally {
-      await closeExtensionBrowser(context);
-    }
-  });
+      // Downloads section visible.
+      await expect(popup.locator('[data-testid="downloads-section"]')).toBeVisible();
 
-  test('switches between tabs', async () => {
-    const { context, extensionId } = await launchExtensionBrowser();
-
-    try {
-      const popup = await openPopup(context, extensionId);
-
-      // Switch to Subtitles tab.
-      await popup.locator('[data-testid="tab-subtitles"]').click();
-      await expect(popup.locator('[data-testid="empty-media"]')).toBeVisible();
-
-      // Switch to Downloads tab.
-      await popup.locator('[data-testid="tab-downloads"]').click();
-      await expect(popup.locator('[data-testid="empty-media"]')).toBeVisible();
-
-      // Switch back to Videos tab.
-      await popup.locator('[data-testid="tab-videos"]').click();
+      // Empty state should be visible (no media detected on blank tab).
       await expect(popup.locator('[data-testid="empty-media"]')).toBeVisible();
 
       await popup.close();
@@ -66,7 +45,7 @@ test.describe('redesigned popup UI', () => {
       await expect(popup.locator('html[data-theme="light"]')).toBeVisible();
 
       // Toggle theme via header button.
-      await popup.locator('[aria-label="Switch to dark theme"]').click();
+      await popup.locator('[aria-label="Toggle theme"]').click();
       await expect(popup.locator('html[data-theme="dark"]')).toBeVisible();
 
       await popup.close();
@@ -81,18 +60,22 @@ test.describe('redesigned popup UI', () => {
     }
   });
 
-  test('opens settings dialog and saves theme from dropdown', async () => {
+  test('opens settings dialog and shows filename source dropdown', async () => {
     const { context, extensionId } = await launchExtensionBrowser();
 
     try {
       const popup = await openPopup(context, extensionId);
 
-      await popup.locator('[aria-label="Open settings"]').click();
+      // Open settings dialog.
+      await popup.locator('[aria-label="Settings"]').click();
       await expect(popup.locator('[role="dialog"]')).toBeVisible();
 
-      // Change theme to dark via the settings dropdown.
-      await popup.locator('[data-testid="theme-select"]').selectOption('dark');
-      await expect(popup.locator('html[data-theme="dark"]')).toBeVisible();
+      // Verify filename source dropdown exists.
+      const dropdown = popup.locator('[data-testid="filename-source-select"]');
+      await expect(dropdown).toBeVisible();
+
+      // Verify default is title-fallback.
+      await expect(dropdown.locator('button')).toContainText('Title (fallback URL)');
 
       // Close settings dialog.
       await popup.locator('[aria-label="Close settings"]').click();

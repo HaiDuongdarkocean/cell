@@ -1,135 +1,145 @@
-.root {
-  width: 650px;
-  min-height: 650px;
-  background-color: var(--color-background);
+/* === Popup Container — 400×600, matches prototype === */
+.popup {
+  width: 400px;
+  height: 600px;
+  background: var(--color-background);
+  color: var(--color-text);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  position: relative;
 }
 
-/* Responsive design for smaller screens */
-@media (max-width: 650px) {
-  .root {
-    width: 100%;
-    max-width: 650px;
-  }
-
-  .downloadAllButton {
-    font-size: var(--font-size-sm);
-    padding: var(--spacing-sm);
-  }
-}
-
-@media (max-width: 480px) {
-  .root {
-    min-height: 600px;
-  }
-
-  .content {
-    padding: var(--spacing-sm);
-  }
-}
-
-@media (max-width: 400px) {
-  .root {
-    min-height: 550px;
-  }
-}
-
+/* === Content (scrollable) === */
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-md);
+  padding: 0 var(--spacing-lg) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
 }
 
-.list {
+/* === Section === */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* === Text button (Select All / Download All) === */
+.btnText {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+  font-family: var(--font-family);
+}
+
+.btnText:hover {
+  background: var(--color-primary-subtle);
+}
+
+/* === Lists === */
+.mediaList,
+.downloadsList {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
 }
 
-.skeletonCard {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
-}
-
-.downloadItem {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
-  margin-bottom: var(--spacing-sm);
-}
-
-.downloadHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-sm);
-}
-
-.downloadTitle {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  margin: 0;
-  color: var(--color-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-.downloadStatus {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  text-transform: capitalize;
-}
-
-.downloadError {
-  margin-bottom: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-danger, #dc2626);
-  background-color: var(--color-danger-bg, rgba(220, 38, 38, 0.1));
-  border-radius: var(--radius-sm);
-  word-break: break-word;
-}
-
-.downloadProgress {
+/* === Selection Bar — slides up from bottom === */
+.selectionBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-}
-
-.progressBar {
-  flex: 1;
-  height: 6px;
-  background-color: var(--color-border-subtle);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  background-color: var(--color-primary);
-  transition: width var(--transition-normal) var(--ease-standard);
-}
-
-.progressText {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  font-weight: var(--font-weight-medium);
-  min-width: 40px;
-  text-align: right;
-}
-
-.actions {
-  padding: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-background);
   border-top: 1px solid var(--color-border);
-  background-color: var(--color-surface);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(100%);
+  transition: transform 200ms ease;
+  z-index: 5;
 }
 
-.downloadAllButton {
-  width: 100%;
+.selectionBarOpen {
+  transform: translateY(0);
+}
+
+.selectionClear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: all var(--transition);
+}
+
+.selectionClear:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.selectionCount {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.selectionDownload {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--transition);
+  font-family: var(--font-family);
+}
+
+.selectionDownload:hover {
+  background: var(--color-primary-hover);
 }

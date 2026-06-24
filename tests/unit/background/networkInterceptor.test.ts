@@ -308,4 +308,73 @@ describe('NetworkInterceptor', () => {
       expect(callback).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('handleRequest - URL deduplication', () => {
+    it('does not add a duplicate video for the same URL+tabId', () => {
+      const callback = jest.fn();
+      interceptor.onMediaDetected(callback);
+
+      // Same URL intercepted multiple times (e.g. page reload).
+      interceptor.handleRequest(makeDetails('https://example.com/stream/playlist.m3u8', 1));
+      interceptor.handleRequest(makeDetails('https://example.com/stream/playlist.m3u8', 1));
+      interceptor.handleRequest(makeDetails('https://example.com/stream/playlist.m3u8', 1));
+
+      const videos = interceptor.getVideos(1);
+      expect(videos).toHaveLength(1);
+      // Callback fired only once (on first detection).
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not add a duplicate subtitle for the same URL+tabId', () => {
+      const callback = jest.fn();
+      interceptor.onMediaDetected(callback);
+
+      interceptor.handleRequest(makeDetails('https://example.com/subs/en.srt', 1));
+      interceptor.handleRequest(makeDetails('https://example.com/subs/en.srt', 1));
+      interceptor.handleRequest(makeDetails('https://example.com/subs/en.srt', 1));
+
+      const subtitles = interceptor.getSubtitles(1);
+      expect(subtitles).toHaveLength(1);
+      expect(callback).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows the same URL on different tabs (not a duplicate)', () => {
+      interceptor.handleRequest(makeDetails('https://example.com/stream/playlist.m3u8', 1));
+      interceptor.handleRequest(makeDetails('https://example.com/stream/playlist.m3u8', 2));
+
+      expect(interceptor.getVideos(1)).toHaveLength(1);
+      expect(interceptor.getVideos(2)).toHaveLength(1);
+    });
+
+    it('allows different URLs on the same tab (not duplicates)', () => {
+      interceptor.handleRequest(makeDetails('https://example.com/stream/720p.m3u8', 1));
+      interceptor.handleRequest(makeDetails('https://example.com/stream/1080p.m3u8', 1));
+
+      expect(interceptor.getVideos(1)).toHaveLength(2);
+    });
+
+    it('does not notify listeners when a duplicate is skipped', () => {
+      const callback = jest.fn();
+      interceptor.onMediaDetected(callback);
+
+      interceptor.handleRequest(makeDetails('https://example.com/subs/en.srt', 1));
+      const callsAfterFirst = callback.mock.calls.length;
+
+      interceptor.handleRequest(makeDetails('https://example.com/subs/en.srt', 1));
+
+      expect(callback.mock.calls.length).toBe(callsAfterFirst);
+    });
+
+    it('clearTab removes the dedup so the same URL can be re-detected', () => {
+      interceptor.handleRequest(makeDetails('https://example.com/stream/playlist.m3u8', 1));
+      expect(interceptor.getVideos(1)).toHaveLength(1);
+
+      interceptor.clearTab(1);
+      expect(interceptor.getVideos(1)).toHaveLength(0);
+
+      // After clearing, the same URL should be detected again.
+      interceptor.handleRequest(makeDetails('https://example.com/stream/playlist.m3u8', 1));
+      expect(interceptor.getVideos(1)).toHaveLength(1);
+    });
+  });
 });

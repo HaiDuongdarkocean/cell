@@ -43,6 +43,7 @@ import type {
   DownloadAllPayload,
   CancelDownloadPayload,
   DownloadProgressUpdatePayload,
+  ConversionProgressUpdatePayload,
   UpdateSettingsPayload,
   PageScanResultPayload,
   DownloadListResponse,
@@ -119,6 +120,8 @@ export class BackgroundService {
     const settings = await this.loadSettings();
     this.downloadQueue.setMaxConcurrent(settings.concurrentDownloads);
     this.downloader.setConvertMode(settings.convertToMp4);
+    this.downloader.setSegmentConcurrency(settings.segmentConcurrency);
+    this.downloader.setFilenameSource(settings.filenameSource);
     this.downloader.setParallelSettings({
       parallelConversion: settings.parallelConversion,
       manualWorkerCount: settings.manualWorkerCount,
@@ -140,6 +143,13 @@ export class BackgroundService {
     void cleanupOrphanedDownloads().catch((err: unknown) => {
       console.warn('[background] OPFS orphan cleanup failed:', err);
     });
+
+    // 7. Update the toolbar badge for the currently active tab.
+    if (this.extensionActive) {
+      void this.updateBadgeForActiveTab();
+    } else {
+      this.clearBadge();
+    }
   }
 
   /**
@@ -164,12 +174,31 @@ export class BackgroundService {
    *  - downloader.setConvertCallback → offscreen ffmpeg conversion
    */
   private wireEvents(): void {
-    // New media detected via network interception → notify popup.
+    // New media detected via network interception → enrich with real tab URL
+    // and page title, then notify popup.
     const unsubMedia = this.networkInterceptor.onMediaDetected(
       (videos, subtitles) => {
+        // Enrich videos with the actual page URL and title (the detector
+        // only has the stream URL, which is useless for filename resolution).
+        const enrichedVideos = videos.map((v) => {
+          if (v.tabUrl !== v.url && v.title !== 'index') {
+            return v; // already enriched
+          }
+          return this.enrichVideo(v);
+        });
+        // Update toolbar badge for the tab that produced the detection.
+        const firstVideo = enrichedVideos[0] ?? subtitles[0];
+        if (firstVideo) {
+          this.updateBadgeForTab(firstVideo.tabId);
+        }
+
         this.messageBus.broadcast({
           type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
-          payload: { videos, subtitles } satisfies DetectedMediaUpdatePayload,
+          payload: {
+            videos: enrichedVideos,
+            subtitles,
+            tabId: firstVideo?.tabId ?? 0,
+          } satisfies DetectedMediaUpdatePayload,
         });
       },
     );
@@ -198,9 +227,17 @@ export class BackgroundService {
       ): Promise<ConvertResult> => {
         await this.offscreenManager.ensureOffscreenReady();
 
+        // Load current settings to pass parallel conversion config to offscreen
+        const currentSettings = await this.loadSettings();
+
         const request: MessageRequest = {
           type: MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2,
-          payload: { downloadId } satisfies ConvertTsToMp4V2Payload,
+          payload: {
+            downloadId,
+            parallelConversion: currentSettings.parallelConversion,
+            manualWorkerCount: currentSettings.manualWorkerCount,
+            parallelFallback: currentSettings.parallelFallback,
+          } satisfies ConvertTsToMp4V2Payload,
         };
 
         const response = (await chrome.runtime.sendMessage(
@@ -329,6 +366,99 @@ export class BackgroundService {
     });
 
     this.unsubscribers.push(unsubMedia, unsubProgress);
+
+    // Clear detected media when a tab navigates to a new URL (reload or
+    // link click). Without this, stale media from a previous page accumulates
+    // and shows up every time the popup is reopened.
+    const onTabUpdated = (
+      tabId: number,
+      changeInfo: chrome.tabs.OnUpdatedInfo,
+    ): void => {
+      if (changeInfo.status === 'loading') {
+        this.networkInterceptor.clearTab(tabId);
+        this.updateBadgeForTab(tabId);
+      }
+    };
+    chrome.tabs.onUpdated.addListener(onTabUpdated);
+
+    // Clear detected media when a tab is closed.
+    const onTabRemoved = (tabId: number): void => {
+      this.networkInterceptor.clearTab(tabId);
+      this.updateBadgeForTab(tabId);
+    };
+    chrome.tabs.onRemoved.addListener(onTabRemoved);
+
+    this.unsubscribers.push(
+      () => chrome.tabs.onUpdated.removeListener(onTabUpdated),
+      () => chrome.tabs.onRemoved.removeListener(onTabRemoved),
+    );
+
+    // Update toolbar badge when the active tab changes.
+    const onTabActivated = (activeInfo: { tabId: number; windowId: number }): void => {
+      this.updateBadgeForTab(activeInfo.tabId);
+    };
+    chrome.tabs.onActivated.addListener(onTabActivated);
+
+    // Update toolbar badge when the focused window changes.
+    const onWindowFocusChanged = (windowId: number): void => {
+      if (windowId === chrome.windows.WINDOW_ID_NONE) {
+        this.clearBadge();
+        return;
+      }
+      void this.updateBadgeForActiveTab();
+    };
+    chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
+
+    this.unsubscribers.push(
+      () => chrome.tabs.onActivated.removeListener(onTabActivated),
+      () => chrome.windows.onFocusChanged.removeListener(onWindowFocusChanged),
+    );
+  }
+
+  // --- toolbar badge ---
+
+  /**
+   * Update the extension toolbar badge to show the number of detected media
+   * items for the given tab. The badge is cleared when the tab has no media.
+   */
+  private updateBadgeForTab(tabId: number): void {
+    if (!this.extensionActive) {
+      this.clearBadge();
+      return;
+    }
+    const { videos, subtitles } = this.networkInterceptor.getMedia(tabId);
+    const count = videos.length + subtitles.length;
+    const text = count > 0 ? String(count) : '';
+    try {
+      void chrome.action.setBadgeText({ text, tabId });
+      void chrome.action.setBadgeBackgroundColor({ color: '#2563eb', tabId });
+      void chrome.action.setBadgeTextColor({ color: '#ffffff', tabId });
+    } catch (err: unknown) {
+      console.warn('[background] Failed to update badge:', err);
+    }
+  }
+
+  /**
+   * Update the badge for the currently active tab.
+   */
+  private async updateBadgeForActiveTab(): Promise<void> {
+    const tabId = await this.getActiveTabId();
+    if (tabId !== undefined) {
+      this.updateBadgeForTab(tabId);
+    } else {
+      this.clearBadge();
+    }
+  }
+
+  /**
+   * Clear the toolbar badge across all tabs.
+   */
+  private clearBadge(): void {
+    try {
+      void chrome.action.setBadgeText({ text: '' });
+    } catch (err: unknown) {
+      console.warn('[background] Failed to clear badge:', err);
+    }
   }
 
   // --- message handler registration ---
@@ -341,12 +471,15 @@ export class BackgroundService {
     this.on(MESSAGE_TYPES.CANCEL_DOWNLOAD, this.handleCancelDownload);
     this.on(MESSAGE_TYPES.PAUSE_DOWNLOAD, this.handlePauseDownload);
     this.on(MESSAGE_TYPES.RESUME_DOWNLOAD, this.handleResumeDownload);
+    this.on(MESSAGE_TYPES.RETRY_DOWNLOAD, this.handleRetryDownload);
+    this.on(MESSAGE_TYPES.REMOVE_DOWNLOAD, this.handleRemoveDownload);
     this.on(MESSAGE_TYPES.GET_DOWNLOAD_PROGRESS, this.handleGetDownloadProgress);
     this.on(MESSAGE_TYPES.GET_SETTINGS, this.handleGetSettings);
     this.on(MESSAGE_TYPES.UPDATE_SETTINGS, this.handleUpdateSettings);
     this.on(MESSAGE_TYPES.GET_EXTENSION_STATUS, this.handleGetExtensionStatus);
     this.on(MESSAGE_TYPES.TOGGLE_EXTENSION, this.handleToggleExtension);
     this.on(MESSAGE_TYPES.PAGE_SCAN_RESULT, this.handlePageScanResult);
+    this.on(MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE, this.handleConversionProgressUpdate);
   }
 
   /** Type-safe wrapper around messageBus.on. */
@@ -361,14 +494,60 @@ export class BackgroundService {
    * Returns `undefined` when no active tab is found.
    */
   private async getActiveTabId(): Promise<number | undefined> {
-    // Query the last focused window (the browser window, not the popup window).
-    // Using lastFocusedWindow instead of currentWindow because when the popup
-    // is open, currentWindow refers to the popup's window, not the browser.
-    const tabs = await chrome.tabs.query({
+    // Query active tab in a normal browser window (not the popup window).
+    // Using currentWindow: false to skip the popup's own window.
+    let tabs = await chrome.tabs.query({
+      active: true,
+      currentWindow: false,
+    });
+    if (tabs.length > 0) return tabs[0].id;
+
+    // Fallback: lastFocusedWindow (covers cases where there's no popup window).
+    tabs = await chrome.tabs.query({
       active: true,
       lastFocusedWindow: true,
     });
     return tabs[0]?.id;
+  }
+
+  /**
+   * Enrich a detected video with the actual page URL and title from the tab
+   * it was detected on. The video detector only has the stream URL (e.g.
+   * `https://cdn.example.com/index.m3u8`), which is useless for filename
+   * resolution. This method queries `chrome.tabs.get` to fill in `tabUrl`
+   * (the page URL) and `title` (the page title), so the downloader and popup
+   * can produce meaningful filenames.
+   *
+   * This is synchronous-safe: if the tab query fails, the original video is
+   * returned unchanged (no crash).
+   */
+  private enrichVideo(video: DetectedVideo): DetectedVideo {
+    // Fire-and-forget: we can't await in the broadcast callback. Instead,
+    // we update the stored video in the interceptor's map and re-broadcast.
+    void chrome.tabs.get(video.tabId).then((tab) => {
+      const enriched: DetectedVideo = {
+        ...video,
+        tabUrl: tab.url ?? video.tabUrl,
+        title: tab.title && tab.title.length > 0 ? tab.title : video.title,
+      };
+      // Update the interceptor's stored copy so future broadcasts include it.
+      this.networkInterceptor.updateVideo(video.id, enriched);
+      // Re-broadcast so the popup picks up the enriched metadata.
+      this.messageBus.broadcast({
+        type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
+        payload: {
+          videos: this.networkInterceptor.getVideos(video.tabId),
+          subtitles: this.networkInterceptor.getSubtitles(video.tabId),
+          tabId: video.tabId,
+        } satisfies DetectedMediaUpdatePayload,
+      });
+      this.updateBadgeForTab(video.tabId);
+    }).catch((err: unknown) => {
+      console.warn(`[background] Failed to enrich video for tab ${video.tabId}:`, err);
+    });
+    // Return the original for now; the enriched version will arrive via
+    // the re-broadcast shortly after.
+    return video;
   }
 
   /**
@@ -440,6 +619,13 @@ export class BackgroundService {
         ? (media as DetectedVideo).title
         : extractBaseName((media as DetectedSubtitle).url);
 
+    // Extract quality from the video's first variant (if available) for the
+    // quality badge in the download card.
+    const quality =
+      mediaType === 'video'
+        ? (media as DetectedVideo).variants[0]?.quality
+        : undefined;
+
     return {
       id,
       mediaType,
@@ -448,6 +634,7 @@ export class BackgroundService {
       status: 'queued',
       progress: 0,
       videoId: mediaType === 'video' ? (media as DetectedVideo).id : undefined,
+      ...(quality !== undefined ? { quality } : {}),
     };
   }
 
@@ -482,33 +669,19 @@ export class BackgroundService {
 
   // --- message handlers ---
 
-  /** GET_DETECTED_MEDIA: return videos + subtitles for the active tab. */
+  /** GET_DETECTED_MEDIA: return videos + subtitles for the requested tab only. */
   private handleGetDetectedMedia = async (
     request: MessageRequest,
   ): Promise<MessageResponse<DetectedMediaUpdatePayload>> => {
     const payload = request.payload as GetDetectedMediaPayload | undefined;
     const tabId = payload?.tabId ?? (await this.getActiveTabId());
 
-    let videos: DetectedVideo[];
-    let subtitles: DetectedSubtitle[];
-
-    if (tabId !== undefined) {
-      ({ videos, subtitles } = this.networkInterceptor.getMedia(tabId));
-    } else {
-      videos = [];
-      subtitles = [];
+    if (tabId === undefined) {
+      return { success: true, data: { videos: [], subtitles: [], tabId: 0 } };
     }
 
-    // If the active-tab lookup returned nothing, fall back to all detected
-    // media across all tabs. This handles the case where the popup is opened
-    // while the browser window does not have a focused tab (e.g. in automated
-    // tests or when the popup HTML is navigated to directly).
-    if (videos.length === 0 && subtitles.length === 0) {
-      videos = this.networkInterceptor.getAllVideos();
-      subtitles = this.networkInterceptor.getAllSubtitles();
-    }
-
-    return { success: true, data: { videos, subtitles } };
+    const { videos, subtitles } = this.networkInterceptor.getMedia(tabId);
+    return { success: true, data: { videos, subtitles, tabId } };
   };
 
   /** DOWNLOAD_VIDEO: create a download item for the requested video. */
@@ -563,6 +736,11 @@ export class BackgroundService {
     }
 
     const { videos, subtitles } = this.networkInterceptor.getMedia(tabId);
+
+    if (videos.length === 0 && subtitles.length === 0) {
+      return { success: false, error: 'No media found for this tab' };
+    }
+
     const items: DownloadItem[] = [];
 
     for (const video of videos) {
@@ -592,6 +770,7 @@ export class BackgroundService {
     request: MessageRequest,
   ): Promise<MessageResponse> => {
     const payload = request.payload as CancelDownloadPayload;
+    this.downloader.pause(payload.downloadId);
     this.downloadQueue.pause(payload.downloadId);
     return { success: true };
   };
@@ -602,6 +781,31 @@ export class BackgroundService {
   ): Promise<MessageResponse> => {
     const payload = request.payload as CancelDownloadPayload;
     this.downloadQueue.resume(payload.downloadId);
+    this.downloader.resume(payload.downloadId);
+    return { success: true };
+  };
+
+  /** RETRY_DOWNLOAD: retry a failed/cancelled download by id. */
+  private handleRetryDownload = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as CancelDownloadPayload;
+    this.downloader.retry(payload.downloadId);
+    this.downloadQueue.retry(payload.downloadId);
+    return { success: true };
+  };
+
+  /** REMOVE_DOWNLOAD: remove a download item from the queue entirely. */
+  private handleRemoveDownload = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as CancelDownloadPayload;
+    // If the item is still active, cancel it first to stop any in-flight work.
+    const item = this.downloadQueue.getById(payload.downloadId);
+    if (item && (item.status === 'downloading' || item.status === 'converting')) {
+      this.downloader.cancel(payload.downloadId);
+    }
+    this.downloadQueue.remove(payload.downloadId);
     return { success: true };
   };
 
@@ -634,6 +838,12 @@ export class BackgroundService {
     if (payload.settings.convertToMp4 !== undefined) {
       this.downloader.setConvertMode(payload.settings.convertToMp4);
     }
+    if (payload.settings.segmentConcurrency !== undefined) {
+      this.downloader.setSegmentConcurrency(payload.settings.segmentConcurrency);
+    }
+    if (payload.settings.filenameSource !== undefined) {
+      this.downloader.setFilenameSource(payload.settings.filenameSource);
+    }
     if (
       payload.settings.parallelConversion !== undefined ||
       payload.settings.manualWorkerCount !== undefined
@@ -665,8 +875,10 @@ export class BackgroundService {
 
     if (this.extensionActive) {
       this.networkInterceptor.start();
+      void this.updateBadgeForActiveTab();
     } else {
       this.networkInterceptor.stop();
+      this.clearBadge();
     }
 
     return { success: true, data: { active: this.extensionActive } };
@@ -741,9 +953,52 @@ export class BackgroundService {
       const subtitles = this.networkInterceptor.getSubtitles(tabId);
       this.messageBus.broadcast({
         type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
-        payload: { videos, subtitles } satisfies DetectedMediaUpdatePayload,
+        payload: { videos, subtitles, tabId } satisfies DetectedMediaUpdatePayload,
       });
+      this.updateBadgeForTab(tabId);
     }
+
+    return { success: true };
+  };
+
+  /**
+   * Handle conversion progress updates from the offscreen document.
+   *
+   * The offscreen ffmpegRunner broadcasts `CONVERSION_PROGRESS_UPDATE` during
+   * TS→MP4 conversion. This handler converts it into a `DownloadProgress`
+   * update with status `converting` and the conversion detail fields, then
+   * broadcasts it to the popup via the standard progress channel.
+   */
+  private handleConversionProgressUpdate = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as ConversionProgressUpdatePayload;
+    if (!payload?.downloadId) {
+      return { success: false, error: 'Missing downloadId in conversion progress' };
+    }
+
+    const progress: DownloadProgress = {
+      itemId: payload.downloadId,
+      status: 'converting',
+      progress: payload.percent,
+      fileSize: payload.fileSize,
+      processedBytes: payload.processedBytes,
+      conversionPhase: payload.phase,
+      workerCount: payload.workerCount,
+      usedWorkers: payload.usedWorkers,
+      // Two-phase: download is complete (100%), convert is in progress
+      downloadProgress: 100,
+      convertProgress: payload.percent,
+    };
+
+    // Update the download queue's tracking
+    this.downloadQueue.updateProgress(progress);
+
+    // Broadcast to the popup
+    this.messageBus.broadcast({
+      type: MESSAGE_TYPES.DOWNLOAD_PROGRESS_UPDATE,
+      payload: { progress } satisfies DownloadProgressUpdatePayload,
+    });
 
     return { success: true };
   };

@@ -238,4 +238,85 @@ describe('DownloadQueue', () => {
     queue.setMaxConcurrent(3);
     expect(calls).toHaveLength(3);
   });
+
+  // === retry() tests ===
+
+  it('retry() resets an errored item to queued', () => {
+    queue.add(makeItem('err1'));
+    // Simulate error via updateProgress
+    queue.updateProgress({
+      itemId: 'err1',
+      status: 'error',
+      progress: 50,
+      error: 'Network timeout',
+    });
+    expect(queue.getById('err1')?.status).toBe('error');
+    expect(queue.getById('err1')?.error).toBe('Network timeout');
+
+    queue.retry('err1');
+    const item = queue.getById('err1');
+    expect(item?.status).toBe('queued');
+    expect(item?.progress).toBe(0);
+    expect(item?.error).toBeUndefined();
+  });
+
+  it('retry() resets downloadProgress and convertProgress', () => {
+    queue.add(makeItem('err2'));
+    queue.updateProgress({
+      itemId: 'err2',
+      status: 'error',
+      progress: 75,
+      downloadProgress: 100,
+      convertProgress: 50,
+      error: 'Conversion failed',
+    });
+    queue.retry('err2');
+    const item = queue.getById('err2');
+    expect(item?.downloadProgress).toBeUndefined();
+    expect(item?.convertProgress).toBeUndefined();
+  });
+
+  it('retry() is no-op on a non-error item', () => {
+    queue.add(makeItem('ok1'));
+    queue.updateProgress({ itemId: 'ok1', status: 'downloading', progress: 30 });
+    queue.retry('ok1');
+    expect(queue.getById('ok1')?.status).toBe('downloading');
+    expect(queue.getById('ok1')?.progress).toBe(30);
+  });
+
+  it('retry() is no-op on non-existent item', () => {
+    queue.retry('nonexistent');
+    // Should not throw
+    expect(queue.getAll()).toHaveLength(0);
+  });
+
+  it('retry() works on cancelled items too', () => {
+    queue.add(makeItem('can1'));
+    queue.cancel('can1');
+    expect(queue.getById('can1')?.status).toBe('cancelled');
+    queue.retry('can1');
+    expect(queue.getById('can1')?.status).toBe('queued');
+  });
+
+  // === remove() tests ===
+
+  it('remove() deletes an item from the queue', () => {
+    queue.add(makeItem('rm1'));
+    expect(queue.getById('rm1')).toBeDefined();
+    queue.remove('rm1');
+    expect(queue.getById('rm1')).toBeUndefined();
+  });
+
+  it('remove() is no-op on non-existent item', () => {
+    queue.remove('nonexistent');
+    // Should not throw
+  });
+
+  it('remove() does not affect other items', () => {
+    queue.add(makeItem('keep'));
+    queue.add(makeItem('remove'));
+    queue.remove('remove');
+    expect(queue.getById('keep')).toBeDefined();
+    expect(queue.getById('remove')).toBeUndefined();
+  });
 });

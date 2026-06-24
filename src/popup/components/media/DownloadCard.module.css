@@ -1,0 +1,217 @@
+/* === DownloadCard — matches prototype === */
+.card {
+  padding: var(--spacing-md);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.card.error {
+  border: 1px solid var(--color-error);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.card.queued {
+  opacity: 0.6;
+}
+
+/* === Header === */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qualityBadge {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.parallelBadge {
+  margin-left: 4px;
+  font-size: 12px;
+  flex-shrink: 0;
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+}
+
+/* === Action buttons === */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  padding: 0;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.actionBtn:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.actionBtn.danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-error);
+}
+
+/* === Error === */
+.errorText {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+  padding: 4px 8px;
+  background: rgba(239, 68, 68, 0.08);
+  border-radius: var(--radius-sm);
+  line-height: 1.4;
+}
+
+/* === Two-phase progress === */
+.phaseRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.phaseRow:first-of-type {
+  margin-top: 0;
+}
+
+.phaseLabel {
+  text-transform: capitalize;
+}
+
+.phaseLabel.done {
+  color: var(--color-success);
+}
+
+.phaseLabel.active {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.phasePercent {
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family);
+  color: var(--color-text-secondary);
+}
+
+.phasePercent.done {
+  color: var(--color-success);
+}
+
+.phasePercent.active {
+  color: var(--color-primary);
+}
+
+/* === Progress bar — 4px === */
+.progressBar {
+  width: 100%;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 200ms ease;
+}
+
+.progressFill.downloading { background: var(--color-primary); }
+.progressFill.converting { background: var(--color-primary); }
+.progressFill.done { background: var(--color-success); }
+.progressFill.error { background: var(--color-error); }
+.progressFill.paused { background: var(--color-text-muted); }
+.progressFill.queued { background: var(--color-text-muted); }
+
+/* === Progress label (single-phase fallback) === */
+.progressLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+.progressPercent {
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family);
+  color: var(--color-text-secondary);
+}
+
+/* === Queued indicator === */
+.queuedIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  padding: 4px 0;
+}
+
+/* === Progress detail items === */
+.detailRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.detailItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.detailItem svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}

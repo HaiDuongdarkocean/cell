@@ -141,6 +141,7 @@ describe('useDetectedMedia', () => {
     const mediaPayload: DetectedMediaUpdatePayload = {
       videos: [mockVideo],
       subtitles: [mockSubtitle],
+      tabId: 1,
     };
     const response: MessageResponse<DetectedMediaUpdatePayload> = {
       success: true,
@@ -172,6 +173,7 @@ describe('useDetectedMedia', () => {
     const updatePayload: DetectedMediaUpdatePayload = {
       videos: [mockVideo],
       subtitles: [mockSubtitle],
+      tabId: 1,
     };
     const message: MessageRequest = {
       type: 'DETECTED_MEDIA_UPDATE',

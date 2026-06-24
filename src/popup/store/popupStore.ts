@@ -45,6 +45,13 @@ function mergeDownloadItems(existing: DownloadItem, incoming: DownloadItem): Dow
     ),
     savedFilename: incoming.savedFilename ?? existing.savedFilename,
     videoId: incoming.videoId ?? existing.videoId,
+    // Conversion detail fields — prefer incoming (most recent) values
+    fileSize: incoming.fileSize ?? existing.fileSize,
+    downloadedBytes: incoming.downloadedBytes ?? existing.downloadedBytes,
+    processedBytes: incoming.processedBytes ?? existing.processedBytes,
+    conversionPhase: incoming.conversionPhase ?? existing.conversionPhase,
+    workerCount: incoming.workerCount ?? existing.workerCount,
+    usedWorkers: incoming.usedWorkers ?? existing.usedWorkers,
   };
 }
 

@@ -30,7 +30,39 @@ export function useDownloadProgress(): {
       if (request.type === 'DOWNLOAD_PROGRESS_UPDATE') {
         const payload = request.payload as DownloadProgressUpdatePayload;
         if (payload?.progress) {
-          const { itemId, status, progress, error } = payload.progress;
+          const {
+            itemId,
+            status,
+            progress,
+            error,
+            fileSize,
+            downloadedBytes,
+            processedBytes,
+            conversionPhase,
+            workerCount,
+            usedWorkers,
+            currentSegment,
+            totalSegments,
+            downloadProgress,
+            convertProgress,
+          } = payload.progress;
+
+          // Build the update patch with all available fields
+          const patch = {
+            status,
+            progress,
+            ...(error !== undefined ? { error } : {}),
+            ...(fileSize !== undefined ? { fileSize } : {}),
+            ...(downloadedBytes !== undefined ? { downloadedBytes } : {}),
+            ...(processedBytes !== undefined ? { processedBytes } : {}),
+            ...(conversionPhase !== undefined ? { conversionPhase } : {}),
+            ...(workerCount !== undefined ? { workerCount } : {}),
+            ...(usedWorkers !== undefined ? { usedWorkers } : {}),
+            ...(currentSegment !== undefined ? { currentSegment } : {}),
+            ...(totalSegments !== undefined ? { totalSegments } : {}),
+            ...(downloadProgress !== undefined ? { downloadProgress } : {}),
+            ...(convertProgress !== undefined ? { convertProgress } : {}),
+          };
 
           // If this download isn't in the store yet, add a stub entry so the
           // popup can display progress/error state. This handles cases where
@@ -45,17 +77,11 @@ export function useDownloadProgress(): {
               mediaType: 'subtitle',
               url: '',
               title: 'Download',
-              status,
-              progress,
               startedAt: Date.now(),
-              ...(error !== undefined ? { error } : {}),
+              ...patch,
             });
           } else {
-            updateDownload(itemId, {
-              status,
-              progress,
-              ...(error !== undefined ? { error } : {}),
-            });
+            updateDownload(itemId, patch);
           }
         }
       }
