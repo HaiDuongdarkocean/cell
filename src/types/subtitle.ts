@@ -1,31 +1,21 @@
 // Type definitions for subtitle overlay functionality
+// Reuses SrtCue from media.ts — SubtitleLine was a duplicate, deleted per ponytail rule.
+
+import type { SrtCue } from './media';
 
 // === Subtitle Format Types ===
 
 export type SubtitleFormat = 'srt' | 'vtt' | 'ass' | 'ssa' | 'unknown';
 
-// === Subtitle Line Types ===
-
-/**
- * Single subtitle line with timing and text content.
- * Timestamps are in milliseconds for easier comparison with video.currentTime.
- */
-export interface SubtitleLine {
-  readonly index: number; // Line number (1-based from source file)
-  readonly start: number; // Start time in milliseconds
-  readonly end: number; // End time in milliseconds
-  readonly text: string; // Subtitle text content
-}
-
 // === Subtitle State Types ===
 
 /**
  * Runtime state for subtitle overlay sync.
- * Tracks current video, parsed lines, and sync status.
+ * Uses SrtCue[] (reused from media.ts) — same shape as SubtitleLine was.
  */
 export interface SubtitleState {
-  readonly lines: SubtitleLine[]; // All parsed subtitle lines
-  readonly currentIndex: number; // Currently displayed line index (-1 if none)
+  readonly cues: SrtCue[]; // All parsed subtitle cues
+  readonly currentIndex: number; // Currently displayed cue index (-1 if none)
   readonly videoElement: HTMLVideoElement; // Reference to video element
   readonly overlayElement: HTMLElement; // Reference to overlay DOM element
   readonly format: SubtitleFormat; // Source format (for conversion logic)
@@ -53,7 +43,7 @@ export interface OverlayConfig {
  */
 export interface ParseResult {
   readonly success: boolean;
-  readonly lines: SubtitleLine[];
+  readonly cues: SrtCue[]; // Reused SrtCue from media.ts
   readonly format: SubtitleFormat;
   readonly error?: string;
 }
@@ -66,5 +56,5 @@ export interface ParseResult {
 export interface SyncStatus {
   readonly isSyncing: boolean; // Whether sync is active
   readonly currentTime: number; // Current video time in milliseconds
-  readonly displayedLine: SubtitleLine | null; // Currently displayed line
+  readonly displayedCue: SrtCue | null; // Currently displayed cue
 }
