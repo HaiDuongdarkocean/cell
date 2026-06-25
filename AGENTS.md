@@ -395,7 +395,7 @@ await new Promise(resolve => setTimeout(resolve, 15000));
 1. **test-driven-development** — When implementing logic, fixing bugs, changing behavior
    - RED → GREEN → REFACTOR
    - Prove-It Pattern for bug fixes
-   - **REFACTOR phase rule**: REFACTOR is a conscious decision, not automatic. After GREEN, ask "Is there anything to improve that does NOT change behavior?" If no → skip, commit, move on. Do NOT invent your own review checklist — use the **5-axis review from `code-review-and-quality` skill** (correctness, readability, architecture, security, performance). Ponytail alignment: REFACTOR must not add abstractions/boilerplate/complexity — only remove problems (duplication, unclear naming, dead code). Mark deliberate simplifications with `// ponytail:` comments instead of "fixing" them.
+   - **REFACTOR phase rule**: Conscious decision, not automatic. After GREEN, ask "Anything to improve without changing behavior?" If no → skip, commit, move on. Use **5-axis review from `code-review-and-quality` skill** (correctness, readability, architecture, security, performance) — do NOT invent your own checklist. Ponytail: REFACTOR removes problems, never adds abstractions. Mark deliberate simplifications with `// ponytail:` comments.
 2. **browser-testing-with-devtools** — When building/debugging browser-related code
    - Test in real browsers via Chrome DevTools MCP
    - Inspect DOM, capture console errors, analyze network requests
@@ -474,7 +474,7 @@ await new Promise(resolve => setTimeout(resolve, 15000));
 - `test-driven-development` + `ponytail.md` + `code-review-and-quality`
 - Ponytail enforces minimal code, TDD ensures minimal is correct, code-review ensures minimal is quality
 - Ponytail's "trivial one-liner no test" is overridden by baseline's TDD for this project
-- **REFACTOR phase uses 5-axis review from `code-review-and-quality` skill** (not invented checklist): correctness, readability, architecture, security, performance. See TDD skill Step 3 for full detail.
+- **REFACTOR phase uses 5-axis review from `code-review-and-quality` skill** (not invented checklist): correctness, readability, architecture, security, performance.
 
 **Chrome Extension Safety**
 - `baseline.md` + `source-driven-development` + `browser-testing-with-devtools`

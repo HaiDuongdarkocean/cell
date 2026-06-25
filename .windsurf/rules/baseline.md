@@ -27,7 +27,7 @@ When implementing logic, fixing bugs, or changing behavior:
 - Prefer real implementations over mocks
 - Test state, not interactions
 - Use DAMP over DRY in tests
-- **REFACTOR phase rule**: REFACTOR is a conscious decision, not automatic. After GREEN, ask "Is there anything to improve that does NOT change behavior?" If no → skip, commit, move on. Use the **5-axis review from `code-review-and-quality` skill** (correctness, readability, architecture, security, performance) — do NOT invent your own checklist. Ponytail alignment: REFACTOR must not add abstractions/boilerplate/complexity, only remove problems. Mark deliberate simplifications with `// ponytail:` comments.
+- **REFACTOR phase rule**: Conscious decision, not automatic. After GREEN, ask "Anything to improve without changing behavior?" If no → skip, commit, move on. Use **5-axis review from `code-review-and-quality` skill** (correctness, readability, architecture, security, performance) — do NOT invent your own checklist. Ponytail: REFACTOR removes problems, never adds abstractions. Mark deliberate simplifications with `// ponytail:` comments.
 
 Invoke `/test` for full TDD workflow.
 

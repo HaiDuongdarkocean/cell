@@ -72,21 +72,7 @@ export async function createTask(input: { title: string }): Promise<Task> {
 
 With tests green, improve the code without changing behavior.
 
-**REFACTOR is a conscious decision, not an automatic phase.** After GREEN, ask one question: "Is there anything to improve that does NOT change behavior?" If yes → refactor + re-run tests. If no → skip, commit, move on. Do not refactor code that is already minimal and clear — that violates the "no unrequested abstractions" rule and risks introducing bugs.
-
-**Use the 5-axis review from `code-review-and-quality` skill — do not invent your own checklist.** The 5 axes are the authoritative source for what to look for during REFACTOR:
-
-1. **Correctness** — edge cases handled? error paths handled? off-by-one? race conditions?
-2. **Readability & Simplicity** — naming descriptive? control flow straightforward? could be fewer lines? abstractions earning their complexity? dead code artifacts? conditional bolted onto unrelated flow?
-3. **Architecture** — follows existing patterns? clean module boundaries? no duplication? dependencies flowing right? abstraction level appropriate? type boundaries explicit?
-4. **Security** — user input validated? secrets out of code/logs? auth checked? SQL parameterized? XSS prevented? untrusted data treated as untrusted?
-5. **Performance** — N+1 queries? unbounded loops? sync that should be async? unnecessary re-renders? large objects in hot paths?
-
-For each axis: if the code passes → no action. If the code fails an axis → refactor to fix it, then re-run tests.
-
-**Ponytail alignment:** REFACTOR must not add abstractions, boilerplate, or complexity. The goal is to remove problems (duplication, unclear naming, dead code), not to add structure. If the only "improvement" is adding an interface/factory/config that wasn't requested → skip it. Mark deliberate simplifications with `// ponytail:` comments instead of "fixing" them.
-
-Run tests after every refactor step to confirm nothing broke.
+**REFACTOR is a conscious decision, not automatic.** After GREEN, ask: "Anything to improve without changing behavior?" If no → skip, commit, move on. If yes → use the **5-axis review from `code-review-and-quality` skill** (correctness, readability, architecture, security, performance) — do NOT invent your own checklist. Ponytail alignment: REFACTOR removes problems (duplication, unclear naming, dead code), never adds abstractions/boilerplate. Mark deliberate simplifications with `// ponytail:` comments. Run tests after every refactor step.
 
 ## The Prove-It Pattern (Bug Fixes)
 
