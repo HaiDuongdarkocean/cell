@@ -81,3 +81,19 @@ export function msToAssTime(ms: number): string {
   const centiseconds = Math.floor((totalMs % 1000) / 10);
   return `${hours}:${pad(minutes, 2)}:${pad(seconds, 2)}.${pad(centiseconds, 2)}`;
 }
+
+/**
+ * Parse a timestamp string to milliseconds, accepting both SRT (comma)
+ * and VTT (dot) separators: "HH:MM:SS,mmm" or "HH:MM:SS.mmm".
+ */
+export function parseTimestamp(time: string): number {
+  const match = /^(\d{2}):(\d{2}):(\d{2})[,.](\d{3})$/.exec(time);
+  if (!match) {
+    throw new Error(`Invalid timestamp format: ${time}`);
+  }
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3]);
+  const milliseconds = Number(match[4]);
+  return (hours * 3600 + minutes * 60 + seconds) * 1000 + milliseconds;
+}

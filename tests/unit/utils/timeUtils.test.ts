@@ -4,6 +4,7 @@ import {
   srtTimeToMs,
   msToSrtTime,
   msToAssTime,
+  parseTimestamp,
 } from '@/lib/utils/timeUtils';
 
 describe('timeUtils', () => {
@@ -106,6 +107,32 @@ describe('timeUtils', () => {
 
     it('rounds milliseconds down to centiseconds (2 digits)', () => {
       expect(msToAssTime(1505)).toBe('0:00:01.50');
+    });
+  });
+
+  describe('parseTimestamp', () => {
+    it('parses SRT timestamp with comma separator', () => {
+      expect(parseTimestamp('00:00:01,000')).toBe(1000);
+    });
+
+    it('parses VTT timestamp with dot separator', () => {
+      expect(parseTimestamp('00:00:01.000')).toBe(1000);
+    });
+
+    it('parses timestamp with hours', () => {
+      expect(parseTimestamp('01:02:03,400')).toBe(3723400);
+    });
+
+    it('parses zero timestamp', () => {
+      expect(parseTimestamp('00:00:00,000')).toBe(0);
+    });
+
+    it('parses zero timestamp with dot separator', () => {
+      expect(parseTimestamp('00:00:00.000')).toBe(0);
+    });
+
+    it('throws on invalid format', () => {
+      expect(() => parseTimestamp('invalid')).toThrow('Invalid timestamp format');
     });
   });
 });
