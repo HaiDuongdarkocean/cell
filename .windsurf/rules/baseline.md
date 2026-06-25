@@ -27,6 +27,7 @@ When implementing logic, fixing bugs, or changing behavior:
 - Prefer real implementations over mocks
 - Test state, not interactions
 - Use DAMP over DRY in tests
+- **REFACTOR phase rule**: REFACTOR is a conscious decision, not automatic. After GREEN, ask "Is there anything to improve that does NOT change behavior?" If no → skip, commit, move on. Use the **5-axis review from `code-review-and-quality` skill** (correctness, readability, architecture, security, performance) — do NOT invent your own checklist. Ponytail alignment: REFACTOR must not add abstractions/boilerplate/complexity, only remove problems. Mark deliberate simplifications with `// ponytail:` comments.
 
 Invoke `/test` for full TDD workflow.
 
@@ -60,13 +61,15 @@ For Chrome extensions, always cite:
 Invoke `/source-driven-development` for full source-driven workflow.
 
 ## Quick Reference
-- `/spec` - Write PRD before code
-- `/plan` - Break down into tasks
-- `/build` - Incremental implementation
-- `/test` - TDD workflow
-- `/review` - Code review
-- `/security` - Security hardening
-- `/source-driven-development` - Source-cited implementation
+- `/spec` - Write PRD before code → invokes **spec-driven-development** skill
+- `/plan` - Break down into tasks → invokes **planning-and-task-breakdown** skill
+- `/build` - Incremental implementation → invokes **incremental-implementation** skill
+- `/test` - TDD workflow → invokes **test-driven-development** skill
+- `/review` - Code review → invokes **code-review-and-quality** skill
+- `/security` - Security hardening → invokes **security-and-hardening** skill
+- `/source-driven-development` - Source-cited implementation → invokes **source-driven-development** skill
+
+See `AGENTS.md` → Skill Orchestration for full skill hierarchy and synergies.
 
 ## called
 - always call me "Anh yêu", xưng là "em"

@@ -345,4 +345,166 @@ await new Promise(resolve => setTimeout(resolve, 15000));
 // Look for [NetworkInterceptor] Detected media messages
 ```
 
+---
+
+## Skill Orchestration
+
+### Always-on Skills
+- `.windsurf/rules/baseline.md` — Chrome extension specific rules (UI/UX, knowledge base, architecture map, TDD, code review, source-driven)
+- `.windsurf/rules/ponytail.md` — Lazy senior dev ladder (YAGNI, reuse, stdlib first, minimal diff) with TDD override for this project
+- `/context-engineering` — Activated when context window reaches 80% capacity
+
+### Skill Hierarchy by Phase
+
+#### Phase 1: Requirement Clarification
+1. **interview-me** — When request is underspecified, user invokes, or when agent silently fills in ambiguous requirements
+   - Extract what user actually wants instead of what they think they should want
+   - One-question-at-a-time until ~95% confidence about underlying intent
+
+#### Phase 2: Specification
+1. **spec-driven-development** — When starting new project/feature and no spec exists
+   - Write PRD before code
+   - Requirements unclear, ambiguous, or only exist as vague idea
+
+#### Phase 3: Planning
+1. **planning-and-task-breakdown** — When spec/clear requirements exist
+   - Break work into ordered, implementable tasks
+   - When task feels too large, need to estimate scope, or parallel work possible
+
+#### Phase 4: Architecture
+1. **system-architecture-design** — When starting new project, designing major feature, evaluating architecture trade-offs
+   - Design architecture from requirements to implementation
+   - Technology selection, architecture governance
+2. **cto-persona** — When making tech strategy decisions, evaluating build-vs-buy, prioritizing technical debt
+   - Architecture oversight, aligning with business goals
+
+#### Phase 5: Implementation
+1. **incremental-implementation** — When implementing feature/change touching >1 file
+   - Deliver changes incrementally
+   - When about to write large amount of code at once
+2. **source-driven-development** — When writing framework-specific code (Chrome extensions, React, etc.)
+   - Ground every implementation decision in official documentation
+   - Cite sources with full URLs
+3. **frontend-ui-engineering** — When building/modifying user-facing interfaces
+   - Production-quality UIs, components, layouts, state management
+4. **doubt-driven-development** — When correctness matters more than speed, unfamiliar code, high stakes
+   - Subject every non-trivial decision to adversarial review before it stands
+5. **ponytail.md** (always-on) — Enforces ladder: YAGNI → reuse → stdlib → native → installed dep → one-liner → minimal
+
+#### Phase 6: Testing
+1. **test-driven-development** — When implementing logic, fixing bugs, changing behavior
+   - RED → GREEN → REFACTOR
+   - Prove-It Pattern for bug fixes
+   - **REFACTOR phase rule**: REFACTOR is a conscious decision, not automatic. After GREEN, ask "Is there anything to improve that does NOT change behavior?" If no → skip, commit, move on. Do NOT invent your own review checklist — use the **5-axis review from `code-review-and-quality` skill** (correctness, readability, architecture, security, performance). Ponytail alignment: REFACTOR must not add abstractions/boilerplate/complexity — only remove problems (duplication, unclear naming, dead code). Mark deliberate simplifications with `// ponytail:` comments instead of "fixing" them.
+2. **browser-testing-with-devtools** — When building/debugging browser-related code
+   - Test in real browsers via Chrome DevTools MCP
+   - Inspect DOM, capture console errors, analyze network requests
+
+#### Phase 7: Review
+1. **code-review-and-quality** — Before merging any change
+   - Review across 5 axes: correctness, readability, architecture, security, performance
+2. **doubt-driven-development** (re-use) — Adversarial review for correctness-critical changes
+
+#### Phase 8: Git
+1. **git-workflow-and-versioning** — When making any code change
+   - Structure git workflow practices (commit, branch, resolve conflicts)
+
+#### Phase 9: Security
+1. **security-and-hardening** — When handling user input, auth, data storage, external integrations
+   - Harden code against vulnerabilities
+   - Input validation, session management, third-party services
+
+#### Phase 10: Performance
+1. **performance-optimization** — When performance requirements exist, suspect regressions
+   - Optimize application performance
+   - Profile bottlenecks, fix N+1 queries, unbounded loops
+
+#### Phase 11: Documentation
+1. **documentation-and-adrs** — When making architectural decisions, changing public APIs, shipping features
+   - Record decisions and documentation
+   - Context for future engineers and agents
+
+#### Phase 12: Deployment
+1. **shipping-and-launch** — When preparing production deployment
+   - Pre-launch checklist, monitoring, staged rollout, rollback strategy
+2. **ci-cd-and-automation** — When setting up/modifying build/deployment pipelines
+   - Automate quality gates, test runners, deployment strategies
+
+#### Phase 13: Monitoring
+1. **observability-and-instrumentation** — When shipping production features or production issues reported
+   - Add logging, metrics, tracing, alerting
+   - Evidence that feature works
+
+#### Phase 14: Debugging
+1. **debugging-and-error-recovery** — When tests fail, builds break, behavior doesn't match expectations
+   - Systematic root-cause debugging
+
+#### Phase 15: Refactoring
+1. **code-simplification** — When refactoring code for clarity without changing behavior
+   - Simplify code that is harder to read/maintain/extend than it should be
+
+#### Phase 16: Deprecation
+1. **deprecation-and-migration** — When removing old systems/APIs/features
+   - Manage deprecation and migration
+
+#### Phase 17: Ideation
+1. **idea-refine** — When idea is vague, need to stress-test assumptions
+   - Refine raw ideas into sharp, actionable concepts
+
+#### Phase 18: Meta
+1. **using-agent-skills** — Discover and invoke agent skills
+2. **devin-for-terminal** — Devin CLI documentation lookup
+3. **context-engineering** — Optimize agent context setup
+4. **api-and-interface-design** — Design stable APIs and module boundaries
+
+### Command → Skill Mapping (baseline.md Quick Reference)
+| Command | Invokes Skill |
+|---|---|
+| `/spec` | spec-driven-development |
+| `/plan` | planning-and-task-breakdown |
+| `/build` | incremental-implementation |
+| `/test` | test-driven-development |
+| `/review` | code-review-and-quality |
+| `/security` | security-and-hardening |
+| `/source-driven-development` | source-driven-development |
+
+### Skill Synergies (Strongest Combos for This Project)
+
+**TDD + Minimalism + Code Review**
+- `test-driven-development` + `ponytail.md` + `code-review-and-quality`
+- Ponytail enforces minimal code, TDD ensures minimal is correct, code-review ensures minimal is quality
+- Ponytail's "trivial one-liner no test" is overridden by baseline's TDD for this project
+- **REFACTOR phase uses 5-axis review from `code-review-and-quality` skill** (not invented checklist): correctness, readability, architecture, security, performance. See TDD skill Step 3 for full detail.
+
+**Chrome Extension Safety**
+- `baseline.md` + `source-driven-development` + `browser-testing-with-devtools`
+- Baseline requires Chrome API citation, source-driven fetches official docs, devtools verifies live
+
+**Architecture + Incremental**
+- `system-architecture-design` + `incremental-implementation` + `planning-and-task-breakdown`
+- Design first, break down tasks, implement incrementally → prevents over-build
+
+**Correctness + Doubt**
+- `doubt-driven-development` + `test-driven-development` + `browser-testing-with-devtools`
+- M3u8 parse, fMP4 merge are non-trivial → doubt-driven reviews decisions, TDD proves behavior, devtools verifies runtime
+
+**Performance + Measurement**
+- `performance-optimization` + `observability-and-instrumentation`
+- No measurement → no knowledge of slowness → observability adds metrics, performance skill optimizes
+
+**Security + Validation**
+- `security-and-hardening` + `doubt-driven-development`
+- Security critical → doubt-driven reviews security decisions, security skill implements hardening
+
+### Architecture Sync Rule
+When adding/removing/renaming files, changing imports, or modifying data flows:
+1. Update `docs/architechture-system.md` before commit
+2. Use "Update protocol" section at the bottom of that file for guidance
+3. This is enforced by baseline.md Architecture Map rule
+
+### Context Engineering Strategy
+- Pro-active: compact context at start of new task, not reactive at 80%
+- Strategy: only load relevant files for current task (grep/glob first, not entire src/)
+- Activate `/context-engineering` with `proactive` mode for this project
+
 
