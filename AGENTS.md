@@ -71,102 +71,6 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 Run a single project: `npm run test:unit` / `npm run test:integration`, or `npx jest --selectProjects unit`.
 Force re-download of segments: `FORCE_DOWNLOAD=1 npm run test:integration` (PowerShell: `$env:FORCE_DOWNLOAD=1; npm run test:integration`).
 
-## Subtitle Language Detection (hybrid script + frequency)
-
-### Architecture
-- `subtitleDetector.extractLanguage()` parses BCP 47 tags from URL (e.g. `en-US` → `en`, `zh-Hans` → `zh`), extracts primary subtag only.
-- `languageDetector.detectLanguage()` uses a **hybrid two-stage** approach:
-  1. **Script detection** (`scriptDetector.ts`): identifies dominant Unicode script (26 scripts from Unicode Scripts.txt). Single-candidate scripts (Hangul→Korean, Hiragana→Japanese, Thai, Greek, etc.) resolve immediately.
-  2. **Frequency disambiguation**: for multi-candidate scripts (Latin, Cyrillic, Arabic, Devanagari, Han), runs frequency profiles filtered by script. 38 profiles total.
-  3. **Fallback**: if no frequency profile meets threshold, returns first candidate for the detected script.
-- `isoCodeToLabel()` maps ISO 639-1 (183 codes) + ISO 639-2 (182 codes) → 183 unique language labels.
-
-### Known limitations
-- All frequency profiles use **top-10 words with 3+ characters**, ranked by corpus frequency. Short words (1-2 chars) are excluded to avoid cross-language false positives (e.g. "a" in English/Spanish/French, "я"/"с" in Russian/Ukrainian). CJK scripts (Han, Hangul, Hiragana) are exempt because CJK characters count as 1 char each and common words are often 2 chars — these scripts resolve via single-candidate script detection anyway.
-- Bulgarian/Serbian/Macedonian share many common Slavic words; frequency alone cannot reliably distinguish them. Serbian is checked first (uses ј U+0458).
-- Languages without frequency profiles (Marathi, Nepali, Malay, African languages, etc.) fall back to the first candidate of their script (e.g. Marathi → Hindi via Devanagari, Malay → English via Latin).
-- `substringMatch: true` is only for scripts without word boundaries (Han, Hiragana, Katakana). Using it for Cyrillic/Arabic causes false positives (e.g. "а" matching inside "за").
-
-## Subtitle filename matches video filename + language suffix
-
-### Problem
-Subtitle downloads had ugly filenames like `subtitle_-_52c5b9e164ce167d5f0828b55f4ec57f.srt` (URL hash-based), while video downloads had clean filenames like `See_You_at_Work_Tomorrow!.mp4` (from video title). Subtitles should use the same base name as the video, with a language suffix (VLC/community convention: `Movie Title.en.srt`).
-
-### Root causes
-1. **`downloadSubtitle` ignored video context**: It called `resolveFilenameBase(this.filenameSource, undefined, subtitle.url)` — always passing `undefined` as title, so it always used the subtitle's own URL base name (typically a hash).
-2. **`subtitle.videoId` is never set**: `detectSubtitle` in `subtitleDetector.ts` does not link subtitles to videos. The `DetectedSubtitle.videoId` field exists but is always `undefined` in practice.
-3. **Language was `'unknown'` in background**: `detectSubtitle` → `extractLanguage(url)` returns `'unknown'` when the URL has no language indicator. The popup's `useSubtitleLanguage` hook detects the language from subtitle content (frequency-based) and updates the **popup store**, but never pushed the result to the background. So `mediaMap` still had `language: 'unknown'` when the download was triggered.
-
-### Fix (3 parts)
-
-**Part 1: `buildSubtitleFileName` helper** (`src/lib/utils/fileUtils.ts`)
-- New function: `buildSubtitleFileName(base, language, ext)` → `<base>.<lang>.<ext>` (e.g. `Movie.en.srt`). Sanitizes + lowercases the language tag. Skips suffix when language is empty/whitespace/all-invalid-chars.
-
-**Part 2: Video context passthrough** (`src/background/downloader.ts` + `src/background/index.ts`)
-- `downloadSubtitle` now accepts optional `videoContext?: { videoTitle?, videoTabUrl? }`. When provided, it uses `resolveFilenameBase(this.filenameSource, videoTitle, videoTabUrl)` — the same mechanism as video downloads. Falls back to the subtitle's URL base when no video context.
-- The background executor looks up videos on the same tab via `this.networkInterceptor.getVideos(subtitle.tabId)` and passes the first video's title + tabUrl as context.
-
-**Part 3: Language push from popup to background** (`src/types/message.ts` + `src/constants/messages.ts` + `src/background/index.ts` + `src/popup/hooks/useSubtitleLanguage.ts`)
-- New message type `UPDATE_SUBTITLE_LANGUAGE` with payload `{ subtitleId, language }`.
-- Background handler `handleUpdateSubtitleLanguage`: updates both `networkInterceptor` (via `updateSubtitle`) and `mediaMap` with the detected ISO 639-1 code.
-- `useSubtitleLanguage` hook: after content-based detection resolves, sends `UPDATE_SUBTITLE_LANGUAGE` for each updated subtitle via `chrome.runtime.sendMessage`.
-
-### Key insights
-- `subtitle.videoId` is a dead field — never set by the detector. Linking by `tabId` is the robust strategy (all subtitles on a video page belong to that page's video).
-- The popup ↔ background language sync is necessary because the popup does content-based detection (fetch + frequency analysis) which the background doesn't do. Without the push, the background's `mediaMap` has stale `'unknown'` language codes.
-- The `buildSubtitleFileName` function lowercases the language tag for VLC convention compatibility (`movie.en.srt`, not `movie.EN.srt`).
-
-### Verification (live debug via edge-devtools MCP)
-- Downloaded English subtitle on `themoviebox.org`:
-  - Before fix: `subtitle_-_52c5b9e164ce167d5f0828b55f4ec57f.srt`
-  - After fix: `See_You_at_Work_Tomorrow!.en.srt` ✓
-- Popup subtitle cards now display the filename format (not hash):
-  - `See_You_at_Work_Tomorrow!.en.srt`, `See_You_at_Work_Tomorrow!.ar.srt`, `See_You_at_Work_Tomorrow!.bn.srt`, etc.
-- 11 subtitles detected with correct language labels (english, arabic, bengali, spanish, tagalog, french, indonesian, khmer, portuguese).
-
-### Popup display title (Part 4)
-- `resolveMediaDisplayTitle` in `useMediaDisplayTitle.ts` now accepts optional `videoContext: { videoTitle?, videoTabUrl? }`.
-- When provided, subtitle display title = `buildSubtitleFileName(resolveFilenameBase(filenameSource, videoTitle, videoTabUrl), language, format)` — matches download filename exactly.
-- `useMediaDisplayTitle` hook reads `videos` from popup store and auto-finds the first video on the same `tabId` for each subtitle. No manual wiring needed in `App.redesigned.tsx`.
-- When no video is detected on the same tab, falls back to the subtitle's URL base name (legacy behavior).
-- `buildSubtitleFileName` treats `'unknown'` as "no language" (skips suffix) — matches the sentinel from `extractLanguage()`.
-
-## PowerShell note
-PowerShell does not support bash heredoc (`<<'EOF'`). For multi-line git commit messages, write to a temp file and use `git commit -F <file>`.
-
-## Parallel fMP4 Merge (ftyp+moov stripping + tfdt offset)
-
-### Problem
-When parallel transmuxing splits a TS file into N groups, each group creates its own `Transmuxer` instance. This causes two bugs:
-
-1. **Multiple ftyp+moov**: Each instance emits `initSegment` (ftyp+moov) + `data` (moof+mdat). Naive concatenation produces an invalid fMP4 with N ftyp+moov pairs — players only read the first one, so the video appears incomplete (only part 0 plays).
-
-2. **tfdt overlap**: mux.js rebases PTS to 0 for each Transmuxer instance. So parts 1+ have tfdt values starting from ~0 instead of their absolute position in the timeline. When merged, fragments from different parts overlap → player only plays part 0 → duration shows as ~1/N of actual.
-
-### Fix
-`mergePartFiles()` in `parallelTransmuxer.ts` applies three fixes:
-
-1. **ftyp+moov stripping**: `findFirstMoofOffset()` parses the MP4 box structure of parts 1+ and skips their ftyp+moov boxes. Only part 0 keeps its ftyp+moov.
-
-2. **tfdt offset**: After transmuxing all groups, the function:
-   - Reads timescales from part 0's moov (moov → trak → mdia → mdhd)
-   - Extracts per-track tfdt + trun total duration from each part's moof boxes
-   - Computes cumulative offsets per track (sum of previous parts' durations)
-   - Patches tfdt values in parts 1+ by adding the cumulative offset (in-place via `offsetTfdtInPlace()`)
-
-3. **mvhd duration update**: The moov's mvhd duration is updated from part 0's duration to the total duration across all parts (via `updateMvhdDuration()`).
-
-### Verification
-Tested with real m3u8 (295 segments, 120s duration):
-- Sequential: 120.48s ✓
-- OLD parallel (naive merge): 43.28s ❌ (only part 0 played)
-- NEW parallel (tfdt fix): 120.48s ✓ (matches sequential)
-
-### Why this works
-- All groups come from the same TS stream → same codec configuration → moov from part 0 is compatible with moof from all parts.
-- HLS TS segments start with PAT/PMT (required for random access), so each group's Transmuxer can independently initialize and produce correct fMP4 fragments.
-- The tfdt offset is computed from the trun sample durations (which mux.js sets correctly from PES headers), so the cumulative offset is accurate.
-
 ## Auto-Select & Auto-Download Feature
 
 ### Architecture
@@ -196,154 +100,7 @@ Tested with real m3u8 (295 segments, 120s duration):
   - Footer: `selectedSummary` derived from selected values + option labels; rendered as `data-testid="{testId}-footer"`.
   - E2E: click the `<li>` option row directly (the component toggles on `li` click); no checkbox input exists.
 
-### PowerShell regex gotcha
-- `(Get-Content -Raw) -replace` with `\n` in replacement string inserts literal `\n` text, not newline. Use backtick-n `` `n `` in PowerShell or use the `edit` tool instead.
-
-## E2E Debugging with Chrome DevTools MCP
-
-### Overview
-Chrome DevTools MCP provides real-time browser inspection and debugging capabilities for Chrome extensions. It's useful for:
-- Inspecting popup UI and DOM state
-- Checking console logs and errors
-- Verifying extension state (active/inactive, whitelist, settings)
-- Testing media detection in real-time
-- Debugging auto-download behavior without full E2E test runs
-
-### Available Tools
-Key tools for debugging:
-- `list_pages` - List all open tabs and extension pages
-- `select_page` - Switch to a specific page/tab
-- `evaluate_script` - Run JavaScript in the page context
-- `get_console_messages` - Retrieve console logs (error/warning/info/debug)
-- `navigate_to` - Navigate to URLs (note: not available in chrome-devtools MCP, use browser_navigate in mcp-playwright instead)
-
-### Common Debugging Workflows
-
-#### 1. Inspect Popup State
-```javascript
-// Check extension state
-{
-  extensionActive: document.querySelector('[data-testid="toggle-extension-btn"]')?.getAttribute('aria-pressed'),
-  autoDownloadActive: document.querySelector('[data-testid="toggle-auto-download-btn"]')?.getAttribute('aria-pressed'),
-  videoCards: document.querySelectorAll('[data-testid="video-card"]').length,
-  subtitleCards: document.querySelectorAll('[data-testid="subtitle-card"]').length
-}
-```
-
-#### 2. Check Settings
-```javascript
-// Verify subtitle language selection
-{
-  totalOptions: document.querySelectorAll('[role="option"]').length,
-  selectedOptionsCount: Array.from(document.querySelectorAll('[role="option"]'))
-    .filter(opt => opt.getAttribute('aria-selected') === 'true').length,
-  selectedText: Array.from(document.querySelectorAll('[role="option"]'))
-    .filter(opt => opt.getAttribute('aria-selected') === 'true')
-    .map(o => o.textContent?.trim())
-}
-```
-
-#### 3. Reload Extension
-```javascript
-// Disable and re-enable extension to reload code
-async () => {
-  const extensions = await new Promise((resolve) => {
-    chrome.management.getAll(resolve);
-  });
-  const videoDownloader = extensions.find(ext =>
-    ext.name.toLowerCase().includes('video') || ext.name.toLowerCase().includes('downloader')
-  );
-  if (videoDownloader) {
-    await chrome.management.setEnabled(videoDownloader.id, false);
-    await new Promise(r => setTimeout(r, 500));
-    await chrome.management.setEnabled(videoDownloader.id, true);
-    return { reloaded: true };
-  }
-  return { reloaded: false };
-}
-```
-
-### MCP Server Comparison
-
-#### Chrome DevTools MCP
-- **Pros**: Direct access to already-open Chrome instance, real-time inspection
-- **Cons**: Cannot navigate to URLs (no `navigate_to` tool), limited to inspecting existing pages
-- **Use case**: Quick inspection of running extension, checking console logs, verifying UI state
-
-#### Playwright MCP
-- **Pros**: Full browser automation, can navigate to URLs, open/close pages, run E2E workflows
-- **Cons**: Creates new browser instance (separate from development Chrome), slower for quick checks
-- **Use case**: Full E2E testing, navigating to test pages, automated workflows
-
-### Debugging Process
-
-#### Step 1: List Available Pages
-```
-mcp_call_tool("chrome-devtools", "list_pages", {})
-```
-Shows all content tabs, extension pages, and service workers.
-
-#### Step 2: Select Target Page
-```
-mcp_call_tool("chrome-devtools", "select_page", { pageId: 5 })
-```
-Switch to the popup or content tab you want to inspect.
-
-#### Step 3: Inspect State
-```
-mcp_call_tool("chrome-devtools", "evaluate_script", {
-  function: "() => { ... }"
-})
-```
-Run JavaScript to check DOM, state, or extract information.
-
-#### Step 4: Check Console
-```
-mcp_call_tool("chrome-devtools", "get_console_messages", {
-  level: "error"
-})
-```
-Check for errors, warnings, or debug logs.
-
-### Known Limitations
-
-1. **No navigate_to in chrome-devtools MCP**: Use mcp-playwright for navigation, or manually navigate in Chrome before inspecting
-2. **Extension reload requires chrome://extensions**: Cannot reload directly from chrome-devtools MCP, need to use chrome.management API via evaluate_script
-3. **Service worker inspection**: Limited access to service worker console; use chrome://serviceworker-internals for detailed debugging
-4. **Background script logs**: Console logs from background service worker may not appear in page console; check service worker console separately
-
-### Best Practices
-
-1. **Use Playwright MCP for full workflows**: When you need to navigate to pages and perform multi-step operations
-2. **Use Chrome DevTools MCP for quick inspection**: When you already have Chrome open and want to check state quickly
-3. **Add debug logging**: Add console.debug statements in code for better visibility during MCP debugging
-4. **Check both page and service worker consoles**: Some logs appear in different contexts
-5. **Verify extension is reloaded**: After code changes, always reload the extension before testing
-6. **Wait for media detection**: Media detection is asynchronous; add delays (10-15s) after navigation before checking results
-
-### Example: Debug Subtitle Auto-Download
-
-```javascript
-// 1. Navigate to content page
-// 2. Wait 15s for media detection
-await new Promise(resolve => setTimeout(resolve, 15000));
-
-// 3. Check popup
-{
-  videoCards: document.querySelectorAll('[data-testid="video-card"]').length,
-  subtitleCards: document.querySelectorAll('[data-testid="subtitle-card"]').length
-}
-
-// 4. Check settings (open settings dialog first)
-{
-  selectedSubtitleLanguages: Array.from(document.querySelectorAll('[role="option"]'))
-    .filter(opt => opt.getAttribute('aria-selected') === 'true')
-    .map(o => o.textContent?.trim())
-}
-
-// 5. Check console for debug logs
-// Look for [NetworkInterceptor] Detected media messages
-```
+E2E Debugging guide moved to [docs/reference-knowledge_base.md](docs/reference-knowledge_base.md).
 
 ---
 
@@ -457,17 +214,6 @@ await new Promise(resolve => setTimeout(resolve, 15000));
 3. **context-engineering** — Optimize agent context setup
 4. **api-and-interface-design** — Design stable APIs and module boundaries
 
-### Command → Skill Mapping (baseline.md Quick Reference)
-| Command | Invokes Skill |
-|---|---|
-| `/spec` | spec-driven-development |
-| `/plan` | planning-and-task-breakdown |
-| `/build` | incremental-implementation |
-| `/test` | test-driven-development |
-| `/review` | code-review-and-quality |
-| `/security` | security-and-hardening |
-| `/source-driven-development` | source-driven-development |
-
 ### Skill Synergies (Strongest Combos for This Project)
 
 **TDD + Minimalism + Code Review**
@@ -506,5 +252,25 @@ When adding/removing/renaming files, changing imports, or modifying data flows:
 - Pro-active: compact context at start of new task, not reactive at 80%
 - Strategy: only load relevant files for current task (grep/glob first, not entire src/)
 - Activate `/context-engineering` with `proactive` mode for this project
+
+### Communication
+- always call me "Anh yêu", xưng là "em"
+- always activate `/context-engineering` if context window reaches 80% capacity
+
+### Git Commit Rules (from `git-workflow-and-versioning` skill)
+- **Atomic commits**: each commit does one logical thing
+- **Separate refactoring from feature work**: refactor commit ≠ feature commit (2 separate commits)
+- **Commit message format**: `<type>: <description>` — types: feat, fix, refactor, test, docs, chore
+- **Body explains why, not what**
+- **Pre-commit hygiene**: check staged diff, no secrets, run tests + lint + typecheck
+- **Change Summaries after modification**:
+  ```
+  CHANGES MADE:
+  - file: what changed
+  THINGS I DIDN'T TOUCH:
+  - file: why not
+  POTENTIAL CONCERNS:
+  - concern
+  ```
 
 
