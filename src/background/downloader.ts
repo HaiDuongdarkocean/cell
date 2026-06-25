@@ -4,7 +4,7 @@ import { convertVttToSrt } from '@/lib/converters/vttToSrt';
 import { normalizeSrt } from '@/lib/converters/srtNormalizer';
 import { ConversionTimer } from '@/lib/converters/conversionTimer';
 import { planParallelConversion } from '@/lib/converters/parallelPlanner';
-import { generateFileName, resolveFilenameBase } from '@/lib/utils/fileUtils';
+import { generateFileName, resolveFilenameBase, buildSubtitleFileName } from '@/lib/utils/fileUtils';
 import type {
   ByteRange,
   DetectedVideo,
@@ -184,6 +184,35 @@ export class Downloader {
    */
   private readonly keyCache = new Map<string, CryptoKey>();
 
+  /**
+   * The filename the next extension-initiated download should use.
+   *
+   * Edge (and some Chrome versions) ignore the `filename` parameter of
+   * `chrome.downloads.download` when the URL is a `data:` URL — there is no
+   * Content-Disposition header and no URL path to derive a name from, so the
+   * browser falls back to the generic name "download" with no extension.
+   * `chrome.downloads.onDeterminingFilename` is the only way to force the
+   * filename in that case (see Chrome docs:
+   * https://developer.chrome.com/docs/extensions/reference/api/downloads#event-onDeterminingFilename).
+   *
+   * `saveBlob` sets this before calling `chrome.downloads.download`; the
+   * background service worker registers a single `onDeterminingFilename`
+   * listener that reads it and calls `suggest({ filename })` for downloads
+   * initiated by this extension. The field is cleared after the download
+   * starts so subsequent non-extension downloads are unaffected.
+   */
+  private pendingFilename: string | null = null;
+
+  /** Get the pending filename (used by the onDeterminingFilename listener). */
+  getPendingFilename(): string | null {
+    return this.pendingFilename;
+  }
+
+  /** Clear the pending filename (called by the listener after suggesting). */
+  clearPendingFilename(): void {
+    this.pendingFilename = null;
+  }
+
   constructor() {}
 
   /** Set the progress callback invoked during download. */
@@ -267,15 +296,23 @@ export class Downloader {
 
   /**
    * Download a subtitle. Fetch → convert (ass/vtt → srt) → save as .srt.
+   *
+   * When `videoTitle` and `videoTabUrl` are provided (linked from the
+   * detected video via `subtitle.videoId`), the subtitle filename uses the
+   * same base name as the video — e.g. `See_You_at_Work_Tomorrow!.en.srt`.
+   * When no video is linked, falls back to the subtitle's own URL base name
+   * (e.g. `sub.en.srt`). The language tag is appended as a suffix before the
+   * extension (VLC/community convention for auto-loading).
    */
   async downloadSubtitle(
     subtitle: DetectedSubtitle,
     downloadId: string,
+    videoContext?: { videoTitle?: string; videoTabUrl?: string },
   ): Promise<void> {
     this.throwIfCancelled(downloadId);
     this.reportProgress(downloadId, 'downloading', 0);
 
-    const response = await fetch(subtitle.url, { credentials: 'include' });
+    const response = await fetch(subtitle.url, { credentials: 'same-origin' });
     if (!response.ok) {
       throw new Error(`Failed to fetch subtitle: ${response.status}`);
     }
@@ -305,12 +342,17 @@ export class Downloader {
     this.throwIfCancelled(downloadId);
 
     const blob = new Blob([srtContent], { type: 'application/x-subrip' });
-    const filename = generateFileName(
-      // Subtitles: language is a code (e.g. "en"), not a meaningful filename.
-      // Pass undefined so resolveFilenameBase always uses the URL base name.
-      resolveFilenameBase(this.filenameSource, undefined, subtitle.url),
-      'srt',
-    );
+    // Resolve the base name: use the linked video's title/URL when available
+    // (same mechanism as video downloads), otherwise fall back to the
+    // subtitle's own URL.
+    const base = videoContext?.videoTabUrl
+      ? resolveFilenameBase(
+          this.filenameSource,
+          videoContext.videoTitle,
+          videoContext.videoTabUrl,
+        )
+      : resolveFilenameBase(this.filenameSource, undefined, subtitle.url);
+    const filename = buildSubtitleFileName(base, subtitle.language, 'srt');
     await this.saveBlob(blob, filename);
 
     this.reportProgress(downloadId, 'done', 100);
@@ -371,12 +413,11 @@ export class Downloader {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), SEGMENT_TIMEOUT_MS);
       try {
-        // Use `credentials: 'same-origin'` for segment fetches. Most HLS
-        // segment CDNs are cross-origin and do NOT send
-        // `Access-Control-Allow-Credentials: true` — using `'include'` here
-        // would cause the browser to BLOCK the response. Segment URLs rarely
-        // need cookies; the playlist fetch (which may need auth from the
-        // page's origin) still uses `'include'`.
+        // Use `credentials: 'same-origin'` for ALL cross-origin CDN fetches.
+        // Most CDNs return `Access-Control-Allow-Origin: *` without
+        // `Access-Control-Allow-Credentials: true` — using `'include'` would
+        // cause the browser to BLOCK the response (CORS policy violation).
+        // CDN auth is typically via Referer/signed-URL, not cookies.
         //
         // Add Referer/Origin headers from the source tab to avoid 403 hotlink
         // protection on some CDNs.
@@ -424,7 +465,7 @@ export class Downloader {
     if (cached) return cached;
 
     const response = await fetch(keyUri, {
-      credentials: 'include',
+      credentials: 'same-origin',
       headers: buildFetchHeaders(tabUrl),
     });
     if (!response.ok) {
@@ -533,7 +574,7 @@ export class Downloader {
     tabUrl?: string,
   ): Promise<Blob[]> {
     const response = await fetch(playlistUrl, {
-      credentials: 'include',
+      credentials: 'same-origin',
       headers: buildFetchHeaders(tabUrl),
     });
     if (!response.ok) {
@@ -562,11 +603,29 @@ export class Downloader {
    */
   async saveBlob(blob: Blob, filename: string): Promise<void> {
     const url = await blobToDataUrl(blob);
-    await chrome.downloads.download({
-      url,
-      filename,
-      saveAs: false,
-    });
+    console.debug(`[downloader] saveBlob: filename="${filename}", blobType="${blob.type}", blobSize=${blob.size}, urlPrefix="${url.slice(0, 50)}..."`);
+    // Set pendingFilename BEFORE calling chrome.downloads.download so the
+    // onDeterminingFilename listener (registered in background init) can
+    // force Edge to use it. Edge ignores the `filename` param for data: URLs.
+    this.pendingFilename = filename;
+    try {
+      const downloadId = await chrome.downloads.download({
+        url,
+        filename,
+        saveAs: false,
+      });
+      console.debug(`[downloader] saveBlob: download started id=${downloadId}, requested filename="${filename}"`);
+      // Verify what filename Edge actually used
+      chrome.downloads.search({ id: downloadId }).then((items) => {
+        if (items.length > 0) {
+          console.debug(`[downloader] saveBlob: ACTUAL filename="${items[0].filename}", mime="${items[0].mime}"`);
+        }
+      }).catch(() => {});
+    } catch (err) {
+      this.pendingFilename = null;
+      console.error(`[downloader] saveBlob FAILED for filename="${filename}":`, err);
+      throw err;
+    }
   }
 
   // --- internals ---
@@ -578,7 +637,7 @@ export class Downloader {
     this.reportProgress(downloadId, 'downloading', 0);
 
     const response = await fetch(video.url, {
-      credentials: 'include',
+      credentials: 'same-origin',
       headers: buildFetchHeaders(video.tabUrl),
     });
     if (!response.ok) {
@@ -609,7 +668,7 @@ export class Downloader {
 
     // Fetch + parse the (possibly master) playlist.
     const response = await fetch(video.url, {
-      credentials: 'include',
+      credentials: 'same-origin',
       headers: videoHeaders,
     });
     if (!response.ok) {
@@ -629,7 +688,7 @@ export class Downloader {
       const variantUrl = playlist.variants[0].url;
       this.throwIfCancelled(downloadId);
       const variantResponse = await fetch(variantUrl, {
-        credentials: 'include',
+        credentials: 'same-origin',
         headers: videoHeaders,
       });
       if (!variantResponse.ok) {

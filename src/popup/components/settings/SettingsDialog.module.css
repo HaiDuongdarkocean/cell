@@ -232,3 +232,36 @@
   color: var(--color-text-muted);
   line-height: 1.5;
 }
+
+/* === Auto select toggle row === */
+.asRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.asLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.01em;
+  user-select: none;
+}
+
+.asHint {
+  margin: 4px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.asActive {
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.asActive:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}

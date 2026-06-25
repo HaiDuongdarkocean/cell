@@ -11,7 +11,14 @@ const FORMAT_EXTENSIONS: ReadonlyArray<[SubtitleFormat, string]> = [
   ['srt', '.srt'],
 ];
 
-const LANGUAGE_PATTERN = /^[a-z]{2,3}$/i;
+/**
+ * BCP 47 language tag pattern: primary subtag (2-3 letters) optionally
+ * followed by subtags separated by hyphens (e.g. "en-US", "zh-Hans",
+ * "pt-BR", "ar-EG"). Only the primary subtag is extracted for ISO lookup.
+ *
+ * Source: https://www.rfc-editor.org/rfc/rfc5646 (BCP 47)
+ */
+const BCP47_PATTERN = /^[a-z]{2,3}(-[a-z0-9]{2,8}){0,3}$/i;
 
 function generateId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -21,6 +28,7 @@ function generateId(): string {
 }
 
 function detectFormat(url: string): SubtitleFormat | null {
+  // First try to detect from file extension
   const pathname = url.split('?')[0]?.split('#')[0] ?? url;
   const lower = pathname.toLowerCase();
   for (const [format, ext] of FORMAT_EXTENSIONS) {
@@ -28,7 +36,21 @@ function detectFormat(url: string): SubtitleFormat | null {
       return format;
     }
   }
-  return null;
+
+  // Try to detect from query parameters
+  const urlParams = new URLSearchParams(url.split('?')[1] ?? '');
+  const formatParam = urlParams.get('format') || urlParams.get('type') || urlParams.get('subtype');
+  if (formatParam) {
+    const normalizedFormat = formatParam.toLowerCase();
+    for (const [format, ext] of FORMAT_EXTENSIONS) {
+      if (normalizedFormat === format || normalizedFormat === ext.replace('.', '')) {
+        return format;
+      }
+    }
+  }
+
+  // Default to vtt if URL matches subtitle patterns but no format found
+  return 'vtt';
 }
 
 function extractLanguage(url: string): string {
@@ -39,16 +61,17 @@ function extractLanguage(url: string): string {
 
   if (parts.length >= 2) {
     const candidate = parts[parts.length - 1] ?? '';
-    if (LANGUAGE_PATTERN.test(candidate)) {
-      return candidate.toLowerCase();
+    // BCP 47: extract primary subtag from tags like "en-US", "zh-Hans"
+    if (BCP47_PATTERN.test(candidate)) {
+      return candidate.split('-')[0].toLowerCase();
     }
   }
 
   const segments = pathname.split('/').filter((s) => s.length > 0);
   if (segments.length >= 2) {
     const candidate = segments[segments.length - 2] ?? '';
-    if (LANGUAGE_PATTERN.test(candidate)) {
-      return candidate.toLowerCase();
+    if (BCP47_PATTERN.test(candidate)) {
+      return candidate.split('-')[0].toLowerCase();
     }
   }
 

@@ -10,10 +10,12 @@ import { VideoCard } from './components/media/VideoCard';
 import { SubtitleCard } from './components/media/SubtitleCard';
 import { MediaEmpty } from './components/media/MediaEmpty';
 import { DownloadCard } from './components/media/DownloadCard';
-import { SelectionBar } from './components/SelectionBar';
 import { SettingsDialog } from './components/settings/SettingsDialog';
 import type { VideoQuality, Settings, DownloadItem } from '@/types/media';
 import type { MessageRequest, MessageResponse } from '@/types/message';
+import { selectBestMedia } from '@/lib/selectors/selectBestMedia';
+import { isWhitelisted, addToWhitelist, removeFromWhitelist } from '@/lib/utils/whitelist';
+import { getActiveContentTab } from '@/popup/utils/getActiveContentTab';
 import styles from './App.redesigned.module.css';
 
 export function AppRedesigned(): React.JSX.Element {
@@ -32,6 +34,7 @@ export function AppRedesigned(): React.JSX.Element {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isAutoDownloadActive, setIsAutoDownloadActive] = useState(false);
 
   const loadPersistedSettings = usePopupStore((state) => state.loadPersistedSettings);
   const loadExtensionStatus = usePopupStore((state) => state.loadExtensionStatus);
@@ -50,6 +53,37 @@ export function AppRedesigned(): React.JSX.Element {
       document.documentElement.dataset.theme = settings.theme;
     }
   }, [settings.theme, isSettingsLoaded]);
+
+  // Check if current tab URL is in auto-download whitelist
+  useEffect(() => {
+    const check = async (): Promise<void> => {
+      try {
+        // Resolve the active content tab (skips chrome-extension app-windows
+        // such as Edge's dictionary sidebar — see getActiveContentTab).
+        const tab = await getActiveContentTab();
+        const tabUrl = tab?.url;
+        if (tabUrl) {
+          const active = await isWhitelisted(tabUrl);
+          setIsAutoDownloadActive(active);
+        }
+      } catch (err) {
+        console.warn('[popup] Failed to check whitelist:', err);
+      }
+    };
+    void check();
+  }, []);
+
+  // Auto-select: when autoSelectEnabled is ON and media is loaded, auto-check best match
+  useEffect(() => {
+    if (!isSettingsLoaded) return;
+    if (!settings.autoSelectEnabled) return;
+    if (videos.length === 0 && subtitles.length === 0) return;
+
+    const result = selectBestMedia(videos, subtitles, settings);
+    if (result) {
+      setSelectedIds(new Set([result.videoId, ...result.subtitleIds]));
+    }
+  }, [settings.autoSelectEnabled, settings.preferredVideoFormat, settings.defaultQuality, settings.selectedSubtitleLanguages, isSettingsLoaded, videos, subtitles]);
 
   // Default quality auto-apply: when user changes defaultQuality in settings,
   // update all video cards' first variant to match (if the quality exists).
@@ -125,73 +159,57 @@ export function AppRedesigned(): React.JSX.Element {
     }
   };
 
-  const handleClearSelection = (): void => {
-    setSelectedIds(new Set());
-  };
-
-  const handleDownloadSelected = (): void => {
-    selectedIds.forEach((id) => {
-      const video = videos.find((v) => v.id === id);
-      const subtitle = subtitles.find((s) => s.id === id);
-      if (video) handleVideoDownload(video.id);
-      else if (subtitle) handleSubtitleDownload(subtitle.id);
-    });
-    setSelectedIds(new Set());
-  };
-
-  /**
-   * Unified download handler:
-   * - Nothing selected → download ALL media (via DOWNLOAD_ALL background message)
-   * - All selected     → download ALL media (same as nothing selected)
-   * - Partial selected → download only the selected items (individual messages)
-   */
-  const handleDownloadAll = async (): Promise<void> => {
-    const hasPartialSelection = selectionCount > 0 && !allSelected;
-
-    if (hasPartialSelection) {
-      // Download only selected items.
-      handleDownloadSelected();
-      return;
-    }
-
-    // Nothing selected or all selected → download everything.
-    // Query the active tab in the browser window (not the popup window).
-    // Use `currentWindow: false` to target the browser window, since the
-    // popup's own window would return the popup's tab (which has no media).
-    let tabId: number | undefined;
-    try {
-      // First try: query active tab in a normal browser window.
-      const tabs = await chrome.tabs.query({
-        active: true,
-        currentWindow: false,
+  const handleDownload = (): void => {
+    if (selectionCount > 0) {
+      // Download selected items
+      selectedIds.forEach((id) => {
+        const video = videos.find((v) => v.id === id);
+        const subtitle = subtitles.find((s) => s.id === id);
+        if (video) handleVideoDownload(video.id);
+        else if (subtitle) handleSubtitleDownload(subtitle.id);
       });
-      tabId = tabs[0]?.id;
-      // Fallback: if no tab found (e.g. only popup window), try lastFocusedWindow.
-      if (tabId === undefined) {
-        const [tab] = await chrome.tabs.query({
-          active: true,
-          lastFocusedWindow: true,
-        });
-        tabId = tab?.id;
+    } else {
+      // Download all available items
+      videos.forEach((video) => handleVideoDownload(video.id));
+      subtitles.forEach((subtitle) => handleSubtitleDownload(subtitle.id));
+    }
+    setSelectedIds(new Set());
+  };
+
+  const handleToggleAutoDownload = async (): Promise<void> => {
+    try {
+      const tab = await getActiveContentTab();
+      const tabUrl = tab?.url;
+      if (!tabUrl) return;
+
+      if (isAutoDownloadActive) {
+        await removeFromWhitelist(tabUrl);
+        setIsAutoDownloadActive(false);
+      } else {
+        await addToWhitelist(tabUrl, tab.id);
+        setIsAutoDownloadActive(true);
+        // Turning AD ON for the current tab also triggers an immediate
+        // auto-select + download of the best-matching media already detected
+        // on this tab (not just whitelisting for future revisits). AD implies
+        // auto-select for the purpose of downloading, so this runs regardless
+        // of the `autoSelectEnabled` setting.
+        if (isSettingsLoaded && (videos.length > 0 || subtitles.length > 0)) {
+          const result = selectBestMedia(videos, subtitles, settings);
+          if (result) {
+            setSelectedIds(new Set([result.videoId, ...result.subtitleIds]));
+            const video = videos.find((v) => v.id === result.videoId);
+            if (video) handleVideoDownload(video.id);
+            for (const subId of result.subtitleIds) {
+              if (subtitles.find((s) => s.id === subId)) {
+                handleSubtitleDownload(subId);
+              }
+            }
+          }
+        }
       }
     } catch (err) {
-      console.warn('[popup] Failed to query active tab:', err);
+      console.warn('[popup] Failed to toggle auto-download:', err);
     }
-
-    const request: MessageRequest = {
-      type: 'DOWNLOAD_ALL',
-      payload: tabId !== undefined ? { tabId } : undefined,
-    };
-    void chrome.runtime.sendMessage(request).then((response) => {
-      const res = response as MessageResponse<{ downloads: DownloadItem[] }> | undefined;
-      if (res?.success && res.data?.downloads) {
-        res.data.downloads.forEach((item) => addDownload(item));
-      } else if (res && !res.success) {
-        setError(res.error ?? 'Failed to start downloads');
-      }
-    });
-    // Clear selection after downloading all.
-    setSelectedIds(new Set());
   };
 
   const handleVideoDownload = (videoId: string): void => {
@@ -275,6 +293,8 @@ export function AppRedesigned(): React.JSX.Element {
         onToggleTheme={handleThemeToggle}
         onOpenSettings={() => setIsSettingsOpen(true)}
         currentTheme={settings.theme}
+        isAutoDownloadActive={isAutoDownloadActive}
+        onToggleAutoDownload={handleToggleAutoDownload}
       />
 
       <main className={styles.content}>
@@ -295,12 +315,10 @@ export function AppRedesigned(): React.JSX.Element {
                 <button
                   type="button"
                   className={styles.btnText}
-                  onClick={handleDownloadAll}
-                  data-testid="download-all-button"
+                  onClick={handleDownload}
+                  data-testid="download-button"
                 >
-                  {selectionCount > 0 && !allSelected
-                    ? `Download Selected (${selectionCount})`
-                    : 'Download All'}
+                  {selectionCount > 0 ? `Download (${selectionCount})` : 'Download All'}
                 </button>
               </div>
             )}
@@ -363,13 +381,6 @@ export function AppRedesigned(): React.JSX.Element {
           </div>
         </section>
       </main>
-
-      {/* Selection bar — slides up from bottom */}
-      <SelectionBar
-        selectionCount={selectionCount}
-        onClear={handleClearSelection}
-        onDownload={handleDownloadSelected}
-      />
 
       <SettingsDialog
         isOpen={isSettingsOpen}

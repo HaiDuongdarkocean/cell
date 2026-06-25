@@ -71,6 +71,17 @@
   background: rgba(239, 68, 68, 0.08);
 }
 
+/* Auto Download active state — primary color + subtle primary background */
+.adActive {
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.adActive:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
 /* Icon sizing */
 .icon {
   width: 18px;

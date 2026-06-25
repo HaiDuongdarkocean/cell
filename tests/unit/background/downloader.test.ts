@@ -58,6 +58,7 @@ beforeAll(() => {
   global.chrome = {
     downloads: {
       download: chromeDownloadsDownloadMock as unknown as typeof chrome.downloads.download,
+      search: jest.fn().mockResolvedValue([]) as unknown as typeof chrome.downloads.search,
     },
   } as unknown as typeof chrome;
   URL.createObjectURL = createObjectURLMock as unknown as typeof URL.createObjectURL;
@@ -242,7 +243,7 @@ describe('Downloader', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/video.mp4', {
-      credentials: 'include',
+      credentials: 'same-origin',
       headers: buildFetchHeaders('https://example.com'),
     });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
@@ -307,10 +308,10 @@ describe('Downloader', () => {
 
     await downloader.downloadVideo(makeM3u8Video(), 'dl2');
 
-    // playlist fetched with credentials:'include'; segments use 'same-origin'
+    // playlist fetched with credentials:'same-origin'; segments also 'same-origin'
     expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/playlist.m3u8', {
-      credentials: 'include',
+      credentials: 'same-origin',
       headers: buildFetchHeaders('https://example.com'),
     });
     // Writer opened once, 3 segments written, writer closed once
@@ -487,7 +488,7 @@ describe('Downloader', () => {
     // master + variant playlist + 3 segments
     expect(fetchMock).toHaveBeenCalledTimes(5);
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/playlist.m3u8', {
-      credentials: 'include',
+      credentials: 'same-origin',
       headers: buildFetchHeaders('https://example.com'),
     });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
@@ -541,11 +542,11 @@ describe('Downloader', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/sub.ass', {
-      credentials: 'include',
+      credentials: 'same-origin',
     });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
-    expect(opts.filename).toBe('sub.srt');
+    expect(opts.filename).toBe('sub.en.srt');
   });
 
   // 5. subtitle .vtt
@@ -571,11 +572,11 @@ describe('Downloader', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/sub.vtt', {
-      credentials: 'include',
+      credentials: 'same-origin',
     });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
-    expect(opts.filename).toBe('sub.srt');
+    expect(opts.filename).toBe('sub.en.srt');
   });
 
   // 6. subtitle .srt (strips leftover VTT/HTML inline tags)
@@ -605,11 +606,11 @@ describe('Downloader', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith('https://example.com/sub.srt', {
-      credentials: 'include',
+      credentials: 'same-origin',
     });
     expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
     const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
-    expect(opts.filename).toBe('sub.srt');
+    expect(opts.filename).toBe('sub.en.srt');
 
     // Verify tags are stripped but blank lines preserved.
     const dataUrl = opts.url as string;
@@ -624,6 +625,99 @@ describe('Downloader', () => {
     expect(decoded).toContain('World');
     // Blank lines between cues preserved.
     expect(decoded).toContain('\n\n');
+  });
+
+  // 6a. subtitle with videoTitle + videoTabUrl → uses video base + lang suffix
+  test('downloadSubtitle with videoTitle uses video base name + language suffix', async () => {
+    fetchMock.mockResolvedValue(makeResponse(makeTextBlob('1\n00:00:01,000 --> 00:00:02,000\nHi\n')));
+
+    const sub: DetectedSubtitle = {
+      id: 's1',
+      url: 'https://cdn.example.com/sub_en.srt',
+      format: 'srt',
+      language: 'en',
+      tabId: 1,
+      detectedAt: 0,
+    };
+
+    await downloader.downloadSubtitle(sub, 'dl6a', {
+      videoTitle: 'See You at Work Tomorrow!',
+      videoTabUrl: 'https://themoviebox.org/movies/see-you-at-work-tomorrow',
+    });
+
+    expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
+    const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
+    // Video title is meaningful → uses title as base + .en.srt
+    expect(opts.filename).toBe('See_You_at_Work_Tomorrow!.en.srt');
+  });
+
+  // 6b. subtitle with videoTitle but generic title → falls back to video URL base
+  test('downloadSubtitle with generic videoTitle falls back to video URL base', async () => {
+    fetchMock.mockResolvedValue(makeResponse(makeTextBlob('1\n00:00:01,000 --> 00:00:02,000\nHi\n')));
+
+    const sub: DetectedSubtitle = {
+      id: 's1',
+      url: 'https://cdn.example.com/sub_ar.srt',
+      format: 'srt',
+      language: 'ar',
+      tabId: 1,
+      detectedAt: 0,
+    };
+
+    await downloader.downloadSubtitle(sub, 'dl6b', {
+      videoTitle: 'video', // generic → not meaningful
+      videoTabUrl: 'https://kisskh.co/Drama/My-Show/Episode-1?id=1',
+    });
+
+    expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
+    const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
+    // Generic title → URL base of video tabUrl + .ar.srt
+    // beautifyUrlFilename: Drama/My-Show/Episode-1 → "Drama - My Show - Episode 1"
+    // sanitizeFileName: spaces → _ → "Drama_-_My_Show_-_Episode_1"
+    expect(opts.filename).toBe('Drama_-_My_Show_-_Episode_1.ar.srt');
+  });
+
+  // 6c. subtitle without videoTitle → URL base of subtitle + lang suffix
+  test('downloadSubtitle without videoTitle uses subtitle URL base + lang suffix', async () => {
+    fetchMock.mockResolvedValue(makeResponse(makeTextBlob('1\n00:00:01,000 --> 00:00:02,000\nHi\n')));
+
+    const sub: DetectedSubtitle = {
+      id: 's1',
+      url: 'https://example.com/sub_fr.srt',
+      format: 'srt',
+      language: 'fr',
+      tabId: 1,
+      detectedAt: 0,
+    };
+
+    await downloader.downloadSubtitle(sub, 'dl6c');
+
+    expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
+    const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
+    expect(opts.filename).toBe('sub_fr.fr.srt');
+  });
+
+  // 6d. subtitle with empty language → no suffix
+  test('downloadSubtitle with empty language has no suffix', async () => {
+    fetchMock.mockResolvedValue(makeResponse(makeTextBlob('1\n00:00:01,000 --> 00:00:02,000\nHi\n')));
+
+    const sub: DetectedSubtitle = {
+      id: 's1',
+      url: 'https://example.com/sub.srt',
+      format: 'srt',
+      language: '',
+      tabId: 1,
+      detectedAt: 0,
+    };
+
+    await downloader.downloadSubtitle(sub, 'dl6d', {
+      videoTitle: 'My Movie',
+      videoTabUrl: 'https://example.com/movie',
+    });
+
+    expect(chromeDownloadsDownloadMock).toHaveBeenCalledTimes(1);
+    const opts = chromeDownloadsDownloadMock.mock.calls[0][0];
+    expect(opts.filename).toBe('My_Movie.srt');
   });
 
   // 7. fetchSegment retries on network error then succeeds

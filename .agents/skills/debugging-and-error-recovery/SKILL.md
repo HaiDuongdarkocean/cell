@@ -169,6 +169,29 @@ npm run build
 npm run dev  # Verify in browser
 ```
 
+## Live Debug vs E2E — when to use which
+
+Two complementary tools. Pick by the triage step you are in, not by habit.
+
+```
+Live debug (chrome-devtools-mcp / DevTools)   →  FIND the root cause
+E2E (Playwright, jest)                        →  PROVE the fix + guard recurrence
+```
+
+**Use live debug when:**
+- Step 1 (Reproduce) and the bug is hard to trigger — you need to poke the UI interactively.
+- Step 2 (Localize) and the failing layer is unknown — read console, network, DOM, computed styles in real time.
+- The bug is timing- or state-dependent — pause, inject state, widen race windows.
+- Verifying a hypothesis fast (e.g. paste a one-liner into the console). Seconds vs minutes for an E2E test.
+
+**Use E2E when:**
+- Step 5 (Guard) — encode the bug as a test that fails without the fix and passes with it. This is mandatory, not optional.
+- Step 6 (Verify) — run the full flow end-to-end to confirm the fix didn't break anything else.
+- Regression after a refactor — re-run the existing suite on the affected browser.
+- CI / pre-merge — no MCP server available; only automated tests run there.
+
+**Rule of thumb:** if you can write the repro as deterministic steps, write an E2E test. If you still need to ask "why does this happen?", live debug first, then write the E2E test once you know the answer. Never ship a fix with only live-debug verification — the guard test is what stops the bug from coming back.
+
 ## Error-Specific Patterns
 
 ### Test Failure Triage

@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { DetectedSubtitle } from '@/types/media';
-import { detectLanguage, isoCodeToLabel } from '@/lib/detectors/languageDetector';
+import { usePopupStore } from '@/popup/store/popupStore';
+import {
+  detectLanguage,
+  isoCodeToLabel,
+  labelToIsoCode,
+} from '@/lib/detectors/languageDetector';
+import { MESSAGE_TYPES } from '@/constants/messages';
 
 /**
  * Map of subtitleId → detected language label (e.g. "English").
@@ -9,20 +15,26 @@ import { detectLanguage, isoCodeToLabel } from '@/lib/detectors/languageDetector
 export type LanguageMap = Map<string, string>;
 
 /**
- * Hook that resolves subtitle language labels.
+ * Hook that resolves subtitle language labels AND normalizes the language code
+ * stored on each `DetectedSubtitle` so that `selectBestMedia` can match it
+ * against `settings.selectedSubtitleLanguages` (which stores ISO 639-1 codes).
  *
  * Resolution order:
  * 1. **URL code wins** — if `subtitle.language` is a valid ISO 639-1/639-2 code,
- *    map it to a display label immediately (no network fetch).
+ *    map it to a display label immediately (no network fetch). The code is
+ *    already in ISO form, so no normalization is needed.
  * 2. **Content fallback** — if `subtitle.language === 'unknown'` or the code is
  *    not in the ISO map, fetch the subtitle content and run frequency-based
- *    detection via `detectLanguage`.
+ *    detection via `detectLanguage`. The returned label is converted back to an
+ *    ISO 639-1 code via `labelToIsoCode` and written back to the subtitle in the
+ *    popup store so that `selectBestMedia` can match it.
  *
  * @param subtitles - Array of detected subtitles from the current tab
  * @returns Map of subtitleId → detected language label
  */
 export function useSubtitleLanguage(subtitles: DetectedSubtitle[]): LanguageMap {
   const [languageMap, setLanguageMap] = useState<LanguageMap>(new Map());
+  const setSubtitles = usePopupStore((state) => state.setSubtitles);
 
   useEffect(() => {
     if (subtitles.length === 0) {
@@ -71,18 +83,22 @@ export function useSubtitleLanguage(subtitles: DetectedSubtitle[]): LanguageMap 
             const res = await fetch(sub.url, {
               headers: { 'Accept': '*/*' },
             });
-            if (!res.ok) return { id: sub.id, lang: null };
+            if (!res.ok) return { id: sub.id, lang: null, isoCode: null };
             const content = await res.text();
             const detected = detectLanguage(content, sub.format);
-            return { id: sub.id, lang: detected };
+            // Convert the detected label back to an ISO 639-1 code so that
+            // selectBestMedia can match it against settings.selectedSubtitleLanguages.
+            const isoCode = detected !== null ? labelToIsoCode(detected) : null;
+            return { id: sub.id, lang: detected, isoCode };
           } catch {
-            return { id: sub.id, lang: null };
+            return { id: sub.id, lang: null, isoCode: null };
           }
         }),
       );
 
       if (cancelled) return;
 
+      // Update the display label map
       setLanguageMap((prev) => {
         const next = new Map(prev);
         for (const { id, lang } of results) {
@@ -92,6 +108,34 @@ export function useSubtitleLanguage(subtitles: DetectedSubtitle[]): LanguageMap 
         }
         return next;
       });
+
+      // Write the ISO code back to the subtitle in the store so that
+      // selectBestMedia can match it against settings.selectedSubtitleLanguages.
+      // Only update subtitles whose language was 'unknown' and is now resolved.
+      const updates: DetectedSubtitle[] = [];
+      for (const { id, isoCode } of results) {
+        if (isoCode === null) continue;
+        const sub = subtitles.find((s) => s.id === id);
+        if (!sub) continue;
+        if (sub.language === isoCode) continue; // no change
+        updates.push({ ...sub, language: isoCode });
+      }
+      if (updates.length > 0) {
+        setSubtitles(
+          subtitles.map((s) => updates.find((u) => u.id === s.id) ?? s),
+        );
+        // Push the detected language to the background so that the
+        // mediaMap + networkInterceptor have the correct language for
+        // download filenames (e.g. "Movie Title.en.srt" not "Movie Title.unknown.srt").
+        for (const update of updates) {
+          void chrome.runtime.sendMessage({
+            type: MESSAGE_TYPES.UPDATE_SUBTITLE_LANGUAGE,
+            payload: { subtitleId: update.id, language: update.language },
+          }).catch((err) => {
+            console.warn('[useSubtitleLanguage] Failed to update background:', err);
+          });
+        }
+      }
     };
 
     void detectAll();
@@ -99,7 +143,7 @@ export function useSubtitleLanguage(subtitles: DetectedSubtitle[]): LanguageMap 
     return () => {
       cancelled = true;
     };
-  }, [subtitles]);
+  }, [subtitles, setSubtitles]);
 
   return languageMap;
 }

@@ -116,14 +116,43 @@ export class DownloadQueue {
     this.items.delete(id);
   }
 
+  /**
+   * Restore a previously-saved download item as-is, preserving its status
+   * and progress. Used to restore state from session storage after a
+   * service worker restart. Unlike {@link add}, this does NOT reset status
+   * to 'queued' or progress to 0, and does NOT trigger processing.
+   */
+  restore(item: DownloadItem): void {
+    this.items.set(item.id, item);
+  }
+
   /** Get all download items. */
   getAll(): DownloadItem[] {
     return Array.from(this.items.values());
   }
 
+  /** Get all download items for a specific tab. */
+  getByTab(tabId: number): DownloadItem[] {
+    return Array.from(this.items.values()).filter((item) => item.tabId === tabId);
+  }
+
   /** Get a download item by id. */
   getById(id: string): DownloadItem | undefined {
     return this.items.get(id);
+  }
+
+  /**
+   * Remove all download items for a specific tab. Active downloads are
+   * cancelled first so in-flight work stops. Used when a tab is closed.
+   */
+  removeByTab(tabId: number): void {
+    for (const item of this.items.values()) {
+      if (item.tabId !== tabId) continue;
+      if (item.status === 'downloading' || item.status === 'converting') {
+        this.cancel(item.id);
+      }
+      this.items.delete(item.id);
+    }
   }
 
   /** Update progress for a download item (called by the executor). */

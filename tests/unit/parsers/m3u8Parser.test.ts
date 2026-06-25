@@ -78,20 +78,21 @@ lowest.m3u8`;
       expect(first.resolution).toBe('1920x1080');
       expect(first.codecs).toBe('avc1.640028');
 
-      // first variant = 'highest', last = 'lowest', middle mapped by resolution
-      expect(first.quality).toBe('highest');
+      // All variants are mapped from their resolution so the popup shows
+      // concrete quality tags like "1080p", "720p", etc.
+      expect(first.quality).toBe('1080p');
       expect(second.quality).toBe('720p');
       expect(third.quality).toBe('480p');
-      expect(fourth.quality).toBe('lowest');
+      expect(fourth.quality).toBe('360p');
     });
 
-    it('marks first variant as highest and last as lowest', () => {
+    it('maps all variants from their resolution', () => {
       const result = parseM3u8(masterPlaylist);
-      expect(result.variants[0].quality).toBe('highest');
-      expect(result.variants[result.variants.length - 1].quality).toBe('lowest');
+      expect(result.variants[0].quality).toBe('1080p');
+      expect(result.variants[result.variants.length - 1].quality).toBe('360p');
     });
 
-    it('uses auto quality when middle variant resolution cannot be mapped', () => {
+    it('uses auto quality only when a variant resolution cannot be mapped', () => {
       const unknown = `#EXTM3U
 #EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080
 high.m3u8
@@ -101,9 +102,9 @@ unknown.m3u8
 low.m3u8`;
       const result = parseM3u8(unknown);
       expect(result.variants).toHaveLength(3);
-      expect(result.variants[0].quality).toBe('highest');
+      expect(result.variants[0].quality).toBe('1080p');
       expect(result.variants[1].quality).toBe('auto');
-      expect(result.variants[2].quality).toBe('lowest');
+      expect(result.variants[2].quality).toBe('360p');
     });
   });
 

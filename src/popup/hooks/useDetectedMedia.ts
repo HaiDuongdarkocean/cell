@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { usePopupStore } from '@/popup/store/popupStore';
+import { getActiveContentTabId } from '@/popup/utils/getActiveContentTab';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -57,23 +58,13 @@ export function useDetectedMedia(): {
 
     chrome.runtime.onMessage.addListener(listener);
 
-    // Query the active tab in the browser window (not the popup window),
-    // then send GET_DETECTED_MEDIA scoped to that tab.
+    // Query the active *content* tab (skips chrome-extension app-windows,
+    // e.g. Edge's dictionary sidebar — see getActiveContentTab), then send
+    // GET_DETECTED_MEDIA scoped to that tab.
     const init = async (): Promise<void> => {
       let activeTabId: number | undefined;
       try {
-        const tabs = await chrome.tabs.query({
-          active: true,
-          currentWindow: false,
-        });
-        activeTabId = tabs[0]?.id;
-        if (activeTabId === undefined) {
-          const [tab] = await chrome.tabs.query({
-            active: true,
-            lastFocusedWindow: true,
-          });
-          activeTabId = tab?.id;
-        }
+        activeTabId = await getActiveContentTabId();
       } catch {
         // leave activeTabId undefined
       }
@@ -82,7 +73,7 @@ export function useDetectedMedia(): {
       tabIdRef.current = activeTabId;
 
       if (activeTabId === undefined) {
-        // No active tab → nothing to fetch. Leave the store empty.
+        // No active content tab → nothing to fetch. Leave the store empty.
         return;
       }
 

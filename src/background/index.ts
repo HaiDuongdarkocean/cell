@@ -16,6 +16,7 @@
 import { NetworkInterceptor } from './networkInterceptor';
 import { MessageBus } from './messageBus';
 import { DownloadQueue } from './downloadQueue';
+import { tryAutoDownload } from './autoDownload';
 import { Downloader, type ConvertResult } from './downloader';
 import { OffscreenManager } from './offscreenManager';
 import { MESSAGE_TYPES } from '@/constants/messages';
@@ -23,6 +24,7 @@ import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
 import { cleanupOrphanedDownloads } from '@/lib/storage/opfsStorage';
 import { detectVideo } from '@/lib/detectors/videoDetector';
 import { detectSubtitle } from '@/lib/detectors/subtitleDetector';
+import { parseM3u8 } from '@/lib/parsers/m3u8Parser';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -31,6 +33,7 @@ import type {
   Settings,
   NetworkRequest,
   MediaType,
+  VideoVariant,
 } from '@/types/media';
 import type {
   MessageRequest,
@@ -40,7 +43,9 @@ import type {
   DetectedMediaUpdatePayload,
   DownloadVideoPayload,
   DownloadSubtitlePayload,
+  UpdateSubtitleLanguagePayload,
   DownloadAllPayload,
+  GetDownloadProgressPayload,
   CancelDownloadPayload,
   DownloadProgressUpdatePayload,
   ConversionProgressUpdatePayload,
@@ -90,11 +95,37 @@ export class BackgroundService {
   private readonly mediaMap: Map<string, DetectedVideo | DetectedSubtitle> =
     new Map();
 
+  /**
+   * Per-tab auto-download state for the current page load. Maps a tab id to
+   * the exact tab URL that was auto-downloaded plus the set of media ids that
+   * have already been enqueued for that URL.
+   *
+   * Media detection is incremental (`onMediaDetected` fires first for the
+   * m3u8, then again when subtitles are discovered). The URL is used to detect
+   * navigation to a different page (cleared by `tabs.onUpdated` loading), and
+   * the enqueued-id set lets follow-up detections catch up newly discovered
+   * subtitles without re-downloading the video. When the tab navigates, the
+   * entry is cleared and the new URL can auto-download again, even if it
+   * normalizes to the same whitelist category (e.g. another episode).
+   */
+  private readonly autoDownloadedTabs: Map<number, {
+    url: string;
+    enqueuedIds: Set<string>;
+  }> = new Map();
+
   /** Unsubscribe functions for event subscriptions. */
   private unsubscribers: Array<() => void> = [];
 
   /** Cached active-state flag mirrored from storage. */
   private extensionActive = true;
+
+  /**
+   * Resolves when session media + downloads have been restored from
+   * `chrome.storage.session`. GET handlers await this so they don't return
+   * empty data during the brief window between SW restart and session
+   * restore completion.
+   */
+  private sessionReady: Promise<void> = Promise.resolve();
 
   constructor(options?: BackgroundServiceOptions) {
     this.networkInterceptor = options?.networkInterceptor ?? new NetworkInterceptor();
@@ -116,6 +147,13 @@ export class BackgroundService {
     this.registerHandlers();
     this.messageBus.start();
 
+    // 1b. Start session restore IMMEDIATELY (before any await) so that GET
+    //     handlers can await `sessionReady` even if the popup sends a
+    //     message while init() is still running. Without this, there's a
+    //     race condition where the handler returns empty data because
+    //     `sessionReady` hasn't been assigned yet.
+    this.sessionReady = this.performSessionRestore();
+
     // 2. Load persisted settings and apply to the download queue.
     const settings = await this.loadSettings();
     this.downloadQueue.setMaxConcurrent(settings.concurrentDownloads);
@@ -133,6 +171,11 @@ export class BackgroundService {
 
     // 4. Wire event streams (network → broadcast, queue → broadcast, etc.)
     this.wireEvents();
+
+    // 4b. Wait for session restore to complete. The promise was created in
+    //     step 1b so GET handlers can await it; here we just ensure init()
+    //     doesn't complete until restore is done.
+    await this.sessionReady;
 
     // 5. Start the network interceptor if the extension is active.
     if (this.extensionActive) {
@@ -186,6 +229,11 @@ export class BackgroundService {
           }
           return this.enrichVideo(v);
         });
+        // For m3u8 videos, fetch and parse the master playlist so the popup
+        // can show quality tags for each variant. Fire-and-forget.
+        for (const video of enrichedVideos) {
+          this.enrichM3u8Variants(video);
+        }
         // Update toolbar badge for the tab that produced the detection.
         const firstVideo = enrichedVideos[0] ?? subtitles[0];
         if (firstVideo) {
@@ -200,21 +248,68 @@ export class BackgroundService {
             tabId: firstVideo?.tabId ?? 0,
           } satisfies DetectedMediaUpdatePayload,
         });
+
+        // Persist to session storage so media survives SW restarts.
+        const tabId = firstVideo?.tabId ?? 0;
+        if (tabId !== 0) {
+          this.saveSessionMedia(tabId, enrichedVideos, subtitles);
+        }
+
+        // Auto-download for whitelisted tabs. Media detection is the correct
+        // trigger point (NOT `tabs.onUpdated` complete, which fires before
+        // network interception captures the m3u8/subtitle requests). The guard
+        // set ensures we only fire once per page load even though
+        // `onMediaDetected` fires incrementally as more media is discovered.
+        if (tabId !== 0) {
+          void this.maybeAutoDownload(tabId);
+        }
       },
     );
 
-    // Download progress changes → notify popup.
+    // Download progress changes → notify popup + persist to session storage.
     const unsubProgress = this.downloadQueue.onProgress((progress) => {
+      const item = this.downloadQueue.getById(progress.itemId);
       this.messageBus.broadcast({
         type: MESSAGE_TYPES.DOWNLOAD_PROGRESS_UPDATE,
-        payload: { progress } satisfies DownloadProgressUpdatePayload,
+        payload: {
+          progress,
+          tabId: item?.tabId ?? 0,
+        } satisfies DownloadProgressUpdatePayload,
       });
+      // Persist so downloads survive SW restarts.
+      if (item) {
+        this.saveSessionDownloads(item.tabId);
+      }
     });
 
     // Downloader progress → queue progress tracking.
     this.downloader.onProgress((progress: DownloadProgress) => {
       this.downloadQueue.updateProgress(progress);
     });
+
+    // Force filename for extension-initiated downloads.
+    //
+    // Edge (and some Chrome versions) ignore the `filename` parameter of
+    // `chrome.downloads.download` when the URL is a `data:` URL — there is no
+    // Content-Disposition header and no URL path to derive a name from, so
+    // the browser falls back to the generic name "download" with no
+    // extension. `chrome.downloads.onDeterminingFilename` is the only way to
+    // force the filename in that case.
+    // Source: https://developer.chrome.com/docs/extensions/reference/api/downloads#event-onDeterminingFilename
+    chrome.downloads.onDeterminingFilename.addListener(
+      (downloadItem, suggest) => {
+        // Only override downloads initiated by THIS extension.
+        if (downloadItem.byExtensionId !== chrome.runtime.id) {
+          return; // let other extensions / browser decide
+        }
+        const desired = this.downloader.getPendingFilename();
+        if (desired) {
+          suggest({ filename: desired, conflictAction: 'uniquify' });
+          this.downloader.clearPendingFilename();
+        }
+        // If no pending filename, fall through (browser uses its own guess).
+      },
+    );
 
     // Convert callback → offscreen mux.js transmuxer (V2: OPFS-based).
     // The callback receives the OPFS directory handle; the offscreen document
@@ -351,9 +446,21 @@ export class BackgroundService {
             item.id,
           );
         } else {
+          const subtitle = media as DetectedSubtitle;
+          // Find a video on the same tab to use its title/URL as the subtitle
+          // filename base (so subtitle filenames match video filenames,
+          // e.g. "Movie Title.en.srt" instead of "sub-<hash>.srt").
+          // `subtitle.videoId` is currently never set by the detector, so we
+          // look up by tabId as the primary linking strategy.
+          const tabVideos = this.networkInterceptor.getVideos(subtitle.tabId);
+          const linkedVideo = tabVideos.length > 0 ? tabVideos[0] : undefined;
+          const videoContext = linkedVideo
+            ? { videoTitle: linkedVideo.title, videoTabUrl: linkedVideo.tabUrl }
+            : undefined;
           await this.downloader.downloadSubtitle(
-            media as DetectedSubtitle,
+            subtitle,
             item.id,
+            videoContext,
           );
         }
       } catch (err: unknown) {
@@ -370,21 +477,33 @@ export class BackgroundService {
     // Clear detected media when a tab navigates to a new URL (reload or
     // link click). Without this, stale media from a previous page accumulates
     // and shows up every time the popup is reopened.
+    //
+    // NOTE: Per user requirement, media should persist across tab navigation
+    // and only be cleared when the tab is closed. This allows users to switch
+    // between tabs and back without losing detected media.
     const onTabUpdated = (
       tabId: number,
       changeInfo: chrome.tabs.OnUpdatedInfo,
+      _tab: chrome.tabs.Tab,
     ): void => {
       if (changeInfo.status === 'loading') {
-        this.networkInterceptor.clearTab(tabId);
-        this.updateBadgeForTab(tabId);
+        // Reset the auto-download guard so a fresh page load can trigger
+        // auto-download again when media is re-detected.
+        this.autoDownloadedTabs.delete(tabId);
+        // Media is NOT cleared here - it persists across navigation
+        // until the tab is closed (see onTabRemoved below).
       }
     };
     chrome.tabs.onUpdated.addListener(onTabUpdated);
 
-    // Clear detected media when a tab is closed.
+    // Clear detected media AND downloads when a tab is closed.
     const onTabRemoved = (tabId: number): void => {
       this.networkInterceptor.clearTab(tabId);
+      this.downloadQueue.removeByTab(tabId);
+      this.clearSessionMedia(tabId);
+      this.clearSessionDownloads(tabId);
       this.updateBadgeForTab(tabId);
+      this.autoDownloadedTabs.delete(tabId);
     };
     chrome.tabs.onRemoved.addListener(onTabRemoved);
 
@@ -478,6 +597,7 @@ export class BackgroundService {
     this.on(MESSAGE_TYPES.UPDATE_SETTINGS, this.handleUpdateSettings);
     this.on(MESSAGE_TYPES.GET_EXTENSION_STATUS, this.handleGetExtensionStatus);
     this.on(MESSAGE_TYPES.TOGGLE_EXTENSION, this.handleToggleExtension);
+    this.on(MESSAGE_TYPES.UPDATE_SUBTITLE_LANGUAGE, this.handleUpdateSubtitleLanguage);
     this.on(MESSAGE_TYPES.PAGE_SCAN_RESULT, this.handlePageScanResult);
     this.on(MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE, this.handleConversionProgressUpdate);
   }
@@ -574,6 +694,65 @@ export class BackgroundService {
   }
 
   /**
+   * Fetch and parse an m3u8 master playlist so the popup can display a quality
+   * tag for each variant (e.g. "1080p", "720p"). Fire-and-forget: when
+   * variants are found, the stored video is updated in-place and a
+   * DETECTED_MEDIA_UPDATE is re-broadcast.
+   *
+   * Silently ignores fetch/parse failures so detection stays robust on pages
+   * with CORS-restricted or auth-protected playlists.
+   */
+  private enrichM3u8Variants(video: DetectedVideo): void {
+    if (video.format !== 'm3u8' || video.variants.length > 0) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        const response = await fetch(video.url, {
+          credentials: 'same-origin',
+          headers: { Accept: 'application/vnd.apple.mpegurl' },
+        });
+        if (!response.ok) {
+          return;
+        }
+        const content = await response.text();
+        const playlist = parseM3u8(content, video.url);
+
+        if (!playlist.isMasterPlaylist || playlist.variants.length === 0) {
+          return;
+        }
+
+        const variants: VideoVariant[] = playlist.variants.map((variant) => ({
+          url: variant.url,
+          quality: variant.quality,
+          resolution: variant.resolution,
+          bandwidth: variant.bandwidth,
+          playlistUrl: video.url,
+        }));
+
+        const enriched: DetectedVideo = {
+          ...video,
+          variants,
+        };
+
+        this.networkInterceptor.updateVideo(video.id, enriched);
+        this.saveSessionMedia(video.tabId, this.networkInterceptor.getVideos(video.tabId), this.networkInterceptor.getSubtitles(video.tabId));
+        this.messageBus.broadcast({
+          type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
+          payload: {
+            videos: this.networkInterceptor.getVideos(video.tabId),
+            subtitles: this.networkInterceptor.getSubtitles(video.tabId),
+            tabId: video.tabId,
+          } satisfies DetectedMediaUpdatePayload,
+        });
+      } catch {
+        // Network/CORS errors are expected for some playlists; ignore.
+      }
+    })();
+  }
+
+  /**
    * Find a detected video by its id, searching the active tab first then all
    * known tabs.
    */
@@ -654,6 +833,7 @@ export class BackgroundService {
       mediaType,
       url: media.url,
       title,
+      tabId: media.tabId,
       status: 'queued',
       progress: 0,
       videoId: mediaType === 'video' ? (media as DetectedVideo).id : undefined,
@@ -690,12 +870,151 @@ export class BackgroundService {
     });
   }
 
+  // --- session persistence (survives SW restarts) ---
+
+  /**
+   * Restore media + downloads from `chrome.storage.session`. Called early
+   * in `init()` (before settings load) so the `sessionReady` promise
+   * resolves as soon as possible. GET handlers await `sessionReady` to
+   * avoid returning empty data during SW restart.
+   */
+  private async performSessionRestore(): Promise<void> {
+    await this.loadSessionMedia();
+    await this.loadSessionDownloads();
+  }
+
+  /**
+   * Save detected media for a tab to `chrome.storage.session`. Fire-and-forget
+   * so detection is not blocked. Called whenever new media is detected.
+   */
+  private saveSessionMedia(
+    tabId: number,
+    videos: DetectedVideo[],
+    subtitles: DetectedSubtitle[],
+  ): void {
+    void chrome.storage.session.get(STORAGE_KEYS.SESSION_MEDIA).then((data) => {
+      const all = (data[STORAGE_KEYS.SESSION_MEDIA] as
+        | Record<string, { videos: DetectedVideo[]; subtitles: DetectedSubtitle[] }>
+        | undefined) ?? {};
+      all[String(tabId)] = { videos, subtitles };
+      void chrome.storage.session.set({
+        [STORAGE_KEYS.SESSION_MEDIA]: all,
+      });
+    });
+  }
+
+  /**
+   * Restore detected media from `chrome.storage.session` into the
+   * NetworkInterceptor. Called on `init()` so media survives SW restarts.
+   * Uses `restoreMedia` to preserve original IDs and enriched metadata.
+   */
+  private async loadSessionMedia(): Promise<void> {
+    try {
+      const data = await chrome.storage.session.get(STORAGE_KEYS.SESSION_MEDIA);
+      const all = data[STORAGE_KEYS.SESSION_MEDIA] as
+        | Record<string, { videos: DetectedVideo[]; subtitles: DetectedSubtitle[] }>
+        | undefined;
+      if (!all) return;
+      for (const [, entry] of Object.entries(all)) {
+        this.networkInterceptor.restoreMedia(entry.videos, entry.subtitles);
+      }
+    } catch {
+      // Session storage may not be available; ignore.
+    }
+  }
+
+  /**
+   * Clear saved media for a tab from session storage. Called on tab close
+   * and on tab navigation (loading).
+   */
+  private clearSessionMedia(tabId: number): void {
+    void chrome.storage.session.get(STORAGE_KEYS.SESSION_MEDIA).then((data) => {
+      const all = data[STORAGE_KEYS.SESSION_MEDIA] as
+        | Record<string, unknown>
+        | undefined;
+      if (!all) return;
+      delete all[String(tabId)];
+      void chrome.storage.session.set({
+        [STORAGE_KEYS.SESSION_MEDIA]: all,
+      });
+    });
+  }
+
+  /**
+   * Save all downloads for a tab to `chrome.storage.session`. Fire-and-forget.
+   * Called whenever download progress changes.
+   */
+  private saveSessionDownloads(tabId: number): void {
+    void chrome.storage.session.get(STORAGE_KEYS.SESSION_DOWNLOADS).then((data) => {
+      const all = (data[STORAGE_KEYS.SESSION_DOWNLOADS] as
+        | Record<string, DownloadItem[]>
+        | undefined) ?? {};
+      all[String(tabId)] = this.downloadQueue.getByTab(tabId);
+      void chrome.storage.session.set({
+        [STORAGE_KEYS.SESSION_DOWNLOADS]: all,
+      });
+    });
+  }
+
+  /**
+   * Restore downloads from `chrome.storage.session` into the DownloadQueue.
+   * Called on `init()` so downloads survive SW restarts. Uses `restore` to
+   * preserve original status/progress — does NOT re-queue completed downloads.
+   * Active downloads (downloading/converting) are marked as error since the
+   * fetch/convert pipeline cannot be resumed after SW restart.
+   */
+  private async loadSessionDownloads(): Promise<void> {
+    try {
+      const data = await chrome.storage.session.get(
+        STORAGE_KEYS.SESSION_DOWNLOADS,
+      );
+      const all = data[STORAGE_KEYS.SESSION_DOWNLOADS] as
+        | Record<string, DownloadItem[]>
+        | undefined;
+      if (!all) return;
+      for (const [, items] of Object.entries(all)) {
+        for (const item of items) {
+          if (item.status === 'downloading' || item.status === 'converting') {
+            this.downloadQueue.restore({
+              ...item,
+              status: 'error',
+              error: 'Interrupted (service worker restarted)',
+            });
+          } else {
+            this.downloadQueue.restore(item);
+          }
+        }
+      }
+    } catch {
+      // Session storage may not be available; ignore.
+    }
+  }
+
+  /**
+   * Clear saved downloads for a tab from session storage. Called on tab close.
+   */
+  private clearSessionDownloads(tabId: number): void {
+    void chrome.storage.session.get(STORAGE_KEYS.SESSION_DOWNLOADS).then((data) => {
+      const all = data[STORAGE_KEYS.SESSION_DOWNLOADS] as
+        | Record<string, unknown>
+        | undefined;
+      if (!all) return;
+      delete all[String(tabId)];
+      void chrome.storage.session.set({
+        [STORAGE_KEYS.SESSION_DOWNLOADS]: all,
+      });
+    });
+  }
+
   // --- message handlers ---
 
   /** GET_DETECTED_MEDIA: return videos + subtitles for the requested tab only. */
   private handleGetDetectedMedia = async (
     request: MessageRequest,
   ): Promise<MessageResponse<DetectedMediaUpdatePayload>> => {
+    // Wait for session restore to complete so we don't return empty data
+    // during the brief window after SW restart.
+    await this.sessionReady;
     const payload = request.payload as GetDetectedMediaPayload | undefined;
     const tabId = payload?.tabId ?? (await this.getActiveTabId());
 
@@ -778,6 +1097,55 @@ export class BackgroundService {
     return { success: true, data: { downloads: items } };
   };
 
+  /**
+   * Auto-download entry point fired when media is detected for a tab
+   * (`onMediaDetected`). Media detection is incremental — the m3u8 is captured
+   * first, then subtitles arrive later — so this handles two cases:
+   *
+   * 1. **First detection for a page load** (no state, or the tab navigated to a
+   *    new URL): run {@link tryAutoDownload} fresh and record the enqueued media
+   *    ids against the tab URL.
+   * 2. **Follow-up detection for the same page load** (state exists and URL
+   *    matches): run {@link tryAutoDownload} with the already-enqueued id set so
+   *    only newly discovered subtitles are queued — the video is not
+   *    re-downloaded.
+   *
+   * {@link tryAutoDownload} silently no-ops for non-whitelisted URLs or when no
+   * matching media is found.
+   */
+  private async maybeAutoDownload(tabId: number): Promise<void> {
+    let tabUrl: string | undefined;
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      tabUrl = tab.url;
+    } catch {
+      return; // tab may already be gone
+    }
+    if (!tabUrl) return;
+
+    const state = this.autoDownloadedTabs.get(tabId);
+    const deps = {
+      getMedia: (id: number) => this.networkInterceptor.getMedia(id),
+      createDownloadItem: (media: DetectedVideo | DetectedSubtitle, type: 'video' | 'subtitle') =>
+        this.createDownloadItem(media, type),
+      addToQueue: (items: DownloadItem[]) => this.downloadQueue.addAll(items),
+    };
+
+    if (state && state.url === tabUrl) {
+      // Same page load: catch up newly discovered subtitles without
+      // re-downloading the video.
+      const newIds = await tryAutoDownload(tabId, tabUrl, deps, state.enqueuedIds);
+      for (const id of newIds) state.enqueuedIds.add(id);
+      return;
+    }
+
+    // Fresh page load (or first detection): enqueue everything selected.
+    const newIds = await tryAutoDownload(tabId, tabUrl, deps);
+    if (newIds.length > 0) {
+      this.autoDownloadedTabs.set(tabId, { url: tabUrl, enqueuedIds: new Set(newIds) });
+    }
+  }
+
   /** CANCEL_DOWNLOAD: cancel a download by id. */
   private handleCancelDownload = async (
     request: MessageRequest,
@@ -832,11 +1200,19 @@ export class BackgroundService {
     return { success: true };
   };
 
-  /** GET_DOWNLOAD_PROGRESS: return all download items. */
-  private handleGetDownloadProgress = async (): Promise<
-    MessageResponse<DownloadListResponse>
-  > => {
-    return { success: true, data: { downloads: this.downloadQueue.getAll() } };
+  /** GET_DOWNLOAD_PROGRESS: return download items for the requested tab. */
+  private handleGetDownloadProgress = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse<DownloadListResponse>> => {
+    // Wait for session restore to complete so we don't return empty data
+    // during the brief window after SW restart.
+    await this.sessionReady;
+    const payload = request.payload as GetDownloadProgressPayload | undefined;
+    const downloads =
+      payload?.tabId !== undefined
+        ? this.downloadQueue.getByTab(payload.tabId)
+        : this.downloadQueue.getAll();
+    return { success: true, data: { downloads } };
   };
 
   /** GET_SETTINGS: return persisted settings (or defaults). */
@@ -909,6 +1285,42 @@ export class BackgroundService {
     }
 
     return { success: true, data: { active: this.extensionActive } };
+  };
+
+  /**
+   * UPDATE_SUBTITLE_LANGUAGE: update a subtitle's detected language code in
+   * both the mediaMap and the networkInterceptor. The popup's
+   * `useSubtitleLanguage` hook detects the language from subtitle content
+   * (frequency-based) and sends the resolved ISO 639-1 code here so that the
+   * background has the correct language for download filenames.
+   */
+  private handleUpdateSubtitleLanguage = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as UpdateSubtitleLanguagePayload;
+    if (!payload?.subtitleId || !payload?.language) {
+      return { success: false, error: 'Missing subtitleId or language' };
+    }
+
+    // Update the networkInterceptor's stored subtitle.
+    const existingSub = this.networkInterceptor.getAllSubtitles().find((s) => s.id === payload.subtitleId);
+    if (existingSub) {
+      this.networkInterceptor.updateSubtitle(payload.subtitleId, {
+        ...existingSub,
+        language: payload.language,
+      });
+    }
+
+    // Update the mediaMap if the subtitle is already enqueued.
+    const existing = this.mediaMap.get(payload.subtitleId);
+    if (existing && (existing.format === 'ass' || existing.format === 'vtt' || existing.format === 'srt')) {
+      this.mediaMap.set(payload.subtitleId, {
+        ...(existing as DetectedSubtitle),
+        language: payload.language,
+      });
+    }
+
+    return { success: true };
   };
 
   /**
@@ -1022,9 +1434,13 @@ export class BackgroundService {
     this.downloadQueue.updateProgress(progress);
 
     // Broadcast to the popup
+    const item = this.downloadQueue.getById(payload.downloadId);
     this.messageBus.broadcast({
       type: MESSAGE_TYPES.DOWNLOAD_PROGRESS_UPDATE,
-      payload: { progress } satisfies DownloadProgressUpdatePayload,
+      payload: {
+        progress,
+        tabId: item?.tabId ?? 0,
+      } satisfies DownloadProgressUpdatePayload,
     });
 
     return { success: true };

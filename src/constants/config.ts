@@ -10,6 +10,12 @@ export const DEFAULT_QUALITY = 'highest' as const;
 
 export const DEFAULT_SUBTITLE_LANGUAGE = 'en';
 
+export const DEFAULT_PREFERRED_VIDEO_FORMAT = 'm3u8' as const;
+
+export const DEFAULT_SELECTED_SUBTITLE_LANGUAGES: string[] = ['all'];
+
+export const DEFAULT_AUTO_SELECT_ENABLED = false;
+
 export const MAX_RETRY = 3;
 export const SEGMENT_TIMEOUT_MS = 30_000; // 30 seconds per segment
 export const DETECTION_TIMEOUT_MS = 30_000; // 30 seconds to wait for media detection
@@ -96,6 +102,7 @@ export const DEFAULT_SETTINGS: Settings = {
   concurrentDownloads: DEFAULT_CONCURRENT_DOWNLOADS,
   defaultQuality: DEFAULT_QUALITY,
   defaultSubtitleLanguage: DEFAULT_SUBTITLE_LANGUAGE,
+  selectedSubtitleLanguages: DEFAULT_SELECTED_SUBTITLE_LANGUAGES,
   theme: 'light',
   convertToMp4: 'always',
   parallelConversion: 'auto',
@@ -103,6 +110,8 @@ export const DEFAULT_SETTINGS: Settings = {
   parallelFallback: 'sequential',
   segmentConcurrency: DEFAULT_SEGMENT_CONCURRENCY,
   filenameSource: DEFAULT_FILENAME_SOURCE,
+  preferredVideoFormat: DEFAULT_PREFERRED_VIDEO_FORMAT,
+  autoSelectEnabled: DEFAULT_AUTO_SELECT_ENABLED,
 };
 
 // === Storage Keys ===
@@ -112,6 +121,12 @@ export const STORAGE_KEYS = {
   DETECTED_MEDIA: 'detected_media',
   DOWNLOADS: 'downloads',
   EXTENSION_STATUS: 'extension_status',
+  /** Per-tab detected media in session storage (survives SW restarts). */
+  SESSION_MEDIA: 'session_media',
+  /** Per-tab downloads in session storage (survives SW restarts). */
+  SESSION_DOWNLOADS: 'session_downloads',
+  /** Auto-download whitelist (origin+pathname → auto-download on visit). */
+  AUTO_DOWNLOAD_WHITELIST: 'auto_download_whitelist',
 } as const;
 
 // === Popup Dimensions ===

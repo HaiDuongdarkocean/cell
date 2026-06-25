@@ -32,6 +32,7 @@ function mergeDownloadItems(existing: DownloadItem, incoming: DownloadItem): Dow
     mediaType: incoming.mediaType,
     url: useIncomingMetadata ? incoming.url : existing.url,
     title: useIncomingMetadata ? incoming.title : existing.title,
+    tabId: incoming.tabId,
     status: chooseStatus(existing.status, incoming.status),
     progress: Math.max(existing.progress, incoming.progress),
     error: existing.error ?? incoming.error,
@@ -72,6 +73,7 @@ export interface PopupState {
   addDownload: (item: DownloadItem) => void;
   updateDownload: (id: string, updates: Partial<DownloadItem>) => void;
   removeDownload: (id: string) => void;
+  setDownloads: (downloads: DownloadItem[]) => void;
   clearDownloads: () => void;
   updateSettings: (settings: Partial<Settings>) => void;
   setExtensionActive: (active: boolean) => void;
@@ -126,6 +128,8 @@ export const usePopupStore = create<PopupState>((set) => ({
       downloads: state.downloads.filter((d) => d.id !== id),
     })),
 
+  setDownloads: (downloads) => set({ downloads }),
+
   clearDownloads: () => set({ downloads: [] }),
 
   updateSettings: (partial) =>
@@ -149,8 +153,31 @@ export const usePopupStore = create<PopupState>((set) => ({
   loadPersistedSettings: async () => {
     try {
       const data = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);
-      const settings = data[STORAGE_KEYS.SETTINGS] as Settings | undefined;
-      if (settings) {
+      const raw = data[STORAGE_KEYS.SETTINGS] as Settings | undefined;
+      if (raw) {
+        // Migration: defaultSubtitleLanguage (string) → selectedSubtitleLanguages (string[])
+        let settings: Settings = raw;
+        if (
+          (!settings.selectedSubtitleLanguages ||
+            settings.selectedSubtitleLanguages.length === 0) &&
+          typeof settings.defaultSubtitleLanguage === 'string' &&
+          settings.defaultSubtitleLanguage.length > 0
+        ) {
+          settings = {
+            ...settings,
+            selectedSubtitleLanguages: [settings.defaultSubtitleLanguage],
+          };
+        }
+        // Fill in new fields with defaults if missing (older saved settings)
+        if (settings.preferredVideoFormat === undefined) {
+          settings = { ...settings, preferredVideoFormat: 'm3u8' };
+        }
+        if (settings.autoSelectEnabled === undefined) {
+          settings = { ...settings, autoSelectEnabled: false };
+        }
+        if (!settings.selectedSubtitleLanguages) {
+          settings = { ...settings, selectedSubtitleLanguages: ['all'] };
+        }
         set({ settings, isSettingsLoaded: true });
       } else {
         set({ isSettingsLoaded: true });

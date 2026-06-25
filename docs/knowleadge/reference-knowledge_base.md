@@ -185,6 +185,35 @@
 - **Files**: `src/lib/parsers/m3u8Parser.ts`, `src/types/media.ts`, `src/background/downloader.ts`, `tests/unit/parsers/m3u8Parser.test.ts`, `tests/unit/background/downloader.test.ts`
 - **Guard**: +14 unit tests (m3u8Parser: +6 KEY/MAP/BYTERANGE/DISCONTINUITY/ENDLIST, downloader: +14 AES decrypt/fMP4/byte-range/ad skip/nested master). Total: 690 → 704
 
+### [B16] `credentials: 'include'` causes CORS block on CDNs with `Access-Control-Allow-Origin: *`
+- **Symptom**: Extension reports "Failed to fetch video: 403" when downloading from sites like themoviebox.org, even though Referer header is correctly set via `buildFetchHeaders()`.
+- **Root cause**:
+  - CDN (e.g., `bcdnxw.hakunaymatata.com`) returns `Access-Control-Allow-Origin: *` in response headers
+  - Extension's `fetch()` used `credentials: 'include'` for MP4/M3U8/subtitle/key fetches
+  - Browser CORS policy: when `credentials: 'include'`, `Access-Control-Allow-Origin` must be a specific origin (not `*`) — otherwise the response is BLOCKED
+  - This is NOT a 403 from the server — it's a CORS block by the browser. The error message "Failed to fetch video: 403" was misleading because the fetch threw before the response could be read.
+- **Discovery method**: Used Playwright MCP browser to test themoviebox.org in real browser context:
+  1. Fetch with no credentials → 200 OK
+  2. Fetch with `credentials: 'include'` → "Failed to fetch" (CORS block)
+  3. Fetch with `credentials: 'same-origin'` → 200 OK
+  4. Fetch with `credentials: 'omit'` → 200 OK
+  5. Console error: "The value of the 'Access-Control-Allow-Origin' header in the response must not be the wildcard '*' when the request's credentials mode is 'include'"
+- **Fix**: Changed all `credentials: 'include'` → `credentials: 'same-origin'` in `downloader.ts` for:
+  - `downloadMp4Video` (line 581)
+  - `downloadM3u8Video` playlist fetch (line 612)
+  - `downloadM3u8Video` variant fetch (line 632)
+  - `fetchAllSegments` playlist fetch (line 536)
+  - `fetchKey` AES key fetch (line 427)
+  - `downloadSubtitle` (line 278)
+  - Segment fetches already used `credentials: 'same-origin'` (line 385, 506).
+- **Key learnings**:
+  - `credentials: 'include'` + `Access-Control-Allow-Origin: *` = CORS BLOCK (browser-level, not server)
+  - Most streaming CDNs return `Access-Control-Allow-Origin: *` (wildcard) — they don't need cookies
+  - CDN auth is typically via Referer header + signed URL (query params), NOT cookies
+  - `credentials: 'same-origin'` is the correct mode for cross-origin CDN fetches from extension SW
+  - The "403" error message was misleading — the actual failure was a CORS TypeError, not an HTTP 403
+- **Guard**: Always use `credentials: 'same-origin'` for cross-origin CDN fetches. Only use `credentials: 'include'` for same-origin API calls that need session cookies.
+
 ---
 
 ## ARCHITECTURE DECISIONS
@@ -359,7 +388,7 @@
 | `e2e/redesigned-popup.spec.ts` | 3 | popup UI, theme, settings dialog |
 | `e2e/kisskh.spec.ts` | 2 | kisskh detection, download |
 | `e2e/subtitle-language.spec.ts` | 6 | subtitle language detection (english, chinese, vietnamese, korean, japanese, russian) |
-| **Total Jest** | **704** | |
+| **Total Jest** | **712** | |
 | **Total E2E** | **13** | |
 
 ---

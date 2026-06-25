@@ -32,3 +32,9 @@ bin/
 
 # Temp commit message
 .git-commit-msg.txt
+
+# Integration test segment cache (downloaded by globalSetup)
+tests/integration/.cache/
+
+# Third-party reference projects (not part of this repo)
+asbplayer-1.18.0/

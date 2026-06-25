@@ -8,6 +8,7 @@ function makeDownload(overrides?: Partial<DownloadItem>): DownloadItem {
     mediaType: 'video',
     url: 'https://example.com/video.m3u8',
     title: 'Test Video',
+    tabId: 1,
     status: 'downloading',
     progress: 50,
     ...overrides,

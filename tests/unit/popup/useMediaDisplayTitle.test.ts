@@ -95,20 +95,78 @@ describe('resolveMediaDisplayTitle', () => {
     });
   });
 
-  describe('subtitle — all modes', () => {
-    it('title-fallback: uses beautified subtitle URL, not language', () => {
+  describe('subtitle — with video context (filename format)', () => {
+    const makeVideoContext = (overrides?: Partial<{ videoTitle: string; videoTabUrl: string }>) => ({
+      videoTitle: overrides?.videoTitle ?? "A Good Girl's Guide to Murder S2 EP1",
+      videoTabUrl: overrides?.videoTabUrl ?? kisskhPageUrl,
+    });
+
+    it('title-fallback: uses video title + lang + .vtt', () => {
+      const sub = makeSubtitle({ language: 'en', format: 'vtt' });
+      const vc = makeVideoContext();
+      expect(resolveMediaDisplayTitle(sub, 'title-fallback', undefined, vc)).toBe(
+        "A_Good_Girl's_Guide_to_Murder_S2_EP1.en.vtt",
+      );
+    });
+
+    it('title-fallback: video title with .srt subtitle format', () => {
+      const sub = makeSubtitle({ language: 'en', format: 'srt' });
+      const vc = makeVideoContext();
+      expect(resolveMediaDisplayTitle(sub, 'title-fallback', undefined, vc)).toBe(
+        "A_Good_Girl's_Guide_to_Murder_S2_EP1.en.srt",
+      );
+    });
+
+    it('url-only: uses video URL base + lang + ext', () => {
+      const sub = makeSubtitle({ language: 'ar', format: 'srt' });
+      const vc = makeVideoContext();
+      expect(resolveMediaDisplayTitle(sub, 'url-only', undefined, vc)).toBe(
+        "Drama_-_A_Good_Girl's_Guide_to_Murder_-_Season_2_-_Episode_1.ar.srt",
+      );
+    });
+
+    it('title-only: uses video title + lang + ext', () => {
+      const sub = makeSubtitle({ language: 'fr', format: 'vtt' });
+      const vc = makeVideoContext();
+      expect(resolveMediaDisplayTitle(sub, 'title-only', undefined, vc)).toBe(
+        "A_Good_Girl's_Guide_to_Murder_S2_EP1.fr.vtt",
+      );
+    });
+
+    it('skips lang suffix when language is unknown', () => {
+      const sub = makeSubtitle({ language: 'unknown', format: 'srt' });
+      const vc = makeVideoContext();
+      expect(resolveMediaDisplayTitle(sub, 'title-fallback', undefined, vc)).toBe(
+        "A_Good_Girl's_Guide_to_Murder_S2_EP1.srt",
+      );
+    });
+
+    it('skips lang suffix when language is empty', () => {
+      const sub = makeSubtitle({ language: '', format: 'srt' });
+      const vc = makeVideoContext();
+      expect(resolveMediaDisplayTitle(sub, 'title-fallback', undefined, vc)).toBe(
+        "A_Good_Girl's_Guide_to_Murder_S2_EP1.srt",
+      );
+    });
+
+    it('falls back to subtitle URL when no video context', () => {
       const sub = makeSubtitle({ language: 'en' });
+      // No videoContext → uses subtitle URL base
       expect(resolveMediaDisplayTitle(sub, 'title-fallback')).toBe('subs - en');
     });
 
-    it('title-only: still uses URL (language is not meaningful)', () => {
-      const sub = makeSubtitle({ language: 'en' });
-      expect(resolveMediaDisplayTitle(sub, 'title-only')).toBe('subs - en');
+    it('falls back to subtitle URL when video context is undefined', () => {
+      const sub = makeSubtitle({ language: 'en', format: 'srt' });
+      expect(resolveMediaDisplayTitle(sub, 'title-fallback', undefined, undefined)).toBe(
+        'subs - en',
+      );
     });
+  });
 
-    it('url-only: uses beautified subtitle URL', () => {
+  describe('subtitle — without video context (legacy fallback)', () => {
+    it('title-fallback: uses beautified subtitle URL', () => {
       const sub = makeSubtitle({ language: 'en' });
-      expect(resolveMediaDisplayTitle(sub, 'url-only')).toBe('subs - en');
+      expect(resolveMediaDisplayTitle(sub, 'title-fallback')).toBe('subs - en');
     });
 
     it('handles complex subtitle URL path', () => {

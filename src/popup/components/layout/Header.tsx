@@ -3,6 +3,8 @@ import styles from './Header.module.css';
 interface HeaderProps {
   isActive: boolean;
   onToggleExtension: () => void;
+  isAutoDownloadActive: boolean;
+  onToggleAutoDownload: () => void;
   onToggleTheme: () => void;
   onOpenSettings: () => void;
   currentTheme: 'light' | 'dark';
@@ -11,6 +13,8 @@ interface HeaderProps {
 export function Header({
   isActive,
   onToggleExtension,
+  isAutoDownloadActive,
+  onToggleAutoDownload,
   onToggleTheme,
   onOpenSettings,
   currentTheme,
@@ -42,6 +46,22 @@ export function Header({
               <path d="M12 2v10M18.36 6.64a9 9 0 1 1-12.72 0" />
             </svg>
           )}
+        </button>
+
+        {/* Auto Download toggle */}
+        <button
+          type="button"
+          className={`${styles.iconBtn} ${isAutoDownloadActive ? styles.adActive : ''}`}
+          onClick={onToggleAutoDownload}
+          aria-label="Toggle auto download for this site"
+          aria-pressed={isAutoDownloadActive}
+          title={isAutoDownloadActive ? 'Auto download: ON — URL sẽ tự tải khi ghé lại' : 'Auto download: OFF — click để whitelist trang này'}
+        >
+          <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
         </button>
 
         {/* Theme toggle */}

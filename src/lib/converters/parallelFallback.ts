@@ -111,7 +111,7 @@ export async function executeWithFallback<T>(
   let attempt = 1;
 
   // Try parallel conversion (with optional retry).
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     try {
       return await parallelFn(workerCount);

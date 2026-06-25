@@ -5,6 +5,7 @@ import {
   MAX_PARALLEL_WORKERS,
   MAX_CONVERT_BYTES,
 } from '@/constants/config';
+import { MultiSelect } from './MultiSelect';
 import styles from './SettingsDialog.module.css';
 
 interface SettingsDialogProps {
@@ -35,6 +36,11 @@ const FILENAME_SOURCE_LABELS: Record<FilenameSource, string> = {
   'title-fallback': 'Title (fallback URL)',
   'title-only': 'Title only',
   'url-only': 'URL only',
+};
+
+const PREFERRED_FORMAT_OPTIONS: readonly ('mp4' | 'm3u8')[] = ['m3u8', 'mp4'];
+const PREFERRED_FORMAT_LABELS: Record<'mp4' | 'm3u8', string> = {
+  m3u8: 'm3u8 (HLS)', mp4: 'mp4 (direct)',
 };
 
 /**
@@ -277,6 +283,62 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
         </div>
 
         <div className={styles.popoverBody}>
+          {/* === Group: chọn media === */}
+
+          {/* Auto select media */}
+          <div className={styles.field}>
+            <div className={styles.asRow}>
+              <span className={styles.asLabel}>Auto select media</span>
+              <button
+                type="button"
+                className={`${styles.iconBtn} ${styles.iconBtnSm} ${settings.autoSelectEnabled ? styles.asActive : ''}`}
+                onClick={() => update('autoSelectEnabled', !settings.autoSelectEnabled)}
+                aria-pressed={settings.autoSelectEnabled}
+                aria-label="Toggle auto select"
+                title={`Auto select: ${settings.autoSelectEnabled ? 'ON' : 'OFF'}`}
+              >
+                <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
+                  <path d="M19 15L19.5 16.5L21 17L19.5 17.5L19 19L18.5 17.5L17 17L18.5 16.5L19 15Z" />
+                </svg>
+              </button>
+            </div>
+            <p className={styles.asHint}>Khi bật, mở popup → media tự chọn theo preference.</p>
+          </div>
+
+          {/* Preferred format */}
+          <SettingField label="Preferred format" htmlFor="set-format">
+            <CustomSelect
+              testId="format-select"
+              value={settings.preferredVideoFormat}
+              options={PREFERRED_FORMAT_OPTIONS.map((f) => ({ value: f, label: PREFERRED_FORMAT_LABELS[f] }))}
+              onSelect={(val) => update('preferredVideoFormat', val as 'mp4' | 'm3u8')}
+            />
+          </SettingField>
+
+          {/* Default quality */}
+          <SettingField label="Default quality" htmlFor="set-quality">
+            <CustomSelect
+              testId="quality-select"
+              value={settings.defaultQuality}
+              options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABELS[q] }))}
+              onSelect={(val) => update('defaultQuality', val as VideoQuality)}
+            />
+          </SettingField>
+
+          {/* Select subtitle */}
+          <SettingField label="Select subtitle" htmlFor="set-subtitle-lang">
+            <MultiSelect
+              testId="subtitle-lang-multiselect"
+              options={SUBTITLE_LANGUAGES}
+              selectedValues={settings.selectedSubtitleLanguages}
+              onChange={(values) => update('selectedSubtitleLanguages', values)}
+              placeholder="Search languages..."
+            />
+          </SettingField>
+
+          {/* === Group: download === */}
+
           {/* Downloads at once */}
           <SettingField label="Downloads at once" htmlFor="set-concurrent">
             <CustomSelect
@@ -319,25 +381,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
             </SettingField>
           )}
 
-          {/* Default quality */}
-          <SettingField label="Default quality" htmlFor="set-quality">
-            <CustomSelect
-              testId="quality-select"
-              value={settings.defaultQuality}
-              options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABELS[q] }))}
-              onSelect={(val) => update('defaultQuality', val as VideoQuality)}
-            />
-          </SettingField>
-
-          {/* Subtitle language */}
-          <SettingField label="Subtitle language" htmlFor="set-subtitle-lang">
-            <CustomSelect
-              testId="subtitle-lang-select"
-              value={settings.defaultSubtitleLanguage}
-              options={SUBTITLE_LANGUAGES}
-              onSelect={(val) => update('defaultSubtitleLanguage', val)}
-            />
-          </SettingField>
+          {/* === Group: filename === */}
 
           {/* Filename source */}
           <SettingField label="Filename source" htmlFor="set-filename-source">

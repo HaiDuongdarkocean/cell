@@ -72,6 +72,7 @@ function makeDownload(id: string, progress = 0): DownloadItem {
     mediaType: 'video',
     url: `https://example.com/${id}.mp4`,
     title: `download-${id}`,
+    tabId: 1,
     status: 'queued',
     progress,
   };
@@ -127,6 +128,7 @@ describe('usePopupStore', () => {
       mediaType: 'subtitle',
       url: '',
       title: 'Download',
+      tabId: 1,
       status: 'downloading',
       progress: 25,
       startedAt: 1000,
@@ -136,6 +138,7 @@ describe('usePopupStore', () => {
       mediaType: 'subtitle',
       url: 'https://example.com/sub.srt',
       title: 'e29ac9d2ef1f849eb73428410d055c26.en',
+      tabId: 1,
       status: 'queued',
       progress: 0,
       startedAt: 2000,
@@ -162,6 +165,7 @@ describe('usePopupStore', () => {
       mediaType: 'video',
       url: 'https://example.com/a.mp4',
       title: 'a',
+      tabId: 1,
       status: 'downloading',
       progress: 50,
     };
@@ -170,6 +174,7 @@ describe('usePopupStore', () => {
       mediaType: 'video',
       url: 'https://example.com/b.mp4',
       title: 'b',
+      tabId: 1,
       status: 'done',
       progress: 100,
     };

@@ -6,10 +6,11 @@ trigger: always_on
 # Chrome Extension Baseline Rules
 
 ## UI/UX
-- Always apply when designing ui/ux for the system [/reference-ui_ux_system.md](reference-ui_ux_system.md)
+- Always apply when designing ui/ux for the system [docs/reference-ui_ux_system.md](reference-ui_ux_system.md)
 
 ## Knowledge Base
-- Always refer to the knowledge base for the system [/reference-knowledge_base.md](reference-knowledge_base.md)
+- Always refer to the knowledge base for the system [docs/reference-knowledge_base.md](reference-knowledge_base.md)
+- For chrome-devtools MCP usage (live debug on Chrome/Edge), refer to [docs/knowleadge/reference-chrome-devtools-mcp.md](../../docs/knowleadge/reference-chrome-devtools-mcp.md)
 
 ## Architecture Map
 - Always read [docs/architechture-system.md](../../docs/architechture-system.md) first to know file structure, dependencies, and impact radius

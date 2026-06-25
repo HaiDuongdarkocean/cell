@@ -182,3 +182,46 @@ export function resolveFilenameBase(
       return beautifyUrlFilename(extractBaseNameFromUrl(url));
   }
 }
+
+/**
+ * Build a subtitle filename from a base name, language tag, and extension.
+ *
+ * The base name is sanitized via `sanitizeFileName`. The language tag is
+ * trimmed, stripped of filename-invalid characters (including parentheses /
+ * brackets which are not in `sanitizeFileName`'s default set but are
+ * undesirable in a language suffix), has spaces replaced with underscores,
+ * and is lowercased. When the sanitized language is empty (undefined, empty
+ * string, whitespace-only, or all-invalid chars), no suffix is appended —
+ * the result is `<base>.<ext>` (matching the video filename convention).
+ *
+ * `ext` is provided without a leading dot.
+ *
+ * Examples:
+ *   `buildSubtitleFileName('See You at Work Tomorrow!', 'en', 'srt')`
+ *     → `See_You_at_Work_Tomorrow!.en.srt`
+ *   `buildSubtitleFileName('My Video', undefined, 'srt')`
+ *     → `My_Video.srt`
+ *   `buildSubtitleFileName('Movie', 'português (BR)', 'srt')`
+ *     → `Movie.português_br.srt`
+ */
+export function buildSubtitleFileName(
+  base: string,
+  language: string | undefined,
+  ext: string,
+): string {
+  const sanitizedBase = sanitizeFileName(base);
+  const langTrimmed = (language ?? '').trim();
+  // 'unknown' is the sentinel returned by extractLanguage() when no language
+  // is detected from the URL. Treat it as "no language" — no suffix.
+  if (langTrimmed.length === 0 || langTrimmed.toLowerCase() === 'unknown') {
+    return `${sanitizedBase}.${ext}`;
+  }
+  const sanitizedLang = langTrimmed
+    .replace(/[<>:"/\\|?*\[\](){}]/g, '')
+    .replace(/ /g, '_')
+    .toLowerCase();
+  if (sanitizedLang.length === 0) {
+    return `${sanitizedBase}.${ext}`;
+  }
+  return `${sanitizedBase}.${sanitizedLang}.${ext}`;
+}

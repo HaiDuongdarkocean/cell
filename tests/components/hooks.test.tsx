@@ -134,6 +134,7 @@ const mockDownload: DownloadItem = {
   mediaType: 'video',
   url: 'https://example.com/video.m3u8',
   title: 'Test Video',
+  tabId: 1,
   status: 'downloading',
   progress: 50,
   startedAt: 1000,
@@ -167,6 +168,11 @@ describe('useDetectedMedia', () => {
     renderHook(() => useDetectedMedia());
 
     // Wait for the async tab query + sendMessage promise to resolve.
+    // getActiveContentTabId uses Promise.all over 3 tab queries, then the
+    // hook awaits it and calls sendMessage — needs a few extra microtask
+    // flushes vs the old 2-query path.
+    await Promise.resolve();
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
@@ -186,6 +192,8 @@ describe('useDetectedMedia', () => {
     renderHook(() => useDetectedMedia());
 
     // Wait for the async tab query to resolve so tabIdRef is populated.
+    await Promise.resolve();
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
@@ -216,6 +224,8 @@ describe('useDetectedMedia', () => {
     renderHook(() => useDetectedMedia());
 
     // Wait for the async tab query to resolve so tabIdRef is populated (tabId=1).
+    await Promise.resolve();
+    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
@@ -262,6 +272,68 @@ describe('useDetectedMedia', () => {
     // No tabId → no GET_DETECTED_MEDIA sent → store stays empty.
     expect(chromeMock.sendMessage).not.toHaveBeenCalled();
     expect(usePopupStore.getState().videos).toEqual([]);
+  });
+
+  // Regression: Edge ships built-in app-windows (e.g. the dictionary sidebar)
+  // that are themselves `active: true` and live in their own window. When the
+  // popup is open, `chrome.tabs.query({ active: true, currentWindow: false })`
+  // on Edge returns THAT app-window tab (a chrome-extension:// URL) instead of
+  // the content tab in the browser window. The hook must skip chrome-extension
+  // URLs and fall back to scanning all tabs for a real content tab, otherwise
+  // the popup renders empty with no console error.
+  it('skips chrome-extension app-window tabs returned by currentWindow:false (Edge regression) and uses the real content tab', async () => {
+    // Simulate the exact Edge layout Anh yêu observed:
+    //   currentWindow:false  -> [{ chrome-extension app-window, active }]
+    //   lastFocusedWindow    -> [] (null)
+    //   all tabs             -> [app-window, content-tab, ...]
+    const extensionTab = {
+      id: 999,
+      url: 'chrome-extension://dmeppfcidcpcocleneopiblmpnbokhep/pages/app-window/index.html#/app/dictionary',
+      active: true,
+      windowId: 2138817063,
+    } as chrome.tabs.Tab;
+    const contentTab = {
+      id: 1,
+      url: 'https://themoviebox.org/movies/see-you-at-work-tomorrow',
+      active: true,
+      windowId: 2138816832,
+    } as chrome.tabs.Tab;
+
+    tabsMock.query.mockImplementation((q: chrome.tabs.QueryInfo) => {
+      if (q.currentWindow === false) return Promise.resolve([extensionTab]);
+      if (q.lastFocusedWindow === true) return Promise.resolve([]);
+      if (q.currentWindow === true) return Promise.resolve([contentTab]);
+      // query({}) — all tabs
+      return Promise.resolve([extensionTab, contentTab]);
+    });
+
+    const mediaPayload: DetectedMediaUpdatePayload = {
+      videos: [mockVideo],
+      subtitles: [mockSubtitle],
+      tabId: 1,
+    };
+    chromeMock.sendMessage.mockResolvedValue({
+      success: true,
+      data: mediaPayload,
+    } as MessageResponse<DetectedMediaUpdatePayload>);
+
+    renderHook(() => useDetectedMedia());
+
+    // Flush the async tab-query + sendMessage chain.
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Must request media for the CONTENT tab (id=1), never the extension
+    // app-window (id=999).
+    expect(chromeMock.sendMessage).toHaveBeenCalledWith({
+      type: 'GET_DETECTED_MEDIA',
+      payload: { tabId: 1 },
+    });
+    expect(usePopupStore.getState().videos).toEqual([mockVideo]);
+    expect(usePopupStore.getState().subtitles).toEqual([mockSubtitle]);
   });
 
   it('removes the listener on unmount', () => {
@@ -312,10 +384,16 @@ describe('useDownloadProgress', () => {
     expect(result.current.totalProgress).toBe(50);
   });
 
-  it('subscribes to DOWNLOAD_PROGRESS_UPDATE messages and updates the store', () => {
+  it('subscribes to DOWNLOAD_PROGRESS_UPDATE messages and updates the store', async () => {
     usePopupStore.getState().addDownload(mockDownload);
 
     renderHook(() => useDownloadProgress());
+
+    // Wait for the async tab query to resolve so tabIdRef is populated.
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     const listener = chromeMock.onMessage.listeners[0];
 
@@ -324,7 +402,7 @@ describe('useDownloadProgress', () => {
       status: 'downloading',
       progress: 75,
     };
-    const payload: DownloadProgressUpdatePayload = { progress };
+    const payload: DownloadProgressUpdatePayload = { progress, tabId: 1 };
     const message: MessageRequest = {
       type: 'DOWNLOAD_PROGRESS_UPDATE',
       payload,
@@ -340,8 +418,14 @@ describe('useDownloadProgress', () => {
     expect(updated?.progress).toBe(75);
   });
 
-  it('adds a stub for unknown downloads and merges when the real item arrives', () => {
+  it('adds a stub for unknown downloads and merges when the real item arrives', async () => {
     renderHook(() => useDownloadProgress());
+
+    // Wait for the async tab query to resolve so tabIdRef is populated.
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
 
     const listener = chromeMock.onMessage.listeners[0];
 
@@ -353,7 +437,7 @@ describe('useDownloadProgress', () => {
     };
     const message: MessageRequest = {
       type: 'DOWNLOAD_PROGRESS_UPDATE',
-      payload: { progress },
+      payload: { progress, tabId: 1 },
     };
 
     act(() => {
@@ -373,6 +457,7 @@ describe('useDownloadProgress', () => {
       mediaType: 'subtitle',
       url: 'https://example.com/sub.srt',
       title: 'e29ac9d2ef1f849eb73428410d055c26.en',
+      tabId: 1,
       status: 'queued',
       progress: 0,
     };
@@ -386,6 +471,60 @@ describe('useDownloadProgress', () => {
     expect(downloads[0].title).toBe('e29ac9d2ef1f849eb73428410d055c26.en');
     expect(downloads[0].status).toBe('downloading');
     expect(downloads[0].progress).toBe(10);
+  });
+
+  // Regression: same Edge app-window leak as useDetectedMedia. The download
+  // list must be fetched for the real content tab, not the chrome-extension
+  // app-window tab, otherwise the Downloads section renders empty.
+  it('skips chrome-extension app-window tabs returned by currentWindow:false (Edge regression) and fetches downloads for the real content tab', async () => {
+    const extensionTab = {
+      id: 999,
+      url: 'chrome-extension://dmeppfcidcpcocleneopiblmpnbokhep/pages/app-window/index.html#/app/dictionary',
+      active: true,
+      windowId: 2138817063,
+    } as chrome.tabs.Tab;
+    const contentTab = {
+      id: 1,
+      url: 'https://themoviebox.org/movies/see-you-at-work-tomorrow',
+      active: true,
+      windowId: 2138816832,
+    } as chrome.tabs.Tab;
+
+    tabsMock.query.mockImplementation((q: chrome.tabs.QueryInfo) => {
+      if (q.currentWindow === false) return Promise.resolve([extensionTab]);
+      if (q.lastFocusedWindow === true) return Promise.resolve([]);
+      if (q.currentWindow === true) return Promise.resolve([contentTab]);
+      return Promise.resolve([extensionTab, contentTab]);
+    });
+
+    const realItem: DownloadItem = {
+      id: 'dl-new',
+      mediaType: 'video',
+      url: 'https://example.com/video.m3u8',
+      title: 'Test Video',
+      tabId: 1,
+      status: 'downloading',
+      progress: 30,
+      startedAt: 1000,
+    };
+    chromeMock.sendMessage.mockResolvedValue({
+      success: true,
+      data: { downloads: [realItem] },
+    } as MessageResponse);
+
+    renderHook(() => useDownloadProgress());
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(chromeMock.sendMessage).toHaveBeenCalledWith({
+      type: 'GET_DOWNLOAD_PROGRESS',
+      payload: { tabId: 1 },
+    });
+    expect(usePopupStore.getState().downloads).toEqual([realItem]);
   });
 
   it('removes the listener on unmount', () => {

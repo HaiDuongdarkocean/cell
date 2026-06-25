@@ -72,6 +72,34 @@ describe('detectSubtitle', () => {
     expect(result?.language).toBe('en');
   });
 
+  it('extracts primary subtag from BCP 47 filename "movie.en-US.srt"', () => {
+    const request = makeRequest('https://example.com/subtitles/movie.en-US.srt');
+    const result = detectSubtitle(request);
+    expect(result).not.toBeNull();
+    expect(result?.language).toBe('en');
+  });
+
+  it('extracts primary subtag from BCP 47 filename "movie.zh-Hans.vtt"', () => {
+    const request = makeRequest('https://example.com/subtitles/movie.zh-Hans.vtt');
+    const result = detectSubtitle(request);
+    expect(result).not.toBeNull();
+    expect(result?.language).toBe('zh');
+  });
+
+  it('extracts primary subtag from BCP 47 filename "movie.pt-BR.srt"', () => {
+    const request = makeRequest('https://example.com/subtitles/movie.pt-BR.srt');
+    const result = detectSubtitle(request);
+    expect(result).not.toBeNull();
+    expect(result?.language).toBe('pt');
+  });
+
+  it('extracts primary subtag from BCP 47 path "/subs/ar-EG/movie.srt"', () => {
+    const request = makeRequest('https://example.com/subs/ar-EG/movie.srt');
+    const result = detectSubtitle(request);
+    expect(result).not.toBeNull();
+    expect(result?.language).toBe('ar');
+  });
+
   it('defaults language to "unknown" when language cannot be detected', () => {
     const request = makeRequest('https://example.com/movie.srt');
     const result = detectSubtitle(request);
@@ -104,11 +132,14 @@ describe('detectSubtitle', () => {
     expect(result1?.id).not.toBe(result2?.id);
   });
 
-  it('returns null when the URL matches a subtitle pattern but has no subtitle extension in its path', () => {
-    // The ".ass" appears in the query string, so the URL pattern matches, but
-    // detectFormat inspects the pathname only and finds no subtitle extension.
+  it('defaults to vtt format when the URL matches a subtitle pattern via query string but has no subtitle extension in its path', () => {
+    // The ".ass" appears in the query string, so the URL pattern matches.
+    // detectFormat now falls back to 'vtt' when no extension is found in the
+    // pathname but the URL matched subtitle patterns.
     const request = makeRequest('https://example.com/page?url=sub.ass');
-    expect(detectSubtitle(request)).toBeNull();
+    const result = detectSubtitle(request);
+    expect(result).not.toBeNull();
+    expect(result?.format).toBe('vtt');
   });
 
   it('defaults language to "unknown" when the filename suffix is not a language code', () => {

@@ -1,4 +1,9 @@
 import type { SubtitleFormat } from '@/types/media';
+import {
+  detectScript,
+  scriptToCandidateLanguages,
+  type ScriptId,
+} from '@/lib/detectors/scriptDetector';
 
 /**
  * A language profile for frequency-based detection.
@@ -21,54 +26,86 @@ export interface LanguageProfile {
    * Unicode CJK characters.
    */
   readonly tokenPattern?: RegExp;
+  /**
+   * Unicode script this profile disambiguates. When set, `detectLanguage`
+   * only runs this profile against text whose dominant script matches.
+   * Profiles without `script` are always evaluated (legacy fallback).
+   */
+  readonly script?: ScriptId;
+  /**
+   * When true, top words are matched as substrings of contiguous token runs
+   * (needed for scripts without word boundaries: Han, Hiragana, Katakana).
+   * Defaults to false — exact token match is used for scripts with spaces.
+   */
+  readonly substringMatch?: boolean;
 }
 
 /**
  * Language profiles for detection, ordered by priority (first match wins).
  *
+ * Each profile's `topWords` contains the 10 most frequent words with **3 or
+ * more characters**, ranked by actual corpus frequency (most frequent first).
+ * Short words (1-2 chars) are excluded because they cause cross-language
+ * false positives (e.g. Russian "а" matching inside "за", or English "a"
+ * appearing in almost every Latin-script language).
+ *
  * Sources:
- * - English: Wikipedia "Most common words in English" (OEC ranking), positions 5-14
+ * - English: Wikipedia "Most common words in English" (OEC ranking)
  *   https://en.wikipedia.org/wiki/Most_common_words_in_English
- * - Chinese: Jun Da's Modern Chinese Character Frequency List, positions 5-14
+ * - Chinese: Jun Da's Modern Chinese Character Frequency List
  *   https://lingua.mtsu.edu/chinese-computing/statistics/char/list.php
- * - Vietnamese: Vietnamese word frequency corpus, positions 5-14
+ * - Vietnamese: Vietnamese word frequency corpus
  *   https://ioecmcomc.github.io/danh_sach_tan_suat/
- * - Korean: Kimchi Reader Korean word frequency (350K+ media), positions 5-14
+ * - Korean: Kimchi Reader Korean word frequency (350K+ media)
  *   https://kimchi-reader.app/explore/freq/words
- * - Japanese: Wiktionary 5000 Most Frequent Japanese Words, positions 5-14
+ * - Japanese: Wiktionary 5000 Most Frequent Japanese Words
  *   https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists/Japanese/5000_Most_Frequent_Words
- * - Russian: Russian National Corpus frequency dictionary, positions 5-14
+ * - Russian: Russian National Corpus frequency dictionary
  *   https://en.wiktionary.org/wiki/Appendix:Frequency_dictionary_of_the_modern_Russian_language
+ * - Other Latin/Cyrillic/Arabic/Devanagari: Wikipedia frequency lists,
+ *   Wiktionary frequency lists, Leipzig Corpora Collection
+ *   https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists
  */
 export const LANGUAGE_PROFILES: readonly LanguageProfile[] = [
+  // === Original 6 profiles (verified, threshold 8) ===
+  // CJK/Korean/Japanese use script-based resolution (single-candidate scripts),
+  // so frequency is only a secondary signal. Words are kept 3+ chars where
+  // possible; CJK characters are counted as 1 char each.
   {
     label: 'English',
-    topWords: ['and', 'a', 'in', 'that', 'have', 'i', 'it', 'for', 'not', 'on'],
+    topWords: ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her'],
     threshold: 8,
+    script: 'latin',
   },
   {
     label: 'Chinese',
-    topWords: ['我', '他', '在', '人', '有', '这', '来', '个', '说', '上'],
+    topWords: ['我们', '他们', '一个', '什么', '这个', '可以', '没有', '自己', '知道', '现在'],
     threshold: 8,
+    script: 'han',
+    substringMatch: true,
     // CJK Unified Ideographs + Extension A
     tokenPattern: /[\u4e00-\u9fff\u3400-\u4dbf]/g,
   },
   {
     label: 'Vietnamese',
-    topWords: ['có', 'trong', 'được', 'cho', 'một', 'với', 'người', 'này', 'không', 'cũng'],
+    topWords: ['trong', 'được', 'cho', 'một', 'với', 'người', 'này', 'không', 'cũng', 'những'],
     threshold: 8,
+    script: 'latin',
   },
   {
     label: 'Korean',
-    topWords: ['같다', '이', '않다', '하다', '아', '이렇다', '되다', '우리', '진짜', '더'],
+    topWords: ['같다', '않다', '하다', '이렇다', '되다', '우리', '진짜', '없다', '그리고', '그래서'],
     threshold: 8,
+    script: 'hangul',
     // Hangul Syllables (U+AC00-U+D7AF) + Hangul Jamo (U+1100-U+11FF)
     tokenPattern: /[\uac00-\ud7af\u1100-\u11ff]+/g,
   },
   {
     label: 'Japanese',
-    topWords: ['を', 'だ', 'が', 'て', 'と', 'ます', 'も', 'で', 'ている', 'です'],
+    topWords: ['ます', 'ている', 'です', 'ない', 'また', 'しかし', 'そして', 'こと', 'もの', 'する'],
     threshold: 8,
+    script: 'hiragana',
+    substringMatch: true,
     // Hiragana (U+3040-U+309F) + Katakana (U+30A0-U+30FF) — match individual
     // kana characters/runes (not CJK kanji, which overlap with Chinese).
     // Multi-char entries like "ている" are matched as substrings below.
@@ -76,10 +113,255 @@ export const LANGUAGE_PROFILES: readonly LanguageProfile[] = [
   },
   {
     label: 'Russian',
-    topWords: ['я', 'быть', 'он', 'с', 'что', 'а', 'по', 'это', 'она', 'этот'],
+    topWords: ['что', 'это', 'как', 'для', 'все', 'был', 'она', 'этот', 'чтобы', 'или'],
     threshold: 8,
+    script: 'cyrillic',
     // Cyrillic (U+0400-U+04FF) + Cyrillic Supplement (U+0500-U+052F)
     tokenPattern: /[\u0400-\u052f]+/g,
+  },
+
+  // === Latin-script languages (threshold 6 — corpus-derived, 3+ char words) ===
+  // Sources: Wikipedia frequency lists, Wiktionary, Leipzig Corpora.
+  {
+    label: 'Spanish',
+    topWords: ['los', 'las', 'por', 'con', 'una', 'sus', 'del', 'más', 'como', 'pero'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'French',
+    topWords: ['les', 'des', 'une', 'que', 'est', 'pour', 'qui', 'dans', 'pas', 'sur'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'German',
+    topWords: ['den', 'von', 'das', 'mit', 'sich', 'des', 'auf', 'für', 'ist', 'dem'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Portuguese',
+    topWords: ['que', 'dos', 'das', 'para', 'com', 'uma', 'por', 'mais', 'como', 'não'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Italian',
+    topWords: ['che', 'per', 'una', 'sono', 'come', 'mai', 'tra', 'gli', 'suo', 'poi'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Dutch',
+    topWords: ['het', 'dat', 'voor', 'met', 'die', 'niet', 'een', 'zijn', 'ook', 'naar'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Swedish',
+    topWords: ['och', 'att', 'det', 'som', 'med', 'han', 'hon', 'inte', 'men', 'var'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Norwegian',
+    topWords: ['jeg', 'det', 'til', 'som', 'med', 'han', 'hun', 'inte', 'men', 'var'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Danish',
+    topWords: ['jeg', 'det', 'til', 'som', 'med', 'han', 'hun', 'ikke', 'men', 'var'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Finnish',
+    topWords: ['että', 'joka', 'hän', 'myös', 'saada', 'mutta', 'tämä', 'voida', 'tulla', 'kun'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Polish',
+    topWords: ['się', 'roku', 'jest', 'przez', 'nie', 'ale', 'jak', 'też', 'oraz', 'temu'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Czech',
+    topWords: ['který', 'mít', 'jsou', 'jen', 'tak', 'kde', 'při', 'aby', 'nebo', 'ještě'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Hungarian',
+    topWords: ['egy', 'van', 'meg', 'csak', 'még', 'mint', 'hogy', 'volt', 'nem', 'majd'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Romanian',
+    topWords: ['pentru', 'din', 'sunt', 'mai', 'sau', 'care', 'cei', 'ele', 'acest', 'aici'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Croatian',
+    topWords: ['biti', 'kako', 'samo', 'ili', 'jer', 'kod', 'preko', 'gdje', 'uvijek', 'dok'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Estonian',
+    topWords: ['see', 'mis', 'kuid', 'tema', 'kui', 'aga', 'sest', 'nii', 'siis', 'veel'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Latvian',
+    topWords: ['kas', 'bet', 'viņš', 'tad', 'kur', 'gan', 'nav', 'jau', 'lai', 'arī'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Turkish',
+    topWords: ['için', 'ile', 'var', 'ben', 'sen', 'daha', 'hiç', 'ama', 'çok', 'bir'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Indonesian',
+    topWords: ['tidak', 'yang', 'ini', 'itu', 'dan', 'akan', 'apa', 'dia', 'karena', 'bisa'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Tagalog',
+    topWords: ['ang', 'mga', 'siya', 'mula', 'para', 'nang', 'hindi', 'pag', 'ako', 'ito'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Catalan',
+    topWords: ['que', 'per', 'una', 'els', 'les', 'del', 'com', 'més', 'son', 'són'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Galician',
+    topWords: ['que', 'para', 'por', 'sen', 'como', 'máis', 'ten', 'hai', 'seu', 'súa'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Welsh',
+    topWords: ['bod', 'ond', 'mae', 'oedd', 'gyda', 'hyn', 'yna', 'wedi', 'nid', 'dyw'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Icelandic',
+    topWords: ['sem', 'til', 'var', 'með', 'það', 'þar', 'hafi', 'hefur', 'hans', 'ekki'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Afrikaans',
+    topWords: ['het', 'dat', 'vir', 'was', 'ook', 'nog', 'sal', 'hulle', 'daar', 'toe'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Swahili',
+    topWords: ['kwa', 'kutoka', 'kama', 'pia', 'mtu', 'mahali', 'baada', 'moja', 'watu', 'sana'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Slovenian',
+    topWords: ['kako', 'samo', 'ali', 'ker', 'pri', 'bil', 'brez', 'tudi', 'zato', 'vendar'],
+    threshold: 6,
+    script: 'latin',
+  },
+  {
+    label: 'Albanian',
+    topWords: ['një', 'dhe', 'për', 'është', 'nga', 'nuk', 'por', 'jam', 'njeri', 'kjo'],
+    threshold: 6,
+    script: 'latin',
+  },
+
+  // === Cyrillic-script languages (3+ char words) ===
+  // Order matters: more specific profiles (with unique characters) are checked
+  // before more generic ones. Serbian uses ј (U+0458) which Bulgarian/Macedonian
+  // do not, so it is checked first. Ukrainian/Belarusian use і (U+0456) which
+  // Russian does not, so they precede Russian.
+  {
+    label: 'Serbian',
+    topWords: ['како', 'само', 'или', 'код', 'где', 'увек', 'док', 'још', 'након', 'током'],
+    threshold: 6,
+    script: 'cyrillic',
+    tokenPattern: /[\u0400-\u052f]+/g,
+  },
+  {
+    label: 'Ukrainian',
+    topWords: ['щоб', 'коли', 'тому', 'тільки', 'тоді', 'також', 'завжди', 'після', 'таму', 'потім'],
+    threshold: 6,
+    script: 'cyrillic',
+    tokenPattern: /[\u0400-\u052f]+/g,
+  },
+  {
+    label: 'Belarusian',
+    topWords: ['што', 'гэта', 'каб', 'калі', 'дзе', 'толькі', 'таксама', 'пасля', 'заўсёды', 'таму'],
+    threshold: 6,
+    script: 'cyrillic',
+    tokenPattern: /[\u0400-\u052f]+/g,
+  },
+  {
+    label: 'Bulgarian',
+    topWords: ['това', 'как', 'само', 'или', 'защо', 'след', 'тези', 'него', 'тяло', 'също'],
+    threshold: 6,
+    script: 'cyrillic',
+    tokenPattern: /[\u0400-\u052f]+/g,
+  },
+  {
+    label: 'Macedonian',
+    topWords: ['како', 'само', 'или', 'код', 'каде', 'секогаш', 'додека', 'уште', 'зашто', 'ниту'],
+    threshold: 6,
+    script: 'cyrillic',
+    tokenPattern: /[\u0400-\u052f]+/g,
+  },
+
+  // === Arabic-script languages (3+ char words) ===
+  {
+    label: 'Arabic',
+    topWords: ['هذا', 'أنا', 'لكن', 'كان', 'لقد', 'عند', 'بين', 'هناك', 'التي', 'الذي'],
+    threshold: 6,
+    script: 'arabic',
+    tokenPattern: /[\u0600-\u06ff\u0750-\u077f\ufb50-\ufeff]+/g,
+  },
+  {
+    label: 'Persian',
+    topWords: ['این', 'است', 'برای', 'اما', 'هستند', 'دارند', 'کنند', 'شوند', 'می‌کنند', 'داشتند'],
+    threshold: 6,
+    script: 'arabic',
+    tokenPattern: /[\u0600-\u06ff\u0750-\u077f\ufb50-\ufeff]+/g,
+  },
+  {
+    label: 'Urdu',
+    topWords: ['اور', 'ہیں', 'میں', 'تھا', 'تھے', 'کیا', 'کچھ', 'ابھی', 'کافی', 'مگر'],
+    threshold: 6,
+    script: 'arabic',
+    tokenPattern: /[\u0600-\u06ff\u0750-\u077f\ufb50-\ufeff]+/g,
+  },
+
+  // === Devanagari-script languages (3+ char words) ===
+  {
+    label: 'Hindi',
+    topWords: ['लिए', 'गया', 'तथा', 'अपने', 'कुछ', 'साथ', 'होता', 'दिया', 'हुए', 'किया'],
+    threshold: 6,
+    script: 'devanagari',
+    tokenPattern: /[\u0900-\u097f]+/g,
   },
 ] as const;
 
@@ -202,6 +484,41 @@ export function isoCodeToLabel(code: string): string | null {
 }
 
 /**
+ * Reverse map: language label (lowercase) → ISO 639-1 (2-letter) code.
+ * Built once from {@link ISO_LANGUAGE_MAP} by inverting the entries and
+ * preferring the 2-letter code when both 2-letter and 3-letter codes map to
+ * the same label (e.g. "english" → "en", not "eng").
+ *
+ * Used to convert the output of {@link detectLanguage} (a label like "english")
+ * back into an ISO 639-1 code so it can be stored on
+ * `DetectedSubtitle.language` and matched against
+ * `settings.selectedSubtitleLanguages` (which stores ISO 639-1 codes).
+ */
+const LABEL_TO_ISO_CODE: ReadonlyMap<string, string> = (() => {
+  const map = new Map<string, string>();
+  for (const [code, label] of ISO_LANGUAGE_MAP) {
+    const key = label.toLowerCase();
+    // Prefer 2-letter codes over 3-letter codes for the same label.
+    if (!map.has(key) || code.length === 2) {
+      map.set(key, code);
+    }
+  }
+  return map;
+})();
+
+/**
+ * Maps a language display label (e.g. "English", "english", "Vietnamese")
+ * back to its ISO 639-1 (2-letter) code (e.g. "en", "vi").
+ *
+ * @param label - Language label (case-insensitive)
+ * @returns ISO 639-1 code, or null if the label is not recognized
+ */
+export function labelToIsoCode(label: string): string | null {
+  if (!label) return null;
+  return LABEL_TO_ISO_CODE.get(label.toLowerCase()) ?? null;
+}
+
+/**
  * Default tokenizer: Latin letters including Vietnamese diacritics.
  * Covers Latin-1 Supplement (U+00E0-U+00FF), Latin Extended-A/B (U+0100-U+024F),
  * and Latin Extended Additional (U+1E00-U+1EFF) for composed Vietnamese chars.
@@ -274,8 +591,19 @@ function nthIndexOf(str: string, substr: string, n: number): number {
 }
 
 /**
- * Detect the language of subtitle content by checking word presence against
- * all registered language profiles. First profile that meets its threshold wins.
+ * Detect the language of subtitle content using a hybrid two-stage approach:
+ *
+ * 1. **Script detection** — identify the dominant Unicode script. If the
+ *    script maps to a single language (e.g. Hangul → Korean), return it
+ *    immediately without frequency analysis.
+ * 2. **Frequency disambiguation** — for scripts that map to multiple
+ *    languages (Latin, Cyrillic, Arabic, Devanagari, Han), run only the
+ *    frequency profiles whose `script` matches the detected script. The
+ *    first profile that meets its threshold wins.
+ * 3. **Fallback** — if no frequency profile matches but the script was
+ *    detected, return the first candidate language for that script
+ *    (best-effort default). If no script was detected, fall back to the
+ *    legacy all-profiles scan.
  *
  * @param content - Raw subtitle file content (SRT, VTT, or ASS)
  * @param format  - Subtitle format
@@ -290,9 +618,48 @@ export function detectLanguage(
   const plainText = extractPlainText(content, format);
   if (plainText.trim().length === 0) return null;
 
-  for (const profile of LANGUAGE_PROFILES) {
+  // Stage 1: Script detection
+  const script = detectScript(plainText);
+
+  if (script !== null) {
+    const candidates = scriptToCandidateLanguages(script);
+
+    // Single-candidate script → resolve immediately
+    if (candidates.length === 1) {
+      return candidates[0].toLowerCase();
+    }
+
+    // Multi-candidate script → frequency disambiguation
+    if (candidates.length > 1) {
+      const scriptProfiles = LANGUAGE_PROFILES.filter(
+        (p) => p.script === script,
+      );
+      const matched = matchByFrequency(plainText, scriptProfiles);
+      if (matched !== null) return matched;
+
+      // No frequency profile met threshold — return best-effort default
+      // (first candidate for the detected script).
+      return candidates[0].toLowerCase();
+    }
+  }
+
+  // Legacy fallback: no script detected — scan all profiles without a
+  // `script` filter (preserves backward compatibility for edge cases).
+  return matchByFrequency(plainText, LANGUAGE_PROFILES);
+}
+
+/**
+ * Run frequency-based matching against a set of profiles.
+ * Returns the first profile label that meets its threshold, or null.
+ */
+function matchByFrequency(
+  plainText: string,
+  profiles: readonly LanguageProfile[],
+): string | null {
+  const lowerText = plainText.toLowerCase();
+
+  for (const profile of profiles) {
     const pattern = profile.tokenPattern ?? DEFAULT_TOKEN_PATTERN;
-    const lowerText = plainText.toLowerCase();
     const tokens = new Set(lowerText.match(pattern) ?? []);
 
     let matchCount = 0;
@@ -300,9 +667,11 @@ export function detectLanguage(
       const candidate = profile.tokenPattern ? word : word.toLowerCase();
       if (tokens.has(candidate)) {
         matchCount++;
-      } else if (profile.tokenPattern) {
-        // For CJK/kana scripts, tokens are contiguous runs — a word may
-        // be a substring of a longer run (e.g. Japanese "て" within "てと").
+      } else if (profile.substringMatch) {
+        // Only for scripts without word boundaries (Han, Hiragana, Katakana):
+        // tokens are contiguous runs and a word may be a substring of a
+        // longer run. For scripts with spaces (Cyrillic, Arabic, etc.) this
+        // would cause false positives (e.g. "а" matching inside "за").
         for (const token of tokens) {
           if (token.includes(candidate)) {
             matchCount++;

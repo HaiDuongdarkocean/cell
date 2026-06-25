@@ -190,6 +190,8 @@ export interface DownloadItem {
   readonly mediaType: MediaType;
   readonly url: string;
   readonly title: string;
+  /** Tab that originated this download. Used to scope popup display per-tab. */
+  readonly tabId: number;
   readonly status: DownloadStatus;
   readonly progress: number; // 0-100 (overall)
   readonly error?: string;
@@ -294,7 +296,10 @@ export type FilenameSource = 'title-fallback' | 'title-only' | 'url-only';
 export interface Settings {
   readonly concurrentDownloads: number;
   readonly defaultQuality: VideoQuality;
-  readonly defaultSubtitleLanguage: string;
+  /** @deprecated Use `selectedSubtitleLanguages` instead. Migrated on load. */
+  readonly defaultSubtitleLanguage?: string;
+  /** Multi-select subtitle languages (ISO 639-1 codes). `['all']` = any. */
+  readonly selectedSubtitleLanguages: string[];
   readonly theme: 'light' | 'dark';
   /** When to attempt TS→MP4 conversion during M3U8 downloads. */
   readonly convertToMp4: ConvertToMp4Mode;
@@ -326,6 +331,26 @@ export interface Settings {
    * Source for naming downloaded files. Default: `'title-fallback'`.
    */
   readonly filenameSource: FilenameSource;
+  /** Preferred video format for auto-select. Fallback to other format if unavailable. */
+  readonly preferredVideoFormat: 'mp4' | 'm3u8';
+  /** When true, popup auto-selects media matching preferences on open. */
+  readonly autoSelectEnabled: boolean;
+}
+
+/** Result of auto-selecting best media matching user preferences. */
+export interface AutoSelectResult {
+  readonly videoId: string;
+  readonly subtitleIds: string[];
+  readonly matchedFormat: 'mp4' | 'm3u8';
+  readonly matchedQuality: VideoQuality;
+  readonly fallbackReason?: 'format' | 'quality' | 'subtitle';
+}
+
+/** Whitelist entry for auto-download per URL. */
+export interface WhitelistEntry {
+  readonly url: string;
+  readonly addedAt: number;
+  readonly tabId?: number;
 }
 
 // === Network Request Types (for detectors) ===

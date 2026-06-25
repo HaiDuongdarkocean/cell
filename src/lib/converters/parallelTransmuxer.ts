@@ -29,6 +29,49 @@ import {
 // that syntax. The factory is loaded via dynamic import() only when
 // workers are actually available at runtime.
 
+/**
+ * Find the byte offset of the first `moof` box in a fragmented MP4 buffer.
+ *
+ * A valid fMP4 part from mux.js has the structure:
+ *   ftyp + moov + moof + mdat [+ moof + mdat ...]
+ *
+ * When merging parallel parts, parts 1+ must skip their ftyp+moov boxes
+ * to avoid producing an invalid file with multiple initialization boxes.
+ * This function finds where the first moof starts so the caller can
+ * subarray from that offset.
+ *
+ * @returns The byte offset of the first moof box, or -1 if not found.
+ */
+export function findFirstMoofOffset(buffer: Uint8Array): number {
+  let offset = 0;
+  while (offset + 8 <= buffer.length) {
+    // Read box size (big-endian uint32)
+    const size =
+      (buffer[offset] << 24) |
+      (buffer[offset + 1] << 16) |
+      (buffer[offset + 2] << 8) |
+      buffer[offset + 3];
+    // Read box type (4 ASCII chars)
+    const type = String.fromCharCode(
+      buffer[offset + 4],
+      buffer[offset + 5],
+      buffer[offset + 6],
+      buffer[offset + 7],
+    );
+
+    if (type === 'moof') {
+      return offset;
+    }
+
+    // Box size must be at least 8 (header size). If invalid, stop parsing.
+    if (size < 8 || offset + size > buffer.length) {
+      break;
+    }
+    offset += size;
+  }
+  return -1;
+}
+
 export interface ParallelTransmuxResult {
   readonly success: boolean;
   readonly outputName: string;
@@ -327,6 +370,16 @@ export async function transmuxTsToFmp4ParallelExperimental(
 
 /**
  * Merge fragmented MP4 part files into a single output file.
+ *
+ * Two fixes applied:
+ * 1. **ftyp+moov stripping**: Parts 1+ have their ftyp+moov boxes stripped
+ *    via `findFirstMoofOffset` so the merged output has exactly one init pair.
+ * 2. **tfdt offset fix**: mux.js rebases PTS to 0 for each Transmuxer instance,
+ *    so parts 1+ have tfdt values starting from ~0 instead of their absolute
+ *    position in the timeline. This function computes cumulative per-track
+ *    offsets and patches tfdt values in parts 1+ so fragments don't overlap.
+ * 3. **mvhd duration fix**: The moov's mvhd duration is updated to the total
+ *    duration across all parts (it was previously only part 0's duration).
  */
 async function mergePartFiles(
   dirHandle: FileSystemDirectoryHandle,
@@ -337,25 +390,83 @@ async function mergePartFiles(
     return { success: false, error: 'No parts to merge' };
   }
 
+  // --- Phase 1: Read all parts into memory and extract per-track info ---
+  const partBuffers: Uint8Array[] = [];
+  for (let i = 0; i < partNames.length; i++) {
+    const partFile = await opfsReadFile(dirHandle, partNames[i]);
+    if (partFile.size === 0) {
+      return { success: false, error: `Part ${partNames[i]} is empty` };
+    }
+    partBuffers.push(new Uint8Array(await partFile.arrayBuffer()));
+  }
+
+  // --- Phase 2: Read timescales from part 0's moov ---
+  const timescales = readTimescalesFromMoov(partBuffers[0]);
+
+  // --- Phase 3: Extract per-track tfdt + duration from each part ---
+  // For each part, compute the end time per track = tfdt + trun total_duration.
+  // This tells us how long each part's timeline is per track.
+  const partInfos: Map<number, { tfdt: number; endTfdt: number }>[] = [];
+  for (let i = 0; i < partBuffers.length; i++) {
+    partInfos.push(extractPartTrackInfo(partBuffers[i]));
+  }
+
+  // --- Phase 4: Compute cumulative offsets and patch tfdt in parts 1+ ---
+  // cumulativeOffset[trackId] = sum of all previous parts' durations for that track.
+  // Each part's offset = cumulative offset at the time we reach it.
+  const cumulativeOffset: Map<number, number> = new Map();
+  for (let i = 0; i < partBuffers.length; i++) {
+    const info = partInfos[i];
+    const partOffset = new Map<number, number>();
+
+    for (const [trackId, ti] of info) {
+      partOffset.set(trackId, cumulativeOffset.get(trackId) ?? 0);
+      // Update cumulative: add this part's own duration (endTfdt - tfdt)
+      const partDuration = ti.endTfdt - ti.tfdt;
+      cumulativeOffset.set(trackId, (cumulativeOffset.get(trackId) ?? 0) + partDuration);
+    }
+
+    // Patch tfdt values in parts 1+ (part 0 keeps original timestamps)
+    if (i > 0) {
+      offsetTfdtInPlace(partBuffers[i], partOffset);
+    }
+  }
+
+  // --- Phase 5: Update mvhd duration in part 0's moov ---
+  // mvhd duration was only part 0's duration; update to total across all parts.
+  const maxEndSec = computeMaxEndSeconds(cumulativeOffset, timescales);
+  updateMvhdDuration(partBuffers[0], maxEndSec);
+
+  // --- Phase 6: Write merged output ---
   const writer = await createOpfsWriter(dirHandle, outputName);
   let totalWritten = 0;
 
   try {
-    for (let i = 0; i < partNames.length; i++) {
-      const partName = partNames[i];
-      const partFile = await opfsReadFile(dirHandle, partName);
-      const partSize = partFile.size;
+    for (let i = 0; i < partBuffers.length; i++) {
+      const buffer = partBuffers[i];
 
-      if (partSize === 0) {
-        return { success: false, error: `Part ${partName} is empty` };
+      // Part 0: write everything (ftyp + moov + moof + mdat + ...).
+      // Parts 1+: skip ftyp + moov, write only moof + mdat + ...
+      let writeOffset = 0;
+      if (i > 0) {
+        const moofOffset = findFirstMoofOffset(buffer);
+        if (moofOffset === -1) {
+          return {
+            success: false,
+            error: `Part ${partNames[i]} has no moof box — cannot strip ftyp/moov`,
+          };
+        }
+        writeOffset = moofOffset;
       }
 
-      const buffer = await partFile.arrayBuffer();
-      await writer.write(new Uint8Array(buffer));
-      totalWritten += partSize;
+      const toWrite = buffer.subarray(writeOffset);
+      await writer.write(toWrite);
+      totalWritten += toWrite.length;
 
       console.debug(
-        `[parallel-transmuxer] Merged ${partName}: ${partSize} bytes (total: ${totalWritten})`,
+        `[parallel-transmuxer] Merged ${partNames[i]}: ${toWrite.length} bytes` +
+          (i > 0 ? ` (stripped ${writeOffset} bytes ftyp/moov, tfdt offset applied)` : '') +
+          ` (total: ${totalWritten})`,
       );
     }
 
@@ -384,6 +495,217 @@ async function cleanupPartFiles(
     await deleteFile(dirHandle, name).catch(() => {
       // Ignore — file may not exist if transmux failed early.
     });
+  }
+}
+
+// === fMP4 box parsing utilities for tfdt offset fix ===
+
+/** Read a big-endian uint32 from a buffer at the given offset. */
+function readU32(buf: Uint8Array, off: number): number {
+  return (buf[off] << 24) | (buf[off + 1] << 16) | (buf[off + 2] << 8) | buf[off + 3];
+}
+
+/** Read a big-endian uint64 (as JS number, may lose precision for very large values). */
+function readU64(buf: Uint8Array, off: number): number {
+  const hi = readU32(buf, off);
+  const lo = readU32(buf, off + 4);
+  return hi * 0x100000000 + lo;
+}
+
+/** Write a big-endian uint32 to a buffer at the given offset. */
+function writeU32(buf: Uint8Array, off: number, val: number): void {
+  buf[off] = (val >>> 24) & 0xff;
+  buf[off + 1] = (val >>> 16) & 0xff;
+  buf[off + 2] = (val >>> 8) & 0xff;
+  buf[off + 3] = val & 0xff;
+}
+
+/** Write a big-endian uint64 to a buffer at the given offset. */
+function writeU64(buf: Uint8Array, off: number, val: number): void {
+  writeU32(buf, off, Math.floor(val / 0x100000000));
+  writeU32(buf, off + 4, val & 0xffffffff);
+}
+
+/** Parse top-level MP4 boxes from a buffer. Returns array of { type, offset, size, body }. */
+function parseBoxes(buf: Uint8Array): Array<{ type: string; offset: number; size: number; body: Uint8Array }> {
+  const boxes: Array<{ type: string; offset: number; size: number; body: Uint8Array }> = [];
+  let offset = 0;
+  while (offset + 8 <= buf.length) {
+    const size = readU32(buf, offset);
+    const type = String.fromCharCode(
+      buf[offset + 4], buf[offset + 5], buf[offset + 6], buf[offset + 7],
+    );
+    if (size < 8 || offset + size > buf.length) break;
+    boxes.push({ type, offset, size, body: buf.subarray(offset + 8, offset + size) });
+    offset += size;
+  }
+  return boxes;
+}
+
+/**
+ * Read timescales from a part's moov box.
+ * Returns a Map<trackId, timescale> by parsing moov → trak → mdia → mdhd.
+ */
+function readTimescalesFromMoov(partBuf: Uint8Array): Map<number, number> {
+  const timescales = new Map<number, number>();
+  const topBoxes = parseBoxes(partBuf);
+  const moov = topBoxes.find((b) => b.type === 'moov');
+  if (!moov) return timescales;
+
+  const moovBoxes = parseBoxes(moov.body);
+  for (const trak of moovBoxes.filter((b) => b.type === 'trak')) {
+    const trakBoxes = parseBoxes(trak.body);
+    const tkhd = trakBoxes.find((b) => b.type === 'tkhd');
+    const mdia = trakBoxes.find((b) => b.type === 'mdia');
+    if (!tkhd || !mdia) continue;
+
+    // track_id is at tkhd body offset 12 (version+flags(4) + creation(4) + modification(4) + track_id(4))
+    const trackId = readU32(tkhd.body, 12);
+
+    const mdiaBoxes = parseBoxes(mdia.body);
+    const mdhd = mdiaBoxes.find((b) => b.type === 'mdhd');
+    if (!mdhd) continue;
+
+    const version = mdhd.body[0];
+    // version 0: creation(4) + modification(4) + timescale(4) + duration(4)
+    // version 1: creation(8) + modification(8) + timescale(4) + duration(8)
+    const timescale = version === 1 ? readU32(mdhd.body, 20) : readU32(mdhd.body, 12);
+    timescales.set(trackId, timescale);
+  }
+  return timescales;
+}
+
+/**
+ * Extract per-track tfdt and end time from a part's moof boxes.
+ * Returns a Map<trackId, { tfdt, endTfdt }> where endTfdt = tfdt + trun total_duration.
+ */
+function extractPartTrackInfo(partBuf: Uint8Array): Map<number, { tfdt: number; endTfdt: number }> {
+  const result = new Map<number, { tfdt: number; endTfdt: number }>();
+  const topBoxes = parseBoxes(partBuf);
+
+  for (const box of topBoxes) {
+    if (box.type !== 'moof') continue;
+    const moofBoxes = parseBoxes(box.body);
+    const traf = moofBoxes.find((b) => b.type === 'traf');
+    if (!traf) continue;
+
+    const trafBoxes = parseBoxes(traf.body);
+    const tfhd = trafBoxes.find((b) => b.type === 'tfhd');
+    const tfdt = trafBoxes.find((b) => b.type === 'tfdt');
+    const trun = trafBoxes.find((b) => b.type === 'trun');
+    if (!tfhd || !tfdt) continue;
+
+    const trackId = readU32(tfhd.body, 4);
+    const tfdtVersion = tfdt.body[0];
+    const tfdtValue = tfdtVersion === 1 ? readU64(tfdt.body, 4) : readU32(tfdt.body, 4);
+
+    // Parse trun for total sample duration
+    let totalDuration = 0;
+    if (trun) {
+      const trunFlags = readU32(trun.body, 0) & 0xffffff;
+      const sampleCount = readU32(trun.body, 4);
+      let trunOff = 8;
+      if (trunFlags & 0x1) trunOff += 4; // data_offset
+      if (trunFlags & 0x100) {
+        for (let i = 0; i < sampleCount && trunOff + 4 <= trun.body.length; i++) {
+          totalDuration += readU32(trun.body, trunOff);
+          trunOff += 4;
+          if (trunFlags & 0x200) trunOff += 4; // sample_size
+          if (trunFlags & 0x400) trunOff += 4; // sample_flags
+          if (trunFlags & 0x800) trunOff += 4; // composition_time
+        }
+      }
+    }
+
+    result.set(trackId, { tfdt: tfdtValue, endTfdt: tfdtValue + totalDuration });
+  }
+  return result;
+}
+
+/**
+ * Offset tfdt values in all moof boxes of a part buffer (in-place).
+ * This fixes the timeline overlap caused by mux.js rebasing PTS to 0 per group.
+ *
+ * @param buf     The part buffer to modify in-place.
+ * @param offsets A Map<trackId, offset> where offset is added to each track's tfdt.
+ */
+function offsetTfdtInPlace(buf: Uint8Array, offsets: Map<number, number>): void {
+  const topBoxes = parseBoxes(buf);
+
+  for (const box of topBoxes) {
+    if (box.type !== 'moof') continue;
+    const moofBoxes = parseBoxes(box.body);
+    const traf = moofBoxes.find((b) => b.type === 'traf');
+    if (!traf) continue;
+
+    const trafBoxes = parseBoxes(traf.body);
+    const tfhd = trafBoxes.find((b) => b.type === 'tfhd');
+    const tfdt = trafBoxes.find((b) => b.type === 'tfdt');
+    if (!tfhd || !tfdt) continue;
+
+    const trackId = readU32(tfhd.body, 4);
+    const offset = offsets.get(trackId);
+    if (offset === undefined || offset === 0) continue;
+
+    // Compute absolute offset of tfdt body in the original buffer:
+    // moof.offset + 8 (moof header) + traf.offset + 8 (traf header) + tfdt.offset + 8 (tfdt header)
+    const tfdtBodyAbs = box.offset + 8 + traf.offset + 8 + tfdt.offset + 8;
+    const version = tfdt.body[0];
+
+    if (version === 1) {
+      const oldVal = readU64(buf, tfdtBodyAbs + 4);
+      writeU64(buf, tfdtBodyAbs + 4, oldVal + offset);
+    } else {
+      const oldVal = readU32(buf, tfdtBodyAbs + 4);
+      writeU32(buf, tfdtBodyAbs + 4, oldVal + offset);
+    }
+  }
+}
+
+/**
+ * Compute the maximum end time in seconds across all tracks.
+ * Used to update mvhd duration in the moov box.
+ */
+function computeMaxEndSeconds(
+  cumulativeOffset: Map<number, number>,
+  timescales: Map<number, number>,
+): number {
+  let maxEndSec = 0;
+  for (const [trackId, totalDuration] of cumulativeOffset) {
+    const ts = timescales.get(trackId) ?? 90000;
+    const endSec = totalDuration / ts;
+    if (endSec > maxEndSec) maxEndSec = endSec;
+  }
+  return maxEndSec;
+}
+
+/**
+ * Update the mvhd (Movie Header) duration in a part's moov box.
+ * The original duration only reflects part 0's timeline; this updates it
+ * to the total duration across all parts.
+ */
+function updateMvhdDuration(partBuf: Uint8Array, totalEndSec: number): void {
+  const topBoxes = parseBoxes(partBuf);
+  const moov = topBoxes.find((b) => b.type === 'moov');
+  if (!moov) return;
+
+  const moovBoxes = parseBoxes(moov.body);
+  const mvhd = moovBoxes.find((b) => b.type === 'mvhd');
+  if (!mvhd) return;
+
+  const version = mvhd.body[0];
+  // version 0: creation(4) + modification(4) + timescale(4) + duration(4) → duration at offset 16
+  // version 1: creation(8) + modification(8) + timescale(4) + duration(8) → duration at offset 24
+  const timescale = version === 1 ? readU32(mvhd.body, 20) : readU32(mvhd.body, 12);
+  const newDuration = Math.floor(totalEndSec * timescale);
+
+  // Absolute offset of mvhd body in the part buffer
+  const mvhdBodyAbs = moov.offset + 8 + mvhd.offset + 8;
+
+  if (version === 1) {
+    writeU64(partBuf, mvhdBodyAbs + 24, newDuration);
+  } else {
+    writeU32(partBuf, mvhdBodyAbs + 16, newDuration);
   }
 }
 

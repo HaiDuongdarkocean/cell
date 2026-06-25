@@ -15,6 +15,7 @@ function makeItem(id: string, title = `item-${id}`): DownloadItem {
     mediaType: 'video',
     url: `https://example.com/${id}.mp4`,
     title,
+    tabId: 1,
     status: 'queued',
     progress: 0,
   };
@@ -219,6 +220,30 @@ describe('DownloadQueue', () => {
     const y = queue.getById('y');
     expect(y?.id).toBe('y');
     expect(queue.getById('nope')).toBeUndefined();
+  });
+
+  it('getByTab() returns only items for the specified tab', () => {
+    const tab1Item = { ...makeItem('a'), tabId: 10 };
+    const tab2Item = { ...makeItem('b'), tabId: 20 };
+    const tab1Item2 = { ...makeItem('c'), tabId: 10 };
+    queue.addAll([tab1Item, tab2Item, tab1Item2]);
+
+    expect(queue.getByTab(10)).toHaveLength(2);
+    expect(queue.getByTab(10).map((i) => i.id)).toEqual(['a', 'c']);
+    expect(queue.getByTab(20)).toHaveLength(1);
+    expect(queue.getByTab(999)).toHaveLength(0);
+  });
+
+  it('removeByTab() removes all items for the specified tab and leaves others', () => {
+    const tab1Item = { ...makeItem('a'), tabId: 10 };
+    const tab2Item = { ...makeItem('b'), tabId: 20 };
+    const tab1Item2 = { ...makeItem('c'), tabId: 10 };
+    queue.addAll([tab1Item, tab2Item, tab1Item2]);
+
+    queue.removeByTab(10);
+
+    expect(queue.getAll()).toHaveLength(1);
+    expect(queue.getAll()[0].id).toBe('b');
   });
 
   it('uses the default concurrent value when none is provided', () => {

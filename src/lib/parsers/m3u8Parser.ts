@@ -263,22 +263,24 @@ function resolutionToQuality(resolution: string | undefined): VideoQuality {
 
 /**
  * Assigns quality labels to variants in a master playlist.
- * The first variant is marked 'highest', the last 'lowest', and the rest
- * are mapped from their resolution (falling back to 'auto').
+ * Variants are mapped from their resolution so the popup can display
+ * concrete tags like "1080p", "720p", etc. If the resolution is unknown,
+ * we fall back to 'highest' for the first variant, 'lowest' for the last
+ * variant, and 'auto' for any others.
  */
 function assignVariantQualities(variants: M3u8Variant[]): void {
   if (variants.length === 0) return;
 
   for (let i = 0; i < variants.length; i++) {
     const variant = variants[i];
-    let quality: VideoQuality;
+    let quality = resolutionToQuality(variant.resolution);
 
-    if (i === 0) {
-      quality = 'highest';
-    } else if (i === variants.length - 1) {
-      quality = 'lowest';
-    } else {
-      quality = resolutionToQuality(variant.resolution);
+    if (quality === 'auto') {
+      if (i === 0) {
+        quality = 'highest';
+      } else if (i === variants.length - 1) {
+        quality = 'lowest';
+      }
     }
 
     variants[i] = { ...variant, quality };

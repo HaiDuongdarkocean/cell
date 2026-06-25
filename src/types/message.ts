@@ -33,6 +33,7 @@ export type MessageType =
   | 'GET_EXTENSION_STATUS'
   | 'TOGGLE_EXTENSION'
   | 'EXTENSION_STATUS_UPDATE'
+  | 'UPDATE_SUBTITLE_LANGUAGE'
   | 'CONVERT_TS_TO_MP4'
   | 'CONVERT_TS_TO_MP4_RESULT'
   | 'CONVERT_TS_TO_MP4_V2'
@@ -86,8 +87,17 @@ export interface DownloadSubtitlePayload {
   readonly subtitleId: string;
 }
 
+export interface UpdateSubtitleLanguagePayload {
+  readonly subtitleId: string;
+  readonly language: string;
+}
+
 export interface DownloadAllPayload {
   readonly tabId?: number;
+}
+
+export interface GetDownloadProgressPayload {
+  readonly tabId: number;
 }
 
 export interface CancelDownloadPayload {
@@ -96,6 +106,8 @@ export interface CancelDownloadPayload {
 
 export interface DownloadProgressUpdatePayload {
   readonly progress: DownloadProgress;
+  /** Tab that owns this download. Popup filters by its own tabId. */
+  readonly tabId: number;
 }
 
 export interface UpdateSettingsPayload {

@@ -6,6 +6,7 @@ import {
   beautifyUrlFilename,
   isTitleMeaningful,
   resolveFilenameBase,
+  buildSubtitleFileName,
 } from '@/lib/utils/fileUtils';
 
 describe('fileUtils', () => {
@@ -342,6 +343,64 @@ describe('fileUtils', () => {
       it('produces correct ts filename with unicode title', () => {
         const base = resolveFilenameBase('title-only', 'Thôn Phệ Tinh Không Tập 33', yanhhUrl);
         expect(generateFileName(base, 'ts')).toBe('Thôn_Phệ_Tinh_Không_Tập_33.ts');
+      });
+    });
+
+    describe('buildSubtitleFileName', () => {
+      it('appends language suffix before extension', () => {
+        expect(buildSubtitleFileName('See You at Work Tomorrow!', 'en', 'srt')).toBe(
+          'See_You_at_Work_Tomorrow!.en.srt',
+        );
+      });
+
+      it('sanitizes the base name (spaces → underscores, invalid chars removed)', () => {
+        expect(buildSubtitleFileName('Show: Part 1?', 'vi', 'srt')).toBe('Show_Part_1.vi.srt');
+      });
+
+      it('skips suffix when language is empty string', () => {
+        expect(buildSubtitleFileName('My Video', '', 'srt')).toBe('My_Video.srt');
+      });
+
+      it('skips suffix when language is undefined', () => {
+        expect(buildSubtitleFileName('My Video', undefined, 'srt')).toBe('My_Video.srt');
+      });
+
+      it('skips suffix when language is "unknown" (sentinel)', () => {
+        expect(buildSubtitleFileName('My Video', 'unknown', 'srt')).toBe('My_Video.srt');
+      });
+
+      it('skips suffix when language is whitespace-only', () => {
+        expect(buildSubtitleFileName('My Video', '   ', 'srt')).toBe('My_Video.srt');
+      });
+
+      it('sanitizes language label with spaces and invalid chars', () => {
+        // Label like "português (BR)" → sanitized + lowercased to "português_br"
+        expect(buildSubtitleFileName('Movie', 'português (BR)', 'srt')).toBe(
+          'Movie.português_br.srt',
+        );
+      });
+
+      it('lowercases the language suffix for consistency', () => {
+        expect(buildSubtitleFileName('Movie', 'EN', 'srt')).toBe('Movie.en.srt');
+      });
+
+      it('skips suffix when sanitized language becomes empty', () => {
+        // All-invalid chars → sanitized to empty → no suffix
+        expect(buildSubtitleFileName('Movie', '?:*', 'srt')).toBe('Movie.srt');
+      });
+
+      it('works with unicode base name', () => {
+        expect(buildSubtitleFileName('Thôn Phệ Tinh Không', 'en', 'srt')).toBe(
+          'Thôn_Phệ_Tinh_Không.en.srt',
+        );
+      });
+
+      it('works with non-srt extension', () => {
+        expect(buildSubtitleFileName('Movie', 'en', 'vtt')).toBe('Movie.en.vtt');
+      });
+
+      it('handles base name that already contains dots', () => {
+        expect(buildSubtitleFileName('Mr. Smith', 'en', 'srt')).toBe('Mr._Smith.en.srt');
       });
     });
   });

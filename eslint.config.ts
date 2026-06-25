@@ -7,7 +7,7 @@ import globals from 'globals';
 export default tseslint.config(
   // Global ignores
   {
-    ignores: ['dist/', 'node_modules/', 'coverage/', 'bin/'],
+    ignores: ['dist/', 'node_modules/', 'coverage/', 'bin/', 'tests/integration/.cache/'],
   },
 
   // Base JS recommended

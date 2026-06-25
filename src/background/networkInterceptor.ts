@@ -100,6 +100,15 @@ export class NetworkInterceptor {
     const video = detectVideo(request);
     const subtitle = detectSubtitle(request);
 
+    // Debug logging for media detection
+    if (video || subtitle) {
+      console.debug('[NetworkInterceptor] Detected media:', {
+        tabId: details.tabId,
+        video: video ? { id: video.id, format: video.format, url: video.url } : null,
+        subtitle: subtitle ? { id: subtitle.id, format: subtitle.format, language: subtitle.language, url: subtitle.url } : null,
+      });
+    }
+
     let detectedNewMedia = false;
 
     if (video !== null) {
@@ -211,6 +220,24 @@ export class NetworkInterceptor {
   clearAll(): void {
     this.videos.clear();
     this.subtitles.clear();
+  }
+
+  /**
+   * Restore previously-saved media directly into the in-memory maps,
+   * preserving original IDs and enriched metadata (tabUrl, title, etc.).
+   * Used by the background service to restore state from session storage
+   * after a service worker restart.
+   *
+   * Unlike {@link handleRequest}, this does NOT re-detect or re-enrich —
+   * it inserts the saved objects as-is.
+   */
+  restoreMedia(videos: DetectedVideo[], subtitles: DetectedSubtitle[]): void {
+    for (const video of videos) {
+      this.videos.set(video.id, video);
+    }
+    for (const subtitle of subtitles) {
+      this.subtitles.set(subtitle.id, subtitle);
+    }
   }
 
   /**

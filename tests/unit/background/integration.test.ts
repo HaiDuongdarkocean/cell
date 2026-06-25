@@ -4,7 +4,7 @@ import { NetworkInterceptor } from '@/background/networkInterceptor';
 import { MessageBus } from '@/background/messageBus';
 import { MESSAGE_TYPES } from '@/constants/messages';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
-import type { DownloadItem, Settings } from '@/types/media';
+import type { DownloadItem, Settings, WhitelistEntry } from '@/types/media';
 import type {
   MessageRequest,
   MessageResponse,
@@ -61,6 +61,7 @@ interface MockChrome {
   };
   storage: {
     local: MockStorageArea;
+    session: MockStorageArea;
   };
   webRequest: {
     onBeforeRequest: MockListener;
@@ -77,6 +78,8 @@ interface MockChrome {
   downloads: {
     download: jest.Mock;
     onChanged: MockListener;
+    onDeterminingFilename: MockListener;
+    search: jest.Mock;
   };
 }
 
@@ -117,6 +120,11 @@ function createMockChrome(): MockChrome {
         set: jest.fn().mockResolvedValue(undefined),
         remove: jest.fn().mockResolvedValue(undefined),
       },
+      session: {
+        get: jest.fn().mockResolvedValue({}),
+        set: jest.fn().mockResolvedValue(undefined),
+        remove: jest.fn().mockResolvedValue(undefined),
+      },
     },
     webRequest: {
       onBeforeRequest: createMockListener(),
@@ -130,6 +138,8 @@ function createMockChrome(): MockChrome {
     downloads: {
       download: jest.fn().mockResolvedValue(1),
       onChanged: createMockListener(),
+      onDeterminingFilename: createMockListener(),
+      search: jest.fn().mockResolvedValue([]),
     },
   };
 }
@@ -596,6 +606,7 @@ describe('Background integration', () => {
       concurrentDownloads: 5,
       defaultQuality: '720p',
       defaultSubtitleLanguage: 'ja',
+      selectedSubtitleLanguages: ['ja'],
       theme: 'dark',
       convertToMp4: 'always',
       parallelConversion: 'auto',
@@ -603,6 +614,8 @@ describe('Background integration', () => {
       parallelFallback: 'save-ts',
       segmentConcurrency: 6,
       filenameSource: 'title-fallback',
+      preferredVideoFormat: 'mp4',
+      autoSelectEnabled: true,
     };
     mockChrome.storage.local.get.mockResolvedValue({
       [STORAGE_KEYS.SETTINGS]: storedSettings,
@@ -862,6 +875,77 @@ describe('Background integration', () => {
     );
   });
 
+  it('enriches m3u8 variants from the master playlist and re-broadcasts', async () => {
+    const originalFetch = global.fetch;
+    const masterPlaylist = `#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080,CODECS="avc1.640028"
+https://cdn.example.com/high.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=2500000,RESOLUTION=1280x720,CODECS="avc1.4d401f"
+https://cdn.example.com/mid.m3u8
+#EXT-X-STREAM-INF:BANDWIDTH=500000,RESOLUTION=640x360,CODECS="avc1.4d4015"
+https://cdn.example.com/low.m3u8`;
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: jest.fn().mockResolvedValue(masterPlaylist),
+    }) as unknown as typeof fetch;
+
+    try {
+      // Clear previous sendMessage calls from init.
+      mockChrome.runtime.sendMessage.mockClear();
+
+      interceptor.handleRequest(
+        makeWebRequestDetails('https://example.com/master.m3u8', 123),
+      );
+
+      // Wait for the async fetch + parse + broadcast.
+      await new Promise((r) => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
+
+      const video = interceptor.getVideos(123)[0];
+      expect(video.format).toBe('m3u8');
+      expect(video.variants).toHaveLength(3);
+      expect(video.variants[0].quality).toBe('1080p');
+      expect(video.variants[1].quality).toBe('720p');
+      expect(video.variants[2].quality).toBe('360p');
+      expect(video.variants[0].resolution).toBe('1920x1080');
+
+      // Should have re-broadcast with enriched variants.
+      expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
+          payload: expect.objectContaining({ tabId: 123 }),
+        }),
+      );
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it('ignores m3u8 enrichment when fetch fails', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+    }) as unknown as typeof fetch;
+
+    try {
+      mockChrome.runtime.sendMessage.mockClear();
+
+      interceptor.handleRequest(
+        makeWebRequestDetails('https://example.com/master.m3u8', 123),
+      );
+
+      await new Promise((r) => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
+
+      const video = interceptor.getVideos(123)[0];
+      expect(video.variants).toHaveLength(0);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   it('sets toolbar badge to media count when network interceptor detects new media', async () => {
     interceptor.handleRequest(
       makeWebRequestDetails('https://example.com/new.m3u8', 123),
@@ -890,8 +974,8 @@ describe('Background integration', () => {
     expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({ text: '' });
   });
 
-  it('clears toolbar badge when tab navigates to a new page', async () => {
-    // Add media first so there is a badge to clear.
+  it('does NOT clear toolbar badge when tab navigates to a new page (media persists)', async () => {
+    // Add media first so there is a badge.
     interceptor.handleRequest(
       makeWebRequestDetails('https://example.com/new.m3u8', 123),
     );
@@ -908,10 +992,8 @@ describe('Background integration', () => {
     ) => void;
     onUpdated(123, { status: 'loading' });
 
-    expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({
-      text: '',
-      tabId: 123,
-    });
+    // Badge should NOT be cleared on navigation - media persists
+    expect(mockChrome.action.setBadgeText).not.toHaveBeenCalled();
   });
 
   // --- convert callback wiring ---
@@ -1053,28 +1135,13 @@ describe('Background integration', () => {
     expect(response.success).toBe(false);
     expect(response.error).toMatch(/downloadId/i);
   });
-});
 
-// =====================================================================
-// OffscreenManager tests
-// =====================================================================
-
-describe('OffscreenManager', () => {
-  let mockChrome: MockChrome;
+  // --- OffscreenManager direct tests ---
   let manager: OffscreenManager;
-
-  beforeEach(() => {
-    mockChrome = createMockChrome();
-    (globalThis as unknown as { chrome: unknown }).chrome = mockChrome;
-    manager = new OffscreenManager();
-  });
-
-  afterEach(() => {
-    delete (globalThis as unknown as { chrome?: unknown }).chrome;
-  });
 
   // 10. OffscreenManager creates document on demand
   it('creates an offscreen document on demand', async () => {
+    manager = new OffscreenManager();
     await manager.ensureOffscreenDocument();
 
     expect(mockChrome.offscreen.hasDocument).toHaveBeenCalled();
@@ -1087,6 +1154,7 @@ describe('OffscreenManager', () => {
   });
 
   it('does not create a document when one already exists', async () => {
+    manager = new OffscreenManager();
     mockChrome.offscreen.hasDocument.mockResolvedValue(true);
 
     await manager.ensureOffscreenDocument();
@@ -1096,6 +1164,7 @@ describe('OffscreenManager', () => {
   });
 
   it('does not create a duplicate document on repeated calls', async () => {
+    manager = new OffscreenManager();
     await manager.ensureOffscreenDocument();
     await manager.ensureOffscreenDocument();
 
@@ -1104,6 +1173,7 @@ describe('OffscreenManager', () => {
 
   // 11. OffscreenManager closes document
   it('closes the offscreen document', async () => {
+    manager = new OffscreenManager();
     await manager.ensureOffscreenDocument();
     await manager.closeOffscreenDocument();
 
@@ -1112,6 +1182,7 @@ describe('OffscreenManager', () => {
   });
 
   it('close is a no-op when no document exists', async () => {
+    manager = new OffscreenManager();
     await manager.closeOffscreenDocument();
 
     expect(mockChrome.offscreen.closeDocument).not.toHaveBeenCalled();
@@ -1119,6 +1190,7 @@ describe('OffscreenManager', () => {
 
   // 12. ensureOffscreenReady does ping-pong handshake
   it('ensureOffscreenReady pings until listener responds', async () => {
+    manager = new OffscreenManager();
     // First ping fails (listener not ready), second succeeds.
     mockChrome.runtime.sendMessage
       .mockRejectedValueOnce(new Error('Could not establish connection'))
@@ -1131,6 +1203,7 @@ describe('OffscreenManager', () => {
   });
 
   it('ensureOffscreenReady throws after max retries if listener never responds', async () => {
+    manager = new OffscreenManager();
     mockChrome.runtime.sendMessage.mockRejectedValue(
       new Error('Could not establish connection'),
     );
@@ -1141,6 +1214,7 @@ describe('OffscreenManager', () => {
   });
 
   it('ensureOffscreenReady is cached after first success', async () => {
+    manager = new OffscreenManager();
     mockChrome.runtime.sendMessage.mockResolvedValue({ success: true });
 
     await manager.ensureOffscreenReady();
@@ -1148,5 +1222,324 @@ describe('OffscreenManager', () => {
 
     // Second call should not re-ping (cached).
     expect(mockChrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT clear toolbar badge when tab navigates to a new page (media persists)', async () => {
+    // Add media first so there is a badge.
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/new.m3u8', 123),
+    );
+    expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({
+      text: '1',
+      tabId: 123,
+    });
+
+    mockChrome.action.setBadgeText.mockClear();
+
+    const onUpdated = mockChrome.tabs.onUpdated.addListener.mock.calls[0][0] as (
+      tabId: number,
+      changeInfo: chrome.tabs.OnUpdatedInfo,
+    ) => void;
+    onUpdated(123, { status: 'loading' });
+
+    // Badge should NOT be cleared on navigation - media persists
+    expect(mockChrome.action.setBadgeText).not.toHaveBeenCalled();
+  });
+
+  // --- convert callback wiring ---
+
+  it('sets a convert callback on the downloader that uses the offscreen document', async () => {
+    expect(mockDownloader.setConvertCallback).toHaveBeenCalledTimes(1);
+    const convertCallback = mockDownloader.setConvertCallback.mock
+      .calls[0][0] as (
+      dirHandle: FileSystemDirectoryHandle,
+      downloadId: string,
+    ) => Promise<{ outputName: string; mimeType: string }>;
+
+    mockChrome.runtime.sendMessage.mockResolvedValueOnce({
+      success: true,
+      data: {
+        downloadId: 'dl-1',
+        outputName: 'output.mp4',
+        mimeType: 'video/mp4',
+        success: true,
+      },
+    });
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    const result = await convertCallback(mockDirHandle, 'dl-1');
+
+    expect(mockOffscreen.ensureOffscreenReady).toHaveBeenCalled();
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: MESSAGE_TYPES.CONVERT_TS_TO_MP4_V2 }),
+    );
+    expect(result).toEqual({ outputName: 'output.mp4', mimeType: 'video/mp4' });
+  });
+
+  it('convert callback throws when offscreen conversion fails', async () => {
+    const convertCallback = mockDownloader.setConvertCallback.mock
+      .calls[0][0] as (
+      dirHandle: FileSystemDirectoryHandle,
+      downloadId: string,
+    ) => Promise<{ outputName: string; mimeType: string }>;
+
+    mockChrome.runtime.sendMessage.mockResolvedValueOnce({
+      success: false,
+      error: 'transmux error',
+    });
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    await expect(convertCallback(mockDirHandle, 'dl-1')).rejects.toThrow(
+      'transmux error',
+    );
+  });
+
+  it('convert callback throws clear error when offscreen returns undefined (listener not registered)', async () => {
+    const convertCallback = mockDownloader.setConvertCallback.mock
+      .calls[0][0] as (
+      dirHandle: FileSystemDirectoryHandle,
+      downloadId: string,
+    ) => Promise<{ outputName: string; mimeType: string }>;
+
+    // Simulate offscreen listener not registered → sendMessage returns undefined.
+    mockChrome.runtime.sendMessage.mockResolvedValueOnce(undefined);
+
+    const mockDirHandle = {} as FileSystemDirectoryHandle;
+    await expect(convertCallback(mockDirHandle, 'dl-1')).rejects.toThrow(
+      /did not respond to CONVERT_TS_TO_MP4_V2/i,
+    );
+  });
+
+  it('saveOpfsFile callback throws clear error when offscreen returns undefined', async () => {
+    const saveCallback = mockDownloader.setSaveOpfsFileCallback.mock
+      .calls[0][0] as (
+      downloadId: string,
+      opfsFilename: string,
+      downloadFilename: string,
+      mimeType: string,
+    ) => Promise<void>;
+
+    mockChrome.runtime.sendMessage.mockResolvedValueOnce(undefined);
+
+    await expect(
+      saveCallback('dl-1', 'input.ts', 'video.ts', 'video/mp2t'),
+    ).rejects.toThrow(/did not respond to CREATE_OPFS_BLOB_URL/i);
+  });
+
+  // --- CONVERSION_PROGRESS_UPDATE handler ---
+
+  it('CONVERSION_PROGRESS_UPDATE broadcasts DOWNLOAD_PROGRESS_UPDATE with conversion detail', async () => {
+    mockChrome.runtime.sendMessage.mockClear();
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE,
+      payload: {
+        downloadId: 'dl-conv-1',
+        percent: 90,
+        phase: 'transmuxing',
+        fileSize: 424 * 1024 * 1024,
+        processedBytes: 212 * 1024 * 1024,
+        workerCount: 4,
+        usedWorkers: true,
+      },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'offscreen' });
+
+    expect(response.success).toBe(true);
+    expect(mockQueue.updateProgress).toHaveBeenCalledWith(
+      expect.objectContaining({
+        itemId: 'dl-conv-1',
+        status: 'converting',
+        progress: 90,
+        conversionPhase: 'transmuxing',
+        workerCount: 4,
+        usedWorkers: true,
+      }),
+    );
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.DOWNLOAD_PROGRESS_UPDATE,
+        payload: expect.objectContaining({
+          progress: expect.objectContaining({
+            itemId: 'dl-conv-1',
+            status: 'converting',
+            progress: 90,
+            conversionPhase: 'transmuxing',
+            workerCount: 4,
+            usedWorkers: true,
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('CONVERSION_PROGRESS_UPDATE returns error when downloadId is missing', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE,
+      payload: {},
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'offscreen' });
+
+    expect(response.success).toBe(false);
+    expect(response.error).toMatch(/downloadId/i);
+  });
+
+  // --- Auto-download on media detection (whitelisted tabs) ---
+
+  /**
+   * Helper: configure storage.local.get to return settings + whitelist so
+   * `tryAutoDownload` can proceed. The mock returns the requested keys.
+   */
+  function setupStorageForAutoDownload(tabUrl: string): void {
+    const settings: Settings = {
+      ...DEFAULT_SETTINGS,
+      autoSelectEnabled: true,
+      preferredVideoFormat: 'm3u8',
+    };
+    const whitelist: WhitelistEntry[] = [{ url: tabUrl, addedAt: 1, tabId: 123 }];
+    mockChrome.storage.local.get.mockImplementation(async (keys) => {
+      const result: Record<string, unknown> = {};
+      const keyList = typeof keys === 'string' ? [keys] : (keys as string[]);
+      for (const key of keyList) {
+        if (key === STORAGE_KEYS.SETTINGS) result[key] = settings;
+        else if (key === STORAGE_KEYS.AUTO_DOWNLOAD_WHITELIST) result[key] = whitelist;
+      }
+      return result;
+    });
+  }
+
+  it('auto-downloads best media when a whitelisted tab detects media', async () => {
+    // The mock tab URL is https://example.com/page (from createMockChrome).
+    setupStorageForAutoDownload('https://example.com/page');
+    mockQueue.addAll.mockClear();
+
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/movie.m3u8', 123),
+    );
+
+    // maybeAutoDownload is async (chrome.tabs.get + tryAutoDownload).
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(mockQueue.addAll).toHaveBeenCalledTimes(1);
+    const items = mockQueue.addAll.mock.calls[0][0] as DownloadItem[];
+    expect(items.length).toBeGreaterThanOrEqual(1);
+    expect(items[0].mediaType).toBe('video');
+    expect(items[0].url).toBe('https://example.com/movie.m3u8');
+  });
+
+  it('does not auto-download when the tab URL is not whitelisted', async () => {
+    // Whitelist a different URL than the tab's actual URL.
+    setupStorageForAutoDownload('https://other.com/page');
+    mockQueue.addAll.mockClear();
+
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/movie.m3u8', 123),
+    );
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(mockQueue.addAll).not.toHaveBeenCalled();
+  });
+
+  it('catches up subtitles discovered after the video without re-downloading the video', async () => {
+    setupStorageForAutoDownload('https://example.com/page');
+    mockQueue.addAll.mockClear();
+
+    // First detection: only the m3u8 is known → auto-download enqueues the
+    // video only (no subtitles detected yet).
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/movie.m3u8', 123),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockQueue.addAll).toHaveBeenCalledTimes(1);
+    const firstItems = mockQueue.addAll.mock.calls[0][0] as DownloadItem[];
+    expect(firstItems).toHaveLength(1);
+    expect(firstItems[0].mediaType).toBe('video');
+    expect(firstItems[0].url).toBe('https://example.com/movie.m3u8');
+
+    // Second detection: a subtitle is discovered later → the subtitle is
+    // enqueued (catch-up), but the video is NOT re-downloaded.
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/sub.vtt', 123),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockQueue.addAll).toHaveBeenCalledTimes(2);
+    const secondItems = mockQueue.addAll.mock.calls[1][0] as DownloadItem[];
+    expect(secondItems).toHaveLength(1);
+    expect(secondItems[0].mediaType).toBe('subtitle');
+    expect(secondItems[0].url).toBe('https://example.com/sub.vtt');
+  });
+
+  it('does not re-enqueue media already auto-downloaded for the same page load', async () => {
+    setupStorageForAutoDownload('https://example.com/page');
+    mockQueue.addAll.mockClear();
+
+    // First detection → auto-download the video.
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/movie.m3u8', 123),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockQueue.addAll).toHaveBeenCalledTimes(1);
+
+    // A second m3u8 detection for the same media (e.g. an enriched variant
+    // re-broadcast) → the video is already enqueued, so nothing new is
+    // queued.
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/movie.m3u8', 123),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockQueue.addAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-enables auto-download after the tab navigates (loading event clears guard)', async () => {
+    setupStorageForAutoDownload('https://example.com/page');
+    mockQueue.addAll.mockClear();
+
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/movie.m3u8', 123),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockQueue.addAll).toHaveBeenCalledTimes(1);
+
+    // Tab navigates → loading event clears the guard.
+    const onUpdated = mockChrome.tabs.onUpdated.addListener.mock.calls[0][0] as (
+      tabId: number,
+      changeInfo: chrome.tabs.OnUpdatedInfo,
+    ) => void;
+    onUpdated(123, { status: 'loading' });
+
+    // New media detected after navigation → auto-download fires again.
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/movie2.m3u8', 123),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockQueue.addAll).toHaveBeenCalledTimes(2);
+  });
+
+  it('auto-downloads each episode under the same whitelisted category without a loading event', async () => {
+    // Whitelist the category (first path segment), then navigate between two
+    // episodes in the same tab. Each episode should auto-download once.
+    setupStorageForAutoDownload('https://example.com/page');
+    mockQueue.addAll.mockClear();
+
+    // First episode.
+    mockChrome.tabs.get
+      .mockResolvedValueOnce({ id: 123, url: 'https://example.com/page/1', title: 'Ep 1' })
+      .mockResolvedValueOnce({ id: 123, url: 'https://example.com/page/2', title: 'Ep 2' });
+
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/movie1.m3u8', 123),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockQueue.addAll).toHaveBeenCalledTimes(1);
+
+    // Second episode under the same category (no loading event in between).
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/movie2.m3u8', 123),
+    );
+    await new Promise((r) => setTimeout(r, 50));
+    expect(mockQueue.addAll).toHaveBeenCalledTimes(2);
   });
 });
