@@ -38,6 +38,9 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 - TypeScript strict mode — no `any` without justification
 - Chrome API calls cite official docs: https://developer.chrome.com/docs/extensions/reference/
 - Ponytail ladder: YAGNI → reuse codebase → stdlib → native → installed dep → one-liner → minimal
+- **Always pass `tabId` in message payloads** — Chrome MV3 `sendMessage` cannot target specific tabs, broadcasts fan out to every listener. Popup filters by `tabId` in payload.
+- **`getActiveContentTab()` for active tab resolution** — use `src/popup/utils/getActiveContentTab.ts`, not inline `chrome.tabs.query`. Handles Edge app-windows by filtering `chrome-extension://` URLs.
+- **Auto-download guard uses id-level dedup** — `autoDownloadedTabs: Map<tabId, { url, enqueuedIds: Set<string> }>`, not URL-level guard (URL guard too coarse, blocks subtitle catch-up).
 
 ## Boundaries
 - Never commit `.env` files or secrets
