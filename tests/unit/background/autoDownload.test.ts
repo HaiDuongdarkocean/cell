@@ -8,7 +8,7 @@
  * runs against realistic fixtures.
  */
 
-import { STORAGE_KEYS } from '@/constants/config';
+import { STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
 import type {
   DetectedSubtitle,
   DetectedVideo,
@@ -85,6 +85,7 @@ const BASE_SETTINGS: Settings = {
   autoSelectEnabled: true,
   subtitleOverlayTargetLanguage: '',
   subtitleOverlayAutoLoad: false,
+  keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
 };
 
 function makeVideo(id: string, tabId = 1): DetectedVideo {

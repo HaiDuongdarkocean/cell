@@ -172,6 +172,33 @@ export interface SrtSubtitle {
   readonly cues: SrtCue[];
 }
 
+// === Bilingual Subtitle Types (floating panel) ===
+
+/** Bilingual SRT cue: target language (prominent) + native language (muted). */
+export interface BilingualCue {
+  readonly index: number;
+  readonly start: number; // milliseconds
+  readonly end: number;   // milliseconds
+  readonly targetText: string;
+  readonly nativeText: string;
+}
+
+// === Keyboard Shortcut Types (floating panel) ===
+
+/** Actions mappable to keyboard shortcuts in the subtitle panel. */
+export type ShortcutAction =
+  | 'prev-cue'
+  | 'next-cue'
+  | 'replay-cue'
+  | 'toggle-overlay'
+  | 'toggle-panel';
+
+/** A single keyboard shortcut binding: action ↔ key. */
+export interface KeyboardShortcut {
+  readonly action: ShortcutAction;
+  readonly key: string; // single lowercase letter, e.g. 'a'
+}
+
 // === Download Types ===
 
 export type DownloadStatus =
@@ -339,6 +366,8 @@ export interface Settings {
   readonly subtitleOverlayTargetLanguage: string;
   /** When true, subtitle overlay auto-loads from extension-detected subtitles matching target language. */
   readonly subtitleOverlayAutoLoad: boolean;
+  /** Keyboard shortcuts for subtitle floating panel. Default: a/d/s/w/t. */
+  readonly keyboardShortcuts: KeyboardShortcut[];
 }
 
 /** Result of auto-selecting best media matching user preferences. */

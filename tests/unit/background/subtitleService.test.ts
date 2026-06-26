@@ -1,4 +1,5 @@
 import { findSubtitleForOverlay } from '../../../src/background/subtitleService';
+import { DEFAULT_KEYBOARD_SHORTCUTS } from '../../../src/constants/config';
 import type { DetectedSubtitle, Settings } from '../../../src/types/media';
 
 describe('findSubtitleForOverlay', () => {
@@ -17,6 +18,7 @@ describe('findSubtitleForOverlay', () => {
     autoSelectEnabled: true,
     subtitleOverlayTargetLanguage: 'en',
     subtitleOverlayAutoLoad: true,
+    keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
   };
 
   const makeSubtitle = (language: string, url = 'https://example.com/sub.srt'): DetectedSubtitle => ({

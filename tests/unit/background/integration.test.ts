@@ -3,7 +3,7 @@ import { OffscreenManager } from '@/background/offscreenManager';
 import { NetworkInterceptor } from '@/background/networkInterceptor';
 import { MessageBus } from '@/background/messageBus';
 import { MESSAGE_TYPES } from '@/constants/messages';
-import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
+import { DEFAULT_SETTINGS, STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
 import type { DownloadItem, Settings, WhitelistEntry } from '@/types/media';
 import type {
   MessageRequest,
@@ -618,6 +618,7 @@ describe('Background integration', () => {
       autoSelectEnabled: true,
       subtitleOverlayTargetLanguage: '',
       subtitleOverlayAutoLoad: false,
+      keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
     };
     mockChrome.storage.local.get.mockResolvedValue({
       [STORAGE_KEYS.SETTINGS]: storedSettings,

@@ -1,4 +1,4 @@
-import type { Settings, FilenameSource } from '../types/media';
+import type { Settings, FilenameSource, KeyboardShortcut } from '../types/media';
 
 // === Default Configuration ===
 
@@ -98,6 +98,15 @@ export const PARALLEL_LARGE_FILE_BYTES = 300 * 1024 * 1024; // 300 MB
 
 // === Default Settings ===
 
+/** Default keyboard shortcuts for subtitle floating panel (a/d/s/w/t). */
+export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
+  { action: 'prev-cue', key: 'a' },
+  { action: 'next-cue', key: 'd' },
+  { action: 'replay-cue', key: 's' },
+  { action: 'toggle-overlay', key: 'w' },
+  { action: 'toggle-panel', key: 't' },
+];
+
 export const DEFAULT_SETTINGS: Settings = {
   concurrentDownloads: DEFAULT_CONCURRENT_DOWNLOADS,
   defaultQuality: DEFAULT_QUALITY,
@@ -114,6 +123,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoSelectEnabled: DEFAULT_AUTO_SELECT_ENABLED,
   subtitleOverlayTargetLanguage: '',
   subtitleOverlayAutoLoad: false,
+  keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
 };
 
 // === Storage Keys ===
