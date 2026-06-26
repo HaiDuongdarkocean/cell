@@ -85,10 +85,12 @@ export class MessageBus {
 
   /**
    * Handle an incoming message. Extracted for testability.
+   * Injects sender.tab.id into payload when tabId is missing (content scripts
+   * don't have chrome.tabs API — they send without tabId, background resolves it).
    */
   async handleMessage(
     request: MessageRequest,
-    _sender: chrome.runtime.MessageSender,
+    sender: chrome.runtime.MessageSender,
   ): Promise<MessageResponse> {
     const handler = this.handlers.get(request.type);
     if (!handler) {
@@ -96,6 +98,14 @@ export class MessageBus {
         success: false,
         error: `No handler for type: ${request.type}`,
       };
+    }
+
+    // Inject tabId from sender when missing (content script → background)
+    if (sender.tab?.id !== undefined) {
+      const payload = request.payload as Record<string, unknown> | undefined;
+      if (payload && payload.tabId === undefined) {
+        payload.tabId = sender.tab.id;
+      }
     }
 
     try {
