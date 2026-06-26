@@ -32,7 +32,7 @@ src/
 │   ├── subtitleAutoLoad.ts        # Auto-load decision + override validation: shouldAutoLoad, validateOverride
 │   ├── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
 │   ├── subtitleBilingualParser.ts # Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, reuse parseSrt)
-│   ├── subtitlePanel.ts           # [PLANNED] Floating panel UI: createPanel, renderCueList, draggable, lazy load (IntersectionObserver)
+│   ├── subtitlePanel.ts           # Floating panel UI: createPanel, renderCueList, createToggleButton, switchPanelPosition (draggable, bilingual layout)
 │   └── subtitleShortcuts.ts       # Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
@@ -153,7 +153,7 @@ src/
 | `content/subtitleAutoLoad.ts` | — | (future overlay) | Auto-load decision + override validation: shouldAutoLoad, validateOverride |
 | `content/subtitleTrackDropdown.ts` | types (SrtCue) | (future overlay) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
 | `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | (future panel) | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
-| `content/subtitlePanel.ts` | types (BilingualCue) | (future panel) | Floating panel UI: createPanel, renderCueList, draggable, lazy load (IntersectionObserver), highlightCue, scrollToCue |
+| `content/subtitlePanel.ts` | types (BilingualCue) | (future panel) | Floating panel UI: createPanel, renderCueList, createToggleButton, switchPanelPosition (draggable, bilingual layout) — **implemented Task 4** |
 | `content/subtitleShortcuts.ts` | types (KeyboardShortcut) | (future panel) | Keyboard handler: handleShortcutKey (pure, guard input/textarea) — **implemented Task 3** |
 
 ### Popup layer
@@ -473,8 +473,10 @@ downloader.downloadM3u8Streaming(playlist)
 | `transmux` | `lib/converters/tsTransmuxer.ts` | (tsData, options) → fMP4Blob | ffmpegRunner.ts | Sequential TS→fMP4 via mux.js |
 | `mergePartFiles` | `lib/converters/parallelTransmuxer.ts` | (parts[]) → fMP4Blob | parallelTransmuxer.ts | Merge parallel fMP4 parts (ftyp+moov strip + tfdt offset fix) |
 | `parseBilingualSrt` | `content/subtitleBilingualParser.ts` | string → BilingualParseResult | (future panel) | Parse bilingual SRT (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
-| `createPanel` | `content/subtitlePanel.ts` | HTMLVideoElement → HTMLDivElement | (future panel) | Create floating panel appended to video parent (draggable, inline DOM) |
-| `renderCueList` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[]) → void | (future panel) | Render cue list items (timestamp + bilingual text) |
+| `createPanel` | `content/subtitlePanel.ts` | HTMLVideoElement → HTMLDivElement | (future panel) | Create floating panel appended to video parent (draggable, inline DOM) — **implemented Task 4** |
+| `renderCueList` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[]) → void | (future panel) | Render cue list items (timestamp + bilingual text) — **implemented Task 4** |
+| `createToggleButton` | `content/subtitlePanel.ts` | HTMLVideoElement → HTMLButtonElement | (future panel) | Create toggle button to show/hide panel — **implemented Task 4** |
+| `switchPanelPosition` | `content/subtitlePanel.ts` | (HTMLDivElement, 'left' \| 'right') → void | (future panel) | Switch panel position between left and right — **implemented Task 4** |
 | `renderCueListLazy` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[], IntersectionObserver) → void | (future panel) | Lazy render visible items + buffer (fallback render all if < 50 cues) |
 | `highlightCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Highlight current cue background |
 | `scrollToCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Auto-scroll current cue into view |
