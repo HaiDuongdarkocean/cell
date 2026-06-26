@@ -1,4 +1,4 @@
-import { createPanel, renderCueList, createToggleButton, switchPanelPosition } from '@/content/subtitlePanel';
+import { createPanel, renderCueList, createToggleButton, switchPanelPosition, highlightCue, scrollToCue, seekToCue } from '@/content/subtitlePanel';
 import type { BilingualCue } from '@/types/media';
 
 describe('subtitlePanel', () => {
@@ -196,6 +196,76 @@ describe('subtitlePanel', () => {
       switchPanelPosition(panel, 'right');
       expect(panel.style.right).toBe('0px');
       expect(panel.style.left).toBe('');
+    });
+  });
+
+  describe('highlightCue', () => {
+    it('highlights cue item by index', () => {
+      const panel = createPanel(video);
+      renderCueList(panel, sampleCues);
+      highlightCue(panel, 1);
+      const item = panel.querySelector('[data-cue-index="1"]') as HTMLElement;
+      expect(item.style.backgroundColor).toContain('rgba(0, 150, 255, 0.3)');
+    });
+
+    it('removes highlight from previously highlighted cue', () => {
+      const panel = createPanel(video);
+      renderCueList(panel, sampleCues);
+      highlightCue(panel, 1);
+      highlightCue(panel, 2);
+      const item1 = panel.querySelector('[data-cue-index="1"]') as HTMLElement;
+      const item2 = panel.querySelector('[data-cue-index="2"]') as HTMLElement;
+      expect(item1.style.backgroundColor).not.toContain('rgba(0, 150, 255');
+      expect(item2.style.backgroundColor).toContain('rgba(0, 150, 255, 0.3)');
+    });
+
+    it('does nothing if cue index not found', () => {
+      const panel = createPanel(video);
+      renderCueList(panel, sampleCues);
+      // Should not throw
+      expect(() => highlightCue(panel, 999)).not.toThrow();
+    });
+
+    it('does nothing if panel body is empty', () => {
+      const panel = createPanel(video);
+      expect(() => highlightCue(panel, 1)).not.toThrow();
+    });
+  });
+
+  describe('scrollToCue', () => {
+    it('scrolls cue item into view', () => {
+      // jsdom doesn't implement scrollIntoView, define then spy
+      Element.prototype.scrollIntoView = jest.fn();
+      const scrollSpy = jest.spyOn(Element.prototype, 'scrollIntoView');
+      const panel = createPanel(video);
+      renderCueList(panel, sampleCues);
+      scrollToCue(panel, 1);
+      expect(scrollSpy).toHaveBeenCalled();
+      scrollSpy.mockRestore();
+    });
+
+    it('does nothing if cue index not found', () => {
+      const panel = createPanel(video);
+      renderCueList(panel, sampleCues);
+      expect(() => scrollToCue(panel, 999)).not.toThrow();
+    });
+  });
+
+  describe('seekToCue', () => {
+    it('sets video currentTime to cue start (in seconds)', () => {
+      const panel = createPanel(video);
+      renderCueList(panel, sampleCues);
+      seekToCue(video, sampleCues[0]);
+      // start is 1000ms → 1 second
+      expect(video.currentTime).toBe(1);
+    });
+
+    it('sets video currentTime to second cue start', () => {
+      const panel = createPanel(video);
+      renderCueList(panel, sampleCues);
+      seekToCue(video, sampleCues[1]);
+      // start is 3500ms → 3.5 seconds
+      expect(video.currentTime).toBe(3.5);
     });
   });
 });

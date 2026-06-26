@@ -478,8 +478,9 @@ downloader.downloadM3u8Streaming(playlist)
 | `createToggleButton` | `content/subtitlePanel.ts` | HTMLVideoElement → HTMLButtonElement | (future panel) | Create toggle button to show/hide panel — **implemented Task 4** |
 | `switchPanelPosition` | `content/subtitlePanel.ts` | (HTMLDivElement, 'left' \| 'right') → void | (future panel) | Switch panel position between left and right — **implemented Task 4** |
 | `renderCueListLazy` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[], IntersectionObserver) → void | (future panel) | Lazy render visible items + buffer (fallback render all if < 50 cues) |
-| `highlightCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Highlight current cue background |
-| `scrollToCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Auto-scroll current cue into view |
+| `highlightCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Highlight current cue background — **implemented Task 5** |
+| `scrollToCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Auto-scroll current cue into view — **implemented Task 5** |
+| `seekToCue` | `content/subtitlePanel.ts` | (HTMLVideoElement, { start: number }) → void | (future panel) | Seek video to cue start (ms → seconds) — **implemented Task 5** |
 | `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | (future panel) | Pure: map key → action, guard input/textarea focus — **implemented Task 3** |
 | `isEditableTarget` | `content/subtitleShortcuts.ts` | EventTarget \| null → boolean | subtitleShortcuts.ts | Check if target is input/textarea/select/contenteditable — **implemented Task 3** |
 

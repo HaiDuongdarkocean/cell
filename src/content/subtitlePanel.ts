@@ -190,3 +190,50 @@ export function switchPanelPosition(panel: HTMLDivElement, side: 'left' | 'right
     panel.style.borderRadius = '8px 0 0 8px';
   }
 }
+
+/** CSS background color for highlighted (current) cue. */
+const HIGHLIGHT_BG = 'rgba(0, 150, 255, 0.3)';
+
+/**
+ * Highlight the current cue item by index.
+ * Removes highlight from all other items first.
+ */
+export function highlightCue(panel: HTMLDivElement, cueIndex: number): void {
+  const body = panel.querySelector('[data-testid="panel-body"]');
+  if (!body) return;
+
+  // Clear all highlights
+  const items = body.querySelectorAll('[data-testid="cue-item"]');
+  items.forEach((item) => {
+    (item as HTMLElement).style.backgroundColor = '';
+  });
+
+  // Highlight target cue
+  const target = body.querySelector(`[data-cue-index="${cueIndex}"]`);
+  if (target) {
+    (target as HTMLElement).style.backgroundColor = HIGHLIGHT_BG;
+  }
+}
+
+/**
+ * Scroll the cue item into view in the panel body.
+ * Uses native scrollIntoView with smooth behavior.
+ */
+export function scrollToCue(panel: HTMLDivElement, cueIndex: number): void {
+  const body = panel.querySelector('[data-testid="panel-body"]');
+  if (!body) return;
+
+  const target = body.querySelector(`[data-cue-index="${cueIndex}"]`);
+  if (target) {
+    (target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+/**
+ * Seek video to cue start time.
+ * @param video - Target video element
+ * @param cue - Cue to seek to (uses cue.start in milliseconds → seconds)
+ */
+export function seekToCue(video: HTMLVideoElement, cue: { start: number }): void {
+  video.currentTime = cue.start / 1000;
+}
