@@ -23,7 +23,8 @@ src/
 │   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT
 │   ├── pageScanner.ts             # Scan <video>, <source>, subtitle <track>
 │   ├── subtitleParser.ts          # Adapter: parseSubtitle(content, format) → ParseResult (reuse parseSrt/parseVtt)
-│   └── subtitleSync.ts            # Binary search O(log n): findCurrentLine(cues, currentTime) → index
+│   ├── subtitleSync.ts            # Binary search O(log n): findCurrentLine(cues, currentTime) → index
+│   └── subtitleUI.ts              # Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
 │   ├── ffmpegRunner.ts            # Entry: nhận CONVERT_TS_TO_MP4_V2, CREATE_OPFS_BLOB_URL
@@ -123,6 +124,16 @@ src/
 | `background/messageBus.ts` | — | `background/index.ts` | Message routing |
 | `background/offscreenManager.ts` | — | `background/index.ts` | Offscreen document lifecycle |
 | `background/autoDownload.ts` | **whitelist**, **selectBestMedia**, config, types, downloadQueue | `background/index.ts` | Auto-download orchestrator: `tryAutoDownload(tabId, tabUrl, deps, alreadyEnqueuedIds?)` → returns `string[]` (enqueued media ids; empty = no-op). Whitelist check → load settings → selectBestMedia → enqueue downloads, skipping ids already enqueued (incremental subtitle catch-up). Silent no-op when no match |
+
+### Content layer
+
+| File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
+|------|-----------|-----------------|--------------------------|
+| `content/content-script.ts` | pageScanner | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT |
+| `content/pageScanner.ts` | urls (constants) | `content/content-script.ts` | Scan `<video>`, `<source>`, `<track>` |
+| `content/subtitleParser.ts` | srtParser, vttParser, types | (future overlay) | Adapter: parseSubtitle(content, format) → ParseResult |
+| `content/subtitleSync.ts` | types (SrtCue) | (future overlay) | Binary search: findCurrentLine(cues, currentTime) → index |
+| `content/subtitleUI.ts` | types (OverlayConfig) | (future overlay) | Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay |
 
 ### Popup layer
 
@@ -417,6 +428,10 @@ downloader.downloadM3u8Streaming(playlist)
 | `parseVtt` | `lib/parsers/vttParser.ts` | string → VttSubtitle | subtitleParser.ts | Parse VTT format to VttCue[] |
 | `parseSubtitle` | `content/subtitleParser.ts` | (string, format) → ParseResult | (future overlay) | Adapter: auto-detect format, parseSrt/parseVtt |
 | `findCurrentLine` | `content/subtitleSync.ts` | (SrtCue[], number) → number | (future overlay) | Binary search O(log n) for current subtitle line by video time |
+| `createOverlay` | `content/subtitleUI.ts` | (HTMLVideoElement, OverlayConfig) → HTMLDivElement | (future overlay) | Create subtitle overlay div appended to video parent |
+| `updateOverlayText` | `content/subtitleUI.ts` | (HTMLDivElement, string) → void | (future overlay) | Set text and show overlay |
+| `hideOverlay` | `content/subtitleUI.ts` | (HTMLDivElement) → void | (future overlay) | Clear text and hide overlay |
+| `removeOverlay` | `content/subtitleUI.ts` | (HTMLDivElement) → void | (future overlay) | Remove overlay from DOM |
 | `parseTimestamp` | `lib/utils/timeUtils.ts` | string → number (ms) | (future) | Unified timestamp parser (comma/dot separator) |
 | `tryAutoDownload` | `background/autoDownload.ts` | (tabId, tabUrl, deps, alreadyEnqueuedIds?) → string[] | background/index.ts | Orchestrator: whitelist → selectBestMedia → enqueue |
 | `getActiveContentTab` | `popup/utils/getActiveContentTab.ts` | void → Promise<Tab> | useDetectedMedia, useDownloadProgress | Resolve active tab (handles Edge app-windows) |
