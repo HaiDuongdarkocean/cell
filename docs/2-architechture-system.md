@@ -17,7 +17,8 @@ src/
 │   ├── downloadQueue.ts           # Queue: concurrency, pause/resume/cancel, retry, remove
 │   ├── messageBus.ts              # Pub/sub: on() / broadcast() cho message handlers
 │   ├── offscreenManager.ts        # Quản lý offscreen document lifecycle
-│   └── autoDownload.ts            # Orchestrator: tryAutoDownload(tabId, tabUrl, deps, alreadyEnqueuedIds?) → string[] — whitelist check → settings → selectBestMedia → enqueue (skip already-enqueued ids). Silent no-op when no match
+│   ├── autoDownload.ts            # Orchestrator: tryAutoDownload(tabId, tabUrl, deps, alreadyEnqueuedIds?) → string[] — whitelist check → settings → selectBestMedia → enqueue (skip already-enqueued ids). Silent no-op when no match
+│   └── subtitleService.ts         # findSubtitleForOverlay: validate target language + return matching subtitle
 │
 ├── content/                       # Content script (chạy trong trang web)
 │   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT
@@ -41,7 +42,8 @@ src/
 │   ├── store/
 │   │   └── popupStore.ts          # Zustand store: videos, subtitles, downloads, settings
 │   ├── utils/
-│   │   └── format.ts              # formatBytes, formatFileSize, formatDuration, phaseToLabel
+│   │   ├── format.ts              # formatBytes, formatFileSize, formatDuration, phaseToLabel
+│   │   └── getActiveContentTab.ts # getActiveContentTab(): 3 query shapes → filter chrome-extension:// URLs (Edge app-window fix)
 │   ├── hooks/
 │   │   ├── useDetectedMedia.ts       # Subscribe GET_DETECTED_MEDIA + DETECTED_MEDIA_UPDATE
 │   │   ├── useDownloadProgress.ts    # Subscribe DOWNLOAD_PROGRESS_UPDATE
@@ -58,7 +60,8 @@ src/
 │       │   └── MediaEmpty.tsx        # Empty state khi không có media
 │       ├── SelectionBar.tsx          # Fixed bottom bar: selection count, clear, download selected
 │       └── settings/
-│           ├── SettingsDialog.tsx    # Settings dialog + CustomSelect dropdowns, Auto Select toggle, Preferred format dropdown, MultiSelect subtitle languages
+│           ├── SettingsDialog.tsx    # Settings dialog + CustomSelect dropdowns, Auto Select toggle, Preferred format dropdown, MultiSelect subtitle languages, Subtitle overlay settings (target language + auto-load)
+│           ├── SettingsDialog.module.css # Styles cho SettingsDialog
 │           ├── MultiSelect.tsx       # Reusable searchable multi-select (search input + checkbox list + footer). Used cho subtitle language selection
 │           └── MultiSelect.module.css # Styles cho MultiSelect
 │
@@ -110,7 +113,8 @@ src/
 │
 └── types/
     ├── media.ts                      # DetectedVideo, DetectedSubtitle, Settings, FilenameSource, DownloadItem, ByteRange, HlsEncryption, HlsInitSegment, AutoSelectResult, WhitelistEntry
-    ├── message.ts                    # MessageRequest, MessageResponse, payloads
+    ├── message.ts                    # MessageRequest, MessageResponse, payloads (incl. GetSubtitleForOverlayPayload, SubtitleForOverlayResult)
+    ├── subtitle.ts                   # SubtitleFormat, SubtitleState, OverlayConfig, ParseResult, SyncStatus
     └── muxjs.d.ts                    # Type declarations cho mux.js
 ```
 
