@@ -24,6 +24,8 @@ docs/           # Tài liệu dự án
 │   ├── subtitle-filename-matches-video.md # Subtitle filename matches video
 │   ├── parallel-fmp4-merge.md           # Parallel fMP4 merge (tfdt offset)
 │   └── architecture-auto-select.md      # Auto-Select & Auto-Download architecture
+├── test-reports/           # MCP browser test reports — "does it work in real browser"
+│   └── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md  # Subtitle panel MCP test (4 bugs found)
 └── reference/              # Hướng dẫn dùng tools — "how to use"
 
 src/            # Source code (chi tiết trong 2-architechture-system.md)
@@ -45,6 +47,7 @@ tests/          # Test files (chi tiết trong 2-architechture-system.md)
 | Trước khi viết function mới | grep docs/knowledge/ | Nguyên lý đã học, tránh tái phạm |
 | Khi gặp tool mới | docs/reference/<tool>.md | Hướng dẫn dùng tool |
 | Khi thay đổi kiến trúc | docs/adr/<decision>.md | Tại sao chọn kiến trúc này |
+| Sau khi implement | docs/test-reports/<feature>-mcp.md | MCP browser test — bugs phát hiện trong real Chrome |
 
 ## File quan trọng (always-load)
 
