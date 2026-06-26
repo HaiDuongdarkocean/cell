@@ -414,6 +414,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `parseSrt` | `lib/parsers/srtParser.ts` | string → SrtSubtitle | subtitleParser.ts | Parse SRT format to SrtCue[] |
 | `parseVtt` | `lib/parsers/vttParser.ts` | string → VttSubtitle | subtitleParser.ts | Parse VTT format to VttCue[] |
 | `parseSubtitle` | `content/subtitleParser.ts` | (string, format) → ParseResult | (future overlay) | Adapter: auto-detect format, parseSrt/parseVtt |
+| `findCurrentLine` | `content/subtitleSync.ts` | (SrtCue[], number) → number | (future overlay) | Binary search O(log n) for current subtitle line by video time |
 | `parseTimestamp` | `lib/utils/timeUtils.ts` | string → number (ms) | (future) | Unified timestamp parser (comma/dot separator) |
 | `tryAutoDownload` | `background/autoDownload.ts` | (tabId, tabUrl, deps, alreadyEnqueuedIds?) → string[] | background/index.ts | Orchestrator: whitelist → selectBestMedia → enqueue |
 | `getActiveContentTab` | `popup/utils/getActiveContentTab.ts` | void → Promise<Tab> | useDetectedMedia, useDownloadProgress | Resolve active tab (handles Edge app-windows) |
