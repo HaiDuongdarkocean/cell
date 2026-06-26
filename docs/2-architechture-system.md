@@ -63,7 +63,7 @@ src/
 │       │   └── MediaEmpty.tsx        # Empty state khi không có media
 │       ├── SelectionBar.tsx          # Fixed bottom bar: selection count, clear, download selected
 │       └── settings/
-│           ├── SettingsDialog.tsx    # Settings dialog + CustomSelect dropdowns, Auto Select toggle, Preferred format dropdown, MultiSelect subtitle languages, Subtitle overlay settings (target language + auto-load)
+│           ├── SettingsDialog.tsx    # Settings dialog + CustomSelect dropdowns, Auto Select toggle, Preferred format dropdown, MultiSelect subtitle languages, Subtitle overlay settings (target language + auto-load), Keyboard shortcuts remap (a/d/s/w/t)
 │           ├── SettingsDialog.module.css # Styles cho SettingsDialog
 │           ├── MultiSelect.tsx       # Reusable searchable multi-select (search input + checkbox list + footer). Used cho subtitle language selection
 │           └── MultiSelect.module.css # Styles cho MultiSelect

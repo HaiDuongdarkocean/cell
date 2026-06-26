@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource } from '@/types/media';
+import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/types/media';
 import {
   MIN_PARALLEL_WORKERS,
   MAX_PARALLEL_WORKERS,
@@ -42,6 +42,18 @@ const PREFERRED_FORMAT_OPTIONS: readonly ('mp4' | 'm3u8')[] = ['m3u8', 'mp4'];
 const PREFERRED_FORMAT_LABELS: Record<'mp4' | 'm3u8', string> = {
   m3u8: 'm3u8 (HLS)', mp4: 'mp4 (direct)',
 };
+
+const SHORTCUT_ACTION_LABELS: Record<ShortcutAction, string> = {
+  'prev-cue': 'Previous cue',
+  'next-cue': 'Next cue',
+  'replay-cue': 'Replay cue',
+  'toggle-overlay': 'Toggle overlay',
+  'toggle-panel': 'Toggle panel',
+};
+
+const SHORTCUT_ACTION_ORDER: readonly ShortcutAction[] = [
+  'prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay', 'toggle-panel',
+];
 
 /**
  * Full ISO 639-1 subtitle language list (~184 codes).
@@ -373,6 +385,37 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
             </div>
             <p className={styles.asHint}>Khi bật, overlay tự load subtitle detect được cùng target language.</p>
           </div>
+
+          {/* === Group: keyboard shortcuts === */}
+          <div className={styles.field}>
+            <label className={styles.label}>Keyboard shortcuts</label>
+            <p className={styles.hint}>Remap keys cho subtitle panel actions.</p>
+          </div>
+
+          {SHORTCUT_ACTION_ORDER.map((action) => {
+            const shortcut = settings.keyboardShortcuts.find((s) => s.action === action);
+            const currentKey = shortcut?.key ?? '';
+            return (
+              <SettingField key={action} label={SHORTCUT_ACTION_LABELS[action]} htmlFor={`set-shortcut-${action}`}>
+                <input
+                  id={`set-shortcut-${action}`}
+                  type="text"
+                  data-testid={`shortcut-${action}`}
+                  value={currentKey}
+                  onChange={(e) => {
+                    const newKey = e.target.value.toLowerCase().slice(0, 1);
+                    const updated = settings.keyboardShortcuts.map((s) =>
+                      s.action === action ? { ...s, key: newKey } : s,
+                    );
+                    update('keyboardShortcuts', updated);
+                  }}
+                  maxLength={1}
+                  className={styles.textInput}
+                  style={{ width: '40px', textAlign: 'center' }}
+                />
+              </SettingField>
+            );
+          })}
 
           {/* === Group: download === */}
 
