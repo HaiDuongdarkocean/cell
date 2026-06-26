@@ -50,12 +50,24 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 - Separate refactoring from feature work (2 separate commits)
 
 ## Level 2 Reference Docs (load per session, NOT always-on)
-- [docs/learned-bugfixes.md](docs/learned-bugfixes.md) — Bug fix history (auto-download, tab-scoping, Edge leak)
-- [docs/architecture-auto-select.md](docs/architecture-auto-select.md) — Auto-Select & Auto-Download feature architecture
-- [docs/reference-knowledge_base.md](docs/reference-knowledge_base.md) — E2E Debugging with Chrome DevTools MCP
-- [docs/knowleadge/reference-chrome-devtools-mcp.md](docs/knowleadge/reference-chrome-devtools-mcp.md) — chrome-devtools MCP config
-- [docs/architechture-system.md](docs/architechture-system.md) — File structure, dependencies, impact radius (update on file changes)
+- [docs/0-wiki.md](docs/0-wiki.md) — Mục lục tổng quan (cây thư mục + cách dùng)
+- [docs/1-share-language.md](docs/1-share-language.md) — Glossary human ↔ system language
+- [docs/2-architechture-system.md](docs/2-architechture-system.md) — Architecture chi tiết (src/ + tests/ + dependency + function index + data flows + ADR)
+- [docs/knowledge/learned-bugfixes.md](docs/knowledge/learned-bugfixes.md) — Bug fix history (auto-download, tab-scoping, Edge leak)
+- [docs/knowledge/architecture-auto-select.md](docs/knowledge/architecture-auto-select.md) — Auto-Select & Auto-Download feature architecture
+- [docs/reference/chrome-devtools-mcp.md](docs/reference/chrome-devtools-mcp.md) — chrome-devtools MCP config
+- [docs/reference/e2e-debugging.md](docs/reference/e2e-debugging.md) — E2E Debugging with Chrome DevTools MCP
 - [docs/spec-subtitle-overlay.md](docs/spec-subtitle-overlay.md) — Subtitle overlay feature spec
+
+## Living Documentation Rules
+- **Trước khi sửa code**: đọc `docs/2-architechture-system.md` → check "Bảng phụ thuộc" → biết ảnh hưởng file nào
+- **Trước khi viết function mới**: grep `docs/knowledge/` cho keywords liên quan + đọc `docs/2-architechture-system.md` Function Index
+- **Sau khi sửa/thêm/xóa file src/**: update `docs/2-architechture-system.md` (cây thư mục + dependency + function index) trước khi commit
+- **Sau khi feature hoàn thành**: update `docs/0-wiki.md` (mục lục) nếu có thêm/xóa file docs
+- **Sau khi test pass + debug pass**: khái niệm hóa thành nguyên lý → ghi vào `docs/knowledge/<principle>.md` (format: nguyên lý + cases + apply cho)
+- **Sau khi fix bug**: ghi bug log + convention vào `docs/knowledge/<principle>.md`
+- **Sau khi thay đổi kiến trúc**: thêm ADR vào `docs/adr/<decision>.md` (format: context, decision, consequences, alternatives)
+- **File placement convention**: knowledge → `docs/knowledge/`, specs → `docs/specs/`, intent → `docs/intent/`, plan → `docs/plan/`, reference → `docs/reference/`, adr → `docs/adr/`. KHÔNG lưu loose file ở docs/ root
 
 ---
 
