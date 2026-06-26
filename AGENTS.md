@@ -62,6 +62,10 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 ## Living Documentation Rules
 - **Trước khi sửa code**: đọc `docs/2-architechture-system.md` → check "Bảng phụ thuộc" → biết ảnh hưởng file nào
 - **Trước khi viết function mới**: grep `docs/knowledge/` cho keywords liên quan + đọc `docs/2-architechture-system.md` Function Index
+- **Git Pre-Commit (Living Docs Check)**: Trước khi commit, chạy `git diff --name-only`:
+  - Nếu có thay đổi src/** → check 2-architechture-system.md Function Index: function mới/sửa → update; file mới/xóa → update Cây thư mục + Bảng phụ thuộc
+  - Nếu có thay đổi docs/** → check 0-wiki.md: file docs mới/xóa → update Mục lục
+  - Nếu test pass + debug pass → check docs/knowledge/: grep keyword → pattern mới → khái niệm hóa thành nguyên lý
 - **Sau khi sửa/thêm/xóa file src/**: update `docs/2-architechture-system.md` (cây thư mục + dependency + function index) trước khi commit
 - **Sau khi feature hoàn thành**: update `docs/0-wiki.md` (mục lục) nếu có thêm/xóa file docs
 - **Sau khi test pass + debug pass**: khái niệm hóa thành nguyên lý → ghi vào `docs/knowledge/<principle>.md` (format: nguyên lý + cases + apply cho)
@@ -100,9 +104,6 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 | 16. Deprecate | deprecation-and-migration | Removing old systems |
 | 17. Ideate | idea-refine | Vague idea, stress-test assumptions |
 | 18. Meta | using-agent-skills / devin-for-terminal / context-engineering / api-and-interface-design | Skill discovery, docs lookup, context setup, API design |
-
-### TDD REFACTOR Rule
-Conscious decision, not automatic. After GREEN, ask "Anything to improve without changing behavior?" If no → skip, commit, move on. Use **5-axis review from `code-review-and-quality` skill** (correctness, readability, architecture, security, performance) — do NOT invent your own checklist. Ponytail: REFACTOR removes problems, never adds abstractions. Mark deliberate simplifications with `// ponytail:` comments.
 
 ### Skill Synergies
 - **TDD + Minimalism + Review**: `test-driven-development` + `ponytail.md` + `code-review-and-quality`
