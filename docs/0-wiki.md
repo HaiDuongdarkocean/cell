@@ -13,6 +13,7 @@ docs/           # Tài liệu dự án
 ├── intent/                 # Output interview-me — "what user wants"
 ├── specs/                  # PRD chi tiết — "what to build"
 ├── plan/                   # Task breakdown — "how to build"
+│   └── subtitle-sidebar-shortcuts.md  # Subtitle floating panel + shortcuts
 ├── knowledge/              # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
 │   ├── principles.md                   # Principle index (abstract, layer 1)
 │   ├── auto-download-subtitle-catchup.md # Auto-download subtitle catch-up
