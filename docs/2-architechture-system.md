@@ -33,7 +33,7 @@ src/
 │   ├── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
 │   ├── subtitleBilingualParser.ts # Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, reuse parseSrt)
 │   ├── subtitlePanel.ts           # [PLANNED] Floating panel UI: createPanel, renderCueList, draggable, lazy load (IntersectionObserver)
-│   └── subtitleShortcuts.ts       # [PLANNED] Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
+│   └── subtitleShortcuts.ts       # Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
 │   ├── ffmpegRunner.ts            # Entry: nhận CONVERT_TS_TO_MP4_V2, CREATE_OPFS_BLOB_URL
@@ -154,7 +154,7 @@ src/
 | `content/subtitleTrackDropdown.ts` | types (SrtCue) | (future overlay) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
 | `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | (future panel) | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
 | `content/subtitlePanel.ts` | types (BilingualCue) | (future panel) | Floating panel UI: createPanel, renderCueList, draggable, lazy load (IntersectionObserver), highlightCue, scrollToCue |
-| `content/subtitleShortcuts.ts` | types (KeyboardShortcut) | (future panel) | Keyboard handler: handleShortcutKey (pure, guard input/textarea) |
+| `content/subtitleShortcuts.ts` | types (KeyboardShortcut) | (future panel) | Keyboard handler: handleShortcutKey (pure, guard input/textarea) — **implemented Task 3** |
 
 ### Popup layer
 
@@ -478,7 +478,8 @@ downloader.downloadM3u8Streaming(playlist)
 | `renderCueListLazy` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[], IntersectionObserver) → void | (future panel) | Lazy render visible items + buffer (fallback render all if < 50 cues) |
 | `highlightCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Highlight current cue background |
 | `scrollToCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Auto-scroll current cue into view |
-| `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | (future panel) | Pure: map key → action, guard input/textarea focus |
+| `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | (future panel) | Pure: map key → action, guard input/textarea focus — **implemented Task 3** |
+| `isEditableTarget` | `content/subtitleShortcuts.ts` | EventTarget \| null → boolean | subtitleShortcuts.ts | Check if target is input/textarea/select/contenteditable — **implemented Task 3** |
 
 ---
 
