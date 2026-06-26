@@ -3,7 +3,20 @@ import { SubtitleOverlayController } from './subtitleOverlay';
 import { handleFileDrop } from './subtitleDragDrop';
 import { handleFileSelect } from './subtitleImport';
 import { createDragHint, showToast } from './subtitleUI';
+import { parseBilingualSrt } from './subtitleBilingualParser';
+import {
+  createPanel,
+  renderCueListLazy,
+  createToggleButton,
+  switchPanelPosition,
+  highlightCue,
+  scrollToCue,
+  seekToCue,
+} from './subtitlePanel';
+import { handleShortcutKey } from './subtitleShortcuts';
+import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
 import type { OverlayConfig } from '../types/subtitle';
+import type { BilingualCue, KeyboardShortcut } from '../types/media';
 
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
 // background tự lấy từ sender.tab.id (xem messageBus.handleMessage)
@@ -46,49 +59,171 @@ const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
   showTimestamps: false,
 };
 
+/** Load keyboard shortcuts from chrome.storage.local, fallback to defaults. */
+async function loadShortcuts(): Promise<KeyboardShortcut[]> {
+  try {
+    const result = await chrome.storage.local.get('settings');
+    const settings = result.settings as { keyboardShortcuts?: KeyboardShortcut[] } | undefined;
+    if (settings?.keyboardShortcuts?.length && settings.keyboardShortcuts.length > 0) {
+      return settings.keyboardShortcuts;
+    }
+  } catch {
+    // ponytail: storage might not be available in test contexts — fallback
+  }
+  return DEFAULT_KEYBOARD_SHORTCUTS;
+}
+
 function initSubtitleOverlay(video: HTMLVideoElement): void {
-  console.log('[VD] initSubtitleOverlay start, video:', video.currentSrc || video.src);
   const controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG);
   controller.init();
-  console.log('[VD] controller.init() done');
 
+  // === Panel + Shortcuts state ===
+  let panel: HTMLDivElement | null = null;
+  let toggleBtn: HTMLButtonElement | null = null;
+  let panelVisible = false;
+  let overlayVisible = true;
+  let bilingualCues: BilingualCue[] = [];
+  let shortcuts: KeyboardShortcut[] = DEFAULT_KEYBOARD_SHORTCUTS;
+  let panelSide: 'left' | 'right' = 'right';
+
+  // Load shortcuts from storage
+  loadShortcuts().then((s) => { shortcuts = s; });
+
+  // Create panel + toggle button (hidden initially)
+  panel = createPanel(video);
+  toggleBtn = createToggleButton(video);
+
+  // Wire toggle button → show/hide panel
+  toggleBtn.addEventListener('click', () => {
+    panelVisible = !panelVisible;
+    if (panel) {
+      panel.style.display = panelVisible ? 'flex' : 'none';
+    }
+  });
+
+  // Wire close button in panel header → hide panel
+  const closeBtn = panel.querySelector('[data-testid="panel-close"]');
+  closeBtn?.addEventListener('click', () => {
+    panelVisible = false;
+    if (panel) panel.style.display = 'none';
+  });
+
+  // Wire drag handle → switch position left/right on double-click
+  const dragHandle = panel.querySelector('[data-testid="panel-drag-handle"]');
+  dragHandle?.addEventListener('dblclick', () => {
+    panelSide = panelSide === 'right' ? 'left' : 'right';
+    if (panel) switchPanelPosition(panel, panelSide);
+  });
+
+  // Wire timestamp clicks → seek to cue
+  panel.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.getAttribute('data-testid') === 'cue-timestamp') {
+      const cueIndex = parseInt(target.getAttribute('data-cue-index') ?? '0', 10);
+      const cue = bilingualCues.find((c) => c.index === cueIndex);
+      if (cue) {
+        seekToCue(video, cue);
+        if (panel) {
+          highlightCue(panel, cueIndex);
+          scrollToCue(panel, cueIndex);
+        }
+      }
+    }
+  });
+
+  // Wire keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target);
+    if (!action) return;
+    e.preventDefault();
+
+    switch (action) {
+      case 'prev-cue': {
+        const currentMs = video.currentTime * 1000;
+        const prevCue = [...bilingualCues].reverse().find((c) => c.start < currentMs - 100);
+        if (prevCue) {
+          seekToCue(video, prevCue);
+          if (panel) { highlightCue(panel, prevCue.index); scrollToCue(panel, prevCue.index); }
+        }
+        break;
+      }
+      case 'next-cue': {
+        const currentMs = video.currentTime * 1000;
+        const nextCue = bilingualCues.find((c) => c.start > currentMs + 100);
+        if (nextCue) {
+          seekToCue(video, nextCue);
+          if (panel) { highlightCue(panel, nextCue.index); scrollToCue(panel, nextCue.index); }
+        }
+        break;
+      }
+      case 'replay-cue': {
+        const currentMs = video.currentTime * 1000;
+        const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end >= currentMs)
+          ?? [...bilingualCues].reverse().find((c) => c.start < currentMs);
+        if (currentCue) {
+          seekToCue(video, currentCue);
+          if (panel) { highlightCue(panel, currentCue.index); scrollToCue(panel, currentCue.index); }
+        }
+        break;
+      }
+      case 'toggle-overlay': {
+        overlayVisible = !overlayVisible;
+        const overlay = document.querySelector('[data-testid="subtitle-overlay"]') as HTMLElement | null;
+        if (overlay) {
+          overlay.style.display = overlayVisible ? 'block' : 'none';
+        }
+        break;
+      }
+      case 'toggle-panel': {
+        panelVisible = !panelVisible;
+        if (panel) panel.style.display = panelVisible ? 'flex' : 'none';
+        break;
+      }
+    }
+  });
+
+  // Wire timeupdate → highlight + scroll current cue in panel
+  video.addEventListener('timeupdate', () => {
+    if (!panel || !panelVisible || bilingualCues.length === 0) return;
+    const currentMs = video.currentTime * 1000;
+    const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end >= currentMs);
+    if (currentCue) {
+      highlightCue(panel, currentCue.index);
+      scrollToCue(panel, currentCue.index);
+    }
+  });
+
+  // === File import wiring ===
   // Wire import button: <label> wraps <input type=file> (created in subtitleImport.ts).
-  // Click label = native file picker. Wire change handler here.
   const importButton = document.querySelector('[data-testid="subtitle-import-button"]') as HTMLButtonElement | null;
   const fileInput = importButton?.querySelector('input[type="file"]') as HTMLInputElement | null;
-  console.log('[VD] importButton found:', !!importButton, '| fileInput found:', !!fileInput);
   if (importButton && fileInput) {
-    // Log click on label — verify user gesture reaches here
-    importButton.addEventListener('click', () => {
-      console.log('[VD] label click event, target:', (event?.target as Element)?.tagName, '| input display:', getComputedStyle(fileInput).display);
-    });
-    fileInput.addEventListener('click', () => {
-      console.log('[VD] input click event (should open picker)');
-    });
     fileInput.addEventListener('change', async () => {
-      console.log('[VD] input change event fired, files.length:', fileInput.files?.length);
       const file = fileInput.files?.[0];
-      if (!file) {
-        console.log('[VD] no file selected, return');
-        return;
-      }
-      console.log('[VD] file selected:', file.name, '| size:', file.size, '| type:', file.type);
+      if (!file) return;
       const result = await handleFileSelect(file);
-      console.log('[VD] parse result:', { success: result.success, cues: result.cues.length, format: result.format, error: result.error });
       if (result.success && result.cues.length > 0) {
         controller.loadCues(result.cues);
+        // Parse bilingual + render panel
+        const bilingualResult = parseBilingualSrt(
+          await file.text(),
+        );
+        if (bilingualResult.success) {
+          bilingualCues = bilingualResult.cues;
+          if (panel) {
+            renderCueListLazy(panel, bilingualCues);
+          }
+        }
         showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);
-        console.log('[VD] loadCues + showToast done');
       } else {
         showToast(`Import failed: ${result.error ?? 'unknown error'}`, video);
-        console.error('[VD] Import failed:', result.error);
       }
     });
   }
 
   // Wire drag-drop on video → parse → loadCues + drag hover hint
   const dragHint = createDragHint(video);
-  let dragCounter = 0; // ponytail: counter avoids flicker from nested dragenter/dragleave
+  let dragCounter = 0;
 
   video.addEventListener('dragenter', (e) => {
     e.preventDefault();
@@ -113,10 +248,18 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     const result = await handleFileDrop(file);
     if (result.success && result.cues.length > 0) {
       controller.loadCues(result.cues);
+      // Parse bilingual + render panel
+      const fileText = await file.text();
+      const bilingualResult = parseBilingualSrt(fileText);
+      if (bilingualResult.success) {
+        bilingualCues = bilingualResult.cues;
+        if (panel) {
+          renderCueListLazy(panel, bilingualCues);
+        }
+      }
       showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);
     } else {
       showToast(`Drag-drop failed: ${result.error ?? 'unknown error'}`, video);
-      console.error('[Video Downloader] Drag-drop failed:', result.error);
     }
   });
 }

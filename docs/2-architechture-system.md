@@ -21,7 +21,7 @@ src/
 │   └── subtitleService.ts         # findSubtitleForOverlay: validate target language + return matching subtitle
 │
 ├── content/                       # Content script (chạy trong trang web)
-│   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT
+│   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT; wire subtitle overlay + panel + shortcuts
 │   ├── pageScanner.ts             # Scan <video>, <source>, subtitle <track>
 │   ├── subtitleParser.ts          # Adapter: parseSubtitle(content, format) → ParseResult (reuse parseSrt/parseVtt)
 │   ├── subtitleSync.ts            # Binary search O(log n): findCurrentLine(cues, currentTime) → index
@@ -142,7 +142,7 @@ src/
 
 | File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
 |------|-----------|-----------------|--------------------------|
-| `content/content-script.ts` | pageScanner | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT |
+| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, subtitleShortcuts, config | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + panel + shortcuts + drag-drop + import |
 | `content/pageScanner.ts` | urls (constants) | `content/content-script.ts` | Scan `<video>`, `<source>`, `<track>` |
 | `content/subtitleParser.ts` | srtParser, vttParser, types | (future overlay) | Adapter: parseSubtitle(content, format) → ParseResult |
 | `content/subtitleSync.ts` | types (SrtCue) | (future overlay) | Binary search: findCurrentLine(cues, currentTime) → index |
