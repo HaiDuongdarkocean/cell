@@ -1,4 +1,5 @@
 import { parseSubtitle } from './subtitleParser';
+import { convertAssToSrt } from '@/lib/converters/assToSrt';
 import type { ParseResult, SubtitleFormat } from '../types/subtitle';
 
 const SUPPORTED_EXTENSIONS = ['.srt', '.vtt', '.ass', '.ssa'];
@@ -53,7 +54,19 @@ export async function handleFileDrop(file: File): Promise<ParseResult> {
     };
   }
 
-  // ass/ssa fallback to srt parser until converter is added (Task 13)
-  const parseFormat = format === 'ass' || format === 'ssa' ? 'srt' : format;
-  return parseSubtitle(content, parseFormat);
+  // ass/ssa: convert to SRT first, then parse as SRT
+  if (format === 'ass' || format === 'ssa') {
+    const srtContent = convertAssToSrt(content);
+    if (!srtContent) {
+      return {
+        success: false,
+        cues: [],
+        format,
+        error: 'ASS conversion produced no cues',
+      };
+    }
+    return parseSubtitle(srtContent, 'srt');
+  }
+
+  return parseSubtitle(content, format);
 }

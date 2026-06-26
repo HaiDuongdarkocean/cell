@@ -40,11 +40,22 @@ Hello world`;
       expect(result.cues.length).toBe(1);
     });
 
-    it('should accept .ass extension (fallback to srt parser)', async () => {
-      // ASS will fail parsing as SRT, but should attempt
-      const file = new File([mockSrtContent], 'test.ass', { type: 'text/plain' });
+    it('should accept .ass extension (convert ASS→SRT then parse)', async () => {
+      const assContent = `[Script Info]
+Title: Test
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,20,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,2,2,2,10,10,10,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hello world`;
+      const file = new File([assContent], 'test.ass', { type: 'text/plain' });
       const result = await handleFileDrop(file);
       expect(result.success).toBe(true);
+      expect(result.cues.length).toBe(1);
+      expect(result.cues[0].text).toBe('Hello world');
     });
 
     it('should return error for empty file', async () => {
