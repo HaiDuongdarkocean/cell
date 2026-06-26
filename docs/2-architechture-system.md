@@ -24,7 +24,10 @@ src/
 │   ├── pageScanner.ts             # Scan <video>, <source>, subtitle <track>
 │   ├── subtitleParser.ts          # Adapter: parseSubtitle(content, format) → ParseResult (reuse parseSrt/parseVtt)
 │   ├── subtitleSync.ts            # Binary search O(log n): findCurrentLine(cues, currentTime) → index
-│   └── subtitleUI.ts              # Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay
+│   ├── subtitleUI.ts              # Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay
+│   ├── subtitleDragDrop.ts        # File read + parse: readFileAsText, handleFileDrop (drag-drop handler)
+│   ├── subtitleImport.ts          # Import button: createImportButton, handleFileSelect (file picker)
+│   └── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring)
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
 │   ├── ffmpegRunner.ts            # Entry: nhận CONVERT_TS_TO_MP4_V2, CREATE_OPFS_BLOB_URL
@@ -134,6 +137,9 @@ src/
 | `content/subtitleParser.ts` | srtParser, vttParser, types | (future overlay) | Adapter: parseSubtitle(content, format) → ParseResult |
 | `content/subtitleSync.ts` | types (SrtCue) | (future overlay) | Binary search: findCurrentLine(cues, currentTime) → index |
 | `content/subtitleUI.ts` | types (OverlayConfig) | (future overlay) | Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay |
+| `content/subtitleDragDrop.ts` | subtitleParser, types | subtitleImport, (future overlay) | File read + parse: readFileAsText, handleFileDrop |
+| `content/subtitleImport.ts` | subtitleDragDrop, types | (future overlay) | Import button: createImportButton, handleFileSelect |
+| `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types | (future overlay) | Orchestrator: SubtitleOverlayController (sync → overlay wiring) |
 
 ### Popup layer
 
@@ -432,6 +438,11 @@ downloader.downloadM3u8Streaming(playlist)
 | `updateOverlayText` | `content/subtitleUI.ts` | (HTMLDivElement, string) → void | (future overlay) | Set text and show overlay |
 | `hideOverlay` | `content/subtitleUI.ts` | (HTMLDivElement) → void | (future overlay) | Clear text and hide overlay |
 | `removeOverlay` | `content/subtitleUI.ts` | (HTMLDivElement) → void | (future overlay) | Remove overlay from DOM |
+| `readFileAsText` | `content/subtitleDragDrop.ts` | File → Promise<string> | subtitleImport, (future overlay) | Read File content as text via FileReader |
+| `handleFileDrop` | `content/subtitleDragDrop.ts` | File → Promise<ParseResult> | subtitleImport, (future overlay) | Validate extension + read + parse subtitle file |
+| `createImportButton` | `content/subtitleImport.ts` | (HTMLVideoElement, OverlayConfig) → HTMLButtonElement | (future overlay) | Create import button at top-right of video |
+| `handleFileSelect` | `content/subtitleImport.ts` | File → Promise<ParseResult> | (future overlay) | Handle file from picker (reuses handleFileDrop) |
+| `SubtitleOverlayController` | `content/subtitleOverlay.ts` | class (HTMLVideoElement, OverlayConfig) | (future overlay) | Orchestrator: init/loadCues/clearCues/destroy, timeupdate → binary search → overlay |
 | `parseTimestamp` | `lib/utils/timeUtils.ts` | string → number (ms) | (future) | Unified timestamp parser (comma/dot separator) |
 | `tryAutoDownload` | `background/autoDownload.ts` | (tabId, tabUrl, deps, alreadyEnqueuedIds?) → string[] | background/index.ts | Orchestrator: whitelist → selectBestMedia → enqueue |
 | `getActiveContentTab` | `popup/utils/getActiveContentTab.ts` | void → Promise<Tab> | useDetectedMedia, useDownloadProgress | Resolve active tab (handles Edge app-windows) |
