@@ -53,23 +53,54 @@ describe('subtitleUI', () => {
       expect(overlay.textContent).toBe('');
       expect(overlay.style.display).toBe('none');
     });
+
+    it('should contain an inner span for selectable text', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      const span = overlay.querySelector('span');
+      expect(span).toBeTruthy();
+    });
+
+    it('should have pointer-events: none on container (pass-through to video)', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      expect(overlay.style.pointerEvents).toBe('none');
+    });
+
+    it('should have pointer-events: auto on inner span (selectable)', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      const span = overlay.querySelector('span') as HTMLSpanElement;
+      expect(span.style.pointerEvents).toBe('auto');
+    });
+
+    it('should have user-select: text on inner span', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      const span = overlay.querySelector('span') as HTMLSpanElement;
+      expect(span.style.userSelect).toBe('text');
+    });
+
+    it('should have cursor: text on inner span', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      const span = overlay.querySelector('span') as HTMLSpanElement;
+      expect(span.style.cursor).toBe('text');
+    });
   });
 
   describe('updateOverlayText', () => {
-    it('should set text and show overlay', () => {
+    it('should set text in inner span and show overlay', () => {
       const overlay = createOverlay(video, defaultConfig);
       updateOverlayText(overlay, 'Hello world');
-      expect(overlay.textContent).toBe('Hello world');
+      const span = overlay.querySelector('span') as HTMLSpanElement;
+      expect(span.textContent).toBe('Hello world');
       expect(overlay.style.display).toBe('block');
     });
   });
 
   describe('hideOverlay', () => {
-    it('should clear text and hide overlay', () => {
+    it('should clear span text and hide overlay', () => {
       const overlay = createOverlay(video, defaultConfig);
       updateOverlayText(overlay, 'Hello');
       hideOverlay(overlay);
-      expect(overlay.textContent).toBe('');
+      const span = overlay.querySelector('span') as HTMLSpanElement;
+      expect(span.textContent).toBe('');
       expect(overlay.style.display).toBe('none');
     });
   });

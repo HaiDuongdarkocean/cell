@@ -27,6 +27,15 @@ export function createOverlay(video: HTMLVideoElement, config: OverlayConfig): H
   overlay.style.textAlign = 'center';
   overlay.style.maxWidth = '90%';
 
+  // Inner span: selectable text (pointer-events: auto, user-select: text)
+  // Container keeps pointer-events: none so background padding passes clicks
+  // through to video controls beneath. Only the text itself is interactive.
+  const span = document.createElement('span');
+  span.style.pointerEvents = 'auto';
+  span.style.userSelect = 'text';
+  span.style.cursor = 'text';
+  overlay.appendChild(span);
+
   // Position: bottom/top/center
   if (config.position === 'bottom') {
     overlay.style.bottom = '10%';
@@ -39,7 +48,6 @@ export function createOverlay(video: HTMLVideoElement, config: OverlayConfig): H
 
   // Hidden initially
   overlay.style.display = 'none';
-  overlay.textContent = '';
 
   // Append to video parent (so it overlays the video)
   video.parentElement?.appendChild(overlay);
@@ -48,17 +56,29 @@ export function createOverlay(video: HTMLVideoElement, config: OverlayConfig): H
 
 /**
  * Update overlay text and show it.
+ * Sets text on inner span (selectable), not on container.
  */
 export function updateOverlayText(overlay: HTMLDivElement, text: string): void {
-  overlay.textContent = text;
+  const span = overlay.querySelector('span');
+  if (span) {
+    span.textContent = text;
+  } else {
+    overlay.textContent = text;
+  }
   overlay.style.display = 'block';
 }
 
 /**
  * Clear text and hide overlay.
+ * Clears inner span text, not container.
  */
 export function hideOverlay(overlay: HTMLDivElement): void {
-  overlay.textContent = '';
+  const span = overlay.querySelector('span');
+  if (span) {
+    span.textContent = '';
+  } else {
+    overlay.textContent = '';
+  }
   overlay.style.display = 'none';
 }
 
@@ -91,6 +111,7 @@ export function createDragHint(video: HTMLVideoElement): HTMLDivElement {
   hint.style.justifyContent = 'center';
   hint.style.zIndex = '999998';
   hint.style.pointerEvents = 'none';
+  hint.style.userSelect = 'none';
   hint.style.fontSize = '18px';
   hint.style.color = '#ffffff';
   hint.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
@@ -128,6 +149,7 @@ export function showToast(message: string, video: HTMLVideoElement): void {
   toast.style.transition = 'opacity 0.3s';
   toast.style.opacity = '1';
   toast.style.pointerEvents = 'none';
+  toast.style.userSelect = 'none';
   toast.style.whiteSpace = 'nowrap';
 
   video.parentElement?.appendChild(toast);
