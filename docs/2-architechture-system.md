@@ -27,7 +27,9 @@ src/
 │   ├── subtitleUI.ts              # Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay
 │   ├── subtitleDragDrop.ts        # File read + parse: readFileAsText, handleFileDrop (drag-drop handler)
 │   ├── subtitleImport.ts          # Import button: createImportButton, handleFileSelect (file picker)
-│   └── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring)
+│   ├── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring)
+│   ├── subtitleAutoLoad.ts        # Auto-load decision + override validation: shouldAutoLoad, validateOverride
+│   └── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
 │   ├── ffmpegRunner.ts            # Entry: nhận CONVERT_TS_TO_MP4_V2, CREATE_OPFS_BLOB_URL
@@ -127,6 +129,7 @@ src/
 | `background/messageBus.ts` | — | `background/index.ts` | Message routing |
 | `background/offscreenManager.ts` | — | `background/index.ts` | Offscreen document lifecycle |
 | `background/autoDownload.ts` | **whitelist**, **selectBestMedia**, config, types, downloadQueue | `background/index.ts` | Auto-download orchestrator: `tryAutoDownload(tabId, tabUrl, deps, alreadyEnqueuedIds?)` → returns `string[]` (enqueued media ids; empty = no-op). Whitelist check → load settings → selectBestMedia → enqueue downloads, skipping ids already enqueued (incremental subtitle catch-up). Silent no-op when no match |
+| `background/subtitleService.ts` | types (DetectedSubtitle, Settings) | (future overlay) | findSubtitleForOverlay: validate target language + return matching subtitle |
 
 ### Content layer
 
@@ -140,6 +143,8 @@ src/
 | `content/subtitleDragDrop.ts` | subtitleParser, types | subtitleImport, (future overlay) | File read + parse: readFileAsText, handleFileDrop |
 | `content/subtitleImport.ts` | subtitleDragDrop, types | (future overlay) | Import button: createImportButton, handleFileSelect |
 | `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types | (future overlay) | Orchestrator: SubtitleOverlayController (sync → overlay wiring) |
+| `content/subtitleAutoLoad.ts` | — | (future overlay) | Auto-load decision + override validation: shouldAutoLoad, validateOverride |
+| `content/subtitleTrackDropdown.ts` | types (SrtCue) | (future overlay) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
 
 ### Popup layer
 
@@ -443,6 +448,11 @@ downloader.downloadM3u8Streaming(playlist)
 | `createImportButton` | `content/subtitleImport.ts` | (HTMLVideoElement, OverlayConfig) → HTMLButtonElement | (future overlay) | Create import button at top-right of video |
 | `handleFileSelect` | `content/subtitleImport.ts` | File → Promise<ParseResult> | (future overlay) | Handle file from picker (reuses handleFileDrop) |
 | `SubtitleOverlayController` | `content/subtitleOverlay.ts` | class (HTMLVideoElement, OverlayConfig) | (future overlay) | Orchestrator: init/loadCues/clearCues/destroy, timeupdate → binary search → overlay |
+| `shouldAutoLoad` | `content/subtitleAutoLoad.ts` | AutoLoadConfig → boolean | (future overlay) | Auto-load decision: autoLoad enabled + target language set |
+| `validateOverride` | `content/subtitleAutoLoad.ts` | OverrideConfig → OverrideResult | (future overlay) | Override validation: file language must match target (case-insensitive) |
+| `createTrackDropdown` | `content/subtitleTrackDropdown.ts` | HTMLElement → HTMLSelectElement | (future overlay) | Create track dropdown for multiple subtitle tracks |
+| `updateTrackOptions` | `content/subtitleTrackDropdown.ts` | (HTMLSelectElement, TrackOption[]) → void | (future overlay) | Populate dropdown + show/hide |
+| `findSubtitleForOverlay` | `background/subtitleService.ts` | (DetectedSubtitle[], Settings) → SubtitleForOverlayResult \| null | (future overlay) | Validate target language + return matching subtitle |
 | `parseTimestamp` | `lib/utils/timeUtils.ts` | string → number (ms) | (future) | Unified timestamp parser (comma/dot separator) |
 | `tryAutoDownload` | `background/autoDownload.ts` | (tabId, tabUrl, deps, alreadyEnqueuedIds?) → string[] | background/index.ts | Orchestrator: whitelist → selectBestMedia → enqueue |
 | `getActiveContentTab` | `popup/utils/getActiveContentTab.ts` | void → Promise<Tab> | useDetectedMedia, useDownloadProgress | Resolve active tab (handles Edge app-windows) |
