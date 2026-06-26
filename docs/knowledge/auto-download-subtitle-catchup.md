@@ -1,6 +1,6 @@
 # Auto-download subtitle catch-up (incremental media detection)
 
-> **Principle**: [Separate dedup from catch-up](learned-bugfixes.md#separate-dedup-from-catch-up)
+> **Principle**: [Separate dedup from catch-up](principles.md#separate-dedup-from-catch-up)
 
 ## Problem
 Auto-download downloaded the video but NOT subtitles. Root cause: `NetworkInterceptor.onMediaDetected` fires incrementally — the m3u8 is captured first, subtitles arrive later. The first fire (video only) ran `tryAutoDownload`, enqueued the video, and set a per-tab URL guard (`autoDownloadedTabs: Map<tabId, url>`). When subtitles arrived in the second fire, `maybeAutoDownload` saw the guard matched the URL and returned early, so subtitles were never enqueued.

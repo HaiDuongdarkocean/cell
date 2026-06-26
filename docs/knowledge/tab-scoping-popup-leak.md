@@ -1,6 +1,6 @@
 # Tab-Scoping (learned while fixing popup media leak)
 
-> **Principle**: [Broadcasts fan out → scope by identifier](learned-bugfixes.md#broadcasts-fan-out--scope-by-identifier)
+> **Principle**: [Broadcasts fan out → scope by identifier](principles.md#broadcasts-fan-out--scope-by-identifier)
 
 ## Problem
 Popup opened for tab A showed media from background tab B. Root cause: `handleGetDetectedMedia` and `handleDownloadAll` fell back to all-tab media when the active tab was empty, and `DETECTED_MEDIA_UPDATE` broadcasts were not tab-scoped.

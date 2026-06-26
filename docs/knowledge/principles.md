@@ -1,4 +1,4 @@
-# Learned Bug Fixes — Principle Index
+# Principles — Engineering Lessons Index
 
 > **Layer 1 (this file)**: abstract principles — scan nhanh, cross-project, không coupled codebase.
 > **Layer 2 (case study files)**: technical detail — problem, fix, verification. Link từ "Cases" bên dưới.

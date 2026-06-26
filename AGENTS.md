@@ -51,7 +51,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 - [docs/0-wiki.md](docs/0-wiki.md) — Mục lục tổng quan (cây thư mục + cách dùng)
 - [docs/1-share-language.md](docs/1-share-language.md) — Glossary human ↔ system language
 - [docs/2-architechture-system.md](docs/2-architechture-system.md) — Architecture chi tiết (src/ + tests/ + dependency + function index + data flows + ADR)
-- [docs/knowledge/learned-bugfixes.md](docs/knowledge/learned-bugfixes.md) — Bug fix principles (abstract: broadcasts, dedup, gather candidates)
+- [docs/knowledge/principles.md](docs/knowledge/principles.md) — Principle index (abstract: broadcasts, dedup, gather candidates, hybrid detection, dead field, codec config)
 - [docs/knowledge/auto-download-subtitle-catchup.md](docs/knowledge/auto-download-subtitle-catchup.md) — Auto-download subtitle catch-up (incremental media detection)
 - [docs/knowledge/tab-scoping-popup-leak.md](docs/knowledge/tab-scoping-popup-leak.md) — Tab-Scoping (popup media leak fix)
 - [docs/knowledge/edge-app-window-leak.md](docs/knowledge/edge-app-window-leak.md) — Edge app-window leak (popup renders empty on Edge)

@@ -14,7 +14,7 @@ docs/           # Tài liệu dự án
 ├── specs/                  # PRD chi tiết — "what to build"
 ├── plan/                   # Task breakdown — "how to build"
 ├── knowledge/              # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
-│   ├── learned-bugfixes.md              # Bug fix principles (abstract)
+│   ├── principles.md                   # Principle index (abstract, layer 1)
 │   ├── auto-download-subtitle-catchup.md # Auto-download subtitle catch-up
 │   ├── tab-scoping-popup-leak.md        # Tab-Scoping (popup media leak)
 │   ├── edge-app-window-leak.md          # Edge app-window leak
