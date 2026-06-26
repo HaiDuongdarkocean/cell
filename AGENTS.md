@@ -68,7 +68,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
   - Nếu test pass + debug pass → check docs/knowledge/: grep keyword → pattern mới → khái niệm hóa thành nguyên lý
 - **Sau khi sửa/thêm/xóa file src/**: update `docs/2-architechture-system.md` (cây thư mục + dependency + function index) trước khi commit
 - **Sau khi feature hoàn thành**: update `docs/0-wiki.md` (mục lục) nếu có thêm/xóa file docs
-- **Sau khi test pass + debug pass**: khái niệm hóa thành nguyên lý → ghi vào `docs/knowledge/<principle>.md` (format: nguyên lý + cases + apply cho)
+- **Sau khi test pass + debug pass**: invoke `/conceptualization` skill → khái niệm hóa thành nguyên lý → ghi vào `docs/knowledge/<principle>.md` (format: nguyên lý + cases + apply cho)
 - **Sau khi fix bug**: ghi bug log + convention vào `docs/knowledge/<principle>.md`
 - **Sau khi thay đổi kiến trúc**: thêm ADR vào `docs/adr/<decision>.md` (format: context, decision, consequences, alternatives)
 - **File placement convention**: knowledge → `docs/knowledge/`, specs → `docs/specs/`, intent → `docs/intent/`, plan → `docs/plan/`, reference → `docs/reference/`, adr → `docs/adr/`. KHÔNG lưu loose file ở docs/ root
@@ -92,7 +92,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 | 4. Architecture | system-architecture-design / cto-persona | New project, major feature, tech strategy |
 | 5. Implement | incremental-implementation / source-driven-development / frontend-ui-engineering / doubt-driven-development / ponytail.md | >1 file, framework code, UI, high stakes, always-on minimal |
 | 6. Test | test-driven-development / browser-testing-with-devtools | Logic/bug/behavior, browser code |
-| 7. Review | code-review-and-quality / doubt-driven-development | Before merge, correctness-critical |
+| 7. Review | code-review-and-quality / doubt-driven-development / conceptualization | Before merge, correctness-critical, after test pass + debug pass |
 | 8. Git | git-workflow-and-versioning | Any code change |
 | 9. Security | security-and-hardening | User input, auth, data, external |
 | 10. Performance | performance-optimization | Perf requirements, regressions |
