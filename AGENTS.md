@@ -122,35 +122,102 @@ knowledge → `docs/knowledge/`, specs → `docs/specs/`, intent → `docs/inten
 
 ---
 
-## Skill Orchestration
+## Software Production Workflow
 
-### Always-on Rules
-- `.windsurf/rules/baseline.md` — Windsurf-specific (UI/UX, knowledge base, architecture map, slash commands)
-- `.windsurf/rules/ponytail.md` — Lazy senior dev ladder (YAGNI → reuse → stdlib → minimal)
-- `AGENTS.md` (this file) — Cross-tool project knowledge + skill hierarchy
+> Based on `docs/software-production-process-research.md` (synthesis 30 nguồn: Google, Microsoft, Amazon, Scrum, DevOps).
+> 8 giai đoạn (0-7). Mỗi giai đoạn: skill kích hoạt → input tài liệu → output tài liệu → file ops.
+> **Điểm khởi đầu**: AGENTS.md (file này) → `.windsurf/rules/` → `docs/0-wiki.md` → chain tham chiếu.
 
-### Skill Hierarchy (compact — invoke skill for full workflow)
+### Giai đoạn 0 — Discovery / Ideation
+**Mục đích**: Xác định vấn đề cần giải, vision, cơ hội.
+**Skill kích hoạt**: `idea-refine` (stress-test assumptions) → `interview-me` (clarify intent)
+**Input tài liệu**: User request (raw, underspecified)
+**Output tài liệu**: `docs/intent/<feature>.md` (vision, problem statement, opportunity)
+**File ops**:
+- XEM: `docs/0-wiki.md` (biết docs hiện có)
+- THÊM: `docs/intent/<feature>.md`
+- UPDATE: `docs/0-wiki.md` (mục lục)
 
-| Phase | Skill | When |
-|---|---|---|
-| 1. Clarify | interview-me | Request underspecified |
-| 2. Spec | spec-driven-development | New feature, no spec exists |
-| 3. Plan | planning-and-task-breakdown | Spec exists, need task breakdown |
-| 4. Architecture | system-architecture-design / cto-persona | New project, major feature, tech strategy |
-| 5. Implement | incremental-implementation / source-driven-development / frontend-ui-engineering / doubt-driven-development / ponytail.md | >1 file, framework code, UI, high stakes, always-on minimal |
-| 6. Test | test-driven-development / browser-testing-with-devtools | Logic/bug/behavior, browser code |
-| 7. Review | code-review-and-quality / doubt-driven-development / conceptualization | Before merge, correctness-critical, after test pass + debug pass |
-| 8. Git | git-workflow-and-versioning | Any code change |
-| 9. Security | security-and-hardening | User input, auth, data, external |
-| 10. Performance | performance-optimization | Perf requirements, regressions |
-| 11. Docs | documentation-and-adrs | Architecture decisions, API changes |
-| 12. Deploy | shipping-and-launch / ci-cd-and-automation | Production deploy, pipelines |
-| 13. Monitor | observability-and-instrumentation | Production features, issues |
-| 14. Debug | debugging-and-error-recovery | Tests fail, builds break |
-| 15. Refactor | code-simplification | Clarity without behavior change |
-| 16. Deprecate | deprecation-and-migration | Removing old systems |
-| 17. Ideate | idea-refine | Vague idea, stress-test assumptions |
-| 18. Meta | using-agent-skills / devin-for-terminal / context-engineering / api-and-interface-design | Skill discovery, docs lookup, context setup, API design |
+### Giai đoạn 1 — Planning & Feasibility
+**Mục đích**: Đánh giá khả thi, lập kế hoạch, phân bổ nguồn lực.
+**Skill kích hoạt**: `planning-and-task-breakdown` (break work into tasks) → `cto-persona` (tech strategy, build-vs-buy)
+**Input tài liệu**: `docs/intent/<feature>.md`
+**Output tài liệu**: `docs/plan/<feature>.md` (task breakdown, scope, risks)
+**File ops**:
+- XEM: `docs/intent/<feature>.md`, `docs/2-architechture-system.md`
+- THÊM: `docs/plan/<feature>.md`
+- UPDATE: `docs/0-wiki.md` (mục lục)
+
+### Giai đoạn 2 — Requirements / Spec
+**Mục đích**: Biến nhu cầu thành yêu cầu cụ thể, có thể test được.
+**Skill kích hoạt**: `spec-driven-development` (write PRD before code) → `interview-me` (resolve open questions) → `security-and-hardening` (security/privacy requirements)
+**Input tài liệu**: `docs/intent/<feature>.md`, `docs/plan/<feature>.md`
+**Output tài liệu**: `docs/specs/<feature>.md` (SRS/PRD: functional + non-functional + acceptance criteria)
+**File ops**:
+- XEM: `docs/intent/`, `docs/plan/`, `docs/knowledge/` (grep keywords liên quan)
+- THÊM: `docs/specs/<feature>.md`
+- UPDATE: `docs/0-wiki.md` (mục lục)
+
+### Giai đoạn 3 — Design / Architecture
+**Mục đích**: Thiết kế kiến trúc + UI/UX + threat model trước khi code.
+**Skill kích hoạt**: `system-architecture-design` (architecture design) → `cto-persona` (architecture governance) → `api-and-interface-design` (module boundaries) → `security-and-hardening` (threat model) → `frontend-ui-engineering` (UI design)
+**Input tài liệu**: `docs/specs/<feature>.md`
+**Output tài liệu**: `docs/adr/<decision>.md` (mỗi quyết định 1 file), `docs/2-architechture-system.md` (update architecture map)
+**File ops**:
+- XEM: `docs/specs/<feature>.md`, `docs/2-architechture-system.md`
+- THÊM: `docs/adr/<decision>.md`
+- UPDATE: `docs/2-architechture-system.md` (Cây thư mục + Bảng phụ thuộc + Function Index)
+- UPDATE: `docs/0-wiki.md` (mục lục)
+
+### Giai đoạn 4 — Implementation / Coding
+**Mục đích**: Viết code theo design, TDD, code review.
+**Skill kích hoạt**: `test-driven-development` (RED→GREEN→REFACTOR) → `source-driven-development` (cite official docs) → `incremental-implementation` (>1 file) → `frontend-ui-engineering` (UI) → `ponytail.md` (lazy ladder) → `git-workflow-and-versioning` (atomic commits)
+**Input tài liệu**: `docs/specs/<feature>.md`, `docs/plan/<feature>.md`, `docs/2-architechture-system.md`
+**Output tài liệu**: `src/` code + `tests/` + updated `docs/2-architechture-system.md`
+**File ops**:
+- XEM: `docs/2-architechture-system.md` (Cây thư mục + Bảng phụ thuộc + Function Index), `docs/knowledge/` (grep keywords)
+- THÊM: `src/<file>.ts`, `tests/unit/<file>.test.ts`
+- UPDATE: `docs/2-architechture-system.md` (3 chỗ: Cây thư mục + Bảng phụ thuộc + Function Index)
+- VERIFY: `ls src/` từng thư mục → compare với Cây thư mục → confirm không thiếu
+
+### Giai đoạn 5 — Testing / Verification
+**Mục đích**: Verify code đáp ứng requirements + an toàn + ổn định.
+**Skill kích hoạt**: `test-driven-development` (test pyramid) → `code-review-and-quality` (5-axis review) → `browser-testing-with-devtools` (browser code) → `security-and-hardening` (SAST/DAST) → `performance-optimization` (perf test) → `doubt-driven-development` (adversarial review)
+**Input tài liệu**: `src/` code + `tests/` + `docs/specs/<feature>.md` (acceptance criteria)
+**Output tài liệu**: Test reports, code review log
+**File ops**:
+- XEM: `docs/specs/<feature>.md` (acceptance criteria), `tests/`
+- THÊM: `tests/integration/`, `tests/e2e/` (nếu cần)
+- UPDATE: `tests/unit/` (fix failing tests)
+
+### Giai đoạn 6 — Deployment / Release
+**Mục đích**: Release build đã verify ra production an toàn, có rollback.
+**Skill kích hoạt**: `shipping-and-launch` (pre-launch checklist, staged rollout, rollback) → `ci-cd-and-automation` (CI/CD pipeline) → `observability-and-instrumentation` (monitoring setup)
+**Input tài liệu**: `src/` code (verified), `docs/specs/<feature>.md`
+**Output tài liệu**: Release artifact, release notes, deployment runbook
+**File ops**:
+- XEM: `docs/specs/<feature>.md` (success criteria)
+- UPDATE: `docs/0-wiki.md` (changelog, version)
+
+### Giai đoạn 7 — Maintenance / Operations
+**Mục đích**: Giữ hệ thống ổn định, fix bug, monitor, evolve.
+**Skill kích hoạt**: `debugging-and-error-recovery` (root-cause debug) → `observability-and-instrumentation` (monitor, diagnose) → `conceptualization` (khái niệm hóa bug → nguyên lý) → `deprecation-and-migration` (remove old systems) → `code-simplification` (refactor clarity)
+**Input tài liệu**: Bug report / incident / monitoring alert
+**Output tài liệu**: `docs/knowledge/<principle>.md` (nguyên lý từ bug), postmortem
+**File ops**:
+- XEM: `docs/knowledge/` (grep keywords liên quan → apply nguyên lý)
+- THÊM: `docs/knowledge/<principle>.md` (nguyên lý mới)
+- UPDATE: `docs/knowledge/<principle>.md` (cases mới cho nguyên lý đã có)
+- UPDATE: `docs/2-architechture-system.md` (nếu fix ảnh hưởng architecture)
+
+### Cross-cutting Skills (áp dụng mọi giai đoạn)
+| Skill | Khi nào |
+|---|---|
+| `doubt-driven-development` | Mọi quyết định non-trivial — adversarial review trước khi stand |
+| `context-engineering` | Session start, context degradation, task switch |
+| `using-agent-skills` | Discover skills khi không biết dùng skill nào |
+| `documentation-and-adrs` | Architecture decisions (Phase 3), API changes (Phase 4), ship features (Phase 6) |
+| `git-workflow-and-versioning` | Mọi code change (Phase 4-7) |
 
 ### Skill Synergies
 - **TDD + Minimalism + Review**: `test-driven-development` + `ponytail.md` + `code-review-and-quality`
