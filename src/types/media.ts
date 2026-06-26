@@ -335,6 +335,10 @@ export interface Settings {
   readonly preferredVideoFormat: 'mp4' | 'm3u8';
   /** When true, popup auto-selects media matching preferences on open. */
   readonly autoSelectEnabled: boolean;
+  /** Target language for subtitle overlay (ISO 639-1 code, e.g. 'en'). Empty = no target. */
+  readonly subtitleOverlayTargetLanguage: string;
+  /** When true, subtitle overlay auto-loads from extension-detected subtitles matching target language. */
+  readonly subtitleOverlayAutoLoad: boolean;
 }
 
 /** Result of auto-selecting best media matching user preferences. */

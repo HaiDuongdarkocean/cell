@@ -112,6 +112,8 @@ export const DEFAULT_SETTINGS: Settings = {
   filenameSource: DEFAULT_FILENAME_SOURCE,
   preferredVideoFormat: DEFAULT_PREFERRED_VIDEO_FORMAT,
   autoSelectEnabled: DEFAULT_AUTO_SELECT_ENABLED,
+  subtitleOverlayTargetLanguage: '',
+  subtitleOverlayAutoLoad: false,
 };
 
 // === Storage Keys ===

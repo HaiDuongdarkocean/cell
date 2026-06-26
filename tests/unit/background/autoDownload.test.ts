@@ -83,6 +83,8 @@ const BASE_SETTINGS: Settings = {
   filenameSource: 'title-fallback',
   preferredVideoFormat: 'm3u8',
   autoSelectEnabled: true,
+  subtitleOverlayTargetLanguage: '',
+  subtitleOverlayAutoLoad: false,
 };
 
 function makeVideo(id: string, tabId = 1): DetectedVideo {

@@ -616,6 +616,8 @@ describe('Background integration', () => {
       filenameSource: 'title-fallback',
       preferredVideoFormat: 'mp4',
       autoSelectEnabled: true,
+      subtitleOverlayTargetLanguage: '',
+      subtitleOverlayAutoLoad: false,
     };
     mockChrome.storage.local.get.mockResolvedValue({
       [STORAGE_KEYS.SETTINGS]: storedSettings,
