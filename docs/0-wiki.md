@@ -13,7 +13,15 @@ docs/           # Tài liệu dự án
 ├── intent/                 # Output interview-me — "what user wants"
 ├── specs/                  # PRD chi tiết — "what to build"
 ├── plan/                   # Task breakdown — "how to build"
-├── knowledge/              # Nguyên lý khái niệm hóa — "lessons learned"
+├── knowledge/              # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
+│   ├── learned-bugfixes.md              # Bug fix principles (abstract)
+│   ├── auto-download-subtitle-catchup.md # Auto-download subtitle catch-up
+│   ├── tab-scoping-popup-leak.md        # Tab-Scoping (popup media leak)
+│   ├── edge-app-window-leak.md          # Edge app-window leak
+│   ├── subtitle-language-detection.md   # Subtitle language detection (hybrid)
+│   ├── subtitle-filename-matches-video.md # Subtitle filename matches video
+│   ├── parallel-fmp4-merge.md           # Parallel fMP4 merge (tfdt offset)
+│   └── architecture-auto-select.md      # Auto-Select & Auto-Download architecture
 └── reference/              # Hướng dẫn dùng tools — "how to use"
 
 src/            # Source code (chi tiết trong 2-architechture-system.md)
