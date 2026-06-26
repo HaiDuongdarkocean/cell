@@ -59,42 +59,57 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 - [docs/reference/e2e-debugging.md](docs/reference/e2e-debugging.md) — E2E Debugging with Chrome DevTools MCP
 - [docs/spec-subtitle-overlay.md](docs/spec-subtitle-overlay.md) — Subtitle overlay feature spec
 
-## Living Documentation Rules
-- **Trước khi sửa code**: đọc `docs/2-architechture-system.md` → check "Bảng phụ thuộc" → biết ảnh hưởng file nào
-- **Trước khi viết function mới**: grep `docs/knowledge/` cho keywords liên quan + đọc `docs/2-architechture-system.md` Function Index → tránh tái phạm pattern
-- **Trước khi fix bug**: grep `docs/knowledge/` cho keywords liên quan → apply nguyên lý để fix nhanh hơn
-- **Git Pre-Commit (Living Docs Check)**: Trước khi commit, chạy `git diff --name-only`:
-  - Nếu có thay đổi src/** → update `docs/2-architechture-system.md` theo loại thay đổi:
-    - **Thêm file src/ mới** → update 3 chỗ: Cây thư mục (file location) + Function Index (function signature) + Bảng phụ thuộc (dependency)
-    - **Xóa file src/** → update 3 chỗ: Cây thư mục + Function Index + Bảng phụ thuộc (remove entries)
-    - **Đổi tên file src/** → update 3 chỗ: Cây thư mục + Function Index + Bảng phụ thuộc (rename references)
-    - **Sửa function (file đã có)** → chỉ update Function Index nếu input/output thay đổi; skip nếu implementation thay đổi (input/output không đổi)
-    - **Verify sau khi update**: chạy `ls src/` từng thư mục con → compare với Cây thư mục trong docs → confirm không thiếu file nào. Cây thư mục ở ĐẦU file (line 9-115) — dễ quên vì Function Index + Bảng phụ thuộc ở giữa/cuối file
-  - Nếu có thay đổi docs/** → check 0-wiki.md: file docs mới/xóa → update Mục lục
-  - Nếu test pass + debug pass → check docs/knowledge/: grep keyword → pattern mới → khái niệm hóa thành nguyên lý
-- **Sau khi sửa/thêm/xóa file src/**: update `docs/2-architechture-system.md` (cây thư mục + dependency + function index) trước khi commit
-- **Sau khi feature hoàn thành**: update `docs/0-wiki.md` (mục lục) nếu có thêm/xóa file docs
-- **Sau khi test pass + debug pass**: invoke `/conceptualization` skill → khái niệm hóa thành nguyên lý → ghi vào `docs/knowledge/<principle>.md` (format: nguyên lý + cases + apply cho)
-- **Sau khi fix bug**: ghi bug log + convention vào `docs/knowledge/<principle>.md`
-- **Sau khi thay đổi kiến trúc**: thêm ADR vào `docs/adr/<decision>.md` (format: context, decision, consequences, alternatives)
-- **File placement convention**: knowledge → `docs/knowledge/`, specs → `docs/specs/`, intent → `docs/intent/`, plan → `docs/plan/`, reference → `docs/reference/`, adr → `docs/adr/`. KHÔNG lưu loose file ở docs/ root
+## Living Documentation Workflow
 
-## Git Commit Timing (from git-workflow-and-versioning skill)
-- **Trước khi commit**: invoke `git-workflow-and-versioning` skill để re-read rules
-- **Commit khi**: test pass (GREEN) + revert-độc-lập + concern đơn + size < 300 lines
-- **Không commit khi**: test fail, chưa revert-độc-lập, gộp nhiều concerns, > 300 lines
-- **Atomic commit test**: "Có thể revert commit này mà build vẫn pass?" → YES = commit riêng; NO = gộp với commit phụ thuộc
-- **TDD cycle**: RED → GREEN → COMMIT → REFACTOR → COMMIT (commit ở GREEN, không phải sau khi "xong hết")
-- **Separate concerns**: code + docs = 2 commit; feature + refactor = 2 commit
-- **Size check**: `git diff --staged --stat` — nếu > 300 lines → split
-- **Pre-Commit Hygiene**: `git diff --staged` (check secrets) → `npm test` → `npm run lint` → `npx tsc --noEmit`
+> **Nguyên lý**: Tham chiếu spec, không tin memory. Verify bằng `ls`, không tin docs.
+> **Điểm khởi đầu**: AGENTS.md (file này) → `.windsurf/rules/` → `docs/0-wiki.md` → chain tham chiếu.
 
-### Git Commit Rules
-- **Atomic commits**: each commit does one logical thing
-- **Separate refactoring from feature work**: refactor commit ≠ feature commit
+### Phase 0: Session Start (ĐỌC — xác định context)
+1. **PHẢI đọc** AGENTS.md (file này) → biết workflow + rules
+2. **PHẢI đọc** `.windsurf/rules/baseline.md` → biết baseline rules (UI/UX, TDD, code review, source-driven)
+3. **PHẢI đọc** `docs/0-wiki.md` → biết mục lục docs + when-to-load từng file
+4. **PHẢI đọc** `docs/2-architechture-system.md` → biết cấu trúc src/ + dependencies + function index
+5. **PHẢI đọc** spec liên quan (từ 0-wiki mục lục → `docs/specs/`) → biết nhiệm vụ cần làm
+6. **VERIFY cấu trúc**: `ls src/` từng thư mục con → compare với Cây thư mục trong 2-architechture-system.md → nếu thiếu file → update Cây thư mục TRƯỚC khi làm task
+
+### Phase 1: Pre-Task (XÁC ĐỊNH nhiệm vụ)
+1. **PHẢI đọc** spec → xác định chính xác nhiệm vụ (không tin memory về spec)
+2. **PHẢI grep** `docs/knowledge/` cho keywords liên quan → tránh tái phạm pattern
+3. **PHẢI đọc** Function Index trong 2-architechture-system.md → biết function liên quan đã tồn tại chưa
+4. **PHẢI check** Bảng phụ thuộc → biết sửa file X ảnh hưởng file Y nào
+
+### Phase 2: Implementation (LÀM)
+1. TDD: RED (viết test fail) → GREEN (minimal impl) → REFACTOR (5-axis review)
+2. Ponytail lazy ladder: reuse > rewrite > new code
+3. Invoke skill liên quan: `/test-driven-development`, `/source-driven-development`
+
+### Phase 3: Pre-Commit (VERIFY + UPDATE docs)
+1. **PHẢI chạy** `git diff --name-only` → biết file nào thay đổi
+2. **Nếu src/ thay đổi** → **PHẢI update** `docs/2-architechture-system.md`:
+   - Thêm/xóa/đổi tên file → update **3 chỗ** (theo thứ tự):
+     a. **Cây thư mục** (ĐẦU file, line ~9-115) — DỄ QUÊN nhất
+     b. **Bảng phụ thuộc** (GIỮA file, line ~119-150)
+     c. **Function Index** (CUỐI file, line ~415-460)
+   - Sửa function → chỉ update Function Index nếu input/output thay đổi
+3. **VERIFY sau khi update**: `ls src/` từng thư mục con → compare với Cây thư mục → **PHẢI confirm không thiếu file nào** (không tin memory, tin `ls`)
+4. **Nếu docs/ thay đổi** → **PHẢI update** `docs/0-wiki.md` mục lục
+5. **Nếu test pass + debug pass** → **PHẢI check** `docs/knowledge/`: grep keyword → pattern mới → invoke `/conceptualization` skill → khái niệm hóa thành nguyên lý
+6. **Nếu thay đổi kiến trúc** → **PHẢI thêm** ADR vào `docs/adr/<decision>.md`
+
+### Phase 4: Commit (GIT RULES)
+1. **PHẢI invoke** `git-workflow-and-versioning` skill
+2. **Atomic commit test**: "Có thể revert commit này mà build vẫn pass?" → YES = commit riêng; NO = gộp
+3. **Size check**: `git diff --staged --stat` — nếu > 300 lines → split
+4. **Separate concerns**: code commit ≠ docs commit (2 commit riêng)
+5. **TDD cycle**: RED → GREEN → COMMIT → REFACTOR → COMMIT
+6. **Pre-Commit Hygiene**: `git diff --staged` (check secrets) → `npm test` → `npm run lint` → `npx tsc --noEmit`
+
+### File Placement Convention
+knowledge → `docs/knowledge/`, specs → `docs/specs/`, intent → `docs/intent/`, plan → `docs/plan/`, reference → `docs/reference/`, adr → `docs/adr/`. KHÔNG lưu loose file ở docs/ root
+
+## Git Commit Rules (from git-workflow-and-versioning skill)
 - **Format**: `<type>: <description>` — types: feat, fix, refactor, test, docs, chore
 - **Body explains why, not what**
-- **Pre-commit**: check staged diff, no secrets, run tests + lint + typecheck
 - **Change Summaries after modification**:
   ```
   CHANGES MADE:
