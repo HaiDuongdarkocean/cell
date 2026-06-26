@@ -106,6 +106,17 @@
   gap: 6px;
 }
 
+/* === Text input — for short code fields (e.g. language code) === */
+.textInput {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
 .label {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);

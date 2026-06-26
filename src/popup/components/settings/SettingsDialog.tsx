@@ -337,6 +337,43 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
             />
           </SettingField>
 
+          {/* === Group: subtitle overlay === */}
+
+          {/* Subtitle overlay target language */}
+          <SettingField label="Overlay target language" htmlFor="set-overlay-lang">
+            <input
+              id="set-overlay-lang"
+              type="text"
+              data-testid="overlay-target-language"
+              value={settings.subtitleOverlayTargetLanguage}
+              onChange={(e) => update('subtitleOverlayTargetLanguage', e.target.value.toLowerCase().trim())}
+              placeholder="e.g. en, vi, ja"
+              maxLength={5}
+              className={styles.textInput}
+            />
+          </SettingField>
+
+          {/* Subtitle overlay auto-load */}
+          <div className={styles.field}>
+            <div className={styles.asRow}>
+              <span className={styles.asLabel}>Overlay auto-load</span>
+              <button
+                type="button"
+                className={`${styles.iconBtn} ${styles.iconBtnSm} ${settings.subtitleOverlayAutoLoad ? styles.asActive : ''}`}
+                onClick={() => update('subtitleOverlayAutoLoad', !settings.subtitleOverlayAutoLoad)}
+                aria-pressed={settings.subtitleOverlayAutoLoad}
+                aria-label="Toggle overlay auto-load"
+                title={`Overlay auto-load: ${settings.subtitleOverlayAutoLoad ? 'ON' : 'OFF'}`}
+              >
+                <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
+                  <path d="M19 15L19.5 16.5L21 17L19.5 17.5L19 19L18.5 17.5L17 17L18.5 16.5L19 15Z" />
+                </svg>
+              </button>
+            </div>
+            <p className={styles.asHint}>Khi bật, overlay tự load subtitle detect được cùng target language.</p>
+          </div>
+
           {/* === Group: download === */}
 
           {/* Downloads at once */}
