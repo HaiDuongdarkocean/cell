@@ -10,6 +10,7 @@ docs/           # Tài liệu dự án
 ├── 1-share-language.md    # Glossary human ↔ system language
 ├── 2-architechture-system.md  # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows)
 ├── adr/                    # Architecture Decision Records (mỗi quyết định 1 file)
+│   └── 005-subtitle-floating-panel.md  # Subtitle panel: inline DOM, bilingual delimiter, CS shortcuts
 ├── intent/                 # Output interview-me — "what user wants"
 ├── specs/                  # PRD chi tiết — "what to build"
 ├── plan/                   # Task breakdown — "how to build"

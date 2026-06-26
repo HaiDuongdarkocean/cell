@@ -30,7 +30,10 @@ src/
 │   ├── subtitleImport.ts          # Import button: createImportButton, handleFileSelect (file picker)
 │   ├── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring)
 │   ├── subtitleAutoLoad.ts        # Auto-load decision + override validation: shouldAutoLoad, validateOverride
-│   └── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
+│   ├── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
+│   ├── subtitleBilingualParser.ts # [PLANNED] Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, reuse parseSrt)
+│   ├── subtitlePanel.ts           # [PLANNED] Floating panel UI: createPanel, renderCueList, draggable, lazy load (IntersectionObserver)
+│   └── subtitleShortcuts.ts       # [PLANNED] Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
 │   ├── ffmpegRunner.ts            # Entry: nhận CONVERT_TS_TO_MP4_V2, CREATE_OPFS_BLOB_URL
@@ -149,6 +152,9 @@ src/
 | `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types | (future overlay) | Orchestrator: SubtitleOverlayController (sync → overlay wiring) |
 | `content/subtitleAutoLoad.ts` | — | (future overlay) | Auto-load decision + override validation: shouldAutoLoad, validateOverride |
 | `content/subtitleTrackDropdown.ts` | types (SrtCue) | (future overlay) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
+| `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | (future panel) | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) |
+| `content/subtitlePanel.ts` | types (BilingualCue) | (future panel) | Floating panel UI: createPanel, renderCueList, draggable, lazy load (IntersectionObserver), highlightCue, scrollToCue |
+| `content/subtitleShortcuts.ts` | types (KeyboardShortcut) | (future panel) | Keyboard handler: handleShortcutKey (pure, guard input/textarea) |
 
 ### Popup layer
 
@@ -466,6 +472,13 @@ downloader.downloadM3u8Streaming(playlist)
 | `isWhitelisted` | `lib/utils/whitelist.ts` | (url, tabId) → boolean | background/autoDownload.ts | Check if URL is whitelisted for auto-download |
 | `transmux` | `lib/converters/tsTransmuxer.ts` | (tsData, options) → fMP4Blob | ffmpegRunner.ts | Sequential TS→fMP4 via mux.js |
 | `mergePartFiles` | `lib/converters/parallelTransmuxer.ts` | (parts[]) → fMP4Blob | parallelTransmuxer.ts | Merge parallel fMP4 parts (ftyp+moov strip + tfdt offset fix) |
+| `parseBilingualSrt` | `content/subtitleBilingualParser.ts` | string → BilingualParseResult | (future panel) | Parse bilingual SRT (target lẻ/native chẵn, fallback single-language) |
+| `createPanel` | `content/subtitlePanel.ts` | HTMLVideoElement → HTMLDivElement | (future panel) | Create floating panel appended to video parent (draggable, inline DOM) |
+| `renderCueList` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[]) → void | (future panel) | Render cue list items (timestamp + bilingual text) |
+| `renderCueListLazy` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[], IntersectionObserver) → void | (future panel) | Lazy render visible items + buffer (fallback render all if < 50 cues) |
+| `highlightCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Highlight current cue background |
+| `scrollToCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Auto-scroll current cue into view |
+| `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | (future panel) | Pure: map key → action, guard input/textarea focus |
 
 ---
 
