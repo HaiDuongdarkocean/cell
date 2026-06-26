@@ -78,6 +78,16 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 - **Sau khi thay đổi kiến trúc**: thêm ADR vào `docs/adr/<decision>.md` (format: context, decision, consequences, alternatives)
 - **File placement convention**: knowledge → `docs/knowledge/`, specs → `docs/specs/`, intent → `docs/intent/`, plan → `docs/plan/`, reference → `docs/reference/`, adr → `docs/adr/`. KHÔNG lưu loose file ở docs/ root
 
+## Git Commit Timing (from git-workflow-and-versioning skill)
+- **Trước khi commit**: invoke `git-workflow-and-versioning` skill để re-read rules
+- **Commit khi**: test pass (GREEN) + revert-độc-lập + concern đơn + size < 300 lines
+- **Không commit khi**: test fail, chưa revert-độc-lập, gộp nhiều concerns, > 300 lines
+- **Atomic commit test**: "Có thể revert commit này mà build vẫn pass?" → YES = commit riêng; NO = gộp với commit phụ thuộc
+- **TDD cycle**: RED → GREEN → COMMIT → REFACTOR → COMMIT (commit ở GREEN, không phải sau khi "xong hết")
+- **Separate concerns**: code + docs = 2 commit; feature + refactor = 2 commit
+- **Size check**: `git diff --staged --stat` — nếu > 300 lines → split
+- **Pre-Commit Hygiene**: `git diff --staged` (check secrets) → `npm test` → `npm run lint` → `npx tsc --noEmit`
+
 ---
 
 ## Skill Orchestration
