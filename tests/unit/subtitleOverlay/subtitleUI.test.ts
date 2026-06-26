@@ -1,4 +1,4 @@
-import { createOverlay, updateOverlayText, hideOverlay, removeOverlay } from '../../../src/content/subtitleUI';
+import { createOverlay, updateOverlayText, hideOverlay, removeOverlay, createDragHint, showToast } from '../../../src/content/subtitleUI';
 import type { OverlayConfig } from '../../../src/types/subtitle';
 
 // jsdom provides document
@@ -80,6 +80,61 @@ describe('subtitleUI', () => {
       const parent = overlay.parentElement;
       removeOverlay(overlay);
       expect(parent?.contains(overlay)).toBe(false);
+    });
+  });
+
+  describe('createDragHint', () => {
+    it('should create drag hint div appended to video parent', () => {
+      const hint = createDragHint(video);
+      expect(hint).toBeTruthy();
+      expect(hint.getAttribute('data-testid')).toBe('subtitle-drag-hint');
+      expect(video.parentElement?.contains(hint)).toBe(true);
+    });
+
+    it('should be hidden initially', () => {
+      const hint = createDragHint(video);
+      expect(hint.style.display).toBe('none');
+    });
+
+    it('should have dashed border for visual feedback', () => {
+      const hint = createDragHint(video);
+      expect(hint.style.border).toContain('dashed');
+    });
+
+    it('should have drop instruction text', () => {
+      const hint = createDragHint(video);
+      expect(hint.textContent).toContain('Drop subtitle');
+    });
+  });
+
+  describe('showToast', () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should create toast element in video parent', () => {
+      showToast('Test message', video);
+      const toast = document.querySelector('[data-testid="subtitle-toast"]');
+      expect(toast).toBeTruthy();
+      expect(toast?.textContent).toBe('Test message');
+      expect(video.parentElement?.contains(toast)).toBe(true);
+    });
+
+    it('should position toast at bottom-center of video', () => {
+      showToast('Position test', video);
+      const toast = document.querySelector('[data-testid="subtitle-toast"]') as HTMLElement;
+      expect(toast.style.position).toBe('absolute');
+      expect(toast.style.bottom).toBe('5%');
+      expect(toast.style.left).toBe('50%');
+      expect(toast.style.transform).toContain('translateX(-50%)');
+    });
+
+    it('should auto-remove after 3 seconds', () => {
+      jest.useFakeTimers();
+      showToast('Auto-hide test', video);
+      expect(document.querySelector('[data-testid="subtitle-toast"]')).toBeTruthy();
+      jest.advanceTimersByTime(3300);
+      expect(document.querySelector('[data-testid="subtitle-toast"]')).toBeNull();
     });
   });
 });

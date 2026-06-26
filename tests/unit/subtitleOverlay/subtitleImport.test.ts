@@ -23,11 +23,19 @@ describe('subtitleImport', () => {
   });
 
   describe('createImportButton', () => {
-    it('should create button appended to video parent', () => {
+    it('should create label (role=button) appended to video parent', () => {
       const button = createImportButton(video, defaultConfig);
       expect(button).toBeTruthy();
-      expect(button.tagName).toBe('BUTTON');
+      expect(button.tagName).toBe('LABEL');
+      expect(button.getAttribute('role')).toBe('button');
       expect(video.parentElement?.contains(button)).toBe(true);
+    });
+
+    it('should contain a file input inside the label', () => {
+      const button = createImportButton(video, defaultConfig);
+      const input = button.querySelector('input[type="file"]');
+      expect(input).toBeTruthy();
+      expect(input?.getAttribute('accept')).toBe('.srt,.vtt,.ass,.ssa');
     });
 
     it('should set data-testid for testing', () => {

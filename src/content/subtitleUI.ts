@@ -68,3 +68,72 @@ export function hideOverlay(overlay: HTMLDivElement): void {
 export function removeOverlay(overlay: HTMLDivElement): void {
   overlay.remove();
 }
+
+/**
+ * Create drag hint overlay — semi-transparent full-cover with dashed border.
+ * Shown on dragenter, hidden on dragleave/drop.
+ * ponytail: counter-based to avoid flicker from nested dragenter/dragleave events.
+ */
+export function createDragHint(video: HTMLVideoElement): HTMLDivElement {
+  const hint = document.createElement('div');
+  hint.setAttribute('data-testid', 'subtitle-drag-hint');
+
+  hint.style.position = 'absolute';
+  hint.style.top = '0';
+  hint.style.left = '0';
+  hint.style.width = '100%';
+  hint.style.height = '100%';
+  hint.style.backgroundColor = 'rgba(0, 150, 255, 0.2)';
+  hint.style.border = '3px dashed rgba(0, 150, 255, 0.8)';
+  hint.style.borderRadius = '8px';
+  hint.style.display = 'flex';
+  hint.style.alignItems = 'center';
+  hint.style.justifyContent = 'center';
+  hint.style.zIndex = '999998';
+  hint.style.pointerEvents = 'none';
+  hint.style.fontSize = '18px';
+  hint.style.color = '#ffffff';
+  hint.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+  hint.style.fontFamily = 'sans-serif';
+  hint.textContent = 'Drop subtitle file here';
+  hint.style.display = 'none';
+
+  video.parentElement?.appendChild(hint);
+  return hint;
+}
+
+/**
+ * Show a temporary toast notification at bottom-center of video.
+ * Auto-hides after 3 seconds.
+ * ponytail: position absolute in video parent (same pattern as overlay/dragHint),
+ * not fixed viewport — toast stays anchored to video even on scroll.
+ */
+export function showToast(message: string, video: HTMLVideoElement): void {
+  const toast = document.createElement('div');
+  toast.setAttribute('data-testid', 'subtitle-toast');
+  toast.textContent = message;
+
+  toast.style.position = 'absolute';
+  toast.style.bottom = '5%';
+  toast.style.left = '50%';
+  toast.style.transform = 'translateX(-50%)';
+  toast.style.backgroundColor = 'rgba(20, 20, 20, 0.9)';
+  toast.style.color = '#ffffff';
+  toast.style.padding = '8px 16px';
+  toast.style.borderRadius = '6px';
+  toast.style.fontSize = '14px';
+  toast.style.fontFamily = 'sans-serif';
+  toast.style.zIndex = '1000000';
+  toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+  toast.style.transition = 'opacity 0.3s';
+  toast.style.opacity = '1';
+  toast.style.pointerEvents = 'none';
+  toast.style.whiteSpace = 'nowrap';
+
+  video.parentElement?.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
