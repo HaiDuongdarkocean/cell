@@ -90,8 +90,11 @@ function formatTimestamp(ms: number): string {
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
+  const millis = ms % 1000;
   const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  // ponytail: show millis only if non-zero — avoids clutter for whole-second cues
+  const msStr = millis > 0 ? `.${String(millis).padStart(3, '0')}` : '';
+  return `${pad(h)}:${pad(m)}:${pad(s)}${msStr}`;
 }
 
 /**
@@ -169,7 +172,9 @@ export function createToggleButton(video: HTMLVideoElement): HTMLButtonElement {
   btn.style.cursor = 'pointer';
   btn.style.fontSize = '16px';
   btn.style.zIndex = '1000000';
-  btn.style.display = 'none';
+  btn.style.display = 'flex';
+  btn.style.alignItems = 'center';
+  btn.style.justifyContent = 'center';
 
   video.parentElement?.appendChild(btn);
   return btn;

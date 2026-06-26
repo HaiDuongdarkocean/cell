@@ -81,7 +81,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   let panel: HTMLDivElement | null = null;
   let toggleBtn: HTMLButtonElement | null = null;
   let panelVisible = false;
-  let overlayVisible = true;
+  let overlayVisible = false; // ponytail: match overlay initial display:none
   let bilingualCues: BilingualCue[] = [];
   let shortcuts: KeyboardShortcut[] = DEFAULT_KEYBOARD_SHORTCUTS;
   let panelSide: 'left' | 'right' = 'right';
@@ -212,6 +212,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
           bilingualCues = bilingualResult.cues;
           if (panel) {
             renderCueListLazy(panel, bilingualCues);
+            // Auto-show panel after subtitle load
+            panelVisible = true;
+            panel.style.display = 'flex';
           }
         }
         showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);
@@ -255,6 +258,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         bilingualCues = bilingualResult.cues;
         if (panel) {
           renderCueListLazy(panel, bilingualCues);
+          // Auto-show panel after subtitle load
+          panelVisible = true;
+          panel.style.display = 'flex';
         }
       }
       showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);

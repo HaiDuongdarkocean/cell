@@ -6,7 +6,7 @@ import type {
   DownloadStatus,
   Settings,
 } from '@/types/media';
-import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
+import { DEFAULT_SETTINGS, DEFAULT_KEYBOARD_SHORTCUTS, STORAGE_KEYS } from '@/constants/config';
 
 const STATUS_ADVANCEMENT: Record<DownloadStatus, number> = {
   queued: 0,
@@ -177,6 +177,10 @@ export const usePopupStore = create<PopupState>((set) => ({
         }
         if (!settings.selectedSubtitleLanguages) {
           settings = { ...settings, selectedSubtitleLanguages: ['all'] };
+        }
+        // Migration: keyboardShortcuts missing in older saved settings
+        if (!settings.keyboardShortcuts || settings.keyboardShortcuts.length === 0) {
+          settings = { ...settings, keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS };
         }
         set({ settings, isSettingsLoaded: true });
       } else {
