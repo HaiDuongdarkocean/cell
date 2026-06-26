@@ -1,4 +1,4 @@
-import { createPanel, renderCueList, createToggleButton, switchPanelPosition, highlightCue, scrollToCue, seekToCue } from '@/content/subtitlePanel';
+import { createPanel, renderCueList, createToggleButton, switchPanelPosition, highlightCue, scrollToCue, seekToCue, renderCueListLazy } from '@/content/subtitlePanel';
 import type { BilingualCue } from '@/types/media';
 
 describe('subtitlePanel', () => {
@@ -266,6 +266,59 @@ describe('subtitlePanel', () => {
       seekToCue(video, sampleCues[1]);
       // start is 3500ms → 3.5 seconds
       expect(video.currentTime).toBe(3.5);
+    });
+  });
+
+  describe('renderCueListLazy', () => {
+    // Generate 60 cues (> 50 threshold → lazy mode)
+    function makeCues(count: number): BilingualCue[] {
+      return Array.from({ length: count }, (_, i) => ({
+        index: i + 1,
+        start: i * 1000,
+        end: i * 1000 + 999,
+        targetText: `Target ${i + 1}`,
+        nativeText: `Native ${i + 1}`,
+      }));
+    }
+
+    it('renders all cues when count < 50 (fallback)', () => {
+      const panel = createPanel(video);
+      const cues = makeCues(30);
+      renderCueListLazy(panel, cues);
+      const items = panel.querySelectorAll('[data-testid="cue-item"]');
+      expect(items).toHaveLength(30);
+    });
+
+    it('renders placeholder items when count >= 50 (lazy mode)', () => {
+      const panel = createPanel(video);
+      const cues = makeCues(60);
+      renderCueListLazy(panel, cues);
+      // 60 total: 10 filled (initial buffer) + 50 placeholders
+      const placeholders = panel.querySelectorAll('[data-testid="cue-placeholder"]');
+      const filled = panel.querySelectorAll('[data-testid="cue-item"]');
+      expect(filled.length + placeholders.length).toBe(60);
+      expect(placeholders.length).toBe(50);
+    });
+
+    it('lazy mode: visible items have content, non-visible are placeholders', () => {
+      const panel = createPanel(video);
+      const cues = makeCues(60);
+      renderCueListLazy(panel, cues);
+      // First few items should have content (rendered), rest are placeholders
+      const filled = panel.querySelectorAll('[data-testid="cue-item"]');
+      const placeholders = panel.querySelectorAll('[data-testid="cue-placeholder"]');
+      expect(filled.length + placeholders.length).toBe(60);
+      // Initial buffer = 10 filled
+      expect(filled.length).toBe(10);
+    });
+
+    it('lazy mode: each placeholder has data-cue-index for observer', () => {
+      const panel = createPanel(video);
+      const cues = makeCues(60);
+      renderCueListLazy(panel, cues);
+      // First placeholder is cue index 11 (after initial buffer of 10)
+      const firstPlaceholder = panel.querySelector('[data-testid="cue-placeholder"]') as HTMLElement;
+      expect(firstPlaceholder.getAttribute('data-cue-index')).toBe('11');
     });
   });
 });

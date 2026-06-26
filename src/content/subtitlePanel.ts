@@ -237,3 +237,120 @@ export function scrollToCue(panel: HTMLDivElement, cueIndex: number): void {
 export function seekToCue(video: HTMLVideoElement, cue: { start: number }): void {
   video.currentTime = cue.start / 1000;
 }
+
+/** Threshold: below this count, render all cues (skip observer overhead). */
+const LAZY_THRESHOLD = 50;
+/** Initial buffer: render this many cues at top on first paint. */
+const LAZY_INITIAL_BUFFER = 10;
+
+/**
+ * Render cue list with lazy loading via IntersectionObserver.
+ * ADR-005 D4: fallback to renderCueList if < 50 cues (skip observer overhead).
+ *
+ * Lazy mode: creates placeholder divs for all cues, fills initial buffer,
+ * then IntersectionObserver fills placeholders as they scroll into view.
+ *
+ * @param panel - Panel element with body
+ * @param cues - Bilingual cues to render
+ * @returns Observer if lazy mode was used, null if fallback (render all)
+ */
+export function renderCueListLazy(
+  panel: HTMLDivElement,
+  cues: BilingualCue[],
+): IntersectionObserver | null {
+  // Fallback: small list → render all, no observer
+  if (cues.length < LAZY_THRESHOLD) {
+    renderCueList(panel, cues);
+    return null;
+  }
+
+  const body = panel.querySelector('[data-testid="panel-body"]');
+  if (!body) return null;
+
+  body.innerHTML = '';
+
+  // Create placeholders for all cues
+  for (const cue of cues) {
+    const placeholder = document.createElement('div');
+    placeholder.setAttribute('data-testid', 'cue-placeholder');
+    placeholder.setAttribute('data-cue-index', String(cue.index));
+    placeholder.style.padding = '6px 12px';
+    placeholder.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
+    placeholder.style.minHeight = '40px';
+    body.appendChild(placeholder);
+  }
+
+  // Fill initial buffer (first N items)
+  const fillCue = (cue: BilingualCue, placeholder: HTMLElement): void => {
+    placeholder.setAttribute('data-testid', 'cue-item');
+    placeholder.innerHTML = '';
+
+    const timestamp = document.createElement('span');
+    timestamp.setAttribute('data-testid', 'cue-timestamp');
+    timestamp.setAttribute('data-cue-index', String(cue.index));
+    timestamp.textContent = formatTimestamp(cue.start);
+    timestamp.style.display = 'block';
+    timestamp.style.fontSize = '11px';
+    timestamp.style.color = 'rgba(255, 255, 255, 0.5)';
+    timestamp.style.cursor = 'pointer';
+    timestamp.style.marginBottom = '2px';
+    placeholder.appendChild(timestamp);
+
+    const targetText = document.createElement('div');
+    targetText.setAttribute('data-testid', 'cue-target-text');
+    targetText.textContent = cue.targetText;
+    targetText.style.fontSize = '14px';
+    targetText.style.color = '#ffffff';
+    targetText.style.lineHeight = '1.3';
+    placeholder.appendChild(targetText);
+
+    const nativeText = document.createElement('div');
+    nativeText.setAttribute('data-testid', 'cue-native-text');
+    nativeText.textContent = cue.nativeText;
+    nativeText.style.fontSize = '12px';
+    nativeText.style.color = 'rgba(255, 255, 255, 0.6)';
+    nativeText.style.lineHeight = '1.3';
+    nativeText.style.marginTop = '2px';
+    placeholder.appendChild(nativeText);
+  };
+
+  // Fill initial buffer
+  const placeholders = body.querySelectorAll('[data-testid="cue-placeholder"]');
+  cues.slice(0, LAZY_INITIAL_BUFFER).forEach((cue, i) => {
+    fillCue(cue, placeholders[i] as HTMLElement);
+  });
+
+  // Set up IntersectionObserver for lazy fill (if available)
+  if (typeof IntersectionObserver === 'undefined') {
+    // ponytail: jsdom doesn't have IntersectionObserver — leave placeholders
+    // unfilled. In real browser, observer fills them on scroll.
+    return null;
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const el = entry.target as HTMLElement;
+          if (el.getAttribute('data-testid') === 'cue-placeholder') {
+            const idx = parseInt(el.getAttribute('data-cue-index') ?? '0', 10) - 1;
+            if (idx >= 0 && idx < cues.length) {
+              fillCue(cues[idx], el);
+              observer.unobserve(el);
+            }
+          }
+        }
+      }
+    },
+    { root: body as HTMLElement, rootMargin: '100px' },
+  );
+
+  // Observe remaining placeholders
+  placeholders.forEach((p, i) => {
+    if (i >= LAZY_INITIAL_BUFFER) {
+      observer.observe(p);
+    }
+  });
+
+  return observer;
+}
