@@ -61,7 +61,8 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 
 ## Living Documentation Rules
 - **Trước khi sửa code**: đọc `docs/2-architechture-system.md` → check "Bảng phụ thuộc" → biết ảnh hưởng file nào
-- **Trước khi viết function mới**: grep `docs/knowledge/` cho keywords liên quan + đọc `docs/2-architechture-system.md` Function Index
+- **Trước khi viết function mới**: grep `docs/knowledge/` cho keywords liên quan + đọc `docs/2-architechture-system.md` Function Index → tránh tái phạm pattern
+- **Trước khi fix bug**: grep `docs/knowledge/` cho keywords liên quan → apply nguyên lý để fix nhanh hơn
 - **Git Pre-Commit (Living Docs Check)**: Trước khi commit, chạy `git diff --name-only`:
   - Nếu có thay đổi src/** → check 2-architechture-system.md Function Index: function mới/sửa → update; file mới/xóa → update Cây thư mục + Bảng phụ thuộc
   - Nếu có thay đổi docs/** → check 0-wiki.md: file docs mới/xóa → update Mục lục
