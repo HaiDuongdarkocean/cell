@@ -69,6 +69,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
     - **Xóa file src/** → update 3 chỗ: Cây thư mục + Function Index + Bảng phụ thuộc (remove entries)
     - **Đổi tên file src/** → update 3 chỗ: Cây thư mục + Function Index + Bảng phụ thuộc (rename references)
     - **Sửa function (file đã có)** → chỉ update Function Index nếu input/output thay đổi; skip nếu implementation thay đổi (input/output không đổi)
+    - **Verify sau khi update**: chạy `ls src/` từng thư mục con → compare với Cây thư mục trong docs → confirm không thiếu file nào. Cây thư mục ở ĐẦU file (line 9-115) — dễ quên vì Function Index + Bảng phụ thuộc ở giữa/cuối file
   - Nếu có thay đổi docs/** → check 0-wiki.md: file docs mới/xóa → update Mục lục
   - Nếu test pass + debug pass → check docs/knowledge/: grep keyword → pattern mới → khái niệm hóa thành nguyên lý
 - **Sau khi sửa/thêm/xóa file src/**: update `docs/2-architechture-system.md` (cây thư mục + dependency + function index) trước khi commit
@@ -87,6 +88,22 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 - **Separate concerns**: code + docs = 2 commit; feature + refactor = 2 commit
 - **Size check**: `git diff --staged --stat` — nếu > 300 lines → split
 - **Pre-Commit Hygiene**: `git diff --staged` (check secrets) → `npm test` → `npm run lint` → `npx tsc --noEmit`
+
+### Git Commit Rules
+- **Atomic commits**: each commit does one logical thing
+- **Separate refactoring from feature work**: refactor commit ≠ feature commit
+- **Format**: `<type>: <description>` — types: feat, fix, refactor, test, docs, chore
+- **Body explains why, not what**
+- **Pre-commit**: check staged diff, no secrets, run tests + lint + typecheck
+- **Change Summaries after modification**:
+  ```
+  CHANGES MADE:
+  - file: what changed
+  THINGS I DIDN'T TOUCH:
+  - file: why not
+  POTENTIAL CONCERNS:
+  - concern
+  ```
 
 ---
 
@@ -138,19 +155,3 @@ When adding/removing/renaming files: update `docs/architechture-system.md` befor
 
 ### Communication
 - always call me "Anh yêu", xưng là "em"
-
-### Git Commit Rules
-- **Atomic commits**: each commit does one logical thing
-- **Separate refactoring from feature work**: refactor commit ≠ feature commit
-- **Format**: `<type>: <description>` — types: feat, fix, refactor, test, docs, chore
-- **Body explains why, not what**
-- **Pre-commit**: check staged diff, no secrets, run tests + lint + typecheck
-- **Change Summaries after modification**:
-  ```
-  CHANGES MADE:
-  - file: what changed
-  THINGS I DIDN'T TOUCH:
-  - file: why not
-  POTENTIAL CONCERNS:
-  - concern
-  ```
