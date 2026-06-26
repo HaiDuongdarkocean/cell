@@ -104,7 +104,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 
 ### Giai đoạn 3 — Design / Architecture
 **Mục đích**: Thiết kế kiến trúc + UI/UX + threat model trước khi code.
-**Skill kích hoạt**: `system-architecture-design` → `cto-persona` (governance) → `api-and-interface-design` (module boundaries) → `security-and-hardening` (threat model) → `frontend-ui-engineering` (UI design)
+**Skill kích hoạt**: `system-architecture-design` → `cto-persona` (governance) → `api-and-interface-design` (module boundaries) → `security-and-hardening` (threat model) → `frontend-ui-engineering` (UI design) → `conceptualization` (trigger 3: architecture decision → principle)
 **Input**: `docs/specs/<feature>.md`
 **Output**: `docs/adr/<decision>.md` (mỗi quyết định 1 file), updated `docs/2-architechture-system.md`
 **File ops**:
@@ -112,10 +112,11 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 - THÊM: `docs/adr/<decision>.md`
 - UPDATE: `docs/2-architechture-system.md` (Cây thư mục + Bảng phụ thuộc + Function Index)
 - UPDATE: `docs/0-wiki.md` (mục lục)
+- LEARNING: nếu architecture decision có insight reusable → invoke `/conceptualization` (trigger 3)
 
 ### Giai đoạn 4 — Implementation / Coding
 **Mục đích**: Viết code theo design, TDD, code review, atomic commits.
-**Skill kích hoạt**: `test-driven-development` (RED→GREEN→REFACTOR) → `source-driven-development` (cite official docs) → `incremental-implementation` (>1 file) → `frontend-ui-engineering` (UI) → `ponytail.md` (lazy ladder) → `git-workflow-and-versioning` (atomic commits)
+**Skill kích hoạt**: `test-driven-development` (RED→GREEN→REFACTOR) → `source-driven-development` (cite official docs) → `incremental-implementation` (>1 file) → `frontend-ui-engineering` (UI) → `ponytail.md` (lazy ladder) → `git-workflow-and-versioning` (atomic commits) → `conceptualization` (trigger 2: feature insight, trigger 4: refactor discovery, trigger 5: cross-cutting pattern)
 **Input**: `docs/specs/<feature>.md`, `docs/plan/<feature>.md`, `docs/2-architechture-system.md`
 **Output**: `src/` code + `tests/` + updated `docs/2-architechture-system.md`
 
@@ -143,7 +144,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 **Pre-Commit (VERIFY + COMMIT)**:
 1. **PHẢI chạy** `git diff --name-only` → biết file nào thay đổi
 2. **Nếu docs/ thay đổi** → **PHẢI update** `docs/0-wiki.md` mục lục
-3. **Nếu test pass + debug pass** → **PHẢI check** `docs/knowledge/principles.md`: grep keyword → pattern mới → invoke `/conceptualization` skill → update 2 layers (principle index + case study file)
+3. **Nếu insight reusable** → **PHẢI check** `docs/knowledge/principles.md`: grep keyword → pattern mới → invoke `/conceptualization` skill → update 2 layers (principle index + case study file). 5 triggers: bug fix verified, feature insight, architecture decision, refactor discovery, cross-cutting pattern
 4. **Nếu thay đổi kiến trúc** → **PHẢI thêm** ADR vào `docs/adr/<decision>.md`
 5. **PHẢI invoke** `git-workflow-and-versioning` skill
 6. **Atomic commit test**: "Có thể revert commit này mà build vẫn pass?" → YES = commit riêng; NO = gộp
@@ -174,7 +175,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 
 ### Giai đoạn 7 — Maintenance / Operations
 **Mục đích**: Giữ hệ thống ổn định, fix bug, monitor, evolve.
-**Skill kích hoạt**: `debugging-and-error-recovery` (root-cause debug) → `observability-and-instrumentation` (monitor, diagnose) → `conceptualization` (khái niệm hóa bug → nguyên lý, 2-layer) → `deprecation-and-migration` (remove old systems) → `code-simplification` (refactor clarity)
+**Skill kích hoạt**: `debugging-and-error-recovery` (root-cause debug) → `observability-and-instrumentation` (monitor, diagnose) → `conceptualization` (trigger 1: bug fix verified → principle, 2-layer) → `deprecation-and-migration` (remove old systems) → `code-simplification` (refactor clarity)
 **Input**: Bug report / incident / monitoring alert
 **Output**: `docs/knowledge/principles.md` (layer 1: principle entry) + `docs/knowledge/<case-name>.md` (layer 2: case study), postmortem
 **File ops**:

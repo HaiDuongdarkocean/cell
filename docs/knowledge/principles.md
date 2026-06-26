@@ -50,15 +50,19 @@ Invoke `/conceptualization` skill cho full workflow.
 - Case study top: `> **Principle**: [link to principles.md#anchor]`
 - Principle "Cases": `[link to case-study.md] — summary`
 
-### Khi nào khái niệm hóa
-- Sau khi test pass + debug pass (rule trong AGENTS.md)
-- Bug có pattern tái sử dụng được (không phải 1-off)
-- Bug liên quan đến framework/library/library behavior (không phải business logic)
+### Khi nào khái niệm hóa (5 triggers)
+1. **Bug fix verified** — test pass + root cause understood (GĐ 7)
+2. **Feature implementation insight** — code pass + pattern reusable (GĐ 4)
+3. **Architecture decision** — ADR written or design decision made (GĐ 3)
+4. **Refactor discovery** — code pass + simplification pattern found (GĐ 4)
+5. **Cross-cutting pattern** — same logic appears 2+ times in codebase (GĐ 4-7)
 
 ### Khi nào KHÔNG khái niệm hóa
 - Bug là 1-off (không tái sử dụng được)
 - Bug là business logic (không phải pattern framework)
-- Bug chưa đủ thông tin để abstract (chưa test pass)
+- Code chưa verified (test fail)
+- Trivial one-liner (ponytail: no insight to abstract)
+- No insight beyond "I implemented the spec" (spec-driven, no surprise)
 
 ---
 

@@ -11,16 +11,22 @@ Bug fixes are specific to the case that triggered them. Without abstraction, the
 
 ## When to Use
 
-Apply this skill when:
-- You have just fixed a bug and tests pass
-- Debug pass confirms the fix works
-- The bug has a reusable pattern (not a 1-off)
-- The bug relates to framework/library behavior (not just business logic)
+Apply this skill when **insight is reusable** — any of 5 triggers:
+
+| # | Trigger | Condition | Example |
+|---|---|---|---|
+| 1 | **Bug fix verified** | Test pass + root cause understood | Tab-scoping, Edge app-window leak |
+| 2 | **Feature implementation insight** | Code pass + pattern reusable across features | Hybrid detection (script→frequency), dead field linking |
+| 3 | **Architecture decision** | ADR written or design decision made | ASS→SRT reuse existing converter, layered clean architecture |
+| 4 | **Refactor discovery** | Code pass + simplification pattern found | ftyp+moov stripping, tfdt offset patching |
+| 5 | **Cross-cutting pattern** | Same logic appears 2+ times in codebase | Broadcasts fan out (popup + background + content script) |
 
 **When NOT to use:**
 - Bug is 1-off (no reusable pattern)
 - Bug is business logic (not framework pattern)
-- Bug is not yet verified (test fails or debug incomplete)
+- Code is not yet verified (test fails or unverified)
+- Trivial one-liner (ponytail: no insight to abstract)
+- No insight beyond "I implemented the spec" (spec-driven, no surprise)
 
 ## 2-Layer Structure
 
@@ -162,9 +168,11 @@ Separate "don't redo" (dedup) from "allow new items" (catch-up). Use id-level de
 ## Integration with Other Skills
 
 This skill is typically invoked as part of:
-- **code-review-and-quality** (axis 6: lessons learned) — after review, abstract lessons
-- **test-driven-development** (after GREEN phase) — after test pass, conceptualize if pattern reusable
-- **debugging-and-error-recovery** (after debug pass) — after root cause fix, abstract principle
+- **code-review-and-quality** (axis 6: lessons learned) — after review, abstract lessons (trigger 1, 2, 5)
+- **test-driven-development** (after GREEN phase) — after test pass, conceptualize if pattern reusable (trigger 1, 2)
+- **debugging-and-error-recovery** (after debug pass) — after root cause fix, abstract principle (trigger 1)
+- **system-architecture-design** (after ADR) — after architecture decision, abstract principle (trigger 3)
+- **code-simplification** (after refactor) — after simplification, abstract pattern (trigger 4)
 
 ## Output
 
