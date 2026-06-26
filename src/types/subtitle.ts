@@ -1,7 +1,7 @@
 // Type definitions for subtitle overlay functionality
 // Reuses SrtCue from media.ts — SubtitleLine was a duplicate, deleted per ponytail rule.
 
-import type { SrtCue } from './media';
+import type { SrtCue, BilingualCue } from './media';
 
 // === Subtitle Format Types ===
 
@@ -57,4 +57,16 @@ export interface SyncStatus {
   readonly isSyncing: boolean; // Whether sync is active
   readonly currentTime: number; // Current video time in milliseconds
   readonly displayedCue: SrtCue | null; // Currently displayed cue
+}
+
+// === Bilingual Parser Types ===
+
+/**
+ * Result of bilingual SRT parsing operation.
+ * Mirrors ParseResult shape but with BilingualCue[].
+ */
+export interface BilingualParseResult {
+  readonly success: boolean;
+  readonly cues: BilingualCue[];
+  readonly error?: string;
 }
