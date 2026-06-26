@@ -75,6 +75,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 ### Giai đoạn 0 — Discovery / Ideation
 **Mục đích**: Xác định vấn đề cần giải, vision, cơ hội.
 **Skill kích hoạt**: `idea-refine` (stress-test assumptions) → `interview-me` (clarify intent)
+**Ponytail**: rung 1 (YAGNI) — "Does this need to be built at all?" Question complex requests: "Do you actually need X, or does Y cover it?"
 **Input**: User request (raw, underspecified)
 **Output**: `docs/intent/<feature>.md` (vision, problem statement, opportunity)
 **File ops**:
@@ -85,6 +86,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 ### Giai đoạn 1 — Planning & Feasibility
 **Mục đích**: Đánh giá khả thi, lập kế hoạch, phân bổ nguồn lực.
 **Skill kích hoạt**: `planning-and-task-breakdown` (break work into tasks) → `cto-persona` (tech strategy, build-vs-buy)
+**Ponytail**: rung 2 (reuse codebase) — "Does it already exist? Reuse the helper, util, or pattern that's already here."
 **Input**: `docs/intent/<feature>.md`
 **Output**: `docs/plan/<feature>.md` (task breakdown, scope, risks)
 **File ops**:
@@ -95,6 +97,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 ### Giai đoạn 2 — Requirements / Spec
 **Mục đích**: Biến nhu cầu thành yêu cầu cụ thể, có thể test được.
 **Skill kích hoạt**: `spec-driven-development` (write PRD before code) → `interview-me` (resolve open questions) → `security-and-hardening` (security/privacy requirements)
+**Ponytail**: rung 3-5 (stdlib → native → installed dep) — "Does stdlib/native/installed dep solve it before specifying custom implementation?"
 **Input**: `docs/intent/<feature>.md`, `docs/plan/<feature>.md`
 **Output**: `docs/specs/<feature>.md` (SRS/PRD: functional + non-functional + acceptance criteria)
 **File ops**:
@@ -116,7 +119,8 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 
 ### Giai đoạn 4 — Implementation / Coding
 **Mục đích**: Viết code theo design, TDD, code review, atomic commits.
-**Skill kích hoạt**: `test-driven-development` (RED→GREEN→REFACTOR) → `source-driven-development` (cite official docs) → `incremental-implementation` (>1 file) → `frontend-ui-engineering` (UI) → `ponytail.md` (lazy ladder) → `git-workflow-and-versioning` (atomic commits) → `conceptualization` (trigger 2: feature insight, trigger 4: refactor discovery, trigger 5: cross-cutting pattern)
+**Skill kích hoạt**: `test-driven-development` (RED→GREEN→REFACTOR) → `source-driven-development` (cite official docs) → `incremental-implementation` (>1 file) → `frontend-ui-engineering` (UI) → `git-workflow-and-versioning` (atomic commits) → `conceptualization` (trigger 2: feature insight, trigger 4: refactor discovery, trigger 5: cross-cutting pattern)
+**Ponytail** (always-on, `.windsurf/rules/ponytail.md`): PRE-FILTER before TDD + implementation rules + self-check
 **Input**: `docs/specs/<feature>.md`, `docs/plan/<feature>.md`, `docs/2-architechture-system.md`
 **Output**: `src/` code + `tests/` + updated `docs/2-architechture-system.md`
 
@@ -126,10 +130,29 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 3. **PHẢI đọc** Function Index → biết function liên quan đã tồn tại chưa
 4. **PHẢI check** Bảng phụ thuộc → biết sửa file X ảnh hưởng file Y nào
 
+**Ponytail ladder (PRE-FILTER — chạy TRƯỚC TDD)**:
+1. YAGNI — "Does this need to be built at all?" → no: skip
+2. Reuse codebase — "Does it already exist?" → yes: reuse, skip TDD cho phần đó
+3. Stdlib — "Does standard library do it?" → yes: use, skip custom code
+4. Native platform — "Does native feature cover it?" → yes: use
+5. Installed dependency — "Does installed dep solve it?" → yes: use
+6. One line — "Can this be one line?" → yes: one line
+7. Only then: write minimum code that works → **TDD áp dụng từ đây**
+
 **Implementation (LÀM)**:
 1. TDD: RED (viết test fail) → GREEN (minimal impl) → REFACTOR (5-axis review)
-2. Ponytail lazy ladder: reuse > rewrite > new code
+2. Ponytail rules (implementation constraints):
+   - No abstractions not explicitly requested (spec/ADR = explicitly requested)
+   - No new dependency if avoidable
+   - Deletion over addition. Boring over clever. Fewest files possible
+   - Shortest working diff wins, but only once you understand the problem
+   - Mark intentional simplifications with `ponytail:` comment (name ceiling + upgrade path)
 3. Invoke skill liên quan: `/test-driven-development`, `/source-driven-development`
+
+**Ponytail self-check (sau khi code pass ladder rung 7)**:
+- Non-trivial logic → **PHẢI** leave ONE runnable check (assert-based demo or one small test file)
+- Trivial one-liners → no test needed
+- **Baseline TDD override**: project baseline.md says "when in doubt, write the test" — baseline wins over ponytail "trivial no test"
 
 **File ops**:
 - XEM: `docs/2-architechture-system.md` (Cây thư mục + Bảng phụ thuộc + Function Index), `docs/knowledge/` (grep keywords)
@@ -176,6 +199,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 ### Giai đoạn 7 — Maintenance / Operations
 **Mục đích**: Giữ hệ thống ổn định, fix bug, monitor, evolve.
 **Skill kích hoạt**: `debugging-and-error-recovery` (root-cause debug) → `observability-and-instrumentation` (monitor, diagnose) → `conceptualization` (trigger 1: bug fix verified → principle, 2-layer) → `deprecation-and-migration` (remove old systems) → `code-simplification` (refactor clarity)
+**Ponytail**: bug fix = root cause, not symptom — grep every caller of the function you touch, fix the shared function once. One guard there is a smaller diff than one per caller. Patching only the path the ticket names leaves a sibling caller still broken.
 **Input**: Bug report / incident / monitoring alert
 **Output**: `docs/knowledge/principles.md` (layer 1: principle entry) + `docs/knowledge/<case-name>.md` (layer 2: case study), postmortem
 **File ops**:
@@ -194,12 +218,13 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 | `git-workflow-and-versioning` | Mọi code change (GĐ 4-7) |
 
 ### Skill Synergies
-- **TDD + Minimalism + Review**: `test-driven-development` + `ponytail.md` + `code-review-and-quality`
+- **Ponytail PRE-FILTER + TDD**: `ponytail.md` (ladder rung 1-7, before code) → `test-driven-development` (RED→GREEN→REFACTOR, only for code that needs to exist) → `code-review-and-quality` (5-axis review)
 - **Chrome Extension Safety**: `baseline.md` + `source-driven-development` + `browser-testing-with-devtools`
 - **Architecture + Incremental**: `system-architecture-design` + `incremental-implementation` + `planning-and-task-breakdown`
 - **Correctness + Doubt**: `doubt-driven-development` + `test-driven-development` + `browser-testing-with-devtools`
 - **Performance + Measurement**: `performance-optimization` + `observability-and-instrumentation`
 - **Security + Validation**: `security-and-hardening` + `doubt-driven-development`
+- **Learning + Conceptualization**: `debugging-and-error-recovery` (root cause) → `conceptualization` (5 triggers → 2-layer principle) → `code-review-and-quality` (axis 6: lessons)
 
 ### File Placement Convention
 knowledge → `docs/knowledge/`, specs → `docs/specs/`, intent → `docs/intent/`, plan → `docs/plan/`, reference → `docs/reference/`, adr → `docs/adr/`. KHÔNG lưu loose file ở docs/ root
