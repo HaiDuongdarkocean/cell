@@ -34,6 +34,7 @@ export type MessageType =
   | 'TOGGLE_EXTENSION'
   | 'EXTENSION_STATUS_UPDATE'
   | 'UPDATE_SUBTITLE_LANGUAGE'
+  | 'GET_SUBTITLE_FOR_OVERLAY'
   | 'CONVERT_TS_TO_MP4'
   | 'CONVERT_TS_TO_MP4_RESULT'
   | 'CONVERT_TS_TO_MP4_V2'
@@ -90,6 +91,18 @@ export interface DownloadSubtitlePayload {
 export interface UpdateSubtitleLanguagePayload {
   readonly subtitleId: string;
   readonly language: string;
+}
+
+/** Request: content script asks background for subtitle matching target language. */
+export interface GetSubtitleForOverlayPayload {
+  readonly tabId: number;
+}
+
+/** Response: background returns matching subtitle URL + language, or null if no match. */
+export interface SubtitleForOverlayResult {
+  readonly url: string;
+  readonly language: string;
+  readonly format: string;
 }
 
 export interface DownloadAllPayload {
