@@ -21,7 +21,9 @@ src/
 │
 ├── content/                       # Content script (chạy trong trang web)
 │   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT
-│   └── pageScanner.ts             # Scan <video>, <source>, subtitle <track>
+│   ├── pageScanner.ts             # Scan <video>, <source>, subtitle <track>
+│   ├── subtitleParser.ts          # Adapter: parseSubtitle(content, format) → ParseResult (reuse parseSrt/parseVtt)
+│   └── subtitleSync.ts            # Binary search O(log n): findCurrentLine(cues, currentTime) → index
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
 │   ├── ffmpegRunner.ts            # Entry: nhận CONVERT_TS_TO_MP4_V2, CREATE_OPFS_BLOB_URL
