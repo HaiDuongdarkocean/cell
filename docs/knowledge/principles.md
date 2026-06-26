@@ -6,9 +6,10 @@
 
 ## Khái niệm hóa template (sau khi test pass + debug pass)
 
-Khi fix bug → test pass → khái niệm hóa thành nguyên lý (abstract principle) để apply cho nhiều trường hợp:
+Khi fix bug → test pass → khái niệm hóa thành nguyên lý (abstract principle) để apply cho nhiều trường hợp.
+Invoke `/conceptualization` skill cho full workflow.
 
-### Format nguyên lý
+### Layer 1 — Principle entry (thêm vào file này)
 ```markdown
 ## <Tên nguyên lý> (ngắn, abstract)
 
@@ -22,6 +23,32 @@ Khi fix bug → test pass → khái niệm hóa thành nguyên lý (abstract pri
 - <Tình huống khác nguyên lý này đúng>
 - <Framework/library khác có pattern tương tự>
 ```
+
+### Layer 2 — Case study file (`docs/knowledge/<case-name>.md`)
+```markdown
+# <Case name> (specific, codebase-coupled)
+
+> **Principle**: [<principle name>](principles.md#<anchor>)
+
+## Problem
+<What happened, symptoms>
+
+## Root causes
+<Why it happened, code paths>
+
+## Fix
+<What changed, which files>
+
+## Key insight
+<1-2 sentences abstract — why the fix works>
+
+## Verification
+<Evidence the fix works: test results, live debug output>
+```
+
+### Bidirectional links (bắt buộc)
+- Case study top: `> **Principle**: [link to principles.md#anchor]`
+- Principle "Cases": `[link to case-study.md] — summary`
 
 ### Khi nào khái niệm hóa
 - Sau khi test pass + debug pass (rule trong AGENTS.md)

@@ -22,6 +22,20 @@ Apply this skill when:
 - Bug is business logic (not framework pattern)
 - Bug is not yet verified (test fails or debug incomplete)
 
+## 2-Layer Structure
+
+Knowledge is stored in 2 layers:
+
+| Layer | File | Content | Purpose |
+|---|---|---|---|
+| 1 (principle index) | `docs/knowledge/principles.md` | Abstract principle + cases links + apply-for | Scan nhanh, cross-project, grep-able |
+| 2 (case study) | `docs/knowledge/<case-name>.md` | Problem, root causes, fix, key insight, verification | Technical detail, code paths, proof |
+
+**Why 2 layers:**
+- Principle alone: loses technical context + verification proof
+- Case study alone: verbose, not scannable, codebase-coupled, stale on rename
+- Hybrid: layer 1 scan fast (grep title + 1-2 sentences), layer 2 drill down when need fix detail
+
 ## The Process
 
 ### Step 1: Identify the pattern
@@ -33,60 +47,36 @@ Example:
 - Pattern: Broadcasts fan out to every listener, cannot target specific listener
 - Principle: Scope by identifier in payload, listener filters by identifier
 
-### Step 2: Abstract the principle
+### Step 2: Write the case study (layer 2)
 
-Write the principle in 1-2 sentences, abstract (not specific to the bug).
+Create `docs/knowledge/<case-name>.md` with full technical detail:
 
-Format:
-```
-Nguyên lý: <short, abstract description>
-```
+```markdown
+# <Case name> (specific, codebase-coupled)
 
-Example:
-```
-Nguyên lý: Broadcasts fan out to every listener — cannot target specific listener. Scope by identifier in payload, listener filters by identifier.
-```
+> **Principle**: [<principle name>](principles.md#<anchor>)
 
-### Step 3: Document cases
+## Problem
+<What happened, symptoms>
 
-List the specific bug(s) that led to this principle.
+## Root causes
+<Why it happened, code paths>
 
-Format:
-```
-Cases đã gặp:
-- <Bug description>
-- <Related bug>
-```
+## Fix
+<What changed, which files>
 
-Example:
-```
-Cases đã gặp:
-- Tab-Scoping bug: chrome.runtime.sendMessage cannot target specific tab → pass tabId in payload, popup filters by tabId
+## Key insight
+<1-2 sentences abstract — why the fix works>
+
+## Verification
+<Evidence the fix works: test results, live debug output>
 ```
 
-### Step 4: Identify apply-for scenarios
+File naming: kebab-case, specific to the case, e.g. `tab-scoping-popup-leak.md`.
 
-List other situations where this principle applies.
+### Step 3: Add or update the principle (layer 1)
 
-Format:
-```
-Apply cho:
-- <Framework/library with similar pattern>
-- <Other domains with same principle>
-```
-
-Example:
-```
-Apply cho:
-- chrome.runtime.sendMessage (Chrome extension)
-- WebSocket rooms (server broadcasts to all rooms, client filters by roomId)
-- Event emitters (EventEmitter emits to all listeners, filter by event type)
-- Database queries (query returns all rows, filter by WHERE clause)
-```
-
-### Step 5: Save to docs/knowledge/
-
-Create or update `docs/knowledge/<principle-name>.md` with the format:
+In `docs/knowledge/principles.md`, add a new section or update an existing one:
 
 ```markdown
 ## <Tên nguyên lý> (ngắn, abstract)
@@ -95,15 +85,21 @@ Create or update `docs/knowledge/<principle-name>.md` with the format:
 <1-2 câu mô tả nguyên lý, không cụ thể case>
 
 ### Cases đã gặp
-- <Bug cụ thể dẫn đến nguyên lý này>
-- <Bug khác liên quan>
+- [case-study-file.md](case-study-file.md) — <1 câu tóm tắt case>
 
 ### Apply cho
 - <Tình huống khác nguyên lý này đúng>
 - <Framework/library khác có pattern tương tự>
 ```
 
-File naming: use kebab-case, e.g., `broadcasts-fan-out-scope-by-identifier.md`.
+- **New principle**: add new `##` section to principles.md
+- **Existing principle**: add new case link to "Cases đã gặp" section
+- **Anchor**: GitHub auto-generates from heading text (lowercase, hyphens for spaces, `--` for `→`)
+
+### Step 4: Verify bidirectional links
+
+- Case study top: `> **Principle**: [link to principles.md#anchor]`
+- Principle "Cases": `[link to case-study.md] — summary`
 
 ## Examples
 
@@ -111,31 +107,57 @@ File naming: use kebab-case, e.g., `broadcasts-fan-out-scope-by-identifier.md`.
 
 **Bug**: Popup opened for tab A showed media from background tab B. Root cause: `chrome.runtime.sendMessage` cannot target specific tab — broadcasts fan out to every listener.
 
-**Principle**: Broadcasts fan out to every listener — cannot target specific listener. Scope by identifier in payload, listener filters by identifier.
+**Layer 2 file**: `docs/knowledge/tab-scoping-popup-leak.md`
+```markdown
+# Tab-Scoping (learned while fixing popup media leak)
 
-**Apply for**: chrome.runtime.sendMessage, WebSocket rooms, event emitters, database queries.
+> **Principle**: [Broadcasts fan out → scope by identifier](principles.md#broadcasts-fan-out--scope-by-identifier)
 
-**File**: `docs/knowledge/broadcasts-fan-out-scope-by-identifier.md`
+## Problem
+Popup opened for tab A showed media from background tab B...
+## Fix
+- DetectedMediaUpdatePayload now carries a required tabId: number...
+## Key insight
+Chrome MV3 chrome.runtime.sendMessage cannot target a specific tab...
+```
+
+**Layer 1 entry** in `docs/knowledge/principles.md`:
+```markdown
+## Broadcasts fan out → scope by identifier
+
+### Nguyên lý
+Broadcasts fan out to every listener — cannot target specific listener. Scope by identifier in payload, listener filters by identifier.
+
+### Cases đã gặp
+- [tab-scoping-popup-leak.md](tab-scoping-popup-leak.md) — chrome.runtime.sendMessage broadcasts to all tabs → pass tabId in payload, popup filters by tabId
+
+### Apply cho
+- chrome.runtime.sendMessage (Chrome extension)
+- WebSocket rooms (server broadcasts to all rooms, client filters by roomId)
+- Event emitters (EventEmitter emits to all listeners, filter by event type)
+```
 
 ### Example 2: URL guard too coarse → Separate dedup from catch-up
 
-**Bug**: Auto-download guard (URL-level) blocked subtitle catch-up. URL guard prevented ALL re-runs for the same page, including legitimate subtitle catch-up.
+**Bug**: Auto-download guard (URL-level) blocked subtitle catch-up.
 
-**Principle**: Separate "don't redo" (dedup) from "allow new items" (catch-up). Use id-level dedup for items already processed, allow re-run for new items.
+**Layer 2 file**: `docs/knowledge/auto-download-subtitle-catchup.md`
 
-**Apply for**: Incremental processing, caching with invalidation, polling with diff.
+**Layer 1 entry** in `docs/knowledge/principles.md`:
+```markdown
+## Separate dedup from catch-up
 
-**File**: `docs/knowledge/separate-dedup-from-catch-up.md`
+### Nguyên lý
+Separate "don't redo" (dedup) from "allow new items" (catch-up). Use id-level dedup for items already processed, allow re-run for new items.
 
-### Example 3: Query assumption fragile → Gather + filter
+### Cases đã gặp
+- [auto-download-subtitle-catchup.md](auto-download-subtitle-catchup.md) — URL guard (coarse) blocked subtitle catch-up → id-level dedup (fine) allows catch-up without re-downloading video
 
-**Bug**: `chrome.tabs.query({ active: true, currentWindow: false })` returned Edge app-window tab, not content tab. Assumption: only one other active tab is the content tab.
-
-**Principle**: Don't assume query results match intent. Gather candidates from several query shapes, then filter by explicit criteria.
-
-**Apply for**: chrome.tabs.query, database queries with complex WHERE, API responses with mixed data types.
-
-**File**: `docs/knowledge/gather-candidates-filter-by-criteria.md`
+### Apply cho
+- Incremental processing (polling with diff)
+- Caching with invalidation (cache by id, invalidate by key)
+- Data synchronization (sync by id, allow new items)
+```
 
 ## Integration with Other Skills
 
@@ -146,12 +168,12 @@ This skill is typically invoked as part of:
 
 ## Output
 
-The output of this skill is a new or updated file in `docs/knowledge/` containing:
-- Abstract principle (1-2 sentences)
-- Cases that led to the principle
-- Apply-for scenarios (other domains/frameworks)
+The output of this skill is:
+1. **Layer 2**: new or updated case study file in `docs/knowledge/<case-name>.md`
+2. **Layer 1**: new or updated principle section in `docs/knowledge/principles.md`
+3. **Bidirectional links**: case study → principle (top blockquote), principle → case study (Cases section)
 
 This principle is then:
-- Read before writing new code (grep docs/knowledge/ for keywords)
+- Read before writing new code (grep principles.md for keywords)
 - Used in code review to check for similar patterns
 - Referenced in ADRs if the principle affects architecture decisions

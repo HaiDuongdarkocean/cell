@@ -143,7 +143,7 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 **Pre-Commit (VERIFY + COMMIT)**:
 1. **PHẢI chạy** `git diff --name-only` → biết file nào thay đổi
 2. **Nếu docs/ thay đổi** → **PHẢI update** `docs/0-wiki.md` mục lục
-3. **Nếu test pass + debug pass** → **PHẢI check** `docs/knowledge/`: grep keyword → pattern mới → invoke `/conceptualization` skill
+3. **Nếu test pass + debug pass** → **PHẢI check** `docs/knowledge/principles.md`: grep keyword → pattern mới → invoke `/conceptualization` skill → update 2 layers (principle index + case study file)
 4. **Nếu thay đổi kiến trúc** → **PHẢI thêm** ADR vào `docs/adr/<decision>.md`
 5. **PHẢI invoke** `git-workflow-and-versioning` skill
 6. **Atomic commit test**: "Có thể revert commit này mà build vẫn pass?" → YES = commit riêng; NO = gộp
@@ -174,13 +174,13 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 
 ### Giai đoạn 7 — Maintenance / Operations
 **Mục đích**: Giữ hệ thống ổn định, fix bug, monitor, evolve.
-**Skill kích hoạt**: `debugging-and-error-recovery` (root-cause debug) → `observability-and-instrumentation` (monitor, diagnose) → `conceptualization` (khái niệm hóa bug → nguyên lý) → `deprecation-and-migration` (remove old systems) → `code-simplification` (refactor clarity)
+**Skill kích hoạt**: `debugging-and-error-recovery` (root-cause debug) → `observability-and-instrumentation` (monitor, diagnose) → `conceptualization` (khái niệm hóa bug → nguyên lý, 2-layer) → `deprecation-and-migration` (remove old systems) → `code-simplification` (refactor clarity)
 **Input**: Bug report / incident / monitoring alert
-**Output**: `docs/knowledge/<principle>.md` (nguyên lý từ bug), postmortem
+**Output**: `docs/knowledge/principles.md` (layer 1: principle entry) + `docs/knowledge/<case-name>.md` (layer 2: case study), postmortem
 **File ops**:
-- XEM: `docs/knowledge/` (grep keywords liên quan → apply nguyên lý)
-- THÊM: `docs/knowledge/<principle>.md` (nguyên lý mới)
-- UPDATE: `docs/knowledge/<principle>.md` (cases mới cho nguyên lý đã có)
+- XEM: `docs/knowledge/principles.md` (grep keywords → apply nguyên lý)
+- THÊM: `docs/knowledge/<case-name>.md` (layer 2: case study mới)
+- UPDATE: `docs/knowledge/principles.md` (layer 1: thêm principle entry hoặc cases link)
 - UPDATE: `docs/2-architechture-system.md` (nếu fix ảnh hưởng architecture)
 
 ### Cross-cutting Skills (áp dụng mọi giai đoạn)
