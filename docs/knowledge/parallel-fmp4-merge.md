@@ -1,5 +1,7 @@
 # Parallel fMP4 Merge (ftyp+moov stripping + tfdt offset)
 
+> **Principle**: [Same codec config → share init segment, patch timeline offsets](learned-bugfixes.md#same-codec-config--share-init-segment-patch-timeline-offsets)
+
 ## Problem
 When parallel transmuxing splits a TS file into N groups, each group creates its own `Transmuxer` instance. This causes two bugs:
 

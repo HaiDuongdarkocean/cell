@@ -1,5 +1,7 @@
 # Edge app-window leak (popup renders empty on Edge)
 
+> **Principle**: [Gather candidates + filter by explicit criteria](learned-bugfixes.md#gather-candidates--filter-by-explicit-criteria)
+
 ## Problem
 On Edge, the Media + Downloads sections rendered completely empty (no console error). On Chrome the same extension + same page worked fine. Root cause: Edge ships built-in app-windows (e.g. the dictionary sidebar at `chrome-extension://<id>/pages/app-window/index.html#/app/dictionary`) that are themselves `active: true` and live in their own window. The popup hooks previously used `chrome.tabs.query({ active: true, currentWindow: false })` then `tabs[0]?.id` to grab "the active tab in a browser window, not the popup window". On Edge that query returns the app-window tab (a `chrome-extension://` URL), not the content tab. The background then looked up media/downloads for the extension tab id, found nothing, and the popup rendered empty with no error. The `lastFocusedWindow: true` fallback returned `null` on Edge, so it did not save the case.
 

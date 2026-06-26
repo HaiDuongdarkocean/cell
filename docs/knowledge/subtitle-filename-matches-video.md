@@ -1,5 +1,7 @@
 # Subtitle filename matches video filename + language suffix
 
+> **Principle**: [Dead field → link by co-occurrence, not by dead reference](learned-bugfixes.md#dead-field--link-by-co-occurrence-not-by-dead-reference)
+
 ## Problem
 Subtitle downloads had ugly filenames like `subtitle_-_52c5b9e164ce167d5f0828b55f4ec57f.srt` (URL hash-based), while video downloads had clean filenames like `See_You_at_Work_Tomorrow!.mp4` (from video title). Subtitles should use the same base name as the video, with a language suffix (VLC/community convention: `Movie Title.en.srt`).
 

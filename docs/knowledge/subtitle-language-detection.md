@@ -1,5 +1,7 @@
 # Subtitle Language Detection (hybrid script + frequency)
 
+> **Principle**: [Hybrid detection: fast single-candidate first, disambiguation second](learned-bugfixes.md#hybrid-detection-fast-single-candidate-first-disambiguation-second)
+
 ## Architecture
 - `subtitleDetector.extractLanguage()` parses BCP 47 tags from URL (e.g. `en-US` → `en`, `zh-Hans` → `zh`), extracts primary subtag only.
 - `languageDetector.detectLanguage()` uses a **hybrid two-stage** approach:
