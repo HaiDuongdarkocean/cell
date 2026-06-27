@@ -151,7 +151,7 @@ src/
 | `content/subtitleDragDrop.ts` | subtitleParser, types | subtitleImport, (future overlay) | File read + parse: readFileAsText, handleFileDrop |
 | `content/subtitleImport.ts` | subtitleDragDrop, types | (future overlay) | Import button: createImportButton (top-left, avoids toggle overlap), handleFileSelect |
 | `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types | (future overlay) | Orchestrator: SubtitleOverlayController (sync → overlay wiring) |
-| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: createDockingWrapper (returns `{outerWrapper, videoWrapper}`), showPanelDocked, hidePanelDocked, movePanelToOuterWrapper (flex shrink when video in-flow; fixed fallback with ResizeObserver + scroll/resize/fullscreen sync when video absolute/fixed) |
+| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: createDockingWrapper (returns `{outerWrapper, videoWrapper}`), showPanelDocked, hidePanelDocked, movePanelToOuterWrapper (flex shrink when video in-flow; absolute-docked layout with MutationObserver-style guard when video absolute/fixed) |
 | `content/subtitleAutoLoad.ts` | — | (future overlay) | Auto-load decision + override validation: shouldAutoLoad, validateOverride |
 | `content/subtitleTrackDropdown.ts` | types (SrtCue) | (future overlay) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
 | `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | (future panel) | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
@@ -460,7 +460,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `createImportButton` | `content/subtitleImport.ts` | (HTMLVideoElement, OverlayConfig) → HTMLButtonElement | (future overlay) | Create import button at top-left of video (avoids toggle overlap) |
 | `handleFileSelect` | `content/subtitleImport.ts` | File → Promise<ParseResult> | (future overlay) | Handle file from picker (reuses handleFileDrop) |
 | `createDockingWrapper` | `content/subtitleDocking.ts` | HTMLVideoElement → `{outerWrapper, videoWrapper}` | content-script.ts | Wrap video in two-layer docking container: outer flex box + inner video box |
-| `showPanelDocked` | `content/subtitleDocking.ts` | (outerWrapper, videoWrapper, HTMLVideoElement, HTMLDivElement) → void | content-script.ts | Show panel beside video (flex shrink, or fixed fallback with ResizeObserver + scroll/resize/fullscreen sync for out-of-flow video) |
+| `showPanelDocked` | `content/subtitleDocking.ts` | (outerWrapper, videoWrapper, HTMLVideoElement, HTMLDivElement) → void | content-script.ts | Show panel beside video: flex shrink for in-flow video; absolute-docked shrink for out-of-flow video, guarded by MutationObserver against player style overwrite |
 | `hidePanelDocked` | `content/subtitleDocking.ts` | (outerWrapper, videoWrapper, HTMLDivElement) → void | content-script.ts | Hide panel and restore video layout |
 | `movePanelToOuterWrapper` | `content/subtitleDocking.ts` | (HTMLDivElement, HTMLDivElement) → void | content-script.ts | Move panel into outer wrapper so it becomes a sibling of the video box |
 | `SubtitleOverlayController` | `content/subtitleOverlay.ts` | class (HTMLVideoElement, OverlayConfig) | (future overlay) | Orchestrator: init/loadCues/clearCues/destroy, timeupdate → binary search → overlay |
