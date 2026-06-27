@@ -52,6 +52,7 @@ interface MockChrome {
     query: jest.Mock;
     get: jest.Mock;
     reload: jest.Mock;
+    sendMessage: jest.Mock;
     onUpdated: MockListener;
     onRemoved: MockListener;
     onActivated: MockListener;
@@ -107,6 +108,7 @@ function createMockChrome(): MockChrome {
       query: jest.fn().mockResolvedValue([{ id: 123 }]),
       get: jest.fn().mockResolvedValue({ id: 123, url: 'https://example.com/page', title: 'Test Page' }),
       reload: jest.fn().mockResolvedValue(undefined),
+      sendMessage: jest.fn().mockResolvedValue(undefined),
       onUpdated: createMockListener(),
       onRemoved: createMockListener(),
       onActivated: createMockListener(),
@@ -1545,5 +1547,168 @@ https://cdn.example.com/low.m3u8`;
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(mockQueue.addAll).toHaveBeenCalledTimes(2);
+  });
+
+  // --- AUTO_LOAD_SUBTITLES push on PAGE_SCAN_RESULT ---
+
+  /**
+   * Helper: configure storage.local.get to return settings with auto-load on
+   * + target 'en' + native 'vi'.
+   */
+  function setupStorageForAutoLoad(): void {
+    const settings: Settings = {
+      ...DEFAULT_SETTINGS,
+      subtitleOverlayAutoLoad: true,
+      subtitleOverlayTargetLanguage: 'en',
+      subtitleOverlayNativeLanguage: 'vi',
+    };
+    mockChrome.storage.local.get.mockImplementation(async (keys) => {
+      const result: Record<string, unknown> = {};
+      const keyList = typeof keys === 'string' ? [keys] : (keys as string[]);
+      for (const key of keyList) {
+        if (key === STORAGE_KEYS.SETTINGS) result[key] = settings;
+      }
+      return result;
+    });
+  }
+
+  it('PAGE_SCAN_RESULT pushes AUTO_LOAD_SUBTITLES when autoLoad on + subtitles match', async () => {
+    setupStorageForAutoLoad();
+    mockChrome.tabs.sendMessage.mockClear();
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
+      payload: {
+        tabId: 123,
+        videoUrls: [],
+        subtitleUrls: [
+          'https://example.com/sub.en.srt',
+          'https://example.com/sub.vi.srt',
+        ],
+      },
+    };
+
+    await messageBus.handleMessage(request, { id: 'tab' });
+
+    // Wait for the async push (loadSettings → findSubtitlesForOverlay → sendMessage).
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(mockChrome.tabs.sendMessage).toHaveBeenCalledWith(
+      123,
+      expect.objectContaining({
+        type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+        payload: expect.objectContaining({
+          tabId: 123,
+          target: expect.objectContaining({ language: 'en' }),
+          native: expect.objectContaining({ language: 'vi' }),
+        }),
+      }),
+    );
+  });
+
+  it('PAGE_SCAN_RESULT does NOT push AUTO_LOAD_SUBTITLES when autoLoad off', async () => {
+    const settings: Settings = {
+      ...DEFAULT_SETTINGS,
+      subtitleOverlayAutoLoad: false,
+      subtitleOverlayTargetLanguage: 'en',
+      subtitleOverlayNativeLanguage: 'vi',
+    };
+    mockChrome.storage.local.get.mockImplementation(async (keys) => {
+      const result: Record<string, unknown> = {};
+      const keyList = typeof keys === 'string' ? [keys] : (keys as string[]);
+      for (const key of keyList) {
+        if (key === STORAGE_KEYS.SETTINGS) result[key] = settings;
+      }
+      return result;
+    });
+    mockChrome.tabs.sendMessage.mockClear();
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
+      payload: {
+        tabId: 123,
+        videoUrls: [],
+        subtitleUrls: ['https://example.com/sub.en.srt'],
+      },
+    };
+
+    await messageBus.handleMessage(request, { id: 'tab' });
+    await new Promise((r) => setTimeout(r, 50));
+
+    const autoLoadCalls = mockChrome.tabs.sendMessage.mock.calls.filter(
+      ([, msg]) => (msg as MessageRequest).type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+    );
+    expect(autoLoadCalls).toHaveLength(0);
+  });
+
+  it('REQUEST_AUTO_LOAD_SUBTITLES re-pushes from session_media', async () => {
+    setupStorageForAutoLoad();
+    mockChrome.tabs.sendMessage.mockClear();
+
+    // Simulate session_media containing previously-detected subtitles for tab 123.
+    mockChrome.storage.session.get.mockResolvedValue({
+      [STORAGE_KEYS.SESSION_MEDIA]: {
+        '123': {
+          videos: [],
+          subtitles: [
+            {
+              id: 'sub-en',
+              url: 'https://example.com/sub.en.srt',
+              format: 'srt',
+              language: 'en',
+              tabId: 123,
+              detectedAt: 1000,
+            },
+            {
+              id: 'sub-vi',
+              url: 'https://example.com/sub.vi.srt',
+              format: 'srt',
+              language: 'vi',
+              tabId: 123,
+              detectedAt: 1000,
+            },
+          ],
+        },
+      },
+    });
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES,
+      payload: { tabId: 123 },
+    };
+
+    await messageBus.handleMessage(request, { id: 'tab' });
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(mockChrome.tabs.sendMessage).toHaveBeenCalledWith(
+      123,
+      expect.objectContaining({
+        type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+        payload: expect.objectContaining({
+          tabId: 123,
+          target: expect.objectContaining({ language: 'en' }),
+          native: expect.objectContaining({ language: 'vi' }),
+        }),
+      }),
+    );
+  });
+
+  it('REQUEST_AUTO_LOAD_SUBTITLES does not push when no session media for tab', async () => {
+    setupStorageForAutoLoad();
+    mockChrome.tabs.sendMessage.mockClear();
+    mockChrome.storage.session.get.mockResolvedValue({});
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES,
+      payload: { tabId: 999 },
+    };
+
+    await messageBus.handleMessage(request, { id: 'tab' });
+    await new Promise((r) => setTimeout(r, 50));
+
+    const autoLoadCalls = mockChrome.tabs.sendMessage.mock.calls.filter(
+      ([, msg]) => (msg as MessageRequest).type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+    );
+    expect(autoLoadCalls).toHaveLength(0);
   });
 });

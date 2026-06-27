@@ -43,7 +43,9 @@ export type MessageType =
   | 'CREATE_OPFS_BLOB_URL'
   | 'REVOKE_OPFS_BLOB_URL'
   | 'OFFSCREEN_PING'
-  | 'PAGE_SCAN_RESULT';
+  | 'PAGE_SCAN_RESULT'
+  | 'AUTO_LOAD_SUBTITLES'
+  | 'REQUEST_AUTO_LOAD_SUBTITLES';
 
 // === Message Request ===
 
@@ -226,6 +228,23 @@ export interface PageScanResultPayload {
   readonly tabId: number;
   readonly videoUrls: string[];
   readonly subtitleUrls: string[];
+}
+
+/**
+ * Pushed by background → content-script when subtitles matching the user's
+ * target/native overlay languages are detected and auto-load is on.
+ * Either `target` or `native` may be null (partial load).
+ */
+export interface AutoLoadSubtitlesPayload {
+  readonly tabId: number;
+  readonly target: SubtitleForOverlayResult | null;
+  readonly native: SubtitleForOverlayResult | null;
+}
+
+/** Content-script → background: re-push AUTO_LOAD_SUBTITLES if already detected
+ * (handles race: background pushed before content-script was ready). */
+export interface RequestAutoLoadSubtitlesPayload {
+  readonly tabId: number;
 }
 
 // === Typed Message Helpers ===

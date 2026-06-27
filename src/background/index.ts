@@ -19,6 +19,7 @@ import { DownloadQueue } from './downloadQueue';
 import { tryAutoDownload } from './autoDownload';
 import { Downloader, type ConvertResult } from './downloader';
 import { OffscreenManager } from './offscreenManager';
+import { findSubtitlesForOverlay } from './subtitleService';
 import { MESSAGE_TYPES } from '@/constants/messages';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
 import { cleanupOrphanedDownloads } from '@/lib/storage/opfsStorage';
@@ -51,6 +52,8 @@ import type {
   ConversionProgressUpdatePayload,
   UpdateSettingsPayload,
   PageScanResultPayload,
+  AutoLoadSubtitlesPayload,
+  RequestAutoLoadSubtitlesPayload,
   DownloadListResponse,
   ConvertTsToMp4V2Payload,
   ConvertTsToMp4V2ResultPayload,
@@ -262,6 +265,14 @@ export class BackgroundService {
         // `onMediaDetected` fires incrementally as more media is discovered.
         if (tabId !== 0) {
           void this.maybeAutoDownload(tabId);
+        }
+
+        // Bilingual subtitle auto-load: push matching subtitles to the
+        // content-script when autoLoad is on (ADR-007 D2). Network-detected
+        // subtitles may arrive after the initial PAGE_SCAN_RESULT, so we also
+        // push here. Content-script dedups via URL cache (Task 7).
+        if (tabId !== 0 && subtitles.length > 0) {
+          void this.pushAutoLoadSubtitles(tabId, subtitles);
         }
       },
     );
@@ -599,6 +610,7 @@ export class BackgroundService {
     this.on(MESSAGE_TYPES.TOGGLE_EXTENSION, this.handleToggleExtension);
     this.on(MESSAGE_TYPES.UPDATE_SUBTITLE_LANGUAGE, this.handleUpdateSubtitleLanguage);
     this.on(MESSAGE_TYPES.PAGE_SCAN_RESULT, this.handlePageScanResult);
+    this.on(MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES, this.handleRequestAutoLoadSubtitles);
     this.on(MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE, this.handleConversionProgressUpdate);
   }
 
@@ -1397,6 +1409,80 @@ export class BackgroundService {
       this.updateBadgeForTab(tabId);
     }
 
+    // Bilingual subtitle auto-load: push matching subtitles to the
+    // content-script (ADR-007 D2). Subtitles may have been detected via
+    // network interception before this scan, so check the full set.
+    const allSubtitles = this.networkInterceptor.getSubtitles(tabId);
+    if (allSubtitles.length > 0) {
+      void this.pushAutoLoadSubtitles(tabId, allSubtitles);
+    }
+
+    return { success: true };
+  };
+
+  /**
+   * Find subtitles matching the user's overlay target/native languages and
+   * push `AUTO_LOAD_SUBTITLES` to the content-script in the given tab.
+   * Skipped silently when auto-load is off, no languages set, or no match.
+   * Errors (content-script not yet injected) are logged but not re-thrown —
+   * the content-script will request a re-push via `REQUEST_AUTO_LOAD_SUBTITLES`
+   * once it is ready (ADR-007 D2 race-condition handling).
+   */
+  private async pushAutoLoadSubtitles(
+    tabId: number,
+    subtitles: DetectedSubtitle[],
+  ): Promise<void> {
+    try {
+      const settings = await this.loadSettings();
+      const result = findSubtitlesForOverlay(subtitles, settings);
+      if (!result) return;
+      const payload: AutoLoadSubtitlesPayload = {
+        tabId,
+        target: result.target,
+        native: result.native,
+      };
+      await chrome.tabs.sendMessage(tabId, {
+        type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+        payload,
+      });
+    } catch (error) {
+      // Content-script may not be injected yet (receiving end does not exist).
+      // The content-script will request a re-push on init. Log only language +
+      // cue count, never the full URL (ADR-007 D8).
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`AUTO_LOAD_SUBTITLES push failed for tab ${tabId}: ${msg}`);
+    }
+  }
+
+  /**
+   * REQUEST_AUTO_LOAD_SUBTITLES: content-script asks background to re-push
+   * AUTO_LOAD_SUBTITLES if subtitles were already detected (handles race:
+   * background pushed before content-script was ready). Reads from
+   * `chrome.storage.session` (survives SW restart) — not in-memory store.
+   */
+  private handleRequestAutoLoadSubtitles = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as RequestAutoLoadSubtitlesPayload;
+    const tabId = payload?.tabId;
+    if (tabId === undefined) {
+      return { success: false, error: 'Missing tabId in REQUEST_AUTO_LOAD_SUBTITLES' };
+    }
+
+    try {
+      const data = await chrome.storage.session.get(STORAGE_KEYS.SESSION_MEDIA);
+      const all = data[STORAGE_KEYS.SESSION_MEDIA] as
+        | Record<string, { videos: DetectedVideo[]; subtitles: DetectedSubtitle[] }>
+        | undefined;
+      const entry = all?.[String(tabId)];
+      if (!entry || entry.subtitles.length === 0) {
+        return { success: true };
+      }
+      await this.pushAutoLoadSubtitles(tabId, entry.subtitles);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`REQUEST_AUTO_LOAD_SUBTITLES failed for tab ${tabId}: ${msg}`);
+    }
     return { success: true };
   };
 
