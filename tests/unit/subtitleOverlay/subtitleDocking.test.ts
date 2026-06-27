@@ -287,7 +287,7 @@ describe('subtitleDocking', () => {
   });
 
   describe('setupFullscreenHandlers', () => {
-    it('intercepts art-player fullscreen button pointerdown and requests F0 fullscreen', () => {
+    it('redirects art-video-player fullscreen to F0 when panel is visible', async () => {
       const container = video.parentElement!;
       mockRect(video, { width: 300, height: 200 });
       mockRect(container, { width: 300, height: 250 });
@@ -295,24 +295,49 @@ describe('subtitleDocking', () => {
       f0.appendChild(panel);
       showPanelDocked(f0, playerContainer, panel);
 
-      let requestedElement: Element | null = null;
+      const artPlayer = document.createElement('div');
+      artPlayer.className = 'art-video-player';
+      playerContainer.appendChild(artPlayer);
+
+      let f0Requested = false;
       f0.requestFullscreen = jest.fn().mockImplementation(() => {
-        requestedElement = f0;
+        f0Requested = true;
+        return Promise.resolve();
+      });
+      document.exitFullscreen = jest.fn().mockImplementation(() => {
+        // Simulate the browser exiting fullscreen
+        Object.defineProperty(document, 'fullscreenElement', {
+          writable: true,
+          configurable: true,
+          value: null,
+        });
+        // Dispatch fullscreenchange after exit
+        document.dispatchEvent(new Event('fullscreenchange'));
         return Promise.resolve();
       });
 
-      const fsBtn = document.createElement('div');
-      fsBtn.className = 'art-control-fullscreen';
-      playerContainer.appendChild(fsBtn);
-
       const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
-      fsBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
 
-      expect(requestedElement).toBe(f0);
+      // Simulate art-video-player entering fullscreen
+      Object.defineProperty(document, 'fullscreenElement', {
+        writable: true,
+        configurable: true,
+        value: artPlayer,
+      });
+      document.dispatchEvent(new Event('fullscreenchange'));
+
+      // Wait for the exit→re-enter Promise chain to resolve
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      // Should have called exitFullscreen (to exit art-player fullscreen)
+      expect(document.exitFullscreen).toHaveBeenCalled();
+      // Should have called f0.requestFullscreen (to enter F0 fullscreen)
+      expect(f0Requested).toBe(true);
+
       cleanup();
     });
 
-    it('lets fullscreen button default behavior when panel is closed', () => {
+    it('does not redirect when panel is closed', () => {
       const container = video.parentElement!;
       mockRect(video, { width: 300, height: 200 });
       mockRect(container, { width: 300, height: 250 });
@@ -320,22 +345,33 @@ describe('subtitleDocking', () => {
       f0.appendChild(panel);
       hidePanelDocked(f0, playerContainer, panel);
 
-      let prevented = false;
-      const fsBtn = document.createElement('div');
-      fsBtn.className = 'art-control-fullscreen';
-      fsBtn.addEventListener('mousedown', (e) => {
-        if (e.defaultPrevented) prevented = true;
+      const artPlayer = document.createElement('div');
+      artPlayer.className = 'art-video-player';
+      playerContainer.appendChild(artPlayer);
+
+      let exitCalled = false;
+      document.exitFullscreen = jest.fn().mockImplementation(() => {
+        exitCalled = true;
+        return Promise.resolve();
       });
-      playerContainer.appendChild(fsBtn);
 
       const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => false);
-      fsBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
 
-      expect(prevented).toBe(false);
+      // Simulate art-video-player entering fullscreen
+      Object.defineProperty(document, 'fullscreenElement', {
+        writable: true,
+        configurable: true,
+        value: artPlayer,
+      });
+      document.dispatchEvent(new Event('fullscreenchange'));
+
+      // Should NOT have called exitFullscreen (panel is closed, let it be)
+      expect(exitCalled).toBe(false);
+
       cleanup();
     });
 
-    it('exits fullscreen when F0 is already fullscreen and button is pointerdowned', () => {
+    it('applies 70/30 layout when F0 enters fullscreen', () => {
       const container = video.parentElement!;
       mockRect(video, { width: 300, height: 200 });
       mockRect(container, { width: 300, height: 250 });
@@ -343,26 +379,21 @@ describe('subtitleDocking', () => {
       f0.appendChild(panel);
       showPanelDocked(f0, playerContainer, panel);
 
-      let exited = false;
-      document.exitFullscreen = jest.fn().mockImplementation(() => {
-        exited = true;
-        return Promise.resolve();
-      });
+      const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
 
+      // Simulate F0 entering fullscreen
       Object.defineProperty(document, 'fullscreenElement', {
         writable: true,
         configurable: true,
         value: f0,
       });
+      document.dispatchEvent(new Event('fullscreenchange'));
 
-      const fsBtn = document.createElement('div');
-      fsBtn.className = 'art-control-fullscreen';
-      playerContainer.appendChild(fsBtn);
+      expect(playerContainer.classList.contains('art-fullscreen')).toBe(true);
+      expect(panel.style.display).toBe('flex');
+      expect(f0.style.display).toBe('flex');
+      expect(f0.style.flexDirection).toBe('row');
 
-      const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
-      fsBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-
-      expect(exited).toBe(true);
       cleanup();
     });
   });

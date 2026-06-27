@@ -315,42 +315,41 @@ export function setupFullscreenHandlers(
   panel: HTMLElement,
   isPanelVisible: () => boolean,
 ): () => void {
-  const fullscreenSelector = '.art-control-fullscreen';
-  let lastInterceptTime = 0;
+  let cleaned = false;
+  let redirecting = false;
 
-  const onPlayerFullscreenInteraction = (e: MouseEvent | PointerEvent) => {
-    const target = e.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (!target.closest(fullscreenSelector)) return;
-    // Only intercept when the panel is open — otherwise let the player's native
-    // fullscreen behavior handle it.
-    if (!isPanelVisible()) return;
-
-    // Deduplicate: pointerdown fires before mousedown and click. If we already
-    // intercepted the pointerdown for this interaction, skip the trailing events.
-    if (Date.now() - lastInterceptTime < 100) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-
-    lastInterceptTime = Date.now();
-
-    if (document.fullscreenElement === f0) {
-      document.exitFullscreen();
-    } else {
-      f0.requestFullscreen();
-    }
-  };
-
-  // Capture phase so we stop the player's own fullscreen handler before it runs.
-  // Art-player (and many custom players) use pointerdown/mousedown, not click.
-  playerContainer.addEventListener('pointerdown', onPlayerFullscreenInteraction, true);
-  playerContainer.addEventListener('mousedown', onPlayerFullscreenInteraction, true);
-  playerContainer.addEventListener('click', onPlayerFullscreenInteraction, true);
-
+  // React to fullscreen changes. When the art-video-player enters fullscreen
+  // (instead of F0), exit it and re-enter on F0. This preserves the 70/30
+  // split with the panel beside the video.
+  //
+  // We can't intercept the art-player's requestFullscreen() call directly
+  // because content scripts run in an isolated world — DOM properties set
+  // from the content script are invisible to the page's JavaScript. And
+  // injecting a <script> tag is blocked by the page's CSP. So we react
+  // to the fullscreenchange event instead.
   const onFullscreenChange = () => {
-    if (document.fullscreenElement === f0) {
+    const fsEl = document.fullscreenElement;
+
+    if (fsEl && fsEl !== f0) {
+      // The art-video-player entered fullscreen, not F0.
+      // Only redirect if the panel is visible and we're not already redirecting.
+      if (!isPanelVisible() || redirecting) return;
+
+      // Exit the art-player's fullscreen and immediately enter F0 fullscreen.
+      redirecting = true;
+      document.exitFullscreen().then(() => {
+        // Reset the flag so the F0 fullscreenchange handler can process the layout.
+        redirecting = false;
+        f0.requestFullscreen().catch(() => {
+          redirecting = false;
+        });
+      }).catch(() => {
+        redirecting = false;
+      });
+      return;
+    }
+
+    if (fsEl === f0) {
       // F0 is fullscreen: make player look fullscreen and layout the panel.
       playerContainer.classList.add('art-fullscreen');
       if (isPanelVisible()) {
@@ -365,8 +364,9 @@ export function setupFullscreenHandlers(
         playerContainer.style.setProperty('aspect-ratio', 'auto', 'important');
         panel.style.display = 'none';
       }
-    } else if (document.fullscreenElement === null) {
+    } else if (fsEl === null && !redirecting) {
       // Exited F0 fullscreen: restore normal docked or hidden state.
+      // Skip if redirecting (the exit is part of the redirect flow).
       exitFullscreenDocked(f0, playerContainer, panel, isPanelVisible());
     }
   };
@@ -374,9 +374,8 @@ export function setupFullscreenHandlers(
   document.addEventListener('fullscreenchange', onFullscreenChange);
 
   return () => {
-    playerContainer.removeEventListener('pointerdown', onPlayerFullscreenInteraction, true);
-    playerContainer.removeEventListener('mousedown', onPlayerFullscreenInteraction, true);
-    playerContainer.removeEventListener('click', onPlayerFullscreenInteraction, true);
+    if (cleaned) return;
+    cleaned = true;
     document.removeEventListener('fullscreenchange', onFullscreenChange);
   };
 }
