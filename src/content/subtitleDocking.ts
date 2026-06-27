@@ -119,14 +119,19 @@ export function showPanelDocked(
   f0.style.display = 'flex';
   f0.style.flexDirection = mobile ? 'column' : 'row';
   f0.style.alignItems = 'stretch';
+  f0.style.boxSizing = 'border-box';
 
   playerContainer.style.flex = mobile
     ? `0 0 ${MOBILE_VIDEO_RATIO}`
     : `0 0 ${DESKTOP_VIDEO_RATIO}`;
   playerContainer.style.minWidth = '0';
   playerContainer.style.minHeight = '0';
+  playerContainer.style.boxSizing = 'border-box';
 
   // Panel becomes a flex sibling filling the remaining space.
+  // min-width: 0 is required because the default min-width: auto prevents
+  // the panel from shrinking below its content width, causing the panel + video
+  // to overflow F0.
   panel.style.position = 'relative';
   panel.style.right = 'auto';
   panel.style.top = 'auto';
@@ -136,6 +141,9 @@ export function showPanelDocked(
   panel.style.width = mobile ? '100%' : 'auto';
   panel.style.height = mobile ? MOBILE_PANEL_RATIO : 'auto';
   panel.style.maxHeight = 'none';
+  panel.style.minWidth = '0';
+  panel.style.overflow = 'hidden';
+  panel.style.boxSizing = 'border-box';
   panel.style.display = 'flex';
   panel.style.alignSelf = 'stretch';
 }
@@ -153,10 +161,12 @@ export function hidePanelDocked(
   f0.style.display = '';
   f0.style.flexDirection = '';
   f0.style.alignItems = '';
+  f0.style.boxSizing = '';
 
   playerContainer.style.flex = '';
   playerContainer.style.minWidth = '';
   playerContainer.style.minHeight = '';
+  playerContainer.style.boxSizing = '';
 
   // Restore panel to its hidden floating state.
   panel.style.position = 'absolute';
@@ -168,6 +178,9 @@ export function hidePanelDocked(
   panel.style.width = '280px';
   panel.style.height = 'auto';
   panel.style.maxHeight = '100%';
+  panel.style.minWidth = '';
+  panel.style.overflow = '';
+  panel.style.boxSizing = '';
   panel.style.display = 'none';
   panel.style.alignSelf = '';
 }

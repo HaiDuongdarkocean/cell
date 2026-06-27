@@ -129,11 +129,17 @@ describe('subtitleDocking', () => {
 
       expect(f0.style.display).toBe('flex');
       expect(f0.style.flexDirection).toBe('row');
+      expect(f0.style.boxSizing).toBe('border-box');
       expect(playerContainer.style.flex).toBe(`0 0 ${DESKTOP_VIDEO_RATIO}`);
+      expect(playerContainer.style.minWidth).toBe('0');
+      expect(playerContainer.style.boxSizing).toBe('border-box');
       expect(panel.style.flex).toBe(`0 0 ${DESKTOP_PANEL_RATIO}`);
       expect(panel.style.display).toBe('flex');
       expect(panel.style.position).toBe('relative');
       expect(panel.style.alignSelf).toBe('stretch');
+      expect(panel.style.minWidth).toBe('0');
+      expect(panel.style.overflow).toBe('hidden');
+      expect(panel.style.boxSizing).toBe('border-box');
       expect(panel.getAttribute('data-docking-mode')).toBe('flex');
     });
 
@@ -170,10 +176,16 @@ describe('subtitleDocking', () => {
 
       expect(f0.style.display).toBe('');
       expect(f0.style.flexDirection).toBe('');
+      expect(f0.style.boxSizing).toBe('');
       expect(playerContainer.style.flex).toBe('');
+      expect(playerContainer.style.minWidth).toBe('');
+      expect(playerContainer.style.boxSizing).toBe('');
       expect(panel.style.display).toBe('none');
       expect(panel.style.position).toBe('absolute');
       expect(panel.style.right).toBe('0px');
+      expect(panel.style.minWidth).toBe('');
+      expect(panel.style.overflow).toBe('');
+      expect(panel.style.boxSizing).toBe('');
       expect(panel.getAttribute('data-docking-mode')).toBe(null);
     });
   });
