@@ -116,6 +116,12 @@ export function showPanelDocked(
   const mobile = isMobileViewport();
   panel.setAttribute('data-docking-mode', 'flex');
 
+  // Preserve F0's natural height so the video does not shrink vertically when
+  // playerContainer width is reduced. Without this, the site's aspect-ratio
+  // CSS on the player would force the height to shrink proportionally with
+  // the width, making the video smaller in both dimensions.
+  f0.style.height = `${f0.getBoundingClientRect().height}px`;
+
   f0.style.display = 'flex';
   f0.style.flexDirection = mobile ? 'column' : 'row';
   f0.style.alignItems = 'stretch';
@@ -127,6 +133,9 @@ export function showPanelDocked(
   playerContainer.style.minWidth = '0';
   playerContainer.style.minHeight = '0';
   playerContainer.style.boxSizing = 'border-box';
+  // Fill the preserved F0 height instead of letting aspect-ratio decide.
+  playerContainer.style.height = mobile ? MOBILE_VIDEO_RATIO : '100%';
+  playerContainer.style.setProperty('aspect-ratio', 'auto', 'important');
 
   // Panel becomes a flex sibling filling the remaining space.
   // min-width: 0 is required because the default min-width: auto prevents
@@ -139,9 +148,10 @@ export function showPanelDocked(
   panel.style.bottom = 'auto';
   panel.style.flex = mobile ? `0 0 ${MOBILE_PANEL_RATIO}` : `0 0 ${DESKTOP_PANEL_RATIO}`;
   panel.style.width = mobile ? '100%' : 'auto';
-  panel.style.height = mobile ? MOBILE_PANEL_RATIO : 'auto';
+  panel.style.height = mobile ? MOBILE_PANEL_RATIO : '100%';
   panel.style.maxHeight = 'none';
   panel.style.minWidth = '0';
+  panel.style.minHeight = '0';
   panel.style.overflow = 'hidden';
   panel.style.boxSizing = 'border-box';
   panel.style.display = 'flex';
@@ -162,11 +172,14 @@ export function hidePanelDocked(
   f0.style.flexDirection = '';
   f0.style.alignItems = '';
   f0.style.boxSizing = '';
+  f0.style.height = '';
 
   playerContainer.style.flex = '';
   playerContainer.style.minWidth = '';
   playerContainer.style.minHeight = '';
   playerContainer.style.boxSizing = '';
+  playerContainer.style.height = '';
+  playerContainer.style.removeProperty('aspect-ratio');
 
   // Restore panel to its hidden floating state.
   panel.style.position = 'absolute';
@@ -179,6 +192,7 @@ export function hidePanelDocked(
   panel.style.height = 'auto';
   panel.style.maxHeight = '100%';
   panel.style.minWidth = '';
+  panel.style.minHeight = '';
   panel.style.overflow = '';
   panel.style.boxSizing = '';
   panel.style.display = 'none';
