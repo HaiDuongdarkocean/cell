@@ -113,20 +113,25 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     movePanelToOuterWrapper(panel, f0);
   }
 
+  // Saved panel state used when the panel is toggled while the player is in
+  // fullscreen. The overlay approach needs to remember the original parent and
+  // styles so it can restore them on exit.
+  let savedPanelStyles: { parent: HTMLElement | null; cssText: string } | null = null;
+
   // Wire toggle button → show/hide panel (docked layout shrinks video when open)
   toggleBtn.addEventListener('click', () => {
     panelVisible = !panelVisible;
     if (panel && toggleBtn) {
       if (panelVisible) {
-        showPanelDocked(f0, playerContainer, panel);
+        savedPanelStyles = showPanelDocked(f0, playerContainer, panel, savedPanelStyles) ?? savedPanelStyles;
       } else {
-        hidePanelDocked(f0, playerContainer, panel);
+        hidePanelDocked(f0, playerContainer, panel, savedPanelStyles);
       }
     }
   });
 
-  // Intercept the player's fullscreen button so it fullscreens F0 instead of
-  // the player itself. This keeps the panel beside the video in fullscreen.
+  // Handle fullscreen change: overlay panel on top of the fullscreen video so
+  // the native player's fullscreen button keeps the panel visible.
   if (panel) {
     setupFullscreenHandlers(f0, playerContainer, panel, () => panelVisible);
   }
@@ -136,7 +141,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   closeBtn?.addEventListener('click', () => {
     panelVisible = false;
     if (panel && toggleBtn) {
-      hidePanelDocked(f0, playerContainer, panel);
+      hidePanelDocked(f0, playerContainer, panel, savedPanelStyles);
     }
   });
 

@@ -66,6 +66,11 @@ describe('subtitleDocking', () => {
       configurable: true,
       value: originalInnerWidth,
     });
+    // Reset fullscreenElement override so it does not leak across tests.
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: () => null,
+    });
   });
 
   describe('setupDocking', () => {
@@ -360,15 +365,12 @@ describe('subtitleDocking', () => {
       artPlayer.className = 'art-video-player';
       playerContainer.appendChild(artPlayer);
 
-      const originalCssText = panel.style.cssText;
-
       const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
 
       // Enter fullscreen
       Object.defineProperty(document, 'fullscreenElement', {
-        writable: true,
         configurable: true,
-        value: artPlayer,
+        get: () => artPlayer,
       });
       document.dispatchEvent(new Event('fullscreenchange'));
 
@@ -376,9 +378,8 @@ describe('subtitleDocking', () => {
 
       // Exit fullscreen
       Object.defineProperty(document, 'fullscreenElement', {
-        writable: true,
         configurable: true,
-        value: null,
+        get: () => null,
       });
       document.dispatchEvent(new Event('fullscreenchange'));
 

@@ -106,15 +106,92 @@ export function isMobileViewport(): boolean {
 }
 
 /**
+ * Apply the panel as a fixed overlay inside the fullscreen element.
+ * The panel is moved into fsElement so it renders (elements outside the
+ * fullscreen element are hidden). Called both from fullscreenchange and from
+ * showPanelDocked/hidePanelDocked when the user toggles the panel while in
+ * fullscreen.
+ */
+function applyFullscreenOverlay(
+  panel: HTMLElement,
+  fsElement: Element,
+  savedStyles: { parent: HTMLElement | null; cssText: string } | null,
+): { parent: HTMLElement | null; cssText: string } {
+  const savedParent = panel.parentElement;
+  const savedCssText = panel.style.cssText;
+
+  // Move panel into the fullscreen element only if it's not already there.
+  if (panel.parentElement !== fsElement) {
+    fsElement.appendChild(panel);
+  }
+
+  // Reset any flex/relative styles from the normal docked layout, then apply
+  // the fixed overlay styles. Use inline styles (not !important) so the
+  // fullscreenchange handler can override them later.
+  panel.style.position = 'fixed';
+  panel.style.right = '0';
+  panel.style.top = '0';
+  panel.style.left = 'auto';
+  panel.style.bottom = 'auto';
+  panel.style.width = '30vw';
+  panel.style.height = '100vh';
+  panel.style.maxHeight = 'none';
+  panel.style.minWidth = '0';
+  panel.style.minHeight = '0';
+  panel.style.zIndex = '2147483647';
+  panel.style.display = 'flex';
+  panel.style.flexDirection = 'column';
+  panel.style.flex = '0 0 auto';
+  panel.style.alignSelf = 'auto';
+  panel.style.borderRadius = '8px 0 0 8px';
+  panel.style.boxSizing = 'border-box';
+  panel.style.overflow = 'hidden';
+  panel.style.setProperty('aspect-ratio', 'auto', 'important');
+
+  const panelBody = panel.querySelector('[data-testid="panel-body"]') as HTMLElement | null;
+  if (panelBody) {
+    panelBody.style.maxHeight = 'none';
+  }
+
+  // Return the previously saved styles so we only capture the very first state
+  // before any overlay was applied. If we already have saved styles, keep them.
+  return savedStyles ?? { parent: savedParent, cssText: savedCssText };
+}
+
+/**
+ * Restore the panel from fullscreen overlay to its saved parent/styles.
+ */
+function restoreFullscreenOverlay(
+  panel: HTMLElement,
+  savedStyles: { parent: HTMLElement | null; cssText: string },
+): void {
+  if (savedStyles.parent && panel.parentElement !== savedStyles.parent) {
+    savedStyles.parent.appendChild(panel);
+  }
+  panel.style.cssText = savedStyles.cssText;
+}
+
+/**
  * Show panel in docked layout: shrink playerContainer to make room for panel.
  * F0 becomes a flex container; playerContainer takes the video ratio, panel
  * takes the panel ratio.
+ *
+ * If the browser is currently in fullscreen on an element other than F0, this
+ * applies the overlay layout instead so the panel remains visible on top of the
+ * fullscreen video.
  */
 export function showPanelDocked(
   f0: HTMLElement,
   playerContainer: HTMLElement,
   panel: HTMLElement,
-): void {
+  savedStyles?: { parent: HTMLElement | null; cssText: string } | null,
+): { parent: HTMLElement | null; cssText: string } | null {
+  const fsElement = document.fullscreenElement;
+  if (fsElement && fsElement !== f0) {
+    // We are in fullscreen on the player (or another element). Overlay the panel.
+    return applyFullscreenOverlay(panel, fsElement, savedStyles ?? null);
+  }
+
   const mobile = isMobileViewport();
   panel.setAttribute('data-docking-mode', 'flex');
 
@@ -166,16 +243,33 @@ export function showPanelDocked(
   if (panelBody) {
     panelBody.style.maxHeight = 'none';
   }
+
+  return null;
 }
 
 /**
  * Hide panel and restore playerContainer to its full size.
+ *
+ * If the browser is currently in fullscreen on an element other than F0, the
+ * panel stays inside the fullscreen element but is hidden with display:none so
+ * it will re-appear correctly when the user reopens it.
  */
 export function hidePanelDocked(
   f0: HTMLElement,
   playerContainer: HTMLElement,
   panel: HTMLElement,
+  savedStyles?: { parent: HTMLElement | null; cssText: string } | null,
 ): void {
+  const fsElement = document.fullscreenElement;
+  if (fsElement && fsElement !== f0) {
+    // Fullscreen mode: just hide the panel. Keep it in the fullscreen element.
+    // `savedStyles` is intentionally unused here — it is owned by the caller
+    // (content-script) which passes it back to showPanelDocked on reopen.
+    void savedStyles;
+    panel.style.display = 'none';
+    return;
+  }
+
   panel.removeAttribute('data-docking-mode');
 
   f0.style.display = '';
@@ -302,19 +396,23 @@ export function exitFullscreenDocked(
 }
 
 /**
- * When the art-video-player enters fullscreen, overlay the subtitle panel
- * on top of the fullscreen video (right side, 30% width). This is the only
- * approach that works because:
+ * When any element enters fullscreen (the video player, not F0), overlay the
+ * subtitle panel on top of the fullscreen content (right side, 30% width).
  *
+ * This is generic: it uses `document.fullscreenElement` directly instead of
+ * hardcoding the art-player class, so it works on any site that puts the video
+ * in fullscreen via the native Fullscreen API.
+ *
+ * Why this approach is needed:
  * 1. Content scripts run in an isolated world — can't override
- *    requestFullscreen() on the art-video-player element (page can't see it).
- * 2. Injecting <script> tags is blocked by the page's CSP.
+ *    requestFullscreen() on the video element (page can't see it).
+ * 2. Injecting <script> tags is blocked by many pages' CSP.
  * 3. Reactive redirect (exitFullscreen → f0.requestFullscreen) fails because
  *    requestFullscreen() requires a user gesture, which is consumed by the
  *    time fullscreenchange fires.
  *
- * So we let the art-video-player be fullscreen, move the panel INTO it as
- * a fixed-position overlay, and restore it when fullscreen exits.
+ * So we let the player's element be fullscreen, move the panel INTO it as a
+ * fixed-position overlay, and restore it when fullscreen exits.
  *
  * Returns a cleanup function that removes the listeners.
  */
@@ -325,54 +423,23 @@ export function setupFullscreenHandlers(
   isPanelVisible: () => boolean,
 ): () => void {
   let cleaned = false;
-  let panelOriginalParent: HTMLElement | null = null;
-  let savedPanelStyles = '';
+  let savedPanelStyles: { parent: HTMLElement | null; cssText: string } | null = null;
 
   const onFullscreenChange = () => {
     const fsEl = document.fullscreenElement;
 
     if (fsEl && fsEl !== f0) {
-      // Some element other than F0 entered fullscreen (e.g. art-video-player).
+      // Some element other than F0 entered fullscreen (e.g. the native player).
       // Only overlay if the panel is visible.
       if (!isPanelVisible()) return;
 
-      // Save the panel's original parent and styles so we can restore them.
-      if (!panelOriginalParent) {
-        panelOriginalParent = panel.parentElement;
-        savedPanelStyles = panel.style.cssText;
-      }
-
-      // Move the panel into the fullscreen element so it's visible.
-      // Elements outside the fullscreen element are NOT rendered.
-      fsEl.appendChild(panel);
-
-      // Style the panel as a fixed overlay on the right side.
-      panel.style.position = 'fixed';
-      panel.style.right = '0';
-      panel.style.top = '0';
-      panel.style.left = 'auto';
-      panel.style.bottom = 'auto';
-      panel.style.width = '30vw';
-      panel.style.height = '100vh';
-      panel.style.maxHeight = 'none';
-      panel.style.zIndex = '2147483647';
-      panel.style.display = 'flex';
-      panel.style.flexDirection = 'column';
-      panel.style.borderRadius = '8px 0 0 8px';
-      panel.style.boxSizing = 'border-box';
-      panel.style.overflow = 'hidden';
-
-      const panelBody = panel.querySelector('[data-testid="panel-body"]') as HTMLElement | null;
-      if (panelBody) {
-        panelBody.style.maxHeight = 'none';
-      }
+      // Apply the overlay and save the original state only once.
+      savedPanelStyles = applyFullscreenOverlay(panel, fsEl, savedPanelStyles);
     } else if (fsEl === null) {
       // Exited fullscreen: restore the panel to its original parent and styles.
-      if (panelOriginalParent && panel.parentElement !== panelOriginalParent) {
-        panelOriginalParent.appendChild(panel);
-        panel.style.cssText = savedPanelStyles;
-        panelOriginalParent = null;
-        savedPanelStyles = '';
+      if (savedPanelStyles) {
+        restoreFullscreenOverlay(panel, savedPanelStyles);
+        savedPanelStyles = null;
       }
 
       // Restore normal docked or hidden layout.
@@ -386,12 +453,10 @@ export function setupFullscreenHandlers(
     if (cleaned) return;
     cleaned = true;
     // If still in fullscreen, restore panel to original parent.
-    if (panelOriginalParent && panel.parentElement !== panelOriginalParent) {
-      panelOriginalParent.appendChild(panel);
-      panel.style.cssText = savedPanelStyles;
+    if (savedPanelStyles) {
+      restoreFullscreenOverlay(panel, savedPanelStyles);
+      savedPanelStyles = null;
     }
-    panelOriginalParent = null;
-    savedPanelStyles = '';
     document.removeEventListener('fullscreenchange', onFullscreenChange);
   };
 }
