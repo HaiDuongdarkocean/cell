@@ -18,22 +18,23 @@ src/
 │   ├── messageBus.ts              # Pub/sub: on() / broadcast() cho message handlers
 │   ├── offscreenManager.ts        # Quản lý offscreen document lifecycle
 │   ├── autoDownload.ts            # Orchestrator: tryAutoDownload(tabId, tabUrl, deps, alreadyEnqueuedIds?) → string[] — whitelist check → settings → selectBestMedia → enqueue (skip already-enqueued ids). Silent no-op when no match
-│   └── subtitleService.ts         # findSubtitleForOverlay: validate target language + return matching subtitle
+│   └── subtitleService.ts         # findSubtitlesForOverlay: validate target + native language → SubtitlesForOverlayResult (target + native, partial load)
 │
 ├── content/                       # Content script (chạy trong trang web)
 │   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT; wire subtitle overlay + panel + shortcuts
 │   ├── pageScanner.ts             # Scan <video>, <source>, subtitle <track>
 │   ├── subtitleParser.ts          # Adapter: parseSubtitle(content, format) → ParseResult (reuse parseSrt/parseVtt)
 │   ├── subtitleSync.ts            # Binary search O(log n): findCurrentLine(cues, currentTime) → index
-│   ├── subtitleUI.ts              # Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay
+│   ├── subtitleUI.ts              # Overlay UI: createOverlay (2 spans target+native), updateOverlayText, updateOverlayBilingual, hideOverlay, removeOverlay
 │   ├── subtitleDragDrop.ts        # File read + parse: readFileAsText, handleFileDrop (drag-drop handler)
 │   ├── subtitleImport.ts          # Import button: createImportButton (top-left, avoids toggle overlap), handleFileSelect (file picker)
-│   ├── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring)
-│   ├── subtitleAutoLoad.ts        # Auto-load decision + override validation: shouldAutoLoad, validateOverride
+│   ├── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring; loadBilingualCues: 2 binary searches runtime align)
+│   ├── subtitleAutoLoad.ts        # Auto-load: shouldAutoLoad, validateOverride, fetchAndParseSubtitle (cache by URL, CORS fallback), handleAutoLoadSubtitles (fetch+parse+load bilingual), formatFromUrl, clearAutoLoadCache
+│   ├── subtitleMerge.ts           # mergeCuesForPanel(targetCues, nativeCues) → BilingualCue[] (target skeleton, native best-effort overlap; fallback native skeleton when target empty)
 │   ├── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
 │   ├── subtitleBilingualParser.ts # Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, reuse parseSrt)
 │   ├── subtitlePanel.ts           # Floating panel UI: createPanel, renderCueList, createToggleButton, switchPanelPosition (draggable, bilingual layout)
-│   ├── subtitleDocking.ts         # Docking layout: setupDocking, showPanelDocked, hidePanelDocked, enterFullscreenDocked, exitFullscreenDocked, setupFullscreenHandlers, movePanelToOuterWrapper (find F0 + playerContainer; 70/30 split; fullscreen intercept to F0; no wrapper, no absolute, no z-index hack)
+│   ├── subtitleDocking.ts         # Docking layout: setupDocking, showPanelDocked, hidePanelDocked, enterFullscreenDocked, exitFullscreenDocked, setupFullscreenHandlers, applyFullscreenOverlay, restoreFullscreenOverlay, movePanelToOuterWrapper (find F0 + playerContainer; 70/30 split; generic fullscreen overlay via document.fullscreenElement — moves panel into fullscreen element as fixed-position overlay)
 │   └── subtitleShortcuts.ts       # Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
@@ -195,26 +196,27 @@ tests/
 | `background/messageBus.ts` | — | `background/index.ts` | Message routing |
 | `background/offscreenManager.ts` | — | `background/index.ts` | Offscreen document lifecycle |
 | `background/autoDownload.ts` | **whitelist**, **selectBestMedia**, config, types, downloadQueue | `background/index.ts` | Auto-download orchestrator: `tryAutoDownload(tabId, tabUrl, deps, alreadyEnqueuedIds?)` → returns `string[]` (enqueued media ids; empty = no-op). Whitelist check → load settings → selectBestMedia → enqueue downloads, skipping ids already enqueued (incremental subtitle catch-up). Silent no-op when no match |
-| `background/subtitleService.ts` | types (DetectedSubtitle, Settings) | (future overlay) | findSubtitleForOverlay: validate target language + return matching subtitle |
+| `background/subtitleService.ts` | types (DetectedSubtitle, Settings, SubtitlesForOverlayResult) | `background/index.ts` | findSubtitlesForOverlay: validate target + native language → return both matches (partial load when only one matches) |
 
 ### Content layer
 
 | File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
 |------|-----------|-----------------|--------------------------|
-| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, **subtitleDocking**, subtitleShortcuts, config | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + panel + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; setup docking via `setupDocking` (no wrapper, no DOM move); intercept player fullscreen via `setupFullscreenHandlers` (F0 fullscreen keeps 70/30 split) |
+| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, **subtitleDocking**, subtitleShortcuts, config | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + panel + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; setup docking via `setupDocking` (no wrapper, no DOM move); wire generic fullscreen overlay via `setupFullscreenHandlers` (panel follows the real fullscreen element, not just F0) |
 | `content/pageScanner.ts` | urls (constants) | `content/content-script.ts` | Scan `<video>`, `<source>`, `<track>` |
-| `content/subtitleParser.ts` | srtParser, vttParser, types | (future overlay) | Adapter: parseSubtitle(content, format) → ParseResult |
-| `content/subtitleSync.ts` | types (SrtCue) | (future overlay) | Binary search: findCurrentLine(cues, currentTime) → index |
-| `content/subtitleUI.ts` | types (OverlayConfig) | (future overlay) | Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay |
-| `content/subtitleDragDrop.ts` | subtitleParser, types | subtitleImport, (future overlay) | File read + parse: readFileAsText, handleFileDrop |
-| `content/subtitleImport.ts` | subtitleDragDrop, types | (future overlay) | Import button: createImportButton (top-left, avoids toggle overlap), handleFileSelect |
-| `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types | (future overlay) | Orchestrator: SubtitleOverlayController (sync → overlay wiring) |
-| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: setupDocking finds F0 + playerContainer; showPanelDocked, hidePanelDocked, enterFullscreenDocked, exitFullscreenDocked, setupFullscreenHandlers, movePanelToOuterWrapper (70/30 split; fullscreen intercept to F0; no wrapper, no absolute, no z-index hack) |
-| `content/subtitleAutoLoad.ts` | — | (future overlay) | Auto-load decision + override validation: shouldAutoLoad, validateOverride |
-| `content/subtitleTrackDropdown.ts` | types (SrtCue) | (future overlay) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
-| `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | (future panel) | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
-| `content/subtitlePanel.ts` | types (BilingualCue) | (future panel) | Floating panel UI: createPanel, renderCueList, createToggleButton, switchPanelPosition (draggable, bilingual layout) — **implemented Task 4** |
-| `content/subtitleShortcuts.ts` | types (KeyboardShortcut) | (future panel) | Keyboard handler: handleShortcutKey (pure, guard input/textarea) — **implemented Task 3** |
+| `content/subtitleParser.ts` | srtParser, vttParser, types | subtitleDragDrop, subtitleImport | Adapter: parseSubtitle(content, format) → ParseResult |
+| `content/subtitleSync.ts` | types (SrtCue) | subtitleOverlay | Binary search: findCurrentLine(cues, currentTime) → index |
+| `content/subtitleUI.ts` | types (OverlayConfig) | subtitleOverlay, subtitleImport | Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay |
+| `content/subtitleDragDrop.ts` | subtitleParser, types | subtitleImport | File read + parse: readFileAsText, handleFileDrop |
+| `content/subtitleImport.ts` | subtitleDragDrop, types | subtitleOverlay, content-script.ts | Import button: createImportButton (top-left, avoids toggle overlap), handleFileSelect |
+| `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types | content-script.ts | Orchestrator: SubtitleOverlayController (sync → overlay wiring) |
+| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: setupDocking finds F0 + playerContainer; showPanelDocked, hidePanelDocked, enterFullscreenDocked, exitFullscreenDocked, setupFullscreenHandlers, applyFullscreenOverlay, restoreFullscreenOverlay, movePanelToOuterWrapper (70/30 split; generic fullscreen overlay via document.fullscreenElement — moves panel into fullscreen element as fixed-position overlay when native player fullscreen fires)
+| `content/subtitleAutoLoad.ts` | subtitleParser, subtitleMerge, subtitleOverlay, types (MessageRequest, BilingualCue), config | content-script.ts | Auto-load: shouldAutoLoad, validateOverride, fetchAndParseSubtitle (cache by URL + CORS fallback via FETCH_SUBTITLE_CONTENT), handleAutoLoadSubtitles (fetch+parse+load bilingual), formatFromUrl, clearAutoLoadCache — **wired Task 7+8** |
+| `content/subtitleMerge.ts` | types (BilingualCue, SrtCue) | subtitleAutoLoad.ts | mergeCuesForPanel(targetCues, nativeCues) → BilingualCue[] (target skeleton, native best-effort overlap; fallback native skeleton when target empty) — **implemented Task 5** |
+| `content/subtitleTrackDropdown.ts` | types (SrtCue) | (implemented, not wired) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
+| `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | content-script.ts | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
+| `content/subtitlePanel.ts` | types (BilingualCue) | content-script.ts | Floating panel UI: createPanel, renderCueList, createToggleButton, switchPanelPosition (draggable, bilingual layout) — **implemented Task 4** |
+| `content/subtitleShortcuts.ts` | types (KeyboardShortcut) | content-script.ts | Keyboard handler: handleShortcutKey (pure, guard input/textarea) — **implemented Task 3** |
 
 ### Popup layer
 
@@ -507,31 +509,39 @@ downloader.downloadM3u8Streaming(playlist)
 | `selectBestMedia` | `lib/selectors/selectBestMedia.ts` | DetectedMedia[] → AutoSelectResult \| null | autoDownload.ts | Pure: select best video + subtitles by prefs |
 | `parseSrt` | `lib/parsers/srtParser.ts` | string → SrtSubtitle | subtitleParser.ts | Parse SRT format to SrtCue[] |
 | `parseVtt` | `lib/parsers/vttParser.ts` | string → VttSubtitle | subtitleParser.ts | Parse VTT format to VttCue[] |
-| `parseSubtitle` | `content/subtitleParser.ts` | (string, format) → ParseResult | (future overlay) | Adapter: auto-detect format, parseSrt/parseVtt |
-| `findCurrentLine` | `content/subtitleSync.ts` | (SrtCue[], number) → number | (future overlay) | Binary search O(log n) for current subtitle line by video time |
-| `createOverlay` | `content/subtitleUI.ts` | (HTMLVideoElement, OverlayConfig) → HTMLDivElement | (future overlay) | Create subtitle overlay div appended to video parent |
-| `updateOverlayText` | `content/subtitleUI.ts` | (HTMLDivElement, string) → void | (future overlay) | Set text and show overlay |
-| `hideOverlay` | `content/subtitleUI.ts` | (HTMLDivElement) → void | (future overlay) | Clear text and hide overlay |
-| `removeOverlay` | `content/subtitleUI.ts` | (HTMLDivElement) → void | (future overlay) | Remove overlay from DOM |
-| `readFileAsText` | `content/subtitleDragDrop.ts` | File → Promise<string> | subtitleImport, (future overlay) | Read File content as text via FileReader |
-| `handleFileDrop` | `content/subtitleDragDrop.ts` | File → Promise<ParseResult> | subtitleImport, (future overlay) | Validate extension + read + parse subtitle file |
-| `createImportButton` | `content/subtitleImport.ts` | (HTMLVideoElement, OverlayConfig) → HTMLButtonElement | (future overlay) | Create import button at top-left of video (avoids toggle overlap) |
-| `handleFileSelect` | `content/subtitleImport.ts` | File → Promise<ParseResult> | (future overlay) | Handle file from picker (reuses handleFileDrop) |
+| `parseSubtitle` | `content/subtitleParser.ts` | (string, format) → ParseResult | subtitleDragDrop, subtitleImport | Adapter: auto-detect format, parseSrt/parseVtt |
+| `findCurrentLine` | `content/subtitleSync.ts` | (SrtCue[], number) → number | subtitleOverlay | Binary search O(log n) for current subtitle line by video time |
+| `createOverlay` | `content/subtitleUI.ts` | (HTMLVideoElement, OverlayConfig) → HTMLDivElement | subtitleOverlay | Create subtitle overlay div appended to video parent |
+| `updateOverlayText` | `content/subtitleUI.ts` | (HTMLDivElement, string) → void | subtitleOverlay | Set text and show overlay |
+| `hideOverlay` | `content/subtitleUI.ts` | (HTMLDivElement) → void | subtitleOverlay | Clear text and hide overlay |
+| `removeOverlay` | `content/subtitleUI.ts` | (HTMLDivElement) → void | subtitleOverlay | Remove overlay from DOM |
+| `readFileAsText` | `content/subtitleDragDrop.ts` | File → Promise<string> | subtitleImport | Read File content as text via FileReader |
+| `handleFileDrop` | `content/subtitleDragDrop.ts` | File → Promise<ParseResult> | subtitleImport | Validate extension + read + parse subtitle file |
+| `createImportButton` | `content/subtitleImport.ts` | (HTMLVideoElement, OverlayConfig) → HTMLButtonElement | subtitleOverlay | Create import button at top-left of video (avoids toggle overlap) |
+| `handleFileSelect` | `content/subtitleImport.ts` | File → Promise<ParseResult> | content-script.ts | Handle file from picker (reuses handleFileDrop) |
 | `setupDocking` | `content/subtitleDocking.ts` | HTMLVideoElement → `{f0, playerContainer}` | content-script.ts | Find video layout box (F0) and player branch; do NOT move video |
-| `setupDocking` | `content/subtitleDocking.ts` | HTMLVideoElement → `{f0, playerContainer}` | content-script.ts | Find video layout box (F0) and player branch; do NOT move video |
-| `showPanelDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement) → void | content-script.ts | Show panel beside video: flex row/column, shrink playerContainer, preserve F0 height, override aspect-ratio |
-| `hidePanelDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement) → void | content-script.ts | Hide panel and restore F0 + playerContainer layout |
+| `showPanelDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement, savedStyles?) → SavedStyles \| null | content-script.ts | Show panel beside video: flex row/column, shrink playerContainer, preserve F0 height, override aspect-ratio; returns savedStyles only when applying fullscreen overlay |
+| `hidePanelDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement, savedStyles?) → void | content-script.ts | Hide panel and restore F0 + playerContainer layout; in fullscreen restores the natural fullscreen layout (video 100%) when side-by-side is active |
 | `enterFullscreenDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement) → void | content-script.ts | Apply 70/30 split when F0 is the fullscreen element |
 | `exitFullscreenDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement, panelVisible: boolean) → void | content-script.ts | Restore docked or hidden layout after exiting F0 fullscreen |
-| `setupFullscreenHandlers` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement, isPanelVisible: () => boolean) → () => void | content-script.ts | Intercept player fullscreen button; route fullscreen to F0 so panel stays beside video |
-| `movePanelToOuterWrapper` | `content/subtitleDocking.ts` | (HTMLDivElement, HTMLElement) → void | content-script.ts | Move panel into F0 so it becomes a sibling of playerContainer |
-| `SubtitleOverlayController` | `content/subtitleOverlay.ts` | class (HTMLVideoElement, OverlayConfig) | (future overlay) | Orchestrator: init/loadCues/clearCues/destroy, timeupdate → binary search → overlay |
-| `shouldAutoLoad` | `content/subtitleAutoLoad.ts` | AutoLoadConfig → boolean | (future overlay) | Auto-load decision: autoLoad enabled + target language set |
-| `validateOverride` | `content/subtitleAutoLoad.ts` | OverrideConfig → OverrideResult | (future overlay) | Override validation: file language must match target (case-insensitive) |
-| `createTrackDropdown` | `content/subtitleTrackDropdown.ts` | HTMLElement → HTMLSelectElement | (future overlay) | Create track dropdown for multiple subtitle tracks |
-| `updateTrackOptions` | `content/subtitleTrackDropdown.ts` | (HTMLSelectElement, TrackOption[]) → void | (future overlay) | Populate dropdown + show/hide |
-| `findSubtitleForOverlay` | `background/subtitleService.ts` | (DetectedSubtitle[], Settings) → SubtitleForOverlayResult \| null | (future overlay) | Validate target language + return matching subtitle |
-| `parseTimestamp` | `lib/utils/timeUtils.ts` | string → number (ms) | (future) | Unified timestamp parser (comma/dot separator) |
+| `applyFullscreenOverlay` | `content/subtitleDocking.ts` | (panel, fsElement, savedStyles?) → SavedStyles | setupFullscreenHandlers, showPanelDocked | Fallback: move panel into fsElement and style as fixed right-side overlay (30vw × 100vh, z-index max). Used when fsElement is `<video>` or has no video child |
+| `applyFullscreenSideBySide` | `content/subtitleDocking.ts` | (panel, fsElement, savedStyles?) → SavedStyles | setupFullscreenHandlers, showPanelDocked | Primary fullscreen layout: flex row/column inside fsElement with video ratio, panel ratio, draggable resize handle, and player UI constrained to the video area |
+| `restoreFullscreenOverlay` | `content/subtitleDocking.ts` | (panel, SavedStyles) → void | setupFullscreenHandlers, cleanup | Restore panel to original parent and saved cssText |
+| `setupFullscreenHandlers` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement, isPanelVisible: () => boolean) → () => void | content-script.ts | Listen to fullscreenchange; when a non-F0 container enters fullscreen, apply side-by-side flex layout; when fsElement is `<video>`, fall back to overlay; restore on exit |
+| `movePanelToOuterWrapper` | `content/subtitleDocking.ts` | (HTMLDivElement, HTMLElement) → void | content-script.ts, enterFullscreenDocked | Move panel into F0 so it becomes a sibling of playerContainer |
+| `movePanelToOuterWrapper` | `content/subtitleDocking.ts` | (HTMLDivElement, HTMLElement) → void | content-script.ts, enterFullscreenDocked | Move panel into F0 so it becomes a sibling of playerContainer |
+| `SubtitleOverlayController` | `content/subtitleOverlay.ts` | class (HTMLVideoElement, OverlayConfig) | content-script.ts | Orchestrator: init/loadCues/clearCues/destroy, timeupdate → 2 binary searches (target + native) → bilingual overlay (2 spans runtime align) — **Task 6** |
+| `createBilingualSubtitleController` | `content/subtitleOverlay.ts` | (deps) → BilingualSubtitleController | subtitleAutoLoad.ts | Factory: create overlay with 2 spans (target + native), loadBilingualCues, updateBilingual, destroy — **implemented Task 6** |
+| `shouldAutoLoad` | `content/subtitleAutoLoad.ts` | AutoLoadConfig → boolean | content-script.ts | Auto-load decision: autoLoad enabled + target language set — **wired Task 7** |
+| `validateOverride` | `content/subtitleAutoLoad.ts` | OverrideConfig → OverrideResult | content-script.ts | Override validation: file language must match target (case-insensitive) — **wired Task 7** |
+| `fetchAndParseSubtitle` | `content/subtitleAutoLoad.ts` | (url, format, tabUrl?) → Promise<ParseResult> | subtitleAutoLoad.ts | Fetch + parse subtitle; cache by URL; CORS fallback via FETCH_SUBTITLE_CONTENT (background SW fetch) — **implemented Task 8** |
+| `handleAutoLoadSubtitles` | `content/subtitleAutoLoad.ts` | (AutoLoadPayload, deps) → Promise<void> | content-script.ts | Auto-load handler: fetch target + native → mergeCuesForPanel → loadBilingualCues — **wired Task 7** |
+| `clearAutoLoadCache` | `content/subtitleAutoLoad.ts` | () → void | content-script.ts | Clear per-URL cache on re-injection — **implemented Task 7** |
+| `mergeCuesForPanel` | `content/subtitleMerge.ts` | (SrtCue[], SrtCue[]) → BilingualCue[] | subtitleAutoLoad.ts | Merge target + native cues: target skeleton, native best-effort overlap; fallback native skeleton when target empty — **implemented Task 5** |
+| `createTrackDropdown` | `content/subtitleTrackDropdown.ts` | HTMLElement → HTMLSelectElement | (implemented, not wired) | Create track dropdown for multiple subtitle tracks |
+| `updateTrackOptions` | `content/subtitleTrackDropdown.ts` | (HTMLSelectElement, TrackOption[]) → void | (implemented, not wired) | Populate dropdown + show/hide |
+| `findSubtitlesForOverlay` | `background/subtitleService.ts` | (DetectedSubtitle[], Settings) → SubtitlesForOverlayResult \| null | `background/index.ts` | Validate target + native language → return both matches (partial load when only one matches) — **wired Task 3** |
+| `parseTimestamp` | `lib/utils/timeUtils.ts` | string → number (ms) | (implemented, not wired) | Unified timestamp parser (comma/dot separator) |
 | `tryAutoDownload` | `background/autoDownload.ts` | (tabId, tabUrl, deps, alreadyEnqueuedIds?) → string[] | background/index.ts | Orchestrator: whitelist → selectBestMedia → enqueue |
 | `getActiveContentTab` | `popup/utils/getActiveContentTab.ts` | void → Promise<Tab> | useDetectedMedia, useDownloadProgress | Resolve active tab (handles Edge app-windows) |
 | `selectBestMedia` | `lib/selectors/selectBestMedia.ts` | DetectedMedia[] → AutoSelectResult \| null | autoDownload.ts | Pure: select best video + subtitles by prefs |
@@ -540,16 +550,16 @@ downloader.downloadM3u8Streaming(playlist)
 | `isWhitelisted` | `lib/utils/whitelist.ts` | (url, tabId) → boolean | background/autoDownload.ts | Check if URL is whitelisted for auto-download |
 | `transmux` | `lib/converters/tsTransmuxer.ts` | (tsData, options) → fMP4Blob | ffmpegRunner.ts | Sequential TS→fMP4 via mux.js |
 | `mergePartFiles` | `lib/converters/parallelTransmuxer.ts` | (parts[]) → fMP4Blob | parallelTransmuxer.ts | Merge parallel fMP4 parts (ftyp+moov strip + tfdt offset fix) |
-| `parseBilingualSrt` | `content/subtitleBilingualParser.ts` | string → BilingualParseResult | (future panel) | Parse bilingual SRT (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
-| `createPanel` | `content/subtitlePanel.ts` | HTMLVideoElement → HTMLDivElement | (future panel) | Create floating panel appended to video parent (draggable, inline DOM) — **implemented Task 4** |
-| `renderCueList` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[]) → void | (future panel) | Render cue list items (timestamp + bilingual text) — **implemented Task 4** |
-| `createToggleButton` | `content/subtitlePanel.ts` | HTMLVideoElement → HTMLButtonElement | (future panel) | Create toggle button to show/hide panel — **implemented Task 4** |
-| `switchPanelPosition` | `content/subtitlePanel.ts` | (HTMLDivElement, 'left' \| 'right') → void | (future panel) | Switch panel position between left and right — **implemented Task 4** |
-| `renderCueListLazy` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[]) → IntersectionObserver \| null | (future panel) | Lazy render: fallback render all if < 50 cues, else placeholders + observer — **implemented Task 6** |
-| `highlightCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Highlight current cue background — **implemented Task 5** |
-| `scrollToCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | (future panel) | Auto-scroll current cue into view — **implemented Task 5** |
-| `seekToCue` | `content/subtitlePanel.ts` | (HTMLVideoElement, { start: number }) → void | (future panel) | Seek video to cue start (ms → seconds) — **implemented Task 5** |
-| `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | (future panel) | Pure: map key → action, guard input/textarea focus — **implemented Task 3** |
+| `parseBilingualSrt` | `content/subtitleBilingualParser.ts` | string → BilingualParseResult | content-script.ts | Parse bilingual SRT (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
+| `createPanel` | `content/subtitlePanel.ts` | HTMLVideoElement → HTMLDivElement | content-script.ts | Create floating panel appended to video parent (draggable, inline DOM) — **implemented Task 4** |
+| `renderCueList` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[]) → void | (implemented, not wired) | Render cue list items (timestamp + bilingual text) — **implemented Task 4** |
+| `createToggleButton` | `content/subtitlePanel.ts` | HTMLVideoElement → HTMLButtonElement | content-script.ts | Create toggle button to show/hide panel — **implemented Task 4** |
+| `switchPanelPosition` | `content/subtitlePanel.ts` | (HTMLDivElement, 'left' \| 'right') → void | content-script.ts | Switch panel position between left and right — **implemented Task 4** |
+| `renderCueListLazy` | `content/subtitlePanel.ts` | (HTMLDivElement, BilingualCue[]) → IntersectionObserver \| null | content-script.ts | Lazy render: fallback render all if < 50 cues, else placeholders + observer — **implemented Task 6** |
+| `highlightCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | content-script.ts | Highlight current cue background — **implemented Task 5** |
+| `scrollToCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | content-script.ts | Auto-scroll current cue into view — **implemented Task 5** |
+| `seekToCue` | `content/subtitlePanel.ts` | (HTMLVideoElement, { start: number }) → void | content-script.ts | Seek video to cue start (ms → seconds) — **implemented Task 5** |
+| `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | content-script.ts | Pure: map key → action, guard input/textarea focus — **implemented Task 3** |
 | `isEditableTarget` | `content/subtitleShortcuts.ts` | EventTarget \| null → boolean | subtitleShortcuts.ts | Check if target is input/textarea/select/contenteditable — **implemented Task 3** |
 
 ---

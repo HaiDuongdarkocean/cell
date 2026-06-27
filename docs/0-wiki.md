@@ -9,25 +9,29 @@ docs/           # Tài liệu dự án
 ├── 0-wiki.md                          # File này — mục lục tổng quan
 ├── 1-share-language.md                # Glossary human ↔ system language
 ├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows)
-├── architecture-proposal.md           # Architecture proposal
-├── architecture-research-synthesis.md # Architecture research synthesis
-├── blueprint-cell-learning-platform.md # Blueprint for learning platform
-├── feature-inventory.md               # Feature inventory
-├── software-org-roles.md              # Software organization roles
-├── software-production-process-research.md # Software production process research
-├── spec-subtitle-overlay.md           # Subtitle overlay PRD
 ├── adr/                               # Architecture Decision Records (mỗi quyết định 1 file)
 │   ├── 001-zustand-not-redux.md
 │   ├── 002-muxjs-not-ffmpeg-wasm.md
 │   ├── 003-content-script-background-network-interception.md
 │   ├── 004-layered-clean-architecture.md
-│   └── 005-subtitle-floating-panel.md # Subtitle panel: inline DOM, bilingual delimiter, CS shortcuts
+│   ├── 005-subtitle-floating-panel.md # Subtitle panel: inline DOM, bilingual delimiter, CS shortcuts
+│   ├── 006-architecture-proposal.md   # Architecture proposal
+│   └── 007-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load architecture
 ├── intent/                            # Output interview-me — "what user wants"
+│   └── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 ├── specs/                             # PRD chi tiết — "what to build"
-├── plan/                              # Task breakdown — "how to build"
+│   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
+│   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
+│   ├── feature-inventory.md           # Feature inventory
+│   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
+├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md
-│   └── subtitle-sidebar-shortcuts.md  # Subtitle floating panel + shortcuts
+│   ├── subtitle-sidebar-shortcuts.md  # Subtitle floating panel + shortcuts
+│   └── plan-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — feasibility (G1)
+├── task/                              # Task list (G4 đầu) — "how to build, step by step"
+│   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
+│   └── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
 ├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
 │   ├── principles.md                              # Principle index (abstract, layer 1)
 │   ├── architecture-auto-select.md              # Auto-Select & Auto-Download architecture
@@ -50,15 +54,21 @@ docs/           # Tài liệu dự án
 │   ├── 2026-06-27-subtitle-panel-docking-mcp.md
 │   ├── 2026-06-27-subtitle-panel-fullscreen-mcp.md
 │   └── screenshot-after-fix.png
-├── reference/                         # Hướng dẫn dùng tools — "how to use"
+├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"
 │   ├── chrome-devtools-mcp.md
-│   └── e2e-debugging.md
+│   ├── e2e-debugging.md
+│   ├── architecture-research-synthesis.md # Architecture research synthesis
+│   ├── software-production-process-research.md # Software production process research
+│   └── software-org-roles.md          # Software organization roles
 └── reading-summaries/                 # Reading summaries
 
 src/            # Source code (chi tiết trong 2-architechture-system.md)
 tests/          # Test files (chi tiết trong 2-architechture-system.md)
 .agents/        # Agent skills
 .windsurf/      # Windsurf rules
+│   ├── rules/
+│   │   ├── baseline.md              # Windsurf-specific baseline rules
+│   │   └── ponytail.md              # Lazy senior dev ladder
 ```
 
 ## Cách dùng tổng quan
