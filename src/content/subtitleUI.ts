@@ -27,14 +27,28 @@ export function createOverlay(video: HTMLVideoElement, config: OverlayConfig): H
   overlay.style.textAlign = 'center';
   overlay.style.maxWidth = '90%';
 
-  // Inner span: selectable text (pointer-events: auto, user-select: text)
+  // Inner spans: target (prominent) + native (muted, below target).
   // Container keeps pointer-events: none so background padding passes clicks
   // through to video controls beneath. Only the text itself is interactive.
-  const span = document.createElement('span');
-  span.style.pointerEvents = 'auto';
-  span.style.userSelect = 'text';
-  span.style.cursor = 'text';
-  overlay.appendChild(span);
+  // Bilingual layout (ADR-007 D1): target on top, native below at 0.85em.
+  const targetSpan = document.createElement('span');
+  targetSpan.setAttribute('data-testid', 'overlay-target');
+  targetSpan.style.display = 'block';
+  targetSpan.style.pointerEvents = 'auto';
+  targetSpan.style.userSelect = 'text';
+  targetSpan.style.cursor = 'text';
+  overlay.appendChild(targetSpan);
+
+  const nativeSpan = document.createElement('span');
+  nativeSpan.setAttribute('data-testid', 'overlay-native');
+  nativeSpan.style.display = 'block';
+  nativeSpan.style.pointerEvents = 'auto';
+  nativeSpan.style.userSelect = 'text';
+  nativeSpan.style.cursor = 'text';
+  nativeSpan.style.fontSize = '0.85em';
+  nativeSpan.style.opacity = '0.85';
+  nativeSpan.style.marginTop = '2px';
+  overlay.appendChild(nativeSpan);
 
   // Position: bottom/top/center
   if (config.position === 'bottom') {
@@ -55,11 +69,11 @@ export function createOverlay(video: HTMLVideoElement, config: OverlayConfig): H
 }
 
 /**
- * Update overlay text and show it.
- * Sets text on inner span (selectable), not on container.
+ * Update overlay text and show it (single-line mode, backward compat).
+ * Sets text on the target span (first span), not on container.
  */
 export function updateOverlayText(overlay: HTMLDivElement, text: string): void {
-  const span = overlay.querySelector('span');
+  const span = overlay.querySelector('[data-testid="overlay-target"]') as HTMLSpanElement | null;
   if (span) {
     span.textContent = text;
   } else {
@@ -69,15 +83,49 @@ export function updateOverlayText(overlay: HTMLDivElement, text: string): void {
 }
 
 /**
+ * Update overlay with bilingual text (target + native) and show it.
+ * Target on top (prominent), native below (muted 0.85em). Either may be
+ * empty string — the empty span is hidden so layout collapses cleanly.
+ * When both are empty, the overlay is hidden via `hideOverlay`.
+ */
+export function updateOverlayBilingual(
+  overlay: HTMLDivElement,
+  targetText: string,
+  nativeText: string,
+): void {
+  if (!targetText && !nativeText) {
+    hideOverlay(overlay);
+    return;
+  }
+  const targetSpan = overlay.querySelector('[data-testid="overlay-target"]') as HTMLSpanElement | null;
+  const nativeSpan = overlay.querySelector('[data-testid="overlay-native"]') as HTMLSpanElement | null;
+  if (targetSpan) {
+    targetSpan.textContent = targetText;
+    targetSpan.style.display = targetText ? 'block' : 'none';
+  }
+  if (nativeSpan) {
+    nativeSpan.textContent = nativeText;
+    nativeSpan.style.display = nativeText ? 'block' : 'none';
+  }
+  overlay.style.display = 'block';
+}
+
+/**
  * Clear text and hide overlay.
- * Clears inner span text, not container.
+ * Clears both target + native spans (bilingual-safe).
  */
 export function hideOverlay(overlay: HTMLDivElement): void {
-  const span = overlay.querySelector('span');
-  if (span) {
-    span.textContent = '';
-  } else {
-    overlay.textContent = '';
+  const targetSpan = overlay.querySelector('[data-testid="overlay-target"]') as HTMLSpanElement | null;
+  const nativeSpan = overlay.querySelector('[data-testid="overlay-native"]') as HTMLSpanElement | null;
+  if (targetSpan) {
+    targetSpan.textContent = '';
+  }
+  if (nativeSpan) {
+    nativeSpan.textContent = '';
+    nativeSpan.style.display = 'block';
+  }
+  if (targetSpan) {
+    targetSpan.style.display = 'block';
   }
   overlay.style.display = 'none';
 }

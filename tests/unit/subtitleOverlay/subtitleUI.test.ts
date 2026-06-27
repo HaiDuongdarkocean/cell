@@ -1,4 +1,4 @@
-import { createOverlay, updateOverlayText, hideOverlay, removeOverlay, createDragHint, showToast } from '../../../src/content/subtitleUI';
+import { createOverlay, updateOverlayText, updateOverlayBilingual, hideOverlay, removeOverlay, createDragHint, showToast } from '../../../src/content/subtitleUI';
 import type { OverlayConfig } from '../../../src/types/subtitle';
 
 // jsdom provides document
@@ -81,6 +81,55 @@ describe('subtitleUI', () => {
       const overlay = createOverlay(video, defaultConfig);
       const span = overlay.querySelector('span') as HTMLSpanElement;
       expect(span.style.cursor).toBe('text');
+    });
+
+    it('should create 2 spans (target + native) for bilingual layout', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      const targetSpan = overlay.querySelector('[data-testid="overlay-target"]');
+      const nativeSpan = overlay.querySelector('[data-testid="overlay-native"]');
+      expect(targetSpan).toBeTruthy();
+      expect(nativeSpan).toBeTruthy();
+    });
+
+    it('should style native span smaller (0.85em) + muted (opacity 0.85)', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      const nativeSpan = overlay.querySelector('[data-testid="overlay-native"]') as HTMLSpanElement;
+      expect(nativeSpan.style.fontSize).toBe('0.85em');
+      expect(nativeSpan.style.opacity).toBe('0.85');
+    });
+  });
+
+  describe('updateOverlayBilingual', () => {
+    it('sets target + native text and shows overlay', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      updateOverlayBilingual(overlay, 'Hello', 'Xin chào');
+      const targetSpan = overlay.querySelector('[data-testid="overlay-target"]') as HTMLSpanElement;
+      const nativeSpan = overlay.querySelector('[data-testid="overlay-native"]') as HTMLSpanElement;
+      expect(targetSpan.textContent).toBe('Hello');
+      expect(nativeSpan.textContent).toBe('Xin chào');
+      expect(overlay.style.display).toBe('block');
+    });
+
+    it('hides native span when nativeText is empty', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      updateOverlayBilingual(overlay, 'Hello', '');
+      const nativeSpan = overlay.querySelector('[data-testid="overlay-native"]') as HTMLSpanElement;
+      expect(nativeSpan.style.display).toBe('none');
+      expect(overlay.style.display).toBe('block');
+    });
+
+    it('hides target span when targetText is empty', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      updateOverlayBilingual(overlay, '', 'Xin chào');
+      const targetSpan = overlay.querySelector('[data-testid="overlay-target"]') as HTMLSpanElement;
+      expect(targetSpan.style.display).toBe('none');
+      expect(overlay.style.display).toBe('block');
+    });
+
+    it('hides overlay when both texts are empty', () => {
+      const overlay = createOverlay(video, defaultConfig);
+      updateOverlayBilingual(overlay, '', '');
+      expect(overlay.style.display).toBe('none');
     });
   });
 
