@@ -105,6 +105,16 @@ export interface SubtitleForOverlayResult {
   readonly format: string;
 }
 
+/**
+ * Result of `findSubtitlesForOverlay`: target + native subtitle matches.
+ * Either may be null (partial load when only one language matches).
+ * The whole result is null when auto-load is off or both languages are empty.
+ */
+export interface SubtitlesForOverlayResult {
+  readonly target: SubtitleForOverlayResult | null;
+  readonly native: SubtitleForOverlayResult | null;
+}
+
 export interface DownloadAllPayload {
   readonly tabId?: number;
 }
