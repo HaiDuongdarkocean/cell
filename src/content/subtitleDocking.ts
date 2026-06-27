@@ -101,6 +101,9 @@ export function createDockingWrapper(video: HTMLVideoElement): DockingWrappers {
 
   const videoWrapper = document.createElement('div');
   videoWrapper.setAttribute('data-testid', VIDEO_WRAPPER_TESTID);
+  // Ensure the video wrapper is a positioned containing block for the absolute
+  // video even before showPanelDocked runs; showPanelDocked may override this.
+  videoWrapper.style.position = 'relative';
 
   const f0 = findVideoLayoutBox(video);
   const videoBranch = f0 ? findVideoBranch(f0, video) : null;
@@ -108,6 +111,11 @@ export function createDockingWrapper(video: HTMLVideoElement): DockingWrappers {
   const insertBefore = videoBranch || video;
 
   if (target) {
+    // Make F0 a positioned containing block so the absolute-docked outerWrapper
+    // fills exactly the F0 box instead of a wider positioned ancestor.
+    if (f0 && getComputedStyle(f0).position === 'static') {
+      f0.style.position = 'relative';
+    }
     target.insertBefore(outerWrapper, insertBefore);
     outerWrapper.appendChild(videoWrapper);
     videoWrapper.appendChild(video);
@@ -162,11 +170,11 @@ function stopVideoStyleGuard(video: HTMLVideoElement): void {
  * In-flow video: flex layout. Video wrapper 70%, panel 30%. Both stay inside
  * `outerWrapper` which is the same width as the parent.
  *
- * Out-of-flow video (e.g. art-player absolute): absolute-docked layout. The
- * `outerWrapper` fills the nearest positioned ancestor (the video's player box),
+ * Out-of-flow video (e.g. art-player absolute): absolute-docked layout. F0 is
+ * made `position: relative` so `outerWrapper` fills exactly the F0 box. The
  * video wrapper is pinned to 70% of that box, and panel occupies the right 30%.
- * The video itself fills the video wrapper, so the overlay never extends into
- * the panel area.
+ * The video keeps its aspect ratio (`height: auto`, `object-fit: contain`) so
+ * it never overflows the video wrapper.
  */
 export function showPanelDocked(
   outerWrapper: HTMLDivElement,
@@ -254,16 +262,18 @@ function applyAbsoluteDockedLayout(
     observer?.disconnect();
 
     video.style.setProperty('position', 'absolute', 'important');
-    video.style.setProperty('left', '0', 'important');
-    video.style.setProperty('top', '0', 'important');
+    video.style.setProperty('left', '50%', 'important');
+    video.style.setProperty('top', '50%', 'important');
     video.style.setProperty('right', 'auto', 'important');
     video.style.setProperty('bottom', 'auto', 'important');
-    video.style.setProperty('width', '100%', 'important');
-    video.style.setProperty('height', '100%', 'important');
-    video.style.setProperty('max-width', 'none', 'important');
-    video.style.setProperty('max-height', 'none', 'important');
+    video.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
+    video.style.setProperty('width', 'auto', 'important');
+    video.style.setProperty('height', 'auto', 'important');
+    video.style.setProperty('max-width', '100%', 'important');
+    video.style.setProperty('max-height', '100%', 'important');
     video.style.setProperty('min-width', '0', 'important');
     video.style.setProperty('min-height', '0', 'important');
+    video.style.setProperty('object-fit', 'contain', 'important');
 
     observer?.observe(video, { attributes: true, attributeFilter: ['style'] });
   };

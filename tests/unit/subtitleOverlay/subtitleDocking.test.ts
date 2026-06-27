@@ -202,8 +202,8 @@ describe('subtitleDocking', () => {
       expect(videoWrapper.style.position).toBe('absolute');
       expect(videoWrapper.style.width).toBe(DESKTOP_VIDEO_RATIO);
       expect(videoWrapper.style.height).toBe('100%');
-      expect(video.style.getPropertyValue('width')).toBe('100%');
-      expect(video.style.getPropertyValue('height')).toBe('100%');
+      expect(video.style.getPropertyValue('width')).toBe('auto');
+      expect(video.style.getPropertyValue('height')).toBe('auto');
       expect(panel.style.position).toBe('absolute');
       expect(panel.style.left).toBe(DESKTOP_VIDEO_RATIO);
       expect(panel.style.width).toBe(DESKTOP_PANEL_RATIO);
