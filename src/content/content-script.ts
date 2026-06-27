@@ -17,6 +17,7 @@ import {
   createDockingWrapper,
   showPanelDocked,
   hidePanelDocked,
+  movePanelToOuterWrapper,
 } from './subtitleDocking';
 import { handleShortcutKey } from './subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
@@ -79,10 +80,12 @@ async function loadShortcuts(): Promise<KeyboardShortcut[]> {
 }
 
 function initSubtitleOverlay(video: HTMLVideoElement): void {
-  // Direction C: wrap video in a docking container so panel can be placed beside it.
-  // ponytail: wrapper must exist before controller init so overlay/import/toggle/panel
-  // all share the same parent (avoids moving elements later).
-  const dockingWrapper = createDockingWrapper(video);
+  // Direction C: wrap video in a two-layer docking container so the panel can be a
+  // sibling of the video box. outerWrapper is the flex container; videoWrapper holds
+  // the video + overlay + toggle + import + drag hint.
+  // ponytail: create wrappers before controller init so overlay/import/toggle append
+  // into the videoWrapper automatically.
+  const { outerWrapper, videoWrapper } = createDockingWrapper(video);
 
   const controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG);
   controller.init();
@@ -103,14 +106,20 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   panel = createPanel(video);
   toggleBtn = createToggleButton(video);
 
+  // Move panel from videoWrapper to outerWrapper so it becomes a sibling of the video box.
+  // This is required for flex layout to place the panel beside the video.
+  if (panel) {
+    movePanelToOuterWrapper(panel, outerWrapper);
+  }
+
   // Wire toggle button → show/hide panel (docked layout shrinks video when open)
   toggleBtn.addEventListener('click', () => {
     panelVisible = !panelVisible;
     if (panel && toggleBtn) {
       if (panelVisible) {
-        showPanelDocked(dockingWrapper, video, panel);
+        showPanelDocked(outerWrapper, videoWrapper, video, panel);
       } else {
-        hidePanelDocked(dockingWrapper, video, panel);
+        hidePanelDocked(outerWrapper, videoWrapper, panel);
       }
     }
   });
@@ -120,7 +129,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   closeBtn?.addEventListener('click', () => {
     panelVisible = false;
     if (panel && toggleBtn) {
-      hidePanelDocked(dockingWrapper, video, panel);
+      hidePanelDocked(outerWrapper, videoWrapper, panel);
     }
   });
 
@@ -194,9 +203,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         panelVisible = !panelVisible;
         if (panel) {
           if (panelVisible) {
-            showPanelDocked(dockingWrapper, video, panel);
+            showPanelDocked(outerWrapper, videoWrapper, video, panel);
           } else {
-            hidePanelDocked(dockingWrapper, video, panel);
+            hidePanelDocked(outerWrapper, videoWrapper, panel);
           }
         }
         break;
@@ -236,7 +245,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
             renderCueListLazy(panel, bilingualCues);
             // Auto-show panel after subtitle load (docked layout)
             panelVisible = true;
-            showPanelDocked(dockingWrapper, video, panel);
+            showPanelDocked(outerWrapper, videoWrapper, video, panel);
           }
         }
         showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);
@@ -282,7 +291,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
           renderCueListLazy(panel, bilingualCues);
           // Auto-show panel after subtitle load (docked layout)
           panelVisible = true;
-          showPanelDocked(dockingWrapper, video, panel);
+          showPanelDocked(outerWrapper, videoWrapper, video, panel);
         }
       }
       showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);

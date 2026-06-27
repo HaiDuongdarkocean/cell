@@ -1,36 +1,55 @@
 /**
- * Docking layout manager for subtitle panel + toggle + video.
+ * Docking layout manager for subtitle panel + video.
  *
  * Direction C: panel is hidden by default; when user toggles it, the video
  * container shrinks to make room for the panel (beside on desktop, below on mobile).
  * This keeps the panel outside the video so it never covers the content.
  *
- * ponytail: minimal DOM manipulation — wrap once, reuse for show/hide, no unwrap.
+ * DOM structure:
+ *   outerWrapper (flex container when panel open)
+ *     ├── videoWrapper (contains video + overlay + toggle + import + drag hint)
+ *     └── panel (subtitle cue list, stretches to outerWrapper height)
+ *
+ * ponytail: two-wrapper structure keeps video and its controls in one box, and the
+ * panel as a sibling — responsive flex/grow works naturally.
  */
 
 export const DESKTOP_BREAKPOINT = 768;
 export const PANEL_WIDTH = 280;
 export const MOBILE_VIDEO_RATIO = '60%';
 export const MOBILE_PANEL_RATIO = '40%';
-export const DESKTOP_VIDEO_FLEX = '1 1 70%';
-export const DESKTOP_PANEL_FLEX = `0 0 ${PANEL_WIDTH}px`;
 
-/** Testid marker for the docking wrapper. */
+/** Testid marker for the outer docking wrapper. */
 export const DOCKING_WRAPPER_TESTID = 'subtitle-docking-wrapper';
+/** Testid marker for the inner video wrapper. */
+export const VIDEO_WRAPPER_TESTID = 'subtitle-video-wrapper';
+
+/** Result of wrapping the video for docking. */
+export interface DockingWrappers {
+  outerWrapper: HTMLDivElement;
+  videoWrapper: HTMLDivElement;
+}
 
 /**
- * Create a wrapper div around the video and move the video inside it.
- * The wrapper becomes the common parent for all subtitle UI elements.
+ * Create the two-wrapper docking structure around the video.
+ * - `outerWrapper` is the flex container that will hold the video box + panel.
+ * - `videoWrapper` contains the video and all overlay controls.
  */
-export function createDockingWrapper(video: HTMLVideoElement): HTMLDivElement {
-  const wrapper = document.createElement('div');
-  wrapper.setAttribute('data-testid', DOCKING_WRAPPER_TESTID);
+export function createDockingWrapper(video: HTMLVideoElement): DockingWrappers {
+  const outerWrapper = document.createElement('div');
+  outerWrapper.setAttribute('data-testid', DOCKING_WRAPPER_TESTID);
+
+  const videoWrapper = document.createElement('div');
+  videoWrapper.setAttribute('data-testid', VIDEO_WRAPPER_TESTID);
+
   const parent = video.parentElement;
   if (parent) {
-    parent.insertBefore(wrapper, video);
-    wrapper.appendChild(video);
+    parent.insertBefore(outerWrapper, video);
+    outerWrapper.appendChild(videoWrapper);
+    videoWrapper.appendChild(video);
   }
-  return wrapper;
+
+  return { outerWrapper, videoWrapper };
 }
 
 /** Detect mobile/narrow viewport based on window width. */
@@ -46,15 +65,16 @@ function isOutOfFlowVideo(video: HTMLVideoElement): boolean {
 
 /**
  * Show panel in docked layout: shrink video to make room.
- * Desktop: video 70% width, panel 280px on the right.
- * Mobile: video 60% height, panel 40% height below.
+ * Desktop: video wrapper 70% width, panel 280px on the right.
+ * Mobile: video wrapper 60% height, panel 40% height below.
  *
  * ponytail: fallback to fixed positioning when the video is out-of-flow
  * (e.g. art-player uses absolute positioning) — flex shrink would not move the panel
  * beside the video and would overlap instead.
  */
 export function showPanelDocked(
-  wrapper: HTMLDivElement,
+  outerWrapper: HTMLDivElement,
+  videoWrapper: HTMLDivElement,
   video: HTMLVideoElement,
   panel: HTMLDivElement,
 ): void {
@@ -66,17 +86,23 @@ export function showPanelDocked(
   const mobile = isMobileViewport();
   panel.setAttribute('data-docking-mode', 'flex');
 
-  wrapper.style.display = 'flex';
-  wrapper.style.flexDirection = mobile ? 'column' : 'row';
-  wrapper.style.width = '100%';
-  wrapper.style.height = '100%';
-  wrapper.style.alignItems = 'stretch';
+  outerWrapper.style.display = 'flex';
+  outerWrapper.style.flexDirection = mobile ? 'column' : 'row';
+  outerWrapper.style.width = '100%';
+  outerWrapper.style.height = '100%';
+  outerWrapper.style.alignItems = 'stretch';
 
-  video.style.flex = '0 0 auto';
-  video.style.width = mobile ? '100%' : '70%';
-  video.style.height = mobile ? '60%' : 'auto';
-  video.style.maxWidth = mobile ? '100%' : '70%';
-  video.style.maxHeight = mobile ? '60%' : '100%';
+  videoWrapper.style.position = 'relative';
+  videoWrapper.style.flex = mobile ? `0 0 ${MOBILE_VIDEO_RATIO}` : '1 1 70%';
+  videoWrapper.style.width = mobile ? '100%' : 'auto';
+  videoWrapper.style.height = mobile ? MOBILE_VIDEO_RATIO : 'auto';
+  videoWrapper.style.minWidth = '0';
+  videoWrapper.style.minHeight = '0';
+  videoWrapper.style.overflow = 'hidden';
+
+  video.style.width = '100%';
+  video.style.height = 'auto';
+  video.style.maxHeight = '100%';
   video.style.minWidth = '0';
   video.style.minHeight = '0';
 
@@ -84,11 +110,12 @@ export function showPanelDocked(
   panel.style.right = 'auto';
   panel.style.top = 'auto';
   panel.style.left = 'auto';
-  panel.style.flex = '0 0 auto';
+  panel.style.flex = mobile ? `0 0 ${MOBILE_PANEL_RATIO}` : '0 0 auto';
   panel.style.width = mobile ? '100%' : `${PANEL_WIDTH}px`;
-  panel.style.height = mobile ? '40%' : '100%';
-  panel.style.maxHeight = mobile ? '40%' : '100%';
+  panel.style.height = mobile ? MOBILE_PANEL_RATIO : 'auto';
+  panel.style.maxHeight = '100%';
   panel.style.display = 'flex';
+  panel.style.alignSelf = 'stretch';
 }
 
 /** Place panel fixed beside the video for out-of-flow players. */
@@ -111,29 +138,30 @@ function showFixedPanel(video: HTMLVideoElement, panel: HTMLDivElement): void {
   panel.style.height = `${rect.height}px`;
   panel.style.maxHeight = `${rect.height}px`;
   panel.style.display = 'flex';
+  panel.style.alignSelf = '';
 }
 
 /**
  * Hide panel and restore video to its full container size.
  */
 export function hidePanelDocked(
-  wrapper: HTMLDivElement,
-  video: HTMLVideoElement,
+  outerWrapper: HTMLDivElement,
+  videoWrapper: HTMLDivElement,
   panel: HTMLDivElement,
 ): void {
   panel.removeAttribute('data-docking-mode');
 
-  wrapper.style.display = 'block';
-  wrapper.style.flexDirection = '';
-  wrapper.style.alignItems = '';
+  outerWrapper.style.display = 'block';
+  outerWrapper.style.flexDirection = '';
+  outerWrapper.style.alignItems = '';
 
-  video.style.flex = '';
-  video.style.width = '100%';
-  video.style.height = 'auto';
-  video.style.maxWidth = '';
-  video.style.maxHeight = '';
-  video.style.minWidth = '';
-  video.style.minHeight = '';
+  videoWrapper.style.position = '';
+  videoWrapper.style.flex = '';
+  videoWrapper.style.width = '100%';
+  videoWrapper.style.height = 'auto';
+  videoWrapper.style.minWidth = '';
+  videoWrapper.style.minHeight = '';
+  videoWrapper.style.overflow = '';
 
   panel.style.position = 'absolute';
   panel.style.right = '0px';
@@ -144,14 +172,25 @@ export function hidePanelDocked(
   panel.style.height = 'auto';
   panel.style.maxHeight = '100%';
   panel.style.display = 'none';
+  panel.style.alignSelf = '';
 }
 
 /**
- * Move an existing UI element into the docking wrapper.
- * Useful for elements that were created before the wrapper existed.
+ * Move an existing UI element into the video wrapper.
+ * Useful for elements that were created before the two-wrapper structure existed.
  */
 export function moveElementIntoWrapper(element: HTMLElement, wrapper: HTMLElement): void {
   if (element.parentElement !== wrapper) {
     wrapper.appendChild(element);
+  }
+}
+
+/**
+ * Move the panel from the video wrapper into the outer wrapper so it becomes a
+ * sibling of the video box (required for flex layout).
+ */
+export function movePanelToOuterWrapper(panel: HTMLDivElement, outerWrapper: HTMLDivElement): void {
+  if (panel.parentElement !== outerWrapper) {
+    outerWrapper.appendChild(panel);
   }
 }

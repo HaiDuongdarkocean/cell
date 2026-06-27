@@ -115,6 +115,7 @@ export function renderCueList(panel: HTMLDivElement, cues: BilingualCue[]): void
     item.style.padding = '6px 12px';
     item.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
     item.style.cursor = 'pointer';
+    item.style.userSelect = 'text';
 
     // Timestamp (clickable → seek)
     const timestamp = document.createElement('span');
@@ -135,6 +136,7 @@ export function renderCueList(panel: HTMLDivElement, cues: BilingualCue[]): void
     targetText.style.fontSize = '14px';
     targetText.style.color = '#ffffff';
     targetText.style.lineHeight = '1.3';
+    targetText.style.userSelect = 'text';
     item.appendChild(targetText);
 
     // Native text (muted) — only if non-empty
@@ -145,6 +147,7 @@ export function renderCueList(panel: HTMLDivElement, cues: BilingualCue[]): void
     nativeText.style.color = 'rgba(255, 255, 255, 0.6)';
     nativeText.style.lineHeight = '1.3';
     nativeText.style.marginTop = '2px';
+    nativeText.style.userSelect = 'text';
     item.appendChild(nativeText);
 
     body.appendChild(item);

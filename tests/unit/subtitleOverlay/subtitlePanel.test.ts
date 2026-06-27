@@ -129,6 +129,17 @@ describe('subtitlePanel', () => {
       expect(targetText.style.color).toBe('rgb(255, 255, 255)');
     });
 
+    it('target and native text are selectable', () => {
+      const panel = createPanel(video);
+      renderCueList(panel, sampleCues);
+      const targetText = panel.querySelector('[data-testid="cue-target-text"]') as HTMLElement;
+      const nativeText = panel.querySelector('[data-testid="cue-native-text"]') as HTMLElement;
+      const item = panel.querySelector('[data-testid="cue-item"]') as HTMLElement;
+      expect(targetText.style.userSelect).toBe('text');
+      expect(nativeText.style.userSelect).toBe('text');
+      expect(item.style.userSelect).toBe('text');
+    });
+
     it('native text is muted (12px, dimmer)', () => {
       const panel = createPanel(video);
       renderCueList(panel, sampleCues);
