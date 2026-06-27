@@ -33,18 +33,23 @@ src/
 │   ├── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
 │   ├── subtitleBilingualParser.ts # Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, reuse parseSrt)
 │   ├── subtitlePanel.ts           # Floating panel UI: createPanel, renderCueList, createToggleButton, switchPanelPosition (draggable, bilingual layout)
-│   ├── subtitleDocking.ts         # Docking layout: createDockingWrapper, showPanelDocked, hidePanelDocked (flex shrink + fixed fallback for out-of-flow video)
+│   ├── subtitleDocking.ts         # Docking layout: setupDocking, showPanelDocked, hidePanelDocked, movePanelToOuterWrapper (find F0 + playerContainer; 70/30 split; no wrapper, no absolute, no z-index hack)
 │   └── subtitleShortcuts.ts       # Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
+│   ├── ffmpeg.html                # Offscreen document HTML entry
 │   ├── ffmpegRunner.ts            # Entry: nhận CONVERT_TS_TO_MP4_V2, CREATE_OPFS_BLOB_URL
 │   └── transmuxWorker.ts          # Web Worker: mux.js transmux TS→fMP4
 │
 ├── popup/                         # Popup UI (React)
 │   ├── main.tsx                   # Entry → render AppRedesigned
 │   ├── App.redesigned.tsx         # UI chính: media list, downloads, settings dialog
+│   ├── App.redesigned.module.css  # Root popup styles
 │   ├── store/
 │   │   └── popupStore.ts          # Zustand store: videos, subtitles, downloads, settings
+│   ├── styles/
+│   │   ├── global.css             # Global popup styles
+│   │   └── theme.css              # Theme variables (light/dark)
 │   ├── utils/
 │   │   ├── format.ts              # formatBytes, formatFileSize, formatDuration, phaseToLabel
 │   │   └── getActiveContentTab.ts # getActiveContentTab(): 3 query shapes → filter chrome-extension:// URLs (Edge app-window fix)
@@ -56,13 +61,19 @@ src/
 │   │   └── useSubtitleLanguage.ts    # Detect subtitle language: ISO code from URL (wins) → hybrid content fallback (script + frequency) → push UPDATE_SUBTITLE_LANGUAGE to background
 │   └── components/
 │       ├── layout/
-│       │   └── Header.tsx            # Logo, theme toggle, settings button, extension toggle
+│       │   ├── Header.tsx            # Logo, theme toggle, settings button, extension toggle
+│       │   └── Header.module.css     # Styles cho Header
 │       ├── media/
 │       │   ├── VideoCard.tsx         # Card 1 video: title, tags (format/quality/size), expand URL, download
+│       │   ├── VideoCard.module.css  # Styles cho VideoCard
 │       │   ├── SubtitleCard.tsx      # Card 1 subtitle: title, tags (language/format/size), expand URL, download
+│       │   ├── SubtitleCard.module.css # Styles cho SubtitleCard
 │       │   ├── DownloadCard.tsx      # Card 1 download: two-phase progress, action buttons, phase labels, details
-│       │   └── MediaEmpty.tsx        # Empty state khi không có media
+│       │   ├── DownloadCard.module.css # Styles cho DownloadCard
+│       │   ├── MediaEmpty.tsx        # Empty state khi không có media
+│       │   └── MediaEmpty.module.css # Styles cho MediaEmpty
 │       ├── SelectionBar.tsx          # Fixed bottom bar: selection count, clear, download selected
+│       ├── SelectionBar.module.css   # Styles cho SelectionBar
 │       └── settings/
 │           ├── SettingsDialog.tsx    # Settings dialog + CustomSelect dropdowns, Auto Select toggle, Preferred format dropdown, MultiSelect subtitle languages, Subtitle overlay settings (target language + auto-load), Keyboard shortcuts remap (a/d/s/w/t)
 │           ├── SettingsDialog.module.css # Styles cho SettingsDialog
@@ -120,6 +131,53 @@ src/
     ├── message.ts                    # MessageRequest, MessageResponse, payloads (incl. GetSubtitleForOverlayPayload, SubtitleForOverlayResult)
     ├── subtitle.ts                   # SubtitleFormat, SubtitleState, OverlayConfig, ParseResult, SyncStatus
     └── muxjs.d.ts                    # Type declarations cho mux.js
+
+```
+
+---
+
+## Cây thư mục tests
+
+```
+tests/
+├── setup.ts                          # Jest setup: polyfills, matchers
+├── styleMock.ts                      # Mock CSS imports
+├── workerMock.ts                     # Mock Web Workers
+├── types.d.ts                        # Shared test type declarations
+├── browser/                          # Browser test assets
+│   ├── test-subtitle-overlay.html    # Standalone HTML page for overlay testing
+│   ├── test-subtitle.srt             # Sample subtitle file
+│   ├── Scary_Movie.en.srt            # Full sample subtitle
+│   └── test-video.mp4                # Sample video file
+├── data-test/                        # Data-driven test files
+│   ├── English.eng (1).srt
+│   └── English.eng (1).vtt
+├── fixtures/                         # Shared unit-test fixtures
+│   ├── sample.ass
+│   ├── sample.m3u8
+│   ├── sample.srt
+│   └── sample.vtt
+├── components/                       # React component tests
+│   └── hooks.test.tsx
+├── utils/                            # Cross-cutting utility tests
+│   └── format.test.ts
+├── unit/                             # Unit + integration tests (Jest, no network)
+│   ├── background/                   # Background service worker tests
+│   ├── content/                      # Content script tests
+│   ├── converters/                   # Converter tests
+│   ├── detectors/                    # Language/script/video/subtitle detector tests
+│   ├── lib/                          # Library tests
+│   ├── offscreen/                    # Offscreen document tests
+│   ├── parsers/                      # Subtitle/M3U8 parser tests
+│   ├── popup/                        # Popup component tests
+│   ├── selectors/                    # Media selector tests
+│   ├── subtitleOverlay/              # Subtitle overlay + panel + docking tests
+│   └── utils/                        # Utility tests
+└── integration/                      # Integration tests (network, real m3u8 download)
+    ├── setup/                        # globalSetup + fixtures
+    ├── compare.integration.test.ts
+    ├── parallel.integration.test.ts
+    └── sequential.integration.test.ts
 ```
 
 ---
@@ -143,7 +201,7 @@ src/
 
 | File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
 |------|-----------|-----------------|--------------------------|
-| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, **subtitleDocking**, subtitleShortcuts, config | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + panel + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; wrap video in docking container |
+| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, **subtitleDocking**, subtitleShortcuts, config | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + panel + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; setup docking via `setupDocking` (no wrapper, no DOM move) |
 | `content/pageScanner.ts` | urls (constants) | `content/content-script.ts` | Scan `<video>`, `<source>`, `<track>` |
 | `content/subtitleParser.ts` | srtParser, vttParser, types | (future overlay) | Adapter: parseSubtitle(content, format) → ParseResult |
 | `content/subtitleSync.ts` | types (SrtCue) | (future overlay) | Binary search: findCurrentLine(cues, currentTime) → index |
@@ -151,7 +209,7 @@ src/
 | `content/subtitleDragDrop.ts` | subtitleParser, types | subtitleImport, (future overlay) | File read + parse: readFileAsText, handleFileDrop |
 | `content/subtitleImport.ts` | subtitleDragDrop, types | (future overlay) | Import button: createImportButton (top-left, avoids toggle overlap), handleFileSelect |
 | `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types | (future overlay) | Orchestrator: SubtitleOverlayController (sync → overlay wiring) |
-| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: createDockingWrapper anchors to F0 (farthest ancestor matching the video's rendered width), showPanelDocked, hidePanelDocked, movePanelToOuterWrapper (70/30 split; absolute-docked with MutationObserver guard for out-of-flow players) |
+| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: setupDocking finds F0 + playerContainer; showPanelDocked, hidePanelDocked, movePanelToOuterWrapper (70/30 split; no wrapper, no absolute, no z-index hack) |
 | `content/subtitleAutoLoad.ts` | — | (future overlay) | Auto-load decision + override validation: shouldAutoLoad, validateOverride |
 | `content/subtitleTrackDropdown.ts` | types (SrtCue) | (future overlay) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
 | `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | (future panel) | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
@@ -459,10 +517,10 @@ downloader.downloadM3u8Streaming(playlist)
 | `handleFileDrop` | `content/subtitleDragDrop.ts` | File → Promise<ParseResult> | subtitleImport, (future overlay) | Validate extension + read + parse subtitle file |
 | `createImportButton` | `content/subtitleImport.ts` | (HTMLVideoElement, OverlayConfig) → HTMLButtonElement | (future overlay) | Create import button at top-left of video (avoids toggle overlap) |
 | `handleFileSelect` | `content/subtitleImport.ts` | File → Promise<ParseResult> | (future overlay) | Handle file from picker (reuses handleFileDrop) |
-| `createDockingWrapper` | `content/subtitleDocking.ts` | HTMLVideoElement → `{outerWrapper, videoWrapper}` | content-script.ts | Wrap video in two-layer docking container: outer flex box + inner video box |
-| `showPanelDocked` | `content/subtitleDocking.ts` | (outerWrapper, videoWrapper, HTMLVideoElement, HTMLDivElement) → void | content-script.ts | Show panel beside video: flex shrink for in-flow video; absolute-docked shrink for out-of-flow video, guarded by MutationObserver against player style overwrite |
-| `hidePanelDocked` | `content/subtitleDocking.ts` | (outerWrapper, videoWrapper, HTMLDivElement) → void | content-script.ts | Hide panel and restore video layout |
-| `movePanelToOuterWrapper` | `content/subtitleDocking.ts` | (HTMLDivElement, HTMLDivElement) → void | content-script.ts | Move panel into outer wrapper so it becomes a sibling of the video box |
+| `setupDocking` | `content/subtitleDocking.ts` | HTMLVideoElement → `{f0, playerContainer}` | content-script.ts | Find video layout box (F0) and player branch; do NOT move video |
+| `showPanelDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement) → void | content-script.ts | Show panel beside video: flex row/column, shrink playerContainer, preserve F0 height, override aspect-ratio |
+| `hidePanelDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement) → void | content-script.ts | Hide panel and restore F0 + playerContainer layout |
+| `movePanelToOuterWrapper` | `content/subtitleDocking.ts` | (HTMLDivElement, HTMLElement) → void | content-script.ts | Move panel into F0 so it becomes a sibling of playerContainer |
 | `SubtitleOverlayController` | `content/subtitleOverlay.ts` | class (HTMLVideoElement, OverlayConfig) | (future overlay) | Orchestrator: init/loadCues/clearCues/destroy, timeupdate → binary search → overlay |
 | `shouldAutoLoad` | `content/subtitleAutoLoad.ts` | AutoLoadConfig → boolean | (future overlay) | Auto-load decision: autoLoad enabled + target language set |
 | `validateOverride` | `content/subtitleAutoLoad.ts` | OverrideConfig → OverrideResult | (future overlay) | Override validation: file language must match target (case-insensitive) |

@@ -6,28 +6,51 @@
 
 ```
 docs/           # Tài liệu dự án
-├── 0-wiki.md              # File này — mục lục tổng quan
-├── 1-share-language.md    # Glossary human ↔ system language
-├── 2-architechture-system.md  # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows)
-├── adr/                    # Architecture Decision Records (mỗi quyết định 1 file)
-│   └── 005-subtitle-floating-panel.md  # Subtitle panel: inline DOM, bilingual delimiter, CS shortcuts
-├── intent/                 # Output interview-me — "what user wants"
-├── specs/                  # PRD chi tiết — "what to build"
-├── plan/                   # Task breakdown — "how to build"
+├── 0-wiki.md                          # File này — mục lục tổng quan
+├── 1-share-language.md                # Glossary human ↔ system language
+├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows)
+├── architecture-proposal.md           # Architecture proposal
+├── architecture-research-synthesis.md # Architecture research synthesis
+├── blueprint-cell-learning-platform.md # Blueprint for learning platform
+├── feature-inventory.md               # Feature inventory
+├── software-org-roles.md              # Software organization roles
+├── software-production-process-research.md # Software production process research
+├── spec-subtitle-overlay.md           # Subtitle overlay PRD
+├── adr/                               # Architecture Decision Records (mỗi quyết định 1 file)
+│   ├── 001-zustand-not-redux.md
+│   ├── 002-muxjs-not-ffmpeg-wasm.md
+│   ├── 003-content-script-background-network-interception.md
+│   ├── 004-layered-clean-architecture.md
+│   └── 005-subtitle-floating-panel.md # Subtitle panel: inline DOM, bilingual delimiter, CS shortcuts
+├── intent/                            # Output interview-me — "what user wants"
+├── specs/                             # PRD chi tiết — "what to build"
+├── plan/                              # Task breakdown — "how to build"
+│   ├── chrome-extension-video-downloader.md
+│   ├── parallel-hls-conversion-scaling.md
 │   └── subtitle-sidebar-shortcuts.md  # Subtitle floating panel + shortcuts
-├── knowledge/              # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
-│   ├── principles.md                   # Principle index (abstract, layer 1)
-│   ├── auto-download-subtitle-catchup.md # Auto-download subtitle catch-up
-│   ├── tab-scoping-popup-leak.md        # Tab-Scoping (popup media leak)
-│   ├── edge-app-window-leak.md          # Edge app-window leak
-│   ├── subtitle-language-detection.md   # Subtitle language detection (hybrid)
-│   ├── subtitle-filename-matches-video.md # Subtitle filename matches video
-│   ├── parallel-fmp4-merge.md           # Parallel fMP4 merge (tfdt offset)
-│   ├── state-dom-init-mismatch.md       # State-DOM init mismatch (subtitle panel bugs)
-│   └── architecture-auto-select.md      # Auto-Select & Auto-Download architecture
-├── test-reports/           # MCP browser test reports — "does it work in real browser"
-│   └── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md  # Subtitle panel MCP test (4 bugs found)
-└── reference/              # Hướng dẫn dùng tools — "how to use"
+├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
+│   ├── principles.md                              # Principle index (abstract, layer 1)
+│   ├── architecture-auto-select.md              # Auto-Select & Auto-Download architecture
+│   ├── aspect-ratio-cross-size-preservation.md    # Preserve cross-axis size when aspect-ratio conflicts
+│   ├── auto-download-subtitle-catchup.md          # Auto-download subtitle catch-up
+│   ├── edge-app-window-leak.md                    # Edge app-window leak
+│   ├── flex-min-width-auto-overflow.md            # Flex min-width: auto overflow
+│   ├── inline-style-leak-toggle-cycle.md          # Inline style leak across toggle cycles
+│   ├── out-of-flow-wrapper-collapse.md            # Out-of-flow wrapper collapse
+│   ├── panel-body-mode-max-height.md              # Panel body mode max-height
+│   ├── parallel-fmp4-merge.md                     # Parallel fMP4 merge (tfdt offset)
+│   ├── state-dom-init-mismatch.md                 # State-DOM init mismatch
+│   ├── subtitle-filename-matches-video.md         # Subtitle filename matches video
+│   ├── subtitle-language-detection.md             # Subtitle language detection (hybrid)
+│   └── tab-scoping-popup-leak.md                  # Tab-Scoping (popup media leak)
+├── test-reports/                      # MCP browser test reports — "does it work in real browser"
+│   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md
+│   ├── 2026-06-27-subtitle-panel-docking-mcp.md
+│   └── screenshot-after-fix.png
+├── reference/                         # Hướng dẫn dùng tools — "how to use"
+│   ├── chrome-devtools-mcp.md
+│   └── e2e-debugging.md
+└── reading-summaries/                 # Reading summaries
 
 src/            # Source code (chi tiết trong 2-architechture-system.md)
 tests/          # Test files (chi tiết trong 2-architechture-system.md)
