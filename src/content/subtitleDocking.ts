@@ -139,6 +139,10 @@ export function createDockingWrapper(video: HTMLVideoElement): DockingWrappers {
       // Force contain so the full picture is visible (letterboxed, not cropped).
       // !important because art-player's JS re-applies cover on resize.
       video.style.setProperty('object-fit', 'contain', 'important');
+      // Video is moved out of the art-player container and layered above it.
+      // Without pointer-events: none, the video blocks clicks on art-player
+      // controls (play/pause, progress bar) that live behind it.
+      video.style.setProperty('pointer-events', 'none', 'important');
     }
   }
 
@@ -295,6 +299,8 @@ function applyAbsoluteDockedLayout(
     video.style.setProperty('min-width', '0', 'important');
     video.style.setProperty('min-height', '0', 'important');
     video.style.setProperty('object-fit', 'contain', 'important');
+    // Ensure clicks reach the art-player controls that live behind the video.
+    video.style.setProperty('pointer-events', 'none', 'important');
 
     observer?.observe(video, { attributes: true, attributeFilter: ['style'] });
   };
@@ -378,6 +384,8 @@ export function hidePanelDocked(
     // Force contain (not cover) so ultra-wide videos show full picture.
     // art-player defaults to cover which crops; we override on every restore.
     video.style.setProperty('object-fit', 'contain', 'important');
+    // Let clicks pass through to art-player controls behind the restored video.
+    video.style.setProperty('pointer-events', 'none', 'important');
   }
 
   panel.style.position = 'absolute';

@@ -258,17 +258,20 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     });
   }
 
-  // Wire drag-drop on video → parse → loadCues + drag hover hint
+  // Wire drag-drop on videoWrapper → parse → loadCues + drag hover hint.
+  // We attach to the wrapper instead of the video because the video has
+  // pointer-events: none so clicks pass through to art-player controls.
+  // The wrapper covers the same area and still receives drag events.
   const dragHint = createDragHint(video);
   let dragCounter = 0;
 
-  video.addEventListener('dragenter', (e) => {
+  videoWrapper.addEventListener('dragenter', (e) => {
     e.preventDefault();
     dragCounter++;
     dragHint.style.display = 'flex';
   });
-  video.addEventListener('dragover', (e) => e.preventDefault());
-  video.addEventListener('dragleave', (e) => {
+  videoWrapper.addEventListener('dragover', (e) => e.preventDefault());
+  videoWrapper.addEventListener('dragleave', (e) => {
     e.preventDefault();
     dragCounter--;
     if (dragCounter <= 0) {
@@ -276,7 +279,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       dragHint.style.display = 'none';
     }
   });
-  video.addEventListener('drop', async (e) => {
+  videoWrapper.addEventListener('drop', async (e) => {
     e.preventDefault();
     dragCounter = 0;
     dragHint.style.display = 'none';
