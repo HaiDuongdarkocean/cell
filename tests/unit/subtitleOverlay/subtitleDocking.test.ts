@@ -46,6 +46,11 @@ describe('subtitleDocking', () => {
     panel.style.width = '280px';
     panel.style.maxHeight = '100%';
 
+    const panelBody = document.createElement('div');
+    panelBody.setAttribute('data-testid', 'panel-body');
+    panelBody.style.maxHeight = '400px';
+    panel.appendChild(panelBody);
+
     originalInnerWidth = window.innerWidth;
   });
 
@@ -146,6 +151,9 @@ describe('subtitleDocking', () => {
       expect(panel.style.overflow).toBe('hidden');
       expect(panel.style.boxSizing).toBe('border-box');
       expect(panel.getAttribute('data-docking-mode')).toBe('flex');
+      const panelBody = panel.querySelector('[data-testid="panel-body"]');
+      expect(panelBody).toBeTruthy();
+      expect((panelBody as HTMLElement).style.maxHeight).toBe('none');
     });
 
     it('stacks playerContainer 60% and panel 40% on mobile', () => {
@@ -196,6 +204,9 @@ describe('subtitleDocking', () => {
       expect(panel.style.overflow).toBe('');
       expect(panel.style.boxSizing).toBe('');
       expect(panel.getAttribute('data-docking-mode')).toBe(null);
+      const panelBody = panel.querySelector('[data-testid="panel-body"]');
+      expect(panelBody).toBeTruthy();
+      expect((panelBody as HTMLElement).style.maxHeight).toBe('400px');
     });
   });
 });

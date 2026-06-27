@@ -156,6 +156,14 @@ export function showPanelDocked(
   panel.style.boxSizing = 'border-box';
   panel.style.display = 'flex';
   panel.style.alignSelf = 'stretch';
+
+  // The panel body has a 400px max-height for the floating panel. When docked
+  // it should fill the full panel height so the subtitle list extends to the
+  // bottom of the video.
+  const panelBody = panel.querySelector('[data-testid="panel-body"]') as HTMLElement | null;
+  if (panelBody) {
+    panelBody.style.maxHeight = 'none';
+  }
 }
 
 /**
@@ -197,6 +205,12 @@ export function hidePanelDocked(
   panel.style.boxSizing = '';
   panel.style.display = 'none';
   panel.style.alignSelf = '';
+
+  // Restore the floating panel body's max-height limit.
+  const panelBody = panel.querySelector('[data-testid="panel-body"]') as HTMLElement | null;
+  if (panelBody) {
+    panelBody.style.maxHeight = '400px';
+  }
 }
 
 /**
