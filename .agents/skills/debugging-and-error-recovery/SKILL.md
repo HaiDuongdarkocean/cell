@@ -336,12 +336,61 @@ Audit checklist:
 └── Test: toggle open → close → inspect element.style.cssText
     If any !important from the show path remains → leak found
 ```
-├── Network error / CORS
-│   └── Check URLs, headers, server CORS config
-├── Render error / White screen
-│   └── Check error boundary, console, component tree
-└── Unexpected behavior (no error)
-    └── Add logging at key points, verify data at each step
+
+### CSS Layout / Flexbox Debugging
+
+DOM measurements look wrong but no console error? Use this layout-specific checklist:
+
+```
+Symptom: element overflows, shrinks unexpectedly, or doesn't fill container
+
+Audit checklist:
+├── Flex container
+│   ├── display: flex or inline-flex? Width/height defined or auto?
+│   ├── flex-direction matches the axis you're sizing? (row = width, column = height)
+│   └── align-items: stretch is the default — does a child override it?
+├── Flex items
+│   ├── flex: 0 0 <pct> without min-width:0 / min-height:0?
+│   │   └── Default min-width: auto / min-height: auto prevents shrinking below content
+│   │   └── Fix: set min-width:0 (row) or min-height:0 (column)
+│   ├── box-sizing: border-box? (padding/border add to width if content-box)
+│   └── Does the item have a max-width / max-height cap from another mode?
+├── Intrinsic sizing
+│   ├── aspect-ratio on the element or a child? Changing width may shrink height
+│   │   └── Fix: preserve container cross-size or override aspect-ratio for the new mode
+│   └── object-fit on <video>/<img>? (contain can letterbox, cover can crop)
+├── Mode-specific inline styles
+│   ├── Floating mode styles (e.g., max-height: 400px) leaking into docked mode?
+│   ├── Position: absolute styles leaking into flex layout?
+│   └── Each mode transition must reset/restore mode-specific styles
+└── Verification
+    ├── getComputedStyle() for actual flex, min-width, min-height, aspect-ratio
+    ├── getBoundingClientRect() for parent vs child sizes
+    └── Screenshot / subagent visual check — DOM numbers can lie
+```
+
+### Browser Extension Content-Script Injection Debugging
+
+The extension UI didn't appear? Don't assume the code is wrong. Check the extension environment first:
+
+```
+Content script not injecting:
+├── Extension loaded from the right path?
+│   └── edge://extensions/ → "Loaded from" must point to the current dist/ (not an old build)
+├── Build output contains new code?
+│   └── grep dist/assets/content-script.*.js for the new function/keyword
+├── Console errors from the content script?
+│   └── page console (main world) won't show content-script errors
+│   └── service worker console may show load errors
+├── SPA timing?
+│   └── video rendered after DOMContentLoaded → MutationObserver may miss it if it disconnects early
+│   └── check document.querySelector('video') and whether the script ran before/after
+├── Page context vs content-script context?
+│   └── chrome.runtime exists in isolated world, not in page world
+│   └── evaluate_script in page context cannot read content-script globals
+└── Workaround if injection still unclear
+    ├── Manually inject the same logic via evaluate_script to verify layout math
+    └── Ask the user to reload the extension and refresh the page
 ```
 
 ## Safe Fallback Patterns
@@ -428,6 +477,8 @@ Error messages, stack traces, log output, and exception details from external so
 - Claiming a layout bug is "fixed" based on DOM measurements alone (no visual check)
 - Fixing one layer and moving on without re-verifying in browser for stacked bugs
 - Setting `!important` inline styles without a corresponding `removeProperty` in the restore path
+- Assuming content script is broken without checking extension path, build output, and console
+- Forgetting to reset mode-specific inline styles (max-height, position, etc.) when switching UI modes
 
 ## Verification
 
@@ -443,3 +494,5 @@ After fixing a bug:
 - [ ] For UI/layout bugs: visual check performed (screenshot + subagent or manual)
 - [ ] For !important styles: every setProperty has a matching removeProperty in restore
 - [ ] For stacked bugs: re-verified in browser after each layer fix
+- [ ] For content-script UI bugs: extension path, build output, and console checked
+- [ ] For layout mode transitions: mode-specific styles reset/restored on every transition
