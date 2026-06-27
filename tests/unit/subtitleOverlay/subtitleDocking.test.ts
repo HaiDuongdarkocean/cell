@@ -287,7 +287,7 @@ describe('subtitleDocking', () => {
   });
 
   describe('setupFullscreenHandlers', () => {
-    it('redirects art-video-player fullscreen to F0 when panel is visible', async () => {
+    it('overlays panel on top of fullscreen element when panel is visible', () => {
       const container = video.parentElement!;
       mockRect(video, { width: 300, height: 200 });
       mockRect(container, { width: 300, height: 250 });
@@ -299,23 +299,6 @@ describe('subtitleDocking', () => {
       artPlayer.className = 'art-video-player';
       playerContainer.appendChild(artPlayer);
 
-      let f0Requested = false;
-      f0.requestFullscreen = jest.fn().mockImplementation(() => {
-        f0Requested = true;
-        return Promise.resolve();
-      });
-      document.exitFullscreen = jest.fn().mockImplementation(() => {
-        // Simulate the browser exiting fullscreen
-        Object.defineProperty(document, 'fullscreenElement', {
-          writable: true,
-          configurable: true,
-          value: null,
-        });
-        // Dispatch fullscreenchange after exit
-        document.dispatchEvent(new Event('fullscreenchange'));
-        return Promise.resolve();
-      });
-
       const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
 
       // Simulate art-video-player entering fullscreen
@@ -326,18 +309,19 @@ describe('subtitleDocking', () => {
       });
       document.dispatchEvent(new Event('fullscreenchange'));
 
-      // Wait for the exit→re-enter Promise chain to resolve
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      // Should have called exitFullscreen (to exit art-player fullscreen)
-      expect(document.exitFullscreen).toHaveBeenCalled();
-      // Should have called f0.requestFullscreen (to enter F0 fullscreen)
-      expect(f0Requested).toBe(true);
+      // Panel should be moved into the fullscreen element
+      expect(panel.parentElement).toBe(artPlayer);
+      // Panel should be styled as a fixed overlay
+      expect(panel.style.position).toBe('fixed');
+      expect(panel.style.width).toBe('30vw');
+      expect(panel.style.height).toBe('100vh');
+      expect(panel.style.zIndex).toBe('2147483647');
+      expect(panel.style.display).toBe('flex');
 
       cleanup();
     });
 
-    it('does not redirect when panel is closed', () => {
+    it('does not overlay when panel is closed', () => {
       const container = video.parentElement!;
       mockRect(video, { width: 300, height: 200 });
       mockRect(container, { width: 300, height: 250 });
@@ -349,15 +333,8 @@ describe('subtitleDocking', () => {
       artPlayer.className = 'art-video-player';
       playerContainer.appendChild(artPlayer);
 
-      let exitCalled = false;
-      document.exitFullscreen = jest.fn().mockImplementation(() => {
-        exitCalled = true;
-        return Promise.resolve();
-      });
-
       const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => false);
 
-      // Simulate art-video-player entering fullscreen
       Object.defineProperty(document, 'fullscreenElement', {
         writable: true,
         configurable: true,
@@ -365,13 +342,13 @@ describe('subtitleDocking', () => {
       });
       document.dispatchEvent(new Event('fullscreenchange'));
 
-      // Should NOT have called exitFullscreen (panel is closed, let it be)
-      expect(exitCalled).toBe(false);
+      // Panel should NOT be moved into the fullscreen element
+      expect(panel.parentElement).toBe(f0);
 
       cleanup();
     });
 
-    it('applies 70/30 layout when F0 enters fullscreen', () => {
+    it('restores panel to original parent and styles on exit fullscreen', () => {
       const container = video.parentElement!;
       mockRect(video, { width: 300, height: 200 });
       mockRect(container, { width: 300, height: 250 });
@@ -379,20 +356,34 @@ describe('subtitleDocking', () => {
       f0.appendChild(panel);
       showPanelDocked(f0, playerContainer, panel);
 
+      const artPlayer = document.createElement('div');
+      artPlayer.className = 'art-video-player';
+      playerContainer.appendChild(artPlayer);
+
+      const originalCssText = panel.style.cssText;
+
       const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
 
-      // Simulate F0 entering fullscreen
+      // Enter fullscreen
       Object.defineProperty(document, 'fullscreenElement', {
         writable: true,
         configurable: true,
-        value: f0,
+        value: artPlayer,
       });
       document.dispatchEvent(new Event('fullscreenchange'));
 
-      expect(playerContainer.classList.contains('art-fullscreen')).toBe(true);
-      expect(panel.style.display).toBe('flex');
-      expect(f0.style.display).toBe('flex');
-      expect(f0.style.flexDirection).toBe('row');
+      expect(panel.parentElement).toBe(artPlayer);
+
+      // Exit fullscreen
+      Object.defineProperty(document, 'fullscreenElement', {
+        writable: true,
+        configurable: true,
+        value: null,
+      });
+      document.dispatchEvent(new Event('fullscreenchange'));
+
+      // Panel should be restored to F0
+      expect(panel.parentElement).toBe(f0);
 
       cleanup();
     });

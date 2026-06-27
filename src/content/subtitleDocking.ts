@@ -302,10 +302,19 @@ export function exitFullscreenDocked(
 }
 
 /**
- * Wire interceptors so the player's fullscreen button fullscreens F0 (the layout
- * box) instead of the player itself. When the panel is open, F0 fullscreen
- * preserves the 70/30 split. When the panel is closed, F0 fullscreen still
- * works because the playerContainer fills the viewport.
+ * When the art-video-player enters fullscreen, overlay the subtitle panel
+ * on top of the fullscreen video (right side, 30% width). This is the only
+ * approach that works because:
+ *
+ * 1. Content scripts run in an isolated world — can't override
+ *    requestFullscreen() on the art-video-player element (page can't see it).
+ * 2. Injecting <script> tags is blocked by the page's CSP.
+ * 3. Reactive redirect (exitFullscreen → f0.requestFullscreen) fails because
+ *    requestFullscreen() requires a user gesture, which is consumed by the
+ *    time fullscreenchange fires.
+ *
+ * So we let the art-video-player be fullscreen, move the panel INTO it as
+ * a fixed-position overlay, and restore it when fullscreen exits.
  *
  * Returns a cleanup function that removes the listeners.
  */
@@ -316,57 +325,57 @@ export function setupFullscreenHandlers(
   isPanelVisible: () => boolean,
 ): () => void {
   let cleaned = false;
-  let redirecting = false;
+  let panelOriginalParent: HTMLElement | null = null;
+  let savedPanelStyles = '';
 
-  // React to fullscreen changes. When the art-video-player enters fullscreen
-  // (instead of F0), exit it and re-enter on F0. This preserves the 70/30
-  // split with the panel beside the video.
-  //
-  // We can't intercept the art-player's requestFullscreen() call directly
-  // because content scripts run in an isolated world — DOM properties set
-  // from the content script are invisible to the page's JavaScript. And
-  // injecting a <script> tag is blocked by the page's CSP. So we react
-  // to the fullscreenchange event instead.
   const onFullscreenChange = () => {
     const fsEl = document.fullscreenElement;
 
     if (fsEl && fsEl !== f0) {
-      // The art-video-player entered fullscreen, not F0.
-      // Only redirect if the panel is visible and we're not already redirecting.
-      if (!isPanelVisible() || redirecting) return;
+      // Some element other than F0 entered fullscreen (e.g. art-video-player).
+      // Only overlay if the panel is visible.
+      if (!isPanelVisible()) return;
 
-      // Exit the art-player's fullscreen and immediately enter F0 fullscreen.
-      redirecting = true;
-      document.exitFullscreen().then(() => {
-        // Reset the flag so the F0 fullscreenchange handler can process the layout.
-        redirecting = false;
-        f0.requestFullscreen().catch(() => {
-          redirecting = false;
-        });
-      }).catch(() => {
-        redirecting = false;
-      });
-      return;
-    }
-
-    if (fsEl === f0) {
-      // F0 is fullscreen: make player look fullscreen and layout the panel.
-      playerContainer.classList.add('art-fullscreen');
-      if (isPanelVisible()) {
-        enterFullscreenDocked(f0, playerContainer, panel);
-      } else {
-        // Panel hidden: maximize playerContainer inside F0 fullscreen.
-        playerContainer.style.flex = '0 0 100%';
-        playerContainer.style.minWidth = '0';
-        playerContainer.style.minHeight = '0';
-        playerContainer.style.boxSizing = 'border-box';
-        playerContainer.style.height = '100%';
-        playerContainer.style.setProperty('aspect-ratio', 'auto', 'important');
-        panel.style.display = 'none';
+      // Save the panel's original parent and styles so we can restore them.
+      if (!panelOriginalParent) {
+        panelOriginalParent = panel.parentElement;
+        savedPanelStyles = panel.style.cssText;
       }
-    } else if (fsEl === null && !redirecting) {
-      // Exited F0 fullscreen: restore normal docked or hidden state.
-      // Skip if redirecting (the exit is part of the redirect flow).
+
+      // Move the panel into the fullscreen element so it's visible.
+      // Elements outside the fullscreen element are NOT rendered.
+      fsEl.appendChild(panel);
+
+      // Style the panel as a fixed overlay on the right side.
+      panel.style.position = 'fixed';
+      panel.style.right = '0';
+      panel.style.top = '0';
+      panel.style.left = 'auto';
+      panel.style.bottom = 'auto';
+      panel.style.width = '30vw';
+      panel.style.height = '100vh';
+      panel.style.maxHeight = 'none';
+      panel.style.zIndex = '2147483647';
+      panel.style.display = 'flex';
+      panel.style.flexDirection = 'column';
+      panel.style.borderRadius = '8px 0 0 8px';
+      panel.style.boxSizing = 'border-box';
+      panel.style.overflow = 'hidden';
+
+      const panelBody = panel.querySelector('[data-testid="panel-body"]') as HTMLElement | null;
+      if (panelBody) {
+        panelBody.style.maxHeight = 'none';
+      }
+    } else if (fsEl === null) {
+      // Exited fullscreen: restore the panel to its original parent and styles.
+      if (panelOriginalParent && panel.parentElement !== panelOriginalParent) {
+        panelOriginalParent.appendChild(panel);
+        panel.style.cssText = savedPanelStyles;
+        panelOriginalParent = null;
+        savedPanelStyles = '';
+      }
+
+      // Restore normal docked or hidden layout.
       exitFullscreenDocked(f0, playerContainer, panel, isPanelVisible());
     }
   };
@@ -376,6 +385,13 @@ export function setupFullscreenHandlers(
   return () => {
     if (cleaned) return;
     cleaned = true;
+    // If still in fullscreen, restore panel to original parent.
+    if (panelOriginalParent && panel.parentElement !== panelOriginalParent) {
+      panelOriginalParent.appendChild(panel);
+      panel.style.cssText = savedPanelStyles;
+    }
+    panelOriginalParent = null;
+    savedPanelStyles = '';
     document.removeEventListener('fullscreenchange', onFullscreenChange);
   };
 }
