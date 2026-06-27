@@ -27,12 +27,13 @@ src/
 │   ├── subtitleSync.ts            # Binary search O(log n): findCurrentLine(cues, currentTime) → index
 │   ├── subtitleUI.ts              # Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay
 │   ├── subtitleDragDrop.ts        # File read + parse: readFileAsText, handleFileDrop (drag-drop handler)
-│   ├── subtitleImport.ts          # Import button: createImportButton, handleFileSelect (file picker)
+│   ├── subtitleImport.ts          # Import button: createImportButton (top-left, avoids toggle overlap), handleFileSelect (file picker)
 │   ├── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring)
 │   ├── subtitleAutoLoad.ts        # Auto-load decision + override validation: shouldAutoLoad, validateOverride
 │   ├── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
 │   ├── subtitleBilingualParser.ts # Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, reuse parseSrt)
 │   ├── subtitlePanel.ts           # Floating panel UI: createPanel, renderCueList, createToggleButton, switchPanelPosition (draggable, bilingual layout)
+│   ├── subtitleDocking.ts         # Docking layout: createDockingWrapper, showPanelDocked, hidePanelDocked (flex shrink + fixed fallback for out-of-flow video)
 │   └── subtitleShortcuts.ts       # Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
@@ -142,14 +143,15 @@ src/
 
 | File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
 |------|-----------|-----------------|--------------------------|
-| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, subtitleShortcuts, config | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + panel + shortcuts + drag-drop + import |
+| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, **subtitleDocking**, subtitleShortcuts, config | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + panel + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; wrap video in docking container |
 | `content/pageScanner.ts` | urls (constants) | `content/content-script.ts` | Scan `<video>`, `<source>`, `<track>` |
 | `content/subtitleParser.ts` | srtParser, vttParser, types | (future overlay) | Adapter: parseSubtitle(content, format) → ParseResult |
 | `content/subtitleSync.ts` | types (SrtCue) | (future overlay) | Binary search: findCurrentLine(cues, currentTime) → index |
 | `content/subtitleUI.ts` | types (OverlayConfig) | (future overlay) | Overlay UI: createOverlay, updateOverlayText, hideOverlay, removeOverlay |
 | `content/subtitleDragDrop.ts` | subtitleParser, types | subtitleImport, (future overlay) | File read + parse: readFileAsText, handleFileDrop |
-| `content/subtitleImport.ts` | subtitleDragDrop, types | (future overlay) | Import button: createImportButton, handleFileSelect |
+| `content/subtitleImport.ts` | subtitleDragDrop, types | (future overlay) | Import button: createImportButton (top-left, avoids toggle overlap), handleFileSelect |
 | `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types | (future overlay) | Orchestrator: SubtitleOverlayController (sync → overlay wiring) |
+| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: createDockingWrapper, showPanelDocked, hidePanelDocked (flex shrink when video in-flow; fixed fallback when video absolute/fixed) |
 | `content/subtitleAutoLoad.ts` | — | (future overlay) | Auto-load decision + override validation: shouldAutoLoad, validateOverride |
 | `content/subtitleTrackDropdown.ts` | types (SrtCue) | (future overlay) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
 | `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | (future panel) | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
@@ -455,8 +457,11 @@ downloader.downloadM3u8Streaming(playlist)
 | `removeOverlay` | `content/subtitleUI.ts` | (HTMLDivElement) → void | (future overlay) | Remove overlay from DOM |
 | `readFileAsText` | `content/subtitleDragDrop.ts` | File → Promise<string> | subtitleImport, (future overlay) | Read File content as text via FileReader |
 | `handleFileDrop` | `content/subtitleDragDrop.ts` | File → Promise<ParseResult> | subtitleImport, (future overlay) | Validate extension + read + parse subtitle file |
-| `createImportButton` | `content/subtitleImport.ts` | (HTMLVideoElement, OverlayConfig) → HTMLButtonElement | (future overlay) | Create import button at top-right of video |
+| `createImportButton` | `content/subtitleImport.ts` | (HTMLVideoElement, OverlayConfig) → HTMLButtonElement | (future overlay) | Create import button at top-left of video (avoids toggle overlap) |
 | `handleFileSelect` | `content/subtitleImport.ts` | File → Promise<ParseResult> | (future overlay) | Handle file from picker (reuses handleFileDrop) |
+| `createDockingWrapper` | `content/subtitleDocking.ts` | HTMLVideoElement → HTMLDivElement | content-script.ts | Wrap video in docking container for panel layout |
+| `showPanelDocked` | `content/subtitleDocking.ts` | (HTMLDivElement, HTMLVideoElement, HTMLDivElement) → void | content-script.ts | Show panel beside video (flex shrink, or fixed fallback for out-of-flow video) |
+| `hidePanelDocked` | `content/subtitleDocking.ts` | (HTMLDivElement, HTMLVideoElement, HTMLDivElement) → void | content-script.ts | Hide panel and restore video layout |
 | `SubtitleOverlayController` | `content/subtitleOverlay.ts` | class (HTMLVideoElement, OverlayConfig) | (future overlay) | Orchestrator: init/loadCues/clearCues/destroy, timeupdate → binary search → overlay |
 | `shouldAutoLoad` | `content/subtitleAutoLoad.ts` | AutoLoadConfig → boolean | (future overlay) | Auto-load decision: autoLoad enabled + target language set |
 | `validateOverride` | `content/subtitleAutoLoad.ts` | OverrideConfig → OverrideResult | (future overlay) | Override validation: file language must match target (case-insensitive) |
