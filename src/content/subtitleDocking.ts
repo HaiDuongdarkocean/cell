@@ -316,8 +316,9 @@ export function setupFullscreenHandlers(
   isPanelVisible: () => boolean,
 ): () => void {
   const fullscreenSelector = '.art-control-fullscreen';
+  let lastInterceptTime = 0;
 
-  const onPlayerClick = (e: MouseEvent) => {
+  const onPlayerFullscreenInteraction = (e: MouseEvent | PointerEvent) => {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
     if (!target.closest(fullscreenSelector)) return;
@@ -325,9 +326,15 @@ export function setupFullscreenHandlers(
     // fullscreen behavior handle it.
     if (!isPanelVisible()) return;
 
+    // Deduplicate: pointerdown fires before mousedown and click. If we already
+    // intercepted the pointerdown for this interaction, skip the trailing events.
+    if (Date.now() - lastInterceptTime < 100) return;
+
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
+
+    lastInterceptTime = Date.now();
 
     if (document.fullscreenElement === f0) {
       document.exitFullscreen();
@@ -337,7 +344,10 @@ export function setupFullscreenHandlers(
   };
 
   // Capture phase so we stop the player's own fullscreen handler before it runs.
-  playerContainer.addEventListener('click', onPlayerClick, true);
+  // Art-player (and many custom players) use pointerdown/mousedown, not click.
+  playerContainer.addEventListener('pointerdown', onPlayerFullscreenInteraction, true);
+  playerContainer.addEventListener('mousedown', onPlayerFullscreenInteraction, true);
+  playerContainer.addEventListener('click', onPlayerFullscreenInteraction, true);
 
   const onFullscreenChange = () => {
     if (document.fullscreenElement === f0) {
@@ -364,7 +374,9 @@ export function setupFullscreenHandlers(
   document.addEventListener('fullscreenchange', onFullscreenChange);
 
   return () => {
-    playerContainer.removeEventListener('click', onPlayerClick, true);
+    playerContainer.removeEventListener('pointerdown', onPlayerFullscreenInteraction, true);
+    playerContainer.removeEventListener('mousedown', onPlayerFullscreenInteraction, true);
+    playerContainer.removeEventListener('click', onPlayerFullscreenInteraction, true);
     document.removeEventListener('fullscreenchange', onFullscreenChange);
   };
 }

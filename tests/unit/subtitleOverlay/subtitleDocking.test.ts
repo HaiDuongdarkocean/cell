@@ -287,7 +287,7 @@ describe('subtitleDocking', () => {
   });
 
   describe('setupFullscreenHandlers', () => {
-    it('intercepts art-player fullscreen button and requests F0 fullscreen', () => {
+    it('intercepts art-player fullscreen button pointerdown and requests F0 fullscreen', () => {
       const container = video.parentElement!;
       mockRect(video, { width: 300, height: 200 });
       mockRect(container, { width: 300, height: 250 });
@@ -306,7 +306,7 @@ describe('subtitleDocking', () => {
       playerContainer.appendChild(fsBtn);
 
       const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
-      fsBtn.click();
+      fsBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
 
       expect(requestedElement).toBe(f0);
       cleanup();
@@ -323,19 +323,19 @@ describe('subtitleDocking', () => {
       let prevented = false;
       const fsBtn = document.createElement('div');
       fsBtn.className = 'art-control-fullscreen';
-      fsBtn.addEventListener('click', (e) => {
+      fsBtn.addEventListener('mousedown', (e) => {
         if (e.defaultPrevented) prevented = true;
       });
       playerContainer.appendChild(fsBtn);
 
       const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => false);
-      fsBtn.click();
+      fsBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
 
       expect(prevented).toBe(false);
       cleanup();
     });
 
-    it('exits fullscreen when F0 is already fullscreen and button is clicked', () => {
+    it('exits fullscreen when F0 is already fullscreen and button is pointerdowned', () => {
       const container = video.parentElement!;
       mockRect(video, { width: 300, height: 200 });
       mockRect(container, { width: 300, height: 250 });
@@ -360,7 +360,7 @@ describe('subtitleDocking', () => {
       playerContainer.appendChild(fsBtn);
 
       const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
-      fsBtn.click();
+      fsBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
 
       expect(exited).toBe(true);
       cleanup();

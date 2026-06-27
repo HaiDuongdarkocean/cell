@@ -12,7 +12,7 @@ The player's native fullscreen API targets the media element, which is a descend
 
 ## Fix
 
-- Intercept the art-player fullscreen button (`.art-control-fullscreen`) in capture phase, but only when the panel is open.
+- Intercept the art-player fullscreen button (`.art-control-fullscreen`) in capture phase, but only when the panel is open. Art-player uses `pointerdown` for real mouse interactions, not `click`, so the interceptor must listen for `pointerdown`/`mousedown` **and** `click`.
 - Instead of letting the player fullscreen its own element, call `f0.requestFullscreen()` so the entire layout box becomes the fullscreen element.
 - Apply `enterFullscreenDocked` to lay out `playerContainer` at 70% and `panel` at 30% horizontally.
 - Add/remove the `art-fullscreen` class on `playerContainer` so the player's controls still think they are in fullscreen.
