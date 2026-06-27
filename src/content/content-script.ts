@@ -4,6 +4,8 @@ import { handleFileDrop } from './subtitleDragDrop';
 import { handleFileSelect } from './subtitleImport';
 import { createDragHint, showToast } from './subtitleUI';
 import { parseBilingualSrt } from './subtitleBilingualParser';
+import { handleAutoLoadSubtitles, clearAutoLoadCache } from './subtitleAutoLoad';
+import { mergeCuesForPanel } from './subtitleMerge';
 import {
   createPanel,
   renderCueListLazy,
@@ -21,12 +23,17 @@ import {
   setupFullscreenHandlers,
 } from './subtitleDocking';
 import { handleShortcutKey } from './subtitleShortcuts';
+import { MESSAGE_TYPES } from '@/constants/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
 import type { OverlayConfig } from '../types/subtitle';
-import type { BilingualCue, KeyboardShortcut } from '../types/media';
+import type { BilingualCue, KeyboardShortcut, SrtCue } from '../types/media';
+import type { AutoLoadSubtitlesPayload } from '../types/message';
 
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
 // background tự lấy từ sender.tab.id (xem messageBus.handleMessage)
+// Clear auto-load cache on every (re)inject — tab navigate re-injects the
+// content-script, so the per-URL cache must not survive across navigations.
+clearAutoLoadCache();
 const scanner = new PageScanner();
 
 // Scan on page load — gửi không tabId, background resolve từ sender
@@ -316,6 +323,39 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     } else {
       showToast(`Drag-drop failed: ${result.error ?? 'unknown error'}`, video);
     }
+  });
+
+  // === Bilingual auto-load wiring (ADR-007 D1, spec F3/F4/F7) ===
+  // Listen for AUTO_LOAD_SUBTITLES pushes from background (triggered on
+  // PAGE_SCAN_RESULT + onMediaDetected). Fetch + parse target + native
+  // (cache by URL), load bilingual cues into overlay, re-render panel.
+  // Re-renders fully each push — no accumulation across pushes (spec F7).
+  // Auto-load + drag-drop are independent: whichever arrives last overrides.
+  chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
+    if (msg?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
+      const payload = msg.payload as AutoLoadSubtitlesPayload;
+      void handleAutoLoadSubtitles(payload, {
+        controller,
+        onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
+          bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
+          if (panel) {
+            renderCueListLazy(panel, bilingualCues);
+            panelVisible = true;
+            showPanelDocked(f0, playerContainer, panel);
+          }
+        },
+        onToast: (message: string) => showToast(message, video),
+      });
+    }
+    return false; // synchronous listener, no async response
+  });
+
+  // Request a re-push of AUTO_LOAD_SUBTITLES in case background pushed before
+  // this content-script was ready (race: SW restart, late injection). Background
+  // reads from chrome.storage.session (ADR-007 D2).
+  void chrome.runtime.sendMessage({
+    type: MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES,
+    payload: { tabId: undefined }, // background resolves from sender.tab.id
   });
 }
 
