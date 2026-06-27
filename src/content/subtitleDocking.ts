@@ -63,6 +63,120 @@ function isOutOfFlowVideo(video: HTMLVideoElement): boolean {
   return position === 'absolute' || position === 'fixed';
 }
 
+/** Cleanup callbacks for active fixed-panel observers, keyed by panel element. */
+const fixedPanelSyncCleanups = new WeakMap<HTMLDivElement, () => void>();
+
+/** Find all ancestors with scrollable overflow (auto/scroll on either axis). */
+function getScrollableAncestors(element: HTMLElement): HTMLElement[] {
+  const containers: HTMLElement[] = [];
+  let parent = element.parentElement;
+  while (parent) {
+    const style = getComputedStyle(parent);
+    if (
+      style.overflow === 'auto' ||
+      style.overflow === 'scroll' ||
+      style.overflowX === 'auto' ||
+      style.overflowX === 'scroll' ||
+      style.overflowY === 'auto' ||
+      style.overflowY === 'scroll'
+    ) {
+      containers.push(parent);
+    }
+    parent = parent.parentElement;
+  }
+  return containers;
+}
+
+/**
+ * Continuously sync a fixed panel to the video's current bounding box.
+ * Triggered by video resize, window resize, scroll on any scrollable ancestor,
+ * and fullscreen changes. Throttled by requestAnimationFrame.
+ */
+function startFixedPanelSync(video: HTMLVideoElement, panel: HTMLDivElement): void {
+  stopFixedPanelSync(panel);
+
+  let rafId: number | null = null;
+  let pending = false;
+
+  const update = () => {
+    if (!pending) return;
+    pending = false;
+    // Only update if panel is still in fixed mode and attached to DOM.
+    if (!document.body.contains(panel)) return;
+    if (panel.getAttribute('data-docking-mode') !== 'fixed') return;
+
+    const rect = video.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const width = PANEL_WIDTH;
+    const isFullscreen = !!document.fullscreenElement;
+    let left = rect.right;
+    let top = rect.top;
+    let panelWidth = width;
+    let panelHeight = rect.height;
+
+    if (isFullscreen || left + width > viewportWidth) {
+      left = Math.max(0, rect.left - width);
+    }
+    if (isFullscreen || (left === 0 && rect.left <= 0)) {
+      left = 0;
+      top = Math.max(0, viewportHeight - Math.floor(viewportHeight * 0.3));
+      panelWidth = viewportWidth;
+      panelHeight = Math.floor(viewportHeight * 0.3);
+    }
+
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+    panel.style.width = `${panelWidth}px`;
+    panel.style.height = `${panelHeight}px`;
+  };
+
+  const schedule = () => {
+    pending = true;
+    if (rafId === null) {
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        update();
+      });
+    }
+  };
+
+  const resizeObserver = new ResizeObserver(schedule);
+  resizeObserver.observe(video);
+
+  const scrollContainers = getScrollableAncestors(video);
+  const scrollOptions: AddEventListenerOptions = { passive: true };
+  scrollContainers.forEach((container) => {
+    container.addEventListener('scroll', schedule, scrollOptions);
+  });
+  window.addEventListener('scroll', schedule, scrollOptions);
+  window.addEventListener('resize', schedule);
+  document.addEventListener('fullscreenchange', schedule);
+
+  fixedPanelSyncCleanups.set(panel, () => {
+    resizeObserver.disconnect();
+    scrollContainers.forEach((container) => {
+      container.removeEventListener('scroll', schedule);
+    });
+    window.removeEventListener('scroll', schedule);
+    window.removeEventListener('resize', schedule);
+    document.removeEventListener('fullscreenchange', schedule);
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+  });
+}
+
+/** Stop syncing a fixed panel and remove all observers/listeners. */
+function stopFixedPanelSync(panel: HTMLDivElement): void {
+  const cleanup = fixedPanelSyncCleanups.get(panel);
+  if (cleanup) {
+    cleanup();
+    fixedPanelSyncCleanups.delete(panel);
+  }
+}
+
 /**
  * Show panel in docked layout: shrink video to make room.
  * Desktop: video wrapper 70% width, panel 280px on the right.
@@ -122,23 +236,44 @@ export function showPanelDocked(
 function showFixedPanel(video: HTMLVideoElement, panel: HTMLDivElement): void {
   const rect = video.getBoundingClientRect();
   const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
   const width = PANEL_WIDTH;
-  // Prefer right side of video; if it overflows viewport, place on the left.
+
+  // In fullscreen the video often fills the viewport, so there is no room beside it.
+  // Fallback to a bottom bar that spans the width and uses a fraction of the height.
+  const isFullscreen = !!document.fullscreenElement;
   let left = rect.right;
-  if (left + width > viewportWidth) {
+  let top = rect.top;
+  let panelWidth = width;
+  let panelHeight = rect.height;
+
+  if (isFullscreen || left + width > viewportWidth) {
     left = Math.max(0, rect.left - width);
+  }
+
+  // If still no room on the left, or we are in fullscreen with video filling width,
+  // dock the panel to the bottom of the viewport.
+  if (isFullscreen || (left === 0 && rect.left <= 0)) {
+    left = 0;
+    top = Math.max(0, viewportHeight - Math.floor(viewportHeight * 0.3));
+    panelWidth = viewportWidth;
+    panelHeight = Math.floor(viewportHeight * 0.3);
   }
 
   panel.setAttribute('data-docking-mode', 'fixed');
   panel.style.position = 'fixed';
   panel.style.left = `${left}px`;
-  panel.style.top = `${rect.top}px`;
+  panel.style.top = `${top}px`;
   panel.style.right = 'auto';
-  panel.style.width = `${width}px`;
-  panel.style.height = `${rect.height}px`;
-  panel.style.maxHeight = `${rect.height}px`;
+  panel.style.width = `${panelWidth}px`;
+  panel.style.height = `${panelHeight}px`;
+  panel.style.maxHeight = `${panelHeight}px`;
   panel.style.display = 'flex';
   panel.style.alignSelf = '';
+
+  // ponytail: fixed positioning is set once, but site layout can change (scroll,
+  // resize, player transitions) → keep panel pinned beside the video.
+  startFixedPanelSync(video, panel);
 }
 
 /**
@@ -149,6 +284,7 @@ export function hidePanelDocked(
   videoWrapper: HTMLDivElement,
   panel: HTMLDivElement,
 ): void {
+  stopFixedPanelSync(panel);
   panel.removeAttribute('data-docking-mode');
 
   outerWrapper.style.display = 'block';
