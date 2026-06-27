@@ -169,3 +169,35 @@ Khi có 2 nguồn truth (state variable + DOM property), chúng phải sync ban 
 - React state vs DOM ref (useState + useRef + imperative DOM mutation)
 - Storage migration (old settings thiếu field mới → fill defaults ở migration, không guard mỗi consumer)
 - Any UI với 2 nguồn truth: state variable + DOM property phải sync init
+
+---
+
+## Inline style leak across state transitions → every set must have matching remove
+
+### Nguyên lý
+Khi show/apply path set inline style với `!important`, hide/restore path PHẢI `removeProperty` (hoặc reset) từng property đó. `!important` styles survive across state transitions — browser không auto-clean. MutationObserver guard phải stop TRƯỚC khi remove, nếu không nó re-apply ngay lập tức.
+
+### Cases đã gặp
+- [inline-style-leak-toggle-cycle.md](inline-style-leak-toggle-cycle.md) — `applyAbsoluteDockedLayout` set `transform: translate(-50%,-50%) !important` + `object-fit: contain !important`, `hidePanelDocked` không remove → video jump ra ngoài sau toggle close. Fix: thêm `removeProperty('transform')` + set `object-fit: contain` trong restore path.
+
+### Apply cho
+- Content script toggle cycles (show/hide panel, overlay, dock)
+- React imperative DOM mutation (useState + ref.style.setProperty)
+- Any show/hide pattern using `!important` to override site CSS
+- MutationObserver guard patterns (stop observer before removing guarded styles)
+
+---
+
+## Out-of-flow element needs explicit containing block → fill 100% of original box
+
+### Nguyên lý
+Khi di chuyển element `position: absolute/fixed` (out-of-flow) vào wrapper mới, wrapper KHÔNG kế thừa size của element — absolute elements contribute no height to containing block. Wrapper phải có explicit `width: 100%; height: 100%` để match original box. Container gốc phải thành positioned containing block (`position: relative`) để absolute wrapper fill đúng box, không phải ancestor rộng hơn. Apply cho cả initial setup VÀ restore path — reset wrapper về `static` = collapse lại.
+
+### Cases đã gặp
+- [out-of-flow-wrapper-collapse.md](out-of-flow-wrapper-collapse.md) — `createDockingWrapper` di chuyển video absolute vào `videoWrapper` không có width/height → wrapper collapse height 0 → video invisible trên page load. Fix: set `outerWrapper` + `videoWrapper` `width: 100%; height: 100%`, set F0 `position: relative`.
+
+### Apply cho
+- Content script DOM restructuring (move element into new wrapper)
+- Art-player / video.js / any player với absolute-positioned video
+- Drag-and-drop containers (element removed from flow → wrapper collapses)
+- Portal/modal patterns (element moved to body → original container collapses)
