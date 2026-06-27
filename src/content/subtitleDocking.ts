@@ -2,12 +2,12 @@
  * Docking layout manager for subtitle panel + video.
  *
  * Direction C: panel is hidden by default; when user toggles it, the video
- * shrinks to make room for the panel inside the same parent container.
- * Desktop: panel on the right, fixed width 280px; video takes the rest.
- * Mobile: panel below the video, video 60% height, panel 40% height.
+ * container shrinks to make room for the panel inside the same parent container.
+ * Desktop: video wrapper 70% width, panel 30% width (side-by-side).
+ * Mobile: video wrapper 60% height, panel 40% height (stacked).
  *
- * This keeps the panel outside the video and ensures the combined panel + video
- * never overflows the parent container.
+ * This keeps the panel outside the video, and the subtitle overlay (which lives
+ * inside the video wrapper) is never covered by the panel.
  *
  * DOM structure:
  *   outerWrapper (flex or absolute container when panel open)
@@ -17,11 +17,12 @@
  * ponytail: two-wrapper structure keeps video and its controls in one box, and the
  * panel as a sibling. For out-of-flow players (e.g. art-player absolute video),
  * the outer wrapper is absolute to fill the nearest positioned ancestor so the
- * panel can be placed inside the same box without overflowing it.
+ * video wrapper can be pinned to 70% of that box and the panel to 30%.
  */
 
 export const DESKTOP_BREAKPOINT = 768;
-export const PANEL_WIDTH = 280;
+export const DESKTOP_VIDEO_RATIO = '70%';
+export const DESKTOP_PANEL_RATIO = '30%';
 export const MOBILE_VIDEO_RATIO = '60%';
 export const MOBILE_PANEL_RATIO = '40%';
 
@@ -37,9 +38,62 @@ export interface DockingWrappers {
 }
 
 /**
+ * Find the video's real layout box (F0).
+ *
+ * Walks up from the video and returns the *farthest* ancestor whose rendered
+ * width matches the video's rendered width (within sub-pixel tolerance). The first
+ * ancestor that no longer matches the video's width marks the boundary of the
+ * video box, so the last width-matching ancestor is the real layout container.
+ *
+ * This is usually the site's player root (e.g. the `div.w-[75%]` inside
+ * `.player-container` on themoviebox). Picking the farthest matching box lets the
+ * subtitle wrapper occupy exactly the same width as the video, without inheriting
+ * a wider parent container.
+ */
+function findVideoLayoutBox(video: HTMLVideoElement): HTMLElement | null {
+  const videoRect = video.getBoundingClientRect();
+  const WIDTH_TOLERANCE = 1;
+  let f0: HTMLElement | null = null;
+  let current: HTMLElement | null = video;
+
+  while (current && current.parentElement) {
+    const parent: HTMLElement = current.parentElement;
+    const parentRect = parent.getBoundingClientRect();
+    const widthMatches = Math.abs(parentRect.width - videoRect.width) < WIDTH_TOLERANCE;
+
+    if (!widthMatches) {
+      break;
+    }
+
+    f0 = parent;
+    current = parent;
+  }
+
+  return f0;
+}
+
+/**
+ * Find the child branch of F0 that contains the video.
+ * We will insert the docking wrapper before this branch so we keep the DOM
+ * order reasonable and avoid disrupting siblings that are not part of the video.
+ */
+function findVideoBranch(f0: HTMLElement, video: HTMLVideoElement): HTMLElement | null {
+  let current: HTMLElement = video;
+  while (current.parentElement && current.parentElement !== f0) {
+    current = current.parentElement;
+  }
+  return current.parentElement === f0 ? current : null;
+}
+
+/**
  * Create the two-wrapper docking structure around the video.
  * - `outerWrapper` is the container that will hold the video box + panel.
  * - `videoWrapper` contains the video and all overlay controls.
+ *
+ * The wrapper is anchored to F0 (the video's real layout box) instead of the
+ * video's immediate parent. This avoids the wrapper inheriting a wider positioned
+ * ancestor and accidentally making the panel overlap the video or the site's
+ * sidebar.
  */
 export function createDockingWrapper(video: HTMLVideoElement): DockingWrappers {
   const outerWrapper = document.createElement('div');
@@ -48,9 +102,13 @@ export function createDockingWrapper(video: HTMLVideoElement): DockingWrappers {
   const videoWrapper = document.createElement('div');
   videoWrapper.setAttribute('data-testid', VIDEO_WRAPPER_TESTID);
 
-  const parent = video.parentElement;
-  if (parent) {
-    parent.insertBefore(outerWrapper, video);
+  const f0 = findVideoLayoutBox(video);
+  const videoBranch = f0 ? findVideoBranch(f0, video) : null;
+  const target = f0 || video.parentElement;
+  const insertBefore = videoBranch || video;
+
+  if (target) {
+    target.insertBefore(outerWrapper, insertBefore);
     outerWrapper.appendChild(videoWrapper);
     videoWrapper.appendChild(video);
   }
@@ -99,15 +157,16 @@ function stopVideoStyleGuard(video: HTMLVideoElement): void {
 }
 
 /**
- * Show panel in docked layout: shrink video to make room inside the parent.
+ * Show panel in docked layout: shrink video wrapper to make room inside the parent.
  *
- * In-flow video: flex layout. Video wrapper takes `calc(100% - 280px)`, panel is
- * `280px`. Both stay inside `outerWrapper` which is the same width as the parent.
+ * In-flow video: flex layout. Video wrapper 70%, panel 30%. Both stay inside
+ * `outerWrapper` which is the same width as the parent.
  *
  * Out-of-flow video (e.g. art-player absolute): absolute-docked layout. The
  * `outerWrapper` fills the nearest positioned ancestor (the video's player box),
- * video is resized to `calc(100% - 280px)` of that box, and panel occupies the
- * right 280px. No overflow, no fixed viewport pinning.
+ * video wrapper is pinned to 70% of that box, and panel occupies the right 30%.
+ * The video itself fills the video wrapper, so the overlay never extends into
+ * the panel area.
  */
 export function showPanelDocked(
   outerWrapper: HTMLDivElement,
@@ -144,8 +203,8 @@ function applyFlexLayout(
   mobile: boolean,
 ): void {
   videoWrapper.style.position = 'relative';
-  videoWrapper.style.flex = mobile ? `0 0 ${MOBILE_VIDEO_RATIO}` : '1 1 auto';
-  videoWrapper.style.width = mobile ? '100%' : `calc(100% - ${PANEL_WIDTH}px)`;
+  videoWrapper.style.flex = mobile ? `0 0 ${MOBILE_VIDEO_RATIO}` : `0 0 ${DESKTOP_VIDEO_RATIO}`;
+  videoWrapper.style.width = mobile ? '100%' : 'auto';
   videoWrapper.style.height = mobile ? MOBILE_VIDEO_RATIO : '100%';
   videoWrapper.style.minWidth = '0';
   videoWrapper.style.minHeight = '0';
@@ -162,8 +221,8 @@ function applyFlexLayout(
   panel.style.top = 'auto';
   panel.style.left = 'auto';
   panel.style.bottom = 'auto';
-  panel.style.flex = mobile ? `0 0 ${MOBILE_PANEL_RATIO}` : '0 0 auto';
-  panel.style.width = mobile ? '100%' : `${PANEL_WIDTH}px`;
+  panel.style.flex = mobile ? `0 0 ${MOBILE_PANEL_RATIO}` : `0 0 ${DESKTOP_PANEL_RATIO}`;
+  panel.style.width = mobile ? '100%' : 'auto';
   panel.style.height = mobile ? MOBILE_PANEL_RATIO : 'auto';
   panel.style.maxHeight = '100%';
   panel.style.display = 'flex';
@@ -177,9 +236,12 @@ function applyAbsoluteDockedLayout(
   panel: HTMLDivElement,
   mobile: boolean,
 ): void {
-  videoWrapper.style.position = 'static';
-  videoWrapper.style.flex = mobile ? `0 0 ${MOBILE_VIDEO_RATIO}` : '1 1 auto';
-  videoWrapper.style.width = mobile ? '100%' : `calc(100% - ${PANEL_WIDTH}px)`;
+  videoWrapper.style.position = 'absolute';
+  videoWrapper.style.left = '0';
+  videoWrapper.style.top = '0';
+  videoWrapper.style.right = 'auto';
+  videoWrapper.style.bottom = 'auto';
+  videoWrapper.style.width = mobile ? '100%' : DESKTOP_VIDEO_RATIO;
   videoWrapper.style.height = mobile ? MOBILE_VIDEO_RATIO : '100%';
   videoWrapper.style.minWidth = '0';
   videoWrapper.style.minHeight = '0';
@@ -191,23 +253,13 @@ function applyAbsoluteDockedLayout(
     const observer = videoStyleObservers.get(video);
     observer?.disconnect();
 
-    if (mobile) {
-      video.style.setProperty('position', 'absolute', 'important');
-      video.style.setProperty('left', '0', 'important');
-      video.style.setProperty('top', '0', 'important');
-      video.style.setProperty('right', 'auto', 'important');
-      video.style.setProperty('bottom', 'auto', 'important');
-      video.style.setProperty('width', '100%', 'important');
-      video.style.setProperty('height', MOBILE_VIDEO_RATIO, 'important');
-    } else {
-      video.style.setProperty('position', 'absolute', 'important');
-      video.style.setProperty('left', '0', 'important');
-      video.style.setProperty('top', '0', 'important');
-      video.style.setProperty('right', 'auto', 'important');
-      video.style.setProperty('bottom', 'auto', 'important');
-      video.style.setProperty('width', `calc(100% - ${PANEL_WIDTH}px)`, 'important');
-      video.style.setProperty('height', '100%', 'important');
-    }
+    video.style.setProperty('position', 'absolute', 'important');
+    video.style.setProperty('left', '0', 'important');
+    video.style.setProperty('top', '0', 'important');
+    video.style.setProperty('right', 'auto', 'important');
+    video.style.setProperty('bottom', 'auto', 'important');
+    video.style.setProperty('width', '100%', 'important');
+    video.style.setProperty('height', '100%', 'important');
     video.style.setProperty('max-width', 'none', 'important');
     video.style.setProperty('max-height', 'none', 'important');
     video.style.setProperty('min-width', '0', 'important');
@@ -219,31 +271,17 @@ function applyAbsoluteDockedLayout(
   applyVideoStyles();
   startVideoStyleGuard(video, applyVideoStyles);
 
-  if (mobile) {
-    panel.style.position = 'absolute';
-    panel.style.left = '0';
-    panel.style.right = 'auto';
-    panel.style.top = 'auto';
-    panel.style.bottom = '0';
-    panel.style.width = '100%';
-    panel.style.height = MOBILE_PANEL_RATIO;
-    panel.style.maxHeight = 'none';
-    panel.style.flex = '0 0 auto';
-    panel.style.display = 'flex';
-    panel.style.alignSelf = '';
-  } else {
-    panel.style.position = 'absolute';
-    panel.style.left = 'auto';
-    panel.style.right = '0';
-    panel.style.top = '0';
-    panel.style.bottom = '0';
-    panel.style.width = `${PANEL_WIDTH}px`;
-    panel.style.height = 'auto';
-    panel.style.maxHeight = 'none';
-    panel.style.flex = '0 0 auto';
-    panel.style.display = 'flex';
-    panel.style.alignSelf = '';
-  }
+  panel.style.position = 'absolute';
+  panel.style.left = mobile ? '0' : DESKTOP_VIDEO_RATIO;
+  panel.style.right = 'auto';
+  panel.style.top = mobile ? 'auto' : '0';
+  panel.style.bottom = mobile ? '0' : 'auto';
+  panel.style.width = mobile ? '100%' : DESKTOP_PANEL_RATIO;
+  panel.style.height = mobile ? MOBILE_PANEL_RATIO : '100%';
+  panel.style.maxHeight = 'none';
+  panel.style.flex = '0 0 auto';
+  panel.style.display = 'flex';
+  panel.style.alignSelf = '';
 }
 
 /**
@@ -269,6 +307,10 @@ export function hidePanelDocked(
 
   videoWrapper.style.position = '';
   videoWrapper.style.flex = '';
+  videoWrapper.style.left = '';
+  videoWrapper.style.top = '';
+  videoWrapper.style.right = '';
+  videoWrapper.style.bottom = '';
   videoWrapper.style.width = '100%';
   videoWrapper.style.height = 'auto';
   videoWrapper.style.minWidth = '';
@@ -297,7 +339,7 @@ export function hidePanelDocked(
   panel.style.left = '';
   panel.style.bottom = '';
   panel.style.flex = '';
-  panel.style.width = `${PANEL_WIDTH}px`;
+  panel.style.width = '280px';
   panel.style.height = 'auto';
   panel.style.maxHeight = '100%';
   panel.style.display = 'none';

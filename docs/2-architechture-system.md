@@ -151,7 +151,7 @@ src/
 | `content/subtitleDragDrop.ts` | subtitleParser, types | subtitleImport, (future overlay) | File read + parse: readFileAsText, handleFileDrop |
 | `content/subtitleImport.ts` | subtitleDragDrop, types | (future overlay) | Import button: createImportButton (top-left, avoids toggle overlap), handleFileSelect |
 | `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types | (future overlay) | Orchestrator: SubtitleOverlayController (sync → overlay wiring) |
-| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: createDockingWrapper (returns `{outerWrapper, videoWrapper}`), showPanelDocked, hidePanelDocked, movePanelToOuterWrapper (flex shrink when video in-flow; absolute-docked layout with MutationObserver-style guard when video absolute/fixed) |
+| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: createDockingWrapper anchors to F0 (farthest ancestor matching the video's rendered width), showPanelDocked, hidePanelDocked, movePanelToOuterWrapper (70/30 split; absolute-docked with MutationObserver guard for out-of-flow players) |
 | `content/subtitleAutoLoad.ts` | — | (future overlay) | Auto-load decision + override validation: shouldAutoLoad, validateOverride |
 | `content/subtitleTrackDropdown.ts` | types (SrtCue) | (future overlay) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
 | `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | (future panel) | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
