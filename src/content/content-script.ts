@@ -13,6 +13,11 @@ import {
   scrollToCue,
   seekToCue,
 } from './subtitlePanel';
+import {
+  createDockingWrapper,
+  showPanelDocked,
+  hidePanelDocked,
+} from './subtitleDocking';
 import { handleShortcutKey } from './subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
 import type { OverlayConfig } from '../types/subtitle';
@@ -74,6 +79,11 @@ async function loadShortcuts(): Promise<KeyboardShortcut[]> {
 }
 
 function initSubtitleOverlay(video: HTMLVideoElement): void {
+  // Direction C: wrap video in a docking container so panel can be placed beside it.
+  // ponytail: wrapper must exist before controller init so overlay/import/toggle/panel
+  // all share the same parent (avoids moving elements later).
+  const dockingWrapper = createDockingWrapper(video);
+
   const controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG);
   controller.init();
 
@@ -93,11 +103,15 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   panel = createPanel(video);
   toggleBtn = createToggleButton(video);
 
-  // Wire toggle button → show/hide panel
+  // Wire toggle button → show/hide panel (docked layout shrinks video when open)
   toggleBtn.addEventListener('click', () => {
     panelVisible = !panelVisible;
-    if (panel) {
-      panel.style.display = panelVisible ? 'flex' : 'none';
+    if (panel && toggleBtn) {
+      if (panelVisible) {
+        showPanelDocked(dockingWrapper, video, panel);
+      } else {
+        hidePanelDocked(dockingWrapper, video, panel);
+      }
     }
   });
 
@@ -105,7 +119,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   const closeBtn = panel.querySelector('[data-testid="panel-close"]');
   closeBtn?.addEventListener('click', () => {
     panelVisible = false;
-    if (panel) panel.style.display = 'none';
+    if (panel && toggleBtn) {
+      hidePanelDocked(dockingWrapper, video, panel);
+    }
   });
 
   // Wire drag handle → switch position left/right on double-click
@@ -176,7 +192,13 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       }
       case 'toggle-panel': {
         panelVisible = !panelVisible;
-        if (panel) panel.style.display = panelVisible ? 'flex' : 'none';
+        if (panel) {
+          if (panelVisible) {
+            showPanelDocked(dockingWrapper, video, panel);
+          } else {
+            hidePanelDocked(dockingWrapper, video, panel);
+          }
+        }
         break;
       }
     }
@@ -212,9 +234,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
           bilingualCues = bilingualResult.cues;
           if (panel) {
             renderCueListLazy(panel, bilingualCues);
-            // Auto-show panel after subtitle load
+            // Auto-show panel after subtitle load (docked layout)
             panelVisible = true;
-            panel.style.display = 'flex';
+            showPanelDocked(dockingWrapper, video, panel);
           }
         }
         showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);
@@ -258,9 +280,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         bilingualCues = bilingualResult.cues;
         if (panel) {
           renderCueListLazy(panel, bilingualCues);
-          // Auto-show panel after subtitle load
+          // Auto-show panel after subtitle load (docked layout)
           panelVisible = true;
-          panel.style.display = 'flex';
+          showPanelDocked(dockingWrapper, video, panel);
         }
       }
       showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);
@@ -270,12 +292,24 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   });
 }
 
-// Find video element and init overlay (defer until DOM ready)
+// Find video element and init overlay (defer until DOM ready, observe SPA late mounts)
 function findAndInitOverlay(): void {
   const video = document.querySelector('video');
   if (video) {
     initSubtitleOverlay(video);
+    return;
   }
+
+  // SPA: video may be rendered after DOMContentLoaded. Observe body until it appears.
+  // ponytail: disconnect as soon as video is found to avoid unnecessary mutation work.
+  const observer = new MutationObserver(() => {
+    const v = document.querySelector('video');
+    if (v) {
+      observer.disconnect();
+      initSubtitleOverlay(v);
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 if (document.readyState === 'loading') {

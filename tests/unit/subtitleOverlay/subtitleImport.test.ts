@@ -43,11 +43,12 @@ describe('subtitleImport', () => {
       expect(button.getAttribute('data-testid')).toBe('subtitle-import-button');
     });
 
-    it('should position at top-right of video', () => {
+    it('should position at top-left of video to avoid toggle overlap', () => {
       const button = createImportButton(video, defaultConfig);
       expect(button.style.position).toBe('absolute');
       expect(button.style.top).toBe('8px');
-      expect(button.style.right).toBe('8px');
+      expect(button.style.left).toBe('8px');
+      expect(button.style.right).toBe('');
     });
 
     it('should have high z-index to avoid being covered', () => {

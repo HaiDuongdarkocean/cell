@@ -38,10 +38,10 @@ export function createImportButton(video: HTMLVideoElement, _config: OverlayConf
   fileInput.style.cursor = 'pointer';
   label.appendChild(fileInput);
 
-  // Position: top-right of video
+  // Position: top-left of video (toggle button occupies top-right)
   label.style.position = 'absolute';
   label.style.top = '8px';
-  label.style.right = '8px';
+  label.style.left = '8px';
   label.style.zIndex = '999999';
   label.style.padding = '4px 8px';
   label.style.fontSize = '12px';
