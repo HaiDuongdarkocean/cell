@@ -26,6 +26,11 @@ export const MOBILE_PANEL_RATIO = '40%';
 export const FULLSCREEN_VIDEO_RATIO = '70%';
 export const FULLSCREEN_PANEL_RATIO = '30%';
 
+/** Width of the draggable resize handle between video and panel (px). */
+export const RESIZE_HANDLE_WIDTH = 8;
+/** Class name for the resize handle element. */
+export const RESIZE_HANDLE_CLASS = 'vd-subtitle-resize-handle';
+
 /** Testid marker for the outer docking wrapper. */
 export const DOCKING_WRAPPER_TESTID = 'subtitle-docking-wrapper';
 /** Testid marker for the inner video wrapper. */
@@ -103,6 +108,371 @@ export function setupDocking(video: HTMLVideoElement): DockingContext {
 /** Detect mobile/narrow viewport based on window width. */
 export function isMobileViewport(): boolean {
   return typeof window !== 'undefined' && window.innerWidth <= DESKTOP_BREAKPOINT;
+}
+
+/**
+ * Check whether the fullscreen element can host a flex layout.
+ * A <video> element is a void/replaced element and cannot contain rendered
+ * siblings, so side-by-side is impossible there. Any other HTMLElement is
+ * treated as a container.
+ */
+function isContainerFullscreenElement(fsElement: Element): boolean {
+  return fsElement instanceof HTMLElement && fsElement.tagName !== 'VIDEO';
+}
+
+/** Find the <video> element inside the fullscreen element. */
+function findVideoInFullscreen(fsElement: Element): HTMLVideoElement | null {
+  return fsElement.querySelector('video');
+}
+
+/**
+ * Find player UI elements that need to be constrained to the video area.
+ * We target the known art-player layer classes and any absolutely positioned
+ * direct children of the fullscreen element that span the full viewport.
+ */
+function findPlayerUiElements(fsElement: HTMLElement): HTMLElement[] {
+  const selectors = [
+    '.art-bottom',
+    '.art-layers',
+    '.art-mask',
+    '.art-subtitle',
+    '.art-danmuku',
+    '.art-poster',
+    '.art-loading',
+    '.art-notice',
+    '.art-settings',
+    '.art-info',
+    '.art-contextmenus',
+    '.art-state',
+  ];
+  const artElements = selectors
+    .flatMap((selector) => Array.from(fsElement.querySelectorAll(selector)))
+    .filter((el): el is HTMLElement => el instanceof HTMLElement);
+
+  // Also catch any direct absolute children that span full width/height.
+  const absoluteChildren = Array.from(fsElement.children).filter((el): el is HTMLElement => {
+    if (!(el instanceof HTMLElement)) return false;
+    const style = getComputedStyle(el);
+    const spansFull =
+      style.position === 'absolute' &&
+      (parseFloat(style.width) >= fsElement.clientWidth - 1 ||
+        parseFloat(style.height) >= fsElement.clientHeight - 1);
+    return spansFull && !el.classList.contains(RESIZE_HANDLE_CLASS);
+  });
+
+  return [...new Set([...artElements, ...absoluteChildren])];
+}
+
+/** Saved inline styles for a single element. */
+interface SavedElementStyles {
+  el: HTMLElement;
+  cssText: string;
+}
+
+/**
+ * Common state for any resize-draggable split layout (normal or fullscreen).
+ * The container is the flex parent; leftEl is the video/player side, rightEl
+ * is the panel. ratio is the video fraction (0.2–0.8).
+ */
+interface ResizeState {
+  container: HTMLElement;
+  leftEl: HTMLElement;
+  rightEl: HTMLElement;
+  handle: HTMLElement;
+  ratio: number;
+  isVertical: boolean;
+  /** Optional callback invoked after ratio is applied (e.g. constrain UI). */
+  onRatioApplied?: () => void;
+}
+
+/** Saved state for an active fullscreen side-by-side layout. */
+interface FullscreenSideBySideState extends ResizeState {
+  fsElement: HTMLElement;
+  video: HTMLVideoElement;
+  savedPanelStyles: { parent: HTMLElement | null; cssText: string };
+  savedFsCssText: string;
+  savedVideoCssText: string;
+  savedUiStyles: SavedElementStyles[];
+}
+
+/** The currently active resize-draggable layout (normal or fullscreen). */
+let activeResizeState: ResizeState | null = null;
+
+/** The currently active fullscreen side-by-side layout, if any. */
+let activeFullscreenSideBySide: FullscreenSideBySideState | null = null;
+
+/**
+ * Persisted split ratio from the last fullscreen side-by-side session.
+ * Kept separate from the active state so it survives hide/show cycles.
+ */
+let lastFullscreenRatio: number | null = null;
+
+/**
+ * Persisted split ratio from the last normal docked session.
+ * Kept separate from the active state so it survives hide/show cycles.
+ */
+let lastNormalRatio: number | null = null;
+
+/** Remove a resize handle from its parent, if it still exists. */
+function removeResizeHandle(handle: HTMLElement): void {
+  handle.parentElement?.removeChild(handle);
+}
+
+/** Clean up resize-handle drag listeners on the document. */
+function removeResizeListeners(): void {
+  document.removeEventListener('mousemove', onResizeMouseMove);
+  document.removeEventListener('mouseup', onResizeMouseUp);
+  document.removeEventListener('touchmove', onResizeTouchMove);
+  document.removeEventListener('touchend', onResizeTouchEnd);
+}
+
+/** Create a resize handle element between video and panel. */
+function createResizeHandle(isVertical: boolean): HTMLElement {
+  const handle = document.createElement('div');
+  handle.className = RESIZE_HANDLE_CLASS;
+  handle.style.flex = `0 0 ${RESIZE_HANDLE_WIDTH}px`;
+  handle.style.cursor = isVertical ? 'ns-resize' : 'ew-resize';
+  handle.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+  handle.style.zIndex = '2147483647';
+  if (isVertical) {
+    handle.style.width = '100%';
+    handle.style.height = `${RESIZE_HANDLE_WIDTH}px`;
+  } else {
+    handle.style.width = `${RESIZE_HANDLE_WIDTH}px`;
+    handle.style.height = '100%';
+  }
+  return handle;
+}
+
+/** Calculate the current video ratio from an active drag position. */
+function calculateDragRatio(
+  state: ResizeState,
+  clientPos: number,
+): number {
+  const { container, isVertical } = state;
+  const rect = container.getBoundingClientRect();
+  const total = isVertical ? rect.height : rect.width;
+  const offset = isVertical ? rect.top : rect.left;
+  const ratio = total > 0 ? (clientPos - offset) / total : 0.5;
+  // Clamp between 20% and 80% to keep both areas usable.
+  return Math.min(Math.max(ratio, 0.2), 0.8);
+}
+
+/** Apply the current ratio to the left element, handle, and right element. */
+function applySplitRatio(state: ResizeState): void {
+  const { leftEl, rightEl, ratio, isVertical } = state;
+  const leftBasis = `calc(${(ratio * 100).toFixed(2)}% - ${RESIZE_HANDLE_WIDTH / 2}px)`;
+  const rightBasis = `calc(${((1 - ratio) * 100).toFixed(2)}% - ${RESIZE_HANDLE_WIDTH / 2}px)`;
+  if (isVertical) {
+    leftEl.style.setProperty('flex', `0 0 ${leftBasis}`, 'important');
+    leftEl.style.setProperty('height', leftBasis, 'important');
+    rightEl.style.setProperty('flex', `0 0 ${rightBasis}`, 'important');
+    rightEl.style.setProperty('height', rightBasis, 'important');
+  } else {
+    leftEl.style.setProperty('flex', `0 0 ${leftBasis}`, 'important');
+    leftEl.style.setProperty('width', leftBasis, 'important');
+    rightEl.style.setProperty('flex', `0 0 ${rightBasis}`, 'important');
+    rightEl.style.setProperty('width', rightBasis, 'important');
+  }
+  state.onRatioApplied?.();
+  void state.container.offsetHeight;
+}
+
+/** Constrain player UI layers to the current video area (fullscreen only). */
+function constrainPlayerUiElements(state: FullscreenSideBySideState): void {
+  const { video, isVertical, savedUiStyles } = state;
+  const videoRect = video.getBoundingClientRect();
+  savedUiStyles.forEach(({ el }) => {
+    if (isVertical) {
+      const height = `${videoRect.height}px`;
+      el.style.setProperty('height', height, 'important');
+      el.style.setProperty('top', '0', 'important');
+      el.style.setProperty('bottom', 'auto', 'important');
+      el.style.setProperty('width', '100%', 'important');
+      el.style.setProperty('left', '0', 'important');
+    } else {
+      const width = `${videoRect.width}px`;
+      el.style.setProperty('width', width, 'important');
+      el.style.setProperty('left', '0', 'important');
+      el.style.setProperty('right', 'auto', 'important');
+      el.style.setProperty('top', '0', 'important');
+      el.style.setProperty('height', '100%', 'important');
+    }
+  });
+}
+
+/** Restore saved UI styles. */
+function restorePlayerUiElements(state: FullscreenSideBySideState): void {
+  const { savedUiStyles } = state;
+  savedUiStyles.forEach(({ el, cssText }) => {
+    el.style.cssText = cssText;
+  });
+}
+
+function onResizeMouseMove(e: MouseEvent): void {
+  if (!activeResizeState) return;
+  const ratio = calculateDragRatio(activeResizeState, e.clientX);
+  activeResizeState.ratio = ratio;
+  if (activeFullscreenSideBySide) lastFullscreenRatio = ratio;
+  else lastNormalRatio = ratio;
+  applySplitRatio(activeResizeState);
+}
+
+function onResizeMouseUp(): void {
+  removeResizeListeners();
+}
+
+function onResizeTouchMove(e: TouchEvent): void {
+  if (!activeResizeState || e.touches.length === 0) return;
+  const touch = e.touches[0];
+  const pos = activeResizeState.isVertical ? touch.clientY : touch.clientX;
+  const ratio = calculateDragRatio(activeResizeState, pos);
+  activeResizeState.ratio = ratio;
+  if (activeFullscreenSideBySide) lastFullscreenRatio = ratio;
+  else lastNormalRatio = ratio;
+  applySplitRatio(activeResizeState);
+}
+
+function onResizeTouchEnd(): void {
+  removeResizeListeners();
+}
+
+function startResizeDrag(e: MouseEvent | TouchEvent): void {
+  e.preventDefault();
+  if (!activeFullscreenSideBySide) return;
+  removeResizeListeners();
+  document.addEventListener('mousemove', onResizeMouseMove);
+  document.addEventListener('mouseup', onResizeMouseUp);
+  document.addEventListener('touchmove', onResizeTouchMove, { passive: false });
+  document.addEventListener('touchend', onResizeTouchEnd);
+}
+
+/**
+ * Apply the panel as a side-by-side flex layout inside the fullscreen element.
+ * Video takes the video ratio, panel takes the panel ratio, separated by a
+ * draggable handle. Player UI layers are constrained to the video area.
+ */
+function applyFullscreenSideBySide(
+  panel: HTMLElement,
+  fsElement: HTMLElement,
+  savedStyles: { parent: HTMLElement | null; cssText: string } | null,
+): { parent: HTMLElement | null; cssText: string } | null {
+  const video = findVideoInFullscreen(fsElement);
+  if (!video) {
+    // Fallback to overlay if there is no video inside the fullscreen element.
+    return applyFullscreenOverlay(panel, fsElement, savedStyles);
+  }
+
+  // Save the very first panel state before any fullscreen styling is applied.
+  const savedPanelStyles = savedStyles ?? {
+    parent: panel.parentElement,
+    cssText: panel.style.cssText,
+  };
+
+  // Move panel into the fullscreen element.
+  if (panel.parentElement !== fsElement) {
+    fsElement.appendChild(panel);
+  }
+
+  const isVertical = isMobileViewport();
+  const defaultRatio = isVertical ? 0.6 : 0.7;
+  const ratio = lastFullscreenRatio ?? defaultRatio;
+
+  const handle = createResizeHandle(isVertical);
+  fsElement.insertBefore(handle, panel);
+
+  const uiElements = findPlayerUiElements(fsElement);
+  const savedUiStyles: SavedElementStyles[] = uiElements.map((el) => ({
+    el,
+    cssText: el.style.cssText,
+  }));
+
+  activeFullscreenSideBySide = {
+    container: fsElement,
+    leftEl: video,
+    rightEl: panel,
+    handle,
+    ratio,
+    isVertical,
+    onRatioApplied: () => constrainPlayerUiElements(activeFullscreenSideBySide!),
+    fsElement,
+    video,
+    savedPanelStyles,
+    savedFsCssText: fsElement.style.cssText,
+    savedVideoCssText: video.style.cssText,
+    savedUiStyles,
+  };
+  activeResizeState = activeFullscreenSideBySide;
+
+  // Set up the fullscreen container as a flex box.
+  fsElement.style.setProperty('display', 'flex', 'important');
+  fsElement.style.setProperty('flex-direction', isVertical ? 'column' : 'row', 'important');
+  fsElement.style.setProperty('align-items', 'stretch', 'important');
+  fsElement.style.setProperty('justify-content', 'flex-start', 'important');
+  fsElement.style.setProperty('box-sizing', 'border-box', 'important');
+
+  // Make the video element participate in the flex layout.
+  video.style.setProperty('position', 'relative', 'important');
+  video.style.setProperty('flex', '0 0 0', 'important');
+  video.style.setProperty('min-width', '0', 'important');
+  video.style.setProperty('min-height', '0', 'important');
+  video.style.setProperty('box-sizing', 'border-box', 'important');
+  video.style.setProperty('aspect-ratio', 'auto', 'important');
+
+  // Reset any absolute/floating panel styles, then set it as a flex item.
+  panel.style.cssText = '';
+  panel.style.setProperty('position', 'relative', 'important');
+  panel.style.setProperty('flex', '0 0 0', 'important');
+  panel.style.setProperty('min-width', '0', 'important');
+  panel.style.setProperty('min-height', '0', 'important');
+  panel.style.setProperty('box-sizing', 'border-box', 'important');
+  panel.style.setProperty('overflow', 'hidden', 'important');
+  panel.style.setProperty('display', 'flex', 'important');
+  panel.style.setProperty('flex-direction', 'column', 'important');
+  panel.style.setProperty('align-self', 'stretch', 'important');
+  panel.style.setProperty('border-radius', '0', 'important');
+  panel.style.setProperty('max-height', 'none', 'important');
+  panel.setAttribute('data-docking-mode', 'flex');
+
+  const panelBody = panel.querySelector('[data-testid="panel-body"]') as HTMLElement | null;
+  if (panelBody) {
+    panelBody.style.setProperty('max-height', 'none', 'important');
+  }
+
+  applySplitRatio(activeFullscreenSideBySide);
+
+  handle.addEventListener('mousedown', startResizeDrag);
+  handle.addEventListener('touchstart', startResizeDrag, { passive: false });
+
+  return savedPanelStyles;
+}
+
+/**
+ * Restore the panel from fullscreen side-by-side to its saved parent/styles.
+ */
+function restoreFullscreenSideBySide(): void {
+  if (!activeFullscreenSideBySide) return;
+
+  const { fsElement, video, rightEl: panel, handle, savedPanelStyles, savedFsCssText, savedVideoCssText } =
+    activeFullscreenSideBySide;
+
+  handle.removeEventListener('mousedown', startResizeDrag);
+  handle.removeEventListener('touchstart', startResizeDrag);
+  removeResizeListeners();
+  removeResizeHandle(handle);
+
+  restorePlayerUiElements(activeFullscreenSideBySide);
+
+  fsElement.style.cssText = savedFsCssText;
+  video.style.cssText = savedVideoCssText;
+
+  if (savedPanelStyles.parent && panel.parentElement !== savedPanelStyles.parent) {
+    savedPanelStyles.parent.appendChild(panel);
+  }
+  panel.style.cssText = savedPanelStyles.cssText;
+
+  activeFullscreenSideBySide = null;
+  activeResizeState = null;
 }
 
 /**
@@ -188,11 +558,17 @@ export function showPanelDocked(
 ): { parent: HTMLElement | null; cssText: string } | null {
   const fsElement = document.fullscreenElement;
   if (fsElement && fsElement !== f0) {
-    // We are in fullscreen on the player (or another element). Overlay the panel.
+    // We are in fullscreen on the player (or another element). Use side-by-side
+    // flex layout if the fullscreen element is a container; otherwise fall back
+    // to the fixed overlay.
+    if (isContainerFullscreenElement(fsElement)) {
+      return applyFullscreenSideBySide(panel, fsElement as HTMLElement, savedStyles ?? null);
+    }
     return applyFullscreenOverlay(panel, fsElement, savedStyles ?? null);
   }
 
   const mobile = isMobileViewport();
+  const isVertical = mobile;
   panel.setAttribute('data-docking-mode', 'flex');
 
   // Preserve F0's natural height so the video does not shrink vertically when
@@ -202,18 +578,15 @@ export function showPanelDocked(
   f0.style.height = `${f0.getBoundingClientRect().height}px`;
 
   f0.style.display = 'flex';
-  f0.style.flexDirection = mobile ? 'column' : 'row';
+  f0.style.flexDirection = isVertical ? 'column' : 'row';
   f0.style.alignItems = 'stretch';
   f0.style.boxSizing = 'border-box';
 
-  playerContainer.style.flex = mobile
-    ? `0 0 ${MOBILE_VIDEO_RATIO}`
-    : `0 0 ${DESKTOP_VIDEO_RATIO}`;
   playerContainer.style.minWidth = '0';
   playerContainer.style.minHeight = '0';
   playerContainer.style.boxSizing = 'border-box';
   // Fill the preserved F0 height instead of letting aspect-ratio decide.
-  playerContainer.style.height = mobile ? MOBILE_VIDEO_RATIO : '100%';
+  playerContainer.style.height = isVertical ? '' : '100%';
   playerContainer.style.setProperty('aspect-ratio', 'auto', 'important');
 
   // Panel becomes a flex sibling filling the remaining space.
@@ -225,9 +598,7 @@ export function showPanelDocked(
   panel.style.top = 'auto';
   panel.style.left = 'auto';
   panel.style.bottom = 'auto';
-  panel.style.flex = mobile ? `0 0 ${MOBILE_PANEL_RATIO}` : `0 0 ${DESKTOP_PANEL_RATIO}`;
-  panel.style.width = mobile ? '100%' : 'auto';
-  panel.style.height = mobile ? MOBILE_PANEL_RATIO : '100%';
+  panel.style.width = isVertical ? '100%' : 'auto';
   panel.style.maxHeight = 'none';
   panel.style.minWidth = '0';
   panel.style.minHeight = '0';
@@ -243,6 +614,30 @@ export function showPanelDocked(
   if (panelBody) {
     panelBody.style.maxHeight = 'none';
   }
+
+  // Insert a draggable resize handle between playerContainer and panel.
+  // Remove any stale handle first (e.g. from a previous show without hide).
+  const staleHandle = f0.querySelector(`.${RESIZE_HANDLE_CLASS}`);
+  if (staleHandle) staleHandle.remove();
+
+  const defaultRatio = isVertical ? 0.6 : 0.7;
+  const ratio = lastNormalRatio ?? defaultRatio;
+  const handle = createResizeHandle(isVertical);
+  f0.insertBefore(handle, panel);
+
+  activeResizeState = {
+    container: f0,
+    leftEl: playerContainer,
+    rightEl: panel,
+    handle,
+    ratio,
+    isVertical,
+  };
+
+  applySplitRatio(activeResizeState);
+
+  handle.addEventListener('mousedown', startResizeDrag);
+  handle.addEventListener('touchstart', startResizeDrag, { passive: false });
 
   return null;
 }
@@ -262,15 +657,28 @@ export function hidePanelDocked(
 ): void {
   const fsElement = document.fullscreenElement;
   if (fsElement && fsElement !== f0) {
-    // Fullscreen mode: just hide the panel. Keep it in the fullscreen element.
-    // `savedStyles` is intentionally unused here — it is owned by the caller
-    // (content-script) which passes it back to showPanelDocked on reopen.
+    // Fullscreen mode: restore the natural fullscreen layout (video 100%) and
+    // hide the panel. If side-by-side is active, tear it down; otherwise just
+    // hide the overlay.
     void savedStyles;
+    if (activeFullscreenSideBySide) {
+      restoreFullscreenSideBySide();
+    }
     panel.style.display = 'none';
     return;
   }
 
   panel.removeAttribute('data-docking-mode');
+
+  // Remove the resize handle and clear drag state (normal mode only).
+  if (activeResizeState && !activeFullscreenSideBySide) {
+    const { handle } = activeResizeState;
+    handle.removeEventListener('mousedown', startResizeDrag);
+    handle.removeEventListener('touchstart', startResizeDrag);
+    removeResizeListeners();
+    removeResizeHandle(handle);
+    activeResizeState = null;
+  }
 
   f0.style.display = '';
   f0.style.flexDirection = '';
@@ -283,6 +691,7 @@ export function hidePanelDocked(
   playerContainer.style.minHeight = '';
   playerContainer.style.boxSizing = '';
   playerContainer.style.height = '';
+  playerContainer.style.width = '';
   playerContainer.style.removeProperty('aspect-ratio');
 
   // Restore panel to its hidden floating state.
@@ -373,35 +782,25 @@ export function exitFullscreenDocked(
     return;
   }
 
-  // Clear fullscreen styles so the browser can reflow to natural size before
-  // showPanelDocked captures it. Otherwise we lock the collapsing transition
-  // height and the layout stays broken.
-  f0.style.display = '';
-  f0.style.flexDirection = '';
-  f0.style.alignItems = '';
-  f0.style.boxSizing = '';
-  f0.style.height = '';
-
-  playerContainer.style.flex = '';
-  playerContainer.style.minWidth = '';
-  playerContainer.style.minHeight = '';
-  playerContainer.style.boxSizing = '';
-  playerContainer.style.height = '';
-  playerContainer.style.removeProperty('aspect-ratio');
-
-  // Force reflow so the next measurement sees the natural post-fullscreen size.
-  void f0.offsetHeight;
-
+  // Reset panel to floating state first so its leftover fullscreen styles
+  // (display:flex, height:100%, max-height:none, align-self:stretch) don't
+  // inflate F0's auto height during the reflow. hidePanelDocked also clears
+  // F0 + playerContainer inline styles and forces a reflow via getBoundingClientRect
+  // in showPanelDocked, so the captured F0 height is the natural post-fullscreen
+  // size, not one inflated by stale panel styles.
+  hidePanelDocked(f0, playerContainer, panel);
   showPanelDocked(f0, playerContainer, panel);
 }
 
 /**
- * When any element enters fullscreen (the video player, not F0), overlay the
- * subtitle panel on top of the fullscreen content (right side, 30% width).
+ * When any element enters fullscreen (the video player, not F0), place the
+ * subtitle panel beside the video in a side-by-side flex layout. If the
+ * fullscreen element is a <video> element (which cannot host rendered siblings),
+ * fall back to the fixed overlay approach.
  *
  * This is generic: it uses `document.fullscreenElement` directly instead of
  * hardcoding the art-player class, so it works on any site that puts the video
- * in fullscreen via the native Fullscreen API.
+ * container in fullscreen via the native Fullscreen API.
  *
  * Why this approach is needed:
  * 1. Content scripts run in an isolated world — can't override
@@ -412,7 +811,7 @@ export function exitFullscreenDocked(
  *    time fullscreenchange fires.
  *
  * So we let the player's element be fullscreen, move the panel INTO it as a
- * fixed-position overlay, and restore it when fullscreen exits.
+ * flex item, and restore it when fullscreen exits.
  *
  * Returns a cleanup function that removes the listeners.
  */
@@ -430,14 +829,21 @@ export function setupFullscreenHandlers(
 
     if (fsEl && fsEl !== f0) {
       // Some element other than F0 entered fullscreen (e.g. the native player).
-      // Only overlay if the panel is visible.
+      // Only layout if the panel is visible.
       if (!isPanelVisible()) return;
 
-      // Apply the overlay and save the original state only once.
-      savedPanelStyles = applyFullscreenOverlay(panel, fsEl, savedPanelStyles);
+      if (isContainerFullscreenElement(fsEl)) {
+        // Container fullscreen: use side-by-side flex layout.
+        savedPanelStyles = applyFullscreenSideBySide(panel, fsEl as HTMLElement, savedPanelStyles) ?? savedPanelStyles;
+      } else {
+        // <video> fullscreen: fallback to fixed overlay.
+        savedPanelStyles = applyFullscreenOverlay(panel, fsEl, savedPanelStyles);
+      }
     } else if (fsEl === null) {
       // Exited fullscreen: restore the panel to its original parent and styles.
-      if (savedPanelStyles) {
+      if (activeFullscreenSideBySide) {
+        restoreFullscreenSideBySide();
+      } else if (savedPanelStyles) {
         restoreFullscreenOverlay(panel, savedPanelStyles);
         savedPanelStyles = null;
       }
@@ -453,7 +859,9 @@ export function setupFullscreenHandlers(
     if (cleaned) return;
     cleaned = true;
     // If still in fullscreen, restore panel to original parent.
-    if (savedPanelStyles) {
+    if (activeFullscreenSideBySide) {
+      restoreFullscreenSideBySide();
+    } else if (savedPanelStyles) {
       restoreFullscreenOverlay(panel, savedPanelStyles);
       savedPanelStyles = null;
     }

@@ -12,6 +12,7 @@ import {
   MOBILE_PANEL_RATIO,
   FULLSCREEN_VIDEO_RATIO,
   FULLSCREEN_PANEL_RATIO,
+  RESIZE_HANDLE_WIDTH,
 } from '@/content/subtitleDocking';
 
 function mockRect(el: HTMLElement, rect: Partial<DOMRect>): void {
@@ -146,21 +147,23 @@ describe('subtitleDocking', () => {
       expect(f0.style.flexDirection).toBe('row');
       expect(f0.style.boxSizing).toBe('border-box');
       expect(f0.style.height).toBe(`${f0.getBoundingClientRect().height}px`);
-      expect(playerContainer.style.flex).toBe(`0 0 ${DESKTOP_VIDEO_RATIO}`);
+      // Resize handle splits the ratio: calc(70% - 4px) / calc(30% - 4px).
+      expect(playerContainer.style.flex).toBe(`0 0 calc(${DESKTOP_VIDEO_RATIO} - 4px)`);
       expect(playerContainer.style.minWidth).toBe('0');
       expect(playerContainer.style.boxSizing).toBe('border-box');
-      expect(playerContainer.style.height).toBe('100%');
       expect(playerContainer.style.getPropertyValue('aspect-ratio')).toBe('auto');
-      expect(panel.style.flex).toBe(`0 0 ${DESKTOP_PANEL_RATIO}`);
+      expect(panel.style.flex).toBe(`0 0 calc(${DESKTOP_PANEL_RATIO} - 4px)`);
       expect(panel.style.display).toBe('flex');
       expect(panel.style.position).toBe('relative');
       expect(panel.style.alignSelf).toBe('stretch');
       expect(panel.style.minWidth).toBe('0');
       expect(panel.style.minHeight).toBe('0');
-      expect(panel.style.height).toBe('100%');
       expect(panel.style.overflow).toBe('hidden');
       expect(panel.style.boxSizing).toBe('border-box');
       expect(panel.getAttribute('data-docking-mode')).toBe('flex');
+      // Resize handle should be present in F0.
+      const handle = f0.querySelector('.vd-subtitle-resize-handle');
+      expect(handle).toBeTruthy();
       const panelBody = panel.querySelector('[data-testid="panel-body"]');
       expect(panelBody).toBeTruthy();
       expect((panelBody as HTMLElement).style.maxHeight).toBe('none');
@@ -177,10 +180,9 @@ describe('subtitleDocking', () => {
       showPanelDocked(f0, playerContainer, panel);
 
       expect(f0.style.flexDirection).toBe('column');
-      expect(playerContainer.style.flex).toBe(`0 0 ${MOBILE_VIDEO_RATIO}`);
-      expect(panel.style.flex).toBe(`0 0 ${MOBILE_PANEL_RATIO}`);
+      expect(playerContainer.style.flex).toBe(`0 0 calc(${MOBILE_VIDEO_RATIO} - 4px)`);
+      expect(panel.style.flex).toBe(`0 0 calc(${MOBILE_PANEL_RATIO} - 4px)`);
       expect(panel.style.width).toBe('100%');
-      expect(panel.style.height).toBe(MOBILE_PANEL_RATIO);
       expect(panel.getAttribute('data-docking-mode')).toBe('flex');
     });
   });
@@ -269,8 +271,8 @@ describe('subtitleDocking', () => {
       exitFullscreenDocked(f0, playerContainer, panel, true);
 
       expect(playerContainer.classList.contains('art-fullscreen')).toBe(false);
-      expect(playerContainer.style.flex).toBe(`0 0 ${DESKTOP_VIDEO_RATIO}`);
-      expect(panel.style.flex).toBe(`0 0 ${DESKTOP_PANEL_RATIO}`);
+      expect(playerContainer.style.flex).toBe(`0 0 calc(${DESKTOP_VIDEO_RATIO} - 4px)`);
+      expect(panel.style.flex).toBe(`0 0 calc(${DESKTOP_PANEL_RATIO} - 4px)`);
       expect(panel.getAttribute('data-docking-mode')).toBe('flex');
     });
 
@@ -385,6 +387,132 @@ describe('subtitleDocking', () => {
 
       // Panel should be restored to F0
       expect(panel.parentElement).toBe(f0);
+
+      cleanup();
+    });
+
+    it('lays out panel side-by-side when fullscreen element is a container with video', () => {
+      const container = video.parentElement!;
+      // Wrap video in an inner container so playerContainer != video.
+      const wrapper = document.createElement('div');
+      wrapper.setAttribute('data-testid', 'video-wrapper');
+      container.appendChild(wrapper);
+      wrapper.appendChild(video);
+      mockRect(video, { width: 300, height: 200 });
+      mockRect(container, { width: 300, height: 250 });
+      mockRect(wrapper, { width: 300, height: 250 });
+      const { f0, playerContainer } = setupDocking(video);
+      f0.appendChild(panel);
+      showPanelDocked(f0, playerContainer, panel);
+
+      // Create a container fullscreen element and move the video inside it.
+      const fsContainer = document.createElement('div');
+      fsContainer.className = 'art-video-player';
+      document.body.appendChild(fsContainer);
+      fsContainer.appendChild(video);
+
+      const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
+
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        get: () => fsContainer,
+      });
+      document.dispatchEvent(new Event('fullscreenchange'));
+
+      // Panel should be moved into the fullscreen container.
+      expect(panel.parentElement).toBe(fsContainer);
+      // Fullscreen container should be a flex row.
+      expect(fsContainer.style.display).toBe('flex');
+      expect(fsContainer.style.flexDirection).toBe('row');
+      // Video should be a flex item.
+      expect(video.style.position).toBe('relative');
+      expect(video.style.flex).toContain('0 0');
+      // Panel should be a flex item.
+      expect(panel.style.position).toBe('relative');
+      expect(panel.style.flex).toContain('0 0');
+      expect(panel.getAttribute('data-docking-mode')).toBe('flex');
+      // Resize handle should exist between video and panel.
+      const handle = fsContainer.querySelector('.vd-subtitle-resize-handle');
+      expect(handle).toBeTruthy();
+      expect(handle!.parentElement).toBe(fsContainer);
+      expect((handle as HTMLElement).style.flex).toBe(`0 0 ${RESIZE_HANDLE_WIDTH}px`);
+
+      cleanup();
+    });
+
+    it('restores natural fullscreen layout when panel is hidden in side-by-side', () => {
+      const container = video.parentElement!;
+      const wrapper = document.createElement('div');
+      wrapper.setAttribute('data-testid', 'video-wrapper');
+      container.appendChild(wrapper);
+      wrapper.appendChild(video);
+      mockRect(video, { width: 300, height: 200 });
+      mockRect(container, { width: 300, height: 250 });
+      mockRect(wrapper, { width: 300, height: 250 });
+      const { f0, playerContainer } = setupDocking(video);
+      f0.appendChild(panel);
+      showPanelDocked(f0, playerContainer, panel);
+
+      const fsContainer = document.createElement('div');
+      fsContainer.className = 'art-video-player';
+      document.body.appendChild(fsContainer);
+      fsContainer.appendChild(video);
+
+      const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
+
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        get: () => fsContainer,
+      });
+      document.dispatchEvent(new Event('fullscreenchange'));
+
+      expect(panel.parentElement).toBe(fsContainer);
+      expect(fsContainer.style.display).toBe('flex');
+
+      // Hide panel while in fullscreen: video should return to 100%.
+      hidePanelDocked(f0, playerContainer, panel);
+
+      expect(panel.style.display).toBe('none');
+      // Flex layout should be torn down so the video can fill fullscreen.
+      expect(fsContainer.style.display).toBe('');
+      expect(video.style.flex).toBe('');
+
+      cleanup();
+    });
+
+    it('uses vertical column layout on mobile portrait', () => {
+      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 375 });
+      const container = video.parentElement!;
+      const wrapper = document.createElement('div');
+      wrapper.setAttribute('data-testid', 'video-wrapper');
+      container.appendChild(wrapper);
+      wrapper.appendChild(video);
+      mockRect(video, { width: 300, height: 200 });
+      mockRect(container, { width: 300, height: 250 });
+      mockRect(wrapper, { width: 300, height: 250 });
+      const { f0, playerContainer } = setupDocking(video);
+      f0.appendChild(panel);
+      showPanelDocked(f0, playerContainer, panel);
+
+      const fsContainer = document.createElement('div');
+      fsContainer.className = 'art-video-player';
+      document.body.appendChild(fsContainer);
+      fsContainer.appendChild(video);
+
+      const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
+
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        get: () => fsContainer,
+      });
+      document.dispatchEvent(new Event('fullscreenchange'));
+
+      expect(fsContainer.style.flexDirection).toBe('column');
+      expect(video.style.flex).toContain('0 0');
+      expect(panel.style.flex).toContain('0 0');
+      const handle = fsContainer.querySelector('.vd-subtitle-resize-handle') as HTMLElement;
+      expect(handle).toBeTruthy();
+      expect(handle.style.cursor).toBe('ns-resize');
 
       cleanup();
     });
