@@ -23,6 +23,8 @@ export const DESKTOP_VIDEO_RATIO = '70%';
 export const DESKTOP_PANEL_RATIO = '30%';
 export const MOBILE_VIDEO_RATIO = '60%';
 export const MOBILE_PANEL_RATIO = '40%';
+export const FULLSCREEN_VIDEO_RATIO = '70%';
+export const FULLSCREEN_PANEL_RATIO = '30%';
 
 /** Testid marker for the outer docking wrapper. */
 export const DOCKING_WRAPPER_TESTID = 'subtitle-docking-wrapper';
@@ -214,10 +216,164 @@ export function hidePanelDocked(
 }
 
 /**
+ * Apply docked 70/30 layout when F0 is the fullscreen element.
+ * In fullscreen the viewport is always wide, so we always use horizontal split.
+ */
+export function enterFullscreenDocked(
+  f0: HTMLElement,
+  playerContainer: HTMLElement,
+  panel: HTMLElement,
+): void {
+  // Ensure panel is a sibling of playerContainer inside F0.
+  movePanelToOuterWrapper(panel, f0);
+  panel.setAttribute('data-docking-mode', 'flex');
+
+  f0.style.display = 'flex';
+  f0.style.flexDirection = 'row';
+  f0.style.alignItems = 'stretch';
+  f0.style.boxSizing = 'border-box';
+  f0.style.height = '100%';
+
+  playerContainer.style.flex = `0 0 ${FULLSCREEN_VIDEO_RATIO}`;
+  playerContainer.style.minWidth = '0';
+  playerContainer.style.minHeight = '0';
+  playerContainer.style.boxSizing = 'border-box';
+  playerContainer.style.height = '100%';
+  playerContainer.style.setProperty('aspect-ratio', 'auto', 'important');
+
+  panel.style.position = 'relative';
+  panel.style.right = 'auto';
+  panel.style.top = 'auto';
+  panel.style.left = 'auto';
+  panel.style.bottom = 'auto';
+  panel.style.flex = `0 0 ${FULLSCREEN_PANEL_RATIO}`;
+  panel.style.width = 'auto';
+  panel.style.height = '100%';
+  panel.style.maxHeight = 'none';
+  panel.style.minWidth = '0';
+  panel.style.minHeight = '0';
+  panel.style.overflow = 'hidden';
+  panel.style.boxSizing = 'border-box';
+  panel.style.display = 'flex';
+  panel.style.alignSelf = 'stretch';
+
+  const panelBody = panel.querySelector('[data-testid="panel-body"]') as HTMLElement | null;
+  if (panelBody) {
+    panelBody.style.maxHeight = 'none';
+  }
+}
+
+/**
+ * Restore normal docked or hidden layout after exiting F0 fullscreen.
+ */
+export function exitFullscreenDocked(
+  f0: HTMLElement,
+  playerContainer: HTMLElement,
+  panel: HTMLElement,
+  panelVisible: boolean,
+): void {
+  playerContainer.classList.remove('art-fullscreen');
+
+  if (!panelVisible) {
+    hidePanelDocked(f0, playerContainer, panel);
+    return;
+  }
+
+  // Clear fullscreen styles so the browser can reflow to natural size before
+  // showPanelDocked captures it. Otherwise we lock the collapsing transition
+  // height and the layout stays broken.
+  f0.style.display = '';
+  f0.style.flexDirection = '';
+  f0.style.alignItems = '';
+  f0.style.boxSizing = '';
+  f0.style.height = '';
+
+  playerContainer.style.flex = '';
+  playerContainer.style.minWidth = '';
+  playerContainer.style.minHeight = '';
+  playerContainer.style.boxSizing = '';
+  playerContainer.style.height = '';
+  playerContainer.style.removeProperty('aspect-ratio');
+
+  // Force reflow so the next measurement sees the natural post-fullscreen size.
+  void f0.offsetHeight;
+
+  showPanelDocked(f0, playerContainer, panel);
+}
+
+/**
+ * Wire interceptors so the player's fullscreen button fullscreens F0 (the layout
+ * box) instead of the player itself. When the panel is open, F0 fullscreen
+ * preserves the 70/30 split. When the panel is closed, F0 fullscreen still
+ * works because the playerContainer fills the viewport.
+ *
+ * Returns a cleanup function that removes the listeners.
+ */
+export function setupFullscreenHandlers(
+  f0: HTMLElement,
+  playerContainer: HTMLElement,
+  panel: HTMLElement,
+  isPanelVisible: () => boolean,
+): () => void {
+  const fullscreenSelector = '.art-control-fullscreen';
+
+  const onPlayerClick = (e: MouseEvent) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (!target.closest(fullscreenSelector)) return;
+    // Only intercept when the panel is open — otherwise let the player's native
+    // fullscreen behavior handle it.
+    if (!isPanelVisible()) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    if (document.fullscreenElement === f0) {
+      document.exitFullscreen();
+    } else {
+      f0.requestFullscreen();
+    }
+  };
+
+  // Capture phase so we stop the player's own fullscreen handler before it runs.
+  playerContainer.addEventListener('click', onPlayerClick, true);
+
+  const onFullscreenChange = () => {
+    if (document.fullscreenElement === f0) {
+      // F0 is fullscreen: make player look fullscreen and layout the panel.
+      playerContainer.classList.add('art-fullscreen');
+      if (isPanelVisible()) {
+        enterFullscreenDocked(f0, playerContainer, panel);
+      } else {
+        // Panel hidden: maximize playerContainer inside F0 fullscreen.
+        playerContainer.style.flex = '0 0 100%';
+        playerContainer.style.minWidth = '0';
+        playerContainer.style.minHeight = '0';
+        playerContainer.style.boxSizing = 'border-box';
+        playerContainer.style.height = '100%';
+        playerContainer.style.setProperty('aspect-ratio', 'auto', 'important');
+        panel.style.display = 'none';
+      }
+    } else if (document.fullscreenElement === null) {
+      // Exited F0 fullscreen: restore normal docked or hidden state.
+      exitFullscreenDocked(f0, playerContainer, panel, isPanelVisible());
+    }
+  };
+
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+
+  return () => {
+    playerContainer.removeEventListener('click', onPlayerClick, true);
+    document.removeEventListener('fullscreenchange', onFullscreenChange);
+  };
+}
+
+/**
  * Move the panel into F0 so it becomes a sibling of playerContainer.
  * Required for flex layout to place the panel beside the video.
  */
-export function movePanelToOuterWrapper(panel: HTMLDivElement, f0: HTMLElement): void {
+export function movePanelToOuterWrapper(panel: HTMLElement, f0: HTMLElement): void {
   if (panel.parentElement !== f0) {
     f0.appendChild(panel);
   }

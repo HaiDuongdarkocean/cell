@@ -2,11 +2,16 @@ import {
   setupDocking,
   showPanelDocked,
   hidePanelDocked,
+  enterFullscreenDocked,
+  exitFullscreenDocked,
+  setupFullscreenHandlers,
   isMobileViewport,
   DESKTOP_VIDEO_RATIO,
   DESKTOP_PANEL_RATIO,
   MOBILE_VIDEO_RATIO,
   MOBILE_PANEL_RATIO,
+  FULLSCREEN_VIDEO_RATIO,
+  FULLSCREEN_PANEL_RATIO,
 } from '@/content/subtitleDocking';
 
 function mockRect(el: HTMLElement, rect: Partial<DOMRect>): void {
@@ -207,6 +212,158 @@ describe('subtitleDocking', () => {
       const panelBody = panel.querySelector('[data-testid="panel-body"]');
       expect(panelBody).toBeTruthy();
       expect((panelBody as HTMLElement).style.maxHeight).toBe('400px');
+    });
+  });
+
+  describe('enterFullscreenDocked', () => {
+    it('lays out 70% video and 30% panel horizontally in fullscreen', () => {
+      const container = video.parentElement!;
+      mockRect(video, { width: 300, height: 200 });
+      mockRect(container, { width: 300, height: 250 });
+      const { f0, playerContainer } = setupDocking(video);
+      f0.appendChild(panel);
+
+      enterFullscreenDocked(f0, playerContainer, panel);
+
+      expect(f0.style.display).toBe('flex');
+      expect(f0.style.flexDirection).toBe('row');
+      expect(f0.style.height).toBe('100%');
+      expect(playerContainer.style.flex).toBe(`0 0 ${FULLSCREEN_VIDEO_RATIO}`);
+      expect(playerContainer.style.height).toBe('100%');
+      expect(panel.style.flex).toBe(`0 0 ${FULLSCREEN_PANEL_RATIO}`);
+      expect(panel.style.height).toBe('100%');
+      expect(panel.style.display).toBe('flex');
+      expect(panel.getAttribute('data-docking-mode')).toBe('flex');
+    });
+
+    it('moves panel back to F0 if it was moved elsewhere', () => {
+      const container = video.parentElement!;
+      mockRect(video, { width: 300, height: 200 });
+      mockRect(container, { width: 300, height: 250 });
+      const { f0, playerContainer } = setupDocking(video);
+      document.body.appendChild(panel);
+      expect(panel.parentElement).not.toBe(f0);
+
+      enterFullscreenDocked(f0, playerContainer, panel);
+
+      expect(panel.parentElement).toBe(f0);
+    });
+  });
+
+  describe('exitFullscreenDocked', () => {
+    it('restores normal docked layout when panel is visible', () => {
+      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
+      const container = video.parentElement!;
+      mockRect(video, { width: 300, height: 200 });
+      mockRect(container, { width: 300, height: 250 });
+      const { f0, playerContainer } = setupDocking(video);
+      f0.appendChild(panel);
+      playerContainer.classList.add('art-fullscreen');
+
+      enterFullscreenDocked(f0, playerContainer, panel);
+      exitFullscreenDocked(f0, playerContainer, panel, true);
+
+      expect(playerContainer.classList.contains('art-fullscreen')).toBe(false);
+      expect(playerContainer.style.flex).toBe(`0 0 ${DESKTOP_VIDEO_RATIO}`);
+      expect(panel.style.flex).toBe(`0 0 ${DESKTOP_PANEL_RATIO}`);
+      expect(panel.getAttribute('data-docking-mode')).toBe('flex');
+    });
+
+    it('restores hidden layout when panel is not visible', () => {
+      const container = video.parentElement!;
+      mockRect(video, { width: 300, height: 200 });
+      mockRect(container, { width: 300, height: 250 });
+      const { f0, playerContainer } = setupDocking(video);
+      f0.appendChild(panel);
+      playerContainer.classList.add('art-fullscreen');
+
+      enterFullscreenDocked(f0, playerContainer, panel);
+      exitFullscreenDocked(f0, playerContainer, panel, false);
+
+      expect(playerContainer.classList.contains('art-fullscreen')).toBe(false);
+      expect(panel.style.display).toBe('none');
+      expect(panel.getAttribute('data-docking-mode')).toBe(null);
+    });
+  });
+
+  describe('setupFullscreenHandlers', () => {
+    it('intercepts art-player fullscreen button and requests F0 fullscreen', () => {
+      const container = video.parentElement!;
+      mockRect(video, { width: 300, height: 200 });
+      mockRect(container, { width: 300, height: 250 });
+      const { f0, playerContainer } = setupDocking(video);
+      f0.appendChild(panel);
+      showPanelDocked(f0, playerContainer, panel);
+
+      let requestedElement: Element | null = null;
+      f0.requestFullscreen = jest.fn().mockImplementation(() => {
+        requestedElement = f0;
+        return Promise.resolve();
+      });
+
+      const fsBtn = document.createElement('div');
+      fsBtn.className = 'art-control-fullscreen';
+      playerContainer.appendChild(fsBtn);
+
+      const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
+      fsBtn.click();
+
+      expect(requestedElement).toBe(f0);
+      cleanup();
+    });
+
+    it('lets fullscreen button default behavior when panel is closed', () => {
+      const container = video.parentElement!;
+      mockRect(video, { width: 300, height: 200 });
+      mockRect(container, { width: 300, height: 250 });
+      const { f0, playerContainer } = setupDocking(video);
+      f0.appendChild(panel);
+      hidePanelDocked(f0, playerContainer, panel);
+
+      let prevented = false;
+      const fsBtn = document.createElement('div');
+      fsBtn.className = 'art-control-fullscreen';
+      fsBtn.addEventListener('click', (e) => {
+        if (e.defaultPrevented) prevented = true;
+      });
+      playerContainer.appendChild(fsBtn);
+
+      const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => false);
+      fsBtn.click();
+
+      expect(prevented).toBe(false);
+      cleanup();
+    });
+
+    it('exits fullscreen when F0 is already fullscreen and button is clicked', () => {
+      const container = video.parentElement!;
+      mockRect(video, { width: 300, height: 200 });
+      mockRect(container, { width: 300, height: 250 });
+      const { f0, playerContainer } = setupDocking(video);
+      f0.appendChild(panel);
+      showPanelDocked(f0, playerContainer, panel);
+
+      let exited = false;
+      document.exitFullscreen = jest.fn().mockImplementation(() => {
+        exited = true;
+        return Promise.resolve();
+      });
+
+      Object.defineProperty(document, 'fullscreenElement', {
+        writable: true,
+        configurable: true,
+        value: f0,
+      });
+
+      const fsBtn = document.createElement('div');
+      fsBtn.className = 'art-control-fullscreen';
+      playerContainer.appendChild(fsBtn);
+
+      const cleanup = setupFullscreenHandlers(f0, playerContainer, panel, () => true);
+      fsBtn.click();
+
+      expect(exited).toBe(true);
+      cleanup();
     });
   });
 });

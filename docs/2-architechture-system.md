@@ -33,7 +33,7 @@ src/
 │   ├── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
 │   ├── subtitleBilingualParser.ts # Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, reuse parseSrt)
 │   ├── subtitlePanel.ts           # Floating panel UI: createPanel, renderCueList, createToggleButton, switchPanelPosition (draggable, bilingual layout)
-│   ├── subtitleDocking.ts         # Docking layout: setupDocking, showPanelDocked, hidePanelDocked, movePanelToOuterWrapper (find F0 + playerContainer; 70/30 split; no wrapper, no absolute, no z-index hack)
+│   ├── subtitleDocking.ts         # Docking layout: setupDocking, showPanelDocked, hidePanelDocked, enterFullscreenDocked, exitFullscreenDocked, setupFullscreenHandlers, movePanelToOuterWrapper (find F0 + playerContainer; 70/30 split; fullscreen intercept to F0; no wrapper, no absolute, no z-index hack)
 │   └── subtitleShortcuts.ts       # Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
@@ -201,7 +201,7 @@ tests/
 
 | File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
 |------|-----------|-----------------|--------------------------|
-| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, **subtitleDocking**, subtitleShortcuts, config | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + panel + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; setup docking via `setupDocking` (no wrapper, no DOM move) |
+| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, **subtitleDocking**, subtitleShortcuts, config | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + panel + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; setup docking via `setupDocking` (no wrapper, no DOM move); intercept player fullscreen via `setupFullscreenHandlers` (F0 fullscreen keeps 70/30 split) |
 | `content/pageScanner.ts` | urls (constants) | `content/content-script.ts` | Scan `<video>`, `<source>`, `<track>` |
 | `content/subtitleParser.ts` | srtParser, vttParser, types | (future overlay) | Adapter: parseSubtitle(content, format) → ParseResult |
 | `content/subtitleSync.ts` | types (SrtCue) | (future overlay) | Binary search: findCurrentLine(cues, currentTime) → index |
@@ -209,7 +209,7 @@ tests/
 | `content/subtitleDragDrop.ts` | subtitleParser, types | subtitleImport, (future overlay) | File read + parse: readFileAsText, handleFileDrop |
 | `content/subtitleImport.ts` | subtitleDragDrop, types | (future overlay) | Import button: createImportButton (top-left, avoids toggle overlap), handleFileSelect |
 | `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types | (future overlay) | Orchestrator: SubtitleOverlayController (sync → overlay wiring) |
-| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: setupDocking finds F0 + playerContainer; showPanelDocked, hidePanelDocked, movePanelToOuterWrapper (70/30 split; no wrapper, no absolute, no z-index hack) |
+| `content/subtitleDocking.ts` | — | content-script.ts | Docking layout: setupDocking finds F0 + playerContainer; showPanelDocked, hidePanelDocked, enterFullscreenDocked, exitFullscreenDocked, setupFullscreenHandlers, movePanelToOuterWrapper (70/30 split; fullscreen intercept to F0; no wrapper, no absolute, no z-index hack) |
 | `content/subtitleAutoLoad.ts` | — | (future overlay) | Auto-load decision + override validation: shouldAutoLoad, validateOverride |
 | `content/subtitleTrackDropdown.ts` | types (SrtCue) | (future overlay) | Multiple tracks dropdown: createTrackDropdown, updateTrackOptions |
 | `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | (future panel) | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
@@ -518,8 +518,12 @@ downloader.downloadM3u8Streaming(playlist)
 | `createImportButton` | `content/subtitleImport.ts` | (HTMLVideoElement, OverlayConfig) → HTMLButtonElement | (future overlay) | Create import button at top-left of video (avoids toggle overlap) |
 | `handleFileSelect` | `content/subtitleImport.ts` | File → Promise<ParseResult> | (future overlay) | Handle file from picker (reuses handleFileDrop) |
 | `setupDocking` | `content/subtitleDocking.ts` | HTMLVideoElement → `{f0, playerContainer}` | content-script.ts | Find video layout box (F0) and player branch; do NOT move video |
+| `setupDocking` | `content/subtitleDocking.ts` | HTMLVideoElement → `{f0, playerContainer}` | content-script.ts | Find video layout box (F0) and player branch; do NOT move video |
 | `showPanelDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement) → void | content-script.ts | Show panel beside video: flex row/column, shrink playerContainer, preserve F0 height, override aspect-ratio |
 | `hidePanelDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement) → void | content-script.ts | Hide panel and restore F0 + playerContainer layout |
+| `enterFullscreenDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement) → void | content-script.ts | Apply 70/30 split when F0 is the fullscreen element |
+| `exitFullscreenDocked` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement, panelVisible: boolean) → void | content-script.ts | Restore docked or hidden layout after exiting F0 fullscreen |
+| `setupFullscreenHandlers` | `content/subtitleDocking.ts` | (f0, playerContainer, HTMLDivElement, isPanelVisible: () => boolean) → () => void | content-script.ts | Intercept player fullscreen button; route fullscreen to F0 so panel stays beside video |
 | `movePanelToOuterWrapper` | `content/subtitleDocking.ts` | (HTMLDivElement, HTMLElement) → void | content-script.ts | Move panel into F0 so it becomes a sibling of playerContainer |
 | `SubtitleOverlayController` | `content/subtitleOverlay.ts` | class (HTMLVideoElement, OverlayConfig) | (future overlay) | Orchestrator: init/loadCues/clearCues/destroy, timeupdate → binary search → overlay |
 | `shouldAutoLoad` | `content/subtitleAutoLoad.ts` | AutoLoadConfig → boolean | (future overlay) | Auto-load decision: autoLoad enabled + target language set |

@@ -18,6 +18,7 @@ import {
   showPanelDocked,
   hidePanelDocked,
   movePanelToOuterWrapper,
+  setupFullscreenHandlers,
 } from './subtitleDocking';
 import { handleShortcutKey } from './subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
@@ -123,6 +124,12 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       }
     }
   });
+
+  // Intercept the player's fullscreen button so it fullscreens F0 instead of
+  // the player itself. This keeps the panel beside the video in fullscreen.
+  if (panel) {
+    setupFullscreenHandlers(f0, playerContainer, panel, () => panelVisible);
+  }
 
   // Wire close button in panel header → hide panel
   const closeBtn = panel.querySelector('[data-testid="panel-close"]');
