@@ -119,6 +119,27 @@ export function createDockingWrapper(video: HTMLVideoElement): DockingWrappers {
     target.insertBefore(outerWrapper, insertBefore);
     outerWrapper.appendChild(videoWrapper);
     videoWrapper.appendChild(video);
+
+    // Out-of-flow video (e.g. art-player absolute): the video is taken out of
+    // normal flow, so it does not contribute height to its containing block.
+    // If we leave outerWrapper/videoWrapper unsized, they collapse to height 0
+    // and the video disappears on page load (before the panel is ever toggled).
+    // Fill 100% of F0 so the wrappers become a real containing block matching
+    // the original art-player box. showPanelDocked will shrink videoWrapper to
+    // 70% when the panel opens; hidePanelDocked restores this 100% state.
+    if (isOutOfFlowVideo(video)) {
+      outerWrapper.style.position = 'absolute';
+      outerWrapper.style.width = '100%';
+      outerWrapper.style.height = '100%';
+      outerWrapper.style.top = '0';
+      outerWrapper.style.left = '0';
+      videoWrapper.style.width = '100%';
+      videoWrapper.style.height = '100%';
+      // art-player sets object-fit: cover which crops ultra-wide videos.
+      // Force contain so the full picture is visible (letterboxed, not cropped).
+      // !important because art-player's JS re-applies cover on resize.
+      video.style.setProperty('object-fit', 'contain', 'important');
+    }
   }
 
   return { outerWrapper, videoWrapper };
@@ -308,12 +329,18 @@ export function hidePanelDocked(
   }
   panel.removeAttribute('data-docking-mode');
 
+  // Out-of-flow video: outerWrapper must stay absolute + 100% to fill F0,
+  // otherwise it collapses (absolute video contributes no height).
+  // In-flow video: outerWrapper returns to static (normal flow).
+  const outOfFlow = video && isOutOfFlowVideo(video);
   outerWrapper.style.display = 'block';
-  outerWrapper.style.position = 'static';
+  outerWrapper.style.position = outOfFlow ? 'absolute' : 'static';
+  outerWrapper.style.width = outOfFlow ? '100%' : '';
+  outerWrapper.style.height = outOfFlow ? '100%' : '';
   outerWrapper.style.flexDirection = '';
   outerWrapper.style.alignItems = '';
-  outerWrapper.style.top = '';
-  outerWrapper.style.left = '';
+  outerWrapper.style.top = outOfFlow ? '0' : '';
+  outerWrapper.style.left = outOfFlow ? '0' : '';
 
   videoWrapper.style.position = '';
   videoWrapper.style.flex = '';
@@ -322,13 +349,19 @@ export function hidePanelDocked(
   videoWrapper.style.right = '';
   videoWrapper.style.bottom = '';
   videoWrapper.style.width = '100%';
-  videoWrapper.style.height = 'auto';
+  // Out-of-flow video (absolute) does not contribute height to its container.
+  // Use 100% so videoWrapper keeps F0's height; in-flow video uses 'auto' so
+  // the video's intrinsic height drives the wrapper height.
+  videoWrapper.style.height = video && isOutOfFlowVideo(video) ? '100%' : 'auto';
   videoWrapper.style.minWidth = '';
   videoWrapper.style.minHeight = '';
   videoWrapper.style.overflow = '';
 
   // Restore video to fill its original container. We only clear the inline styles
   // we set; the site's player CSS (or inline styles) will take over again.
+  // Must also clear transform + object-fit: applyAbsoluteDockedLayout sets them
+  // with !important to center the video inside the 70% wrapper. If left behind,
+  // translate(-50%, -50%) pushes the video out of the full-width wrapper.
   if (video) {
     video.style.removeProperty('position');
     video.style.removeProperty('left');
@@ -341,6 +374,10 @@ export function hidePanelDocked(
     video.style.removeProperty('max-height');
     video.style.removeProperty('min-width');
     video.style.removeProperty('min-height');
+    video.style.removeProperty('transform');
+    // Force contain (not cover) so ultra-wide videos show full picture.
+    // art-player defaults to cover which crops; we override on every restore.
+    video.style.setProperty('object-fit', 'contain', 'important');
   }
 
   panel.style.position = 'absolute';
