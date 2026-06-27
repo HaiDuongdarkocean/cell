@@ -21,9 +21,13 @@ export interface OverrideResult {
 
 import { parseSubtitle } from './subtitleParser';
 import { convertAssToSrt } from '@/lib/converters/assToSrt';
+import { MESSAGE_TYPES } from '@/constants/messages';
 import type { SrtCue } from '@/types/media';
 import type { SubtitleFormat, ParseResult } from '@/types/subtitle';
-import type { AutoLoadSubtitlesPayload } from '@/types/message';
+import type {
+  AutoLoadSubtitlesPayload,
+  FetchSubtitleContentResult,
+} from '@/types/message';
 
 /**
  * Decide whether auto-load should trigger.
@@ -87,35 +91,41 @@ export function formatFromUrl(url: string): SubtitleFormat {
 /**
  * Fetch + parse a subtitle by URL. Caches by URL — second call is a cache hit.
  * ASS/SSA → convert to SRT first (reuse `convertAssToSrt`).
+ *
+ * CORS fallback (spec F9, ADR-007 A7): if the content-script fetch fails
+ * (TypeError = CORS, or non-ok 403/404), retries via background
+ * `FETCH_SUBTITLE_CONTENT` (SW fetch is cross-origin allowed with host
+ * permission). `tabUrl` is passed so background can resolve relative URLs.
+ *
  * Returns ParseResult (success: false on fetch/parse failure, never throws).
  */
 export async function fetchAndParseSubtitle(
   url: string,
   format: SubtitleFormat,
+  tabUrl?: string,
 ): Promise<ParseResult> {
   const cached = subtitleCache.get(url);
   if (cached) {
     return { success: true, cues: cached.cues, format: cached.format as SubtitleFormat };
   }
 
-  let response: Response;
-  try {
-    response = await fetch(url);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { success: false, cues: [], format, error: `Fetch failed: ${msg}` };
-  }
-
-  if (!response.ok) {
-    return { success: false, cues: [], format, error: `HTTP ${response.status}` };
-  }
-
   let content: string;
   try {
-    content = await response.text();
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { success: false, cues: [], format, error: `Read body failed: ${msg}` };
+    const response = await fetch(url);
+    if (!response.ok) {
+      // Non-ok (403/404) → try background fallback before giving up.
+      content = await fetchViaBackground(url, tabUrl);
+    } else {
+      content = await response.text();
+    }
+  } catch {
+    // TypeError (CORS blocked) → background fallback.
+    try {
+      content = await fetchViaBackground(url, tabUrl);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, cues: [], format, error: `Fetch failed: ${msg}` };
+    }
   }
 
   // ASS/SSA → convert to SRT, then parse as SRT.
@@ -134,6 +144,21 @@ export async function fetchAndParseSubtitle(
   return result;
 }
 
+/**
+ * Fallback: ask background to fetch the subtitle (CORS bypass via SW).
+ * Throws on failure (caller catches + reports).
+ */
+async function fetchViaBackground(url: string, tabUrl?: string): Promise<string> {
+  const response = await chrome.runtime.sendMessage({
+    type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
+    payload: { url, tabUrl },
+  }) as { success?: boolean; data?: FetchSubtitleContentResult; error?: string } | undefined;
+  if (!response?.success || !response.data?.content) {
+    throw new Error(response?.error ?? 'background fetch returned no content');
+  }
+  return response.data.content;
+}
+
 /** Controller shape accepted by `handleAutoLoadSubtitles` (decoupled from SubtitleOverlayController). */
 export interface AutoLoadController {
   loadBilingualCues(targetCues: SrtCue[], nativeCues: SrtCue[]): void;
@@ -146,6 +171,8 @@ export interface AutoLoadDeps {
   readonly controller: AutoLoadController;
   readonly onPanelRender?: (targetCues: SrtCue[], nativeCues: SrtCue[]) => void;
   readonly onToast?: (message: string) => void;
+  /** Page URL for resolving relative subtitle URLs (CORS fallback, spec F9). */
+  readonly tabUrl?: string;
 }
 
 /**
@@ -165,8 +192,8 @@ export async function handleAutoLoadSubtitles(
   if (!target && !native) return;
 
   const [targetResult, nativeResult] = await Promise.all([
-    target ? fetchAndParseSubtitle(target.url, formatFromUrl(target.url)) : Promise.resolve(null),
-    native ? fetchAndParseSubtitle(native.url, formatFromUrl(native.url)) : Promise.resolve(null),
+    target ? fetchAndParseSubtitle(target.url, formatFromUrl(target.url), deps.tabUrl) : Promise.resolve(null),
+    native ? fetchAndParseSubtitle(native.url, formatFromUrl(native.url), deps.tabUrl) : Promise.resolve(null),
   ]);
 
   // Toast on fetch/parse failure (spec F8). Never log full URL (ADR-007 D8).

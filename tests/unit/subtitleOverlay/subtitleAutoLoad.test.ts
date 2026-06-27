@@ -12,6 +12,12 @@ import type { SubtitleForOverlayResult } from '@/types/message';
 const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 global.fetch = mockFetch;
 
+// Mock chrome.runtime.sendMessage for CORS fallback tests
+const mockSendMessage = jest.fn();
+(globalThis as unknown as { chrome: { runtime: { sendMessage: jest.Mock } } }).chrome = {
+  runtime: { sendMessage: mockSendMessage },
+};
+
 interface MockController {
   loadBilingualCues: jest.Mock;
   loadCues: jest.Mock;
@@ -120,6 +126,7 @@ describe('subtitleAutoLoad', () => {
   describe('fetchAndParseSubtitle', () => {
     beforeEach(() => {
       mockFetch.mockReset();
+      mockSendMessage.mockReset();
       clearAutoLoadCache();
     });
 
@@ -141,24 +148,64 @@ describe('subtitleAutoLoad', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
-    it('returns error on fetch failure (non-ok response)', async () => {
+    it('returns error when content-script 403 + background also fails', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 403,
         text: () => Promise.resolve(''),
       } as Response);
+      mockSendMessage.mockResolvedValueOnce({ success: false, error: 'HTTP 403' });
 
       const result = await fetchAndParseSubtitle('https://example.com/sub.en.srt', 'srt');
       expect(result.success).toBe(false);
-      expect(result.error).toMatch(/403/);
+      expect(result.error).toMatch(/background fetch/);
     });
 
-    it('returns error on network error', async () => {
+    it('returns error when content-script network error + background also fails', async () => {
       mockFetch.mockRejectedValueOnce(new Error('CORS blocked'));
+      mockSendMessage.mockResolvedValueOnce({ success: false, error: 'network down' });
 
       const result = await fetchAndParseSubtitle('https://example.com/sub.en.srt', 'srt');
       expect(result.success).toBe(false);
-      expect(result.error).toMatch(/CORS blocked/);
+      expect(result.error).toMatch(/network down/);
+    });
+
+    it('falls back to background FETCH_SUBTITLE_CONTENT on CORS error (TypeError)', async () => {
+      // First fetch throws TypeError (CORS) → background fallback.
+      mockFetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      mockSendMessage.mockResolvedValueOnce({
+        success: true,
+        data: { content: SAMPLE_SRT, finalUrl: 'https://example.com/sub.en.srt' },
+      });
+
+      const result = await fetchAndParseSubtitle('https://example.com/sub.en.srt', 'srt', 'https://example.com/page');
+      expect(result.success).toBe(true);
+      expect(result.cues).toHaveLength(1);
+      expect(mockSendMessage).toHaveBeenCalledWith({
+        type: 'FETCH_SUBTITLE_CONTENT',
+        payload: { url: 'https://example.com/sub.en.srt', tabUrl: 'https://example.com/page' },
+      });
+    });
+
+    it('falls back to background on non-ok response (403)', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 403, text: () => Promise.resolve('') } as Response);
+      mockSendMessage.mockResolvedValueOnce({
+        success: true,
+        data: { content: SAMPLE_SRT, finalUrl: 'https://example.com/sub.en.srt' },
+      });
+
+      const result = await fetchAndParseSubtitle('https://example.com/sub.en.srt', 'srt');
+      expect(result.success).toBe(true);
+      expect(result.cues).toHaveLength(1);
+    });
+
+    it('returns error when both content-script + background fetch fail', async () => {
+      mockFetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      mockSendMessage.mockResolvedValueOnce({ success: false, error: 'HTTP 403' });
+
+      const result = await fetchAndParseSubtitle('https://example.com/sub.en.srt', 'srt');
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/HTTP 403/);
     });
   });
 

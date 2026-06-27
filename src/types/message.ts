@@ -45,7 +45,8 @@ export type MessageType =
   | 'OFFSCREEN_PING'
   | 'PAGE_SCAN_RESULT'
   | 'AUTO_LOAD_SUBTITLES'
-  | 'REQUEST_AUTO_LOAD_SUBTITLES';
+  | 'REQUEST_AUTO_LOAD_SUBTITLES'
+  | 'FETCH_SUBTITLE_CONTENT';
 
 // === Message Request ===
 
@@ -245,6 +246,19 @@ export interface AutoLoadSubtitlesPayload {
  * (handles race: background pushed before content-script was ready). */
 export interface RequestAutoLoadSubtitlesPayload {
   readonly tabId: number;
+}
+
+/** Content-script → background: fetch subtitle content (CORS fallback).
+ * Background resolves relative URLs from `tabUrl` before fetching. */
+export interface FetchSubtitleContentPayload {
+  readonly url: string;
+  readonly tabUrl?: string;
+}
+
+/** Background → content-script: fetched subtitle text (or error). */
+export interface FetchSubtitleContentResult {
+  readonly content: string;
+  readonly finalUrl: string;
 }
 
 // === Typed Message Helpers ===

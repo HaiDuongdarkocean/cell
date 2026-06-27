@@ -54,6 +54,8 @@ import type {
   PageScanResultPayload,
   AutoLoadSubtitlesPayload,
   RequestAutoLoadSubtitlesPayload,
+  FetchSubtitleContentPayload,
+  FetchSubtitleContentResult,
   DownloadListResponse,
   ConvertTsToMp4V2Payload,
   ConvertTsToMp4V2ResultPayload,
@@ -611,6 +613,7 @@ export class BackgroundService {
     this.on(MESSAGE_TYPES.UPDATE_SUBTITLE_LANGUAGE, this.handleUpdateSubtitleLanguage);
     this.on(MESSAGE_TYPES.PAGE_SCAN_RESULT, this.handlePageScanResult);
     this.on(MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES, this.handleRequestAutoLoadSubtitles);
+    this.on(MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT, this.handleFetchSubtitleContent);
     this.on(MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE, this.handleConversionProgressUpdate);
   }
 
@@ -1484,6 +1487,47 @@ export class BackgroundService {
       console.warn(`REQUEST_AUTO_LOAD_SUBTITLES failed for tab ${tabId}: ${msg}`);
     }
     return { success: true };
+  };
+
+  /**
+   * FETCH_SUBTITLE_CONTENT: content-script asks background to fetch a subtitle
+   * URL it could not fetch itself (CORS/403). Background resolves relative URLs
+   * from `tabUrl` first, then fetches in the SW (cross-origin allowed with host
+   * permission, but no page cookie context — ponytail V1, ADR-007 A7).
+   * Returns the text content + final resolved URL.
+   */
+  private handleFetchSubtitleContent = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse<FetchSubtitleContentResult>> => {
+    const payload = request.payload as FetchSubtitleContentPayload;
+    const rawUrl = payload?.url;
+    if (!rawUrl) {
+      return { success: false, error: 'Missing url in FETCH_SUBTITLE_CONTENT' };
+    }
+
+    // Resolve relative URL against the page URL (tabUrl) if provided.
+    let finalUrl = rawUrl;
+    const tabUrl = payload.tabUrl;
+    if (tabUrl) {
+      try {
+        finalUrl = new URL(rawUrl, tabUrl).href;
+      } catch {
+        // If URL() throws, try the raw URL as-is.
+        finalUrl = rawUrl;
+      }
+    }
+
+    try {
+      const response = await fetch(finalUrl);
+      if (!response.ok) {
+        return { success: false, error: `HTTP ${response.status}` };
+      }
+      const content = await response.text();
+      return { success: true, data: { content, finalUrl } };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { success: false, error: `Background fetch failed: ${msg}` };
+    }
   };
 
   /**

@@ -336,6 +336,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       const payload = msg.payload as AutoLoadSubtitlesPayload;
       void handleAutoLoadSubtitles(payload, {
         controller,
+        tabUrl: window.location.href,
         onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
           bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
           if (panel) {

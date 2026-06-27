@@ -1711,4 +1711,77 @@ https://cdn.example.com/low.m3u8`;
     );
     expect(autoLoadCalls).toHaveLength(0);
   });
+
+  // --- FETCH_SUBTITLE_CONTENT (CORS fallback) ---
+
+  it('FETCH_SUBTITLE_CONTENT fetches + returns content', async () => {
+    // Mock global fetch for the background handler.
+    const mockGlobalFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve('1\n00:00:00,000 --> 00:00:01,000\nHello\n'),
+    }) as jest.MockedFunction<typeof fetch>;
+    (globalThis as unknown as { fetch: jest.Mock }).fetch = mockGlobalFetch;
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
+      payload: { url: 'https://example.com/sub.en.srt', tabUrl: 'https://example.com/page' },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+    expect(response.data?.content).toContain('Hello');
+    expect(response.data?.finalUrl).toBe('https://example.com/sub.en.srt');
+
+    delete (globalThis as unknown as { fetch?: jest.Mock }).fetch;
+  });
+
+  it('FETCH_SUBTITLE_CONTENT resolves relative URL against tabUrl', async () => {
+    const mockGlobalFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve('content'),
+    }) as jest.MockedFunction<typeof fetch>;
+    (globalThis as unknown as { fetch: jest.Mock }).fetch = mockGlobalFetch;
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
+      payload: { url: '/subs/sub.en.srt', tabUrl: 'https://example.com/watch' },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+    expect(mockGlobalFetch).toHaveBeenCalledWith('https://example.com/subs/sub.en.srt');
+
+    delete (globalThis as unknown as { fetch?: jest.Mock }).fetch;
+  });
+
+  it('FETCH_SUBTITLE_CONTENT returns error on missing url', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
+      payload: {},
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(false);
+    expect(response.error).toMatch(/url/i);
+  });
+
+  it('FETCH_SUBTITLE_CONTENT returns error on fetch failure', async () => {
+    const mockGlobalFetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      text: () => Promise.resolve(''),
+    }) as jest.MockedFunction<typeof fetch>;
+    (globalThis as unknown as { fetch: jest.Mock }).fetch = mockGlobalFetch;
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
+      payload: { url: 'https://example.com/sub.en.srt' },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(false);
+    expect(response.error).toMatch(/403/);
+
+    delete (globalThis as unknown as { fetch?: jest.Mock }).fetch;
+  });
 });
