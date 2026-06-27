@@ -165,7 +165,10 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     switch (action) {
       case 'prev-cue': {
         const currentMs = video.currentTime * 1000;
-        const prevCue = [...bilingualCues].reverse().find((c) => c.start < currentMs - 100);
+        // Find the last cue whose end is before current time — this skips the
+        // currently-playing cue and lands on the previous one. Using `end`
+        // instead of `start` avoids matching the current cue when seeking back.
+        const prevCue = [...bilingualCues].reverse().find((c) => c.end < currentMs);
         if (prevCue) {
           seekToCue(video, prevCue);
           if (panel) { highlightCue(panel, prevCue.index); scrollToCue(panel, prevCue.index); }
