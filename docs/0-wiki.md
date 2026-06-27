@@ -35,7 +35,9 @@ docs/           # Tài liệu dự án
 │   ├── auto-download-subtitle-catchup.md          # Auto-download subtitle catch-up
 │   ├── edge-app-window-leak.md                    # Edge app-window leak
 │   ├── flex-min-width-auto-overflow.md            # Flex min-width: auto overflow
+│   ├── fullscreen-target-shared-container.md      # Fullscreen target shared container
 │   ├── inline-style-leak-toggle-cycle.md          # Inline style leak across toggle cycles
+│   ├── measure-after-clearing-transition-styles.md # Measure after clearing transition styles
 │   ├── out-of-flow-wrapper-collapse.md            # Out-of-flow wrapper collapse
 │   ├── panel-body-mode-max-height.md              # Panel body mode max-height
 │   ├── parallel-fmp4-merge.md                     # Parallel fMP4 merge (tfdt offset)
@@ -46,6 +48,7 @@ docs/           # Tài liệu dự án
 ├── test-reports/                      # MCP browser test reports — "does it work in real browser"
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md
 │   ├── 2026-06-27-subtitle-panel-docking-mcp.md
+│   ├── 2026-06-27-subtitle-panel-fullscreen-mcp.md
 │   └── screenshot-after-fix.png
 ├── reference/                         # Hướng dẫn dùng tools — "how to use"
 │   ├── chrome-devtools-mcp.md

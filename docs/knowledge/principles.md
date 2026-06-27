@@ -172,19 +172,35 @@ Khi có 2 nguồn truth (state variable + DOM property), chúng phải sync ban 
 
 ---
 
-## Inline style leak across state transitions → every set must have matching remove
+## Fullscreen target shared container
 
 ### Nguyên lý
-Khi show/apply path set inline style với `!important`, hide/restore path PHẢI `removeProperty` (hoặc reset) từng property đó. `!important` styles survive across state transitions — browser không auto-clean. MutationObserver guard phải stop TRƯỚC khi remove, nếu không nó re-apply ngay lập tức.
+When multiple UI pieces must remain visible together in fullscreen, the fullscreen element must be their common ancestor, not the media element. Fullscreening only the media element leaves sibling UI floating outside the fullscreen layer or overlaying the video.
 
 ### Cases đã gặp
-- [inline-style-leak-toggle-cycle.md](inline-style-leak-toggle-cycle.md) — `applyAbsoluteDockedLayout` set `transform: translate(-50%,-50%) !important` + `object-fit: contain !important`, `hidePanelDocked` không remove → video jump ra ngoài sau toggle close. Fix: thêm `removeProperty('transform')` + set `object-fit: contain` trong restore path.
+- [fullscreen-target-shared-container.md](fullscreen-target-shared-container.md) — art-player fullscreen button targeted the video element, so the subtitle panel overlayed the video. Fix: intercept the button and request fullscreen on the shared layout box (F0), then lay out video 70% and panel 30%.
 
 ### Apply cho
-- Content script toggle cycles (show/hide panel, overlay, dock)
-- React imperative DOM mutation (useState + ref.style.setProperty)
-- Any show/hide pattern using `!important` to override site CSS
-- MutationObserver guard patterns (stop observer before removing guarded styles)
+- Video players with side panels (subtitle, playlist, chat, annotations)
+- Media players where controls/overlays must stay beside the video in fullscreen
+- Content scripts that inject sibling UI into a site's native player
+- Any fullscreen transition where the browser API targets a child, but a sibling must remain visible
+
+---
+
+## Measure after clearing transition styles
+
+### Nguyên lý
+When switching between layout modes that set conflicting inline styles, clear the previous mode's styles and force a reflow before measuring the "natural" size for the next mode. Measuring while old styles are still applied locks the transition/collapsed value and breaks the next mode.
+
+### Cases đã gặp
+- [measure-after-clearing-transition-styles.md](measure-after-clearing-transition-styles.md) — after exiting F0 fullscreen, `showPanelDocked` captured `f0.getBoundingClientRect().height` while fullscreen styles were still applied, locking a collapsed ~48px height. Fix: clear fullscreen styles, `void f0.offsetHeight`, then measure.
+
+### Apply cho
+- Content script mode switches (floating → docked → fullscreen)
+- Imperative DOM transitions that rely on inline style snapshots (e.g., lock height before flex resize)
+- Browser fullscreen API transitions where the element must return to natural flow
+- Any "capture natural size" step that follows a state with strong inline styles
 
 ---
 
