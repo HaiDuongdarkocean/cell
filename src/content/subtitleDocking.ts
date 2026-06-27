@@ -1,23 +1,21 @@
 /**
  * Docking layout manager for subtitle panel + video.
  *
- * Direction C: panel is hidden by default; when user toggles it, the video
- * container shrinks to make room for the panel inside the same parent container.
- * Desktop: video wrapper 70% width, panel 30% width (side-by-side).
- * Mobile: video wrapper 60% height, panel 40% height (stacked).
+ * Simplified approach: the video is NEVER moved out of its player container.
+ * We find the player's layout box (F0) and the child branch that holds the
+ * player (playerContainer). The panel is inserted as a sibling of
+ * playerContainer inside F0. When the panel opens, F0 becomes a flex row
+ * (or column on mobile): playerContainer shrinks to 70% (desktop) / 60%
+ * (mobile), panel takes the remaining 30% / 40%.
  *
- * This keeps the panel outside the video, and the subtitle overlay (which lives
- * inside the video wrapper) is never covered by the panel.
+ * This preserves the site's player DOM hierarchy (e.g. art-player controls
+ * stay above the video via their own z-index), so no z-index / pointer-events
+ * hacks are needed.
  *
- * DOM structure:
- *   outerWrapper (flex or absolute container when panel open)
- *     ├── videoWrapper (contains video + overlay + toggle + import + drag hint)
- *     └── panel (subtitle cue list, stretches to outerWrapper height)
- *
- * ponytail: two-wrapper structure keeps video and its controls in one box, and the
- * panel as a sibling. For out-of-flow players (e.g. art-player absolute video),
- * the outer wrapper is absolute to fill the nearest positioned ancestor so the
- * video wrapper can be pinned to 70% of that box and the panel to 30%.
+ * DOM structure (unchanged from the site):
+ *   F0 (layout box, e.g. div.w-[75%])
+ *     ├── playerContainer (e.g. .artplayer-app → .art-video-player → video + controls)
+ *     └── panel (subtitle cue list, inserted by us)
  */
 
 export const DESKTOP_BREAKPOINT = 768;
@@ -31,24 +29,22 @@ export const DOCKING_WRAPPER_TESTID = 'subtitle-docking-wrapper';
 /** Testid marker for the inner video wrapper. */
 export const VIDEO_WRAPPER_TESTID = 'subtitle-video-wrapper';
 
-/** Result of wrapping the video for docking. */
-export interface DockingWrappers {
-  outerWrapper: HTMLDivElement;
-  videoWrapper: HTMLDivElement;
+/** Docking context: the layout box (F0) and the player branch inside it. */
+export interface DockingContext {
+  /** F0 — the farthest ancestor whose width matches the video's width. */
+  f0: HTMLElement;
+  /** The direct child of F0 that contains the video (e.g. .artplayer-app). */
+  playerContainer: HTMLElement;
 }
 
 /**
  * Find the video's real layout box (F0).
  *
  * Walks up from the video and returns the *farthest* ancestor whose rendered
- * width matches the video's rendered width (within sub-pixel tolerance). The first
- * ancestor that no longer matches the video's width marks the boundary of the
- * video box, so the last width-matching ancestor is the real layout container.
- *
- * This is usually the site's player root (e.g. the `div.w-[75%]` inside
- * `.player-container` on themoviebox). Picking the farthest matching box lets the
- * subtitle wrapper occupy exactly the same width as the video, without inheriting
- * a wider parent container.
+ * width matches the video's rendered width (within sub-pixel tolerance). The
+ * first ancestor that no longer matches the video's width marks the boundary
+ * of the video box, so the last width-matching ancestor is the real layout
+ * container.
  */
 function findVideoLayoutBox(video: HTMLVideoElement): HTMLElement | null {
   const videoRect = video.getBoundingClientRect();
@@ -74,8 +70,7 @@ function findVideoLayoutBox(video: HTMLVideoElement): HTMLElement | null {
 
 /**
  * Find the child branch of F0 that contains the video.
- * We will insert the docking wrapper before this branch so we keep the DOM
- * order reasonable and avoid disrupting siblings that are not part of the video.
+ * This is the element we will shrink when the panel opens.
  */
 function findVideoBranch(f0: HTMLElement, video: HTMLVideoElement): HTMLElement | null {
   let current: HTMLElement = video;
@@ -86,67 +81,21 @@ function findVideoBranch(f0: HTMLElement, video: HTMLVideoElement): HTMLElement 
 }
 
 /**
- * Create the two-wrapper docking structure around the video.
- * - `outerWrapper` is the container that will hold the video box + panel.
- * - `videoWrapper` contains the video and all overlay controls.
- *
- * The wrapper is anchored to F0 (the video's real layout box) instead of the
- * video's immediate parent. This avoids the wrapper inheriting a wider positioned
- * ancestor and accidentally making the panel overlap the video or the site's
- * sidebar.
+ * Set up docking: find F0 and playerContainer. The video is NOT moved.
+ * Returns the layout box (f0) and the player branch (playerContainer) so the
+ * caller can insert the panel as a sibling of playerContainer inside f0.
  */
-export function createDockingWrapper(video: HTMLVideoElement): DockingWrappers {
-  const outerWrapper = document.createElement('div');
-  outerWrapper.setAttribute('data-testid', DOCKING_WRAPPER_TESTID);
-
-  const videoWrapper = document.createElement('div');
-  videoWrapper.setAttribute('data-testid', VIDEO_WRAPPER_TESTID);
-  // Ensure the video wrapper is a positioned containing block for the absolute
-  // video even before showPanelDocked runs; showPanelDocked may override this.
-  videoWrapper.style.position = 'relative';
-
+export function setupDocking(video: HTMLVideoElement): DockingContext {
   const f0 = findVideoLayoutBox(video);
-  const videoBranch = f0 ? findVideoBranch(f0, video) : null;
-  const target = f0 || video.parentElement;
-  const insertBefore = videoBranch || video;
+  const playerContainer = f0 ? findVideoBranch(f0, video) : null;
 
-  if (target) {
-    // Make F0 a positioned containing block so the absolute-docked outerWrapper
-    // fills exactly the F0 box instead of a wider positioned ancestor.
-    if (f0 && getComputedStyle(f0).position === 'static') {
-      f0.style.position = 'relative';
-    }
-    target.insertBefore(outerWrapper, insertBefore);
-    outerWrapper.appendChild(videoWrapper);
-    videoWrapper.appendChild(video);
-
-    // Out-of-flow video (e.g. art-player absolute): the video is taken out of
-    // normal flow, so it does not contribute height to its containing block.
-    // If we leave outerWrapper/videoWrapper unsized, they collapse to height 0
-    // and the video disappears on page load (before the panel is ever toggled).
-    // Fill 100% of F0 so the wrappers become a real containing block matching
-    // the original art-player box. showPanelDocked will shrink videoWrapper to
-    // 70% when the panel opens; hidePanelDocked restores this 100% state.
-    if (isOutOfFlowVideo(video)) {
-      outerWrapper.style.position = 'absolute';
-      outerWrapper.style.width = '100%';
-      outerWrapper.style.height = '100%';
-      outerWrapper.style.top = '0';
-      outerWrapper.style.left = '0';
-      videoWrapper.style.width = '100%';
-      videoWrapper.style.height = '100%';
-      // art-player sets object-fit: cover which crops ultra-wide videos.
-      // Force contain so the full picture is visible (letterboxed, not cropped).
-      // !important because art-player's JS re-applies cover on resize.
-      video.style.setProperty('object-fit', 'contain', 'important');
-      // Video is moved out of the art-player container and layered above it.
-      // Without pointer-events: none, the video blocks clicks on art-player
-      // controls (play/pause, progress bar) that live behind it.
-      video.style.setProperty('pointer-events', 'none', 'important');
-    }
+  if (f0 && playerContainer) {
+    return { f0, playerContainer };
   }
 
-  return { outerWrapper, videoWrapper };
+  // Fallback: use video's immediate parent as both f0 and playerContainer.
+  const fallback = video.parentElement ?? document.body;
+  return { f0: fallback, playerContainer: fallback };
 }
 
 /** Detect mobile/narrow viewport based on window width. */
@@ -154,101 +103,30 @@ export function isMobileViewport(): boolean {
   return typeof window !== 'undefined' && window.innerWidth <= DESKTOP_BREAKPOINT;
 }
 
-/** Detect whether the video is taken out of normal document flow (absolute/fixed). */
-function isOutOfFlowVideo(video: HTMLVideoElement): boolean {
-  const position = getComputedStyle(video).position;
-  return position === 'absolute' || position === 'fixed';
-}
-
 /**
- * Mutation observers that re-apply our required video styles when the site's player
- * overwrites them. Keyed by video element.
- */
-const videoStyleObservers = new WeakMap<HTMLVideoElement, MutationObserver>();
-
-/** Watch the video's style attribute and re-apply the required absolute-docked styles. */
-function startVideoStyleGuard(
-  video: HTMLVideoElement,
-  applyStyles: () => void,
-): void {
-  stopVideoStyleGuard(video);
-
-  const observer = new MutationObserver(() => {
-    applyStyles();
-  });
-  observer.observe(video, { attributes: true, attributeFilter: ['style'] });
-  videoStyleObservers.set(video, observer);
-}
-
-/** Stop guarding the video's style attribute. */
-function stopVideoStyleGuard(video: HTMLVideoElement): void {
-  const observer = videoStyleObservers.get(video);
-  if (observer) {
-    observer.disconnect();
-    videoStyleObservers.delete(video);
-  }
-}
-
-/**
- * Show panel in docked layout: shrink video wrapper to make room inside the parent.
- *
- * In-flow video: flex layout. Video wrapper 70%, panel 30%. Both stay inside
- * `outerWrapper` which is the same width as the parent.
- *
- * Out-of-flow video (e.g. art-player absolute): absolute-docked layout. F0 is
- * made `position: relative` so `outerWrapper` fills exactly the F0 box. The
- * video wrapper is pinned to 70% of that box, and panel occupies the right 30%.
- * The video keeps its aspect ratio (`height: auto`, `object-fit: contain`) so
- * it never overflows the video wrapper.
+ * Show panel in docked layout: shrink playerContainer to make room for panel.
+ * F0 becomes a flex container; playerContainer takes the video ratio, panel
+ * takes the panel ratio.
  */
 export function showPanelDocked(
-  outerWrapper: HTMLDivElement,
-  videoWrapper: HTMLDivElement,
-  video: HTMLVideoElement,
-  panel: HTMLDivElement,
+  f0: HTMLElement,
+  playerContainer: HTMLElement,
+  panel: HTMLElement,
 ): void {
   const mobile = isMobileViewport();
-  const outOfFlow = isOutOfFlowVideo(video);
-  panel.setAttribute('data-docking-mode', outOfFlow ? 'absolute-docked' : 'flex');
+  panel.setAttribute('data-docking-mode', 'flex');
 
-  // Reset any previous layout state.
-  outerWrapper.style.position = outOfFlow ? 'absolute' : 'relative';
-  outerWrapper.style.display = 'flex';
-  outerWrapper.style.flexDirection = mobile ? 'column' : 'row';
-  outerWrapper.style.width = '100%';
-  outerWrapper.style.height = '100%';
-  outerWrapper.style.top = '0';
-  outerWrapper.style.left = '0';
-  outerWrapper.style.alignItems = 'stretch';
+  f0.style.display = 'flex';
+  f0.style.flexDirection = mobile ? 'column' : 'row';
+  f0.style.alignItems = 'stretch';
 
-  if (outOfFlow) {
-    applyAbsoluteDockedLayout(videoWrapper, video, panel, mobile);
-  } else {
-    applyFlexLayout(videoWrapper, video, panel, mobile);
-  }
-}
+  playerContainer.style.flex = mobile
+    ? `0 0 ${MOBILE_VIDEO_RATIO}`
+    : `0 0 ${DESKTOP_VIDEO_RATIO}`;
+  playerContainer.style.minWidth = '0';
+  playerContainer.style.minHeight = '0';
 
-/** Flex layout for normal-flow video. */
-function applyFlexLayout(
-  videoWrapper: HTMLDivElement,
-  video: HTMLVideoElement,
-  panel: HTMLDivElement,
-  mobile: boolean,
-): void {
-  videoWrapper.style.position = 'relative';
-  videoWrapper.style.flex = mobile ? `0 0 ${MOBILE_VIDEO_RATIO}` : `0 0 ${DESKTOP_VIDEO_RATIO}`;
-  videoWrapper.style.width = mobile ? '100%' : 'auto';
-  videoWrapper.style.height = mobile ? MOBILE_VIDEO_RATIO : '100%';
-  videoWrapper.style.minWidth = '0';
-  videoWrapper.style.minHeight = '0';
-  videoWrapper.style.overflow = 'hidden';
-
-  video.style.width = '100%';
-  video.style.height = mobile ? '100%' : 'auto';
-  video.style.maxHeight = '100%';
-  video.style.minWidth = '0';
-  video.style.minHeight = '0';
-
+  // Panel becomes a flex sibling filling the remaining space.
   panel.style.position = 'relative';
   panel.style.right = 'auto';
   panel.style.top = 'auto';
@@ -257,137 +135,30 @@ function applyFlexLayout(
   panel.style.flex = mobile ? `0 0 ${MOBILE_PANEL_RATIO}` : `0 0 ${DESKTOP_PANEL_RATIO}`;
   panel.style.width = mobile ? '100%' : 'auto';
   panel.style.height = mobile ? MOBILE_PANEL_RATIO : 'auto';
-  panel.style.maxHeight = '100%';
+  panel.style.maxHeight = 'none';
   panel.style.display = 'flex';
   panel.style.alignSelf = 'stretch';
 }
 
-/** Absolute-docked layout for out-of-flow players (e.g. art-player). */
-function applyAbsoluteDockedLayout(
-  videoWrapper: HTMLDivElement,
-  video: HTMLVideoElement,
-  panel: HTMLDivElement,
-  mobile: boolean,
-): void {
-  videoWrapper.style.position = 'absolute';
-  videoWrapper.style.left = '0';
-  videoWrapper.style.top = '0';
-  videoWrapper.style.right = 'auto';
-  videoWrapper.style.bottom = 'auto';
-  videoWrapper.style.width = mobile ? '100%' : DESKTOP_VIDEO_RATIO;
-  videoWrapper.style.height = mobile ? MOBILE_VIDEO_RATIO : '100%';
-  videoWrapper.style.minWidth = '0';
-  videoWrapper.style.minHeight = '0';
-  videoWrapper.style.overflow = 'hidden';
-
-  // Use !important because the site's player (e.g. art-player) repeatedly sets
-  // its own inline styles for the video. Without !important our resize is lost.
-  const applyVideoStyles = () => {
-    const observer = videoStyleObservers.get(video);
-    observer?.disconnect();
-
-    video.style.setProperty('position', 'absolute', 'important');
-    video.style.setProperty('left', '50%', 'important');
-    video.style.setProperty('top', '50%', 'important');
-    video.style.setProperty('right', 'auto', 'important');
-    video.style.setProperty('bottom', 'auto', 'important');
-    video.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
-    video.style.setProperty('width', 'auto', 'important');
-    video.style.setProperty('height', 'auto', 'important');
-    video.style.setProperty('max-width', '100%', 'important');
-    video.style.setProperty('max-height', '100%', 'important');
-    video.style.setProperty('min-width', '0', 'important');
-    video.style.setProperty('min-height', '0', 'important');
-    video.style.setProperty('object-fit', 'contain', 'important');
-    // Ensure clicks reach the art-player controls that live behind the video.
-    video.style.setProperty('pointer-events', 'none', 'important');
-
-    observer?.observe(video, { attributes: true, attributeFilter: ['style'] });
-  };
-
-  applyVideoStyles();
-  startVideoStyleGuard(video, applyVideoStyles);
-
-  panel.style.position = 'absolute';
-  panel.style.left = mobile ? '0' : DESKTOP_VIDEO_RATIO;
-  panel.style.right = 'auto';
-  panel.style.top = mobile ? 'auto' : '0';
-  panel.style.bottom = mobile ? '0' : 'auto';
-  panel.style.width = mobile ? '100%' : DESKTOP_PANEL_RATIO;
-  panel.style.height = mobile ? MOBILE_PANEL_RATIO : '100%';
-  panel.style.maxHeight = 'none';
-  panel.style.flex = '0 0 auto';
-  panel.style.display = 'flex';
-  panel.style.alignSelf = '';
-}
-
 /**
- * Hide panel and restore video to its full container size.
+ * Hide panel and restore playerContainer to its full size.
  */
 export function hidePanelDocked(
-  outerWrapper: HTMLDivElement,
-  videoWrapper: HTMLDivElement,
-  panel: HTMLDivElement,
+  f0: HTMLElement,
+  playerContainer: HTMLElement,
+  panel: HTMLElement,
 ): void {
-  const video = videoWrapper.querySelector('video');
-  if (video) {
-    stopVideoStyleGuard(video);
-  }
   panel.removeAttribute('data-docking-mode');
 
-  // Out-of-flow video: outerWrapper must stay absolute + 100% to fill F0,
-  // otherwise it collapses (absolute video contributes no height).
-  // In-flow video: outerWrapper returns to static (normal flow).
-  const outOfFlow = video && isOutOfFlowVideo(video);
-  outerWrapper.style.display = 'block';
-  outerWrapper.style.position = outOfFlow ? 'absolute' : 'static';
-  outerWrapper.style.width = outOfFlow ? '100%' : '';
-  outerWrapper.style.height = outOfFlow ? '100%' : '';
-  outerWrapper.style.flexDirection = '';
-  outerWrapper.style.alignItems = '';
-  outerWrapper.style.top = outOfFlow ? '0' : '';
-  outerWrapper.style.left = outOfFlow ? '0' : '';
+  f0.style.display = '';
+  f0.style.flexDirection = '';
+  f0.style.alignItems = '';
 
-  videoWrapper.style.position = '';
-  videoWrapper.style.flex = '';
-  videoWrapper.style.left = '';
-  videoWrapper.style.top = '';
-  videoWrapper.style.right = '';
-  videoWrapper.style.bottom = '';
-  videoWrapper.style.width = '100%';
-  // Out-of-flow video (absolute) does not contribute height to its container.
-  // Use 100% so videoWrapper keeps F0's height; in-flow video uses 'auto' so
-  // the video's intrinsic height drives the wrapper height.
-  videoWrapper.style.height = video && isOutOfFlowVideo(video) ? '100%' : 'auto';
-  videoWrapper.style.minWidth = '';
-  videoWrapper.style.minHeight = '';
-  videoWrapper.style.overflow = '';
+  playerContainer.style.flex = '';
+  playerContainer.style.minWidth = '';
+  playerContainer.style.minHeight = '';
 
-  // Restore video to fill its original container. We only clear the inline styles
-  // we set; the site's player CSS (or inline styles) will take over again.
-  // Must also clear transform + object-fit: applyAbsoluteDockedLayout sets them
-  // with !important to center the video inside the 70% wrapper. If left behind,
-  // translate(-50%, -50%) pushes the video out of the full-width wrapper.
-  if (video) {
-    video.style.removeProperty('position');
-    video.style.removeProperty('left');
-    video.style.removeProperty('top');
-    video.style.removeProperty('right');
-    video.style.removeProperty('bottom');
-    video.style.removeProperty('width');
-    video.style.removeProperty('height');
-    video.style.removeProperty('max-width');
-    video.style.removeProperty('max-height');
-    video.style.removeProperty('min-width');
-    video.style.removeProperty('min-height');
-    video.style.removeProperty('transform');
-    // Force contain (not cover) so ultra-wide videos show full picture.
-    // art-player defaults to cover which crops; we override on every restore.
-    video.style.setProperty('object-fit', 'contain', 'important');
-    // Let clicks pass through to art-player controls behind the restored video.
-    video.style.setProperty('pointer-events', 'none', 'important');
-  }
-
+  // Restore panel to its hidden floating state.
   panel.style.position = 'absolute';
   panel.style.right = '0px';
   panel.style.top = '0px';
@@ -402,21 +173,11 @@ export function hidePanelDocked(
 }
 
 /**
- * Move an existing UI element into the video wrapper.
- * Useful for elements that were created before the two-wrapper structure existed.
+ * Move the panel into F0 so it becomes a sibling of playerContainer.
+ * Required for flex layout to place the panel beside the video.
  */
-export function moveElementIntoWrapper(element: HTMLElement, wrapper: HTMLElement): void {
-  if (element.parentElement !== wrapper) {
-    wrapper.appendChild(element);
-  }
-}
-
-/**
- * Move the panel from the video wrapper into the outer wrapper so it becomes a
- * sibling of the video box (required for flex layout).
- */
-export function movePanelToOuterWrapper(panel: HTMLDivElement, outerWrapper: HTMLDivElement): void {
-  if (panel.parentElement !== outerWrapper) {
-    outerWrapper.appendChild(panel);
+export function movePanelToOuterWrapper(panel: HTMLDivElement, f0: HTMLElement): void {
+  if (panel.parentElement !== f0) {
+    f0.appendChild(panel);
   }
 }

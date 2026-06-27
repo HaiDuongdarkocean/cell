@@ -14,7 +14,7 @@ import {
   seekToCue,
 } from './subtitlePanel';
 import {
-  createDockingWrapper,
+  setupDocking,
   showPanelDocked,
   hidePanelDocked,
   movePanelToOuterWrapper,
@@ -80,12 +80,12 @@ async function loadShortcuts(): Promise<KeyboardShortcut[]> {
 }
 
 function initSubtitleOverlay(video: HTMLVideoElement): void {
-  // Direction C: wrap video in a two-layer docking container so the panel can be a
-  // sibling of the video box. outerWrapper is the flex container; videoWrapper holds
-  // the video + overlay + toggle + import + drag hint.
-  // ponytail: create wrappers before controller init so overlay/import/toggle append
-  // into the videoWrapper automatically.
-  const { outerWrapper, videoWrapper } = createDockingWrapper(video);
+  // Simplified docking: find F0 (layout box) and playerContainer (child of F0
+  // that holds the video). The video is NOT moved — we only insert the panel
+  // as a sibling of playerContainer inside F0, and shrink playerContainer when
+  // the panel opens. This preserves the site's player DOM hierarchy (controls
+  // stay above the video via their own z-index).
+  const { f0, playerContainer } = setupDocking(video);
 
   const controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG);
   controller.init();
@@ -106,10 +106,10 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   panel = createPanel(video);
   toggleBtn = createToggleButton(video);
 
-  // Move panel from videoWrapper to outerWrapper so it becomes a sibling of the video box.
-  // This is required for flex layout to place the panel beside the video.
+  // Move panel into F0 so it becomes a sibling of playerContainer.
+  // Required for flex layout to place the panel beside the video.
   if (panel) {
-    movePanelToOuterWrapper(panel, outerWrapper);
+    movePanelToOuterWrapper(panel, f0);
   }
 
   // Wire toggle button → show/hide panel (docked layout shrinks video when open)
@@ -117,9 +117,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     panelVisible = !panelVisible;
     if (panel && toggleBtn) {
       if (panelVisible) {
-        showPanelDocked(outerWrapper, videoWrapper, video, panel);
+        showPanelDocked(f0, playerContainer, panel);
       } else {
-        hidePanelDocked(outerWrapper, videoWrapper, panel);
+        hidePanelDocked(f0, playerContainer, panel);
       }
     }
   });
@@ -129,7 +129,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   closeBtn?.addEventListener('click', () => {
     panelVisible = false;
     if (panel && toggleBtn) {
-      hidePanelDocked(outerWrapper, videoWrapper, panel);
+      hidePanelDocked(f0, playerContainer, panel);
     }
   });
 
@@ -206,9 +206,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         panelVisible = !panelVisible;
         if (panel) {
           if (panelVisible) {
-            showPanelDocked(outerWrapper, videoWrapper, video, panel);
+            showPanelDocked(f0, playerContainer, panel);
           } else {
-            hidePanelDocked(outerWrapper, videoWrapper, panel);
+            hidePanelDocked(f0, playerContainer, panel);
           }
         }
         break;
@@ -248,7 +248,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
             renderCueListLazy(panel, bilingualCues);
             // Auto-show panel after subtitle load (docked layout)
             panelVisible = true;
-            showPanelDocked(outerWrapper, videoWrapper, video, panel);
+            showPanelDocked(f0, playerContainer, panel);
           }
         }
         showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);
@@ -258,20 +258,20 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     });
   }
 
-  // Wire drag-drop on videoWrapper → parse → loadCues + drag hover hint.
-  // We attach to the wrapper instead of the video because the video has
-  // pointer-events: none so clicks pass through to art-player controls.
-  // The wrapper covers the same area and still receives drag events.
+  // Wire drag-drop on playerContainer → parse → loadCues + drag hover hint.
+  // We attach to the player container (which holds the video) so drag events
+  // cover the full video area. The drag hint overlay is appended to
+  // video.parentElement (the art-player box) by createDragHint.
   const dragHint = createDragHint(video);
   let dragCounter = 0;
 
-  videoWrapper.addEventListener('dragenter', (e) => {
+  playerContainer.addEventListener('dragenter', (e) => {
     e.preventDefault();
     dragCounter++;
     dragHint.style.display = 'flex';
   });
-  videoWrapper.addEventListener('dragover', (e) => e.preventDefault());
-  videoWrapper.addEventListener('dragleave', (e) => {
+  playerContainer.addEventListener('dragover', (e) => e.preventDefault());
+  playerContainer.addEventListener('dragleave', (e) => {
     e.preventDefault();
     dragCounter--;
     if (dragCounter <= 0) {
@@ -279,7 +279,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       dragHint.style.display = 'none';
     }
   });
-  videoWrapper.addEventListener('drop', async (e) => {
+  playerContainer.addEventListener('drop', async (e) => {
     e.preventDefault();
     dragCounter = 0;
     dragHint.style.display = 'none';
@@ -297,7 +297,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
           renderCueListLazy(panel, bilingualCues);
           // Auto-show panel after subtitle load (docked layout)
           panelVisible = true;
-          showPanelDocked(outerWrapper, videoWrapper, video, panel);
+          showPanelDocked(f0, playerContainer, panel);
         }
       }
       showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);
