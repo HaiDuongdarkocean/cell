@@ -201,3 +201,51 @@ Khi di chuyển element `position: absolute/fixed` (out-of-flow) vào wrapper m�
 - Art-player / video.js / any player với absolute-positioned video
 - Drag-and-drop containers (element removed from flow → wrapper collapses)
 - Portal/modal patterns (element moved to body → original container collapses)
+
+---
+
+## Flex items need explicit min-width: 0 / min-height: 0 to shrink below content
+
+### Nguyên lý
+A flex item with `flex: 0 0 <percentage>` only starts at that percentage. The browser's default `min-width: auto` / `min-height: auto` prevents the item from shrinking below its content size. To make a percentage flex item strictly obey its flex-basis, explicitly set `min-width: 0` (row) or `min-height: 0` (column) and clip or wrap overflow content.
+
+### Cases đã gặp
+- [flex-min-width-auto-overflow.md](flex-min-width-auto-overflow.md) — subtitle panel docked at 30% width, but cue text made `min-width: auto` push panel + video past F0. Fix: set `panel.style.minWidth = '0'` and `panel.style.overflow = 'hidden'`.
+
+### Apply cho
+- CSS flex layouts with percentage-based flex items that contain text or other intrinsic-width content
+- Side panels, sidebars, split-panes, docked panels
+- Horizontal scroll containers that must shrink below content width
+- Mobile stacked flex columns where items should shrink below content height
+
+---
+
+## Preserve cross-axis size when aspect-ratio conflicts with layout change
+
+### Nguyên lý
+Changing an element's main-axis size can trigger its intrinsic `aspect-ratio` to automatically resize the cross-axis. If you want the cross-axis to stay the same (e.g., keep video height while narrowing its width), preserve the container's cross-axis size and override the element's aspect-ratio for the new mode. Otherwise, the element will shrink proportionally in both dimensions.
+
+### Cases đã gặp
+- [aspect-ratio-cross-size-preservation.md](aspect-ratio-cross-size-preservation.md) — subtitle panel docked beside video, playerContainer width reduced to 70%, aspect-ratio forced height to shrink too. Fix: record F0 height, set `f0.style.height` and `playerContainer.style.height = '100%'` with `aspect-ratio: auto !important`.
+
+### Apply cho
+- Video players, image carousels, map widgets — any component with `aspect-ratio` that must be resized in one dimension
+- Responsive layouts that switch from full-width to split-pane
+- Content scripts that override a site's intrinsic sizing to add a docked panel
+
+---
+
+## Inline style leak across state transitions → every set must have matching remove
+
+### Nguyên lý
+Khi show/apply path set inline style với `!important`, hide/restore path PHẢI `removeProperty` (hoặc reset) từng property đó. `!important` styles survive across state transitions — browser không auto-clean. MutationObserver guard phải stop TRƯỚC khi remove, nếu không nó re-apply ngay lập tức.
+
+### Cases đã gặp
+- [inline-style-leak-toggle-cycle.md](inline-style-leak-toggle-cycle.md) — `applyAbsoluteDockedLayout` set `transform: translate(-50%,-50%) !important` + `object-fit: contain !important`, `hidePanelDocked` không remove → video jump ra ngoài sau toggle close. Fix: thêm `removeProperty('transform')` + set `object-fit: contain` trong restore path.
+- [panel-body-mode-max-height.md](panel-body-mode-max-height.md) — floating panel body `max-height: 400px` persisted into docked mode, capping the cue list. Fix: set `maxHeight: 'none'` in `showPanelDocked` and restore `400px` in `hidePanelDocked`.
+
+### Apply cho
+- Content script toggle cycles (show/hide panel, overlay, dock)
+- React imperative DOM mutation (useState + ref.style.setProperty)
+- Any show/hide pattern using `!important` to override site CSS
+- MutationObserver guard patterns (stop observer before removing styles)
