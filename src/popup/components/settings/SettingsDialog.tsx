@@ -247,6 +247,16 @@ const SUBTITLE_LANGUAGES: { value: string; label: string }[] = [
   { value: 'zu', label: 'isiZulu (Zulu)' },
 ];
 
+/**
+ * Language options for the overlay target/native dropdowns.
+ * Same list as SUBTITLE_LANGUAGES but without the "all" option, with a
+ * leading "None" option (value '') so users can clear the selection.
+ */
+const OVERLAY_LANGUAGE_OPTIONS: DropdownOption[] = [
+  { value: '', label: 'None' },
+  ...SUBTITLE_LANGUAGES.filter((o) => o.value !== 'all'),
+];
+
 export function SettingsDialog({ isOpen, settings, onChange, onClose }: SettingsDialogProps): React.JSX.Element {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -353,15 +363,21 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
 
           {/* Subtitle overlay target language */}
           <SettingField label="Overlay target language" htmlFor="set-overlay-lang">
-            <input
-              id="set-overlay-lang"
-              type="text"
-              data-testid="overlay-target-language"
+            <CustomSelect
+              testId="overlay-target-language"
               value={settings.subtitleOverlayTargetLanguage}
-              onChange={(e) => update('subtitleOverlayTargetLanguage', e.target.value.toLowerCase().trim())}
-              placeholder="e.g. en, vi, ja"
-              maxLength={5}
-              className={styles.textInput}
+              options={OVERLAY_LANGUAGE_OPTIONS}
+              onSelect={(val) => update('subtitleOverlayTargetLanguage', val)}
+            />
+          </SettingField>
+
+          {/* Subtitle overlay native language */}
+          <SettingField label="Overlay native language" htmlFor="set-overlay-native-lang">
+            <CustomSelect
+              testId="overlay-native-language"
+              value={settings.subtitleOverlayNativeLanguage}
+              options={OVERLAY_LANGUAGE_OPTIONS}
+              onSelect={(val) => update('subtitleOverlayNativeLanguage', val)}
             />
           </SettingField>
 
