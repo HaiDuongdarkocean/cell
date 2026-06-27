@@ -617,6 +617,7 @@ describe('Background integration', () => {
       preferredVideoFormat: 'mp4',
       autoSelectEnabled: true,
       subtitleOverlayTargetLanguage: '',
+      subtitleOverlayNativeLanguage: '',
       subtitleOverlayAutoLoad: false,
       keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
     };

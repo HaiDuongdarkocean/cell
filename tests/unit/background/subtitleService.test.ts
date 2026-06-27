@@ -17,6 +17,7 @@ describe('findSubtitleForOverlay', () => {
     preferredVideoFormat: 'm3u8',
     autoSelectEnabled: true,
     subtitleOverlayTargetLanguage: 'en',
+    subtitleOverlayNativeLanguage: 'vi',
     subtitleOverlayAutoLoad: true,
     keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
   };

@@ -376,6 +376,94 @@ describe('usePopupStore', () => {
     expect(state.settings.concurrentDownloads).toBe(3);
   });
 
+  // --- Migration: subtitleOverlayNativeLanguage (bilingual auto-load) ---
+
+  it('DEFAULT_SETTINGS.subtitleOverlayNativeLanguage defaults to empty string', () => {
+    expect(DEFAULT_SETTINGS.subtitleOverlayNativeLanguage).toBe('');
+  });
+
+  it('loadPersistedSettings fills missing subtitleOverlayNativeLanguage with "vi"', async () => {
+    // Existing users (pre-feature) have no subtitleOverlayNativeLanguage field.
+    // Migration fills 'vi' for backward compat (Anh yêu — current user).
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: {
+        ...DEFAULT_SETTINGS,
+        subtitleOverlayNativeLanguage: undefined,
+      },
+    });
+
+    await usePopupStore.getState().loadPersistedSettings();
+
+    expect(usePopupStore.getState().settings.subtitleOverlayNativeLanguage).toBe('vi');
+  });
+
+  it('loadPersistedSettings keeps existing subtitleOverlayNativeLanguage', async () => {
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: {
+        ...DEFAULT_SETTINGS,
+        subtitleOverlayNativeLanguage: 'ja',
+      },
+    });
+
+    await usePopupStore.getState().loadPersistedSettings();
+
+    expect(usePopupStore.getState().settings.subtitleOverlayNativeLanguage).toBe('ja');
+  });
+
+  it('loadPersistedSettings keeps empty subtitleOverlayNativeLanguage when explicitly empty', async () => {
+    // New users get '' default — migration must NOT overwrite explicit ''.
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: {
+        ...DEFAULT_SETTINGS,
+        subtitleOverlayNativeLanguage: '',
+      },
+    });
+
+    await usePopupStore.getState().loadPersistedSettings();
+
+    expect(usePopupStore.getState().settings.subtitleOverlayNativeLanguage).toBe('');
+  });
+
+  it('loadPersistedSettings normalizes invalid subtitleOverlayTargetLanguage to empty', async () => {
+    // Invalid = not ISO 639-1 (2 lowercase letters) and not empty.
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: {
+        ...DEFAULT_SETTINGS,
+        subtitleOverlayTargetLanguage: 'english',
+      },
+    });
+
+    await usePopupStore.getState().loadPersistedSettings();
+
+    expect(usePopupStore.getState().settings.subtitleOverlayTargetLanguage).toBe('');
+  });
+
+  it('loadPersistedSettings normalizes uppercase target language to lowercase', async () => {
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: {
+        ...DEFAULT_SETTINGS,
+        subtitleOverlayTargetLanguage: 'EN',
+      },
+    });
+
+    await usePopupStore.getState().loadPersistedSettings();
+
+    expect(usePopupStore.getState().settings.subtitleOverlayTargetLanguage).toBe('en');
+  });
+
+  it('loadPersistedSettings keeps valid 2-letter subtitleOverlayTargetLanguage', async () => {
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: {
+        ...DEFAULT_SETTINGS,
+        subtitleOverlayTargetLanguage: 'zh',
+      },
+    });
+
+    await usePopupStore.getState().loadPersistedSettings();
+
+    expect(usePopupStore.getState().settings.subtitleOverlayTargetLanguage).toBe('zh');
+  });
+
   it('loadExtensionStatus loads saved status from chrome.storage.local', async () => {
     storageLocalGetMock.mockResolvedValue({
       [STORAGE_KEYS.EXTENSION_STATUS]: false,

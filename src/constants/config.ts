@@ -122,6 +122,7 @@ export const DEFAULT_SETTINGS: Settings = {
   preferredVideoFormat: DEFAULT_PREFERRED_VIDEO_FORMAT,
   autoSelectEnabled: DEFAULT_AUTO_SELECT_ENABLED,
   subtitleOverlayTargetLanguage: '',
+  subtitleOverlayNativeLanguage: '',
   subtitleOverlayAutoLoad: false,
   keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
 };

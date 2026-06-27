@@ -84,6 +84,7 @@ const BASE_SETTINGS: Settings = {
   preferredVideoFormat: 'm3u8',
   autoSelectEnabled: true,
   subtitleOverlayTargetLanguage: '',
+  subtitleOverlayNativeLanguage: '',
   subtitleOverlayAutoLoad: false,
   keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
 };

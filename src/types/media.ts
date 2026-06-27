@@ -364,6 +364,8 @@ export interface Settings {
   readonly autoSelectEnabled: boolean;
   /** Target language for subtitle overlay (ISO 639-1 code, e.g. 'en'). Empty = no target. */
   readonly subtitleOverlayTargetLanguage: string;
+  /** Native language for bilingual subtitle overlay (ISO 639-1 code, e.g. 'vi'). Empty = no native. Migration fills 'vi' for existing users. */
+  readonly subtitleOverlayNativeLanguage: string;
   /** When true, subtitle overlay auto-loads from extension-detected subtitles matching target language. */
   readonly subtitleOverlayAutoLoad: boolean;
   /** Keyboard shortcuts for subtitle floating panel. Default: a/d/s/w/t. */

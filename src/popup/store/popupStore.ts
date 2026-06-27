@@ -182,6 +182,20 @@ export const usePopupStore = create<PopupState>((set) => ({
         if (!settings.keyboardShortcuts || settings.keyboardShortcuts.length === 0) {
           settings = { ...settings, keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS };
         }
+        // Migration: subtitleOverlayNativeLanguage missing in pre-bilingual settings.
+        // Fill 'vi' for backward compat (existing users). New users keep '' default.
+        if (settings.subtitleOverlayNativeLanguage === undefined) {
+          settings = { ...settings, subtitleOverlayNativeLanguage: 'vi' };
+        }
+        // Migration: normalize subtitleOverlayTargetLanguage to ISO 639-1 (2 lowercase letters)
+        // or empty. Invalid values (e.g. 'english', 'EN-', whitespace) reset to ''.
+        const targetLang = settings.subtitleOverlayTargetLanguage ?? '';
+        const normalizedTarget = targetLang.trim().toLowerCase();
+        if (normalizedTarget && !/^[a-z]{2}$/.test(normalizedTarget)) {
+          settings = { ...settings, subtitleOverlayTargetLanguage: '' };
+        } else if (normalizedTarget !== targetLang) {
+          settings = { ...settings, subtitleOverlayTargetLanguage: normalizedTarget };
+        }
         set({ settings, isSettingsLoaded: true });
       } else {
         set({ isSettingsLoaded: true });
