@@ -23,6 +23,7 @@ docs/           # Tài liệu dự án
 │   ├── subtitle-language-detection.md   # Subtitle language detection (hybrid)
 │   ├── subtitle-filename-matches-video.md # Subtitle filename matches video
 │   ├── parallel-fmp4-merge.md           # Parallel fMP4 merge (tfdt offset)
+│   ├── state-dom-init-mismatch.md       # State-DOM init mismatch (subtitle panel bugs)
 │   └── architecture-auto-select.md      # Auto-Select & Auto-Download architecture
 ├── test-reports/           # MCP browser test reports — "does it work in real browser"
 │   └── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md  # Subtitle panel MCP test (4 bugs found)

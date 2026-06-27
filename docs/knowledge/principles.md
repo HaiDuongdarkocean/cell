@@ -155,3 +155,17 @@ When merging fMP4 fragments from the same source stream, they share codec config
 - fMP4 concatenation (mux.js, ffmpeg wasm)
 - HLS segment merging (same codec → share init)
 - Any fragmented media merge where fragments share codec config but have independent timeline baselines
+
+## State init must match DOM init
+
+### Nguyên lý
+Khi có 2 nguồn truth (state variable + DOM property), chúng phải sync ban đầu. Nếu không, toggle đầu tiên sẽ đi sai hướng — state flip nhưng DOM không thay đổi (hoặc ngược lại). Rule: nếu DOM `display: none`, state phải `false`; nếu DOM `display: flex`, state phải `true`.
+
+### Cases đã gặp
+- [state-dom-init-mismatch.md](state-dom-init-mismatch.md) — subtitle panel: 3/4 blocking bugs có cùng root cause (overlayVisible=true vs display:none, panel không auto-show, toggle ẩn) + storage migration thiếu keyboardShortcuts → popup crash
+
+### Apply cho
+- Content script state (closure variables + DOM style) — Chrome extension, userscript
+- React state vs DOM ref (useState + useRef + imperative DOM mutation)
+- Storage migration (old settings thiếu field mới → fill defaults ở migration, không guard mỗi consumer)
+- Any UI với 2 nguồn truth: state variable + DOM property phải sync init
