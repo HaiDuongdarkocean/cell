@@ -7,23 +7,6 @@ import {
   VIDEO_WRAPPER_TESTID,
 } from '@/content/subtitleDocking';
 
-const observeSpy = jest.fn();
-const disconnectSpy = jest.fn();
-
-class ResizeObserverMock {
-  observe = observeSpy;
-  unobserve = jest.fn();
-  disconnect = disconnectSpy;
-}
-
-beforeAll(() => {
-  Object.defineProperty(global, 'ResizeObserver', {
-    value: ResizeObserverMock,
-    writable: true,
-    configurable: true,
-  });
-});
-
 function mockVideoRect(video: HTMLVideoElement, rect: Partial<DOMRect>): void {
   Object.defineProperty(video, 'getBoundingClientRect', {
     value: () => ({
@@ -112,7 +95,7 @@ describe('subtitleDocking', () => {
   });
 
   describe('showPanelDocked', () => {
-    it('sets outer wrapper flex row and video wrapper to 70% on desktop', () => {
+    it('sets flex row and video width to calc(100% - 280px) on desktop', () => {
       Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
       const { outerWrapper, videoWrapper } = createDockingWrapper(video);
       outerWrapper.appendChild(panel);
@@ -122,15 +105,17 @@ describe('subtitleDocking', () => {
 
       expect(outerWrapper.style.display).toBe('flex');
       expect(outerWrapper.style.flexDirection).toBe('row');
-      expect(videoWrapper.style.flex).toBe('1 1 70%');
+      expect(videoWrapper.style.width).toBe('calc(100% - 280px)');
+      expect(videoWrapper.style.height).toBe('100%');
       expect(video.style.width).toBe('100%');
-      expect(panel.style.display).toBe('flex');
       expect(panel.style.width).toBe('280px');
+      expect(panel.style.display).toBe('flex');
       expect(panel.style.position).toBe('relative');
       expect(panel.style.alignSelf).toBe('stretch');
+      expect(panel.getAttribute('data-docking-mode')).toBe('flex');
     });
 
-    it('sets outer wrapper flex column and splits video/panel 60/40 on mobile', () => {
+    it('sets flex column and splits video/panel 60/40 on mobile', () => {
       Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 375 });
       const { outerWrapper, videoWrapper } = createDockingWrapper(video);
       outerWrapper.appendChild(panel);
@@ -139,14 +124,15 @@ describe('subtitleDocking', () => {
       showPanelDocked(outerWrapper, videoWrapper, video, panel);
 
       expect(outerWrapper.style.flexDirection).toBe('column');
-      expect(videoWrapper.style.flex).toBe('0 0 60%');
+      expect(videoWrapper.style.width).toBe('100%');
       expect(videoWrapper.style.height).toBe('60%');
-      expect(panel.style.flex).toBe('0 0 40%');
+      expect(video.style.height).toBe('100%');
+      expect(panel.style.width).toBe('100%');
       expect(panel.style.height).toBe('40%');
-      expect(panel.style.maxHeight).toBe('100%');
+      expect(panel.getAttribute('data-docking-mode')).toBe('flex');
     });
 
-    it('starts fixed panel sync when video is absolutely positioned', () => {
+    it('uses absolute-docked layout when video is out-of-flow', () => {
       Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
       const { outerWrapper, videoWrapper } = createDockingWrapper(video);
       outerWrapper.appendChild(panel);
@@ -156,61 +142,36 @@ describe('subtitleDocking', () => {
 
       showPanelDocked(outerWrapper, videoWrapper, video, panel);
 
-      expect(panel.style.position).toBe('fixed');
-      expect(panel.getAttribute('data-docking-mode')).toBe('fixed');
-      expect(observeSpy).toHaveBeenCalled();
-    });
-
-    it('falls back to fixed positioning when video is absolutely positioned', () => {
-      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1024 });
-      const { outerWrapper, videoWrapper } = createDockingWrapper(video);
-      outerWrapper.appendChild(panel);
-      outerWrapper.appendChild(toggle);
-      video.style.position = 'absolute';
-      mockVideoRect(video, { left: 100, top: 50, right: 400, bottom: 300, width: 300, height: 250 });
-
-      showPanelDocked(outerWrapper, videoWrapper, video, panel);
-
-      expect(panel.style.position).toBe('fixed');
-      expect(panel.style.left).toBe('400px');
-      expect(panel.style.top).toBe('50px');
+      expect(outerWrapper.style.position).toBe('absolute');
+      expect(video.style.position).toBe('absolute');
+      expect(video.style.width).toBe('calc(100% - 280px)');
+      expect(video.style.height).toBe('100%');
+      expect(panel.style.position).toBe('absolute');
+      expect(panel.style.right).toMatch(/^0(p?x)?$/);
       expect(panel.style.width).toBe('280px');
-      expect(panel.style.height).toBe('250px');
-      expect(panel.getAttribute('data-docking-mode')).toBe('fixed');
+      expect(panel.style.height).toBe('auto');
+      expect(panel.getAttribute('data-docking-mode')).toBe('absolute-docked');
     });
 
-    it('places fixed panel on the left when right side overflows viewport', () => {
-      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 500 });
+    it('stacks out-of-flow video and panel vertically on mobile', () => {
+      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 375 });
       const { outerWrapper, videoWrapper } = createDockingWrapper(video);
       outerWrapper.appendChild(panel);
       outerWrapper.appendChild(toggle);
       video.style.position = 'absolute';
-      mockVideoRect(video, { left: 300, top: 50, right: 450, bottom: 300, width: 150, height: 250 });
+      mockVideoRect(video, { left: 100, top: 50, right: 400, bottom: 300, width: 300, height: 250 });
 
       showPanelDocked(outerWrapper, videoWrapper, video, panel);
 
-      expect(panel.style.position).toBe('fixed');
-      expect(panel.style.left).toBe('20px'); // 300 - 280
-      expect(panel.style.top).toBe('50px');
-    });
-
-    it('docks fixed panel to bottom in fullscreen', () => {
-      Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1366 });
-      Object.defineProperty(window, 'innerHeight', { writable: true, configurable: true, value: 768 });
-      Object.defineProperty(document, 'fullscreenElement', { value: video, configurable: true });
-      const { outerWrapper, videoWrapper } = createDockingWrapper(video);
-      outerWrapper.appendChild(panel);
-      outerWrapper.appendChild(toggle);
-      video.style.position = 'absolute';
-      mockVideoRect(video, { left: 0, top: 0, right: 1366, bottom: 768, width: 1366, height: 768 });
-
-      showPanelDocked(outerWrapper, videoWrapper, video, panel);
-
-      expect(panel.style.position).toBe('fixed');
-      expect(panel.style.left).toBe('0px');
-      expect(panel.style.width).toBe('1366px');
-      expect(panel.style.height).toBe('230px'); // floor(768 * 0.3)
-      Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true });
+      expect(outerWrapper.style.flexDirection).toBe('column');
+      expect(video.style.position).toBe('absolute');
+      expect(video.style.width).toBe('100%');
+      expect(video.style.height).toBe('60%');
+      expect(panel.style.position).toBe('absolute');
+      expect(panel.style.width).toBe('100%');
+      expect(panel.style.height).toBe('40%');
+      expect(panel.style.bottom).toMatch(/^0(p?x)?$/);
+      expect(panel.getAttribute('data-docking-mode')).toBe('absolute-docked');
     });
   });
 
@@ -225,9 +186,11 @@ describe('subtitleDocking', () => {
       hidePanelDocked(outerWrapper, videoWrapper, panel);
 
       expect(outerWrapper.style.display).toBe('block');
+      expect(outerWrapper.style.position).toBe('static');
       expect(videoWrapper.style.flex).toBe('');
       expect(videoWrapper.style.width).toBe('100%');
-      expect(video.style.width).toBe('100%');
+      expect(video.style.getPropertyValue('width')).toBe('');
+      expect(video.style.getPropertyValue('position')).toBe('');
       expect(panel.style.display).toBe('none');
       expect(panel.style.position).toBe('absolute');
       expect(panel.style.right).toBe('0px');
