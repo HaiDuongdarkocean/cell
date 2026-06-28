@@ -16,19 +16,23 @@ docs/           # Tài liệu dự án
 │   ├── 004-layered-clean-architecture.md
 │   ├── 005-subtitle-floating-panel.md # Subtitle panel: inline DOM, bilingual delimiter, CS shortcuts
 │   ├── 006-architecture-proposal.md   # Architecture proposal
-│   └── 007-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load architecture
+│   ├── 007-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load architecture
+│   └── 008-side-panel-subtitle.md     # Side Panel API thay thế inject-DOM panel
 ├── intent/                            # Output interview-me — "what user wants"
-│   └── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
+│   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
+│   └── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
+│   ├── spec-side-panel-subtitle.md    # Side Panel subtitle PRD (thay thế inject-DOM panel)
 │   ├── feature-inventory.md           # Feature inventory
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md
 │   ├── subtitle-sidebar-shortcuts.md  # Subtitle floating panel + shortcuts
-│   └── plan-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — feasibility (G1)
+│   ├── plan-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — feasibility (G1)
+│   └── plan-side-panel-subtitle.md    # Side Panel subtitle — feasibility + task breakdown
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   └── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
