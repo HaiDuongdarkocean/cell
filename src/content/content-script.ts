@@ -6,22 +6,7 @@ import { createDragHint, showToast } from './subtitleUI';
 import { parseBilingualSrt } from './subtitleBilingualParser';
 import { handleAutoLoadSubtitles, clearAutoLoadCache } from './subtitleAutoLoad';
 import { mergeCuesForPanel } from './subtitleMerge';
-import {
-  createPanel,
-  renderCueListLazy,
-  createToggleButton,
-  switchPanelPosition,
-  highlightCue,
-  scrollToCue,
-  seekToCue,
-} from './subtitlePanel';
-import {
-  setupDocking,
-  showPanelDocked,
-  hidePanelDocked,
-  movePanelToOuterWrapper,
-  setupFullscreenHandlers,
-} from './subtitleDocking';
+import { createToggleButton, seekToCue } from './subtitlePanel';
 import { handleShortcutKey } from './subtitleShortcuts';
 import { MESSAGE_TYPES } from '@/constants/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
@@ -88,91 +73,31 @@ async function loadShortcuts(): Promise<KeyboardShortcut[]> {
 }
 
 function initSubtitleOverlay(video: HTMLVideoElement): void {
-  // Simplified docking: find F0 (layout box) and playerContainer (child of F0
-  // that holds the video). The video is NOT moved — we only insert the panel
-  // as a sibling of playerContainer inside F0, and shrink playerContainer when
-  // the panel opens. This preserves the site's player DOM hierarchy (controls
-  // stay above the video via their own z-index).
-  const { f0, playerContainer } = setupDocking(video);
+  // ADR-008 D2: overlay UI neo vào video.parentElement — không cần F0, không cần
+  // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
+  const container = video.parentElement ?? document.body;
 
   const controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG);
-  controller.init();
+  controller.init(container);
 
-  // === Panel + Shortcuts state ===
-  let panel: HTMLDivElement | null = null;
+  // === State ===
   let toggleBtn: HTMLButtonElement | null = null;
-  let panelVisible = false;
   let overlayVisible = false; // ponytail: match overlay initial display:none
   let bilingualCues: BilingualCue[] = [];
   let shortcuts: KeyboardShortcut[] = DEFAULT_KEYBOARD_SHORTCUTS;
-  let panelSide: 'left' | 'right' = 'right';
 
   // Load shortcuts from storage
   loadShortcuts().then((s) => { shortcuts = s; });
 
-  // Create panel + toggle button (hidden initially)
-  panel = createPanel(video);
-  toggleBtn = createToggleButton(video);
+  // Create toggle button (overlay) — click → open Side Panel
+  toggleBtn = createToggleButton(container);
 
-  // Move panel into F0 so it becomes a sibling of playerContainer.
-  // Required for flex layout to place the panel beside the video.
-  if (panel) {
-    movePanelToOuterWrapper(panel, f0);
-  }
-
-  // Saved panel state used when the panel is toggled while the player is in
-  // fullscreen. The overlay approach needs to remember the original parent and
-  // styles so it can restore them on exit.
-  let savedPanelStyles: { parent: HTMLElement | null; cssText: string } | null = null;
-
-  // Wire toggle button → show/hide panel (docked layout shrinks video when open)
+  // Wire toggle button → open Side Panel (ADR-008 D1)
   toggleBtn.addEventListener('click', () => {
-    panelVisible = !panelVisible;
-    if (panel && toggleBtn) {
-      if (panelVisible) {
-        savedPanelStyles = showPanelDocked(f0, playerContainer, panel, savedPanelStyles) ?? savedPanelStyles;
-      } else {
-        hidePanelDocked(f0, playerContainer, panel, savedPanelStyles);
-      }
-    }
-  });
-
-  // Handle fullscreen change: overlay panel on top of the fullscreen video so
-  // the native player's fullscreen button keeps the panel visible.
-  if (panel) {
-    setupFullscreenHandlers(f0, playerContainer, panel, () => panelVisible);
-  }
-
-  // Wire close button in panel header → hide panel
-  const closeBtn = panel.querySelector('[data-testid="panel-close"]');
-  closeBtn?.addEventListener('click', () => {
-    panelVisible = false;
-    if (panel && toggleBtn) {
-      hidePanelDocked(f0, playerContainer, panel, savedPanelStyles);
-    }
-  });
-
-  // Wire drag handle → switch position left/right on double-click
-  const dragHandle = panel.querySelector('[data-testid="panel-drag-handle"]');
-  dragHandle?.addEventListener('dblclick', () => {
-    panelSide = panelSide === 'right' ? 'left' : 'right';
-    if (panel) switchPanelPosition(panel, panelSide);
-  });
-
-  // Wire timestamp clicks → seek to cue
-  panel.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    if (target.getAttribute('data-testid') === 'cue-timestamp') {
-      const cueIndex = parseInt(target.getAttribute('data-cue-index') ?? '0', 10);
-      const cue = bilingualCues.find((c) => c.index === cueIndex);
-      if (cue) {
-        seekToCue(video, cue);
-        if (panel) {
-          highlightCue(panel, cueIndex);
-          scrollToCue(panel, cueIndex);
-        }
-      }
-    }
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
+      payload: { tabId: undefined }, // background resolves from sender.tab.id
+    });
   });
 
   // Wire keyboard shortcuts
@@ -184,33 +109,21 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     switch (action) {
       case 'prev-cue': {
         const currentMs = video.currentTime * 1000;
-        // Find the last cue whose end is before current time — this skips the
-        // currently-playing cue and lands on the previous one. Using `end`
-        // instead of `start` avoids matching the current cue when seeking back.
         const prevCue = [...bilingualCues].reverse().find((c) => c.end < currentMs);
-        if (prevCue) {
-          seekToCue(video, prevCue);
-          if (panel) { highlightCue(panel, prevCue.index); scrollToCue(panel, prevCue.index); }
-        }
+        if (prevCue) seekToCue(video, prevCue);
         break;
       }
       case 'next-cue': {
         const currentMs = video.currentTime * 1000;
         const nextCue = bilingualCues.find((c) => c.start > currentMs + 100);
-        if (nextCue) {
-          seekToCue(video, nextCue);
-          if (panel) { highlightCue(panel, nextCue.index); scrollToCue(panel, nextCue.index); }
-        }
+        if (nextCue) seekToCue(video, nextCue);
         break;
       }
       case 'replay-cue': {
         const currentMs = video.currentTime * 1000;
         const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end >= currentMs)
           ?? [...bilingualCues].reverse().find((c) => c.start < currentMs);
-        if (currentCue) {
-          seekToCue(video, currentCue);
-          if (panel) { highlightCue(panel, currentCue.index); scrollToCue(panel, currentCue.index); }
-        }
+        if (currentCue) seekToCue(video, currentCue);
         break;
       }
       case 'toggle-overlay': {
@@ -222,32 +135,60 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         break;
       }
       case 'toggle-panel': {
-        panelVisible = !panelVisible;
-        if (panel) {
-          if (panelVisible) {
-            showPanelDocked(f0, playerContainer, panel);
-          } else {
-            hidePanelDocked(f0, playerContainer, panel);
-          }
-        }
+        // ADR-008 D1: toggle-panel now opens the Side Panel instead of
+        // show/hide inject-DOM panel.
+        chrome.runtime.sendMessage({
+          type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
+          payload: { tabId: undefined },
+        });
         break;
       }
     }
   });
 
-  // Wire timeupdate → highlight + scroll current cue in panel
+  // Wire timeupdate → send VIDEO_TIME_UPDATE to Side Panel (via background)
+  // ponytail: throttle to ~4fps to avoid message flooding (timeupdate fires ~60fps)
+  let lastTimeUpdateSent = 0;
   video.addEventListener('timeupdate', () => {
-    if (!panel || !panelVisible || bilingualCues.length === 0) return;
-    const currentMs = video.currentTime * 1000;
-    const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end >= currentMs);
-    if (currentCue) {
-      highlightCue(panel, currentCue.index);
-      scrollToCue(panel, currentCue.index);
+    const now = performance.now();
+    if (now - lastTimeUpdateSent < 250) return; // 4fps throttle
+    lastTimeUpdateSent = now;
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
+      payload: {
+        tabId: undefined,
+        currentTimeMs: video.currentTime * 1000,
+        durationMs: video.duration * 1000 || 0,
+      },
+    });
+  });
+
+  // Wire play/pause → send VIDEO_PLAY_STATE to Side Panel
+  video.addEventListener('play', () => {
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
+      payload: { tabId: undefined, isPlaying: true },
+    });
+  });
+  video.addEventListener('pause', () => {
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
+      payload: { tabId: undefined, isPlaying: false },
+    });
+  });
+
+  // Receive SEEK_TO from Side Panel (via background relay) → seek video
+  chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
+    if (msg?.type === MESSAGE_TYPES.SEEK_TO) {
+      const timeMs = (msg.payload as { timeMs: number })?.timeMs;
+      if (timeMs !== undefined) {
+        video.currentTime = timeMs / 1000;
+      }
     }
+    return false; // synchronous listener
   });
 
   // === File import wiring ===
-  // Wire import button: <label> wraps <input type=file> (created in subtitleImport.ts).
   const importButton = document.querySelector('[data-testid="subtitle-import-button"]') as HTMLButtonElement | null;
   const fileInput = importButton?.querySelector('input[type="file"]') as HTMLInputElement | null;
   if (importButton && fileInput) {
@@ -257,40 +198,33 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       const result = await handleFileSelect(file);
       if (result.success && result.cues.length > 0) {
         controller.loadCues(result.cues);
-        // Parse bilingual + render panel
-        const bilingualResult = parseBilingualSrt(
-          await file.text(),
-        );
+        const bilingualResult = parseBilingualSrt(await file.text());
         if (bilingualResult.success) {
           bilingualCues = bilingualResult.cues;
-          if (panel) {
-            renderCueListLazy(panel, bilingualCues);
-            // Auto-show panel after subtitle load (docked layout)
-            panelVisible = true;
-            showPanelDocked(f0, playerContainer, panel);
-          }
+          // Send cues to Side Panel
+          chrome.runtime.sendMessage({
+            type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+            payload: { tabId: undefined, cues: bilingualCues },
+          });
         }
-        showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);
+        showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, container);
       } else {
-        showToast(`Import failed: ${result.error ?? 'unknown error'}`, video);
+        showToast(`Import failed: ${result.error ?? 'unknown error'}`, container);
       }
     });
   }
 
-  // Wire drag-drop on playerContainer → parse → loadCues + drag hover hint.
-  // We attach to the player container (which holds the video) so drag events
-  // cover the full video area. The drag hint overlay is appended to
-  // video.parentElement (the art-player box) by createDragHint.
-  const dragHint = createDragHint(video);
+  // Wire drag-drop on container → parse → loadCues + drag hover hint.
+  const dragHint = createDragHint(container);
   let dragCounter = 0;
 
-  playerContainer.addEventListener('dragenter', (e) => {
+  container.addEventListener('dragenter', (e) => {
     e.preventDefault();
     dragCounter++;
     dragHint.style.display = 'flex';
   });
-  playerContainer.addEventListener('dragover', (e) => e.preventDefault());
-  playerContainer.addEventListener('dragleave', (e) => {
+  container.addEventListener('dragover', (e) => e.preventDefault());
+  container.addEventListener('dragleave', (e) => {
     e.preventDefault();
     dragCounter--;
     if (dragCounter <= 0) {
@@ -298,7 +232,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       dragHint.style.display = 'none';
     }
   });
-  playerContainer.addEventListener('drop', async (e) => {
+  container.addEventListener('drop', async (e) => {
     e.preventDefault();
     dragCounter = 0;
     dragHint.style.display = 'none';
@@ -307,30 +241,23 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     const result = await handleFileDrop(file);
     if (result.success && result.cues.length > 0) {
       controller.loadCues(result.cues);
-      // Parse bilingual + render panel
       const fileText = await file.text();
       const bilingualResult = parseBilingualSrt(fileText);
       if (bilingualResult.success) {
         bilingualCues = bilingualResult.cues;
-        if (panel) {
-          renderCueListLazy(panel, bilingualCues);
-          // Auto-show panel after subtitle load (docked layout)
-          panelVisible = true;
-          showPanelDocked(f0, playerContainer, panel);
-        }
+        // Send cues to Side Panel
+        chrome.runtime.sendMessage({
+          type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+          payload: { tabId: undefined, cues: bilingualCues },
+        });
       }
-      showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, video);
+      showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, container);
     } else {
-      showToast(`Drag-drop failed: ${result.error ?? 'unknown error'}`, video);
+      showToast(`Drag-drop failed: ${result.error ?? 'unknown error'}`, container);
     }
   });
 
   // === Bilingual auto-load wiring (ADR-007 D1, spec F3/F4/F7) ===
-  // Listen for AUTO_LOAD_SUBTITLES pushes from background (triggered on
-  // PAGE_SCAN_RESULT + onMediaDetected). Fetch + parse target + native
-  // (cache by URL), load bilingual cues into overlay, re-render panel.
-  // Re-renders fully each push — no accumulation across pushes (spec F7).
-  // Auto-load + drag-drop are independent: whichever arrives last overrides.
   chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
     if (msg?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
       const payload = msg.payload as AutoLoadSubtitlesPayload;
@@ -339,13 +266,13 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         tabUrl: window.location.href,
         onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
           bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
-          if (panel) {
-            renderCueListLazy(panel, bilingualCues);
-            panelVisible = true;
-            showPanelDocked(f0, playerContainer, panel);
-          }
+          // Send cues to Side Panel
+          chrome.runtime.sendMessage({
+            type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+            payload: { tabId: undefined, cues: bilingualCues },
+          });
         },
-        onToast: (message: string) => showToast(message, video),
+        onToast: (message: string) => showToast(message, container),
       });
     }
     return false; // synchronous listener, no async response

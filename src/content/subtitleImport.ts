@@ -9,7 +9,7 @@ import type { OverlayConfig, ParseResult } from '../types/subtitle';
  * @param config - Overlay configuration (for consistent styling)
  * @returns Button element
  */
-export function createImportButton(video: HTMLVideoElement, _config: OverlayConfig): HTMLButtonElement {
+export function createImportButton(container: HTMLElement, _config: OverlayConfig): HTMLButtonElement {
   // ponytail: use <label> wrapping <input type=file> — native HTML, click label
   // = click input = file picker opens. <button> swallows input click (invalid HTML),
   // <div> works but <label> is semantic + accessible + guaranteed.
@@ -38,7 +38,7 @@ export function createImportButton(video: HTMLVideoElement, _config: OverlayConf
   fileInput.style.cursor = 'pointer';
   label.appendChild(fileInput);
 
-  // Position: top-left of video (toggle button occupies top-right)
+  // Position: top-left of video area (toggle button occupies top-right)
   label.style.position = 'absolute';
   label.style.top = '8px';
   label.style.left = '8px';
@@ -61,7 +61,7 @@ export function createImportButton(video: HTMLVideoElement, _config: OverlayConf
     label.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
   });
 
-  video.parentElement?.appendChild(label);
+  container.appendChild(label);
   return label;
 }
 

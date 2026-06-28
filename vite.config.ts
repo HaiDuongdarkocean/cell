@@ -11,9 +11,10 @@ export default defineConfig({
     rollupOptions: {
       input: {
         // The CRX plugin handles the popup and background entries; add the
-        // offscreen document explicitly so it is built and emitted as a
-        // loadable chrome-extension:// page.
+        // offscreen document and side panel explicitly so they are built and
+        // emitted as loadable chrome-extension:// pages.
         offscreen: resolve(__dirname, 'src/offscreen/ffmpeg.html'),
+        sidepanel: resolve(__dirname, 'src/sidepanel/index.html'),
       },
     },
   },

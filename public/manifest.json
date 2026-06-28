@@ -9,7 +9,8 @@
     "storage",
     "offscreen",
     "activeTab",
-    "tabs"
+    "tabs",
+    "sidePanel"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -20,9 +21,14 @@
     {
       "matches": ["<all_urls>"],
       "js": ["src/content/content-script.ts"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true,
+      "match_origin_as_fallback": true
     }
   ],
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
   "action": {
     "default_popup": "src/popup/index.html",
     "default_title": "Video Downloader",

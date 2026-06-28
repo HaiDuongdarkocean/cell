@@ -10,6 +10,7 @@ import type {
   ParallelConversionMode,
   ParallelFallbackMode,
   ConversionPhase,
+  BilingualCue,
 } from './media';
 
 // === Message Types ===
@@ -46,7 +47,12 @@ export type MessageType =
   | 'PAGE_SCAN_RESULT'
   | 'AUTO_LOAD_SUBTITLES'
   | 'REQUEST_AUTO_LOAD_SUBTITLES'
-  | 'FETCH_SUBTITLE_CONTENT';
+  | 'FETCH_SUBTITLE_CONTENT'
+  | 'OPEN_SIDE_PANEL'
+  | 'SUBTITLE_CUES_LOADED'
+  | 'VIDEO_TIME_UPDATE'
+  | 'VIDEO_PLAY_STATE'
+  | 'SEEK_TO';
 
 // === Message Request ===
 
@@ -259,6 +265,38 @@ export interface FetchSubtitleContentPayload {
 export interface FetchSubtitleContentResult {
   readonly content: string;
   readonly finalUrl: string;
+}
+
+// === Side Panel messages ===
+
+/** Content-script → background: open the side panel for this tab. */
+export interface OpenSidePanelPayload {
+  readonly tabId?: number; // background resolves from sender.tab.id
+}
+
+/** Content-script → background → side panel: bilingual cues loaded. */
+export interface SubtitleCuesLoadedPayload {
+  readonly tabId?: number;
+  readonly cues: BilingualCue[];
+}
+
+/** Content-script → background → side panel: video time update. */
+export interface VideoTimeUpdatePayload {
+  readonly tabId?: number;
+  readonly currentTimeMs: number;
+  readonly durationMs: number;
+}
+
+/** Content-script → background → side panel: play/pause state. */
+export interface VideoPlayStatePayload {
+  readonly tabId?: number;
+  readonly isPlaying: boolean;
+}
+
+/** Side panel → background → content-script: seek video to time. */
+export interface SeekToPayload {
+  readonly tabId?: number;
+  readonly timeMs: number;
 }
 
 // === Typed Message Helpers ===

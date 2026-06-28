@@ -34,10 +34,13 @@ export class SubtitleOverlayController {
 
   /**
    * Create overlay + import button, attach timeupdate listener.
+   *
+   * @param videoWrapper - Container for the video + extension UI. If omitted,
+   * falls back to video.parentElement (legacy callers / tests).
    */
-  init(): void {
-    this.overlay = createOverlay(this.video, this.config);
-    this.importButton = createImportButton(this.video, this.config);
+  init(videoWrapper?: HTMLElement): void {
+    this.overlay = createOverlay(videoWrapper ?? this.video.parentElement ?? document.body, this.config);
+    this.importButton = createImportButton(videoWrapper ?? this.video.parentElement ?? document.body, this.config);
     this.video.addEventListener('timeupdate', this.onTimeUpdate);
   }
 

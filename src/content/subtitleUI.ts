@@ -8,11 +8,13 @@ import type { OverlayConfig } from '../types/subtitle';
  * @param config - Overlay configuration (fontSize, position, colors)
  * @returns Overlay div element
  */
-export function createOverlay(video: HTMLVideoElement, config: OverlayConfig): HTMLDivElement {
+export function createOverlay(container: HTMLElement, config: OverlayConfig): HTMLDivElement {
   const overlay = document.createElement('div');
   overlay.setAttribute('data-testid', 'subtitle-overlay');
 
-  // Style: absolute positioned over video, bottom by default
+  // Style: absolute positioned over video, bottom by default.
+  // The container is the video wrapper (video area) so the overlay stays within
+  // the video bounds in both normal and fullscreen modes.
   overlay.style.position = 'absolute';
   overlay.style.left = '50%';
   overlay.style.transform = 'translateX(-50%)';
@@ -63,8 +65,8 @@ export function createOverlay(video: HTMLVideoElement, config: OverlayConfig): H
   // Hidden initially
   overlay.style.display = 'none';
 
-  // Append to video parent (so it overlays the video)
-  video.parentElement?.appendChild(overlay);
+  // Append to the video wrapper (so it overlays the video area)
+  container.appendChild(overlay);
   return overlay;
 }
 
@@ -142,7 +144,7 @@ export function removeOverlay(overlay: HTMLDivElement): void {
  * Shown on dragenter, hidden on dragleave/drop.
  * ponytail: counter-based to avoid flicker from nested dragenter/dragleave events.
  */
-export function createDragHint(video: HTMLVideoElement): HTMLDivElement {
+export function createDragHint(container: HTMLElement): HTMLDivElement {
   const hint = document.createElement('div');
   hint.setAttribute('data-testid', 'subtitle-drag-hint');
 
@@ -167,7 +169,7 @@ export function createDragHint(video: HTMLVideoElement): HTMLDivElement {
   hint.textContent = 'Drop subtitle file here';
   hint.style.display = 'none';
 
-  video.parentElement?.appendChild(hint);
+  container.appendChild(hint);
   return hint;
 }
 
@@ -177,7 +179,7 @@ export function createDragHint(video: HTMLVideoElement): HTMLDivElement {
  * ponytail: position absolute in video parent (same pattern as overlay/dragHint),
  * not fixed viewport — toast stays anchored to video even on scroll.
  */
-export function showToast(message: string, video: HTMLVideoElement): void {
+export function showToast(message: string, container: HTMLElement): void {
   const toast = document.createElement('div');
   toast.setAttribute('data-testid', 'subtitle-toast');
   toast.textContent = message;
@@ -200,7 +202,7 @@ export function showToast(message: string, video: HTMLVideoElement): void {
   toast.style.userSelect = 'none';
   toast.style.whiteSpace = 'nowrap';
 
-  video.parentElement?.appendChild(toast);
+  container.appendChild(toast);
 
   setTimeout(() => {
     toast.style.opacity = '0';

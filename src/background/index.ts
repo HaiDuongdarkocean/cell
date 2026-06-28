@@ -62,6 +62,11 @@ import type {
   CreateOpfsBlobUrlPayload,
   CreateOpfsBlobUrlResultPayload,
   RevokeOpfsBlobUrlPayload,
+  OpenSidePanelPayload,
+  SubtitleCuesLoadedPayload,
+  VideoTimeUpdatePayload,
+  VideoPlayStatePayload,
+  SeekToPayload,
 } from '@/types/message';
 
 /** Optional dependency overrides (used for testing). */
@@ -615,6 +620,12 @@ export class BackgroundService {
     this.on(MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES, this.handleRequestAutoLoadSubtitles);
     this.on(MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT, this.handleFetchSubtitleContent);
     this.on(MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE, this.handleConversionProgressUpdate);
+    // Side Panel relay handlers (ADR-008 D4)
+    this.on(MESSAGE_TYPES.OPEN_SIDE_PANEL, this.handleOpenSidePanel);
+    this.on(MESSAGE_TYPES.SUBTITLE_CUES_LOADED, this.handleSubtitleCuesLoaded);
+    this.on(MESSAGE_TYPES.VIDEO_TIME_UPDATE, this.handleVideoTimeUpdate);
+    this.on(MESSAGE_TYPES.VIDEO_PLAY_STATE, this.handleVideoPlayState);
+    this.on(MESSAGE_TYPES.SEEK_TO, this.handleSeekTo);
   }
 
   /** Type-safe wrapper around messageBus.on. */
@@ -1574,6 +1585,140 @@ export class BackgroundService {
     });
 
     return { success: true };
+  };
+
+  // === Side Panel handlers (ADR-008 D4) ===
+
+  /**
+   * OPEN_SIDE_PANEL: content-script asks background to open the side panel
+   * for the current tab. Requires Chrome 116+ (`sidePanel.open`).
+   * ponytail: sidePanel.open requires user gesture — toggle button click
+   * satisfies this (the click happens in the page, message relays the intent).
+   */
+  private handleOpenSidePanel = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as OpenSidePanelPayload;
+    const tabId = payload?.tabId;
+    if (tabId === undefined) {
+      return { success: false, error: 'Missing tabId in OPEN_SIDE_PANEL' };
+    }
+    try {
+      await chrome.sidePanel.open({ tabId });
+      return { success: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`OPEN_SIDE_PANEL failed for tab ${tabId}: ${msg}`);
+      return { success: false, error: msg };
+    }
+  };
+
+  /**
+   * SUBTITLE_CUES_LOADED: relay bilingual cues from content-script to the
+   * side panel. Background broadcasts to all extension pages; the side panel
+   * is the only listener for this type.
+   */
+  private handleSubtitleCuesLoaded = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as SubtitleCuesLoadedPayload;
+    if (!payload?.cues) {
+      return { success: false, error: 'Missing cues in SUBTITLE_CUES_LOADED' };
+    }
+    // Relay to side panel (extension page) via runtime.sendMessage
+    try {
+      await chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+        payload: { cues: payload.cues },
+      });
+    } catch {
+      // Side panel may not be open — silently ignore
+    }
+    return { success: true };
+  };
+
+  /**
+   * VIDEO_TIME_UPDATE: relay current playback time from content-script to
+   * the side panel for cue highlight + auto-scroll.
+   */
+  private handleVideoTimeUpdate = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as VideoTimeUpdatePayload;
+    if (payload?.currentTimeMs === undefined) {
+      return { success: false, error: 'Missing currentTimeMs' };
+    }
+    try {
+      await chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
+        payload: {
+          currentTimeMs: payload.currentTimeMs,
+          durationMs: payload.durationMs,
+        },
+      });
+    } catch {
+      // Side panel may not be open — silently ignore
+    }
+    return { success: true };
+  };
+
+  /**
+   * VIDEO_PLAY_STATE: relay play/pause state from content-script to side panel.
+   */
+  private handleVideoPlayState = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as VideoPlayStatePayload;
+    if (payload?.isPlaying === undefined) {
+      return { success: false, error: 'Missing isPlaying' };
+    }
+    try {
+      await chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
+        payload: { isPlaying: payload.isPlaying },
+      });
+    } catch {
+      // Side panel may not be open — silently ignore
+    }
+    return { success: true };
+  };
+
+  /**
+   * SEEK_TO: side panel asks background to seek the video in the content
+   * script of the given tab. Background relays via chrome.tabs.sendMessage.
+   */
+  private handleSeekTo = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as SeekToPayload;
+    let tabId = payload?.tabId;
+    const timeMs = payload?.timeMs;
+    if (timeMs === undefined) {
+      return { success: false, error: 'Missing timeMs in SEEK_TO' };
+    }
+    // Side Panel doesn't know tabId — resolve from active tab
+    if (tabId === undefined) {
+      try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!activeTab?.id) {
+          return { success: false, error: 'No active tab found for SEEK_TO' };
+        }
+        tabId = activeTab.id;
+      } catch {
+        return { success: false, error: 'Failed to query active tab for SEEK_TO' };
+      }
+    }
+    try {
+      await chrome.tabs.sendMessage(tabId, {
+        type: MESSAGE_TYPES.SEEK_TO,
+        payload: { timeMs },
+      });
+      return { success: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`SEEK_TO relay failed for tab ${tabId}: ${msg}`);
+      return { success: false, error: msg };
+    }
   };
 }
 
