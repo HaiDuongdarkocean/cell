@@ -55,7 +55,8 @@ export type MessageType =
   | 'VIDEO_PLAY_STATE'
   | 'SEEK_TO'
   | 'TOGGLE_PLAY'
-  | 'SHORTCUT_ACTION';
+  | 'SHORTCUT_ACTION'
+  | 'VIDEO_EPISODE_CHANGED';
 
 // === Message Request ===
 
@@ -318,6 +319,32 @@ export interface SeekToPayload {
 export interface ShortcutActionPayload {
   readonly tabId?: number;
   readonly action: 'prev-cue' | 'next-cue' | 'replay-cue' | 'toggle-overlay';
+}
+
+/** Content-script → background: the active `<video>` element was REPLACED by
+ *  a new one in-page (e.g. themoviebox.org swaps the entire `<video>` element
+ *  on episode switch — same element for quality switches, verified). This is
+ *  the only reliable signal for an in-page episode/movie switch on SPAs that
+ *  change the video without reloading the page or updating the tab URL, so
+ *  `chrome.tabs.onUpdated` never fires and the background cannot detect it
+ *  via the normal navigation lifecycle. The background responds by clearing
+ *  the tab's detected media so the new episode starts fresh instead of
+ *  accumulating media from the previous episode.
+ *
+ *  Triggering on element replacement (not `loadedmetadata` duration-diff) is
+ *  deliberate: the replacement fires BEFORE the new video's network requests,
+ *  so the clear runs before the new episode's media is detected — no race
+ *  that would wipe the new media. Quality switches keep the same `<video>`
+ *  element (only `src` changes), so they do not trigger a clear and the
+ *  subtitle list is preserved.
+ *
+ *  ponytail: element-replacement heuristic. Ceiling: (1) sites that replace
+ *  the `<video>` element on quality switch would spuriously clear; (2) pages
+ *  with multiple `<video>` elements (e.g. ad-supported) may clear on the
+ *  second element's mount. Upgrade path: combine with video-URL path
+ *  heuristic or an explicit episode-click watcher. */
+export interface VideoEpisodeChangedPayload {
+  readonly tabId?: number; // background resolves from sender.tab.id
 }
 
 // === Typed Message Helpers ===

@@ -71,6 +71,7 @@ import type {
   VideoPlayStatePayload,
   SeekToPayload,
   ShortcutActionPayload,
+  VideoEpisodeChangedPayload,
 } from '@/types/message';
 
 /** Optional dependency overrides (used for testing). */
@@ -651,6 +652,7 @@ export class BackgroundService {
     this.on(MESSAGE_TYPES.SEEK_TO, this.handleSeekTo);
     this.on(MESSAGE_TYPES.TOGGLE_PLAY, this.handleTogglePlay);
     this.on(MESSAGE_TYPES.SHORTCUT_ACTION, this.handleShortcutAction);
+    this.on(MESSAGE_TYPES.VIDEO_EPISODE_CHANGED, this.handleVideoEpisodeChanged);
   }
 
   /** Type-safe wrapper around messageBus.on. */
@@ -1944,6 +1946,39 @@ export class BackgroundService {
       console.warn(`SHORTCUT_ACTION relay failed for tab ${tabId}: ${msg}`);
       return { success: false, error: msg };
     }
+  };
+
+  /**
+   * VIDEO_EPISODE_CHANGED: the content-script detected an in-page episode/movie
+   * switch — the active `<video>` element was REPLACED by a new one (SPAs like
+   * themoviebox.org swap the entire element on episode switch; quality switches
+   * keep the same element so they do not trigger this). This happens without
+   * any tab-level navigation event, so `chrome.tabs.onUpdated` never fires and
+   * the normal navigation clear in `onTabUpdated` cannot run. Clear the tab's
+   * detected media so the new episode starts fresh instead of accumulating
+   * media from the previous episode. Reuses the same clear methods as
+   * `onTabRemoved` / `onTabUpdated` loading — no new clear logic.
+   *
+   * Downloads are intentionally NOT cleared: an in-progress download of the
+   * previous episode should not be aborted just because the user switched
+   * episodes in the player. Only the detected-media list (popup/side panel) is
+   * reset.
+   */
+  private handleVideoEpisodeChanged = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as VideoEpisodeChangedPayload;
+    const tabId = payload?.tabId;
+    if (tabId === undefined) {
+      return { success: false, error: 'Missing tabId in VIDEO_EPISODE_CHANGED payload' };
+    }
+    this.networkInterceptor.clearTab(tabId);
+    this.clearSessionMedia(tabId);
+    this.lastCuesByTab.delete(tabId);
+    this.autoDownloadedTabs.delete(tabId);
+    this.updateBadgeForTab(tabId);
+    console.log('[bg VIDEO_EPISODE_CHANGED] cleared media for tab', tabId);
+    return { success: true };
   };
 }
 

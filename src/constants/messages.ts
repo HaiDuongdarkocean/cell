@@ -44,4 +44,5 @@ export const MESSAGE_TYPES = {
   SEEK_TO: 'SEEK_TO',
   TOGGLE_PLAY: 'TOGGLE_PLAY',
   SHORTCUT_ACTION: 'SHORTCUT_ACTION',
+  VIDEO_EPISODE_CHANGED: 'VIDEO_EPISODE_CHANGED',
 } as const satisfies Record<string, MessageType>;

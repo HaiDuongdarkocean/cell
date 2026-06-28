@@ -13,6 +13,7 @@ import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
 import type { OverlayConfig } from '../types/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue } from '../types/media';
 import type { AutoLoadSubtitlesPayload } from '../types/message';
+import type { VideoEpisodeChangedPayload } from '../types/message';
 
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
 // background tự lấy từ sender.tab.id (xem messageBus.handleMessage)
@@ -356,6 +357,79 @@ function findAndInitOverlay(): void {
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
+}
+
+// === In-page episode/movie switch detection (ADR-010) ===
+// SPA sites (themoviebox.org) switch episodes by REPLACING the `<video>`
+// element in-page — no URL change, no pushState, no reload, so
+// `chrome.tabs.onUpdated` never fires and the background's navigation clear
+// never runs. Media from the previous episode then accumulates into the new
+// episode's list.
+//
+// Detection signal: a NEW `<video>` element appearing in the DOM AFTER the
+// first one has already been seen = episode switch (the element was replaced).
+// Quality switches keep the SAME `<video>` element (only `src` changes,
+// verified 1080p↔480p: element identity preserved), so they do NOT trigger a
+// clear and the subtitle list is preserved.
+//
+// Triggering on element replacement (not on `loadedmetadata` duration-diff) is
+// deliberate: the replacement fires BEFORE the new video's network requests,
+// so the clear runs before the new episode's media is detected — no race that
+// would wipe the newly detected media.
+//
+// This watcher is module-level and independent of `initSubtitleOverlay`
+// because themoviebox replaces the entire `<video>` element on episode switch
+// — listeners attached to the previous element do not fire on the new one.
+//
+// ponytail: element-replacement heuristic. Ceiling: (1) sites that replace the
+// `<video>` element on quality switch would spuriously clear; (2) pages with
+// multiple `<video>` elements (e.g. ad-supported) may clear on the second
+// element's mount. Upgrade path: combine with video-URL path heuristic or an
+// explicit episode-click watcher.
+let hasSeenFirstVideo = false;
+
+function reportEpisodeChangedIfReplacement(): void {
+  if (hasSeenFirstVideo) {
+    // A previous <video> was already seen → this new one is a replacement
+    // (episode switch). Tell the background to clear the previous episode's
+    // media before the new episode's media is detected.
+    const payload: VideoEpisodeChangedPayload = {
+      tabId: undefined, // background resolves from sender.tab.id
+    };
+    chrome.runtime.sendMessage({
+      type: MESSAGE_TYPES.VIDEO_EPISODE_CHANGED,
+      payload,
+    });
+  }
+  hasSeenFirstVideo = true;
+}
+
+function initEpisodeChangeWatcher(): void {
+  // If a <video> is already present at inject time, that's the first one —
+  // baseline it without firing an episode-changed event.
+  if (document.querySelector('video')) {
+    hasSeenFirstVideo = true;
+  }
+  // Persistently observe for new <video> elements. A NEW element appearing
+  // after the first one was seen = episode switch (element replacement).
+  const observer = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node.nodeName === 'VIDEO') {
+          reportEpisodeChangedIfReplacement();
+        } else if (node instanceof Element && node.querySelector('video')) {
+          reportEpisodeChangedIfReplacement();
+        }
+      }
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initEpisodeChangeWatcher);
+} else {
+  initEpisodeChangeWatcher();
 }
 
 if (document.readyState === 'loading') {

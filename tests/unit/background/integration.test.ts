@@ -1266,6 +1266,75 @@ https://cdn.example.com/low.m3u8`;
     expect(media.subtitles).toHaveLength(0);
   });
 
+  // --- in-page episode switch (ADR-010) ---
+  // SPA sites (themoviebox.org) replace the <video> element on episode switch
+  // without triggering any tab-level navigation event, so chrome.tabs.onUpdated
+  // never fires. The content-script detects the replacement and sends
+  // VIDEO_EPISODE_CHANGED; the background must clear the tab's media so each
+  // episode starts fresh instead of accumulating.
+  it('clears media when content-script reports VIDEO_EPISODE_CHANGED (in-page episode switch)', async () => {
+    // Simulate episode 1 media already detected.
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/ep1.m3u8', 123),
+    );
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/ep1-en.srt', 123),
+    );
+    expect(interceptor.getMedia(123).videos).toHaveLength(1);
+    expect(interceptor.getMedia(123).subtitles).toHaveLength(1);
+
+    mockChrome.action.setBadgeText.mockClear();
+
+    // Content-script detected a <video> element replacement → episode switched.
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.VIDEO_EPISODE_CHANGED,
+      payload: {
+        tabId: 123,
+      },
+    };
+    const res = await messageBus.handleMessage(request, { id: 'sender-1' });
+
+    expect(res.success).toBe(true);
+    // Media from episode 1 must be cleared.
+    const media = interceptor.getMedia(123);
+    expect(media.videos).toHaveLength(0);
+    expect(media.subtitles).toHaveLength(0);
+    // Badge must be reset (no media left).
+    expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({
+      text: '',
+      tabId: 123,
+    });
+  });
+
+  it('does NOT clear other tabs when one tab reports VIDEO_EPISODE_CHANGED', async () => {
+    // Tab 123 has media; tab 456 has media.
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/ep1.m3u8', 123),
+    );
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/other.m3u8', 456),
+    );
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.VIDEO_EPISODE_CHANGED,
+      payload: { tabId: 123 },
+    };
+    await messageBus.handleMessage(request, { id: 'sender-1' });
+
+    // Tab 123 cleared; tab 456 untouched.
+    expect(interceptor.getMedia(123).videos).toHaveLength(0);
+    expect(interceptor.getMedia(456).videos).toHaveLength(1);
+  });
+
+  it('rejects VIDEO_EPISODE_CHANGED without a tabId', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.VIDEO_EPISODE_CHANGED,
+      payload: {},
+    };
+    const res = await messageBus.handleMessage(request, { id: 'sender-1' });
+    expect(res.success).toBe(false);
+  });
+
   // --- convert callback wiring ---
 
   it('sets a convert callback on the downloader that uses the offscreen document', async () => {
