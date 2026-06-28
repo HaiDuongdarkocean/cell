@@ -83,7 +83,7 @@ src/
 ├── sidepanel/                     # Side Panel UI (React) — ADR-008
 │   ├── index.html                 # HTML shell
 │   ├── main.tsx                   # Entry → render App
-│   ├── App.tsx                    # Side Panel UI: header + CueList; listen for cues/time/play from background; send SEEK_TO
+│   ├── App.tsx                    # Side Panel UI: header + CueList; listen for cues/time/play from background; send SEEK_TO; Spacebar → TOGGLE_PLAY; hotkeys (a/d/s/w/t) → SHORTCUT_ACTION (reuse handleShortcutKey); request cues on mount (REQUEST_SUBTITLE_CUES)
 │   ├── store/
 │   │   └── sidePanelStore.ts      # Zustand store: cues, currentTimeMs, durationMs, isPlaying; currentCueIndex()
 │   └── components/
@@ -198,7 +198,7 @@ tests/
 
 | File | Import từ (depends on) | Được import bởi (depended by) | Sửa file này → ảnh hưởng |
 |------|------------------------|-------------------------------|--------------------------|
-| `background/index.ts` | networkInterceptor, messageBus, downloadQueue, downloader, offscreenManager, **autoDownload**, config, messages, opfsStorage, videoDetector, subtitleDetector, types | `service-worker-loader.js` (entry) | Toàn bộ background flow; **onMediaDetected** → `maybeAutoDownload` → `tryAutoDownload` (per-tab state `autoDownloadedTabs: Map<tabId, {url, enqueuedIds}>` — catch-up subtitles without re-downloading video); **onTabUpdated** (loading) → clear state + media; **ADR-008: 5 Side Panel handlers** — handleOpenSidePanel (chrome.sidePanel.open), handleSubtitleCuesLoaded (relay cues → side panel), handleVideoTimeUpdate (relay time → side panel), handleVideoPlayState (relay play/pause → side panel), handleSeekTo (relay seek → content script, resolves active tab when tabId missing) |
+| `background/index.ts` | networkInterceptor, messageBus, downloadQueue, downloader, offscreenManager, **autoDownload**, config, messages, opfsStorage, videoDetector, subtitleDetector, types | `service-worker-loader.js` (entry) | Toàn bộ background flow; **onMediaDetected** → `maybeAutoDownload` → `tryAutoDownload` (per-tab state `autoDownloadedTabs: Map<tabId, {url, enqueuedIds}>` — catch-up subtitles without re-downloading video); **onTabUpdated** (loading) → clear state + **media clear** (clearTab + clearSessionMedia + lastCuesByTab.delete + updateBadgeForTab — ADR-009 D3); **ADR-008: 5 Side Panel handlers** — handleOpenSidePanel, handleSubtitleCuesLoaded, handleVideoTimeUpdate, handleVideoPlayState, handleSeekTo; **ADR-009: 2 video control handlers** — handleTogglePlay (relay TOGGLE_PLAY → content-script), handleShortcutAction (relay SHORTCUT_ACTION → content-script), handleRequestSubtitleCues (re-send cached cues) |
 | `background/networkInterceptor.ts` | videoDetector, subtitleDetector, types | `background/index.ts` | Media detection, dedup, clearTab |
 | `background/downloader.ts` | m3u8Parser, assToSrt, vttToSrt, srtNormalizer, conversionTimer, parallelPlanner, **fileUtils**, opfsStorage, types, config | `background/index.ts` | Download + convert + filename, **pause/resume/retry** (cancel flag pattern), **two-phase progress** (downloadProgress + convertProgress), **AES-128 decrypt** (fetchKey, decryptSegment, WebCrypto AES-CBC), **fMP4 concat** (init segment + .m4s → .mp4, no transmux), **byte-range** (Range header, 206/200), **ad skip** (section-based, even=content/odd=ad), **nested master** (max depth 3) |
 | `background/downloadQueue.ts` | types | `background/index.ts` | Queue concurrency, pause/resume, **retry** (reset+requeue), **remove** (delete item) |
@@ -232,7 +232,7 @@ tests/
 |------|-----------|-----------------|--------------------------|
 | `sidepanel/index.html` | — | Vite (sidepanel entry) | HTML shell for Side Panel |
 | `sidepanel/main.tsx` | App | `index.html` | React entry point |
-| `sidepanel/App.tsx` | useSidePanelStore, CueList, types | `main.tsx` | Side Panel UI: header (title + cue count + play state), CueList; listens for SUBTITLE_CUES_LOADED/VIDEO_TIME_UPDATE/VIDEO_PLAY_STATE from background; sends SEEK_TO on cue click |
+| `sidepanel/App.tsx` | useSidePanelStore, CueList, getActiveContentTab, **handleShortcutKey** (content/subtitleShortcuts), **DEFAULT_KEYBOARD_SHORTCUTS** (config), types | `main.tsx` | Side Panel UI: header (title + cue count + play state), CueList; listens for SUBTITLE_CUES_LOADED/VIDEO_TIME_UPDATE/VIDEO_PLAY_STATE from background; sends SEEK_TO on cue click; **ADR-009: Spacebar → TOGGLE_PLAY, hotkeys (a/d/s/w/t) → SHORTCUT_ACTION** (reuse handleShortcutKey, load shortcuts from storage); REQUEST_SUBTITLE_CUES on mount (race condition fix) |
 | `sidepanel/store/sidePanelStore.ts` | zustand, types (BilingualCue) | App, CueList | State: cues, currentTimeMs, durationMs, isPlaying; actions: setCues, setCurrentTime, setPlaying, currentCueIndex (binary search) |
 | `sidepanel/components/CueList.tsx` | types (BilingualCue) | App | Cue list with timestamps, bilingual text, highlight current cue, auto-scroll, click → onSeek(cue.start) |
 
@@ -572,8 +572,11 @@ downloader.downloadM3u8Streaming(playlist)
 | `highlightCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | content-script.ts | Highlight current cue background — **implemented Task 5** |
 | `scrollToCue` | `content/subtitlePanel.ts` | (HTMLDivElement, number) → void | content-script.ts | Auto-scroll current cue into view — **implemented Task 5** |
 | `seekToCue` | `content/subtitlePanel.ts` | (HTMLVideoElement, { start: number }) → void | content-script.ts | Seek video to cue start (ms → seconds) — **implemented Task 5** |
-| `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | content-script.ts | Pure: map key → action, guard input/textarea focus — **implemented Task 3** |
+| `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | content-script.ts, **sidepanel/App.tsx** | Pure: map key → action, guard input/textarea focus — **implemented Task 3, reused ADR-009** |
 | `isEditableTarget` | `content/subtitleShortcuts.ts` | EventTarget \| null → boolean | subtitleShortcuts.ts | Check if target is input/textarea/select/contenteditable — **implemented Task 3** |
+| `handleTogglePlay` | `background/index.ts` | MessageRequest → Promise<MessageResponse> | messageBus | Relay TOGGLE_PLAY → active tab content-script (resolves active tab when tabId missing) — **ADR-009 D1** |
+| `handleShortcutAction` | `background/index.ts` | MessageRequest → Promise<MessageResponse> | messageBus | Relay SHORTCUT_ACTION (prev-cue/next-cue/replay-cue/toggle-overlay) → active tab content-script — **ADR-009 D4** |
+| `handleRequestSubtitleCues` | `background/index.ts` | MessageRequest → Promise<MessageResponse> | messageBus | Re-send cached cues per tab (race condition fix: panel opens after cues sent) — **ADR-008** |
 
 ---
 

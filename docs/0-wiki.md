@@ -17,14 +17,17 @@ docs/           # Tài liệu dự án
 │   ├── 005-subtitle-floating-panel.md # Subtitle panel: inline DOM, bilingual delimiter, CS shortcuts
 │   ├── 006-architecture-proposal.md   # Architecture proposal
 │   ├── 007-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load architecture
-│   └── 008-side-panel-subtitle.md     # Side Panel API thay thế inject-DOM panel
+│   ├── 008-side-panel-subtitle.md     # Side Panel API thay thế inject-DOM panel
+│   └── 009-side-panel-video-controls.md # Side Panel video controls (hotkeys + media clear)
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
-│   └── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
+│   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
+│   └── intent-side-panel-video-controls.md # Side Panel video controls (spacebar + hotkeys)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
 │   ├── spec-side-panel-subtitle.md    # Side Panel subtitle PRD (thay thế inject-DOM panel)
+│   ├── spec-side-panel-video-controls.md # Side Panel video controls PRD (spacebar + hotkeys + media clear)
 │   ├── feature-inventory.md           # Feature inventory
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
@@ -32,9 +35,11 @@ docs/           # Tài liệu dự án
 │   ├── parallel-hls-conversion-scaling.md
 │   ├── subtitle-sidebar-shortcuts.md  # Subtitle floating panel + shortcuts
 │   ├── plan-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — feasibility (G1)
-│   └── plan-side-panel-subtitle.md    # Side Panel subtitle — feasibility + task breakdown
+│   ├── plan-side-panel-subtitle.md    # Side Panel subtitle — feasibility + task breakdown
+│   └── plan-side-panel-video-controls.md # Side Panel video controls — feasibility (G1)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
+│   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
 │   └── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
 ├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
 │   ├── principles.md                              # Principle index (abstract, layer 1)
@@ -52,7 +57,8 @@ docs/           # Tài liệu dự án
 │   ├── state-dom-init-mismatch.md                 # State-DOM init mismatch
 │   ├── subtitle-filename-matches-video.md         # Subtitle filename matches video
 │   ├── subtitle-language-detection.md             # Subtitle language detection (hybrid)
-│   └── tab-scoping-popup-leak.md                  # Tab-Scoping (popup media leak)
+│   ├── tab-scoping-popup-leak.md                  # Tab-Scoping (popup media leak)
+│   └── media-accumulation-navigation.md           # Media accumulation across navigation (clear on onTabUpdated)
 ├── test-reports/                      # MCP browser test reports — "does it work in real browser"
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md
 │   ├── 2026-06-27-subtitle-panel-docking-mcp.md

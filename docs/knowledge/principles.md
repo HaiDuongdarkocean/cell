@@ -178,7 +178,7 @@ Khi có 2 nguồn truth (state variable + DOM property), chúng phải sync ban 
 When multiple UI pieces must remain visible together in fullscreen, the fullscreen element must be their common ancestor, not the media element. Fullscreening only the media element leaves sibling UI floating outside the fullscreen layer or overlaying the video.
 
 ### Cases đã gặp
-- [fullscreen-target-shared-container.md](fullscreen-target-shared-container.md) — art-player fullscreen button targeted the video element, so the subtitle panel overlayed the video. Fix: intercept the button and request fullscreen on the shared layout box (F0), then lay out video 70% and panel 30%.
+- [fullscreen-target-shared-container.md](fullscreen-target-shared-container.md) — art-player fullscreen button targeted the video element, so the subtitle panel disappeared. Direct interception failed because content scripts run in an isolated world and page CSP blocks injected scripts; reactive redirect failed because `requestFullscreen()` requires a user gesture that is consumed before the `fullscreenchange` handler runs. Fix: let the player's chosen element become `document.fullscreenElement`, then move the subtitle panel **into** that element as a fixed-position overlay (30vw right side, max z-index) so it stays visible; restore parent and styles on exit.
 
 ### Apply cho
 - Video players with side panels (subtitle, playlist, chat, annotations)
@@ -265,3 +265,18 @@ Khi show/apply path set inline style với `!important`, hide/restore path PHẢ
 - React imperative DOM mutation (useState + ref.style.setProperty)
 - Any show/hide pattern using `!important` to override site CSS
 - MutationObserver guard patterns (stop observer before removing styles)
+
+---
+
+## Clear per-navigation state in shared lifecycle handler
+
+### Nguyên lý
+Navigation lifecycle handler (onTabUpdated loading) là shared function cho mọi navigation. Clear per-page state ở đây = root cause fix, không patch symptom. Reuse methods đã có trong close handler (onTabRemoved) — không code mới.
+
+### Cases đã gặp
+- [media-accumulation-navigation.md](media-accumulation-navigation.md) — `onTabUpdated` loading chỉ reset auto-download guard, không clear media → media accumulate across episodes (11 → 22). Fix: thêm `clearTab` + `clearSessionMedia` + `lastCuesByTab.delete` + `updateBadgeForTab` (reuse từ `onTabRemoved`).
+
+### Apply cho
+- Chrome extension `onTabUpdated` / `onTabRemoved` lifecycle handlers
+- SPA route change cleanup (clear state khi URL change, không đợi close)
+- Any per-page state that must reset on navigation (media, cache, badge, session storage)
