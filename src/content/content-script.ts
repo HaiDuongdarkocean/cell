@@ -22,6 +22,23 @@ import type { VideoEpisodeChangedPayload } from '../types/message';
 clearAutoLoadCache();
 const scanner = new PageScanner();
 
+// === Main-world fetch interceptor bridge (ADR-011) ===
+// The main-world fetchInterceptor.iife.ts patches `window.fetch` and posts
+// detected subtitle URLs via `window.postMessage`. This isolated-world
+// listener receives them and relays to the background, which adds them to
+// the network interceptor's subtitle store. This catches subtitle fetches
+// that page Service Workers serve from cache (webRequest does not fire for
+// cached responses).
+window.addEventListener('message', (event) => {
+  if (event.source !== window) return;
+  const data = event.data as { type?: string; url?: string } | null;
+  if (data?.type !== '__DETECTED_SUBTITLE_FETCH' || !data.url) return;
+  chrome.runtime.sendMessage({
+    type: MESSAGE_TYPES.DETECTED_SUBTITLE_URL,
+    payload: { tabId: undefined, url: data.url },
+  });
+});
+
 // Scan on page load — gửi không tabId, background resolve từ sender
 const urls = scanner.scan();
 if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
@@ -122,7 +139,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       }
       case 'replay-cue': {
         const currentMs = video.currentTime * 1000;
-        const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end >= currentMs)
+        // Half-open [start, end) — at boundary t = cue[i].end = cue[i+1].start,
+        // match the NEXT cue, not the previous one (replay-cue "jump back" bug).
+        const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end > currentMs)
           ?? [...bilingualCues].reverse().find((c) => c.start < currentMs);
         if (currentCue) seekToCue(video, currentCue);
         break;
@@ -211,7 +230,8 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
           break;
         }
         case 'replay-cue': {
-          const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end >= currentMs)
+          // Half-open [start, end) — see in-page keydown handler above.
+          const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end > currentMs)
             ?? [...bilingualCues].reverse().find((c) => c.start < currentMs);
           if (currentCue) seekToCue(video, currentCue);
           break;
@@ -340,23 +360,44 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
 }
 
 // Find video element and init overlay (defer until DOM ready, observe SPA late mounts)
+// ADR-012: SPA frameworks (Angular on kisskh.co) render <video> in two phases —
+// first mount the element with src="" (template), then assign the real source
+// (blob: URL) after fetch. If the content-script init's overlay UI during phase 1,
+// the framework's continued render wipes foreign (non-framework) elements appended
+// to the video's parent. Waiting until the video has a real source (blob: URL OR
+// readyState >= 2 HAVE_CURRENT_DATA) ensures the framework render is done, so
+// appended UI persists. Covers both blob-streaming SPAs (kisskh) and direct-MP4
+// sites (themoviebox.org — no framework re-render, readyState>=2 is immediate).
+function isVideoReady(v: HTMLVideoElement): boolean {
+  return (v.src !== '' && v.src.startsWith('blob:')) || v.readyState >= 2;
+}
+
 function findAndInitOverlay(): void {
   const video = document.querySelector('video');
-  if (video) {
+  if (video && isVideoReady(video)) {
     initSubtitleOverlay(video);
     return;
   }
 
-  // SPA: video may be rendered after DOMContentLoaded. Observe body until it appears.
-  // ponytail: disconnect as soon as video is found to avoid unnecessary mutation work.
+  // SPA: video may be rendered after DOMContentLoaded, or may exist but not yet
+  // have a real source (Angular two-phase render — see isVideoReady). Observe
+  // body until a ready video appears. attributeFilter:['src'] catches the
+  // phase-2 src assignment (blob: URL) that childList alone would miss.
+  // ponytail: disconnect as soon as a ready video is found to avoid unnecessary
+  // mutation work.
   const observer = new MutationObserver(() => {
     const v = document.querySelector('video');
-    if (v) {
+    if (v && isVideoReady(v)) {
       observer.disconnect();
       initSubtitleOverlay(v);
     }
   });
-  observer.observe(document.body, { childList: true, subtree: true });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['src'],
+  });
 }
 
 // === In-page episode/movie switch detection (ADR-010) ===

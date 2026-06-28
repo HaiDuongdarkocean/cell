@@ -21,7 +21,7 @@ src/
 │   └── subtitleService.ts         # findSubtitlesForOverlay: validate target + native language → SubtitlesForOverlayResult (target + native, partial load)
 │
 ├── content/                       # Content script (chạy trong trang web)
-│   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT; wire subtitle overlay + panel + shortcuts; ADR-010 episode-switch watcher (VIDEO_EPISODE_CHANGED)
+│   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT; wire subtitle overlay + panel + shortcuts; ADR-010 episode-switch watcher (VIDEO_EPISODE_CHANGED); ADR-012 isVideoReady gate (blob: OR readyState>=2)
 │   ├── pageScanner.ts             # Scan <video>, <source>, subtitle <track>
 │   ├── subtitleParser.ts          # Adapter: parseSubtitle(content, format) → ParseResult (reuse parseSrt/parseVtt)
 │   ├── subtitleSync.ts            # Binary search O(log n): findCurrentLine(cues, currentTime) → index
@@ -83,7 +83,7 @@ src/
 ├── sidepanel/                     # Side Panel UI (React) — ADR-008
 │   ├── index.html                 # HTML shell
 │   ├── main.tsx                   # Entry → render App
-│   ├── App.tsx                    # Side Panel UI: header + CueList; listen for cues/time/play from background; send SEEK_TO; Spacebar → TOGGLE_PLAY; hotkeys (a/d/s/w/t) → SHORTCUT_ACTION (reuse handleShortcutKey); request cues on mount (REQUEST_SUBTITLE_CUES)
+│   ├── App.tsx                    # Side Panel UI: header + CueList; listen for cues/time/play from background (filter by activeTabId); send SEEK_TO; Spacebar → TOGGLE_PLAY; hotkeys (a/d/s/w/t) → SHORTCUT_ACTION (reuse handleShortcutKey); request cues on mount + on tab switch (REQUEST_SUBTITLE_CUES); ADR-011 active tab tracking (onActivated + onUpdated listeners)
 │   ├── store/
 │   │   └── sidePanelStore.ts      # Zustand store: cues, currentTimeMs, durationMs, isPlaying; currentCueIndex()
 │   └── components/
@@ -198,7 +198,7 @@ tests/
 
 | File | Import từ (depends on) | Được import bởi (depended by) | Sửa file này → ảnh hưởng |
 |------|------------------------|-------------------------------|--------------------------|
-| `background/index.ts` | networkInterceptor, messageBus, downloadQueue, downloader, offscreenManager, **autoDownload**, config, messages, opfsStorage, videoDetector, subtitleDetector, types | `service-worker-loader.js` (entry) | Toàn bộ background flow; **onMediaDetected** → `maybeAutoDownload` → `tryAutoDownload` (per-tab state `autoDownloadedTabs: Map<tabId, {url, enqueuedIds}>` — catch-up subtitles without re-downloading video); **onTabUpdated** (loading) → clear state + **media clear** (clearTab + clearSessionMedia + lastCuesByTab.delete + updateBadgeForTab — ADR-009 D3); **ADR-008: 5 Side Panel handlers** — handleOpenSidePanel, handleSubtitleCuesLoaded, handleVideoTimeUpdate, handleVideoPlayState, handleSeekTo; **ADR-009: 2 video control handlers** — handleTogglePlay (relay TOGGLE_PLAY → content-script), handleShortcutAction (relay SHORTCUT_ACTION → content-script), handleRequestSubtitleCues (re-send cached cues); **ADR-010: handleVideoEpisodeChanged** (clear tab media on in-page episode switch — `<video>` element replacement detected by content-script) |
+| `background/index.ts` | networkInterceptor, messageBus, downloadQueue, downloader, offscreenManager, **autoDownload**, config, messages, opfsStorage, videoDetector, subtitleDetector, types | `service-worker-loader.js` (entry) | Toàn bộ background flow; **onMediaDetected** → `maybeAutoDownload` → `tryAutoDownload` (per-tab state `autoDownloadedTabs: Map<tabId, {url, enqueuedIds}>` — catch-up subtitles without re-downloading video); **onTabUpdated** (loading) → clear state + **media clear** (clearTab + clearSessionMedia + lastCuesByTab.delete + updateBadgeForTab — ADR-009 D3); **ADR-008: 5 Side Panel handlers** — handleOpenSidePanel, handleSubtitleCuesLoaded, handleVideoTimeUpdate, handleVideoPlayState, handleSeekTo; **ADR-009: 2 video control handlers** — handleTogglePlay (relay TOGGLE_PLAY → content-script), handleShortcutAction (relay SHORTCUT_ACTION → content-script), handleRequestSubtitleCues (re-send cached cues); **ADR-010: handleVideoEpisodeChanged** (clear tab media on in-page episode switch — `<video>` element replacement detected by content-script); **ADR-011: 3 relay handlers (SUBTITLE_CUES_LOADED, VIDEO_TIME_UPDATE, VIDEO_PLAY_STATE) include tabId in payload** so side panel can filter by active tab |
 | `background/networkInterceptor.ts` | videoDetector, subtitleDetector, types | `background/index.ts` | Media detection, dedup, clearTab |
 | `background/downloader.ts` | m3u8Parser, assToSrt, vttToSrt, srtNormalizer, conversionTimer, parallelPlanner, **fileUtils**, opfsStorage, types, config | `background/index.ts` | Download + convert + filename, **pause/resume/retry** (cancel flag pattern), **two-phase progress** (downloadProgress + convertProgress), **AES-128 decrypt** (fetchKey, decryptSegment, WebCrypto AES-CBC), **fMP4 concat** (init segment + .m4s → .mp4, no transmux), **byte-range** (Range header, 206/200), **ad skip** (section-based, even=content/odd=ad), **nested master** (max depth 3) |
 | `background/downloadQueue.ts` | types | `background/index.ts` | Queue concurrency, pause/resume, **retry** (reset+requeue), **remove** (delete item) |
@@ -211,7 +211,7 @@ tests/
 
 | File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
 |------|-----------|-----------------|--------------------------|
-| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, subtitleShortcuts, subtitleAutoLoad, subtitleMerge, config, messages | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + toggle + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; send cues/timeupdate/play-state to Side Panel via background relay; receive SEEK_TO from Side Panel (ADR-008); **ADR-010: module-level `initEpisodeChangeWatcher`** — MutationObserver persist observe `<video>` replacement → send VIDEO_EPISODE_CHANGED (episode switch clear, quality switch preserved) |
+| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, subtitleShortcuts, subtitleAutoLoad, subtitleMerge, config, messages | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + toggle + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; send cues/timeupdate/play-state to Side Panel via background relay; receive SEEK_TO from Side Panel (ADR-008); **ADR-010: module-level `initEpisodeChangeWatcher`** — MutationObserver persist observe `<video>` replacement → send VIDEO_EPISODE_CHANGED (episode switch clear, quality switch preserved); **ADR-012: `isVideoReady` gate** — `findAndInitOverlay` waits until `video.src` is `blob:` OR `readyState>=2` before init (Angular two-phase render on kisskh.co wipes foreign elements appended during phase 1; observer uses `attributeFilter:['src']` to catch phase-2 src assignment) |
 | `content/pageScanner.ts` | urls (constants) | `content/content-script.ts` | Scan `<video>`, `<source>`, `<track>` |
 | `content/subtitleParser.ts` | srtParser, vttParser, types | subtitleDragDrop, subtitleImport | Adapter: parseSubtitle(content, format) → ParseResult |
 | `content/subtitleSync.ts` | types (SrtCue) | subtitleOverlay | Binary search: findCurrentLine(cues, currentTime) → index |
@@ -232,9 +232,9 @@ tests/
 |------|-----------|-----------------|--------------------------|
 | `sidepanel/index.html` | — | Vite (sidepanel entry) | HTML shell for Side Panel |
 | `sidepanel/main.tsx` | App | `index.html` | React entry point |
-| `sidepanel/App.tsx` | useSidePanelStore, CueList, getActiveContentTab, **handleShortcutKey** (content/subtitleShortcuts), **DEFAULT_KEYBOARD_SHORTCUTS** (config), types | `main.tsx` | Side Panel UI: header (title + cue count + play state), CueList; listens for SUBTITLE_CUES_LOADED/VIDEO_TIME_UPDATE/VIDEO_PLAY_STATE from background; sends SEEK_TO on cue click; **ADR-009: Spacebar → TOGGLE_PLAY, hotkeys (a/d/s/w/t) → SHORTCUT_ACTION** (reuse handleShortcutKey, load shortcuts from storage); REQUEST_SUBTITLE_CUES on mount (race condition fix) |
-| `sidepanel/store/sidePanelStore.ts` | zustand, types (BilingualCue) | App, CueList | State: cues, currentTimeMs, durationMs, isPlaying; actions: setCues, setCurrentTime, setPlaying, currentCueIndex (binary search) |
-| `sidepanel/components/CueList.tsx` | types (BilingualCue) | App | Cue list with timestamps, bilingual text, highlight current cue, auto-scroll, click → onSeek(cue.start) |
+| `sidepanel/App.tsx` | useSidePanelStore, CueList, getActiveContentTab, **handleShortcutKey** (content/subtitleShortcuts), **DEFAULT_KEYBOARD_SHORTCUTS** (config), types | `main.tsx` | Side Panel UI: header (title + cue count + play state), CueList; listens for SUBTITLE_CUES_LOADED/VIDEO_TIME_UPDATE/VIDEO_PLAY_STATE from background (**filter by activeTabId** — drop when payload.tabId !== activeTabIdRef.current, race fallback accept when activeTabIdRef undefined); sends SEEK_TO on cue click; **ADR-009: Spacebar → TOGGLE_PLAY, hotkeys (a/d/s/w/t) → SHORTCUT_ACTION** (reuse handleShortcutKey, load shortcuts from storage); REQUEST_SUBTITLE_CUES on mount + **on tab switch** (syncActiveTab resets store + re-fetches cached cues); **ADR-011: activeTabIdRef + chrome.tabs.onActivated (re-fetch on tab switch) + chrome.tabs.onUpdated loading (clear store on same-tab navigate, mirror background lastCuesByTab.delete)** |
+| `sidepanel/store/sidePanelStore.ts` | zustand, types (BilingualCue) | App, CueList | State: cues, currentTimeMs, durationMs, isPlaying; actions: setCues, setCurrentTime, setPlaying, currentCueIndex — **half-open [start,end)** (boundary overlap fix) |
+| `sidepanel/components/CueList.tsx` | types (BilingualCue) | App | Cue list with timestamps, bilingual text, highlight current cue, auto-scroll (**instant `behavior:'auto'`** — smooth scroll across long list caused motion sickness), click → onSeek(cue.start); **half-open [start,end)** findIndex |
 
 ### Popup layer
 
@@ -502,8 +502,9 @@ downloader.downloadM3u8Streaming(playlist)
 | `tests/unit/utils/whitelist.test.ts` | `lib/utils/whitelist.ts` | 13 | normalizeUrl, getWhitelist, isWhitelisted, addToWhitelist, removeFromWhitelist |
 | `tests/unit/popup/MultiSelect.test.tsx` | `popup/components/settings/MultiSelect.tsx` | 14 | Search input, checkbox list, selection toggle, footer |
 | `tests/unit/sidepanel/sidePanelStore.test.ts` | `sidepanel/store/sidePanelStore.ts` | 8 | setCues, setCurrentTime, setPlaying, currentCueIndex (binary search) |
-| `tests/unit/sidepanel/CueList.test.tsx` | `sidepanel/components/CueList.tsx` | 7 | Render cues, timestamps, onSeek, highlight, auto-scroll, empty nativeText |
+| `tests/unit/sidepanel/CueList.test.tsx` | `sidepanel/components/CueList.tsx` | 11 | Render cues, timestamps, onSeek, highlight, auto-scroll, empty nativeText, **boundary overlap (half-open [start,end))**, **scroll behavior (instant)** |
 | `tests/unit/background/autoDownload.test.ts` | `background/autoDownload.ts` | 15 | tryAutoDownload: whitelist miss → no-op, whitelist hit → enqueue, no media → no-op, return value (enqueued ids array), incremental subtitle catch-up with alreadyEnqueuedIds |
+| `tests/unit/background/integration.test.ts` | `background/index.ts` (messageBus handlers) | 100+ | SUBTITLE_CUES_LOADED cache + relay (**ADR-011: relay tabId**), REQUEST_SUBTITLE_CUES re-send, VIDEO_TIME_UPDATE/VIDEO_PLAY_STATE relay tabId (ADR-011), VIDEO_EPISODE_CHANGED clear (ADR-010), auto-download, navigation media clear (ADR-009 D3) |
 
 ---
 
@@ -580,6 +581,8 @@ downloader.downloadM3u8Streaming(playlist)
 | `handleVideoEpisodeChanged` | `background/index.ts` | MessageRequest → Promise<MessageResponse> | messageBus | Clear tab media on in-page episode switch (reuse clearTab + clearSessionMedia + lastCuesByTab.delete + autoDownloadedTabs.delete + updateBadgeForTab; downloads NOT cleared) — **ADR-010** |
 | `initEpisodeChangeWatcher` | `content/content-script.ts` | () → void | content-script.ts (module-level) | MutationObserver persist observe `<video>` element replacement → send VIDEO_EPISODE_CHANGED when 2nd+ video appears (episode switch). Quality switch keeps same element → no clear. — **ADR-010** |
 | `reportEpisodeChangedIfReplacement` | `content/content-script.ts` | () → void | initEpisodeChangeWatcher | Send VIDEO_EPISODE_CHANGED if `hasSeenFirstVideo` already true (replacement); else baseline first mount — **ADR-010** |
+| `isVideoReady` | `content/content-script.ts` | (HTMLVideoElement) → boolean | findAndInitOverlay | Gate: true if `video.src` is `blob:` OR `readyState>=2`. Prevents init during Angular two-phase render (phase 1: src="" → foreign elements wiped; phase 2: blob: assigned → safe). — **ADR-012** |
+| `findAndInitOverlay` | `content/content-script.ts` | () → void | content-script.ts (module-level) | Find ready `<video>` → initSubtitleOverlay. MutationObserver with `attributeFilter:['src']` catches phase-2 src assignment. Disconnects after init. — **ADR-012** |
 
 ---
 

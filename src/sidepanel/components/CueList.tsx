@@ -23,9 +23,13 @@ export function CueList({ cues, currentTimeMs, onSeek }: CueListProps) {
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
 
-  // Find current cue
+  // Find current cue. Half-open [start, end): at boundary t = cue[i].end =
+  // cue[i+1].start, only the NEXT cue matches (subtitle semantics: a cue is
+  // visible from start inclusive to end exclusive). Closed interval [start,end]
+  // would match both cues and findIndex returns the earlier one → replay-cue
+  // "jumps back to previous cue" bug.
   const currentIndex = cues.findIndex(
-    (c) => c.start <= currentTimeMs && c.end >= currentTimeMs,
+    (c) => c.start <= currentTimeMs && c.end > currentTimeMs,
   );
 
   // Auto-scroll current cue into view
@@ -35,12 +39,15 @@ export function CueList({ cues, currentTimeMs, onSeek }: CueListProps) {
     highlightedRef.current = currentIndex;
     const el = itemRefs.current[currentIndex];
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // ponytail: 'auto' (instant) instead of 'smooth' — smooth scroll across
+      // a long cue list (full movie) causes motion sickness. Upgrade path:
+      // distance-aware behavior (smooth for small jumps, auto for large).
+      el.scrollIntoView({ behavior: 'auto', block: 'center' });
     }
   }, [currentIndex, currentTimeMs]);
 
   return (
-    <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
+    <div ref={listRef} style={{ flex: 1, overflowY: 'auto' }}>
       {cues.map((cue, i) => {
         const isCurrent = i === currentIndex;
         return (
@@ -49,11 +56,9 @@ export function CueList({ cues, currentTimeMs, onSeek }: CueListProps) {
             ref={(el) => { itemRefs.current[i] = el; }}
             data-testid="cue-item"
             data-cue-index={cue.index}
-            onClick={() => onSeek(cue.start)}
             style={{
-              padding: '6px 12px',
+              padding: '4px 8px',
               borderBottom: '1px solid rgba(255,255,255,0.08)',
-              cursor: 'pointer',
               userSelect: 'text',
               backgroundColor: isCurrent ? 'rgba(0, 150, 255, 0.3)' : 'transparent',
             }}
@@ -61,11 +66,13 @@ export function CueList({ cues, currentTimeMs, onSeek }: CueListProps) {
             <span
               data-testid="cue-timestamp"
               data-cue-index={cue.index}
+              onClick={() => onSeek(cue.start)}
               style={{
                 display: 'block',
                 fontSize: '11px',
                 color: 'rgba(255, 255, 255, 0.5)',
                 marginBottom: '2px',
+                cursor: 'pointer',
               }}
             >
               {formatTimestamp(cue.start)}

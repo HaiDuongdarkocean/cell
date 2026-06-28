@@ -91,4 +91,52 @@ describe('CueList', () => {
     expect(screen.getByText('No native')).toBeTruthy();
     expect(screen.queryByTestId('cue-native-text')).toBeNull();
   });
+
+  // Regression: boundary overlap. When cue[i].end === cue[i+1].start (adjacent
+  // cues, common in real subtitles), a closed interval [start,end] would match
+  // BOTH cues and findIndex returns the earlier one → replay-cue "jumps back
+  // to previous cue" bug. Half-open [start,end) must match only the NEXT cue.
+  describe('boundary overlap (half-open [start, end))', () => {
+    const adjacentCues: BilingualCue[] = [
+      { index: 1, start: 1000, end: 3000, targetText: 'First', nativeText: '' },
+      { index: 2, start: 3000, end: 5000, targetText: 'Second', nativeText: '' },
+    ];
+
+    it('at t = cue[i].end = cue[i+1].start, highlights the NEXT cue (not previous)', () => {
+      render(<CueList cues={adjacentCues} currentTimeMs={3000} onSeek={jest.fn()} />);
+
+      const items = screen.getAllByTestId('cue-item');
+      // t=3000 is cue1.end AND cue2.start. Half-open [start,end) → only cue 2.
+      expect(items[0].style.backgroundColor).toBe('transparent');
+      expect(items[1].style.backgroundColor).toBe('rgba(0, 150, 255, 0.3)');
+    });
+
+    it('at t = cue[i].end - 1, highlights the current cue', () => {
+      render(<CueList cues={adjacentCues} currentTimeMs={2999} onSeek={jest.fn()} />);
+
+      const items = screen.getAllByTestId('cue-item');
+      expect(items[0].style.backgroundColor).toBe('rgba(0, 150, 255, 0.3)');
+      expect(items[1].style.backgroundColor).toBe('transparent');
+    });
+  });
+
+  // Regression: scrollIntoView must use behavior 'auto' (instant), not 'smooth'.
+  // Smooth scroll across a long cue list (full movie) causes motion sickness.
+  describe('scroll behavior', () => {
+    it('uses instant scroll (behavior: auto) when cue changes', () => {
+      const cues: BilingualCue[] = [
+        { index: 1, start: 1000, end: 3000, targetText: 'A', nativeText: '' },
+        { index: 2, start: 3000, end: 5000, targetText: 'B', nativeText: '' },
+      ];
+      const { rerender } = render(<CueList cues={cues} currentTimeMs={1500} onSeek={jest.fn()} />);
+      (Element.prototype.scrollIntoView as jest.Mock).mockClear();
+
+      // Move to next cue → should trigger instant scroll
+      rerender(<CueList cues={cues} currentTimeMs={3500} onSeek={jest.fn()} />);
+
+      expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith(
+        expect.objectContaining({ behavior: 'auto', block: 'center' }),
+      );
+    });
+  });
 });

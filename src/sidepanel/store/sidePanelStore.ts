@@ -23,6 +23,7 @@ export const useSidePanelStore = create<SidePanelState>((set, get) => ({
   setPlaying: (isPlaying) => set({ isPlaying }),
   currentCueIndex: () => {
     const { cues, currentTimeMs } = get();
-    return cues.findIndex((c) => c.start <= currentTimeMs && c.end >= currentTimeMs);
+    // Half-open [start, end) — see CueList.tsx for rationale.
+    return cues.findIndex((c) => c.start <= currentTimeMs && c.end > currentTimeMs);
   },
 }));
