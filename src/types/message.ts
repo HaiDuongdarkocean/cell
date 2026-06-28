@@ -50,9 +50,12 @@ export type MessageType =
   | 'FETCH_SUBTITLE_CONTENT'
   | 'OPEN_SIDE_PANEL'
   | 'SUBTITLE_CUES_LOADED'
+  | 'REQUEST_SUBTITLE_CUES'
   | 'VIDEO_TIME_UPDATE'
   | 'VIDEO_PLAY_STATE'
-  | 'SEEK_TO';
+  | 'SEEK_TO'
+  | 'TOGGLE_PLAY'
+  | 'SHORTCUT_ACTION';
 
 // === Message Request ===
 
@@ -280,6 +283,14 @@ export interface SubtitleCuesLoadedPayload {
   readonly cues: BilingualCue[];
 }
 
+/** Side panel → background: request the last cached cues (panel opened
+ *  after cues were already relayed and dropped because panel was closed).
+ *  Background responds with the last `SUBTITLE_CUES_LOADED` payload it cached,
+ *  or `{ success: true, data: { cues: [] } }` if none cached yet. */
+export interface RequestSubtitleCuesPayload {
+  readonly tabId?: number;
+}
+
 /** Content-script → background → side panel: video time update. */
 export interface VideoTimeUpdatePayload {
   readonly tabId?: number;
@@ -297,6 +308,16 @@ export interface VideoPlayStatePayload {
 export interface SeekToPayload {
   readonly tabId?: number;
   readonly timeMs: number;
+}
+
+/** Side panel → background → content-script: trigger a keyboard shortcut
+ *  action (prev-cue / next-cue / replay-cue / toggle-overlay). The side
+ *  panel reads the user's configured shortcuts from storage and maps the
+ *  pressed key to an action, then sends it here. The content-script
+ *  already has the cue-seeking + overlay logic for these actions. */
+export interface ShortcutActionPayload {
+  readonly tabId?: number;
+  readonly action: 'prev-cue' | 'next-cue' | 'replay-cue' | 'toggle-overlay';
 }
 
 // === Typed Message Helpers ===

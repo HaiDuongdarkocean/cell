@@ -185,6 +185,46 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         video.currentTime = timeMs / 1000;
       }
     }
+    // Receive TOGGLE_PLAY from Side Panel (via background relay) → toggle play/pause
+    if (msg?.type === MESSAGE_TYPES.TOGGLE_PLAY) {
+      if (video.paused) {
+        video.play().catch(() => { /* autoplay may be blocked */ });
+      } else {
+        video.pause();
+      }
+    }
+    // Receive SHORTCUT_ACTION from Side Panel (via background relay) →
+    // cue navigation. Reuses the same logic as the in-page keydown handler.
+    if (msg?.type === MESSAGE_TYPES.SHORTCUT_ACTION) {
+      const action = (msg.payload as { action: string })?.action;
+      const currentMs = video.currentTime * 1000;
+      switch (action) {
+        case 'prev-cue': {
+          const prevCue = [...bilingualCues].reverse().find((c) => c.end < currentMs);
+          if (prevCue) seekToCue(video, prevCue);
+          break;
+        }
+        case 'next-cue': {
+          const nextCue = bilingualCues.find((c) => c.start > currentMs + 100);
+          if (nextCue) seekToCue(video, nextCue);
+          break;
+        }
+        case 'replay-cue': {
+          const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end >= currentMs)
+            ?? [...bilingualCues].reverse().find((c) => c.start < currentMs);
+          if (currentCue) seekToCue(video, currentCue);
+          break;
+        }
+        case 'toggle-overlay': {
+          overlayVisible = !overlayVisible;
+          const overlay = document.querySelector('[data-testid="subtitle-overlay"]') as HTMLElement | null;
+          if (overlay) {
+            overlay.style.display = overlayVisible ? 'block' : 'none';
+          }
+          break;
+        }
+      }
+    }
     return false; // synchronous listener
   });
 
@@ -261,11 +301,22 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
     if (msg?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
       const payload = msg.payload as AutoLoadSubtitlesPayload;
+      console.log('[content-script] AUTO_LOAD_SUBTITLES received', {
+        targetUrl: payload?.target?.url,
+        nativeUrl: payload?.native?.url,
+        targetLang: payload?.target?.language,
+        nativeLang: payload?.native?.language,
+      });
       void handleAutoLoadSubtitles(payload, {
         controller,
         tabUrl: window.location.href,
         onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
           bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
+          console.log('[content-script] onPanelRender', {
+            targetCueCount: targetCues.length,
+            nativeCueCount: nativeCues.length,
+            bilingualCueCount: bilingualCues.length,
+          });
           // Send cues to Side Panel
           chrome.runtime.sendMessage({
             type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,

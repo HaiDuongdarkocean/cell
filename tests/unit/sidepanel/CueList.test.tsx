@@ -31,16 +31,29 @@ describe('CueList', () => {
     expect(timestamps[1].textContent).toBe('00:00:03.500');
   });
 
-  it('calls onSeek with cue start time when cue clicked', () => {
+  it('calls onSeek with cue start time when cue-timestamp clicked', () => {
     const onSeek = jest.fn();
     render(<CueList cues={sampleCues} currentTimeMs={0} onSeek={onSeek} />);
 
-    const items = screen.getAllByTestId('cue-item');
-    fireEvent.click(items[0]);
+    const timestamps = screen.getAllByTestId('cue-timestamp');
+    fireEvent.click(timestamps[0]);
     expect(onSeek).toHaveBeenCalledWith(1000);
 
-    fireEvent.click(items[1]);
+    fireEvent.click(timestamps[1]);
     expect(onSeek).toHaveBeenCalledWith(3500);
+  });
+
+  it('does NOT call onSeek when cue text (non-timestamp) clicked', () => {
+    const onSeek = jest.fn();
+    render(<CueList cues={sampleCues} currentTimeMs={0} onSeek={onSeek} />);
+
+    // Click on cue target text — should NOT seek
+    fireEvent.click(screen.getByText('Hello world'));
+    expect(onSeek).not.toHaveBeenCalled();
+
+    // Click on cue native text — should NOT seek
+    fireEvent.click(screen.getByText('Xin chào'));
+    expect(onSeek).not.toHaveBeenCalled();
   });
 
   it('highlights current cue', () => {

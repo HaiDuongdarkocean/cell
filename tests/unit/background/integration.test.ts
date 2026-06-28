@@ -980,7 +980,7 @@ https://cdn.example.com/low.m3u8`;
     expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({ text: '' });
   });
 
-  it('does NOT clear toolbar badge when tab navigates to a new page (media persists)', async () => {
+  it('clears toolbar badge + media when tab navigates to a new page (loading event)', async () => {
     // Add media first so there is a badge.
     interceptor.handleRequest(
       makeWebRequestDetails('https://example.com/new.m3u8', 123),
@@ -998,8 +998,15 @@ https://cdn.example.com/low.m3u8`;
     ) => void;
     onUpdated(123, { status: 'loading' });
 
-    // Badge should NOT be cleared on navigation - media persists
-    expect(mockChrome.action.setBadgeText).not.toHaveBeenCalled();
+    // Badge should be cleared on navigation - media is cleared
+    expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({
+      text: '',
+      tabId: 123,
+    });
+    // Media should be cleared from the interceptor
+    const media = interceptor.getMedia(123);
+    expect(media.videos).toHaveLength(0);
+    expect(media.subtitles).toHaveLength(0);
   });
 
   // --- convert callback wiring ---
@@ -1230,7 +1237,7 @@ https://cdn.example.com/low.m3u8`;
     expect(mockChrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
   });
 
-  it('does NOT clear toolbar badge when tab navigates to a new page (media persists)', async () => {
+  it('clears toolbar badge + media when tab navigates to a new page (loading event)', async () => {
     // Add media first so there is a badge.
     interceptor.handleRequest(
       makeWebRequestDetails('https://example.com/new.m3u8', 123),
@@ -1248,8 +1255,15 @@ https://cdn.example.com/low.m3u8`;
     ) => void;
     onUpdated(123, { status: 'loading' });
 
-    // Badge should NOT be cleared on navigation - media persists
-    expect(mockChrome.action.setBadgeText).not.toHaveBeenCalled();
+    // Badge should be cleared on navigation - media is cleared
+    expect(mockChrome.action.setBadgeText).toHaveBeenCalledWith({
+      text: '',
+      tabId: 123,
+    });
+    // Media should be cleared from the interceptor
+    const media = interceptor.getMedia(123);
+    expect(media.videos).toHaveLength(0);
+    expect(media.subtitles).toHaveLength(0);
   });
 
   // --- convert callback wiring ---
@@ -1712,6 +1726,103 @@ https://cdn.example.com/low.m3u8`;
     expect(autoLoadCalls).toHaveLength(0);
   });
 
+  // --- Content-based language resolution for hash-based subtitle URLs (ADR-007 A6) ---
+
+  it('PAGE_SCAN_RESULT resolves unknown languages via content detection then pushes AUTO_LOAD_SUBTITLES', async () => {
+    setupStorageForAutoLoad();
+    mockChrome.tabs.sendMessage.mockClear();
+
+    // Mock global fetch: return English content for first URL, Vietnamese for second.
+    // English topWords (threshold 8): the, and, for, are, but, not, you, all, can, her
+    // Vietnamese topWords (threshold 8): trong, được, cho, một, với, người, này, không, cũng, những
+    const mockGlobalFetch = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('aabbccdd')) {
+        return Promise.resolve({
+          ok: true,
+          text: () => Promise.resolve(
+            '1\n00:00:00,000 --> 00:00:02,000\nthe and for are but not you all can her\n',
+          ),
+        });
+      }
+      if (url.includes('eeffgghh')) {
+        return Promise.resolve({
+          ok: true,
+          text: () => Promise.resolve(
+            '1\n00:00:00,000 --> 00:00:02,000\ntrong được cho một với người này không cũng những\n',
+          ),
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    }) as jest.MockedFunction<typeof fetch>;
+    (globalThis as unknown as { fetch: typeof fetch }).fetch = mockGlobalFetch;
+
+    // Hash-based URLs — extractLanguage returns 'unknown' for both.
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
+      payload: {
+        tabId: 123,
+        videoUrls: [],
+        subtitleUrls: [
+          'https://example.com/subtitle/aabbccdd.srt',
+          'https://example.com/subtitle/eeffgghh.srt',
+        ],
+      },
+    };
+
+    await messageBus.handleMessage(request, { id: 'tab' });
+    // Wait for: pushAutoLoadSubtitles → fetch + detectLanguage + update + re-run.
+    await new Promise((r) => setTimeout(r, 200));
+
+    const autoLoadCalls = mockChrome.tabs.sendMessage.mock.calls.filter(
+      ([, msg]) => (msg as MessageRequest).type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+    );
+    expect(autoLoadCalls.length).toBeGreaterThanOrEqual(1);
+    expect(autoLoadCalls[0][0]).toBe(123);
+    const payload = (autoLoadCalls[0][1] as MessageRequest).payload as { target: { language: string }; native: { language: string } };
+    expect(payload.target.language).toBe('en');
+    expect(payload.native.language).toBe('vi');
+
+    delete (globalThis as unknown as { fetch?: jest.Mock }).fetch;
+  });
+
+  it('UPDATE_SUBTITLE_LANGUAGE re-triggers pushAutoLoadSubtitles when language resolved', async () => {
+    setupStorageForAutoLoad();
+    mockChrome.tabs.sendMessage.mockClear();
+
+    // Seed networkInterceptor with two unknown-language subtitles for tab 123.
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/subtitle/aabbccdd.srt', 123),
+    );
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/subtitle/eeffgghh.srt', 123),
+    );
+
+    // Get the detected subtitle IDs.
+    const subs = interceptor.getSubtitles(123);
+    expect(subs.length).toBe(2);
+    expect(subs.every((s) => s.language === 'unknown')).toBe(true);
+
+    // Simulate popup resolving language for the first subtitle to 'en'.
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.UPDATE_SUBTITLE_LANGUAGE,
+      payload: { subtitleId: subs[0].id, language: 'en' },
+    };
+
+    await messageBus.handleMessage(request, { id: 'tab' });
+    // Wait for the re-triggered pushAutoLoadSubtitles (loadSettings → findSubtitlesForOverlay).
+    // Only one subtitle is 'en', native 'vi' still unknown → partial load (target only).
+    await new Promise((r) => setTimeout(r, 100));
+
+    const autoLoadCalls = mockChrome.tabs.sendMessage.mock.calls.filter(
+      ([, msg]) => (msg as MessageRequest).type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+    );
+    // pushAutoLoadSubtitles should have been called — findSubtitlesForOverlay
+    // returns partial (target='en', native=null) since only 'en' is resolved.
+    expect(autoLoadCalls.length).toBeGreaterThanOrEqual(1);
+    const payload = (autoLoadCalls[0][1] as MessageRequest).payload as { target: { language: string } | null; native: { language: string } | null };
+    expect(payload.target?.language).toBe('en');
+  });
+
   // --- FETCH_SUBTITLE_CONTENT (CORS fallback) ---
 
   it('FETCH_SUBTITLE_CONTENT fetches + returns content', async () => {
@@ -1720,7 +1831,7 @@ https://cdn.example.com/low.m3u8`;
       ok: true,
       text: () => Promise.resolve('1\n00:00:00,000 --> 00:00:01,000\nHello\n'),
     }) as jest.MockedFunction<typeof fetch>;
-    (globalThis as unknown as { fetch: jest.Mock }).fetch = mockGlobalFetch;
+    (globalThis as unknown as { fetch: typeof fetch }).fetch = mockGlobalFetch;
 
     const request: MessageRequest = {
       type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
@@ -1729,8 +1840,8 @@ https://cdn.example.com/low.m3u8`;
 
     const response = await messageBus.handleMessage(request, { id: 'tab' });
     expect(response.success).toBe(true);
-    expect(response.data?.content).toContain('Hello');
-    expect(response.data?.finalUrl).toBe('https://example.com/sub.en.srt');
+    expect((response.data as { content?: string })?.content).toContain('Hello');
+    expect((response.data as { finalUrl?: string })?.finalUrl).toBe('https://example.com/sub.en.srt');
 
     delete (globalThis as unknown as { fetch?: jest.Mock }).fetch;
   });
@@ -1740,7 +1851,7 @@ https://cdn.example.com/low.m3u8`;
       ok: true,
       text: () => Promise.resolve('content'),
     }) as jest.MockedFunction<typeof fetch>;
-    (globalThis as unknown as { fetch: jest.Mock }).fetch = mockGlobalFetch;
+    (globalThis as unknown as { fetch: typeof fetch }).fetch = mockGlobalFetch;
 
     const request: MessageRequest = {
       type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
@@ -1771,7 +1882,7 @@ https://cdn.example.com/low.m3u8`;
       status: 403,
       text: () => Promise.resolve(''),
     }) as jest.MockedFunction<typeof fetch>;
-    (globalThis as unknown as { fetch: jest.Mock }).fetch = mockGlobalFetch;
+    (globalThis as unknown as { fetch: typeof fetch }).fetch = mockGlobalFetch;
 
     const request: MessageRequest = {
       type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
@@ -1783,5 +1894,76 @@ https://cdn.example.com/low.m3u8`;
     expect(response.error).toMatch(/403/);
 
     delete (globalThis as unknown as { fetch?: jest.Mock }).fetch;
+  });
+
+  // --- SUBTITLE_CUES_LOADED caching + REQUEST_SUBTITLE_CUES re-send (ADR-008 D5) ---
+
+  it('SUBTITLE_CUES_LOADED caches cues per tab and relays to side panel', async () => {
+    mockChrome.runtime.sendMessage.mockClear();
+
+    const cues = [
+      { id: 0, start: 0, end: 1000, target: 'Hello', native: 'Xin chào' },
+      { id: 1, start: 1000, end: 2000, target: 'World', native: 'Thế giới' },
+    ];
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+      payload: { tabId: 123, cues },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+
+    // Relayed to side panel via runtime.sendMessage
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+        payload: expect.objectContaining({ cues }),
+      }),
+    );
+  });
+
+  it('REQUEST_SUBTITLE_CUES returns cached cues for the tab', async () => {
+    const cues = [
+      { id: 0, start: 0, end: 1000, target: 'Hello', native: 'Xin chào' },
+    ];
+
+    // First, send SUBTITLE_CUES_LOADED to cache the cues.
+    await messageBus.handleMessage(
+      { type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED, payload: { tabId: 123, cues } },
+      { id: 'tab' },
+    );
+
+    // Now request cached cues (simulating side panel opening late).
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.REQUEST_SUBTITLE_CUES,
+      payload: { tabId: 123 },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+    expect((response.data as { cues: unknown[] })?.cues).toEqual(cues);
+  });
+
+  it('REQUEST_SUBTITLE_CUES returns empty array when no cues cached for tab', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.REQUEST_SUBTITLE_CUES,
+      payload: { tabId: 999 },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+    expect((response.data as { cues: unknown[] })?.cues).toEqual([]);
+  });
+
+  it('REQUEST_SUBTITLE_CUES returns error when tabId is missing', async () => {
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.REQUEST_SUBTITLE_CUES,
+      payload: {},
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(false);
+    expect(response.error).toMatch(/tabId/i);
   });
 });

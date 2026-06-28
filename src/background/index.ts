@@ -25,6 +25,7 @@ import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
 import { cleanupOrphanedDownloads } from '@/lib/storage/opfsStorage';
 import { detectVideo } from '@/lib/detectors/videoDetector';
 import { detectSubtitle } from '@/lib/detectors/subtitleDetector';
+import { detectLanguage, labelToIsoCode } from '@/lib/detectors/languageDetector';
 import { parseM3u8 } from '@/lib/parsers/m3u8Parser';
 import type {
   DetectedVideo,
@@ -35,6 +36,7 @@ import type {
   NetworkRequest,
   MediaType,
   VideoVariant,
+  BilingualCue,
 } from '@/types/media';
 import type {
   MessageRequest,
@@ -64,9 +66,11 @@ import type {
   RevokeOpfsBlobUrlPayload,
   OpenSidePanelPayload,
   SubtitleCuesLoadedPayload,
+  RequestSubtitleCuesPayload,
   VideoTimeUpdatePayload,
   VideoPlayStatePayload,
   SeekToPayload,
+  ShortcutActionPayload,
 } from '@/types/message';
 
 /** Optional dependency overrides (used for testing). */
@@ -122,6 +126,18 @@ export class BackgroundService {
     url: string;
     enqueuedIds: Set<string>;
   }> = new Map();
+
+  /**
+   * Last bilingual cues relayed via SUBTITLE_CUES_LOADED, keyed by tabId.
+   * Survives in-memory across SW idle restarts only briefly — for true
+   * persistence across SW restart, also mirrored to chrome.storage.session
+   * (see handleSubtitleCuesLoaded). The side panel requests this via
+   * REQUEST_SUBTITLE_CUES when it opens after cues were already sent.
+   * ponytail: in-memory Map is enough for the common case (panel opened
+   * shortly after cues load, same SW lifecycle); upgrade path = session
+   * storage mirror if SW restarts prove to drop cues in practice.
+   */
+  private readonly lastCuesByTab: Map<number, BilingualCue[]> = new Map();
 
   /** Unsubscribe functions for event subscriptions. */
   private unsubscribers: Array<() => void> = [];
@@ -508,8 +524,13 @@ export class BackgroundService {
         // Reset the auto-download guard so a fresh page load can trigger
         // auto-download again when media is re-detected.
         this.autoDownloadedTabs.delete(tabId);
-        // Media is NOT cleared here - it persists across navigation
-        // until the tab is closed (see onTabRemoved below).
+        // Clear media from the previous page (e.g. previous episode) so
+        // each page load starts fresh — media should NOT accumulate across
+        // navigations within the same tab.
+        this.networkInterceptor.clearTab(tabId);
+        this.clearSessionMedia(tabId);
+        this.lastCuesByTab.delete(tabId);
+        this.updateBadgeForTab(tabId);
       }
     };
     chrome.tabs.onUpdated.addListener(onTabUpdated);
@@ -522,6 +543,7 @@ export class BackgroundService {
       this.clearSessionDownloads(tabId);
       this.updateBadgeForTab(tabId);
       this.autoDownloadedTabs.delete(tabId);
+      this.lastCuesByTab.delete(tabId);
     };
     chrome.tabs.onRemoved.addListener(onTabRemoved);
 
@@ -623,9 +645,12 @@ export class BackgroundService {
     // Side Panel relay handlers (ADR-008 D4)
     this.on(MESSAGE_TYPES.OPEN_SIDE_PANEL, this.handleOpenSidePanel);
     this.on(MESSAGE_TYPES.SUBTITLE_CUES_LOADED, this.handleSubtitleCuesLoaded);
+    this.on(MESSAGE_TYPES.REQUEST_SUBTITLE_CUES, this.handleRequestSubtitleCues);
     this.on(MESSAGE_TYPES.VIDEO_TIME_UPDATE, this.handleVideoTimeUpdate);
     this.on(MESSAGE_TYPES.VIDEO_PLAY_STATE, this.handleVideoPlayState);
     this.on(MESSAGE_TYPES.SEEK_TO, this.handleSeekTo);
+    this.on(MESSAGE_TYPES.TOGGLE_PLAY, this.handleTogglePlay);
+    this.on(MESSAGE_TYPES.SHORTCUT_ACTION, this.handleShortcutAction);
   }
 
   /** Type-safe wrapper around messageBus.on. */
@@ -1346,6 +1371,14 @@ export class BackgroundService {
       });
     }
 
+    // Re-trigger auto-load push: the popup just resolved a subtitle's language
+    // (content-based detection). If auto-load was previously skipped because
+    // all subtitles were 'unknown', this re-push fires it now that a match is
+    // possible. No-op when auto-load is off or still no match (ADR-007 A6).
+    if (existingSub) {
+      void this.pushAutoLoadSubtitles(existingSub.tabId, this.networkInterceptor.getSubtitles(existingSub.tabId));
+    }
+
     return { success: true };
   };
 
@@ -1427,6 +1460,11 @@ export class BackgroundService {
     // content-script (ADR-007 D2). Subtitles may have been detected via
     // network interception before this scan, so check the full set.
     const allSubtitles = this.networkInterceptor.getSubtitles(tabId);
+    console.log('[bg PAGE_SCAN_RESULT] subtitles detected', {
+      tabId,
+      subtitleCount: allSubtitles.length,
+      subtitleLanguages: allSubtitles.map((s) => s.language),
+    });
     if (allSubtitles.length > 0) {
       void this.pushAutoLoadSubtitles(tabId, allSubtitles);
     }
@@ -1448,7 +1486,37 @@ export class BackgroundService {
   ): Promise<void> {
     try {
       const settings = await this.loadSettings();
-      const result = findSubtitlesForOverlay(subtitles, settings);
+      console.log('[bg pushAutoLoadSubtitles]', {
+        tabId,
+        autoLoad: settings.subtitleOverlayAutoLoad,
+        targetLang: settings.subtitleOverlayTargetLanguage,
+        nativeLang: settings.subtitleOverlayNativeLanguage,
+        subtitleCount: subtitles.length,
+        subtitleLanguages: subtitles.map((s) => s.language),
+      });
+      let result = findSubtitlesForOverlay(subtitles, settings);
+      console.log('[bg pushAutoLoadSubtitles] result', result);
+
+      // Content-based language resolution fallback (ADR-007 A6): when no match
+      // and some subtitles have language='unknown' (URL hash-based filenames
+      // like themoviebox's /subtitle/<md5>.srt), fetch each unknown subtitle's
+      // content in the SW (cross-origin allowed with host permission), run
+      // `detectLanguage` + `labelToIsoCode`, persist via `updateSubtitle`, then
+      // re-run `findSubtitlesForOverlay`. Reuses the same pure detection logic
+      // as the popup's `useSubtitleLanguage` hook — no new dependency.
+      if (!result && subtitles.some((s) => s.language === 'unknown')) {
+        console.log('[bg pushAutoLoadSubtitles] resolving unknown languages via content detection');
+        const resolved = await this.resolveUnknownSubtitleLanguages(tabId, subtitles);
+        if (resolved.length > 0) {
+          const refreshed = this.networkInterceptor.getSubtitles(tabId);
+          result = findSubtitlesForOverlay(refreshed, settings);
+          console.log('[bg pushAutoLoadSubtitles] result after resolve', {
+            resolvedCount: resolved.length,
+            result,
+          });
+        }
+      }
+
       if (!result) return;
       const payload: AutoLoadSubtitlesPayload = {
         tabId,
@@ -1459,6 +1527,7 @@ export class BackgroundService {
         type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
         payload,
       });
+      console.log('[bg pushAutoLoadSubtitles] sent AUTO_LOAD_SUBTITLES');
     } catch (error) {
       // Content-script may not be injected yet (receiving end does not exist).
       // The content-script will request a re-push on init. Log only language +
@@ -1466,6 +1535,60 @@ export class BackgroundService {
       const msg = error instanceof Error ? error.message : String(error);
       console.warn(`AUTO_LOAD_SUBTITLES push failed for tab ${tabId}: ${msg}`);
     }
+  }
+
+  /**
+   * Resolve `language: 'unknown'` subtitles by fetching their content in the
+   * service worker and running frequency-based language detection. Mutates the
+   * networkInterceptor's stored subtitles via `updateSubtitle` so subsequent
+   * `findSubtitlesForOverlay` calls see the resolved ISO 639-1 code.
+   *
+   * Reuses `detectLanguage` + `labelToIsoCode` (same pure functions as the
+   * popup's `useSubtitleLanguage` hook). SW fetch is cross-origin allowed with
+   * host permission but has no page cookie context — sites requiring cookies
+   * for subtitle fetch will fail silently (ponytail V1, ADR-007 A7 ceiling).
+   *
+   * @returns Array of subtitles that were successfully resolved (for logging).
+   */
+  private async resolveUnknownSubtitleLanguages(
+    tabId: number,
+    subtitles: DetectedSubtitle[],
+  ): Promise<DetectedSubtitle[]> {
+    const unknowns = subtitles.filter((s) => s.language === 'unknown');
+    if (unknowns.length === 0) return [];
+
+    const resolved: DetectedSubtitle[] = [];
+    const results = await Promise.all(
+      unknowns.map(async (sub) => {
+        try {
+          const response = await fetch(sub.url);
+          if (!response.ok) return null;
+          const content = await response.text();
+          const label = detectLanguage(content, sub.format);
+          if (!label) return null;
+          const isoCode = labelToIsoCode(label);
+          if (!isoCode) return null;
+          this.networkInterceptor.updateSubtitle(sub.id, { ...sub, language: isoCode });
+          return { ...sub, language: isoCode };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.warn(`[bg resolveUnknownSubtitleLanguages] fetch failed for sub ${sub.id}: ${msg}`);
+          return null;
+        }
+      }),
+    );
+
+    for (const r of results) {
+      if (r) resolved.push(r);
+    }
+
+    // Persist updated languages to session storage so they survive SW restart
+    // and the popup sees the resolved codes immediately.
+    if (resolved.length > 0) {
+      this.saveSessionMedia(tabId, this.networkInterceptor.getVideos(tabId), this.networkInterceptor.getSubtitles(tabId));
+    }
+
+    return resolved;
   }
 
   /**
@@ -1479,6 +1602,7 @@ export class BackgroundService {
   ): Promise<MessageResponse> => {
     const payload = request.payload as RequestAutoLoadSubtitlesPayload;
     const tabId = payload?.tabId;
+    console.log('[bg REQUEST_AUTO_LOAD_SUBTITLES]', { tabId });
     if (tabId === undefined) {
       return { success: false, error: 'Missing tabId in REQUEST_AUTO_LOAD_SUBTITLES' };
     }
@@ -1489,6 +1613,12 @@ export class BackgroundService {
         | Record<string, { videos: DetectedVideo[]; subtitles: DetectedSubtitle[] }>
         | undefined;
       const entry = all?.[String(tabId)];
+      console.log('[bg REQUEST_AUTO_LOAD_SUBTITLES] session media', {
+        tabId,
+        hasEntry: !!entry,
+        subtitleCount: entry?.subtitles?.length ?? 0,
+        subtitleLanguages: entry?.subtitles?.map((s) => s.language),
+      });
       if (!entry || entry.subtitles.length === 0) {
         return { success: true };
       }
@@ -1616,7 +1746,9 @@ export class BackgroundService {
   /**
    * SUBTITLE_CUES_LOADED: relay bilingual cues from content-script to the
    * side panel. Background broadcasts to all extension pages; the side panel
-   * is the only listener for this type.
+   * is the only listener for this type. Cues are also cached per-tab so a
+   * side panel opened AFTER the relay can request them back via
+   * REQUEST_SUBTITLE_CUES (handles the "panel opened late" race).
    */
   private handleSubtitleCuesLoaded = async (
     request: MessageRequest,
@@ -1625,6 +1757,10 @@ export class BackgroundService {
     if (!payload?.cues) {
       return { success: false, error: 'Missing cues in SUBTITLE_CUES_LOADED' };
     }
+    // Cache per-tab so a late-opening side panel can fetch via REQUEST_SUBTITLE_CUES
+    if (payload.tabId !== undefined) {
+      this.lastCuesByTab.set(payload.tabId, payload.cues);
+    }
     // Relay to side panel (extension page) via runtime.sendMessage
     try {
       await chrome.runtime.sendMessage({
@@ -1632,9 +1768,28 @@ export class BackgroundService {
         payload: { cues: payload.cues },
       });
     } catch {
-      // Side panel may not be open — silently ignore
+      // Side panel may not be open — silently ignore; cues are cached above
     }
     return { success: true };
+  };
+
+  /**
+   * REQUEST_SUBTITLE_CUES: side panel asks background for the last cached
+   * cues for a tab. Used when the panel opens AFTER cues were already
+   * relayed (and dropped because no listener was registered yet).
+   * Returns `{ success: true, data: { cues } }` — `cues` is `[]` if none
+   * cached for the tab yet (panel should then show "No subtitles loaded").
+   */
+  private handleRequestSubtitleCues = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as RequestSubtitleCuesPayload;
+    const tabId = payload?.tabId;
+    if (tabId === undefined) {
+      return { success: false, error: 'Missing tabId in REQUEST_SUBTITLE_CUES' };
+    }
+    const cues = this.lastCuesByTab.get(tabId) ?? [];
+    return { success: true, data: { cues } };
   };
 
   /**
@@ -1717,6 +1872,76 @@ export class BackgroundService {
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       console.warn(`SEEK_TO relay failed for tab ${tabId}: ${msg}`);
+      return { success: false, error: msg };
+    }
+  };
+
+  /**
+   * TOGGLE_PLAY: side panel asks background to toggle play/pause on the
+   * video in the content script of the active tab. Background relays via
+   * chrome.tabs.sendMessage. Reuses the SEEK_TO active-tab resolution.
+   */
+  private handleTogglePlay = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    let tabId = (request.payload as { tabId?: number })?.tabId;
+    if (tabId === undefined) {
+      try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!activeTab?.id) {
+          return { success: false, error: 'No active tab found for TOGGLE_PLAY' };
+        }
+        tabId = activeTab.id;
+      } catch {
+        return { success: false, error: 'Failed to query active tab for TOGGLE_PLAY' };
+      }
+    }
+    try {
+      await chrome.tabs.sendMessage(tabId, {
+        type: MESSAGE_TYPES.TOGGLE_PLAY,
+      });
+      return { success: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`TOGGLE_PLAY relay failed for tab ${tabId}: ${msg}`);
+      return { success: false, error: msg };
+    }
+  };
+
+  /**
+   * SHORTCUT_ACTION: side panel asks background to trigger a cue navigation
+   * shortcut (prev-cue / next-cue / replay-cue) in the content script of
+   * the active tab. Reuses the TOGGLE_PLAY active-tab resolution.
+   */
+  private handleShortcutAction = async (
+    request: MessageRequest,
+  ): Promise<MessageResponse> => {
+    const payload = request.payload as ShortcutActionPayload;
+    const action = payload?.action;
+    if (!action || !['prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay'].includes(action)) {
+      return { success: false, error: `Invalid shortcut action: ${action}` };
+    }
+    let tabId = payload?.tabId;
+    if (tabId === undefined) {
+      try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!activeTab?.id) {
+          return { success: false, error: 'No active tab found for SHORTCUT_ACTION' };
+        }
+        tabId = activeTab.id;
+      } catch {
+        return { success: false, error: 'Failed to query active tab for SHORTCUT_ACTION' };
+      }
+    }
+    try {
+      await chrome.tabs.sendMessage(tabId, {
+        type: MESSAGE_TYPES.SHORTCUT_ACTION,
+        payload: { action },
+      });
+      return { success: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`SHORTCUT_ACTION relay failed for tab ${tabId}: ${msg}`);
       return { success: false, error: msg };
     }
   };
