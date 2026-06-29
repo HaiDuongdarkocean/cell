@@ -29,6 +29,7 @@ docs/           # Tài liệu dự án
 │   ├── intent-side-panel-video-controls.md # Side Panel video controls (spacebar + hotkeys)
 │   └── intent-subtitle-appearance-manager.md # Subtitle appearance manager (2 overlay độc lập + drag + realtime persist)
 │   └── intent-subtitle-selector-multi-match.md # Subtitle selector khi ≥2 matches (V2 ADR-007 D3, giải quyết bug A)
+│   └── idea-subtitle-manager-panel.md     # Subtitle Manager Panel (V2 ADR-014 — unified panel + import flow + active name + toast)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
