@@ -45,6 +45,7 @@ docs/           # Tài liệu dự án
 │   ├── plan-side-panel-subtitle.md    # Side Panel subtitle — feasibility + task breakdown
 │   ├── plan-side-panel-video-controls.md # Side Panel video controls — feasibility (G1)
 │   └── plan-subtitle-appearance-manager.md # Subtitle appearance manager — implementation plan (G2)
+│   └── plan-subtitle-selector-multi-match.md # Subtitle selector ≥2 matches — implementation plan (G2, V2 ADR-007 D3)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
