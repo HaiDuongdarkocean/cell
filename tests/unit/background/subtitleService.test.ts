@@ -1,4 +1,4 @@
-import { findSubtitlesForOverlay, findPreferredMatch } from '../../../src/background/subtitleService';
+import { findSubtitlesForOverlay, findPreferredMatch, type SubtitlePreference } from '../../../src/background/subtitleService';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '../../../src/constants/config';
 import type { DetectedSubtitle, Settings } from '../../../src/types/media';
 
@@ -116,6 +116,37 @@ describe('findSubtitlesForOverlay', () => {
     expect(result).not.toBeNull();
     expect(result?.target?.language).toBe('en');
     expect(result?.native).toBeNull();
+  });
+
+  it('ADR-014 D2: uses preference target index when provided', () => {
+    const first = makeSubtitle('en', 'https://example.com/first-en.srt');
+    const second = makeSubtitle('en', 'https://example.com/second-en.srt');
+    const prefs: SubtitlePreference = { target: 1 };
+    const result = findSubtitlesForOverlay([first, second], baseSettings, prefs);
+    expect(result?.target?.url).toBe('https://example.com/second-en.srt');
+  });
+
+  it('ADR-014 D2: uses preference native index when provided', () => {
+    const firstVi = makeSubtitle('vi', 'https://example.com/first-vi.srt');
+    const secondVi = makeSubtitle('vi', 'https://example.com/second-vi.srt');
+    const prefs: SubtitlePreference = { native: 1 };
+    const result = findSubtitlesForOverlay([makeSubtitle('en'), firstVi, secondVi], baseSettings, prefs);
+    expect(result?.native?.url).toBe('https://example.com/second-vi.srt');
+  });
+
+  it('ADR-014 D2: falls back to first-match when preference index out of range (B8)', () => {
+    const first = makeSubtitle('en', 'https://example.com/first-en.srt');
+    const second = makeSubtitle('en', 'https://example.com/second-en.srt');
+    const prefs: SubtitlePreference = { target: 5 };
+    const result = findSubtitlesForOverlay([first, second], baseSettings, prefs);
+    expect(result?.target?.url).toBe('https://example.com/first-en.srt');
+  });
+
+  it('ADR-014 D2: no preferences → first-match (V1 behavior, B11 regression)', () => {
+    const first = makeSubtitle('en', 'https://example.com/first-en.srt');
+    const second = makeSubtitle('en', 'https://example.com/second-en.srt');
+    const result = findSubtitlesForOverlay([first, second], baseSettings);
+    expect(result?.target?.url).toBe('https://example.com/first-en.srt');
   });
 });
 
