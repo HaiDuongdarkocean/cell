@@ -8,7 +8,7 @@ How might we let users know which subtitle is active, switch easily between auto
 - 2 dropdown icon riêng (target góc phải, native bên trái) — chỉ hiện khi ≥2 sub cùng lang.
 - Import button/drag-drop là flow riêng — imported sub không xuất hiện trong dropdown list, không set làm active, không toast.
 - Active state không hiện trên icon (chỉ chevron) — user không biết sub nào đang active mà không mở dropdown.
-- Auto-load push mới → destroy + re-create dropdown → reset `activeIndex=0` (bug #5: chọn #2 → push mới → reset về #1).
+- Auto-load push mới destroy+re-create dropdown → **flicker + stale index khi matches reorder** (bug #5: chọn #2 → push mới reorder list → index #2 trỏ sang sub khác). Code hiện tại đã preserve activeIndex qua module-level var, không reset về 0 như ghi trước.
 - Naming: dropdown list không có naming convention rõ ràng (chỉ "English #1", "English #2" — không phân biệt nguồn).
 
 **Pain**:
@@ -40,7 +40,7 @@ How might we let users know which subtitle is active, switch easily between auto
 - [ ] **A1 — `detectLanguage` đủ chính xác để auto-assign role**: import sub "en" → detect "en" → assign target (nếu target lang = "en"). Bet: detectLanguage đúng ≥90% cho sub phim. Test: import sub "vi" → detect có ra "vi" không?
 - [ ] **A2 — Active chip không che video quá nhiều**: `English #2 · Arabic #1` ~120px + toolbar 64px = 184px góc trái. Bet: acceptable trên 16:9. Test: browser verify trên themoviebox.
 - [ ] **A3 — Imported sub add vào list không conflict auto-detected**: imported sub không có URL, không re-fetch. Bet: imported sub = last item, click → load cues từ memory (không re-fetch). Test: import → switch lại auto-detected → switch lại imported.
-- [ ] **A4 — Auto-load push mới không reset activeIndex**: hiện tại re-create dropdown reset index. Bet: giữ state khi re-render. Test: chọn #2 → wait for push → dropdown vẫn #2.
+- [ ] **A4 — Auto-load push mới không flicker + không stale index**: hiện tại destroy/re-create dropdown gây flicker + index trỏ sai sub khi matches reorder. Bet: update-in-place (không destroy/re-create). Test: chọn #2 → wait for push → dropdown vẫn #2 + không nháy.
 - [ ] **A5 — Toast không spam**: mỗi action 1 toast. Bet: OK nếu debounce 500ms. Test: rapid switch → không spam toast.
 - [ ] **A6 — Light/dark mode**: tất cả màu dùng CSS tokens từ `theme.css` (primary, warning, success, surface, border). Bet: auto-adapt via `[data-theme]`. Test: browser verify cả 2 mode.
 
@@ -92,6 +92,6 @@ How might we let users know which subtitle is active, switch easily between auto
 - ADR-014: Subtitle selector ≥2 matches (V1) — `docs/adr/014-subtitle-selector-multi-match.md`
 - Mockup v4: `docs/mockups/subtitle-selector-mockup.html` (system colors + friendly naming + case guard + aria-label)
 - theme.css: `src/popup/styles/theme.css` (design tokens — primary #2563eb, warning #f59e0b, success #10b981, light/dark mode via `[data-theme]`)
-- detectLanguage + labelToIsoCode: `src/background/subtitleAutoLoad.ts`
+- detectLanguage + labelToIsoCode: `src/lib/detectors/languageDetector.ts`
 - createSubtitleDropdown: `src/content-script/subtitleDropdown.ts` (ADR-014 D3)
 - User interview (G0 session 2026-06-29): unified panel + import button góc trái + active name chip + multi-file import + naming thân thiện + system colors + light/dark mode
