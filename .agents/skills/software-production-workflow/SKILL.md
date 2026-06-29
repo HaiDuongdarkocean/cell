@@ -66,9 +66,9 @@ Mọi file docs feature phải theo format: `<prefix>-<name>.md` với prefix �
 **Input**: User request (raw, underspecified)
 **Output**: `docs/intent/intent-<feature>.md` (vision, problem statement, opportunity, **+ feasibility go/no-go section** ở cuối file: 1-2 đoạn build-vs-buy + risk thô + recommendation). Nếu idea-refine chạy trước interview-me → `docs/intent/idea-<feature>.md` (raw idea, chưa interview).
 **File ops**:
-- XEM: `docs/0-wiki.md` (biết docs hiện có)
+- XEM: `docs/0-wiki.md` (biết docs hiện có), `docs/1-share-language.md` (glossary — cache miss khi anh dùng từ mới → hỏi confirm → thêm entry, xem Update protocol cuối file đó)
 - THÊM: `docs/intent/intent-<feature>.md` (hoặc `idea-<feature>.md` nếu chưa interview) — **phải có section "Feasibility go/no-go"** ở cuối
-- UPDATE: `docs/0-wiki.md` (mục lục)
+- UPDATE: `docs/0-wiki.md` (mục lục), `docs/1-share-language.md` (nếu sinh term mới trong intent)
 
 > **Feasibility go/no-go nhẹ (cuối G0)**: chỉ trả lời "Có rõ ràng không đáng làm không?" — nếu YES → dừng, không vào G1. Nếu NO (cần đánh giá sâu hơn) → vào G1 viết spec. Đánh giá feasibility CHUYÊN SÂU (build-vs-buy có cơ sở, risk mitigation cụ thể) chuyển xuống G2 plan, nơi có spec làm gốc.
 
@@ -79,9 +79,9 @@ Mọi file docs feature phải theo format: `<prefix>-<name>.md` với prefix �
 **Input**: `docs/intent/intent-<feature>.md` (kể cả section feasibility go/no-go)
 **Output**: `docs/specs/spec-<feature>.md` (SRS/PRD: functional + non-functional + acceptance criteria + error cases + data flow + out-of-scope)
 **File ops**:
-- XEM: `docs/intent/`, `docs/knowledge/` (grep keywords liên quan), `docs/2-architechture-system.md` (biết hệ thống hiện có để spec thực tế)
+- XEM: `docs/intent/`, `docs/knowledge/` (grep keywords liên quan), `docs/2-architechture-system.md` (biết hệ thống hiện có để spec thực tế), `docs/1-share-language.md` (glossary — spec phải dùng system term chính xác; cache miss → hỏi confirm → thêm entry)
 - THÊM: `docs/specs/spec-<feature>.md`
-- UPDATE: `docs/0-wiki.md` (mục lục)
+- UPDATE: `docs/0-wiki.md` (mục lục), `docs/1-share-language.md` (nếu spec introduce system term mới)
 
 > **Lý do spec trước plan**: spec phơi bày complexity ẩn, edge cases, non-functional requirements — những thứ cần thiết để đánh giá feasibility/build-vs-buy CHÍN. Plan không có spec = opinion cảm tính. Spec ít đổi hơn plan, làm móng ổn định.
 
@@ -154,12 +154,13 @@ Mọi file docs feature phải theo format: `<prefix>-<name>.md` với prefix �
 - **Baseline TDD override**: project baseline.md says "when in doubt, write the test" — baseline wins over ponytail "trivial no test"
 
 **File ops**:
-- XEM: `docs/2-architechture-system.md` (Cây thư mục + Bảng phụ thuộc + Function Index), `docs/knowledge/` (grep keywords)
+- XEM: `docs/2-architechture-system.md` (Cây thư mục + Bảng phụ thuộc + Function Index), `docs/knowledge/` (grep keywords), `docs/1-share-language.md` (glossary — biết system term hiện có để dùng lại, không sinh alias trùng)
 - THÊM: `src/<file>.ts`, `tests/unit/<file>.test.ts`
 - UPDATE: `docs/2-architechture-system.md` — **3 chỗ** (theo thứ tự):
   a. **Cây thư mục** (ĐẦU file) — DỄ QUÊN NHẤT
   b. **Bảng phụ thuộc** (GIỮA file)
   c. **Function Index** (CUỐI file)
+- UPDATE: `docs/1-share-language.md` — **khi sinh system term mới** (tên file mới, tên toggle mới, tên message type mới, tên store key mới) → thêm entry "anh có thể gọi là Z → system term W"; **khi rename/refactor system term** → update entry (trigger 3, xem Update protocol cuối glossary)
 - Sửa function → chỉ update Function Index nếu input/output thay đổi; skip nếu implementation thay đổi
 - VERIFY: `ls src/` từng thư mục → compare với Cây thư mục → **PHẢI confirm không thiếu** (không tin memory, tin `ls`)
 
@@ -207,6 +208,7 @@ Mọi file docs feature phải theo format: `<prefix>-<name>.md` với prefix �
 - THÊM: `docs/knowledge/<case-name>.md` (layer 2: case study mới)
 - UPDATE: `docs/knowledge/principles.md` (layer 1: thêm principle entry hoặc cases link)
 - UPDATE: `docs/2-architechture-system.md` (nếu fix ảnh hưởng architecture)
+- UPDATE: `docs/1-share-language.md` (nếu refactor/rename/xóa system term → update hoặc xóa entry stale, xem Update protocol cuối glossary)
 
 -> Tự biết bản thân mình đang ở giai đoạn nào và áp dụng các quy trình có trong giai đoạn đó.
 

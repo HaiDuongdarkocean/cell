@@ -1,6 +1,11 @@
 # 1-Share Language — Glossary
 
 > Bridge giữa human language và system language. Khi anh nói X, hệ thống hiểu Y.
+>
+> **Cơ chế 2 chiều**:
+> - **Anh → System** (table dưới): anh dùng từ tự nhiên → em tra → map sang system term.
+> - **System → Anh** (section "Reverse lookup" cuối): em output system term → tra alias anh dùng → kèm mapping `(anh gọi: Y)` lần đầu xuất hiện trong conversation.
+> - Table chỉ ghi chiều Anh → System; chiều ngược lại là đảo của cột 1, ghi riêng cho các term có nhiều alias hoặc không đảo trực tiếp được.
 
 ## Project Terms
 
@@ -52,3 +57,38 @@
 | "unit test" | tests/unit/** | Fast (~3s), no network, jest project "unit" |
 | "integration test" | tests/integration/** | Slow (network), uses globalSetup, caches m3u8/TS segments |
 | "E2E test" | Playwright | Full browser automation, real Chrome/Edge, tests/ui/ |
+
+## Reverse lookup (System → Anh)
+
+> Tra khi em output system term lần đầu trong conversation → kèm `(anh gọi: Y)`.
+> Chỉ liệt kê term có nhiều alias hoặc không đảo trực tiếp từ table trên.
+
+| System term | Anh có thể gọi |
+|---|---|
+| `autoDownloadEnabled` | "AD toggle", "auto-download toggle" |
+| `autoSelectEnabled` | "AS toggle", "auto-select toggle" |
+| `tabId` (in payload) | "tab-scoping", "tab filter" |
+| `src/content/` | "content script", "script chạy trong trang" |
+| `src/background/` | "service worker", "background" |
+| `src/offscreen/` | "offscreen", "offscreen document" |
+| `mux.js` (TS → fMP4) | "transmuxing", "convert TS" |
+| `docs/2-architechture-system.md` | "architecture map", "file structure doc" |
+| `docs/knowledge/principles.md` | "principle index", "nguyên lý đúc rút" |
+| `docs/adr/NNN-*.md` | "ADR", "architecture decision" |
+
+## Update protocol
+
+**Khi nào update file này:**
+1. **Anh dùng từ mới chưa có entry** (runtime, mọi phase) → em hỏi "anh đang nói đến X phải không?" → confirm → thêm entry vào table tương ứng + reverse lookup nếu có nhiều alias. Đây là trigger chính, xảy ra nhiều nhất ở G0 interview.
+2. **Em sinh system term mới** (G4 implementation: tên file mới, tên toggle, tên message type, tên store key) → thêm entry "anh có thể gọi là Z → system term W" + reverse lookup. Nếu không thêm, anh không có cách gọi term đó.
+3. **System term bị rename/refactor** (G4/G7) → update entry (đổi cột System term) hoặc xóa entry nếu term bị xóa. Trigger này đi cùng commit refactor, không tách riêng.
+
+**Cách update:**
+- Đọc file này → tìm entry cần sửa → edit
+- Không cần rewrite toàn bộ, chỉ edit phần liên quan
+- Giữ format nhất quán (table, section)
+- Entry mới: xác nhận **không trùng alias** với entry đã có (grep cột "Anh nói" trước khi thêm) — tránh 2 system term cùng đáp 1 alias
+
+**Commit rule:**
+- Glossary update đi **cùng commit phase** nơi term sinh/đổi (không tách commit riêng) — glossary là cross-cutting reference, không phải feature artifact.
+- Nếu chỉ update glossary mà không có file khác trong phase đó → mới tách commit `docs: glossary <term>`.

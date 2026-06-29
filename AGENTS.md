@@ -47,10 +47,16 @@ Note: `npm test -- --testPathPattern=` is deprecated in jest 30; use `--testPath
 - Never modify `manifest.json` without testing in real Chrome
 
 ## Chrome Extension Baseline
-- UI/UX: when using `/frontend-ui-engineering`, apply `docs/reference-ui_ux_system.md`
+- UI/UX: when using `/frontend-ui-engineering`, apply `docs/specs/design/ferrence-for-design-ux_ui/reference-ui_ux_system.md`
 - Knowledge base: read `docs/0-wiki.md` (overview) → `docs/1-share-language.md` (glossary) → `docs/2-architechture-system.md` (file structure + dependencies + impact radius) before touching code
 - chrome-devtools MCP: refer to `docs/reference/chrome-devtools-mcp.md`
 - Architecture map: update `docs/2-architechture-system.md` whenever adding/removing/renaming files, changing imports, or modifying data flows. Use the "Update protocol" section at the bottom of that file.
+
+## Share-Language (glossary runtime rule)
+Glossary `docs/1-share-language.md` là cache đồng thuận ngôn ngữ giữa anh và em. 3 runtime rule:
+1. **Cache miss → hỏi confirm → thêm entry**: Khi anh dùng từ không có trong glossary → em KHÔNG đoán. Em hỏi "anh đang nói đến `<system term>` phải không?" → confirm → thêm entry vào table tương ứng + reverse lookup (xem Update protocol cuối glossary). Xảy ra nhiều nhất ở G0 interview.
+2. **Output system term → kèm mapping**: Khi em output system term lần đầu trong conversation → kèm `(anh gọi: Y)` tra từ reverse lookup. Sau lần đầu có thể dùng system term thuần.
+3. **Refactor/rename → update entry**: Khi rename/xóa system term (G4/G7) → update hoặc xóa entry stale trong glossary, đi cùng commit refactor. Entry stale = glossary mất tin cậy → bị bỏ read.
 
 ## Ponytail (lazy senior dev mode)
 Lazy = efficient, not careless. The best code is the code never written. Before writing code, stop at the first rung that holds:
@@ -70,13 +76,13 @@ Not lazy about: understanding the problem, input validation at trust boundaries,
 Khi task >3 bước hoặc touch code: `todo_write` checklist nhúng rules (read `docs/2-architechture-system.md` Bảng phụ thuộc trước sửa, ponytail PRE-FILTER grep caller, fix root cause shared function, update docs/2-architechture-system.md 3 chỗ + verify by ls, npm run test:unit + npx tsc --noEmit). Mỗi item = 1 rule được tuân thủ, làm xong → complete → biến mất. Không đặt reminder chung chung không có done criteria.
 
 ## Workflow & Skills
-**Identify your phase (0-7) → invoke `software-production-workflow` skill for full process (file ops, verify steps, skill activation per phase).** Cross-cutting: `doubt-driven-development` (non-trivial decisions), `context-engineering` (context degradation), `using-agent-skills` (discover skills), `git-workflow-and-versioning` (every code change).
+**Identify your phase (0-7) → invoke `software-production-workflow` skill for full process (file ops, verify steps, skill activation per phase).** Thứ tự đúng: G0 Discovery (+ feasibility go/no-go nhẹ cuối G0) → G1 Spec → G2 Plan (implementation plan, input = spec) → G3 Design/ADR → G4 Implementation (task breakdown đầu G4, sau khi có Spec+Plan+ADR) → G5 Testing → G6 Release → G7 Maintenance. **Quy tắc cốt lõi: output của spec là input của plan — plan phải cite spec, KHÔNG viết plan trước spec.** **Lưu ý: task breakdown chi tiết chạy ở G4 đầu (sau Spec+Plan+ADR), KHÔNG ở G2** (G2 chỉ implementation plan high-level: approach, risk mitigation, milestones). Cross-cutting: `doubt-driven-development` (non-trivial decisions), `context-engineering` (context degradation), `using-agent-skills` (discover skills), `git-workflow-and-versioning` (every code change).
 
 ### Browser-facing code verification (stop-the-line)
 Any change touching content-scripts, popup UI, DOM injection, or extension runtime behavior **must be verified in a real browser** (MCP `chrome-devtools`/`edge-devtools`, or Playwright) before committing. Unit tests and `tsc` are necessary but not sufficient for visual/runtime bugs. No commit until the browser-level check passes.
 
 ## File Placement Convention
-knowledge → `docs/knowledge/`, specs → `docs/specs/`, intent → `docs/intent/`, plan → `docs/plan/`, reference → `docs/reference/`, adr → `docs/adr/`. KHÔNG lưu loose file ở docs/ root.
+File docs feature theo format `<prefix>-<name>.md` với prefix ∈ {`idea`, `intent`, `spec`, `plan`, `task`}. ADR giữ format `NNN-<name>.md`. knowledge → `docs/knowledge/`, intent/idea → `docs/intent/`, spec → `docs/specs/`, plan (implementation plan G2, input = spec) → `docs/plan/`, task (task list G4) → `docs/task/`, reference → `docs/reference/`, adr → `docs/adr/`. KHÔNG lưu loose file ở docs/ root.
 
 ## Communication
 - always call me "Anh yêu", xưng là "em"
