@@ -35,7 +35,7 @@ ADRs capture the reasoning behind significant technical decisions. They're the h
 
 ### ADR Template
 
-Store ADRs in `docs/decisions/` with sequential numbering:
+Store ADRs in `docs/adr/` with sequential numbering (`NNN-<name>.md`):
 
 ```markdown
 # ADR-001: Use PostgreSQL for primary database
@@ -83,11 +83,62 @@ Use PostgreSQL with Prisma ORM.
 ### ADR Lifecycle
 
 ```
-PROPOSED → ACCEPTED → (SUPERSEDED or DEPRECATED)
+PROPOSED → ACCEPTED → (SUPERSEDED or DEPRECATED or AMENDED)
 ```
 
 - **Don't delete old ADRs.** They capture historical context.
 - When a decision changes, write a new ADR that references and supersedes the old one.
+
+### Amend vs New ADR (decision change policy)
+
+ADRs are **immutable** — they snapshot a decision at a point in time. Mutating
+content destroys the ability to trace decision evolution. But ponytail says
+"don't duplicate." These rules reconcile the two:
+
+| Case | Action | When |
+|------|--------|------|
+| **Minor enhancement** (same decision, more detail) | Addendum section in old ADR + mark `Amended YYYY-MM-DD`. No new ADR. | New info doesn't change the decision, just clarifies it. |
+| **Major change** (architecture decision shifts) | New ADR, `Amends ADR-XXX` + link + **delta only** (no duplicate context). Mark old ADR `Amended by ADR-YYY`. | Decision direction changes or significant new surface added. |
+| **Decision reversed** (rejected) | New ADR full standalone + mark old ADR `Superseded by ADR-YYY`. | The original decision is now wrong. |
+| **Typo / factual error** | Amend old ADR in place. | Not a decision change — just a correction. |
+
+**Duplicate threshold**: If the new ADR would be >50% duplicate of the old ADR's
+context/decision, write **delta-only** (link + what changed + why). If <50%
+duplicate, standalone is fine.
+
+**Delta-only ADR template**:
+
+```markdown
+# ADR-NNN: <Short title — what changed>
+
+## Status
+Accepted | Amends ADR-XXX
+
+## Date
+YYYY-MM-DD
+
+## Amends
+ADR-XXX: <link to old ADR>
+
+## Delta (what changed)
+- <Change 1 — 1-2 lines>
+- <Change 2>
+
+## Why changed
+<1 paragraph — new context/constraint that forced the change>
+
+## What stays (see ADR-XXX for full rationale)
+- <Point 1 preserved from old ADR>
+- <Point 2 preserved>
+
+## Consequences (delta only)
+- <New consequence from the change>
+```
+
+**Rationale**: Ponytail applies to *code*, not *ADRs*. ADR duplication (link +
+delta summary) is intentional — it preserves history while keeping the new
+decision readable. The >50% threshold prevents both over-long amended ADRs and
+over-short standalone ADRs that add no value.
 
 ## Inline Documentation
 
@@ -275,4 +326,4 @@ After documenting:
 - [ ] API functions have parameter and return type documentation
 - [ ] Known gotchas are documented inline where they matter
 - [ ] No commented-out code remains
-- [ ] Rules files (CLAUDE.md etc.) are current and accurate
+- [ ] Rules files (agents.md etc.) are current and accurate

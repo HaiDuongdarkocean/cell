@@ -1,7 +1,7 @@
 # ADR-014: Subtitle Selector When Multiple Matches (V2 of ADR-007 D3) + Bug A Fix
 
 ## Status
-Proposed (G3 — chờ G4 implement + G5 verify)
+Accepted — Amended by ADR-015 (`docs/adr/015-subtitle-manager-panel.md`, V2 unified panel, 2026-06-29). D1/D2/D4/D5 preserved; D3 dropdown refactor thành panel.
 
 ## Context
 
