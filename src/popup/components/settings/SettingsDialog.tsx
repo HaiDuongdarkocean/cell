@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/types/media';
+import type { OverlayStyleConfig } from '@/types/subtitle';
 import {
   MIN_PARALLEL_WORKERS,
   MAX_PARALLEL_WORKERS,
   MAX_CONVERT_BYTES,
+  DEFAULT_OVERLAY_STYLE_TARGET,
+  DEFAULT_OVERLAY_STYLE_NATIVE,
 } from '@/constants/config';
 import { MultiSelect } from './MultiSelect';
+import { SubtitleStylePanel } from './SubtitleStylePanel';
 import styles from './SettingsDialog.module.css';
 
 interface SettingsDialogProps {
@@ -259,6 +263,9 @@ const OVERLAY_LANGUAGE_OPTIONS: DropdownOption[] = [
 
 export function SettingsDialog({ isOpen, settings, onChange, onClose }: SettingsDialogProps): React.JSX.Element {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  // ADR-013: tab state for Target/Native style panel (kept here so tab switch
+  // preserves state — panel unmounts/remounts would lose unsaved slider drag)
+  const [styleTab, setStyleTab] = useState<'target' | 'native'>('target');
 
   useEffect(() => {
     if (isOpen) {
@@ -275,6 +282,19 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
 
   const update = <K extends keyof Settings>(key: K, value: Settings[K]): void => {
     onChange({ ...settings, [key]: value });
+  };
+
+  // ADR-013: partial update cho overlay style (target or native)
+  const updateOverlayStyle = (role: 'target' | 'native', partial: Partial<OverlayStyleConfig>): void => {
+    const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
+    const current = settings[key] ?? (role === 'target' ? DEFAULT_OVERLAY_STYLE_TARGET : DEFAULT_OVERLAY_STYLE_NATIVE);
+    onChange({ ...settings, [key]: { ...current, ...partial } });
+  };
+
+  const resetOverlayStyle = (role: 'target' | 'native'): void => {
+    const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
+    const defaults = role === 'target' ? DEFAULT_OVERLAY_STYLE_TARGET : DEFAULT_OVERLAY_STYLE_NATIVE;
+    onChange({ ...settings, [key]: defaults });
   };
 
   return (
@@ -400,6 +420,50 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
               </button>
             </div>
             <p className={styles.asHint}>Khi bật, overlay tự load subtitle detect được cùng target language.</p>
+          </div>
+
+          {/* === ADR-013: Subtitle appearance (Target/Native tabs) === */}
+          <div className={styles.field}>
+            <label className={styles.label}>Subtitle appearance</label>
+            <div className={styles.tabRow} role="tablist" aria-label="Subtitle style tab">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={styleTab === 'target'}
+                className={`${styles.tabBtn} ${styleTab === 'target' ? styles.tabBtnActive : ''}`}
+                onClick={() => setStyleTab('target')}
+                data-testid="style-tab-target"
+              >
+                Target
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={styleTab === 'native'}
+                className={`${styles.tabBtn} ${styleTab === 'native' ? styles.tabBtnActive : ''}`}
+                onClick={() => setStyleTab('native')}
+                data-testid="style-tab-native"
+              >
+                Native
+              </button>
+            </div>
+            {styleTab === 'target' ? (
+              <SubtitleStylePanel
+                role="target"
+                style={settings.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET}
+                onChange={(partial) => updateOverlayStyle('target', partial)}
+                onReset={() => resetOverlayStyle('target')}
+                defaultStyle={DEFAULT_OVERLAY_STYLE_TARGET}
+              />
+            ) : (
+              <SubtitleStylePanel
+                role="native"
+                style={settings.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE}
+                onChange={(partial) => updateOverlayStyle('native', partial)}
+                onReset={() => resetOverlayStyle('native')}
+                defaultStyle={DEFAULT_OVERLAY_STYLE_NATIVE}
+              />
+            )}
           </div>
 
           {/* === Group: keyboard shortcuts === */}
