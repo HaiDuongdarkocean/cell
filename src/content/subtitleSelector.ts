@@ -1,0 +1,197 @@
+import type { DetectedSubtitle } from '@/types/media';
+
+/**
+ * Subtitle selector dropdown for overlay (ADR-014 D3, V2 of ADR-007 D3).
+ *
+ * When ≥2 subtitles share the same language, render a dropdown icon at
+ * top-right of the video container. Click → popover list of matching subs
+ * (cue count + format), highlight active. Click outside / Esc / select → close.
+ *
+ * Only 1 dropdown open at a time (clicking dropdown #2 closes dropdown #1).
+ * Icon position: absolute top-right container (not overlay) — avoids covering
+ * subtitle text. z-index = overlay z-index + 1.
+ *
+ * @param role - 'target' | 'native' (for data-testid + aria-label)
+ * @param container - Video wrapper (icon appended here, position absolute)
+ * @param subtitles - All detected subtitles (filters by language internally)
+ * @param language - Language code to filter (case-insensitive)
+ * @param activeIndex - Currently active sub index (highlighted in popover)
+ * @param onSelect - Callback with chosen sub index (0-based into filtered matches)
+ * @returns { icon, destroy } — icon button element + cleanup function
+ */
+export function createSubtitleDropdown(
+  role: 'target' | 'native',
+  container: HTMLElement,
+  subtitles: DetectedSubtitle[],
+  language: string,
+  activeIndex: number,
+  onSelect: (index: number) => void,
+): { icon: HTMLButtonElement; destroy: () => void } {
+  const matches = subtitles.filter(
+    (s) => s.language.toLowerCase() === language.toLowerCase(),
+  );
+
+  // V1 behavior: only 1 match → no dropdown needed
+  if (matches.length < 2) {
+    const noop = document.createElement('button');
+    noop.style.display = 'none';
+    return { icon: noop, destroy: () => noop.remove() };
+  }
+
+  const icon = document.createElement('button');
+  icon.setAttribute('type', 'button');
+  icon.setAttribute('data-testid', `subtitle-selector-${role}`);
+  icon.setAttribute('aria-label', `Select ${role} subtitle`);
+  icon.setAttribute('aria-haspopup', 'listbox');
+  icon.setAttribute('aria-expanded', 'false');
+  icon.style.cssText = `
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 1000001;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 4px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+  `;
+
+  // chevron-down SVG (Lucide-style)
+  icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+
+  let popover: HTMLDivElement | null = null;
+  let outsideClickHandler: ((e: MouseEvent) => void) | null = null;
+  let escHandler: ((e: KeyboardEvent) => void) | null = null;
+
+  const closePopover = (): void => {
+    if (popover) {
+      popover.remove();
+      popover = null;
+    }
+    icon.setAttribute('aria-expanded', 'false');
+    if (outsideClickHandler) {
+      document.removeEventListener('mousedown', outsideClickHandler);
+      outsideClickHandler = null;
+    }
+    if (escHandler) {
+      document.removeEventListener('keydown', escHandler);
+      escHandler = null;
+    }
+    // Notify global registry (only 1 dropdown open at a time)
+    activeDropdown = null;
+  };
+
+  const openPopover = (): void => {
+    // Close any other open dropdown first (only 1 at a time)
+    if (activeDropdown && activeDropdown !== closePopover) {
+      activeDropdown();
+    }
+
+    popover = document.createElement('div');
+    popover.setAttribute('data-testid', `subtitle-selector-popover-${role}`);
+    popover.setAttribute('role', 'listbox');
+    popover.style.cssText = `
+      position: absolute;
+      top: 40px;
+      right: 8px;
+      z-index: 1000002;
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.85);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      padding: 4px;
+      min-width: 180px;
+      font-size: 12px;
+    `;
+
+    matches.forEach((sub, index) => {
+      const item = document.createElement('div');
+      item.setAttribute('role', 'option');
+      item.setAttribute('data-testid', `subtitle-selector-item-${role}-${index}`);
+      item.setAttribute('aria-selected', String(index === activeIndex));
+      item.style.cssText = `
+        padding: 6px 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        ${index === activeIndex ? 'background: rgba(255,255,255,0.15); font-weight: bold;' : ''}
+      `;
+      item.textContent = `Sub #${index + 1}`;
+      const meta = document.createElement('span');
+      meta.style.cssText = 'opacity: 0.7; font-size: 11px;';
+      meta.textContent = sub.format.toUpperCase();
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        onSelect(index);
+        closePopover();
+      });
+      item.addEventListener('mouseenter', () => {
+        if (index !== activeIndex) item.style.background = 'rgba(255,255,255,0.1)';
+      });
+      item.addEventListener('mouseleave', () => {
+        if (index !== activeIndex) item.style.background = 'transparent';
+      });
+      popover!.appendChild(item);
+    });
+
+    container.appendChild(popover);
+    icon.setAttribute('aria-expanded', 'true');
+
+    // Close on click outside (mousedown fires before click on item)
+    outsideClickHandler = (e: MouseEvent): void => {
+      if (popover && !popover.contains(e.target as Node) && e.target !== icon) {
+        closePopover();
+      }
+    };
+    document.addEventListener('mousedown', outsideClickHandler);
+
+    // Close on Esc
+    escHandler = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        closePopover();
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    // Register as active dropdown
+    activeDropdown = closePopover;
+  };
+
+  icon.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (popover) {
+      closePopover();
+    } else {
+      openPopover();
+    }
+  });
+
+  container.appendChild(icon);
+
+  return {
+    icon,
+    destroy: () => {
+      closePopover();
+      icon.remove();
+    },
+  };
+}
+
+/**
+ * Global registry: only 1 dropdown open at a time (ADR-014 D3 spec).
+ * Clicking dropdown #2 closes dropdown #1. `activeDropdown` = closePopover
+ * function of currently-open dropdown, or null.
+ */
+let activeDropdown: (() => void) | null = null;
