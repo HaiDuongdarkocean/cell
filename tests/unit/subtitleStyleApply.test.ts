@@ -9,32 +9,47 @@ import type { TextShadowConfig } from '@/types/subtitle';
 // === calcYOffsetPercent ===
 
 describe('calcYOffsetPercent', () => {
+  // Overlay anchored at `bottom%` (distance from video bottom). Drag up
+  // (deltaY<0) → offset increases → subtitle moves up (natural drag direction).
+  // Drag down (deltaY>0) → offset decreases → subtitle moves down.
+
   it('returns current offset when delta is 0', () => {
     expect(calcYOffsetPercent(0, 600, 10)).toBe(10);
   });
 
-  it('adds delta percent rounded', () => {
-    // delta 60px on 600px container = 10% → 10 + 10 = 20
-    expect(calcYOffsetPercent(60, 600, 10)).toBe(20);
+  it('drag down decreases offset (subtitle follows down)', () => {
+    // delta 60px down on 600px container = 10% → 10 - 10 = 0
+    expect(calcYOffsetPercent(60, 600, 10)).toBe(0);
   });
 
-  it('clamps to 0 when result negative', () => {
-    expect(calcYOffsetPercent(-600, 600, 5)).toBe(0);
+  it('drag up increases offset, clamps to 95', () => {
+    // delta -600px up on 600px = +100% → 5 + 100 = 105 → clamp 95
+    expect(calcYOffsetPercent(-600, 600, 5)).toBe(95);
   });
 
-  it('clamps to 95 when result exceeds 95', () => {
-    expect(calcYOffsetPercent(60000, 600, 90)).toBe(95);
+  it('drag down clamps to 0 when result negative', () => {
+    // delta 60000px down → 90 - 10000 = negative → clamp 0
+    expect(calcYOffsetPercent(60000, 600, 90)).toBe(0);
   });
 
   it('rounds to nearest integer', () => {
-    // delta 3px on 600px = 0.5% → 10 + 0.5 = 10.5 → round 11 (round half up)
-    // Actually Math.round(10.5) = 11 in JS? No, Math.round(10.5) = 11 (round half to even not in JS)
-    // JS Math.round rounds half up: Math.round(10.5) = 11, Math.round(10.4) = 10
-    expect(calcYOffsetPercent(3, 600, 10)).toBe(11);
+    // delta 3px down on 600px = 0.5% → 10 - 0.5 = 9.5 → Math.round(9.5) = 10
+    expect(calcYOffsetPercent(3, 600, 10)).toBe(10);
   });
 
-  it('handles negative delta subtracting', () => {
-    expect(calcYOffsetPercent(-30, 600, 20)).toBe(15);
+  it('drag up adds offset (subtitle follows up)', () => {
+    // delta -30px up on 600px = +5% → 20 + 5 = 25
+    expect(calcYOffsetPercent(-30, 600, 20)).toBe(25);
+  });
+
+  it('regression: natural drag up moves subtitle up', () => {
+    // start at bottom (offset 0), drag up 120px on 600px container → +20% → 20
+    expect(calcYOffsetPercent(-120, 600, 0)).toBe(20);
+  });
+
+  it('regression: natural drag down moves subtitle down', () => {
+    // start near top (offset 80), drag down 120px on 600px → -20% → 60
+    expect(calcYOffsetPercent(120, 600, 80)).toBe(60);
   });
 });
 

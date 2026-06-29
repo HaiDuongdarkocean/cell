@@ -41,8 +41,8 @@ describe('createDragHandle', () => {
 
     // Simulate pointerdown
     handle.dispatchEvent(new PointerEvent('pointerdown', { clientY: 100, bubbles: true }));
-    // Simulate pointermove (delta 60px on 600px = 10% → 10 + 10 = 20)
-    document.dispatchEvent(new PointerEvent('pointermove', { clientY: 160 }));
+    // Simulate pointermove drag UP 60px (clientY 100→40) on 600px = +10% → 10 + 10 = 20
+    document.dispatchEvent(new PointerEvent('pointermove', { clientY: 40 }));
     // Simulate pointerup
     document.dispatchEvent(new PointerEvent('pointerup'));
 
@@ -59,9 +59,9 @@ describe('createDragHandle', () => {
       lastDraggedOffset = newOffset;
     });
 
-    handle.dispatchEvent(new PointerEvent('pointerdown', { clientY: 100, bubbles: true }));
-    // Drag down 600px = 100% → 90 + 100 = 190 → clamp 95
-    document.dispatchEvent(new PointerEvent('pointermove', { clientY: 700 }));
+    handle.dispatchEvent(new PointerEvent('pointerdown', { clientY: 700, bubbles: true }));
+    // Drag UP 600px (clientY 700→100) = +100% → 90 + 100 = 190 → clamp 95
+    document.dispatchEvent(new PointerEvent('pointermove', { clientY: 100 }));
     document.dispatchEvent(new PointerEvent('pointerup'));
 
     expect(lastDraggedOffset).toBe(95);
@@ -74,10 +74,11 @@ describe('createDragHandle', () => {
     const handle = createDragHandle(overlay, container, 10, () => {});
 
     handle.dispatchEvent(new PointerEvent('pointerdown', { clientY: 100, bubbles: true }));
-    document.dispatchEvent(new PointerEvent('pointermove', { clientY: 130 }));
+    // Drag UP 30px (clientY 100→70) on 600px = +5% → 10 + 5 = 15
+    document.dispatchEvent(new PointerEvent('pointermove', { clientY: 70 }));
     document.dispatchEvent(new PointerEvent('pointerup'));
 
-    // delta 30px on 600px = 5% → 10 + 5 = 15
+    // delta -30px up on 600px = +5% → 10 + 5 = 15
     expect(handle.getAttribute('aria-valuenow')).toBe('15');
   });
 

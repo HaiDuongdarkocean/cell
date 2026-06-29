@@ -14,8 +14,11 @@ export function calcYOffsetPercent(
   currentOffset: number,
 ): number {
   if (containerHeight <= 0) return clamp(currentOffset, 0, 95);
+  // Subtract: overlay anchored at `bottom%` (distance from bottom). Pointer Y
+  // increases downward on screen, but bottom% increases upward. Drag up
+  // (deltaY<0) → offset increases → subtitle moves up (natural drag direction).
   const deltaPercent = (pointerDeltaY / containerHeight) * 100;
-  return clamp(Math.round(currentOffset + deltaPercent), 0, 95);
+  return clamp(Math.round(currentOffset - deltaPercent), 0, 95);
 }
 
 /**
