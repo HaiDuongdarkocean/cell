@@ -1,4 +1,4 @@
-import { findSubtitlesForOverlay } from '../../../src/background/subtitleService';
+import { findSubtitlesForOverlay, findPreferredMatch } from '../../../src/background/subtitleService';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '../../../src/constants/config';
 import type { DetectedSubtitle, Settings } from '../../../src/types/media';
 
@@ -116,5 +116,72 @@ describe('findSubtitlesForOverlay', () => {
     expect(result).not.toBeNull();
     expect(result?.target?.language).toBe('en');
     expect(result?.native).toBeNull();
+  });
+});
+
+describe('findPreferredMatch (ADR-014 D2 — preference-aware, V2 ADR-007 D3)', () => {
+  const makeSubtitle = (language: string, url = `https://example.com/sub.${language}.srt`): DetectedSubtitle => ({
+    id: `sub-${language}-${url}`,
+    url,
+    format: 'srt',
+    language,
+    tabId: 1,
+    detectedAt: Date.now(),
+  });
+
+  it('returns first match when preferredIndex undefined (V1 fallback)', () => {
+    const subs = [makeSubtitle('en', 'https://x/first.srt'), makeSubtitle('en', 'https://x/second.srt')];
+    const result = findPreferredMatch(subs, 'en');
+    expect(result?.url).toBe('https://x/first.srt');
+  });
+
+  it('returns sub at preferredIndex when index in range', () => {
+    const subs = [makeSubtitle('en', 'https://x/first.srt'), makeSubtitle('en', 'https://x/second.srt')];
+    const result = findPreferredMatch(subs, 'en', 1);
+    expect(result?.url).toBe('https://x/second.srt');
+  });
+
+  it('falls back to first match when preferredIndex out of range (B8)', () => {
+    const subs = [makeSubtitle('en', 'https://x/first.srt'), makeSubtitle('en', 'https://x/second.srt')];
+    const result = findPreferredMatch(subs, 'en', 5);
+    expect(result?.url).toBe('https://x/first.srt');
+  });
+
+  it('returns null when no subtitle matches language', () => {
+    const subs = [makeSubtitle('en'), makeSubtitle('vi')];
+    expect(findPreferredMatch(subs, 'zh', 0)).toBeNull();
+  });
+
+  it('returns null when language is empty', () => {
+    const subs = [makeSubtitle('en')];
+    expect(findPreferredMatch(subs, '', 0)).toBeNull();
+  });
+
+  it('matches case-insensitively (EN vs en)', () => {
+    const subs = [makeSubtitle('EN', 'https://x/first.srt'), makeSubtitle('EN', 'https://x/second.srt')];
+    const result = findPreferredMatch(subs, 'en', 1);
+    expect(result?.url).toBe('https://x/second.srt');
+    expect(result?.language).toBe('EN');
+  });
+
+  it('returns null when subtitles array is empty', () => {
+    expect(findPreferredMatch([], 'en', 0)).toBeNull();
+  });
+
+  it('preferredIndex=0 returns first match (explicit first)', () => {
+    const subs = [makeSubtitle('en', 'https://x/first.srt'), makeSubtitle('en', 'https://x/second.srt')];
+    const result = findPreferredMatch(subs, 'en', 0);
+    expect(result?.url).toBe('https://x/first.srt');
+  });
+
+  it('filters only matching language (ignores other languages)', () => {
+    const subs = [
+      makeSubtitle('vi', 'https://x/vi.srt'),
+      makeSubtitle('en', 'https://x/en1.srt'),
+      makeSubtitle('fr', 'https://x/fr.srt'),
+      makeSubtitle('en', 'https://x/en2.srt'),
+    ];
+    const result = findPreferredMatch(subs, 'en', 1);
+    expect(result?.url).toBe('https://x/en2.srt');
   });
 });

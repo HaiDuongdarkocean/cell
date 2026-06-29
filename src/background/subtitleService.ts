@@ -35,6 +35,35 @@ export function findSubtitlesForOverlay(
   return { target, native };
 }
 
+/**
+ * Preference-aware subtitle match (ADR-014 D2). Replaces `findFirstMatch` for
+ * V2 subtitle selector — returns sub at `preferredIndex` when ≥2 sub same lang,
+ * falls back to first-match (index 0) when `preferredIndex` undefined or out of
+ * range (site changed sub list, B8 graceful degradation).
+ *
+ * @param subtitles - Detected subtitles on the tab
+ * @param language - ISO 639-1 language code (case-insensitive, trimmed)
+ * @param preferredIndex - 0-based index into filtered matches (undefined = first)
+ * @returns matching subtitle or null when no match / empty language
+ */
+export function findPreferredMatch(
+  subtitles: DetectedSubtitle[],
+  language: string,
+  preferredIndex?: number,
+): SubtitleForOverlayResult | null {
+  if (!language) return null;
+  const matches = subtitles.filter(
+    (s) => s.language.toLowerCase() === language.toLowerCase(),
+  );
+  if (matches.length === 0) return null;
+  const index =
+    preferredIndex !== undefined && preferredIndex < matches.length
+      ? preferredIndex
+      : 0;
+  const match = matches[index];
+  return { url: match.url, language: match.language, format: match.format };
+}
+
 function findFirstMatch(
   subtitles: DetectedSubtitle[],
   language: string,
