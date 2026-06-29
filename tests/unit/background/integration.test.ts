@@ -623,6 +623,7 @@ describe('Background integration', () => {
       subtitleOverlayAutoLoad: false,
       subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
       subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
+      subtitlePreference: {},
       keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
     };
     mockChrome.storage.local.get.mockResolvedValue({

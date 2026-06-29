@@ -19,7 +19,7 @@ import { DownloadQueue } from './downloadQueue';
 import { tryAutoDownload } from './autoDownload';
 import { Downloader, type ConvertResult } from './downloader';
 import { OffscreenManager } from './offscreenManager';
-import { findSubtitlesForOverlay } from './subtitleService';
+import { findSubtitlesForOverlay, type SubtitlePreference } from './subtitleService';
 import { MESSAGE_TYPES } from '@/constants/messages';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
 import { cleanupOrphanedDownloads } from '@/lib/storage/opfsStorage';
@@ -72,6 +72,7 @@ import type {
   SeekToPayload,
   ShortcutActionPayload,
   VideoEpisodeChangedPayload,
+  DetectedSubtitleUrlPayload,
 } from '@/types/message';
 
 /** Optional dependency overrides (used for testing). */
@@ -139,6 +140,17 @@ export class BackgroundService {
    * storage mirror if SW restarts prove to drop cues in practice.
    */
   private readonly lastCuesByTab: Map<number, BilingualCue[]> = new Map();
+
+  /**
+   * Active content tab id for side-panel relay filtering (ADR-011 v3).
+   * Background tracks this via chrome.tabs.onActivated (filtering out
+   * chrome-extension:// tabs) so the 3 relay handlers (SUBTITLE_CUES_LOADED,
+   * VIDEO_TIME_UPDATE, VIDEO_PLAY_STATE) only forward messages from the
+   * active tab — the side panel never receives messages from background tabs,
+   * eliminating highlight flicker when multiple tabs play simultaneously.
+   * Ground truth = sender.tab.id (Chrome-set) compared against this field.
+   */
+  private activeTabIdForPanel: number | undefined = undefined;
 
   /** Unsubscribe functions for event subscriptions. */
   private unsubscribers: Array<() => void> = [];
@@ -219,6 +231,25 @@ export class BackgroundService {
       void this.updateBadgeForActiveTab();
     } else {
       this.clearBadge();
+    }
+
+    // 8. Resolve the initial active content tab for side-panel relay
+    //    filtering (ADR-011 v3). onActivated only fires on tab switches,
+    //    so we need to seed activeTabIdForPanel at startup. Filter out
+    //    chrome-extension:// and edge:// tabs (same logic as onActivated).
+    //    Awaited so handlers see the correct value immediately after init.
+    try {
+      const tabs = await chrome.tabs.query({ active: true });
+      // Same filter as getActiveContentTab: accept tabs with no URL
+      // (loading/restricted), reject chrome-extension:// and edge:// tabs.
+      const contentTab = tabs.find(
+        (t) => !t.url || (!t.url.startsWith('chrome-extension://') && !t.url.startsWith('edge://')),
+      );
+      if (contentTab?.id !== undefined) {
+        this.activeTabIdForPanel = contentTab.id;
+      }
+    } catch {
+      // SW may be shutting down — leave previous value
     }
   }
 
@@ -554,8 +585,19 @@ export class BackgroundService {
     );
 
     // Update toolbar badge when the active tab changes.
+    // Also track activeTabIdForPanel (ADR-011 v3): filter out
+    // chrome-extension:// tabs so the side-panel relay only forwards
+    // messages from real content tabs. This is the ground truth the 3
+    // relay handlers check before forwarding to the side panel.
     const onTabActivated = (activeInfo: { tabId: number; windowId: number }): void => {
       this.updateBadgeForTab(activeInfo.tabId);
+      void chrome.tabs.get(activeInfo.tabId).then((tab) => {
+        // Same filter as getActiveContentTab: accept tabs with no URL,
+        // reject chrome-extension:// and edge:// tabs.
+        if (!tab.url || (!tab.url.startsWith('chrome-extension://') && !tab.url.startsWith('edge://'))) {
+          this.activeTabIdForPanel = activeInfo.tabId;
+        }
+      }).catch(() => { /* tab may be gone — leave previous value */ });
     };
     chrome.tabs.onActivated.addListener(onTabActivated);
 
@@ -653,6 +695,7 @@ export class BackgroundService {
     this.on(MESSAGE_TYPES.TOGGLE_PLAY, this.handleTogglePlay);
     this.on(MESSAGE_TYPES.SHORTCUT_ACTION, this.handleShortcutAction);
     this.on(MESSAGE_TYPES.VIDEO_EPISODE_CHANGED, this.handleVideoEpisodeChanged);
+    this.on(MESSAGE_TYPES.DETECTED_SUBTITLE_URL, this.handleDetectedSubtitleUrl);
   }
 
   /** Type-safe wrapper around messageBus.on. */
@@ -1488,6 +1531,26 @@ export class BackgroundService {
   ): Promise<void> {
     try {
       const settings = await this.loadSettings();
+      // ADR-014 D5: read per-site subtitle preference (origin → lang → subIndex).
+      // Origin extracted from tab URL hostname. Fallback first-match when no pref.
+      let preferences: SubtitlePreference | undefined;
+      let tabUrl: string | undefined;
+      try {
+        const tab = await chrome.tabs.get(tabId);
+        tabUrl = tab.url;
+      } catch {
+        // tab may be gone — skip preference, use first-match
+      }
+      if (tabUrl && settings.subtitlePreference) {
+        const origin = this.extractOrigin(tabUrl);
+        const sitePref = settings.subtitlePreference[origin];
+        if (sitePref) {
+          preferences = {
+            target: sitePref[settings.subtitleOverlayTargetLanguage],
+            native: sitePref[settings.subtitleOverlayNativeLanguage],
+          };
+        }
+      }
       console.log('[bg pushAutoLoadSubtitles]', {
         tabId,
         autoLoad: settings.subtitleOverlayAutoLoad,
@@ -1495,8 +1558,9 @@ export class BackgroundService {
         nativeLang: settings.subtitleOverlayNativeLanguage,
         subtitleCount: subtitles.length,
         subtitleLanguages: subtitles.map((s) => s.language),
+        preferences,
       });
-      let result = findSubtitlesForOverlay(subtitles, settings);
+      let result = findSubtitlesForOverlay(subtitles, settings, preferences);
       console.log('[bg pushAutoLoadSubtitles] result', result);
 
       // Content-based language resolution fallback (ADR-007 A6): when no match
@@ -1511,7 +1575,7 @@ export class BackgroundService {
         const resolved = await this.resolveUnknownSubtitleLanguages(tabId, subtitles);
         if (resolved.length > 0) {
           const refreshed = this.networkInterceptor.getSubtitles(tabId);
-          result = findSubtitlesForOverlay(refreshed, settings);
+          result = findSubtitlesForOverlay(refreshed, settings, preferences);
           console.log('[bg pushAutoLoadSubtitles] result after resolve', {
             resolvedCount: resolved.length,
             result,
@@ -1536,6 +1600,19 @@ export class BackgroundService {
       // cue count, never the full URL (ADR-007 D8).
       const msg = error instanceof Error ? error.message : String(error);
       console.warn(`AUTO_LOAD_SUBTITLES push failed for tab ${tabId}: ${msg}`);
+    }
+  }
+
+  /**
+   * Extract origin hostname from tab URL for subtitle preference lookup
+   * (ADR-014 D5). `new URL(tabUrl).hostname` → e.g. 'themoviebox.org'.
+   * Returns '' on invalid URL (preference lookup skipped, first-match fallback).
+   */
+  private extractOrigin(tabUrl: string): string {
+    try {
+      return new URL(tabUrl).hostname;
+    } catch {
+      return '';
     }
   }
 
@@ -1763,11 +1840,19 @@ export class BackgroundService {
     if (payload.tabId !== undefined) {
       this.lastCuesByTab.set(payload.tabId, payload.cues);
     }
-    // Relay to side panel (extension page) via runtime.sendMessage
+    // Relay to side panel ONLY for the active content tab (ADR-011 v3).
+    // Background filters at the relay point so the side panel never
+    // receives messages from background tabs — eliminating highlight
+    // flicker when multiple tabs play simultaneously. SUBTITLE_CUES_LOADED
+    // is cached above for all tabs (for REQUEST_SUBTITLE_CUES), but only
+    // relayed to the panel for the active tab.
+    if (payload.tabId !== undefined && payload.tabId !== this.activeTabIdForPanel) {
+      return { success: true };
+    }
     try {
       await chrome.runtime.sendMessage({
         type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-        payload: { cues: payload.cues },
+        payload: { tabId: payload.tabId, cues: payload.cues },
       });
     } catch {
       // Side panel may not be open — silently ignore; cues are cached above
@@ -1805,10 +1890,17 @@ export class BackgroundService {
     if (payload?.currentTimeMs === undefined) {
       return { success: false, error: 'Missing currentTimeMs' };
     }
+    // Relay to side panel ONLY for the active content tab (ADR-011 v3).
+    // Background tab time updates are dropped at the relay point so the
+    // panel's currentTimeMs doesn't jump between simultaneously-playing tabs.
+    if (payload.tabId !== undefined && payload.tabId !== this.activeTabIdForPanel) {
+      return { success: true };
+    }
     try {
       await chrome.runtime.sendMessage({
         type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
         payload: {
+          tabId: payload.tabId,
           currentTimeMs: payload.currentTimeMs,
           durationMs: payload.durationMs,
         },
@@ -1829,10 +1921,14 @@ export class BackgroundService {
     if (payload?.isPlaying === undefined) {
       return { success: false, error: 'Missing isPlaying' };
     }
+    // Relay to side panel ONLY for the active content tab (ADR-011 v3).
+    if (payload.tabId !== undefined && payload.tabId !== this.activeTabIdForPanel) {
+      return { success: true };
+    }
     try {
       await chrome.runtime.sendMessage({
         type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
-        payload: { isPlaying: payload.isPlaying },
+        payload: { tabId: payload.tabId, isPlaying: payload.isPlaying },
       });
     } catch {
       // Side panel may not be open — silently ignore
@@ -1978,6 +2074,44 @@ export class BackgroundService {
     this.autoDownloadedTabs.delete(tabId);
     this.updateBadgeForTab(tabId);
     console.log('[bg VIDEO_EPISODE_CHANGED] cleared media for tab', tabId);
+    return { success: true };
+  };
+
+  /**
+   * DETECTED_SUBTITLE_URL: the main-world fetch interceptor caught a subtitle
+   * fetch that `chrome.webRequest` missed (page Service Worker served it from
+   * cache → webRequest did not fire). The content-script relayed the URL here.
+   * Run it through the same `detectSubtitle` detector as the webRequest path
+   * and store it in the network interceptor's subtitle map (dedup by URL).
+   * Reuses `onMediaDetected` notification by calling `handleRequest` with a
+   * synthetic webRequest-shaped object — no new storage logic.
+   *
+   * ponytail: reuses detectSubtitle + networkInterceptor.handleRequest (which
+   * dedups + notifies listeners). No parallel subtitle store. Ceiling: only
+   * `fetch` is patched in main world — XHR-based subtitle fetches still missed.
+   */
+  private handleDetectedSubtitleUrl = (
+    request: MessageRequest,
+  ): MessageResponse => {
+    const payload = request.payload as DetectedSubtitleUrlPayload;
+    const tabId = payload.tabId;
+    if (!tabId || !payload.url) {
+      return { success: false, error: 'Missing tabId or url' };
+    }
+
+    // Build a synthetic OnBeforeRequestDetails so handleRequest can run the
+    // same detectSubtitle + dedup + notify path as real webRequest events.
+    const syntheticDetails = {
+      url: payload.url,
+      method: 'GET',
+      tabId,
+      type: 'xmlhttprequest' as chrome.webRequest.ResourceType,
+      timeStamp: Date.now(),
+      // initiator omitted — handleRequest's extension-request filter checks
+      // initiator.startsWith('chrome-extension://'); undefined passes.
+    } as chrome.webRequest.OnBeforeRequestDetails;
+
+    this.networkInterceptor.handleRequest(syntheticDetails);
     return { success: true };
   };
 }
