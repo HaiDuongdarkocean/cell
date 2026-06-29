@@ -464,6 +464,39 @@ describe('usePopupStore', () => {
     expect(usePopupStore.getState().settings.subtitleOverlayTargetLanguage).toBe('zh');
   });
 
+  // --- Migration: subtitlePreference (ADR-014 D5, subtitle selector V2) ---
+
+  it('DEFAULT_SETTINGS.subtitlePreference defaults to empty object', () => {
+    expect(DEFAULT_SETTINGS.subtitlePreference).toEqual({});
+  });
+
+  it('loadPersistedSettings fills missing subtitlePreference with {} (ADR-014 D5)', async () => {
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: {
+        ...DEFAULT_SETTINGS,
+        subtitlePreference: undefined,
+      },
+    });
+
+    await usePopupStore.getState().loadPersistedSettings();
+
+    expect(usePopupStore.getState().settings.subtitlePreference).toEqual({});
+  });
+
+  it('loadPersistedSettings keeps existing subtitlePreference', async () => {
+    const pref = { 'themoviebox.org': { en: 1 } };
+    storageLocalGetMock.mockResolvedValue({
+      [STORAGE_KEYS.SETTINGS]: {
+        ...DEFAULT_SETTINGS,
+        subtitlePreference: pref,
+      },
+    });
+
+    await usePopupStore.getState().loadPersistedSettings();
+
+    expect(usePopupStore.getState().settings.subtitlePreference).toEqual(pref);
+  });
+
   it('loadExtensionStatus loads saved status from chrome.storage.local', async () => {
     storageLocalGetMock.mockResolvedValue({
       [STORAGE_KEYS.EXTENSION_STATUS]: false,

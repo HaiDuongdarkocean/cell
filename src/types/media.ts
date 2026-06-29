@@ -372,6 +372,12 @@ export interface Settings {
   readonly subtitleOverlayTargetStyle?: import('./subtitle').OverlayStyleConfig;
   /** Per-layer appearance config for native subtitle overlay (ADR-013). Independent from target. */
   readonly subtitleOverlayNativeStyle?: import('./subtitle').OverlayStyleConfig;
+  /**
+   * Per-site subtitle preference (ADR-014 D5). Key = origin (e.g. 'themoviebox.org'),
+   * value = { [lang]: subIndex } where subIndex is 0-based index into filtered
+   * matches. Fallback first-match when index out of range (B8).
+   */
+  readonly subtitlePreference?: Record<string, Record<string, number>>;
   /** Keyboard shortcuts for subtitle floating panel. Default: a/d/s/w/t. */
   readonly keyboardShortcuts: KeyboardShortcut[];
 }

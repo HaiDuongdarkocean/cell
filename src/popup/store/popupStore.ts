@@ -204,6 +204,11 @@ export const usePopupStore = create<PopupState>((set) => ({
         if (!settings.subtitleOverlayNativeStyle) {
           settings = { ...settings, subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE };
         }
+        // Migration: subtitlePreference missing in pre-ADR-014 settings.
+        // Fill {} for existing users (ADR-014 D5).
+        if (!settings.subtitlePreference) {
+          settings = { ...settings, subtitlePreference: {} };
+        }
         set({ settings, isSettingsLoaded: true });
       } else {
         set({ isSettingsLoaded: true });
