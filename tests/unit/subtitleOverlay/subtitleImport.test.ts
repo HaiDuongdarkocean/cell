@@ -1,4 +1,5 @@
-import { createImportButton, handleFileSelect } from '../../../src/content/subtitleImport';
+import { createImportButton, handleFileSelect, assignImportRole } from '../../../src/content/subtitleImport';
+import type { ParsedFile } from '../../../src/content/subtitleImport';
 import type { OverlayConfig } from '../../../src/types/subtitle';
 
 describe('subtitleImport', () => {
@@ -73,6 +74,80 @@ Hello world`;
       const result = await handleFileSelect(file);
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unsupported');
+    });
+  });
+
+  describe('assignImportRole (ADR-015 — multi-file auto-detect role)', () => {
+    const makeParsed = (name: string, detectedLang: string): ParsedFile => ({
+      file: new File(['x'], name, { type: 'text/plain' }),
+      detectedLang,
+      cues: [],
+      format: 'srt',
+    });
+
+    it('1 file target-lang → target only', () => {
+      const files = [makeParsed('en-sub.srt', 'english')];
+      const result = assignImportRole(files, 'en', 'ar');
+      expect(result.target).toHaveLength(1);
+      expect(result.native).toHaveLength(0);
+      expect(result.ignored).toHaveLength(0);
+    });
+
+    it('1 file native-lang → native only', () => {
+      const files = [makeParsed('ar-sub.srt', 'arabic')];
+      const result = assignImportRole(files, 'en', 'ar');
+      expect(result.target).toHaveLength(0);
+      expect(result.native).toHaveLength(1);
+      expect(result.ignored).toHaveLength(0);
+    });
+
+    it('1 file neither-lang → fallback target (spec Assumption #5)', () => {
+      const files = [makeParsed('fr-sub.srt', 'french')];
+      const result = assignImportRole(files, 'en', 'ar');
+      expect(result.target).toHaveLength(1);
+      expect(result.native).toHaveLength(0);
+      expect(result.ignored).toHaveLength(0);
+    });
+
+    it('2 files (1 target + 1 native) → both sections', () => {
+      const files = [makeParsed('en.srt', 'english'), makeParsed('ar.srt', 'arabic')];
+      const result = assignImportRole(files, 'en', 'ar');
+      expect(result.target).toHaveLength(1);
+      expect(result.native).toHaveLength(1);
+      expect(result.ignored).toHaveLength(0);
+    });
+
+    it('2 files same lang (target) → both in target section (C7)', () => {
+      const files = [makeParsed('en1.srt', 'english'), makeParsed('en2.srt', 'english')];
+      const result = assignImportRole(files, 'en', 'ar');
+      expect(result.target).toHaveLength(2);
+      expect(result.native).toHaveLength(0);
+      expect(result.ignored).toHaveLength(0);
+    });
+
+    it('3 files (2 target-lang + 1 neither) → 2 target + 1 ignored (C8)', () => {
+      const files = [
+        makeParsed('en1.srt', 'english'),
+        makeParsed('en2.srt', 'english'),
+        makeParsed('fr.srt', 'french'),
+      ];
+      const result = assignImportRole(files, 'en', 'ar');
+      expect(result.target).toHaveLength(2);
+      expect(result.native).toHaveLength(0);
+      expect(result.ignored).toHaveLength(1);
+    });
+
+    it('handles null detectedLang → ignored (then fallback target if target empty)', () => {
+      const files = [makeParsed('unknown.srt', '')];
+      const result = assignImportRole(files, 'en', 'ar');
+      expect(result.target).toHaveLength(1); // fallback (target was empty)
+      expect(result.ignored).toHaveLength(0);
+    });
+
+    it('case-insensitive ISO comparison', () => {
+      const files = [makeParsed('en.srt', 'English')]; // capitalized label
+      const result = assignImportRole(files, 'EN', 'AR');
+      expect(result.target).toHaveLength(1);
     });
   });
 });

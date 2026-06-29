@@ -1,5 +1,79 @@
 import { handleFileDrop } from './subtitleDragDrop';
-import type { OverlayConfig, ParseResult } from '../types/subtitle';
+import { labelToIsoCode } from '@/lib/detectors/languageDetector';
+import type { OverlayConfig, ParseResult, SubtitleFormat } from '../types/subtitle';
+import type { SrtCue } from '../types/media';
+
+/**
+ * Parsed subtitle file with detected language (ADR-015 — multi-file import).
+ * `detectedLang` is a lowercase label from `detectLanguage` (e.g. "english"),
+ * NOT an ISO code. `assignImportRole` converts via `labelToIsoCode`.
+ */
+export interface ParsedFile {
+  readonly file: File;
+  readonly detectedLang: string; // lowercase label from detectLanguage, '' if detection failed
+  readonly cues: SrtCue[];
+  readonly format: SubtitleFormat;
+}
+
+/**
+ * Result of multi-file import role assignment (ADR-015).
+ * - `target`: files whose detected language matches targetLang (ISO).
+ * - `native`: files whose detected language matches nativeLang (ISO).
+ * - `ignored`: files whose detected language matches neither.
+ *
+ * Fallback (spec Assumption #5): if `target` is empty and `ignored` is
+ * non-empty, the first ignored file is promoted to `target` so the user
+ * always gets at least one target subtitle from an import.
+ */
+export interface ImportRoleAssignment {
+  readonly target: ParsedFile[];
+  readonly native: ParsedFile[];
+  readonly ignored: ParsedFile[];
+}
+
+/**
+ * Assign import roles (target / native / ignored) by detected language.
+ *
+ * Pure function — converts `detectLanguage` label → ISO via `labelToIsoCode`
+ * before comparing with `targetLang` / `nativeLang` (which are ISO codes).
+ * Case-insensitive comparison. 2 files same lang → both in the same section
+ * (spec C7). Neither-lang → ignored, with fallback-to-target when target
+ * is empty (spec Assumption #5).
+ *
+ * @param files - Parsed files with detected language labels
+ * @param targetLang - Target language ISO 639-1 code (e.g. 'en')
+ * @param nativeLang - Native language ISO 639-1 code (e.g. 'ar')
+ */
+export function assignImportRole(
+  files: readonly ParsedFile[],
+  targetLang: string,
+  nativeLang: string,
+): ImportRoleAssignment {
+  const target: ParsedFile[] = [];
+  const native: ParsedFile[] = [];
+  const ignored: ParsedFile[] = [];
+  const targetIso = targetLang.toLowerCase();
+  const nativeIso = nativeLang.toLowerCase();
+
+  for (const f of files) {
+    const iso = f.detectedLang ? labelToIsoCode(f.detectedLang) : null;
+    if (iso && iso.toLowerCase() === targetIso) {
+      target.push(f);
+    } else if (iso && iso.toLowerCase() === nativeIso) {
+      native.push(f);
+    } else {
+      ignored.push(f);
+    }
+  }
+
+  // Fallback (spec Assumption #5): if no target matched but we have ignored
+  // files, promote the first ignored to target so the user gets a subtitle.
+  if (target.length === 0 && ignored.length > 0) {
+    target.push(ignored.shift()!);
+  }
+
+  return { target, native, ignored };
+}
 
 /**
  * Create import button appended to video parent (top-right corner).
