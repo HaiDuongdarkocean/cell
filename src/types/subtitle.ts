@@ -24,16 +24,49 @@ export interface SubtitleState {
 // === Overlay Configuration Types ===
 
 /**
- * Configuration for subtitle overlay behavior.
+ * Configuration for subtitle overlay behavior (language, auto-load).
+ * Kept separate from `OverlayStyleConfig` (per-layer appearance) per ADR-013 D2.
  */
 export interface OverlayConfig {
   readonly targetLanguage: string; // Target language ISO 639-1 code (e.g., 'en', 'vi')
   readonly autoLoadEnabled: boolean; // Whether auto-load from extension detect
-  readonly fontSize: number; // Font size in pixels (default: 24)
-  readonly position: 'bottom' | 'top' | 'center'; // Vertical position
-  readonly backgroundColor: string; // Background color (rgba format)
-  readonly textColor: string; // Text color (hex or rgba)
+  readonly fontSize: number; // Font size in pixels (default: 24) — legacy, superseded by OverlayStyleConfig
+  readonly position: 'bottom' | 'top' | 'center'; // Vertical position — legacy, superseded by OverlayStyleConfig.yOffsetPercent
+  readonly backgroundColor: string; // Background color (rgba format) — legacy, superseded by OverlayStyleConfig
+  readonly textColor: string; // Text color (hex or rgba) — legacy, superseded by OverlayStyleConfig
   readonly showTimestamps: boolean; // Whether to display timestamps
+}
+
+/**
+ * Text shadow configuration for overlay (ADR-013 D2).
+ * 3 preset (none/soft/cinema) + custom (4 field).
+ */
+export interface TextShadowConfig {
+  readonly preset: 'none' | 'soft' | 'cinema' | 'custom';
+  readonly color: string; // hex, default '#000000'
+  readonly blur: number; // px, default 2
+  readonly offsetX: number; // px, default 1
+  readonly offsetY: number; // px, default 1
+}
+
+/**
+ * Per-layer appearance configuration for subtitle overlay (ADR-013 D2).
+ * Replaces the appearance fields of `OverlayConfig` (fontSize, position, colors).
+ * `OverlayConfig` kept for behavior (targetLanguage, autoLoadEnabled, showTimestamps).
+ *
+ * One config per layer: target + native are independent (2 overlay div, 2 style).
+ */
+export interface OverlayStyleConfig {
+  readonly fontSize: number; // px, default 24 (target) / 20 (native)
+  readonly textColor: string; // hex, default '#ffffff'
+  readonly backgroundColor: string; // hex (alpha tách rời — color picker native không hỗ trợ alpha)
+  readonly backgroundOpacity: number; // 0-1, default 0.7
+  readonly textOpacity: number; // 0-1, default 1
+  readonly textShadow: TextShadowConfig;
+  readonly fontFamily: string; // CSS font-family string, default 'sans-serif'
+  readonly yOffsetPercent: number; // 0-95, % video height, default 10 (target bottom) / 5 (native top)
+  readonly horizontalAlign: 'left' | 'center' | 'right'; // default 'center'
+  readonly visible: boolean; // on/off, default true (native toggle C1)
 }
 
 // === Parser Types ===

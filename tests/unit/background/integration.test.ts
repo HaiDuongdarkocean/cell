@@ -3,7 +3,7 @@ import { OffscreenManager } from '@/background/offscreenManager';
 import { NetworkInterceptor } from '@/background/networkInterceptor';
 import { MessageBus } from '@/background/messageBus';
 import { MESSAGE_TYPES } from '@/constants/messages';
-import { DEFAULT_SETTINGS, STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
+import { DEFAULT_SETTINGS, STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/constants/config';
 import type { DownloadItem, Settings, WhitelistEntry } from '@/types/media';
 import type {
   MessageRequest,
@@ -621,6 +621,8 @@ describe('Background integration', () => {
       subtitleOverlayTargetLanguage: '',
       subtitleOverlayNativeLanguage: '',
       subtitleOverlayAutoLoad: false,
+      subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
+      subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
       keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
     };
     mockChrome.storage.local.get.mockResolvedValue({
@@ -1983,11 +1985,12 @@ https://cdn.example.com/low.m3u8`;
     const response = await messageBus.handleMessage(request, { id: 'tab' });
     expect(response.success).toBe(true);
 
-    // Relayed to side panel via runtime.sendMessage
+    // Relayed to side panel via runtime.sendMessage — tabId included so the
+    // panel can filter by its active tab (ADR-013).
     expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-        payload: expect.objectContaining({ cues }),
+        payload: expect.objectContaining({ tabId: 123, cues }),
       }),
     );
   });
@@ -2034,5 +2037,121 @@ https://cdn.example.com/low.m3u8`;
     const response = await messageBus.handleMessage(request, { id: 'tab' });
     expect(response.success).toBe(false);
     expect(response.error).toMatch(/tabId/i);
+  });
+
+  // --- ADR-011 v3: background filters relay by activeTabIdForPanel ---
+
+  it('VIDEO_TIME_UPDATE relays to side panel when tab is active', async () => {
+    mockChrome.runtime.sendMessage.mockClear();
+    // Set activeTabIdForPanel to match the test's tabId (init sets it to 123)
+    (service as unknown as { activeTabIdForPanel: number }).activeTabIdForPanel = 42;
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
+      payload: { tabId: 42, currentTimeMs: 5000, durationMs: 60000 },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
+        payload: expect.objectContaining({
+          tabId: 42,
+          currentTimeMs: 5000,
+          durationMs: 60000,
+        }),
+      }),
+    );
+  });
+
+  it('VIDEO_TIME_UPDATE drops relay when tab is NOT active (no flicker)', async () => {
+    mockChrome.runtime.sendMessage.mockClear();
+    (service as unknown as { activeTabIdForPanel: number }).activeTabIdForPanel = 42;
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
+      payload: { tabId: 999, currentTimeMs: 5000, durationMs: 60000 },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+    expect(mockChrome.runtime.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('VIDEO_PLAY_STATE relays to side panel when tab is active', async () => {
+    mockChrome.runtime.sendMessage.mockClear();
+    (service as unknown as { activeTabIdForPanel: number }).activeTabIdForPanel = 42;
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
+      payload: { tabId: 42, isPlaying: true },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
+        payload: expect.objectContaining({ tabId: 42, isPlaying: true }),
+      }),
+    );
+  });
+
+  it('VIDEO_PLAY_STATE drops relay when tab is NOT active', async () => {
+    mockChrome.runtime.sendMessage.mockClear();
+    (service as unknown as { activeTabIdForPanel: number }).activeTabIdForPanel = 42;
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
+      payload: { tabId: 999, isPlaying: true },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+    expect(mockChrome.runtime.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('SUBTITLE_CUES_LOADED relays to side panel when tab is active (+ caches per-tab)', async () => {
+    mockChrome.runtime.sendMessage.mockClear();
+    (service as unknown as { activeTabIdForPanel: number }).activeTabIdForPanel = 42;
+
+    const cues = [{ id: 0, start: 0, end: 1000, target: 'Hi', native: 'Xin chào' }];
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+      payload: { tabId: 42, cues },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+        payload: expect.objectContaining({ tabId: 42, cues }),
+      }),
+    );
+  });
+
+  it('SUBTITLE_CUES_LOADED caches per-tab but does NOT relay when tab is NOT active', async () => {
+    mockChrome.runtime.sendMessage.mockClear();
+    (service as unknown as { activeTabIdForPanel: number }).activeTabIdForPanel = 42;
+
+    const cues = [{ id: 0, start: 0, end: 1000, target: 'Hi', native: 'Xin chào' }];
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+      payload: { tabId: 999, cues },
+    };
+
+    const response = await messageBus.handleMessage(request, { id: 'tab' });
+    expect(response.success).toBe(true);
+    // Cached for REQUEST_SUBTITLE_CUES, but NOT relayed to side panel
+    expect(mockChrome.runtime.sendMessage).not.toHaveBeenCalled();
+    // Verify cache by requesting cues for tab 999
+    const cueReq: MessageRequest = {
+      type: MESSAGE_TYPES.REQUEST_SUBTITLE_CUES,
+      payload: { tabId: 999 },
+    };
+    const cueRes = await messageBus.handleMessage(cueReq, { id: 'tab' });
+    expect((cueRes.data as { cues: unknown[] })?.cues).toEqual(cues);
   });
 });

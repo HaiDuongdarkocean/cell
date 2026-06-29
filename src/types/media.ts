@@ -368,6 +368,10 @@ export interface Settings {
   readonly subtitleOverlayNativeLanguage: string;
   /** When true, subtitle overlay auto-loads from extension-detected subtitles matching target language. */
   readonly subtitleOverlayAutoLoad: boolean;
+  /** Per-layer appearance config for target subtitle overlay (ADR-013). Independent from native. */
+  readonly subtitleOverlayTargetStyle?: import('./subtitle').OverlayStyleConfig;
+  /** Per-layer appearance config for native subtitle overlay (ADR-013). Independent from target. */
+  readonly subtitleOverlayNativeStyle?: import('./subtitle').OverlayStyleConfig;
   /** Keyboard shortcuts for subtitle floating panel. Default: a/d/s/w/t. */
   readonly keyboardShortcuts: KeyboardShortcut[];
 }

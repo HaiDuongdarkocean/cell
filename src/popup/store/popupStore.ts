@@ -6,7 +6,7 @@ import type {
   DownloadStatus,
   Settings,
 } from '@/types/media';
-import { DEFAULT_SETTINGS, DEFAULT_KEYBOARD_SHORTCUTS, STORAGE_KEYS } from '@/constants/config';
+import { DEFAULT_SETTINGS, DEFAULT_KEYBOARD_SHORTCUTS, STORAGE_KEYS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/constants/config';
 
 const STATUS_ADVANCEMENT: Record<DownloadStatus, number> = {
   queued: 0,
@@ -195,6 +195,14 @@ export const usePopupStore = create<PopupState>((set) => ({
           settings = { ...settings, subtitleOverlayTargetLanguage: '' };
         } else if (normalizedTarget !== targetLang) {
           settings = { ...settings, subtitleOverlayTargetLanguage: normalizedTarget };
+        }
+        // Migration: subtitleOverlayTargetStyle/NativeStyle missing in pre-ADR-013 settings.
+        // Fill defaults for existing users (ADR-013 D2).
+        if (!settings.subtitleOverlayTargetStyle) {
+          settings = { ...settings, subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET };
+        }
+        if (!settings.subtitleOverlayNativeStyle) {
+          settings = { ...settings, subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE };
         }
         set({ settings, isSettingsLoaded: true });
       } else {

@@ -1,4 +1,5 @@
 import type { Settings, FilenameSource, KeyboardShortcut } from '../types/media';
+import type { OverlayStyleConfig, TextShadowConfig } from '../types/subtitle';
 
 // === Default Configuration ===
 
@@ -107,6 +108,44 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   { action: 'toggle-panel', key: 't' },
 ];
 
+// === Default Overlay Style (ADR-013) ===
+
+const DEFAULT_TEXT_SHADOW: TextShadowConfig = {
+  preset: 'soft',
+  color: '#000000',
+  blur: 2,
+  offsetX: 0,
+  offsetY: 1,
+};
+
+/** Default appearance for target subtitle overlay (prominent, bottom 10%). */
+export const DEFAULT_OVERLAY_STYLE_TARGET: OverlayStyleConfig = {
+  fontSize: 24,
+  textColor: '#ffffff',
+  backgroundColor: '#000000',
+  backgroundOpacity: 0.7,
+  textOpacity: 1,
+  textShadow: DEFAULT_TEXT_SHADOW,
+  fontFamily: 'sans-serif',
+  yOffsetPercent: 10,
+  horizontalAlign: 'center',
+  visible: true,
+};
+
+/** Default appearance for native subtitle overlay (muted, top 5%). */
+export const DEFAULT_OVERLAY_STYLE_NATIVE: OverlayStyleConfig = {
+  fontSize: 20,
+  textColor: '#ffffff',
+  backgroundColor: '#000000',
+  backgroundOpacity: 0.6,
+  textOpacity: 0.85,
+  textShadow: DEFAULT_TEXT_SHADOW,
+  fontFamily: 'sans-serif',
+  yOffsetPercent: 5,
+  horizontalAlign: 'center',
+  visible: true,
+};
+
 export const DEFAULT_SETTINGS: Settings = {
   concurrentDownloads: DEFAULT_CONCURRENT_DOWNLOADS,
   defaultQuality: DEFAULT_QUALITY,
@@ -124,6 +163,8 @@ export const DEFAULT_SETTINGS: Settings = {
   subtitleOverlayTargetLanguage: '',
   subtitleOverlayNativeLanguage: '',
   subtitleOverlayAutoLoad: false,
+  subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
+  subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
   keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
 };
 
