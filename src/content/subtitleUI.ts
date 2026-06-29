@@ -1,4 +1,4 @@
-import type { OverlayConfig, OverlayStyleConfig, TextShadowConfig } from '../types/subtitle';
+import type { OverlayStyleConfig, TextShadowConfig } from '../types/subtitle';
 
 // === Pure style helpers (ADR-013 D6) ===
 // Logic ở pure function — testable 100%, no DOM side effect.
@@ -182,81 +182,12 @@ export function applyStyle(config: OverlayStyleConfig, overlay: HTMLDivElement):
 }
 
 /**
- * Create subtitle overlay div appended to video parent.
- * Minimal overlay — just a styled div for displaying subtitle text.
- *
- * @param video - Target video element
- * @param config - Overlay configuration (fontSize, position, colors)
- * @returns Overlay div element
- */
-export function createOverlay(container: HTMLElement, config: OverlayConfig): HTMLDivElement {
-  const overlay = document.createElement('div');
-  overlay.setAttribute('data-testid', 'subtitle-overlay');
-
-  // Style: absolute positioned over video, bottom by default.
-  // The container is the video wrapper (video area) so the overlay stays within
-  // the video bounds in both normal and fullscreen modes.
-  overlay.style.position = 'absolute';
-  overlay.style.left = '50%';
-  overlay.style.transform = 'translateX(-50%)';
-  overlay.style.fontSize = `${config.fontSize}px`;
-  overlay.style.color = config.textColor;
-  overlay.style.backgroundColor = config.backgroundColor;
-  overlay.style.padding = '4px 12px';
-  overlay.style.borderRadius = '4px';
-  overlay.style.pointerEvents = 'none';
-  overlay.style.zIndex = '999999';
-  overlay.style.whiteSpace = 'pre-wrap';
-  overlay.style.textAlign = 'center';
-  overlay.style.maxWidth = '90%';
-
-  // Inner spans: target (prominent) + native (muted, below target).
-  // Container keeps pointer-events: none so background padding passes clicks
-  // through to video controls beneath. Only the text itself is interactive.
-  // Bilingual layout (ADR-007 D1): target on top, native below at 0.85em.
-  const targetSpan = document.createElement('span');
-  targetSpan.setAttribute('data-testid', 'overlay-target');
-  targetSpan.style.display = 'block';
-  targetSpan.style.pointerEvents = 'auto';
-  targetSpan.style.userSelect = 'text';
-  targetSpan.style.cursor = 'text';
-  overlay.appendChild(targetSpan);
-
-  const nativeSpan = document.createElement('span');
-  nativeSpan.setAttribute('data-testid', 'overlay-native');
-  nativeSpan.style.display = 'block';
-  nativeSpan.style.pointerEvents = 'auto';
-  nativeSpan.style.userSelect = 'text';
-  nativeSpan.style.cursor = 'text';
-  nativeSpan.style.fontSize = '0.85em';
-  nativeSpan.style.opacity = '0.85';
-  nativeSpan.style.marginTop = '2px';
-  overlay.appendChild(nativeSpan);
-
-  // Position: bottom/top/center
-  if (config.position === 'bottom') {
-    overlay.style.bottom = '10%';
-  } else if (config.position === 'top') {
-    overlay.style.top = '10%';
-  } else {
-    overlay.style.top = '50%';
-    overlay.style.transform = 'translate(-50%, -50%)';
-  }
-
-  // Hidden initially
-  overlay.style.display = 'none';
-
-  // Append to the video wrapper (so it overlays the video area)
-  container.appendChild(overlay);
-  return overlay;
-}
-
-/**
- * Update overlay text and show it (single-line mode, backward compat).
- * Sets text on the target span (first span), not on container.
+ * Update overlay text and show it.
+ * ADR-013: finds text span in overlay layer (data-testid="overlay-{role}-text").
+ * Falls back to overlay.textContent if span not found (legacy compat).
  */
 export function updateOverlayText(overlay: HTMLDivElement, text: string): void {
-  const span = overlay.querySelector('[data-testid="overlay-target"]') as HTMLSpanElement | null;
+  const span = overlay.querySelector('span[data-testid]') as HTMLSpanElement | null;
   if (span) {
     span.textContent = text;
   } else {
@@ -266,49 +197,13 @@ export function updateOverlayText(overlay: HTMLDivElement, text: string): void {
 }
 
 /**
- * Update overlay with bilingual text (target + native) and show it.
- * Target on top (prominent), native below (muted 0.85em). Either may be
- * empty string — the empty span is hidden so layout collapses cleanly.
- * When both are empty, the overlay is hidden via `hideOverlay`.
- */
-export function updateOverlayBilingual(
-  overlay: HTMLDivElement,
-  targetText: string,
-  nativeText: string,
-): void {
-  if (!targetText && !nativeText) {
-    hideOverlay(overlay);
-    return;
-  }
-  const targetSpan = overlay.querySelector('[data-testid="overlay-target"]') as HTMLSpanElement | null;
-  const nativeSpan = overlay.querySelector('[data-testid="overlay-native"]') as HTMLSpanElement | null;
-  if (targetSpan) {
-    targetSpan.textContent = targetText;
-    targetSpan.style.display = targetText ? 'block' : 'none';
-  }
-  if (nativeSpan) {
-    nativeSpan.textContent = nativeText;
-    nativeSpan.style.display = nativeText ? 'block' : 'none';
-  }
-  overlay.style.display = 'block';
-}
-
-/**
  * Clear text and hide overlay.
- * Clears both target + native spans (bilingual-safe).
+ * Clears text span (bilingual-safe — each overlay layer has 1 span).
  */
 export function hideOverlay(overlay: HTMLDivElement): void {
-  const targetSpan = overlay.querySelector('[data-testid="overlay-target"]') as HTMLSpanElement | null;
-  const nativeSpan = overlay.querySelector('[data-testid="overlay-native"]') as HTMLSpanElement | null;
-  if (targetSpan) {
-    targetSpan.textContent = '';
-  }
-  if (nativeSpan) {
-    nativeSpan.textContent = '';
-    nativeSpan.style.display = 'block';
-  }
-  if (targetSpan) {
-    targetSpan.style.display = 'block';
+  const span = overlay.querySelector('span[data-testid]') as HTMLSpanElement | null;
+  if (span) {
+    span.textContent = '';
   }
   overlay.style.display = 'none';
 }

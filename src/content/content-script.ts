@@ -9,8 +9,8 @@ import { mergeCuesForPanel } from './subtitleMerge';
 import { createToggleButton, seekToCue } from './subtitlePanel';
 import { handleShortcutKey } from './subtitleShortcuts';
 import { MESSAGE_TYPES } from '@/constants/messages';
-import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
-import type { OverlayConfig } from '../types/subtitle';
+import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/constants/config';
+import type { OverlayConfig, OverlayStyleConfig } from '../types/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue } from '../types/media';
 import type { AutoLoadSubtitlesPayload } from '../types/message';
 import type { VideoEpisodeChangedPayload } from '../types/message';
@@ -76,6 +76,23 @@ const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
   showTimestamps: false,
 };
 
+/** Load overlay style settings from chrome.storage.local, fallback to defaults. ADR-013 D3. */
+async function loadOverlayStyles(): Promise<{ target: OverlayStyleConfig; native: OverlayStyleConfig }> {
+  try {
+    const result = await chrome.storage.local.get('settings');
+    const settings = result.settings as
+      | { subtitleOverlayTargetStyle?: OverlayStyleConfig; subtitleOverlayNativeStyle?: OverlayStyleConfig }
+      | undefined;
+    return {
+      target: settings?.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET,
+      native: settings?.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE,
+    };
+  } catch {
+    // ponytail: storage might not be available in test contexts — fallback
+    return { target: DEFAULT_OVERLAY_STYLE_TARGET, native: DEFAULT_OVERLAY_STYLE_NATIVE };
+  }
+}
+
 /** Load keyboard shortcuts from chrome.storage.local, fallback to defaults. */
 async function loadShortcuts(): Promise<KeyboardShortcut[]> {
   try {
@@ -95,8 +112,25 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   const container = video.parentElement ?? document.body;
 
-  const controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG);
-  controller.init(container);
+  // ADR-013 D3: load overlay styles from storage (async), then init controller
+  let controller: SubtitleOverlayController | null = null;
+  loadOverlayStyles().then(({ target, native }) => {
+    controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG, target, native);
+    controller.init(container);
+
+    // ADR-013 D3: listen chrome.storage.onChanged → updateStyle realtime
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'local' || !controller) return;
+      const newSettings = changes.settings?.newValue as
+        | { subtitleOverlayTargetStyle?: OverlayStyleConfig; subtitleOverlayNativeStyle?: OverlayStyleConfig }
+        | undefined;
+      if (!newSettings) return;
+      controller.updateStyle(
+        newSettings.subtitleOverlayTargetStyle,
+        newSettings.subtitleOverlayNativeStyle,
+      );
+    });
+  });
 
   // === State ===
   let toggleBtn: HTMLButtonElement | null = null;
@@ -148,9 +182,14 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       }
       case 'toggle-overlay': {
         overlayVisible = !overlayVisible;
-        const overlay = document.querySelector('[data-testid="subtitle-overlay"]') as HTMLElement | null;
-        if (overlay) {
-          overlay.style.display = overlayVisible ? 'block' : 'none';
+        // ADR-013: toggle both target + native overlay (2 div độc lập)
+        const targetOverlay = document.querySelector('[data-testid="subtitle-overlay-target"]') as HTMLElement | null;
+        const nativeOverlay = document.querySelector('[data-testid="subtitle-overlay-native"]') as HTMLElement | null;
+        if (targetOverlay) {
+          targetOverlay.style.display = overlayVisible ? 'block' : 'none';
+        }
+        if (nativeOverlay) {
+          nativeOverlay.style.display = overlayVisible ? 'block' : 'none';
         }
         break;
       }
@@ -258,7 +297,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       if (!file) return;
       const result = await handleFileSelect(file);
       if (result.success && result.cues.length > 0) {
-        controller.loadCues(result.cues);
+        controller?.loadCues(result.cues);
         const bilingualResult = parseBilingualSrt(await file.text());
         if (bilingualResult.success) {
           bilingualCues = bilingualResult.cues;
@@ -301,7 +340,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     if (!file) return;
     const result = await handleFileDrop(file);
     if (result.success && result.cues.length > 0) {
-      controller.loadCues(result.cues);
+      controller?.loadCues(result.cues);
       const fileText = await file.text();
       const bilingualResult = parseBilingualSrt(fileText);
       if (bilingualResult.success) {
@@ -329,7 +368,11 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         nativeLang: payload?.native?.language,
       });
       void handleAutoLoadSubtitles(payload, {
-        controller,
+        controller: {
+          loadBilingualCues: (t: SrtCue[], n: SrtCue[]) => controller?.loadBilingualCues(t, n),
+          loadCues: (c: SrtCue[]) => controller?.loadCues(c),
+          clearCues: () => controller?.clearCues(),
+        },
         tabUrl: window.location.href,
         onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
           bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
