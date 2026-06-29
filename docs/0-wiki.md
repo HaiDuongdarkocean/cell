@@ -51,6 +51,7 @@ docs/           # Tài liệu dự án
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
 │   ├── task-subtitle-appearance-manager.md # Subtitle appearance manager — task list (G4)
+│   └── task-subtitle-selector-multi-match.md # Subtitle selector ≥2 matches — task list (G4, V2 ADR-007 D3)
 │   ├── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
 │   └── 2026-06-29-subtitle-appearance-manager-mcp.md # ADR-013 browser MCP verify report (A1-A16)
 ├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
