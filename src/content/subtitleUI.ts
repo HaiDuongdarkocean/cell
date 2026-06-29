@@ -1,4 +1,78 @@
-import type { OverlayConfig } from '../types/subtitle';
+import type { OverlayConfig, TextShadowConfig } from '../types/subtitle';
+
+// === Pure style helpers (ADR-013 D6) ===
+// Logic ở pure function — testable 100%, no DOM side effect.
+
+/**
+ * Calculate Y-offset percent from pointer delta + container height.
+ * Clamps result to [0, 95] and rounds to nearest integer.
+ * Pure — no DOM access.
+ */
+export function calcYOffsetPercent(
+  pointerDeltaY: number,
+  containerHeight: number,
+  currentOffset: number,
+): number {
+  if (containerHeight <= 0) return clamp(currentOffset, 0, 95);
+  const deltaPercent = (pointerDeltaY / containerHeight) * 100;
+  return clamp(Math.round(currentOffset + deltaPercent), 0, 95);
+}
+
+/**
+ * Build CSS text-shadow string from config.
+ * 3 preset (none/soft/cinema) + custom (offsetX/offsetY/blur/color).
+ * Pure — no DOM access.
+ */
+export function buildTextShadow(config: TextShadowConfig): string {
+  if (config.preset === 'none') return 'none';
+  if (config.preset === 'soft') return `0 1px 2px ${config.color}`;
+  if (config.preset === 'cinema') return `2px 2px 4px ${config.color}`;
+  return `${config.offsetX}px ${config.offsetY}px ${config.blur}px ${config.color}`;
+}
+
+/**
+ * Sanitize CSS font-family string.
+ * Blocks url()/@import/expression()/javascript: (security — no font loading exploit).
+ * Falls back to 'sans-serif' for empty/invalid input.
+ * Pure — no DOM access.
+ */
+export function sanitizeFontFamily(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return 'sans-serif';
+  // Block dangerous patterns (font loading exploit, XSS via expression)
+  if (/url\(|@import|expression|javascript:/i.test(trimmed)) return 'sans-serif';
+  return trimmed;
+}
+
+/**
+ * Convert hex color + alpha to rgba string.
+ * Supports 3-digit (#fff) and 6-digit (#ffffff) hex.
+ * Falls back to rgba(0,0,0,alpha) for invalid hex.
+ * Pure — no DOM access.
+ */
+export function hexToRgba(hex: string, alpha: number): string {
+  const normalized = hex.replace('#', '').trim();
+  let r = 0, g = 0, b = 0;
+  if (normalized.length === 3) {
+    r = parseInt(normalized[0] + normalized[0], 16);
+    g = parseInt(normalized[1] + normalized[1], 16);
+    b = parseInt(normalized[2] + normalized[2], 16);
+  } else if (normalized.length === 6) {
+    r = parseInt(normalized.slice(0, 2), 16);
+    g = parseInt(normalized.slice(2, 4), 16);
+    b = parseInt(normalized.slice(4, 6), 16);
+  }
+  // NaN guard — fallback to 0
+  if (Number.isNaN(r)) r = 0;
+  if (Number.isNaN(g)) g = 0;
+  if (Number.isNaN(b)) b = 0;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** Internal clamp helper. */
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
 
 /**
  * Create subtitle overlay div appended to video parent.
