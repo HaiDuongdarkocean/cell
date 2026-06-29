@@ -103,10 +103,13 @@ export class SubtitleOverlayController {
    * Each `timeupdate` runs 2 independent binary searches (`findCurrentLine`)
    * — n ~ 1000 cues, 4 fires/sec, no degrade (spec NF5).
    * ADR-013: output tách 2 div độc lập (thay 2 span trong 1 div).
+   * ADR-014 D1: merge thay ghi đè — giữ cues cũ khi side mới rỗng (bug A fix).
+   * Multiple AUTO_LOAD_SUBTITLES push (onMediaDetected incremental + REQUEST re-push)
+   * có thể gửi 1 side null → ghi đè unconditionally clear cues cũ. Merge giữ cues cũ.
    */
   loadBilingualCues(targetCues: SrtCue[], nativeCues: SrtCue[]): void {
-    this.cues = targetCues;
-    this.nativeCues = nativeCues;
+    if (targetCues.length > 0) this.cues = targetCues;
+    if (nativeCues.length > 0) this.nativeCues = nativeCues;
     this.bilingual = true;
     this.lastIndex = -1;
     this.lastNativeIndex = -1;

@@ -213,6 +213,68 @@ describe('SubtitleOverlayController', () => {
 
       expect(targetSpan.textContent).toBe('MUTATED');
     });
+
+    it('ADR-014 D1: merge — target rỗng giữ cues cũ (bug A fix)', () => {
+      const controller = makeController();
+      controller.init();
+      const targetCues: SrtCue[] = [{ index: 1, start: 0, end: 2000, text: 'Hello' }];
+      const nativeCues: SrtCue[] = [{ index: 1, start: 0, end: 2000, text: 'Xin chào' }];
+      controller.loadBilingualCues(targetCues, nativeCues);
+
+      // Second push: only native (target null/empty) — bug A scenario.
+      const nativeCues2: SrtCue[] = [{ index: 1, start: 0, end: 2000, text: 'Chào mới' }];
+      controller.loadBilingualCues([], nativeCues2);
+
+      Object.defineProperty(video, 'currentTime', { value: 0.5, configurable: true });
+      video.dispatchEvent(new Event('timeupdate'));
+
+      const targetSpan = document.querySelector('[data-testid="overlay-target-text"]') as HTMLSpanElement;
+      const nativeSpan = document.querySelector('[data-testid="overlay-native-text"]') as HTMLSpanElement;
+      // Target cues cũ giữ nguyên (không bị clear bởi push rỗng).
+      expect(targetSpan.textContent).toBe('Hello');
+      // Native cues mới ghi đè.
+      expect(nativeSpan.textContent).toBe('Chào mới');
+    });
+
+    it('ADR-014 D1: merge — native rỗng giữ cues cũ (bug A fix)', () => {
+      const controller = makeController();
+      controller.init();
+      const targetCues: SrtCue[] = [{ index: 1, start: 0, end: 2000, text: 'Hello' }];
+      const nativeCues: SrtCue[] = [{ index: 1, start: 0, end: 2000, text: 'Xin chào' }];
+      controller.loadBilingualCues(targetCues, nativeCues);
+
+      // Second push: only target (native null/empty).
+      const targetCues2: SrtCue[] = [{ index: 1, start: 0, end: 2000, text: 'Hi new' }];
+      controller.loadBilingualCues(targetCues2, []);
+
+      Object.defineProperty(video, 'currentTime', { value: 0.5, configurable: true });
+      video.dispatchEvent(new Event('timeupdate'));
+
+      const targetSpan = document.querySelector('[data-testid="overlay-target-text"]') as HTMLSpanElement;
+      const nativeSpan = document.querySelector('[data-testid="overlay-native-text"]') as HTMLSpanElement;
+      expect(targetSpan.textContent).toBe('Hi new');
+      expect(nativeSpan.textContent).toBe('Xin chào');
+    });
+
+    it('ADR-014 D1: cả 2 non-empty → vẫn ghi đè (behavior giữ, B11 regression)', () => {
+      const controller = makeController();
+      controller.init();
+      const targetCues: SrtCue[] = [{ index: 1, start: 0, end: 2000, text: 'Hello' }];
+      const nativeCues: SrtCue[] = [{ index: 1, start: 0, end: 2000, text: 'Xin chào' }];
+      controller.loadBilingualCues(targetCues, nativeCues);
+
+      const targetCues2: SrtCue[] = [{ index: 1, start: 0, end: 2000, text: 'Hi new' }];
+      const nativeCues2: SrtCue[] = [{ index: 1, start: 0, end: 2000, text: 'Chào mới' }];
+      controller.loadBilingualCues(targetCues2, nativeCues2);
+
+      Object.defineProperty(video, 'currentTime', { value: 0.5, configurable: true });
+      video.dispatchEvent(new Event('timeupdate'));
+
+      const targetSpan = document.querySelector('[data-testid="overlay-target-text"]') as HTMLSpanElement;
+      const nativeSpan = document.querySelector('[data-testid="overlay-native-text"]') as HTMLSpanElement;
+      expect(targetSpan.textContent).toBe('Hi new');
+      expect(nativeSpan.textContent).toBe('Chào mới');
+    });
   });
 
   describe('updateStyle (ADR-013 D3)', () => {
