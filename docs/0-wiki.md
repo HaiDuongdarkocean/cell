@@ -47,7 +47,8 @@ docs/           # Tài liệu dự án
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
 │   ├── task-subtitle-appearance-manager.md # Subtitle appearance manager — task list (G4)
-│   └── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
+│   ├── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
+│   └── 2026-06-29-subtitle-appearance-manager-mcp.md # ADR-013 browser MCP verify report (A1-A16)
 ├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
 │   ├── principles.md                              # Principle index (abstract, layer 1)
 │   ├── architecture-auto-select.md              # Auto-Select & Auto-Download architecture
@@ -97,7 +98,7 @@ tests/          # Test files (chi tiết trong 2-architechture-system.md)
 |---|---|---|
 | Đầu session | 0-wiki.md | Dự án có gì, docs nào tồn tại |
 | Trước khi sửa code | 2-architechture-system.md | Cấu trúc src/, dependency map, function index |
-| Khi hiểu sai intent | 1-share-language.md | Glossary human ↔ system language |
+| Khi hiểu sai intent | 1-share-language.md | Glossary human ↔ system language (2 chiều + Update protocol) |
 | Đầu feature | docs/intent/<feature>.md | Output interview-me — what user wants |
 | Trước khi plan | docs/specs/<feature>.md | PRD chi tiết — what to build |
 | Mỗi task | docs/plan/<feature>.md | Task list — how to build |
@@ -124,3 +125,4 @@ tests/          # Test files (chi tiết trong 2-architechture-system.md)
 - Thay đổi kiến trúc → thêm ADR vào docs/adr/
 - Đúc rút nguyên lý → thêm vào docs/knowledge/<principle>.md
 - Fix bug → ghi bug log + convention vào docs/knowledge/<principle>.md
+- Sinh/rename/xóa system term (tên file, toggle, message type, store key) → update 1-share-language.md (xem Update protocol cuối file đó)

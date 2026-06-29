@@ -1,7 +1,7 @@
 # ADR-013: Subtitle Appearance Manager — 2 Overlay Layer Độc Lập + Per-Layer Style + Drag Handle
 
 ## Status
-Proposed (draft G3 — chờ implement + browser verify để chuyển Accepted)
+Accepted (G4 implemented + G5 verified — browser MCP verify A1-A16 pass, test report: `docs/test-reports/2026-06-29-subtitle-appearance-manager-mcp.md`)
 
 ## Context
 
