@@ -18,7 +18,7 @@ src/
 │   ├── messageBus.ts              # Pub/sub: on() / broadcast() cho message handlers
 │   ├── offscreenManager.ts        # Quản lý offscreen document lifecycle
 │   ├── autoDownload.ts            # Orchestrator: tryAutoDownload(tabId, tabUrl, deps, alreadyEnqueuedIds?) → string[] — whitelist check → settings → selectBestMedia → enqueue (skip already-enqueued ids). Silent no-op when no match
-│   └── subtitleService.ts         # findSubtitlesForOverlay: validate target + native language → SubtitlesForOverlayResult (target + native, partial load)
+│   └── subtitleService.ts         # findSubtitlesForOverlay: validate target + native language → SubtitlesForOverlayResult (target + native, partial load) — **planned ADR-014**: findPreferredMatch (preference-aware, fallback first-match) thay findFirstMatch
 │
 ├── content/                       # Content script (chạy trong trang web)
 │   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT; wire subtitle overlay + panel + shortcuts; ADR-010 episode-switch watcher (VIDEO_EPISODE_CHANGED); ADR-012 isVideoReady gate (blob: OR readyState>=2)
@@ -28,11 +28,12 @@ src/
 │   ├── subtitleUI.ts              # Overlay UI: createOverlay (appended to video-wrapper), createDragHint (appended to video-wrapper), showToast (appended to video-wrapper), updateOverlayText, updateOverlayBilingual, hideOverlay, removeOverlay — **planned ADR-013**: refactor createOverlay → createOverlayLayer(role, config) 2 div độc lập + applyStyle + buildTextShadow + sanitizeFontFamily + hexToRgba
 │   ├── subtitleDragDrop.ts        # File read + parse: readFileAsText, handleFileDrop (drag-drop handler)
 │   ├── subtitleImport.ts          # Import button: createImportButton (appended to video parent, top-left, avoids toggle overlap), handleFileSelect (file picker)
-│   ├── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring; init receives video parent; loadBilingualCues: 2 binary searches runtime align) — **planned ADR-013**: 2 ref targetOverlay + nativeOverlay, onTimeUpdate 2 updateOverlayText
+│   ├── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring; init receives video parent; loadBilingualCues: 2 binary searches runtime align) — **ADR-013**: 2 ref targetOverlay + nativeOverlay, onTimeUpdate 2 updateOverlayText — **planned ADR-014**: loadBilingualCues merge (bug A fix, giữ cues cũ khi side mới rỗng)
 │   ├── subtitleDragPosition.ts    # NEW (planned ADR-013): calcYOffsetPercent (pure, clamp 0-95) + createDragHandle (pointer events, icon move-vertical, role=slider aria)
 │   ├── subtitleAutoLoad.ts        # Auto-load: shouldAutoLoad, validateOverride, fetchAndParseSubtitle (cache by URL, CORS fallback), handleAutoLoadSubtitles (fetch+parse+load bilingual), formatFromUrl, clearAutoLoadCache
 │   ├── subtitleMerge.ts           # mergeCuesForPanel(targetCues, nativeCues) → BilingualCue[] (target skeleton, native best-effort overlap; fallback native skeleton when target empty)
 │   ├── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
+│   ├── subtitleSelector.ts        # NEW (planned ADR-014): createSubtitleDropdown (overlay dropdown góc phải container, icon chevron-down, popover list sub cùng lang + cue count + format, click outside/Esc/chọn đóng) — V2 ADR-007 D3
 │   ├── subtitleBilingualParser.ts # Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, reuse parseSrt)
 │   ├── subtitlePanel.ts           # Toggle button + seek helper: createToggleButton (opens Side Panel), seekToCue — ADR-008
 │   └── subtitleShortcuts.ts       # Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
@@ -547,6 +548,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `hexToRgba` | `content/subtitleUI.ts` | (hex, alpha 0-1) → string | applyStyle | **NEW (planned ADR-013)**: Pure — convert hex + alpha → rgba string (bg color tách alpha rời) |
 | `calcYOffsetPercent` | `content/subtitleDragPosition.ts` | (pointerDeltaY, containerHeight, currentOffset) → number | createDragHandle | **NEW (planned ADR-013)**: Pure — calc Y-offset % from pointer delta, clamp 0-95 |
 | `createDragHandle` | `content/subtitleDragPosition.ts` | (overlay, container, onDrag) → HTMLButtonElement | subtitleOverlay | **NEW (planned ADR-013)**: Pointer Events drag handle (icon move-vertical, role=slider aria, debounce 50ms) |
+| `createSubtitleDropdown` | `content/subtitleSelector.ts` | (role, container, subtitles, language, activeIndex, onSelect) → {icon, destroy} | content-script.ts | **NEW (planned ADR-014)**: Overlay dropdown góc phải container — icon chevron-down, popover list sub cùng lang + cue count + format, click outside/Esc/chọn đóng. Chỉ render khi ≥2 sub cùng lang |
 | `readFileAsText` | `content/subtitleDragDrop.ts` | File → Promise<string> | subtitleImport | Read File content as text via FileReader |
 | `handleFileDrop` | `content/subtitleDragDrop.ts` | File → Promise<ParseResult> | subtitleImport | Validate extension + read + parse subtitle file |
 | `createImportButton` | `content/subtitleImport.ts` | (HTMLElement, OverlayConfig) → HTMLButtonElement | subtitleOverlay | Create import button at top-left of video parent (avoids toggle overlap) |
@@ -563,7 +565,8 @@ downloader.downloadM3u8Streaming(playlist)
 | `mergeCuesForPanel` | `content/subtitleMerge.ts` | (SrtCue[], SrtCue[]) → BilingualCue[] | subtitleAutoLoad.ts | Merge target + native cues: target skeleton, native best-effort overlap; fallback native skeleton when target empty — **implemented Task 5** |
 | `createTrackDropdown` | `content/subtitleTrackDropdown.ts` | HTMLElement → HTMLSelectElement | (implemented, not wired) | Create track dropdown for multiple subtitle tracks |
 | `updateTrackOptions` | `content/subtitleTrackDropdown.ts` | (HTMLSelectElement, TrackOption[]) → void | (implemented, not wired) | Populate dropdown + show/hide |
-| `findSubtitlesForOverlay` | `background/subtitleService.ts` | (DetectedSubtitle[], Settings) → SubtitlesForOverlayResult \| null | `background/index.ts` | Validate target + native language → return both matches (partial load when only one matches) — **wired Task 3** |
+| `findSubtitlesForOverlay` | `background/subtitleService.ts` | (DetectedSubtitle[], Settings) → SubtitlesForOverlayResult \| null | `background/index.ts` | Validate target + native language → return both matches (partial load when only one matches) — **wired Task 3** — **planned ADR-014**: dùng findPreferredMatch (preference-aware) |
+| `findPreferredMatch` | `background/subtitleService.ts` | (DetectedSubtitle[], language, preferredIndex?) → SubtitleForOverlayResult \| null | `findSubtitlesForOverlay` | **NEW (planned ADR-014)**: Pure — filter sub cùng lang, trả sub theo preference index, fallback first-match (index 0) khi out of range |
 | `parseTimestamp` | `lib/utils/timeUtils.ts` | string → number (ms) | (implemented, not wired) | Unified timestamp parser (comma/dot separator) |
 | `tryAutoDownload` | `background/autoDownload.ts` | (tabId, tabUrl, deps, alreadyEnqueuedIds?) → string[] | background/index.ts | Orchestrator: whitelist → selectBestMedia → enqueue |
 | `getActiveContentTab` | `popup/utils/getActiveContentTab.ts` | void → Promise<Tab> | useDetectedMedia, useDownloadProgress | Resolve active tab (handles Edge app-windows) |

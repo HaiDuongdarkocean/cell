@@ -22,6 +22,7 @@ docs/           # Tài liệu dự án
 │   ├── 010-in-page-episode-switch-detection.md # In-page episode switch (video element replacement)
 │   ├── 012-spa-two-phase-render-wipe.md # SPA two-phase render wipe (isVideoReady gate)
 │   └── 013-subtitle-appearance-manager.md # 2 overlay layer độc lập + per-layer style + drag handle
+│   └── 014-subtitle-selector-multi-match.md # Subtitle selector ≥2 matches (V2 ADR-007 D3) + bug A fix (loadBilingualCues merge)
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
