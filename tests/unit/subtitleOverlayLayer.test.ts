@@ -123,10 +123,12 @@ describe('applyStyle', () => {
     expect(overlay.style.display).toBe('none');
   });
 
-  it('sets display block when visible true', () => {
+  it('does not force display block when visible true (timeupdate manages display)', () => {
     const container = document.createElement('div');
     const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
+    // createOverlayLayer sets display:none initially; applyStyle with visible:true
+    // must NOT override to block — display stays managed by cue sync.
     applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, visible: true }, overlay);
-    expect(overlay.style.display).toBe('block');
+    expect(overlay.style.display).toBe('none');
   });
 });

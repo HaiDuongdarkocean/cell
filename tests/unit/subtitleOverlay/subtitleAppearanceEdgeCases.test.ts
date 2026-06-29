@@ -41,16 +41,17 @@ describe('SubtitleOverlayController edge cases (ADR-013 Task 8)', () => {
       controller.init();
       const nativeOverlay = document.querySelector('[data-testid="subtitle-overlay-native"]') as HTMLDivElement;
 
-      // First show it
+      // visible=true does NOT force display:block — timeupdate manages display.
+      // With no cues loaded, overlay stays hidden (display:none from init).
       controller.updateStyle(undefined, { ...DEFAULT_OVERLAY_STYLE_NATIVE, visible: true });
-      expect(nativeOverlay.style.display).not.toBe('none');
+      expect(nativeOverlay.style.display).toBe('none');
 
       // Now hide via visible=false
       controller.updateStyle(undefined, { ...DEFAULT_OVERLAY_STYLE_NATIVE, visible: false });
       expect(nativeOverlay.style.display).toBe('none');
     });
 
-    it('restores native overlay when visible toggled back to true', () => {
+    it('does not force show when visible toggled back to true (waits for cue)', () => {
       const controller = makeController();
       controller.init();
       const nativeOverlay = document.querySelector('[data-testid="subtitle-overlay-native"]') as HTMLDivElement;
@@ -58,8 +59,10 @@ describe('SubtitleOverlayController edge cases (ADR-013 Task 8)', () => {
       controller.updateStyle(undefined, { ...DEFAULT_OVERLAY_STYLE_NATIVE, visible: false });
       expect(nativeOverlay.style.display).toBe('none');
 
+      // visible=true restores eligibility but does NOT force display:block.
+      // Display stays none until timeupdate finds a cue and calls updateOverlayText.
       controller.updateStyle(undefined, { ...DEFAULT_OVERLAY_STYLE_NATIVE, visible: true });
-      expect(nativeOverlay.style.display).toBe('block');
+      expect(nativeOverlay.style.display).toBe('none');
     });
   });
 

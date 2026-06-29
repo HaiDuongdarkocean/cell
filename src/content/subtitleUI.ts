@@ -175,7 +175,10 @@ export function applyStyle(config: OverlayStyleConfig, overlay: HTMLDivElement):
   overlay.style.fontFamily = sanitizeFontFamily(config.fontFamily);
   overlay.style.bottom = `${config.yOffsetPercent}%`;
   overlay.style.textAlign = config.horizontalAlign;
-  overlay.style.display = config.visible ? 'block' : 'none';
+  // Only hide when visible=false. When visible=true, do NOT force display:block —
+  // display is managed by timeupdate (updateOverlayText/hideOverlay) based on
+  // current cue. Forcing block here shows drag handle with no subtitle (bug fix).
+  if (!config.visible) overlay.style.display = 'none';
 
   // Update drag handle aria-valuenow if handle exists
   const handle = overlay.querySelector('[role="slider"]') as HTMLButtonElement | null;
