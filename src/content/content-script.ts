@@ -4,10 +4,11 @@ import { handleFileDrop } from './subtitleDragDrop';
 import { handleFileSelect } from './subtitleImport';
 import { createDragHint, showToast } from './subtitleUI';
 import { parseBilingualSrt } from './subtitleBilingualParser';
-import { handleAutoLoadSubtitles, clearAutoLoadCache } from './subtitleAutoLoad';
+import { handleAutoLoadSubtitles, clearAutoLoadCache, fetchAndParseSubtitle, formatFromUrl } from './subtitleAutoLoad';
 import { mergeCuesForPanel } from './subtitleMerge';
 import { createToggleButton, seekToCue } from './subtitlePanel';
 import { handleShortcutKey } from './subtitleShortcuts';
+import { createSubtitleDropdown } from './subtitleSelector';
 import { MESSAGE_TYPES } from '@/constants/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/constants/config';
 import type { OverlayConfig, OverlayStyleConfig } from '../types/subtitle';
@@ -137,6 +138,14 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   let overlayVisible = false; // ponytail: match overlay initial display:none
   let bilingualCues: BilingualCue[] = [];
   let shortcuts: KeyboardShortcut[] = DEFAULT_KEYBOARD_SHORTCUTS;
+  // ADR-014 D3: dropdown instances for subtitle selector (target + native)
+  let targetDropdown: { icon: HTMLButtonElement; destroy: () => void } | null = null;
+  let nativeDropdown: { icon: HTMLButtonElement; destroy: () => void } | null = null;
+  // Track active sub indices + all matches for re-fetch on dropdown select
+  let activeTargetIndex = 0;
+  let activeNativeIndex = 0;
+  let targetMatches: readonly import('../types/message').SubtitleForOverlayResult[] = [];
+  let nativeMatches: readonly import('../types/message').SubtitleForOverlayResult[] = [];
 
   // Load shortcuts from storage
   loadShortcuts().then((s) => { shortcuts = s; });
@@ -388,6 +397,35 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
           });
         },
         onToast: (message: string) => showToast(message, container),
+        onSubtitleMatches: (targetM, nativeM) => {
+          targetMatches = targetM;
+          nativeMatches = nativeM;
+          // Destroy old dropdowns before re-creating (fresh active index)
+          targetDropdown?.destroy();
+          nativeDropdown?.destroy();
+          targetDropdown = null;
+          nativeDropdown = null;
+          if (targetM.length >= 2) {
+            targetDropdown = createSubtitleDropdown(
+              'target',
+              container,
+              targetM.map((m) => ({ id: m.url, url: m.url, format: m.format as any, language: m.language, tabId: 0, detectedAt: 0 })),
+              targetM[0].language,
+              activeTargetIndex,
+              (index) => { void onSubtitleSelect('target', index); },
+            );
+          }
+          if (nativeM.length >= 2) {
+            nativeDropdown = createSubtitleDropdown(
+              'native',
+              container,
+              nativeM.map((m) => ({ id: m.url, url: m.url, format: m.format as any, language: m.language, tabId: 0, detectedAt: 0 })),
+              nativeM[0].language,
+              activeNativeIndex,
+              (index) => { void onSubtitleSelect('native', index); },
+            );
+          }
+        },
       });
     }
     return false; // synchronous listener, no async response
@@ -400,6 +438,53 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     type: MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES,
     payload: { tabId: undefined }, // background resolves from sender.tab.id
   });
+
+  /**
+   * ADR-014 D4: user selected a different subtitle via dropdown.
+   * Re-fetch (cache hit instant) + loadBilingualCues (D1 merge keeps other side)
+   * + save preference to chrome.storage.local (origin → lang → index).
+   */
+  async function onSubtitleSelect(role: 'target' | 'native', index: number): Promise<void> {
+    const matches = role === 'target' ? targetMatches : nativeMatches;
+    if (index >= matches.length) return;
+    const sub = matches[index];
+    if (role === 'target') activeTargetIndex = index;
+    else activeNativeIndex = index;
+
+    try {
+      const result = await fetchAndParseSubtitle(sub.url, formatFromUrl(sub.url), window.location.href);
+      if (!result.success || result.cues.length === 0) {
+        showToast(`Failed to load sub #${index + 1}: ${result.error ?? 'empty'}`, container);
+        return;
+      }
+      // D1 merge: loadBilingualCues keeps other side when this side is empty.
+      // We only update the selected side by passing its cues + empty other side.
+      if (role === 'target') {
+        controller?.loadBilingualCues(result.cues, []);
+      } else {
+        controller?.loadBilingualCues([], result.cues);
+      }
+      showToast(`Switched to sub #${index + 1}`, container);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast(`Switch failed: ${msg}`, container);
+    }
+
+    // Save preference: origin → lang → index
+    try {
+      const origin = new URL(window.location.href).hostname;
+      const lang = sub.language;
+      const result = await chrome.storage.local.get('settings');
+      const settings = (result.settings ?? {}) as Partial<import('../types/media').Settings>;
+      const pref = { ...(settings.subtitlePreference ?? {}) };
+      const sitePref = { ...(pref[origin] ?? {}) };
+      sitePref[lang] = index;
+      pref[origin] = sitePref;
+      await chrome.storage.local.set({ settings: { ...settings, subtitlePreference: pref } });
+    } catch {
+      // ponytail: storage might not be available in test contexts — ignore
+    }
+  }
 }
 
 // Find video element and init overlay (defer until DOM ready, observe SPA late mounts)

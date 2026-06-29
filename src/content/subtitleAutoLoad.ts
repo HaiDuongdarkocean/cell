@@ -27,6 +27,7 @@ import type { SubtitleFormat, ParseResult } from '@/types/subtitle';
 import type {
   AutoLoadSubtitlesPayload,
   FetchSubtitleContentResult,
+  SubtitleForOverlayResult,
 } from '@/types/message';
 
 /**
@@ -173,6 +174,11 @@ export interface AutoLoadDeps {
   readonly onToast?: (message: string) => void;
   /** Page URL for resolving relative subtitle URLs (CORS fallback, spec F9). */
   readonly tabUrl?: string;
+  /**
+   * ADR-014 D3: called when ≥2 sub same lang detected (for dropdown render).
+   * Receives all matches + active index per role. Empty array = no dropdown.
+   */
+  readonly onSubtitleMatches?: (target: readonly SubtitleForOverlayResult[], native: readonly SubtitleForOverlayResult[]) => void;
 }
 
 /**
@@ -189,12 +195,24 @@ export async function handleAutoLoadSubtitles(
   deps: AutoLoadDeps,
 ): Promise<void> {
   const { target, native } = payload;
-  if (!target && !native) return;
+  console.log('[handleAutoLoadSubtitles] start', { hasTarget: !!target, hasNative: !!native });
+  if (!target && !native) {
+    console.log('[handleAutoLoadSubtitles] both target and native null');
+    return;
+  }
 
   const [targetResult, nativeResult] = await Promise.all([
     target ? fetchAndParseSubtitle(target.url, formatFromUrl(target.url), deps.tabUrl) : Promise.resolve(null),
     native ? fetchAndParseSubtitle(native.url, formatFromUrl(native.url), deps.tabUrl) : Promise.resolve(null),
   ]);
+  console.log('[handleAutoLoadSubtitles] parse results', {
+    targetSuccess: targetResult?.success,
+    targetCueCount: targetResult?.success ? targetResult.cues.length : 0,
+    targetError: targetResult && !targetResult.success ? targetResult.error : undefined,
+    nativeSuccess: nativeResult?.success,
+    nativeCueCount: nativeResult?.success ? nativeResult.cues.length : 0,
+    nativeError: nativeResult && !nativeResult.success ? nativeResult.error : undefined,
+  });
 
   // Toast on fetch/parse failure (spec F8). Never log full URL (ADR-007 D8).
   if (target && targetResult && !targetResult.success) {
@@ -212,4 +230,13 @@ export async function handleAutoLoadSubtitles(
 
   deps.controller.loadBilingualCues(targetCues, nativeCues);
   deps.onPanelRender?.(targetCues, nativeCues);
+
+  // ADR-014 D3: notify content-script of all matches for dropdown render.
+  if (deps.onSubtitleMatches) {
+    const targetM = payload.targetMatches ?? [];
+    const nativeM = payload.nativeMatches ?? [];
+    if (targetM.length >= 2 || nativeM.length >= 2) {
+      deps.onSubtitleMatches(targetM, nativeM);
+    }
+  }
 }

@@ -56,7 +56,8 @@ export type MessageType =
   | 'SEEK_TO'
   | 'TOGGLE_PLAY'
   | 'SHORTCUT_ACTION'
-  | 'VIDEO_EPISODE_CHANGED';
+  | 'VIDEO_EPISODE_CHANGED'
+  | 'DETECTED_SUBTITLE_URL';
 
 // === Message Request ===
 
@@ -126,6 +127,10 @@ export interface SubtitleForOverlayResult {
 export interface SubtitlesForOverlayResult {
   readonly target: SubtitleForOverlayResult | null;
   readonly native: SubtitleForOverlayResult | null;
+  /** All target-language matches (≥2 only, for dropdown — ADR-014 D3). */
+  readonly targetMatches?: readonly SubtitleForOverlayResult[];
+  /** All native-language matches (≥2 only, for dropdown — ADR-014 D3). */
+  readonly nativeMatches?: readonly SubtitleForOverlayResult[];
 }
 
 export interface DownloadAllPayload {
@@ -250,6 +255,17 @@ export interface AutoLoadSubtitlesPayload {
   readonly tabId: number;
   readonly target: SubtitleForOverlayResult | null;
   readonly native: SubtitleForOverlayResult | null;
+  /**
+   * All subtitles matching target language (ADR-014 D3, V2 subtitle selector).
+   * Empty when only 1 match (V1 behavior, no dropdown needed).
+   * Content-script uses this to render dropdown when ≥2 matches.
+   */
+  readonly targetMatches?: readonly SubtitleForOverlayResult[];
+  /**
+   * All subtitles matching native language (ADR-014 D3).
+   * Same semantics as targetMatches.
+   */
+  readonly nativeMatches?: readonly SubtitleForOverlayResult[];
 }
 
 /** Content-script → background: re-push AUTO_LOAD_SUBTITLES if already detected
@@ -345,6 +361,23 @@ export interface ShortcutActionPayload {
  *  heuristic or an explicit episode-click watcher. */
 export interface VideoEpisodeChangedPayload {
   readonly tabId?: number; // background resolves from sender.tab.id
+}
+
+/** Content-script → background: a subtitle URL was detected by the main-world
+ *  fetch interceptor (ADR-011). This fires for subtitle fetches that page
+ *  Service Workers serve from cache — `chrome.webRequest` does NOT fire for
+ *  cached responses, so the network interceptor misses them. The main-world
+ *  fetchInterceptor.iife.ts patches `window.fetch` and posts the URL via
+ *  `window.postMessage`; the isolated-world content-script relays it here.
+ *  The background runs the URL through `detectSubtitle` (same detector as
+ *  webRequest path) and stores it in the network interceptor's subtitle map.
+ *
+ *  ponytail: only `fetch` is patched (verified themoviebox uses fetch). Ceiling:
+ *  sites using XMLHttpRequest for subtitle fetch won't be caught. Upgrade: also
+ *  patch XMLHttpRequest.prototype.open/send. */
+export interface DetectedSubtitleUrlPayload {
+  readonly tabId?: number; // background resolves from sender.tab.id
+  readonly url: string;
 }
 
 // === Typed Message Helpers ===

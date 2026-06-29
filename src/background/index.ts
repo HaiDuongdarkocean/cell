@@ -1588,6 +1588,8 @@ export class BackgroundService {
         tabId,
         target: result.target,
         native: result.native,
+        targetMatches: result.targetMatches,
+        nativeMatches: result.nativeMatches,
       };
       await chrome.tabs.sendMessage(tabId, {
         type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,

@@ -45,7 +45,22 @@ export function findSubtitlesForOverlay(
 
   if (!target && !native) return null;
 
-  return { target, native };
+  // ADR-014 D3: include all matches for dropdown (V2 subtitle selector).
+  // Only populated when ≥2 matches (V1 behavior when 1 match).
+  const targetMatches =
+    targetLang && subtitles.filter((s) => s.language.toLowerCase() === targetLang).length >= 2
+      ? subtitles
+          .filter((s) => s.language.toLowerCase() === targetLang)
+          .map((s) => ({ url: s.url, language: s.language, format: s.format }))
+      : [];
+  const nativeMatches =
+    nativeLang && subtitles.filter((s) => s.language.toLowerCase() === nativeLang).length >= 2
+      ? subtitles
+          .filter((s) => s.language.toLowerCase() === nativeLang)
+          .map((s) => ({ url: s.url, language: s.language, format: s.format }))
+      : [];
+
+  return { target, native, targetMatches, nativeMatches };
 }
 
 /**
