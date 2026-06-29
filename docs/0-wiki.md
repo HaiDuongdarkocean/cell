@@ -46,6 +46,7 @@ docs/           # Tài liệu dự án
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
+│   ├── task-subtitle-appearance-manager.md # Subtitle appearance manager — task list (G4)
 │   └── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
 ├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
 │   ├── principles.md                              # Principle index (abstract, layer 1)
