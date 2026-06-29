@@ -18,16 +18,21 @@ docs/           # Tài liệu dự án
 │   ├── 006-architecture-proposal.md   # Architecture proposal
 │   ├── 007-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load architecture
 │   ├── 008-side-panel-subtitle.md     # Side Panel API thay thế inject-DOM panel
-│   └── 009-side-panel-video-controls.md # Side Panel video controls (hotkeys + media clear)
+│   ├── 009-side-panel-video-controls.md # Side Panel video controls (hotkeys + media clear)
+│   ├── 010-in-page-episode-switch-detection.md # In-page episode switch (video element replacement)
+│   ├── 012-spa-two-phase-render-wipe.md # SPA two-phase render wipe (isVideoReady gate)
+│   └── 013-subtitle-appearance-manager.md # 2 overlay layer độc lập + per-layer style + drag handle
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
-│   └── intent-side-panel-video-controls.md # Side Panel video controls (spacebar + hotkeys)
+│   ├── intent-side-panel-video-controls.md # Side Panel video controls (spacebar + hotkeys)
+│   └── intent-subtitle-appearance-manager.md # Subtitle appearance manager (2 overlay độc lập + drag + realtime persist)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
 │   ├── spec-side-panel-subtitle.md    # Side Panel subtitle PRD (thay thế inject-DOM panel)
 │   ├── spec-side-panel-video-controls.md # Side Panel video controls PRD (spacebar + hotkeys + media clear)
+│   ├── spec-subtitle-appearance-manager.md # Subtitle appearance manager PRD (2 overlay độc lập + drag + realtime persist)
 │   ├── feature-inventory.md           # Feature inventory
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
@@ -36,7 +41,8 @@ docs/           # Tài liệu dự án
 │   ├── subtitle-sidebar-shortcuts.md  # Subtitle floating panel + shortcuts
 │   ├── plan-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — feasibility (G1)
 │   ├── plan-side-panel-subtitle.md    # Side Panel subtitle — feasibility + task breakdown
-│   └── plan-side-panel-video-controls.md # Side Panel video controls — feasibility (G1)
+│   ├── plan-side-panel-video-controls.md # Side Panel video controls — feasibility (G1)
+│   └── plan-subtitle-appearance-manager.md # Subtitle appearance manager — implementation plan (G2)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
@@ -58,7 +64,10 @@ docs/           # Tài liệu dự án
 │   ├── subtitle-filename-matches-video.md         # Subtitle filename matches video
 │   ├── subtitle-language-detection.md             # Subtitle language detection (hybrid)
 │   ├── tab-scoping-popup-leak.md                  # Tab-Scoping (popup media leak)
-│   └── media-accumulation-navigation.md           # Media accumulation across navigation (clear on onTabUpdated)
+│   ├── media-accumulation-navigation.md           # Media accumulation across navigation (clear on onTabUpdated)
+│   ├── spa-two-phase-render-wipe.md               # SPA two-phase render wipe (Angular foreign element wipe)
+│   ├── half-open-interval-cue-matching.md         # Half-open [start,end) for cue boundary matching
+│   └── instant-scroll-long-lists.md               # Instant scroll for long lists (motion sickness)
 ├── test-reports/                      # MCP browser test reports — "does it work in real browser"
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md
 │   ├── 2026-06-27-subtitle-panel-docking-mcp.md
