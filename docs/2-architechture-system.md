@@ -40,7 +40,7 @@ src/
 └── types/              # Ambient .d.ts (muxjs, vite-env)
 ```
 
-**Refactor status**: M1 scaffold done. M2.1 parsers+converters → `shared/lib/parsers/`. M2.2 storage+utils+constants → `shared/{lib/storage,utils,config}/`. M3-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
+**Refactor status**: M1 scaffold done. M2 shared/ migrated. M3.1 types/media.ts split into entities/{video,settings,media} (Strangler Fig — types/media.ts now barrel re-export). M3.2-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
 
 ---
 
