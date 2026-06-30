@@ -1,4 +1,4 @@
-import { handleFileDrop, readFileAsText } from '../../../src/content/subtitleDragDrop';
+import { handleFileDrop, handleMultipleFilesDrop, readFileAsText } from '../../../src/content/subtitleDragDrop';
 
 describe('subtitleDragDrop', () => {
   describe('readFileAsText', () => {
@@ -62,6 +62,50 @@ Dialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hello world`;
       const file = new File([''], 'empty.srt', { type: 'text/plain' });
       const result = await handleFileDrop(file);
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('handleMultipleFilesDrop (ADR-015 — multi-file drag-drop)', () => {
+    const srtA = `1
+00:00:01,000 --> 00:00:02,000
+Hello world`;
+    const srtB = `1
+00:00:03,000 --> 00:00:04,000
+Another line`;
+
+    it('returns 1 result per file, preserving order', async () => {
+      const files = [
+        new File([srtA], 'a.srt', { type: 'text/plain' }),
+        new File([srtB], 'b.srt', { type: 'text/plain' }),
+      ];
+      const results = await handleMultipleFilesDrop(files);
+      expect(results).toHaveLength(2);
+      expect(results[0].result.success).toBe(true);
+      expect(results[0].result.cues[0].text).toBe('Hello world');
+      expect(results[1].result.success).toBe(true);
+      expect(results[1].result.cues[0].text).toBe('Another line');
+    });
+
+    it('empty array → empty results', async () => {
+      const results = await handleMultipleFilesDrop([]);
+      expect(results).toEqual([]);
+    });
+
+    it('mixed valid + invalid → both included (caller filters)', async () => {
+      const files = [
+        new File([srtA], 'good.srt', { type: 'text/plain' }),
+        new File(['x'], 'bad.txt', { type: 'text/plain' }),
+      ];
+      const results = await handleMultipleFilesDrop(files);
+      expect(results).toHaveLength(2);
+      expect(results[0].result.success).toBe(true);
+      expect(results[1].result.success).toBe(false);
+    });
+
+    it('preserves file reference on each result', async () => {
+      const fileA = new File([srtA], 'a.srt', { type: 'text/plain' });
+      const results = await handleMultipleFilesDrop([fileA]);
+      expect(results[0].file).toBe(fileA);
     });
   });
 });

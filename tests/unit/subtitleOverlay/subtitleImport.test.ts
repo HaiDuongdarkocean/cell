@@ -1,4 +1,4 @@
-import { createImportButton, handleFileSelect, assignImportRole } from '../../../src/content/subtitleImport';
+import { createImportButton, handleFileSelect, assignImportRole, parseAndDetectFiles } from '../../../src/content/subtitleImport';
 import type { ParsedFile } from '../../../src/content/subtitleImport';
 import type { OverlayConfig } from '../../../src/types/subtitle';
 
@@ -37,6 +37,12 @@ describe('subtitleImport', () => {
       const input = button.querySelector('input[type="file"]');
       expect(input).toBeTruthy();
       expect(input?.getAttribute('accept')).toBe('.srt,.vtt,.ass,.ssa');
+    });
+
+    it('should allow multiple files (ADR-015 multi-file import)', () => {
+      const button = createImportButton(video, defaultConfig);
+      const input = button.querySelector('input[type="file"]') as HTMLInputElement;
+      expect(input.multiple).toBe(true);
     });
 
     it('should set data-testid for testing', () => {
@@ -148,6 +154,44 @@ Hello world`;
       const files = [makeParsed('en.srt', 'English')]; // capitalized label
       const result = assignImportRole(files, 'EN', 'AR');
       expect(result.target).toHaveLength(1);
+    });
+  });
+
+  describe('parseAndDetectFiles (ADR-015 — multi-file import)', () => {
+    it('parses and detects English .srt', async () => {
+      const srt = `1
+00:00:01,000 --> 00:00:02,000
+Hello world
+
+2
+00:00:03,000 --> 00:00:04,000
+Another line`;
+      const file = new File([srt], 'en.srt', { type: 'text/plain' });
+      const parsed = await parseAndDetectFiles([file]);
+      expect(parsed).toHaveLength(1);
+      expect(parsed[0].format).toBe('srt');
+      expect(parsed[0].cues.length).toBe(2);
+      expect(parsed[0].detectedLang).toBe('english');
+    });
+
+    it('returns empty array for unsupported file', async () => {
+      const file = new File(['x'], 'bad.txt', { type: 'text/plain' });
+      const parsed = await parseAndDetectFiles([file]);
+      expect(parsed).toHaveLength(0);
+    });
+
+    it('parses multiple files', async () => {
+      const en = `1
+00:00:01,000 --> 00:00:02,000
+Hello`;
+      const ar = `1
+00:00:01,000 --> 00:00:02,000
+مرحبا`;
+      const files = [new File([en], 'en.srt', { type: 'text/plain' }), new File([ar], 'ar.srt', { type: 'text/plain' })];
+      const parsed = await parseAndDetectFiles(files);
+      expect(parsed).toHaveLength(2);
+      expect(parsed[0].detectedLang).toBe('english');
+      expect(parsed[1].detectedLang).toBe('arabic');
     });
   });
 });

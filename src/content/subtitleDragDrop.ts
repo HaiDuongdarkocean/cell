@@ -2,6 +2,16 @@ import { parseSubtitle } from './subtitleParser';
 import { convertAssToSrt } from '@/lib/converters/assToSrt';
 import type { ParseResult, SubtitleFormat } from '../types/subtitle';
 
+/**
+ * ParseResult + source File (for multi-file drag-drop, ADR-015).
+ * Caller uses `file` to read content again for language detection / bilingual
+ * parse, and `result` to decide success/failure per file.
+ */
+export interface FileParseResult {
+  readonly file: File;
+  readonly result: ParseResult;
+}
+
 const SUPPORTED_EXTENSIONS = ['.srt', '.vtt', '.ass', '.ssa'];
 
 /**
@@ -69,4 +79,26 @@ export async function handleFileDrop(file: File): Promise<ParseResult> {
   }
 
   return parseSubtitle(content, format);
+}
+
+/**
+ * Handle multiple dropped subtitle files (ADR-015 — multi-file drag-drop).
+ *
+ * Parses each file independently via `handleFileDrop`, preserving input order.
+ * Invalid/unsupported files are included as failed results (caller filters by
+ * `result.success`). Returns one `FileParseResult` per input file so the caller
+ * can access the original `File` for language detection or bilingual parse.
+ *
+ * @param files - Dropped File objects (from DataTransfer.files)
+ * @returns Array of { file, result } in input order
+ */
+export async function handleMultipleFilesDrop(
+  files: readonly File[],
+): Promise<FileParseResult[]> {
+  const results: FileParseResult[] = [];
+  for (const file of files) {
+    const result = await handleFileDrop(file);
+    results.push({ file, result });
+  }
+  return results;
 }

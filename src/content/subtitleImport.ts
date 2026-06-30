@@ -1,5 +1,5 @@
 import { handleFileDrop } from './subtitleDragDrop';
-import { labelToIsoCode } from '@/lib/detectors/languageDetector';
+import { detectLanguage, labelToIsoCode } from '@/lib/detectors/languageDetector';
 import type { OverlayConfig, ParseResult, SubtitleFormat } from '../types/subtitle';
 import type { SrtCue } from '../types/media';
 
@@ -101,6 +101,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.accept = '.srt,.vtt,.ass,.ssa';
+  fileInput.multiple = true; // ADR-015: multi-file import
   // ponytail: display:none prevents picker in some content-script contexts.
   // opacity:0 + absolute keeps input rendered (picker opens) but invisible.
   fileInput.style.position = 'absolute';
@@ -137,6 +138,35 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
 
   container.appendChild(label);
   return label;
+}
+
+/**
+ * Parse + detect language for multiple imported files (ADR-015).
+ *
+ * For each file: validate extension → read → parse → detect language label.
+ * Files that fail parsing or have unsupported extensions are skipped (caller
+ * should toast the count). Returns `ParsedFile[]` ready for `assignImportRole`.
+ *
+ * @param files - Selected/dropped File objects
+ * @returns Array of parsed files with detected language labels
+ */
+export async function parseAndDetectFiles(files: readonly File[]): Promise<ParsedFile[]> {
+  const results: ParsedFile[] = [];
+  for (const file of files) {
+    const parseResult = await handleFileDrop(file);
+    if (!parseResult.success || parseResult.cues.length === 0) continue;
+    const detectedLang = detectLanguage(
+      parseResult.cues.map((c) => c.text).join('\n'),
+      parseResult.format,
+    );
+    results.push({
+      file,
+      detectedLang: detectedLang?.toLowerCase() ?? '',
+      cues: parseResult.cues,
+      format: parseResult.format,
+    });
+  }
+  return results;
 }
 
 /**
