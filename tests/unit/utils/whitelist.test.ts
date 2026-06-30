@@ -14,7 +14,7 @@ import {
   isWhitelisted,
   addToWhitelist,
   removeFromWhitelist,
-} from '@/lib/utils/whitelist';
+} from '@/features/whitelist/whitelist';
 
 // --- In-memory chrome.storage.local mock ---
 

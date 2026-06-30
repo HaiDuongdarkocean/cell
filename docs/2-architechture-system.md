@@ -40,7 +40,7 @@ src/
 └── types/              # Ambient .d.ts (muxjs, vite-env)
 ```
 
-**Refactor status**: M1-M3 migrated. M4.1 detectors → `features/detection/logic/` (barrel index.ts). M5-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
+**Refactor status**: M1-M3 migrated. M4.1 detectors → features/detection/logic/. M5.1 whitelist → features/whitelist/. M6-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
 
 ---
 

@@ -28,7 +28,7 @@ import type {
   Settings,
 } from '@/types/media';
 import { selectBestMedia } from '@/lib/selectors/selectBestMedia';
-import { isWhitelisted } from '@/lib/utils/whitelist';
+import { isWhitelisted } from '@/features/whitelist/whitelist';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 
 /**
