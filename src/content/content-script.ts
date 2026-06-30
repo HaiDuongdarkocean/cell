@@ -9,6 +9,7 @@ import { handleShortcutKey } from './subtitleShortcuts';
 import { createSubtitleDropdown } from './subtitleSelector';
 import { createSubtitleManagerPanel } from './subtitleManagerPanel';
 import { createDebouncedToast } from './subtitleToast';
+import { injectThemeTokens } from './themeTokens';
 import { formatSubtitleName } from './subtitleNaming';
 import { isoCodeToLabel } from '@/lib/detectors/languageDetector';
 import { MESSAGE_TYPES } from '@/constants/messages';
@@ -115,6 +116,10 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   // ADR-008 D2: overlay UI neo vào video.parentElement — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   const container = video.parentElement ?? document.body;
+
+  // ADR-015 T12: inject theme tokens so panel/chip/toast var(--color-*) resolve.
+  // Content-script isolated world cannot access popup's theme.css.
+  injectThemeTokens(container);
 
   // ADR-013 D3: load overlay styles from storage (async), then init controller
   let controller: SubtitleOverlayController | null = null;
