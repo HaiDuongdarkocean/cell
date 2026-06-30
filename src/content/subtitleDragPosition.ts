@@ -49,12 +49,18 @@ function wireDrag(
 ): HTMLButtonElement {
   let dragging = false;
   let startClientY = 0;
-  let currentOffset = initialOffset;
+  let startOffset = initialOffset; // snapshot at pointerdown — base for delta calc
+  let currentOffset = initialOffset; // live position — snapshot source for next drag
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   const onPointerDown = (e: PointerEvent): void => {
     dragging = true;
     startClientY = e.clientY;
+    // Snapshot current position as the base for this drag. Using `currentOffset`
+    // (not `initialOffset`) means consecutive drags start from the last position.
+    // `startOffset` stays fixed during the drag so `deltaY` from `startClientY`
+    // is applied exactly once (no double-count across intermediate pointermove).
+    startOffset = currentOffset;
     try {
       handle.setPointerCapture(e.pointerId);
     } catch {
@@ -67,7 +73,7 @@ function wireDrag(
     if (!dragging) return;
     const deltaY = e.clientY - startClientY;
     const rect = container.getBoundingClientRect();
-    const newOffset = calcYOffsetPercent(deltaY, rect.height, currentOffset);
+    const newOffset = calcYOffsetPercent(deltaY, rect.height, startOffset);
     currentOffset = newOffset;
 
     // Update overlay position immediately (visual feedback)

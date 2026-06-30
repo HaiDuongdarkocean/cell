@@ -101,6 +101,25 @@ describe('createDragHandle', () => {
     expect(overlay.style.bottom).toBe('30%');
   });
 
+  it('intermediate pointermove events do not double-count delta', () => {
+    const overlay = document.createElement('div');
+    const container = document.createElement('div');
+    container.getBoundingClientRect = () => ({ height: 600, width: 800, top: 0, left: 0, right: 800, bottom: 600, x: 0, y: 0, toJSON: () => {} }) as DOMRect;
+    const handle = createDragHandle(overlay, container, 10, () => {});
+
+    // Drag UP 60px with 3 intermediate pointermove events (realistic drag).
+    // Each pointermove fires with deltaY from startClientY. Base must be the
+    // snapshot at pointerdown (startOffset), not the live currentOffset —
+    // otherwise each move adds the full delta on top of the already-moved offset.
+    handle.dispatchEvent(new PointerEvent('pointerdown', { clientY: 100, bubbles: true }));
+    document.dispatchEvent(new PointerEvent('pointermove', { clientY: 80 })); // deltaY -20 → +3.33%
+    document.dispatchEvent(new PointerEvent('pointermove', { clientY: 60 })); // deltaY -40 → +6.67%
+    document.dispatchEvent(new PointerEvent('pointermove', { clientY: 40 })); // deltaY -60 → +10%
+    document.dispatchEvent(new PointerEvent('pointerup'));
+    // Expected: 10 + 10 = 20 (NOT 10 + 3.33 + 6.67 + 10 = 30 from double-count)
+    expect(overlay.style.bottom).toBe('20%');
+  });
+
   it('ignores pointermove when not in drag mode', () => {
     const overlay = document.createElement('div');
     const container = document.createElement('div');
