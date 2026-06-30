@@ -3,7 +3,7 @@ import {
   phaseLabel,
   ParallelProgressTracker,
   type ParallelConversionPhase,
-} from '@/lib/converters/parallelProgress';
+} from '@/features/transmux/execution/parallelProgress';
 
 describe('parallelProgress', () => {
   describe('phaseToPercent', () => {

@@ -3,7 +3,7 @@ import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
 import { convertVttToSrt } from '@/shared/lib/parsers/vttToSrt';
 import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
 import { ConversionTimer } from '@/lib/converters/conversionTimer';
-import { planParallelConversion } from '@/lib/converters/parallelPlanner';
+import { planParallelConversion } from '@/features/transmux/planning/parallelPlanner';
 import { generateFileName, resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
 import type {
   ByteRange,

@@ -1,4 +1,4 @@
-import { decideFallback, executeWithFallback } from '@/lib/converters/parallelFallback';
+import { decideFallback, executeWithFallback } from '@/features/transmux/execution/parallelFallback';
 
 describe('decideFallback', () => {
   describe('fail strategy', () => {

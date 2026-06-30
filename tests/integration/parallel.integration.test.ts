@@ -7,7 +7,7 @@
  * with sequential.integration.test.ts and compare.integration.test.ts.
  */
 import { transmuxTsToFmp4ParallelExperimental } from '@/lib/converters/parallelTransmuxer';
-import { groupSegmentsByBytes } from '@/lib/converters/segmentGrouping';
+import { groupSegmentsByBytes } from '@/features/transmux/planning/segmentGrouping';
 import { validateFragmentedMp4 } from '@/lib/converters/mp4Validator';
 import {
   countBoxes,

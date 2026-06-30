@@ -3,7 +3,7 @@ import {
   CancellationTokenRegistry,
   ParallelConversionCancelledError,
   cleanupParallelTempFiles,
-} from '@/lib/converters/parallelCancellation';
+} from '@/features/transmux/execution/parallelCancellation';
 
 // --- OPFS mock (minimal) ---
 

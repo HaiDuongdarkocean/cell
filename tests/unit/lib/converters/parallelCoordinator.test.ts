@@ -2,10 +2,10 @@ import {
   executeParallelConversion,
   cancelParallelConversion,
   isParallelConversionCancelled,
-} from '@/lib/converters/parallelCoordinator';
+} from '@/features/transmux/execution/parallelCoordinator';
 import { transmuxTsToFmp4ParallelExperimental } from '@/lib/converters/parallelTransmuxer';
 import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
-import { ParallelConversionCancelledError } from '@/lib/converters/parallelCancellation';
+import { ParallelConversionCancelledError } from '@/features/transmux/execution/parallelCancellation';
 import { validateFragmentedMp4 } from '@/lib/converters/mp4Validator';
 import type { Settings, SegmentRange } from '@/types/media';
 

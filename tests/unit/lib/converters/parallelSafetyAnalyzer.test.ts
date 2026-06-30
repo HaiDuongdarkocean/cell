@@ -1,4 +1,4 @@
-import { analyzeParallelSafety } from '@/lib/converters/parallelSafetyAnalyzer';
+import { analyzeParallelSafety } from '@/features/transmux/execution/parallelSafetyAnalyzer';
 import type { SegmentRange } from '@/types/media';
 import { MIN_PARALLEL_WORKERS } from '@/shared/config/config';
 

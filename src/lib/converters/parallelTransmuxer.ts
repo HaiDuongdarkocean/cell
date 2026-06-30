@@ -13,7 +13,7 @@
  */
 
 import type { SegmentRange } from '@/types/media';
-import type { SegmentGroup } from '@/lib/converters/segmentGrouping';
+import type { SegmentGroup } from '@/features/transmux/planning/segmentGrouping';
 import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
 import {
   ensureDownloadSubdir,

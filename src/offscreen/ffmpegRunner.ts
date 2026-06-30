@@ -13,7 +13,7 @@
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
-import { executeParallelConversion } from '@/lib/converters/parallelCoordinator';
+import { executeParallelConversion } from '@/features/transmux/execution/parallelCoordinator';
 import { readSegmentRanges } from '@/lib/converters/parallelTransmuxer';
 import {
   ensureDownloadSubdir,

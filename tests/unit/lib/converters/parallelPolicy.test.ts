@@ -1,4 +1,4 @@
-import { resolveParallelPolicy } from '@/lib/converters/parallelPolicy';
+import { resolveParallelPolicy } from '@/features/transmux/planning/parallelPolicy';
 import type { Settings } from '@/types/media';
 import {
   MIN_PARALLEL_WORKERS,

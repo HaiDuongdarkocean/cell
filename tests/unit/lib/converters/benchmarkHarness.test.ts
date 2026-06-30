@@ -4,7 +4,7 @@ import {
   formatBenchmarkResult,
   formatBenchmarkComparison,
   type BenchmarkResult,
-} from '@/lib/converters/benchmarkHarness';
+} from '@/features/transmux/execution/benchmarkHarness';
 
 describe('benchmarkHarness', () => {
   describe('runBenchmark', () => {

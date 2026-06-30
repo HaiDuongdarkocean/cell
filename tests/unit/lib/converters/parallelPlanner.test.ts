@@ -1,4 +1,4 @@
-import { planParallelConversion } from '@/lib/converters/parallelPlanner';
+import { planParallelConversion } from '@/features/transmux/planning/parallelPlanner';
 import type { SegmentRange, Settings } from '@/types/media';
 import {
   PARALLEL_LARGE_FILE_BYTES,

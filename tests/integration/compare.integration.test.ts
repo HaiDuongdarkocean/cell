@@ -9,7 +9,7 @@
  */
 import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
 import { transmuxTsToFmp4ParallelExperimental } from '@/lib/converters/parallelTransmuxer';
-import { groupSegmentsByBytes } from '@/lib/converters/segmentGrouping';
+import { groupSegmentsByBytes } from '@/features/transmux/planning/segmentGrouping';
 import { validateFragmentedMp4 } from '@/lib/converters/mp4Validator';
 import {
   countBoxes,

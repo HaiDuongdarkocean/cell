@@ -5,8 +5,8 @@ import {
   recordAttempt,
   DEFAULT_GATE_STATE,
   type GateState,
-} from '@/lib/converters/autoEnablement';
-import type { BenchmarkComparison } from '@/lib/converters/benchmarkHarness';
+} from '@/features/transmux/execution/autoEnablement';
+import type { BenchmarkComparison } from '@/features/transmux/execution/benchmarkHarness';
 
 function makeComparison(
   verdict: 'parallel-faster' | 'sequential-faster' | 'inconclusive',

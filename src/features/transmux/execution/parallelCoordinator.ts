@@ -20,20 +20,20 @@
  */
 
 import type { Settings, SegmentRange } from '@/types/media';
-import { planParallelConversion, type ParallelPlan } from '@/lib/converters/parallelPlanner';
+import { planParallelConversion, type ParallelPlan } from '../planning/parallelPlanner';
 import { transmuxTsToFmp4ParallelExperimental } from '@/lib/converters/parallelTransmuxer';
 import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
-import { executeWithFallback } from '@/lib/converters/parallelFallback';
+import { executeWithFallback } from './parallelFallback';
 import {
   ParallelProgressTracker,
   type ParallelConversionPhase,
-} from '@/lib/converters/parallelProgress';
+} from './parallelProgress';
 import { validateFragmentedMp4 } from '@/lib/converters/mp4Validator';
 import {
   CancellationTokenRegistry,
   ParallelConversionCancelledError,
   cleanupParallelTempFiles,
-} from '@/lib/converters/parallelCancellation';
+} from './parallelCancellation';
 import {
   ensureDownloadSubdir,
   readFile as opfsReadFile,

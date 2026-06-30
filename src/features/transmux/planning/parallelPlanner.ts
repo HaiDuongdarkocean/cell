@@ -1,6 +1,6 @@
 import type { Settings, SegmentRange } from '@/types/media';
-import { resolveParallelPolicy, type ParallelPolicy } from '@/lib/converters/parallelPolicy';
-import { analyzeParallelSafety, type SafetyAnalysis } from '@/lib/converters/parallelSafetyAnalyzer';
+import { resolveParallelPolicy, type ParallelPolicy } from './parallelPolicy';
+import { analyzeParallelSafety, type SafetyAnalysis } from '../execution/parallelSafetyAnalyzer';
 
 /**
  * Combined result of parallel conversion planning (policy + safety).

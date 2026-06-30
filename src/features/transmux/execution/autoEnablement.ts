@@ -14,7 +14,7 @@
  */
 
 import type { ParallelConversionMode } from '@/types/media';
-import type { BenchmarkComparison } from '@/lib/converters/benchmarkHarness';
+import type { BenchmarkComparison } from './benchmarkHarness';
 
 /** Minimum speedup required to enable auto mode (1.1x = 10% faster). */
 const MIN_SPEEDUP_FOR_AUTO = 1.1;
