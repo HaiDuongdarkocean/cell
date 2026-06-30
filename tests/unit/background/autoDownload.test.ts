@@ -397,4 +397,41 @@ describe('tryAutoDownload', () => {
 
     expect(result).toEqual(['v1', 's1']);
   });
+
+  // --- Characterization test (M0.2): pin storage.local.get throw path ---
+
+  it('characterization: returns [] when chrome.storage.local.get throws on settings load (line 107-108 catch)', async () => {
+    // Pin: if chrome.storage.local.get rejects on the SETTINGS call (2nd call,
+    // after whitelist check succeeds), tryAutoDownload catches and returns []
+    // silently — does NOT throw, does NOT proceed to media selection.
+    whitelist('https://site.com/lesson/123');
+    const video = makeVideo('v1');
+    const { deps, addToQueue, createDownloadItem, getMedia } = makeDeps(
+      { videos: [video], subtitles: [] },
+    );
+
+    // First call = whitelist check (succeeds, returns whitelist entries).
+    // Second call = settings load (rejects → triggers catch at line 107-108).
+    const originalImpl = storageLocalGetMock.getMockImplementation();
+    storageLocalGetMock
+      .mockImplementationOnce(async (keys) => {
+        // Return whitelist entries for the whitelist check
+        const result: Record<string, unknown> = {};
+        const keyList = typeof keys === 'string' ? [keys] : (keys as string[]);
+        for (const key of keyList) {
+          if (store.has(key)) result[key] = store.get(key);
+        }
+        return result;
+      })
+      .mockRejectedValueOnce(new Error('storage read failed (characterization)'));
+
+    const result = await tryAutoDownload(1, 'https://site.com/lesson/123', deps);
+
+    expect(result).toEqual([]);
+    expect(getMedia).not.toHaveBeenCalled();
+    expect(createDownloadItem).not.toHaveBeenCalled();
+    expect(addToQueue).not.toHaveBeenCalled();
+
+    storageLocalGetMock.mockImplementation(originalImpl);
+  });
 });

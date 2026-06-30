@@ -3,7 +3,16 @@ import {
   cancelParallelConversion,
   isParallelConversionCancelled,
 } from '@/lib/converters/parallelCoordinator';
+import { transmuxTsToFmp4ParallelExperimental } from '@/lib/converters/parallelTransmuxer';
+import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
+import { ParallelConversionCancelledError } from '@/lib/converters/parallelCancellation';
+import { validateFragmentedMp4 } from '@/lib/converters/mp4Validator';
 import type { Settings, SegmentRange } from '@/types/media';
+
+// Mock mp4Validator — default returns valid, per-test can override to invalid
+jest.mock('@/lib/converters/mp4Validator', () => ({
+  validateFragmentedMp4: jest.fn(() => ({ valid: true })),
+}));
 
 // Mock the transmuxers
 jest.mock('@/lib/converters/tsTransmuxer', () => ({
@@ -271,5 +280,82 @@ describe('executeParallelConversion', () => {
 
   it('isParallelConversionCancelled returns false for unknown', () => {
     expect(isParallelConversionCancelled('unknown')).toBe(false);
+  });
+
+  // --- Characterization tests (M0.2): pin fallback / cancel paths ---
+
+  it('characterization: parallel returns {success:false} → throws → fallback runs sequential (usedParallel stays true)', async () => {
+    // Pin: when parallelTransmuxer returns {success:false}, coordinator throws
+    // (line 145) → executeWithFallback catches → runs sequential fallback.
+    // Actual behavior: result.success=true (sequential worked), but
+    // usedParallel=true (coordinator hardcodes true at line 179 — does NOT
+    // track whether fallback was used inside executeWithFallback).
+    const parallelMock = transmuxTsToFmp4ParallelExperimental as jest.Mock;
+    parallelMock.mockResolvedValueOnce({
+      success: false,
+      outputName: 'output.mp4',
+      error: 'parallel transmux failed (characterization)',
+    });
+
+    const result = await executeParallelConversion(
+      makeSettings(),
+      'dl-test',
+      makeRanges(20, 20_000_000),
+      LARGE_FILE,
+      EIGHT_CORES,
+    );
+
+    expect(result.success).toBe(true);
+    // Characterization pin: usedParallel is true even though fallback ran.
+    // This is the ACTUAL behavior — coordinator doesn't know fallback was used.
+    expect(result.usedParallel).toBe(true);
+    // Sequential transmuxer was called (fallback path)
+    expect((transmuxTsToFmp4 as jest.Mock)).toHaveBeenCalled();
+  });
+
+  it('characterization: validation fails → fallback to sequential → usedParallel=false, fallbackUsed=true', async () => {
+    // Pin: parallel succeeds, but validateFragmentedMp4 returns invalid →
+    // coordinator runs sequential again (lines 162-165) and returns
+    // { usedParallel:false, fallbackUsed:true }.
+    (validateFragmentedMp4 as jest.Mock).mockReturnValueOnce({
+      valid: false,
+      reason: 'characterization: invalid fmp4',
+    });
+
+    const result = await executeParallelConversion(
+      makeSettings(),
+      'dl-test',
+      makeRanges(20, 20_000_000),
+      LARGE_FILE,
+      EIGHT_CORES,
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.usedParallel).toBe(false);
+    expect(result.fallbackUsed).toBe(true);
+  });
+
+  it('characterization: cancellation error with fail strategy → returns {success:false, error:"Conversion cancelled"}', async () => {
+    // Pin: when parallel throws ParallelConversionCancelledError AND the
+    // fallback strategy is 'fail', executeWithFallback re-throws (doesn't
+    // catch). The coordinator catch block (lines 184-192) then catches it
+    // and returns a cancelled result instead of re-throwing.
+    // NOTE: with 'sequential' strategy, executeWithFallback would catch the
+    // error and run sequential — the coordinator catch block would NOT be
+    // reached. We use 'fail' to exercise the coordinator's own catch.
+    const parallelMock = transmuxTsToFmp4ParallelExperimental as jest.Mock;
+    parallelMock.mockRejectedValueOnce(new ParallelConversionCancelledError());
+
+    const result = await executeParallelConversion(
+      makeSettings({ parallelFallback: 'fail' }),
+      'dl-test',
+      makeRanges(20, 20_000_000),
+      LARGE_FILE,
+      EIGHT_CORES,
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Conversion cancelled');
+    expect(result.usedParallel).toBe(false);
   });
 });
