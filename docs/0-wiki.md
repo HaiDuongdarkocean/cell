@@ -23,7 +23,8 @@ docs/           # Tài liệu dự án
 │   ├── 012-spa-two-phase-render-wipe.md # SPA two-phase render wipe (isVideoReady gate)
 │   ├── 013-subtitle-appearance-manager.md # 2 overlay layer độc lập + per-layer style + drag handle
 │   ├── 014-subtitle-selector-multi-match.md # Subtitle selector ≥2 matches (V2 ADR-007 D3) + bug A fix (loadBilingualCues merge)
-│   └── 015-subtitle-drag-integrated.md  # Subtitle drag integrated (xóa icon riêng, drag trực tiếp overlay background)
+│   ├── 015-subtitle-drag-integrated.md  # Subtitle drag integrated (xóa icon riêng, drag trực tiếp overlay background)
+│   └── 016-fsd-screaming-architecture-worktree.md # FSD + Screaming Architecture worktree (refactor src/ + tests/ cho Orca platform, 6 layer + dependency rule + port/adapter)
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
