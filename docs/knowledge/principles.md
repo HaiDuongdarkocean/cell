@@ -280,3 +280,45 @@ Navigation lifecycle handler (onTabUpdated loading) là shared function cho mọ
 - Chrome extension `onTabUpdated` / `onTabRemoved` lifecycle handlers
 - SPA route change cleanup (clear state khi URL change, không đợi close)
 - Any per-page state that must reset on navigation (media, cache, badge, session storage)
+
+## Wait for framework render completion before injecting foreign elements
+
+### Nguyên lý
+SPA frameworks (Angular, React, Vue) render dynamic elements trong nhiều phase. Content-script append foreign elements (không thuộc framework template) **during render cycle** → framework wipe chúng trong re-render tiếp theo. Signal "render done" = element có data thực (blob URL cho streaming, readyState>=2 cho direct source). `setTimeout` không đủ — Zone.js/React Concurrent mode wrap timer callbacks.
+
+### Cases đã gặp
+- [spa-two-phase-render-wipe.md](spa-two-phase-render-wipe.md) — Angular trên kisskh.co render `<video>` 2 phase: phase 1 mount element src="", phase 2 gán blob: URL. Content-script init overlay during phase 1 → Angular wipe foreign elements. Fix: `isVideoReady` gate (blob: OR readyState>=2) + observer `attributeFilter:['src']` catch phase-2. — **ADR-012**
+
+### Apply cho
+- Content-script inject vào SPA (Angular, React, Vue, Svelte)
+- Browser extension overlay UI trên dynamic pages
+- Any foreign element injection vào framework-managed DOM (MutationObserver timing)
+- Zone.js / React Concurrent mode timer wrap (setTimeout không thoát render zone)
+
+## Half-open intervals [start, end) for time-based matching
+
+### Nguyên lý
+Time-based matching với boundary liền nhau (cue end = cue next start) phải dùng half-open interval `[start, end)` — boundary thuộc về item tiếp theo, không thuộc về item hiện tại. Closed interval `[start, end]` tạo overlap tại boundary → `findIndex` trả index sai (earlier match) → flash/correction.
+
+### Cases đã gặp
+- [half-open-interval-cue-matching.md](half-open-interval-cue-matching.md) — 4 callsites dùng `c.end >= currentTimeMs` (closed) → tại boundary `cue[i].end = cue[i+1].start`, cả 2 cue match → `findIndex` trả cue cũ → replay-cue "jump back" flash. Fix: `c.end > currentTimeMs` (half-open) tại 4 callsites (CueList, sidePanelStore, content-script ×2).
+
+### Apply cho
+- Time-range matching (cue, segment, chapter, bookmark)
+- Interval overlap detection (calendar, scheduling, Gantt)
+- Bucket assignment (timestamp → bucket, boundary thuộc bucket tiếp theo)
+- Any `findIndex` with `start <= t && end >= t` when boundaries are contiguous
+
+## Instant scroll for long lists, smooth only for short distances
+
+### Nguyên lý
+`scrollIntoView({ behavior: 'smooth' })` phù hợp cho short distance (scroll vài item, user thấy context movement). Trên long list (hundreds/thousands items), smooth scroll animate qua toàn bộ list → motion sickness + disorientation. Default instant (`behavior: 'auto'`) khi không biết beforehand distance (panel open, seek far).
+
+### Cases đã gặp
+- [instant-scroll-long-lists.md](instant-scroll-long-lists.md) — Side panel cue list `scrollIntoView({ behavior: 'smooth' })` animate từ top đến middle của list dài → motion sickness. Fix: `behavior: 'auto'` (instant). User không bị disorient vì list jump thẳng đến highlighted cue.
+
+### Apply cho
+- Long list scroll (cue list, log viewer, chat history, file tree)
+- Seek-to-position (jump far → instant, not animate)
+- Panel open with pre-selected item (jump to item, not animate from top)
+- Any `scrollIntoView` trên list > 50 items where distance is unknown beforehand
