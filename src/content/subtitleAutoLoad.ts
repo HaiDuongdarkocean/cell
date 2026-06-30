@@ -231,11 +231,20 @@ export async function handleAutoLoadSubtitles(
   deps.controller.loadBilingualCues(targetCues, nativeCues);
   deps.onPanelRender?.(targetCues, nativeCues);
 
-  // ADR-014 D3: notify content-script of all matches for dropdown render.
+  // ADR-014 D3 + ADR-015: notify content-script of all matches for panel + dropdown render.
+  // Show panel/chip when at least 1 subtitle (target or native) is auto-detected —
+  // not only when 2+ matches (user needs to see active subtitle state even with 1 sub).
+  // targetMatches/nativeMatches are only populated when ≥2 matches (ADR-014 D3, for
+  // legacy dropdown). When 1 match, fall back to the single preferred target/native
+  // so the manager panel + chip still render.
   if (deps.onSubtitleMatches) {
-    const targetM = payload.targetMatches ?? [];
-    const nativeM = payload.nativeMatches ?? [];
-    if (targetM.length >= 2 || nativeM.length >= 2) {
+    const targetM = payload.targetMatches?.length
+      ? payload.targetMatches
+      : payload.target ? [payload.target] : [];
+    const nativeM = payload.nativeMatches?.length
+      ? payload.nativeMatches
+      : payload.native ? [payload.native] : [];
+    if (targetM.length >= 1 || nativeM.length >= 1) {
       deps.onSubtitleMatches(targetM, nativeM);
     }
   }

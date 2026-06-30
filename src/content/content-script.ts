@@ -406,6 +406,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
           const targetSubs = targetM.map((m) => ({ id: m.url, url: m.url, format: m.format as any, language: m.language, tabId: 0, detectedAt: 0 }));
           const nativeSubs = nativeM.map((m) => ({ id: m.url, url: m.url, format: m.format as any, language: m.language, tabId: 0, detectedAt: 0 }));
 
+          // ADR-015: legacy dropdown only renders when 2+ matches (select-between UX).
+          // The new manager panel (below) renders when 1+ match so user always sees
+          // active subtitle state.
           if (targetM.length >= 2) {
             if (targetDropdown) {
               targetDropdown.update(targetSubs, activeTargetIndex);
@@ -433,6 +436,32 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
                 (index) => { void onSubtitleSelect('native', index); },
               );
             }
+          }
+          // ADR-015: update manager panel with auto-detected matches (1+ subs).
+          // Build panel items from matches so panel + chip show even with 1 sub.
+          const autoTargetItems: SubtitlePanelItem[] = targetM.map((m, i) => ({
+            id: `auto-target-${i}`,
+            name: formatSubtitleName('auto', m.language, i),
+            format: m.format,
+            source: 'auto' as const,
+            role: 'target' as const,
+            index: i,
+          }));
+          const autoNativeItems: SubtitlePanelItem[] = nativeM.map((m, i) => ({
+            id: `auto-native-${i}`,
+            name: formatSubtitleName('auto', m.language, i),
+            format: m.format,
+            source: 'auto' as const,
+            role: 'native' as const,
+            index: i,
+          }));
+          // Prefer imported items if exist (import flow updates separately),
+          // else fall back to auto-detected items.
+          if (importedTargetItems.length === 0) {
+            managerPanel?.updateTarget(autoTargetItems, activeTargetIndex);
+          }
+          if (importedNativeItems.length === 0) {
+            managerPanel?.updateNative(autoNativeItems, activeNativeIndex);
           }
           // ADR-015 T11: update chip when auto-load pushes new matches
           updateActiveChip();
