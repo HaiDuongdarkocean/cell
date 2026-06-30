@@ -55,6 +55,7 @@ docs/           # Tài liệu dự án
 │   └── plan-subtitle-appearance-manager.md # Subtitle appearance manager — implementation plan (G2)
 │   └── plan-subtitle-drag-integrated.md  # Subtitle drag integrated — implementation plan (G2)
 │   └── plan-subtitle-selector-multi-match.md # Subtitle selector ≥2 matches — implementation plan (G2, V2 ADR-007 D3)
+│   └── plan-refactor-system-architecture.md # Refactor system architecture — implementation plan (G2, 14 milestone + dependency graph + checkpoint A-E)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
@@ -91,6 +92,7 @@ docs/           # Tài liệu dự án
 │   └── screenshot-after-fix.png
 ├── reviews/                           # Spec review reports (spec-reviewer skill output)
 │   └── review-subtitle-drag-integrated.md # Spec review: subtitle drag integrated (APPROVED post-update)
+│   └── review-refactor-system-architecture.md # Spec review: refactor system architecture (APPROVED, Opus 4.8, 1 CRITICAL + 2 HIGH fixed)
 ├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"
 │   ├── chrome-devtools-mcp.md
 │   ├── e2e-debugging.md
