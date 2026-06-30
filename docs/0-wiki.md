@@ -32,6 +32,7 @@ docs/           # Tài liệu dự án
 │   └── intent-subtitle-selector-multi-match.md # Subtitle selector khi ≥2 matches (V2 ADR-007 D3, giải quyết bug A)
 │   └── idea-subtitle-manager-panel.md     # Subtitle Manager Panel (V2 ADR-014 — unified panel + import flow + active name + toast)
 │   └── intent-subtitle-drag-integrated.md # Subtitle drag integrated (xóa icon riêng, drag trực tiếp overlay background)
+│   └── intent-refactor-system-architecture.md # Refactor system architecture (G0 research 53 nguồn + 7 nguyên lý + Orca platform scope)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
@@ -41,6 +42,7 @@ docs/           # Tài liệu dự án
 │   └── spec-subtitle-selector-multi-match.md # Subtitle selector khi ≥2 matches PRD (V2 ADR-007 D3 + bug A fix)
 │   └── spec-subtitle-manager-panel.md    # Subtitle Manager Panel PRD (V2 ADR-014 — unified panel + import flow + active name + toast)
 │   └── spec-subtitle-drag-integrated.md  # Subtitle drag integrated PRD (xóa icon riêng, drag trực tiếp overlay background)
+│   └── spec-refactor-system-architecture.md # Refactor system architecture PRD (FSD + Screaming Architecture worktree cho Orca platform extensibility)
 │   ├── feature-inventory.md           # Feature inventory
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
