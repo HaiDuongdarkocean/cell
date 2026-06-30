@@ -39,6 +39,7 @@ docs/           # Tài liệu dự án
 │   ├── spec-subtitle-appearance-manager.md # Subtitle appearance manager PRD (2 overlay độc lập + drag + realtime persist)
 │   └── spec-subtitle-selector-multi-match.md # Subtitle selector khi ≥2 matches PRD (V2 ADR-007 D3 + bug A fix)
 │   └── spec-subtitle-manager-panel.md    # Subtitle Manager Panel PRD (V2 ADR-014 — unified panel + import flow + active name + toast)
+│   └── spec-subtitle-drag-integrated.md  # Subtitle drag integrated PRD (xóa icon riêng, drag trực tiếp overlay background)
 │   ├── feature-inventory.md           # Feature inventory
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
@@ -83,6 +84,8 @@ docs/           # Tài liệu dự án
 │   ├── 2026-06-27-subtitle-panel-docking-mcp.md
 │   ├── 2026-06-27-subtitle-panel-fullscreen-mcp.md
 │   └── screenshot-after-fix.png
+├── reviews/                           # Spec review reports (spec-reviewer skill output)
+│   └── review-subtitle-drag-integrated.md # Spec review: subtitle drag integrated (APPROVED post-update)
 ├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"
 │   ├── chrome-devtools-mcp.md
 │   ├── e2e-debugging.md
