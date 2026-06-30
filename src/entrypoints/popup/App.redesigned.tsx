@@ -10,7 +10,7 @@ import { VideoCard } from './components/media/VideoCard';
 import { SubtitleCard } from './components/media/SubtitleCard';
 import { MediaEmpty } from './components/media/MediaEmpty';
 import { DownloadCard } from './components/media/DownloadCard';
-import { SettingsDialog } from './components/settings/SettingsDialog';
+import { SettingsDialog } from '@/features/settings/ui/SettingsDialog';
 import type { VideoQuality, Settings, DownloadItem } from '@/types/media';
 import type { MessageRequest, MessageResponse } from '@/types/message';
 import { selectBestMedia } from '@/features/download/selectBestMedia';
