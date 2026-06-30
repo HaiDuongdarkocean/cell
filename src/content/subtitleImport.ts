@@ -97,6 +97,8 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   label.setAttribute('title', 'Import subtitle file');
   label.setAttribute('data-testid', 'subtitle-import-button');
   label.style.cssText = `
+    position: relative;
+    overflow: hidden;
     width: 32px;
     height: 32px;
     border: 1px solid var(--color-border);

@@ -75,8 +75,9 @@ export function createSubtitleManagerPanel(
   `;
   container.appendChild(toolbar);
 
-  // Move import button into toolbar (it was created elsewhere for lifecycle reasons)
-  importButton.style.position = 'static';
+  // Move import button into toolbar (it was created elsewhere for lifecycle reasons).
+  // Keep its relative positioning + overflow: hidden so the hidden file input stays
+  // clipped inside the 32x32 button and does not overlap the manager icon.
   toolbar.appendChild(importButton);
 
   // === Manager icon ===

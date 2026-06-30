@@ -50,11 +50,12 @@ describe('subtitleImport', () => {
       expect(button.getAttribute('data-testid')).toBe('subtitle-import-button');
     });
 
-    it('should be 32x32 icon button (UI v4 toolbar)', () => {
+    it('should be 32x32 icon button with relative overflow-hidden input container (UI v4 toolbar)', () => {
       const button = createImportButton(video, defaultConfig);
       expect(button.style.width).toBe('32px');
       expect(button.style.height).toBe('32px');
-      expect(button.style.position).toBe(''); // position is reset by panel toolbar
+      expect(button.style.position).toBe('relative');
+      expect(button.style.overflow).toBe('hidden');
     });
   });
 
