@@ -73,8 +73,11 @@ Goodbye world`;
     // === Step 1: create panel + controller ===
     let selectedRole: 'target' | 'native' | null = null;
     let selectedIndex = -1;
-    const panel = createSubtitleManagerPanel(container, {
-      onSelect: (role, index) => {
+    const importButton = document.createElement('button');
+    importButton.setAttribute('data-testid', 'subtitle-import-button');
+    importButton.setAttribute('aria-label', 'Import subtitle file');
+    const panel = createSubtitleManagerPanel(container, importButton, {
+      onSelect: (role: 'target' | 'native', index: number) => {
         selectedRole = role;
         selectedIndex = index;
       },
@@ -185,7 +188,9 @@ Goodbye world`;
   });
 
   it('panel sections collapsible + chip hidden when no subs', () => {
-    const panel = createSubtitleManagerPanel(container, {});
+    const importButton = document.createElement('button');
+    importButton.setAttribute('data-testid', 'subtitle-import-button');
+    const panel = createSubtitleManagerPanel(container, importButton);
     // Chip hidden initially
     expect(panel.chip.style.display).toBe('none');
     // Open panel
@@ -200,7 +205,9 @@ Goodbye world`;
   });
 
   it('Esc closes panel', () => {
-    const panel = createSubtitleManagerPanel(container, {});
+    const importButton = document.createElement('button');
+    importButton.setAttribute('data-testid', 'subtitle-import-button');
+    const panel = createSubtitleManagerPanel(container, importButton);
     panel.icon.click();
     expect(panel.panel.style.display).toBe('block');
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));

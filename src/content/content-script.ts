@@ -127,6 +127,12 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG, target, native);
     controller.init(container);
 
+    // ADR-015 UI v4: create manager panel after controller init so we can reuse
+    // the import button created by the controller (single toolbar, no duplicate buttons).
+    managerPanel = createSubtitleManagerPanel(container, controller.importButton!, {
+      onSelect: (role, index) => { void onPanelSelect(role, index); },
+    });
+
     // ADR-013 D3: listen chrome.storage.onChanged → updateStyle realtime
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== 'local' || !controller) return;
@@ -182,13 +188,8 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     });
   });
 
-  // ADR-015 T11: create unified Subtitle Manager Panel.
-  // Replaces V1 separate target/native dropdown icons with a single manager
-  // icon + collapsible panel + active chip. onSelect handles both auto-loaded
-  // and imported subs (distinguished by `source` field on SubtitlePanelItem).
-  managerPanel = createSubtitleManagerPanel(container, {
-    onSelect: (role, index) => { void onPanelSelect(role, index); },
-  });
+  // Manager panel is created asynchronously inside loadOverlayStyles().then()
+  // so it can reuse the import button created by SubtitleOverlayController.
 
   // Wire keyboard shortcuts
   document.addEventListener('keydown', (e) => {

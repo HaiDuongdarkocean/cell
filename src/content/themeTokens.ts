@@ -110,6 +110,11 @@ ${LIGHT_TOKENS}
 [data-theme="dark"] {
 ${DARK_TOKENS}
 }
+
+@keyframes subtitle-toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
 `;
     document.head.appendChild(style);
   }

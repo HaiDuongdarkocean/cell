@@ -118,30 +118,30 @@ const DEFAULT_TEXT_SHADOW: TextShadowConfig = {
   offsetY: 1,
 };
 
-/** Default appearance for target subtitle overlay (prominent, bottom 10%). */
+/** Default appearance for target subtitle overlay (prominent, bottom 18% — UI v4). */
 export const DEFAULT_OVERLAY_STYLE_TARGET: OverlayStyleConfig = {
   fontSize: 24,
   textColor: '#ffffff',
   backgroundColor: '#000000',
-  backgroundOpacity: 0.7,
+  backgroundOpacity: 0.85,
   textOpacity: 1,
   textShadow: DEFAULT_TEXT_SHADOW,
   fontFamily: 'sans-serif',
-  yOffsetPercent: 10,
+  yOffsetPercent: 18,
   horizontalAlign: 'center',
   visible: true,
 };
 
-/** Default appearance for native subtitle overlay (muted, top 5%). */
+/** Default appearance for native subtitle overlay (muted, bottom 6% — UI v4). */
 export const DEFAULT_OVERLAY_STYLE_NATIVE: OverlayStyleConfig = {
   fontSize: 20,
   textColor: '#ffffff',
   backgroundColor: '#000000',
-  backgroundOpacity: 0.6,
+  backgroundOpacity: 0.7,
   textOpacity: 0.85,
   textShadow: DEFAULT_TEXT_SHADOW,
   fontFamily: 'sans-serif',
-  yOffsetPercent: 5,
+  yOffsetPercent: 6,
   horizontalAlign: 'center',
   visible: true,
 };

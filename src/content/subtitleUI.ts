@@ -255,39 +255,57 @@ export function createDragHint(container: HTMLElement): HTMLDivElement {
   return hint;
 }
 
+const CHECK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>`;
+
 /**
- * Show a temporary toast notification at bottom-center of video.
- * Auto-hides after 3 seconds.
+ * Show a temporary toast notification at bottom-center of video (UI v4).
+ * Matches docs/mockups/subtitle-selector-mockup.html: bottom 30%, check icon,
+ * theme tokens, bordered card. Auto-hides after 3 seconds.
  * ponytail: position absolute in video parent (same pattern as overlay/dragHint),
  * not fixed viewport — toast stays anchored to video even on scroll.
  */
 export function showToast(message: string, container: HTMLElement): void {
   const toast = document.createElement('div');
   toast.setAttribute('data-testid', 'subtitle-toast');
-  toast.textContent = message;
 
-  toast.style.position = 'absolute';
-  toast.style.bottom = '5%';
-  toast.style.left = '50%';
-  toast.style.transform = 'translateX(-50%)';
-  toast.style.backgroundColor = 'rgba(20, 20, 20, 0.9)';
-  toast.style.color = '#ffffff';
-  toast.style.padding = '8px 16px';
-  toast.style.borderRadius = '6px';
-  toast.style.fontSize = '14px';
-  toast.style.fontFamily = 'sans-serif';
-  toast.style.zIndex = '1000000';
-  toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-  toast.style.transition = 'opacity 0.3s';
-  toast.style.opacity = '1';
-  toast.style.pointerEvents = 'none';
-  toast.style.userSelect = 'none';
-  toast.style.whiteSpace = 'nowrap';
+  toast.style.cssText = `
+    position: absolute;
+    bottom: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000003;
+    background: var(--color-background);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    font-size: var(--font-size-sm, 13px);
+    font-weight: 500;
+    font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+    animation: subtitle-toast-in 0.2s ease;
+  `;
+
+  const icon = document.createElement('span');
+  icon.style.cssText = 'color: var(--color-success); display: inline-flex; flex-shrink: 0;';
+  icon.innerHTML = CHECK_SVG;
+  toast.appendChild(icon);
+
+  const text = document.createElement('span');
+  text.textContent = message;
+  toast.appendChild(text);
 
   container.appendChild(toast);
 
   setTimeout(() => {
     toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s ease';
     setTimeout(() => toast.remove(), 300);
   }, 3000);
 }

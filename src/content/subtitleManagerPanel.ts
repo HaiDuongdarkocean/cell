@@ -16,7 +16,9 @@ export interface SubtitlePanelItem {
  * Subtitle Manager Panel API (ADR-015).
  */
 export interface SubtitleManagerPanel {
+  readonly toolbar: HTMLDivElement;
   readonly icon: HTMLButtonElement;
+  readonly importButton: HTMLButtonElement;
   readonly panel: HTMLDivElement;
   readonly chip: HTMLDivElement;
   readonly open: () => void;
@@ -27,23 +29,28 @@ export interface SubtitleManagerPanel {
   readonly destroy: () => void;
 }
 
-const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a4 4 0 0 1-4 4H2V3z"/><path d="M12 7h8"/><path d="M12 12h8"/><path d="M12 17h8"/></svg>`;
-const CLOSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M14 12h4"/><path d="M6 16h2"/><path d="M12 16h6"/></svg>`;
+const CLOSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>`;
+const CHEVRON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
 
 /**
- * Create the unified Subtitle Manager Panel (ADR-015 V2).
+ * Create the unified Subtitle Manager Panel (ADR-015 V2 / UI v4).
  *
  * Replaces ADR-014 V1 separate dropdown icons with a single panel opened from a
  * manager icon. Panel has two collapsible sections (Target + Native), shows
  * active subtitle via radio highlight, and keeps the panel open after selection
  * so users can switch multiple times quickly.
  *
- * @param container - Video wrapper (icon + chip + panel appended here)
+ * Matches docs/mockups/subtitle-selector-mockup.html.
+ *
+ * @param container - Video wrapper (toolbar + panel appended here)
+ * @param importButton - Existing import button element (moved into toolbar)
  * @param options - onSelect callback, section labels
  * @returns Panel API
  */
 export function createSubtitleManagerPanel(
   container: HTMLElement,
+  importButton: HTMLButtonElement,
   options: {
     targetLabel?: string;
     nativeLabel?: string;
@@ -54,7 +61,51 @@ export function createSubtitleManagerPanel(
   const nativeLabel = options.nativeLabel ?? 'Native';
   const onSelect = options.onSelect;
 
-  // === Active chip (toolbar, right of manager icon) ===
+  // === Top-left toolbar ===
+  const toolbar = document.createElement('div');
+  toolbar.setAttribute('data-testid', 'subtitle-toolbar');
+  toolbar.style.cssText = `
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    gap: var(--spacing-sm, 8px);
+    z-index: 1000001;
+    pointer-events: none;
+  `;
+  container.appendChild(toolbar);
+
+  // Move import button into toolbar (it was created elsewhere for lifecycle reasons)
+  importButton.style.position = 'static';
+  toolbar.appendChild(importButton);
+
+  // === Manager icon ===
+  const icon = document.createElement('button');
+  icon.setAttribute('type', 'button');
+  icon.setAttribute('data-testid', 'subtitle-manager-icon');
+  icon.setAttribute('aria-label', 'Subtitle manager');
+  icon.setAttribute('title', 'Open subtitle manager');
+  icon.setAttribute('aria-expanded', 'false');
+  icon.style.cssText = `
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    user-select: none;
+    transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  `;
+  icon.innerHTML = ICON_SVG;
+  toolbar.appendChild(icon);
+
+  // === Active chip ===
   const chip = document.createElement('div');
   chip.setAttribute('data-testid', 'subtitle-active-chip');
   chip.setAttribute('aria-label', 'Active subtitles');
@@ -78,36 +129,7 @@ export function createSubtitleManagerPanel(
     pointer-events: auto;
     user-select: none;
   `;
-  container.appendChild(chip);
-
-  // === Manager icon ===
-  const icon = document.createElement('button');
-  icon.setAttribute('type', 'button');
-  icon.setAttribute('data-testid', 'subtitle-manager-icon');
-  icon.setAttribute('aria-label', 'Open subtitle manager');
-  icon.setAttribute('title', 'Open subtitle manager — select or import subtitles');
-  icon.setAttribute('aria-expanded', 'false');
-  icon.style.cssText = `
-    position: absolute;
-    top: 8px;
-    left: 112px;
-    width: 32px;
-    height: 32px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 8px);
-    background: var(--color-surface);
-    color: var(--color-text);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-    user-select: none;
-    z-index: 1000002;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  `;
-  icon.innerHTML = ICON_SVG;
-  container.appendChild(icon);
+  toolbar.appendChild(chip);
 
   // === Panel ===
   const panel = document.createElement('div');
@@ -128,7 +150,7 @@ export function createSubtitleManagerPanel(
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md, 8px);
     box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
-    padding: 4px;
+    padding: var(--spacing-xs, 4px);
     font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
     font-size: var(--font-size-base, 14px);
   `;
@@ -140,12 +162,12 @@ export function createSubtitleManagerPanel(
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
     border-bottom: 1px solid var(--color-border-subtle);
   `;
   const title = document.createElement('span');
-  title.textContent = 'Subtitles';
-  title.style.cssText = 'font-size: var(--font-size-sm, 13px); font-weight: 600;';
+  title.textContent = 'Subtitle Manager';
+  title.style.cssText = 'font-size: var(--font-size-sm, 13px); font-weight: 600; color: var(--color-text);';
   const closeBtn = document.createElement('button');
   closeBtn.setAttribute('type', 'button');
   closeBtn.setAttribute('data-testid', 'subtitle-manager-close');
@@ -161,7 +183,8 @@ export function createSubtitleManagerPanel(
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: var(--radius-sm, 6px);
+    transition: background 150ms ease, color 150ms ease;
   `;
   closeBtn.innerHTML = CLOSE_SVG;
   header.appendChild(title);
@@ -179,40 +202,57 @@ export function createSubtitleManagerPanel(
   const nativeSection = createSection(panel, 'native', nativeLabel);
 
   // === Helpers ===
+  const roleColor = (role: 'target' | 'native'): string =>
+    role === 'target' ? 'var(--color-primary)' : 'var(--color-warning)';
+  const roleBg = (role: 'target' | 'native'): string =>
+    role === 'target' ? 'var(--color-primary-subtle)' : 'rgba(245, 158, 11, 0.1)';
+
   const renderSection = (role: 'target' | 'native'): void => {
     const section = role === 'target' ? targetSection : nativeSection;
     const { items, activeIndex } = state[role];
-    section.count.textContent = String(items.length);
+    const lang = items[activeIndex]?.name ? extractLanguageName(items[activeIndex].name) : '';
+    section.count.textContent = `${items.length} subtitle${items.length === 1 ? '' : 's'}`;
+    section.label.textContent = lang ? `${roleLabel(role)} · ${lang}` : roleLabel(role);
     section.body.innerHTML = '';
 
     items.forEach((item, index) => {
+      const isActive = index === activeIndex;
       const row = document.createElement('div');
       row.setAttribute('role', 'option');
       row.setAttribute('data-testid', `manager-item-${role}-${index}`);
-      row.setAttribute('aria-selected', String(index === activeIndex));
+      row.setAttribute('aria-selected', String(isActive));
       row.setAttribute('title', `Select ${item.name}`);
       row.style.cssText = `
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 8px;
+        gap: var(--spacing-sm, 8px);
+        padding: ${isActive ? 'calc(var(--spacing-sm, 8px) - 1px) calc(var(--spacing-md, 12px) - 1px)' : 'var(--spacing-sm, 8px) var(--spacing-md, 12px)'};
         cursor: pointer;
-        border-radius: var(--radius-md, 8px);
-        border: 1px solid transparent;
-        ${index === activeIndex ? 'background: var(--color-surface-hover); border-color: var(--color-' + (role === 'target' ? 'primary' : 'warning') + ');' : ''}
+        border-radius: var(--radius-sm, 6px);
+        border: 1px solid ${isActive ? roleColor(role) : 'transparent'};
+        background: ${isActive ? roleBg(role) : 'transparent'};
+        transition: background 150ms ease;
       `;
 
       // Radio dot
       const radio = document.createElement('span');
       radio.setAttribute('aria-hidden', 'true');
       radio.style.cssText = `
-        width: 12px;
-        height: 12px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
-        border: 2px solid var(--color-${role === 'target' ? 'primary' : 'warning'});
-        background: ${index === activeIndex ? 'var(--color-' + (role === 'target' ? 'primary' : 'warning') + ')' : 'transparent'};
+        border: 2px solid ${isActive ? roleColor(role) : 'var(--color-text-muted)'};
+        background: ${isActive ? roleColor(role) : 'transparent'};
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       `;
+      if (isActive) {
+        const dot = document.createElement('span');
+        dot.style.cssText = 'width: 4px; height: 4px; border-radius: 50%; background: white;';
+        radio.appendChild(dot);
+      }
 
       // Name + meta
       const textCol = document.createElement('div');
@@ -220,10 +260,37 @@ export function createSubtitleManagerPanel(
       const name = document.createElement('span');
       name.textContent = item.name;
       name.style.cssText = 'font-size: var(--font-size-sm, 13px); font-weight: 500; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
-      const meta = document.createElement('span');
-      const sizeText = item.size ? ` · ${formatBytes(item.size)}` : '';
-      meta.textContent = `${item.format.toUpperCase()}${sizeText}`;
-      meta.style.cssText = 'font-size: var(--font-size-xs, 12px); color: var(--color-text-muted);';
+      const meta = document.createElement('div');
+      meta.style.cssText = 'display: flex; gap: var(--spacing-sm, 8px); align-items: center; font-size: var(--font-size-xs, 12px); color: var(--color-text-muted);';
+      const formatBadge = document.createElement('span');
+      formatBadge.textContent = item.format.toUpperCase();
+      formatBadge.style.cssText = `
+        padding: 1px 5px;
+        border-radius: 3px;
+        background: var(--color-surface-hover);
+        font-weight: 600;
+        font-size: 9px;
+        letter-spacing: 0.04em;
+      `;
+      meta.appendChild(formatBadge);
+      if (item.size) {
+        const size = document.createElement('span');
+        size.textContent = formatBytes(item.size);
+        meta.appendChild(size);
+      }
+      if (item.source === 'imported') {
+        const imported = document.createElement('span');
+        imported.textContent = 'Imported';
+        imported.style.cssText = 'color: var(--color-success); font-weight: 600;';
+        meta.appendChild(imported);
+      }
+      // Optional role indicator when item name doesn't obviously match section (imported fallback)
+      if (item.source === 'imported' && !item.name.toLowerCase().startsWith(role)) {
+        const roleInd = document.createElement('span');
+        roleInd.textContent = `→ ${roleLabel(role)}`;
+        roleInd.style.cssText = `font-weight: 600; color: ${roleColor(role)};`;
+        meta.appendChild(roleInd);
+      }
       textCol.appendChild(name);
       textCol.appendChild(meta);
 
@@ -234,14 +301,17 @@ export function createSubtitleManagerPanel(
         onSelect?.(role, index);
       });
       row.addEventListener('mouseenter', () => {
-        if (index !== activeIndex) row.style.background = 'var(--color-surface-hover)';
+        if (!isActive) row.style.background = 'var(--color-surface-hover)';
       });
       row.addEventListener('mouseleave', () => {
-        if (index !== activeIndex) row.style.background = 'transparent';
+        if (!isActive) row.style.background = 'transparent';
       });
       section.body.appendChild(row);
     });
   };
+
+  const roleLabel = (role: 'target' | 'native'): string =>
+    role === 'target' ? targetLabel : nativeLabel;
 
   const updateSection = (role: 'target' | 'native', items: SubtitlePanelItem[], activeIndex: number): void => {
     state[role].items = items;
@@ -250,21 +320,34 @@ export function createSubtitleManagerPanel(
   };
 
   const updateChip = (targetName: string | null, nativeName: string | null): void => {
-    const parts: string[] = [];
-    if (targetName) parts.push(targetName);
-    if (nativeName) parts.push(nativeName);
-    if (parts.length === 0) {
+    chip.innerHTML = '';
+    if (!targetName && !nativeName) {
       chip.style.display = 'none';
-      chip.textContent = '';
       return;
     }
-    chip.textContent = parts.join(' · ');
+    const addPart = (name: string, colorVar: string) => {
+      const span = document.createElement('span');
+      span.textContent = name;
+      span.style.cssText = `color: ${colorVar}; font-weight: 600;`;
+      chip.appendChild(span);
+    };
+    if (targetName) addPart(targetName, 'var(--color-primary)');
+    if (targetName && nativeName) {
+      const sep = document.createElement('span');
+      sep.textContent = '·';
+      sep.style.cssText = 'color: var(--color-text-muted); margin: 0 2px;';
+      chip.appendChild(sep);
+    }
+    if (nativeName) addPart(nativeName, 'var(--color-warning)');
     chip.style.display = 'flex';
   };
 
   const open = (): void => {
     panel.style.display = 'block';
     icon.setAttribute('aria-expanded', 'true');
+    icon.style.background = 'var(--color-primary-subtle)';
+    icon.style.borderColor = 'var(--color-primary)';
+    icon.style.color = 'var(--color-primary)';
     renderSection('target');
     renderSection('native');
     bindOutsideClick();
@@ -273,6 +356,9 @@ export function createSubtitleManagerPanel(
   const close = (): void => {
     panel.style.display = 'none';
     icon.setAttribute('aria-expanded', 'false');
+    icon.style.background = 'var(--color-surface)';
+    icon.style.borderColor = 'var(--color-border)';
+    icon.style.color = 'var(--color-text)';
     unbindOutsideClick();
   };
 
@@ -287,17 +373,38 @@ export function createSubtitleManagerPanel(
     e.stopPropagation();
     close();
   });
+  closeBtn.addEventListener('mouseenter', () => {
+    closeBtn.style.background = 'var(--color-surface-hover)';
+    closeBtn.style.color = 'var(--color-text)';
+  });
+  closeBtn.addEventListener('mouseleave', () => {
+    closeBtn.style.background = 'transparent';
+    closeBtn.style.color = 'var(--color-text-muted)';
+  });
 
   const headerClick = (e: MouseEvent) => {
-    const header = e.currentTarget as HTMLElement;
-    const role = header.getAttribute('data-role') as 'target' | 'native';
+    const headerEl = e.currentTarget as HTMLElement;
+    const role = headerEl.getAttribute('data-role') as 'target' | 'native';
     const section = role === 'target' ? targetSection : nativeSection;
     state[role].expanded = !state[role].expanded;
     section.body.style.display = state[role].expanded ? 'block' : 'none';
+    section.header.setAttribute('aria-expanded', String(state[role].expanded));
     section.chevron.style.transform = state[role].expanded ? 'rotate(0deg)' : 'rotate(-90deg)';
   };
   targetSection.header.addEventListener('click', headerClick);
   nativeSection.header.addEventListener('click', headerClick);
+  targetSection.header.addEventListener('mouseenter', () => {
+    targetSection.header.style.background = 'var(--color-surface-hover)';
+  });
+  targetSection.header.addEventListener('mouseleave', () => {
+    targetSection.header.style.background = 'transparent';
+  });
+  nativeSection.header.addEventListener('mouseenter', () => {
+    nativeSection.header.style.background = 'var(--color-surface-hover)';
+  });
+  nativeSection.header.addEventListener('mouseleave', () => {
+    nativeSection.header.style.background = 'transparent';
+  });
 
   const escHandler = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') close();
@@ -310,7 +417,7 @@ export function createSubtitleManagerPanel(
     outsideClickHandler = (e: MouseEvent) => {
       if (panel.style.display === 'none') return;
       const target = e.target as Node;
-      if (!panel.contains(target) && !icon.contains(target) && !chip.contains(target)) {
+      if (!panel.contains(target) && !icon.contains(target) && !chip.contains(target) && !importButton.contains(target)) {
         close();
       }
     };
@@ -327,13 +434,14 @@ export function createSubtitleManagerPanel(
     close();
     document.removeEventListener('keydown', escHandler);
     unbindOutsideClick();
-    icon.remove();
+    toolbar.remove();
     panel.remove();
-    chip.remove();
   };
 
   return {
+    toolbar,
     icon,
+    importButton,
     panel,
     chip,
     open,
@@ -349,27 +457,46 @@ function createSection(
   panel: HTMLElement,
   role: 'target' | 'native',
   label: string,
-): { header: HTMLElement; body: HTMLElement; count: HTMLElement; chevron: HTMLElement } {
-  const header = document.createElement('div');
+): { header: HTMLElement; body: HTMLElement; count: HTMLElement; label: HTMLElement; chevron: HTMLElement } {
+  const section = document.createElement('div');
+  section.setAttribute('data-testid', 'manager-section');
+  section.setAttribute('data-role', role);
+  panel.appendChild(section);
+
+  const header = document.createElement('button');
+  header.setAttribute('type', 'button');
   header.setAttribute('data-testid', 'manager-section-header');
   header.setAttribute('data-role', role);
-  header.setAttribute('role', 'button');
   header.setAttribute('aria-expanded', 'true');
   header.setAttribute('aria-label', `Toggle ${label} section`);
   header.setAttribute('title', `Toggle ${label} section`);
   header.style.cssText = `
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
     cursor: pointer;
-    border-radius: var(--radius-md, 8px);
+    border-radius: var(--radius-sm, 6px);
     user-select: none;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    transition: background 150ms ease;
   `;
+
   const chevron = document.createElement('span');
   chevron.setAttribute('aria-hidden', 'true');
-  chevron.style.cssText = 'display: inline-block; transition: transform 150ms ease;';
-  chevron.textContent = '▾';
+  chevron.innerHTML = CHEVRON_SVG;
+  chevron.style.cssText = `
+    display: inline-flex;
+    color: var(--color-text-muted);
+    transition: transform 150ms ease;
+  `;
+  header.appendChild(chevron);
+
   const labelEl = document.createElement('span');
   labelEl.textContent = label;
   labelEl.style.cssText = `
@@ -378,27 +505,33 @@ function createSection(
     text-transform: uppercase;
     letter-spacing: 0.06em;
     flex: 1;
-    color: var(--color-${role === 'target' ? 'primary' : 'warning'});
+    color: ${role === 'target' ? 'var(--color-primary)' : 'var(--color-warning)'};
   `;
+  header.appendChild(labelEl);
+
   const count = document.createElement('span');
   count.style.cssText = 'font-size: var(--font-size-xs, 12px); color: var(--color-text-muted);';
-  count.textContent = '0';
-  header.appendChild(chevron);
-  header.appendChild(labelEl);
+  count.textContent = '0 subtitles';
   header.appendChild(count);
-  panel.appendChild(header);
+  section.appendChild(header);
 
   const body = document.createElement('div');
   body.setAttribute('data-testid', 'manager-section-body');
   body.setAttribute('data-role', role);
-  body.style.cssText = 'padding: 0 4px 8px; display: block;';
-  panel.appendChild(body);
+  body.style.cssText = 'padding: 0 var(--spacing-xs, 4px); display: block;';
+  section.appendChild(body);
 
-  return { header, body, count, chevron };
+  return { header, body, count, label: labelEl, chevron };
 }
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes}B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
+function extractLanguageName(name: string): string {
+  // "English #2" → "English"; "my-subtitle" → ""
+  const match = name.match(/^([A-Za-z\s]+)\s*#/);
+  return match ? match[1].trim() : '';
 }

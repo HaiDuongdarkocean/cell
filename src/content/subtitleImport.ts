@@ -75,28 +75,43 @@ export function assignImportRole(
   return { target, native, ignored };
 }
 
+const UPLOAD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
+
 /**
- * Create import button appended to video parent (top-right corner).
- * Button triggers hidden file input on click.
+ * Create icon-only import button for the top-left toolbar (ADR-015 UI v4).
+ * 32x32 button with upload icon; hidden file input inside triggers native picker.
  *
- * @param video - Target video element
- * @param config - Overlay configuration (for consistent styling)
+ * @param container - Video wrapper (button appended here, then moved into toolbar by panel)
+ * @param _config - Overlay configuration (unused, kept for API compat)
  * @returns Button element
  */
 export function createImportButton(container: HTMLElement, _config: OverlayConfig): HTMLButtonElement {
   // ponytail: use <label> wrapping <input type=file> — native HTML, click label
   // = click input = file picker opens. <button> swallows input click (invalid HTML),
-  // <div> works but <label> is semantic + accessible + guaranteed.
+  // <label> is semantic + accessible + guaranteed.
   // Source: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
   const label = document.createElement('label') as unknown as HTMLButtonElement;
   label.setAttribute('role', 'button');
   label.setAttribute('tabindex', '0');
   label.setAttribute('aria-label', 'Import subtitle file');
+  label.setAttribute('title', 'Import subtitle file');
   label.setAttribute('data-testid', 'subtitle-import-button');
-
-  const text = document.createElement('span');
-  text.textContent = 'Import Subtitle';
-  label.appendChild(text);
+  label.style.cssText = `
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    user-select: none;
+    transition: border-color 150ms ease, background 150ms ease;
+  `;
+  label.innerHTML = UPLOAD_SVG;
 
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -113,27 +128,21 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   fileInput.style.cursor = 'pointer';
   label.appendChild(fileInput);
 
-  // Position: top-left of video area (toggle button occupies top-right)
-  label.style.position = 'absolute';
-  label.style.top = '8px';
-  label.style.left = '8px';
-  label.style.zIndex = '999999';
-  label.style.padding = '4px 8px';
-  label.style.fontSize = '12px';
-  label.style.cursor = 'pointer';
-  label.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-  label.style.color = '#ffffff';
-  label.style.border = 'none';
-  label.style.borderRadius = '4px';
-  label.style.transition = 'background-color 0.2s';
-  label.style.userSelect = 'none';
-
-  // Hover effect
+  // Hover / active states
   label.addEventListener('mouseenter', () => {
-    label.style.backgroundColor = 'rgba(0, 150, 255, 0.8)';
+    label.style.borderColor = 'var(--color-border-focus)';
+    label.style.background = 'var(--color-surface-hover)';
   });
   label.addEventListener('mouseleave', () => {
-    label.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    label.style.borderColor = 'var(--color-border)';
+    label.style.background = 'var(--color-surface)';
+  });
+  fileInput.addEventListener('focus', () => {
+    label.style.outline = '2px solid var(--color-border-focus)';
+    label.style.outlineOffset = '2px';
+  });
+  fileInput.addEventListener('blur', () => {
+    label.style.outline = 'none';
   });
 
   container.appendChild(label);

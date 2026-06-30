@@ -35,7 +35,7 @@ import type { SrtCue } from '../types/media';
 export class SubtitleOverlayController {
   private targetOverlay: HTMLDivElement | null = null;
   private nativeOverlay: HTMLDivElement | null = null;
-  private importButton: HTMLButtonElement | null = null;
+  public importButton: HTMLButtonElement | null = null;
   private cues: SrtCue[] = [];
   private nativeCues: SrtCue[] = [];
   private lastIndex: number = -1;
@@ -78,6 +78,8 @@ export class SubtitleOverlayController {
       this.persistStyle('native');
     });
 
+    // Import button is created by content-script and passed to the manager panel
+    // toolbar; kept here for backwards-compat callers that don't wire the panel.
     this.importButton = createImportButton(container, this.config);
     this.video.addEventListener('timeupdate', this.onTimeUpdate);
   }

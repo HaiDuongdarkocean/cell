@@ -24,7 +24,7 @@ describe('subtitleImport', () => {
   });
 
   describe('createImportButton', () => {
-    it('should create label (role=button) appended to video parent', () => {
+    it('should create icon-only button (label role=button) appended to video parent', () => {
       const button = createImportButton(video, defaultConfig);
       expect(button).toBeTruthy();
       expect(button.tagName).toBe('LABEL');
@@ -32,7 +32,7 @@ describe('subtitleImport', () => {
       expect(video.parentElement?.contains(button)).toBe(true);
     });
 
-    it('should contain a file input inside the label', () => {
+    it('should contain a file input inside the button', () => {
       const button = createImportButton(video, defaultConfig);
       const input = button.querySelector('input[type="file"]');
       expect(input).toBeTruthy();
@@ -50,17 +50,11 @@ describe('subtitleImport', () => {
       expect(button.getAttribute('data-testid')).toBe('subtitle-import-button');
     });
 
-    it('should position at top-left of video to avoid toggle overlap', () => {
+    it('should be 32x32 icon button (UI v4 toolbar)', () => {
       const button = createImportButton(video, defaultConfig);
-      expect(button.style.position).toBe('absolute');
-      expect(button.style.top).toBe('8px');
-      expect(button.style.left).toBe('8px');
-      expect(button.style.right).toBe('');
-    });
-
-    it('should have high z-index to avoid being covered', () => {
-      const button = createImportButton(video, defaultConfig);
-      expect(button.style.zIndex).toBe('999999');
+      expect(button.style.width).toBe('32px');
+      expect(button.style.height).toBe('32px');
+      expect(button.style.position).toBe(''); // position is reset by panel toolbar
     });
   });
 
