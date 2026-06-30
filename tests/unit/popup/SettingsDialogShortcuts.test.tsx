@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SettingsDialog } from '@/popup/components/settings/SettingsDialog';
-import { DEFAULT_SETTINGS } from '@/constants/config';
+import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings } from '@/types/media';
 
 function makeSettings(overrides: Partial<Settings> = {}): Settings {

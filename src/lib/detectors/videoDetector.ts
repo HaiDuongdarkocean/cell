@@ -1,4 +1,4 @@
-import { VIDEO_URL_PATTERNS } from '../../constants/urls';
+import { VIDEO_URL_PATTERNS } from '@/shared/config/urls';
 import type {
   DetectedVideo,
   NetworkRequest,

@@ -4,7 +4,7 @@ import { convertVttToSrt } from '@/shared/lib/parsers/vttToSrt';
 import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
 import { ConversionTimer } from '@/lib/converters/conversionTimer';
 import { planParallelConversion } from '@/lib/converters/parallelPlanner';
-import { generateFileName, resolveFilenameBase, buildSubtitleFileName } from '@/lib/utils/fileUtils';
+import { generateFileName, resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
 import type {
   ByteRange,
   DetectedVideo,
@@ -22,7 +22,7 @@ import {
   DEFAULT_SEGMENT_CONCURRENCY,
   MIN_SEGMENT_CONCURRENCY,
   MAX_SEGMENT_CONCURRENCY,
-} from '@/constants/config';
+} from '@/shared/config/config';
 import type { ConvertToMp4Mode, Settings, FilenameSource } from '@/types/media';
 import {
   ensureDownloadSubdir,
@@ -32,7 +32,7 @@ import {
   isOpfsAvailable,
   isQuotaExceededError,
   writeJsonFile,
-} from '@/lib/storage/opfsStorage';
+} from '@/shared/lib/storage/opfsStorage';
 
 /**
  * Callback invoked with progress updates during a download.

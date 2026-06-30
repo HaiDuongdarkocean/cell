@@ -1,7 +1,7 @@
 import { findSubtitlesForOverlay, findPreferredMatch, type SubtitlePreference } from '../../src/background/subtitleService';
 import { createSubtitleDropdown } from '../../src/content/subtitleSelector';
 import { SubtitleOverlayController } from '../../src/content/subtitleOverlay';
-import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '../../src/constants/config';
+import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '../../src/shared/config/config';
 import type { OverlayConfig } from '../../src/types/subtitle';
 import type { DetectedSubtitle, Settings } from '../../src/types/media';
 

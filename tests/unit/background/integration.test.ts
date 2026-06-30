@@ -2,8 +2,8 @@ import { BackgroundService } from '@/background/index';
 import { OffscreenManager } from '@/background/offscreenManager';
 import { NetworkInterceptor } from '@/background/networkInterceptor';
 import { MessageBus } from '@/background/messageBus';
-import { MESSAGE_TYPES } from '@/constants/messages';
-import { DEFAULT_SETTINGS, STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/constants/config';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { DEFAULT_SETTINGS, STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { DownloadItem, Settings, WhitelistEntry } from '@/types/media';
 import type {
   MessageRequest,
@@ -13,7 +13,7 @@ import type {
 } from '@/types/message';
 
 // Mock OPFS so cleanupOrphanedDownloads doesn't fail in jsdom.
-jest.mock('@/lib/storage/opfsStorage', () => ({
+jest.mock('@/shared/lib/storage/opfsStorage', () => ({
   ensureDownloadSubdir: jest.fn(),
   appendChunk: jest.fn(),
   readFile: jest.fn(),

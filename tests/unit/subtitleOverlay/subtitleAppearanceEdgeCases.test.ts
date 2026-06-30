@@ -1,5 +1,5 @@
 import { SubtitleOverlayController } from '../../../src/content/subtitleOverlay';
-import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/constants/config';
+import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { OverlayConfig } from '../../../src/types/subtitle';
 
 describe('SubtitleOverlayController edge cases (ADR-013 Task 8)', () => {

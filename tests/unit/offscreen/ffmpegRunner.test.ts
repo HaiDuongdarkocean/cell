@@ -51,7 +51,7 @@ class MockDirHandle {
 
 const downloadDirs = new Map<string, MockDirHandle>();
 
-jest.mock('@/lib/storage/opfsStorage', () => ({
+jest.mock('@/shared/lib/storage/opfsStorage', () => ({
   ensureDownloadSubdir: jest.fn(async (downloadId: string) => {
     let dir = downloadDirs.get(downloadId);
     if (!dir) {
@@ -139,8 +139,8 @@ import {
   resetFFmpeg,
 } from '@/offscreen/ffmpegRunner';
 import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
-import { ensureDownloadSubdir, readFile as opfsReadFile } from '@/lib/storage/opfsStorage';
-import { MESSAGE_TYPES } from '@/constants/messages';
+import { ensureDownloadSubdir, readFile as opfsReadFile } from '@/shared/lib/storage/opfsStorage';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 describe('offscreen ffmpegRunner (V2)', () => {
   beforeEach(() => {
@@ -344,7 +344,7 @@ describe('offscreen ffmpegRunner (V2)', () => {
       // Clear the module cache so bootstrap runs again on re-import.
       jest.resetModules();
       // Re-mock dependencies after resetModules.
-      jest.doMock('@/lib/storage/opfsStorage', () => ({
+      jest.doMock('@/shared/lib/storage/opfsStorage', () => ({
         ensureDownloadSubdir: jest.fn(),
         readFile: jest.fn(),
         deleteFile: jest.fn(),
@@ -375,7 +375,7 @@ describe('offscreen ffmpegRunner (V2)', () => {
     it('does NOT auto-register in test environment (JEST_WORKER_ID set)', async () => {
       // JEST_WORKER_ID is set by Jest, so bootstrap should skip.
       jest.resetModules();
-      jest.doMock('@/lib/storage/opfsStorage', () => ({
+      jest.doMock('@/shared/lib/storage/opfsStorage', () => ({
         ensureDownloadSubdir: jest.fn(),
         readFile: jest.fn(),
         deleteFile: jest.fn(),

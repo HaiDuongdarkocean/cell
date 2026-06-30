@@ -7,7 +7,7 @@ import {
   isTitleMeaningful,
   resolveFilenameBase,
   buildSubtitleFileName,
-} from '@/lib/utils/fileUtils';
+} from '@/shared/utils/fileUtils';
 
 describe('fileUtils', () => {
   describe('sanitizeFileName', () => {

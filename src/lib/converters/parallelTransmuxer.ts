@@ -22,7 +22,7 @@ import {
   deleteFile,
   writeJsonFile,
   readJsonFile,
-} from '@/lib/storage/opfsStorage';
+} from '@/shared/lib/storage/opfsStorage';
 
 // Web Worker creation is isolated in workerFactory.ts (which uses
 // `import.meta.url`) so that Jest's CommonJS transform never parses

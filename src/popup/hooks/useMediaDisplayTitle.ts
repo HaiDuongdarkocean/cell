@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { usePopupStore } from '@/popup/store/popupStore';
-import { resolveFilenameBase, buildSubtitleFileName } from '@/lib/utils/fileUtils';
+import { resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
 import type {
   DetectedVideo,
   DetectedSubtitle,

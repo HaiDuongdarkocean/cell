@@ -5,7 +5,7 @@ import {
   DEFAULT_MANUAL_WORKER_COUNT,
   PARALLEL_MIN_FILE_BYTES,
   PARALLEL_LARGE_FILE_BYTES,
-} from '@/constants/config';
+} from '@/shared/config/config';
 
 /**
  * Result of resolving the parallel scaling policy.

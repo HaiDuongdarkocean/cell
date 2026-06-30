@@ -37,7 +37,7 @@ import {
 import {
   ensureDownloadSubdir,
   readFile as opfsReadFile,
-} from '@/lib/storage/opfsStorage';
+} from '@/shared/lib/storage/opfsStorage';
 
 /** Result of parallel conversion coordination. */
 export interface ParallelConversionResult {

@@ -11,14 +11,14 @@
  * result back to OPFS, and responds with the output file name.
  */
 
-import { MESSAGE_TYPES } from '@/constants/messages';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
 import { executeParallelConversion } from '@/lib/converters/parallelCoordinator';
 import { readSegmentRanges } from '@/lib/converters/parallelTransmuxer';
 import {
   ensureDownloadSubdir,
   readFile as opfsReadFile,
-} from '@/lib/storage/opfsStorage';
+} from '@/shared/lib/storage/opfsStorage';
 import type {
   ConvertTsToMp4V2Payload,
   ConvertTsToMp4V2ResultPayload,

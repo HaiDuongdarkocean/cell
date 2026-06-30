@@ -7,7 +7,7 @@ import {
   DEFAULT_CONCURRENT_DOWNLOADS,
   MAX_CONCURRENT_DOWNLOADS,
   MIN_CONCURRENT_DOWNLOADS,
-} from '@/constants/config';
+} from '@/shared/config/config';
 
 function makeItem(id: string, title = `item-${id}`): DownloadItem {
   return {

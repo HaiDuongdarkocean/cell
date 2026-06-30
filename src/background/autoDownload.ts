@@ -29,7 +29,7 @@ import type {
 } from '@/types/media';
 import { selectBestMedia } from '@/lib/selectors/selectBestMedia';
 import { isWhitelisted } from '@/lib/utils/whitelist';
-import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
+import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 
 /**
  * Side-effecting collaborators injected by the background service.

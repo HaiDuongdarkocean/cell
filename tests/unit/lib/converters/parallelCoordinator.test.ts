@@ -23,7 +23,7 @@ jest.mock('@/lib/converters/tsTransmuxer', () => ({
     _onProgress?: (processedBytes: number, totalBytes: number) => void,
   ) => {
     // Simulate writing output.mp4
-    const { createOpfsWriter } = require('@/lib/storage/opfsStorage');
+    const { createOpfsWriter } = require('@/shared/lib/storage/opfsStorage');
     const writer = await createOpfsWriter(_dirHandle, outputName);
     // Write a minimal valid fmp4 (ftyp + moov + moof + mdat)
     // ftyp: 20, moov: 8, moof: 8, mdat: 16 = 52 bytes total
@@ -56,7 +56,7 @@ jest.mock('@/lib/converters/parallelTransmuxer', () => ({
     outputName?: string;
   }) => {
     // Simulate writing output.mp4
-    const { ensureDownloadSubdir, createOpfsWriter } = require('@/lib/storage/opfsStorage');
+    const { ensureDownloadSubdir, createOpfsWriter } = require('@/shared/lib/storage/opfsStorage');
     const dirHandle = await ensureDownloadSubdir(opts.downloadId);
     const writer = await createOpfsWriter(dirHandle, opts.outputName || 'output.mp4');
     // Same valid fmp4 structure as sequential mock

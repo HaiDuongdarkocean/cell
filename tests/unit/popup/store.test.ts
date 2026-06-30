@@ -1,5 +1,5 @@
 import { usePopupStore, type PopupState } from '@/popup/store/popupStore';
-import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/constants/config';
+import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 import type {
   DetectedVideo,
   DetectedSubtitle,

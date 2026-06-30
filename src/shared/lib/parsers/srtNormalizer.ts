@@ -1,4 +1,4 @@
-import { msToSrtTime } from '@/lib/utils/timeUtils';
+import { msToSrtTime } from '@/shared/utils/timeUtils';
 
 /**
  * # SRT Format

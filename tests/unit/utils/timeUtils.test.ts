@@ -5,7 +5,7 @@ import {
   msToSrtTime,
   msToAssTime,
   parseTimestamp,
-} from '@/lib/utils/timeUtils';
+} from '@/shared/utils/timeUtils';
 
 describe('timeUtils', () => {
   describe('assTimeToMs', () => {

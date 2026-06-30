@@ -143,7 +143,7 @@ jest.mock('@/lib/converters/tsTransmuxer', () => ({
     outputName: string,
     onProgress?: (processedBytes: number, totalBytes: number) => void,
   ) => {
-    const { createOpfsWriter } = require('@/lib/storage/opfsStorage');
+    const { createOpfsWriter } = require('@/shared/lib/storage/opfsStorage');
     const writer = await createOpfsWriter(dirHandle, outputName);
     const part = makeFmp4Part();
     await writer.write(part);
@@ -404,7 +404,7 @@ describe('mergePartFiles — ftyp+moov stripping', () => {
       dirHandle: FileSystemDirectoryHandle,
       outputName: string,
     ) => {
-      const { createOpfsWriter } = require('@/lib/storage/opfsStorage');
+      const { createOpfsWriter } = require('@/shared/lib/storage/opfsStorage');
       const writer = await createOpfsWriter(dirHandle, outputName);
       const part = makeFmp4Part();
       await writer.write(part);
@@ -466,7 +466,7 @@ describe('mergePartFiles — ftyp+moov stripping', () => {
       dirHandle: FileSystemDirectoryHandle,
       outputName: string,
     ) => {
-      const { createOpfsWriter } = require('@/lib/storage/opfsStorage');
+      const { createOpfsWriter } = require('@/shared/lib/storage/opfsStorage');
       const writer = await createOpfsWriter(dirHandle, outputName);
       const partIndex = parseInt(outputName.match(/part-(\d+)/)?.[1] ?? '0', 10);
       const part = makeFmp4Part(moofContents[partIndex]);
@@ -673,7 +673,7 @@ describe('mergePartFiles — tfdt offset fix', () => {
       dirHandle: FileSystemDirectoryHandle,
       outputName: string,
     ) => {
-      const { createOpfsWriter } = require('@/lib/storage/opfsStorage');
+      const { createOpfsWriter } = require('@/shared/lib/storage/opfsStorage');
       const writer = await createOpfsWriter(dirHandle, outputName);
       const partIndex = parseInt(outputName.match(/part-(\d+)/)?.[1] ?? '0', 10);
       await writer.write(parts[partIndex]);
@@ -770,7 +770,7 @@ describe('mergePartFiles — tfdt offset fix', () => {
       dirHandle: FileSystemDirectoryHandle,
       outputName: string,
     ) => {
-      const { createOpfsWriter } = require('@/lib/storage/opfsStorage');
+      const { createOpfsWriter } = require('@/shared/lib/storage/opfsStorage');
       const writer = await createOpfsWriter(dirHandle, outputName);
       const partIndex = parseInt(outputName.match(/part-(\d+)/)?.[1] ?? '0', 10);
       await writer.write(parts[partIndex]);

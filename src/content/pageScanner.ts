@@ -1,4 +1,4 @@
-import { VIDEO_URL_PATTERNS, SUBTITLE_URL_PATTERNS } from '@/constants/urls';
+import { VIDEO_URL_PATTERNS, SUBTITLE_URL_PATTERNS } from '@/shared/config/urls';
 
 export interface ScannedUrls {
   videoUrls: string[];

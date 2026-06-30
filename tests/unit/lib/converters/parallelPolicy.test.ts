@@ -5,7 +5,7 @@ import {
   MAX_PARALLEL_WORKERS,
   PARALLEL_MIN_FILE_BYTES,
   PARALLEL_LARGE_FILE_BYTES,
-} from '@/constants/config';
+} from '@/shared/config/config';
 
 function makeSettings(
   overrides: Partial<Pick<Settings, 'parallelConversion' | 'manualWorkerCount'>> = {},

@@ -6,7 +6,7 @@
  * files are removed even if the conversion is cancelled mid-flight.
  */
 
-import { deleteFile, ensureDownloadSubdir } from '@/lib/storage/opfsStorage';
+import { deleteFile, ensureDownloadSubdir } from '@/shared/lib/storage/opfsStorage';
 
 /**
  * Cancellation token for parallel conversion.

@@ -1,5 +1,5 @@
-import type { Settings, FilenameSource, KeyboardShortcut } from '../types/media';
-import type { OverlayStyleConfig, TextShadowConfig } from '../types/subtitle';
+import type { Settings, FilenameSource, KeyboardShortcut } from '@/types/media';
+import type { OverlayStyleConfig, TextShadowConfig } from '@/types/subtitle';
 
 // === Default Configuration ===
 

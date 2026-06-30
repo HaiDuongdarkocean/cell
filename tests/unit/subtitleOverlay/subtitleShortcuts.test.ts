@@ -1,5 +1,5 @@
 import { handleShortcutKey, isEditableTarget } from '@/content/subtitleShortcuts';
-import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
+import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import type { KeyboardShortcut } from '@/types/media';
 
 describe('handleShortcutKey', () => {

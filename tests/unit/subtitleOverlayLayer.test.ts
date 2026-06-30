@@ -1,5 +1,5 @@
 import { createOverlayLayer, applyStyle } from '@/content/subtitleUI';
-import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/constants/config';
+import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 
 describe('createOverlayLayer', () => {
   it('creates overlay div with data-role target', () => {

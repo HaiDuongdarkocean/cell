@@ -18,7 +18,7 @@
  * {@link STORAGE_KEYS.AUTO_DOWNLOAD_WHITELIST} key.
  */
 
-import { STORAGE_KEYS } from '@/constants/config';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import type { WhitelistEntry } from '@/types/media';
 
 /**

@@ -189,7 +189,7 @@ import {
   isOpfsAvailable,
   writeJsonFile,
   readJsonFile,
-} from '@/lib/storage/opfsStorage';
+} from '@/shared/lib/storage/opfsStorage';
 
 describe('opfsStorage', () => {
   describe('isOpfsAvailable', () => {

@@ -1,5 +1,5 @@
 import { parseVtt } from '@/shared/lib/parsers/vttParser';
-import { msToSrtTime } from '@/lib/utils/timeUtils';
+import { msToSrtTime } from '@/shared/utils/timeUtils';
 
 /**
  * Strip all VTT/HTML tags from cue text so the output is plain-text SRT.

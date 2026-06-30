@@ -2,7 +2,7 @@ import { parseAndDetectFiles, assignImportRole } from '../../src/content/subtitl
 import { createSubtitleManagerPanel } from '../../src/content/subtitleManagerPanel';
 import { SubtitleOverlayController } from '../../src/content/subtitleOverlay';
 import { injectThemeTokens } from '../../src/content/themeTokens';
-import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '../../src/constants/config';
+import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '../../src/shared/config/config';
 import type { OverlayConfig } from '../../src/types/subtitle';
 
 // Mock chrome.storage.local for injectThemeTokens

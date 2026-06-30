@@ -6,7 +6,7 @@
  * lazily creates that document on demand and closes it when no longer needed.
  */
 
-import { MESSAGE_TYPES } from '@/constants/messages';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 /** URL of the offscreen document relative to the extension root. */
 const OFFSCREEN_DOCUMENT_URL = 'src/offscreen/ffmpeg.html';

@@ -1,4 +1,4 @@
-import { SUBTITLE_URL_PATTERNS } from '../../constants/urls';
+import { SUBTITLE_URL_PATTERNS } from '@/shared/config/urls';
 import type {
   DetectedSubtitle,
   NetworkRequest,

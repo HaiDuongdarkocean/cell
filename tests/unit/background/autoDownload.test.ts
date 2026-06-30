@@ -8,7 +8,7 @@
  * runs against realistic fixtures.
  */
 
-import { STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
+import { STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import type {
   DetectedSubtitle,
   DetectedVideo,

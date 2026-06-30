@@ -3,7 +3,7 @@ import {
   DEFAULT_CONCURRENT_DOWNLOADS,
   MAX_CONCURRENT_DOWNLOADS,
   MIN_CONCURRENT_DOWNLOADS,
-} from '@/constants/config';
+} from '@/shared/config/config';
 
 /**
  * Function that processes a single download item. Resolves on success and

@@ -3,7 +3,7 @@ import { useSidePanelStore } from './store/sidePanelStore';
 import { CueList } from './components/CueList';
 import { getActiveContentTabId } from '@/popup/utils/getActiveContentTab';
 import { handleShortcutKey } from '@/content/subtitleShortcuts';
-import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/constants/config';
+import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import type { BilingualCue, KeyboardShortcut } from '@/types/media';
 
 export function App() {

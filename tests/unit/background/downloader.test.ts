@@ -5,7 +5,7 @@ import {
   type ConvertResult,
 } from '@/background/downloader';
 import type { DetectedVideo, DetectedSubtitle, DownloadProgress, SegmentRange } from '@/types/media';
-import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/constants/config';
+import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/shared/config/config';
 
 // Mock OPFS helpers so we can control whether the streaming path is used.
 // `createOpfsWriter` returns a mock writer that records all write calls in
@@ -14,7 +14,7 @@ import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/constants/config';
 // Note: `jest.mock` factories are hoisted above all declarations, so we cannot
 // reference variables declared outside the factory. We create the mock writer
 // inside the factory and attach it to `globalThis` so tests can access it.
-jest.mock('@/lib/storage/opfsStorage', () => {
+jest.mock('@/shared/lib/storage/opfsStorage', () => {
   const mockWriter = {
     write: jest.fn().mockResolvedValue(undefined),
     close: jest.fn().mockResolvedValue(undefined),
@@ -35,7 +35,7 @@ jest.mock('@/lib/storage/opfsStorage', () => {
   };
 });
 
-import { isOpfsAvailable } from '@/lib/storage/opfsStorage';
+import { isOpfsAvailable } from '@/shared/lib/storage/opfsStorage';
 
 // Convenience accessor for the mock writer (populated by the jest.mock factory).
 const mockWriter = (globalThis as Record<string, unknown>).__mockWriter as {
@@ -276,7 +276,7 @@ describe('Downloader', () => {
 
     // Mock OPFS: simulate reading a converted mp4 file.
     const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         readFile: jest.Mock;
@@ -351,7 +351,7 @@ describe('Downloader', () => {
     });
 
     const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         readFile: jest.Mock;
@@ -404,7 +404,7 @@ describe('Downloader', () => {
     });
 
     const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         readFile: jest.Mock;
@@ -829,7 +829,7 @@ describe('Downloader', () => {
     });
 
     const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         readFile: jest.Mock;
@@ -898,7 +898,7 @@ describe('Downloader', () => {
     });
 
     const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         readFile: jest.Mock;
@@ -962,7 +962,7 @@ describe('Downloader', () => {
     });
 
     const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         readFile: jest.Mock;
@@ -1019,7 +1019,7 @@ describe('Downloader', () => {
     });
 
     const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         deleteDownloadSubdir: jest.Mock;
@@ -1057,7 +1057,7 @@ describe('Downloader', () => {
     });
 
     const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         readFile: jest.Mock;
@@ -1135,7 +1135,7 @@ describe('Downloader', () => {
     });
 
     const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         readFile: jest.Mock;
@@ -1214,7 +1214,7 @@ describe('Downloader', () => {
     });
 
     const { ensureDownloadSubdir, createOpfsWriter, readFile, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         readFile: jest.Mock;
@@ -1292,7 +1292,7 @@ describe('Downloader', () => {
     });
 
     const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
-      require('@/lib/storage/opfsStorage') as {
+      require('@/shared/lib/storage/opfsStorage') as {
         ensureDownloadSubdir: jest.Mock;
         createOpfsWriter: jest.Mock;
         deleteDownloadSubdir: jest.Mock;
@@ -1469,7 +1469,7 @@ describe('Downloader', () => {
       });
 
       const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
-        require('@/lib/storage/opfsStorage') as {
+        require('@/shared/lib/storage/opfsStorage') as {
           ensureDownloadSubdir: jest.Mock;
           createOpfsWriter: jest.Mock;
           deleteDownloadSubdir: jest.Mock;
@@ -1541,7 +1541,7 @@ describe('Downloader', () => {
       });
 
       const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
-        require('@/lib/storage/opfsStorage') as {
+        require('@/shared/lib/storage/opfsStorage') as {
           ensureDownloadSubdir: jest.Mock;
           createOpfsWriter: jest.Mock;
           deleteDownloadSubdir: jest.Mock;
@@ -1598,7 +1598,7 @@ describe('Downloader', () => {
       });
 
       const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
-        require('@/lib/storage/opfsStorage') as {
+        require('@/shared/lib/storage/opfsStorage') as {
           ensureDownloadSubdir: jest.Mock;
           createOpfsWriter: jest.Mock;
           deleteDownloadSubdir: jest.Mock;
@@ -1710,7 +1710,7 @@ describe('Downloader', () => {
       });
 
       const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
-        require('@/lib/storage/opfsStorage') as {
+        require('@/shared/lib/storage/opfsStorage') as {
           ensureDownloadSubdir: jest.Mock;
           createOpfsWriter: jest.Mock;
           deleteDownloadSubdir: jest.Mock;
@@ -1752,7 +1752,7 @@ describe('Downloader', () => {
       });
 
       const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
-        require('@/lib/storage/opfsStorage') as {
+        require('@/shared/lib/storage/opfsStorage') as {
           ensureDownloadSubdir: jest.Mock;
           createOpfsWriter: jest.Mock;
           deleteDownloadSubdir: jest.Mock;
@@ -1810,7 +1810,7 @@ describe('Downloader', () => {
       });
 
       const { ensureDownloadSubdir, createOpfsWriter, deleteDownloadSubdir } =
-        require('@/lib/storage/opfsStorage') as {
+        require('@/shared/lib/storage/opfsStorage') as {
           ensureDownloadSubdir: jest.Mock;
           createOpfsWriter: jest.Mock;
           deleteDownloadSubdir: jest.Mock;

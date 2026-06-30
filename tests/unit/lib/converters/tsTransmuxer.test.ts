@@ -111,7 +111,7 @@ jest.mock('mux.js', () => {
 // dirHandle.getFileHandle + createWritable directly. We mock it to route
 // writes into the same MockFileHandle pattern so tests can verify output.
 
-jest.mock('@/lib/storage/opfsStorage', () => ({
+jest.mock('@/shared/lib/storage/opfsStorage', () => ({
   createOpfsWriter: jest.fn(async (
     dirHandle: MockDirHandle,
     filename: string,

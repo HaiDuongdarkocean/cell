@@ -1,5 +1,5 @@
 import { parseAss } from '@/shared/lib/parsers/assParser';
-import { msToSrtTime } from '@/lib/utils/timeUtils';
+import { msToSrtTime } from '@/shared/utils/timeUtils';
 
 /**
  * Strip ASS override/styling and drawing content from a dialogue's text,

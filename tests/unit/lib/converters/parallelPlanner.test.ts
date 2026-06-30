@@ -2,7 +2,7 @@ import { planParallelConversion } from '@/lib/converters/parallelPlanner';
 import type { SegmentRange, Settings } from '@/types/media';
 import {
   PARALLEL_LARGE_FILE_BYTES,
-} from '@/constants/config';
+} from '@/shared/config/config';
 
 function makeSettings(
   overrides: Partial<Pick<Settings, 'parallelConversion' | 'manualWorkerCount'>> = {},

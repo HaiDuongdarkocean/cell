@@ -6,7 +6,7 @@ import {
   isoCodeToLabel,
   labelToIsoCode,
 } from '@/lib/detectors/languageDetector';
-import { MESSAGE_TYPES } from '@/constants/messages';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 /**
  * Map of subtitleId → detected language label (e.g. "English").

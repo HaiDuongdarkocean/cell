@@ -3,7 +3,7 @@
  */
 
 import type { FilenameSource } from '@/types/media';
-import { GENERIC_TITLES } from '@/constants/config';
+import { GENERIC_TITLES } from '@/shared/config/config';
 
 /**
  * Remove invalid filename characters (`<>:"/\|?*`) and replace spaces with

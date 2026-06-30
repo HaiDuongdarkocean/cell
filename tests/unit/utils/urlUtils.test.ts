@@ -3,7 +3,7 @@ import {
   isAbsoluteUrl,
   getFileExtension,
   normalizeUrl,
-} from '@/lib/utils/urlUtils';
+} from '@/shared/utils/urlUtils';
 
 describe('urlUtils', () => {
   describe('resolveUrl', () => {

@@ -5,7 +5,7 @@
  * helpers can be exercised end-to-end without a real extension runtime.
  */
 
-import { STORAGE_KEYS } from '@/constants/config';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import type { WhitelistEntry } from '@/types/media';
 
 import {

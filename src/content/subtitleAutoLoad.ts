@@ -21,7 +21,7 @@ export interface OverrideResult {
 
 import { parseSubtitle } from './subtitleParser';
 import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
-import { MESSAGE_TYPES } from '@/constants/messages';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { SrtCue } from '@/types/media';
 import type { SubtitleFormat, ParseResult } from '@/types/subtitle';
 import type {

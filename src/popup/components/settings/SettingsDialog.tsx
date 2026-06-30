@@ -7,7 +7,7 @@ import {
   MAX_CONVERT_BYTES,
   DEFAULT_OVERLAY_STYLE_TARGET,
   DEFAULT_OVERLAY_STYLE_NATIVE,
-} from '@/constants/config';
+} from '@/shared/config/config';
 import { MultiSelect } from './MultiSelect';
 import { SubtitleStylePanel } from './SubtitleStylePanel';
 import styles from './SettingsDialog.module.css';

@@ -11,7 +11,7 @@
 
 // mux.js ships as CommonJS; import the default export and destructure.
 import muxjs from 'mux.js';
-import { createOpfsWriter } from '@/lib/storage/opfsStorage';
+import { createOpfsWriter } from '@/shared/lib/storage/opfsStorage';
 
 const { Transmuxer } = muxjs.mp4;
 

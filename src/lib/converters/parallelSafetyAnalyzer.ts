@@ -1,6 +1,6 @@
 import type { SegmentRange } from '@/types/media';
 import { groupSegmentsByBytes, type SegmentGroup } from '@/lib/converters/segmentGrouping';
-import { MIN_PARALLEL_WORKERS } from '@/constants/config';
+import { MIN_PARALLEL_WORKERS } from '@/shared/config/config';
 
 /**
  * Result of the parallel conversion safety analysis.

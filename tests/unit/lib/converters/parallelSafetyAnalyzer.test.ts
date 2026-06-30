@@ -1,6 +1,6 @@
 import { analyzeParallelSafety } from '@/lib/converters/parallelSafetyAnalyzer';
 import type { SegmentRange } from '@/types/media';
-import { MIN_PARALLEL_WORKERS } from '@/constants/config';
+import { MIN_PARALLEL_WORKERS } from '@/shared/config/config';
 
 function makeRange(index: number, size: number, startByte: number): SegmentRange {
   return { index, startByte, endByte: startByte + size, size, duration: 10.0 };
