@@ -35,8 +35,6 @@ const config: Config = {
       setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
       roots: [
         '<rootDir>/tests/unit',
-        '<rootDir>/tests/components',
-        '<rootDir>/tests/utils',
         '<rootDir>/src',
       ],
       testMatch: ['**/*.test.ts', '**/*.test.tsx'],
@@ -62,6 +60,7 @@ const config: Config = {
     'src/shared/**/*.ts',
     'src/entities/**/*.ts',
     'src/entrypoints/popup/components/**/*.tsx',
+    'src/features/settings/ui/**/*.tsx',
     '!src/**/*.d.ts',
   ],
   coverageThreshold: {

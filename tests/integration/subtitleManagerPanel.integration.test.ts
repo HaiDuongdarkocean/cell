@@ -1,9 +1,9 @@
-import { parseAndDetectFiles, assignImportRole } from '../../src/features/subtitle/logic/subtitleImport';
-import { createSubtitleManagerPanel } from '../../src/features/subtitle/ui/subtitleManagerPanel';
-import { SubtitleOverlayController } from '../../src/features/subtitle/ui/subtitleOverlay';
-import { injectThemeTokens } from '../../src/entrypoints/content/themeTokens';
-import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '../../src/shared/config/config';
-import type { OverlayConfig } from '../../src/types/subtitle';
+import { parseAndDetectFiles, assignImportRole } from '@/features/subtitle/logic/subtitleImport';
+import { createSubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel';
+import { SubtitleOverlayController } from '@/features/subtitle/ui/subtitleOverlay';
+import { injectThemeTokens } from '@/entrypoints/content/themeTokens';
+import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
+import type { OverlayConfig } from '@/types/subtitle';
 
 // Mock chrome.storage.local for injectThemeTokens
 beforeAll(() => {

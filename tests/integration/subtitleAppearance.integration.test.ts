@@ -1,6 +1,6 @@
-import { SubtitleOverlayController } from '../../src/features/subtitle/ui/subtitleOverlay';
-import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '../../src/shared/config/config';
-import type { OverlayConfig, OverlayStyleConfig } from '../../src/types/subtitle';
+import { SubtitleOverlayController } from '@/features/subtitle/ui/subtitleOverlay';
+import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
+import type { OverlayConfig, OverlayStyleConfig } from '@/types/subtitle';
 
 /**
  * Integration test: chrome.storage.onChanged → controller.updateStyle → overlay update.
