@@ -133,6 +133,22 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       onSelect: (role, index) => { void onPanelSelect(role, index); },
     });
 
+    // Wire file picker (import button) → processImportedFiles. Must run AFTER
+    // managerPanel creation because the import button is created inside the
+    // controller/panel (async). Wiring at top-level would query a non-existent
+    // button and silently skip — bug: import button did nothing while drag-drop
+    // worked (drag-drop wires on `container` which already exists).
+    const importButtonEl = managerPanel.importButton;
+    const fileInput = importButtonEl.querySelector('input[type="file"]') as HTMLInputElement | null;
+    if (fileInput) {
+      fileInput.addEventListener('change', async () => {
+        const files = Array.from(fileInput.files ?? []);
+        if (files.length === 0) return;
+        await processImportedFiles(files, container);
+        fileInput.value = ''; // reset so same file can be re-selected
+      });
+    }
+
     // ADR-013 D3: listen chrome.storage.onChanged → updateStyle realtime
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== 'local' || !controller) return;
@@ -327,17 +343,12 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     return false; // synchronous listener
   });
 
-  // === File import wiring (ADR-015 T10: multi-file → panel) ===
-  const importButton = document.querySelector('[data-testid="subtitle-import-button"]') as HTMLButtonElement | null;
-  const fileInput = importButton?.querySelector('input[type="file"]') as HTMLInputElement | null;
-  if (importButton && fileInput) {
-    fileInput.addEventListener('change', async () => {
-      const files = Array.from(fileInput.files ?? []);
-      if (files.length === 0) return;
-      await processImportedFiles(files, container);
-      fileInput.value = ''; // reset so same file can be re-selected
-    });
-  }
+  // === File import wiring ===
+  // File picker (import button) is wired inside loadOverlayStyles().then()
+  // above, because the import button is created asynchronously by the
+  // controller/panel. Wiring here at top-level would query a non-existent
+  // button. Drag-drop below wires on `container` (already exists) so it can
+  // run at top-level.
 
   // Wire drag-drop on container → parse → loadCues + drag hover hint.
   const dragHint = createDragHint(container);
