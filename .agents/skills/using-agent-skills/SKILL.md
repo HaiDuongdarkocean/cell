@@ -30,9 +30,8 @@ Task arrives
     │   └── Browser-facing? ──────────→ extension-browser-debugging
     │       (Chrome/Edge MV3 extension: install, inspect, measure, verify)
     ├── Something broke? ──────────────→ debugging-and-error-recovery
-    │   ├── Browser-facing bug? ───────→ extension-browser-debugging
-    │   │   (UI/layout/fullscreen/content-script/console errors/visual regression)
-    │   └── Need live DOM measurement? → extension-browser-debugging
+    │   (single entry point — auto-invokes extension-browser-debugging
+    │    when bug is browser-facing; do NOT call sub-skill separately)
     ├── Reviewing code? ───────────────→ code-review-and-quality
     │   ├── Too complex? ─────────────→ code-simplification
     │   ├── Security concerns? ───────→ security-and-hardening

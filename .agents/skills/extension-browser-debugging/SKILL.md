@@ -5,6 +5,12 @@ description: Browser debugging + testing for Chrome/Edge MV3 extensions via DevT
 
 # Extension Browser Debugging
 
+## Overview
+
+This is a **sub-skill** of `debugging-and-error-recovery`. It is auto-invoked by the parent skill's Step 3 (verify evidence) and Step 8 (verify fix) when the bug is browser-facing. Users do NOT need to call this skill directly — call `debugging-and-error-recovery` and it will invoke this skill automatically when needed.
+
+This skill provides the MCP tooling layer: `install_extension`, `evaluate_script` snippets, DataTransfer drop simulation, `chrome.storage` preconditions, theme token verification, C1-Cn acceptance-criteria verification, performance + a11y audits.
+
 ## When to Use
 - Developing or debugging a **Chrome/Edge MV3 extension** (content scripts, popup, service worker, side panel, offscreen documents)
 - Content-script not injecting after reload

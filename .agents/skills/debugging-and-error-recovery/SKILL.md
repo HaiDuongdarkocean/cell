@@ -7,6 +7,13 @@ description: Guides systematic root-cause debugging through an 8-step user-colla
 
 ## Overview
 
+This skill is the **single entry point** for any bug. It auto-invokes sub-skills as needed — the user only calls this one skill:
+
+- Browser-facing extension bug → auto-invokes `extension-browser-debugging` (Step 3 for evidence, Step 8 for verify)
+- Other bug types (test/build/API/logic) → handled inline, no sub-skill needed
+
+Do NOT ask the user to call `extension-browser-debugging` separately. This skill is the parent; the sub-skill is invoked automatically when the bug is browser-facing.
+
 This skill is not a generic "find and fix" checklist. It encodes a specific 8-step protocol that the user has defined. **Follow it exactly when invoked.** The goal is to avoid the agent silently guessing a root cause, making changes, and only then asking the user. Instead, the agent:
 
 1. States the suspected bug(s).
@@ -52,9 +59,9 @@ This step ensures the agent and the user share the same mental model before movi
 
 ### Step 3 — Verify with Real Evidence
 
-The agent uses the best available tool to test the hypothesis:
+The agent uses the best available tool to test the hypothesis. **Auto-invoke the matching sub-skill** — do not ask the user to call it separately:
 
-- **Browser-facing bug** (UI, layout, fullscreen, DOM, video, extension content script) → `chrome-devtools` / `edge-devtools` MCP or Playwright.
+- **Browser-facing bug** (UI, layout, fullscreen, DOM, video, extension content script) → **auto-invoke `extension-browser-debugging` skill**. It provides the MCP tooling: `install_extension`, `evaluate_script` snippets (measure, styles, F0, fullscreen, a11y), DataTransfer drop simulation, `chrome.storage` preconditions, theme token verification, C1-Cn acceptance-criteria verification. Run its Phase 0-2 (install extension → reproduce → inspect) to gather evidence. Do NOT ask the user to call `extension-browser-debugging` separately — this skill is the entry point, the sub-skill is invoked automatically.
 - **API/background bug** → read network logs, background script logs, or use MCP.
 - **Test failure** → run the test, read the full output.
 - **Build failure** → run the build, read the error.
@@ -119,6 +126,7 @@ Now the agent may write or edit code.
 - Add a regression test if possible.
 - Verify after the fix: unit test, browser, build.
 - For UI/layout bugs, verify all state transitions and do a visual check.
+- **Browser-facing extension bug** → auto-invoke `extension-browser-debugging` Phase 5-7 (reload extension → re-injection check → state transitions → acceptance-criteria → performance/a11y). Do NOT ask the user to call it separately.
 
 ## Stop-the-Line Rules
 
