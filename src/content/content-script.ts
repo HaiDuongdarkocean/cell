@@ -12,7 +12,7 @@ import { createSubtitleDropdown } from './subtitleSelector';
 import { MESSAGE_TYPES } from '@/constants/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/constants/config';
 import type { OverlayConfig, OverlayStyleConfig } from '../types/subtitle';
-import type { BilingualCue, KeyboardShortcut, SrtCue } from '../types/media';
+import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle } from '../types/media';
 import type { AutoLoadSubtitlesPayload } from '../types/message';
 import type { VideoEpisodeChangedPayload } from '../types/message';
 
@@ -139,8 +139,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   let bilingualCues: BilingualCue[] = [];
   let shortcuts: KeyboardShortcut[] = DEFAULT_KEYBOARD_SHORTCUTS;
   // ADR-014 D3: dropdown instances for subtitle selector (target + native)
-  let targetDropdown: { icon: HTMLButtonElement; destroy: () => void } | null = null;
-  let nativeDropdown: { icon: HTMLButtonElement; destroy: () => void } | null = null;
+  // ADR-015 T4: added update() for in-place refresh (bug #5 fix)
+  let targetDropdown: { icon: HTMLButtonElement; destroy: () => void; update: (s: DetectedSubtitle[], i: number) => void } | null = null;
+  let nativeDropdown: { icon: HTMLButtonElement; destroy: () => void; update: (s: DetectedSubtitle[], i: number) => void } | null = null;
   // Track active sub indices + all matches for re-fetch on dropdown select
   let activeTargetIndex = 0;
   let activeNativeIndex = 0;
@@ -400,30 +401,40 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         onSubtitleMatches: (targetM, nativeM) => {
           targetMatches = targetM;
           nativeMatches = nativeM;
-          // Destroy old dropdowns before re-creating (fresh active index)
-          targetDropdown?.destroy();
-          nativeDropdown?.destroy();
-          targetDropdown = null;
-          nativeDropdown = null;
+          // ADR-015 T4: update-in-place (bug #5 fix — no flicker, no stale index)
+          // V1 destroyed + re-created dropdown on every push → flicker + stale
+          // index when matches reordered. V2 calls update() to refresh list
+          // items in-place, preserving icon element identity + activeIndex.
+          const targetSubs = targetM.map((m) => ({ id: m.url, url: m.url, format: m.format as any, language: m.language, tabId: 0, detectedAt: 0 }));
+          const nativeSubs = nativeM.map((m) => ({ id: m.url, url: m.url, format: m.format as any, language: m.language, tabId: 0, detectedAt: 0 }));
+
           if (targetM.length >= 2) {
-            targetDropdown = createSubtitleDropdown(
-              'target',
-              container,
-              targetM.map((m) => ({ id: m.url, url: m.url, format: m.format as any, language: m.language, tabId: 0, detectedAt: 0 })),
-              targetM[0].language,
-              activeTargetIndex,
-              (index) => { void onSubtitleSelect('target', index); },
-            );
+            if (targetDropdown) {
+              targetDropdown.update(targetSubs, activeTargetIndex);
+            } else {
+              targetDropdown = createSubtitleDropdown(
+                'target',
+                container,
+                targetSubs,
+                targetM[0].language,
+                activeTargetIndex,
+                (index) => { void onSubtitleSelect('target', index); },
+              );
+            }
           }
           if (nativeM.length >= 2) {
-            nativeDropdown = createSubtitleDropdown(
-              'native',
-              container,
-              nativeM.map((m) => ({ id: m.url, url: m.url, format: m.format as any, language: m.language, tabId: 0, detectedAt: 0 })),
-              nativeM[0].language,
-              activeNativeIndex,
-              (index) => { void onSubtitleSelect('native', index); },
-            );
+            if (nativeDropdown) {
+              nativeDropdown.update(nativeSubs, activeNativeIndex);
+            } else {
+              nativeDropdown = createSubtitleDropdown(
+                'native',
+                container,
+                nativeSubs,
+                nativeM[0].language,
+                activeNativeIndex,
+                (index) => { void onSubtitleSelect('native', index); },
+              );
+            }
           }
         },
       });

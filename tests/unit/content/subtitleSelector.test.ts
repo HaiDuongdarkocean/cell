@@ -49,9 +49,9 @@ describe('createSubtitleDropdown (ADR-014 D3 — V2 ADR-007 D3)', () => {
     expect(popover).toBeTruthy();
     const items = document.querySelectorAll('[data-testid^="subtitle-selector-item-target-"]');
     expect(items.length).toBe(2);
-    expect(items[0].textContent).toContain('Sub #1');
+    expect(items[0].textContent).toContain('English #1');
     expect(items[0].textContent).toContain('SRT');
-    expect(items[1].textContent).toContain('VTT');
+    expect(items[1].textContent).toContain('English #2');
   });
 
   it('highlights active sub in popover (aria-selected)', () => {
@@ -154,5 +154,68 @@ describe('createSubtitleDropdown (ADR-014 D3 — V2 ADR-007 D3)', () => {
     const { icon } = createSubtitleDropdown('target', container, subs, 'en', 0, () => {});
     icon.click();
     expect(icon.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  // === ADR-015 T3: updateSubtitleDropdown (bug #5 fix — update-in-place) ===
+  describe('updateSubtitleDropdown (ADR-015 — bug #5 fix, update-in-place)', () => {
+    it('updates popover list items in-place without destroying icon', () => {
+      const subs = [makeSub('en'), makeSub('en')];
+      const { icon, update } = createSubtitleDropdown('target', container, subs, 'en', 0, () => {});
+      icon.click();
+      const iconRef = icon; // capture identity
+      const newSubs = [makeSub('en'), makeSub('en'), makeSub('en')]; // 3 subs now
+      update(newSubs, 0);
+      // Icon element identity stable (not recreated)
+      expect(container.contains(iconRef)).toBe(true);
+      expect(iconRef).toBe(icon);
+      // Popover now has 3 items
+      const items = document.querySelectorAll('[data-testid^="subtitle-selector-item-target-"]');
+      expect(items.length).toBe(3);
+    });
+
+    it('preserves activeIndex across update (bug #5 — no reset to 0)', () => {
+      const subs = [makeSub('en'), makeSub('en')];
+      const { icon, update } = createSubtitleDropdown('target', container, subs, 'en', 1, () => {});
+      icon.click();
+      // Simulate auto-load push with same matches — activeIndex must stay 1
+      update(subs, 1);
+      const item1 = document.querySelector('[data-testid="subtitle-selector-item-target-1"]');
+      expect(item1?.getAttribute('aria-selected')).toBe('true');
+      const item0 = document.querySelector('[data-testid="subtitle-selector-item-target-0"]');
+      expect(item0?.getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('clamps activeIndex when matches shrink below current index', () => {
+      const subs = [makeSub('en'), makeSub('en'), makeSub('en')];
+      const { icon, update } = createSubtitleDropdown('target', container, subs, 'en', 2, () => {});
+      icon.click();
+      // Matches shrink to 2 — activeIndex 2 is out of range, clamp to 1
+      const newSubs = [makeSub('en'), makeSub('en')];
+      update(newSubs, 2);
+      const item1 = document.querySelector('[data-testid="subtitle-selector-item-target-1"]');
+      expect(item1?.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('does not flicker — icon element not removed/re-appended on update', () => {
+      const subs = [makeSub('en'), makeSub('en')];
+      const { icon, update } = createSubtitleDropdown('target', container, subs, 'en', 0, () => {});
+      icon.click();
+      const iconBefore = icon;
+      const parentBefore = icon.parentNode;
+      update(subs, 0);
+      expect(icon.parentNode).toBe(parentBefore);
+      expect(icon).toBe(iconBefore);
+    });
+
+    it('update works when popover is closed (updates for next open)', () => {
+      const subs = [makeSub('en'), makeSub('en')];
+      const { icon, update } = createSubtitleDropdown('target', container, subs, 'en', 0, () => {});
+      // Popover closed — update should not throw, next open reflects new state
+      const newSubs = [makeSub('en'), makeSub('en'), makeSub('en')];
+      expect(() => update(newSubs, 0)).not.toThrow();
+      icon.click();
+      const items = document.querySelectorAll('[data-testid^="subtitle-selector-item-target-"]');
+      expect(items.length).toBe(3);
+    });
   });
 });

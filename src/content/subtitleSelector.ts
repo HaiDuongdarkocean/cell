@@ -1,7 +1,11 @@
 import type { DetectedSubtitle } from '@/types/media';
+import { formatSubtitleName } from './subtitleNaming';
 
 /**
  * Subtitle selector dropdown for overlay (ADR-014 D3, V2 of ADR-007 D3).
+ *
+ * ADR-015: refactored to support `updateSubtitleDropdown` (update-in-place)
+ * for bug #5 fix — no destroy/re-create on auto-load push, no flicker.
  *
  * When ≥2 subtitles share the same language, render a dropdown icon at
  * top-right of the video container. Click → popover list of matching subs
@@ -17,7 +21,7 @@ import type { DetectedSubtitle } from '@/types/media';
  * @param language - Language code to filter (case-insensitive)
  * @param activeIndex - Currently active sub index (highlighted in popover)
  * @param onSelect - Callback with chosen sub index (0-based into filtered matches)
- * @returns { icon, destroy } — icon button element + cleanup function
+ * @returns { icon, destroy, update } — icon button + cleanup + in-place updater
  */
 export function createSubtitleDropdown(
   role: 'target' | 'native',
@@ -26,16 +30,21 @@ export function createSubtitleDropdown(
   language: string,
   activeIndex: number,
   onSelect: (index: number) => void,
-): { icon: HTMLButtonElement; destroy: () => void } {
-  const matches = subtitles.filter(
+): { icon: HTMLButtonElement; destroy: () => void; update: (newSubtitles: DetectedSubtitle[], newActiveIndex: number) => void } {
+  let matches = subtitles.filter(
     (s) => s.language.toLowerCase() === language.toLowerCase(),
   );
+  let currentActiveIndex = activeIndex;
 
   // V1 behavior: only 1 match → no dropdown needed
   if (matches.length < 2) {
     const noop = document.createElement('button');
     noop.style.display = 'none';
-    return { icon: noop, destroy: () => noop.remove() };
+    return {
+      icon: noop,
+      destroy: () => noop.remove(),
+      update: () => { /* noop — never had a real dropdown */ },
+    };
   }
 
   const icon = document.createElement('button');
@@ -88,6 +97,44 @@ export function createSubtitleDropdown(
     activeDropdown = null;
   };
 
+  const renderItems = (): void => {
+    if (!popover) return;
+    // Clear existing items (update-in-place — keep popover element, replace children)
+    popover.innerHTML = '';
+    matches.forEach((sub, index) => {
+      const item = document.createElement('div');
+      item.setAttribute('role', 'option');
+      item.setAttribute('data-testid', `subtitle-selector-item-${role}-${index}`);
+      item.setAttribute('aria-selected', String(index === currentActiveIndex));
+      item.style.cssText = `
+        padding: 6px 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        ${index === currentActiveIndex ? 'background: rgba(255,255,255,0.15); font-weight: bold;' : ''}
+      `;
+      item.textContent = formatSubtitleName('auto', sub.language, index);
+      const meta = document.createElement('span');
+      meta.style.cssText = 'opacity: 0.7; font-size: 11px;';
+      meta.textContent = sub.format.toUpperCase();
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        onSelect(index);
+        closePopover();
+      });
+      item.addEventListener('mouseenter', () => {
+        if (index !== currentActiveIndex) item.style.background = 'rgba(255,255,255,0.1)';
+      });
+      item.addEventListener('mouseleave', () => {
+        if (index !== currentActiveIndex) item.style.background = 'transparent';
+      });
+      popover!.appendChild(item);
+    });
+  };
+
   const openPopover = (): void => {
     // Close any other open dropdown first (only 1 at a time)
     if (activeDropdown && activeDropdown !== closePopover) {
@@ -113,39 +160,7 @@ export function createSubtitleDropdown(
       font-size: 12px;
     `;
 
-    matches.forEach((sub, index) => {
-      const item = document.createElement('div');
-      item.setAttribute('role', 'option');
-      item.setAttribute('data-testid', `subtitle-selector-item-${role}-${index}`);
-      item.setAttribute('aria-selected', String(index === activeIndex));
-      item.style.cssText = `
-        padding: 6px 8px;
-        cursor: pointer;
-        border-radius: 4px;
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        ${index === activeIndex ? 'background: rgba(255,255,255,0.15); font-weight: bold;' : ''}
-      `;
-      item.textContent = `Sub #${index + 1}`;
-      const meta = document.createElement('span');
-      meta.style.cssText = 'opacity: 0.7; font-size: 11px;';
-      meta.textContent = sub.format.toUpperCase();
-      item.appendChild(meta);
-
-      item.addEventListener('click', () => {
-        onSelect(index);
-        closePopover();
-      });
-      item.addEventListener('mouseenter', () => {
-        if (index !== activeIndex) item.style.background = 'rgba(255,255,255,0.1)';
-      });
-      item.addEventListener('mouseleave', () => {
-        if (index !== activeIndex) item.style.background = 'transparent';
-      });
-      popover!.appendChild(item);
-    });
-
+    renderItems();
     container.appendChild(popover);
     icon.setAttribute('aria-expanded', 'true');
 
@@ -180,12 +195,28 @@ export function createSubtitleDropdown(
 
   container.appendChild(icon);
 
+  // ADR-015 T3: update-in-place — no destroy/re-create, no flicker (bug #5 fix)
+  const update = (newSubtitles: DetectedSubtitle[], newActiveIndex: number): void => {
+    matches = newSubtitles.filter(
+      (s) => s.language.toLowerCase() === language.toLowerCase(),
+    );
+    // Clamp activeIndex to valid range (matches may have shrunk/reordered)
+    currentActiveIndex = newActiveIndex < matches.length
+      ? newActiveIndex
+      : Math.max(0, matches.length - 1);
+    if (popover) {
+      renderItems(); // popover open → refresh list in-place
+    }
+    // If popover closed, next open will call renderItems() with fresh matches
+  };
+
   return {
     icon,
     destroy: () => {
       closePopover();
       icon.remove();
     },
+    update,
   };
 }
 
