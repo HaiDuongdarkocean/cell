@@ -17,7 +17,7 @@ import type {
   WhitelistEntry,
 } from '@/types/media';
 
-import { tryAutoDownload, type AutoDownloadDeps } from '@/background/autoDownload';
+import { tryAutoDownload, type AutoDownloadDeps } from '@/features/download/autoDownload';
 import { normalizeUrl } from '@/features/whitelist/whitelist';
 
 // --- In-memory chrome.storage.local mock ---

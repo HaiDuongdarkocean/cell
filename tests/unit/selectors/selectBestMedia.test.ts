@@ -1,7 +1,7 @@
 import {
   selectBestMedia,
   QUALITY_RANK,
-} from '@/lib/selectors/selectBestMedia';
+} from '@/features/download/selectBestMedia';
 import type {
   DetectedVideo,
   DetectedSubtitle,

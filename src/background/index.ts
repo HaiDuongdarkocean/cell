@@ -15,9 +15,9 @@
 
 import { NetworkInterceptor } from './networkInterceptor';
 import { MessageBus } from './messageBus';
-import { DownloadQueue } from './downloadQueue';
-import { tryAutoDownload } from './autoDownload';
-import { Downloader, type ConvertResult } from './downloader';
+import { DownloadQueue } from '@/features/download/downloadQueue';
+import { tryAutoDownload } from '@/features/download/autoDownload';
+import { Downloader, type ConvertResult } from '@/features/download/downloader';
 import { OffscreenManager } from './offscreenManager';
 import { findSubtitlesForOverlay, type SubtitlePreference } from '@/features/subtitle/service/subtitleService';
 import { MESSAGE_TYPES } from '@/shared/config/messages';

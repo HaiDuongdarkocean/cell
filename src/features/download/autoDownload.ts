@@ -27,7 +27,7 @@ import type {
   DownloadItem,
   Settings,
 } from '@/types/media';
-import { selectBestMedia } from '@/lib/selectors/selectBestMedia';
+import { selectBestMedia } from './selectBestMedia';
 import { isWhitelisted } from '@/features/whitelist/whitelist';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 

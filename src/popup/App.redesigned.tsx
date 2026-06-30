@@ -13,7 +13,7 @@ import { DownloadCard } from './components/media/DownloadCard';
 import { SettingsDialog } from './components/settings/SettingsDialog';
 import type { VideoQuality, Settings, DownloadItem } from '@/types/media';
 import type { MessageRequest, MessageResponse } from '@/types/message';
-import { selectBestMedia } from '@/lib/selectors/selectBestMedia';
+import { selectBestMedia } from '@/features/download/selectBestMedia';
 import { isWhitelisted, addToWhitelist, removeFromWhitelist } from '@/features/whitelist/whitelist';
 import { getActiveContentTab } from '@/popup/utils/getActiveContentTab';
 import styles from './App.redesigned.module.css';

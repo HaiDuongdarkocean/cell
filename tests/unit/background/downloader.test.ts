@@ -3,7 +3,7 @@ import {
   buildFetchHeaders,
   type ConvertCallback,
   type ConvertResult,
-} from '@/background/downloader';
+} from '@/features/download/downloader';
 import type { DetectedVideo, DetectedSubtitle, DownloadProgress, SegmentRange } from '@/types/media';
 import { MAX_RETRY, SEGMENT_TIMEOUT_MS } from '@/shared/config/config';
 

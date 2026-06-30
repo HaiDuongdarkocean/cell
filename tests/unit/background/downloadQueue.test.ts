@@ -1,7 +1,7 @@
 import {
   DownloadQueue,
   type DownloadExecutor,
-} from '@/background/downloadQueue';
+} from '@/features/download/downloadQueue';
 import type { DownloadItem, DownloadProgress } from '@/types/media';
 import {
   DEFAULT_CONCURRENT_DOWNLOADS,
