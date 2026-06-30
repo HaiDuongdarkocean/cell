@@ -85,6 +85,7 @@ docs/           # Tài liệu dự án
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md
 │   ├── 2026-06-27-subtitle-panel-docking-mcp.md
 │   ├── 2026-06-27-subtitle-panel-fullscreen-mcp.md
+│   ├── 2026-06-30-subtitle-drag-integrated-mcp.md  # ADR-015 drag integrated verify (9/9 SC pass)
 │   └── screenshot-after-fix.png
 ├── reviews/                           # Spec review reports (spec-reviewer skill output)
 │   └── review-subtitle-drag-integrated.md # Spec review: subtitle drag integrated (APPROVED post-update)

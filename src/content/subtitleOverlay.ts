@@ -67,7 +67,9 @@ export class SubtitleOverlayController {
     this.targetOverlay = target.overlay;
     this.nativeOverlay = native.overlay;
 
-    // Wire drag handles → updateStyle position + persist (debounced in createDragHandle)
+    // ADR-015: drag wired directly on overlay background (no separate handle button).
+    // createDragHandle wires pointerdown/move/up on overlay; text span skipped via
+    // e.target check. Persist debounced inside createDragHandle.
     const containerForDrag = container;
     createDragHandle(this.targetOverlay, containerForDrag, this.targetStyle.yOffsetPercent, (newOffset) => {
       this.targetStyle = { ...this.targetStyle, yOffsetPercent: newOffset };

@@ -77,16 +77,15 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-// === Overlay layer (ADR-013 D1) ===
-// 2 div độc lập (target + native), mỗi cái 1 text span + 1 drag handle.
-// Refactor từ createOverlay (1 div 2 span) — kept tạm cho backward compat (Task 5 xóa).
-
-/** SVG icon move-vertical (2 mũi tên lên-xuống) — Lucide-style. */
-const MOVE_VERTICAL_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 18 12 22 16 18"/><polyline points="8 6 12 2 16 6"/><line x1="12" y1="2" x2="12" y2="22"/></svg>`;
+// === Overlay layer (ADR-013 D1, ADR-015 D1-D3) ===
+// 2 div độc lập (target + native), mỗi cái 1 text span.
+// ADR-015: drag tích hợp trực tiếp vào overlay background (xóa handle button riêng).
+// Text span giữ user-select: text + pointer-events: auto cho select text + tra cứu.
 
 /**
- * Create 1 overlay layer độc lập (target OR native) — ADR-013 D1.
- * Returns overlay div + text span + drag handle (handle logic wire ở Task 4).
+ * Create 1 overlay layer độc lập (target OR native) — ADR-013 D1, ADR-015 D1-D3.
+ * Returns overlay div + text span. Overlay is the drag target (background drag),
+ * text span keeps select-text + dictionary lookup.
  *
  * @param role - 'target' | 'native'
  * @param config - Per-layer appearance (OverlayStyleConfig)
@@ -96,7 +95,7 @@ export function createOverlayLayer(
   role: 'target' | 'native',
   config: OverlayStyleConfig,
   container: HTMLElement,
-): { overlay: HTMLDivElement; textSpan: HTMLSpanElement; dragHandle: HTMLButtonElement } {
+): { overlay: HTMLDivElement; textSpan: HTMLSpanElement } {
   const overlay = document.createElement('div');
   overlay.setAttribute('data-role', role);
   overlay.setAttribute('data-testid', `subtitle-overlay-${role}`);
@@ -107,10 +106,21 @@ export function createOverlayLayer(
   overlay.style.transform = 'translateX(-50%)';
   overlay.style.padding = '4px 12px';
   overlay.style.borderRadius = '4px';
-  overlay.style.pointerEvents = 'none'; // container passes clicks; handle + span re-enable
+  // ADR-015 D1: overlay receives pointer events for background drag.
+  // Text span keeps pointer-events: auto + user-select: text below.
+  overlay.style.pointerEvents = 'auto';
+  overlay.style.cursor = 'ns-resize'; // hover affordance — ADR-015 D1
   overlay.style.whiteSpace = 'pre-wrap';
   overlay.style.maxWidth = '90%';
   overlay.style.zIndex = role === 'target' ? '999999' : '999998';
+
+  // ARIA slider on overlay div (ADR-015 D2 — moved from handle button)
+  overlay.setAttribute('role', 'slider');
+  overlay.setAttribute('aria-label', `Drag to move ${role} subtitle`);
+  overlay.setAttribute('aria-orientation', 'vertical');
+  overlay.setAttribute('aria-valuemin', '0');
+  overlay.setAttribute('aria-valuemax', '95');
+  overlay.setAttribute('aria-valuenow', String(config.yOffsetPercent));
 
   // Text span: user-select text (copy word), pointer-events auto
   const textSpan = document.createElement('span');
@@ -121,36 +131,6 @@ export function createOverlayLayer(
   textSpan.style.cursor = 'text';
   overlay.appendChild(textSpan);
 
-  // Drag handle: icon move-vertical, pointer-events auto, aria slider
-  // ponytail: handle position left edge, hardcode v1 (ceiling: configurable v2)
-  const dragHandle = document.createElement('button');
-  dragHandle.setAttribute('data-testid', `overlay-${role}-drag-handle`);
-  dragHandle.setAttribute('aria-label', 'Drag to move subtitle');
-  dragHandle.setAttribute('role', 'slider');
-  dragHandle.setAttribute('aria-orientation', 'vertical');
-  dragHandle.setAttribute('aria-valuemin', '0');
-  dragHandle.setAttribute('aria-valuemax', '95');
-  dragHandle.setAttribute('aria-valuenow', String(config.yOffsetPercent));
-  dragHandle.style.position = 'absolute';
-  dragHandle.style.left = '-28px';
-  dragHandle.style.top = '50%';
-  dragHandle.style.transform = 'translateY(-50%)';
-  dragHandle.style.width = '24px';
-  dragHandle.style.height = '24px';
-  dragHandle.style.padding = '0';
-  dragHandle.style.border = '1px solid rgba(255,255,255,0.4)';
-  dragHandle.style.borderRadius = '4px';
-  dragHandle.style.backgroundColor = 'rgba(0,0,0,0.6)';
-  dragHandle.style.color = '#ffffff';
-  dragHandle.style.cursor = 'ns-resize';
-  dragHandle.style.pointerEvents = 'auto';
-  dragHandle.style.display = 'flex';
-  dragHandle.style.alignItems = 'center';
-  dragHandle.style.justifyContent = 'center';
-  dragHandle.style.zIndex = '1000001';
-  dragHandle.innerHTML = MOVE_VERTICAL_SVG;
-  overlay.appendChild(dragHandle);
-
   // Apply initial style
   applyStyle(config, overlay);
 
@@ -158,7 +138,7 @@ export function createOverlayLayer(
   overlay.style.display = 'none';
 
   container.appendChild(overlay);
-  return { overlay, textSpan, dragHandle };
+  return { overlay, textSpan };
 }
 
 /**
@@ -180,11 +160,10 @@ export function applyStyle(config: OverlayStyleConfig, overlay: HTMLDivElement):
   // current cue. Forcing block here shows drag handle with no subtitle (bug fix).
   if (!config.visible) overlay.style.display = 'none';
 
-  // Update drag handle aria-valuenow if handle exists
-  const handle = overlay.querySelector('[role="slider"]') as HTMLButtonElement | null;
-  if (handle) {
-    handle.setAttribute('aria-valuenow', String(config.yOffsetPercent));
-  }
+  // ADR-015 D2: ARIA valuenow directly on overlay (role=slider moved from handle
+  // button to overlay div). querySelector('[role="slider"]') would return null
+  // because it doesn't match the element itself — set attribute directly.
+  overlay.setAttribute('aria-valuenow', String(config.yOffsetPercent));
 }
 
 /**

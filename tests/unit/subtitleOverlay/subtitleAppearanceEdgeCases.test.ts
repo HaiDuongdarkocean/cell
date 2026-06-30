@@ -105,6 +105,30 @@ describe('SubtitleOverlayController edge cases (ADR-013 Task 8)', () => {
       // should still render whatever it receives. Test the panel clamp separately.
       controller.updateStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, yOffsetPercent: 50 }, undefined);
       expect(targetOverlay.style.bottom).toBe('50%');
+      // ADR-015 D2: aria-valuenow updates directly on overlay (no handle button)
+      expect(targetOverlay.getAttribute('aria-valuenow')).toBe('50');
+    });
+  });
+
+  describe('ADR-015: drag integrated (no handle button)', () => {
+    it('controller.init creates overlays with no drag handle button (target + native)', () => {
+      const controller = makeController();
+      controller.init();
+      // No handle buttons (import button still exists, that's expected)
+      expect(document.querySelector('[data-testid="overlay-target-drag-handle"]')).toBeNull();
+      expect(document.querySelector('[data-testid="overlay-native-drag-handle"]')).toBeNull();
+      // No button with role=slider (ARIA moved to overlay div)
+      expect(document.querySelector('button[role="slider"]')).toBeNull();
+    });
+
+    it('overlays have role=slider + per-role aria-label (ARIA moved from handle to overlay)', () => {
+      const controller = makeController();
+      controller.init();
+      const targetOverlay = document.querySelector('[data-testid="subtitle-overlay-target"]') as HTMLDivElement;
+      const nativeOverlay = document.querySelector('[data-testid="subtitle-overlay-native"]') as HTMLDivElement;
+      expect(targetOverlay.getAttribute('role')).toBe('slider');
+      expect(targetOverlay.getAttribute('aria-label')).toBe('Drag to move target subtitle');
+      expect(nativeOverlay.getAttribute('aria-label')).toBe('Drag to move native subtitle');
     });
   });
 

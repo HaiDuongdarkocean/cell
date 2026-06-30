@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (G3 — chờ G4 implement + G5 verify)
+Accepted (G4 implemented + G5 verified — browser MCP verify 9/9 SC pass, test report: `docs/test-reports/2026-06-30-subtitle-drag-integrated-mcp.md`)
 
 ## Context
 

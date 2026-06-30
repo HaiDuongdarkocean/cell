@@ -1,52 +1,38 @@
 import { calcYOffsetPercent } from './subtitleUI';
 
 /**
- * Drag handle for subtitle overlay position (ADR-013 D4).
+ * Wire drag directly on overlay background (ADR-015 D1-D2).
  * Native Pointer Events (mouse + touch), pure calcYOffsetPercent for math.
- * Handle pointer-events: auto, text span keeps user-select: text (no conflict).
+ * Overlay is the drag target; text span keeps user-select: text (skipped via
+ * e.target === textSpan check). setPointerCapture keeps drag smooth when
+ * pointer crosses text span.
  *
- * @param overlay - Overlay div to move (sets bottom %)
+ * @param overlay - Overlay div to drag (sets bottom %) — ARIA role=slider on this element
  * @param container - Video wrapper (for height measurement)
  * @param initialOffset - Starting Y-offset percent (0-95)
  * @param onDrag - Callback with new Y-offset percent (debounced 50ms)
- * @returns Drag handle button element (already in overlay)
+ * @returns overlay (for chaining)
  */
 export function createDragHandle(
   overlay: HTMLDivElement,
   container: HTMLElement,
   initialOffset: number,
   onDrag: (newYOffsetPercent: number) => void,
-): HTMLButtonElement {
-  // Find existing handle in overlay (created by createOverlayLayer)
-  const handle = overlay.querySelector('[role="slider"]') as HTMLButtonElement | null;
-  if (!handle) {
-    // Fallback: create new handle if overlay doesn't have one
-    const newHandle = document.createElement('button');
-    newHandle.setAttribute('role', 'slider');
-    newHandle.setAttribute('aria-orientation', 'vertical');
-    newHandle.setAttribute('aria-label', 'Drag to move subtitle');
-    newHandle.setAttribute('aria-valuemin', '0');
-    newHandle.setAttribute('aria-valuemax', '95');
-    newHandle.setAttribute('aria-valuenow', String(initialOffset));
-    overlay.appendChild(newHandle);
-    return wireDrag(newHandle, overlay, container, initialOffset, onDrag);
-  }
-
-  handle.setAttribute('aria-valuenow', String(initialOffset));
-  return wireDrag(handle, overlay, container, initialOffset, onDrag);
+): HTMLDivElement {
+  return wireDrag(overlay, container, initialOffset, onDrag);
 }
 
 /**
- * Wire Pointer Events to handle. Returns the handle (for chaining).
+ * Wire Pointer Events to overlay. Returns the overlay (for chaining).
  * ponytail: closure-based state (startClientY, currentOffset) — no class needed.
+ * ADR-015 D1: e.target === textSpan check skips drag (text span keeps select text).
  */
 function wireDrag(
-  handle: HTMLButtonElement,
   overlay: HTMLDivElement,
   container: HTMLElement,
   initialOffset: number,
   onDrag: (newYOffsetPercent: number) => void,
-): HTMLButtonElement {
+): HTMLDivElement {
   let dragging = false;
   let startClientY = 0;
   let startOffset = initialOffset; // snapshot at pointerdown — base for delta calc
@@ -54,6 +40,10 @@ function wireDrag(
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   const onPointerDown = (e: PointerEvent): void => {
+    // ADR-015 D1: skip drag if pointerdown originated on text span (select text + tra cứu)
+    const textSpan = overlay.querySelector('span[data-testid]');
+    if (textSpan && e.target === textSpan) return;
+
     dragging = true;
     startClientY = e.clientY;
     // Snapshot current position as the base for this drag. Using `currentOffset`
@@ -61,8 +51,9 @@ function wireDrag(
     // `startOffset` stays fixed during the drag so `deltaY` from `startClientY`
     // is applied exactly once (no double-count across intermediate pointermove).
     startOffset = currentOffset;
+    overlay.style.cursor = 'grabbing'; // ADR-015 D1: cursor affordance during drag
     try {
-      handle.setPointerCapture(e.pointerId);
+      overlay.setPointerCapture(e.pointerId);
     } catch {
       // ponytail: setPointerCapture may throw in test env — ignore
     }
@@ -78,7 +69,7 @@ function wireDrag(
 
     // Update overlay position immediately (visual feedback)
     overlay.style.bottom = `${newOffset}%`;
-    handle.setAttribute('aria-valuenow', String(newOffset));
+    overlay.setAttribute('aria-valuenow', String(newOffset));
 
     // Debounce onDrag callback (50ms — avoid spamming storage.set)
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -90,8 +81,9 @@ function wireDrag(
   const onPointerUp = (e: PointerEvent): void => {
     if (!dragging) return;
     dragging = false;
+    overlay.style.cursor = 'ns-resize'; // restore hover affordance
     try {
-      handle.releasePointerCapture(e.pointerId);
+      overlay.releasePointerCapture(e.pointerId);
     } catch {
       // ponytail: releasePointerCapture may throw in test env — ignore
     }
@@ -103,10 +95,10 @@ function wireDrag(
     onDrag(currentOffset);
   };
 
-  handle.addEventListener('pointerdown', onPointerDown);
-  // Listen on document (pointer may move outside handle during drag)
+  overlay.addEventListener('pointerdown', onPointerDown);
+  // Listen on document (pointer may move outside overlay during drag)
   document.addEventListener('pointermove', onPointerMove);
   document.addEventListener('pointerup', onPointerUp);
 
-  return handle;
+  return overlay;
 }

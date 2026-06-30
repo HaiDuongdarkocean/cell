@@ -29,12 +29,31 @@ describe('createOverlayLayer', () => {
     expect(textSpan.style.pointerEvents).toBe('auto');
   });
 
-  it('creates drag handle with aria-label and role slider', () => {
+  it('ADR-015: no drag handle button — drag integrated into overlay background', () => {
     const container = document.createElement('div');
-    const { dragHandle } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
-    expect(dragHandle.getAttribute('aria-label')).toBe('Drag to move subtitle');
-    expect(dragHandle.getAttribute('role')).toBe('slider');
-    expect(dragHandle.getAttribute('aria-orientation')).toBe('vertical');
+    const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
+    // No separate drag handle button element
+    expect(overlay.querySelector('[data-testid="overlay-target-drag-handle"]')).toBeNull();
+    expect(overlay.querySelector('button')).toBeNull();
+  });
+
+  it('ADR-015 D1: overlay has pointer-events auto + cursor ns-resize (background drag affordance)', () => {
+    const container = document.createElement('div');
+    const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
+    expect(overlay.style.pointerEvents).toBe('auto');
+    expect(overlay.style.cursor).toBe('ns-resize');
+  });
+
+  it('ADR-015 D2: overlay has ARIA role=slider + per-role aria-label (moved from handle button)', () => {
+    const container = document.createElement('div');
+    const { overlay: targetOverlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
+    const { overlay: nativeOverlay } = createOverlayLayer('native', DEFAULT_OVERLAY_STYLE_NATIVE, container);
+    expect(targetOverlay.getAttribute('role')).toBe('slider');
+    expect(targetOverlay.getAttribute('aria-orientation')).toBe('vertical');
+    expect(targetOverlay.getAttribute('aria-valuemin')).toBe('0');
+    expect(targetOverlay.getAttribute('aria-valuemax')).toBe('95');
+    expect(targetOverlay.getAttribute('aria-label')).toBe('Drag to move target subtitle');
+    expect(nativeOverlay.getAttribute('aria-label')).toBe('Drag to move native subtitle');
   });
 
   it('sets z-index target=999999 > native=999998', () => {
@@ -130,5 +149,12 @@ describe('applyStyle', () => {
     // must NOT override to block — display stays managed by cue sync.
     applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, visible: true }, overlay);
     expect(overlay.style.display).toBe('none');
+  });
+
+  it('ADR-015 D2: applyStyle updates aria-valuenow directly on overlay (no querySelector handle)', () => {
+    const container = document.createElement('div');
+    const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
+    applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, yOffsetPercent: 42 }, overlay);
+    expect(overlay.getAttribute('aria-valuenow')).toBe('42');
   });
 });
