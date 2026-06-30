@@ -1,0 +1,15 @@
+1
+00:00:00,500 --> 00:00:02,500
+Hello world! This is a test subtitle.
+
+2
+00:00:02,500 --> 00:00:05,000
+Second line of subtitle.
+
+3
+00:00:05,000 --> 00:00:08,000
+Third line — testing sync.
+
+4
+00:00:08,000 --> 00:00:10,000
+Final line at the end.
