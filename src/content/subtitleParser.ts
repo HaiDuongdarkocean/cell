@@ -1,8 +1,8 @@
 // Subtitle parser adapter — reuses existing parseSrt/parseVtt from lib/parsers.
 // ponytail: no need to rewrite parsers, just thin adapter to ParseResult shape.
 
-import { parseSrt } from '@/lib/parsers/srtParser';
-import { parseVtt } from '@/lib/parsers/vttParser';
+import { parseSrt } from '@/shared/lib/parsers/srtParser';
+import { parseVtt } from '@/shared/lib/parsers/vttParser';
 import type { SrtCue } from '@/types/media';
 import type { ParseResult, SubtitleFormat } from '@/types/subtitle';
 

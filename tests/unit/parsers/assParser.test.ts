@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseAss } from '@/lib/parsers/assParser';
+import { parseAss } from '@/shared/lib/parsers/assParser';
 import type { AssSubtitle } from '@/types/media';
 
 const fixturePath = join(__dirname, '..', 'fixtures', 'sample.ass');

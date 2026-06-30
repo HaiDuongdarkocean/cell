@@ -1,5 +1,5 @@
 import { parseSubtitle } from './subtitleParser';
-import { convertAssToSrt } from '@/lib/converters/assToSrt';
+import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
 import type { ParseResult, SubtitleFormat } from '../types/subtitle';
 
 /**

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { convertAssToSrt } from '@/lib/converters/assToSrt';
+import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
 
 const fixturePath = join(__dirname, '..', 'fixtures', 'sample.ass');
 

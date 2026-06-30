@@ -26,7 +26,7 @@ import { cleanupOrphanedDownloads } from '@/lib/storage/opfsStorage';
 import { detectVideo } from '@/lib/detectors/videoDetector';
 import { detectSubtitle } from '@/lib/detectors/subtitleDetector';
 import { detectLanguage, labelToIsoCode } from '@/lib/detectors/languageDetector';
-import { parseM3u8 } from '@/lib/parsers/m3u8Parser';
+import { parseM3u8 } from '@/shared/lib/parsers/m3u8Parser';
 import type {
   DetectedVideo,
   DetectedSubtitle,

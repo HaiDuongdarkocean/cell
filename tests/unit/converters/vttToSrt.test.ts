@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { convertVttToSrt } from '@/lib/converters/vttToSrt';
+import { convertVttToSrt } from '@/shared/lib/parsers/vttToSrt';
 
 const fixturePath = join(__dirname, '..', 'fixtures', 'sample.vtt');
 

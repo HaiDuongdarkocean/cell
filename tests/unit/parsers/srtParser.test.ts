@@ -1,4 +1,4 @@
-import { parseSrt } from '@/lib/parsers/srtParser';
+import { parseSrt } from '@/shared/lib/parsers/srtParser';
 import type { SrtSubtitle } from '@/types/media';
 
 describe('parseSrt', () => {

@@ -1,4 +1,4 @@
-import { parseAss } from '@/lib/parsers/assParser';
+import { parseAss } from '@/shared/lib/parsers/assParser';
 import { msToSrtTime } from '@/lib/utils/timeUtils';
 
 /**

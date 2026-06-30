@@ -1,4 +1,4 @@
-import { parseVtt } from '@/lib/parsers/vttParser';
+import { parseVtt } from '@/shared/lib/parsers/vttParser';
 import { msToSrtTime } from '@/lib/utils/timeUtils';
 
 /**

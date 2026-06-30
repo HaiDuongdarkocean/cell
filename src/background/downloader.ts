@@ -1,7 +1,7 @@
-import { parseM3u8 } from '@/lib/parsers/m3u8Parser';
-import { convertAssToSrt } from '@/lib/converters/assToSrt';
-import { convertVttToSrt } from '@/lib/converters/vttToSrt';
-import { normalizeSrt } from '@/lib/converters/srtNormalizer';
+import { parseM3u8 } from '@/shared/lib/parsers/m3u8Parser';
+import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
+import { convertVttToSrt } from '@/shared/lib/parsers/vttToSrt';
+import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
 import { ConversionTimer } from '@/lib/converters/conversionTimer';
 import { planParallelConversion } from '@/lib/converters/parallelPlanner';
 import { generateFileName, resolveFilenameBase, buildSubtitleFileName } from '@/lib/utils/fileUtils';

@@ -3,7 +3,7 @@
 // ADR-005 D2: target = dòng lẻ (first), native = dòng chẵn (last).
 // Fallback: 1 line → target only (nativeText = ''); > 2 lines → last = native, rest = target.
 
-import { parseSrt } from '@/lib/parsers/srtParser';
+import { parseSrt } from '@/shared/lib/parsers/srtParser';
 import type { BilingualCue } from '@/types/media';
 import type { BilingualParseResult } from '@/types/subtitle';
 

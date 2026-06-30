@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { parseM3u8 } from '@/lib/parsers/m3u8Parser';
+import { parseM3u8 } from '@/shared/lib/parsers/m3u8Parser';
 
 const fixturesDir = join(__dirname, '..', 'fixtures');
 

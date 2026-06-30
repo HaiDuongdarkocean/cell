@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseVtt } from '@/lib/parsers/vttParser';
+import { parseVtt } from '@/shared/lib/parsers/vttParser';
 import type { VttSubtitle } from '@/types/media';
 
 const fixturePath = join(__dirname, '..', 'fixtures', 'sample.vtt');

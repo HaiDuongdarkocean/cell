@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { normalizeSrt } from '@/lib/converters/srtNormalizer';
+import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
 
 describe('normalizeSrt', () => {
   it('passes through already-clean SRT unchanged', () => {
