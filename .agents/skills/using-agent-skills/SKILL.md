@@ -27,12 +27,12 @@ Task arrives
     │   ├── Need doc-verified code? ───→ source-driven-development
     │   └── Stakes high / unfamiliar code? ──→ doubt-driven-development
     ├── Writing/running tests? ────────→ test-driven-development
-    │   └── Browser-based? ───────────→ browser-testing-with-devtools
-    │       └── Debugging UI/layout? ─→ debugging-with-edge-devtools
+    │   └── Browser-facing? ──────────→ extension-browser-debugging
+    │       (Chrome/Edge MV3 extension: install, inspect, measure, verify)
     ├── Something broke? ──────────────→ debugging-and-error-recovery
-    │   ├── Browser-facing bug? ───────→ debugging-with-edge-devtools
+    │   ├── Browser-facing bug? ───────→ extension-browser-debugging
     │   │   (UI/layout/fullscreen/content-script/console errors/visual regression)
-    │   └── Need live DOM measurement? → debugging-with-edge-devtools
+    │   └── Need live DOM measurement? → extension-browser-debugging
     ├── Reviewing code? ───────────────→ code-review-and-quality
     │   ├── Too complex? ─────────────→ code-simplification
     │   ├── Security concerns? ───────→ security-and-hardening
@@ -179,8 +179,7 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Build | frontend-ui-engineering | Production-quality UI with accessibility |
 | Build | api-and-interface-design | Stable interfaces with clear contracts |
 | Verify | test-driven-development | Failing test first, then make it pass |
-| Verify | browser-testing-with-devtools | Chrome DevTools MCP for runtime verification |
-| Verify | debugging-with-edge-devtools | MCP browser debugging: install extension, inspect DOM, measure, screenshot |
+| Verify | extension-browser-debugging | Chrome/Edge MV3 extension debugging + testing via DevTools MCP |
 | Verify | debugging-and-error-recovery | Reproduce → localize → fix → guard |
 | Review | code-review-and-quality | Five-axis review with quality gates |
 | Review | code-simplification | Preserve behavior while reducing unnecessary complexity |

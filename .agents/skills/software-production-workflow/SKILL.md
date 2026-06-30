@@ -180,7 +180,7 @@ Mọi file docs feature phải theo format: `<prefix>-<name>.md` với prefix �
 
 ## Giai đoạn 5 — Testing / Verification
 **Mục đích**: Verify code đáp ứng requirements + an toàn + ổn định.
-**Skill kích hoạt**: `test-driven-development` (test pyramid) → `code-review-and-quality` (5-axis review) → `browser-testing-with-devtools` (browser code) → `security-and-hardening` (SAST/DAST) → `performance-optimization` (perf test) → `doubt-driven-development` (adversarial review)
+**Skill kích hoạt**: `test-driven-development` (test pyramid) → `code-review-and-quality` (5-axis review) → `extension-browser-debugging` (browser/extension code) → `security-and-hardening` (SAST/DAST) → `performance-optimization` (perf test) → `doubt-driven-development` (adversarial review)
 **Input**: `src/` code + `tests/` + `docs/specs/spec-<feature>.md` (acceptance criteria)
 **Output**: Test reports, code review log
 **File ops**:
@@ -223,9 +223,9 @@ Mọi file docs feature phải theo format: `<prefix>-<name>.md` với prefix �
 
 ## Skill Synergies
 - **Ponytail PRE-FILTER + TDD**: AGENTS.md ponytail (ladder rung 1-7, before code) → `test-driven-development` (RED→GREEN→REFACTOR, only for code that needs to exist) → `code-review-and-quality` (5-axis review)
-- **Chrome Extension Safety**: AGENTS.md baseline + `source-driven-development` + `browser-testing-with-devtools`
+- **Chrome Extension Safety**: AGENTS.md baseline + `source-driven-development` + `extension-browser-debugging`
 - **Architecture + Incremental**: `system-architecture-design` + `incremental-implementation` + `planning-and-task-breakdown`
-- **Correctness + Doubt**: `doubt-driven-development` + `test-driven-development` + `browser-testing-with-devtools`
+- **Correctness + Doubt**: `doubt-driven-development` + `test-driven-development` + `extension-browser-debugging`
 - **Performance + Measurement**: `performance-optimization` + `observability-and-instrumentation`
 - **Security + Validation**: `security-and-hardening` + `doubt-driven-development`
 - **Learning + Conceptualization**: `debugging-and-error-recovery` (root cause) → `conceptualization` (5 triggers → 2-layer principle) → `code-review-and-quality` (axis 6: lessons)
