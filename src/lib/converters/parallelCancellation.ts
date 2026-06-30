@@ -132,10 +132,11 @@ export async function cleanupParallelTempFiles(
   }
 
   if (cleaned > 0 || errors > 0) {
-    console.debug(
+    console.log(
       `[parallel-cleanup] Cleaned ${cleaned} part files (${errors} errors) for ${downloadId}`,
     );
   }
 
   return { cleaned, errors };
 }
+

@@ -118,7 +118,7 @@ export function resolveEffectiveMode(
       return 'auto';
     }
     // Gates haven't passed — fall back to off (sequential).
-    console.debug(`[auto-gate] Auto mode disabled: ${gates.reason}`);
+    console.log(`[auto-gate] Auto mode disabled: ${gates.reason}`);
     return 'off';
   }
 
@@ -155,3 +155,4 @@ export function recordAttempt(
     totalFailures: state.totalFailures + (success ? 0 : 1),
   };
 }
+

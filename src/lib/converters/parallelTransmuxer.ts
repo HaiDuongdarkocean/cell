@@ -234,7 +234,7 @@ export async function transmuxTsToFmp4ParallelExperimental(
   const totalBytes = inputFile.size;
   const useWorkers = areWorkersAvailable();
 
-  console.debug(
+  console.log(
     `[parallel-transmuxer] Starting: ${groups.length} groups, ${totalBytes} bytes, ${useWorkers ? 'Web Workers' : 'inline (fallback)'}`,
   );
 
@@ -259,7 +259,7 @@ export async function transmuxTsToFmp4ParallelExperimental(
 
     const results = await Promise.all(
       groups.map(async (group, i) => {
-        console.debug(
+        console.log(
           `[parallel-transmuxer] Worker ${i}: bytes [${group.startByte}, ${group.endByte}), ${group.segmentIndices.length} segments`,
         );
 
@@ -279,7 +279,7 @@ export async function transmuxTsToFmp4ParallelExperimental(
         await writer.write(response.output!);
         await writer.close();
 
-        console.debug(
+        console.log(
           `[parallel-transmuxer] Worker ${i}: ${response.durationMs}ms, ${(response.outputSize / 1024 / 1024).toFixed(1)}MB output`,
         );
 
@@ -305,7 +305,7 @@ export async function transmuxTsToFmp4ParallelExperimental(
     const results = await Promise.all(
       groups.map(async (group, i) => {
         const partName = partNames[i];
-        console.debug(
+        console.log(
           `[parallel-transmuxer] Inline ${i}: bytes [${group.startByte}, ${group.endByte}), ${group.segmentIndices.length} segments`,
         );
 
@@ -344,7 +344,7 @@ export async function transmuxTsToFmp4ParallelExperimental(
   }
 
   // Merge all part files into the final output.
-  console.debug(`[parallel-transmuxer] Merging ${partNames.length} parts into ${outputName}`);
+  console.log(`[parallel-transmuxer] Merging ${partNames.length} parts into ${outputName}`);
   const mergeResult = await mergePartFiles(dirHandle, partNames, outputName);
   await cleanupPartFiles(dirHandle, partNames);
 
@@ -358,7 +358,7 @@ export async function transmuxTsToFmp4ParallelExperimental(
     };
   }
 
-  console.debug(`[parallel-transmuxer] Done: ${outputName} from ${partNames.length} parts`);
+  console.log(`[parallel-transmuxer] Done: ${outputName} from ${partNames.length} parts`);
   return {
     success: true,
     outputName,
@@ -463,7 +463,7 @@ async function mergePartFiles(
       await writer.write(toWrite);
       totalWritten += toWrite.length;
 
-      console.debug(
+      console.log(
         `[parallel-transmuxer] Merged ${partNames[i]}: ${toWrite.length} bytes` +
           (i > 0 ? ` (stripped ${writeOffset} bytes ftyp/moov, tfdt offset applied)` : '') +
           ` (total: ${totalWritten})`,
@@ -729,3 +729,4 @@ export async function writeSegmentRanges(
   const dirHandle = await ensureDownloadSubdir(downloadId);
   await writeJsonFile(dirHandle, 'segment-ranges.json', ranges);
 }
+

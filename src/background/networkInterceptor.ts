@@ -102,7 +102,7 @@ export class NetworkInterceptor {
 
     // Debug logging for media detection
     if (video || subtitle) {
-      console.debug('[NetworkInterceptor] Detected media:', {
+      console.log('[NetworkInterceptor] Detected media:', {
         tabId: details.tabId,
         video: video ? { id: video.id, format: video.format, url: video.url } : null,
         subtitle: subtitle ? { id: subtitle.id, format: subtitle.format, language: subtitle.language, url: subtitle.url } : null,
@@ -265,3 +265,4 @@ export class NetworkInterceptor {
     }
   }
 }
+

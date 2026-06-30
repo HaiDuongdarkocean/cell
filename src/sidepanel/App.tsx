@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSidePanelStore } from './store/sidePanelStore';
 import { CueList } from './components/CueList';
 import { getActiveContentTabId } from '@/popup/utils/getActiveContentTab';
@@ -16,67 +16,126 @@ export function App() {
     return DEFAULT_KEYBOARD_SHORTCUTS;
   });
 
+  // Active content tab id — kept in a ref so the broadcast listener (created
+  // once) always reads the latest value without re-subscribing. Mirrors the
+  // pattern in popup's useDetectedMedia (ADR-011: side panel per-tab state).
+  const activeTabIdRef = useRef<number | undefined>(undefined);
+
+  // Reset store + re-fetch cached cues for a tab. Called on mount and on
+  // chrome.tabs.onActivated (user switches tab). Reset is required so a tab
+  // with no cached cues shows "No subtitles loaded" instead of the previous
+  // tab's stale cues.
+  const syncActiveTab = async (tabId: number | undefined): Promise<void> => {
+    activeTabIdRef.current = tabId;
+    const store = useSidePanelStore.getState();
+    store.setCues([]);
+    store.setCurrentTime(0, 0);
+    store.setPlaying(false);
+    if (tabId === undefined) return;
+    try {
+      const res = await chrome.runtime.sendMessage({
+        type: 'REQUEST_SUBTITLE_CUES',
+        payload: { tabId },
+      });
+      const cuesFromCache = (res as { success?: boolean; data?: { cues?: BilingualCue[] } })?.data?.cues;
+      if (cuesFromCache && cuesFromCache.length > 0 && activeTabIdRef.current === tabId) {
+        useSidePanelStore.getState().setCues(cuesFromCache);
+      }
+    } catch {
+      // Background may be asleep — silently ignore; live listener will
+      // catch the next SUBTITLE_CUES_LOADED for this tab.
+    }
+  };
+
   useEffect(() => {
-    // Listen for messages from background (relayed from content script)
+    let cancelled = false;
+
+    // Listen for messages from background (relayed from content script).
+    // TWO-LAYER filter (ADR-011 v3):
+    //   1. Drop messages with tabId === undefined — these are raw broadcasts
+    //      from content-script (chrome.runtime.sendMessage fans out to ALL
+    //      extension listeners including this panel). Only accept messages
+    //      that passed through background (which injects sender.tab.id).
+    //   2. Drop messages whose tabId !== activeTabIdRef — background already
+    //      filters at the relay point (only active tab relayed), but this is
+    //      a defense-in-depth guard in case background's activeTabIdForPanel
+    //      is stale (SW restart, race).
     const listener = (msg: { type: string; payload?: unknown }) => {
       if (!msg?.type) return;
+      const payload = msg.payload as { tabId?: number } | undefined;
+      // Layer 1: drop raw content-script broadcasts (tabId undefined).
+      // These bypass background's filter entirely.
+      if (payload?.tabId === undefined) return;
+      // Layer 2: defense-in-depth — only accept the active tab.
+      if (payload.tabId !== activeTabIdRef.current) return;
       switch (msg.type) {
         case 'SUBTITLE_CUES_LOADED': {
-          const payload = msg.payload as { cues: BilingualCue[] } | undefined;
-          if (payload?.cues) {
-            useSidePanelStore.getState().setCues(payload.cues);
+          const cuesPayload = payload as { cues: BilingualCue[] } | undefined;
+          if (cuesPayload?.cues) {
+            useSidePanelStore.getState().setCues(cuesPayload.cues);
           }
           break;
         }
         case 'VIDEO_TIME_UPDATE': {
-          const payload = msg.payload as { currentTimeMs: number; durationMs: number } | undefined;
-          if (payload) {
-            useSidePanelStore.getState().setCurrentTime(payload.currentTimeMs, payload.durationMs);
+          const timePayload = payload as { currentTimeMs: number; durationMs: number } | undefined;
+          if (timePayload) {
+            useSidePanelStore.getState().setCurrentTime(timePayload.currentTimeMs, timePayload.durationMs);
           }
           break;
         }
         case 'VIDEO_PLAY_STATE': {
-          const payload = msg.payload as { isPlaying: boolean } | undefined;
-          if (payload) {
-            useSidePanelStore.getState().setPlaying(payload.isPlaying);
+          const playPayload = payload as { isPlaying: boolean } | undefined;
+          if (playPayload) {
+            useSidePanelStore.getState().setPlaying(playPayload.isPlaying);
           }
           break;
         }
       }
     };
     chrome.runtime.onMessage.addListener(listener);
-    return () => chrome.runtime.onMessage.removeListener(listener);
-  }, []);
 
-  // Request cached cues on mount — handles the race where the panel opens
-  // AFTER the content-script already sent SUBTITLE_CUES_LOADED (which was
-  // dropped because no listener was registered yet). Background caches the
-  // last cues per tab and re-sends them here.
-  useEffect(() => {
-    let cancelled = false;
+    // Tab activation → re-fetch cues for the newly-active tab.
+    // ponytail: only onActivated is tracked. A background tab navigating
+    // (onUpdated loading) while not active won't clear the panel — but the
+    // panel isn't showing that tab anyway, so no bug. Ceiling: track all
+    // tab lifecycles if panel ever shows non-active tabs.
+    const onActivated = (activeInfo: chrome.tabs.OnActivatedInfo): void => {
+      if (cancelled) return;
+      void syncActiveTab(activeInfo.tabId);
+    };
+    chrome.tabs.onActivated.addListener(onActivated);
+
+    // Same-tab navigation on the active tab → background deletes
+    // lastCuesByTab[tabId] (onTabUpdated loading, index.ts:534). Mirror that
+    // here so the panel doesn't show stale cues from the previous URL while
+    // the new URL's subtitles autoload.
+    const onUpdated = (
+      tabId: number,
+      changeInfo: chrome.tabs.OnUpdatedInfo,
+    ): void => {
+      if (cancelled) return;
+      if (changeInfo.status !== 'loading') return;
+      if (tabId !== activeTabIdRef.current) return;
+      const store = useSidePanelStore.getState();
+      store.setCues([]);
+      store.setCurrentTime(0, 0);
+      store.setPlaying(false);
+    };
+    chrome.tabs.onUpdated.addListener(onUpdated);
+
+    // Initial sync: resolve active content tab + fetch its cached cues.
     (async () => {
       const tabId = await getActiveContentTabId();
-      if (cancelled || tabId === undefined) return;
-      try {
-        const res = await chrome.runtime.sendMessage({
-          type: 'REQUEST_SUBTITLE_CUES',
-          payload: { tabId },
-        });
-        if (cancelled) return;
-        const cuesFromCache = (res as { success?: boolean; data?: { cues?: BilingualCue[] } })?.data?.cues;
-        if (cuesFromCache && cuesFromCache.length > 0) {
-          // Only set if store is still empty (don't overwrite cues that
-          // arrived via the live SUBTITLE_CUES_LOADED listener in the meantime)
-          if (useSidePanelStore.getState().cues.length === 0) {
-            useSidePanelStore.getState().setCues(cuesFromCache);
-          }
-        }
-      } catch {
-        // Background may be asleep — silently ignore; live listener will
-        // catch the next SUBTITLE_CUES_LOADED.
-      }
+      if (cancelled) return;
+      void syncActiveTab(tabId);
     })();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+      chrome.runtime.onMessage.removeListener(listener);
+      chrome.tabs.onActivated.removeListener(onActivated);
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+    };
   }, []);
 
   const handleSeek = (timeMs: number) => {

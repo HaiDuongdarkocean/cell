@@ -603,7 +603,7 @@ export class Downloader {
    */
   async saveBlob(blob: Blob, filename: string): Promise<void> {
     const url = await blobToDataUrl(blob);
-    console.debug(`[downloader] saveBlob: filename="${filename}", blobType="${blob.type}", blobSize=${blob.size}, urlPrefix="${url.slice(0, 50)}..."`);
+    console.log(`[downloader] saveBlob: filename="${filename}", blobType="${blob.type}", blobSize=${blob.size}, urlPrefix="${url.slice(0, 50)}..."`);
     // Set pendingFilename BEFORE calling chrome.downloads.download so the
     // onDeterminingFilename listener (registered in background init) can
     // force Edge to use it. Edge ignores the `filename` param for data: URLs.
@@ -614,11 +614,11 @@ export class Downloader {
         filename,
         saveAs: false,
       });
-      console.debug(`[downloader] saveBlob: download started id=${downloadId}, requested filename="${filename}"`);
+      console.log(`[downloader] saveBlob: download started id=${downloadId}, requested filename="${filename}"`);
       // Verify what filename Edge actually used
       chrome.downloads.search({ id: downloadId }).then((items) => {
         if (items.length > 0) {
-          console.debug(`[downloader] saveBlob: ACTUAL filename="${items[0].filename}", mime="${items[0].mime}"`);
+          console.log(`[downloader] saveBlob: ACTUAL filename="${items[0].filename}", mime="${items[0].mime}"`);
         }
       }).catch(() => {});
     } catch (err) {
@@ -748,13 +748,13 @@ export class Downloader {
     let aesKey: CryptoKey | undefined;
     if (playlist.encryption && playlist.encryption.method === 'AES-128') {
       this.throwIfCancelled(downloadId);
-      console.debug(`[downloader] Playlist is AES-128 encrypted, fetching key: ${playlist.encryption.keyUri}`);
+      console.log(`[downloader] Playlist is AES-128 encrypted, fetching key: ${playlist.encryption.keyUri}`);
       aesKey = await this.fetchKey(
         playlist.encryption.keyUri,
         video.tabUrl,
         downloadId,
       );
-      console.debug('[downloader] AES-128 key fetched and cached');
+      console.log('[downloader] AES-128 key fetched and cached');
     }
 
     // --- fMP4 / CMAF setup ---
@@ -767,7 +767,7 @@ export class Downloader {
 
     if (isFmp4 && playlist.initSegment) {
       this.throwIfCancelled(downloadId);
-      console.debug(`[downloader] fMP4 playlist detected, fetching init segment: ${playlist.initSegment.uri}`);
+      console.log(`[downloader] fMP4 playlist detected, fetching init segment: ${playlist.initSegment.uri}`);
       const initBlob = await this.fetchSegmentWithRange(
         playlist.initSegment.uri,
         video.tabUrl,
@@ -781,7 +781,7 @@ export class Downloader {
       } finally {
         await initWriter.close();
       }
-      console.debug(`[downloader] Init segment written (${initBlob.size} bytes)`);
+      console.log(`[downloader] Init segment written (${initBlob.size} bytes)`);
     }
 
     // Phase 1: Fetch segments in parallel batches, write sequentially to OPFS
@@ -805,14 +805,14 @@ export class Downloader {
     });
     const skippedAds = totalSegments - contentSegments.length;
     if (skippedAds > 0) {
-      console.debug(`[downloader] Skipping ${skippedAds} ad segments (${Math.floor(sectionIndex / 2)} ad breaks detected)`);
+      console.log(`[downloader] Skipping ${skippedAds} ad segments (${Math.floor(sectionIndex / 2)} ad breaks detected)`);
     }
     if (contentSegments.length === 0) {
       throw new Error('All segments are in ad breaks — no content to download');
     }
     const effectiveTotal = contentSegments.length;
 
-    console.debug(
+    console.log(
       `[downloader] Starting parallel download: ${effectiveTotal} segments (${skippedAds} ads skipped), concurrency=${this.segmentConcurrency}`,
     );
     const writer = await createOpfsWriter(dirHandle, opfsFilename);
@@ -887,7 +887,7 @@ export class Downloader {
         }
 
         const batchEnd = start + blobs.length;
-        console.debug(
+        console.log(
           `[downloader] Fetched+wrote batch ${start}-${batchEnd - 1} in ${fetchMs}ms, total=${totalBytes} bytes`,
         );
       }
@@ -897,10 +897,10 @@ export class Downloader {
 
     const downloadMs = Math.round(performance.now() - downloadStartedAt);
     timer.end('download');
-    console.debug(
+    console.log(
       `[downloader] Downloaded ${totalSegments} segments (${totalBytes} bytes) in ${downloadMs}ms`,
     );
-    console.debug(
+    console.log(
       `[downloader] Recorded ${segmentRanges.length} segment ranges for ${downloadId}`,
     );
 
@@ -936,7 +936,7 @@ export class Downloader {
       totalBytes,
       typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined,
     );
-    console.debug(parallelPlan.summary);
+    console.log(parallelPlan.summary);
 
     // Phase 2: Save the file.
     //
@@ -963,7 +963,7 @@ export class Downloader {
         outputMimeType,
       );
       timer.end('save');
-      console.debug(`[downloader] fMP4 saved directly as .mp4 (${totalBytes} bytes, no transmux)`);
+      console.log(`[downloader] fMP4 saved directly as .mp4 (${totalBytes} bytes, no transmux)`);
     } else if (shouldConvert && this.convertCallback) {
       this.reportProgress(downloadId, 'converting', 85, undefined, undefined, totalBytes, totalBytes);
       timer.start('convert');
@@ -972,7 +972,7 @@ export class Downloader {
         const result = await this.convertCallback(dirHandle, downloadId);
         const convertMs = Math.round(performance.now() - convertStartedAt);
         timer.end('convert');
-        console.debug(`[downloader] Conversion succeeded in ${convertMs}ms`);
+        console.log(`[downloader] Conversion succeeded in ${convertMs}ms`);
         savedFilename = generateFileName(
           resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
           'mp4',
@@ -1196,3 +1196,4 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   const mimeType = blob.type || 'application/octet-stream';
   return `data:${mimeType};base64,${base64}`;
 }
+

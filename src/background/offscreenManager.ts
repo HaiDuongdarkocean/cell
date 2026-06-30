@@ -88,14 +88,14 @@ export class OffscreenManager {
         });
         if (response?.success) {
           this.listenerReady = true;
-          console.debug(
+          console.log(
             `[offscreen-manager] Listener ready after ${attempt + 1} ping(s)`,
           );
           return;
         }
       } catch (err) {
         // "Could not establish connection" — listener not ready yet, retry.
-        console.debug(
+        console.log(
           `[offscreen-manager] Ping attempt ${attempt + 1} failed:`,
           err instanceof Error ? err.message : err,
         );
@@ -136,3 +136,4 @@ export class OffscreenManager {
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+

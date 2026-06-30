@@ -62,8 +62,9 @@ export class ConversionTimer {
       }
     }
     const totalMs = Math.round(performance.now() - this.createdAt);
-    console.debug(
+    console.log(
       `[conversion-timer] ${this.downloadId}: ${parts.join(', ')} | total=${totalMs}ms`,
     );
   }
 }
+
