@@ -67,7 +67,7 @@ function wireDrag(
     if (!dragging) return;
     const deltaY = e.clientY - startClientY;
     const rect = container.getBoundingClientRect();
-    const newOffset = calcYOffsetPercent(deltaY, rect.height, initialOffset);
+    const newOffset = calcYOffsetPercent(deltaY, rect.height, currentOffset);
     currentOffset = newOffset;
 
     // Update overlay position immediately (visual feedback)

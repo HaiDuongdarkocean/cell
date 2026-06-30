@@ -82,6 +82,25 @@ describe('createDragHandle', () => {
     expect(handle.getAttribute('aria-valuenow')).toBe('15');
   });
 
+  it('second drag starts from current offset, not initial offset', () => {
+    const overlay = document.createElement('div');
+    const container = document.createElement('div');
+    container.getBoundingClientRect = () => ({ height: 600, width: 800, top: 0, left: 0, right: 800, bottom: 600, x: 0, y: 0, toJSON: () => {} }) as DOMRect;
+    const handle = createDragHandle(overlay, container, 10, () => {});
+
+    // Drag 1: UP 60px (clientY 100→40) on 600px = +10% → 10 + 10 = 20
+    handle.dispatchEvent(new PointerEvent('pointerdown', { clientY: 100, bubbles: true }));
+    document.dispatchEvent(new PointerEvent('pointermove', { clientY: 40 }));
+    document.dispatchEvent(new PointerEvent('pointerup'));
+    expect(overlay.style.bottom).toBe('20%');
+
+    // Drag 2: UP another 60px (clientY 40→-20) on 600px = +10% → 20 + 10 = 30
+    handle.dispatchEvent(new PointerEvent('pointerdown', { clientY: 40, bubbles: true }));
+    document.dispatchEvent(new PointerEvent('pointermove', { clientY: -20 }));
+    document.dispatchEvent(new PointerEvent('pointerup'));
+    expect(overlay.style.bottom).toBe('30%');
+  });
+
   it('ignores pointermove when not in drag mode', () => {
     const overlay = document.createElement('div');
     const container = document.createElement('div');

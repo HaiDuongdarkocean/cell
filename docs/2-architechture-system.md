@@ -29,7 +29,7 @@ src/
 │   ├── subtitleDragDrop.ts        # File read + parse: readFileAsText, handleFileDrop (drag-drop handler)
 │   ├── subtitleImport.ts          # Import button: createImportButton (appended to video parent, top-left, avoids toggle overlap), handleFileSelect (file picker)
 │   ├── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring; init receives video parent; loadBilingualCues: 2 binary searches runtime align) — **ADR-013**: 2 ref targetOverlay + nativeOverlay, onTimeUpdate 2 updateOverlayText — **planned ADR-014**: loadBilingualCues merge (bug A fix, giữ cues cũ khi side mới rỗng)
-│   ├── subtitleDragPosition.ts    # NEW (planned ADR-013): calcYOffsetPercent (pure, clamp 0-95) + createDragHandle (pointer events, icon move-vertical, role=slider aria)
+│   ├── subtitleDragPosition.ts    # calcYOffsetPercent (pure, clamp 0-95) + createDragHandle (pointer events, icon move-vertical, role=slider aria). Bug fix: second drag uses currentOffset, not initialOffset
 │   ├── subtitleAutoLoad.ts        # Auto-load: shouldAutoLoad, validateOverride, fetchAndParseSubtitle (cache by URL, CORS fallback), handleAutoLoadSubtitles (fetch+parse+load bilingual), formatFromUrl, clearAutoLoadCache
 │   ├── subtitleMerge.ts           # mergeCuesForPanel(targetCues, nativeCues) → BilingualCue[] (target skeleton, native best-effort overlap; fallback native skeleton when target empty)
 │   ├── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
@@ -218,7 +218,7 @@ tests/
 | `content/subtitleParser.ts` | srtParser, vttParser, types | subtitleDragDrop, subtitleImport | Adapter: parseSubtitle(content, format) → ParseResult |
 | `content/subtitleSync.ts` | types (SrtCue) | subtitleOverlay | Binary search: findCurrentLine(cues, currentTime) → index |
 | `content/subtitleUI.ts` | types (OverlayConfig, **planned ADR-013**: OverlayStyleConfig, TextShadowConfig) | subtitleOverlay, subtitleImport | Overlay UI: createOverlay (appended to video parent), createDragHint, showToast, updateOverlayText, hideOverlay, removeOverlay — **planned ADR-013**: createOverlayLayer(role) 2 div độc lập + applyStyle + buildTextShadow + sanitizeFontFamily + hexToRgba |
-| `content/subtitleDragPosition.ts` | types (OverlayStyleConfig) | subtitleOverlay, content-script.ts | **NEW (planned ADR-013)**: calcYOffsetPercent (pure, clamp 0-95) + createDragHandle (Pointer Events, icon move-vertical, role=slider aria, debounce 50ms) |
+| `content/subtitleDragPosition.ts` | types (OverlayStyleConfig) | subtitleOverlay, content-script.ts | calcYOffsetPercent (pure, clamp 0-95) + createDragHandle (Pointer Events, icon move-vertical, role=slider aria, debounce 50ms). Bug fix: second drag uses currentOffset, not initialOffset |
 | `content/subtitleDragDrop.ts` | subtitleParser, types | subtitleImport | File read + parse: readFileAsText, handleFileDrop |
 | `content/subtitleImport.ts` | subtitleDragDrop, types | subtitleOverlay, content-script.ts | Import button: createImportButton (appended to video parent, top-left, avoids toggle overlap), handleFileSelect |
 | `content/subtitleOverlay.ts` | subtitleUI, subtitleImport, subtitleSync, types, **planned ADR-013**: subtitleDragPosition | content-script.ts | Orchestrator: SubtitleOverlayController (sync → overlay wiring) — **planned ADR-013**: 2 ref targetOverlay + nativeOverlay, onTimeUpdate 2 updateOverlayText, chrome.storage.onChanged listener |
@@ -547,7 +547,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `sanitizeFontFamily` | `content/subtitleUI.ts` | (string) → string | applyStyle | **NEW (planned ADR-013)**: Pure — block url()/@import/expression(), fallback 'sans-serif' |
 | `hexToRgba` | `content/subtitleUI.ts` | (hex, alpha 0-1) → string | applyStyle | **NEW (planned ADR-013)**: Pure — convert hex + alpha → rgba string (bg color tách alpha rời) |
 | `calcYOffsetPercent` | `content/subtitleDragPosition.ts` | (pointerDeltaY, containerHeight, currentOffset) → number | createDragHandle | **NEW (planned ADR-013)**: Pure — calc Y-offset % from pointer delta, clamp 0-95 |
-| `createDragHandle` | `content/subtitleDragPosition.ts` | (overlay, container, onDrag) → HTMLButtonElement | subtitleOverlay | **NEW (planned ADR-013)**: Pointer Events drag handle (icon move-vertical, role=slider aria, debounce 50ms) |
+| `createDragHandle` | `content/subtitleDragPosition.ts` | (overlay, container, initialOffset, onDrag) → HTMLButtonElement | subtitleOverlay | Pointer Events drag handle (icon move-vertical, role=slider aria, debounce 50ms). Uses currentOffset during drag so consecutive drags start from the last position |
 | `createSubtitleDropdown` | `content/subtitleSelector.ts` | (role, container, subtitles, language, activeIndex, onSelect) → {icon, destroy} | content-script.ts | **NEW (planned ADR-014)**: Overlay dropdown góc phải container — icon chevron-down, popover list sub cùng lang + cue count + format, click outside/Esc/chọn đóng. Chỉ render khi ≥2 sub cùng lang |
 | `readFileAsText` | `content/subtitleDragDrop.ts` | File → Promise<string> | subtitleImport | Read File content as text via FileReader |
 | `handleFileDrop` | `content/subtitleDragDrop.ts` | File → Promise<ParseResult> | subtitleImport | Validate extension + read + parse subtitle file |
