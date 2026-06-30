@@ -1,20 +1,23 @@
 import { PageScanner } from './pageScanner';
 import { SubtitleOverlayController } from './subtitleOverlay';
-import { handleFileDrop } from './subtitleDragDrop';
-import { handleFileSelect } from './subtitleImport';
+import { parseAndDetectFiles, assignImportRole } from './subtitleImport';
 import { createDragHint, showToast } from './subtitleUI';
-import { parseBilingualSrt } from './subtitleBilingualParser';
 import { handleAutoLoadSubtitles, clearAutoLoadCache, fetchAndParseSubtitle, formatFromUrl } from './subtitleAutoLoad';
 import { mergeCuesForPanel } from './subtitleMerge';
 import { createToggleButton, seekToCue } from './subtitlePanel';
 import { handleShortcutKey } from './subtitleShortcuts';
 import { createSubtitleDropdown } from './subtitleSelector';
+import { createSubtitleManagerPanel } from './subtitleManagerPanel';
+import { createDebouncedToast } from './subtitleToast';
+import { formatSubtitleName } from './subtitleNaming';
+import { isoCodeToLabel } from '@/lib/detectors/languageDetector';
 import { MESSAGE_TYPES } from '@/constants/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/constants/config';
 import type { OverlayConfig, OverlayStyleConfig } from '../types/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle } from '../types/media';
-import type { AutoLoadSubtitlesPayload } from '../types/message';
+import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '../types/message';
 import type { VideoEpisodeChangedPayload } from '../types/message';
+import type { SubtitlePanelItem, SubtitleManagerPanel } from './subtitleManagerPanel';
 
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
 // background tự lấy từ sender.tab.id (xem messageBus.handleMessage)
@@ -145,8 +148,20 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   // Track active sub indices + all matches for re-fetch on dropdown select
   let activeTargetIndex = 0;
   let activeNativeIndex = 0;
-  let targetMatches: readonly import('../types/message').SubtitleForOverlayResult[] = [];
-  let nativeMatches: readonly import('../types/message').SubtitleForOverlayResult[] = [];
+  let targetMatches: readonly SubtitleForOverlayResult[] = [];
+  let nativeMatches: readonly SubtitleForOverlayResult[] = [];
+  // ADR-015 T11: unified Subtitle Manager Panel (replaces V1 dropdowns long-term)
+  let managerPanel: SubtitleManagerPanel | null = null;
+  // ADR-015 T10: imported subtitle items per role (for panel display + select)
+  let importedTargetItems: SubtitlePanelItem[] = [];
+  let importedNativeItems: SubtitlePanelItem[] = [];
+  let activeImportTargetIndex = 0;
+  let activeImportNativeIndex = 0;
+  // ADR-015 T10: parsed files side-map (panel items don't carry cues)
+  let importedParsedTarget: import('./subtitleImport').ParsedFile[] = [];
+  let importedParsedNative: import('./subtitleImport').ParsedFile[] = [];
+  // ADR-015 T7: debounced toast (collapses rapid import/switch messages)
+  const debouncedToast = createDebouncedToast(showToast, 500);
 
   // Load shortcuts from storage
   loadShortcuts().then((s) => { shortcuts = s; });
@@ -160,6 +175,14 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
       payload: { tabId: undefined }, // background resolves from sender.tab.id
     });
+  });
+
+  // ADR-015 T11: create unified Subtitle Manager Panel.
+  // Replaces V1 separate target/native dropdown icons with a single manager
+  // icon + collapsible panel + active chip. onSelect handles both auto-loaded
+  // and imported subs (distinguished by `source` field on SubtitlePanelItem).
+  managerPanel = createSubtitleManagerPanel(container, {
+    onSelect: (role, index) => { void onPanelSelect(role, index); },
   });
 
   // Wire keyboard shortcuts
@@ -298,29 +321,15 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     return false; // synchronous listener
   });
 
-  // === File import wiring ===
+  // === File import wiring (ADR-015 T10: multi-file → panel) ===
   const importButton = document.querySelector('[data-testid="subtitle-import-button"]') as HTMLButtonElement | null;
   const fileInput = importButton?.querySelector('input[type="file"]') as HTMLInputElement | null;
   if (importButton && fileInput) {
     fileInput.addEventListener('change', async () => {
-      const file = fileInput.files?.[0];
-      if (!file) return;
-      const result = await handleFileSelect(file);
-      if (result.success && result.cues.length > 0) {
-        controller?.loadCues(result.cues);
-        const bilingualResult = parseBilingualSrt(await file.text());
-        if (bilingualResult.success) {
-          bilingualCues = bilingualResult.cues;
-          // Send cues to Side Panel
-          chrome.runtime.sendMessage({
-            type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-            payload: { tabId: undefined, cues: bilingualCues },
-          });
-        }
-        showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, container);
-      } else {
-        showToast(`Import failed: ${result.error ?? 'unknown error'}`, container);
-      }
+      const files = Array.from(fileInput.files ?? []);
+      if (files.length === 0) return;
+      await processImportedFiles(files, container);
+      fileInput.value = ''; // reset so same file can be re-selected
     });
   }
 
@@ -346,25 +355,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     e.preventDefault();
     dragCounter = 0;
     dragHint.style.display = 'none';
-    const file = e.dataTransfer?.files?.[0];
-    if (!file) return;
-    const result = await handleFileDrop(file);
-    if (result.success && result.cues.length > 0) {
-      controller?.loadCues(result.cues);
-      const fileText = await file.text();
-      const bilingualResult = parseBilingualSrt(fileText);
-      if (bilingualResult.success) {
-        bilingualCues = bilingualResult.cues;
-        // Send cues to Side Panel
-        chrome.runtime.sendMessage({
-          type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-          payload: { tabId: undefined, cues: bilingualCues },
-        });
-      }
-      showToast(`Subtitle loaded: ${result.cues.length} cues (${result.format.toUpperCase()})`, container);
-    } else {
-      showToast(`Drag-drop failed: ${result.error ?? 'unknown error'}`, container);
-    }
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    if (files.length === 0) return;
+    await processImportedFiles(files, container);
   });
 
   // === Bilingual auto-load wiring (ADR-007 D1, spec F3/F4/F7) ===
@@ -436,6 +429,8 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
               );
             }
           }
+          // ADR-015 T11: update chip when auto-load pushes new matches
+          updateActiveChip();
         },
       });
     }
@@ -449,6 +444,138 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     type: MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES,
     payload: { tabId: undefined }, // background resolves from sender.tab.id
   });
+
+  /**
+   * ADR-015 T10: Process imported files (multi-file) → panel + cues + toast.
+   * Flow: parseAndDetectFiles → assignImportRole → panel.updateTarget/Native
+   * → loadBilingualCues (first target + first native) → chip + toast.
+   */
+  async function processImportedFiles(files: File[], _container: HTMLElement): Promise<void> {
+    if (files.length === 0) return;
+    const { targetLang, nativeLang } = await loadTargetNativeLangs();
+    const parsed = await parseAndDetectFiles(files);
+    if (parsed.length === 0) {
+      debouncedToast('Import failed: no valid subtitle files', _container);
+      return;
+    }
+    const assignment = assignImportRole(parsed, targetLang, nativeLang);
+
+    // Build panel items
+    importedTargetItems = assignment.target.map((f, i) => ({
+      id: `imported-target-${i}`,
+      name: formatSubtitleName('imported', '', i, f.file.name),
+      format: f.format,
+      size: f.file.size,
+      source: 'imported' as const,
+      role: 'target' as const,
+      index: i,
+    }));
+    importedNativeItems = assignment.native.map((f, i) => ({
+      id: `imported-native-${i}`,
+      name: formatSubtitleName('imported', '', i, f.file.name),
+      format: f.format,
+      size: f.file.size,
+      source: 'imported' as const,
+      role: 'native' as const,
+      index: i,
+    }));
+    importedParsedTarget = assignment.target;
+    importedParsedNative = assignment.native;
+    activeImportTargetIndex = 0;
+    activeImportNativeIndex = 0;
+    managerPanel?.updateTarget(importedTargetItems, activeImportTargetIndex);
+    managerPanel?.updateNative(importedNativeItems, activeImportNativeIndex);
+
+    // Load cues: first target + first native (D1 merge keeps other side)
+    const targetCues = assignment.target[0]?.cues ?? [];
+    const nativeCues = assignment.native[0]?.cues ?? [];
+    if (targetCues.length > 0 || nativeCues.length > 0) {
+      controller?.loadBilingualCues(targetCues, nativeCues);
+      // ADR-015 T10: merge for Side Panel + keyboard shortcuts
+      bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
+      chrome.runtime.sendMessage({
+        type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+        payload: { tabId: undefined, cues: bilingualCues },
+      });
+    } else if (assignment.target.length === 0 && assignment.native.length === 0) {
+      controller?.loadCues(parsed[0].cues); // fallback: single mode
+    }
+
+    // Update chip with active names
+    updateActiveChip();
+
+    // Toast
+    const total = assignment.target.length + assignment.native.length;
+    const ignoredCount = assignment.ignored.length;
+    if (total === 1) {
+      debouncedToast(`✓ Imported ${parsed[0].file.name}`, _container);
+    } else {
+      const parts: string[] = [];
+      if (assignment.target.length > 0) parts.push(`Target:${assignment.target.length}`);
+      if (assignment.native.length > 0) parts.push(`Native:${assignment.native.length}`);
+      const ignoredTxt = ignoredCount > 0 ? ` (${ignoredCount} ignored)` : '';
+      debouncedToast(`✓ Imported ${total} files → ${parts.join(' + ')}${ignoredTxt}`, _container);
+    }
+  }
+
+  /**
+   * ADR-015 T10/T11: Update active chip with current target + native names.
+   * Prefers imported active item if exists, else auto-loaded active match.
+   */
+  function updateActiveChip(): void {
+    const targetName = importedTargetItems[activeImportTargetIndex]?.name
+      ?? (targetMatches[activeTargetIndex] ? isoCodeToLabel(targetMatches[activeTargetIndex].language) : null);
+    const nativeName = importedNativeItems[activeImportNativeIndex]?.name
+      ?? (nativeMatches[activeNativeIndex] ? isoCodeToLabel(nativeMatches[activeNativeIndex].language) : null);
+    managerPanel?.updateChip(targetName ?? null, nativeName ?? null);
+  }
+
+  /**
+   * ADR-015 T10: Load target/native languages from chrome.storage.local.
+   * Falls back to empty strings (assignImportRole handles empty → all ignored
+   * → fallback-to-target).
+   */
+  async function loadTargetNativeLangs(): Promise<{ targetLang: string; nativeLang: string }> {
+    try {
+      const result = await chrome.storage.local.get('settings');
+      const settings = result.settings as
+        | { subtitleOverlayTargetLanguage?: string; subtitleOverlayNativeLanguage?: string }
+        | undefined;
+      return {
+        targetLang: settings?.subtitleOverlayTargetLanguage ?? '',
+        nativeLang: settings?.subtitleOverlayNativeLanguage ?? '',
+      };
+    } catch {
+      return { targetLang: '', nativeLang: '' };
+    }
+  }
+
+  /**
+   * ADR-015 T11: User selected an imported subtitle via the manager panel.
+   * Loads cues from the stored parsed file + updates chip + toast.
+   */
+  async function onPanelSelect(role: 'target' | 'native', index: number): Promise<void> {
+    const items = role === 'target' ? importedTargetItems : importedNativeItems;
+    if (index >= items.length) return;
+    if (role === 'target') activeImportTargetIndex = index;
+    else activeImportNativeIndex = index;
+
+    // Retrieve cues from the parsed file (stored in a side map)
+    const parsed = role === 'target'
+      ? importedParsedTarget[index]
+      : importedParsedNative[index];
+    if (!parsed) return;
+
+    if (role === 'target') {
+      controller?.loadBilingualCues(parsed.cues, []);
+    } else {
+      controller?.loadBilingualCues([], parsed.cues);
+    }
+    updateActiveChip();
+    debouncedToast(`Switched to ${parsed.file.name}`, container);
+  }
+
+  // ADR-015 T10: side maps moved to state block above (importedParsedTarget/Native)
 
   /**
    * ADR-014 D4: user selected a different subtitle via dropdown.
@@ -476,6 +603,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         controller?.loadBilingualCues([], result.cues);
       }
       showToast(`Switched to sub #${index + 1}`, container);
+      updateActiveChip(); // ADR-015 T11: update chip on auto-load switch
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       showToast(`Switch failed: ${msg}`, container);

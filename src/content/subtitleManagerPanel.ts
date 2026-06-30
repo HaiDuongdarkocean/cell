@@ -1,5 +1,3 @@
-import { formatSubtitleName } from './subtitleNaming';
-
 /**
  * Item displayed in the Subtitle Manager Panel (ADR-015).
  * Can be auto-detected or imported, target or native.

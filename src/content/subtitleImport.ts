@@ -1,7 +1,7 @@
 import { handleFileDrop } from './subtitleDragDrop';
 import { detectLanguage, labelToIsoCode } from '@/lib/detectors/languageDetector';
 import type { OverlayConfig, ParseResult, SubtitleFormat } from '../types/subtitle';
-import type { SrtCue } from '../types/media';
+import type { SrtCue, SubtitleFormat as MediaSubtitleFormat } from '../types/media';
 
 /**
  * Parsed subtitle file with detected language (ADR-015 — multi-file import).
@@ -157,7 +157,7 @@ export async function parseAndDetectFiles(files: readonly File[]): Promise<Parse
     if (!parseResult.success || parseResult.cues.length === 0) continue;
     const detectedLang = detectLanguage(
       parseResult.cues.map((c) => c.text).join('\n'),
-      parseResult.format,
+      parseResult.format as MediaSubtitleFormat,
     );
     results.push({
       file,
