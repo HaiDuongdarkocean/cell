@@ -30,7 +30,7 @@ Before writing any code, operate in read-only mode:
 - Map dependencies between components
 - Note risks and unknowns
 
-**Do NOT write code during planning.** The output is a plan document, not implementation.
+**Do NOT write code during planning.** The output is a task list document (`docs/task/task-<name>.md` — naming convention: `task-<name>.md`), not implementation.
 
 ### Step 2: Identify the Dependency Graph
 
