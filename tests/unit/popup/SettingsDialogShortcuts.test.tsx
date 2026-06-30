@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { SettingsDialog } from '@/popup/components/settings/SettingsDialog';
+import { SettingsDialog } from '@/entrypoints/popup/components/settings/SettingsDialog';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings } from '@/types/media';
 

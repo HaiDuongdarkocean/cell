@@ -1,9 +1,9 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { usePopupStore } from '@/popup/store/popupStore';
-import { useDetectedMedia } from '@/popup/hooks/useDetectedMedia';
-import { useDownloadProgress } from '@/popup/hooks/useDownloadProgress';
-import { useExtensionStatus } from '@/popup/hooks/useExtensionStatus';
+import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
+import { useDetectedMedia } from '@/entrypoints/popup/hooks/useDetectedMedia';
+import { useDownloadProgress } from '@/entrypoints/popup/hooks/useDownloadProgress';
+import { useExtensionStatus } from '@/entrypoints/popup/hooks/useExtensionStatus';
 import type {
   DetectedVideo,
   DetectedSubtitle,

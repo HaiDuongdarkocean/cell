@@ -61,7 +61,7 @@ const config: Config = {
     'src/features/**/*.ts',
     'src/shared/**/*.ts',
     'src/entities/**/*.ts',
-    'src/popup/components/**/*.tsx',
+    'src/entrypoints/popup/components/**/*.tsx',
     '!src/**/*.d.ts',
   ],
   coverageThreshold: {

@@ -1,5 +1,5 @@
-import { PageScanner } from '@/content/pageScanner';
-import type { ScannedUrls } from '@/content/pageScanner';
+import { PageScanner } from '@/entrypoints/content/pageScanner';
+import type { ScannedUrls } from '@/entrypoints/content/pageScanner';
 
 describe('PageScanner', () => {
   let scanner: PageScanner;

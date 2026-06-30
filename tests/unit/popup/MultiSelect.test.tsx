@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MultiSelect } from '@/popup/components/settings/MultiSelect';
-import type { MultiSelectOption } from '@/popup/components/settings/MultiSelect';
+import { MultiSelect } from '@/entrypoints/popup/components/settings/MultiSelect';
+import type { MultiSelectOption } from '@/entrypoints/popup/components/settings/MultiSelect';
 
 const options: MultiSelectOption[] = [
   { value: 'en', label: 'English' },

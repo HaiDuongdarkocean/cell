@@ -1,4 +1,4 @@
-import { resolveMediaDisplayTitle } from '@/popup/hooks/useMediaDisplayTitle';
+import { resolveMediaDisplayTitle } from '@/entrypoints/popup/hooks/useMediaDisplayTitle';
 import type { DetectedVideo, DetectedSubtitle } from '@/types/media';
 
 describe('resolveMediaDisplayTitle', () => {

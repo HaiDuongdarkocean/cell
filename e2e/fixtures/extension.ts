@@ -72,7 +72,7 @@ export async function openPopup(
   extensionId: string,
 ): Promise<Page> {
   const popup = await context.newPage();
-  await popup.goto(`chrome-extension://${extensionId}/src/popup/index.html`, {
+  await popup.goto(`chrome-extension://${extensionId}/src/entrypoints/popup/index.html`, {
     waitUntil: 'domcontentloaded',
   });
   return popup;

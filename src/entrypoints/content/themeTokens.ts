@@ -15,7 +15,7 @@
  * a new build pipeline.
  */
 
-// Token definitions — mirrors src/popup/styles/theme.css (keep in sync).
+// Token definitions — mirrors src/entrypoints/popup/styles/theme.css (keep in sync).
 const LIGHT_TOKENS = `
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;

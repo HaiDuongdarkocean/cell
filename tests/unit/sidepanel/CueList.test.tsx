@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { CueList } from '@/sidepanel/components/CueList';
+import { CueList } from '@/entrypoints/sidepanel/components/CueList';
 import type { BilingualCue } from '@/types/media';
 
 // jsdom does not implement scrollIntoView — mock it

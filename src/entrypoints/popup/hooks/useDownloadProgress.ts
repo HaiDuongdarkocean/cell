@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { usePopupStore } from '@/popup/store/popupStore';
-import { getActiveContentTabId } from '@/popup/utils/getActiveContentTab';
+import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
+import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import type { DownloadItem } from '@/types/media';
 import type {
   MessageRequest,

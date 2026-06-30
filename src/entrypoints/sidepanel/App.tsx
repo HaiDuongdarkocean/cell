@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSidePanelStore } from './store/sidePanelStore';
 import { CueList } from './components/CueList';
-import { getActiveContentTabId } from '@/popup/utils/getActiveContentTab';
+import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { handleShortcutKey } from '@/features/subtitle/ui/subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import type { BilingualCue, KeyboardShortcut } from '@/types/media';

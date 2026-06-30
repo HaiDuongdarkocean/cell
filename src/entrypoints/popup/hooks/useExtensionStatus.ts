@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { usePopupStore } from '@/popup/store/popupStore';
+import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
 import type { MessageRequest } from '@/types/message';
 
 /**

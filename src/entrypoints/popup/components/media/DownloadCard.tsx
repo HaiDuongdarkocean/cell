@@ -1,5 +1,5 @@
 import type { DownloadItem } from '@/types/media';
-import { formatFileSize, formatDuration, phaseToLabel } from '@/popup/utils/format';
+import { formatFileSize, formatDuration, phaseToLabel } from '@/entrypoints/popup/utils/format';
 import styles from './DownloadCard.module.css';
 
 interface DownloadCardProps {

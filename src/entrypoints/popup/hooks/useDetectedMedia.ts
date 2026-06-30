@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { usePopupStore } from '@/popup/store/popupStore';
-import { getActiveContentTabId } from '@/popup/utils/getActiveContentTab';
+import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
+import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import type {
   DetectedVideo,
   DetectedSubtitle,

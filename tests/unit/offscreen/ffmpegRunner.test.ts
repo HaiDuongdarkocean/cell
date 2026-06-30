@@ -137,7 +137,7 @@ import {
   startMessageListener,
   stopMessageListener,
   resetFFmpeg,
-} from '@/offscreen/ffmpegRunner';
+} from '@/entrypoints/offscreen/ffmpegRunner';
 import { transmuxTsToFmp4 } from '@/features/transmux/merging/tsTransmuxer';
 import { ensureDownloadSubdir, readFile as opfsReadFile } from '@/shared/lib/storage/opfsStorage';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -361,7 +361,7 @@ describe('offscreen ffmpegRunner (V2)', () => {
       const addListenerSpy = chromeMock.runtime.onMessage.addListener;
       addListenerSpy.mockClear();
 
-      await import('@/offscreen/ffmpegRunner');
+      await import('@/entrypoints/offscreen/ffmpegRunner');
 
       // Bootstrap calls startMessageListener() which calls addListener.
       // Wait a microtask for the async startMessageListener to resolve.
@@ -390,7 +390,7 @@ describe('offscreen ffmpegRunner (V2)', () => {
       const addListenerSpy = chromeMock.runtime.onMessage.addListener;
       const callCountBefore = addListenerSpy.mock.calls.length;
 
-      await import('@/offscreen/ffmpegRunner');
+      await import('@/entrypoints/offscreen/ffmpegRunner');
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       // No new addListener calls from bootstrap (JEST_WORKER_ID is set).

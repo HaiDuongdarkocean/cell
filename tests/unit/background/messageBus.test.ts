@@ -1,4 +1,4 @@
-import { MessageBus } from '@/background/messageBus';
+import { MessageBus } from '@/entrypoints/background/messageBus';
 import type {
   MessageRequest,
   MessageResponse,

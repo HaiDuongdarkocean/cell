@@ -13,8 +13,8 @@ export default defineConfig({
         // The CRX plugin handles the popup and background entries; add the
         // offscreen document and side panel explicitly so they are built and
         // emitted as loadable chrome-extension:// pages.
-        offscreen: resolve(__dirname, 'src/offscreen/ffmpeg.html'),
-        sidepanel: resolve(__dirname, 'src/sidepanel/index.html'),
+        offscreen: resolve(__dirname, 'src/entrypoints/offscreen/ffmpeg.html'),
+        sidepanel: resolve(__dirname, 'src/entrypoints/sidepanel/index.html'),
       },
     },
   },

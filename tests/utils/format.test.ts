@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { formatBytes, formatFileSize, formatDuration, phaseToLabel } from '@/popup/utils/format';
+import { formatBytes, formatFileSize, formatDuration, phaseToLabel } from '@/entrypoints/popup/utils/format';
 
 describe('formatBytes', () => {
   it('formats 0 bytes', () => {

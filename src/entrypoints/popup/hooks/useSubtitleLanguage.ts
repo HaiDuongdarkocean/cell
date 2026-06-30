@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { DetectedSubtitle } from '@/types/media';
-import { usePopupStore } from '@/popup/store/popupStore';
+import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
 import {
   detectLanguage,
   isoCodeToLabel,

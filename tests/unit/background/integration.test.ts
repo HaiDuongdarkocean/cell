@@ -1,7 +1,7 @@
-import { BackgroundService } from '@/background/index';
-import { OffscreenManager } from '@/background/offscreenManager';
-import { NetworkInterceptor } from '@/background/networkInterceptor';
-import { MessageBus } from '@/background/messageBus';
+import { BackgroundService } from '@/entrypoints/background/index';
+import { OffscreenManager } from '@/entrypoints/background/offscreenManager';
+import { NetworkInterceptor } from '@/entrypoints/background/networkInterceptor';
+import { MessageBus } from '@/entrypoints/background/messageBus';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS, STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { DownloadItem, Settings, WhitelistEntry } from '@/types/media';
@@ -1162,7 +1162,7 @@ https://cdn.example.com/low.m3u8`;
 
     expect(mockChrome.offscreen.hasDocument).toHaveBeenCalled();
     expect(mockChrome.offscreen.createDocument).toHaveBeenCalledWith({
-      url: 'src/offscreen/ffmpeg.html',
+      url: 'src/entrypoints/offscreen/ffmpeg.html',
       reasons: ['WORKERS', 'BLOBS'],
       justification: expect.any(String),
     });

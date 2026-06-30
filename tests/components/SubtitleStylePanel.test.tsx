@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { SubtitleStylePanel } from '@/popup/components/settings/SubtitleStylePanel';
+import { SubtitleStylePanel } from '@/entrypoints/popup/components/settings/SubtitleStylePanel';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 
 describe('SubtitleStylePanel', () => {

@@ -1,5 +1,5 @@
 // Subtitle panel — toggle button + seek helper.
-// ADR-008 D1: panel UI moved to Chrome Side Panel (src/sidepanel/).
+// ADR-008 D1: panel UI moved to Chrome Side Panel (src/entrypoints/sidepanel/).
 // Only the overlay toggle button + seek helper remain in content script.
 
 /**

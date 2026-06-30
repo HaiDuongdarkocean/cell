@@ -1,4 +1,4 @@
-import { injectThemeTokens } from '../../../src/content/themeTokens';
+import { injectThemeTokens } from '../../../src/entrypoints/content/themeTokens';
 
 // Mock chrome.storage.local
 const storageData: { settings?: { theme?: 'light' | 'dark' } } = {};

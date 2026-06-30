@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { usePopupStore } from '@/popup/store/popupStore';
+import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
 import { resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
 import type {
   DetectedVideo,

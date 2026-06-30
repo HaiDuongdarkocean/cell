@@ -1,4 +1,4 @@
-import { NetworkInterceptor } from '@/background/networkInterceptor';
+import { NetworkInterceptor } from '@/entrypoints/background/networkInterceptor';
 import type { DetectedVideo, DetectedSubtitle } from '@/types/media';
 
 /**

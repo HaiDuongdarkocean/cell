@@ -1,4 +1,4 @@
-import { useSidePanelStore } from '@/sidepanel/store/sidePanelStore';
+import { useSidePanelStore } from '@/entrypoints/sidepanel/store/sidePanelStore';
 import type { BilingualCue } from '@/types/media';
 
 describe('sidePanelStore', () => {

@@ -2,14 +2,14 @@
  * Manages the lifecycle of the offscreen document that runs ffmpeg.wasm.
  *
  * MV3 service workers cannot execute WebAssembly, so all ffmpeg.wasm work is
- * delegated to an offscreen document (`src/offscreen/ffmpeg.html`). This class
+ * delegated to an offscreen document (`src/entrypoints/offscreen/ffmpeg.html`). This class
  * lazily creates that document on demand and closes it when no longer needed.
  */
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 /** URL of the offscreen document relative to the extension root. */
-const OFFSCREEN_DOCUMENT_URL = 'src/offscreen/ffmpeg.html';
+const OFFSCREEN_DOCUMENT_URL = 'src/entrypoints/offscreen/ffmpeg.html';
 
 /** Human-readable justification supplied to the Chrome API. */
 const JUSTIFICATION =

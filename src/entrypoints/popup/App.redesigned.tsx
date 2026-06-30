@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { usePopupStore } from '@/popup/store/popupStore';
-import { useDetectedMedia } from '@/popup/hooks/useDetectedMedia';
-import { useDownloadProgress } from '@/popup/hooks/useDownloadProgress';
-import { useExtensionStatus } from '@/popup/hooks/useExtensionStatus';
-import { useMediaDisplayTitle } from '@/popup/hooks/useMediaDisplayTitle';
-import { useSubtitleLanguage } from '@/popup/hooks/useSubtitleLanguage';
+import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
+import { useDetectedMedia } from '@/entrypoints/popup/hooks/useDetectedMedia';
+import { useDownloadProgress } from '@/entrypoints/popup/hooks/useDownloadProgress';
+import { useExtensionStatus } from '@/entrypoints/popup/hooks/useExtensionStatus';
+import { useMediaDisplayTitle } from '@/entrypoints/popup/hooks/useMediaDisplayTitle';
+import { useSubtitleLanguage } from '@/entrypoints/popup/hooks/useSubtitleLanguage';
 import { Header } from './components/layout/Header';
 import { VideoCard } from './components/media/VideoCard';
 import { SubtitleCard } from './components/media/SubtitleCard';
@@ -15,7 +15,7 @@ import type { VideoQuality, Settings, DownloadItem } from '@/types/media';
 import type { MessageRequest, MessageResponse } from '@/types/message';
 import { selectBestMedia } from '@/features/download/selectBestMedia';
 import { isWhitelisted, addToWhitelist, removeFromWhitelist } from '@/features/whitelist/whitelist';
-import { getActiveContentTab } from '@/popup/utils/getActiveContentTab';
+import { getActiveContentTab } from '@/entrypoints/popup/utils/getActiveContentTab';
 import styles from './App.redesigned.module.css';
 
 export function AppRedesigned(): React.JSX.Element {

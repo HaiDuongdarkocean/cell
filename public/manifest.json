@@ -14,20 +14,20 @@
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "src/background/index.ts",
+    "service_worker": "src/entrypoints/background/index.ts",
     "type": "module"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/content/content-script.ts"],
+      "js": ["src/entrypoints/content/content-script.ts"],
       "run_at": "document_idle",
       "all_frames": true,
       "match_origin_as_fallback": true
     },
     {
       "matches": ["<all_urls>"],
-      "js": ["src/content/fetchInterceptor.iife.ts"],
+      "js": ["src/entrypoints/content/fetchInterceptor.iife.ts"],
       "run_at": "document_start",
       "world": "MAIN",
       "all_frames": true,
@@ -35,10 +35,10 @@
     }
   ],
   "side_panel": {
-    "default_path": "src/sidepanel/index.html"
+    "default_path": "src/entrypoints/sidepanel/index.html"
   },
   "action": {
-    "default_popup": "src/popup/index.html",
+    "default_popup": "src/entrypoints/popup/index.html",
     "default_title": "Video Downloader",
     "default_icon": "public/icons/icon-48.png"
   },

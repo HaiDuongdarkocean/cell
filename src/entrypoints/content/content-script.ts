@@ -13,10 +13,10 @@ import { injectThemeTokens } from './themeTokens';
 import { formatSubtitleName } from '@/features/subtitle/logic/subtitleNaming';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
-import type { OverlayConfig, OverlayStyleConfig } from '../types/subtitle';
-import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle } from '../types/media';
-import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '../types/message';
-import type { VideoEpisodeChangedPayload } from '../types/message';
+import type { OverlayConfig, OverlayStyleConfig } from '@/types/subtitle';
+import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle } from '@/types/media';
+import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/types/message';
+import type { VideoEpisodeChangedPayload } from '@/types/message';
 import type { SubtitlePanelItem, SubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel';
 
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
@@ -641,7 +641,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       const origin = new URL(window.location.href).hostname;
       const lang = sub.language;
       const result = await chrome.storage.local.get('settings');
-      const settings = (result.settings ?? {}) as Partial<import('../types/media').Settings>;
+      const settings = (result.settings ?? {}) as Partial<import('@/types/media').Settings>;
       const pref = { ...(settings.subtitlePreference ?? {}) };
       const sitePref = { ...(pref[origin] ?? {}) };
       sitePref[lang] = index;
