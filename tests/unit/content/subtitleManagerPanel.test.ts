@@ -47,17 +47,11 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     container.remove();
   });
 
-  it('renders manager icon + active chip in toolbar', () => {
-    const { icon, chip } = createSubtitleManagerPanel(container, createImportButton());
+  it('renders manager icon in toolbar', () => {
+    const { icon } = createSubtitleManagerPanel(container, createImportButton());
     expect(icon.getAttribute('data-testid')).toBe('subtitle-manager-icon');
     expect(icon.getAttribute('aria-label')).toBe('Subtitle manager');
     expect(icon.getAttribute('title')).toBeTruthy();
-    expect(chip.getAttribute('data-testid')).toBe('subtitle-active-chip');
-  });
-
-  it('chip is hidden when no sub active', () => {
-    const { chip } = createSubtitleManagerPanel(container, createImportButton());
-    expect(chip.style.display).toBe('none');
   });
 
   it('opens panel when manager icon clicked', () => {
@@ -130,22 +124,6 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     expect(body.style.display).toBe('none');
     header.click();
     expect(body.style.display).not.toBe('none');
-  });
-
-  it('updateChip shows target + native names', () => {
-    const { chip, updateChip } = createSubtitleManagerPanel(container, createImportButton());
-    updateChip('English #2', 'Arabic #1');
-    expect(chip.style.display).toBe('flex');
-    expect(chip.textContent).toContain('English #2');
-    expect(chip.textContent).toContain('Arabic #1');
-    expect(chip.textContent).toContain('·');
-  });
-
-  it('updateChip hides chip when both names null', () => {
-    const { chip, updateChip } = createSubtitleManagerPanel(container, createImportButton());
-    updateChip('English #2', 'Arabic #1');
-    updateChip(null, null);
-    expect(chip.style.display).toBe('none');
   });
 
   it('panel uses CSS theme tokens', () => {

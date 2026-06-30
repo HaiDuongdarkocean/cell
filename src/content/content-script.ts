@@ -11,7 +11,6 @@ import { createSubtitleManagerPanel } from './subtitleManagerPanel';
 import { createDebouncedToast } from './subtitleToast';
 import { injectThemeTokens } from './themeTokens';
 import { formatSubtitleName } from './subtitleNaming';
-import { isoCodeToLabel } from '@/lib/detectors/languageDetector';
 import { MESSAGE_TYPES } from '@/constants/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/constants/config';
 import type { OverlayConfig, OverlayStyleConfig } from '../types/subtitle';
@@ -117,7 +116,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   const container = video.parentElement ?? document.body;
 
-  // ADR-015 T12: inject theme tokens so panel/chip/toast var(--color-*) resolve.
+  // ADR-015 T12: inject theme tokens so panel/toast var(--color-*) resolve.
   // Content-script isolated world cannot access popup's theme.css.
   injectThemeTokens(container);
 
@@ -450,7 +449,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
             }
           }
           // ADR-015: update manager panel with auto-detected matches (1+ subs).
-          // Build panel items from matches so panel + chip show even with 1 sub.
+          // Build panel items from matches so panel shows even with 1 sub.
           const autoTargetItems: SubtitlePanelItem[] = targetM.map((m, i) => ({
             id: `auto-target-${i}`,
             name: formatSubtitleName('auto', m.language, i),
@@ -475,8 +474,6 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
           if (importedNativeItems.length === 0) {
             managerPanel?.updateNative(autoNativeItems, activeNativeIndex);
           }
-          // ADR-015 T11: update chip when auto-load pushes new matches
-          updateActiveChip();
         },
       });
     }
@@ -494,7 +491,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   /**
    * ADR-015 T10: Process imported files (multi-file) → panel + cues + toast.
    * Flow: parseAndDetectFiles → assignImportRole → panel.updateTarget/Native
-   * → loadBilingualCues (first target + first native) → chip + toast.
+   * → loadBilingualCues (first target + first native) → toast.
    */
   async function processImportedFiles(files: File[], _container: HTMLElement): Promise<void> {
     if (files.length === 0) return;
@@ -547,9 +544,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       controller?.loadCues(parsed[0].cues); // fallback: single mode
     }
 
-    // Update chip with active names
-    updateActiveChip();
-
+    // Active subtitle names are visible in the manager panel; chip removed.
     // Toast
     const total = assignment.target.length + assignment.native.length;
     const ignoredCount = assignment.ignored.length;
@@ -562,18 +557,6 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       const ignoredTxt = ignoredCount > 0 ? ` (${ignoredCount} ignored)` : '';
       debouncedToast(`✓ Imported ${total} files → ${parts.join(' + ')}${ignoredTxt}`, _container);
     }
-  }
-
-  /**
-   * ADR-015 T10/T11: Update active chip with current target + native names.
-   * Prefers imported active item if exists, else auto-loaded active match.
-   */
-  function updateActiveChip(): void {
-    const targetName = importedTargetItems[activeImportTargetIndex]?.name
-      ?? (targetMatches[activeTargetIndex] ? isoCodeToLabel(targetMatches[activeTargetIndex].language) : null);
-    const nativeName = importedNativeItems[activeImportNativeIndex]?.name
-      ?? (nativeMatches[activeNativeIndex] ? isoCodeToLabel(nativeMatches[activeNativeIndex].language) : null);
-    managerPanel?.updateChip(targetName ?? null, nativeName ?? null);
   }
 
   /**
@@ -598,7 +581,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
 
   /**
    * ADR-015 T11: User selected an imported subtitle via the manager panel.
-   * Loads cues from the stored parsed file + updates chip + toast.
+   * Loads cues from the stored parsed file + toast.
    */
   async function onPanelSelect(role: 'target' | 'native', index: number): Promise<void> {
     const items = role === 'target' ? importedTargetItems : importedNativeItems;
@@ -617,7 +600,6 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     } else {
       controller?.loadBilingualCues([], parsed.cues);
     }
-    updateActiveChip();
     debouncedToast(`Switched to ${parsed.file.name}`, container);
   }
 
@@ -649,7 +631,6 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
         controller?.loadBilingualCues([], result.cues);
       }
       showToast(`Switched to sub #${index + 1}`, container);
-      updateActiveChip(); // ADR-015 T11: update chip on auto-load switch
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       showToast(`Switch failed: ${msg}`, container);

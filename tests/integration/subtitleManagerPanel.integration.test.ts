@@ -126,13 +126,7 @@ Goodbye world`;
     panel.updateTarget(targetItems, 0);
     panel.updateNative(nativeItems, 0);
 
-    // === Step 4: chip shows both names ===
-    panel.updateChip(targetItems[0].name, nativeItems[0].name);
-    expect(panel.chip.style.display).toBe('flex');
-    expect(panel.chip.textContent).toContain('movie-en');
-    expect(panel.chip.textContent).toContain('movie-ar');
-
-    // === Step 5: load cues (first target + first native) ===
+    // === Step 4: load cues (first target + first native) ===
     controller.loadBilingualCues(assignment.target[0].cues, assignment.native[0].cues);
 
     // === Step 6: open panel + click target item ===
@@ -187,12 +181,10 @@ Goodbye world`;
     expect(assignment.ignored).toHaveLength(0);
   });
 
-  it('panel sections collapsible + chip hidden when no subs', () => {
+  it('panel sections collapsible when no subs', () => {
     const importButton = document.createElement('button');
     importButton.setAttribute('data-testid', 'subtitle-import-button');
     const panel = createSubtitleManagerPanel(container, importButton);
-    // Chip hidden initially
-    expect(panel.chip.style.display).toBe('none');
     // Open panel
     panel.icon.click();
     // Collapse target section

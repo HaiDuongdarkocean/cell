@@ -20,12 +20,10 @@ export interface SubtitleManagerPanel {
   readonly icon: HTMLButtonElement;
   readonly importButton: HTMLButtonElement;
   readonly panel: HTMLDivElement;
-  readonly chip: HTMLDivElement;
   readonly open: () => void;
   readonly close: () => void;
   readonly updateTarget: (items: SubtitlePanelItem[], activeIndex: number) => void;
   readonly updateNative: (items: SubtitlePanelItem[], activeIndex: number) => void;
-  readonly updateChip: (targetName: string | null, nativeName: string | null) => void;
   readonly destroy: () => void;
 }
 
@@ -105,32 +103,6 @@ export function createSubtitleManagerPanel(
   `;
   icon.innerHTML = ICON_SVG;
   toolbar.appendChild(icon);
-
-  // === Active chip ===
-  const chip = document.createElement('div');
-  chip.setAttribute('data-testid', 'subtitle-active-chip');
-  chip.setAttribute('aria-label', 'Active subtitles');
-  chip.setAttribute('title', 'Currently active target and native subtitles');
-  chip.style.cssText = `
-    display: none;
-    align-items: center;
-    gap: var(--spacing-xs, 4px);
-    height: 32px;
-    padding: 0 var(--spacing-md, 12px);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 8px);
-    background: var(--color-surface);
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-xs, 12px);
-    font-weight: 500;
-    max-width: 160px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    pointer-events: auto;
-    user-select: none;
-  `;
-  toolbar.appendChild(chip);
 
   // === Panel ===
   const panel = document.createElement('div');
@@ -320,29 +292,6 @@ export function createSubtitleManagerPanel(
     renderSection(role);
   };
 
-  const updateChip = (targetName: string | null, nativeName: string | null): void => {
-    chip.innerHTML = '';
-    if (!targetName && !nativeName) {
-      chip.style.display = 'none';
-      return;
-    }
-    const addPart = (name: string, colorVar: string) => {
-      const span = document.createElement('span');
-      span.textContent = name;
-      span.style.cssText = `color: ${colorVar}; font-weight: 600;`;
-      chip.appendChild(span);
-    };
-    if (targetName) addPart(targetName, 'var(--color-primary)');
-    if (targetName && nativeName) {
-      const sep = document.createElement('span');
-      sep.textContent = '·';
-      sep.style.cssText = 'color: var(--color-text-muted); margin: 0 2px;';
-      chip.appendChild(sep);
-    }
-    if (nativeName) addPart(nativeName, 'var(--color-warning)');
-    chip.style.display = 'flex';
-  };
-
   const open = (): void => {
     panel.style.display = 'block';
     icon.setAttribute('aria-expanded', 'true');
@@ -418,7 +367,7 @@ export function createSubtitleManagerPanel(
     outsideClickHandler = (e: MouseEvent) => {
       if (panel.style.display === 'none') return;
       const target = e.target as Node;
-      if (!panel.contains(target) && !icon.contains(target) && !chip.contains(target) && !importButton.contains(target)) {
+      if (!panel.contains(target) && !icon.contains(target) && !importButton.contains(target)) {
         close();
       }
     };
@@ -444,12 +393,10 @@ export function createSubtitleManagerPanel(
     icon,
     importButton,
     panel,
-    chip,
     open,
     close,
     updateTarget: (items, activeIndex) => updateSection('target', items, activeIndex),
     updateNative: (items, activeIndex) => updateSection('native', items, activeIndex),
-    updateChip,
     destroy,
   };
 }

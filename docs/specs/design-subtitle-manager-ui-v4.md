@@ -8,12 +8,15 @@ Make the content-script subtitle UI match the mockup pixel-by-pixel (as much as 
 
 ## Scope
 Content-script overlay only:
-- Top-left toolbar (import button + manager icon + active chip)
+- Top-left toolbar (import button + manager icon)
 - Subtitle Manager panel (header, collapsible sections, radio-style items)
 - Toast (bottom-center, check icon)
 - Target/Native subtitle text overlays (positioning)
 
 Out of scope: popup, sidepanel, settings, background logic.
+
+Note: The active chip was removed by design. Active subtitle selection is
+visible in the manager panel, not in a compact toolbar chip.
 
 ## Design Tokens
 Use existing CSS custom properties from `themeTokens.ts`. Map mockup tokens to the closest existing token:
@@ -24,7 +27,7 @@ Use existing CSS custom properties from `themeTokens.ts`. Map mockup tokens to t
 | `--color-warning` | `--color-warning` | Native accent (keep as amber/orange) |
 | `--color-success` | `--color-success` | Imported indicator |
 | `--color-background` | `--color-background` | Panel background |
-| `--color-surface` | `--color-surface` | Toolbar buttons, chip |
+| `--color-surface` | `--color-surface` | Toolbar buttons |
 | `--color-surface-hover` | `--color-surface-hover` | Hover states |
 | `--color-text` | `--color-text` | Primary text |
 | `--color-text-secondary` | `--color-text-secondary` | Chip text, secondary |
@@ -36,9 +39,9 @@ Use existing CSS custom properties from `themeTokens.ts`. Map mockup tokens to t
 | `--font-size-base` | `--font-size-base` (14px) | Base |
 | `--spacing-xs` | `--spacing-xs` (4px) | Gaps |
 | `--spacing-sm` | `--spacing-sm` (8px) | Toolbar gaps, section padding |
-| `--spacing-md` | `--spacing-md` (12px) | Item padding, chip padding |
+| `--spacing-md` | `--spacing-md` (12px) | Item padding |
 | `--radius-sm` | `--radius-sm` (6px) | Format badge, radio |
-| `--radius-md` | `--radius-md` (8px) | Toolbar buttons, panel, chip |
+| `--radius-md` | `--radius-md` (8px) | Toolbar buttons, panel |
 | `--shadow-md` | `--shadow-md` | Panel shadow |
 
 Z-index: toolbar `1000001`, panel `1000002`, toast `1000003`.
@@ -51,7 +54,6 @@ Container: absolute `top: 8px; left: 8px; display: flex; gap: 8px; z-index: 1000
 Children left-to-right:
 1. **Import button** (icon-only)
 2. **Manager icon** (icon-only)
-3. **Active chip** (text)
 
 #### 1.1 Import button
 - Element: `<button type="button" data-testid="subtitle-import-button" aria-label="Import subtitle file">`
@@ -70,14 +72,6 @@ Children left-to-right:
 - Icon: subtitle-card SVG (rect + lines)
 - Active state (panel open): `background: var(--color-primary-subtle); border-color: var(--color-primary); color: var(--color-primary);`
 - Position: left: 112px (right of import button) within toolbar
-
-#### 1.3 Active chip
-- Element: `<div data-testid="subtitle-active-chip" aria-label="Active subtitles">`
-- Height: 32px; padding: 0 12px; border, border-radius, background like toolbar buttons
-- Text: `formatSubtitleName()` output for target and native separated by `·`
-- Colors: target name in `var(--color-primary)` semibold; native name in `var(--color-warning)` semibold; separator in `var(--color-text-muted)`
-- Max-width: 160px; overflow hidden; text-overflow ellipsis; white-space nowrap
-- Show only when target or native name exists (existing logic preserved)
 
 ### 2. Manager Panel
 Container: `<div data-testid="subtitle-manager-panel" role="dialog" aria-label="Subtitle manager">`
@@ -142,12 +136,11 @@ Container: `<div data-testid="subtitle-manager-panel" role="dialog" aria-label="
 - All buttons have `aria-label`
 - Manager icon has `aria-expanded`
 - Panel has `role="dialog"` and `aria-label`
-- Active chip has `aria-label="Active subtitles"` and `title`
 - Section headers are clickable but use `<div>` with `role="button"`? Prefer `<button>` styled as header.
 - Focus states visible via outline
 
 ## File Plan
-- `src/content/subtitleManagerPanel.ts`: rewrite to create toolbar + panel + chip according to spec. Keep public API (`icon`, `panel`, `chip`, `open`, `close`, `updateTarget`, `updateNative`, `updateChip`, `destroy`).
+- `src/content/subtitleManagerPanel.ts`: rewrite to create toolbar + panel according to spec. Keep public API (`icon`, `panel`, `open`, `close`, `updateTarget`, `updateNative`, `destroy`).
 - `src/content/subtitleImport.ts`: change `createImportButton` to return icon-only button with hidden file input. Keep drag-drop wiring.
 - `src/content/subtitleToast.ts`: create or update toast component with v4 style (check icon, bottom 30%).
 - `src/content/subtitleOverlay.ts`: update CSS for target/native line positions (if not already matching).
@@ -155,7 +148,7 @@ Container: `<div data-testid="subtitle-manager-panel" role="dialog" aria-label="
 - `src/content/themeTokens.ts`: verify tokens exist; add any missing warning tokens if needed.
 
 ## Verification Checklist
-- [ ] Mockup toolbar rendered in browser (import icon + manager icon + chip)
+- [ ] Mockup toolbar rendered in browser (import icon + manager icon)
 - [ ] Panel matches mockup (header, sections, items, active states)
 - [ ] Toast matches mockup (bottom 30%, check icon)
 - [ ] Overlay target/native positions match mockup
