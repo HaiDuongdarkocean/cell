@@ -1,4 +1,4 @@
-import { SubtitleOverlayController } from '../../src/content/subtitleOverlay';
+import { SubtitleOverlayController } from '../../src/features/subtitle/ui/subtitleOverlay';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '../../src/shared/config/config';
 import type { OverlayConfig, OverlayStyleConfig } from '../../src/types/subtitle';
 

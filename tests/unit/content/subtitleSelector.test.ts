@@ -1,4 +1,4 @@
-import { createSubtitleDropdown } from '../../../src/content/subtitleSelector';
+import { createSubtitleDropdown } from '../../../src/features/subtitle/ui/subtitleSelector';
 import type { DetectedSubtitle } from '../../../src/types/media';
 
 describe('createSubtitleDropdown (ADR-014 D3 — V2 ADR-007 D3)', () => {

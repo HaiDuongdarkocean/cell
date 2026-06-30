@@ -1,4 +1,4 @@
-import { mergeCuesForPanel } from '../../../src/content/subtitleMerge';
+import { mergeCuesForPanel } from '../../../src/features/subtitle/logic/subtitleMerge';
 import type { SrtCue } from '../../../src/types/media';
 
 function cue(index: number, start: number, end: number, text: string): SrtCue {

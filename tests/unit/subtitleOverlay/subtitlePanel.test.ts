@@ -1,4 +1,4 @@
-import { createToggleButton, seekToCue } from '@/content/subtitlePanel';
+import { createToggleButton, seekToCue } from '@/features/subtitle/ui/subtitlePanel';
 import type { BilingualCue } from '@/types/media';
 
 describe('subtitlePanel', () => {

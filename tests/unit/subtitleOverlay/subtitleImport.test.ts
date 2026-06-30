@@ -1,5 +1,5 @@
-import { createImportButton, handleFileSelect, assignImportRole, parseAndDetectFiles } from '../../../src/content/subtitleImport';
-import type { ParsedFile } from '../../../src/content/subtitleImport';
+import { createImportButton, handleFileSelect, assignImportRole, parseAndDetectFiles } from '../../../src/features/subtitle/logic/subtitleImport';
+import type { ParsedFile } from '../../../src/features/subtitle/logic/subtitleImport';
 import type { OverlayConfig } from '../../../src/types/subtitle';
 
 describe('subtitleImport', () => {

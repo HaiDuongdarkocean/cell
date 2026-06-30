@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import type { OverlayStyleConfig } from '@/types/subtitle';
-import { buildTextShadow, sanitizeFontFamily, hexToRgba } from '@/content/subtitleUI';
+import { buildTextShadow, sanitizeFontFamily, hexToRgba } from '@/features/subtitle/ui/subtitleUI';
 import styles from './SubtitlePreview.module.css';
 
 interface SubtitlePreviewProps {

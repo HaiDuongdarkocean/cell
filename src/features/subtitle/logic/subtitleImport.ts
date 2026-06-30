@@ -1,7 +1,7 @@
 import { handleFileDrop } from './subtitleDragDrop';
 import { detectLanguage, labelToIsoCode } from '@/features/detection/logic/languageDetector';
-import type { OverlayConfig, ParseResult, SubtitleFormat } from '../types/subtitle';
-import type { SrtCue, SubtitleFormat as MediaSubtitleFormat } from '../types/media';
+import type { OverlayConfig, ParseResult, SubtitleFormat } from '@/types/subtitle';
+import type { SrtCue, SubtitleFormat as MediaSubtitleFormat } from '@/types/media';
 
 /**
  * Parsed subtitle file with detected language (ADR-015 — multi-file import).

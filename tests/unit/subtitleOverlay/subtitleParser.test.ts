@@ -1,4 +1,4 @@
-import { parseSubtitle } from '@/content/subtitleParser';
+import { parseSubtitle } from '@/features/subtitle/logic/subtitleParser';
 
 describe('parseSubtitle', () => {
   const sampleSrt = `1

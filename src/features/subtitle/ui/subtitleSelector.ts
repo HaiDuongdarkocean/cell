@@ -1,5 +1,5 @@
 import type { DetectedSubtitle } from '@/types/media';
-import { formatSubtitleName } from './subtitleNaming';
+import { formatSubtitleName } from '../logic/subtitleNaming';
 
 /**
  * Subtitle selector dropdown for overlay (ADR-014 D3, V2 of ADR-007 D3).

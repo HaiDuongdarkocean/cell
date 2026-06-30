@@ -1,4 +1,4 @@
-import { createDebouncedToast } from '../../../src/content/subtitleToast';
+import { createDebouncedToast } from '../../../src/features/subtitle/ui/subtitleToast';
 
 describe('createDebouncedToast (ADR-015 — toast debounce)', () => {
   let container: HTMLDivElement;

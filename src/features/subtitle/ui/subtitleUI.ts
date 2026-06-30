@@ -1,4 +1,4 @@
-import type { OverlayStyleConfig, TextShadowConfig } from '../types/subtitle';
+import type { OverlayStyleConfig, TextShadowConfig } from '@/types/subtitle';
 
 // === Pure style helpers (ADR-013 D6) ===
 // Logic ở pure function — testable 100%, no DOM side effect.

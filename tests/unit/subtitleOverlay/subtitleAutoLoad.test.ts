@@ -5,7 +5,7 @@ import {
   formatFromUrl,
   handleAutoLoadSubtitles,
   clearAutoLoadCache,
-} from '../../../src/content/subtitleAutoLoad';
+} from '../../../src/features/subtitle/logic/subtitleAutoLoad';
 import type { SubtitleForOverlayResult } from '@/types/message';
 
 // Mock fetch globally

@@ -5,11 +5,11 @@ import {
   hideOverlay,
   removeOverlay,
 } from './subtitleUI';
-import { createImportButton } from './subtitleImport';
+import { createImportButton } from '../logic/subtitleImport';
 import { createDragHandle } from './subtitleDragPosition';
-import { findCurrentLine } from './subtitleSync';
-import type { OverlayConfig, OverlayStyleConfig } from '../types/subtitle';
-import type { SrtCue } from '../types/media';
+import { findCurrentLine } from '../logic/subtitleSync';
+import type { OverlayConfig, OverlayStyleConfig } from '@/types/subtitle';
+import type { SrtCue } from '@/types/media';
 
 /**
  * SubtitleOverlayController — orchestrator that connects sync logic to overlay UI.

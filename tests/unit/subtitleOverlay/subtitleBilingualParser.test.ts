@@ -1,4 +1,4 @@
-import { parseBilingualSrt } from '@/content/subtitleBilingualParser';
+import { parseBilingualSrt } from '@/features/subtitle/logic/subtitleBilingualParser';
 
 describe('parseBilingualSrt', () => {
   // Bilingual SRT: 2 dòng/cue — target (lẻ) + native (chẵn)

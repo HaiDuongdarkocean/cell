@@ -1,4 +1,4 @@
-import { formatSubtitleName } from '../../../src/content/subtitleNaming';
+import { formatSubtitleName } from '../../../src/features/subtitle/logic/subtitleNaming';
 
 describe('formatSubtitleName (ADR-015 — friendly naming convention)', () => {
   describe('auto-detected subtitles', () => {

@@ -1,4 +1,4 @@
-import { findCurrentLine } from '../../../src/content/subtitleSync';
+import { findCurrentLine } from '../../../src/features/subtitle/logic/subtitleSync';
 
 describe('findCurrentLine', () => {
   const mockLines = [

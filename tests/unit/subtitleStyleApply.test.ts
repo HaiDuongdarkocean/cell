@@ -3,7 +3,7 @@ import {
   buildTextShadow,
   sanitizeFontFamily,
   hexToRgba,
-} from '@/content/subtitleUI';
+} from '@/features/subtitle/ui/subtitleUI';
 import type { TextShadowConfig } from '@/types/subtitle';
 
 // === calcYOffsetPercent ===

@@ -1,4 +1,4 @@
-import { createTrackDropdown, updateTrackOptions } from '../../../src/content/subtitleTrackDropdown';
+import { createTrackDropdown, updateTrackOptions } from '../../../src/features/subtitle/ui/subtitleTrackDropdown';
 import type { SrtCue } from '../../../src/types/media';
 
 interface TrackOption {

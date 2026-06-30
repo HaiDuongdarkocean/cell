@@ -1,4 +1,4 @@
-import { handleShortcutKey, isEditableTarget } from '@/content/subtitleShortcuts';
+import { handleShortcutKey, isEditableTarget } from '@/features/subtitle/ui/subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import type { KeyboardShortcut } from '@/types/media';
 

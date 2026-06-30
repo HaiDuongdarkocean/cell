@@ -1,4 +1,4 @@
-import { handleFileDrop, handleMultipleFilesDrop, readFileAsText } from '../../../src/content/subtitleDragDrop';
+import { handleFileDrop, handleMultipleFilesDrop, readFileAsText } from '../../../src/features/subtitle/logic/subtitleDragDrop';
 
 describe('subtitleDragDrop', () => {
   describe('readFileAsText', () => {

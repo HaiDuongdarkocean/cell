@@ -1,4 +1,4 @@
-import { createDragHandle } from '@/content/subtitleDragPosition';
+import { createDragHandle } from '@/features/subtitle/ui/subtitleDragPosition';
 
 // jsdom does not define PointerEvent — polyfill for tests
 class TestPointerEvent extends MouseEvent {

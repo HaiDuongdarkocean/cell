@@ -1,23 +1,23 @@
 import { PageScanner } from './pageScanner';
-import { SubtitleOverlayController } from './subtitleOverlay';
-import { parseAndDetectFiles, assignImportRole } from './subtitleImport';
-import { createDragHint, showToast } from './subtitleUI';
-import { handleAutoLoadSubtitles, clearAutoLoadCache, fetchAndParseSubtitle, formatFromUrl } from './subtitleAutoLoad';
-import { mergeCuesForPanel } from './subtitleMerge';
-import { createToggleButton, seekToCue } from './subtitlePanel';
-import { handleShortcutKey } from './subtitleShortcuts';
-import { createSubtitleDropdown } from './subtitleSelector';
-import { createSubtitleManagerPanel } from './subtitleManagerPanel';
-import { createDebouncedToast } from './subtitleToast';
+import { SubtitleOverlayController } from '@/features/subtitle/ui/subtitleOverlay';
+import { parseAndDetectFiles, assignImportRole } from '@/features/subtitle/logic/subtitleImport';
+import { createDragHint, showToast } from '@/features/subtitle/ui/subtitleUI';
+import { handleAutoLoadSubtitles, clearAutoLoadCache, fetchAndParseSubtitle, formatFromUrl } from '@/features/subtitle/logic/subtitleAutoLoad';
+import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
+import { createToggleButton, seekToCue } from '@/features/subtitle/ui/subtitlePanel';
+import { handleShortcutKey } from '@/features/subtitle/ui/subtitleShortcuts';
+import { createSubtitleDropdown } from '@/features/subtitle/ui/subtitleSelector';
+import { createSubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel';
+import { createDebouncedToast } from '@/features/subtitle/ui/subtitleToast';
 import { injectThemeTokens } from './themeTokens';
-import { formatSubtitleName } from './subtitleNaming';
+import { formatSubtitleName } from '@/features/subtitle/logic/subtitleNaming';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { OverlayConfig, OverlayStyleConfig } from '../types/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle } from '../types/media';
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '../types/message';
 import type { VideoEpisodeChangedPayload } from '../types/message';
-import type { SubtitlePanelItem, SubtitleManagerPanel } from './subtitleManagerPanel';
+import type { SubtitlePanelItem, SubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel';
 
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
 // background tự lấy từ sender.tab.id (xem messageBus.handleMessage)
@@ -184,8 +184,8 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   let activeImportTargetIndex = 0;
   let activeImportNativeIndex = 0;
   // ADR-015 T10: parsed files side-map (panel items don't carry cues)
-  let importedParsedTarget: import('./subtitleImport').ParsedFile[] = [];
-  let importedParsedNative: import('./subtitleImport').ParsedFile[] = [];
+  let importedParsedTarget: import('@/features/subtitle/logic/subtitleImport').ParsedFile[] = [];
+  let importedParsedNative: import('@/features/subtitle/logic/subtitleImport').ParsedFile[] = [];
   // ADR-015 T7: debounced toast (collapses rapid import/switch messages)
   const debouncedToast = createDebouncedToast(showToast, 500);
 

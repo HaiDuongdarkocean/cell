@@ -1,5 +1,5 @@
-import { createSubtitleManagerPanel } from '../../../src/content/subtitleManagerPanel';
-import type { SubtitlePanelItem } from '../../../src/content/subtitleManagerPanel';
+import { createSubtitleManagerPanel } from '../../../src/features/subtitle/ui/subtitleManagerPanel';
+import type { SubtitlePanelItem } from '../../../src/features/subtitle/ui/subtitleManagerPanel';
 
 // Inject minimal theme tokens so var(--color-*) resolve in tests
 beforeAll(() => {
