@@ -1,6 +1,6 @@
 ---
 name: debugging-with-edge-devtools
-description: Debug browser-facing bugs (UI, layout, fullscreen, content scripts) using Edge DevTools MCP. Use when you need to inspect live DOM, measure elements, capture screenshots, or verify visual output. Provides Step 3 tooling for debugging-and-error-recovery.
+description: Debug browser-facing bugs (UI, layout, fullscreen, content scripts) using Edge/Chrome DevTools MCP. Use when you need to inspect live DOM, measure elements, capture screenshots, verify visual output, install a Chrome/Edge MV3 extension for testing, simulate drag-drop file import, or verify acceptance criteria (C1-Cn) on a real video page. Provides Step 3 tooling for debugging-and-error-recovery. Triggers on "browser bug", "UI layout", "content script not injecting", "inspect DOM", "measure element", "screenshot verify", "install extension test", "verify C1-C15".
 ---
 
 # Debugging with Edge DevTools MCP
