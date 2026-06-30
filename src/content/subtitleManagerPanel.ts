@@ -88,6 +88,9 @@ export function createSubtitleManagerPanel(
   icon.setAttribute('title', 'Open subtitle manager — select or import subtitles');
   icon.setAttribute('aria-expanded', 'false');
   icon.style.cssText = `
+    position: absolute;
+    top: 8px;
+    left: 112px;
     width: 32px;
     height: 32px;
     border: 1px solid var(--color-border);
@@ -100,6 +103,8 @@ export function createSubtitleManagerPanel(
     justify-content: center;
     pointer-events: auto;
     user-select: none;
+    z-index: 1000002;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   `;
   icon.innerHTML = ICON_SVG;
   container.appendChild(icon);
