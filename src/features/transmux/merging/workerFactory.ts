@@ -10,7 +10,7 @@
 
 export function createTransmuxWorker(): Worker {
   return new Worker(
-    new URL('../../offscreen/transmuxWorker.ts', import.meta.url),
+    new URL('../../../offscreen/transmuxWorker.ts', import.meta.url),
     { type: 'module' },
   );
 }

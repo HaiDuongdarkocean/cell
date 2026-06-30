@@ -19,7 +19,7 @@ import { DownloadQueue } from './downloadQueue';
 import { tryAutoDownload } from './autoDownload';
 import { Downloader, type ConvertResult } from './downloader';
 import { OffscreenManager } from './offscreenManager';
-import { findSubtitlesForOverlay, type SubtitlePreference } from './subtitleService';
+import { findSubtitlesForOverlay, type SubtitlePreference } from '@/features/subtitle/service/subtitleService';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 import { cleanupOrphanedDownloads } from '@/shared/lib/storage/opfsStorage';

@@ -1,4 +1,4 @@
-import { findSubtitlesForOverlay, findPreferredMatch, type SubtitlePreference } from '../../src/background/subtitleService';
+import { findSubtitlesForOverlay, findPreferredMatch, type SubtitlePreference } from '../../src/features/subtitle/service/subtitleService';
 import { createSubtitleDropdown } from '../../src/features/subtitle/ui/subtitleSelector';
 import { SubtitleOverlayController } from '../../src/features/subtitle/ui/subtitleOverlay';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '../../src/shared/config/config';

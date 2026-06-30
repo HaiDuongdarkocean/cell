@@ -1,4 +1,4 @@
-import { findSubtitlesForOverlay, findPreferredMatch, type SubtitlePreference } from '../../../src/background/subtitleService';
+import { findSubtitlesForOverlay, findPreferredMatch, type SubtitlePreference } from '../../../src/features/subtitle/service/subtitleService';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '../../../src/shared/config/config';
 import type { DetectedSubtitle, Settings } from '../../../src/types/media';
 
