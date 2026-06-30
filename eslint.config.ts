@@ -7,7 +7,7 @@ import globals from 'globals';
 export default tseslint.config(
   // Global ignores
   {
-    ignores: ['dist/', 'node_modules/', 'coverage/', 'bin/', 'tests/integration/.cache/'],
+    ignores: ['dist/', 'node_modules/', 'coverage/', 'bin/', 'tests/integration/.cache/', 'project-reference/', 'public/ffmpeg/'],
   },
 
   // Base JS recommended
@@ -58,6 +58,16 @@ export default tseslint.config(
     files: ['**/*.test.ts', '**/*.test.tsx', 'tests/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
+
+  // Node.js scripts and E2E specs
+  {
+    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'e2e/**/*.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
     },
   },
 );

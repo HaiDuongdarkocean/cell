@@ -1,0 +1,26 @@
+{
+  "UserPromptSubmit": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"d:/Tool/learning apply skill/cell/scripts/reinject-rules.js\"",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "PostCompact": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"d:/Tool/learning apply skill/cell/scripts/reinject-rules.js\"",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}

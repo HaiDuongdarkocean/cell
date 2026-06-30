@@ -1,25 +1,24 @@
----
-description: "Chrome extension baseline rules"
-trigger: always_on
----
+# Project Baseline (Windsurf)
 
-# Chrome Extension Baseline Rules (Windsurf-specific)
+> Cross-tool source of truth is `AGENTS.md`. This file is the Windsurf-specific reminder.
 
-- Cross-tool rules (TDD, REFACTOR, code review, source-driven, skill hierarchy) are defined in `AGENTS.md`.
+## Mandatory pre-flight
 
-## UI/UX
-- When using skill `/frontend-ui-engineering`, always apply when designing ui/ux for the system `docs/reference-ui_ux_system.md`
+1. Identify phase 0-7 → invoke `/software-production-workflow`.
+2. Read `docs/2-architechture-system.md` before touching code.
+3. Grep `docs/knowledge/` for related keywords before writing new logic.
+4. Browser-facing changes MUST be verified in real Chrome/Edge (MCP DevTools or Playwright) before commit.
 
-## Knowledge Base
-- Always read `docs/0-wiki.md` first to know project overview and docs structure
-- Always read `docs/1-share-language.md` for glossary (human ↔ system language)
-- Always read `docs/2-architechture-system.md` to know file structure, dependencies, and impact radius
-- For chrome-devtools MCP usage (live debug on Chrome/Edge), refer to `docs/reference/chrome-devtools-mcp.md`
+## Quality gates
 
-## Architecture Map
-- Always read `docs/2-architechture-system.md` first to know file structure, dependencies, and impact radius
-- Update it whenever: adding/removing/renaming files, changing imports, or modifying data flows
-- Use the "Update protocol" section at the bottom of that file for guidance
+- `npm run test:unit`
+- `npx tsc --noEmit`
+- `npm run lint`
+- Atomic commits: code ≠ docs.
 
-## called
-- always call me "Anh yêu", xưng là "em"
+## Update protocol
+
+- Add/remove/rename `src/` files → update `docs/2-architechture-system.md` (3 places: tree, dependency table, function index).
+- Add/remove docs → update `docs/0-wiki.md`.
+- Reusable insight → `docs/knowledge/<principle>.md`.
+- Architecture decision → `docs/adr/<decision>.md`.
