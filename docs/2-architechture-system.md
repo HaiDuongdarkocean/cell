@@ -6,6 +6,44 @@
 
 ---
 
+## Target structure (refactor in progress — ADR-016)
+
+Đang migrate sang **Feature-Sliced Design (FSD) + Screaming Architecture**. Target structure:
+
+```
+src/
+├── app/                # App-wide config, providers, global setup
+├── stores/             # Global state stores (Zustand)
+├── entrypoints/        # Extension entrypoints (manifest-declared)
+│   ├── background/     #   Service Worker (MV3)
+│   ├── content/        #   Content scripts (ISOLATED + MAIN world)
+│   ├── offscreen/      #   Offscreen document (OPFS, workers)
+│   ├── popup/          #   Popup UI (React)
+│   └── sidepanel/      #   Side panel UI (React)
+├── features/           # Feature domains (screaming — domain name first)
+│   ├── detection/      #   Media/subtitle/script/language detection
+│   ├── whitelist/      #   Auto-download whitelist
+│   ├── transmux/       #   TS→fMP4 transmuxing (planning/execution/merging)
+│   ├── subtitle/       #   Subtitle overlay/sync/merge/bilingual (logic/ui/service)
+│   ├── download/       #   Download queue/selection
+│   └── settings/       #   Settings UI + validation logic
+├── entities/           # Domain entities (types/models)
+│   ├── video/          #   DetectedVideo, M3u8*, TsSegment
+│   ├── subtitle/       #   Subtitle overlay types
+│   ├── settings/       #   Settings, FilenameSource
+│   ├── media/          #   DownloadItem, Ass/Vtt/Srt types
+│   └── message/        #   Message bus types
+├── shared/             # Shared infrastructure (cross-feature)
+│   ├── lib/            #   parsers/, storage/, chrome-apis/ (adapters)
+│   ├── utils/          #   fileUtils, timeUtils, urlUtils
+│   └── config/         #   config, messages, urls
+└── types/              # Ambient .d.ts (muxjs, vite-env)
+```
+
+**Refactor status**: M1 scaffold done. M2-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
+
+---
+
 ## Cây thư mục
 
 ```
