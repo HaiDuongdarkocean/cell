@@ -3,7 +3,7 @@ import {
   detectScript,
   scriptToCandidateLanguages,
   type ScriptId,
-} from '@/lib/detectors/scriptDetector';
+} from './scriptDetector';
 
 /**
  * A language profile for frequency-based detection.

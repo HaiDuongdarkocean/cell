@@ -3,7 +3,7 @@ import type {
   DetectedSubtitle,
   NetworkRequest,
   SubtitleFormat,
-} from '../../types/media';
+} from '@/types/media';
 
 const FORMAT_EXTENSIONS: ReadonlyArray<[SubtitleFormat, string]> = [
   ['ass', '.ass'],

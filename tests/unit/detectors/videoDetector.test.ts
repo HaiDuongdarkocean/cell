@@ -1,4 +1,4 @@
-import { detectVideo } from '@/lib/detectors/videoDetector';
+import { detectVideo } from '@/features/detection/logic/videoDetector';
 import type { NetworkRequest } from '@/types/media';
 
 function makeRequest(url: string): NetworkRequest {

@@ -5,7 +5,7 @@ import {
   detectLanguage,
   isoCodeToLabel,
   labelToIsoCode,
-} from '@/lib/detectors/languageDetector';
+} from '@/features/detection/logic/languageDetector';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
 /**

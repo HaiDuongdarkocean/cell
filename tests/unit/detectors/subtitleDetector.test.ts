@@ -1,4 +1,4 @@
-import { detectSubtitle } from '@/lib/detectors/subtitleDetector';
+import { detectSubtitle } from '@/features/detection/logic/subtitleDetector';
 import type { NetworkRequest } from '@/types/media';
 
 function makeRequest(url: string, tabId = 1): NetworkRequest {

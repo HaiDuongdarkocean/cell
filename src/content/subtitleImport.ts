@@ -1,5 +1,5 @@
 import { handleFileDrop } from './subtitleDragDrop';
-import { detectLanguage, labelToIsoCode } from '@/lib/detectors/languageDetector';
+import { detectLanguage, labelToIsoCode } from '@/features/detection/logic/languageDetector';
 import type { OverlayConfig, ParseResult, SubtitleFormat } from '../types/subtitle';
 import type { SrtCue, SubtitleFormat as MediaSubtitleFormat } from '../types/media';
 

@@ -1,4 +1,4 @@
-import { detectLanguage, extractPlainText, isoCodeToLabel, labelToIsoCode, LANGUAGE_PROFILES } from '@/lib/detectors/languageDetector';
+import { detectLanguage, extractPlainText, isoCodeToLabel, labelToIsoCode, LANGUAGE_PROFILES } from '@/features/detection/logic/languageDetector';
 
 describe('languageDetector', () => {
   describe('LANGUAGE_PROFILES', () => {

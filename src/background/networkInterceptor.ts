@@ -1,5 +1,5 @@
-import { detectVideo } from '@/lib/detectors/videoDetector';
-import { detectSubtitle } from '@/lib/detectors/subtitleDetector';
+import { detectVideo } from '@/features/detection/logic/videoDetector';
+import { detectSubtitle } from '@/features/detection/logic/subtitleDetector';
 import type { DetectedVideo, DetectedSubtitle, NetworkRequest } from '@/types/media';
 
 /**

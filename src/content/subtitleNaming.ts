@@ -1,4 +1,4 @@
-import { isoCodeToLabel } from '@/lib/detectors/languageDetector';
+import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 
 /**
  * Format a subtitle display name (ADR-015 — friendly naming convention).

@@ -40,7 +40,7 @@ src/
 └── types/              # Ambient .d.ts (muxjs, vite-env)
 ```
 
-**Refactor status**: M1-M2 migrated. M3 entities/ layer done (video/settings/media/message/subtitle, types/ kept as Strangler Fig barrels for ambient .d.ts + backward-compat). M4-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
+**Refactor status**: M1-M3 migrated. M4.1 detectors → `features/detection/logic/` (barrel index.ts). M5-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
 
 ---
 

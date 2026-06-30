@@ -23,9 +23,9 @@ import { findSubtitlesForOverlay, type SubtitlePreference } from './subtitleServ
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 import { cleanupOrphanedDownloads } from '@/shared/lib/storage/opfsStorage';
-import { detectVideo } from '@/lib/detectors/videoDetector';
-import { detectSubtitle } from '@/lib/detectors/subtitleDetector';
-import { detectLanguage, labelToIsoCode } from '@/lib/detectors/languageDetector';
+import { detectVideo } from '@/features/detection/logic/videoDetector';
+import { detectSubtitle } from '@/features/detection/logic/subtitleDetector';
+import { detectLanguage, labelToIsoCode } from '@/features/detection/logic/languageDetector';
 import { parseM3u8 } from '@/shared/lib/parsers/m3u8Parser';
 import type {
   DetectedVideo,

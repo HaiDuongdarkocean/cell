@@ -3,7 +3,7 @@ import {
   scriptToCandidateLanguages,
   SCRIPT_RANGES,
   type ScriptId,
-} from '@/lib/detectors/scriptDetector';
+} from '@/features/detection/logic/scriptDetector';
 
 describe('scriptDetector', () => {
   describe('SCRIPT_RANGES', () => {

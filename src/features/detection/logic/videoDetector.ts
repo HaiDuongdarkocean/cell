@@ -4,7 +4,7 @@ import type {
   NetworkRequest,
   VideoFormat,
   VideoVariant,
-} from '../../types/media';
+} from '@/types/media';
 
 /**
  * Extract the file extension (without the leading dot) from a URL pathname,

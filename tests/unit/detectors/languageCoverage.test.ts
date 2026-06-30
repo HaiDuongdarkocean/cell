@@ -1,4 +1,4 @@
-import { detectLanguage } from '@/lib/detectors/languageDetector';
+import { detectLanguage } from '@/features/detection/logic/languageDetector';
 
 /**
  * Coverage tests for the hybrid script + frequency language detection.
