@@ -33,6 +33,7 @@ import {
   isQuotaExceededError,
   writeJsonFile,
 } from '@/shared/lib/storage/opfsStorage';
+import { download as chromeDownload, searchDownloads } from '@/shared/lib/chrome-apis/downloads';
 
 /**
  * Callback invoked with progress updates during a download.
@@ -609,14 +610,14 @@ export class Downloader {
     // force Edge to use it. Edge ignores the `filename` param for data: URLs.
     this.pendingFilename = filename;
     try {
-      const downloadId = await chrome.downloads.download({
+      const downloadId = await chromeDownload({
         url,
         filename,
         saveAs: false,
       });
       console.log(`[downloader] saveBlob: download started id=${downloadId}, requested filename="${filename}"`);
       // Verify what filename Edge actually used
-      chrome.downloads.search({ id: downloadId }).then((items) => {
+      searchDownloads({ id: downloadId }).then((items) => {
         if (items.length > 0) {
           console.log(`[downloader] saveBlob: ACTUAL filename="${items[0].filename}", mime="${items[0].mime}"`);
         }

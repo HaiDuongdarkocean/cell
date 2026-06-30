@@ -20,6 +20,7 @@
 
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { WhitelistEntry } from '@/types/media';
+import { getStorage, setStorage } from '@/shared/lib/chrome-apis/storage';
 
 /**
  * Normalize a URL for the auto-download whitelist.
@@ -53,7 +54,7 @@ export function normalizeUrl(rawUrl: string): string {
  * @returns The stored entries, or an empty array when none exist.
  */
 export async function getWhitelist(): Promise<WhitelistEntry[]> {
-  const result = await chrome.storage.local.get(
+  const result = await getStorage<Record<string, unknown>>(
     STORAGE_KEYS.AUTO_DOWNLOAD_WHITELIST,
   );
   const entries = result[STORAGE_KEYS.AUTO_DOWNLOAD_WHITELIST];
@@ -64,7 +65,7 @@ export async function getWhitelist(): Promise<WhitelistEntry[]> {
  * Persist the given whitelist entries to storage.
  */
 async function saveWhitelist(entries: WhitelistEntry[]): Promise<void> {
-  await chrome.storage.local.set({
+  await setStorage({
     [STORAGE_KEYS.AUTO_DOWNLOAD_WHITELIST]: entries,
   });
 }

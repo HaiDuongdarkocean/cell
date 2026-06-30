@@ -30,6 +30,7 @@ import type {
 import { selectBestMedia } from './selectBestMedia';
 import { isWhitelisted } from '@/features/whitelist/whitelist';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
+import { getStorage } from '@/shared/lib/chrome-apis/storage';
 
 /**
  * Side-effecting collaborators injected by the background service.
@@ -101,7 +102,7 @@ export async function tryAutoDownload(
   // has never opened the settings dialog still gets auto-downloads.
   let settings: Settings;
   try {
-    const data = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);
+    const data = await getStorage<Record<string, unknown>>(STORAGE_KEYS.SETTINGS);
     const raw = data[STORAGE_KEYS.SETTINGS] as Partial<Settings> | undefined;
     settings = { ...DEFAULT_SETTINGS, ...raw };
   } catch {

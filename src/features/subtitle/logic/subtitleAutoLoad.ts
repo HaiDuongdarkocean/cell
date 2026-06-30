@@ -29,6 +29,7 @@ import type {
   FetchSubtitleContentResult,
   SubtitleForOverlayResult,
 } from '@/types/message';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 
 /**
  * Decide whether auto-load should trigger.
@@ -150,7 +151,7 @@ export async function fetchAndParseSubtitle(
  * Throws on failure (caller catches + reports).
  */
 async function fetchViaBackground(url: string, tabUrl?: string): Promise<string> {
-  const response = await chrome.runtime.sendMessage({
+  const response = await sendMessage<{ content?: string; error?: string }>({
     type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
     payload: { url, tabUrl },
   }) as { success?: boolean; data?: FetchSubtitleContentResult; error?: string } | undefined;

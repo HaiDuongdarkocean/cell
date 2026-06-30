@@ -40,7 +40,7 @@ src/
 └── types/              # Ambient .d.ts (muxjs, vite-env)
 ```
 
-**Refactor status**: M1-M3 migrated. M4.1 detectors → features/detection/logic/. M5.1 whitelist → features/whitelist/. M6 transmux → features/transmux/. M7 subtitle → features/subtitle/. M8 download → features/download/. M9 5 entrypoints → entrypoints/. M10 settings UI → features/settings/ui/ (4 components). M11-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
+**Refactor status**: M1-M3 migrated. M4.1 detectors → features/detection/logic/. M5.1 whitelist → features/whitelist/. M6 transmux → features/transmux/. M7 subtitle → features/subtitle/. M8 download → features/download/. M9 5 entrypoints → entrypoints/. M10 settings → features/settings/ui/. M11 chrome.* adapters → shared/lib/chrome-apis/ (NF3 satisfied). M12-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
 
 ---
 
