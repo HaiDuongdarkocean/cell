@@ -1,4 +1,4 @@
-import { mergeTsSegments } from '@/lib/converters/segmentMerger';
+import { mergeTsSegments } from '@/features/transmux/merging/segmentMerger';
 
 /** Reads a Blob's content as a UTF-8 string using FileReader (jsdom-compatible). */
 function readBlobAsText(blob: Blob): Promise<string> {

@@ -5,8 +5,8 @@
  * only reads the cache (no network). Runs in its own jest worker in parallel
  * with parallel.integration.test.ts and compare.integration.test.ts.
  */
-import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
-import { validateFragmentedMp4 } from '@/lib/converters/mp4Validator';
+import { transmuxTsToFmp4 } from '@/features/transmux/merging/tsTransmuxer';
+import { validateFragmentedMp4 } from '@/features/transmux/merging/mp4Validator';
 import {
   countBoxes,
   installOpfsMock,

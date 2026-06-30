@@ -6,9 +6,9 @@
  * only reads the cache (no network). Runs in its own jest worker in parallel
  * with sequential.integration.test.ts and compare.integration.test.ts.
  */
-import { transmuxTsToFmp4ParallelExperimental } from '@/lib/converters/parallelTransmuxer';
+import { transmuxTsToFmp4ParallelExperimental } from '@/features/transmux/merging/parallelTransmuxer';
 import { groupSegmentsByBytes } from '@/features/transmux/planning/segmentGrouping';
-import { validateFragmentedMp4 } from '@/lib/converters/mp4Validator';
+import { validateFragmentedMp4 } from '@/features/transmux/merging/mp4Validator';
 import {
   countBoxes,
   installOpfsMock,

@@ -11,7 +11,7 @@ const moduleNameMapper = {
   // Mock Vite ?worker imports — returns a no-op Worker class for tests
   '\\?worker$': '<rootDir>/tests/workerMock.ts',
   // Mock workerFactory (uses import.meta.url which is invalid in Jest's CJS)
-  '@/lib/converters/workerFactory': '<rootDir>/tests/workerMock.ts',
+  '@/features/transmux/merging/workerFactory': '<rootDir>/tests/workerMock.ts',
 };
 
 const transform = {
@@ -58,7 +58,9 @@ const config: Config = {
   ],
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
-    'src/lib/**/*.ts',
+    'src/features/**/*.ts',
+    'src/shared/**/*.ts',
+    'src/entities/**/*.ts',
     'src/popup/components/**/*.tsx',
     '!src/**/*.d.ts',
   ],

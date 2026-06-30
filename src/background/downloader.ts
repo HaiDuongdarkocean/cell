@@ -2,7 +2,7 @@ import { parseM3u8 } from '@/shared/lib/parsers/m3u8Parser';
 import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
 import { convertVttToSrt } from '@/shared/lib/parsers/vttToSrt';
 import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
-import { ConversionTimer } from '@/lib/converters/conversionTimer';
+import { ConversionTimer } from '@/features/transmux/merging/conversionTimer';
 import { planParallelConversion } from '@/features/transmux/planning/parallelPlanner';
 import { generateFileName, resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
 import type {

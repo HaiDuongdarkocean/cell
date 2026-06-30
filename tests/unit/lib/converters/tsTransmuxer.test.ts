@@ -137,7 +137,7 @@ jest.mock('@/shared/lib/storage/opfsStorage', () => ({
   }),
 }));
 
-import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
+import { transmuxTsToFmp4 } from '@/features/transmux/merging/tsTransmuxer';
 import muxjs from 'mux.js';
 
 // Helper: create a File with a given size filled with a repeating byte pattern.

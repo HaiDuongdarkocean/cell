@@ -14,7 +14,7 @@
 
 import type { SegmentRange } from '@/types/media';
 import type { SegmentGroup } from '@/features/transmux/planning/segmentGrouping';
-import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
+import { transmuxTsToFmp4 } from './tsTransmuxer';
 import {
   ensureDownloadSubdir,
   readFile as opfsReadFile,

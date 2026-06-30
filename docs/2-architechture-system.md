@@ -40,7 +40,7 @@ src/
 └── types/              # Ambient .d.ts (muxjs, vite-env)
 ```
 
-**Refactor status**: M1-M3 migrated. M4.1 detectors → features/detection/logic/. M5.1 whitelist → features/whitelist/. M6.1 transmux planning+execution → features/transmux/{planning,execution}/. M6.2-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
+**Refactor status**: M1-M3 migrated. M4.1 detectors → features/detection/logic/. M5.1 whitelist → features/whitelist/. M6 transmux → features/transmux/{planning,execution,merging}/. lib/converters/ removed. M7-M13 in progress (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
 
 ---
 

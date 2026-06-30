@@ -1,4 +1,4 @@
-import { validateFragmentedMp4 } from '@/lib/converters/mp4Validator';
+import { validateFragmentedMp4 } from '@/features/transmux/merging/mp4Validator';
 
 /**
  * Create a minimal valid fragmented MP4 byte sequence for testing.

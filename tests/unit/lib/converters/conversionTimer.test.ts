@@ -1,4 +1,4 @@
-import { ConversionTimer } from '@/lib/converters/conversionTimer';
+import { ConversionTimer } from '@/features/transmux/merging/conversionTimer';
 
 describe('ConversionTimer', () => {
   beforeEach(() => {

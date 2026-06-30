@@ -72,7 +72,7 @@ jest.mock('@/shared/lib/storage/opfsStorage', () => ({
 
 // ---- mux.js mock ----
 
-jest.mock('@/lib/converters/tsTransmuxer', () => ({
+jest.mock('@/features/transmux/merging/tsTransmuxer', () => ({
   transmuxTsToFmp4: jest.fn(),
 }));
 
@@ -138,7 +138,7 @@ import {
   stopMessageListener,
   resetFFmpeg,
 } from '@/offscreen/ffmpegRunner';
-import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
+import { transmuxTsToFmp4 } from '@/features/transmux/merging/tsTransmuxer';
 import { ensureDownloadSubdir, readFile as opfsReadFile } from '@/shared/lib/storage/opfsStorage';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 
@@ -352,7 +352,7 @@ describe('offscreen ffmpegRunner (V2)', () => {
         isOpfsAvailable: jest.fn().mockReturnValue(true),
         createOpfsWriter: jest.fn(),
       }));
-      jest.doMock('@/lib/converters/tsTransmuxer', () => ({
+      jest.doMock('@/features/transmux/merging/tsTransmuxer', () => ({
         transmuxTsToFmp4: jest.fn(),
       }));
 
@@ -383,7 +383,7 @@ describe('offscreen ffmpegRunner (V2)', () => {
         isOpfsAvailable: jest.fn().mockReturnValue(true),
         createOpfsWriter: jest.fn(),
       }));
-      jest.doMock('@/lib/converters/tsTransmuxer', () => ({
+      jest.doMock('@/features/transmux/merging/tsTransmuxer', () => ({
         transmuxTsToFmp4: jest.fn(),
       }));
 

@@ -21,14 +21,14 @@
 
 import type { Settings, SegmentRange } from '@/types/media';
 import { planParallelConversion, type ParallelPlan } from '../planning/parallelPlanner';
-import { transmuxTsToFmp4ParallelExperimental } from '@/lib/converters/parallelTransmuxer';
-import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
+import { transmuxTsToFmp4ParallelExperimental } from '../merging/parallelTransmuxer';
+import { transmuxTsToFmp4 } from '../merging/tsTransmuxer';
 import { executeWithFallback } from './parallelFallback';
 import {
   ParallelProgressTracker,
   type ParallelConversionPhase,
 } from './parallelProgress';
-import { validateFragmentedMp4 } from '@/lib/converters/mp4Validator';
+import { validateFragmentedMp4 } from '../merging/mp4Validator';
 import {
   CancellationTokenRegistry,
   ParallelConversionCancelledError,

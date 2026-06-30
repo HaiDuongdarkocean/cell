@@ -3,19 +3,19 @@ import {
   cancelParallelConversion,
   isParallelConversionCancelled,
 } from '@/features/transmux/execution/parallelCoordinator';
-import { transmuxTsToFmp4ParallelExperimental } from '@/lib/converters/parallelTransmuxer';
-import { transmuxTsToFmp4 } from '@/lib/converters/tsTransmuxer';
+import { transmuxTsToFmp4ParallelExperimental } from '@/features/transmux/merging/parallelTransmuxer';
+import { transmuxTsToFmp4 } from '@/features/transmux/merging/tsTransmuxer';
 import { ParallelConversionCancelledError } from '@/features/transmux/execution/parallelCancellation';
-import { validateFragmentedMp4 } from '@/lib/converters/mp4Validator';
+import { validateFragmentedMp4 } from '@/features/transmux/merging/mp4Validator';
 import type { Settings, SegmentRange } from '@/types/media';
 
 // Mock mp4Validator — default returns valid, per-test can override to invalid
-jest.mock('@/lib/converters/mp4Validator', () => ({
+jest.mock('@/features/transmux/merging/mp4Validator', () => ({
   validateFragmentedMp4: jest.fn(() => ({ valid: true })),
 }));
 
 // Mock the transmuxers
-jest.mock('@/lib/converters/tsTransmuxer', () => ({
+jest.mock('@/features/transmux/merging/tsTransmuxer', () => ({
   transmuxTsToFmp4: jest.fn(async (
     _inputFile: Blob,
     _dirHandle: FileSystemDirectoryHandle,
@@ -50,7 +50,7 @@ jest.mock('@/lib/converters/tsTransmuxer', () => ({
   }),
 }));
 
-jest.mock('@/lib/converters/parallelTransmuxer', () => ({
+jest.mock('@/features/transmux/merging/parallelTransmuxer', () => ({
   transmuxTsToFmp4ParallelExperimental: jest.fn(async (opts: {
     downloadId: string;
     outputName?: string;

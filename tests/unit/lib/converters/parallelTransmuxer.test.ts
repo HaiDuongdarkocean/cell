@@ -1,4 +1,4 @@
-import { transmuxTsToFmp4ParallelExperimental, findFirstMoofOffset } from '@/lib/converters/parallelTransmuxer';
+import { transmuxTsToFmp4ParallelExperimental, findFirstMoofOffset } from '@/features/transmux/merging/parallelTransmuxer';
 import type { SegmentGroup } from '@/features/transmux/planning/segmentGrouping';
 import type { SegmentRange } from '@/types/media';
 
@@ -136,7 +136,7 @@ beforeAll(() => {
 
 // Default mock: write a valid synthetic fMP4 part so mergePartFiles can find
 // the first moof box and strip ftyp+moov from subsequent parts.
-jest.mock('@/lib/converters/tsTransmuxer', () => ({
+jest.mock('@/features/transmux/merging/tsTransmuxer', () => ({
   transmuxTsToFmp4: jest.fn(async (
     _inputFile: Blob,
     dirHandle: FileSystemDirectoryHandle,
@@ -155,7 +155,7 @@ jest.mock('@/lib/converters/tsTransmuxer', () => ({
   }),
 }));
 
-const { transmuxTsToFmp4 } = require('@/lib/converters/tsTransmuxer') as {
+const { transmuxTsToFmp4 } = require('@/features/transmux/merging/tsTransmuxer') as {
   transmuxTsToFmp4: jest.Mock;
 };
 
