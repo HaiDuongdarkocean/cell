@@ -9,11 +9,13 @@
 
 ## Objective
 
-Refactor **cấu trúc toàn bộ `src/` + `tests/`** từ flat-folder hiện tại sang **Feature-Sliced Design + Screaming Architecture** worktree, thiết kế cho **extensibility ~15 feature domain tương lai của Orca platform** (17 nhóm UC / 130 UC), không chỉ fix 2 cluster smell hiện tại (subtitle*.ts + parallel*.ts).
+**Problem**: Cell hiện tại (~99 file source + 85 test) đang hình thành "Big Ball of Mud" — `content/` có **17 `subtitle*.ts`** phẳng, `lib/converters/` có **transmux cluster ~16 file** (8 `parallel*.ts` + segment/merger/validator/timer/...) phẳng. Mở folder thấy technical prefix, không thấy domain intent. Tìm file/function mất >3 bước. Sắp tới thêm **23 feature domain Orca platform** (17 nhóm UC / 130 UC) → nếu không refactor structure trước, flat folder sẽ nổ (>200 file phẳng). Refactor structure giờ rẻ hơn refactor sau khi đã thêm feature.
+
+**Chosen approach** (confirmed Q2:A): refactor cấu trúc toàn bộ `src/` + `tests/` sang **Feature-Sliced Design + Screaming Architecture** worktree — `entrypoints/` + `features/` + `entities/` + `shared/` + `stores/` + `app/`. Domain-named folders. KHÔNG chỉ fix 2 cluster smell, mà thiết kế cho extensibility 23 feature domain Orca platform.
 
 **User**: Anh — solo developer (architect + developer role), muốn worktree gọn gàng, dễ tra cứu file/function, dễ mở rộng khi thêm feature Orca (dict, vocab, flashcard, SRS, Anki, podcast, EPUB, AI, sync...), dễ maintain qua tháng/năm.
 
-**Why now**: Cell hiện tại (~75 file) đang hình thành "Big Ball of Mud" — `content/` có ~20 `subtitle*.ts` phẳng, `lib/converters/` có ~15 `parallel*.ts` phẳng. Sắp tới thêm ~15 feature domain Orca → nếu không refactor structure trước, flat folder sẽ nổ (>200 file phẳng). Refactor structure giờ rẻ hơn refactor sau khi đã thêm 15 feature.
+**Why now**: flat folder phẳng đang nổ, sắp thêm 23 feature domain → refactor structure trước khi thêm feature rẻ hơn refactor sau.
 
 **Success**:
 - Worktree "screams" domain intent — mở `src/features/` thấy ngay subtitle, transmux, download, detection, dict (future), vocab (future), flashcard (future), srs (future)...
@@ -65,9 +67,9 @@ E2E:              npm run test:e2e
 
 Note: `npm test -- --testPathPattern=` deprecated in jest 30; dùng `--testPathPatterns=`.
 
-## Scope — Orca Platform Feature Domains (17 UC groups → feature folders)
+## Scope — Orca Platform Feature Domains (23 feature domains across 17 UC groups)
 
-> **Lưu ý**: đây là **target feature domain map** cho worktree. Cell hiện tại implement subset (UC04 video download + subtitle overlay). Orca tương lai implement toàn bộ. Worktree phải có chỗ cho tất cả, KHÔNG tạo folder rỗng trước (YAGNI) — chỉ thiết kế pattern.
+> **Lưu ý**: đây là **target feature domain map** cho worktree — **23 feature domains** mapped across **17 UC groups** (130 UC). Cell hiện tại implement subset (UC04 video download + subtitle overlay). Orca tương lai implement toàn bộ. Worktree phải có chỗ cho tất cả, KHÔNG tạo folder rỗng trước (YAGNI) — chỉ thiết kế pattern.
 
 | # | Feature domain | UC group | Cell hiện tại | Orca tương lai | Folder target |
 |---|---|---|---|---|---|
@@ -116,9 +118,11 @@ src/
 │   │       ├── media-detection.ts  # GET_DETECTED_MEDIA, PAGE_SCAN_RESULT
 │   │       └── offscreen.ts        # CONVERT_TS_TO_MP4_V2, CREATE_OPFS_BLOB_URL
 │   ├── content/
-│   │   ├── index.ts                # Content script entry (thin: scan + wire)
+│   │   ├── index.ts                # Content script entry (ISOLATED world, document_idle) — scan + wire (← content-script.ts)
+│   │   ├── fetchInterceptor.iife.ts # MAIN world content script (document_start) — intercept fetch/XHR (manifest content_scripts[1])
+│   │   ├── themeTokens.ts          # Theme token injection (used by fetchInterceptor)
 │   │   └── video/                  # Video-page content modules
-│   │       └── overlay-wiring.ts   # Wire subtitle overlay + panel + shortcuts
+│   │       └── overlay-wiring.ts   # Wire subtitle overlay + panel + shortcuts (← pageScanner.ts)
 │   ├── offscreen/
 │   │   ├── index.html              # Offscreen HTML entry
 │   │   ├── runner.ts               # Entry: nhận CONVERT_TS_TO_MP4_V2
@@ -157,25 +161,28 @@ src/
 │           └── CueList.tsx
 │
 ├── features/                       # Business features (Screaming Architecture)
-│   ├── subtitle/                   # ← group 20 subtitle*.ts (UC04.1-04.9)
-│   │   ├── ui/                     # overlay, drag handle, selector, panel toggle, import button, track dropdown
-│   │   │   ├── overlayLayer.ts     # createOverlayLayer, applyStyle, buildTextShadow, hexToRgba
-│   │   │   ├── dragPosition.ts     # calcYOffsetPercent, createDragHandle
-│   │   │   ├── selector.ts         # createSubtitleDropdown
-│   │   │   ├── panelToggle.ts      # createToggleButton
-│   │   │   ├── importButton.ts     # createImportButton, handleFileSelect
-│   │   │   ├── trackDropdown.ts    # createTrackDropdown, updateTrackOptions
-│   │   │   └── dragHint.ts         # createDragHint
+│   ├── subtitle/                   # ← group 17 subtitle*.ts (UC04.1-04.9)
+│   │   ├── ui/                     # overlay, drag handle, selector, panel toggle, import button, track dropdown, panel, toast
+│   │   │   ├── overlayLayer.ts     # createOverlayLayer, applyStyle, buildTextShadow, hexToRgba (← subtitleUI.ts)
+│   │   │   ├── dragPosition.ts     # calcYOffsetPercent, createDragHandle (← subtitleDragPosition.ts)
+│   │   │   ├── selector.ts         # createSubtitleDropdown (← subtitleSelector.ts)
+│   │   │   ├── panelToggle.ts      # createToggleButton (← subtitlePanel.ts)
+│   │   │   ├── importButton.ts     # createImportButton, handleFileSelect (← subtitleImport.ts)
+│   │   │   ├── trackDropdown.ts    # createTrackDropdown, updateTrackOptions (← subtitleTrackDropdown.ts)
+│   │   │   ├── dragHint.ts         # createDragHint
+│   │   │   ├── managerPanel.ts     # SubtitleManagerPanel (← subtitleManagerPanel.ts)
+│   │   │   └── toast.ts            # toast notification (← subtitleToast.ts)
 │   │   ├── logic/                  # pure logic (testable, no DOM)
-│   │   │   ├── sync.ts             # findCurrentLine (binary search)
-│   │   │   ├── merge.ts            # mergeCuesForPanel
-│   │   │   ├── bilingualParser.ts # parseBilingualSrt
-│   │   │   └── parserAdapter.ts    # parseSubtitle (reuse shared/lib/parsers)
+│   │   │   ├── sync.ts             # findCurrentLine (binary search) (← subtitleSync.ts)
+│   │   │   ├── merge.ts            # mergeCuesForPanel (← subtitleMerge.ts)
+│   │   │   ├── bilingualParser.ts # parseBilingualSrt (← subtitleBilingualParser.ts)
+│   │   │   ├── naming.ts           # filename helpers (← subtitleNaming.ts)
+│   │   │   └── parserAdapter.ts    # parseSubtitle (reuse shared/lib/parsers) (← subtitleParser.ts)
 │   │   ├── service/                # side-effect orchestration
-│   │   │   ├── overlay.ts          # SubtitleOverlayController
-│   │   │   ├── autoLoad.ts         # shouldAutoLoad, fetchAndParseSubtitle, handleAutoLoadSubtitles
-│   │   │   ├── dragDrop.ts         # readFileAsText, handleFileDrop
-│   │   │   └── shortcuts.ts        # handleShortcutKey
+│   │   │   ├── overlay.ts          # SubtitleOverlayController (← subtitleOverlay.ts)
+│   │   │   ├── autoLoad.ts         # shouldAutoLoad, fetchAndParseSubtitle, handleAutoLoadSubtitles (← subtitleAutoLoad.ts)
+│   │   │   ├── dragDrop.ts         # readFileAsText, handleFileDrop (← subtitleDragDrop.ts)
+│   │   │   └── shortcuts.ts        # handleShortcutKey (← subtitleShortcuts.ts)
 │   │   ├── ports/                  # interfaces cho external deps (future Orca)
 │   │   │   ├── ISubtitleStorage.ts # port cho chrome.storage / future SQLite
 │   │   │   └── ISubtitleOverlay.ts # port cho overlay DOM manipulation
@@ -422,8 +429,8 @@ app → tất cả (wiring)
 - `src/app/` wiring (minimal — chỉ khi cần)
 
 **NOT touched** (intentionally):
-- `manifest.json` — giữ nguyên trừ khi crxjs cần update entry path (verify build).
-- `vite.config.ts` — giữ nguyên trừ khi cần update input path cho offscreen.
+- `manifest.json` content — giữ nguyên trừ entry path update ở M9 (service_worker, content_scripts[0/1].js, action.default_popup, side_panel.default_path). Verify build + browser sau mỗi M9 sub-commit.
+- `vite.config.ts` — giữ nguyên trừ `rollupOptions.input.{offscreen,sidepanel}` path update ở M9.3 + M9.5.
 - `package.json` — KHÔNG thêm dep.
 - Behavior logic bên trong file — KHÔNG đổi khi move.
 
@@ -491,18 +498,21 @@ export interface ISubtitleStorage {
 14. **P2. No new deps**: `package.json` diff = 0 (trừ khi anh approve).
 15. **P3. ADR chain**: ADR-016 (folder structure decision) + ADR con nếu cần (port pattern, chrome-apis adapter) ở G3 trước G4.
 
-## Open Questions (resolve at spec review)
+## Open Questions (resolved at spec review — anh confirm 2026-06-30)
 
-1. **Chrome.* wrapping scope**: wrap tất cả chrome.* calls trong adapter ngay G4, hay incremental (wrap khi chạm file)? **Em lean incremental** (Metz P8: tránh over-engineer, wrap khi cần testability). Anh confirm?
-2. **Zustand store tách slice**: popup store hiện tại 1 file monolithic → tách slice per feature ngay G4, hay giữ nguyên + tách khi thêm Orca feature? **Em lean giữ nguyên + tách khi Orca feature cần** (YAGNI). Anh confirm?
-3. **`app/` layer scope**: tạo `app/` ngay G4 (cho providers/styles wiring), hay skip + tạo khi cần (future Orca OAuth provider)? **Em lean skip G4, tạo khi cần** (YAGNI). Anh confirm?
-4. **ESLint layer-rule enforcement**: thêm eslint-plugin-boundaries (or similar) để enforce FSD import rule ngay G4, hay manual review + tsc? **Em lean manual + tsc G4, thêm lint rule ở ADR riêng sau** (tránh new dep + scope creep). Anh confirm?
-5. **`entities/` vs `features/*/types.ts`**: domain types (Subtitle, Video, Settings) đặt ở `entities/` (FSD) hay `features/*/types.ts` (Bulletproof React)? **Em lean `entities/` cho shared domain models, `features/*/types.ts` cho feature-specific types** (FSD hybrid). Anh confirm?
+1. **Chrome.* wrapping scope**: wrap tất cả chrome.* calls trong adapter ngay G4, hay incremental (wrap khi chạm file)? **RESOLVED — incremental** (Metz P8: tránh over-engineer, wrap khi cần testability). Gate M11 only, không block M1-M10.
+2. **Zustand store tách slice**: popup store hiện tại 1 file monolithic → tách slice per feature ngay G4, hay giữ nguyên + tách khi thêm Orca feature? **RESOLVED — giữ nguyên + tách khi Orca feature cần** (YAGNI).
+3. **`app/` layer scope**: tạo `app/` ngay G4 (cho providers/styles wiring), hay skip + tạo khi cần (future Orca OAuth provider)? **RESOLVED — skip G4, tạo khi cần** (YAGNI).
+4. **ESLint layer-rule enforcement**: thêm eslint-plugin-boundaries (or similar) để enforce FSD import rule ngay G4, hay manual review + tsc? **RESOLVED — manual + tsc G4, thêm lint rule ở ADR riêng sau** (tránh new dep + scope creep).
+5. **`entities/` vs `features/*/types.ts`**: domain types (Subtitle, Video, Settings) đặt ở `entities/` (FSD) hay `features/*/types.ts` (Bulletproof React)? **RESOLVED — `entities/` cho shared domain models, `features/*/types.ts` cho feature-specific types** (FSD hybrid).
+6. **`fetchInterceptor.iife.ts` target** (CRITICAL from spec review): move đi đâu? **RESOLVED — `src/entrypoints/content/fetchInterceptor.iife.ts`**, manifest `content_scripts[1].js` update trong M9.2.
+7. **3 stray converter files** (HIGH from spec review): `assToSrt/vttToSrt/srtNormalizer` move khi nào? **RESOLVED — move ở M2** (→ `shared/lib/parsers/`).
+8. **Coverage baseline** (HIGH from spec review): thêm Milestone 0 pre-flight? **RESOLVED — yes**, M0 chạy `npm run test:coverage` + characterization gap close trước M6/M7.
 
 ## Edge Cases
 
-1. **CRXJS manifest entry path**: `manifest.json` reference `src/background/index.ts`, `src/content/content-script.ts`, `src/popup/main.tsx`... Sau move → path đổi → build break. **Mitigation**: update manifest entry path trong cùng commit move entrypoint. Verify `npm run build` sau mỗi entrypoint move.
-2. **Vite config input**: `vite.config.ts` `rollupOptions.input.offscreen` reference `src/offscreen/ffmpeg.html`. Sau move → update path. **Mitigation**: update trong cùng commit.
+1. **CRXJS manifest entry path**: `public/manifest.json` reference `src/background/index.ts`, `src/content/content-script.ts`, `src/content/fetchInterceptor.iife.ts` (MAIN world), `src/sidepanel/index.html`, `src/popup/index.html`. Sau move → path đổi → build break. **Mitigation**: M9 tách 5 sub-commit, mỗi sub-commit = 1 entrypoint group + manifest path update trong cùng commit. Verify `npm run build` + browser load sau mỗi sub-commit.
+2. **Vite config input**: `vite.config.ts` `rollupOptions.input` reference `src/offscreen/ffmpeg.html` AND `src/sidepanel/index.html`. Sau move → update cả 2 path. **Mitigation**: update trong M9.3 (offscreen) + M9.5 (sidepanel).
 3. **Import path hàng loạt**: move 1 file → N file import nó phải update. **Mitigation**: Parallel Change — tạo new path + barrel trước, update import từng file, test sau mỗi file, xóa old path cuối. Hoặc dùng IDE rename (PowerShell không có, manual edit).
 4. **Circular dependency**: feature A import feature B, feature B import feature A (risky khi tách). **Mitigation**: tsc catch circular type error. Nếu runtime circular → extract shared vào `entities/` hoặc `shared/`.
 5. **Test path mismatch**: move source nhưng quên move test → test fail (import path cũ). **Mitigation**: move test cùng lúc source, colocate rule.
@@ -545,6 +555,12 @@ export interface ISubtitleStorage {
 
 > **Pattern**: Strangler Fig + Parallel Change (Expand-Contract). Incremental, behavior-preserving, test pass mỗi bước.
 
+**Milestone 0 — Coverage baseline + characterization gap** (1 commit, pre-flight):
+- Run `npm run test:coverage`, record per-cluster coverage cho `subtitle` (M7) + `transmux` (M6) + `download` (M8).
+- List behaviors chưa cover (untested) → viết characterization test pin behavior hiện tại (test "code ACTUALLY does", không "should do") TRƯỚC khi move.
+- **Exit gate**: characterization gap closed cho cluster sắp move. KHÔNG move cluster nếu coverage gap chưa close.
+- Save coverage report vào `docs/test-reports/coverage-baseline-pre-refactor.md`.
+
 **Milestone 1 — Scaffolding** (1 commit):
 - Tạo `src/entrypoints/`, `src/features/`, `src/entities/`, `src/shared/`, `src/app/` folder rỗng + `.gitkeep`.
 - Update `docs/2-architechture-system.md` note new target structure.
@@ -552,6 +568,7 @@ export interface ISubtitleStorage {
 
 **Milestone 2 — shared/ layer** (1-2 commit):
 - Move `src/lib/parsers/` → `src/shared/lib/parsers/`.
+- Move 3 stray converter files `src/lib/converters/{assToSrt,vttToSrt,srtNormalizer}.ts` → `src/shared/lib/parsers/` (target tree đã place ở đây, move khỏi converters).
 - Move `src/lib/storage/` → `src/shared/lib/storage/`.
 - Move `src/lib/utils/` → `src/shared/utils/`.
 - Move `src/constants/` → `src/shared/config/`.
@@ -571,11 +588,11 @@ export interface ISubtitleStorage {
 - Tạo barrel. Update imports. Test pass.
 
 **Milestone 6 — transmux/ feature** (1 commit):
-- Move 15 `src/lib/converters/parallel*.ts` + `segment*.ts` + `mp4Validator.ts` + `conversionTimer.ts` + `autoEnablement.ts` + `benchmarkHarness.ts` + `workerFactory.ts` + `tsTransmuxer.ts` → `src/features/transmux/{planning,execution,merging}/`.
+- Move ~16 file transmux cluster: `src/lib/converters/{parallel*,segment*,mp4Validator,conversionTimer,autoEnablement,benchmarkHarness,workerFactory,tsTransmuxer}.ts` → `src/features/transmux/{planning,execution,merging}/`. (8 `parallel*.ts` + 8 file kia = ~16; assToSrt/vttToSrt/srtNormalizer đã move ở M2.)
 - Tạo barrel. Update imports. Test pass + integration test (parallel/sequential).
 
 **Milestone 7 — subtitle/ feature** (1 commit — largest):
-- Move 20 `src/content/subtitle*.ts` → `src/features/subtitle/{ui,logic,service}/`.
+- Move 17 `src/content/subtitle*.ts` → `src/features/subtitle/{ui,logic,service}/` (mapping đầy đủ trong Target Structure).
 - Tạo barrel. Update imports. Test pass + browser verify (overlay + drag).
 
 **Milestone 8 — download/ feature** (1 commit):
@@ -583,14 +600,12 @@ export interface ISubtitleStorage {
 - Move `src/lib/selectors/selectBestMedia.ts` → `src/features/download/logic/`.
 - Tạo barrel. Update imports. Test pass.
 
-**Milestone 9 — entrypoints/ migration** (2-3 commit):
-- Move `src/background/{index,messageBus,offscreenManager}.ts` → `src/entrypoints/background/`.
-- Move `src/content/{content-script,pageScanner}.ts` → `src/entrypoints/content/`.
-- Move `src/offscreen/` → `src/entrypoints/offscreen/`.
-- Move `src/popup/` → `src/entrypoints/popup/`.
-- Move `src/sidepanel/` → `src/entrypoints/sidepanel/`.
-- Update `manifest.json` entry path + `vite.config.ts` input.
-- Update imports. Test pass + build verify + browser verify.
+**Milestone 9 — entrypoints/ migration** (5 commit — 1 entrypoint group + manifest/vite path update per commit, `npm run build` pass per commit):
+- **M9.1**: Move `src/background/{index,messageBus,offscreenManager}.ts` → `src/entrypoints/background/`. Update `manifest.json` `service_worker` path. Build pass.
+- **M9.2**: Move `src/content/{content-script,pageScanner,fetchInterceptor.iife,themeTokens}.ts` → `src/entrypoints/content/`. Update `manifest.json` `content_scripts[0].js` (content-script) + `content_scripts[1].js` (fetchInterceptor.iife). Build pass + browser verify (MAIN world inject).
+- **M9.3**: Move `src/offscreen/` → `src/entrypoints/offscreen/`. Update `vite.config.ts` `rollupOptions.input.offscreen`. Build pass.
+- **M9.4**: Move `src/popup/` → `src/entrypoints/popup/`. Update `manifest.json` `action.default_popup`. Build pass + browser verify (popup load).
+- **M9.5**: Move `src/sidepanel/` → `src/entrypoints/sidepanel/`. Update `manifest.json` `side_panel.default_path` + `vite.config.ts` `rollupOptions.input.sidepanel`. Build pass + browser verify (sidepanel load).
 
 **Milestone 10 — settings/ feature** (1 commit):
 - Extract settings UI + logic từ `src/entrypoints/popup/components/settings/` → `src/features/settings/`.
@@ -611,7 +626,7 @@ export interface ISubtitleStorage {
 - Update `docs/0-wiki.md` mục lục.
 - Full regression: `npm run test:unit` + `npm run test:integration` + `npx tsc --noEmit` + `npm run build` + browser verify + E2E.
 
-**Total**: ~13-16 commit (commit nhỏ mỗi cluster, anh confirm Q3:A).
+**Total**: ~17-20 commit (M0 + M1-M13, M9 tách 5 sub-commit). Commit nhỏ mỗi cluster, test pass mỗi commit (anh confirm Q3:A).
 
 ## References
 
