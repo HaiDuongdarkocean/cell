@@ -9,6 +9,7 @@ import type { BackgroundContext } from '../context';
 import {
   pushAutoLoadSubtitles,
 } from '../helpers';
+import { offscreenFetch } from '../offscreenFetch';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -106,12 +107,12 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
     }
 
     try {
-      const response = await fetch(finalUrl);
-      if (!response.ok) {
-        return { success: false, error: `HTTP ${response.status}` };
+      // M15: fetch via offscreen so SW idle eviction doesn't abort the subtitle fetch.
+      const result = await offscreenFetch(ctx.offscreenManager, finalUrl);
+      if (!result.ok) {
+        return { success: false, error: `HTTP ${result.status}` };
       }
-      const content = await response.text();
-      return { success: true, data: { content, finalUrl } };
+      return { success: true, data: { content: result.content, finalUrl: result.finalUrl } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return { success: false, error: `Background fetch failed: ${msg}` };

@@ -26,6 +26,8 @@ import type {
   CreateOpfsBlobUrlPayload,
   CreateOpfsBlobUrlResultPayload,
   RevokeOpfsBlobUrlPayload,
+  FetchRequestPayload,
+  FetchResponsePayload,
   MessageRequest,
   MessageResponse,
 } from '@/types/message';
@@ -416,6 +418,40 @@ export async function startMessageListener(): Promise<void> {
       // the offscreen document's listener is registered and ready.
       const response: MessageResponse = { success: true };
       sendResponse(response);
+      return true;
+    }
+
+    if (type === MESSAGE_TYPES.FETCH_REQUEST) {
+      // M15: delegate fetch() from SW to offscreen (SW idle eviction safety).
+      // Offscreen persists for the fetch duration — no silent abort.
+      const payload = request.payload as FetchRequestPayload;
+      void (async () => {
+        try {
+          const response = await fetch(payload.url, {
+            method: payload.options?.method ?? 'GET',
+            headers: payload.options?.headers,
+            credentials: payload.options?.credentials ?? 'same-origin',
+          });
+          const content = await response.text();
+          const result: FetchResponsePayload = {
+            ok: response.ok,
+            status: response.status,
+            content,
+            finalUrl: response.url || payload.url,
+          };
+          sendResponse({ success: true, data: result } satisfies MessageResponse<FetchResponsePayload>);
+        } catch (error: unknown) {
+          const msg = error instanceof Error ? error.message : String(error);
+          const result: FetchResponsePayload = {
+            ok: false,
+            status: 0,
+            content: '',
+            finalUrl: payload.url,
+            error: msg,
+          };
+          sendResponse({ success: true, data: result } satisfies MessageResponse<FetchResponsePayload>);
+        }
+      })();
       return true;
     }
 

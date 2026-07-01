@@ -885,7 +885,6 @@ describe('Background integration', () => {
   });
 
   it('enriches m3u8 variants from the master playlist and re-broadcasts', async () => {
-    const originalFetch = global.fetch;
     const masterPlaylist = `#EXTM3U
 #EXT-X-STREAM-INF:BANDWIDTH=5000000,RESOLUTION=1920x1080,CODECS="avc1.640028"
 https://cdn.example.com/high.m3u8
@@ -894,65 +893,81 @@ https://cdn.example.com/mid.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=500000,RESOLUTION=640x360,CODECS="avc1.4d4015"
 https://cdn.example.com/low.m3u8`;
 
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      text: jest.fn().mockResolvedValue(masterPlaylist),
-    }) as unknown as typeof fetch;
+    // M15: fetch is delegated to offscreen via FETCH_REQUEST message.
+    // Clear previous sendMessage calls from init first, then queue responses.
+    // broadcast() calls sendMessage too, so we need a default + a FETCH_REQUEST response.
+    mockChrome.runtime.sendMessage.mockClear();
+    mockChrome.runtime.sendMessage.mockImplementation((msg: MessageRequest) => {
+      if (msg.type === MESSAGE_TYPES.FETCH_REQUEST) {
+        return Promise.resolve({
+          success: true,
+          data: {
+            ok: true,
+            status: 200,
+            content: masterPlaylist,
+            finalUrl: 'https://example.com/master.m3u8',
+          },
+        });
+      }
+      // broadcast calls — return generic success
+      return Promise.resolve({ success: true });
+    });
 
-    try {
-      // Clear previous sendMessage calls from init.
-      mockChrome.runtime.sendMessage.mockClear();
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/master.m3u8', 123),
+    );
 
-      interceptor.handleRequest(
-        makeWebRequestDetails('https://example.com/master.m3u8', 123),
-      );
+    // Wait for the async fetch + parse + broadcast.
+    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 50));
 
-      // Wait for the async fetch + parse + broadcast.
-      await new Promise((r) => setTimeout(r, 50));
-      await new Promise((r) => setTimeout(r, 50));
+    const video = interceptor.getVideos(123)[0];
+    expect(video.format).toBe('m3u8');
+    expect(video.variants).toHaveLength(3);
+    expect(video.variants[0].quality).toBe('1080p');
+    expect(video.variants[1].quality).toBe('720p');
+    expect(video.variants[2].quality).toBe('360p');
+    expect(video.variants[0].resolution).toBe('1920x1080');
 
-      const video = interceptor.getVideos(123)[0];
-      expect(video.format).toBe('m3u8');
-      expect(video.variants).toHaveLength(3);
-      expect(video.variants[0].quality).toBe('1080p');
-      expect(video.variants[1].quality).toBe('720p');
-      expect(video.variants[2].quality).toBe('360p');
-      expect(video.variants[0].resolution).toBe('1920x1080');
+    // Should have re-broadcast with enriched variants.
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
+        payload: expect.objectContaining({ tabId: 123 }),
+      }),
+    );
 
-      // Should have re-broadcast with enriched variants.
-      expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
-          payload: expect.objectContaining({ tabId: 123 }),
-        }),
-      );
-    } finally {
-      global.fetch = originalFetch;
-    }
+    mockChrome.runtime.sendMessage.mockReset();
   });
 
   it('ignores m3u8 enrichment when fetch fails', async () => {
-    const originalFetch = global.fetch;
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: false,
-      status: 403,
-    }) as unknown as typeof fetch;
+    mockChrome.runtime.sendMessage.mockClear();
+    mockChrome.runtime.sendMessage.mockImplementation((msg: MessageRequest) => {
+      if (msg.type === MESSAGE_TYPES.FETCH_REQUEST) {
+        return Promise.resolve({
+          success: true,
+          data: {
+            ok: false,
+            status: 403,
+            content: '',
+            finalUrl: 'https://example.com/master.m3u8',
+          },
+        });
+      }
+      return Promise.resolve({ success: true });
+    });
 
-    try {
-      mockChrome.runtime.sendMessage.mockClear();
+    interceptor.handleRequest(
+      makeWebRequestDetails('https://example.com/master.m3u8', 123),
+    );
 
-      interceptor.handleRequest(
-        makeWebRequestDetails('https://example.com/master.m3u8', 123),
-      );
+    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 50));
 
-      await new Promise((r) => setTimeout(r, 50));
-      await new Promise((r) => setTimeout(r, 50));
+    const video = interceptor.getVideos(123)[0];
+    expect(video.variants).toHaveLength(0);
 
-      const video = interceptor.getVideos(123)[0];
-      expect(video.variants).toHaveLength(0);
-    } finally {
-      global.fetch = originalFetch;
-    }
+    mockChrome.runtime.sendMessage.mockReset();
   });
 
   it('sets toolbar badge to media count when network interceptor detects new media', async () => {
@@ -1803,30 +1818,44 @@ https://cdn.example.com/low.m3u8`;
   it('PAGE_SCAN_RESULT resolves unknown languages via content detection then pushes AUTO_LOAD_SUBTITLES', async () => {
     setupStorageForAutoLoad();
     mockChrome.tabs.sendMessage.mockClear();
+    mockChrome.runtime.sendMessage.mockClear();
 
-    // Mock global fetch: return English content for first URL, Vietnamese for second.
+    // M15: fetch is delegated to offscreen via FETCH_REQUEST message.
+    // Return English content for first URL, Vietnamese for second.
     // English topWords (threshold 8): the, and, for, are, but, not, you, all, can, her
     // Vietnamese topWords (threshold 8): trong, được, cho, một, với, người, này, không, cũng, những
-    const mockGlobalFetch = jest.fn().mockImplementation((url: string) => {
-      if (url.includes('aabbccdd')) {
+    mockChrome.runtime.sendMessage.mockImplementation((msg: MessageRequest) => {
+      if (msg.type === MESSAGE_TYPES.FETCH_REQUEST) {
+        const url = (msg.payload as { url: string }).url;
+        if (url.includes('aabbccdd')) {
+          return Promise.resolve({
+            success: true,
+            data: {
+              ok: true,
+              status: 200,
+              content: '1\n00:00:00,000 --> 00:00:02,000\nthe and for are but not you all can her\n',
+              finalUrl: url,
+            },
+          });
+        }
+        if (url.includes('eeffgghh')) {
+          return Promise.resolve({
+            success: true,
+            data: {
+              ok: true,
+              status: 200,
+              content: '1\n00:00:00,000 --> 00:00:02,000\ntrong được cho một với người này không cũng những\n',
+              finalUrl: url,
+            },
+          });
+        }
         return Promise.resolve({
-          ok: true,
-          text: () => Promise.resolve(
-            '1\n00:00:00,000 --> 00:00:02,000\nthe and for are but not you all can her\n',
-          ),
+          success: true,
+          data: { ok: false, status: 404, content: '', finalUrl: url },
         });
       }
-      if (url.includes('eeffgghh')) {
-        return Promise.resolve({
-          ok: true,
-          text: () => Promise.resolve(
-            '1\n00:00:00,000 --> 00:00:02,000\ntrong được cho một với người này không cũng những\n',
-          ),
-        });
-      }
-      return Promise.resolve({ ok: false, status: 404 });
-    }) as jest.MockedFunction<typeof fetch>;
-    (globalThis as unknown as { fetch: typeof fetch }).fetch = mockGlobalFetch;
+      return Promise.resolve({ success: true });
+    });
 
     // Hash-based URLs — extractLanguage returns 'unknown' for both.
     const request: MessageRequest = {
@@ -1854,7 +1883,7 @@ https://cdn.example.com/low.m3u8`;
     expect(payload.target.language).toBe('en');
     expect(payload.native.language).toBe('vi');
 
-    delete (globalThis as unknown as { fetch?: jest.Mock }).fetch;
+    mockChrome.runtime.sendMessage.mockReset();
   });
 
   it('UPDATE_SUBTITLE_LANGUAGE re-triggers pushAutoLoadSubtitles when language resolved', async () => {
@@ -1898,12 +1927,22 @@ https://cdn.example.com/low.m3u8`;
   // --- FETCH_SUBTITLE_CONTENT (CORS fallback) ---
 
   it('FETCH_SUBTITLE_CONTENT fetches + returns content', async () => {
-    // Mock global fetch for the background handler.
-    const mockGlobalFetch = jest.fn().mockResolvedValue({
-      ok: true,
-      text: () => Promise.resolve('1\n00:00:00,000 --> 00:00:01,000\nHello\n'),
-    }) as jest.MockedFunction<typeof fetch>;
-    (globalThis as unknown as { fetch: typeof fetch }).fetch = mockGlobalFetch;
+    // M15: fetch is delegated to offscreen via FETCH_REQUEST message.
+    mockChrome.runtime.sendMessage.mockClear();
+    mockChrome.runtime.sendMessage.mockImplementation((msg: MessageRequest) => {
+      if (msg.type === MESSAGE_TYPES.FETCH_REQUEST) {
+        return Promise.resolve({
+          success: true,
+          data: {
+            ok: true,
+            status: 200,
+            content: '1\n00:00:00,000 --> 00:00:01,000\nHello\n',
+            finalUrl: 'https://example.com/sub.en.srt',
+          },
+        });
+      }
+      return Promise.resolve({ success: true });
+    });
 
     const request: MessageRequest = {
       type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
@@ -1915,15 +1954,26 @@ https://cdn.example.com/low.m3u8`;
     expect((response.data as { content?: string })?.content).toContain('Hello');
     expect((response.data as { finalUrl?: string })?.finalUrl).toBe('https://example.com/sub.en.srt');
 
-    delete (globalThis as unknown as { fetch?: jest.Mock }).fetch;
+    mockChrome.runtime.sendMessage.mockReset();
   });
 
   it('FETCH_SUBTITLE_CONTENT resolves relative URL against tabUrl', async () => {
-    const mockGlobalFetch = jest.fn().mockResolvedValue({
-      ok: true,
-      text: () => Promise.resolve('content'),
-    }) as jest.MockedFunction<typeof fetch>;
-    (globalThis as unknown as { fetch: typeof fetch }).fetch = mockGlobalFetch;
+    mockChrome.runtime.sendMessage.mockClear();
+    mockChrome.runtime.sendMessage.mockImplementation((msg: MessageRequest) => {
+      if (msg.type === MESSAGE_TYPES.FETCH_REQUEST) {
+        const url = (msg.payload as { url: string }).url;
+        return Promise.resolve({
+          success: true,
+          data: {
+            ok: true,
+            status: 200,
+            content: 'content',
+            finalUrl: url,
+          },
+        });
+      }
+      return Promise.resolve({ success: true });
+    });
 
     const request: MessageRequest = {
       type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
@@ -1932,9 +1982,15 @@ https://cdn.example.com/low.m3u8`;
 
     const response = await messageBus.handleMessage(request, { id: 'tab' });
     expect(response.success).toBe(true);
-    expect(mockGlobalFetch).toHaveBeenCalledWith('https://example.com/subs/sub.en.srt');
+    // The handler resolves the relative URL before sending FETCH_REQUEST to offscreen.
+    expect(mockChrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: MESSAGE_TYPES.FETCH_REQUEST,
+        payload: expect.objectContaining({ url: 'https://example.com/subs/sub.en.srt' }),
+      }),
+    );
 
-    delete (globalThis as unknown as { fetch?: jest.Mock }).fetch;
+    mockChrome.runtime.sendMessage.mockReset();
   });
 
   it('FETCH_SUBTITLE_CONTENT returns error on missing url', async () => {
@@ -1949,12 +2005,21 @@ https://cdn.example.com/low.m3u8`;
   });
 
   it('FETCH_SUBTITLE_CONTENT returns error on fetch failure', async () => {
-    const mockGlobalFetch = jest.fn().mockResolvedValue({
-      ok: false,
-      status: 403,
-      text: () => Promise.resolve(''),
-    }) as jest.MockedFunction<typeof fetch>;
-    (globalThis as unknown as { fetch: typeof fetch }).fetch = mockGlobalFetch;
+    mockChrome.runtime.sendMessage.mockClear();
+    mockChrome.runtime.sendMessage.mockImplementation((msg: MessageRequest) => {
+      if (msg.type === MESSAGE_TYPES.FETCH_REQUEST) {
+        return Promise.resolve({
+          success: true,
+          data: {
+            ok: false,
+            status: 403,
+            content: '',
+            finalUrl: 'https://example.com/sub.en.srt',
+          },
+        });
+      }
+      return Promise.resolve({ success: true });
+    });
 
     const request: MessageRequest = {
       type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
@@ -1965,7 +2030,7 @@ https://cdn.example.com/low.m3u8`;
     expect(response.success).toBe(false);
     expect(response.error).toMatch(/403/);
 
-    delete (globalThis as unknown as { fetch?: jest.Mock }).fetch;
+    mockChrome.runtime.sendMessage.mockReset();
   });
 
   // --- SUBTITLE_CUES_LOADED caching + REQUEST_SUBTITLE_CUES re-send (ADR-008 D5) ---

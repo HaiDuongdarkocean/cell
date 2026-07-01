@@ -61,7 +61,9 @@ export type MessageType =
   | 'TOGGLE_PLAY'
   | 'SHORTCUT_ACTION'
   | 'VIDEO_EPISODE_CHANGED'
-  | 'DETECTED_SUBTITLE_URL';
+  | 'DETECTED_SUBTITLE_URL'
+  | 'FETCH_REQUEST'
+  | 'FETCH_RESPONSE';
 
 // === Message Request ===
 
@@ -289,6 +291,25 @@ export interface FetchSubtitleContentPayload {
 export interface FetchSubtitleContentResult {
   readonly content: string;
   readonly finalUrl: string;
+}
+
+/** Background → offscreen: delegate a fetch() call (M15 — SW idle eviction safety). */
+export interface FetchRequestPayload {
+  readonly url: string;
+  readonly options?: {
+    readonly method?: string;
+    readonly headers?: Record<string, string>;
+    readonly credentials?: RequestCredentials;
+  };
+}
+
+/** Offscreen → background: fetched response (text body, not ArrayBuffer — subtitle/m3u8 only). */
+export interface FetchResponsePayload {
+  readonly ok: boolean;
+  readonly status: number;
+  readonly content: string;
+  readonly finalUrl: string;
+  readonly error?: string;
 }
 
 // === Side Panel messages ===

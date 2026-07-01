@@ -8,6 +8,7 @@ import { tryAutoDownload } from '@/features/download/autoDownload';
 import { findSubtitlesForOverlay, type SubtitlePreference } from '@/features/subtitle/service/subtitleService';
 import { detectLanguage, labelToIsoCode } from '@/features/detection/logic/languageDetector';
 import { parseM3u8 } from '@/shared/lib/parsers/m3u8Parser';
+import { offscreenFetch, type OffscreenFetchOptions } from './offscreenFetch';
 import type { BackgroundContext } from './context';
 import type {
   DetectedVideo,
@@ -165,14 +166,15 @@ export function enrichM3u8Variants(ctx: BackgroundContext, video: DetectedVideo)
 
   void (async () => {
     try {
-      const response = await fetch(video.url, {
+      // M15: fetch via offscreen so SW idle eviction doesn't abort the playlist fetch.
+      const result = await offscreenFetch(ctx.offscreenManager, video.url, {
         credentials: 'same-origin',
         headers: { Accept: 'application/vnd.apple.mpegurl' },
-      });
-      if (!response.ok) {
+      } satisfies OffscreenFetchOptions);
+      if (!result.ok) {
         return;
       }
-      const content = await response.text();
+      const content = result.content;
       const playlist = parseM3u8(content, video.url);
 
       if (!playlist.isMasterPlaylist || playlist.variants.length === 0) {
@@ -500,9 +502,10 @@ export async function resolveUnknownSubtitleLanguages(
   const results = await Promise.all(
     unknowns.map(async (sub) => {
       try {
-        const response = await fetch(sub.url);
-        if (!response.ok) return null;
-        const content = await response.text();
+        // M15: fetch via offscreen so SW idle eviction doesn't abort the language-detection fetch.
+        const result = await offscreenFetch(ctx.offscreenManager, sub.url);
+        if (!result.ok) return null;
+        const content = result.content;
         const label = detectLanguage(content, sub.format);
         if (!label) return null;
         const isoCode = labelToIsoCode(label);
