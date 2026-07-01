@@ -83,6 +83,21 @@ Optional sections (add only if relevant):
 - **Boundaries** — always do / ask first / never do
 - **Anti-patterns** — what NOT to do
 
+### Step 3b — Apply writing style patterns
+
+These patterns make skills scannable for agents AND readable for humans. Apply when structuring the body:
+
+| Pattern | What | Why | Example |
+|---|---|---|---|
+| **Visual decision tree** | ASCII art tree for branching logic | Agent scans in <3s; sub-branch shows conditional logic | `├── UI work? ──→ frontend-ui-engineering` |
+| **Bad/Good contrast** | Pair wrong behavior with right behavior | Gives agent a concrete template, not abstract principle | `**Bad:** Silently guessing.` / `**Good:** "I see X but Y. Which wins?"` |
+| **Mirror reinforcement** | Behaviors (positive) + Failure Modes (negative) cover same concepts | Same idea from 2 angles = deeper internalization | Behavior #1 "Surface Assumptions" ↔ Failure #1 "Making wrong assumptions without checking" |
+| **Verb-first headings** | Start every heading/step with imperative verb | Agent knows immediately what to DO, not what to UNDERSTAND | "Surface Assumptions" (not "About Assumptions") |
+| **Multi-view for same data** | Same info in 3 formats: tree + sequence + table | Different reader needs: navigation / planning / lookup | Decision tree + Lifecycle sequence + Quick Reference table |
+| **Quantified concrete guidance** | Use numbers, not vague adjectives | Gives agent a clear boundary to judge against | "this adds ~200ms latency" not "this might be slower" |
+| **Progressive disclosure strict** | Each section builds on previous; reader can stop at any section and still get value | Respects reader attention; no forced linear reading | Overview (10s) → Tree (30s) → Behaviors (1min) → Rules (30s) |
+| **Plain typography, one language** | No mixed language mid-sentence; no long inline parentheticals; each sentence = one idea | Reduces cognitive load for scanning | English-only or Vietnamese-only per section; avoid `— aside —` interruptions |
+
 ### Step 4 — Add supporting files (if needed)
 
 If the skill would exceed 500 lines or needs reusable artifacts:
@@ -108,6 +123,11 @@ Reference supporting files from SKILL.md:
 
 Read `checklists/skill-quality-checklist.md` and verify the new skill passes all 12 principles. Report pass/fail for each. Fix any failures before saving.
 
+Additionally, verify at least 3 of the 8 writing style patterns (Step 3b) are applied. A skill does not need all 8, but the most useful skills typically use:
+- **Visual decision tree** (if skill has branching logic)
+- **Bad/Good contrast** (if skill has behavioral rules)
+- **Verb-first headings** (always — baseline)
+
 ### Step 6 — Save and verify
 
 1. Save `SKILL.md` + supporting files to `.agents/skills/<skill-name>/`
@@ -121,10 +141,12 @@ When the user says "improve this skill" with an existing SKILL.md:
 
 1. **Read** the existing SKILL.md + all supporting files
 2. **Run** the 12-principle checklist — identify failures
-3. **Ask** the user what specific improvement they want (or apply all checklist fixes)
-4. **Edit** in place — do not rewrite from scratch unless the structure is fundamentally broken
-5. **Diff** before/after — show the user what changed
-6. **Verify** the skill is still discoverable
+3. **Audit redundancy/conflict**: grep each skill name + each rule keyword; if a rule appears 3+ times → consolidate to a single source of truth (matrix/table) and reference it from other locations
+4. **Audit writing style**: check if at least 3 of 8 patterns (Step 3b) are applied; suggest additions if missing
+5. **Ask** the user what specific improvement they want (or apply all checklist + style fixes)
+6. **Edit** in place — do not rewrite from scratch unless the structure is fundamentally broken
+7. **Diff** before/after — show the user what changed (added patterns, removed redundancy, fixed conflicts)
+8. **Verify** the skill is still discoverable
 
 ## Cross-Platform Compatibility
 
@@ -149,5 +171,8 @@ After creating or improving a skill:
 - [ ] SKILL.md body: <500 lines, has all 6 required sections
 - [ ] Supporting files: referenced from SKILL.md, use relative paths
 - [ ] 12-principle checklist: all pass
+- [ ] Writing style: at least 3 of 8 patterns applied (Step 3b); verb-first headings required
+- [ ] No redundancy: each rule appears in exactly one place (use a matrix/table as source of truth)
+- [ ] No conflicts: cross-check Skill list vs Skill Activation Matrix (if present)
 - [ ] Skill discoverable: `skill list` shows it
 - [ ] No platform-specific syntax

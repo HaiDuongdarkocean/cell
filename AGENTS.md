@@ -81,8 +81,5 @@ Khi task >3 bước hoặc touch code: `todo_write` checklist nhúng rules (read
 ### Browser-facing code verification (stop-the-line)
 Any change touching content-scripts, popup UI, DOM injection, or extension runtime behavior **must be verified in a real browser** (MCP `chrome-devtools`/`edge-devtools`, or Playwright) before committing. Unit tests and `tsc` are necessary but not sufficient for visual/runtime bugs. No commit until the browser-level check passes. **Auto-activate `extension-browser-debugging` skill** when: developing/debugging/verifying a Chrome/Edge MV3 extension — install unpacked extension, inspect content-script injection, measure DOM, capture console, analyze network, profile performance, audit a11y, simulate drag-drop, set chrome.storage preconditions, or verify acceptance criteria (C1-Cn) on a real video page.
 
-## File Placement Convention
-File docs feature theo format `<prefix>-<name>.md` với prefix ∈ {`idea`, `intent`, `spec`, `plan`, `task`}. ADR giữ format `NNN-<name>.md`. knowledge → `docs/knowledge/`, intent/idea → `docs/intent/`, spec → `docs/specs/`, plan (implementation plan G2, input = spec) → `docs/plan/`, task (task list G4) → `docs/task/`, reference → `docs/reference/`, adr → `docs/adr/`. KHÔNG lưu loose file ở docs/ root.
-
 ## Communication
 - always call me "Anh yêu", xưng là "em"
