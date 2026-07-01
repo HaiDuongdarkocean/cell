@@ -271,13 +271,44 @@ export function resetBackgroundService(): void {
   }
 }
 
-// --- auto-initialise on service worker startup ---
+// --- lifecycle: onStartup / onInstalled rehydration (M16, ADR-017 D3, spec C3) ---
 
 // Service workers in MV3 can be terminated and restarted at any time.
-// This top-level call ensures the background service is (re)initialised
-// every time the service worker wakes up.
+// The top-level `initBackground()` call below ensures the background service
+// is (re)initialised every time the service worker wakes up. The two lifecycle
+// listeners below cover the remaining cases:
+//
+// - `chrome.runtime.onStartup` — fires when the browser starts (before any
+//   tabs/pages). Ensures the SW is alive and state is rehydrated from
+//   `chrome.storage.session` immediately, not lazily on first message.
+// - `chrome.runtime.onInstalled` — fires on install/update. On update, the
+//   singleton is reset first so any stale in-memory state from the previous
+//   version is discarded, then re-initialised fresh from session storage.
+//
+// Both handlers are idempotent: `initBackground()` no-ops if already running.
 // Guard against running in non-extension environments (e.g. Jest tests).
 if (typeof chrome !== 'undefined' && chrome.runtime?.id) {
+  // Browser startup — rehydrate state from session storage immediately.
+  chrome.runtime.onStartup.addListener(() => {
+    initBackground().catch((err) => {
+      console.error('[Video Downloader] onStartup init failed:', err);
+    });
+  });
+
+  // Extension install/update — reset + fresh init (discard stale state on update).
+  chrome.runtime.onInstalled.addListener((details) => {
+    if (details.reason === 'update') {
+      // On update: reset singleton so stale state from the previous version
+      // is discarded, then re-init fresh from session storage.
+      resetBackgroundService();
+    }
+    // On install: fresh init (no persisted state yet — session storage is empty).
+    initBackground().catch((err) => {
+      console.error('[Video Downloader] onInstalled init failed:', err);
+    });
+  });
+
+  // Top-level: (re)initialise on every SW wake-up (idle eviction restart).
   initBackground().catch((err) => {
     console.error('[Video Downloader] Failed to initialise background service:', err);
   });

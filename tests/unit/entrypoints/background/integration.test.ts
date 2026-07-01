@@ -193,13 +193,16 @@ interface MockDownloadQueue {
   resume: jest.Mock;
   retry: jest.Mock;
   remove: jest.Mock;
+  removeByTab: jest.Mock;
   getAll: jest.Mock;
+  getByTab: jest.Mock;
   getById: jest.Mock;
   updateProgress: jest.Mock;
   onProgress: jest.Mock;
   setMaxConcurrent: jest.Mock;
   getMaxConcurrent: jest.Mock;
   processNext: jest.Mock;
+  restore: jest.Mock;
 }
 
 function createMockDownloadQueue(): MockDownloadQueue {
@@ -213,13 +216,16 @@ function createMockDownloadQueue(): MockDownloadQueue {
     resume: jest.fn(),
     retry: jest.fn(),
     remove: jest.fn(),
+    removeByTab: jest.fn(),
     getAll: jest.fn(() => items),
+    getByTab: jest.fn((tabId: number) => items.filter((i) => i.tabId === tabId)),
     getById: jest.fn((id: string) => items.find((i) => i.id === id)),
     updateProgress: jest.fn(),
     onProgress: jest.fn(() => () => {}),
     setMaxConcurrent: jest.fn(),
     getMaxConcurrent: jest.fn(() => 3),
     processNext: jest.fn(),
+    restore: jest.fn((item: DownloadItem) => items.push(item)),
   };
 }
 
@@ -2219,5 +2225,136 @@ https://cdn.example.com/low.m3u8`;
     };
     const cueRes = await messageBus.handleMessage(cueReq, { id: 'tab' });
     expect((cueRes.data as { cues: unknown[] })?.cues).toEqual(cues);
+  });
+
+  // --- M16: onStartup / onInstalled lifecycle rehydration (ADR-017 D3, spec C3) ---
+
+  it('session restore rehydrates downloads from chrome.storage.session on init', async () => {
+    // Simulate a previous SW session that persisted a completed download.
+    mockChrome.storage.session.get.mockImplementation((key: string) => {
+      if (key === STORAGE_KEYS.SESSION_DOWNLOADS) {
+        return Promise.resolve({
+          [STORAGE_KEYS.SESSION_DOWNLOADS]: {
+            '123': [
+              {
+                id: 'dl-prev',
+                mediaType: 'video',
+                url: 'https://example.com/video.m3u8',
+                title: 'Previous Video',
+                tabId: 123,
+                status: 'completed',
+                progress: 100,
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    // Create a fresh service (simulates SW restart) and init.
+    const freshService = new BackgroundService({
+      networkInterceptor: new NetworkInterceptor(),
+      messageBus: new MessageBus(),
+      downloadQueue: mockQueue as unknown as never,
+      downloader: mockDownloader as unknown as never,
+      offscreenManager: mockOffscreen,
+    });
+    await freshService.init();
+
+    // The completed download should be restored to the queue.
+    expect(mockQueue.restore).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'dl-prev', status: 'completed' }),
+    );
+
+    freshService.stop();
+  });
+
+  it('session restore marks in-flight downloads as error on SW restart', async () => {
+    // Simulate a previous SW session that had an in-flight download.
+    mockChrome.storage.session.get.mockImplementation((key: string) => {
+      if (key === STORAGE_KEYS.SESSION_DOWNLOADS) {
+        return Promise.resolve({
+          [STORAGE_KEYS.SESSION_DOWNLOADS]: {
+            '123': [
+              {
+                id: 'dl-inflight',
+                mediaType: 'video',
+                url: 'https://example.com/video.m3u8',
+                title: 'In-flight Video',
+                tabId: 123,
+                status: 'downloading',
+                progress: 45,
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    const freshService = new BackgroundService({
+      networkInterceptor: new NetworkInterceptor(),
+      messageBus: new MessageBus(),
+      downloadQueue: mockQueue as unknown as never,
+      downloader: mockDownloader as unknown as never,
+      offscreenManager: mockOffscreen,
+    });
+    await freshService.init();
+
+    // In-flight downloads are marked as error (fetch/convert pipeline cannot resume).
+    expect(mockQueue.restore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'dl-inflight',
+        status: 'error',
+        error: 'Interrupted (service worker restarted)',
+      }),
+    );
+
+    freshService.stop();
+  });
+
+  it('session restore rehydrates detected media from chrome.storage.session on init', async () => {
+    // Simulate a previous SW session that persisted detected media.
+    mockChrome.storage.session.get.mockImplementation((key: string) => {
+      if (key === STORAGE_KEYS.SESSION_MEDIA) {
+        return Promise.resolve({
+          [STORAGE_KEYS.SESSION_MEDIA]: {
+            '123': {
+              videos: [
+                {
+                  id: 'vid-1',
+                  url: 'https://example.com/video.m3u8',
+                  tabId: 123,
+                  tabUrl: 'https://example.com/watch',
+                  title: 'Test Video',
+                  format: 'm3u8',
+                  variants: [],
+                },
+              ],
+              subtitles: [],
+            },
+          },
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    const freshInterceptor = new NetworkInterceptor();
+    const freshService = new BackgroundService({
+      networkInterceptor: freshInterceptor,
+      messageBus: new MessageBus(),
+      downloadQueue: mockQueue as unknown as never,
+      downloader: mockDownloader as unknown as never,
+      offscreenManager: mockOffscreen,
+    });
+    await freshService.init();
+
+    // The media should be restored into the interceptor.
+    const videos = freshInterceptor.getVideos(123);
+    expect(videos).toHaveLength(1);
+    expect(videos[0].id).toBe('vid-1');
+
+    freshService.stop();
   });
 });
