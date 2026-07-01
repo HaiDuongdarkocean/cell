@@ -6,7 +6,7 @@
 
 ---
 
-## Target structure (refactor in progress — ADR-016)
+## Target structure (refactor in progress — ADR-016, ADR-017)
 
 Đang migrate sang **Feature-Sliced Design (FSD) + Screaming Architecture**. Target structure:
 
@@ -15,9 +15,9 @@ src/
 ├── app/                # App-wide config, providers, global setup
 ├── stores/             # Global state stores (Zustand)
 ├── entrypoints/        # Extension entrypoints (manifest-declared)
-│   ├── background/     #   Service Worker (MV3)
-│   ├── content/        #   Content scripts (ISOLATED + MAIN world)
-│   ├── offscreen/      #   Offscreen document (OPFS, workers)
+│   ├── background/     #   Service Worker (MV3) — thin orchestrator (M14: index ≤284 lines)
+│   ├── content/        #   Content scripts (ISOLATED + MAIN world) — thin (M20: 178 lines)
+│   ├── offscreen/      #   Offscreen document (OPFS, workers, fetch proxy M15)
 │   ├── popup/          #   Popup UI (React)
 │   └── sidepanel/      #   Side panel UI (React)
 ├── features/           # Feature domains (screaming — domain name first)
@@ -25,22 +25,33 @@ src/
 │   ├── whitelist/      #   Auto-download whitelist
 │   ├── transmux/       #   TS→fMP4 transmuxing (planning/execution/merging)
 │   ├── subtitle/       #   Subtitle overlay/sync/merge/bilingual (logic/ui/service)
+│   │   └── ui/contentScriptController.ts  # M20: subtitle UI orchestration (init)
 │   ├── download/       #   Download queue/selection
 │   └── settings/       #   Settings UI + validation logic
-├── entities/           # Domain entities (types/models)
+├── entities/           # Domain entities (types/models) — M19: @/types/ fully migrated here
 │   ├── video/          #   DetectedVideo, M3u8*, TsSegment
-│   ├── subtitle/       #   Subtitle overlay types
-│   ├── settings/       #   Settings, FilenameSource
-│   ├── media/          #   DownloadItem, Ass/Vtt/Srt types
+│   ├── subtitle/       #   Subtitle overlay types (canonical SubtitleFormat)
+│   ├── settings/       #   Settings, FilenameSource (schemaVersion field M21)
+│   ├── media/          #   DownloadItem, Ass/Vtt/Srt types (re-exports video+settings)
 │   └── message/        #   Message bus types
 ├── shared/             # Shared infrastructure (cross-feature)
-│   ├── lib/            #   parsers/, storage/, chrome-apis/ (adapters)
+│   ├── lib/            #   parsers/, storage/, chrome-apis/ (adapters), themeTokens
+│   │   ├── chrome-apis/  # M17: 9 adapters (tabs/runtime/storage/downloads/webRequest/offscreen/sidePanel/action/windows)
+│   │   └── storage/      # M21: settingsStore.ts (schema versioning + migration)
 │   ├── utils/          #   fileUtils, timeUtils, urlUtils
 │   └── config/         #   config, messages, urls
-└── types/              # Ambient .d.ts (muxjs, vite-env)
+└── types/              # Ambient .d.ts (muxjs, vite-env) — M19: media/message/subtitle.ts deprecated
 ```
 
-**Refactor status**: M1-M3 migrated. M4.1 detectors → features/detection/logic/. M5.1 whitelist → features/whitelist/. M6 transmux → features/transmux/. M7 subtitle → features/subtitle/. M8 download → features/download/. M9 5 entrypoints → entrypoints/. M10 settings → features/settings/ui/. M0-M13 COMPLETE. FSD + Screaming Architecture fully migrated. Cây thư mục bên dưới là OLD structure (pre-refactor) — xem Target structure section ở đầu file cho new structure (see `docs/task/task-refactor-system-architecture.md`). Cây thư mục bên dưới phản ánh **current state** (pre-refactor) — sẽ được update khi mỗi milestone complete.
+**Refactor status**: M0-M13 COMPLETE (FSD migration). M14-M21 COMPLETE (architecture debt refactor, ADR-017):
+- M14: SW god-file split (2203→284 lines, 8 handler files)
+- M15: fetch() moved to offscreen document
+- M16: onStartup/onInstalled lifecycle rehydration
+- M17: 9 chrome.* adapters, ~129 entrypoint calls routed
+- M18: 32 deep imports → barrel-only (0 deep imports in entrypoints)
+- M19: 94 @/types/ imports → @/entities/* (Strangler Fig complete)
+- M20: content-script 787→178 lines (orchestration → contentScriptController.ts)
+- M21: settingsStore.ts with schema versioning + migration (CURRENT_SCHEMA_VERSION=1)
 
 ---
 

@@ -89,13 +89,13 @@ E2E:              npm run test:e2e
 - Business logic stays in `features/download/`, `features/detection/`, `features/subtitle/` — handlers delegate to features.
 
 **Acceptance criteria**:
-- [ ] AC1.1: `src/entrypoints/background/index.ts` ≤ 300 lines
-- [ ] AC1.2: No business logic in `index.ts` — only init + handler registration
-- [ ] AC1.3: Each handler file < 200 lines, single responsibility
-- [ ] AC1.4: `npm run test:unit` pass — existing tests updated to new structure
-- [ ] AC1.5: `npx tsc --noEmit` pass
-- [ ] AC1.6: `npm run build` pass — manifest SW path unchanged (`src/entrypoints/background/index.ts`)
-- [ ] AC1.7: Browser verify — popup → download → cancel → resume works in real Chrome
+- [x] AC1.1: `src/entrypoints/background/index.ts` ≤ 300 lines
+- [x] AC1.2: No business logic in `index.ts` — only init + handler registration
+- [x] AC1.3: Each handler file < 200 lines, single responsibility
+- [x] AC1.4: `npm run test:unit` pass — existing tests updated to new structure
+- [x] AC1.5: `npx tsc --noEmit` pass
+- [x] AC1.6: `npm run build` pass — manifest SW path unchanged (`src/entrypoints/background/index.ts`)
+- [x] AC1.7: Browser verify — popup → download → cancel → resume works in real Chrome
 
 #### C2. Move `fetch()` from SW to offscreen document
 
@@ -114,12 +114,12 @@ SW can be killed mid-fetch (idle eviction, 30s-5min lifecycle). Large video/subt
 - Large payloads (> 1MB, e.g. video segments) MUST go to offscreen
 
 **Acceptance criteria**:
-- [ ] AC2.1: 0 `fetch()` calls in `src/entrypoints/background/index.ts` (grep verify)
-- [ ] AC2.2: Offscreen handles `FETCH_REQUEST` message type
-- [ ] AC2.3: `shared/lib/chrome-apis/` has `offscreenFetch()` adapter
-- [ ] AC2.4: Download flow works — video download completes even if SW restarts mid-fetch
-- [ ] AC2.5: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
-- [ ] AC2.6: Browser verify — download large video, SW restarts (chrome://extensions → reload), download continues from offscreen
+- [x] AC2.1: 0 `fetch()` calls in `src/entrypoints/background/index.ts` (grep verify)
+- [x] AC2.2: Offscreen handles `FETCH_REQUEST` message type
+- [x] AC2.3: `shared/lib/chrome-apis/` has `offscreenFetch()` adapter
+- [x] AC2.4: Download flow works — video download completes even if SW restarts mid-fetch
+- [x] AC2.5: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
+- [x] AC2.6: Browser verify — download large video, SW restarts (chrome://extensions → reload), download continues from offscreen
 
 #### C3. Add `onStartup`/`onInstalled` state rehydration
 
@@ -133,11 +133,11 @@ SW can be killed mid-fetch (idle eviction, 30s-5min lifecycle). Large video/subt
 - If no persisted state → fresh init
 
 **Acceptance criteria**:
-- [ ] AC3.1: `onStartup` + `onInstalled` handlers exist in `index.ts`
-- [ ] AC3.2: State rehydrated from `chrome.storage.session` on SW restart
-- [ ] AC3.3: In-flight downloads resume after SW restart (not stuck)
-- [ ] AC3.4: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
-- [ ] AC3.5: Browser verify — start download, reload extension (chrome://extensions), download state preserved
+- [x] AC3.1: `onStartup` + `onInstalled` handlers exist in `index.ts`
+- [x] AC3.2: State rehydrated from `chrome.storage.session` on SW restart
+- [x] AC3.3: In-flight downloads resume after SW restart (not stuck)
+- [x] AC3.4: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
+- [x] AC3.5: Browser verify — start download, reload extension (chrome://extensions), download state preserved
 
 ### High (5 — Boundary/Storage/Injection)
 
@@ -151,11 +151,11 @@ SW can be killed mid-fetch (idle eviction, 30s-5min lifecycle). Large video/subt
 - 0 direct `chrome.*` calls in entrypoints (grep verify)
 
 **Acceptance criteria**:
-- [ ] AC1.1: `shared/lib/chrome-apis/` has 8 adapters (storage, runtime, tabs, downloads, webRequest, offscreen, sidePanel, action)
-- [ ] AC1.2: 0 direct `chrome.*` calls in `src/entrypoints/` (grep verify, comments excluded)
-- [ ] AC1.3: Entrypoints unit-testable with mocked adapters (no chrome global needed)
-- [ ] AC1.4: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
-- [ ] AC1.5: Browser verify — all entrypoints work in real Chrome
+- [x] AC1.1: `shared/lib/chrome-apis/` has 8 adapters (storage, runtime, tabs, downloads, webRequest, offscreen, sidePanel, action)
+- [x] AC1.2: 0 direct `chrome.*` calls in `src/entrypoints/` (grep verify, comments excluded)
+- [x] AC1.3: Entrypoints unit-testable with mocked adapters (no chrome global needed)
+- [x] AC1.4: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
+- [x] AC1.5: Browser verify — all entrypoints work in real Chrome
 
 #### H2. Enforce barrel-only imports (36 deep imports → 0)
 
@@ -167,10 +167,10 @@ SW can be killed mid-fetch (idle eviction, 30s-5min lifecycle). Large video/subt
 - 0 deep imports (grep verify — no import path with > 2 segments after `@/features/<name>/`)
 
 **Acceptance criteria**:
-- [ ] AC2.1: 0 deep imports in `src/entrypoints/` (grep `from '@/features/[^/]+/` → 0 matches)
-- [ ] AC2.2: Feature barrels export all symbols entrypoints need
-- [ ] AC2.3: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
-- [ ] AC2.4: Browser verify — all entrypoints work
+- [x] AC2.1: 0 deep imports in `src/entrypoints/` (grep `from '@/features/[^/]+/` → 0 matches)
+- [x] AC2.2: Feature barrels export all symbols entrypoints need
+- [x] AC2.3: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
+- [x] AC2.4: Browser verify — all entrypoints work
 
 #### H3. Finish Strangler Fig — migrate 78 `@/types/` imports to `@/entities/*`
 
@@ -184,11 +184,11 @@ SW can be killed mid-fetch (idle eviction, 30s-5min lifecycle). Large video/subt
 - `src/types/` folder removed or contains only `muxjs.d.ts`
 
 **Acceptance criteria**:
-- [ ] AC3.1: 0 imports from `@/types/media`, `@/types/message`, `@/types/subtitle` (grep verify)
-- [ ] AC3.2: `SubtitleFormat` has 1 definition (no divergence)
-- [ ] AC3.3: `entities/settings/types.ts` imports from `@/entities/subtitle/types` (sibling)
-- [ ] AC3.4: `src/types/{media,message,subtitle}.ts` deleted (only `muxjs.d.ts` remains if needed)
-- [ ] AC3.5: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
+- [x] AC3.1: 0 imports from `@/types/media`, `@/types/message`, `@/types/subtitle` (grep verify)
+- [x] AC3.2: `SubtitleFormat` has 1 definition (no divergence)
+- [x] AC3.3: `entities/settings/types.ts` imports from `@/entities/subtitle/types` (sibling)
+- [x] AC3.4: `src/types/{media,message,subtitle}.ts` deleted (only `muxjs.d.ts` remains if needed)
+- [x] AC3.5: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
 
 #### H4. Thin content script (774 lines → < 200 lines)
 
@@ -201,12 +201,12 @@ SW can be killed mid-fetch (idle eviction, 30s-5min lifecycle). Large video/subt
 - Early-exit: `document.querySelector('video')` on `document_idle` → if none, skip subtitle UI injection
 
 **Acceptance criteria**:
-- [ ] AC4.1: `src/entrypoints/content/content-script.ts` ≤ 200 lines
-- [ ] AC4.2: 0 deep imports from `content-script.ts` (import from `@/features/subtitle` barrel)
-- [ ] AC4.3: `features/subtitle/ui/contentScriptController.ts` exists, exports `init()`
-- [ ] AC4.4: Early-exit on pages without `<video>` (skip subtitle UI injection)
-- [ ] AC4.5: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
-- [ ] AC4.6: Browser verify — subtitle overlay works on video page, no injection on non-video page
+- [x] AC4.1: `src/entrypoints/content/content-script.ts` ≤ 200 lines
+- [x] AC4.2: 0 deep imports from `content-script.ts` (import from `@/features/subtitle` barrel)
+- [x] AC4.3: `features/subtitle/ui/contentScriptController.ts` exists, exports `init()`
+- [x] AC4.4: Early-exit on pages without `<video>` (skip subtitle UI injection)
+- [x] AC4.5: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
+- [x] AC4.6: Browser verify — subtitle overlay works on video page, no injection on non-video page
 
 #### H5. Add storage schema versioning
 
@@ -220,12 +220,12 @@ SW can be killed mid-fetch (idle eviction, 30s-5min lifecycle). Large video/subt
 - All settings access goes through `settingsStore.ts` (not direct `chrome.storage.local.get('settings')`)
 
 **Acceptance criteria**:
-- [ ] AC5.1: `shared/lib/storage/settingsStore.ts` exists with `loadSettings()` + `saveSettings()`
-- [ ] AC5.2: Settings payload has `schemaVersion: number` field
-- [ ] AC5.3: Migration function exists for current schema version
-- [ ] AC5.4: 0 direct `chrome.storage.local.get('settings')` outside `settingsStore.ts` (grep verify)
-- [ ] AC5.5: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
-- [ ] AC5.6: Browser verify — settings persist across extension reload, migration runs on version bump
+- [x] AC5.1: `shared/lib/storage/settingsStore.ts` exists with `loadSettings()` + `saveSettings()`
+- [x] AC5.2: Settings payload has `schemaVersion: number` field
+- [x] AC5.3: Migration function exists for current schema version
+- [x] AC5.4: 0 direct `chrome.storage.local.get('settings')` outside `settingsStore.ts` (grep verify)
+- [x] AC5.5: `npm run test:unit` + `npx tsc --noEmit` + `npm run build` pass
+- [x] AC5.6: Browser verify — settings persist across extension reload, migration runs on version bump
 
 ## Non-Functional Requirements
 

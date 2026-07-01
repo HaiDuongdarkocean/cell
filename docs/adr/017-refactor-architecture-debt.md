@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (G3 — architecture debt refactor decisions. Implementation G4 milestone M14-M21, spec `docs/specs/spec-refactor-architecture-debt.md`, plan `docs/plan/plan-refactor-architecture-debt.md`)
+Accepted — **Implemented** (G4 M14-M21 complete, G5 verified). All 8 findings (C1-C3, H1-H5) resolved. See `docs/specs/spec-refactor-architecture-debt.md` for acceptance criteria, `docs/plan/plan-refactor-architecture-debt.md` for milestone plan.
 
 ## Context
 
