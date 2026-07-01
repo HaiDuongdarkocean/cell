@@ -44,6 +44,7 @@ docs/           # Tài liệu dự án
 │   └── spec-subtitle-manager-panel.md    # Subtitle Manager Panel PRD (V2 ADR-014 — unified panel + import flow + active name + toast)
 │   └── spec-subtitle-drag-integrated.md  # Subtitle drag integrated PRD (xóa icon riêng, drag trực tiếp overlay background)
 │   └── spec-refactor-system-architecture.md # Refactor system architecture PRD (FSD + Screaming Architecture worktree cho Orca platform extensibility)
+│   └── spec-refactor-architecture-debt.md # Refactor architecture debt PRD phase 2 (8 findings: C1-C3 + H1-H5 from architecture review 2026-07-01)
 │   ├── feature-inventory.md           # Feature inventory
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
