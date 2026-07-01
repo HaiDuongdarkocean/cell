@@ -33,7 +33,7 @@ docs/           # Tài liệu dự án
 │   └── intent-subtitle-selector-multi-match.md # Subtitle selector khi ≥2 matches (V2 ADR-007 D3, giải quyết bug A)
 │   └── idea-subtitle-manager-panel.md     # Subtitle Manager Panel (V2 ADR-014 — unified panel + import flow + active name + toast)
 │   └── intent-subtitle-drag-integrated.md # Subtitle drag integrated (xóa icon riêng, drag trực tiếp overlay background)
-│   └── intent-refactor-system-architecture.md # Refactor system architecture (G0 research 53 nguồn + 7 nguyên lý + Orca platform scope)
+│   └── intent-refactor-system-architecture.md # Refactor system architecture (G0 research 53 nguồn + 7 nguyên lý + architecture review 2026-07-01 findings + 8 findings scope)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
@@ -92,7 +92,8 @@ docs/           # Tài liệu dự án
 │   ├── 2026-06-27-subtitle-panel-fullscreen-mcp.md
 │   ├── 2026-06-30-subtitle-drag-integrated-mcp.md  # ADR-015 drag integrated verify (9/9 SC pass)
 │   └── screenshot-after-fix.png
-├── reviews/                           # Spec review reports (spec-reviewer skill output)
+├── reviews/                           # Architecture review + spec review reports
+│   ├── architecture-review-2026-07-01.md # Architecture review (chrome-extension-mv3-architecture-review skill, 17/42 failures, 3 Critical + 5 High)
 │   └── review-subtitle-drag-integrated.md # Spec review: subtitle drag integrated (APPROVED post-update)
 │   └── review-refactor-system-architecture.md # Spec review: refactor system architecture (APPROVED, Opus 4.8, 1 CRITICAL + 2 HIGH fixed)
 ├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"
