@@ -58,6 +58,7 @@ docs/           # Tài liệu dự án
 │   └── plan-subtitle-drag-integrated.md  # Subtitle drag integrated — implementation plan (G2)
 │   └── plan-subtitle-selector-multi-match.md # Subtitle selector ≥2 matches — implementation plan (G2, V2 ADR-007 D3)
 │   └── plan-refactor-system-architecture.md # Refactor system architecture — implementation plan (G2, 14 milestone + dependency graph + checkpoint A-E)
+│   └── plan-refactor-architecture-debt.md # Refactor architecture debt — implementation plan phase 2 (G2, 8 milestones M14-M21, cite spec-refactor-architecture-debt)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
