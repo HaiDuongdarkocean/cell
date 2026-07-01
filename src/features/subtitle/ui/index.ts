@@ -8,3 +8,4 @@ export * from './subtitleToast';
 export * from './subtitleTrackDropdown';
 export * from './subtitleDragPosition';
 export * from './subtitleUI';
+export { init as initContentScriptController } from './contentScriptController';

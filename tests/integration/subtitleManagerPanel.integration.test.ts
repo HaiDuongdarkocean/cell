@@ -1,7 +1,7 @@
 import { parseAndDetectFiles, assignImportRole } from '@/features/subtitle/logic/subtitleImport';
 import { createSubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel';
 import { SubtitleOverlayController } from '@/features/subtitle/ui/subtitleOverlay';
-import { injectThemeTokens } from '@/entrypoints/content/themeTokens';
+import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { OverlayConfig } from '@/types/subtitle';
 
