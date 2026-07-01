@@ -1,24 +1,32 @@
 import { sendMessage, onMessage, getStorage, setStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { PageScanner } from './pageScanner';
-import { SubtitleOverlayController } from '@/features/subtitle/ui/subtitleOverlay';
-import { parseAndDetectFiles, assignImportRole } from '@/features/subtitle/logic/subtitleImport';
-import { createDragHint, showToast } from '@/features/subtitle/ui/subtitleUI';
-import { handleAutoLoadSubtitles, clearAutoLoadCache, fetchAndParseSubtitle, formatFromUrl } from '@/features/subtitle/logic/subtitleAutoLoad';
-import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
-import { createToggleButton, seekToCue } from '@/features/subtitle/ui/subtitlePanel';
-import { handleShortcutKey } from '@/features/subtitle/ui/subtitleShortcuts';
-import { createSubtitleDropdown } from '@/features/subtitle/ui/subtitleSelector';
-import { createSubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel';
-import { createDebouncedToast } from '@/features/subtitle/ui/subtitleToast';
+import {
+  SubtitleOverlayController,
+  parseAndDetectFiles,
+  assignImportRole,
+  createDragHint,
+  showToast,
+  handleAutoLoadSubtitles,
+  clearAutoLoadCache,
+  fetchAndParseSubtitle,
+  formatFromUrl,
+  mergeCuesForPanel,
+  createToggleButton,
+  seekToCue,
+  handleShortcutKey,
+  createSubtitleDropdown,
+  createSubtitleManagerPanel,
+  createDebouncedToast,
+  formatSubtitleName,
+} from '@/features/subtitle';
 import { injectThemeTokens } from './themeTokens';
-import { formatSubtitleName } from '@/features/subtitle/logic/subtitleNaming';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { OverlayConfig, OverlayStyleConfig } from '@/types/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle } from '@/types/media';
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/types/message';
 import type { VideoEpisodeChangedPayload } from '@/types/message';
-import type { SubtitlePanelItem, SubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel';
+import type { SubtitlePanelItem, SubtitleManagerPanel } from '@/features/subtitle';
 
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
 // background tự lấy từ sender.tab.id (xem messageBus.handleMessage)

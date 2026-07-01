@@ -40,7 +40,7 @@ import type {
 } from '@/types/media';
 import type {
   ConvertResult,
-} from '@/features/download/downloader';
+} from '@/features/download';
 import type {
   MessageRequest,
   MessageResponse,

@@ -5,7 +5,7 @@ import {
   detectLanguage,
   isoCodeToLabel,
   labelToIsoCode,
-} from '@/features/detection/logic/languageDetector';
+} from '@/features/detection';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 

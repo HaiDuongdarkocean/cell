@@ -1,5 +1,5 @@
-import { detectVideo } from '@/features/detection/logic/videoDetector';
-import { detectSubtitle } from '@/features/detection/logic/subtitleDetector';
+import { detectVideo } from '@/features/detection';
+import { detectSubtitle } from '@/features/detection';
 import {
   addOnBeforeRequestListener,
   type WebRequestListener,

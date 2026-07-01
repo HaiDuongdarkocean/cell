@@ -16,8 +16,8 @@
 
 import { NetworkInterceptor } from './networkInterceptor';
 import { MessageBus } from './messageBus';
-import { DownloadQueue } from '@/features/download/downloadQueue';
-import { Downloader } from '@/features/download/downloader';
+import { DownloadQueue } from '@/features/download';
+import { Downloader } from '@/features/download';
 import { OffscreenManager } from './offscreenManager';
 import { cleanupOrphanedDownloads } from '@/shared/lib/storage/opfsStorage';
 import {

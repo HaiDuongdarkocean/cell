@@ -12,9 +12,9 @@
  */
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { transmuxTsToFmp4 } from '@/features/transmux/merging/tsTransmuxer';
-import { executeParallelConversion } from '@/features/transmux/execution/parallelCoordinator';
-import { readSegmentRanges } from '@/features/transmux/merging/parallelTransmuxer';
+import { transmuxTsToFmp4 } from '@/features/transmux';
+import { executeParallelConversion } from '@/features/transmux';
+import { readSegmentRanges } from '@/features/transmux';
 import {
   ensureDownloadSubdir,
   readFile as opfsReadFile,

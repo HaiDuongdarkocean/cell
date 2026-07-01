@@ -17,9 +17,9 @@ import {
   setBadgeBackgroundColor,
   setBadgeTextColor,
 } from '@/shared/lib/chrome-apis';
-import { tryAutoDownload } from '@/features/download/autoDownload';
-import { findSubtitlesForOverlay, type SubtitlePreference } from '@/features/subtitle/service/subtitleService';
-import { detectLanguage, labelToIsoCode } from '@/features/detection/logic/languageDetector';
+import { tryAutoDownload } from '@/features/download';
+import { findSubtitlesForOverlay, type SubtitlePreference } from '@/features/subtitle';
+import { detectLanguage, labelToIsoCode } from '@/features/detection';
 import { parseM3u8 } from '@/shared/lib/parsers/m3u8Parser';
 import { offscreenFetch, type OffscreenFetchOptions } from './offscreenFetch';
 import type { BackgroundContext } from './context';

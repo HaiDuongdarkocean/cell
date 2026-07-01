@@ -3,8 +3,8 @@
  * DETECTED_SUBTITLE_URL.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { detectVideo } from '@/features/detection/logic/videoDetector';
-import { detectSubtitle } from '@/features/detection/logic/subtitleDetector';
+import { detectVideo } from '@/features/detection';
+import { detectSubtitle } from '@/features/detection';
 import type { BackgroundContext } from '../context';
 import {
   getActiveTabId,

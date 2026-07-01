@@ -9,8 +9,8 @@
  */
 import type { NetworkInterceptor } from './networkInterceptor';
 import type { MessageBus } from './messageBus';
-import type { DownloadQueue } from '@/features/download/downloadQueue';
-import type { Downloader } from '@/features/download/downloader';
+import type { DownloadQueue } from '@/features/download';
+import type { Downloader } from '@/features/download';
 import type { OffscreenManager } from './offscreenManager';
 import type { MessageHandler } from '@/types/message';
 import type {

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSidePanelStore } from './store/sidePanelStore';
 import { CueList } from './components/CueList';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
-import { handleShortcutKey } from '@/features/subtitle/ui/subtitleShortcuts';
+import { handleShortcutKey } from '@/features/subtitle';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import { sendMessage, onMessage, removeOnMessageListener, getStorage, addOnTabActivatedListener, addOnTabUpdatedListener } from '@/shared/lib/chrome-apis';
 import type { BilingualCue, KeyboardShortcut } from '@/types/media';

@@ -10,12 +10,12 @@ import { VideoCard } from './components/media/VideoCard';
 import { SubtitleCard } from './components/media/SubtitleCard';
 import { MediaEmpty } from './components/media/MediaEmpty';
 import { DownloadCard } from './components/media/DownloadCard';
-import { SettingsDialog } from '@/features/settings/ui/SettingsDialog';
+import { SettingsDialog } from '@/features/settings';
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import type { VideoQuality, Settings, DownloadItem } from '@/types/media';
 import type { MessageRequest, MessageResponse } from '@/types/message';
-import { selectBestMedia } from '@/features/download/selectBestMedia';
-import { isWhitelisted, addToWhitelist, removeFromWhitelist } from '@/features/whitelist/whitelist';
+import { selectBestMedia } from '@/features/download';
+import { isWhitelisted, addToWhitelist, removeFromWhitelist } from '@/features/whitelist';
 import { getActiveContentTab } from '@/entrypoints/popup/utils/getActiveContentTab';
 import styles from './App.redesigned.module.css';
 
