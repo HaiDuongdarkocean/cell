@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
 import { sendMessage } from '@/shared/lib/chrome-apis';
-import type { MessageRequest } from '@/types/message';
+import type { MessageRequest } from '@/entities/message';
 
 /**
  * Tracks and toggles the extension's active status.

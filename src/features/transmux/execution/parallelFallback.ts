@@ -12,7 +12,7 @@
  * - 'fail': fail immediately (for debugging)
  */
 
-import type { ParallelFallbackMode } from '@/types/media';
+import type { ParallelFallbackMode } from '@/entities/media';
 
 /** Result of fallback decision. */
 export interface FallbackDecision {

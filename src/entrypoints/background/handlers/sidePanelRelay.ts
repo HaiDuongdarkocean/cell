@@ -25,7 +25,7 @@ import type {
   SeekToPayload,
   ShortcutActionPayload,
   VideoEpisodeChangedPayload,
-} from '@/types/message';
+} from '@/entities/message';
 
 /** Register side panel relay message handlers. */
 export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {

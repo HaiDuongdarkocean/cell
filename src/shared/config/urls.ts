@@ -1,4 +1,4 @@
-import type { VideoFormat, SubtitleFormat } from '@/types/media';
+import type { VideoFormat, SubtitleFormat } from '@/entities/media';
 
 // === Test Sites ===
 

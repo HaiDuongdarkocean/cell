@@ -1,4 +1,4 @@
-import type { VttCue, VttSubtitle } from '@/types/media';
+import type { VttCue, VttSubtitle } from '@/entities/media';
 
 /**
  * Parse a WebVTT (.vtt) subtitle string into a structured VttSubtitle.

@@ -4,7 +4,7 @@ import type {
   DetectedVideo,
   Settings,
   VideoQuality,
-} from '@/types/media';
+} from '@/entities/media';
 
 /**
  * Numeric rank for each concrete video quality. Higher number = higher quality.

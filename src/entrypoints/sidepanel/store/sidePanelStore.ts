@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { BilingualCue } from '@/types/media';
+import type { BilingualCue } from '@/entities/media';
 
 interface SidePanelState {
   cues: BilingualCue[];

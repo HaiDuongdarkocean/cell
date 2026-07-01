@@ -12,7 +12,7 @@
  * not available (e.g., in test environments).
  */
 
-import type { SegmentRange } from '@/types/media';
+import type { SegmentRange } from '@/entities/media';
 import type { SegmentGroup } from '@/features/transmux/planning/segmentGrouping';
 import { transmuxTsToFmp4 } from './tsTransmuxer';
 import {

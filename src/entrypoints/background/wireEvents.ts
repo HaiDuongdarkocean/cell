@@ -37,7 +37,7 @@ import type {
   DetectedSubtitle,
   DownloadItem,
   DownloadProgress,
-} from '@/types/media';
+} from '@/entities/media';
 import type {
   ConvertResult,
 } from '@/features/download';
@@ -51,7 +51,7 @@ import type {
   CreateOpfsBlobUrlPayload,
   CreateOpfsBlobUrlResultPayload,
   RevokeOpfsBlobUrlPayload,
-} from '@/types/message';
+} from '@/entities/message';
 
 /**
  * Connect the event streams of the building blocks:

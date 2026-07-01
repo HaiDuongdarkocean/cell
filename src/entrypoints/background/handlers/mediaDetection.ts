@@ -14,14 +14,14 @@ import {
 } from '../helpers';
 import type {
   NetworkRequest,
-} from '@/types/media';
+} from '@/entities/media';
 import type {
   MessageResponse,
   GetDetectedMediaPayload,
   DetectedMediaUpdatePayload,
   PageScanResultPayload,
   DetectedSubtitleUrlPayload,
-} from '@/types/message';
+} from '@/entities/message';
 
 /** Register media detection message handlers. */
 export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {

@@ -12,11 +12,11 @@ import {
   reloadActiveTab,
   clearBadge,
 } from '../helpers';
-import type { Settings } from '@/types/media';
+import type { Settings } from '@/entities/media';
 import type {
   MessageResponse,
   UpdateSettingsPayload,
-} from '@/types/message';
+} from '@/entities/message';
 
 /** Register settings message handlers. */
 export function registerSettingsHandlers(ctx: BackgroundContext): void {

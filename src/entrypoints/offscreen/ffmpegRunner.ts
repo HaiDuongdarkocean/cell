@@ -31,8 +31,8 @@ import type {
   FetchResponsePayload,
   MessageRequest,
   MessageResponse,
-} from '@/types/message';
-import type { Settings, ConversionPhase } from '@/types/media';
+} from '@/entities/message';
+import type { Settings, ConversionPhase } from '@/entities/media';
 
 /** Currently-registered message listener (kept so it can be removed). */
 let messageListener:

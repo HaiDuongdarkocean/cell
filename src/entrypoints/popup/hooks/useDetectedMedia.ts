@@ -5,12 +5,12 @@ import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/ch
 import type {
   DetectedVideo,
   DetectedSubtitle,
-} from '@/types/media';
+} from '@/entities/media';
 import type {
   MessageRequest,
   MessageResponse,
   DetectedMediaUpdatePayload,
-} from '@/types/message';
+} from '@/entities/message';
 
 /**
  * Subscribes to detected media from the background script, scoped to the

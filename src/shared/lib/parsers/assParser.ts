@@ -2,7 +2,7 @@ import type {
   AssDialogue,
   AssStyle,
   AssSubtitle,
-} from '@/types/media';
+} from '@/entities/media';
 
 /**
  * Parse a single ASS timing token of the form H:MM:SS.cc (centiseconds)

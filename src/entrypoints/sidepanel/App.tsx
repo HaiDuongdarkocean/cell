@@ -5,7 +5,7 @@ import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveConten
 import { handleShortcutKey } from '@/features/subtitle';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
 import { sendMessage, onMessage, removeOnMessageListener, getStorage, addOnTabActivatedListener, addOnTabUpdatedListener } from '@/shared/lib/chrome-apis';
-import type { BilingualCue, KeyboardShortcut } from '@/types/media';
+import type { BilingualCue, KeyboardShortcut } from '@/entities/media';
 
 export function App() {
   const cues = useSidePanelStore((s) => s.cues);

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { BilingualCue } from '@/types/media';
+import type { BilingualCue } from '@/entities/media';
 
 interface CueListProps {
   cues: BilingualCue[];

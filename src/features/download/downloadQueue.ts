@@ -1,4 +1,4 @@
-import type { DownloadItem, DownloadProgress } from '@/types/media';
+import type { DownloadItem, DownloadProgress } from '@/entities/media';
 import {
   DEFAULT_CONCURRENT_DOWNLOADS,
   MAX_CONCURRENT_DOWNLOADS,

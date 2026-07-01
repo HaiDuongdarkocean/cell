@@ -1,4 +1,4 @@
-import type { MessageType } from '@/types/message';
+import type { MessageType } from '@/entities/message';
 
 // === Message Type Constants ===
 // Must match MessageType union in src/types/message.ts

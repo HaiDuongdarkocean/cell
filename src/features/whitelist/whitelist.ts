@@ -19,7 +19,7 @@
  */
 
 import { STORAGE_KEYS } from '@/shared/config/config';
-import type { WhitelistEntry } from '@/types/media';
+import type { WhitelistEntry } from '@/entities/media';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis/storage';
 
 /**

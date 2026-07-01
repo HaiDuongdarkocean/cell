@@ -1,4 +1,4 @@
-import type { SrtCue, BilingualCue } from '@/types/media';
+import type { SrtCue, BilingualCue } from '@/entities/media';
 
 /**
  * Merge 2 sets of cues into `BilingualCue[]` for the floating panel.

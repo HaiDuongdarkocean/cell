@@ -1,4 +1,4 @@
-import type { SrtCue, SrtSubtitle } from '@/types/media';
+import type { SrtCue, SrtSubtitle } from '@/entities/media';
 
 /**
  * Parses SubRip (.srt) subtitle content into a structured SrtSubtitle object.

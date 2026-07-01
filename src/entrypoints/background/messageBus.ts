@@ -8,7 +8,7 @@ import type {
   MessageResponse,
   MessageHandler,
   MessageType,
-} from '@/types/message';
+} from '@/entities/message';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 

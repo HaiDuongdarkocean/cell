@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { DetectedVideo, VideoQuality } from '@/types/media';
+import type { DetectedVideo, VideoQuality } from '@/entities/media';
 import styles from './VideoCard.module.css';
 
 interface VideoCardProps {

@@ -1,4 +1,4 @@
-import type { SegmentRange } from '@/types/media';
+import type { SegmentRange } from '@/entities/media';
 import { groupSegmentsByBytes, type SegmentGroup } from '../planning/segmentGrouping';
 import { MIN_PARALLEL_WORKERS } from '@/shared/config/config';
 

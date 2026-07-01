@@ -13,7 +13,7 @@ import {
 import type {
   DownloadItem,
   DownloadProgress,
-} from '@/types/media';
+} from '@/entities/media';
 import type {
   MessageResponse,
   DownloadVideoPayload,
@@ -24,7 +24,7 @@ import type {
   DownloadListResponse,
   ConversionProgressUpdatePayload,
   DownloadProgressUpdatePayload,
-} from '@/types/message';
+} from '@/entities/message';
 
 /** Register all download-related message handlers on the context's messageBus. */
 export function registerDownloadHandlers(ctx: BackgroundContext): void {

@@ -1,4 +1,4 @@
-import type { DownloadItem } from '@/types/media';
+import type { DownloadItem } from '@/entities/media';
 import { formatFileSize, formatDuration, phaseToLabel } from '@/entrypoints/popup/utils/format';
 import styles from './DownloadCard.module.css';
 

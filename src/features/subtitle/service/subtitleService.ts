@@ -1,5 +1,5 @@
-import type { DetectedSubtitle, Settings } from '@/types/media';
-import type { SubtitleForOverlayResult, SubtitlesForOverlayResult } from '@/types/message';
+import type { DetectedSubtitle, Settings } from '@/entities/media';
+import type { SubtitleForOverlayResult, SubtitlesForOverlayResult } from '@/entities/message';
 
 /**
  * Per-language preference indices for `findSubtitlesForOverlay` (ADR-014 D2).

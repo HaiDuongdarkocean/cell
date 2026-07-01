@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/types/media';
-import type { OverlayStyleConfig } from '@/types/subtitle';
+import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/entities/media';
+import type { OverlayStyleConfig } from '@/entities/subtitle';
 import {
   MIN_PARALLEL_WORKERS,
   MAX_PARALLEL_WORKERS,

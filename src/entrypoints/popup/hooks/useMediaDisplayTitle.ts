@@ -6,7 +6,7 @@ import type {
   DetectedVideo,
   DetectedSubtitle,
   FilenameSource,
-} from '@/types/media';
+} from '@/entities/media';
 
 /**
  * Optional video context for subtitle display title resolution.

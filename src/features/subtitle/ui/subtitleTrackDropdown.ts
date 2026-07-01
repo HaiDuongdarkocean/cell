@@ -1,4 +1,4 @@
-import type { SrtCue } from '@/types/media';
+import type { SrtCue } from '@/entities/media';
 
 export interface TrackOption {
   readonly id: string;

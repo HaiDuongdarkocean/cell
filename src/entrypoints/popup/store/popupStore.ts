@@ -5,7 +5,7 @@ import type {
   DownloadItem,
   DownloadStatus,
   Settings,
-} from '@/types/media';
+} from '@/entities/media';
 import { DEFAULT_SETTINGS, DEFAULT_KEYBOARD_SHORTCUTS, STORAGE_KEYS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 

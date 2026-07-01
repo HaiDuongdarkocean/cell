@@ -2,7 +2,7 @@
 // ponytail: pure function — no side effects, fully testable.
 // ADR-005 D3: pure function in content script, guard input/textarea/contenteditable.
 
-import type { KeyboardShortcut, ShortcutAction } from '@/types/media';
+import type { KeyboardShortcut, ShortcutAction } from '@/entities/media';
 
 /**
  * Check if the event target is an editable element (input, textarea, select,

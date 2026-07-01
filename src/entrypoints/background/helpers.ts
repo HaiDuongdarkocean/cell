@@ -30,8 +30,8 @@ import type {
   Settings,
   MediaType,
   VideoVariant,
-} from '@/types/media';
-import type { DetectedMediaUpdatePayload, AutoLoadSubtitlesPayload } from '@/types/message';
+} from '@/entities/media';
+import type { DetectedMediaUpdatePayload, AutoLoadSubtitlesPayload } from '@/entities/message';
 
 /**
  * Generate a unique identifier, preferring `crypto.randomUUID` and falling back

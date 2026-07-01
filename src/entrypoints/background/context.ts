@@ -12,7 +12,7 @@ import type { MessageBus } from './messageBus';
 import type { DownloadQueue } from '@/features/download';
 import type { Downloader } from '@/features/download';
 import type { OffscreenManager } from './offscreenManager';
-import type { MessageHandler } from '@/types/message';
+import type { MessageHandler } from '@/entities/message';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -20,7 +20,7 @@ import type {
   Settings,
   MediaType,
   BilingualCue,
-} from '@/types/media';
+} from '@/entities/media';
 
 export interface BackgroundContext {
   // --- building blocks ---

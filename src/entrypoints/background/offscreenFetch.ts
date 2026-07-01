@@ -18,7 +18,7 @@ import type {
   FetchResponsePayload,
   MessageRequest,
   MessageResponse,
-} from '@/types/message';
+} from '@/entities/message';
 
 export interface OffscreenFetchOptions {
   readonly method?: string;

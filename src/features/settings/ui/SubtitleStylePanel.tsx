@@ -1,5 +1,5 @@
 import { useState, type ReactElement } from 'react';
-import type { OverlayStyleConfig, TextShadowConfig } from '@/types/subtitle';
+import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
 import { SubtitlePreview } from './SubtitlePreview';
 import styles from './SubtitleStylePanel.module.css';
 

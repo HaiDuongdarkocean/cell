@@ -26,7 +26,7 @@ import type {
   DetectedVideo,
   DownloadItem,
   Settings,
-} from '@/types/media';
+} from '@/entities/media';
 import { selectBestMedia } from './selectBestMedia';
 import { isWhitelisted } from '@/features/whitelist/whitelist';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';

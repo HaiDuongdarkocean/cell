@@ -1,4 +1,4 @@
-import type { SubtitleFormat } from '@/types/media';
+import type { SubtitleFormat } from '@/entities/media';
 import {
   detectScript,
   scriptToCandidateLanguages,

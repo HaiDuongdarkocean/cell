@@ -1,4 +1,4 @@
-import type { SrtCue } from '@/types/media';
+import type { SrtCue } from '@/entities/media';
 
 /**
  * Binary search to find current subtitle line based on video time.

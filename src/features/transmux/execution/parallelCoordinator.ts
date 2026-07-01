@@ -19,7 +19,7 @@
  * auto mode after benchmark gates pass.
  */
 
-import type { Settings, SegmentRange } from '@/types/media';
+import type { Settings, SegmentRange } from '@/entities/media';
 import { planParallelConversion, type ParallelPlan } from '../planning/parallelPlanner';
 import { transmuxTsToFmp4ParallelExperimental } from '../merging/parallelTransmuxer';
 import { transmuxTsToFmp4 } from '../merging/tsTransmuxer';

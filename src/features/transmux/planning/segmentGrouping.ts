@@ -1,4 +1,4 @@
-import type { SegmentRange } from '@/types/media';
+import type { SegmentRange } from '@/entities/media';
 
 /**
  * A group of contiguous segments assigned to one parallel worker.

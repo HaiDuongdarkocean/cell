@@ -13,7 +13,7 @@
  * from 'off' to 'auto'. If gates fail, it stays 'off'.
  */
 
-import type { ParallelConversionMode } from '@/types/media';
+import type { ParallelConversionMode } from '@/entities/media';
 import type { BenchmarkComparison } from './benchmarkHarness';
 
 /** Minimum speedup required to enable auto mode (1.1x = 10% faster). */

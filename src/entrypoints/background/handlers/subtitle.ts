@@ -17,7 +17,7 @@ import { offscreenFetch } from '../offscreenFetch';
 import type {
   DetectedVideo,
   DetectedSubtitle,
-} from '@/types/media';
+} from '@/entities/media';
 import type {
   MessageResponse,
   UpdateSubtitleLanguagePayload,
@@ -26,7 +26,7 @@ import type {
   FetchSubtitleContentResult,
   SubtitleCuesLoadedPayload,
   RequestSubtitleCuesPayload,
-} from '@/types/message';
+} from '@/entities/message';
 
 /** Register subtitle message handlers. */
 export function registerSubtitleHandlers(ctx: BackgroundContext): void {

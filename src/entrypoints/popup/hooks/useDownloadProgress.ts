@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
-import type { DownloadItem } from '@/types/media';
+import type { DownloadItem } from '@/entities/media';
 import type {
   MessageRequest,
   MessageResponse,
   DownloadProgressUpdatePayload,
   DownloadListResponse,
-} from '@/types/message';
+} from '@/entities/message';
 
 /**
  * Subscribes to download progress updates from the background script, scoped

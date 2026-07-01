@@ -6,7 +6,7 @@ import type {
   M3u8Variant,
   TsSegment,
   VideoQuality,
-} from '@/types/media';
+} from '@/entities/media';
 
 /**
  * Parses HLS m3u8 playlist content into a structured M3u8Playlist object.

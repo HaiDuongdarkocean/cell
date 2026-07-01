@@ -22,13 +22,13 @@ export interface OverrideResult {
 import { parseSubtitle } from './subtitleParser';
 import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import type { SrtCue } from '@/types/media';
-import type { SubtitleFormat, ParseResult } from '@/types/subtitle';
+import type { SrtCue } from '@/entities/media';
+import type { SubtitleFormat, ParseResult } from '@/entities/subtitle';
 import type {
   AutoLoadSubtitlesPayload,
   FetchSubtitleContentResult,
   SubtitleForOverlayResult,
-} from '@/types/message';
+} from '@/entities/message';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 
 /**

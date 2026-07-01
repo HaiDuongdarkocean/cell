@@ -8,8 +8,8 @@ import {
 import { createImportButton } from '../logic/subtitleImport';
 import { createDragHandle } from './subtitleDragPosition';
 import { findCurrentLine } from '../logic/subtitleSync';
-import type { OverlayConfig, OverlayStyleConfig } from '@/types/subtitle';
-import type { SrtCue } from '@/types/media';
+import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
+import type { SrtCue } from '@/entities/media';
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis/storage';
 
 /**

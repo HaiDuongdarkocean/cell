@@ -3,8 +3,8 @@
 
 import { parseSrt } from '@/shared/lib/parsers/srtParser';
 import { parseVtt } from '@/shared/lib/parsers/vttParser';
-import type { SrtCue } from '@/types/media';
-import type { ParseResult, SubtitleFormat } from '@/types/subtitle';
+import type { SrtCue } from '@/entities/media';
+import type { ParseResult, SubtitleFormat } from '@/entities/subtitle';
 
 /**
  * Parse subtitle content into SrtCue[] wrapped in ParseResult.

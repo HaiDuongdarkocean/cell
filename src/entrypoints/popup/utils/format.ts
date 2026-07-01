@@ -1,4 +1,4 @@
-import type { ConversionPhase } from '@/types/media';
+import type { ConversionPhase } from '@/entities/media';
 
 /**
  * Format a byte count into a human-readable string with binary units.

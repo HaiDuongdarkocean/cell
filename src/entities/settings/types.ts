@@ -1,7 +1,7 @@
 // Settings types (entities/settings)
 
 import type { VideoQuality } from '@/entities/video/types';
-import type { OverlayStyleConfig } from '@/types/subtitle';
+import type { OverlayStyleConfig } from '@/entities/subtitle/types';
 
 // === Keyboard Shortcut Types (floating panel) ===
 

@@ -4,8 +4,8 @@
 // Fallback: 1 line → target only (nativeText = ''); > 2 lines → last = native, rest = target.
 
 import { parseSrt } from '@/shared/lib/parsers/srtParser';
-import type { BilingualCue } from '@/types/media';
-import type { BilingualParseResult } from '@/types/subtitle';
+import type { BilingualCue } from '@/entities/media';
+import type { BilingualParseResult } from '@/entities/subtitle';
 
 /**
  * Parse bilingual SRT content into BilingualCue[].

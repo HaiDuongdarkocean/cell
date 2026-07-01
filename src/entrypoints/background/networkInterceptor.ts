@@ -4,7 +4,7 @@ import {
   addOnBeforeRequestListener,
   type WebRequestListener,
 } from '@/shared/lib/chrome-apis';
-import type { DetectedVideo, DetectedSubtitle, NetworkRequest } from '@/types/media';
+import type { DetectedVideo, DetectedSubtitle, NetworkRequest } from '@/entities/media';
 
 /**
  * Callback invoked whenever new media (video and/or subtitle) is detected from

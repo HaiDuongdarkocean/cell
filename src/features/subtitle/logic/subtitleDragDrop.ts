@@ -1,6 +1,6 @@
 import { parseSubtitle } from './subtitleParser';
 import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
-import type { ParseResult, SubtitleFormat } from '@/types/subtitle';
+import type { ParseResult, SubtitleFormat } from '@/entities/subtitle';
 
 /**
  * ParseResult + source File (for multi-file drag-drop, ADR-015).

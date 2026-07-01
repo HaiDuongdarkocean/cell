@@ -2,10 +2,12 @@
 // auto-select, whitelist, network request (entities/media)
 
 import type { VideoQuality } from '@/entities/video/types';
+// SubtitleFormat consolidated to @/entities/subtitle/types (more complete:
+// includes 'ssa' | 'unknown'). Re-exported here for backward compatibility.
+import type { SubtitleFormat } from '@/entities/subtitle/types';
+export type { SubtitleFormat };
 
 // === Subtitle Types ===
-
-export type SubtitleFormat = 'ass' | 'vtt' | 'srt';
 
 export interface DetectedSubtitle {
   readonly id: string;

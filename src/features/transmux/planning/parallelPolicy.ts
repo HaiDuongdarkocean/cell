@@ -1,4 +1,4 @@
-import type { ParallelConversionMode, Settings } from '@/types/media';
+import type { ParallelConversionMode, Settings } from '@/entities/media';
 import {
   MIN_PARALLEL_WORKERS,
   MAX_PARALLEL_WORKERS,

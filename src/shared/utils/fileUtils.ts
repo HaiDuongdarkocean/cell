@@ -2,7 +2,7 @@
  * File name utility functions for sanitizing and building download filenames.
  */
 
-import type { FilenameSource } from '@/types/media';
+import type { FilenameSource } from '@/entities/media';
 import { GENERIC_TITLES } from '@/shared/config/config';
 
 /**

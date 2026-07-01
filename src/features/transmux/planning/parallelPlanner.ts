@@ -1,4 +1,4 @@
-import type { Settings, SegmentRange } from '@/types/media';
+import type { Settings, SegmentRange } from '@/entities/media';
 import { resolveParallelPolicy, type ParallelPolicy } from './parallelPolicy';
 import { analyzeParallelSafety, type SafetyAnalysis } from '../execution/parallelSafetyAnalyzer';
 

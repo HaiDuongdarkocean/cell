@@ -1,4 +1,4 @@
-import type { DetectedSubtitle } from '@/types/media';
+import type { DetectedSubtitle } from '@/entities/media';
 import { formatSubtitleName } from '../logic/subtitleNaming';
 
 /**

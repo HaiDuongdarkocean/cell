@@ -22,10 +22,10 @@ import {
 import { injectThemeTokens } from './themeTokens';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
-import type { OverlayConfig, OverlayStyleConfig } from '@/types/subtitle';
-import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle } from '@/types/media';
-import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/types/message';
-import type { VideoEpisodeChangedPayload } from '@/types/message';
+import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
+import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle } from '@/entities/media';
+import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
+import type { VideoEpisodeChangedPayload } from '@/entities/message';
 import type { SubtitlePanelItem, SubtitleManagerPanel } from '@/features/subtitle';
 
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,

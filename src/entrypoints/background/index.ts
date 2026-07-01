@@ -62,7 +62,7 @@ import { registerMediaDetectionHandlers } from './handlers/mediaDetection';
 import { registerSubtitleHandlers } from './handlers/subtitle';
 import { registerSettingsHandlers } from './handlers/settings';
 import { registerSidePanelRelayHandlers } from './handlers/sidePanelRelay';
-import type { MessageHandler } from '@/types/message';
+import type { MessageHandler } from '@/entities/message';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -70,7 +70,7 @@ import type {
   Settings,
   MediaType,
   BilingualCue,
-} from '@/types/media';
+} from '@/entities/media';
 
 /** Optional dependency overrides (used for testing). */
 export interface BackgroundServiceOptions {

@@ -14,7 +14,7 @@ import type {
   M3u8Playlist,
   SegmentRange,
   TsSegment,
-} from '@/types/media';
+} from '@/entities/media';
 import {
   MAX_RETRY,
   SEGMENT_TIMEOUT_MS,
@@ -23,7 +23,7 @@ import {
   MIN_SEGMENT_CONCURRENCY,
   MAX_SEGMENT_CONCURRENCY,
 } from '@/shared/config/config';
-import type { ConvertToMp4Mode, Settings, FilenameSource } from '@/types/media';
+import type { ConvertToMp4Mode, Settings, FilenameSource } from '@/entities/media';
 import {
   ensureDownloadSubdir,
   createOpfsWriter,
