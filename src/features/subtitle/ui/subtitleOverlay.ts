@@ -10,7 +10,7 @@ import { createDragHandle } from './subtitleDragPosition';
 import { findCurrentLine } from '../logic/subtitleSync';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
 import type { SrtCue } from '@/entities/media';
-import { getStorage, setStorage } from '@/shared/lib/chrome-apis/storage';
+import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 
 /**
  * SubtitleOverlayController — orchestrator that connects sync logic to overlay UI.
@@ -206,14 +206,13 @@ export class SubtitleOverlayController {
    */
   private persistStyle(role: 'target' | 'native'): void {
     try {
-      void getStorage<{ settings?: Record<string, unknown> }>('settings').then((result) => {
-        const settings = result.settings ?? {};
+      void loadSettings().then((settings) => {
         const updated = {
           ...settings,
           [role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle']:
             role === 'target' ? this.targetStyle : this.nativeStyle,
         };
-        void setStorage({ settings: updated });
+        void saveSettings(updated);
       });
     } catch {
       // ponytail: storage might not be available in test contexts — ignore

@@ -3,7 +3,7 @@
  * Each function takes a {@link BackgroundContext} as the first parameter.
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import {
   getStorage,
   setStorage,
@@ -17,6 +17,7 @@ import {
   setBadgeBackgroundColor,
   setBadgeTextColor,
 } from '@/shared/lib/chrome-apis';
+import { loadSettings as loadSettingsFromStore, saveSettings as saveSettingsToStore } from '@/shared/lib/storage/settingsStore';
 import { tryAutoDownload } from '@/features/download';
 import { findSubtitlesForOverlay, type SubtitlePreference } from '@/features/subtitle';
 import { detectLanguage, labelToIsoCode } from '@/features/detection';
@@ -294,13 +295,11 @@ export function createDownloadItem(
 // --- settings helpers ---
 
 export async function loadSettings(_ctx?: BackgroundContext): Promise<Settings> {
-  const result = await getStorage<Record<string, unknown>>(STORAGE_KEYS.SETTINGS);
-  const stored = result[STORAGE_KEYS.SETTINGS] as Partial<Settings> | undefined;
-  return { ...DEFAULT_SETTINGS, ...stored };
+  return loadSettingsFromStore();
 }
 
 export async function saveSettings(_ctx: BackgroundContext | undefined, settings: Settings): Promise<void> {
-  await setStorage({ [STORAGE_KEYS.SETTINGS]: settings });
+  await saveSettingsToStore(settings);
 }
 
 export async function loadExtensionStatus(_ctx?: BackgroundContext): Promise<boolean> {

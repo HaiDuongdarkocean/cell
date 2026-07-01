@@ -26,6 +26,15 @@ beforeEach(() => {
   storageListeners.length = 0;
 });
 
+// loadSettings() has a deeper async chain than the old direct getStorage call
+// (async function → await getStorage → return → .then). Flush enough microtasks
+// so the theme is applied before assertions run.
+async function flushMicrotasks(): Promise<void> {
+  for (let i = 0; i < 5; i++) {
+    await Promise.resolve();
+  }
+}
+
 describe('injectThemeTokens (ADR-015 T12)', () => {
   it('injects <style> with theme tokens into document.head', () => {
     const container = document.createElement('div');
@@ -51,7 +60,7 @@ describe('injectThemeTokens (ADR-015 T12)', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
-    await Promise.resolve();
+    await flushMicrotasks();
     expect(container.getAttribute('data-theme')).toBe('light');
   });
 
@@ -60,7 +69,7 @@ describe('injectThemeTokens (ADR-015 T12)', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
-    await Promise.resolve();
+    await flushMicrotasks();
     expect(container.getAttribute('data-theme')).toBe('dark');
   });
 
@@ -68,7 +77,7 @@ describe('injectThemeTokens (ADR-015 T12)', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
-    await Promise.resolve();
+    await flushMicrotasks();
     expect(container.getAttribute('data-theme')).toBe('light');
     // Simulate storage change
     for (const listener of storageListeners) {

@@ -642,7 +642,9 @@ describe('Background integration', () => {
     })) as MessageResponse<Settings>;
 
     expect(response.success).toBe(true);
-    expect(response.data).toEqual(storedSettings);
+    // loadSettings() runs migration v0→v1 which stamps schemaVersion: 1
+    // (ADR-017 D8). The returned data includes this field.
+    expect(response.data).toEqual({ ...storedSettings, schemaVersion: 1 });
   });
 
   it('GET_SETTINGS returns DEFAULT_SETTINGS when storage is empty', async () => {

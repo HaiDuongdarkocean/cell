@@ -15,7 +15,8 @@
  * a new build pipeline.
  */
 
-import { getStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 
 // Token definitions — mirrors src/entrypoints/popup/styles/theme.css (keep in sync).
 const LIGHT_TOKENS = `
@@ -126,9 +127,8 @@ ${DARK_TOKENS}
     container.setAttribute('data-theme', theme);
   };
 
-  getStorage('settings').then((result) => {
-    const settings = result.settings as { theme?: 'light' | 'dark' } | undefined;
-    applyTheme(settings?.theme ?? 'light');
+  loadSettings().then((settings) => {
+    applyTheme(settings.theme ?? 'light');
   }).catch(() => {
     applyTheme('light');
   });

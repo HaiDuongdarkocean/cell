@@ -4,7 +4,8 @@ import { CueList } from './components/CueList';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { handleShortcutKey } from '@/features/subtitle';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
-import { sendMessage, onMessage, removeOnMessageListener, getStorage, addOnTabActivatedListener, addOnTabUpdatedListener } from '@/shared/lib/chrome-apis';
+import { sendMessage, onMessage, removeOnMessageListener, addOnTabActivatedListener, addOnTabUpdatedListener } from '@/shared/lib/chrome-apis';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import type { BilingualCue, KeyboardShortcut } from '@/entities/media';
 
 export function App() {
@@ -150,8 +151,8 @@ export function App() {
   useEffect(() => {
     // Load user-configured shortcuts from storage (overrides defaults)
     let currentShortcuts = shortcuts;
-    getStorage('settings').then((result) => {
-      const stored = (result.settings as { keyboardShortcuts?: KeyboardShortcut[] } | undefined)?.keyboardShortcuts;
+    loadSettings().then((settings) => {
+      const stored = settings.keyboardShortcuts;
       if (stored && stored.length > 0) currentShortcuts = stored;
     }).catch(() => { /* fallback to defaults */ });
 

@@ -28,12 +28,17 @@ const storageLocalGetMock = jest.fn<
   Promise<Record<string, unknown>>,
   [string | string[] | Record<string, unknown> | null]
 >();
+const storageLocalSetMock = jest.fn<
+  Promise<void>,
+  [Record<string, unknown>]
+>();
 
 beforeAll(() => {
   global.chrome = {
     storage: {
       local: {
         get: storageLocalGetMock as unknown as typeof chrome.storage.local.get,
+        set: storageLocalSetMock as unknown as typeof chrome.storage.local.set,
       },
     },
   } as unknown as typeof chrome;
@@ -56,6 +61,12 @@ beforeAll(() => {
       if (store.has(key)) result[key] = store.get(key);
     }
     return result;
+  });
+
+  storageLocalSetMock.mockImplementation(async (items) => {
+    for (const [k, v] of Object.entries(items)) {
+      store.set(k, v);
+    }
   });
 });
 

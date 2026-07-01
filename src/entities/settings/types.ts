@@ -57,6 +57,8 @@ export type ParallelFallbackMode = 'sequential' | 'retry-reduced' | 'save-ts' | 
 export type FilenameSource = 'title-fallback' | 'title-only' | 'url-only';
 
 export interface Settings {
+  /** Schema version for migration (ADR-017 D8). Current: 1. */
+  readonly schemaVersion?: number;
   readonly concurrentDownloads: number;
   readonly defaultQuality: VideoQuality;
   /** @deprecated Use `selectedSubtitleLanguages` instead. Migrated on load. */

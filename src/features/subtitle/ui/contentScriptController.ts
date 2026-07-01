@@ -1,4 +1,5 @@
-import { sendMessage, onMessage, getStorage, setStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
+import { sendMessage, onMessage, onStorageChanged } from '@/shared/lib/chrome-apis';
+import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
@@ -21,7 +22,7 @@ import {
   formatSubtitleName,
 } from '@/features/subtitle';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
-import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle, Settings } from '@/entities/media';
+import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle } from '@/entities/media';
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
 import type { SubtitlePanelItem, SubtitleManagerPanel, ParsedFile } from '@/features/subtitle';
 
@@ -40,13 +41,10 @@ const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
 /** Load overlay style settings from chrome.storage.local, fallback to defaults. ADR-013 D3. */
 async function loadOverlayStyles(): Promise<{ target: OverlayStyleConfig; native: OverlayStyleConfig }> {
   try {
-    const result = await getStorage('settings');
-    const settings = result.settings as
-      | { subtitleOverlayTargetStyle?: OverlayStyleConfig; subtitleOverlayNativeStyle?: OverlayStyleConfig }
-      | undefined;
+    const settings = await loadSettings();
     return {
-      target: settings?.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET,
-      native: settings?.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE,
+      target: settings.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET,
+      native: settings.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE,
     };
   } catch {
     // ponytail: storage might not be available in test contexts — fallback
@@ -57,9 +55,8 @@ async function loadOverlayStyles(): Promise<{ target: OverlayStyleConfig; native
 /** Load keyboard shortcuts from chrome.storage.local, fallback to defaults. */
 async function loadShortcuts(): Promise<KeyboardShortcut[]> {
   try {
-    const result = await getStorage('settings');
-    const settings = result.settings as { keyboardShortcuts?: KeyboardShortcut[] } | undefined;
-    if (settings?.keyboardShortcuts?.length && settings.keyboardShortcuts.length > 0) {
+    const settings = await loadSettings();
+    if (settings.keyboardShortcuts?.length && settings.keyboardShortcuts.length > 0) {
       return settings.keyboardShortcuts;
     }
   } catch {
@@ -527,13 +524,10 @@ export function init(video: HTMLVideoElement): void {
    */
   async function loadTargetNativeLangs(): Promise<{ targetLang: string; nativeLang: string }> {
     try {
-      const result = await getStorage('settings');
-      const settings = result.settings as
-        | { subtitleOverlayTargetLanguage?: string; subtitleOverlayNativeLanguage?: string }
-        | undefined;
+      const settings = await loadSettings();
       return {
-        targetLang: settings?.subtitleOverlayTargetLanguage ?? '',
-        nativeLang: settings?.subtitleOverlayNativeLanguage ?? '',
+        targetLang: settings.subtitleOverlayTargetLanguage ?? '',
+        nativeLang: settings.subtitleOverlayNativeLanguage ?? '',
       };
     } catch {
       return { targetLang: '', nativeLang: '' };
@@ -601,13 +595,12 @@ export function init(video: HTMLVideoElement): void {
     try {
       const origin = new URL(window.location.href).hostname;
       const lang = sub.language;
-      const result = await getStorage('settings');
-      const settings = (result.settings ?? {}) as Partial<Settings>;
+      const settings = await loadSettings();
       const pref = { ...(settings.subtitlePreference ?? {}) };
       const sitePref = { ...(pref[origin] ?? {}) };
       sitePref[lang] = index;
       pref[origin] = sitePref;
-      await setStorage({ settings: { ...settings, subtitlePreference: pref } });
+      await saveSettings({ ...settings, subtitlePreference: pref });
     } catch {
       // ponytail: storage might not be available in test contexts — ignore
     }
