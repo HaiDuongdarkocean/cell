@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
+import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -56,7 +57,7 @@ export function useDetectedMedia(): {
       return false;
     };
 
-    chrome.runtime.onMessage.addListener(listener);
+    onMessage(listener as unknown as Parameters<typeof onMessage>[0]);
 
     // Query the active *content* tab (skips chrome-extension app-windows,
     // e.g. Edge's dictionary sidebar — see getActiveContentTab), then send
@@ -91,7 +92,7 @@ export function useDetectedMedia(): {
         for (let attempt = 0; attempt < retries; attempt++) {
           if (cancelled) return;
           try {
-            const response = (await chrome.runtime.sendMessage(
+            const response = (await sendMessage(
               request,
             )) as MessageResponse<DetectedMediaUpdatePayload>;
             if (cancelled) return;
@@ -115,7 +116,7 @@ export function useDetectedMedia(): {
 
     return () => {
       cancelled = true;
-      chrome.runtime.onMessage.removeListener(listener);
+      removeOnMessageListener(listener as unknown as Parameters<typeof removeOnMessageListener>[0]);
     };
   }, [setVideos, setSubtitles]);
 

@@ -11,6 +11,7 @@ import { SubtitleCard } from './components/media/SubtitleCard';
 import { MediaEmpty } from './components/media/MediaEmpty';
 import { DownloadCard } from './components/media/DownloadCard';
 import { SettingsDialog } from '@/features/settings/ui/SettingsDialog';
+import { sendMessage } from '@/shared/lib/chrome-apis';
 import type { VideoQuality, Settings, DownloadItem } from '@/types/media';
 import type { MessageRequest, MessageResponse } from '@/types/message';
 import { selectBestMedia } from '@/features/download/selectBestMedia';
@@ -214,7 +215,7 @@ export function AppRedesigned(): React.JSX.Element {
 
   const handleVideoDownload = (videoId: string): void => {
     const request: MessageRequest = { type: 'DOWNLOAD_VIDEO', payload: { videoId } };
-    void chrome.runtime.sendMessage(request).then((response) => {
+    void sendMessage(request).then((response) => {
       const res = response as MessageResponse<DownloadItem> | undefined;
       if (res?.success && res.data) addDownload(res.data);
       else if (res && !res.success) setError(res.error ?? 'Failed to start video download');
@@ -223,7 +224,7 @@ export function AppRedesigned(): React.JSX.Element {
 
   const handleQualitySelect = (videoId: string, quality: VideoQuality): void => {
     const request: MessageRequest = { type: 'DOWNLOAD_VIDEO', payload: { videoId, quality } };
-    void chrome.runtime.sendMessage(request).then((response) => {
+    void sendMessage(request).then((response) => {
       const res = response as MessageResponse<DownloadItem> | undefined;
       if (res?.success && res.data) addDownload(res.data);
       else if (res && !res.success) setError(res.error ?? 'Failed to start video download');
@@ -232,7 +233,7 @@ export function AppRedesigned(): React.JSX.Element {
 
   const handleSubtitleDownload = (subtitleId: string): void => {
     const request: MessageRequest = { type: 'DOWNLOAD_SUBTITLE', payload: { subtitleId } };
-    void chrome.runtime.sendMessage(request).then((response) => {
+    void sendMessage(request).then((response) => {
       const res = response as MessageResponse<DownloadItem> | undefined;
       if (res?.success && res.data) addDownload(res.data);
       else if (res && !res.success) setError(res.error ?? 'Failed to start subtitle download');
@@ -248,36 +249,36 @@ export function AppRedesigned(): React.JSX.Element {
   const handleSettingsChange = (nextSettings: Settings): void => {
     updateSettings(nextSettings);
     const request: MessageRequest = { type: 'UPDATE_SETTINGS', payload: { settings: nextSettings } };
-    void chrome.runtime.sendMessage(request);
+    void sendMessage(request);
   };
 
   // === Download control handlers ===
 
   const handlePauseDownload = (downloadId: string): void => {
     const request: MessageRequest = { type: 'PAUSE_DOWNLOAD', payload: { downloadId } };
-    void chrome.runtime.sendMessage(request);
+    void sendMessage(request);
   };
 
   const handleResumeDownload = (downloadId: string): void => {
     const request: MessageRequest = { type: 'RESUME_DOWNLOAD', payload: { downloadId } };
-    void chrome.runtime.sendMessage(request);
+    void sendMessage(request);
   };
 
   const handleCancelDownload = (downloadId: string): void => {
     const request: MessageRequest = { type: 'CANCEL_DOWNLOAD', payload: { downloadId } };
-    void chrome.runtime.sendMessage(request);
+    void sendMessage(request);
     // Optimistic UI: remove from store immediately
     removeDownload(downloadId);
   };
 
   const handleRetryDownload = (downloadId: string): void => {
     const request: MessageRequest = { type: 'RETRY_DOWNLOAD', payload: { downloadId } };
-    void chrome.runtime.sendMessage(request);
+    void sendMessage(request);
   };
 
   const handleRemoveDownload = (downloadId: string): void => {
     const request: MessageRequest = { type: 'REMOVE_DOWNLOAD', payload: { downloadId } };
-    void chrome.runtime.sendMessage(request);
+    void sendMessage(request);
     // Optimistic UI: remove from store immediately
     removeDownload(downloadId);
   };

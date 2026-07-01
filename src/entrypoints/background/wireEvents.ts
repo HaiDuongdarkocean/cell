@@ -3,6 +3,20 @@
  * Extracted from BackgroundService.wireEvents().
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import {
+  sendMessage,
+  getExtensionId,
+  download,
+  addOnDeterminingFilenameListener,
+  addOnDownloadsChangedListener,
+  removeOnDownloadsChangedListener,
+  addOnTabUpdatedListener,
+  addOnTabRemovedListener,
+  addOnTabActivatedListener,
+  getTab,
+  addOnWindowFocusChangedListener,
+  getWindowIdNone,
+} from '@/shared/lib/chrome-apis';
 import type { BackgroundContext } from './context';
 import {
   enrichVideo,
@@ -117,9 +131,9 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
   });
 
   // 4. Chrome downloads filename override
-  chrome.downloads.onDeterminingFilename.addListener(
+  addOnDeterminingFilenameListener(
     (downloadItem, suggest) => {
-      if (downloadItem.byExtensionId !== chrome.runtime.id) {
+      if (downloadItem.byExtensionId !== getExtensionId()) {
         return;
       }
       const desired = ctx.downloader.getPendingFilename();
@@ -150,7 +164,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
         } satisfies ConvertTsToMp4V2Payload,
       };
 
-      const response = (await chrome.runtime.sendMessage(
+      const response = (await sendMessage(
         request,
       )) as MessageResponse<ConvertTsToMp4V2ResultPayload> | undefined;
 
@@ -190,7 +204,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
         } satisfies CreateOpfsBlobUrlPayload,
       };
 
-      const createResponse = (await chrome.runtime.sendMessage(
+      const createResponse = (await sendMessage(
         createRequest,
       )) as MessageResponse<CreateOpfsBlobUrlResultPayload> | undefined;
 
@@ -207,7 +221,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       }
 
       const blobUrl = createResponse.data.url;
-      const chromeDownloadId = await chrome.downloads.download({
+      const chromeDownloadId = await download({
         url: blobUrl,
         filename: downloadFilename,
         saveAs: false,
@@ -221,17 +235,17 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
           delta.state?.current === 'complete' ||
           delta.state?.current === 'interrupted'
         ) {
-          chrome.downloads.onChanged.removeListener(revokeListener);
+          removeOnDownloadsChangedListener(revokeListener);
           const revokeRequest: MessageRequest = {
             type: MESSAGE_TYPES.REVOKE_OPFS_BLOB_URL,
             payload: { url: blobUrl } satisfies RevokeOpfsBlobUrlPayload,
           };
-          void chrome.runtime.sendMessage(revokeRequest).catch((err) => {
+          void sendMessage(revokeRequest).catch((err) => {
             console.warn('[background] Failed to revoke Blob URL:', err);
           });
         }
       };
-      chrome.downloads.onChanged.addListener(revokeListener);
+      addOnDownloadsChangedListener(revokeListener);
     },
   );
 
@@ -286,7 +300,6 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       updateBadgeForTab(ctx, tabId);
     }
   };
-  chrome.tabs.onUpdated.addListener(onTabUpdated);
 
   // 9. Tab removal clear
   const onTabRemoved = (tabId: number): void => {
@@ -298,37 +311,34 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     ctx.autoDownloadedTabs.delete(tabId);
     ctx.lastCuesByTab.delete(tabId);
   };
-  chrome.tabs.onRemoved.addListener(onTabRemoved);
 
   unsubscribers.push(
-    () => chrome.tabs.onUpdated.removeListener(onTabUpdated),
-    () => chrome.tabs.onRemoved.removeListener(onTabRemoved),
+    addOnTabUpdatedListener(onTabUpdated),
+    addOnTabRemovedListener(onTabRemoved),
   );
 
   // 10. Tab activation → badge + activeTabIdForPanel tracking
   const onTabActivated = (activeInfo: { tabId: number; windowId: number }): void => {
     updateBadgeForTab(ctx, activeInfo.tabId);
-    void chrome.tabs.get(activeInfo.tabId).then((tab) => {
+    void getTab(activeInfo.tabId).then((tab) => {
       if (!tab.url || (!tab.url.startsWith('chrome-extension://') && !tab.url.startsWith('edge://'))) {
         ctx.activeTabIdForPanel = activeInfo.tabId;
       }
     }).catch(() => { /* tab may be gone — leave previous value */ });
   };
-  chrome.tabs.onActivated.addListener(onTabActivated);
 
   // 11. Window focus change → badge
   const onWindowFocusChanged = (windowId: number): void => {
-    if (windowId === chrome.windows.WINDOW_ID_NONE) {
+    if (windowId === getWindowIdNone()) {
       clearBadge(ctx);
       return;
     }
     void updateBadgeForActiveTab(ctx);
   };
-  chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
 
   unsubscribers.push(
-    () => chrome.tabs.onActivated.removeListener(onTabActivated),
-    () => chrome.windows.onFocusChanged.removeListener(onWindowFocusChanged),
+    addOnTabActivatedListener(onTabActivated),
+    addOnWindowFocusChangedListener(onWindowFocusChanged),
   );
 
   return unsubscribers;

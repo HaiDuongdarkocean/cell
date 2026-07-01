@@ -7,6 +7,7 @@ import {
   labelToIsoCode,
 } from '@/features/detection/logic/languageDetector';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { sendMessage } from '@/shared/lib/chrome-apis';
 
 /**
  * Map of subtitleId → detected language label (e.g. "English").
@@ -128,7 +129,7 @@ export function useSubtitleLanguage(subtitles: DetectedSubtitle[]): LanguageMap 
         // mediaMap + networkInterceptor have the correct language for
         // download filenames (e.g. "Movie Title.en.srt" not "Movie Title.unknown.srt").
         for (const update of updates) {
-          void chrome.runtime.sendMessage({
+          void sendMessage({
             type: MESSAGE_TYPES.UPDATE_SUBTITLE_LANGUAGE,
             payload: { subtitleId: update.id, language: update.language },
           }).catch((err) => {

@@ -19,6 +19,7 @@ import {
   ensureDownloadSubdir,
   readFile as opfsReadFile,
 } from '@/shared/lib/storage/opfsStorage';
+import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import type {
   ConvertTsToMp4V2Payload,
   ConvertTsToMp4V2ResultPayload,
@@ -104,7 +105,7 @@ function broadcastConversionProgress(
     payload,
   };
   // Fire-and-forget — the popup may not be open, and that's fine.
-  void chrome.runtime.sendMessage(request).catch(() => {
+  void sendMessage(request).catch(() => {
     // Popup/background may not be listening — ignore.
   });
 }
@@ -460,7 +461,7 @@ export async function startMessageListener(): Promise<void> {
   };
 
   messageListener = listener;
-  chrome.runtime.onMessage.addListener(listener);
+  onMessage(listener);
 }
 
 /**
@@ -468,7 +469,7 @@ export async function startMessageListener(): Promise<void> {
  */
 export function stopMessageListener(): void {
   if (messageListener) {
-    chrome.runtime.onMessage.removeListener(messageListener);
+    removeOnMessageListener(messageListener);
     messageListener = null;
   }
   // Revoke any Blob URLs that were never explicitly revoked.

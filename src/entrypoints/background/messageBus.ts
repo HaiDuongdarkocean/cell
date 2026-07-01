@@ -1,3 +1,8 @@
+import {
+  sendMessage,
+  onMessage,
+  removeOnMessageListener,
+} from '@/shared/lib/chrome-apis';
 import type {
   MessageRequest,
   MessageResponse,
@@ -50,9 +55,8 @@ export class MessageBus {
         }
       }, timeoutMs);
 
-      chrome.runtime
-        .sendMessage(request)
-        .then((response: MessageResponse<T>) => {
+      sendMessage<MessageResponse<T>>(request)
+        .then((response) => {
           if (!settled) {
             settled = true;
             clearTimeout(timer);
@@ -73,14 +77,14 @@ export class MessageBus {
    * Send a message without waiting for a response (fire-and-forget).
    */
   sendNoWait(request: MessageRequest): void {
-    void chrome.runtime.sendMessage(request);
+    void sendMessage(request);
   }
 
   /**
    * Broadcast a message to all listeners (background -> popup).
    */
   broadcast(payload: MessageRequest): void {
-    void chrome.runtime.sendMessage(payload);
+    void sendMessage(payload);
   }
 
   /**
@@ -136,7 +140,9 @@ export class MessageBus {
     };
 
     this.boundListener = listener;
-    chrome.runtime.onMessage.addListener(listener);
+    // The adapter's onMessage type omits the optional sendResponse param;
+    // cast to satisfy the narrower signature without changing runtime behavior.
+    onMessage(listener as Parameters<typeof onMessage>[0]);
   }
 
   /**
@@ -146,7 +152,7 @@ export class MessageBus {
     if (!this.boundListener) {
       return;
     }
-    chrome.runtime.onMessage.removeListener(this.boundListener);
+    removeOnMessageListener(this.boundListener);
     this.boundListener = null;
   }
 }

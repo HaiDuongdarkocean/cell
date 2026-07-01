@@ -1,3 +1,4 @@
+import { sendMessage, onMessage, getStorage, setStorage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { PageScanner } from './pageScanner';
 import { SubtitleOverlayController } from '@/features/subtitle/ui/subtitleOverlay';
 import { parseAndDetectFiles, assignImportRole } from '@/features/subtitle/logic/subtitleImport';
@@ -37,7 +38,7 @@ window.addEventListener('message', (event) => {
   if (event.source !== window) return;
   const data = event.data as { type?: string; url?: string } | null;
   if (data?.type !== '__DETECTED_SUBTITLE_FETCH' || !data.url) return;
-  chrome.runtime.sendMessage({
+  void sendMessage({
     type: MESSAGE_TYPES.DETECTED_SUBTITLE_URL,
     payload: { tabId: undefined, url: data.url },
   });
@@ -46,7 +47,7 @@ window.addEventListener('message', (event) => {
 // Scan on page load — gửi không tabId, background resolve từ sender
 const urls = scanner.scan();
 if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
-  chrome.runtime.sendMessage({
+  void sendMessage({
     type: 'PAGE_SCAN_RESULT',
     payload: {
       tabId: undefined,
@@ -58,7 +59,7 @@ if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
 
 // Start observing for dynamically loaded content
 scanner.startObserving((newUrls) => {
-  chrome.runtime.sendMessage({
+  void sendMessage({
     type: 'PAGE_SCAN_RESULT',
     payload: {
       tabId: undefined,
@@ -83,7 +84,7 @@ const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
 /** Load overlay style settings from chrome.storage.local, fallback to defaults. ADR-013 D3. */
 async function loadOverlayStyles(): Promise<{ target: OverlayStyleConfig; native: OverlayStyleConfig }> {
   try {
-    const result = await chrome.storage.local.get('settings');
+    const result = await getStorage('settings');
     const settings = result.settings as
       | { subtitleOverlayTargetStyle?: OverlayStyleConfig; subtitleOverlayNativeStyle?: OverlayStyleConfig }
       | undefined;
@@ -100,7 +101,7 @@ async function loadOverlayStyles(): Promise<{ target: OverlayStyleConfig; native
 /** Load keyboard shortcuts from chrome.storage.local, fallback to defaults. */
 async function loadShortcuts(): Promise<KeyboardShortcut[]> {
   try {
-    const result = await chrome.storage.local.get('settings');
+    const result = await getStorage('settings');
     const settings = result.settings as { keyboardShortcuts?: KeyboardShortcut[] } | undefined;
     if (settings?.keyboardShortcuts?.length && settings.keyboardShortcuts.length > 0) {
       return settings.keyboardShortcuts;
@@ -149,7 +150,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     }
 
     // ADR-013 D3: listen chrome.storage.onChanged → updateStyle realtime
-    chrome.storage.onChanged.addListener((changes, area) => {
+    onStorageChanged((changes, area) => {
       if (area !== 'local' || !controller) return;
       const newSettings = changes.settings?.newValue as
         | { subtitleOverlayTargetStyle?: OverlayStyleConfig; subtitleOverlayNativeStyle?: OverlayStyleConfig }
@@ -197,7 +198,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
 
   // Wire toggle button → open Side Panel (ADR-008 D1)
   toggleBtn.addEventListener('click', () => {
-    chrome.runtime.sendMessage({
+    void sendMessage({
       type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
       payload: { tabId: undefined }, // background resolves from sender.tab.id
     });
@@ -250,7 +251,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       case 'toggle-panel': {
         // ADR-008 D1: toggle-panel now opens the Side Panel instead of
         // show/hide inject-DOM panel.
-        chrome.runtime.sendMessage({
+        void sendMessage({
           type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
           payload: { tabId: undefined },
         });
@@ -266,7 +267,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     const now = performance.now();
     if (now - lastTimeUpdateSent < 250) return; // 4fps throttle
     lastTimeUpdateSent = now;
-    chrome.runtime.sendMessage({
+    void sendMessage({
       type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
       payload: {
         tabId: undefined,
@@ -278,20 +279,22 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
 
   // Wire play/pause → send VIDEO_PLAY_STATE to Side Panel
   video.addEventListener('play', () => {
-    chrome.runtime.sendMessage({
+    void sendMessage({
       type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
       payload: { tabId: undefined, isPlaying: true },
     });
   });
   video.addEventListener('pause', () => {
-    chrome.runtime.sendMessage({
+    void sendMessage({
       type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
       payload: { tabId: undefined, isPlaying: false },
     });
   });
 
   // Receive SEEK_TO from Side Panel (via background relay) → seek video
-  chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
+  // msg typed as any to match chrome.runtime.onMessage.addListener's signature
+  // (adapter tightens to unknown, but callers need property access)
+  onMessage((msg: any, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
     if (msg?.type === MESSAGE_TYPES.SEEK_TO) {
       const timeMs = (msg.payload as { timeMs: number })?.timeMs;
       if (timeMs !== undefined) {
@@ -377,7 +380,9 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   });
 
   // === Bilingual auto-load wiring (ADR-007 D1, spec F3/F4/F7) ===
-  chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
+  // msg typed as any to match chrome.runtime.onMessage.addListener's signature
+  // (adapter tightens to unknown, but callers need property access)
+  onMessage((msg: any, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
     if (msg?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
       const payload = msg.payload as AutoLoadSubtitlesPayload;
       console.log('[content-script] AUTO_LOAD_SUBTITLES received', {
@@ -401,7 +406,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
             bilingualCueCount: bilingualCues.length,
           });
           // Send cues to Side Panel
-          chrome.runtime.sendMessage({
+          void sendMessage({
             type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
             payload: { tabId: undefined, cues: bilingualCues },
           });
@@ -483,7 +488,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
   // Request a re-push of AUTO_LOAD_SUBTITLES in case background pushed before
   // this content-script was ready (race: SW restart, late injection). Background
   // reads from chrome.storage.session (ADR-007 D2).
-  void chrome.runtime.sendMessage({
+  void sendMessage({
     type: MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES,
     payload: { tabId: undefined }, // background resolves from sender.tab.id
   });
@@ -536,7 +541,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
       controller?.loadBilingualCues(targetCues, nativeCues);
       // ADR-015 T10: merge for Side Panel + keyboard shortcuts
       bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
-      chrome.runtime.sendMessage({
+      void sendMessage({
         type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
         payload: { tabId: undefined, cues: bilingualCues },
       });
@@ -566,7 +571,7 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
    */
   async function loadTargetNativeLangs(): Promise<{ targetLang: string; nativeLang: string }> {
     try {
-      const result = await chrome.storage.local.get('settings');
+      const result = await getStorage('settings');
       const settings = result.settings as
         | { subtitleOverlayTargetLanguage?: string; subtitleOverlayNativeLanguage?: string }
         | undefined;
@@ -640,13 +645,13 @@ function initSubtitleOverlay(video: HTMLVideoElement): void {
     try {
       const origin = new URL(window.location.href).hostname;
       const lang = sub.language;
-      const result = await chrome.storage.local.get('settings');
+      const result = await getStorage('settings');
       const settings = (result.settings ?? {}) as Partial<import('@/types/media').Settings>;
       const pref = { ...(settings.subtitlePreference ?? {}) };
       const sitePref = { ...(pref[origin] ?? {}) };
       sitePref[lang] = index;
       pref[origin] = sitePref;
-      await chrome.storage.local.set({ settings: { ...settings, subtitlePreference: pref } });
+      await setStorage({ settings: { ...settings, subtitlePreference: pref } });
     } catch {
       // ponytail: storage might not be available in test contexts — ignore
     }
@@ -731,7 +736,7 @@ function reportEpisodeChangedIfReplacement(): void {
     const payload: VideoEpisodeChangedPayload = {
       tabId: undefined, // background resolves from sender.tab.id
     };
-    chrome.runtime.sendMessage({
+    void sendMessage({
       type: MESSAGE_TYPES.VIDEO_EPISODE_CHANGED,
       payload,
     });

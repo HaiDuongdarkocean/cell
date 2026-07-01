@@ -6,6 +6,12 @@
  * ADR-011 v3: relay only for the active content tab (no flicker from background tabs).
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import {
+  openSidePanel,
+  sendMessage,
+  queryTabs,
+  sendTabMessage,
+} from '@/shared/lib/chrome-apis';
 import type { BackgroundContext } from '../context';
 import {
   updateBadgeForTab,
@@ -31,7 +37,7 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
       return { success: false, error: 'Missing tabId in OPEN_SIDE_PANEL' };
     }
     try {
-      await chrome.sidePanel.open({ tabId });
+      await openSidePanel({ tabId });
       return { success: true };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -50,7 +56,7 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
       return { success: true };
     }
     try {
-      await chrome.runtime.sendMessage({
+      await sendMessage({
         type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
         payload: {
           tabId: payload.tabId,
@@ -74,7 +80,7 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
       return { success: true };
     }
     try {
-      await chrome.runtime.sendMessage({
+      await sendMessage({
         type: MESSAGE_TYPES.VIDEO_PLAY_STATE,
         payload: { tabId: payload.tabId, isPlaying: payload.isPlaying },
       });
@@ -94,7 +100,7 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     }
     if (tabId === undefined) {
       try {
-        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const [activeTab] = await queryTabs({ active: true, currentWindow: true });
         if (!activeTab?.id) {
           return { success: false, error: 'No active tab found for SEEK_TO' };
         }
@@ -104,7 +110,7 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
       }
     }
     try {
-      await chrome.tabs.sendMessage(tabId, {
+      await sendTabMessage(tabId, {
         type: MESSAGE_TYPES.SEEK_TO,
         payload: { timeMs },
       });
@@ -121,7 +127,7 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     let tabId = (request.payload as { tabId?: number })?.tabId;
     if (tabId === undefined) {
       try {
-        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const [activeTab] = await queryTabs({ active: true, currentWindow: true });
         if (!activeTab?.id) {
           return { success: false, error: 'No active tab found for TOGGLE_PLAY' };
         }
@@ -131,7 +137,7 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
       }
     }
     try {
-      await chrome.tabs.sendMessage(tabId, {
+      await sendTabMessage(tabId, {
         type: MESSAGE_TYPES.TOGGLE_PLAY,
       });
       return { success: true };
@@ -152,7 +158,7 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     let tabId = payload?.tabId;
     if (tabId === undefined) {
       try {
-        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const [activeTab] = await queryTabs({ active: true, currentWindow: true });
         if (!activeTab?.id) {
           return { success: false, error: 'No active tab found for SHORTCUT_ACTION' };
         }
@@ -162,7 +168,7 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
       }
     }
     try {
-      await chrome.tabs.sendMessage(tabId, {
+      await sendTabMessage(tabId, {
         type: MESSAGE_TYPES.SHORTCUT_ACTION,
         payload: { action },
       });

@@ -1,5 +1,9 @@
 import { detectVideo } from '@/features/detection/logic/videoDetector';
 import { detectSubtitle } from '@/features/detection/logic/subtitleDetector';
+import {
+  addOnBeforeRequestListener,
+  type WebRequestListener,
+} from '@/shared/lib/chrome-apis';
 import type { DetectedVideo, DetectedSubtitle, NetworkRequest } from '@/types/media';
 
 /**
@@ -30,6 +34,9 @@ export class NetworkInterceptor {
     | ((details: chrome.webRequest.OnBeforeRequestDetails) => chrome.webRequest.BlockingResponse | undefined)
     | null = null;
 
+  /** Unsubscribe function returned by the webRequest adapter. */
+  private unsubscribe: (() => void) | null = null;
+
   /**
    * Start listening to `chrome.webRequest.onBeforeRequest` for all URLs.
    * Each captured request is forwarded to {@link handleRequest}.
@@ -50,7 +57,7 @@ export class NetworkInterceptor {
       urls: ['<all_urls>'],
     };
 
-    chrome.webRequest.onBeforeRequest.addListener(this.boundListener, filter);
+    this.unsubscribe = addOnBeforeRequestListener(this.boundListener as WebRequestListener, filter);
   }
 
   /**
@@ -62,7 +69,8 @@ export class NetworkInterceptor {
       return;
     }
 
-    chrome.webRequest.onBeforeRequest.removeListener(this.boundListener);
+    this.unsubscribe?.();
+    this.unsubscribe = null;
     this.boundListener = null;
   }
 

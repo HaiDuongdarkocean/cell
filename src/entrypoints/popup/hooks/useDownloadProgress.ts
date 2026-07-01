@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
+import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import type { DownloadItem } from '@/types/media';
 import type {
   MessageRequest,
@@ -107,7 +108,7 @@ export function useDownloadProgress(): {
       return false;
     };
 
-    chrome.runtime.onMessage.addListener(listener);
+    onMessage(listener as unknown as Parameters<typeof onMessage>[0]);
 
     // Query the active *content* tab (skips chrome-extension app-windows,
     // e.g. Edge's dictionary sidebar — see getActiveContentTab), then fetch
@@ -134,7 +135,7 @@ export function useDownloadProgress(): {
       };
 
       try {
-        const response = (await chrome.runtime.sendMessage(
+        const response = (await sendMessage(
           request,
         )) as MessageResponse<DownloadListResponse> | undefined;
         if (cancelled) return;
@@ -150,7 +151,7 @@ export function useDownloadProgress(): {
 
     return () => {
       cancelled = true;
-      chrome.runtime.onMessage.removeListener(listener);
+      removeOnMessageListener(listener as unknown as Parameters<typeof removeOnMessageListener>[0]);
     };
   }, [updateDownload, addDownload, setDownloads]);
 

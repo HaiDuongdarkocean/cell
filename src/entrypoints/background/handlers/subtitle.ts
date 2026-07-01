@@ -5,6 +5,10 @@
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import {
+  getSessionStorage,
+  sendMessage,
+} from '@/shared/lib/chrome-apis';
 import type { BackgroundContext } from '../context';
 import {
   pushAutoLoadSubtitles,
@@ -66,7 +70,7 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
     }
 
     try {
-      const data = await chrome.storage.session.get(STORAGE_KEYS.SESSION_MEDIA);
+      const data = await getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_MEDIA);
       const all = data[STORAGE_KEYS.SESSION_MEDIA] as
         | Record<string, { videos: DetectedVideo[]; subtitles: DetectedSubtitle[] }>
         | undefined;
@@ -132,7 +136,7 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
       return { success: true };
     }
     try {
-      await chrome.runtime.sendMessage({
+      await sendMessage({
         type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
         payload: { tabId: payload.tabId, cues: payload.cues },
       });

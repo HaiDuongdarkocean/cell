@@ -7,6 +7,7 @@ import type {
   Settings,
 } from '@/types/media';
 import { DEFAULT_SETTINGS, DEFAULT_KEYBOARD_SHORTCUTS, STORAGE_KEYS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
+import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 
 const STATUS_ADVANCEMENT: Record<DownloadStatus, number> = {
   queued: 0,
@@ -135,12 +136,12 @@ export const usePopupStore = create<PopupState>((set) => ({
   updateSettings: (partial) =>
     set((state) => {
       const settings: Settings = { ...state.settings, ...partial };
-      void chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: settings });
+      void setStorage({ [STORAGE_KEYS.SETTINGS]: settings });
       return { settings };
     }),
 
   setExtensionActive: (active) => {
-    void chrome.storage.local.set({ [STORAGE_KEYS.EXTENSION_STATUS]: active });
+    void setStorage({ [STORAGE_KEYS.EXTENSION_STATUS]: active });
     set({ extensionActive: active });
   },
 
@@ -152,7 +153,7 @@ export const usePopupStore = create<PopupState>((set) => ({
 
   loadPersistedSettings: async () => {
     try {
-      const data = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);
+      const data = await getStorage(STORAGE_KEYS.SETTINGS);
       const raw = data[STORAGE_KEYS.SETTINGS] as Settings | undefined;
       if (raw) {
         // Migration: defaultSubtitleLanguage (string) → selectedSubtitleLanguages (string[])
@@ -221,7 +222,7 @@ export const usePopupStore = create<PopupState>((set) => ({
 
   loadExtensionStatus: async () => {
     try {
-      const data = await chrome.storage.local.get(STORAGE_KEYS.EXTENSION_STATUS);
+      const data = await getStorage(STORAGE_KEYS.EXTENSION_STATUS);
       const status = data[STORAGE_KEYS.EXTENSION_STATUS];
       if (typeof status === 'boolean') {
         set({ extensionActive: status });

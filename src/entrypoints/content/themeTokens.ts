@@ -15,6 +15,8 @@
  * a new build pipeline.
  */
 
+import { getStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+
 // Token definitions — mirrors src/entrypoints/popup/styles/theme.css (keep in sync).
 const LIGHT_TOKENS = `
   --color-primary: #2563eb;
@@ -124,7 +126,7 @@ ${DARK_TOKENS}
     container.setAttribute('data-theme', theme);
   };
 
-  chrome.storage.local.get('settings').then((result) => {
+  getStorage('settings').then((result) => {
     const settings = result.settings as { theme?: 'light' | 'dark' } | undefined;
     applyTheme(settings?.theme ?? 'light');
   }).catch(() => {
@@ -139,10 +141,10 @@ ${DARK_TOKENS}
       applyTheme(newSettings.theme);
     }
   };
-  chrome.storage.onChanged.addListener(onChanged);
+  onStorageChanged(onChanged);
 
   // Cleanup
   return () => {
-    chrome.storage.onChanged.removeListener(onChanged);
+    removeOnStorageChangedListener(onChanged);
   };
 }

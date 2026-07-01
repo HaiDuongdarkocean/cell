@@ -11,6 +11,7 @@
  * fetch pipeline (which has its own resume logic).
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { sendMessage } from '@/shared/lib/chrome-apis';
 import type { OffscreenManager } from './offscreenManager';
 import type {
   FetchRequestPayload,
@@ -53,7 +54,7 @@ export async function offscreenFetch(
     } satisfies FetchRequestPayload,
   };
 
-  const response = (await chrome.runtime.sendMessage(
+  const response = (await sendMessage(
     request,
   )) as MessageResponse<FetchResponsePayload> | undefined;
 

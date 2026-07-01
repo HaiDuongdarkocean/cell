@@ -20,6 +20,12 @@ import { DownloadQueue } from '@/features/download/downloadQueue';
 import { Downloader } from '@/features/download/downloader';
 import { OffscreenManager } from './offscreenManager';
 import { cleanupOrphanedDownloads } from '@/shared/lib/storage/opfsStorage';
+import {
+  queryTabs,
+  onStartup,
+  onInstalled,
+  getExtensionId,
+} from '@/shared/lib/chrome-apis';
 import type { BackgroundContext } from './context';
 import {
   loadSettings,
@@ -160,7 +166,7 @@ export class BackgroundService implements BackgroundContext {
 
     // 8. Resolve the initial active content tab for side-panel relay filtering.
     try {
-      const tabs = await chrome.tabs.query({ active: true });
+      const tabs = await queryTabs({ active: true });
       const contentTab = tabs.find(
         (t) => !t.url || (!t.url.startsWith('chrome-extension://') && !t.url.startsWith('edge://')),
       );
@@ -287,16 +293,16 @@ export function resetBackgroundService(): void {
 //
 // Both handlers are idempotent: `initBackground()` no-ops if already running.
 // Guard against running in non-extension environments (e.g. Jest tests).
-if (typeof chrome !== 'undefined' && chrome.runtime?.id) {
+if (typeof chrome !== 'undefined' && getExtensionId()) {
   // Browser startup — rehydrate state from session storage immediately.
-  chrome.runtime.onStartup.addListener(() => {
+  onStartup(() => {
     initBackground().catch((err) => {
       console.error('[Video Downloader] onStartup init failed:', err);
     });
   });
 
   // Extension install/update — reset + fresh init (discard stale state on update).
-  chrome.runtime.onInstalled.addListener((details) => {
+  onInstalled((details) => {
     if (details.reason === 'update') {
       // On update: reset singleton so stale state from the previous version
       // is discarded, then re-init fresh from session storage.

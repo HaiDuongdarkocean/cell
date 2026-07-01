@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
 import { resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
+import { queryTabs } from '@/shared/lib/chrome-apis';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -78,7 +79,7 @@ export function useActiveTabTitle(): string | undefined {
     let cancelled = false;
     const getTitle = async (): Promise<void> => {
       try {
-        const [tab] = await chrome.tabs.query({
+        const [tab] = await queryTabs({
           active: true,
           currentWindow: true,
         });

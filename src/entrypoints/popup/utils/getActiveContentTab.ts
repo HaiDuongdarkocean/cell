@@ -23,6 +23,9 @@
  *
  * @returns the active content tab, or `undefined` if none is found.
  */
+
+import { queryTabs } from '@/shared/lib/chrome-apis';
+
 export async function getActiveContentTab(): Promise<
   chrome.tabs.Tab | undefined
 > {
@@ -35,9 +38,9 @@ export async function getActiveContentTab(): Promise<
   //   4. any tab at all
   // Then pick the first candidate whose URL is NOT a chrome-extension page.
   const [currentTabs, lastFocusedTabs, allTabs] = await Promise.all([
-    chrome.tabs.query({ active: true, currentWindow: true }),
-    chrome.tabs.query({ active: true, lastFocusedWindow: true }),
-    chrome.tabs.query({}),
+    queryTabs({ active: true, currentWindow: true }),
+    queryTabs({ active: true, lastFocusedWindow: true }),
+    queryTabs({}),
   ]);
 
   const candidates = [

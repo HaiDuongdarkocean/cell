@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
+import { sendMessage } from '@/shared/lib/chrome-apis';
 import type { MessageRequest } from '@/types/message';
 
 /**
@@ -17,7 +18,7 @@ export function useExtensionStatus(): {
 
   const toggle = useCallback(() => {
     const request: MessageRequest = { type: 'TOGGLE_EXTENSION' };
-    void chrome.runtime.sendMessage(request);
+    void sendMessage(request);
     setExtensionActive(!isActive);
   }, [isActive, setExtensionActive]);
 

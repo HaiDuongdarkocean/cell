@@ -4,6 +4,7 @@ import { CueList } from './components/CueList';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { handleShortcutKey } from '@/features/subtitle/ui/subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
+import { sendMessage, onMessage, removeOnMessageListener, getStorage, addOnTabActivatedListener, addOnTabUpdatedListener } from '@/shared/lib/chrome-apis';
 import type { BilingualCue, KeyboardShortcut } from '@/types/media';
 
 export function App() {
@@ -33,7 +34,7 @@ export function App() {
     store.setPlaying(false);
     if (tabId === undefined) return;
     try {
-      const res = await chrome.runtime.sendMessage({
+      const res = await sendMessage({
         type: 'REQUEST_SUBTITLE_CUES',
         payload: { tabId },
       });
@@ -92,7 +93,7 @@ export function App() {
         }
       }
     };
-    chrome.runtime.onMessage.addListener(listener);
+    onMessage(listener as unknown as Parameters<typeof onMessage>[0]);
 
     // Tab activation → re-fetch cues for the newly-active tab.
     // ponytail: only onActivated is tracked. A background tab navigating
@@ -103,7 +104,7 @@ export function App() {
       if (cancelled) return;
       void syncActiveTab(activeInfo.tabId);
     };
-    chrome.tabs.onActivated.addListener(onActivated);
+    const unsubTabActivated = addOnTabActivatedListener(onActivated);
 
     // Same-tab navigation on the active tab → background deletes
     // lastCuesByTab[tabId] (onTabUpdated loading, index.ts:534). Mirror that
@@ -121,7 +122,7 @@ export function App() {
       store.setCurrentTime(0, 0);
       store.setPlaying(false);
     };
-    chrome.tabs.onUpdated.addListener(onUpdated);
+    const unsubTabUpdated = addOnTabUpdatedListener(onUpdated);
 
     // Initial sync: resolve active content tab + fetch its cached cues.
     (async () => {
@@ -132,14 +133,14 @@ export function App() {
 
     return () => {
       cancelled = true;
-      chrome.runtime.onMessage.removeListener(listener);
-      chrome.tabs.onActivated.removeListener(onActivated);
-      chrome.tabs.onUpdated.removeListener(onUpdated);
+      removeOnMessageListener(listener as unknown as Parameters<typeof removeOnMessageListener>[0]);
+      unsubTabActivated();
+      unsubTabUpdated();
     };
   }, []);
 
   const handleSeek = (timeMs: number) => {
-    chrome.runtime.sendMessage({ type: 'SEEK_TO', payload: { timeMs } });
+    void sendMessage({ type: 'SEEK_TO', payload: { timeMs } });
   };
 
   // Spacebar → toggle play/pause (only when focus is not in an input/textarea)
@@ -149,7 +150,7 @@ export function App() {
   useEffect(() => {
     // Load user-configured shortcuts from storage (overrides defaults)
     let currentShortcuts = shortcuts;
-    chrome.storage.local.get('settings').then((result) => {
+    getStorage('settings').then((result) => {
       const stored = (result.settings as { keyboardShortcuts?: KeyboardShortcut[] } | undefined)?.keyboardShortcuts;
       if (stored && stored.length > 0) currentShortcuts = stored;
     }).catch(() => { /* fallback to defaults */ });
@@ -163,7 +164,7 @@ export function App() {
       // Spacebar → toggle play/pause (not remappable, always Space)
       if (e.code === 'Space') {
         e.preventDefault(); // prevent page scroll
-        chrome.runtime.sendMessage({ type: 'TOGGLE_PLAY' });
+        void sendMessage({ type: 'TOGGLE_PLAY' });
         return;
       }
 
@@ -175,11 +176,11 @@ export function App() {
         case 'prev-cue':
         case 'next-cue':
         case 'replay-cue':
-          chrome.runtime.sendMessage({ type: 'SHORTCUT_ACTION', payload: { action } });
+          void sendMessage({ type: 'SHORTCUT_ACTION', payload: { action } });
           break;
         case 'toggle-overlay':
           // Overlay lives in the content page — relay via background
-          chrome.runtime.sendMessage({ type: 'SHORTCUT_ACTION', payload: { action: 'toggle-overlay' } });
+          void sendMessage({ type: 'SHORTCUT_ACTION', payload: { action: 'toggle-overlay' } });
           break;
         case 'toggle-panel':
           // Already in the panel — no-op (or could focus the panel)

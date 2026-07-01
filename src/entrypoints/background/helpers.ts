@@ -4,6 +4,19 @@
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
+import {
+  getStorage,
+  setStorage,
+  getSessionStorage,
+  setSessionStorage,
+  queryTabs,
+  getTab,
+  sendTabMessage,
+  reloadTab,
+  setBadgeText,
+  setBadgeBackgroundColor,
+  setBadgeTextColor,
+} from '@/shared/lib/chrome-apis';
 import { tryAutoDownload } from '@/features/download/autoDownload';
 import { findSubtitlesForOverlay, type SubtitlePreference } from '@/features/subtitle/service/subtitleService';
 import { detectLanguage, labelToIsoCode } from '@/features/detection/logic/languageDetector';
@@ -72,9 +85,9 @@ export function buildDetails(
 
 /** Get the active tab id via `chrome.tabs.query`. */
 export async function getActiveTabId(_ctx: BackgroundContext): Promise<number | undefined> {
-  let tabs = await chrome.tabs.query({ active: true, currentWindow: false });
+  let tabs = await queryTabs({ active: true, currentWindow: false });
   if (tabs.length > 0) return tabs[0].id;
-  tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+  tabs = await queryTabs({ active: true, lastFocusedWindow: true });
   return tabs[0]?.id;
 }
 
@@ -83,11 +96,11 @@ export async function reloadActiveTab(_ctx: BackgroundContext): Promise<void> {
   const tabId = await getActiveTabId(_ctx);
   if (tabId === undefined) return;
   try {
-    const tab = await chrome.tabs.get(tabId);
+    const tab = await getTab(tabId);
     if (tab.url && /^(chrome|edge|about|chrome-extension):/i.test(tab.url)) {
       return;
     }
-    await chrome.tabs.reload(tabId);
+    await reloadTab(tabId);
   } catch {
     // Tab may have been closed or be restricted; ignore.
   }
@@ -105,9 +118,9 @@ export function updateBadgeForTab(ctx: BackgroundContext, tabId: number): void {
   const count = videos.length + subtitles.length;
   const text = count > 0 ? String(count) : '';
   try {
-    void chrome.action.setBadgeText({ text, tabId });
-    void chrome.action.setBadgeBackgroundColor({ color: '#2563eb', tabId });
-    void chrome.action.setBadgeTextColor({ color: '#ffffff', tabId });
+    void setBadgeText({ text, tabId });
+    void setBadgeBackgroundColor({ color: '#2563eb', tabId });
+    void setBadgeTextColor({ color: '#ffffff', tabId });
   } catch (err: unknown) {
     console.warn('[background] Failed to update badge:', err);
   }
@@ -126,7 +139,7 @@ export async function updateBadgeForActiveTab(ctx: BackgroundContext): Promise<v
 /** Clear the toolbar badge across all tabs. */
 export function clearBadge(_ctx: BackgroundContext): void {
   try {
-    void chrome.action.setBadgeText({ text: '' });
+    void setBadgeText({ text: '' });
   } catch (err: unknown) {
     console.warn('[background] Failed to clear badge:', err);
   }
@@ -136,7 +149,7 @@ export function clearBadge(_ctx: BackgroundContext): void {
 
 /** Enrich a detected video with the actual page URL and title from the tab. */
 export function enrichVideo(ctx: BackgroundContext, video: DetectedVideo): DetectedVideo {
-  void chrome.tabs.get(video.tabId).then((tab) => {
+  void getTab(video.tabId).then((tab) => {
     const enriched: DetectedVideo = {
       ...video,
       tabUrl: tab.url ?? video.tabUrl,
@@ -281,23 +294,23 @@ export function createDownloadItem(
 // --- settings helpers ---
 
 export async function loadSettings(_ctx?: BackgroundContext): Promise<Settings> {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);
+  const result = await getStorage<Record<string, unknown>>(STORAGE_KEYS.SETTINGS);
   const stored = result[STORAGE_KEYS.SETTINGS] as Partial<Settings> | undefined;
   return { ...DEFAULT_SETTINGS, ...stored };
 }
 
 export async function saveSettings(_ctx: BackgroundContext | undefined, settings: Settings): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: settings });
+  await setStorage({ [STORAGE_KEYS.SETTINGS]: settings });
 }
 
 export async function loadExtensionStatus(_ctx?: BackgroundContext): Promise<boolean> {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.EXTENSION_STATUS);
+  const result = await getStorage<Record<string, unknown>>(STORAGE_KEYS.EXTENSION_STATUS);
   const stored = result[STORAGE_KEYS.EXTENSION_STATUS] as boolean | undefined;
   return stored ?? true;
 }
 
 export async function saveExtensionStatus(_ctx: BackgroundContext | undefined, active: boolean): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEYS.EXTENSION_STATUS]: active });
+  await setStorage({ [STORAGE_KEYS.EXTENSION_STATUS]: active });
 }
 
 // --- session persistence helpers ---
@@ -313,12 +326,12 @@ export function saveSessionMedia(
   videos: DetectedVideo[],
   subtitles: DetectedSubtitle[],
 ): void {
-  void chrome.storage.session.get(STORAGE_KEYS.SESSION_MEDIA).then((data) => {
+  void getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_MEDIA).then((data) => {
     const all = (data[STORAGE_KEYS.SESSION_MEDIA] as
       | Record<string, { videos: DetectedVideo[]; subtitles: DetectedSubtitle[] }>
       | undefined) ?? {};
     all[String(tabId)] = { videos, subtitles };
-    void chrome.storage.session.set({
+    void setSessionStorage({
       [STORAGE_KEYS.SESSION_MEDIA]: all,
     });
   });
@@ -326,7 +339,7 @@ export function saveSessionMedia(
 
 export async function loadSessionMedia(ctx: BackgroundContext): Promise<void> {
   try {
-    const data = await chrome.storage.session.get(STORAGE_KEYS.SESSION_MEDIA);
+    const data = await getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_MEDIA);
     const all = data[STORAGE_KEYS.SESSION_MEDIA] as
       | Record<string, { videos: DetectedVideo[]; subtitles: DetectedSubtitle[] }>
       | undefined;
@@ -340,25 +353,25 @@ export async function loadSessionMedia(ctx: BackgroundContext): Promise<void> {
 }
 
 export function clearSessionMedia(_ctx: BackgroundContext, tabId: number): void {
-  void chrome.storage.session.get(STORAGE_KEYS.SESSION_MEDIA).then((data) => {
+  void getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_MEDIA).then((data) => {
     const all = data[STORAGE_KEYS.SESSION_MEDIA] as
       | Record<string, unknown>
       | undefined;
     if (!all) return;
     delete all[String(tabId)];
-    void chrome.storage.session.set({
+    void setSessionStorage({
       [STORAGE_KEYS.SESSION_MEDIA]: all,
     });
   });
 }
 
 export function saveSessionDownloads(ctx: BackgroundContext, tabId: number): void {
-  void chrome.storage.session.get(STORAGE_KEYS.SESSION_DOWNLOADS).then((data) => {
+  void getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_DOWNLOADS).then((data) => {
     const all = (data[STORAGE_KEYS.SESSION_DOWNLOADS] as
       | Record<string, DownloadItem[]>
       | undefined) ?? {};
     all[String(tabId)] = ctx.downloadQueue.getByTab(tabId);
-    void chrome.storage.session.set({
+    void setSessionStorage({
       [STORAGE_KEYS.SESSION_DOWNLOADS]: all,
     });
   });
@@ -366,7 +379,7 @@ export function saveSessionDownloads(ctx: BackgroundContext, tabId: number): voi
 
 export async function loadSessionDownloads(ctx: BackgroundContext): Promise<void> {
   try {
-    const data = await chrome.storage.session.get(STORAGE_KEYS.SESSION_DOWNLOADS);
+    const data = await getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_DOWNLOADS);
     const all = data[STORAGE_KEYS.SESSION_DOWNLOADS] as
       | Record<string, DownloadItem[]>
       | undefined;
@@ -390,13 +403,13 @@ export async function loadSessionDownloads(ctx: BackgroundContext): Promise<void
 }
 
 export function clearSessionDownloads(_ctx: BackgroundContext, tabId: number): void {
-  void chrome.storage.session.get(STORAGE_KEYS.SESSION_DOWNLOADS).then((data) => {
+  void getSessionStorage<Record<string, unknown>>(STORAGE_KEYS.SESSION_DOWNLOADS).then((data) => {
     const all = data[STORAGE_KEYS.SESSION_DOWNLOADS] as
       | Record<string, unknown>
       | undefined;
     if (!all) return;
     delete all[String(tabId)];
-    void chrome.storage.session.set({
+    void setSessionStorage({
       [STORAGE_KEYS.SESSION_DOWNLOADS]: all,
     });
   });
@@ -427,7 +440,7 @@ export async function pushAutoLoadSubtitles(
     let preferences: SubtitlePreference | undefined;
     let tabUrl: string | undefined;
     try {
-      const tab = await chrome.tabs.get(tabId);
+      const tab = await getTab(tabId);
       tabUrl = tab.url;
     } catch {
       // tab may be gone — skip preference, use first-match
@@ -475,7 +488,7 @@ export async function pushAutoLoadSubtitles(
       targetMatches: result.targetMatches,
       nativeMatches: result.nativeMatches,
     };
-    await chrome.tabs.sendMessage(tabId, {
+    await sendTabMessage(tabId, {
       type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
       payload,
     });
@@ -537,7 +550,7 @@ export async function resolveUnknownSubtitleLanguages(
 export async function maybeAutoDownload(ctx: BackgroundContext, tabId: number): Promise<void> {
   let tabUrl: string | undefined;
   try {
-    const tab = await chrome.tabs.get(tabId);
+    const tab = await getTab(tabId);
     tabUrl = tab.url;
   } catch {
     return; // tab may already be gone

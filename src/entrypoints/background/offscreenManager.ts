@@ -7,6 +7,13 @@
  */
 
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import {
+  createOffscreenDocument,
+  hasOffscreenDocument,
+  closeOffscreenDocument,
+  getOffscreenReasons,
+  sendMessage,
+} from '@/shared/lib/chrome-apis';
 
 /** URL of the offscreen document relative to the extension root. */
 const OFFSCREEN_DOCUMENT_URL = 'src/entrypoints/offscreen/ffmpeg.html';
@@ -44,21 +51,22 @@ export class OffscreenManager {
     // `hasDocument` may not exist in older Chrome versions; guard accordingly.
     const offscreen = chrome.offscreen;
     if (typeof offscreen?.hasDocument === 'function') {
-      const hasDocument = await offscreen.hasDocument();
+      const hasDocument = await hasOffscreenDocument();
       if (hasDocument) {
         this.documentExists = true;
         return;
       }
     }
 
-    await chrome.offscreen.createDocument({
-      url: OFFSCREEN_DOCUMENT_URL,
-      reasons: [
-        chrome.offscreen.Reason.WORKERS,
-        chrome.offscreen.Reason.BLOBS,
+    const reasons = getOffscreenReasons();
+    await createOffscreenDocument(
+      OFFSCREEN_DOCUMENT_URL,
+      [
+        reasons.WORKERS,
+        reasons.BLOBS,
       ],
-      justification: JUSTIFICATION,
-    });
+      JUSTIFICATION,
+    );
 
     this.documentExists = true;
   }
@@ -83,7 +91,7 @@ export class OffscreenManager {
 
     for (let attempt = 0; attempt < PING_MAX_RETRIES; attempt++) {
       try {
-        const response = await chrome.runtime.sendMessage({
+        const response = await sendMessage<{ success?: boolean }>({
           type: MESSAGE_TYPES.OFFSCREEN_PING,
         });
         if (response?.success) {
@@ -119,7 +127,7 @@ export class OffscreenManager {
       return;
     }
 
-    await chrome.offscreen.closeDocument();
+    await closeOffscreenDocument();
     this.documentExists = false;
     this.listenerReady = false;
   }

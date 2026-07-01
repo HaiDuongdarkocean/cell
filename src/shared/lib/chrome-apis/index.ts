@@ -9,3 +9,8 @@ export * from './storage';
 export * from './runtime';
 export * from './tabs';
 export * from './downloads';
+export * from './webRequest';
+export * from './offscreen';
+export * from './sidePanel';
+export * from './action';
+export * from './windows';

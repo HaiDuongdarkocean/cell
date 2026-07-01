@@ -6,7 +6,7 @@
  * Docs: https://developer.chrome.com/docs/extensions/reference/api/runtime
  */
 
-export async function sendMessage<T = unknown>(
+export function sendMessage<T = unknown>(
   message: unknown,
 ): Promise<T> {
   return chrome.runtime.sendMessage(message) as Promise<T>;
@@ -16,6 +16,7 @@ export function onMessage(
   callback: (
     message: unknown,
     sender: chrome.runtime.MessageSender,
+    sendResponse: (response?: unknown) => void,
   ) => boolean | Promise<unknown> | void,
 ): void {
   chrome.runtime.onMessage.addListener(callback);
@@ -27,4 +28,23 @@ export function getURL(path: string): string {
 
 export function getExtensionId(): string {
   return chrome.runtime.id;
+}
+
+/** Add a listener for chrome.runtime.onStartup (browser startup). */
+export function onStartup(callback: () => void): void {
+  chrome.runtime.onStartup.addListener(callback);
+}
+
+/** Add a listener for chrome.runtime.onInstalled (extension install/update). */
+export function onInstalled(
+  callback: (details: chrome.runtime.InstalledDetails) => void,
+): void {
+  chrome.runtime.onInstalled.addListener(callback);
+}
+
+/** Remove a message listener. */
+export function removeOnMessageListener(
+  callback: Parameters<typeof chrome.runtime.onMessage.addListener>[0],
+): void {
+  chrome.runtime.onMessage.removeListener(callback);
 }
