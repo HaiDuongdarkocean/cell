@@ -13,14 +13,54 @@
  */
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
-import type { Settings } from '@/entities/settings';
+import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
   schemaVersion: number;
+}
+
+/** Valid nav cluster button size presets (ADR-018 D2). */
+const BUTTON_SIZE_PRESETS: readonly NavClusterButtonSize[] = [40, 48, 56];
+
+/** Snap a numeric button size to the nearest valid preset (ADR-018 D2). */
+function snapButtonSize(size: unknown): NavClusterButtonSize {
+  if (typeof size !== 'number' || !Number.isFinite(size)) return 48;
+  return BUTTON_SIZE_PRESETS.reduce<NavClusterButtonSize>(
+    (best, preset) => (Math.abs(preset - size) <= Math.abs(best - size) ? preset : best),
+    48,
+  );
+}
+
+/** Clamp a numeric value to [min, max]. Returns fallback if not a finite number. */
+function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.max(min, Math.min(max, value));
+}
+
+/** Coerce a value to boolean, defaulting to fallback. */
+function coerceBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') return value;
+  return fallback;
+}
+
+/** Validate + clamp nav cluster fields after migration (ADR-018 D2 boundary validation). */
+function validateNavClusterFields(s: Record<string, unknown>): void {
+  const pos = s.navClusterPosition as { x?: number; y?: number } | undefined;
+  if (pos && typeof pos === 'object') {
+    s.navClusterPosition = {
+      x: clampNumber(pos.x, 0, 100, 0),
+      y: clampNumber(pos.y, 0, 100, 75),
+    };
+  }
+  s.navClusterBgOpacity = clampNumber(s.navClusterBgOpacity, 0, 1, 0.7);
+  s.navClusterButtonOpacity = clampNumber(s.navClusterButtonOpacity, 0, 1, 0.9);
+  s.navClusterButtonSize = snapButtonSize(s.navClusterButtonSize);
+  s.navClusterEnabled = coerceBoolean(s.navClusterEnabled, true);
+  s.navClusterCollapsed = coerceBoolean(s.navClusterCollapsed, false);
 }
 
 /**
@@ -34,6 +74,13 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   // v0 → v1: first versioned schema. Unversioned settings (no schemaVersion
   // field) are treated as v0. Migration merges with defaults + stamps v1.
   0: (s) => ({ ...DEFAULT_SETTINGS, ...s, schemaVersion: 1 }),
+  // v1 → v2: add nav cluster fields (ADR-018 D2). Merge DEFAULT_NAV_CLUSTER_SETTINGS
+  // (already part of DEFAULT_SETTINGS) + validate/clamp nav fields.
+  1: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 2 };
+    validateNavClusterFields(merged);
+    return merged;
+  },
 };
 
 /**
@@ -53,8 +100,11 @@ export async function loadSettings(): Promise<Settings> {
   const storedVersion = typeof raw.schemaVersion === 'number' ? raw.schemaVersion : 0;
   if (storedVersion >= CURRENT_SCHEMA_VERSION) {
     // Already current — merge with defaults for forward-compat (new fields added
-    // in future versions that the user hasn't saved yet).
-    return { ...DEFAULT_SETTINGS, ...raw } as Settings;
+    // in future versions that the user hasn't saved yet). Validate nav cluster
+    // fields in case storage was edited externally with invalid values.
+    const merged = { ...DEFAULT_SETTINGS, ...raw } as Record<string, unknown>;
+    validateNavClusterFields(merged);
+    return merged as Settings;
   }
 
   // Run migrations sequentially from stored version up to current.
