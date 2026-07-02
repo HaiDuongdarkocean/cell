@@ -35,6 +35,7 @@ docs/           # Tài liệu dự án
 │   └── idea-subtitle-manager-panel.md     # Subtitle Manager Panel (V2 ADR-014 — unified panel + import flow + active name + toast)
 │   └── intent-subtitle-drag-integrated.md # Subtitle drag integrated (xóa icon riêng, drag trực tiếp overlay background)
 │   └── intent-refactor-system-architecture.md # Refactor system architecture (G0 research 53 nguồn + 7 nguyên lý + architecture review 2026-07-01 findings + 8 findings scope)
+│   └── intent-subtitle-navigation-control.md # Subtitle navigation control cluster (floating prev/repeat/next + seek 5s/10s + drag handle ⋯ + collapse half-circle, touch+mouse)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
@@ -100,6 +101,7 @@ docs/           # Tài liệu dự án
 ├── reviews/                           # Architecture review + spec review + design-system audit reports
 │   ├── architecture-review-2026-07-01.md # Architecture review (chrome-extension-mv3-architecture-review skill, 17/42 failures, 3 Critical + 5 High)
 │   ├── design-system-inventory-2026-07-02.md # Design-system UI/UX audit (design-system-ui-ux skill Step 1, 12 inconsist, file:line cited)
+│   ├── design-system-drift-audit-2026-07-02.md # Post-fix drift audit (6 axes pass, browser-verified)
 │   └── review-subtitle-drag-integrated.md # Spec review: subtitle drag integrated (APPROVED post-update)
 │   └── review-refactor-system-architecture.md # Spec review: refactor system architecture (APPROVED, Opus 4.8, 1 CRITICAL + 2 HIGH fixed)
 ├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"

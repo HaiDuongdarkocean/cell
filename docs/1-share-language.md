@@ -39,6 +39,12 @@
 | "tab-scoping" | Tab-level message filtering | Payload carries tabId, popup filters by tabId |
 | "app-window leak" | Edge app-window interference | Edge built-in app-windows (dictionary sidebar) masquerade as active tab |
 | "whitelist" | URL-based auto-download trigger | Whitelist first pathname segment (origin + first path segment) |
+| "nav cluster" | Subtitle navigation control cluster | Floating 6-nút xếp dọc (⋯/⏪/◀/🔁/▶/⏩) inject vào video player, drag-to-move + collapse half-circle |
+| "thu gọn" | Collapse mode | Nav cluster collapse thành 1 icon half-circle dính mép video gần nhất, tap = expand lại |
+| "dính mép" | Edge-stuck | Half-circle icon stuck sát mép video (trái/phải) khi collapse mode |
+| "hold to loop" | Hold-to-loop repeat | Giữ nút repeat ≥500ms = loop câu hiện tại, release = stop (Pointer Events, touch+mouse cùng handler) |
+| "drag handle ⋯" | Nav cluster drag handle | Icon ⋯ trên cùng cluster: press+drag=move, double-click=reset default, drag-to-edge=collapse |
+| "cột phụ" | Secondary seek column | Cột ⏪⏩ nhô bên phải cột chính (⋯/◀/🔁/▶), ít dùng nhưng không thiếu, offset xuống 1 row |
 
 ## Architecture Terms
 
@@ -75,6 +81,8 @@
 | `docs/2-architechture-system.md` | "architecture map", "file structure doc" |
 | `docs/knowledge/principles.md` | "principle index", "nguyên lý đúc rút" |
 | `docs/adr/NNN-*.md` | "ADR", "architecture decision" |
+| Subtitle navigation control cluster | "nav cluster", "control cluster", "cluster 6 nút" |
+| Collapse mode (half-circle edge-stuck) | "thu gọn", "dính mép", "collapse" |
 
 ## Update protocol
 
