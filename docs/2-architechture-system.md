@@ -25,7 +25,8 @@ src/
 │   ├── whitelist/      #   Auto-download whitelist
 │   ├── transmux/       #   TS→fMP4 transmuxing (planning/execution/merging)
 │   ├── subtitle/       #   Subtitle overlay/sync/merge/bilingual (logic/ui/service)
-│   │   └── ui/contentScriptController.ts  # M20: subtitle UI orchestration (init → returns cleanup for SPA episode-switch re-init)
+│   │   └── ui/contentScriptController.ts  # M20: subtitle UI orchestration (init → returns cleanup for SPA episode-switch re-init) — ADR-018: wires NavClusterController
+│   │       └── ui/navCluster*.ts  # ADR-018: navClusterController + navClusterDom + navClusterActions + navClusterButton + navClusterKeyboard (6-button floating cluster)
 │   ├── download/       #   Download queue/selection
 │   └── settings/       #   Settings UI + validation logic
 ├── entities/           # Domain entities (types/models) — M19: @/types/ fully migrated here
@@ -286,6 +287,11 @@ tests/
 | `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | content-script.ts | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
 | `content/subtitlePanel.ts` | — | content-script.ts | Toggle button + seek helper: createToggleButton (toggles Side Panel via OPEN/CLOSE_SIDE_PANEL message), seekToCue — **ADR-008: panel UI moved to Side Panel** |
 | `content/subtitleShortcuts.ts` | types (KeyboardShortcut) | content-script.ts | Keyboard handler: handleShortcutKey (pure, guard input/textarea) — **implemented Task 3** |
+| `content/navClusterController.ts` | navClusterDom, navClusterActions, navClusterButton, navClusterKeyboard, types (NavClusterSettings, SrtCue) | contentScriptController.ts | **ADR-018**: NavClusterController class — floating 6-button subtitle navigation cluster. Lifecycle: init (idempotent) → updateCues (4↔6 nút CSS class toggle) → updateSettings (realtime) → setVisible → destroy. Wires drag (Pointer Events + setPointerCapture + clampPosition + edge collapse + dblclick reset), repeat hold (500ms timer + timeupdate loop + blur/visibilitychange cancel), keyboard (ArrowLeft/Right, R hold, </, >/), persist debounced 300ms, fullscreen re-parent |
+| `content/navClusterDom.ts` | types (NavClusterPosition) | navClusterController.ts | **ADR-018**: Pure DOM helpers — buildClusterDOM (6 buttons 2 columns, role=toolbar, data-testid), clampPosition (percent bounds), findNearestEdge (collapse mirror) |
+| `content/navClusterActions.ts` | subtitleSync (findCurrentLine), types (SrtCue) | navClusterController.ts | **ADR-018**: Pure action helpers — findActiveCueIndex (target-primary native-fallback), prevSentence/nextSentence (gap fallback), seekBy ([0,duration] clamp + NaN/Infinity live-stream) |
+| `content/navClusterButton.ts` | — | navClusterController.ts, navClusterDom.ts | **ADR-018**: Atom — createNavClusterButton DOM factory (click/hold handlers + aria-pressed toggle), setButtonPressed helper |
+| `content/navClusterKeyboard.ts` | subtitleShortcuts (isEditableTarget) | navClusterController.ts | **ADR-018**: Pure keyboard state machine — handleClusterKeydown/up (ArrowLeft/Right, R hold with e.repeat ignore + repeatHolding guard, </, >/), cancelRepeatHold (blur/visibilitychange) |
 
 ### Side Panel layer (ADR-008)
 
@@ -646,6 +652,18 @@ downloader.downloadM3u8Streaming(playlist)
 | `seekToCue` | `content/subtitlePanel.ts` | (HTMLVideoElement, { start: number }) → void | content-script.ts | Seek video to cue start (ms → seconds) — **implemented Task 5** |
 | `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | content-script.ts, **sidepanel/App.tsx** | Pure: map key → action, guard input/textarea focus — **implemented Task 3, reused ADR-009** |
 | `isEditableTarget` | `content/subtitleShortcuts.ts` | EventTarget \| null → boolean | subtitleShortcuts.ts | Check if target is input/textarea/select/contenteditable — **implemented Task 3** |
+| `NavClusterController` | `content/navClusterController.ts` | class (video, container, settings, cueSource, onPersist?) → controller | contentScriptController.ts | **ADR-018**: Floating 6-button subtitle navigation cluster. init/updateCues/updateSettings/setVisible/destroy. Wires drag + repeat hold + keyboard + persist + fullscreen |
+| `buildClusterDOM` | `content/navClusterDom.ts` | () → NavClusterDOM | navClusterController.ts | **ADR-018**: Build cluster DOM tree (6 buttons, 2 columns, role=toolbar, data-testid) |
+| `clampPosition` | `content/navClusterDom.ts` | (NavClusterPosition, DOMRect, DOMRect) → NavClusterPosition | navClusterController.ts | **ADR-018**: Clamp position percent so cluster stays within container bounds |
+| `findNearestEdge` | `content/navClusterDom.ts` | (NavClusterPosition, DOMRect) → 'left' \| 'right' | navClusterController.ts | **ADR-018**: Find nearest horizontal edge for collapse mirroring |
+| `findActiveCueIndex` | `content/navClusterActions.ts` | (SrtCue[], SrtCue[], number) → { cues, index } | navClusterController.ts | **ADR-018**: Find active cue (target-primary, native-fallback) via findCurrentLine |
+| `prevSentence` | `content/navClusterActions.ts` | (HTMLVideoElement, SrtCue[], SrtCue[]) → void | navClusterController.ts | **ADR-018**: Seek to previous subtitle sentence (gap fallback) |
+| `nextSentence` | `content/navClusterActions.ts` | (HTMLVideoElement, SrtCue[], SrtCue[]) → void | navClusterController.ts | **ADR-018**: Seek to next subtitle sentence (gap fallback) |
+| `seekBy` | `content/navClusterActions.ts` | (HTMLVideoElement, number) → void | navClusterController.ts | **ADR-018**: Seek by fixed seconds ([0,duration] clamp, NaN/Infinity live-stream) |
+| `createNavClusterButton` | `content/navClusterButton.ts` | (NavClusterButtonProps) → HTMLButtonElement | navClusterController.ts, navClusterDom.ts | **ADR-018**: Atom — DOM factory for cluster button (click/hold + aria-pressed) |
+| `handleClusterKeydown` | `content/navClusterKeyboard.ts` | (KeyboardEvent, NavClusterKeyboardState) → { action, state } | navClusterController.ts | **ADR-018**: Pure keydown state machine (ArrowLeft/Right, R hold, </, >/) |
+| `handleClusterKeyup` | `content/navClusterKeyboard.ts` | (KeyboardEvent, NavClusterKeyboardState) → { action, state } | navClusterController.ts | **ADR-018**: Pure keyup state machine (R keyup → repeat-stop) |
+| `cancelRepeatHold` | `content/navClusterKeyboard.ts` | (NavClusterKeyboardState) → { action, state } | navClusterController.ts | **ADR-018**: Cancel repeat hold (blur/visibilitychange — keyup may be lost) |
 | `handleTogglePlay` | `background/index.ts` | MessageRequest → Promise<MessageResponse> | messageBus | Relay TOGGLE_PLAY → active tab content-script (resolves active tab when tabId missing) — **ADR-009 D1** |
 | `handleShortcutAction` | `background/index.ts` | MessageRequest → Promise<MessageResponse> | messageBus | Relay SHORTCUT_ACTION (prev-cue/next-cue/replay-cue/toggle-overlay) → active tab content-script — **ADR-009 D4** |
 | `handleRequestSubtitleCues` | `background/index.ts` | MessageRequest → Promise<MessageResponse> | messageBus | Re-send cached cues per tab (race condition fix: panel opens after cues sent) — **ADR-008** |
