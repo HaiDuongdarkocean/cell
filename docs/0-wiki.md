@@ -88,7 +88,8 @@ docs/           # Tài liệu dự án
 │   ├── media-accumulation-navigation.md           # Media accumulation across navigation (clear on onTabUpdated)
 │   ├── spa-two-phase-render-wipe.md               # SPA two-phase render wipe (Angular foreign element wipe)
 │   ├── half-open-interval-cue-matching.md         # Half-open [start,end) for cue boundary matching
-│   └── instant-scroll-long-lists.md               # Instant scroll for long lists (motion sickness)
+│   ├── instant-scroll-long-lists.md               # Instant scroll for long lists (motion sickness)
+│   └── sidepanel-active-tab-race.md               # Sidepanel stuck on "No subtitles loaded" after tab switch (activeTabIdForPanel race)
 ├── test-reports/                      # MCP browser test reports — "does it work in real browser"
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md
 │   ├── 2026-06-27-subtitle-panel-docking-mcp.md
