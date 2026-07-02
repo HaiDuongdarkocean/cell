@@ -339,3 +339,19 @@ Time-based matching với boundary liền nhau (cue end = cue next start) phải
 - Seek-to-position (jump far → instant, not animate)
 - Panel open with pre-selected item (jump to item, not animate from top)
 - Any `scrollIntoView` trên list > 50 items where distance is unknown beforehand
+
+---
+
+## Set active identity synchronously before filtering events
+
+### Nguyên lý
+Khi một event được relay/filter dựa trên một mutable identity (active tab, focused window, selected item), identity đó phải được cập nhật **đồng bộ** với trigger đổi active scope. Nếu update bất đồng bộ, event từ scope mới sẽ đến trước khi filter identity kịp đổi → bị lọc nhầm sang scope cũ.
+
+### Cases đã gặp
+- [sidepanel-active-tab-race.md](sidepanel-active-tab-race.md) — `activeTabIdForPanel` cập nhật async trong `getTab()` → `SUBTITLE_CUES_LOADED` từ tab mới bị drop vì so sánh với tab cũ → sidepanel stuck "No subtitles loaded" đến khi đóng/mở lại
+
+### Apply cho
+- Chrome extension active tab / window focus tracking (sidepanel relay, popup state, badge)
+- Event bus filtering by `currentUser`, `selectedItem`, `activeRoom`
+- WebSocket/WebRTC message routing dựa trên "active session"
+- Any filter/render that reads `activeX` state khi vừa đổi active scope
