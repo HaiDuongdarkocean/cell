@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction } from '@/entities/media';
+import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction, NavClusterSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import {
   MIN_PARALLEL_WORKERS,
@@ -10,6 +10,7 @@ import {
 } from '@/shared/config/config';
 import { MultiSelect } from './MultiSelect';
 import { SubtitleStylePanel } from './SubtitleStylePanel';
+import { NavClusterSettingsPanel } from './NavClusterSettingsPanel';
 import { IconButton } from '@/shared/ui/IconButton';
 import styles from './SettingsDialog.module.css';
 
@@ -285,6 +286,18 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
     onChange({ ...settings, [key]: value });
   };
 
+  // ADR-018: partial update cho nav cluster settings (flat keys)
+  const updateNavCluster = (partial: Partial<NavClusterSettings>): void => {
+    const flat: Record<string, unknown> = {};
+    if (partial.enabled !== undefined) flat.navClusterEnabled = partial.enabled;
+    if (partial.position !== undefined) flat.navClusterPosition = partial.position;
+    if (partial.buttonSize !== undefined) flat.navClusterButtonSize = partial.buttonSize;
+    if (partial.bgOpacity !== undefined) flat.navClusterBgOpacity = partial.bgOpacity;
+    if (partial.buttonOpacity !== undefined) flat.navClusterButtonOpacity = partial.buttonOpacity;
+    if (partial.collapsed !== undefined) flat.navClusterCollapsed = partial.collapsed;
+    onChange({ ...settings, ...flat } as Settings);
+  };
+
   // ADR-013: partial update cho overlay style (target or native)
   const updateOverlayStyle = (role: 'target' | 'native', partial: Partial<OverlayStyleConfig>): void => {
     const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
@@ -496,6 +509,23 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
               </SettingField>
             );
           })}
+
+          {/* === ADR-018: Navigation cluster === */}
+          <div className={styles.field}>
+            <label className={styles.label}>Navigation cluster</label>
+            <p className={styles.hint}>Floating subtitle navigation buttons on video pages.</p>
+          </div>
+          <NavClusterSettingsPanel
+            settings={{
+              enabled: settings.navClusterEnabled,
+              position: settings.navClusterPosition,
+              buttonSize: settings.navClusterButtonSize,
+              bgOpacity: settings.navClusterBgOpacity,
+              buttonOpacity: settings.navClusterButtonOpacity,
+              collapsed: settings.navClusterCollapsed,
+            }}
+            onChange={updateNavCluster}
+          />
 
           {/* === Group: download === */}
 

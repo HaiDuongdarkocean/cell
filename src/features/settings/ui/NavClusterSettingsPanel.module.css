@@ -1,0 +1,88 @@
+/* === NavClusterSettingsPanel — navigation cluster controls (ADR-018) === */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.value {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.slider {
+  width: 100%;
+  accent-color: var(--primary);
+}
+
+.offToggle {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--danger);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast) ease;
+}
+
+.offToggle:hover {
+  background: var(--danger);
+  color: var(--text-inverse);
+}
+
+.confirmDialog {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.confirmText {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.confirmBtn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: opacity var(--transition-fast) ease;
+}
+
+.confirmBtn:hover {
+  opacity: 0.85;
+}
+
+.confirmYes {
+  background: var(--danger);
+  color: var(--text-inverse);
+}
+
+.confirmNo {
+  background: var(--surface-3);
+  color: var(--text-primary);
+}
