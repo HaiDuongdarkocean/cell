@@ -606,12 +606,31 @@ export function init(video: HTMLVideoElement): () => void {
     }
   }
 
+  // Re-send SUBTITLE_CUES_LOADED when tab becomes visible again.
+  // Bug: switching to another tab and back left sidepanel showing "No subtitles
+  // loaded" because the background's per-tab cue cache was cleared (SW restart or
+  // onTabUpdated loading), and the content-script only sends cues once on auto-load.
+  // On re-visibility, re-broadcast cached bilingualCues so the background can
+  // re-cache + relay to the sidepanel. ponytail: visibilitychange is the native
+  // signal for "tab became active again" — no polling, no chrome.tabs API needed
+  // (content-script cannot access chrome.tabs).
+  const onVisibilityChange = (): void => {
+    if (document.visibilityState !== 'visible') return;
+    if (bilingualCues.length === 0) return;
+    void sendMessage({
+      type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+      payload: { tabId: undefined, cues: bilingualCues },
+    });
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
   // Return cleanup so the caller can tear down before re-init on SPA episode
   // switch (Angular replaces <video> → old overlay UI removed by framework
   // re-render, but document/onMessage listeners would otherwise leak).
   // ponytail: document keydown + onMessage listeners leak — ceiling: memory
   // leak after many episode switches. Upgrade path: track + remove all listeners.
   return () => {
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     toggleBtn?.remove();
     managerPanel?.destroy();
     controller?.destroy();
