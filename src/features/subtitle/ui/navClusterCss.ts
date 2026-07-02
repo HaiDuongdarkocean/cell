@@ -21,6 +21,7 @@ export const NAV_CLUSTER_CSS = `
 .nav-cluster-main,
 .nav-cluster-secondary {
   display: flex;
+  flex-direction: column;
   gap: 2px;
   align-items: center;
 }
