@@ -16,13 +16,12 @@ import {
   createToggleButton,
   seekToCue,
   handleShortcutKey,
-  createSubtitleDropdown,
   createSubtitleManagerPanel,
   createDebouncedToast,
   formatSubtitleName,
 } from '@/features/subtitle';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
-import type { BilingualCue, KeyboardShortcut, SrtCue, DetectedSubtitle } from '@/entities/media';
+import type { BilingualCue, KeyboardShortcut, SrtCue } from '@/entities/media';
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
 import type { SubtitlePanelItem, SubtitleManagerPanel, ParsedFile } from '@/features/subtitle';
 
@@ -82,8 +81,10 @@ export function init(video: HTMLVideoElement): () => void {
 
     // ADR-015 UI v4: create manager panel after controller init so we can reuse
     // the import button created by the controller (single toolbar, no duplicate buttons).
+    // Legacy target/native dropdowns are removed; the manager panel handles selection
+    // for both auto-detected and imported subtitles via a unified onSelect handler.
     managerPanel = createSubtitleManagerPanel(container, controller.importButton!, {
-      onSelect: (role, index) => { void onPanelSelect(role, index); },
+      onSelect: (role, index) => { void onManagerSelect(role, index); },
     });
 
     // Wire file picker (import button) → processImportedFiles. Must run AFTER
@@ -121,10 +122,7 @@ export function init(video: HTMLVideoElement): () => void {
   let overlayVisible = false; // ponytail: match overlay initial display:none
   let bilingualCues: BilingualCue[] = [];
   let shortcuts: KeyboardShortcut[] = DEFAULT_KEYBOARD_SHORTCUTS;
-  // ADR-014 D3: dropdown instances for subtitle selector (target + native)
-  // ADR-015 T4: added update() for in-place refresh (bug #5 fix)
-  let targetDropdown: { icon: HTMLButtonElement; destroy: () => void; update: (s: DetectedSubtitle[], i: number) => void } | null = null;
-  let nativeDropdown: { icon: HTMLButtonElement; destroy: () => void; update: (s: DetectedSubtitle[], i: number) => void } | null = null;
+
   // Track active sub indices + all matches for re-fetch on dropdown select
   let activeTargetIndex = 0;
   let activeNativeIndex = 0;
@@ -137,6 +135,9 @@ export function init(video: HTMLVideoElement): () => void {
   let importedNativeItems: SubtitlePanelItem[] = [];
   let activeImportTargetIndex = 0;
   let activeImportNativeIndex = 0;
+  // ADR-015: auto-detected subtitle items per role (panel display + refresh after select)
+  let autoTargetItems: SubtitlePanelItem[] = [];
+  let autoNativeItems: SubtitlePanelItem[] = [];
   // ADR-015 T10: parsed files side-map (panel items don't carry cues)
   let importedParsedTarget: ParsedFile[] = [];
   let importedParsedNative: ParsedFile[] = [];
@@ -372,43 +373,11 @@ export function init(video: HTMLVideoElement): () => void {
           // V1 destroyed + re-created dropdown on every push → flicker + stale
           // index when matches reordered. V2 calls update() to refresh list
           // items in-place, preserving icon element identity + activeIndex.
-          const targetSubs = targetM.map((m) => ({ id: m.url, url: m.url, format: m.format as any, language: m.language, tabId: 0, detectedAt: 0 }));
-          const nativeSubs = nativeM.map((m) => ({ id: m.url, url: m.url, format: m.format as any, language: m.language, tabId: 0, detectedAt: 0 }));
-
-          // ADR-015: legacy dropdown only renders when 2+ matches (select-between UX).
-          // The new manager panel (below) renders when 1+ match so user always sees
-          // active subtitle state.
-          if (targetM.length >= 2) {
-            if (targetDropdown) {
-              targetDropdown.update(targetSubs, activeTargetIndex);
-            } else {
-              targetDropdown = createSubtitleDropdown(
-                'target',
-                container,
-                targetSubs,
-                targetM[0].language,
-                activeTargetIndex,
-                (index) => { void onSubtitleSelect('target', index); },
-              );
-            }
-          }
-          if (nativeM.length >= 2) {
-            if (nativeDropdown) {
-              nativeDropdown.update(nativeSubs, activeNativeIndex);
-            } else {
-              nativeDropdown = createSubtitleDropdown(
-                'native',
-                container,
-                nativeSubs,
-                nativeM[0].language,
-                activeNativeIndex,
-                (index) => { void onSubtitleSelect('native', index); },
-              );
-            }
-          }
+          // ADR-015: legacy target/native dropdowns removed. The unified manager
+          // panel handles selection for both auto-detected and imported subs.
           // ADR-015: update manager panel with auto-detected matches (1+ subs).
           // Build panel items from matches so panel shows even with 1 sub.
-          const autoTargetItems: SubtitlePanelItem[] = targetM.map((m, i) => ({
+          autoTargetItems = targetM.map((m, i) => ({
             id: `auto-target-${i}`,
             name: formatSubtitleName('auto', m.language, i),
             format: m.format,
@@ -416,7 +385,7 @@ export function init(video: HTMLVideoElement): () => void {
             role: 'target' as const,
             index: i,
           }));
-          const autoNativeItems: SubtitlePanelItem[] = nativeM.map((m, i) => ({
+          autoNativeItems = nativeM.map((m, i) => ({
             id: `auto-native-${i}`,
             name: formatSubtitleName('auto', m.language, i),
             format: m.format,
@@ -544,6 +513,13 @@ export function init(video: HTMLVideoElement): () => void {
     if (role === 'target') activeImportTargetIndex = index;
     else activeImportNativeIndex = index;
 
+    // Refresh manager panel active state immediately so the UI reflects the click.
+    if (role === 'target') {
+      managerPanel?.updateTarget(importedTargetItems, activeImportTargetIndex);
+    } else {
+      managerPanel?.updateNative(importedNativeItems, activeImportNativeIndex);
+    }
+
     // Retrieve cues from the parsed file (stored in a side map)
     const parsed = role === 'target'
       ? importedParsedTarget[index]
@@ -561,6 +537,21 @@ export function init(video: HTMLVideoElement): () => void {
   // ADR-015 T10: side maps moved to state block above (importedParsedTarget/Native)
 
   /**
+   * ADR-015: unified manager panel selection handler. Routes to the imported or
+   * auto-detected subtitle loader based on which item set is currently shown in
+   * the panel. Imported items override auto-detected items (see updateTarget/Native
+   * calls in onSubtitleMatches), so we check imported item count per role.
+   */
+  async function onManagerSelect(role: 'target' | 'native', index: number): Promise<void> {
+    const importedItems = role === 'target' ? importedTargetItems : importedNativeItems;
+    if (importedItems.length > 0) {
+      await onPanelSelect(role, index);
+    } else {
+      await onSubtitleSelect(role, index);
+    }
+  }
+
+  /**
    * ADR-014 D4: user selected a different subtitle via dropdown.
    * Re-fetch (cache hit instant) + loadBilingualCues (D1 merge keeps other side)
    * + save preference to chrome.storage.local (origin → lang → index).
@@ -571,6 +562,15 @@ export function init(video: HTMLVideoElement): () => void {
     const sub = matches[index];
     if (role === 'target') activeTargetIndex = index;
     else activeNativeIndex = index;
+
+    // Refresh manager panel active state immediately so the UI reflects the click
+    // before the async fetch. The fetch can fail (CORS/offline), but the selected
+    // index should still be visible as the user's choice.
+    if (role === 'target') {
+      managerPanel?.updateTarget(autoTargetItems, activeTargetIndex);
+    } else {
+      managerPanel?.updateNative(autoNativeItems, activeNativeIndex);
+    }
 
     try {
       const result = await fetchAndParseSubtitle(sub.url, formatFromUrl(sub.url), window.location.href);
