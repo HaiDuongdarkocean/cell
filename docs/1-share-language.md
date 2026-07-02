@@ -45,6 +45,11 @@
 | "hold to loop" | Hold-to-loop repeat | Giữ nút repeat ≥500ms = loop câu hiện tại, release = stop (Pointer Events, touch+mouse cùng handler) |
 | "drag handle ⋯" | Nav cluster drag handle | Icon ⋯ trên cùng cluster: press+drag=move, double-click=reset default, drag-to-edge=collapse |
 | "cột phụ" | Secondary seek column | Cột ⏪⏩ nhô bên phải cột chính (⋯/◀/🔁/▶), ít dùng nhưng không thiếu, offset xuống 1 row |
+| "no-sub adaptive" | No-subtitle adaptive layout | Khi chưa load subtitle → ⏪⏩ ẩn, ◀▶ fill slot thành time mode (5s/10s), cluster gọn 4 nút 1 cột |
+| "time mode" | ◀▶ time-seek mode | ◀▶ thành tua 5s/10s khi chưa load subtitle (thay sentence mode) |
+| "sentence mode" | ◀▶ sentence-seek mode | ◀▶ tua theo cue (mặc định khi đã load subtitle) |
+| "hold-to-loop" | Repeat hold-to-loop | Giữ nút 🔁 ≥500ms = loop; có subtitle → cue start→end, không subtitle → last-3s time window, release = stop. A-B tap rejected G1 |
+| "collapse mode" | Cluster collapse | Cluster thu gọn thành half-circle 32px edge-stuck (mirror theo mép), tap = expand |
 
 ## Architecture Terms
 
