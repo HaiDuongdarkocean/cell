@@ -105,6 +105,7 @@ docs/           # Tài liệu dự án
 │   ├── design-system-drift-audit-2026-07-02.md # Post-fix drift audit (6 axes pass, browser-verified)
 │   └── review-subtitle-drag-integrated.md # Spec review: subtitle drag integrated (APPROVED post-update)
 │   └── review-refactor-system-architecture.md # Spec review: refactor system architecture (APPROVED, Opus 4.8, 1 CRITICAL + 2 HIGH fixed)
+│   └── review-subtitle-navigation-control.md # Spec review: subtitle navigation control cluster (BLOCKED, Kimi 2.7, 1 CRITICAL + 5 HIGH + 3 MEDIUM risks)
 ├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"
 │   ├── chrome-devtools-mcp.md
 │   ├── e2e-debugging.md
