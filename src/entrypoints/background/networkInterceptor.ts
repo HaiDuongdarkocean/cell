@@ -130,12 +130,6 @@ export class NetworkInterceptor {
       if (existing === undefined) {
         this.videos.set(video.id, video);
         detectedNewMedia = true;
-        if (typeof self !== 'undefined') {
-          const arr = (self as unknown as { __addLogs?: string[] }).__addLogs ?? [];
-          arr.push(`add tab=${details.tabId} size=${this.videos.size} ts=${Date.now()}`);
-          if (arr.length > 20) arr.shift();
-          (self as unknown as { __addLogs?: string[] }).__addLogs = arr;
-        }
       }
     }
 
@@ -216,12 +210,6 @@ export class NetworkInterceptor {
    * Clear all detected media for a tab.
    */
   clearTab(tabId: number): void {
-    if (typeof self !== 'undefined') {
-      const arr = (self as unknown as { __clearLogs?: string[] }).__clearLogs ?? [];
-      arr.push(`clear tab=${tabId} videosBefore=${this.videos.size} ts=${Date.now()}`);
-      if (arr.length > 20) arr.shift();
-      (self as unknown as { __clearLogs?: string[] }).__clearLogs = arr;
-    }
     for (const [id, video] of this.videos) {
       if (video.tabId === tabId) {
         this.videos.delete(id);

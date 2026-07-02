@@ -110,7 +110,7 @@
 .select:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-alpha);
+  box-shadow: 0 0 0 2px var(--color-primary-subtle);
 }
 
 .radioRow {
@@ -177,10 +177,10 @@
 
 .confirmBtn {
   padding: 4px 10px;
-  border: 1px solid var(--color-danger);
+  border: 1px solid var(--color-error);
   border-radius: var(--radius-sm);
-  background: var(--color-danger);
-  color: white;
+  background: var(--color-error);
+  color: var(--color-text-inverse);
   font-size: var(--font-size-xs);
   cursor: pointer;
 }

@@ -19,6 +19,27 @@ export interface KeyboardShortcut {
   readonly key: string; // single lowercase letter, e.g. 'a'
 }
 
+// === Nav Cluster Types (ADR-018) ===
+
+/** Cluster position as percent of video container (0-100). Default {x:0, y:75}. */
+export interface NavClusterPosition {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Nav cluster button size preset (WCAG 2.5.5 touch target). */
+export type NavClusterButtonSize = 40 | 48 | 56;
+
+/** Settings slice for nav cluster (flat keys in Settings, ADR-018 D2). */
+export interface NavClusterSettings {
+  readonly enabled: boolean;
+  readonly position: NavClusterPosition;
+  readonly buttonSize: NavClusterButtonSize;
+  readonly bgOpacity: number; // 0-1
+  readonly buttonOpacity: number; // 0-1
+  readonly collapsed: boolean;
+}
+
 // === Settings Types ===
 
 /** Conversion behavior for M3U8 downloads. */
@@ -118,4 +139,17 @@ export interface Settings {
   readonly subtitlePreference?: Record<string, Record<string, number>>;
   /** Keyboard shortcuts for subtitle floating panel. Default: a/d/s/w/t. */
   readonly keyboardShortcuts: KeyboardShortcut[];
+  // === Nav Cluster (ADR-018) — flat keys, schema v2 ===
+  /** Nav cluster master toggle. Default: true. */
+  readonly navClusterEnabled: boolean;
+  /** Nav cluster position as percent of video container. Default: { x: 0, y: 75 }. */
+  readonly navClusterPosition: NavClusterPosition;
+  /** Nav cluster button size preset. Default: 48 (medium). */
+  readonly navClusterButtonSize: NavClusterButtonSize;
+  /** Nav cluster background opacity (0-1). Default: 0.7. */
+  readonly navClusterBgOpacity: number;
+  /** Nav cluster button opacity (0-1). Default: 0.9. */
+  readonly navClusterButtonOpacity: number;
+  /** Nav cluster collapsed state (half-circle edge-stuck). Default: false. */
+  readonly navClusterCollapsed: boolean;
 }

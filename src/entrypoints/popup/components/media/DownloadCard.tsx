@@ -1,5 +1,6 @@
 import type { DownloadItem } from '@/entities/media';
 import { formatFileSize, formatDuration, phaseToLabel } from '@/entrypoints/popup/utils/format';
+import { IconButton } from '@/shared/ui/IconButton';
 import styles from './DownloadCard.module.css';
 
 interface DownloadCardProps {
@@ -58,66 +59,68 @@ export function DownloadCard({
   if (isActive) {
     if (isPaused) {
       actions.push(
-        <button
+        <IconButton
           key="resume"
-          className={styles.actionBtn}
+          size="xs"
           onClick={() => onResume(download.id)}
           aria-label="Resume"
           data-testid="resume-btn"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M8 5v14l11-7z" /></svg>
-        </button>,
+        </IconButton>,
       );
     } else {
       actions.push(
-        <button
+        <IconButton
           key="pause"
-          className={styles.actionBtn}
+          size="xs"
           onClick={() => onPause(download.id)}
           aria-label="Pause"
           data-testid="pause-btn"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M6 4h4v16H6zM14 4h4v16h-4z" /></svg>
-        </button>,
+        </IconButton>,
       );
     }
   }
   if (isError) {
     actions.push(
-      <button
+      <IconButton
         key="retry"
-        className={styles.actionBtn}
+        size="xs"
         onClick={() => onRetry(download.id)}
         aria-label="Retry"
         data-testid="retry-btn"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
-      </button>,
+      </IconButton>,
     );
   }
   if (!isDone) {
     actions.push(
-      <button
+      <IconButton
         key="cancel"
-        className={`${styles.actionBtn} ${styles.danger}`}
+        size="xs"
+        variant="danger"
         onClick={() => onCancel(download.id)}
         aria-label="Cancel"
         data-testid="cancel-btn"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M18 6L6 18M6 6l12 12" /></svg>
-      </button>,
+      </IconButton>,
     );
   } else {
     actions.push(
-      <button
+      <IconButton
         key="remove"
-        className={`${styles.actionBtn} ${styles.danger}`}
+        size="xs"
+        variant="danger"
         onClick={() => onRemove(download.id)}
         aria-label="Remove"
         data-testid="remove-btn"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-      </button>,
+      </IconButton>,
     );
   }
 

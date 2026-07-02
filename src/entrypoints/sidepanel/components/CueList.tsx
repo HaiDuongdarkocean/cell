@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { BilingualCue } from '@/entities/media';
+import styles from './CueList.module.css';
 
 interface CueListProps {
   cues: BilingualCue[];
@@ -47,7 +48,7 @@ export function CueList({ cues, currentTimeMs, onSeek }: CueListProps) {
   }, [currentIndex, currentTimeMs]);
 
   return (
-    <div ref={listRef} style={{ flex: 1, overflowY: 'auto' }}>
+    <div ref={listRef} className={styles.list}>
       {cues.map((cue, i) => {
         const isCurrent = i === currentIndex;
         return (
@@ -56,32 +57,22 @@ export function CueList({ cues, currentTimeMs, onSeek }: CueListProps) {
             ref={(el) => { itemRefs.current[i] = el; }}
             data-testid="cue-item"
             data-cue-index={cue.index}
-            style={{
-              padding: '4px 8px',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              userSelect: 'text',
-              backgroundColor: isCurrent ? 'rgba(0, 150, 255, 0.3)' : 'transparent',
-            }}
+            data-current={isCurrent ? 'true' : 'false'}
+            className={`${styles.cue} ${isCurrent ? styles.cueCurrent : ''}`}
           >
             <span
               data-testid="cue-timestamp"
               data-cue-index={cue.index}
               onClick={() => onSeek(cue.start)}
-              style={{
-                display: 'block',
-                fontSize: '11px',
-                color: 'rgba(255, 255, 255, 0.5)',
-                marginBottom: '2px',
-                cursor: 'pointer',
-              }}
+              className={styles.timestamp}
             >
               {formatTimestamp(cue.start)}
             </span>
-            <div data-testid="cue-target-text" style={{ fontSize: '14px', color: '#fff', lineHeight: '1.3' }}>
+            <div data-testid="cue-target-text" className={styles.targetText}>
               {cue.targetText}
             </div>
             {cue.nativeText && (
-              <div data-testid="cue-native-text" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.3', marginTop: '2px' }}>
+              <div data-testid="cue-native-text" className={styles.nativeText}>
                 {cue.nativeText}
               </div>
             )}

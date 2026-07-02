@@ -8,7 +8,7 @@
  * runs against realistic fixtures.
  */
 
-import { STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
+import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type {
   DetectedSubtitle,
   DetectedVideo,
@@ -81,23 +81,9 @@ afterAll(() => {
 // --- Fixtures ---
 
 const BASE_SETTINGS: Settings = {
-  concurrentDownloads: 3,
-  defaultQuality: 'highest',
+  ...DEFAULT_SETTINGS,
   defaultSubtitleLanguage: 'en',
-  selectedSubtitleLanguages: ['all'],
-  theme: 'light',
-  convertToMp4: 'always',
-  parallelConversion: 'auto',
-  manualWorkerCount: 4,
-  parallelFallback: 'sequential',
-  segmentConcurrency: 6,
-  filenameSource: 'title-fallback',
-  preferredVideoFormat: 'm3u8',
   autoSelectEnabled: true,
-  subtitleOverlayTargetLanguage: '',
-  subtitleOverlayNativeLanguage: '',
-  subtitleOverlayAutoLoad: false,
-  keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
 };
 
 function makeVideo(id: string, tabId = 1): DetectedVideo {

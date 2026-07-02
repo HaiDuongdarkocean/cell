@@ -178,7 +178,7 @@ export function createSubtitleManagerPanel(
   const roleColor = (role: 'target' | 'native'): string =>
     role === 'target' ? 'var(--color-primary)' : 'var(--color-warning)';
   const roleBg = (role: 'target' | 'native'): string =>
-    role === 'target' ? 'var(--color-primary-subtle)' : 'rgba(245, 158, 11, 0.1)';
+    role === 'target' ? 'var(--color-primary-subtle)' : 'var(--color-warning-subtle, rgba(245, 158, 11, 0.1))';
 
   const renderSection = (role: 'target' | 'native'): void => {
     const section = role === 'target' ? targetSection : nativeSection;
@@ -223,7 +223,7 @@ export function createSubtitleManagerPanel(
       `;
       if (isActive) {
         const dot = document.createElement('span');
-        dot.style.cssText = 'width: 4px; height: 4px; border-radius: 50%; background: white;';
+        dot.style.cssText = 'width: 4px; height: 4px; border-radius: 50%; background: var(--color-text-inverse, white);';
         radio.appendChild(dot);
       }
 
@@ -239,7 +239,7 @@ export function createSubtitleManagerPanel(
       formatBadge.textContent = item.format.toUpperCase();
       formatBadge.style.cssText = `
         padding: 1px 5px;
-        border-radius: 3px;
+        border-radius: var(--radius-sm, 6px);
         background: var(--color-surface-hover);
         font-weight: 600;
         font-size: 9px;
@@ -295,9 +295,12 @@ export function createSubtitleManagerPanel(
   const open = (): void => {
     panel.style.display = 'block';
     icon.setAttribute('aria-expanded', 'true');
-    icon.style.background = 'var(--color-primary-subtle)';
-    icon.style.borderColor = 'var(--color-primary)';
-    icon.style.color = 'var(--color-primary)';
+    // Design-system sync (2026-07-02): active state uses the same neutral hover
+    // scale as panel-toggle + subtitle-import-button so all three toolbar buttons
+    // share one visual language. Previously primary color made it look mismatched.
+    icon.style.background = 'var(--color-surface-hover)';
+    icon.style.borderColor = 'var(--color-border-focus)';
+    icon.style.color = 'var(--color-text)';
     renderSection('target');
     renderSection('native');
     bindOutsideClick();
@@ -317,6 +320,33 @@ export function createSubtitleManagerPanel(
     e.stopPropagation();
     if (panel.style.display === 'none') open();
     else close();
+  });
+  // Hover feedback when panel is closed (open state has its own primary styling).
+  // Design-system sync (2026-07-02): border --color-border-focus aligns with
+  // subtitle-import-button + panel-toggle.
+  icon.addEventListener('mouseenter', () => {
+    if (panel.style.display === 'none') {
+      icon.style.background = 'var(--color-surface-hover)';
+      icon.style.borderColor = 'var(--color-border-focus)';
+      icon.style.color = 'var(--color-text)';
+    }
+  });
+  icon.addEventListener('mouseleave', () => {
+    if (panel.style.display === 'none') {
+      icon.style.background = 'var(--color-surface)';
+      icon.style.borderColor = 'var(--color-border)';
+      icon.style.color = 'var(--color-text)';
+    }
+  });
+  // Focus — align with subtitle-import-button + panel-toggle
+  icon.addEventListener('focus', () => {
+    if (panel.style.display === 'none') {
+      icon.style.outline = '2px solid var(--color-border-focus)';
+      icon.style.outlineOffset = '2px';
+    }
+  });
+  icon.addEventListener('blur', () => {
+    icon.style.outline = 'none';
   });
 
   closeBtn.addEventListener('click', (e) => {

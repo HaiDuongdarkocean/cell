@@ -26,27 +26,6 @@
   }
 }
 
-.clearBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  padding: 0;
-  flex-shrink: 0;
-  transition: background 150ms ease, color 150ms ease;
-}
-
-.clearBtn:hover {
-  background: var(--color-border);
-  color: var(--color-text);
-}
-
 .count {
   flex: 1;
   font-size: var(--font-size-sm);
@@ -61,7 +40,7 @@
   padding: 6px 14px;
   border: none;
   background: var(--color-primary);
-  color: white;
+  color: var(--color-text-inverse);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;

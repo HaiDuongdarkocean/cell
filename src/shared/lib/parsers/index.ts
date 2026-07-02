@@ -11,4 +11,4 @@ export { parseSrt } from './srtParser';
 export { parseVtt } from './vttParser';
 export { convertAssToSrt } from './assToSrt';
 export { convertVttToSrt, stripVttInlineTags } from './vttToSrt';
-export { normalizeSrt } from './srtNormalizer';
+export { normalizeSrt, stripSubtitleTags } from './srtNormalizer';

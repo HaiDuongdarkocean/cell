@@ -1,4 +1,5 @@
 import type { VttCue, VttSubtitle } from '@/entities/media';
+import { stripSubtitleTags } from './srtNormalizer';
 
 /**
  * Parse a WebVTT (.vtt) subtitle string into a structured VttSubtitle.
@@ -112,7 +113,7 @@ export function parseVtt(content: string): VttSubtitle {
       id,
       start,
       end,
-      text: textLines.join('\n'),
+      text: stripSubtitleTags(textLines.join('\n')),
     });
   }
 

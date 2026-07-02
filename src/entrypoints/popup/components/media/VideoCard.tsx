@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DetectedVideo, VideoQuality } from '@/entities/media';
+import { IconButton } from '@/shared/ui/IconButton';
 import styles from './VideoCard.module.css';
 
 interface VideoCardProps {
@@ -162,9 +163,8 @@ export function VideoCard({
 
         {/* Actions — expand chevron + download button */}
         <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.expandBtn}
+          <IconButton
+            size="sm"
             onClick={handleExpandClick}
             aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
             aria-expanded={urlExpanded}
@@ -176,7 +176,7 @@ export function VideoCard({
             >
               <path d="M6 9l6 6 6-6" />
             </svg>
-          </button>
+          </IconButton>
           <div className={styles.action} onClick={handleActionClick}>
             {downloading ? (
               <span className={styles.downloadingIndicator} aria-label="Downloading">

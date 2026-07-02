@@ -67,16 +67,27 @@ function toMs(
 }
 
 /**
- * Strip all inline tags from cue text, leaving only plain text.
+ * Strip all inline tags from cue text, leaving only plain text (newlines preserved).
  *
  * Removes:
  * - VTT/ASS override tags: `{\an8}`, `{\b1}`, …
  * - All HTML/VTT tags: `<i>`, `</i>`, `<b>`, `<c.yellow>`, `<v Bob>`, …
+ *
+ * Does NOT collapse blank lines or trim — callers that need collapsed
+ * plain text (e.g. `normalizeSrt`) should post-process. Used by the
+ * display path (`parseSrt`/`parseVtt`) so cue text rendered via
+ * `textContent` / React text children shows no literal `<i>` markup.
+ */
+export function stripSubtitleTags(text: string): string {
+  return text.replace(/\{[^}]*\}/g, '').replace(/<[^>]*>/g, '');
+}
+
+/**
+ * Strip inline tags AND collapse to non-empty trimmed lines (SRT block form).
+ * Wraps {@link stripSubtitleTags} + line collapse for `normalizeSrt` output.
  */
 function stripInlineTags(text: string): string {
-  return text
-    .replace(/\{[^}]*\}/g, '')
-    .replace(/<[^>]*>/g, '')
+  return stripSubtitleTags(text)
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0)

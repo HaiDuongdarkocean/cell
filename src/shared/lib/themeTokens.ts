@@ -37,6 +37,8 @@ const LIGHT_TOKENS = `
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #2563eb;
+  --color-error-subtle: rgba(239, 68, 68, 0.08);
+  --color-warning-subtle: rgba(245, 158, 11, 0.1);
   --color-scrollbar-thumb: #cbd5e1;
   --color-scrollbar-thumb-hover: #94a3b8;
   --color-scrollbar-track: transparent;
@@ -85,6 +87,8 @@ const DARK_TOKENS = `
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #60a5fa;
+  --color-error-subtle: rgba(239, 68, 68, 0.15);
+  --color-warning-subtle: rgba(245, 158, 11, 0.15);
   --color-scrollbar-thumb: #475569;
   --color-scrollbar-thumb-hover: #64748b;
   --color-scrollbar-track: transparent;
@@ -107,7 +111,7 @@ export function injectThemeTokens(container: HTMLElement): () => void {
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-[data-theme-Host="light"], [data-theme="light"] {
+[data-theme="light"], :root {
 ${LIGHT_TOKENS}
 }
 [data-theme="dark"] {

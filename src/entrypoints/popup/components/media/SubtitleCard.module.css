@@ -74,7 +74,7 @@
 }
 
 .subtitleIcon {
-  background: rgba(245, 158, 11, 0.1);
+  background: var(--color-warning-subtle);
   color: var(--color-warning);
 }
 
@@ -124,31 +124,6 @@
   align-items: center;
   gap: var(--spacing-xs);
   flex-shrink: 0;
-}
-
-.expandBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: transparent;
-  color: var(--color-text-muted);
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--transition);
-  padding: 0;
-}
-
-.expandBtn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-}
-
-.expandBtn:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 1px;
 }
 
 .expandChevron {

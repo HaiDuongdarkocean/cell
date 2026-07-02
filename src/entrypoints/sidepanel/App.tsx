@@ -4,9 +4,10 @@ import { CueList } from './components/CueList';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { handleShortcutKey } from '@/features/subtitle';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
-import { sendMessage, onMessage, removeOnMessageListener, addOnTabActivatedListener, addOnTabUpdatedListener } from '@/shared/lib/chrome-apis';
+import { sendMessage, onMessage, removeOnMessageListener, addOnTabActivatedListener, addOnTabUpdatedListener, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import type { BilingualCue, KeyboardShortcut } from '@/entities/media';
+import styles from './App.module.css';
 
 export function App() {
   const cues = useSidePanelStore((s) => s.cues);
@@ -202,18 +203,42 @@ export function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [shortcuts]);
 
+  // Apply theme to sidepanel document. theme.css uses [data-theme="dark"]
+  // selector (not prefers-color-scheme), so the attribute must be set
+  // explicitly. Sidepanel is long-lived (unlike popup which reloads on
+  // open), so also listen to chrome.storage.onChanged to sync realtime
+  // when the user toggles theme in the popup.
+  useEffect(() => {
+    const applyTheme = (theme: 'light' | 'dark'): void => {
+      document.documentElement.dataset.theme = theme;
+    };
+    loadSettings()
+      .then((settings) => applyTheme(settings.theme ?? 'light'))
+      .catch(() => applyTheme('light'));
+    const onChanged = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      area: string,
+    ): void => {
+      if (area !== 'local') return;
+      const newSettings = changes.settings?.newValue as { theme?: 'light' | 'dark' } | undefined;
+      if (newSettings?.theme) applyTheme(newSettings.theme);
+    };
+    onStorageChanged(onChanged);
+    return () => removeOnStorageChangedListener(onChanged);
+  }, []);
+
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif', height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#141414', color: '#fff' }}>
-      <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '14px', fontWeight: 600 }}>Subtitles</span>
+    <div className={styles.app}>
+      <div className={styles.header}>
+        <span className={styles.title}>Subtitles</span>
         {cues.length > 0 && (
-          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>
+          <span className={styles.meta}>
             {cues.length} cues {isPlaying ? '▶' : '⏸'}
           </span>
         )}
       </div>
       {cues.length === 0 ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>
+        <div className={styles.empty}>
           No subtitles loaded
         </div>
       ) : (

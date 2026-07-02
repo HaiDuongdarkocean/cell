@@ -121,6 +121,13 @@ export function init(video: HTMLVideoElement): () => void {
   let toggleBtn: HTMLButtonElement | null = null;
   let overlayVisible = false; // ponytail: match overlay initial display:none
   let bilingualCues: BilingualCue[] = [];
+  // Track side panel open state for toggle (☰ button).
+  // ponytail ceiling: best-effort — if user closes panel via browser UI (X),
+  // this stays true and next click sends CLOSE (no-op, panel already closed),
+  // then the following click sends OPEN. Upgrade: sidepanel notify background
+  // on close via chrome.runtime.connect port disconnect → background tracks
+  // state → content-script queries before toggle.
+  let sidePanelOpen = false;
   let shortcuts: KeyboardShortcut[] = DEFAULT_KEYBOARD_SHORTCUTS;
 
   // Track active sub indices + all matches for re-fetch on dropdown select
@@ -138,6 +145,35 @@ export function init(video: HTMLVideoElement): () => void {
   // ADR-015: auto-detected subtitle items per role (panel display + refresh after select)
   let autoTargetItems: SubtitlePanelItem[] = [];
   let autoNativeItems: SubtitlePanelItem[] = [];
+  // Track which source is currently active per role (so merged panel highlights
+  // the correct item when both auto + imported exist).
+  let activeTargetSource: 'auto' | 'imported' = 'auto';
+  let activeNativeSource: 'auto' | 'imported' = 'auto';
+
+  /**
+   * Build merged panel items for a role: auto items first, then imported items.
+   * Returns the merged list + the active index in the merged space.
+   * ADR-015 T10 fix: previously import REPLACED auto items in the panel (bug:
+   * auto-loaded subtitles vanished after import). Now both coexist — user can
+   * switch between auto-detected and imported subtitles freely.
+   */
+  const mergedPanelItems = (role: 'target' | 'native'): { items: SubtitlePanelItem[]; activeIndex: number } => {
+    const autoItems = role === 'target' ? autoTargetItems : autoNativeItems;
+    const importedItems = role === 'target' ? importedTargetItems : importedNativeItems;
+    const autoActive = role === 'target' ? activeTargetIndex : activeNativeIndex;
+    const importActive = role === 'target' ? activeImportTargetIndex : activeImportNativeIndex;
+    const source = role === 'target' ? activeTargetSource : activeNativeSource;
+    if (source === 'imported' && importedItems.length > 0) {
+      return { items: [...autoItems, ...importedItems], activeIndex: autoItems.length + importActive };
+    }
+    return { items: [...autoItems, ...importedItems], activeIndex: autoActive };
+  };
+
+  const refreshPanel = (role: 'target' | 'native'): void => {
+    const { items, activeIndex } = mergedPanelItems(role);
+    if (role === 'target') managerPanel?.updateTarget(items, activeIndex);
+    else managerPanel?.updateNative(items, activeIndex);
+  };
   // ADR-015 T10: parsed files side-map (panel items don't carry cues)
   let importedParsedTarget: ParsedFile[] = [];
   let importedParsedNative: ParsedFile[] = [];
@@ -150,12 +186,22 @@ export function init(video: HTMLVideoElement): () => void {
   // Create toggle button (overlay) — click → open Side Panel
   toggleBtn = createToggleButton(container);
 
-  // Wire toggle button → open Side Panel (ADR-008 D1)
+  // Wire toggle button → toggle Side Panel open/close (ADR-008 D1).
+  // sidePanelOpen tracks best-effort state (see ceiling note above).
   toggleBtn.addEventListener('click', () => {
-    void sendMessage({
-      type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
-      payload: { tabId: undefined }, // background resolves from sender.tab.id
-    });
+    if (sidePanelOpen) {
+      sidePanelOpen = false;
+      void sendMessage({
+        type: MESSAGE_TYPES.CLOSE_SIDE_PANEL,
+        payload: { tabId: undefined }, // background resolves from sender.tab.id
+      });
+    } else {
+      sidePanelOpen = true;
+      void sendMessage({
+        type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
+        payload: { tabId: undefined }, // background resolves from sender.tab.id
+      });
+    }
   });
 
   // Manager panel is created asynchronously inside loadOverlayStyles().then()
@@ -393,14 +439,10 @@ export function init(video: HTMLVideoElement): () => void {
             role: 'native' as const,
             index: i,
           }));
-          // Prefer imported items if exist (import flow updates separately),
-          // else fall back to auto-detected items.
-          if (importedTargetItems.length === 0) {
-            managerPanel?.updateTarget(autoTargetItems, activeTargetIndex);
-          }
-          if (importedNativeItems.length === 0) {
-            managerPanel?.updateNative(autoNativeItems, activeNativeIndex);
-          }
+          // ADR-015 T10 fix: merge auto + imported items in panel (both visible).
+          // Previously: imported items replaced auto items → auto subtitles vanished.
+          refreshPanel('target');
+          refreshPanel('native');
         },
       });
     }
@@ -453,8 +495,12 @@ export function init(video: HTMLVideoElement): () => void {
     importedParsedNative = assignment.native;
     activeImportTargetIndex = 0;
     activeImportNativeIndex = 0;
-    managerPanel?.updateTarget(importedTargetItems, activeImportTargetIndex);
-    managerPanel?.updateNative(importedNativeItems, activeImportNativeIndex);
+    // ADR-015 T10 fix: merge auto + imported items in panel (both visible).
+    // Mark active source as imported for roles that got imported files.
+    if (assignment.target.length > 0) activeTargetSource = 'imported';
+    if (assignment.native.length > 0) activeNativeSource = 'imported';
+    refreshPanel('target');
+    refreshPanel('native');
 
     // Load cues: first target + first native (D1 merge keeps other side)
     const targetCues = assignment.target[0]?.cues ?? [];
@@ -510,15 +556,11 @@ export function init(video: HTMLVideoElement): () => void {
   async function onPanelSelect(role: 'target' | 'native', index: number): Promise<void> {
     const items = role === 'target' ? importedTargetItems : importedNativeItems;
     if (index >= items.length) return;
-    if (role === 'target') activeImportTargetIndex = index;
-    else activeImportNativeIndex = index;
+    if (role === 'target') { activeImportTargetIndex = index; activeTargetSource = 'imported'; }
+    else { activeImportNativeIndex = index; activeNativeSource = 'imported'; }
 
     // Refresh manager panel active state immediately so the UI reflects the click.
-    if (role === 'target') {
-      managerPanel?.updateTarget(importedTargetItems, activeImportTargetIndex);
-    } else {
-      managerPanel?.updateNative(importedNativeItems, activeImportNativeIndex);
-    }
+    refreshPanel(role);
 
     // Retrieve cues from the parsed file (stored in a side map)
     const parsed = role === 'target'
@@ -537,17 +579,19 @@ export function init(video: HTMLVideoElement): () => void {
   // ADR-015 T10: side maps moved to state block above (importedParsedTarget/Native)
 
   /**
-   * ADR-015: unified manager panel selection handler. Routes to the imported or
-   * auto-detected subtitle loader based on which item set is currently shown in
-   * the panel. Imported items override auto-detected items (see updateTarget/Native
-   * calls in onSubtitleMatches), so we check imported item count per role.
+   * ADR-015: unified manager panel selection handler. The panel shows a merged
+   * list (auto items first, then imported items). Route based on which item the
+   * user clicked: auto items → onSubtitleSelect (re-fetch by auto index),
+   * imported items → onPanelSelect (load parsed cues by imported index).
    */
   async function onManagerSelect(role: 'target' | 'native', index: number): Promise<void> {
-    const importedItems = role === 'target' ? importedTargetItems : importedNativeItems;
-    if (importedItems.length > 0) {
-      await onPanelSelect(role, index);
+    const { items } = mergedPanelItems(role);
+    const item = items[index];
+    if (!item) return;
+    if (item.source === 'imported') {
+      await onPanelSelect(role, item.index);
     } else {
-      await onSubtitleSelect(role, index);
+      await onSubtitleSelect(role, item.index);
     }
   }
 
@@ -560,17 +604,13 @@ export function init(video: HTMLVideoElement): () => void {
     const matches = role === 'target' ? targetMatches : nativeMatches;
     if (index >= matches.length) return;
     const sub = matches[index];
-    if (role === 'target') activeTargetIndex = index;
-    else activeNativeIndex = index;
+    if (role === 'target') { activeTargetIndex = index; activeTargetSource = 'auto'; }
+    else { activeNativeIndex = index; activeNativeSource = 'auto'; }
 
     // Refresh manager panel active state immediately so the UI reflects the click
     // before the async fetch. The fetch can fail (CORS/offline), but the selected
     // index should still be visible as the user's choice.
-    if (role === 'target') {
-      managerPanel?.updateTarget(autoTargetItems, activeTargetIndex);
-    } else {
-      managerPanel?.updateNative(autoNativeItems, activeNativeIndex);
-    }
+    refreshPanel(role);
 
     try {
       const result = await fetchAndParseSubtitle(sub.url, formatFromUrl(sub.url), window.location.href);

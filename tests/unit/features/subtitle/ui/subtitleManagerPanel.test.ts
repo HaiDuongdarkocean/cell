@@ -139,4 +139,56 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     expect(container.contains(toolbar)).toBe(false);
     expect(container.contains(panel)).toBe(false);
   });
+
+  // Regression: import subtitle must not wipe auto-detected subtitles from panel.
+  // The controller now merges auto + imported items into one list and passes it
+  // to updateTarget/updateNative. The panel must render BOTH and distinguish them
+  // via the "Imported" badge on imported items.
+  it('renders merged auto + imported items together (import does not wipe auto)', () => {
+    const { panel, updateTarget } = createSubtitleManagerPanel(container, createImportButton());
+    const autoItems = [
+      makeItem('target', 0, { id: 'auto-target-0', name: 'English #1', source: 'auto' }),
+      makeItem('target', 1, { id: 'auto-target-1', name: 'English #2', source: 'auto' }),
+    ];
+    const importedItems = [
+      makeItem('target', 0, { id: 'imported-target-0', name: 'manual-test', source: 'imported', index: 0 }),
+    ];
+    // Controller merges: [...auto, ...imported], activeIndex = auto.length + importActive
+    updateTarget([...autoItems, ...importedItems], 2);
+
+    const rows = panel.querySelectorAll('[data-testid^="manager-item-target-"]');
+    expect(rows.length).toBe(3); // 2 auto + 1 imported, NOT 1 (imported only)
+
+    // Auto items render without "Imported" badge
+    const item0 = rows[0] as HTMLElement;
+    expect(item0.textContent).toContain('English #1');
+    expect(item0.textContent).not.toContain('Imported');
+
+    // Imported item renders WITH "Imported" badge
+    const item2 = rows[2] as HTMLElement;
+    expect(item2.textContent).toContain('manual-test');
+    expect(item2.textContent).toContain('Imported');
+
+    // Active index points to the imported item (index 2)
+    expect(item2.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('clicking an auto item in a merged list calls onSelect with the correct index', () => {
+    const { panel, updateTarget, icon } = createSubtitleManagerPanel(container, createImportButton(), {
+      onSelect: (r: 'target' | 'native', i: number) => { selected = { role: r, index: i }; },
+    });
+    icon.click();
+    const autoItems = [
+      makeItem('target', 0, { id: 'auto-target-0', name: 'English #1', source: 'auto', index: 0 }),
+    ];
+    const importedItems = [
+      makeItem('target', 0, { id: 'imported-target-0', name: 'manual-test', source: 'imported', index: 0 }),
+    ];
+    updateTarget([...autoItems, ...importedItems], 1);
+
+    // Click the auto item (panel index 0) — controller routes by item.source
+    const autoRow = panel.querySelector('[data-testid="manager-item-target-0"]') as HTMLElement;
+    autoRow.click();
+    expect(selected).toEqual({ role: 'target', index: 0 });
+  });
 });

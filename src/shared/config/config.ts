@@ -1,4 +1,4 @@
-import type { Settings, FilenameSource, KeyboardShortcut } from '@/entities/media';
+import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
 
 // === Default Configuration ===
@@ -167,6 +167,26 @@ export const DEFAULT_SETTINGS: Settings = {
   subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
   subtitlePreference: {},
   keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
+  // === Nav Cluster (ADR-018) — schema v2 ===
+  navClusterEnabled: true,
+  navClusterPosition: { x: 0, y: 75 },
+  navClusterButtonSize: 48,
+  navClusterBgOpacity: 0.7,
+  navClusterButtonOpacity: 0.9,
+  navClusterCollapsed: false,
+};
+
+/**
+ * Default nav cluster settings slice (ADR-018 D2). Used for schema v1→v2
+ * migration merge + as fallback when storage load fails.
+ */
+export const DEFAULT_NAV_CLUSTER_SETTINGS: NavClusterSettings = {
+  enabled: true,
+  position: { x: 0, y: 75 },
+  buttonSize: 48,
+  bgOpacity: 0.7,
+  buttonOpacity: 0.9,
+  collapsed: false,
 };
 
 // === Storage Keys ===

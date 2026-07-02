@@ -1,25 +1,14 @@
 import { findSubtitlesForOverlay, findPreferredMatch, type SubtitlePreference } from '@/features/subtitle/service/subtitleService';
-import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
+import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { DetectedSubtitle, Settings } from '@/types/media';
 
 describe('findSubtitlesForOverlay', () => {
   const baseSettings: Settings = {
-    concurrentDownloads: 3,
-    defaultQuality: 'highest',
-    selectedSubtitleLanguages: ['all'],
-    theme: 'light',
-    convertToMp4: 'always',
-    parallelConversion: 'auto',
-    manualWorkerCount: 4,
-    parallelFallback: 'sequential',
-    segmentConcurrency: 6,
-    filenameSource: 'title-fallback',
-    preferredVideoFormat: 'm3u8',
+    ...DEFAULT_SETTINGS,
     autoSelectEnabled: true,
     subtitleOverlayTargetLanguage: 'en',
     subtitleOverlayNativeLanguage: 'vi',
     subtitleOverlayAutoLoad: true,
-    keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
   };
 
   const makeSubtitle = (language: string, url = `https://example.com/sub.${language}.srt`): DetectedSubtitle => ({

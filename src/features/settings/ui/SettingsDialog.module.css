@@ -58,31 +58,7 @@
   margin: 0;
 }
 
-/* === Close button — icon-btn-sm 28px === */
-.iconBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--color-text-muted);
-  transition: all var(--transition);
-}
-
-.iconBtn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-}
-
-.iconBtnSm {
-  width: 28px;
-  height: 28px;
-}
-
+/* === Icon sizing (svg children of IconButton atom) === */
 .icon {
   width: 18px;
   height: 18px;
@@ -112,7 +88,7 @@
   padding: 6px 8px;
   font-size: var(--font-size-sm);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
 }
@@ -265,16 +241,6 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   line-height: 1.5;
-}
-
-.asActive {
-  color: var(--color-primary);
-  background: var(--color-primary-subtle);
-}
-
-.asActive:hover {
-  color: var(--color-primary);
-  background: var(--color-primary-subtle);
 }
 
 /* === ADR-013: Subtitle style tab (Target/Native) === */

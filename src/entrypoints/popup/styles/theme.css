@@ -27,6 +27,10 @@
   --color-error: #ef4444;
   --color-info: #2563eb;
 
+  /* Subtle backgrounds — measured inconsist #3/#9 (5+ raw rgba usages each) */
+  --color-error-subtle: rgba(239, 68, 68, 0.08);
+  --color-warning-subtle: rgba(245, 158, 11, 0.1);
+
   --color-scrollbar-thumb: #cbd5e1;
   --color-scrollbar-thumb-hover: #94a3b8;
   --color-scrollbar-track: transparent;
@@ -95,6 +99,10 @@
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #60a5fa;
+
+  /* Subtle backgrounds — dark mode (measured inconsist #3/#9) */
+  --color-error-subtle: rgba(239, 68, 68, 0.15);
+  --color-warning-subtle: rgba(245, 158, 11, 0.15);
 
   --color-scrollbar-thumb: #475569;
   --color-scrollbar-thumb-hover: #64748b;

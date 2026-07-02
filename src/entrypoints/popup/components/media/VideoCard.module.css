@@ -130,7 +130,7 @@
   gap: var(--spacing-xs);
   padding: 3px var(--spacing-sm);
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   background: transparent;
@@ -232,31 +232,6 @@
   align-items: center;
   gap: var(--spacing-xs);
   flex-shrink: 0;
-}
-
-.expandBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: transparent;
-  color: var(--color-text-muted);
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--transition);
-  padding: 0;
-}
-
-.expandBtn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-}
-
-.expandBtn:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 1px;
 }
 
 .expandChevron {

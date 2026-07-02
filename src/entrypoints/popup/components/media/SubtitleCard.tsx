@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { DetectedSubtitle } from '@/entities/media';
+import { IconButton } from '@/shared/ui/IconButton';
 import styles from './SubtitleCard.module.css';
 
 interface SubtitleCardProps {
@@ -90,9 +91,8 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
 
         {/* Actions — expand chevron + download button */}
         <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.expandBtn}
+          <IconButton
+            size="sm"
             onClick={handleExpandClick}
             aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
             aria-expanded={urlExpanded}
@@ -104,7 +104,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
             >
               <path d="M6 9l6 6 6-6" />
             </svg>
-          </button>
+          </IconButton>
           <div className={styles.action} onClick={handleActionClick}>
             {downloading ? (
               <span className={styles.downloadingIndicator} aria-label="Downloading">

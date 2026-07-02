@@ -25,4 +25,7 @@ export type {
   ParallelFallbackMode,
   FilenameSource,
   Settings,
+  NavClusterPosition,
+  NavClusterButtonSize,
+  NavClusterSettings,
 } from '@/entities/settings/types';

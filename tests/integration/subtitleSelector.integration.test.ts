@@ -1,7 +1,7 @@
 import { findSubtitlesForOverlay, findPreferredMatch, type SubtitlePreference } from '@/features/subtitle/service/subtitleService';
 import { createSubtitleDropdown } from '@/features/subtitle/ui/subtitleSelector';
 import { SubtitleOverlayController } from '@/features/subtitle/ui/subtitleOverlay';
-import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
+import { DEFAULT_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { OverlayConfig } from '@/types/subtitle';
 import type { DetectedSubtitle, Settings } from '@/types/media';
 
@@ -24,25 +24,11 @@ const defaultConfig: OverlayConfig = {
  */
 describe('ADR-014 subtitle selector V2 integration', () => {
   const baseSettings: Settings = {
-    concurrentDownloads: 3,
-    defaultQuality: 'highest',
-    selectedSubtitleLanguages: ['all'],
-    theme: 'light',
-    convertToMp4: 'always',
-    parallelConversion: 'auto',
-    manualWorkerCount: 4,
-    parallelFallback: 'sequential',
-    segmentConcurrency: 6,
-    filenameSource: 'title-fallback',
-    preferredVideoFormat: 'm3u8',
+    ...DEFAULT_SETTINGS,
     autoSelectEnabled: true,
     subtitleOverlayTargetLanguage: 'en',
     subtitleOverlayNativeLanguage: 'vi',
     subtitleOverlayAutoLoad: true,
-    subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
-    subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
-    subtitlePreference: {},
-    keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
   };
 
   const makeSub = (language: string, url: string, format: 'srt' | 'vtt' = 'srt'): DetectedSubtitle => ({

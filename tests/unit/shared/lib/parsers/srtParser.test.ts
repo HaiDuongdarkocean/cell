@@ -129,4 +129,30 @@ Timed cue`;
     // 2*3600000 + 3*60000 + 4*1000 + 789 = 7384789
     expect(result.cues[0].end).toBe(7384789);
   });
+
+  test('strips inline tags (<i>, <b>, <u>, ASS override) from cue text', () => {
+    const content = `1
+00:00:01,000 --> 00:00:05,000
+<i>Italic line</i>
+<b>Bold</b> {\\an8}plain`;
+
+    const result = parseSrt(content);
+
+    expect(result.cues).toHaveLength(1);
+    expect(result.cues[0].text).toBe('Italic line\nBold plain');
+    expect(result.cues[0].text).not.toMatch(/[<>]/);
+    expect(result.cues[0].text).not.toMatch(/\{[^}]*\}/);
+  });
+
+  test('strips <i> tags while preserving multi-line structure for bilingual split', () => {
+    const content = `1
+00:00:01,000 --> 00:00:05,000
+<i>Target line</i>
+Native line`;
+
+    const result = parseSrt(content);
+
+    expect(result.cues[0].text).toBe('Target line\nNative line');
+    expect(result.cues[0].text.split('\n')).toHaveLength(2);
+  });
 });

@@ -1,0 +1,56 @@
+/* === IconButton atom — design-system-ui-ux Step 3 (Rule of Three: 11 call sites) ===
+   Consumes tokens only (no raw hex/radius). Variants via props, not CSS overrides.
+   Migrates: Header.iconBtn, SettingsDialog.iconBtn/iconBtnSm, VideoCard.expandBtn/downloadBtn,
+   SubtitleCard.expandBtn/downloadBtn, SelectionBar.clearBtn, DownloadCard.actionBtn.
+   Header active states (extDisabled/adActive) via `active` prop. */
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: background var(--transition), color var(--transition);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* === Sizes === */
+.xs { width: 24px; height: 24px; }
+.sm { width: 28px; height: 28px; }
+.md { width: 32px; height: 32px; }
+
+/* === Hover variants === */
+.ghost:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.danger:hover {
+  background: var(--color-error-subtle);
+  color: var(--color-error);
+}
+
+/* === Active states (persistent — no hover change) ===
+   variant='ghost' + active → primary active (Header.adActive pattern)
+   variant='danger' + active → danger active (Header.extDisabled pattern) */
+.activePrimary,
+.activePrimary:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.activeDanger,
+.activeDanger:hover {
+  color: var(--color-error);
+  background: var(--color-error-subtle);
+}
+
+/* === Focus ring (global :focus-visible also applies, this is per-atom for offset) === */
+.iconBtn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 1px;
+}

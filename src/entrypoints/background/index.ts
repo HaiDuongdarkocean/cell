@@ -139,7 +139,7 @@ export class BackgroundService implements BackgroundContext {
 
     // 2. Load persisted settings and apply to the download queue.
     const settings = await loadSettings();
-    if (this.aborted) { console.log('[init] aborted after loadSettings'); return; }
+    if (this.aborted) return; // reset by onInstalled('update') during await
     this.downloadQueue.setMaxConcurrent(settings.concurrentDownloads);
     this.downloader.setConvertMode(settings.convertToMp4);
     this.downloader.setSegmentConcurrency(settings.segmentConcurrency);
@@ -151,21 +151,18 @@ export class BackgroundService implements BackgroundContext {
 
     // 3. Load persisted extension active state.
     this.extensionActive = await loadExtensionStatus();
-    if (this.aborted) { console.log('[init] aborted after loadExtensionStatus'); return; }
+    if (this.aborted) return; // reset by onInstalled('update') during await
 
     // 4. Wire event streams (network → broadcast, queue → broadcast, etc.)
     this.unsubscribers = wireEvents(this);
 
     // 4b. Wait for session restore to complete.
     await this.sessionReady;
-    if (this.aborted) { console.log('[init] aborted after sessionReady'); return; }
+    if (this.aborted) return; // reset by onInstalled('update') during await
 
     // 5. Start the network interceptor if the extension is active.
     if (this.extensionActive) {
       this.networkInterceptor.start();
-      console.log('[init] networkInterceptor.start() called, extensionActive=', this.extensionActive);
-    } else {
-      console.log('[init] networkInterceptor NOT started, extensionActive=', this.extensionActive);
     }
 
     // 6. Clean up orphaned OPFS temp files from crashed sessions.
@@ -273,25 +270,9 @@ export async function initBackground(): Promise<BackgroundService> {
   if (backgroundService) {
     return backgroundService;
   }
-  const svc = new BackgroundService();
-  backgroundService = svc;
-  const initLogs: string[] = [];
-  if (typeof self !== 'undefined') {
-    (self as unknown as { __initLogs?: string[] }).__initLogs = initLogs;
-    (self as unknown as { __bgDebug?: unknown }).__bgDebug = {
-      getAllVideos: () => backgroundService?.networkInterceptor.getAllVideos().length ?? -1,
-      extensionActive: () => backgroundService?.extensionActive ?? null,
-      isSingleton: () => backgroundService === svc,
-      hasListener: () => {
-        const ni = backgroundService?.networkInterceptor as unknown as { boundListener: unknown } | undefined;
-        return ni ? ni.boundListener !== null : 'no-ni';
-      },
-    };
-  }
-  initLogs.push(`initBackground start ts=${Date.now()}`);
-  await svc.init();
-  initLogs.push(`initBackground done, isSingleton=${backgroundService === svc} ts=${Date.now()}`);
-  return svc;
+  backgroundService = new BackgroundService();
+  await backgroundService.init();
+  return backgroundService;
 }
 
 /**
@@ -307,12 +288,6 @@ export function getBackgroundService(): BackgroundService | null {
  */
 export function resetBackgroundService(): void {
   if (backgroundService) {
-    if (typeof self !== 'undefined') {
-      const arr = (self as unknown as { __initLogs?: string[] }).__initLogs ?? [];
-      arr.push(`resetBackgroundService STOP ts=${Date.now()}`);
-      if (arr.length > 20) arr.shift();
-      (self as unknown as { __initLogs?: string[] }).__initLogs = arr;
-    }
     backgroundService.stop();
     backgroundService = null;
   }

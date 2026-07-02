@@ -3,7 +3,7 @@ import { OffscreenManager } from '@/entrypoints/background/offscreenManager';
 import { NetworkInterceptor } from '@/entrypoints/background/networkInterceptor';
 import { MessageBus } from '@/entrypoints/background/messageBus';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_SETTINGS, STORAGE_KEYS, DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
+import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
 import type { DownloadItem, Settings, WhitelistEntry } from '@/types/media';
 import type {
   MessageRequest,
@@ -611,26 +611,15 @@ describe('Background integration', () => {
   // 6. GET_SETTINGS returns from storage
   it('GET_SETTINGS returns settings from storage', async () => {
     const storedSettings: Settings = {
+      ...DEFAULT_SETTINGS,
       concurrentDownloads: 5,
       defaultQuality: '720p',
       defaultSubtitleLanguage: 'ja',
       selectedSubtitleLanguages: ['ja'],
       theme: 'dark',
-      convertToMp4: 'always',
-      parallelConversion: 'auto',
-      manualWorkerCount: 4,
       parallelFallback: 'save-ts',
-      segmentConcurrency: 6,
-      filenameSource: 'title-fallback',
       preferredVideoFormat: 'mp4',
       autoSelectEnabled: true,
-      subtitleOverlayTargetLanguage: '',
-      subtitleOverlayNativeLanguage: '',
-      subtitleOverlayAutoLoad: false,
-      subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
-      subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
-      subtitlePreference: {},
-      keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
     };
     mockChrome.storage.local.get.mockResolvedValue({
       [STORAGE_KEYS.SETTINGS]: storedSettings,

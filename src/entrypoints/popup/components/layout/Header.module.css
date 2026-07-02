@@ -36,53 +36,7 @@
   flex-shrink: 0;
 }
 
-/* === Icon Button — matches prototype exactly === */
-.iconBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--color-text-muted);
-  transition: all var(--transition);
-}
-
-.iconBtn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-}
-
-.iconBtn:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 1px;
-}
-
-/* Extension disabled state — red icon */
-.extDisabled {
-  color: var(--color-error);
-}
-
-.extDisabled:hover {
-  color: var(--color-error);
-  background: rgba(239, 68, 68, 0.08);
-}
-
-/* Auto Download active state — primary color + subtle primary background */
-.adActive {
-  color: var(--color-primary);
-  background: var(--color-primary-subtle);
-}
-
-.adActive:hover {
-  color: var(--color-primary);
-  background: var(--color-primary-subtle);
-}
-
-/* Icon sizing */
+/* === Icon sizing (svg children of IconButton atom) === */
 .icon {
   width: 18px;
   height: 18px;

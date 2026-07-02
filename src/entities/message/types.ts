@@ -53,6 +53,7 @@ export type MessageType =
   | 'REQUEST_AUTO_LOAD_SUBTITLES'
   | 'FETCH_SUBTITLE_CONTENT'
   | 'OPEN_SIDE_PANEL'
+  | 'CLOSE_SIDE_PANEL'
   | 'SUBTITLE_CUES_LOADED'
   | 'REQUEST_SUBTITLE_CUES'
   | 'VIDEO_TIME_UPDATE'
@@ -316,6 +317,11 @@ export interface FetchResponsePayload {
 
 /** Content-script → background: open the side panel for this tab. */
 export interface OpenSidePanelPayload {
+  readonly tabId?: number; // background resolves from sender.tab.id
+}
+
+/** Content-script → background: close the side panel for this tab. */
+export interface CloseSidePanelPayload {
   readonly tabId?: number; // background resolves from sender.tab.id
 }
 

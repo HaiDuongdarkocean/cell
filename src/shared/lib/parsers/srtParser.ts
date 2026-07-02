@@ -1,4 +1,5 @@
 import type { SrtCue, SrtSubtitle } from '@/entities/media';
+import { stripSubtitleTags } from './srtNormalizer';
 
 /**
  * Parses SubRip (.srt) subtitle content into a structured SrtSubtitle object.
@@ -61,7 +62,7 @@ export function parseSrt(content: string): SrtSubtitle {
     }
 
     const textLines = lines.slice(lineIndex);
-    const text = textLines.join('\n').trim();
+    const text = stripSubtitleTags(textLines.join('\n')).trim();
 
     sequential += 1;
     cues.push({

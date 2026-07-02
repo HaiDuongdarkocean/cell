@@ -10,6 +10,7 @@ import {
 } from '@/shared/config/config';
 import { MultiSelect } from './MultiSelect';
 import { SubtitleStylePanel } from './SubtitleStylePanel';
+import { IconButton } from '@/shared/ui/IconButton';
 import styles from './SettingsDialog.module.css';
 
 interface SettingsDialogProps {
@@ -311,17 +312,16 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
       >
         <div className={styles.popoverHeader}>
           <h3 id="settings-title" className={styles.popoverTitle}>Settings</h3>
-          <button
+          <IconButton
             ref={closeButtonRef}
-            type="button"
-            className={`${styles.iconBtn} ${styles.iconBtnSm}`}
+            size="sm"
             onClick={onClose}
             aria-label="Close settings"
           >
             <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
-          </button>
+          </IconButton>
         </div>
 
         <div className={styles.popoverBody}>
@@ -331,9 +331,9 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
           <div className={styles.field}>
             <div className={styles.asRow}>
               <span className={styles.asLabel}>Auto select media</span>
-              <button
-                type="button"
-                className={`${styles.iconBtn} ${styles.iconBtnSm} ${settings.autoSelectEnabled ? styles.asActive : ''}`}
+              <IconButton
+                size="sm"
+                active={settings.autoSelectEnabled}
                 onClick={() => update('autoSelectEnabled', !settings.autoSelectEnabled)}
                 aria-pressed={settings.autoSelectEnabled}
                 aria-label="Toggle auto select"
@@ -343,7 +343,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                   <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
                   <path d="M19 15L19.5 16.5L21 17L19.5 17.5L19 19L18.5 17.5L17 17L18.5 16.5L19 15Z" />
                 </svg>
-              </button>
+              </IconButton>
             </div>
             <p className={styles.asHint}>Khi bật, mở popup → media tự chọn theo preference.</p>
           </div>
@@ -405,9 +405,9 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
           <div className={styles.field}>
             <div className={styles.asRow}>
               <span className={styles.asLabel}>Overlay auto-load</span>
-              <button
-                type="button"
-                className={`${styles.iconBtn} ${styles.iconBtnSm} ${settings.subtitleOverlayAutoLoad ? styles.asActive : ''}`}
+              <IconButton
+                size="sm"
+                active={settings.subtitleOverlayAutoLoad}
                 onClick={() => update('subtitleOverlayAutoLoad', !settings.subtitleOverlayAutoLoad)}
                 aria-pressed={settings.subtitleOverlayAutoLoad}
                 aria-label="Toggle overlay auto-load"
@@ -417,7 +417,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                   <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
                   <path d="M19 15L19.5 16.5L21 17L19.5 17.5L19 19L18.5 17.5L17 17L18.5 16.5L19 15Z" />
                 </svg>
-              </button>
+              </IconButton>
             </div>
             <p className={styles.asHint}>Khi bật, overlay tự load subtitle detect được cùng target language.</p>
           </div>

@@ -61,8 +61,8 @@ describe('CueList', () => {
 
     const items = screen.getAllByTestId('cue-item');
     // 2000ms is within cue 1 (1000-3000) → first item highlighted
-    expect(items[0].style.backgroundColor).toBe('rgba(0, 150, 255, 0.3)');
-    expect(items[1].style.backgroundColor).toBe('transparent');
+    expect(items[0].getAttribute('data-current')).toBe('true');
+    expect(items[1].getAttribute('data-current')).toBe('false');
   });
 
   it('highlights second cue when in range', () => {
@@ -70,16 +70,16 @@ describe('CueList', () => {
 
     const items = screen.getAllByTestId('cue-item');
     // 4000ms is within cue 2 (3500-5000) → second item highlighted
-    expect(items[1].style.backgroundColor).toBe('rgba(0, 150, 255, 0.3)');
-    expect(items[0].style.backgroundColor).toBe('transparent');
+    expect(items[1].getAttribute('data-current')).toBe('true');
+    expect(items[0].getAttribute('data-current')).toBe('false');
   });
 
   it('does not highlight any cue when between cues', () => {
     render(<CueList cues={sampleCues} currentTimeMs={3200} onSeek={jest.fn()} />);
 
     const items = screen.getAllByTestId('cue-item');
-    expect(items[0].style.backgroundColor).toBe('transparent');
-    expect(items[1].style.backgroundColor).toBe('transparent');
+    expect(items[0].getAttribute('data-current')).toBe('false');
+    expect(items[1].getAttribute('data-current')).toBe('false');
   });
 
   it('renders cue with empty nativeText without native div', () => {
@@ -107,16 +107,16 @@ describe('CueList', () => {
 
       const items = screen.getAllByTestId('cue-item');
       // t=3000 is cue1.end AND cue2.start. Half-open [start,end) → only cue 2.
-      expect(items[0].style.backgroundColor).toBe('transparent');
-      expect(items[1].style.backgroundColor).toBe('rgba(0, 150, 255, 0.3)');
+      expect(items[0].getAttribute('data-current')).toBe('false');
+      expect(items[1].getAttribute('data-current')).toBe('true');
     });
 
     it('at t = cue[i].end - 1, highlights the current cue', () => {
       render(<CueList cues={adjacentCues} currentTimeMs={2999} onSeek={jest.fn()} />);
 
       const items = screen.getAllByTestId('cue-item');
-      expect(items[0].style.backgroundColor).toBe('rgba(0, 150, 255, 0.3)');
-      expect(items[1].style.backgroundColor).toBe('transparent');
+      expect(items[0].getAttribute('data-current')).toBe('true');
+      expect(items[1].getAttribute('data-current')).toBe('false');
     });
   });
 

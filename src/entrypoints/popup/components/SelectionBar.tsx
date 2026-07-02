@@ -1,3 +1,4 @@
+import { IconButton } from '@/shared/ui/IconButton';
 import styles from './SelectionBar.module.css';
 
 interface SelectionBarProps {
@@ -11,9 +12,8 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
 
   return (
     <div className={styles.selectionBar} data-testid="selection-bar">
-      <button
-        type="button"
-        className={styles.clearBtn}
+      <IconButton
+        size="sm"
         onClick={onClear}
         aria-label="Clear selection"
         data-testid="selection-clear-btn"
@@ -21,7 +21,7 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
           <path d="M18 6L6 18M6 6l12 12" />
         </svg>
-      </button>
+      </IconButton>
       <span className={styles.count} data-testid="selection-count">
         {selectionCount} selected
       </span>

@@ -8,6 +8,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import {
   openSidePanel,
+  closeSidePanel,
   sendMessage,
   queryTabs,
   sendTabMessage,
@@ -20,6 +21,7 @@ import {
 import type {
   MessageResponse,
   OpenSidePanelPayload,
+  CloseSidePanelPayload,
   VideoTimeUpdatePayload,
   VideoPlayStatePayload,
   SeekToPayload,
@@ -42,6 +44,26 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       console.warn(`OPEN_SIDE_PANEL failed for tab ${tabId}: ${msg}`);
+      return { success: false, error: msg };
+    }
+  });
+
+  // CLOSE_SIDE_PANEL: content-script asks background to close the side panel.
+  // chrome.sidePanel.close() (Chrome 141+) takes tabId or windowId. We resolve
+  // the tab's windowId from the tabId so the global panel closes for that window.
+  ctx.on(MESSAGE_TYPES.CLOSE_SIDE_PANEL, async (request): Promise<MessageResponse> => {
+    const payload = request.payload as CloseSidePanelPayload;
+    const tabId = payload?.tabId;
+    if (tabId === undefined) {
+      return { success: false, error: 'Missing tabId in CLOSE_SIDE_PANEL' };
+    }
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      await closeSidePanel({ windowId: tab.windowId });
+      return { success: true };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`CLOSE_SIDE_PANEL failed for tab ${tabId}: ${msg}`);
       return { success: false, error: msg };
     }
   });
