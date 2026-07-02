@@ -25,7 +25,8 @@ docs/           # Tài liệu dự án
 │   ├── 014-subtitle-selector-multi-match.md # Subtitle selector ≥2 matches (V2 ADR-007 D3) + bug A fix (loadBilingualCues merge)
 │   ├── 015-subtitle-drag-integrated.md  # Subtitle drag integrated (xóa icon riêng, drag trực tiếp overlay background)
 │   └── 016-fsd-screaming-architecture-worktree.md # FSD + Screaming Architecture worktree (refactor src/ + tests/ cho Orca platform, 6 layer + dependency rule + port/adapter)
-│   └── 017-refactor-architecture-debt.md # Refactor architecture debt phase 2 (8 decisions D1-D8 from architecture review 2026-07-01, M14-M21)
+│   └── 017-refactor-architecture-debt.md
+│   └── 018-subtitle-navigation-control-cluster.md # Nav cluster controller contract (NavClusterController class, settings schema v2 flat keys, cue source findCurrentLine, kbd fixed parallel, Pointer Events drag, CSS half-circle collapse) # Refactor architecture debt phase 2 (8 decisions D1-D8 from architecture review 2026-07-01, M14-M21)
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
