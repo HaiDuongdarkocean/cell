@@ -295,6 +295,23 @@ SPA frameworks (Angular, React, Vue) render dynamic elements trong nhiều phase
 - Any foreign element injection vào framework-managed DOM (MutationObserver timing)
 - Zone.js / React Concurrent mode timer wrap (setTimeout không thoát render zone)
 
+## Order-dependent side effects → sequence explicitly
+
+### Nguyên lý
+Khi 2+ observers/reactors react cùng event (DOM mutation, message, lifecycle) và effect của chúng xung đột trên shared state (A add, B clear), KHÔNG dựa vào registration/dispatch order để guarantee sequence. Browser dispatch theo registration order, nhưng message bus / async handler xử lý tuần tự và order có thể đúng cho 1 effect nhưng sai cho effect ngược (add-then-clear = clear wipe add). Phải **explicitly sequence**: await effect phải-trước (clear) response, rồi re-run effect phải-sau (add). Re-run idempotent nếu dedup by key.
+
+### Cases đã gặp
+- [mutation-observer-race-clear-wipes-add.md](mutation-observer-race-clear-wipes-add.md) — lordflix.org (SvelteKit SPA): PageScanner observer fire trước → PAGE_SCAN_RESULT add 27 subtitles, EpisodeChangeWatcher fire sau → VIDEO_EPISODE_CHANGED clearTab wipe 27. Fix: await VIDEO_EPISODE_CHANGED response, re-scan + re-send PAGE_SCAN_RESULT sau clear.
+
+### Apply cho
+- Multiple MutationObservers trên cùng DOM subtree (content script, browser extension)
+- Multiple message handlers trên cùng event (chrome.runtime.onMessage, EventEmitter)
+- Lifecycle handler race (onTabUpdated vs onBeforeRequest, beforeunload vs unload)
+- Any "clear then re-add" pattern where clear và add react to same trigger — await clear, then re-add
+- React useEffect cleanup race (cleanup of effect A wipes state set by effect B trong same render cycle)
+
+---
+
 ## Half-open intervals [start, end) for time-based matching
 
 ### Nguyên lý
