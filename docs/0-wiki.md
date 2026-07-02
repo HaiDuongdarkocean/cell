@@ -89,15 +89,17 @@ docs/           # Tài liệu dự án
 │   ├── spa-two-phase-render-wipe.md               # SPA two-phase render wipe (Angular foreign element wipe)
 │   ├── half-open-interval-cue-matching.md         # Half-open [start,end) for cue boundary matching
 │   ├── instant-scroll-long-lists.md               # Instant scroll for long lists (motion sickness)
-│   └── sidepanel-active-tab-race.md               # Sidepanel stuck on "No subtitles loaded" after tab switch (activeTabIdForPanel race)
+│   ├── sidepanel-active-tab-race.md               # Sidepanel stuck on "No subtitles loaded" after tab switch (activeTabIdForPanel race)
+│   └── skill-output-routing.md                    # Skill output routing (filled artifacts → project docs/, not skill dir)
 ├── test-reports/                      # MCP browser test reports — "does it work in real browser"
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md
 │   ├── 2026-06-27-subtitle-panel-docking-mcp.md
 │   ├── 2026-06-27-subtitle-panel-fullscreen-mcp.md
 │   ├── 2026-06-30-subtitle-drag-integrated-mcp.md  # ADR-015 drag integrated verify (9/9 SC pass)
 │   └── screenshot-after-fix.png
-├── reviews/                           # Architecture review + spec review reports
+├── reviews/                           # Architecture review + spec review + design-system audit reports
 │   ├── architecture-review-2026-07-01.md # Architecture review (chrome-extension-mv3-architecture-review skill, 17/42 failures, 3 Critical + 5 High)
+│   ├── design-system-inventory-2026-07-02.md # Design-system UI/UX audit (design-system-ui-ux skill Step 1, 12 inconsist, file:line cited)
 │   └── review-subtitle-drag-integrated.md # Spec review: subtitle drag integrated (APPROVED post-update)
 │   └── review-refactor-system-architecture.md # Spec review: refactor system architecture (APPROVED, Opus 4.8, 1 CRITICAL + 2 HIGH fixed)
 ├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"
