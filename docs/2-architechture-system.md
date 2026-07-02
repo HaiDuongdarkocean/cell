@@ -25,7 +25,7 @@ src/
 │   ├── whitelist/      #   Auto-download whitelist
 │   ├── transmux/       #   TS→fMP4 transmuxing (planning/execution/merging)
 │   ├── subtitle/       #   Subtitle overlay/sync/merge/bilingual (logic/ui/service)
-│   │   └── ui/contentScriptController.ts  # M20: subtitle UI orchestration (init)
+│   │   └── ui/contentScriptController.ts  # M20: subtitle UI orchestration (init → returns cleanup for SPA episode-switch re-init)
 │   ├── download/       #   Download queue/selection
 │   └── settings/       #   Settings UI + validation logic
 ├── entities/           # Domain entities (types/models) — M19: @/types/ fully migrated here
@@ -70,7 +70,7 @@ src/
 │   └── subtitleService.ts         # findSubtitlesForOverlay: validate target + native language → SubtitlesForOverlayResult (target + native, partial load) — **planned ADR-014**: findPreferredMatch (preference-aware, fallback first-match) thay findFirstMatch
 │
 ├── content/                       # Content script (chạy trong trang web)
-│   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT; wire subtitle overlay + panel + shortcuts; ADR-010 episode-switch watcher (VIDEO_EPISODE_CHANGED); ADR-012 isVideoReady gate (blob: OR readyState>=2)
+│   ├── content-script.ts          # Entry: scan DOM → gửi PAGE_SCAN_RESULT; wire subtitle overlay + panel + shortcuts; ADR-010 episode-switch watcher (VIDEO_EPISODE_CHANGED); ADR-012 isVideoReady gate (blob: OR readyState>=2); **overlay re-init on SPA episode switch** (track currentVideo + currentOverlayCleanup, reportEpisodeChangedIfReplacement re-injects overlay for new <video>)
 │   ├── pageScanner.ts             # Scan <video>, <source>, subtitle <track>
 │   ├── subtitleParser.ts          # Adapter: parseSubtitle(content, format) → ParseResult (reuse parseSrt/parseVtt)
 │   ├── subtitleSync.ts            # Binary search O(log n): findCurrentLine(cues, currentTime) → index
@@ -143,9 +143,9 @@ src/
 ├── lib/
 │   ├── detectors/
 │   │   ├── videoDetector.ts          # detectVideo(request) → DetectedVideo | null
-│   │   ├── subtitleDetector.ts       # detectSubtitle(request) → DetectedSubtitle | null (extractLanguage từ URL, BCP 47 primary subtag)
+│   │   ├── subtitleDetector.ts       # detectSubtitle(request) → DetectedSubtitle | null (extractLanguage từ URL, BCP 47 primary subtag + **ISO 639 validation** — reject folder-name false positives like "sub", "vid", "api")
 │   │   ├── scriptDetector.ts         # detectScript() — Unicode script detection (26 scripts) → candidate languages
-│   │   └── languageDetector.ts       # detectLanguage() (hybrid: script + frequency) + isoCodeToLabel() (ISO 639-1/2 → label)
+│   │   └── languageDetector.ts       # detectLanguage() (hybrid: script + frequency) + isoCodeToLabel() (ISO 639-1/2 → label) + **isValidIsoCode()** (validate candidate against ISO 639-1/2 set)
 │   ├── selectors/
 │   │   └── selectBestMedia.ts        # Pure function: select best video + subtitles matching user prefs (format → quality → subtitle fallback). Returns AutoSelectResult | null
 │   ├── parsers/
@@ -271,7 +271,7 @@ tests/
 
 | File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
 |------|-----------|-----------------|--------------------------|
-| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, subtitleShortcuts, subtitleAutoLoad, subtitleMerge, config, messages | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + toggle + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; send cues/timeupdate/play-state to Side Panel via background relay; receive SEEK_TO from Side Panel (ADR-008); **ADR-010: module-level `initEpisodeChangeWatcher`** — MutationObserver persist observe `<video>` replacement → send VIDEO_EPISODE_CHANGED (episode switch clear, quality switch preserved); **ADR-012: `isVideoReady` gate** — `findAndInitOverlay` waits until `video.src` is `blob:` OR `readyState>=2` before init (Angular two-phase render on kisskh.co wipes foreign elements appended during phase 1; observer uses `attributeFilter:['src']` to catch phase-2 src assignment) |
+| `content/content-script.ts` | pageScanner, subtitleOverlay, subtitleDragDrop, subtitleImport, subtitleUI, subtitleBilingualParser, subtitlePanel, subtitleShortcuts, subtitleAutoLoad, subtitleMerge, config, messages | `content-script-loader.js` (entry) | DOM scan → PAGE_SCAN_RESULT; wire overlay + toggle + shortcuts + drag-drop + import; **MutationObserver** for SPA late-mount `<video>`; send cues/timeupdate/play-state to Side Panel via background relay; receive SEEK_TO from Side Panel (ADR-008); **ADR-010: module-level `initEpisodeChangeWatcher`** — MutationObserver persist observe `<video>` replacement → send VIDEO_EPISODE_CHANGED (episode switch clear, quality switch preserved); **ADR-012: `isVideoReady` gate** — `findAndInitOverlay` waits until `video.src` is `blob:` OR `readyState>=2` before init (Angular two-phase render on kisskh.co wipes foreign elements appended during phase 1; observer uses `attributeFilter:['src']` to catch phase-2 src assignment); **overlay re-init on SPA episode switch** — `reportEpisodeChangedIfReplacement` calls `findAndInitOverlay()` for new `<video>`; `currentVideo`/`lastSeenVideo` guards prevent duplicate init (Angular may mount/unmount same element during phase render); `currentOverlayCleanup` tears down old controller before re-init |
 | `content/pageScanner.ts` | urls (constants) | `content/content-script.ts` | Scan `<video>`, `<source>`, `<track>` |
 | `content/subtitleParser.ts` | srtParser, vttParser, types | subtitleDragDrop, subtitleImport | Adapter: parseSubtitle(content, format) → ParseResult |
 | `content/subtitleSync.ts` | types (SrtCue) | subtitleOverlay | Binary search: findCurrentLine(cues, currentTime) → index |
@@ -495,7 +495,7 @@ User toggles AD (Header icon button)
 ### 5. Subtitle Language Detection Flow
 ```
 Subtitle detected (networkInterceptor)
-  → subtitleDetector.extractLanguage(url) → "en" | "ko" | "unknown"
+  → subtitleDetector.extractLanguage(url) → "en" | "ko" | "unknown" (ISO 639 validated — folder names like "sub" → "unknown" → resolveUnknownSubtitleLanguages fires)
   → popup useSubtitleLanguage(subtitles)
     → Phase 1: URL code wins
       - subtitle.language !== 'unknown' → isoCodeToLabel(language)

@@ -163,6 +163,37 @@ describe('detectSubtitle', () => {
     expect(result?.language).toBe('unknown');
   });
 
+  // Regression: kisskh.co subtitle URL `/sub/<hash>.srt` — the path segment
+  // "sub" matches the BCP47 shape (3 letters) but is a folder name, not a
+  // language code. Without ISO 639 validation, extractLanguage returned "sub",
+  // which is neither a real language nor "unknown", so
+  // resolveUnknownSubtitleLanguages never fired and auto-load failed.
+  it('rejects folder-name path segment "sub" as language (kisskh.co regression)', () => {
+    const request = makeRequest('https://sub.cdnvideo11.shop/sub/xbnp1w4q.srt');
+    const result = detectSubtitle(request);
+
+    expect(result).not.toBeNull();
+    expect(result?.format).toBe('srt');
+    expect(result?.language).toBe('unknown');
+  });
+
+  it('rejects folder-name path segment "vid" as language (3-letter non-language)', () => {
+    const request = makeRequest('https://cdn.example.com/vid/movie.en.srt');
+    const result = detectSubtitle(request);
+
+    expect(result).not.toBeNull();
+    // "en" in filename is valid → should still extract from filename
+    expect(result?.language).toBe('en');
+  });
+
+  it('rejects folder-name path segment "api" when filename has no language', () => {
+    const request = makeRequest('https://api.example.com/api/abc123.srt');
+    const result = detectSubtitle(request);
+
+    expect(result).not.toBeNull();
+    expect(result?.language).toBe('unknown');
+  });
+
   describe('generateId fallback', () => {
     it('uses the timestamp+random fallback when crypto.randomUUID is unavailable', () => {
       const realRandomUUID = crypto.randomUUID;

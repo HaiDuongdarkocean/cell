@@ -65,7 +65,7 @@ async function loadShortcuts(): Promise<KeyboardShortcut[]> {
   return DEFAULT_KEYBOARD_SHORTCUTS;
 }
 
-export function init(video: HTMLVideoElement): void {
+export function init(video: HTMLVideoElement): () => void {
   // ADR-008 D2: overlay UI neo vào video.parentElement — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   const container = video.parentElement ?? document.body;
@@ -605,4 +605,15 @@ export function init(video: HTMLVideoElement): void {
       // ponytail: storage might not be available in test contexts — ignore
     }
   }
+
+  // Return cleanup so the caller can tear down before re-init on SPA episode
+  // switch (Angular replaces <video> → old overlay UI removed by framework
+  // re-render, but document/onMessage listeners would otherwise leak).
+  // ponytail: document keydown + onMessage listeners leak — ceiling: memory
+  // leak after many episode switches. Upgrade path: track + remove all listeners.
+  return () => {
+    toggleBtn?.remove();
+    managerPanel?.destroy();
+    controller?.destroy();
+  };
 }

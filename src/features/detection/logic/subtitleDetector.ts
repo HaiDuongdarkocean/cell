@@ -1,4 +1,5 @@
 import { SUBTITLE_URL_PATTERNS } from '@/shared/config/urls';
+import { isValidIsoCode } from './languageDetector';
 import type {
   DetectedSubtitle,
   NetworkRequest,
@@ -63,7 +64,14 @@ function extractLanguage(url: string): string {
     const candidate = parts[parts.length - 1] ?? '';
     // BCP 47: extract primary subtag from tags like "en-US", "zh-Hans"
     if (BCP47_PATTERN.test(candidate)) {
-      return candidate.split('-')[0].toLowerCase();
+      const primary = candidate.split('-')[0].toLowerCase();
+      // Validate against ISO 639-1/639-2: reject folder-name false positives
+      // like "sub", "vid", "api" that match the BCP47 shape (2-3 letters) but
+      // are not real language codes. Without this, kisskh.co's
+      // `/sub/<hash>.srt` URL extracts "sub" as the language, which is neither
+      // a real language nor "unknown", so `resolveUnknownSubtitleLanguages`
+      // never fires and auto-load fails (bug: kisskh autoload never triggered).
+      if (isValidIsoCode(primary)) return primary;
     }
   }
 
@@ -71,7 +79,8 @@ function extractLanguage(url: string): string {
   if (segments.length >= 2) {
     const candidate = segments[segments.length - 2] ?? '';
     if (BCP47_PATTERN.test(candidate)) {
-      return candidate.split('-')[0].toLowerCase();
+      const primary = candidate.split('-')[0].toLowerCase();
+      if (isValidIsoCode(primary)) return primary;
     }
   }
 

@@ -8,6 +8,7 @@
 - **Testing**: Jest 30 (unit + integration), Playwright (E2E)
 - **Linting**: ESLint 9 + Prettier 3
 - **Platform**: Windows (PowerShell) — no bash heredoc, use temp file + `git commit -F`
+- **Browser verify**: Edge browser + `edge-devtools` MCP (preferred). `chrome-devtools` MCP chỉ khi cần test Chrome-specific.
 
 ## Commands
 ```

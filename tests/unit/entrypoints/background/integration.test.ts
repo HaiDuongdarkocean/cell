@@ -2359,4 +2359,32 @@ https://cdn.example.com/low.m3u8`;
 
     freshService.stop();
   });
+
+  it('init() aborts when stop() is called during async init (onInstalled update race)', async () => {
+    // Regression: onInstalled('update') calls resetBackgroundService() while
+    // init() is still awaiting loadSettings(). Without the aborted guard,
+    // init() resumes and calls networkInterceptor.start(), registering a stale
+    // webRequest listener on the discarded instance. Media detected by the
+    // stale listener lands in the stale Map, invisible to the fresh singleton
+    // → "Video not found" on download.
+    const staleInterceptor = new NetworkInterceptor();
+    const startSpy = jest.spyOn(staleInterceptor, 'start');
+
+    const staleService = new BackgroundService({
+      networkInterceptor: staleInterceptor,
+      messageBus: new MessageBus(),
+      downloadQueue: mockQueue as unknown as never,
+      downloader: mockDownloader as unknown as never,
+      offscreenManager: mockOffscreen,
+    });
+
+    // Stop the service BEFORE init() reaches networkInterceptor.start().
+    // This simulates resetBackgroundService() firing during the await chain.
+    staleService.stop();
+
+    // Now init() — it should bail out at the aborted guard and NOT call start().
+    await staleService.init();
+
+    expect(startSpy).not.toHaveBeenCalled();
+  });
 });

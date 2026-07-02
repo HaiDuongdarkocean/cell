@@ -484,6 +484,23 @@ export function isoCodeToLabel(code: string): string | null {
 }
 
 /**
+ * Validate whether a candidate string is a recognized ISO 639-1 (2-letter) or
+ * ISO 639-2 (3-letter) language code. Used by `extractLanguage` in the subtitle
+ * detector to reject URL path segments that match the BCP47 shape but are not
+ * real language codes (e.g. kisskh.co's `/sub/<hash>.srt` path → "sub" is a
+ * folder name, not a language; themoviebox's `/subtitle/<hash>.srt` →
+ * "subtitle" already fails BCP47 length, but 3-letter folder names like "sub",
+ * "vid", "api" would slip through without this check).
+ *
+ * @param code - Candidate language code (case-insensitive)
+ * @returns true if the code is a recognized ISO 639-1/639-2 language code
+ */
+export function isValidIsoCode(code: string): boolean {
+  if (!/^[a-z]{2,3}$/i.test(code)) return false;
+  return ISO_LANGUAGE_MAP.has(code.toLowerCase());
+}
+
+/**
  * Reverse map: language label (lowercase) → ISO 639-1 (2-letter) code.
  * Built once from {@link ISO_LANGUAGE_MAP} by inverting the entries and
  * preferring the 2-letter code when both 2-letter and 3-letter codes map to
