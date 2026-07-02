@@ -62,6 +62,7 @@ docs/           # Tài liệu dự án
 │   └── plan-subtitle-selector-multi-match.md # Subtitle selector ≥2 matches — implementation plan (G2, V2 ADR-007 D3)
 │   └── plan-refactor-system-architecture.md # Refactor system architecture — implementation plan (G2, 14 milestone + dependency graph + checkpoint A-E)
 │   └── plan-refactor-architecture-debt.md # Refactor architecture debt — implementation plan phase 2 (G2, 8 milestones M14-M21, cite spec-refactor-architecture-debt)
+│   └── plan-subtitle-navigation-control.md # Subtitle navigation control cluster — implementation plan (G2, 10 AD, 6 milestones, cue source divergence + settings schema v2)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
@@ -105,7 +106,7 @@ docs/           # Tài liệu dự án
 │   ├── design-system-drift-audit-2026-07-02.md # Post-fix drift audit (6 axes pass, browser-verified)
 │   └── review-subtitle-drag-integrated.md # Spec review: subtitle drag integrated (APPROVED post-update)
 │   └── review-refactor-system-architecture.md # Spec review: refactor system architecture (APPROVED, Opus 4.8, 1 CRITICAL + 2 HIGH fixed)
-│   └── review-subtitle-navigation-control.md # Spec review: subtitle navigation control cluster (BLOCKED, Kimi 2.7, 1 CRITICAL + 5 HIGH + 3 MEDIUM risks)
+│   └── review-subtitle-navigation-control.md # Spec review: subtitle navigation control cluster (BLOCKED Kimi 2.7 → patched → APPROVED Opus 4.8, 9 risks resolved, 1 LOW non-blocking)
 ├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"
 │   ├── chrome-devtools-mcp.md
 │   ├── e2e-debugging.md
