@@ -70,6 +70,7 @@ docs/           # Tài liệu dự án
 │   ├── task-subtitle-appearance-manager.md # Subtitle appearance manager — task list (G4)
 │   └── task-subtitle-selector-multi-match.md # Subtitle selector ≥2 matches — task list (G4, V2 ADR-007 D3)
 │   └── task-refactor-system-architecture.md # Refactor system architecture — task breakdown (G4, M0-M13, 25 task, codebase reality check)
+│   └── task-subtitle-navigation-control.md # Subtitle navigation control cluster — task breakdown (G4, 11 tasks M1-M6, TDD, vertical slices)
 │   ├── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
 │   └── 2026-06-29-subtitle-appearance-manager-mcp.md # ADR-013 browser MCP verify report (A1-A16)
 ├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
