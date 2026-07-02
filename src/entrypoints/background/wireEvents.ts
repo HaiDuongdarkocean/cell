@@ -320,9 +320,16 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
   // 10. Tab activation → badge + activeTabIdForPanel tracking
   const onTabActivated = (activeInfo: { tabId: number; windowId: number }): void => {
     updateBadgeForTab(ctx, activeInfo.tabId);
+    // ADR-011 v3: optimistically set the active tab id for panel relay filtering
+    // *synchronously* so SUBTITLE_CUES_LOADED from the newly-active tab is not
+    // dropped while we asynchronously verify the URL. Without this, a content
+    // script that auto-loads subtitles quickly after activation can race the
+    // getTab() promise and its message gets filtered out (sidepanel stays empty
+    // until the user closes/reopens it).
+    ctx.activeTabIdForPanel = activeInfo.tabId;
     void getTab(activeInfo.tabId).then((tab) => {
-      if (!tab.url || (!tab.url.startsWith('chrome-extension://') && !tab.url.startsWith('edge://'))) {
-        ctx.activeTabIdForPanel = activeInfo.tabId;
+      if (tab.url?.startsWith('chrome-extension://') || tab.url?.startsWith('edge://')) {
+        ctx.activeTabIdForPanel = undefined;
       }
     }).catch(() => { /* tab may be gone — leave previous value */ });
   };

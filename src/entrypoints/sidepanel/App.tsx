@@ -116,12 +116,22 @@ export function App() {
       changeInfo: chrome.tabs.OnUpdatedInfo,
     ): void => {
       if (cancelled) return;
-      if (changeInfo.status !== 'loading') return;
       if (tabId !== activeTabIdRef.current) return;
-      const store = useSidePanelStore.getState();
-      store.setCues([]);
-      store.setCurrentTime(0, 0);
-      store.setPlaying(false);
+      if (changeInfo.status === 'loading') {
+        // Same-tab navigation: background deletes lastCuesByTab[tabId]
+        // (index.ts:534). Mirror that here so the panel doesn't show stale
+        // cues from the previous URL while the new URL's subtitles autoload.
+        const store = useSidePanelStore.getState();
+        store.setCues([]);
+        store.setCurrentTime(0, 0);
+        store.setPlaying(false);
+      } else if (changeInfo.status === 'complete') {
+        // Defense-in-depth: if a live SUBTITLE_CUES_LOADED was dropped (e.g.
+        // background activeTabIdForPanel race during tab switch), re-fetch the
+        // cached cues for the now-loaded page. This is idempotent: if the live
+        // message already arrived, the cached cues are the same data.
+        void syncActiveTab(tabId);
+      }
     };
     const unsubTabUpdated = addOnTabUpdatedListener(onUpdated);
 
