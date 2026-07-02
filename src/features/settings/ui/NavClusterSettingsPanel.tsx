@@ -1,5 +1,6 @@
-import { useState, type ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import type { NavClusterSettings, NavClusterButtonSize } from '@/entities/settings';
+import { IconButton } from '@/shared/ui/IconButton';
 import styles from './NavClusterSettingsPanel.module.css';
 
 interface NavClusterSettingsPanelProps {
@@ -21,18 +22,16 @@ function snapButtonSize(size: number): NavClusterButtonSize {
 
 /**
  * Nav cluster settings panel (ADR-018 D2, spec §A9).
- * 3 sliders (button size, bg opacity, button opacity) + off toggle with confirm.
+ * 3 sliders (button size, bg opacity, button opacity) + enable toggle.
  * Each control calls onChange(partial) → parent persists → storage.onChanged
  * → content-script updateSettings (realtime).
  *
- * Accessibility: label htmlFor, aria-label, keyboard-navigable sliders.
+ * Accessibility: label htmlFor, aria-label, keyboard-navigable sliders + toggle.
  */
 export function NavClusterSettingsPanel({
   settings,
   onChange,
 }: NavClusterSettingsPanelProps): ReactElement {
-  const [showOffConfirm, setShowOffConfirm] = useState(false);
-
   const handleButtonSizeChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const raw = Number(e.target.value);
     onChange({ buttonSize: snapButtonSize(raw) });
@@ -46,17 +45,8 @@ export function NavClusterSettingsPanel({
     onChange({ buttonOpacity: Number(e.target.value) });
   };
 
-  const handleOffClick = (): void => {
-    setShowOffConfirm(true);
-  };
-
-  const handleOffConfirmYes = (): void => {
-    onChange({ enabled: false });
-    setShowOffConfirm(false);
-  };
-
-  const handleOffConfirmNo = (): void => {
-    setShowOffConfirm(false);
+  const handleToggleEnabled = (): void => {
+    onChange({ enabled: !settings.enabled });
   };
 
   return (
@@ -121,37 +111,28 @@ export function NavClusterSettingsPanel({
         />
       </div>
 
-      {/* Off toggle with confirm */}
-      {!showOffConfirm ? (
-        <button
-          type="button"
-          className={styles.offToggle}
-          onClick={handleOffClick}
-          data-testid="nav-cluster-off-toggle"
+      {/* Enable toggle (ADR-018 D2: 2-state ON/OFF, reuse IconButton pattern) */}
+      <div className={styles.field}>
+        <label className={styles.label} htmlFor="nav-cluster-enabled">
+          <span>Navigation cluster</span>
+          <span className={styles.value}>{settings.enabled ? 'ON' : 'OFF'}</span>
+        </label>
+        <IconButton
+          id="nav-cluster-enabled"
+          size="sm"
+          active={settings.enabled}
+          onClick={handleToggleEnabled}
+          aria-pressed={settings.enabled}
+          aria-label="Toggle navigation cluster"
+          title={`Navigation cluster: ${settings.enabled ? 'ON' : 'OFF'}`}
+          data-testid="nav-cluster-enabled-toggle"
         >
-          Turn off navigation cluster
-        </button>
-      ) : (
-        <div className={styles.confirmDialog} data-testid="nav-cluster-off-confirm">
-          <span className={styles.confirmText}>Turn off the navigation cluster?</span>
-          <button
-            type="button"
-            className={`${styles.confirmBtn} ${styles.confirmYes}`}
-            onClick={handleOffConfirmYes}
-            data-testid="nav-cluster-off-confirm-yes"
-          >
-            Yes
-          </button>
-          <button
-            type="button"
-            className={`${styles.confirmBtn} ${styles.confirmNo}`}
-            onClick={handleOffConfirmNo}
-            data-testid="nav-cluster-off-confirm-no"
-          >
-            No
-          </button>
-        </div>
-      )}
+          <svg className={styles.toggleIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
+            <path d="M19 15L19.5 16.5L21 17L19.5 17.5L19 19L18.5 17.5L17 17L18.5 16.5L19 15Z" />
+          </svg>
+        </IconButton>
+      </div>
     </div>
   );
 }

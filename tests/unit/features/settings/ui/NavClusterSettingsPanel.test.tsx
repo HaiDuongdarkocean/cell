@@ -36,9 +36,9 @@ describe('NavClusterSettingsPanel (ADR-018 D2, spec §A9)', () => {
     expect(slider.value).toBe('0.9');
   });
 
-  it('renders off toggle button', () => {
+  it('renders enable toggle button', () => {
     render(<NavClusterSettingsPanel {...makeProps()} />);
-    expect(screen.getByTestId('nav-cluster-off-toggle')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-cluster-enabled-toggle')).toBeInTheDocument();
   });
 
   it('button size slider change calls onChange with new buttonSize', () => {
@@ -65,27 +65,30 @@ describe('NavClusterSettingsPanel (ADR-018 D2, spec §A9)', () => {
     expect(props.onChange).toHaveBeenCalledWith({ buttonOpacity: 0.8 });
   });
 
-  it('off toggle click shows confirm dialog', () => {
-    render(<NavClusterSettingsPanel {...makeProps()} />);
-    fireEvent.click(screen.getByTestId('nav-cluster-off-toggle'));
-    expect(screen.getByTestId('nav-cluster-off-confirm')).toBeInTheDocument();
-  });
-
-  it('confirm Yes calls onChange with enabled=false', () => {
-    const props = makeProps();
+  it('toggle click when enabled calls onChange with enabled=false', () => {
+    const props = makeProps({ enabled: true });
     render(<NavClusterSettingsPanel {...props} />);
-    fireEvent.click(screen.getByTestId('nav-cluster-off-toggle'));
-    fireEvent.click(screen.getByTestId('nav-cluster-off-confirm-yes'));
+    fireEvent.click(screen.getByTestId('nav-cluster-enabled-toggle'));
     expect(props.onChange).toHaveBeenCalledWith({ enabled: false });
   });
 
-  it('confirm No cancels (no onChange call)', () => {
-    const props = makeProps();
+  it('toggle click when disabled calls onChange with enabled=true', () => {
+    const props = makeProps({ enabled: false });
     render(<NavClusterSettingsPanel {...props} />);
-    fireEvent.click(screen.getByTestId('nav-cluster-off-toggle'));
-    fireEvent.click(screen.getByTestId('nav-cluster-off-confirm-no'));
-    expect(props.onChange).not.toHaveBeenCalled();
-    expect(screen.queryByTestId('nav-cluster-off-confirm')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('nav-cluster-enabled-toggle'));
+    expect(props.onChange).toHaveBeenCalledWith({ enabled: true });
+  });
+
+  it('toggle reflects aria-pressed state matching enabled', () => {
+    render(<NavClusterSettingsPanel {...makeProps({ enabled: true })} />);
+    const toggle = screen.getByTestId('nav-cluster-enabled-toggle');
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('toggle reflects aria-pressed=false when disabled', () => {
+    render(<NavClusterSettingsPanel {...makeProps({ enabled: false })} />);
+    const toggle = screen.getByTestId('nav-cluster-enabled-toggle');
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('button size slider snaps to nearest preset on change', () => {
