@@ -1,16 +1,58 @@
 # Spec Review: Subtitle Navigation Control Cluster
 
-> **Model**: Kimi 2.7
+> **Model**: Kimi 2.7 (initial) → Opus 4.8 (re-review after patch)
 > **Date**: 2026-07-02
 > **Spec**: `docs/specs/spec-subtitle-navigation-control.md`
 > **Intent**: `docs/intent/intent-subtitle-navigation-control.md`
 > **Reviewer**: spec-reviewer skill (subagent)
+> **Review type**: Initial BLOCKED → patched → re-review APPROVED
 
 ## Status
 
-**BLOCKED**
+**APPROVED** (after patch — initial review was BLOCKED)
 
-## Checklist Results
+## Re-Review Checklist Results (Opus 4.8)
+
+| Section | Pass | Fail | NA | Items |
+|---------|------|------|-----|-------|
+| Feasibility (Tech Lead) | 4/4 | 0/4 | 0/4 | F1-F4 |
+| Testability (QA) | 3/3 | 0/3 | 0/3 | T1-T3 |
+| Scope (Product) | 3/3 | 0/3 | 0/3 | S1-S3 |
+| **Total** | 10/10 | 0/10 | 0/10 | |
+
+## Previous Risk Resolution
+
+| # | Prev Severity | Section | Status | Evidence |
+|---|--------------|---------|--------|----------|
+| 1 | HIGH | F1 | RESOLVED | Dependencies & Fallbacks table — 7 deps with owner/available/fallback |
+| 2 | HIGH | F4 | RESOLVED | Rollback & Migration Failure Strategy — atomic, no-retry, clamp, forward-compat |
+| 3 | CRITICAL | T1 | RESOLVED | Acceptance A1-A15 table with Precondition/Steps/Expected/Verify/Selector; F/NF mapped |
+| 4 | HIGH | T2 | RESOLVED | Edge Cases — 8 subsections, each ≥2 cases |
+| 5 | HIGH | T3 | RESOLVED | Error States & Recovery — 9 scenarios |
+| 6 | HIGH | S1 | RESOLVED | Objective problem-first + Proposed Solution separate |
+| 7 | MEDIUM | Feasibility | RESOLVED | cue fields start/end (0 startMs/endMs remaining) |
+| 8 | MEDIUM | Feasibility | RESOLVED | Keyboard State Machine + fixed parallel shortcuts (ShortcutAction not expanded) |
+| 9 | MEDIUM | Feasibility | RESOLVED | Cue Source Decision — target primary, native fallback, not merged bilingual |
+
+**All 9 previous risks: RESOLVED.**
+
+## Remaining Risk (LOW, non-blocking)
+
+| # | Severity | Section | Question | Suggested Fix |
+|---|----------|---------|----------|---------------|
+| 1 | LOW | Settings Schema vs prose | Naming: `NavClusterSettings.enabled` (interface) vs `navClusterEnabled` (prose F11/A9/Rollback/Data Flow). | Align naming at G2 Plan — pick flat `navClusterEnabled` or nested `navCluster.enabled`. |
+
+## Decision
+
+- [x] **APPROVED** — proceed to G2 Plan
+
+---
+
+## Initial Review (BLOCKED — superseded by re-review above)
+
+> Kept for audit trail. The initial review flagged 1 CRITICAL + 5 HIGH + 3 MEDIUM risks, all resolved in patch commit `0e40020`.
+
+### Initial Checklist Results (Kimi 2.7)
 
 | Section | Pass | Fail | NA | Items |
 |---------|------|------|-----|-------|
@@ -18,6 +60,20 @@
 | Testability (QA) | 0/3 | 3/3 | 0/3 | T1-T3 |
 | Scope (Product) | 2/3 | 1/3 | 0/3 | S1-S3 |
 | **Total** | 4/10 | 6/10 | 0/10 | |
+
+### Initial Risks (all RESOLVED in patch)
+
+| # | Severity | Section | Question | Suggested Fix |
+|---|----------|---------|----------|---------------|
+| 1 | HIGH | F1 | Runtime/verification dependencies lack owner + timeline + fallback. | Add Dependencies & Fallbacks table. |
+| 2 | HIGH | F4 | Stateful settings/schema changes have no rollback or migration failure behavior. | Add rollback section. |
+| 3 | CRITICAL | T1 | Acceptance criteria lack concrete verify methods. | Convert to verification table with selectors. |
+| 4 | HIGH | T2 | Edge cases are not documented at ≥2 per feature/story. | Add Edge Cases subsection per feature. |
+| 5 | HIGH | T3 | Error states are undefined. | Add Error States & Recovery section. |
+| 6 | HIGH | S1 | Objective/problem statement is solution-first. | Rewrite Objective problem-first + Proposed Solution. |
+| 7 | MEDIUM | Feasibility | Spec uses cue fields `startMs`/`endMs`, but current code uses `start`/`end`. | Replace with `start`/`end`. |
+| 8 | MEDIUM | Feasibility | Keyboard hold-to-repeat and seek shortcuts underspecified. | Add Keyboard State Machine + schema decision. |
+| 9 | MEDIUM | Feasibility | Prev/next cue source conflict with content controller. | Add Cue Source Decision. |
 
 ## Checklist Details
 
