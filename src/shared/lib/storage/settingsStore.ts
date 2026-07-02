@@ -104,7 +104,7 @@ export async function loadSettings(): Promise<Settings> {
     // fields in case storage was edited externally with invalid values.
     const merged = { ...DEFAULT_SETTINGS, ...raw } as Record<string, unknown>;
     validateNavClusterFields(merged);
-    return merged as Settings;
+    return merged as unknown as Settings;
   }
 
   // Run migrations sequentially from stored version up to current.
