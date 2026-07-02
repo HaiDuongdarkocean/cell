@@ -111,10 +111,7 @@ docs/           # Tài liệu dự án
 src/            # Source code (chi tiết trong 2-architechture-system.md)
 tests/          # Test files (chi tiết trong 2-architechture-system.md)
 .agents/        # Agent skills
-.windsurf/      # Windsurf rules
-│   ├── rules/
-│   │   ├── baseline.md              # Windsurf-specific baseline rules
-│   │   └── ponytail.md              # Lazy senior dev ladder
+.windsurf/      # Windsurf config (rules consolidated vào AGENTS.md — cross-tool source of truth)
 ```
 
 ## Cách dùng tổng quan
@@ -136,9 +133,7 @@ tests/          # Test files (chi tiết trong 2-architechture-system.md)
 
 | File | Bản chất | Khi nào load |
 |---|---|---|
-| AGENTS.md | Cross-tool rules + skill hierarchy | Mỗi session (Windsurf + Devin) |
-| .windsurf/rules/baseline.md | Windsurf-specific rules | Mỗi session (Windsurf) |
-| .windsurf/rules/ponytail.md | Lazy senior dev ladder | Mỗi session (Windsurf) |
+| AGENTS.md | Cross-tool rules + skill hierarchy (baseline + ponytail consolidated) | Mỗi session (Windsurf + Devin) |
 | 0-wiki.md | Mục lục tổng quan | Đầu session |
 | 1-share-language.md | Glossary human ↔ system | Đầu session |
 | 2-architechture-system.md | Architecture chi tiết | Trước khi sửa code |
