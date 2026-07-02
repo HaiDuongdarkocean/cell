@@ -2,7 +2,7 @@ import { sendMessage, onMessage, onStorageChanged } from '@/shared/lib/chrome-ap
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
+import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
 import {
   SubtitleOverlayController,
   parseAndDetectFiles,
@@ -20,8 +20,9 @@ import {
   createDebouncedToast,
   formatSubtitleName,
 } from '@/features/subtitle';
+import { NavClusterController } from '@/features/subtitle/ui/navClusterController';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
-import type { BilingualCue, KeyboardShortcut, SrtCue } from '@/entities/media';
+import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, Settings } from '@/entities/media';
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
 import type { SubtitlePanelItem, SubtitleManagerPanel, ParsedFile } from '@/features/subtitle';
 
@@ -75,9 +76,57 @@ export function init(video: HTMLVideoElement): () => void {
 
   // ADR-013 D3: load overlay styles from storage (async), then init controller
   let controller: SubtitleOverlayController | null = null;
-  loadOverlayStyles().then(({ target, native }) => {
+  // ADR-018: nav cluster controller (subtitle navigation control cluster)
+  let navCluster: NavClusterController | null = null;
+  // ADR-018: track latest target/native cues for nav cluster cue source
+  let latestTargetCues: SrtCue[] = [];
+  let latestNativeCues: SrtCue[] = [];
+
+  loadOverlayStyles().then(async ({ target, native }) => {
     controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG, target, native);
     controller.init(container);
+
+    // ADR-018: init nav cluster — load settings first, then instantiate.
+    // Cluster renders immediately (4-nút no-sub state) without waiting for subtitles.
+    let navClusterSettings: NavClusterSettings = {
+      enabled: DEFAULT_NAV_CLUSTER_SETTINGS.enabled,
+      position: DEFAULT_NAV_CLUSTER_SETTINGS.position,
+      buttonSize: DEFAULT_NAV_CLUSTER_SETTINGS.buttonSize,
+      bgOpacity: DEFAULT_NAV_CLUSTER_SETTINGS.bgOpacity,
+      buttonOpacity: DEFAULT_NAV_CLUSTER_SETTINGS.buttonOpacity,
+      collapsed: DEFAULT_NAV_CLUSTER_SETTINGS.collapsed,
+    };
+    try {
+      const settings = await loadSettings();
+      navClusterSettings = {
+        enabled: settings.navClusterEnabled,
+        position: settings.navClusterPosition,
+        buttonSize: settings.navClusterButtonSize,
+        bgOpacity: settings.navClusterBgOpacity,
+        buttonOpacity: settings.navClusterButtonOpacity,
+        collapsed: settings.navClusterCollapsed,
+      };
+    } catch {
+      // ponytail: storage might not be available in test contexts — fallback to defaults
+    }
+    navCluster = new NavClusterController(
+      video,
+      container,
+      navClusterSettings,
+      { targetCues: latestTargetCues, nativeCues: latestNativeCues },
+      // ADR-018 D2: map NavClusterSettings slice → flat settings keys for saveSettings
+      (partial) => {
+        const flat: Record<string, unknown> = {};
+        if (partial.enabled !== undefined) flat.navClusterEnabled = partial.enabled;
+        if (partial.position !== undefined) flat.navClusterPosition = partial.position;
+        if (partial.buttonSize !== undefined) flat.navClusterButtonSize = partial.buttonSize;
+        if (partial.bgOpacity !== undefined) flat.navClusterBgOpacity = partial.bgOpacity;
+        if (partial.buttonOpacity !== undefined) flat.navClusterButtonOpacity = partial.buttonOpacity;
+        if (partial.collapsed !== undefined) flat.navClusterCollapsed = partial.collapsed;
+        void saveSettings(flat as Partial<Settings>);
+      },
+    );
+    navCluster.init();
 
     // ADR-015 UI v4: create manager panel after controller init so we can reuse
     // the import button created by the controller (single toolbar, no duplicate buttons).
@@ -103,17 +152,44 @@ export function init(video: HTMLVideoElement): () => void {
       });
     }
 
-    // ADR-013 D3: listen chrome.storage.onChanged → updateStyle realtime
+    // ADR-013 D3 + ADR-018: listen chrome.storage.onChanged → updateStyle + navCluster realtime
     onStorageChanged((changes, area) => {
       if (area !== 'local' || !controller) return;
       const newSettings = changes.settings?.newValue as
-        | { subtitleOverlayTargetStyle?: OverlayStyleConfig; subtitleOverlayNativeStyle?: OverlayStyleConfig }
+        | {
+            subtitleOverlayTargetStyle?: OverlayStyleConfig;
+            subtitleOverlayNativeStyle?: OverlayStyleConfig;
+            navClusterEnabled?: boolean;
+            navClusterPosition?: { x: number; y: number };
+            navClusterButtonSize?: number;
+            navClusterBgOpacity?: number;
+            navClusterButtonOpacity?: number;
+            navClusterCollapsed?: boolean;
+          }
         | undefined;
       if (!newSettings) return;
       controller.updateStyle(
         newSettings.subtitleOverlayTargetStyle,
         newSettings.subtitleOverlayNativeStyle,
       );
+      // ADR-018: update nav cluster settings realtime
+      if (navCluster) {
+        const partial: {
+          enabled?: boolean;
+          position?: { x: number; y: number };
+          buttonSize?: NavClusterSettings['buttonSize'];
+          bgOpacity?: number;
+          buttonOpacity?: number;
+          collapsed?: boolean;
+        } = {};
+        if (newSettings.navClusterEnabled !== undefined) partial.enabled = newSettings.navClusterEnabled;
+        if (newSettings.navClusterPosition !== undefined) partial.position = newSettings.navClusterPosition;
+        if (newSettings.navClusterButtonSize !== undefined) partial.buttonSize = newSettings.navClusterButtonSize as NavClusterSettings['buttonSize'];
+        if (newSettings.navClusterBgOpacity !== undefined) partial.bgOpacity = newSettings.navClusterBgOpacity;
+        if (newSettings.navClusterButtonOpacity !== undefined) partial.buttonOpacity = newSettings.navClusterButtonOpacity;
+        if (newSettings.navClusterCollapsed !== undefined) partial.collapsed = newSettings.navClusterCollapsed;
+        if (Object.keys(partial).length > 0) navCluster.updateSettings(partial);
+      }
     });
   });
 
@@ -507,6 +583,10 @@ export function init(video: HTMLVideoElement): () => void {
     const nativeCues = assignment.native[0]?.cues ?? [];
     if (targetCues.length > 0 || nativeCues.length > 0) {
       controller?.loadBilingualCues(targetCues, nativeCues);
+      // ADR-018: update nav cluster cue source (4↔6 nút transition)
+      latestTargetCues = targetCues;
+      latestNativeCues = nativeCues;
+      navCluster?.updateCues(targetCues, nativeCues);
       // ADR-015 T10: merge for Side Panel + keyboard shortcuts
       bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
       void sendMessage({
@@ -515,6 +595,10 @@ export function init(video: HTMLVideoElement): () => void {
       });
     } else if (assignment.target.length === 0 && assignment.native.length === 0) {
       controller?.loadCues(parsed[0].cues); // fallback: single mode
+      // ADR-018: update nav cluster with single-mode cues
+      latestTargetCues = parsed[0].cues;
+      latestNativeCues = [];
+      navCluster?.updateCues(parsed[0].cues, []);
     }
 
     // Active subtitle names are visible in the manager panel; chip removed.
@@ -622,8 +706,14 @@ export function init(video: HTMLVideoElement): () => void {
       // We only update the selected side by passing its cues + empty other side.
       if (role === 'target') {
         controller?.loadBilingualCues(result.cues, []);
+        // ADR-018: update nav cluster — keep native side, replace target
+        latestTargetCues = result.cues;
+        navCluster?.updateCues(latestTargetCues, latestNativeCues);
       } else {
         controller?.loadBilingualCues([], result.cues);
+        // ADR-018: update nav cluster — keep target side, replace native
+        latestNativeCues = result.cues;
+        navCluster?.updateCues(latestTargetCues, latestNativeCues);
       }
       showToast(`Switched to sub #${index + 1}`, container);
     } catch (err) {
@@ -673,6 +763,7 @@ export function init(video: HTMLVideoElement): () => void {
     document.removeEventListener('visibilitychange', onVisibilityChange);
     toggleBtn?.remove();
     managerPanel?.destroy();
+    navCluster?.destroy();
     controller?.destroy();
   };
 }
