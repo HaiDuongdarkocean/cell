@@ -476,6 +476,11 @@ export function init(video: HTMLVideoElement): () => void {
         tabUrl: window.location.href,
         onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
           bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
+          // ADR-018: keep nav cluster cue source in sync with auto-loaded subtitles
+          // (4↔6 nút transition when subtitles become available).
+          latestTargetCues = targetCues;
+          latestNativeCues = nativeCues;
+          navCluster?.updateCues(targetCues, nativeCues);
           console.log('[content-script] onPanelRender', {
             targetCueCount: targetCues.length,
             nativeCueCount: nativeCues.length,
