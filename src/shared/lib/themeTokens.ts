@@ -17,6 +17,7 @@
 
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { NAV_CLUSTER_CSS } from '@/features/subtitle/ui/navClusterCss';
 
 // Token definitions — mirrors src/entrypoints/popup/styles/theme.css (keep in sync).
 const LIGHT_TOKENS = `
@@ -132,6 +133,8 @@ ${DARK_TOKENS}
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+${NAV_CLUSTER_CSS}
 `;
     document.head.appendChild(style);
   }
