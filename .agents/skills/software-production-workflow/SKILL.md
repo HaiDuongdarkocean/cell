@@ -19,8 +19,10 @@ Task arrives
     │
     ├── Don't know what user wants? ────────→ G0 (interview-me + idea-refine)
     │   └── Feasibility go/no-go LIGHTWEIGHT → YES (skip) → STOP
-    │                                   → NO → G1
-    ├── Have intent, need requirements? ───→ G1 (spec-driven-development)
+    │                                   → NO → G0.5 (if UI feature) / G1 (if no UI)
+    ├── Have intent, UI feature? ──────────→ G0.5 (design-driven-development — mockup before spec)
+    │   └── design-system.md stale? ───────→ design-system-audit (refresh living doc first)
+    ├── Have intent, need requirements? ───→ G1 (spec-driven-development — cite mockup if G0.5 ran)
     ├── Have spec, need approach? ─────────→ G2 (planning-and-task-breakdown high-level)
     ├── Have plan, need architecture? ──────→ G3 (system-architecture-design + ADR)
     │   ├── UI work? ───────────────────────→ ADR records UI decision (WHAT + WHY), implementation detail (DOM/state/mockup) lives in G4 task list
@@ -139,6 +141,7 @@ All feature docs must follow the format `<prefix>-<name>.md` with prefix ∈ {`i
 | Phase | When to commit | Commit scope | Format |
 |---|---|---|---|
 | G0 Discovery | After completing G0 file ops (intent + 0-wiki update) | Docs only: `docs/intent/` + `docs/0-wiki.md` | `docs: G0 intent <feature>` |
+| G0.5 Mockup | After completing G0.5 file ops (mockup + optional contract + 0-wiki update + intent update if drift) | Docs only: `docs/mockups/` + `docs/intent/` (if drift) + `docs/0-wiki.md` | `docs: G0.5 mockup <feature>` |
 | G1 Spec | After completing G1 file ops (spec + 0-wiki update) | Docs only: `docs/specs/` + `docs/0-wiki.md` | `docs: G1 spec <feature>` |
 | G2 Plan | After completing G2 file ops (plan + 0-wiki update) | Docs only: `docs/plan/` + `docs/0-wiki.md` | `docs: G2 plan <feature>` |
 | G3 ADR | After completing G3 file ops (ADR + 2-arch update + 0-wiki update) | Docs only: `docs/adr/` + `docs/2-architechture-system.md` + `docs/0-wiki.md` | `docs: G3 ADR-NNN <feature>` |
@@ -168,6 +171,21 @@ All feature docs must follow the format `<prefix>-<name>.md` with prefix ∈ {`i
 - UPDATE: `docs/0-wiki.md` (table of contents), `docs/1-share-language.md` (if intent introduces new terms)
 
 > **Lightweight feasibility go/no-go (end of G0)**: only answers "Is it clearly not worth doing?" — if YES → stop, don't enter G1. If NO (needs deeper evaluation) → enter G1 to write spec. IN-DEPTH feasibility assessment (evidence-based build-vs-buy, concrete risk mitigation) moves to G2 plan, where spec is the foundation.
+
+## Phase 0.5 — Design-Driven Mockup (UI features only)
+**Purpose**: Generate visual mockup (HTML/SVG) from intent + `design-system.md` BEFORE writing spec, so UI is confirmed with anh before committing to detailed requirements. Mockup may change intent requirements (intent drift) → update intent before G1.
+**Skill activation**: `design-driven-development` (generate mockup + get approval + handoff)
+**Ponytail**: rung 2 (reuse codebase) — "Read `docs/design-system/design-system.md` first, reuse tokens/components/patterns, don't invent."
+**Input**: `docs/intent/intent-<feature>.md` + `docs/design-system/design-system.md` + anh's answers to 8 input-gathering questions
+**Output**: `docs/mockups/mockup-<feature>.html` (always) + `docs/mockups/icon-svg/<icon>.svg` (if custom icon) + `docs/mockups/design-contract-<feature>.md` (optional — only if UI complex: multi-state 4+ AND multi-token 5+ AND new interaction pattern)
+**File ops**:
+- READ: `docs/intent/intent-<feature>.md`, `docs/design-system/design-system.md`, `src/entrypoints/popup/styles/theme.css` + `src/shared/lib/themeTokens.ts` (verify token values), `docs/adr/` (approved patterns), `src/` existing components (mimic)
+- ADD: `docs/mockups/mockup-<feature>.html` (+ optional SVG icon + optional contract file)
+- UPDATE (if intent drift): `docs/intent/intent-<feature>.md` (mockup changed requirements → update intent before G1), `docs/0-wiki.md` (mockup entry)
+**Skip condition**: Feature has NO UI surface (pure background logic, no-UI) → skip G0.5, go straight to G1.
+**Stale design-system.md**: If `design-system.md` "Last updated" > 1 month ago + recent refactors → invoke `design-system-audit` first to refresh living doc before generating mockup.
+
+> **Why mockup before spec**: Spec describes UI in text → ambiguous → G4 code drifts from anh's vision → rework. Mockup = visual confirmation → spec cites mockup → G4 code follows mockup → G5 verifies real render vs mockup. Catches UI breakage early (G0.5) instead of late (G4/G6).
 
 ## Phase 1 — Requirements / Spec
 **Purpose**: Turn needs into specific, testable requirements (PRD/SRS "what to build"). **Spec is the ROOT for plan** — all downstream decisions (plan, ADR, task) must cite spec.

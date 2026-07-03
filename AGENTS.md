@@ -141,7 +141,8 @@ Mỗi item = 1 rule được tuân thủ, làm xong → complete → biến mấ
 
 ```
 G0 Discovery (+ feasibility go/no-go nhẹ cuối G0)
-  → G1 Spec
+  → G0.5 Design-Driven Mockup (UI features only — design-driven-development skill, generates mockup before spec)
+  → G1 Spec (cite mockup if G0.5 ran)
   → G2 Plan (implementation plan, input = spec)
   → G3 Design/ADR
       └── api-and-interface-design  (code-to-code contracts: props, payloads, module boundaries)
@@ -164,7 +165,7 @@ Any change touching content-scripts, popup UI, DOM injection, or extension runti
 
 ## Use Knowledge Base (Chrome Extension Baseline)
 
-- **UI/UX decisions**: ADR (G3) ghi WHY — token reuse vs new, accessibility target, component boundaries. Implementation detail (DOM, state, mockup, a11y checklist) thuộc G4 task list. Legacy `docs/design-system/` + `docs/reviews/design-system-*` files kept as reference, not updated further.
+- **UI/UX decisions**: ADR (G3) ghi WHY — token reuse vs new, accessibility target, component boundaries. Implementation detail (DOM, state, mockup, a11y checklist) thuộc G4 task list. **Living design system doc**: `docs/design-system/design-system.md` (DSDS-inspired, 7 sections) — read in G0.5 (mockup bounds) + G4 (token/pattern reuse) + G7 (audit). Audit via `design-system-audit` skill when stale. Legacy `docs/reviews/design-system-*` files kept as reference, not updated further.
 - **Đọc trước code**: `docs/0-wiki.md` (overview) → `docs/1-share-language.md` (glossary) → `docs/2-architechture-system.md` (file structure + dependencies + impact radius)
 - **chrome-devtools MCP**: refer `docs/reference/chrome-devtools-mcp.md`
 - **Architecture map**: update `docs/2-architechture-system.md` mỗi khi add/remove/rename files, change imports, hoặc modify data flows (xem "Update protocol" cuối file đó).
