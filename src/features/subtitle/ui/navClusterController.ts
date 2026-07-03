@@ -71,6 +71,7 @@ export class NavClusterController {
     this.applyPosition(this.settings.position);
     this.applyVisibility();
     this.applyNoSubState();
+    this.applyAppearance();
     this.container.appendChild(dom.cluster);
 
     this.wireButtonActions();
@@ -90,11 +91,10 @@ export class NavClusterController {
   updateSettings(partial: Partial<NavClusterSettings>): void {
     this.settings = { ...this.settings, ...partial };
     if (partial.position) this.applyPosition(this.settings.position);
-    if (partial.enabled !== undefined) {
-      this.applyVisibility();
-    }
-    if (partial.collapsed !== undefined) {
-      this.applyCollapsedState();
+    if (partial.enabled !== undefined) this.applyVisibility();
+    if (partial.collapsed !== undefined) this.applyCollapsedState();
+    if (partial.buttonSize !== undefined || partial.bgOpacity !== undefined || partial.buttonOpacity !== undefined) {
+      this.applyAppearance();
     }
   }
 
@@ -139,6 +139,14 @@ export class NavClusterController {
     // Use left/top % of container for absolute positioning.
     this.dom.cluster.style.left = `${pos.x}%`;
     this.dom.cluster.style.top = `${pos.y}%`;
+  }
+
+  private applyAppearance(): void {
+    if (!this.dom) return;
+    const { buttonSize, bgOpacity, buttonOpacity } = this.settings;
+    this.dom.cluster.style.setProperty('--nav-cluster-btn-size', `${buttonSize}px`);
+    this.dom.cluster.style.setProperty('--nav-cluster-bg-opacity', String(bgOpacity));
+    this.dom.cluster.style.setProperty('--nav-cluster-btn-opacity', String(buttonOpacity));
   }
 
   private applyVisibility(): void {

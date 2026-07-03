@@ -32,17 +32,17 @@ export function NavClusterSettingsPanel({
   settings,
   onChange,
 }: NavClusterSettingsPanelProps): ReactElement {
-  const handleButtonSizeChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const raw = Number(e.target.value);
+  const handleButtonSizeChange = (e: React.SyntheticEvent<HTMLInputElement>): void => {
+    const raw = Number(e.currentTarget.value);
     onChange({ buttonSize: snapButtonSize(raw) });
   };
 
-  const handleBgOpacityChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    onChange({ bgOpacity: Number(e.target.value) });
+  const handleBgOpacityChange = (e: React.SyntheticEvent<HTMLInputElement>): void => {
+    onChange({ bgOpacity: Number(e.currentTarget.value) });
   };
 
-  const handleButtonOpacityChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    onChange({ buttonOpacity: Number(e.target.value) });
+  const handleButtonOpacityChange = (e: React.SyntheticEvent<HTMLInputElement>): void => {
+    onChange({ buttonOpacity: Number(e.currentTarget.value) });
   };
 
   const handleToggleEnabled = (): void => {
@@ -65,6 +65,7 @@ export function NavClusterSettingsPanel({
           step={1}
           value={settings.buttonSize}
           onChange={handleButtonSizeChange}
+          onInput={handleButtonSizeChange}
           className={styles.slider}
           data-testid="nav-cluster-button-size"
           aria-label="Nav cluster button size"
@@ -85,6 +86,7 @@ export function NavClusterSettingsPanel({
           step={0.1}
           value={settings.bgOpacity}
           onChange={handleBgOpacityChange}
+          onInput={handleBgOpacityChange}
           className={styles.slider}
           data-testid="nav-cluster-bg-opacity"
           aria-label="Nav cluster background opacity"
@@ -105,6 +107,7 @@ export function NavClusterSettingsPanel({
           step={0.1}
           value={settings.buttonOpacity}
           onChange={handleButtonOpacityChange}
+          onInput={handleButtonOpacityChange}
           className={styles.slider}
           data-testid="nav-cluster-button-opacity"
           aria-label="Nav cluster button opacity"

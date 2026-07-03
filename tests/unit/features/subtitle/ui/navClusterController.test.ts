@@ -189,6 +189,17 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       expect(cluster.style.top).toBe('25%');
       ctrl.destroy();
     });
+
+    it('updates appearance CSS variables when buttonSize/bgOpacity/buttonOpacity change', () => {
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      ctrl.updateSettings({ buttonSize: 56, bgOpacity: 0.3, buttonOpacity: 0.5 });
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.style.getPropertyValue('--nav-cluster-btn-size')).toBe('56px');
+      expect(cluster.style.getPropertyValue('--nav-cluster-bg-opacity')).toBe('0.3');
+      expect(cluster.style.getPropertyValue('--nav-cluster-btn-opacity')).toBe('0.5');
+      ctrl.destroy();
+    });
   });
 
   describe('setVisible', () => {
