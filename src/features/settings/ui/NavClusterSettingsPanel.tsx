@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import type { NavClusterSettings, NavClusterButtonSize } from '@/entities/settings';
-import { IconButton } from '@/shared/ui/IconButton';
+import { Toggle } from '@/shared/ui/Toggle';
+import { Slider } from '@/shared/ui/Slider';
 import styles from './NavClusterSettingsPanel.module.css';
 
 interface NavClusterSettingsPanelProps {
@@ -32,109 +33,87 @@ export function NavClusterSettingsPanel({
   settings,
   onChange,
 }: NavClusterSettingsPanelProps): ReactElement {
-  const handleButtonSizeChange = (e: React.SyntheticEvent<HTMLInputElement>): void => {
-    const raw = Number(e.currentTarget.value);
+  const handleButtonSizeChange = (raw: number): void => {
     onChange({ buttonSize: snapButtonSize(raw) });
   };
 
-  const handleBgOpacityChange = (e: React.SyntheticEvent<HTMLInputElement>): void => {
-    onChange({ bgOpacity: Number(e.currentTarget.value) });
+  const handleBgOpacityChange = (v: number): void => {
+    onChange({ bgOpacity: v });
   };
 
-  const handleButtonOpacityChange = (e: React.SyntheticEvent<HTMLInputElement>): void => {
-    onChange({ buttonOpacity: Number(e.currentTarget.value) });
+  const handleButtonOpacityChange = (v: number): void => {
+    onChange({ buttonOpacity: v });
   };
 
-  const handleToggleEnabled = (): void => {
-    onChange({ enabled: !settings.enabled });
+  const handleToggleEnabled = (next: boolean): void => {
+    onChange({ enabled: next });
   };
 
   return (
     <div className={styles.container} data-testid="nav-cluster-settings-panel">
+      {/* Enable toggle (ADR-018 D2: 2-state ON/OFF, Toggle atom switch pill) */}
+      <div className={styles.fieldRow}>
+        <span className={styles.rowLabel}>Enable cluster</span>
+        <Toggle
+          checked={settings.enabled}
+          onChange={handleToggleEnabled}
+          aria-label="Toggle navigation cluster"
+          data-testid="nav-cluster-enabled-toggle"
+        />
+      </div>
+
       {/* Button size */}
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="nav-cluster-button-size">
-          <span>Button size</span>
+        <div className={styles.sliderHeader}>
+          <label className={styles.label} htmlFor="nav-cluster-button-size">Button size</label>
           <span className={styles.value}>{settings.buttonSize}px</span>
-        </label>
-        <input
+        </div>
+        <Slider
           id="nav-cluster-button-size"
-          type="range"
+          value={settings.buttonSize}
           min={40}
           max={56}
           step={1}
-          value={settings.buttonSize}
           onChange={handleButtonSizeChange}
-          onInput={handleButtonSizeChange}
-          className={styles.slider}
-          data-testid="nav-cluster-button-size"
           aria-label="Nav cluster button size"
+          data-testid="nav-cluster-button-size"
         />
       </div>
 
       {/* Background opacity */}
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="nav-cluster-bg-opacity">
-          <span>Background opacity</span>
+        <div className={styles.sliderHeader}>
+          <label className={styles.label} htmlFor="nav-cluster-bg-opacity">Background opacity</label>
           <span className={styles.value}>{Math.round(settings.bgOpacity * 100)}%</span>
-        </label>
-        <input
+        </div>
+        <Slider
           id="nav-cluster-bg-opacity"
-          type="range"
+          value={settings.bgOpacity}
           min={0}
           max={1}
           step={0.1}
-          value={settings.bgOpacity}
           onChange={handleBgOpacityChange}
-          onInput={handleBgOpacityChange}
-          className={styles.slider}
-          data-testid="nav-cluster-bg-opacity"
           aria-label="Nav cluster background opacity"
+          data-testid="nav-cluster-bg-opacity"
         />
       </div>
 
       {/* Button opacity */}
       <div className={styles.field}>
-        <label className={styles.label} htmlFor="nav-cluster-button-opacity">
-          <span>Button opacity</span>
+        <div className={styles.sliderHeader}>
+          <label className={styles.label} htmlFor="nav-cluster-button-opacity">Button opacity</label>
           <span className={styles.value}>{Math.round(settings.buttonOpacity * 100)}%</span>
-        </label>
-        <input
+        </div>
+        <Slider
           id="nav-cluster-button-opacity"
-          type="range"
+          value={settings.buttonOpacity}
           min={0}
           max={1}
           step={0.1}
-          value={settings.buttonOpacity}
           onChange={handleButtonOpacityChange}
-          onInput={handleButtonOpacityChange}
-          className={styles.slider}
-          data-testid="nav-cluster-button-opacity"
           aria-label="Nav cluster button opacity"
+          data-testid="nav-cluster-button-opacity"
         />
-      </div>
-
-      {/* Enable toggle (ADR-018 D2: 2-state ON/OFF, reuse IconButton pattern) */}
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor="nav-cluster-enabled">
-          <span>Navigation cluster</span>
-          <span className={styles.value}>{settings.enabled ? 'ON' : 'OFF'}</span>
-        </label>
-        <IconButton
-          id="nav-cluster-enabled"
-          size="sm"
-          active={settings.enabled}
-          onClick={handleToggleEnabled}
-          aria-pressed={settings.enabled}
-          aria-label="Toggle navigation cluster"
-          title={`Navigation cluster: ${settings.enabled ? 'ON' : 'OFF'}`}
-          data-testid="nav-cluster-enabled-toggle"
-        >
-          <svg className={styles.toggleIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
-            <path d="M19 15L19.5 16.5L21 17L19.5 17.5L19 19L18.5 17.5L17 17L18.5 16.5L19 15Z" />
-          </svg>
-        </IconButton>
       </div>
     </div>
   );
