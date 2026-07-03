@@ -113,6 +113,32 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       expect(cluster.getAttribute('aria-grabbed')).toBe('false');
       ctrl.destroy();
     });
+
+    it('double-click on action button does NOT reset position (regression)', () => {
+      const customPos = { x: 50, y: 50 };
+      const ctrl = new NavClusterController(video, container, { ...DEFAULT_NAV_CLUSTER_SETTINGS, position: customPos }, { targetCues: CUES, nativeCues: [] });
+      ctrl.init();
+      ctrl.updateCues(CUES, []);
+      const prevBtn = container.querySelector('[data-testid="nav-cluster-prev"]') as HTMLButtonElement;
+      prevBtn.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      // Position should NOT reset to default (0, 75)
+      expect(cluster.style.left).toBe('50%');
+      expect(cluster.style.top).toBe('50%');
+      ctrl.destroy();
+    });
+
+    it('double-click on cluster background resets position to default', () => {
+      const customPos = { x: 50, y: 50 };
+      const ctrl = new NavClusterController(video, container, { ...DEFAULT_NAV_CLUSTER_SETTINGS, position: customPos }, { targetCues: CUES, nativeCues: [] });
+      ctrl.init();
+      ctrl.updateCues(CUES, []);
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      cluster.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      expect(cluster.style.left).toBe('0%');
+      expect(cluster.style.top).toBe('75%');
+      ctrl.destroy();
+    });
   });
 
   describe('updateCues — 4↔6 nút transition', () => {

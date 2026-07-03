@@ -324,7 +324,11 @@ export class NavClusterController {
       this.persistSettings({ position: this.settings.position });
     };
 
-    const onDblClick = (): void => {
+    const onDblClick = (e: MouseEvent): void => {
+      // Skip reset if double-click landed on an action button (prev/repeat/next/
+      // rewind/forward) — user is double-clicking the button, not the background.
+      const target = e.target as Element | null;
+      if (target && target.closest('.nav-cluster-btn')) return;
       const defaultPos: NavClusterPosition = { x: 0, y: 75 };
       this.updateSettings({ position: defaultPos, collapsed: false });
       this.persistSettings({ position: defaultPos, collapsed: false });
