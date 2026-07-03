@@ -39,6 +39,11 @@ src/
 │   ├── lib/            #   parsers/, storage/, chrome-apis/ (adapters), themeTokens
 │   │   ├── chrome-apis/  # M17: 9 adapters (tabs/runtime/storage/downloads/webRequest/offscreen/sidePanel/action/windows)
 │   │   └── storage/      # M21: settingsStore.ts (schema versioning + migration)
+│   ├── ui/             #   Reusable UI atoms (design-system-ui-ux Step 3, Rule of Three)
+│   │   ├── IconButton.tsx + .module.css  # Icon-only transparent button (11 call sites: Header, SettingsDialog, VideoCard, SubtitleCard, SelectionBar, DownloadCard)
+│   │   ├── Toggle.tsx + .module.css      # Switch pill 32x18px (settings-controls-restyle F1) — replaces IconButton star-icon toggles
+│   │   ├── Slider.tsx + .module.css      # Styled range 4px track + 14px thumb (settings-controls-restyle F2)
+│   │   └── ShortcutInput.tsx + .module.css # Uppercase + center single-char input (settings-controls-restyle F3)
 │   ├── utils/          #   fileUtils, timeUtils, urlUtils
 │   └── config/         #   config, messages, urls
 └── types/              # Ambient .d.ts (muxjs, vite-env) — M19: media/message/subtitle.ts deprecated
@@ -127,8 +132,12 @@ src/
 │       ├── SelectionBar.tsx          # Fixed bottom bar: selection count, clear, download selected
 │       ├── SelectionBar.module.css   # Styles cho SelectionBar
 │       └── settings/
-│           ├── SettingsDialog.tsx    # Settings dialog + CustomSelect dropdowns, Auto Select toggle, Preferred format dropdown, MultiSelect subtitle languages, Subtitle overlay settings (target language + auto-load), Keyboard shortcuts remap (a/d/s/w/t)
-│           ├── SettingsDialog.module.css # Styles cho SettingsDialog
+│           ├── SettingsDialog.tsx    # Settings dialog + CustomSelect dropdowns, Auto Select toggle (Toggle atom), Preferred format dropdown, MultiSelect subtitle languages, Subtitle overlay settings (target language + auto-load Toggle atom), Subtitle appearance (Target/Native tabs + SubtitlePreview + SubtitleStylePanel), Keyboard shortcuts remap (ShortcutInput atom, a/d/s/w/t), Nav cluster panel, Download settings
+│           ├── SettingsDialog.module.css # Styles cho SettingsDialog (480px popover + sidebar 120px + 5 section cards + pill active)
+│           ├── SubtitlePreview.tsx   # Black bg + white text + apply OverlayStyleConfig realtime (settings-controls-restyle F4)
+│           ├── SubtitlePreview.module.css # Styles cho SubtitlePreview
+│           ├── NavClusterSettingsPanel.tsx # Nav cluster controls (Toggle enable + 3 Slider atoms: button size/bg opacity/button opacity)
+│           ├── NavClusterSettingsPanel.module.css # Styles cho NavClusterSettingsPanel
 │           ├── MultiSelect.tsx       # Reusable searchable multi-select (search input + checkbox list + footer). Used cho subtitle language selection
 │           └── MultiSelect.module.css # Styles cho MultiSelect
 │
