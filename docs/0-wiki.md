@@ -111,6 +111,12 @@ docs/           # Tài liệu dự án
 │   └── review-subtitle-navigation-control.md # Spec review: subtitle navigation control cluster (BLOCKED Kimi 2.7 → patched → APPROVED Opus 4.8, 9 risks resolved, 1 LOW non-blocking)
 │   └── design-system-inventory-2026-07-02-nav-cluster.md # Design system inventory nav cluster (G3: 0 inconsist baseline, 10 new tokens, NavClusterButton atom, 3-layer enforcement)
 │   └── nav-cluster-frontend-design.md # Frontend UI engineering nav cluster (G3 build HOW: DOM tree, state machines, ARIA toolbar, responsive touch target, perf, anti-AI-aesthetic)
+├── design-system/                     # Living design system documentation + mockups
+│   ├── design-system.md               # Living Design System Documentation (DSDS-inspired, 7 sections: tokens + components + patterns + a11y + runtime + sync + guidelines)
+│   ├── nav-cluster-frontend-design.md # (legacy) Frontend UI engineering nav cluster — kept as reference, not updated
+│   └── icon-svg/                      # SVG icons used in mockups
+├── mockups/                           # HTML mockups (design-driven-development output, G0.5)
+│   └── subtitle-selector-mockup.html  # Subtitle selector mockup v4 (ADR-014 enhancement)
 ├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"
 │   ├── chrome-devtools-mcp.md
 │   ├── e2e-debugging.md
