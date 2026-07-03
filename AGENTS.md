@@ -144,13 +144,11 @@ G0 Discovery (+ feasibility go/no-go nhẹ cuối G0)
   → G1 Spec
   → G2 Plan (implementation plan, input = spec)
   → G3 Design/ADR
-      ├── api-and-interface-design  (code-to-code contracts: props, payloads, module boundaries)
-      ├── design-system-ui-ux       (user-facing visual contracts: tokens, atoms, enforcement)
-      └── frontend-ui-engineering   (build HOW: a11y, responsive, state — runs AFTER design-system-ui-ux)
+      └── api-and-interface-design  (code-to-code contracts: props, payloads, module boundaries)
   → G4 Implementation (task breakdown đầu G4, sau Spec+Plan+ADR)
   → G5 Testing
   → G6 Release
-  → G7 Maintenance (re-run design-system-ui-ux Step 5 drift audit quarterly)
+  → G7 Maintenance
 ```
 
 **Quy tắc cốt lõi**: output của spec là input của plan — plan phải cite spec, KHÔNG viết plan trước spec.
@@ -166,8 +164,7 @@ Any change touching content-scripts, popup UI, DOM injection, or extension runti
 
 ## Use Knowledge Base (Chrome Extension Baseline)
 
-- **UI/UX design system**: invoke `design-system-ui-ux` skill (G3) để establish tokens + atoms + enforcement. Output lưu `docs/design-system/` (inventory.md, tokens.css, atoms/, drift-audit-report.md).
-- **UI/UX build**: khi dùng `/frontend-ui-engineering`, apply `docs/specs/design/ferrence-for-design-ux_ui/reference-ui_ux_system.md`. Chạy SAU `design-system-ui-ux` (skill đó quyết định WHAT share, skill này build HOW).
+- **UI/UX decisions**: live inside ADR (G3) — section "## UI Design" covers tokens to reuse, new tokens, ARIA/accessibility, responsive, state machine, DOM tree. Optional "## Visual Mockup" section (SVG inline or linked) — gate G4 until anh duyệt. Legacy `docs/design-system/` + `docs/reviews/design-system-*` files kept as reference, not updated further.
 - **Đọc trước code**: `docs/0-wiki.md` (overview) → `docs/1-share-language.md` (glossary) → `docs/2-architechture-system.md` (file structure + dependencies + impact radius)
 - **chrome-devtools MCP**: refer `docs/reference/chrome-devtools-mcp.md`
 - **Architecture map**: update `docs/2-architechture-system.md` mỗi khi add/remove/rename files, change imports, hoặc modify data flows (xem "Update protocol" cuối file đó).
@@ -190,8 +187,7 @@ Glossary `docs/1-share-language.md` là cache đồng thuận ngôn ngữ giữa
 | Reusable insight | `docs/knowledge/<principle>.md` | — |
 | Bug fix | bug log + convention trong `docs/knowledge/<principle>.md` | — |
 | Rename/delete system term | `docs/1-share-language.md` (xem Update protocol cuối file đó) | — |
-| Add/remove/modify UI token or atom | `docs/reviews/design-system-inventory-YYYY-MM-DD.md` (re-run design-system-ui-ux Step 1) + `docs/reviews/design-system-drift-audit-YYYY-MM-DD.md` (Step 5) | `checklists/drift-audit-checklist.md` pass |
-| New runtime context renders UI | `docs/reviews/design-system-inventory-YYYY-MM-DD.md` cross-runtime section + token injection plan | audit report cross-runtime PASS |
+| UI decisions (tokens, ARIA, responsive, state machine) | `docs/adr/NNN-<decision>.md` section "## UI Design" | ADR exists + anh duyệt mockup (nếu có) |
 
 ## Communicate
 

@@ -23,7 +23,7 @@ Task arrives
     ├── Have intent, need requirements? ───→ G1 (spec-driven-development)
     ├── Have spec, need approach? ─────────→ G2 (planning-and-task-breakdown high-level)
     ├── Have plan, need architecture? ──────→ G3 (system-architecture-design + ADR)
-    │   ├── UI work? ───────────────────────→ design-system-ui-ux (tokens+atoms) → frontend-ui-engineering (build)
+    │   ├── UI work? ───────────────────────→ ADR includes "## Visual Mockup" section (optional, see G3)
     │   └── Module boundaries? ─────────────→ api-and-interface-design
     ├── Have ADR, need code? ──────────────→ G4 (TDD + incremental-implementation)
     │   ├── Context degrading? ────────────→ context-engineering
@@ -196,23 +196,22 @@ All feature docs must follow the format `<prefix>-<name>.md` with prefix ∈ {`i
 > **COMMON MISCONCEPTION WARNING**: Don't use `planning-and-task-breakdown` to generate a detailed task list in G2. That skill has 2 modes: (a) high-level phase split for G2 plan, (b) detailed task list for G4. G2 only uses mode (a). Detailed task list runs at **G4 start** (after Spec G1 + Plan G2 + ADR G3). G2 answers: "HOW high-level? Approach? Risk mitigation? Milestones?"
 
 ## Phase 3 — Design / Architecture
-**Purpose**: Design architecture + UI/UX + threat model before code.
-**Skill activation**: `system-architecture-design` → `cto-persona` (governance) → `api-and-interface-design` (module boundaries) → `design-system-ui-ux` (UI tokens + atoms + enforcement — runs BEFORE `frontend-ui-engineering`) → `frontend-ui-engineering` (UI design/build) → `security-and-hardening` (threat model) → `conceptualization` (trigger 3: architecture decision → principle)
+**Purpose**: Design architecture + threat model before code. UI/UX decisions live inside the ADR (no separate design-system files).
+**Skill activation**: `system-architecture-design` → `cto-persona` (governance) → `api-and-interface-design` (module boundaries) → `security-and-hardening` (threat model) → `conceptualization` (trigger 3: architecture decision → principle)
 **Input**: `docs/specs/spec-<feature>.md`, `docs/plan/plan-<feature>.md` (approach/risk already there, ADR formalizes decision)
-**Output**: `docs/adr/NNN-<decision>.md` (1 file per decision, NNN = sequence number), updated `docs/2-architechture-system.md`. If UI work: `docs/reviews/design-system-inventory-YYYY-MM-DD.md` (Step 1) + `tokens.css` + `atoms/` (output of `design-system-ui-ux` Steps 1-4)
+**Output**: `docs/adr/NNN-<decision>.md` (1 file per decision, NNN = sequence number), updated `docs/2-architechture-system.md`. ADR contains all UI decisions inline (tokens to reuse, new tokens, ARIA/accessibility, responsive, state machine, DOM tree).
 **File ops**:
 - READ: `docs/specs/spec-<feature>.md`, `docs/plan/plan-<feature>.md`, `docs/2-architechture-system.md`
 - ADD: `docs/adr/NNN-<decision>.md`
 - UPDATE: `docs/2-architechture-system.md` (Directory tree + Dependency table + Function Index)
 - UPDATE: `docs/0-wiki.md` (table of contents)
-- UI WORK: invoke `design-system-ui-ux` → ADD `docs/reviews/design-system-inventory-YYYY-MM-DD.md` (Step 1) + `tokens.css` (Step 2) + `atoms/` (Step 3) + `enforcement.md` (Step 4). Skip Steps 2-4 if Step 1 finds 0 inconsist (ponytail).
 - LEARNING: if architecture decision has reusable insight → invoke `/conceptualization` (trigger 3)
 
-> **G3 UI skill order**: `design-system-ui-ux` (decide WHAT components share: tokens + atoms) → `frontend-ui-engineering` (build HOW: a11y, responsive, component impl). Never build UI atoms before inventory — Dan Mall: "pain precedes change". `design-system-ui-ux` Step 1 (Interface Inventory) is the gate: 0 inconsist → skip rest, proceed to `frontend-ui-engineering` directly.
+> **G3 UI decisions live in ADR** (no separate design-system files): ADR section "## UI Design" covers tokens to reuse + new tokens + ARIA/accessibility + responsive + state machine + DOM tree. Optional "## Visual Mockup" section (SVG inline or linked) — gate G4 until anh duyệt. Legacy `docs/design-system/` + `docs/reviews/design-system-*` files kept as reference, not updated further.
 
 ## Phase 4 — Implementation / Coding
 **Purpose**: Write code per design, TDD, code review, atomic commits.
-**Skill activation**: `planning-and-task-breakdown` (G4 START, task list mode) → `test-driven-development` → `source-driven-development` → `incremental-implementation` → `frontend-ui-engineering` (UI) → `git-workflow-and-versioning`. Cross-cutting: see Skill Activation Matrix (`context-engineering`, `observability-and-instrumentation`, `code-simplification`, `conceptualization`).
+**Skill activation**: `planning-and-task-breakdown` (G4 START, task list mode) → `test-driven-development` → `source-driven-development` → `incremental-implementation` → `git-workflow-and-versioning`. Cross-cutting: see Skill Activation Matrix (`context-engineering`, `observability-and-instrumentation`, `code-simplification`, `conceptualization`).
 **Ponytail** (always-on, AGENTS.md): PRE-FILTER before TDD + implementation rules + self-check
 **Input**: `docs/specs/spec-<feature>.md`, `docs/plan/plan-<feature>.md`, `docs/adr/NNN-<decision>.md`, `docs/2-architechture-system.md`
 **Output**: `docs/task/task-<feature>.md` (detailed task list — output of `planning-and-task-breakdown` run at G4 start) + `src/` code + `tests/` + updated `docs/2-architechture-system.md`
@@ -324,20 +323,17 @@ All feature docs must follow the format `<prefix>-<name>.md` with prefix ∈ {`i
 
 → `code-simplification` (refactor clarity)
 
-→ `design-system-ui-ux` Step 5 (drift audit — re-run quarterly or before major release: re-inventory UI, compare vs last audit, run `checklists/drift-audit-checklist.md`)
-
 **Ponytail**: bug fix = root cause, not symptom — grep every caller of the function you touch, fix the shared function once. One guard there is a smaller diff than one per caller. Patching only the path the ticket names leaves a sibling caller still broken.
 
 **Input**: Bug report / incident / monitoring alert
 
-**Output**: `docs/knowledge/principles.md` (layer 1: principle entry) + `docs/knowledge/<case-name>.md` (layer 2: case study), postmortem. If UI drift audit: `docs/reviews/design-system-drift-audit-YYYY-MM-DD.md` (compared vs last inventory)
+**Output**: `docs/knowledge/principles.md` (layer 1: principle entry) + `docs/knowledge/<case-name>.md` (layer 2: case study), postmortem.
 **File ops**:
 - READ: `docs/knowledge/principles.md` (grep keywords → apply principle)
 - ADD: `docs/knowledge/<case-name>.md` (layer 2: new case study)
 - UPDATE: `docs/knowledge/principles.md` (layer 1: add principle entry or cases link)
 - UPDATE: `docs/2-architechture-system.md` (if fix affects architecture)
 - UPDATE: `docs/1-share-language.md` (if refactor/rename/delete system term → update or remove stale entry, see Update protocol at end of glossary)
-- UI DRIFT: ADD `docs/reviews/design-system-drift-audit-YYYY-MM-DD.md` (re-run `design-system-ui-ux` Step 5, fill `templates/audit-report-template.md`)
 
 -> Identify which phase you are in and apply the processes within that phase.
 
@@ -357,7 +353,6 @@ Each skill appears exactly once here. Phases sections reference this matrix for 
 | `security-and-hardening` | G1 (requirements), G3 (threat model), G5 (conditional) | Security concerns, SAST/DAST | + doubt-driven |
 | `performance-optimization` | G5 (conditional) | Perf concerns, Core Web Vitals | + observability |
 | `extension-browser-debugging` | G4 Pre-Commit, G5 (browser-facing) | Content-script, popup, UI, DOM injection | Stop-the-line verification |
-| `design-system-ui-ux` | G3 (UI work), G7 (drift audit quarterly) | UI inconsistent, add Nth screen, visual refactor, onboarding UI codebase, token/atom extraction | Runs BEFORE `frontend-ui-engineering` (WHAT share → HOW build). Step 1 inventory = gate: 0 inconsist → skip rest |
 | `conceptualization` | G3 (trigger 3), G4 (trigger 2,4,5), G7 (trigger 1) | 5 triggers → 2-layer principle | — |
 
 **G5 Code Review branching** (conditional sub-skills of `code-review-and-quality`):

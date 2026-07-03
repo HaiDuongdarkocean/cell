@@ -78,6 +78,58 @@ Use PostgreSQL with Prisma ORM.
 - We can use PostgreSQL's full-text search instead of adding Elasticsearch
 - Team needs PostgreSQL knowledge (standard skill, low risk)
 - Hosting on managed service (Supabase, Neon, or RDS)
+
+## UI Design (include when ADR touches user-facing UI)
+> Replaces `design-system-ui-ux` + `frontend-ui-engineering` skills (removed from workflow). All UI decisions live here, no separate design-system files.
+
+### Tokens to reuse (from existing `theme.css` / `themeTokens.ts`)
+| Token | Value (light / dark) | Use in this feature |
+|---|---|---|
+| `--color-text-inverse` | #ffffff / #0f172a | ... |
+
+### New tokens (cite spec §)
+| Token | Value | Cite |
+|---|---|---|
+| `--<feature>-size-md` | 48px | spec §NF1 |
+
+### DOM tree
+```
+<div data-testid="..." role="..." aria-label="...">
+  <button data-testid="..." aria-label="...">...</button>
+</div>
+```
+
+### State machine (if interactive)
+```
+IDLE → pointerdown → LOOPING → pointerup → IDLE
+```
+
+### Responsive
+| Setting | Size | Use case |
+|---|---|---|
+| small | 40px | Desktop mouse |
+
+## Accessibility (WCAG 2.1 AA — include when ADR touches UI)
+> Replaces `frontend-ui-engineering` a11y checklist (removed from workflow).
+
+- [ ] **Keyboard navigation**: every interactive element focusable by default (`<button>`, not `<div onClick>`). Tab order logical.
+- [ ] **ARIA labels**: interactive elements without visible text have `aria-label`. Toggle states use `aria-pressed`. Drag handle uses `aria-grabbed`.
+- [ ] **Focus management**: don't steal focus on mount. Move focus to safe element when hiding/collapsing. Trap focus inside dialogs when open.
+- [ ] **Contrast**: icon/text on background ≥ 4.5:1 (normal text) / 3:1 (large text). Document if user-adjustable opacity may break contrast.
+- [ ] **Touch target**: ≥44px desktop, ≥56px touch (WCAG 2.5.5).
+- [ ] **Don't rely on color alone**: use icon + text + color for state changes.
+- [ ] **Semantic HTML**: `<button>` for actions, `<a>` for navigation, `<dialog>` for modals. Avoid `<div role="button">` when native exists.
+
+## Visual Mockup (optional — gate G4 until anh duyệt)
+> When UI is non-trivial (layout/position/overlap/responsive), include SVG mockup here. Anh duyệt "UI này đúng ý" before G4 starts.
+
+[SVG mockup inline or link to `docs/design-system/<feature>-mockup.svg`]
+
+- Light variant: [SVG]
+- Dark variant: [SVG]
+- Collapsed/alternative state: [SVG]
+
+**Approval**: _Pending_ / _Approved by anh on YYYY-MM-DD_
 ```
 
 ### ADR Lifecycle
