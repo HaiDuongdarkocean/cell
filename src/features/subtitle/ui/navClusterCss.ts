@@ -18,12 +18,16 @@ export const NAV_CLUSTER_CSS = `
   transition: transform 150ms ease, opacity 150ms ease;
   pointer-events: auto;
 }
+.nav-cluster[aria-grabbed="true"] {
+  /* ARIA drag state (ADR-015) — cursor not supported in content-script isolated world */
+}
 .nav-cluster-main,
 .nav-cluster-secondary {
   display: flex;
   flex-direction: column;
   gap: 2px;
   align-items: center;
+  justify-content: center;
 }
 .nav-cluster-btn {
   display: inline-flex;
@@ -32,37 +36,35 @@ export const NAV_CLUSTER_CSS = `
   width: var(--nav-cluster-size-md, 48px);
   height: var(--nav-cluster-size-md, 48px);
   border: none;
-  border-radius: var(--radius-sm, 6px);
-  background: rgba(255, 255, 255, var(--nav-cluster-btn-opacity-default, 0.9));
-  color: var(--color-text, #0f172a);
-  font-size: 20px;
+  background: transparent;
+  color: var(--color-text, #f1f5f9);
   cursor: pointer;
-  transition: background 150ms ease, transform 100ms ease;
   padding: 0;
   line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  transition: none;
+}
+.nav-cluster-btn .nav-cluster-icon {
+  width: 60%;
+  height: 60%;
+  display: block;
 }
 .nav-cluster-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: scale(1.05);
-}
-.nav-cluster-btn:active {
-  transform: scale(0.95);
+  color: var(--color-primary, #60a5fa);
 }
 .nav-cluster-btn:focus-visible {
-  outline: 2px solid var(--color-primary, #2563eb);
+  outline: 2px solid var(--color-primary, #60a5fa);
   outline-offset: 2px;
 }
 .nav-cluster-btn--active {
-  background: var(--color-primary, #2563eb);
-  color: var(--color-text-inverse, #ffffff);
+  color: var(--color-primary, #60a5fa);
 }
-.nav-cluster-drag-handle {
-  cursor: grab;
-  font-size: 16px;
-  opacity: 0.7;
+.nav-cluster-btn--active .nav-cluster-icon {
+  animation: nav-cluster-spin 800ms var(--ease-standard, ease);
 }
-.nav-cluster-drag-handle:hover {
-  opacity: 1;
+@keyframes nav-cluster-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
 }
 .nav-cluster.no-sub .nav-cluster-secondary {
   display: none;
@@ -77,7 +79,7 @@ export const NAV_CLUSTER_CSS = `
   border-radius: 0 50% 50% 0;
   transform: scaleX(-1);
 }
-.nav-cluster.collapsed .nav-cluster-main .nav-cluster-btn:not(.nav-cluster-drag-handle),
+.nav-cluster.collapsed .nav-cluster-main .nav-cluster-btn,
 .nav-cluster.collapsed .nav-cluster-secondary {
   display: none;
 }

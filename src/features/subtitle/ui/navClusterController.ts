@@ -223,6 +223,10 @@ export class NavClusterController {
 
   private stopRepeatHold(): void {
     if (!this.repeatHolding) return;
+    // Was the hold loop active (hold ≥500ms)? If not, this was a quick click/tap
+    // → one-shot repeat: seek to current cue start (spec F7 defines hold-loop;
+    // click behavior: repeat current cue once).
+    const wasLooping = this.repeatLoopCue !== null;
     this.repeatHolding = false;
     this.repeatLoopCue = null;
     if (this.repeatHoldTimer) {
@@ -230,6 +234,19 @@ export class NavClusterController {
       this.repeatHoldTimer = null;
     }
     if (this.dom) setButtonPressed(this.dom.repeatBtn, false);
+    if (!wasLooping) {
+      this.repeatOnce();
+    }
+  }
+
+  /** One-shot repeat: seek to the active cue's start (click/tap on repeat). */
+  private repeatOnce(): void {
+    const currentMs = this.video.currentTime * 1000;
+    const { cues, index } = findActiveCueIndex(this.cueSource.targetCues, this.cueSource.nativeCues, currentMs);
+    if (index >= 0 && cues[index]) {
+      this.video.currentTime = cues[index].start / 1000;
+    }
+    // No-sub: no-op — nothing to repeat (hold-loop uses [t-3s,t] window per spec §F9).
   }
 
   private wireTimeupdate(): void {
@@ -245,18 +262,21 @@ export class NavClusterController {
 
   private wireDrag(): void {
     if (!this.dom) return;
-    const handle = this.dom.dragHandle;
+    const cluster = this.dom.cluster;
 
     const onPointerDown = (e: PointerEvent): void => {
-      if (e.target !== handle) return;
+      // ADR-015: skip drag if target is action button (prev/repeat/next/rewind/forward)
+      const isActionButton = e.target === this.dom!.prevBtn || e.target === this.dom!.repeatBtn
+        || e.target === this.dom!.nextBtn || e.target === this.dom!.rewindBtn || e.target === this.dom!.forwardBtn;
+      if (isActionButton) return;
+
       e.preventDefault();
       try {
-        handle.setPointerCapture(e.pointerId);
+        cluster.setPointerCapture(e.pointerId);
       } catch {
         // setPointerCapture can throw if pointerId invalid — ignore
       }
-      handle.setAttribute('aria-grabbed', 'true');
-      handle.style.cursor = 'grabbing';
+      cluster.setAttribute('aria-grabbed', 'true');
       this.dragStart = {
         px: e.clientX,
         py: e.clientY,
@@ -291,12 +311,11 @@ export class NavClusterController {
     const onPointerUp = (e: PointerEvent): void => {
       if (!this.dragStart) return;
       try {
-        handle.releasePointerCapture(e.pointerId);
+        cluster.releasePointerCapture(e.pointerId);
       } catch {
         // ignore
       }
-      handle.setAttribute('aria-grabbed', 'false');
-      handle.style.cursor = 'grab';
+      cluster.setAttribute('aria-grabbed', 'false');
       this.dragStart = null;
       this.persistSettings({ position: this.settings.position });
     };
@@ -307,11 +326,11 @@ export class NavClusterController {
       this.persistSettings({ position: defaultPos, collapsed: false });
     };
 
-    handle.addEventListener('pointerdown', onPointerDown);
-    handle.addEventListener('pointermove', onPointerMove);
-    handle.addEventListener('pointerup', onPointerUp);
-    handle.addEventListener('pointercancel', onPointerUp);
-    handle.addEventListener('dblclick', onDblClick);
+    cluster.addEventListener('pointerdown', onPointerDown);
+    cluster.addEventListener('pointermove', onPointerMove);
+    cluster.addEventListener('pointerup', onPointerUp);
+    cluster.addEventListener('pointercancel', onPointerUp);
+    cluster.addEventListener('dblclick', onDblClick);
   }
 
   private wireKeyboard(): void {

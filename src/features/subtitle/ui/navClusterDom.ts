@@ -3,6 +3,7 @@
 // existing content-script pattern (createOverlayLayer, createToggleButton).
 
 import type { NavClusterPosition } from '@/entities/settings';
+import { NAV_CLUSTER_ICONS } from './navClusterIcons';
 
 /** Edge the cluster is stuck to when collapsed. */
 export type NavClusterEdge = 'left' | 'right';
@@ -12,7 +13,6 @@ export interface NavClusterDOM {
   readonly cluster: HTMLDivElement;
   readonly mainColumn: HTMLDivElement;
   readonly secondaryColumn: HTMLDivElement;
-  readonly dragHandle: HTMLButtonElement;
   readonly prevBtn: HTMLButtonElement;
   readonly repeatBtn: HTMLButtonElement;
   readonly nextBtn: HTMLButtonElement;
@@ -20,20 +20,24 @@ export interface NavClusterDOM {
   readonly forwardBtn: HTMLButtonElement;
 }
 
-/** Create a single cluster button with ARIA + data-testid. */
-function makeButton(testId: string, ariaLabel: string, glyph: string): HTMLButtonElement {
+/**
+ * Create a single cluster button with ARIA + data-testid.
+ * @param iconHtml - inline SVG markup.
+ */
+function makeButton(testId: string, ariaLabel: string, iconHtml: string): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.setAttribute('data-testid', testId);
   btn.setAttribute('aria-label', ariaLabel);
   btn.className = 'nav-cluster-btn';
-  btn.textContent = glyph;
+  btn.innerHTML = iconHtml;
   btn.type = 'button';
   return btn;
 }
 
 /**
- * Build the cluster DOM tree (6 buttons, 2 columns). Pure — no listeners,
+ * Build the cluster DOM tree (5 buttons, 2 columns). Pure — no listeners,
  * no container attachment. Caller wires listeners + appends to container.
+ * Drag is handled on cluster background (ADR-015 pattern) — no drag handle button.
  */
 export function buildClusterDOM(): NavClusterDOM {
   const cluster = document.createElement('div');
@@ -41,6 +45,7 @@ export function buildClusterDOM(): NavClusterDOM {
   cluster.setAttribute('role', 'toolbar');
   cluster.setAttribute('aria-label', 'Subtitle navigation');
   cluster.setAttribute('aria-orientation', 'horizontal');
+  cluster.setAttribute('aria-grabbed', 'false');
   cluster.className = 'nav-cluster';
 
   const mainColumn = document.createElement('div');
@@ -51,23 +56,19 @@ export function buildClusterDOM(): NavClusterDOM {
   secondaryColumn.setAttribute('data-testid', 'nav-cluster-secondary');
   secondaryColumn.className = 'nav-cluster-secondary';
 
-  const dragHandle = makeButton('nav-cluster-drag-handle', 'Drag to move cluster, double-click to reset', '⋯');
-  dragHandle.setAttribute('aria-grabbed', 'false');
-  dragHandle.classList.add('nav-cluster-drag-handle');
-
-  const prevBtn = makeButton('nav-cluster-prev', 'Previous sentence', '◀');
-  const repeatBtn = makeButton('nav-cluster-repeat', 'Repeat current sentence', '🔁');
+  const prevBtn = makeButton('nav-cluster-prev', 'Previous sentence', NAV_CLUSTER_ICONS.prev);
+  const repeatBtn = makeButton('nav-cluster-repeat', 'Repeat current sentence', NAV_CLUSTER_ICONS.repeat);
   repeatBtn.setAttribute('aria-pressed', 'false');
 
-  const nextBtn = makeButton('nav-cluster-next', 'Next sentence', '▶');
-  const rewindBtn = makeButton('nav-cluster-rewind', 'Rewind 5 seconds', '⏪');
-  const forwardBtn = makeButton('nav-cluster-forward', 'Forward 10 seconds', '⏩');
+  const nextBtn = makeButton('nav-cluster-next', 'Next sentence', NAV_CLUSTER_ICONS.next);
+  const rewindBtn = makeButton('nav-cluster-rewind', 'Rewind 5 seconds', NAV_CLUSTER_ICONS.rewind);
+  const forwardBtn = makeButton('nav-cluster-forward', 'Forward 10 seconds', NAV_CLUSTER_ICONS.forward);
 
-  mainColumn.append(dragHandle, prevBtn, repeatBtn, nextBtn);
+  mainColumn.append(prevBtn, repeatBtn, nextBtn);
   secondaryColumn.append(rewindBtn, forwardBtn);
   cluster.append(mainColumn, secondaryColumn);
 
-  return { cluster, mainColumn, secondaryColumn, dragHandle, prevBtn, repeatBtn, nextBtn, rewindBtn, forwardBtn };
+  return { cluster, mainColumn, secondaryColumn, prevBtn, repeatBtn, nextBtn, rewindBtn, forwardBtn };
 }
 
 /**

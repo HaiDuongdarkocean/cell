@@ -10,34 +10,47 @@ describe('navClusterButton — atom (ADR-018 D1, design-system inventory)', () =
     expect(btn.className).toContain('nav-cluster-btn');
   });
 
-  it('sets textContent to glyph for icon=prev', () => {
+  it('renders inline SVG for icon=prev (round-alt-arrow-left)', () => {
     const btn = createNavClusterButton({ icon: 'prev', ariaLabel: 'prev', testId: 'prev' });
-    expect(btn.textContent).toBe('◀');
+    const svg = btn.querySelector('svg.nav-cluster-icon');
+    expect(svg).not.toBeNull();
+    expect(svg?.getAttribute('aria-hidden')).toBe('true');
+    expect(svg?.querySelector('circle')).not.toBeNull();
   });
 
-  it('sets textContent to glyph for icon=next', () => {
+  it('renders inline SVG for icon=next (round-alt-arrow-right)', () => {
     const btn = createNavClusterButton({ icon: 'next', ariaLabel: 'next', testId: 'next' });
-    expect(btn.textContent).toBe('▶');
+    const svg = btn.querySelector('svg.nav-cluster-icon');
+    expect(svg).not.toBeNull();
+    expect(svg?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('sets textContent to glyph for icon=repeat', () => {
+  it('renders inline SVG for icon=repeat (restart loop)', () => {
     const btn = createNavClusterButton({ icon: 'repeat', ariaLabel: 'repeat', testId: 'repeat' });
-    expect(btn.textContent).toBe('🔁');
+    const svg = btn.querySelector('svg.nav-cluster-icon');
+    expect(svg).not.toBeNull();
+    expect(svg?.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('sets textContent to glyph for icon=rewind', () => {
+  it('renders inline SVG for icon=rewind (rewind-5-seconds)', () => {
     const btn = createNavClusterButton({ icon: 'rewind', ariaLabel: 'rewind', testId: 'rewind' });
-    expect(btn.textContent).toBe('⏪');
+    const svg = btn.querySelector('svg.nav-cluster-icon');
+    expect(svg).not.toBeNull();
   });
 
-  it('sets textContent to glyph for icon=forward', () => {
+  it('renders inline SVG for icon=forward (rewind-10-seconds)', () => {
     const btn = createNavClusterButton({ icon: 'forward', ariaLabel: 'forward', testId: 'forward' });
-    expect(btn.textContent).toBe('⏩');
+    const svg = btn.querySelector('svg.nav-cluster-icon');
+    expect(svg).not.toBeNull();
   });
 
-  it('sets textContent to glyph for icon=drag-handle', () => {
-    const btn = createNavClusterButton({ icon: 'drag-handle', ariaLabel: 'drag', testId: 'drag' });
-    expect(btn.textContent).toBe('⋯');
+  it('SVG icons use currentColor stroke (theme-aware)', () => {
+    const btn = createNavClusterButton({ icon: 'prev', ariaLabel: 'prev', testId: 'prev' });
+    const paths = btn.querySelectorAll('[stroke]');
+    expect(paths.length).toBeGreaterThan(0);
+    Array.from(paths).forEach((el) => {
+      expect(el.getAttribute('stroke')).toBe('currentColor');
+    });
   });
 
   it('fires onClick on click event', () => {

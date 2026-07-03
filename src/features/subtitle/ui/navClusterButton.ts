@@ -2,17 +2,14 @@
 // ponytail: pure factory, mimics existing content-script pattern (createToggleButton,
 // createOverlayLayer). Content-script isolated world cannot use React.
 
-/** Icon glyph mapping for cluster buttons. */
-const NAV_CLUSTER_GLYPHS: Record<NavClusterButtonIcon, string> = {
-  'drag-handle': '⋯',
-  prev: '◀',
-  repeat: '🔁',
-  next: '▶',
-  rewind: '⏪',
-  forward: '⏩',
-};
+import { NAV_CLUSTER_ICONS, type NavClusterIconName } from './navClusterIcons';
 
-export type NavClusterButtonIcon = 'drag-handle' | 'prev' | 'repeat' | 'next' | 'rewind' | 'forward';
+export type NavClusterButtonIcon = NavClusterIconName;
+
+/** Icon markup mapping for cluster buttons (SVG). */
+const NAV_CLUSTER_BUTTON_ICONS: Record<NavClusterButtonIcon, string> = {
+  ...NAV_CLUSTER_ICONS,
+};
 
 export interface NavClusterButtonProps {
   readonly icon: NavClusterButtonIcon;
@@ -39,7 +36,7 @@ export function createNavClusterButton(props: NavClusterButtonProps): HTMLButton
   btn.setAttribute('data-testid', testId);
   btn.setAttribute('aria-label', ariaLabel);
   btn.className = 'nav-cluster-btn';
-  btn.textContent = NAV_CLUSTER_GLYPHS[icon];
+  btn.innerHTML = NAV_CLUSTER_BUTTON_ICONS[icon];
 
   if (pressed !== undefined) {
     btn.setAttribute('aria-pressed', String(pressed));

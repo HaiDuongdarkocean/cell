@@ -46,7 +46,6 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       const cluster = container.querySelector('[data-testid="nav-cluster"]');
       expect(cluster).not.toBeNull();
       expect(cluster?.getAttribute('role')).toBe('toolbar');
-      expect(container.querySelector('[data-testid="nav-cluster-drag-handle"]')).not.toBeNull();
       expect(container.querySelector('[data-testid="nav-cluster-prev"]')).not.toBeNull();
       expect(container.querySelector('[data-testid="nav-cluster-repeat"]')).not.toBeNull();
       expect(container.querySelector('[data-testid="nav-cluster-next"]')).not.toBeNull();
@@ -72,6 +71,33 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       ctrl.init();
       const cluster2 = container.querySelector('[data-testid="nav-cluster"]');
       expect(cluster1).toBe(cluster2);
+      ctrl.destroy();
+    });
+
+    it('cluster has aria-grabbed=false by default (ADR-015 pattern)', () => {
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.getAttribute('aria-grabbed')).toBe('false');
+      ctrl.destroy();
+    });
+
+    it('drag on cluster background starts drag (ADR-015)', () => {
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      cluster.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      expect(cluster.getAttribute('aria-grabbed')).toBe('true');
+      ctrl.destroy();
+    });
+
+    it('drag on action button is skipped (ADR-015 skip sub-elements)', () => {
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const prevBtn = container.querySelector('[data-testid="nav-cluster-prev"]') as HTMLButtonElement;
+      prevBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.getAttribute('aria-grabbed')).toBe('false');
       ctrl.destroy();
     });
   });
@@ -219,15 +245,49 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       ctrl.destroy();
     });
 
-    it('pointerup before 500ms cancels (no loop)', () => {
-      video.currentTime = 3.5;
+    it('pointerup before 500ms cancels loop AND one-shot repeats current cue (click = repeat once)', () => {
+      video.currentTime = 3.5; // in cue 1 (3000-5000)
       const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
       ctrl.init();
       ctrl.updateCues(CUES, []);
       const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
       repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      jest.advanceTimersByTime(200); // < 500ms
+      jest.advanceTimersByTime(200); // < 500ms → quick click
       repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+      expect(repeatBtn.getAttribute('aria-pressed')).toBe('false');
+      // One-shot repeat: seek to current cue start (3s)
+      expect(video.currentTime).toBe(3);
+      ctrl.destroy();
+    });
+
+    it('quick click repeat with no cues is a no-op (nothing to repeat)', () => {
+      video.currentTime = 10;
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
+      repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      jest.advanceTimersByTime(200);
+      repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+      expect(video.currentTime).toBe(10); // unchanged
+      ctrl.destroy();
+    });
+
+    it('hold ≥500ms loops (no one-shot seek on release)', () => {
+      video.currentTime = 3.5; // in cue 1 (3000-5000)
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
+      ctrl.init();
+      ctrl.updateCues(CUES, []);
+      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
+      repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      jest.advanceTimersByTime(600); // ≥ 500ms → loop starts
+      // Simulate timeupdate reaching cue end → seek back to start
+      video.currentTime = 5.1;
+      video.dispatchEvent(new Event('timeupdate'));
+      expect(video.currentTime).toBe(3);
+      // Release — loop was active, so NO one-shot seek (currentTime stays at loop position)
+      video.currentTime = 4.2;
+      repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+      expect(video.currentTime).toBe(4.2); // unchanged — no one-shot on hold release
       expect(repeatBtn.getAttribute('aria-pressed')).toBe('false');
       ctrl.destroy();
     });

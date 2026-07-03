@@ -12,11 +12,9 @@ describe('navClusterDom — pure helpers (ADR-018 D1, frontend design)', () => {
       expect(dom.cluster.getAttribute('data-testid')).toBe('nav-cluster');
     });
 
-    it('creates main column with 4 buttons (drag/prev/repeat/next)', () => {
+    it('creates main column with 3 buttons (prev/repeat/next)', () => {
       const dom = buildClusterDOM();
       expect(dom.cluster.querySelector('[data-testid="nav-cluster-main"]')).not.toBeNull();
-      expect(dom.dragHandle.getAttribute('data-testid')).toBe('nav-cluster-drag-handle');
-      expect(dom.dragHandle.getAttribute('aria-label')).toContain('Drag');
       expect(dom.prevBtn.getAttribute('data-testid')).toBe('nav-cluster-prev');
       expect(dom.prevBtn.getAttribute('aria-label')).toBe('Previous sentence');
       expect(dom.repeatBtn.getAttribute('data-testid')).toBe('nav-cluster-repeat');
@@ -37,7 +35,6 @@ describe('navClusterDom — pure helpers (ADR-018 D1, frontend design)', () => {
 
     it('all buttons are HTMLButtonElement', () => {
       const dom = buildClusterDOM();
-      expect(dom.dragHandle.tagName).toBe('BUTTON');
       expect(dom.prevBtn.tagName).toBe('BUTTON');
       expect(dom.repeatBtn.tagName).toBe('BUTTON');
       expect(dom.nextBtn.tagName).toBe('BUTTON');
@@ -45,9 +42,32 @@ describe('navClusterDom — pure helpers (ADR-018 D1, frontend design)', () => {
       expect(dom.forwardBtn.tagName).toBe('BUTTON');
     });
 
-    it('drag handle has aria-grabbed=false', () => {
+    it('cluster has aria-grabbed=false (ADR-015 drag pattern)', () => {
       const dom = buildClusterDOM();
-      expect(dom.dragHandle.getAttribute('aria-grabbed')).toBe('false');
+      expect(dom.cluster.getAttribute('aria-grabbed')).toBe('false');
+    });
+
+    it('no drag handle button (ADR-015 — drag on cluster background)', () => {
+      const dom = buildClusterDOM();
+      expect(dom.cluster.querySelector('[data-testid="nav-cluster-drag-handle"]')).toBeNull();
+    });
+
+    it('action buttons render inline SVG icons (not text glyphs)', () => {
+      const dom = buildClusterDOM();
+      expect(dom.prevBtn.querySelector('svg.nav-cluster-icon')).not.toBeNull();
+      expect(dom.nextBtn.querySelector('svg.nav-cluster-icon')).not.toBeNull();
+      expect(dom.repeatBtn.querySelector('svg.nav-cluster-icon')).not.toBeNull();
+      expect(dom.rewindBtn.querySelector('svg.nav-cluster-icon')).not.toBeNull();
+      expect(dom.forwardBtn.querySelector('svg.nav-cluster-icon')).not.toBeNull();
+    });
+
+    it('SVG icons are aria-hidden (decorative — button has aria-label)', () => {
+      const dom = buildClusterDOM();
+      const svgs = dom.cluster.querySelectorAll('svg.nav-cluster-icon');
+      expect(svgs.length).toBe(5); // prev + next + repeat + rewind + forward
+      Array.from(svgs).forEach((svg) => {
+        expect(svg.getAttribute('aria-hidden')).toBe('true');
+      });
     });
   });
 
