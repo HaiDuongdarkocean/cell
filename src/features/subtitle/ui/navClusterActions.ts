@@ -34,6 +34,35 @@ export function findActiveCueIndex(
 }
 
 /**
+ * Find the nearest cue index by temporal distance when no cue is active (in gap).
+ * Distance = min(|start - t|, |end - t|) — picks the closest cue boundary.
+ * Tie-break: earlier cue wins (first match in array).
+ *
+ * @param cues - Sorted cue array (by start time)
+ * @param currentTimeMs - Current video time in milliseconds
+ * @returns Index of nearest cue, or -1 if cues empty
+ */
+export function findNearestCueIndex(cues: readonly SrtCue[], currentTimeMs: number): number {
+  if (cues.length === 0) return -1;
+  let bestIndex = 0;
+  let bestDist = Math.min(
+    Math.abs(cues[0].start - currentTimeMs),
+    Math.abs(cues[0].end - currentTimeMs),
+  );
+  for (let i = 1; i < cues.length; i++) {
+    const dist = Math.min(
+      Math.abs(cues[i].start - currentTimeMs),
+      Math.abs(cues[i].end - currentTimeMs),
+    );
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestIndex = i;
+    }
+  }
+  return bestIndex;
+}
+
+/**
  * Seek to the previous subtitle sentence (spec §F5).
  * - index > 0 → seek cues[index-1].start/1000
  * - index === -1 (in gap) → seek nearest previous cue start

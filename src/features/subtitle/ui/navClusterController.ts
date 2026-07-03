@@ -5,7 +5,7 @@
 // state machine + persist debounced + fullscreen re-parent + destroy cleanup.
 
 import { buildClusterDOM, clampPosition, findNearestEdge, type NavClusterDOM } from './navClusterDom';
-import { prevSentence, nextSentence, seekBy, findActiveCueIndex } from './navClusterActions';
+import { prevSentence, nextSentence, seekBy, findActiveCueIndex, findNearestCueIndex } from './navClusterActions';
 import { setButtonPressed } from './navClusterButton';
 import {
   createInitialKeyboardState,
@@ -24,8 +24,6 @@ export interface NavClusterCueSource {
   readonly nativeCues: readonly SrtCue[];
 }
 
-/** No-sub repeat window default (spec §F9, plan AD9 — hardcode 3s v1). */
-const NO_SUB_REPEAT_WINDOW_MS = 3000;
 /** Repeat hold threshold (spec §F7). */
 const REPEAT_HOLD_MS = 500;
 /** Persist debounce (ADR-013 yOffset pattern). */
@@ -211,13 +209,12 @@ export class NavClusterController {
     const { cues, index } = findActiveCueIndex(this.cueSource.targetCues, this.cueSource.nativeCues, currentMs);
     if (index >= 0 && cues[index]) {
       this.repeatLoopCue = { start: cues[index].start, end: cues[index].end };
-    } else {
-      // No-sub: loop [holdStart - 3s, holdStart]
-      const holdStartMs = currentMs;
-      this.repeatLoopCue = {
-        start: Math.max(0, holdStartMs - NO_SUB_REPEAT_WINDOW_MS),
-        end: holdStartMs,
-      };
+      return;
+    }
+    // In gap (no active cue) — loop nearest cue by temporal distance
+    const nearestIndex = findNearestCueIndex(cues, currentMs);
+    if (nearestIndex >= 0 && cues[nearestIndex]) {
+      this.repeatLoopCue = { start: cues[nearestIndex].start, end: cues[nearestIndex].end };
     }
   }
 
@@ -239,14 +236,20 @@ export class NavClusterController {
     }
   }
 
-  /** One-shot repeat: seek to the active cue's start (click/tap on repeat). */
+  /** One-shot repeat: seek to the active cue's start (click/tap on repeat).
+   *  In gap (no active cue) — seek to nearest cue's start by temporal distance. */
   private repeatOnce(): void {
     const currentMs = this.video.currentTime * 1000;
     const { cues, index } = findActiveCueIndex(this.cueSource.targetCues, this.cueSource.nativeCues, currentMs);
     if (index >= 0 && cues[index]) {
       this.video.currentTime = cues[index].start / 1000;
+      return;
     }
-    // No-sub: no-op — nothing to repeat (hold-loop uses [t-3s,t] window per spec §F9).
+    // In gap — seek to nearest cue's start
+    const nearestIndex = findNearestCueIndex(cues, currentMs);
+    if (nearestIndex >= 0 && cues[nearestIndex]) {
+      this.video.currentTime = cues[nearestIndex].start / 1000;
+    }
   }
 
   private wireTimeupdate(): void {
@@ -265,10 +268,11 @@ export class NavClusterController {
     const cluster = this.dom.cluster;
 
     const onPointerDown = (e: PointerEvent): void => {
-      // ADR-015: skip drag if target is action button (prev/repeat/next/rewind/forward)
-      const isActionButton = e.target === this.dom!.prevBtn || e.target === this.dom!.repeatBtn
-        || e.target === this.dom!.nextBtn || e.target === this.dom!.rewindBtn || e.target === this.dom!.forwardBtn;
-      if (isActionButton) return;
+      // ADR-015: skip drag if target is inside an action button (prev/repeat/next/
+      // rewind/forward). Use closest() because SVG icons are children of buttons —
+      // e.target is the SVG/path, not the button itself.
+      const target = e.target as Element | null;
+      if (target && target.closest('.nav-cluster-btn')) return;
 
       e.preventDefault();
       try {

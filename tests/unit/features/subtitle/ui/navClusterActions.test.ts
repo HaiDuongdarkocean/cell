@@ -1,6 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   findActiveCueIndex,
+  findNearestCueIndex,
   prevSentence,
   nextSentence,
   seekBy,
@@ -45,6 +46,41 @@ describe('navClusterActions — pure action helpers (ADR-018 D3, spec §F5-F8)',
     it('returns -1 when currentTime is in gap', () => {
       const result = findActiveCueIndex(CUES, [], 2500);
       expect(result.index).toBe(-1);
+    });
+  });
+
+  describe('findNearestCueIndex', () => {
+    it('returns -1 when cues empty', () => {
+      expect(findNearestCueIndex([], 1000)).toBe(-1);
+    });
+
+    it('returns 0 when single cue', () => {
+      expect(findNearestCueIndex([CUES[0]], 10000)).toBe(0);
+    });
+
+    it('returns previous cue when closer by end boundary (in gap)', () => {
+      // gap between cue[0] (0-2000) and cue[1] (3000-5000), t=2200
+      // dist to cue[0].end(2000) = 200; dist to cue[1].start(3000) = 800
+      expect(findNearestCueIndex(CUES, 2200)).toBe(0);
+    });
+
+    it('returns next cue when closer by start boundary (in gap)', () => {
+      // t=2800: dist to cue[0].end(2000) = 800; dist to cue[1].start(3000) = 200
+      expect(findNearestCueIndex(CUES, 2800)).toBe(1);
+    });
+
+    it('returns cue at exact tie boundary (earlier wins)', () => {
+      // t=2500: dist to cue[0].end(2000) = 500; dist to cue[1].start(3000) = 500
+      // tie-break: earlier cue wins (first match kept)
+      expect(findNearestCueIndex(CUES, 2500)).toBe(0);
+    });
+
+    it('returns last cue when currentTime far beyond all cues', () => {
+      expect(findNearestCueIndex(CUES, 100000)).toBe(2);
+    });
+
+    it('returns first cue when currentTime far before all cues', () => {
+      expect(findNearestCueIndex(CUES, -100000)).toBe(0);
     });
   });
 
