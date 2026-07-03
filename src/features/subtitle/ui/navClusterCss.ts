@@ -86,7 +86,7 @@ export const NAV_CLUSTER_CSS = `
   fill: none !important;
   background: transparent !important;
 }
-.nav-cluster-btn .nav-cluster-icon * {
+.nav-cluster-btn .nav-cluster-icon *:not(text) {
   fill: none !important;
   background: transparent !important;
 }
