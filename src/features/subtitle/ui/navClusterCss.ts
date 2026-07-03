@@ -71,6 +71,12 @@ export const NAV_CLUSTER_CSS = `
   width: 65%;
   height: 65%;
   display: block;
+  fill: none !important;
+  background: transparent !important;
+}
+.nav-cluster-btn .nav-cluster-icon * {
+  fill: none !important;
+  background: transparent !important;
 }
 .nav-cluster-btn:hover {
   background: var(--color-surface-hover, #334155);
