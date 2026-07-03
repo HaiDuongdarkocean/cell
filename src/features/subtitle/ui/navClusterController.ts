@@ -28,8 +28,6 @@ export interface NavClusterCueSource {
 const REPEAT_HOLD_MS = 500;
 /** Persist debounce (ADR-013 yOffset pattern). */
 const PERSIST_DEBOUNCE_MS = 300;
-/** Edge collapse threshold (spec §F4). */
-const EDGE_THRESHOLD_PX = 20;
 
 /**
  * Floating 6-button subtitle navigation cluster.
@@ -302,13 +300,6 @@ export class NavClusterController {
       );
       this.applyPosition(newPos);
       this.settings = { ...this.settings, position: newPos };
-
-      // Check edge collapse
-      const edgeX = newPos.x <= (EDGE_THRESHOLD_PX / containerRect.width) * 100
-        || newPos.x >= 100 - (EDGE_THRESHOLD_PX / containerRect.width) * 100;
-      if (edgeX && !this.settings.collapsed) {
-        this.updateSettings({ collapsed: true });
-      }
     };
 
     const onPointerUp = (e: PointerEvent): void => {
