@@ -17,9 +17,10 @@ export const NAV_CLUSTER_CSS = `
   user-select: none;
   transition: transform 150ms ease, opacity 150ms ease;
   pointer-events: auto;
+  cursor: move !important;
 }
 .nav-cluster[aria-grabbed="true"] {
-  /* ARIA drag state (ADR-015) — cursor not supported in content-script isolated world */
+  cursor: grabbing !important;
 }
 .nav-cluster-main,
 .nav-cluster-secondary {
@@ -38,11 +39,15 @@ export const NAV_CLUSTER_CSS = `
   border: none;
   background: transparent;
   color: var(--color-text, #f1f5f9);
-  cursor: pointer;
+  cursor: pointer !important;
   padding: 0;
   line-height: 1;
   -webkit-tap-highlight-color: transparent;
   transition: none;
+}
+.nav-cluster .nav-cluster-btn {
+  cursor: pointer !important;
+}
 }
 .nav-cluster-btn .nav-cluster-icon {
   width: 60%;
