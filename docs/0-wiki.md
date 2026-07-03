@@ -66,6 +66,7 @@ docs/           # Tài liệu dự án
 │   └── plan-refactor-system-architecture.md # Refactor system architecture — implementation plan (G2, 14 milestone + dependency graph + checkpoint A-E)
 │   └── plan-refactor-architecture-debt.md # Refactor architecture debt — implementation plan phase 2 (G2, 8 milestones M14-M21, cite spec-refactor-architecture-debt)
 │   └── plan-subtitle-navigation-control.md # Subtitle navigation control cluster — implementation plan (G2, 10 AD, 6 milestones, cue source divergence + settings schema v2)
+│   └── plan-settings-controls-restyle.md # Settings controls restyle — implementation plan (G2, 10 milestones M1-M10, bottom-up atoms→integrate, cite spec-settings-controls-restyle)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
