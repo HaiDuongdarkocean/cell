@@ -178,18 +178,33 @@ export class NavClusterController {
   private wireButtonActions(): void {
     if (!this.dom) return;
     this.dom.prevBtn.addEventListener('click', () => {
+      this.flashButtonActive(this.dom!.prevBtn);
       prevSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues);
     });
     this.dom.nextBtn.addEventListener('click', () => {
+      this.flashButtonActive(this.dom!.nextBtn);
       nextSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues);
     });
-    this.dom.rewindBtn.addEventListener('click', () => seekBy(this.video, -5));
-    this.dom.forwardBtn.addEventListener('click', () => seekBy(this.video, 10));
+    this.dom.rewindBtn.addEventListener('click', () => {
+      this.flashButtonActive(this.dom!.rewindBtn);
+      seekBy(this.video, -5);
+    });
+    this.dom.forwardBtn.addEventListener('click', () => {
+      this.flashButtonActive(this.dom!.forwardBtn);
+      seekBy(this.video, 10);
+    });
 
     // Repeat hold (pointerdown/up)
     this.dom.repeatBtn.addEventListener('pointerdown', () => this.startRepeatHold());
     this.dom.repeatBtn.addEventListener('pointerup', () => this.stopRepeatHold());
     this.dom.repeatBtn.addEventListener('pointercancel', () => this.stopRepeatHold());
+  }
+
+  /** Add active class + spin animation to a button, then remove after animation. */
+  private flashButtonActive(btn: HTMLButtonElement): void {
+    btn.classList.add('nav-cluster-btn--active');
+    // Match animation duration (800ms)
+    setTimeout(() => btn.classList.remove('nav-cluster-btn--active'), 800);
   }
 
   private startRepeatHold(): void {

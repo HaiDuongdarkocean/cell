@@ -87,7 +87,10 @@ export const NAV_CLUSTER_CSS = `
   outline: 2px solid var(--color-border-focus, #60a5fa);
   outline-offset: 2px;
 }
+.nav-cluster-btn:active,
 .nav-cluster-btn--active {
+  background: var(--color-surface-hover, #334155);
+  border-color: var(--color-border-focus, #60a5fa);
   color: var(--color-primary, #60a5fa);
 }
 .nav-cluster-btn--active .nav-cluster-icon {
