@@ -29,6 +29,7 @@ export const NAV_CLUSTER_CSS = `
   gap: 2px;
   align-items: center;
   justify-content: center;
+  cursor: default !important;
 }
 .nav-cluster-btn {
   display: inline-flex;

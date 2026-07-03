@@ -266,10 +266,17 @@ export class NavClusterController {
     const cluster = this.dom.cluster;
 
     const onPointerDown = (e: PointerEvent): void => {
-      // ADR-015: drag only on cluster background (direct hit on cluster, not on
-      // buttons or column interiors). e.target === cluster means pointer landed
-      // on the padding frame or inter-column gap — the visible "background".
+      // Drag only on outer border (viền) — 4px padding zone around cluster edge.
+      // e.target === cluster means pointer is on cluster's direct area (padding
+      // frame OR inter-column gap). Exclude interior by checking pointer is within
+      // 4px of any edge.
       if (e.target !== cluster) return;
+      const rect = cluster.getBoundingClientRect();
+      const pad = 4; // matches CSS padding: 4px
+      const ox = e.clientX - rect.left;
+      const oy = e.clientY - rect.top;
+      const onBorder = ox < pad || ox > rect.width - pad || oy < pad || oy > rect.height - pad;
+      if (!onBorder) return;
 
       e.preventDefault();
       try {
@@ -315,9 +322,14 @@ export class NavClusterController {
     };
 
     const onDblClick = (e: MouseEvent): void => {
-      // Only reset on double-click of cluster background (direct hit), not on
-      // buttons or column interiors.
+      // Only reset on double-click of outer border (viền), not interior or buttons.
       if (e.target !== cluster) return;
+      const rect = cluster.getBoundingClientRect();
+      const pad = 4;
+      const ox = e.clientX - rect.left;
+      const oy = e.clientY - rect.top;
+      const onBorder = ox < pad || ox > rect.width - pad || oy < pad || oy > rect.height - pad;
+      if (!onBorder) return;
       const defaultPos: NavClusterPosition = { x: 0, y: 75 };
       this.updateSettings({ position: defaultPos, collapsed: false });
       this.persistSettings({ position: defaultPos, collapsed: false });
