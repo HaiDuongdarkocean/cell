@@ -1,6 +1,6 @@
 // Nav cluster keyboard state machine — pure functions (ADR-018 D4, spec §F12).
 // ponytail: pure, no side effects. Fixed parallel shortcuts (NOT in ShortcutAction union).
-// R hold uses keydown/keyup state machine (ignore e.repeat, cancel on blur/visibilitychange).
+// R key now toggles the 3-state repeat cycle (idle → recording-end → looping → idle).
 
 import { isEditableTarget } from './subtitleShortcuts';
 
@@ -8,14 +8,19 @@ import { isEditableTarget } from './subtitleShortcuts';
 export type NavClusterKeyAction =
   | 'prev-sentence'
   | 'next-sentence'
-  | 'repeat-start'
-  | 'repeat-stop'
+  | 'repeat-toggle'
   | 'seek-rewind-5'
   | 'seek-forward-10';
 
-/** Mutable keyboard state (R hold tracking). */
+/** Mutable keyboard state (no R hold tracking; 3-state repeat is toggle on keydown). */
 export interface NavClusterKeyboardState {
-  repeatHolding: boolean;
+  /** Reserved for future stateful keyboard shortcuts. */
+  _placeholder: boolean;
+}
+
+/** Create initial keyboard state. */
+export function createInitialKeyboardState(): NavClusterKeyboardState {
+  return { _placeholder: false };
 }
 
 /** Result of a keyboard event handler. */
@@ -24,15 +29,10 @@ export interface NavClusterKeyResult {
   readonly state: NavClusterKeyboardState;
 }
 
-/** Create initial keyboard state (R not holding). */
-export function createInitialKeyboardState(): NavClusterKeyboardState {
-  return { repeatHolding: false };
-}
-
 /**
  * Handle keydown for cluster shortcuts (ADR-018 D4).
  * Guards: editable target → no action. e.repeat → no action (ignore auto-repeat).
- * R hold: only starts if not already holding + not auto-repeat.
+ * R key: toggle 3-state repeat cycle (idle → recording-end → looping → idle).
  */
 export function handleClusterKeydown(
   e: KeyboardEvent,
@@ -51,10 +51,10 @@ export function handleClusterKeydown(
       return { action: 'next-sentence', state };
     case 'r':
     case 'R': {
-      if (e.repeat || state.repeatHolding) {
+      if (e.repeat) {
         return { action: null, state };
       }
-      return { action: 'repeat-start', state: { repeatHolding: true } };
+      return { action: 'repeat-toggle', state };
     }
     case '<':
     case ',':
@@ -69,26 +69,19 @@ export function handleClusterKeydown(
 
 /**
  * Handle keyup for cluster shortcuts (ADR-018 D4).
- * R keyup when holding → repeat-stop. Other keys → no action (keep holding).
+ * 3-state repeat is toggle-on-keydown, so keyup has no action for R.
  */
 export function handleClusterKeyup(
-  e: KeyboardEvent,
+  _e: KeyboardEvent,
   state: NavClusterKeyboardState,
 ): NavClusterKeyResult {
-  const key = e.key;
-  if ((key === 'r' || key === 'R') && state.repeatHolding) {
-    return { action: 'repeat-stop', state: { repeatHolding: false } };
-  }
   return { action: null, state };
 }
 
 /**
  * Cancel repeat hold (blur/visibilitychange — keyup may be lost).
- * Returns repeat-stop if was holding, else no action.
+ * 3-state repeat loop is not tied to key hold, so no action needed.
  */
 export function cancelRepeatHold(state: NavClusterKeyboardState): NavClusterKeyResult {
-  if (state.repeatHolding) {
-    return { action: 'repeat-stop', state: { repeatHolding: false } };
-  }
   return { action: null, state };
 }

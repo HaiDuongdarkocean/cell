@@ -13,6 +13,7 @@ export interface NavClusterDOM {
   readonly cluster: HTMLDivElement;
   readonly mainColumn: HTMLDivElement;
   readonly secondaryColumn: HTMLDivElement;
+  readonly noSubColumn: HTMLDivElement;
   readonly prevBtn: HTMLButtonElement;
   readonly repeatBtn: HTMLButtonElement;
   readonly nextBtn: HTMLButtonElement;
@@ -67,15 +68,21 @@ export function buildClusterDOM(): NavClusterDOM {
   mainColumn.append(prevBtn, repeatBtn, nextBtn);
   secondaryColumn.append(rewindBtn, forwardBtn);
 
+  // No-sub mode: single column with rewind, repeat, forward (no prev/next needed).
+  // Empty container — controller moves buttons here when no subtitles loaded.
+  const noSubColumn = document.createElement('div');
+  noSubColumn.setAttribute('data-testid', 'nav-cluster-no-sub');
+  noSubColumn.className = 'nav-cluster-no-sub';
+
   // Gap cover: real DOM element over inter-column gap so cursor shows default
   // (not move) — prevents border-zone drag check from triggering in the gap.
   const gapCover = document.createElement('div');
   gapCover.className = 'nav-cluster-gap-cover';
   gapCover.setAttribute('aria-hidden', 'true');
 
-  cluster.append(mainColumn, secondaryColumn, gapCover);
+  cluster.append(mainColumn, secondaryColumn, noSubColumn, gapCover);
 
-  return { cluster, mainColumn, secondaryColumn, prevBtn, repeatBtn, nextBtn, rewindBtn, forwardBtn };
+  return { cluster, mainColumn, secondaryColumn, noSubColumn, prevBtn, repeatBtn, nextBtn, rewindBtn, forwardBtn };
 }
 
 /**

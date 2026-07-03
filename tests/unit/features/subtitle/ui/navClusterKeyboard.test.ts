@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { handleClusterKeydown, handleClusterKeyup, createInitialKeyboardState } from '@/features/subtitle/ui/navClusterKeyboard';
+import { handleClusterKeydown, handleClusterKeyup, createInitialKeyboardState, cancelRepeatHold } from '@/features/subtitle/ui/navClusterKeyboard';
 
 function makeKeydownEvent(key: string, opts: { repeat?: boolean; target?: EventTarget | null } = {}): KeyboardEvent {
   const e = new KeyboardEvent('keydown', { key, bubbles: true, repeat: opts.repeat ?? false });
@@ -24,7 +24,6 @@ describe('navClusterKeyboard — pure state machine (ADR-018 D4, spec §F12)', (
       const state = createInitialKeyboardState();
       const result = handleClusterKeydown(makeKeydownEvent('ArrowLeft'), state);
       expect(result.action).toBe('prev-sentence');
-      expect(result.state.repeatHolding).toBe(false);
     });
 
     it('ArrowRight → next-sentence action', () => {
@@ -33,32 +32,22 @@ describe('navClusterKeyboard — pure state machine (ADR-018 D4, spec §F12)', (
       expect(result.action).toBe('next-sentence');
     });
 
-    it('r keydown (not repeat) → repeat-start action + repeatHolding=true', () => {
+    it('r keydown (not repeat) → repeat-toggle action', () => {
       const state = createInitialKeyboardState();
       const result = handleClusterKeydown(makeKeydownEvent('r'), state);
-      expect(result.action).toBe('repeat-start');
-      expect(result.state.repeatHolding).toBe(true);
+      expect(result.action).toBe('repeat-toggle');
     });
 
-    it('R (uppercase) keydown → repeat-start', () => {
+    it('R (uppercase) keydown → repeat-toggle', () => {
       const state = createInitialKeyboardState();
       const result = handleClusterKeydown(makeKeydownEvent('R'), state);
-      expect(result.action).toBe('repeat-start');
-      expect(result.state.repeatHolding).toBe(true);
+      expect(result.action).toBe('repeat-toggle');
     });
 
     it('r keydown with e.repeat=true → no action (ignore auto-repeat)', () => {
       const state = createInitialKeyboardState();
       const result = handleClusterKeydown(makeKeydownEvent('r', { repeat: true }), state);
       expect(result.action).toBeNull();
-      expect(result.state.repeatHolding).toBe(false);
-    });
-
-    it('r keydown when already repeatHolding → no action', () => {
-      const state = { ...createInitialKeyboardState(), repeatHolding: true };
-      const result = handleClusterKeydown(makeKeydownEvent('r'), state);
-      expect(result.action).toBeNull();
-      expect(result.state.repeatHolding).toBe(true);
     });
 
     it('< keydown → seek-rewind-5 action', () => {
@@ -115,53 +104,24 @@ describe('navClusterKeyboard — pure state machine (ADR-018 D4, spec §F12)', (
   });
 
   describe('handleClusterKeyup', () => {
-    it('r keyup when repeatHolding → repeat-stop action + repeatHolding=false', () => {
-      const state = { ...createInitialKeyboardState(), repeatHolding: true };
-      const result = handleClusterKeyup(makeKeyupEvent('r'), state);
-      expect(result.action).toBe('repeat-stop');
-      expect(result.state.repeatHolding).toBe(false);
-    });
-
-    it('R keyup when repeatHolding → repeat-stop', () => {
-      const state = { ...createInitialKeyboardState(), repeatHolding: true };
-      const result = handleClusterKeyup(makeKeyupEvent('R'), state);
-      expect(result.action).toBe('repeat-stop');
-      expect(result.state.repeatHolding).toBe(false);
-    });
-
-    it('r keyup when not repeatHolding → no action', () => {
+    it('r keyup → no action (3-state repeat is toggle-on-keydown)', () => {
       const state = createInitialKeyboardState();
       const result = handleClusterKeyup(makeKeyupEvent('r'), state);
       expect(result.action).toBeNull();
-      expect(result.state.repeatHolding).toBe(false);
     });
 
-    it('other key keyup when repeatHolding → no action (keep holding)', () => {
-      const state = { ...createInitialKeyboardState(), repeatHolding: true };
+    it('other key keyup → no action', () => {
+      const state = createInitialKeyboardState();
       const result = handleClusterKeyup(makeKeyupEvent('ArrowLeft'), state);
       expect(result.action).toBeNull();
-      expect(result.state.repeatHolding).toBe(true);
     });
   });
 
   describe('cancelRepeatHold (blur/visibilitychange)', () => {
-    it('cancelRepeatHold when repeatHolding → repeat-stop + repeatHolding=false', () => {
-      const state = { ...createInitialKeyboardState(), repeatHolding: true };
-      // Import cancelRepeatHold
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { cancelRepeatHold } = require('@/features/subtitle/ui/navClusterKeyboard');
-      const result = cancelRepeatHold(state);
-      expect(result.action).toBe('repeat-stop');
-      expect(result.state.repeatHolding).toBe(false);
-    });
-
-    it('cancelRepeatHold when not repeatHolding → no action', () => {
+    it('cancelRepeatHold → no action (loop is not tied to key hold)', () => {
       const state = createInitialKeyboardState();
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { cancelRepeatHold } = require('@/features/subtitle/ui/navClusterKeyboard');
       const result = cancelRepeatHold(state);
       expect(result.action).toBeNull();
-      expect(result.state.repeatHolding).toBe(false);
     });
   });
 });

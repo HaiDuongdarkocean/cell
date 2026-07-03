@@ -1,4 +1,4 @@
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { NavClusterController } from '@/features/subtitle/ui/navClusterController';
 import { DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
 import type { SrtCue } from '@/entities/media';
@@ -256,124 +256,61 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
     });
   });
 
-  describe('repeat hold', () => {
-    beforeEach(() => {
-      jest.useFakeTimers();
-    });
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
-    it('pointerdown on repeat starts 500ms timer; fires loop after threshold', () => {
-      video.currentTime = 3.5; // in cue 1 (3000-5000)
-      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
-      ctrl.init();
-      ctrl.updateCues(CUES, []);
-      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
-      repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      expect(repeatBtn.getAttribute('aria-pressed')).toBe('true');
-      // Advance past 500ms threshold to start repeat loop
-      jest.advanceTimersByTime(600);
-      // Simulate timeupdate reaching cue end
-      video.currentTime = 5.1;
-      video.dispatchEvent(new Event('timeupdate'));
-      // Should seek back to cue start (3s)
-      expect(video.currentTime).toBe(3);
-      repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
-      expect(repeatBtn.getAttribute('aria-pressed')).toBe('false');
-      ctrl.destroy();
-    });
-
-    it('pointerup before 500ms cancels loop AND one-shot repeats current cue (click = repeat once)', () => {
-      video.currentTime = 3.5; // in cue 1 (3000-5000)
-      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
-      ctrl.init();
-      ctrl.updateCues(CUES, []);
-      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
-      repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      jest.advanceTimersByTime(200); // < 500ms → quick click
-      repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
-      expect(repeatBtn.getAttribute('aria-pressed')).toBe('false');
-      // One-shot repeat: seek to current cue start (3s)
-      expect(video.currentTime).toBe(3);
-      ctrl.destroy();
-    });
-
-    it('quick click repeat with no cues is a no-op (nothing to repeat)', () => {
-      video.currentTime = 10;
+  describe('repeat 3-state cycle', () => {
+    it('click 1 records start, click 2 records end + loops, click 3 cancels', () => {
       const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
       ctrl.init();
       const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
-      repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      jest.advanceTimersByTime(200);
-      repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
-      expect(video.currentTime).toBe(10); // unchanged
-      ctrl.destroy();
-    });
 
-    it('hold ≥500ms loops (no one-shot seek on release)', () => {
-      video.currentTime = 3.5; // in cue 1 (3000-5000)
-      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
-      ctrl.init();
-      ctrl.updateCues(CUES, []);
-      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
-      repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      jest.advanceTimersByTime(600); // ≥ 500ms → loop starts
-      // Simulate timeupdate reaching cue end → seek back to start
-      video.currentTime = 5.1;
+      // Click 1: record start at 2.0
+      video.currentTime = 2.0;
+      repeatBtn.click();
+      expect(repeatBtn.getAttribute('aria-label')).toBe('Record loop end');
+      expect(repeatBtn.getAttribute('aria-pressed')).toBe('false');
+
+      // Click 2: record end at 4.0, start looping
+      video.currentTime = 4.0;
+      repeatBtn.click();
+      expect(repeatBtn.getAttribute('aria-label')).toBe('Cancel loop');
+      expect(repeatBtn.getAttribute('aria-pressed')).toBe('true');
+
+      // Simulate timeupdate reaching end → seek back to start
+      video.currentTime = 4.1;
       video.dispatchEvent(new Event('timeupdate'));
-      expect(video.currentTime).toBe(3);
-      // Release — loop was active, so NO one-shot seek (currentTime stays at loop position)
-      video.currentTime = 4.2;
-      repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
-      expect(video.currentTime).toBe(4.2); // unchanged — no one-shot on hold release
+      expect(video.currentTime).toBe(2.0);
+
+      // Click 3: cancel loop
+      repeatBtn.click();
+      expect(repeatBtn.getAttribute('aria-label')).toBe('Record loop start');
       expect(repeatBtn.getAttribute('aria-pressed')).toBe('false');
       ctrl.destroy();
     });
 
-    it('quick click repeat in gap seeks to nearest cue (ADR-018 edge case)', () => {
-      // gap between cue[0] (0-2000) and cue[1] (3000-5000), t=2.2s
-      // nearest = cue[0] (dist 200 to end) vs cue[1] (dist 800 to start)
-      video.currentTime = 2.2;
-      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
+    it('3-state cycle: start==end clamps end to start+0.1s', () => {
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
       ctrl.init();
-      ctrl.updateCues(CUES, []);
       const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
-      repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      jest.advanceTimersByTime(200); // quick click
-      repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
-      expect(video.currentTime).toBe(0); // seek to nearest cue start
-      ctrl.destroy();
-    });
-
-    it('quick click repeat in gap closer to next cue seeks forward', () => {
-      // t=2.8s: dist to cue[0].end(2000) = 800; dist to cue[1].start(3000) = 200
-      video.currentTime = 2.8;
-      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
-      ctrl.init();
-      ctrl.updateCues(CUES, []);
-      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
-      repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      jest.advanceTimersByTime(200);
-      repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
-      expect(video.currentTime).toBe(3); // seek to nearest cue (cue[1]) start
-      ctrl.destroy();
-    });
-
-    it('hold repeat in gap loops nearest cue (not [t-3s,t] window)', () => {
-      // t=2.8s in gap, nearest = cue[1] (3000-5000)
-      video.currentTime = 2.8;
-      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
-      ctrl.init();
-      ctrl.updateCues(CUES, []);
-      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
-      repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      jest.advanceTimersByTime(600); // ≥ 500ms → loop starts
-      // Simulate timeupdate reaching cue[1] end (5s) → seek back to cue[1] start (3s)
-      video.currentTime = 5.1;
+      video.currentTime = 5.0;
+      repeatBtn.click(); // start
+      repeatBtn.click(); // end at same time → should clamp
+      video.currentTime = 5.2;
       video.dispatchEvent(new Event('timeupdate'));
-      expect(video.currentTime).toBe(3); // loops cue[1], not [t-3s,t] window
-      repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+      expect(video.currentTime).toBe(5.0); // loops back to start
+      ctrl.destroy();
+    });
+
+    it('3-state cycle: no loop after cancel', () => {
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
+      video.currentTime = 1.0;
+      repeatBtn.click(); // start
+      video.currentTime = 3.0;
+      repeatBtn.click(); // end + loop
+      repeatBtn.click(); // cancel
+      video.currentTime = 3.5;
+      video.dispatchEvent(new Event('timeupdate'));
+      expect(video.currentTime).toBe(3.5); // no loop
       ctrl.destroy();
     });
   });

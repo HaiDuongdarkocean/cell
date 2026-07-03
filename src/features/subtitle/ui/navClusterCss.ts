@@ -94,7 +94,20 @@ export const NAV_CLUSTER_CSS = `
   border-color: var(--color-border-focus, #60a5fa);
   color: var(--color-primary, #60a5fa);
 }
-.nav-cluster.no-sub .nav-cluster-secondary {
+.nav-cluster.no-sub .nav-cluster-main,
+.nav-cluster.no-sub .nav-cluster-secondary,
+.nav-cluster.no-sub .nav-cluster-gap-cover {
+  display: none;
+}
+.nav-cluster.no-sub .nav-cluster-no-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  cursor: default !important;
+}
+.nav-cluster:not(.no-sub) .nav-cluster-no-sub {
   display: none;
 }
 .nav-cluster.collapsed {
