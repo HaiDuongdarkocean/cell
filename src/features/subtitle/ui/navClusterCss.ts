@@ -65,7 +65,7 @@ export const NAV_CLUSTER_CSS = `
   padding: 0;
   line-height: 1;
   -webkit-tap-highlight-color: transparent;
-  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+  transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 150ms ease, background 150ms ease, color 150ms ease;
 }
 .nav-cluster-btn .nav-cluster-icon {
   width: 65%;
@@ -89,16 +89,10 @@ export const NAV_CLUSTER_CSS = `
 }
 .nav-cluster-btn:active,
 .nav-cluster-btn--active {
+  transform: scale(0.88);
   background: var(--color-surface-hover, #334155);
   border-color: var(--color-border-focus, #60a5fa);
   color: var(--color-primary, #60a5fa);
-}
-.nav-cluster-btn--active .nav-cluster-icon {
-  animation: nav-cluster-spin 800ms var(--ease-standard, ease);
-}
-@keyframes nav-cluster-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(-360deg); }
 }
 .nav-cluster.no-sub .nav-cluster-secondary {
   display: none;
