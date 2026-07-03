@@ -23,7 +23,7 @@ Task arrives
     ├── Have intent, need requirements? ───→ G1 (spec-driven-development)
     ├── Have spec, need approach? ─────────→ G2 (planning-and-task-breakdown high-level)
     ├── Have plan, need architecture? ──────→ G3 (system-architecture-design + ADR)
-    │   ├── UI work? ───────────────────────→ ADR includes "## Visual Mockup" section (optional, see G3)
+    │   ├── UI work? ───────────────────────→ ADR records UI decision (WHAT + WHY), implementation detail (DOM/state/mockup) lives in G4 task list
     │   └── Module boundaries? ─────────────→ api-and-interface-design
     ├── Have ADR, need code? ──────────────→ G4 (TDD + incremental-implementation)
     │   ├── Context degrading? ────────────→ context-engineering
@@ -199,7 +199,7 @@ All feature docs must follow the format `<prefix>-<name>.md` with prefix ∈ {`i
 **Purpose**: Design architecture + threat model before code. UI/UX decisions live inside the ADR (no separate design-system files).
 **Skill activation**: `system-architecture-design` → `cto-persona` (governance) → `api-and-interface-design` (module boundaries) → `security-and-hardening` (threat model) → `conceptualization` (trigger 3: architecture decision → principle)
 **Input**: `docs/specs/spec-<feature>.md`, `docs/plan/plan-<feature>.md` (approach/risk already there, ADR formalizes decision)
-**Output**: `docs/adr/NNN-<decision>.md` (1 file per decision, NNN = sequence number), updated `docs/2-architechture-system.md`. ADR contains all UI decisions inline (tokens to reuse, new tokens, ARIA/accessibility, responsive, state machine, DOM tree).
+**Output**: `docs/adr/NNN-<decision>.md` (1 file per decision, NNN = sequence number), updated `docs/2-architechture-system.md`. ADR records WHY of UI decisions (token reuse vs new, accessibility target, component boundaries). Implementation detail (DOM tree, state machine, responsive, mockup) lives in G4 task list, NOT in ADR.
 **File ops**:
 - READ: `docs/specs/spec-<feature>.md`, `docs/plan/plan-<feature>.md`, `docs/2-architechture-system.md`
 - ADD: `docs/adr/NNN-<decision>.md`
@@ -207,7 +207,7 @@ All feature docs must follow the format `<prefix>-<name>.md` with prefix ∈ {`i
 - UPDATE: `docs/0-wiki.md` (table of contents)
 - LEARNING: if architecture decision has reusable insight → invoke `/conceptualization` (trigger 3)
 
-> **G3 UI decisions live in ADR** (no separate design-system files): ADR section "## UI Design" covers tokens to reuse + new tokens + ARIA/accessibility + responsive + state machine + DOM tree. Optional "## Visual Mockup" section (SVG inline or linked) — gate G4 until anh duyệt. Legacy `docs/design-system/` + `docs/reviews/design-system-*` files kept as reference, not updated further.
+> **G3 ADR giữ bản chất** (WHY + decision, không phải HOW): ADR ghi quyết định khó đảo ngược — token reuse vs new, accessibility target (WCAG 2.1 AA), component boundaries. Implementation detail (DOM tree, state machine, responsive, mockup, a11y checklist) thuộc G4 task list. Legacy `docs/design-system/` + `docs/reviews/design-system-*` files kept as reference, not updated further.
 
 ## Phase 4 — Implementation / Coding
 **Purpose**: Write code per design, TDD, code review, atomic commits.

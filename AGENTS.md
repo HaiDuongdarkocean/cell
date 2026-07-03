@@ -164,7 +164,7 @@ Any change touching content-scripts, popup UI, DOM injection, or extension runti
 
 ## Use Knowledge Base (Chrome Extension Baseline)
 
-- **UI/UX decisions**: live inside ADR (G3) — section "## UI Design" covers tokens to reuse, new tokens, ARIA/accessibility, responsive, state machine, DOM tree. Optional "## Visual Mockup" section (SVG inline or linked) — gate G4 until anh duyệt. Legacy `docs/design-system/` + `docs/reviews/design-system-*` files kept as reference, not updated further.
+- **UI/UX decisions**: ADR (G3) ghi WHY — token reuse vs new, accessibility target, component boundaries. Implementation detail (DOM, state, mockup, a11y checklist) thuộc G4 task list. Legacy `docs/design-system/` + `docs/reviews/design-system-*` files kept as reference, not updated further.
 - **Đọc trước code**: `docs/0-wiki.md` (overview) → `docs/1-share-language.md` (glossary) → `docs/2-architechture-system.md` (file structure + dependencies + impact radius)
 - **chrome-devtools MCP**: refer `docs/reference/chrome-devtools-mcp.md`
 - **Architecture map**: update `docs/2-architechture-system.md` mỗi khi add/remove/rename files, change imports, hoặc modify data flows (xem "Update protocol" cuối file đó).
@@ -187,7 +187,7 @@ Glossary `docs/1-share-language.md` là cache đồng thuận ngôn ngữ giữa
 | Reusable insight | `docs/knowledge/<principle>.md` | — |
 | Bug fix | bug log + convention trong `docs/knowledge/<principle>.md` | — |
 | Rename/delete system term | `docs/1-share-language.md` (xem Update protocol cuối file đó) | — |
-| UI decisions (tokens, ARIA, responsive, state machine) | `docs/adr/NNN-<decision>.md` section "## UI Design" | ADR exists + anh duyệt mockup (nếu có) |
+| UI decisions (token reuse vs new, a11y target, component boundaries) | `docs/adr/NNN-<decision>.md` (WHY only — implementation detail in G4 task list) | ADR exists |
 
 ## Communicate
 
