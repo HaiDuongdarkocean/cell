@@ -268,11 +268,10 @@ export class NavClusterController {
     const cluster = this.dom.cluster;
 
     const onPointerDown = (e: PointerEvent): void => {
-      // ADR-015: skip drag if target is inside an action button (prev/repeat/next/
-      // rewind/forward). Use closest() because SVG icons are children of buttons —
-      // e.target is the SVG/path, not the button itself.
-      const target = e.target as Element | null;
-      if (target && target.closest('.nav-cluster-btn')) return;
+      // ADR-015: drag only on cluster background (direct hit on cluster, not on
+      // buttons or column interiors). e.target === cluster means pointer landed
+      // on the padding frame or inter-column gap — the visible "background".
+      if (e.target !== cluster) return;
 
       e.preventDefault();
       try {
@@ -325,10 +324,9 @@ export class NavClusterController {
     };
 
     const onDblClick = (e: MouseEvent): void => {
-      // Skip reset if double-click landed on an action button (prev/repeat/next/
-      // rewind/forward) — user is double-clicking the button, not the background.
-      const target = e.target as Element | null;
-      if (target && target.closest('.nav-cluster-btn')) return;
+      // Only reset on double-click of cluster background (direct hit), not on
+      // buttons or column interiors.
+      if (e.target !== cluster) return;
       const defaultPos: NavClusterPosition = { x: 0, y: 75 };
       this.updateSettings({ position: defaultPos, collapsed: false });
       this.persistSettings({ position: defaultPos, collapsed: false });
