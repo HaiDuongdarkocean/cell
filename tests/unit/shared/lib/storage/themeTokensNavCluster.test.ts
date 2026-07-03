@@ -57,22 +57,22 @@ describe('Nav cluster tokens — theme.css + themeTokens.ts mirror sync (ADR-018
     }
   });
 
-  it('nav-cluster-size-sm is 40px', () => {
+  it('nav-cluster-size-sm is 32px (synced with panel-toggle)', () => {
     const rootBlock = themeCss.split(':root')[1]?.split('}')[0] ?? '';
     const values = extractTokenValues(rootBlock, ['--nav-cluster-size-sm']);
-    expect(values['--nav-cluster-size-sm']).toBe('40px');
+    expect(values['--nav-cluster-size-sm']).toBe('32px');
   });
 
-  it('nav-cluster-size-md is 48px', () => {
+  it('nav-cluster-size-md is 32px (synced with panel-toggle)', () => {
     const rootBlock = themeCss.split(':root')[1]?.split('}')[0] ?? '';
     const values = extractTokenValues(rootBlock, ['--nav-cluster-size-md']);
-    expect(values['--nav-cluster-size-md']).toBe('48px');
+    expect(values['--nav-cluster-size-md']).toBe('32px');
   });
 
-  it('nav-cluster-size-lg is 56px', () => {
+  it('nav-cluster-size-lg is 32px (synced with panel-toggle)', () => {
     const rootBlock = themeCss.split(':root')[1]?.split('}')[0] ?? '';
     const values = extractTokenValues(rootBlock, ['--nav-cluster-size-lg']);
-    expect(values['--nav-cluster-size-lg']).toBe('56px');
+    expect(values['--nav-cluster-size-lg']).toBe('32px');
   });
 
   it('nav-cluster-z-index is 1000001', () => {

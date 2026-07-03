@@ -1,6 +1,11 @@
 // Nav cluster CSS — injected into content-script isolated world (ADR-018).
 // ponytail: content-script cannot access popup's theme.css, so we inject
 // a <style> block with the cluster's component CSS (uses tokens from themeTokens).
+//
+// Design-system sync (2026-07-03): cluster buttons match panel-toggle size
+// (32×32) + color pattern (--color-surface bg, --color-border, --color-text).
+// Light mode → dark border/text on light surface; Dark mode → light border/text
+// on dark surface. Auto-switches via [data-theme] tokens from themeTokens.ts.
 
 /** CSS for nav cluster (uses --nav-cluster-* tokens + color tokens). */
 export const NAV_CLUSTER_CSS = `
@@ -10,7 +15,8 @@ export const NAV_CLUSTER_CSS = `
   gap: 4px;
   padding: 4px;
   border-radius: var(--radius-md, 8px);
-  background: rgba(15, 23, 42, var(--nav-cluster-bg-opacity-default, 0.7));
+  background: var(--color-surface, #1e293b);
+  border: 1px solid var(--color-border, #334155);
   backdrop-filter: blur(8px);
   z-index: var(--nav-cluster-z-index, 1000001);
   font-family: system-ui, -apple-system, sans-serif;
@@ -18,6 +24,7 @@ export const NAV_CLUSTER_CSS = `
   transition: transform 150ms ease, opacity 150ms ease;
   pointer-events: auto;
   cursor: move !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 .nav-cluster[aria-grabbed="true"] {
   cursor: grabbing !important;
@@ -48,31 +55,30 @@ export const NAV_CLUSTER_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--nav-cluster-size-md, 48px);
-  height: var(--nav-cluster-size-md, 48px);
-  border: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md, 8px);
   background: transparent;
   color: var(--color-text, #f1f5f9);
   cursor: pointer !important;
   padding: 0;
   line-height: 1;
   -webkit-tap-highlight-color: transparent;
-  transition: none;
-}
-.nav-cluster .nav-cluster-btn {
-  cursor: pointer !important;
-}
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
 }
 .nav-cluster-btn .nav-cluster-icon {
-  width: 60%;
-  height: 60%;
+  width: 65%;
+  height: 65%;
   display: block;
 }
 .nav-cluster-btn:hover {
-  color: var(--color-primary, #60a5fa);
+  background: var(--color-surface-hover, #334155);
+  border-color: var(--color-border-focus, #60a5fa);
+  color: var(--color-text, #f1f5f9);
 }
 .nav-cluster-btn:focus-visible {
-  outline: 2px solid var(--color-primary, #60a5fa);
+  outline: 2px solid var(--color-border-focus, #60a5fa);
   outline-offset: 2px;
 }
 .nav-cluster-btn--active {

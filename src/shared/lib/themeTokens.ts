@@ -68,9 +68,9 @@ const LIGHT_TOKENS = `
   --transition-fast: 150ms;
   --transition-normal: 200ms;
   --ease-standard: ease;
-  --nav-cluster-size-sm: 40px;
-  --nav-cluster-size-md: 48px;
-  --nav-cluster-size-lg: 56px;
+  --nav-cluster-size-sm: 32px;
+  --nav-cluster-size-md: 32px;
+  --nav-cluster-size-lg: 32px;
   --nav-cluster-bg-opacity-default: 0.7;
   --nav-cluster-btn-opacity-default: 0.9;
   --nav-cluster-collapse-size: 32px;
