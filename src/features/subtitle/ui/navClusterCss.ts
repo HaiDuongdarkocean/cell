@@ -31,6 +31,19 @@ export const NAV_CLUSTER_CSS = `
   justify-content: center;
   cursor: default !important;
 }
+/* Cover inter-column gap so cursor shows default (not move) — real DOM element
+   is the event target instead of cluster, so border-zone drag check (e.target
+   === cluster) fails here. ponytail: 1 div, no JS logic. */
+.nav-cluster-gap-cover {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  cursor: default !important;
+}
 .nav-cluster-btn {
   display: inline-flex;
   align-items: center;

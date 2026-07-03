@@ -66,7 +66,14 @@ export function buildClusterDOM(): NavClusterDOM {
 
   mainColumn.append(prevBtn, repeatBtn, nextBtn);
   secondaryColumn.append(rewindBtn, forwardBtn);
-  cluster.append(mainColumn, secondaryColumn);
+
+  // Gap cover: real DOM element over inter-column gap so cursor shows default
+  // (not move) — prevents border-zone drag check from triggering in the gap.
+  const gapCover = document.createElement('div');
+  gapCover.className = 'nav-cluster-gap-cover';
+  gapCover.setAttribute('aria-hidden', 'true');
+
+  cluster.append(mainColumn, secondaryColumn, gapCover);
 
   return { cluster, mainColumn, secondaryColumn, prevBtn, repeatBtn, nextBtn, rewindBtn, forwardBtn };
 }
