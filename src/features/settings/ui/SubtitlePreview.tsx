@@ -1,6 +1,5 @@
-import type { ReactElement } from 'react';
+import type { CSSProperties } from 'react';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import { buildTextShadow, sanitizeFontFamily, hexToRgba } from '@/features/subtitle/ui/subtitleUI';
 import styles from './SubtitlePreview.module.css';
 
 interface SubtitlePreviewProps {
@@ -11,34 +10,51 @@ interface SubtitlePreviewProps {
 }
 
 /**
- * Live preview of subtitle overlay appearance (ADR-013).
- * Renders a text sample with the style applied via inline style.
- * Dark/light background toggle simulates video backdrop (light vs dark scene).
+ * SubtitlePreview — black bg + white text + apply OverlayStyleConfig realtime
+ * (settings-controls-restyle spec F4).
  *
- * Note: Preview shows font/color/shadow only. Position (yOffsetPercent) is
- * visible on the actual video, not here (preview is a fixed sample box).
+ * Renders a sample text "This is how the {role} subtitle will look." with the
+ * current OverlayStyleConfig applied (fontSize, textColor, backgroundColor +
+ * alpha, textShadow, fontFamily, opacity). Sits above SubtitleStylePanel in
+ * the appearance field so user sees live preview while dragging sliders.
+ *
+ * Note: yOffsetPercent + horizontalAlign + visible are NOT previewed here —
+ * position only makes sense on a real video. This box previews text style only.
  */
-export function SubtitlePreview({ style, role }: SubtitlePreviewProps): ReactElement {
-  const previewStyle: React.CSSProperties = {
+export function SubtitlePreview({ style, role }: SubtitlePreviewProps): React.JSX.Element {
+  const sampleText = `This is how the ${role} subtitle will look.`;
+
+  // Convert hex bg + 0-1 opacity → rgba string for the preview background
+  const bgRgba = hexToRgba(style.backgroundColor, style.backgroundOpacity);
+
+  const previewStyle: CSSProperties = {
     fontSize: `${style.fontSize}px`,
     color: style.textColor,
-    backgroundColor: hexToRgba(style.backgroundColor, style.backgroundOpacity),
+    background: bgRgba,
     opacity: style.textOpacity,
+    fontFamily: style.fontFamily,
     textShadow: buildTextShadow(style.textShadow),
-    fontFamily: sanitizeFontFamily(style.fontFamily),
-    textAlign: style.horizontalAlign,
   };
 
   return (
-    <div className={styles.container} data-testid={`subtitle-preview-${role}`}>
-      <div className={styles.previewBox}>
-        <span style={previewStyle} className={styles.sampleText}>
-          {role === 'target' ? 'Hello world — target subtitle sample' : 'Xin chào — native subtitle sample'}
-        </span>
-      </div>
-      <p className={styles.note}>
-        Preview shows font/color/shadow only. Position visible on video.
-      </p>
+    <div className={styles.previewBox} style={previewStyle} data-testid={`subtitle-preview-${role}`}>
+      {sampleText}
     </div>
   );
+}
+
+/** Convert hex (#rrggbb) + alpha (0-1) → rgba string. Falls back to hex if parse fails. */
+function hexToRgba(hex: string, alpha: number): string {
+  const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!match) return hex;
+  const r = parseInt(match[1], 16);
+  const g = parseInt(match[2], 16);
+  const b = parseInt(match[3], 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** Build CSS text-shadow string from TextShadowConfig. Returns 'none' if preset='none'. */
+function buildTextShadow(shadow: OverlayStyleConfig['textShadow']): string {
+  if (shadow.preset === 'none') return 'none';
+  return `${shadow.offsetX}px ${shadow.offsetY}px ${shadow.blur}px ${shadow.color}`;
 }

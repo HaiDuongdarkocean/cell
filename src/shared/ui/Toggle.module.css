@@ -1,0 +1,41 @@
+/* === Toggle atom — switch pill 32×18px (settings-controls-restyle spec F1) ===
+   Replaces IconButton star-icon toggles in SettingsDialog + NavClusterSettingsPanel.
+   Consumes tokens only — no raw hex/radius. */
+
+.toggle {
+  width: 32px;
+  height: 18px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background var(--transition);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.on {
+  background: var(--color-primary);
+}
+
+.thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform var(--transition);
+  pointer-events: none;
+}
+
+.on .thumb {
+  transform: translateX(14px);
+}

@@ -1,0 +1,28 @@
+/* === ShortcutInput atom — uppercase + center single-char (settings-controls-restyle spec F3) ===
+   Replaces plain text input in SettingsDialog keyboard shortcuts section.
+   Consumes tokens only — no raw hex/radius. */
+
+.shortcutInput {
+  width: 40px;
+  padding: 6px 8px;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+  text-transform: uppercase;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.shortcutInput:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+.shortcutInput:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+}

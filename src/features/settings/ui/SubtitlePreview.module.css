@@ -1,42 +1,14 @@
-/* === SubtitlePreview — live appearance sample === */
+/* === SubtitlePreview — black bg + white text + apply OverlayStyleConfig (settings-controls-restyle spec F4) === */
 
-.container {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-/* Preview box: simulate video backdrop (dark scene by default) */
 .previewBox {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 80px;
+  margin-top: var(--spacing-sm);
   padding: var(--spacing-md);
+  background: #000000;
   border-radius: var(--radius-sm);
-  /* Dark scene backdrop — most subtitle use case */
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  overflow: hidden;
-}
-
-.sampleText {
-  display: inline-block;
-  max-width: 100%;
-  padding: 4px 12px;
-  border-radius: 4px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.4;
-}
-
-.note {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
   text-align: center;
-  font-style: italic;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow: hidden;
+  word-break: break-word;
 }
