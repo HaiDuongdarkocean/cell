@@ -1,6 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
 import { SubtitlePreview } from './SubtitlePreview';
+import { HintIcon } from '@/shared/ui/HintIcon';
 import styles from './SubtitleStylePanel.module.css';
 
 interface SubtitleStylePanelProps {
@@ -325,7 +326,10 @@ export function SubtitleStylePanel({
           className={styles.numberInput}
           aria-label={`Vertical position ${style.yOffsetPercent} percent`}
         />
-        <p className={styles.hint}>0% = top, 95% = bottom. Drag handle on video also sets this.</p>
+        <HintIcon
+          hint="0% = top, 95% = bottom. Drag handle on video also sets this."
+          ariaLabel="Show hint for Vertical position"
+        />
       </div>
 
       {/* Visible toggle (native only — target always visible) */}
@@ -339,8 +343,11 @@ export function SubtitleStylePanel({
               aria-label="Show native overlay"
             />
             <span>Show native overlay</span>
+            <HintIcon
+              hint="When off, native overlay is fully hidden (not just transparent)."
+              ariaLabel="Show hint for Show native overlay"
+            />
           </label>
-          <p className={styles.hint}>When off, native overlay is fully hidden (not just transparent).</p>
         </div>
       )}
 

@@ -57,7 +57,7 @@ export function NavClusterSettingsPanel({
         <Toggle
           checked={settings.enabled}
           onChange={handleToggleEnabled}
-          aria-label="Toggle navigation cluster"
+          ariaLabel="Toggle navigation cluster"
           data-testid="nav-cluster-enabled-toggle"
         />
       </div>

@@ -1,0 +1,143 @@
+/* === HintIcon atom — info-circle button + floating popover (settings-controls-restyle spec F6) ===
+   Boundary detection: flip-top/align-right/align-center variants.
+   Consumes tokens only — no raw hex/radius. */
+
+.hintWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* === Hint button === */
+.hintBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: help;
+  border-radius: var(--radius-full);
+  transition: color var(--transition), background var(--transition);
+  flex-shrink: 0;
+}
+
+.hintBtn:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.hintBtn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.hintBtn[aria-expanded="true"] {
+  color: var(--color-primary);
+}
+
+.hintBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* === Floating hint popover (nổi lên trên icon) === */
+.hintText {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  width: max-content;
+  max-width: 280px;
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+  line-height: 1.5;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 30;
+  animation: hintPop 150ms ease;
+  pointer-events: none;
+}
+
+/* Arrow pointing down to the icon (default: left-aligned) */
+.hintText::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 8px;
+  border: 5px solid transparent;
+  border-top-color: var(--color-border);
+}
+
+/* === Boundary detection variants === */
+
+/* Flip vertical: popover below icon (when near top viewport edge) */
+.hintText.flip-top {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
+
+.hintText.flip-top::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: var(--color-border);
+}
+
+/* Align right: when near left viewport edge */
+.hintText.align-right {
+  left: auto;
+  right: 0;
+}
+
+.hintText.align-right::after {
+  left: auto;
+  right: 8px;
+}
+
+/* Center horizontal: when centered in viewport */
+.hintText.align-center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.hintText.align-center::after {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Combined variants (e.g., flip-top + align-right) */
+.hintText.flip-top.align-right::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: var(--color-border);
+  left: auto;
+  right: 8px;
+}
+
+.hintText.flip-top.align-center::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: var(--color-border);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+@keyframes hintPop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

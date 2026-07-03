@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <title>Settings — Searchable Language Select + Collapsible Hint Icon</title>
+  <!--
+    Mockup v1 — 2 improvements for SettingsDialog (confirmed scope with anh 2026-07-04):
+
+    BUG 1 — Overlay target/native language selects (~184 langs) too hard to find.
+      Current: CustomSelect (plain dropdown, scroll 184 items).
+      Proposed: SearchableSelect — single-select dropdown with embedded search box.
+        - Click trigger → menu opens with search input auto-focused.
+        - Type to filter (case-insensitive, matches label incl. native name in parens).
+        - Arrow Up/Down to move highlight, Enter to select, Esc to close.
+        - "No languages found" empty state.
+        - Selected item shows check mark (single-select, not toggle like MultiSelect).
+      Reuse: mirrors existing MultiSelect search UX (same filter logic, same empty state)
+        but single-select semantics. Keeps visual parity with CustomSelect trigger.
+
+    CAI TIEN 1 — Always-visible <p class="asHint"> clutters the panel.
+      Current: hint text rendered permanently under every toggle/field.
+      Proposed: Hint icon ("i" in a circle) next to the label; click → reveal hint inline.
+        - Icon: 14px info-circle SVG, --color-text-muted, hover --color-primary.
+        - Click toggles a hint row (same <p> styling) sliding in below the label row.
+        - Default collapsed (clean panel). Persists per-field open state in session.
+        - Accessible: button + aria-expanded + aria-label="Show hint for X".
+        - Applied uniformly: every field that currently has asHint / hint gets the icon.
+      Trade-off acknowledged: one extra click to read hint. Mitigated by:
+        - Icon is small + always visible (discoverability preserved).
+        - Hover state hints affordance (cursor: help, color shift).
+        - Power users who already know the hint never see clutter again.
+
+    Tokens: imported from theme.css (no invented tokens).
+    Reuse: section/field/label CSS copied from mockup-settings-grouped.html.
+  -->
+  <style>
+    /* === Tokens (copy from theme.css — source of truth) === */
+    :root {
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-subtle: rgba(37, 99, 235, 0.1);
+      --color-background: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-hover: #f1f5f9;
+      --color-text: #0f172a;
+      --color-text-secondary: #475569;
+      --color-text-muted: #94a3b8;
+      --color-text-inverse: #ffffff;
+      --color-border: #e2e8f0;
+      --color-border-subtle: #f1f5f9;
+      --color-border-focus: #2563eb;
+      --color-success: #10b981;
+      --color-scrollbar-thumb: #cbd5e1;
+      --color-scrollbar-thumb-hover: #94a3b8;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-size-xs: 12px;
+      --font-size-sm: 13px;
+      --font-size-base: 14px;
+      --font-size-lg: 16px;
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --leading-tight: 1.25;
+      --leading-normal: 1.5;
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 12px;
+      --spacing-lg: 16px;
+      --spacing-xl: 24px;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --transition: 150ms ease;
+    }
+    [data-theme="dark"] {
+      --color-primary: #60a5fa;
+      --color-primary-hover: #3b82f6;
+      --color-primary-subtle: rgba(96, 165, 250, 0.15);
+      --color-background: #0f172a;
+      --color-surface: #1e293b;
+      --color-surface-hover: #334155;
+      --color-text: #f1f5f9;
+      --color-text-secondary: #cbd5e1;
+      --color-text-muted: #64748b;
+      --color-text-inverse: #0f172a;
+      --color-border: #334155;
+      --color-border-subtle: #1e293b;
+      --color-border-focus: #60a5fa;
+      --color-scrollbar-thumb: #475569;
+      --color-scrollbar-thumb-hover: #64748b;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: var(--font-family);
+      background: #e5e7eb;
+      color: var(--color-text);
+      min-height: 100vh;
+    }
+    [data-theme="dark"] body { background: #020617; }
+
+    .mockup-shell {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: var(--spacing-xl);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-lg);
+    }
+    .mockup-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--spacing-md);
+    }
+    .mockup-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin: 0;
+    }
+    .mockup-meta { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+    .theme-toggle {
+      padding: 6px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-background);
+      color: var(--color-text);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .theme-toggle:hover { background: var(--color-surface-hover); }
+
+    .legend {
+      padding: var(--spacing-md);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+    }
+    .legend strong { color: var(--color-text); }
+    .legend .pill {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: var(--font-weight-semibold);
+      margin-right: 4px;
+    }
+    .pill-bug { background: rgba(239,68,68,0.12); color: var(--color-error, #ef4444); }
+    .pill-imp { background: var(--color-primary-subtle); color: var(--color-primary); }
+    [data-theme="dark"] .pill-bug { color: #f87171; }
+
+    /* === Popup popover (480px — sidebar + main) === */
+    .popover {
+      width: 480px;
+      margin: 0 auto;
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      overflow: visible; /* allow dropdown menu to overflow for demo */
+    }
+    .popoverHeader {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+      flex-shrink: 0;
+    }
+    .popoverTitle {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+    .close-btn {
+      width: 28px; height: 28px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: none; border-radius: var(--radius-sm);
+      background: transparent; color: var(--color-text-secondary);
+      cursor: pointer;
+    }
+    .close-btn:hover { background: var(--color-surface-hover); color: var(--color-text); }
+    .close-btn svg { width: 16px; height: 16px; }
+
+    .popoverBody { flex: 1; display: flex; min-height: 0; }
+    .sidebar {
+      width: 120px; flex-shrink: 0;
+      padding: var(--spacing-md) var(--spacing-sm);
+      border-right: 1px solid var(--color-border-subtle);
+      background: var(--color-surface);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .sidebarLabel {
+      font-size: 10px; font-weight: var(--font-weight-semibold);
+      color: var(--color-text-muted);
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: var(--spacing-xs) var(--spacing-sm);
+      margin-bottom: var(--spacing-xs);
+    }
+    .sidebarItem {
+      display: block; width: 100%;
+      padding: 8px 12px;
+      border: none; border-radius: var(--radius-md);
+      background: transparent; color: var(--color-text-secondary);
+      font-family: var(--font-family);
+      font-size: var(--font-size-xs); font-weight: var(--font-weight-medium);
+      text-align: left; cursor: pointer;
+      transition: all var(--transition);
+    }
+    .sidebarItem:hover { background: var(--color-surface-hover); color: var(--color-text); }
+    .sidebarItem.active {
+      background: var(--color-primary-subtle);
+      color: var(--color-primary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .mainCol {
+      flex: 1;
+      padding: var(--spacing-lg);
+      overflow-y: auto;
+      display: flex; flex-direction: column;
+      gap: var(--spacing-lg);
+      max-height: 620px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-scrollbar-thumb) transparent;
+    }
+    .mainCol::-webkit-scrollbar { width: 6px; }
+    .mainCol::-webkit-scrollbar-thumb { background: var(--color-scrollbar-thumb); border-radius: var(--radius-full); }
+
+    /* === Section card === */
+    .section {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      overflow: visible;
+      scroll-margin-top: var(--spacing-md);
+      flex-shrink: 0;
+    }
+    .sectionHeader {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+      background: var(--color-surface);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sectionTitle {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      margin: 0; letter-spacing: -0.01em;
+    }
+    .sectionCount {
+      font-size: 10px; font-weight: var(--font-weight-medium);
+      color: var(--color-text-muted);
+      background: var(--color-background);
+      padding: 2px 6px; border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+    }
+    .sectionDescription {
+      margin: 0;
+      padding: var(--spacing-xs) var(--spacing-md) 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      line-height: var(--leading-normal);
+      background: var(--color-surface);
+    }
+    .sectionBody {
+      padding: var(--spacing-md);
+      display: flex; flex-direction: column;
+      gap: var(--spacing-md);
+      background: var(--color-background);
+    }
+
+    /* === Setting field === */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      letter-spacing: 0.01em;
+      user-select: none;
+    }
+
+    /* === NEW: Label row with hint icon === */
+    .labelRow {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .labelRow .label { flex: 0 1 auto; }
+    .hintBtn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px;
+      padding: 0; border: none;
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: help;
+      border-radius: var(--radius-full);
+      transition: color var(--transition), background var(--transition);
+      flex-shrink: 0;
+    }
+    .hintBtn:hover { color: var(--color-primary); background: var(--color-primary-subtle); }
+    .hintBtn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 1px;
+    }
+    .hintBtn svg { width: 14px; height: 14px; }
+    .hintBtn[aria-expanded="true"] { color: var(--color-primary); }
+
+    /* === NEW: floating hint popover (nổi lên trên icon) === */
+    .hintText {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 0;
+      width: max-content;
+      max-width: 280px;
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text);
+      line-height: 1.5;
+      padding: var(--spacing-sm) var(--spacing-md);
+      background: var(--color-surface-hover);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      z-index: 30;
+      animation: hintPop 150ms ease;
+      pointer-events: none;
+    }
+    /* Arrow pointing down to the icon (default: left-aligned) */
+    .hintText::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 8px;
+      border: 5px solid transparent;
+      border-top-color: var(--color-border);
+    }
+
+    /* === Boundary detection variants === */
+
+    /* Flip vertical: popover below icon (when near top viewport edge) */
+    .hintText.flip-top {
+      bottom: auto;
+      top: calc(100% + 6px);
+    }
+    .hintText.flip-top::after {
+      top: auto;
+      bottom: 100%;
+      border-top-color: transparent;
+      border-bottom-color: var(--color-border);
+    }
+
+    /* Align right: when near left viewport edge */
+    .hintText.align-right {
+      left: auto;
+      right: 0;
+    }
+    .hintText.align-right::after {
+      left: auto;
+      right: 8px;
+    }
+
+    /* Center horizontal: when centered in viewport */
+    .hintText.align-center {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .hintText.align-center::after {
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    /* Reset transform for animation when centered */
+    .hintText.align-center[data-animate="true"] {
+      animation: hintPopCenter 150ms ease;
+    }
+    @keyframes hintPopCenter {
+      from { opacity: 0; transform: translateX(-50%) translateY(4px) scale(0.96); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+
+    /* Combined variants (e.g., flip-top + align-right) */
+    .hintText.flip-top.align-right::after {
+      top: auto;
+      bottom: 100%;
+      border-top-color: transparent;
+      border-bottom-color: var(--color-border);
+      left: auto;
+      right: 8px;
+    }
+    .hintText.flip-top.align-center::after {
+      top: auto;
+      bottom: 100%;
+      border-top-color: transparent;
+      border-bottom-color: var(--color-border);
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    @keyframes hintPop {
+      from { opacity: 0; transform: translateY(4px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Wrapper needed for absolute positioning of the popover */
+    .hintWrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    /* === Toggle row (asRow) === */
+    .asRow {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--spacing-sm);
+    }
+    .asLabel {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      letter-spacing: 0.01em;
+      user-select: none;
+    }
+
+    /* === Toggle switch (visual only in mockup) === */
+    .toggle {
+      width: 32px; height: 18px;
+      border-radius: var(--radius-full);
+      background: var(--color-border);
+      position: relative;
+      transition: background var(--transition);
+      cursor: pointer;
+      flex-shrink: 0;
+      border: none;
+    }
+    .toggle[aria-checked="true"] { background: var(--color-primary); }
+    .toggle .thumb {
+      position: absolute; top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition);
+    }
+    .toggle[aria-checked="true"] .thumb { transform: translateX(14px); }
+
+    /* === SearchableSelect (BUG 1 fix) === */
+    .searchableSelect { position: relative; width: 100%; }
+    .ssTrigger {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--spacing-sm);
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+    }
+    .ssTrigger:hover { border-color: var(--color-text-muted); background: var(--color-surface-hover); }
+    .ssTrigger:focus-visible,
+    .searchableSelect.open .ssTrigger {
+      outline: none;
+      border-color: var(--color-primary);
+      background: var(--color-background);
+      box-shadow: 0 0 0 3px var(--color-primary-subtle);
+    }
+    .ssValue { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ssChevron {
+      width: 16px; height: 16px; flex-shrink: 0;
+      color: var(--color-text-muted);
+      transition: transform var(--transition), color var(--transition);
+    }
+    .searchableSelect.open .ssChevron { transform: rotate(180deg); color: var(--color-primary); }
+
+    /* === Menu (with embedded search) === */
+    .ssMenu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      display: flex; flex-direction: column;
+      padding: 4px;
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      z-index: 20;
+      max-height: 260px;
+      overflow: hidden;
+    }
+    .ssSearchWrap {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--color-border-subtle);
+      flex-shrink: 0;
+    }
+    .ssSearchIcon {
+      width: 14px; height: 14px;
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+    }
+    .ssSearchInput {
+      flex: 1;
+      border: none; outline: none;
+      background: transparent;
+      color: var(--color-text);
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+    }
+    .ssSearchInput::placeholder { color: var(--color-text-muted); }
+
+    .ssList {
+      margin: 0; padding: 0; list-style: none;
+      overflow-y: auto;
+      max-height: 200px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-scrollbar-thumb) transparent;
+    }
+    .ssList::-webkit-scrollbar { width: 6px; }
+    .ssList::-webkit-scrollbar-thumb { background: var(--color-scrollbar-thumb); border-radius: var(--radius-full); }
+
+    .ssOption {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      color: var(--color-text);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .ssOption:hover,
+    .ssOption.focused { background: var(--color-surface-hover); }
+    .ssOption.selected { background: var(--color-primary-subtle); color: var(--color-primary); font-weight: var(--font-weight-semibold); }
+    .ssOption .check {
+      width: 14px; height: 14px;
+      color: var(--color-primary);
+      opacity: 0;
+      flex-shrink: 0;
+    }
+    .ssOption.selected .check { opacity: 1; }
+    .ssEmpty {
+      padding: 12px 10px;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      text-align: center;
+    }
+
+    /* === Annotation badges (mockup-only) === */
+    .anno {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: var(--font-weight-semibold);
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .anno-new { background: var(--color-success); color: #fff; }
+    .anno-before { background: var(--color-text-muted); color: #fff; }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-lg);
+    }
+    .compare-col {
+      padding: var(--spacing-md);
+      background: var(--color-background);
+      border: 1px dashed var(--color-border);
+      border-radius: var(--radius-md);
+    }
+    .compare-col h3 {
+      margin: 0 0 var(--spacing-sm);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+  </style>
+</head>
+<body>
+  <div class="mockup-shell">
+    <div class="mockup-header">
+      <div>
+        <h1 class="mockup-title">Settings — Searchable Language + Collapsible Hint</h1>
+        <div class="mockup-meta">Mockup v1 · 2026-07-04 · tokens from theme.css · light/dark toggle top-right</div>
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
+    </div>
+
+    <div class="legend">
+      <div><span class="pill pill-bug">BUG 1</span> <strong>Searchable language select</strong> — Overlay target/native language dropdowns (~184 items) → embed search box in menu. Type to filter, arrow keys to navigate, Enter to select.</div>
+      <div><span class="pill pill-imp">IMP 1</span> <strong>Collapsible hint icon</strong> — Always-visible <code>&lt;p class="asHint"&gt;</code> → small "ⓘ" icon next to label; click to reveal hint inline. Applied to <em>all</em> settings fields.</div>
+    </div>
+
+    <!-- ============ MAIN POPOVER (proposed state) ============ -->
+    <div class="popover">
+      <div class="popoverHeader">
+        <h2 class="popoverTitle">Settings</h2>
+        <button class="close-btn" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="popoverBody">
+        <nav class="sidebar">
+          <div class="sidebarLabel">Settings</div>
+          <button class="sidebarItem">Media</button>
+          <button class="sidebarItem active">Overlay</button>
+          <button class="sidebarItem">Shortcuts</button>
+          <button class="sidebarItem">Nav Cluster</button>
+          <button class="sidebarItem">Download</button>
+        </nav>
+
+        <div class="mainCol">
+          <!-- === Card: Subtitle Overlay (proposed) === -->
+          <section class="section">
+            <div class="sectionHeader">
+              <h3 class="sectionTitle">Subtitle Overlay</h3>
+              <span class="sectionCount">4</span>
+            </div>
+            <p class="sectionDescription">Languages and appearance for the floating subtitle overlay.</p>
+            <div class="sectionBody">
+
+              <!-- Field 1: Overlay target language — SearchableSelect (OPEN, filtered) -->
+              <div class="field">
+                <div class="labelRow">
+                  <label class="label">Overlay target language</label>
+                  <span class="hintWrap">
+                    <button class="hintBtn" aria-expanded="false" aria-label="Show hint for Overlay target language" title="Show hint" onclick="toggleHint(this)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                    </button>
+                    <!-- Floating hint popover (nổi lên trên icon) — hidden by default -->
+                    <p class="hintText" role="tooltip" hidden>Ngôn ngữ hiển thị cho subtitle overlay (bản dịch).</p>
+                  </span>
+                </div>
+                <!-- SearchableSelect — OPEN state, query "jap" -->
+                <div class="searchableSelect open" data-testid="overlay-target-language">
+                  <button type="button" class="ssTrigger" aria-haspopup="listbox" aria-expanded="true">
+                    <span class="ssValue">日本語 (Japanese)</span>
+                    <svg class="ssChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                  </button>
+                  <div class="ssMenu" role="listbox">
+                    <div class="ssSearchWrap">
+                      <svg class="ssSearchIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                      <input type="search" class="ssSearchInput" placeholder="Search languages..." value="jap" aria-label="Search languages" autofocus>
+                    </div>
+                    <ul class="ssList">
+                      <li class="ssOption focused" role="option" aria-selected="false">
+                        <span>日本語 (Japanese)</span>
+                        <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                      </li>
+                      <li class="ssEmpty" style="display:none">No languages found</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Field 2: Overlay native language — SearchableSelect (CLOSED) + hint EXPANDED (floating up)
+                   Demo: hint popover floats ABOVE the icon — does NOT push the control down. -->
+              <div class="field">
+                <div class="labelRow">
+                  <label class="label">Overlay native language</label>
+                  <span class="hintWrap">
+                    <button class="hintBtn" aria-expanded="true" aria-label="Show hint for Overlay native language" title="Show hint" onclick="toggleHint(this)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                    </button>
+                    <!-- ↓↓↓ Floating popover — rises above icon, control stays put ↓↓↓ -->
+                    <p class="hintText" role="tooltip">Ngôn ngữ gốc của subtitle (bản phụ đề gốc), hiển thị song song với target.</p>
+                  </span>
+                </div>
+                <!-- Control stays in place — hint floats over it via absolute positioning -->
+                <div class="searchableSelect" data-testid="overlay-native-language">
+                  <button type="button" class="ssTrigger" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="ssValue">Tiếng Việt (Vietnamese)</span>
+                    <svg class="ssChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Field 3: Overlay auto-load — toggle + hint icon (EXPANDED, floating up) -->
+              <div class="field">
+                <div class="asRow">
+                  <div class="labelRow">
+                    <span class="asLabel">Overlay auto-load</span>
+                    <span class="hintWrap">
+                      <button class="hintBtn" aria-expanded="true" aria-label="Show hint for Overlay auto-load" title="Show hint" onclick="toggleHint(this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                      </button>
+                      <p class="hintText" role="tooltip">Khi bật, overlay tự load subtitle detect được cùng target language.</p>
+                    </span>
+                  </div>
+                  <button class="toggle" aria-checked="true" aria-label="Toggle overlay auto-load"><span class="thumb"></span></button>
+                </div>
+              </div>
+
+              <!-- Field 4: Subtitle appearance — label + hint icon (collapsed) -->
+              <div class="field">
+                <div class="labelRow">
+                  <label class="label">Subtitle appearance</label>
+                  <span class="hintWrap">
+                    <button class="hintBtn" aria-expanded="false" aria-label="Show hint for Subtitle appearance" title="Show hint" onclick="toggleHint(this)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                      </svg>
+                    </button>
+                    <p class="hintText" role="tooltip" hidden>Tùy chỉnh font, size, màu cho target và native subtitle.</p>
+                  </span>
+                </div>
+                <div style="padding: 24px; text-align: center; color: var(--color-text-muted); font-size: var(--font-size-xs); border: 1px dashed var(--color-border); border-radius: var(--radius-md);">
+                  [ SubtitlePreview + style tabs — unchanged ]
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- === Card: Media (showing hint icon pattern on a second card) === -->
+          <section class="section">
+            <div class="sectionHeader">
+              <h3 class="sectionTitle">Media</h3>
+              <span class="sectionCount">4</span>
+            </div>
+            <div class="sectionBody">
+              <div class="field">
+                <div class="asRow">
+                  <div class="labelRow">
+                    <span class="asLabel">Auto select media</span>
+                    <span class="hintWrap">
+                      <button class="hintBtn" aria-expanded="false" aria-label="Show hint for Auto select media" title="Show hint" onclick="toggleHint(this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                      </button>
+                      <p class="hintText" role="tooltip" hidden>Khi bật, mở popup → media tự chọn theo preference.</p>
+                    </span>
+                  </div>
+                  <button class="toggle" aria-checked="true" aria-label="Toggle auto select"><span class="thumb"></span></button>
+                </div>
+                <!-- Collapsed: hint hidden. Click icon to reveal floating popover. -->
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ BEFORE / AFTER comparison ============ -->
+    <h2 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin: var(--spacing-lg) 0 0;">Before / After — single field</h2>
+    <div class="compare">
+      <div class="compare-col">
+        <h3>Before <span class="anno anno-before">current</span></h3>
+        <div class="field">
+          <div class="asRow">
+            <span class="asLabel">Overlay auto-load</span>
+            <button class="toggle" aria-checked="true"><span class="thumb"></span></button>
+          </div>
+          <p style="margin: 4px 0 0; font-size: var(--font-size-xs); color: var(--color-text-muted); line-height: 1.5;">
+            Khi bật, overlay tự load subtitle detect được cùng target language.
+          </p>
+        </div>
+        <p style="font-size: 11px; color: var(--color-text-muted); margin-top: var(--spacing-sm);">Hint always visible → every field adds a line of muted text → panel feels busy.</p>
+      </div>
+      <div class="compare-col">
+        <h3>After <span class="anno anno-new">proposed</span></h3>
+        <div class="field">
+          <div class="asRow">
+            <div class="labelRow">
+              <span class="asLabel">Overlay auto-load</span>
+              <span class="hintWrap">
+                <button class="hintBtn" aria-expanded="false" aria-label="Show hint for Overlay auto-load" title="Show hint" onclick="toggleHint(this)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                  </svg>
+                </button>
+                <p class="hintText" role="tooltip" hidden>Khi bật, overlay tự load subtitle detect được cùng target language.</p>
+              </span>
+            </div>
+            <button class="toggle" aria-checked="true"><span class="thumb"></span></button>
+          </div>
+          <!-- Click the ⓘ icon above → hint floats UP over the label, control stays put -->
+        </div>
+        <p style="font-size: 11px; color: var(--color-text-muted); margin-top: var(--spacing-sm);">Hint collapsed by default → click ⓘ → popover <strong>nổi lên trên</strong> icon. Control không bị đẩy xuống. Panel stays clean.</p>
+      </div>
+    </div>
+
+    <!-- ============ EDGE CASE DEMO: boundary detection ============ -->
+    <h2 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin: var(--spacing-lg) 0 0;">Edge Case Demo — boundary detection</h2>
+    <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--spacing-md);">
+      Resize browser window to test positioning. Hints auto-adjust to avoid viewport overflow.
+    </p>
+    <div style="display: flex; gap: var(--spacing-md); flex-wrap: wrap; align-items: flex-start;">
+      <!-- Left edge: should align right -->
+      <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md);">
+        <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin: 0 0 var(--spacing-sm);">Near left edge → align right</p>
+        <div class="labelRow">
+          <span class="asLabel">Left edge test</span>
+          <span class="hintWrap">
+            <button class="hintBtn" aria-expanded="false" aria-label="Show hint" title="Show hint" onclick="toggleHint(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </button>
+            <p class="hintText" role="tooltip" hidden>Hint text long enough to trigger right alignment when near left viewport edge.</p>
+          </span>
+        </div>
+      </div>
+
+      <!-- Right edge: should align left (default) -->
+      <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md); margin-left: auto;">
+        <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin: 0 0 var(--spacing-sm);">Near right edge → align left</p>
+        <div class="labelRow">
+          <span class="asLabel">Right edge test</span>
+          <span class="hintWrap">
+            <button class="hintBtn" aria-expanded="false" aria-label="Show hint" title="Show hint" onclick="toggleHint(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </button>
+            <p class="hintText" role="tooltip" hidden>Hint text long enough to trigger left alignment when near right viewport edge.</p>
+          </span>
+        </div>
+      </div>
+
+      <!-- Center: should center align -->
+      <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md); width: 100%; text-align: center;">
+        <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin: 0 0 var(--spacing-sm);">Centered → center align</p>
+        <div class="labelRow" style="justify-content: center;">
+          <span class="asLabel">Center test</span>
+          <span class="hintWrap">
+            <button class="hintBtn" aria-expanded="false" aria-label="Show hint" title="Show hint" onclick="toggleHint(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </button>
+            <p class="hintText" role="tooltip" hidden>Hint text centered when both left and right space is insufficient.</p>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend" style="margin-top: var(--spacing-lg);">
+      <strong>Implementation notes (for G1 spec):</strong>
+      <ul style="margin: 8px 0 0; padding-left: 20px; line-height: 1.7;">
+        <li><strong>BUG 1 — SearchableSelect</strong>: new atom <code>src/shared/ui/SearchableSelect.tsx</code>. Reuses MultiSelect's filter logic (case-insensitive, matches label incl. native name). Single-select semantics: click option → select + close. Keyboard: ↑/↓ navigate, Enter select, Esc close, type reopens menu if closed. Replaces <code>CustomSelect</code> only for the 2 overlay language fields (others have ≤7 options — no search needed, YAGNI).</li>
+        <li><strong>IMP 1 — Hint icon (floating popover)</strong>: new atom <code>src/shared/ui/HintIcon.tsx</code>. Pattern: <code>&lt;span class="hintWrap" style="position:relative"&gt;&lt;button class="hintBtn"/&gt;&lt;p class="hintText" role="tooltip"/&gt;&lt;/span&gt;</code>. Hint popover is <code>position:absolute; bottom:calc(100%+6px)</code> → floats UP above the icon, does NOT push the control down. Click icon toggles <code>hidden</code> on the popover. Replaces all <code>&lt;p class="asHint"&gt;</code> / <code>&lt;p class="hint"&gt;</code> usages (4 in SettingsDialog, 2 in SubtitleStylePanel). Open state local to component (no persistence — refresh resets, per ponytail). Dismiss: click icon again, or click outside (optional — ponytail: skip outside-click if user didn't ask).</li>
+        <li><strong>Edge cases solved</strong>:
+           <ul style="margin: 4px 0 0; padding-left: 16px; line-height: 1.5;">
+             <li><strong>Theme sync</strong>: popover bg = <code>--color-surface-hover</code>, border = <code>--color-border</code>, text = <code>--color-text</code> → đồng bộ light/dark mode.</li>
+             <li><strong>Viewport boundary (3-axis detection)</strong>:
+               <ul style="margin: 4px 0 0; padding-left: 16px; line-height: 1.5;">
+                 <li><strong>Vertical</strong>: if <code>btnRect.top &lt; popoverHeight + 8px</code>, add <code>.flip-top</code> → popover appears below icon instead of above.</li>
+                 <li><strong>Horizontal</strong>: if <code>spaceLeft &lt; popoverWidth</code>, add <code>.align-right</code> → popover right-aligned to icon.</li>
+                 <li><strong>Center</strong>: if both sides insufficient (<code>&lt; popoverWidth/2</code>), add <code>.align-center</code> → popover centered on icon.</li>
+                 <li><strong>Combined</strong>: CSS supports combos like <code>.flip-top.align-right</code> for corner cases.</li>
+               </ul>
+             </li>
+             <li><strong>Scroll container</strong>: render popover via React Portal to <code>document.body</code> (position fixed) → not clipped by <code>overflow-y: auto</code> on settings panel. Calculate position from icon's rect.</li>
+             <li><strong>Click outside dismiss</strong>: <code>useEffect</code> + <code>mousedown</code> listener on document → close if click outside icon + popover.</li>
+             <li><strong>Single popover</strong>: parent <code>SettingsDialog</code> state <code>openHintId: string | null</code> → only 1 hint open at a time.</li>
+             <li><strong>Text length</strong>: <code>max-width: 280px</code> + natural text-wrap → prevents overflow.</li>
+             <li><strong>Z-index</strong>: <code>z-index: 30</code> → above all panel content.</li>
+             <li><strong>Keyboard a11y</strong>: Tab → Enter/Space toggle, Esc to close.</li>
+           </ul>
+        </li>
+        <li><strong>No new tokens</strong>: reuses --color-surface-hover, --color-border, --color-text, --color-primary, --color-primary-subtle, --color-text-muted, --radius-md, --shadow-md, --transition.</li>
+        <li><strong>a11y</strong>: hint button = <code>aria-expanded</code> + <code>aria-label="Show hint for X"</code>; popover = <code>role="tooltip"</code>. SearchableSelect = <code>combobox</code> pattern per WAI-ARIA.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    }
+
+    function toggleHint(btn) {
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!expanded));
+      // Hint popover lives INSIDE .hintWrap (sibling of the button). Toggle its visibility.
+      const wrap = btn.closest('.hintWrap');
+      const hint = wrap.querySelector('.hintText');
+      if (hint) {
+        if (!expanded) {
+          hint.removeAttribute('hidden');
+          // Calculate position after showing (need dimensions)
+          requestAnimationFrame(() => positionHint(btn, hint));
+        } else {
+          hint.setAttribute('hidden', '');
+          // Reset position classes when closing
+          hint.classList.remove('flip-top', 'align-right', 'align-center');
+        }
+      }
+    }
+
+    /**
+     * Calculate hint popover position based on viewport boundaries.
+     * Applies CSS classes: flip-top (vertical flip), align-right (right align), align-center (center)
+     */
+    function positionHint(btn, hint) {
+      const btnRect = btn.getBoundingClientRect();
+      const hintRect = hint.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      const padding = 8; // Safety margin from viewport edge
+      const popoverHeight = hintRect.height;
+      const popoverWidth = hintRect.width;
+
+      // Reset all position classes first
+      hint.classList.remove('flip-top', 'align-right', 'align-center');
+
+      // Vertical: check if popover would overflow top edge
+      if (btnRect.top < popoverHeight + padding) {
+        hint.classList.add('flip-top');
+      }
+
+      // Horizontal: check alignment based on available space
+      const spaceLeft = btnRect.left;
+      const spaceRight = viewportWidth - btnRect.right;
+
+      if (spaceLeft < popoverWidth / 2 && spaceRight < popoverWidth / 2) {
+        // Centered: both sides insufficient, center align
+        hint.classList.add('align-center');
+      } else if (spaceLeft < popoverWidth) {
+        // Near left edge: align right
+        hint.classList.add('align-right');
+      }
+      // Default: left-aligned (no class needed)
+    }
+
+    // Close all hints when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.hintWrap')) {
+        document.querySelectorAll('.hintBtn[aria-expanded="true"]').forEach(btn => {
+          btn.setAttribute('aria-expanded', 'false');
+          const wrap = btn.closest('.hintWrap');
+          const hint = wrap.querySelector('.hintText');
+          if (hint) {
+            hint.setAttribute('hidden', '');
+            hint.classList.remove('flip-top', 'align-right', 'align-center');
+          }
+        });
+      }
+    });
+
+    // Keyboard: Esc to close open hints
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.hintBtn[aria-expanded="true"]').forEach(btn => {
+          btn.setAttribute('aria-expanded', 'false');
+          const wrap = btn.closest('.hintWrap');
+          const hint = wrap.querySelector('.hintText');
+          if (hint) {
+            hint.setAttribute('hidden', '');
+            hint.classList.remove('flip-top', 'align-right', 'align-center');
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>

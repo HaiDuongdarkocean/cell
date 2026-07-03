@@ -15,6 +15,8 @@ import { NavClusterSettingsPanel } from './NavClusterSettingsPanel';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Toggle } from '@/shared/ui/Toggle';
 import { ShortcutInput } from '@/shared/ui/ShortcutInput';
+import { SearchableSelect } from '@/shared/ui/SearchableSelect';
+import { HintIcon } from '@/shared/ui/HintIcon';
 import styles from './SettingsDialog.module.css';
 
 interface SettingsDialogProps {
@@ -420,14 +422,17 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                 <div className={styles.field}>
                   <div className={styles.asRow}>
                     <span className={styles.asLabel}>Auto select media</span>
+                    <HintIcon
+                      hint="Khi bật, mở popup → media tự chọn theo preference."
+                      ariaLabel="Show hint for Auto select media"
+                    />
                     <Toggle
                       checked={settings.autoSelectEnabled}
                       onChange={(next) => update('autoSelectEnabled', next)}
-                      aria-label="Toggle auto select"
+                      ariaLabel="Toggle auto select"
                       title={`Auto select: ${settings.autoSelectEnabled ? 'ON' : 'OFF'}`}
                     />
                   </div>
-                  <p className={styles.asHint}>Khi bật, mở popup → media tự chọn theo preference.</p>
                 </div>
 
                 {/* Preferred format */}
@@ -477,21 +482,25 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
               <div className={styles.sectionBody}>
                 {/* Subtitle overlay target language */}
                 <SettingField label="Overlay target language" htmlFor="set-overlay-lang">
-                  <CustomSelect
+                  <SearchableSelect
                     testId="overlay-target-language"
+                    dataTestId="overlay-target-language"
                     value={settings.subtitleOverlayTargetLanguage}
                     options={OVERLAY_LANGUAGE_OPTIONS}
-                    onSelect={(val) => update('subtitleOverlayTargetLanguage', val)}
+                    onChange={(val) => update('subtitleOverlayTargetLanguage', val)}
+                    ariaLabel="Select overlay target language"
                   />
                 </SettingField>
 
                 {/* Subtitle overlay native language */}
                 <SettingField label="Overlay native language" htmlFor="set-overlay-native-lang">
-                  <CustomSelect
+                  <SearchableSelect
                     testId="overlay-native-language"
+                    dataTestId="overlay-native-language"
                     value={settings.subtitleOverlayNativeLanguage}
                     options={OVERLAY_LANGUAGE_OPTIONS}
-                    onSelect={(val) => update('subtitleOverlayNativeLanguage', val)}
+                    onChange={(val) => update('subtitleOverlayNativeLanguage', val)}
+                    ariaLabel="Select overlay native language"
                   />
                 </SettingField>
 
@@ -499,14 +508,17 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                 <div className={styles.field}>
                   <div className={styles.asRow}>
                     <span className={styles.asLabel}>Overlay auto-load</span>
+                    <HintIcon
+                      hint="Khi bật, overlay tự load subtitle detect được cùng target language."
+                      ariaLabel="Show hint for Overlay auto-load"
+                    />
                     <Toggle
                       checked={settings.subtitleOverlayAutoLoad}
                       onChange={(next) => update('subtitleOverlayAutoLoad', next)}
-                      aria-label="Toggle overlay auto-load"
+                      ariaLabel="Toggle overlay auto-load"
                       title={`Overlay auto-load: ${settings.subtitleOverlayAutoLoad ? 'ON' : 'OFF'}`}
                     />
                   </div>
-                  <p className={styles.asHint}>Khi bật, overlay tự load subtitle detect được cùng target language.</p>
                 </div>
 
                 {/* === ADR-013: Subtitle appearance (Target/Native tabs) === */}
@@ -579,7 +591,13 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
               </div>
               <p className={styles.sectionDescription}>Remap keys for subtitle panel navigation actions.</p>
               <div className={styles.sectionBody}>
-                <p className={styles.hint}>Single character per action.</p>
+                <div className={styles.field}>
+                  <span className={styles.label}>Keyboard shortcuts</span>
+                  <HintIcon
+                    hint="Single character per action."
+                    ariaLabel="Show hint for Keyboard shortcuts"
+                  />
+                </div>
                 {SHORTCUT_ACTION_ORDER.map((action) => {
                   const shortcut = settings.keyboardShortcuts.find((s) => s.action === action);
                   const currentKey = shortcut?.key ?? '';
@@ -693,9 +711,13 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                   />
                 </SettingField>
 
-                <p className={styles.hint}>
-                  Parallel conversion: {settings.parallelConversion} (số lượng tùy vào GPU của máy tính hiện có)
-                </p>
+                <div className={styles.field}>
+                  <span className={styles.label}>Parallel conversion info</span>
+                  <HintIcon
+                    hint={`Parallel conversion: ${settings.parallelConversion} (số lượng tùy vào GPU của máy tính hiện có)`}
+                    ariaLabel="Show hint for Parallel conversion"
+                  />
+                </div>
               </div>
             </section>
 

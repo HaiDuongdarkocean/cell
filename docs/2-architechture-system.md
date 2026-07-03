@@ -43,7 +43,9 @@ src/
 │   │   ├── IconButton.tsx + .module.css  # Icon-only transparent button (11 call sites: Header, SettingsDialog, VideoCard, SubtitleCard, SelectionBar, DownloadCard)
 │   │   ├── Toggle.tsx + .module.css      # Switch pill 32x18px (settings-controls-restyle F1) — replaces IconButton star-icon toggles
 │   │   ├── Slider.tsx + .module.css      # Styled range 4px track + 14px thumb (settings-controls-restyle F2)
-│   │   └── ShortcutInput.tsx + .module.css # Uppercase + center single-char input (settings-controls-restyle F3)
+│   │   ├── ShortcutInput.tsx + .module.css # Uppercase + center single-char input (settings-controls-restyle F3)
+│   │   ├── SearchableSelect.tsx + .module.css # Single-select dropdown with embedded search (settings-controls-restyle F5)
+│   │   └── HintIcon.tsx + .module.css    # Info-circle button + floating popover with boundary detection (settings-controls-restyle F6)
 │   ├── utils/          #   fileUtils, timeUtils, urlUtils
 │   └── config/         #   config, messages, urls
 └── types/              # Ambient .d.ts (muxjs, vite-env) — M19: media/message/subtitle.ts deprecated
@@ -333,8 +335,24 @@ tests/
 | `popup/components/media/DownloadCard.tsx` | types, **format.ts** | App.redesigned | Download card UI (two-phase progress, pause/resume/cancel/retry/remove, phase labels, quality badge, detail items) |
 | `popup/components/media/MediaEmpty.tsx` | — | App.redesigned | Empty state |
 | `popup/components/SelectionBar.tsx` | — | App.redesigned | Selection bar (clear, count, download selected) |
-| `popup/components/settings/SettingsDialog.tsx` | types, config, messages, **MultiSelect** | App.redesigned | Settings UI; regrouped fields (chọn media → download → filename), Auto Select toggle (sparkles SVG), Preferred format dropdown, MultiSelect subtitle languages (replaces CustomSelect) |
+| `popup/components/settings/SettingsDialog.tsx` | types, config, messages, **MultiSelect**, **Toggle**, **Slider**, **ShortcutInput**, **SearchableSelect**, **HintIcon** | App.redesigned | Settings UI; regrouped fields (chọn media → download → filename), Auto Select toggle (sparkles SVG), Preferred format dropdown, MultiSelect subtitle languages (replaces CustomSelect), SearchableSelect cho overlay target/native languages, HintIcon cho hints |
 | `popup/components/settings/MultiSelect.tsx` | — | SettingsDialog | Reusable searchable multi-select (search input + checkbox list + footer). Used cho subtitle language selection |
+| `shared/ui/Toggle.tsx` | — | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
+| `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
+| `shared/ui/ShortcutInput.tsx` | — | SettingsDialog | Uppercase + center single-char input (settings-controls-restyle F3) |
+| `shared/ui/SearchableSelect.tsx` | — | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
+| `shared/ui/HintIcon.tsx` | — | SettingsDialog, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
+
+### Shared UI layer
+
+| File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
+|------|-----------|-----------------|--------------------------|
+| `shared/ui/IconButton.tsx` | — | Header, SettingsDialog, VideoCard, SubtitleCard, SelectionBar, DownloadCard | Icon-only transparent button (11 call sites) |
+| `shared/ui/Toggle.tsx` | — | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
+| `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
+| `shared/ui/ShortcutInput.tsx` | — | SettingsDialog | Uppercase + center single-char input (settings-controls-restyle F3) |
+| `shared/ui/SearchableSelect.tsx` | — | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
+| `shared/ui/HintIcon.tsx` | — | SettingsDialog, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 
 ### Lib layer
 
@@ -609,6 +627,11 @@ downloader.downloadM3u8Streaming(playlist)
 | `parseSrt` | `lib/parsers/srtParser.ts` | string → SrtSubtitle | subtitleParser.ts | Parse SRT format to SrtCue[]; **strips inline tags** (`<i>`, `<b>`, `{\an8}`) via stripSubtitleTags |
 | `parseVtt` | `lib/parsers/vttParser.ts` | string → VttSubtitle | subtitleParser.ts | Parse VTT format to VttCue[]; **strips inline tags** via stripSubtitleTags |
 | `stripSubtitleTags` | `lib/parsers/srtNormalizer.ts` | string → string | srtParser, vttParser, srtNormalizer | Strip `<i>`/`<b>`/`<c>`/`<v>`/`{\an8}` tags, preserve newlines (display path) |
+| `Toggle` | `shared/ui/Toggle.tsx` | checked, onChange, ariaLabel → ReactElement | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
+| `Slider` | `shared/ui/Slider.tsx` | value, min, max, step, onChange, ariaLabel → ReactElement | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
+| `ShortcutInput` | `shared/ui/ShortcutInput.tsx` | value, onChange, ariaLabel → ReactElement | SettingsDialog | Uppercase + center single-char input (settings-controls-restyle F3) |
+| `SearchableSelect` | `shared/ui/SearchableSelect.tsx` | options, value, onChange, ariaLabel → ReactElement | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
+| `HintIcon` | `shared/ui/HintIcon.tsx` | hint, ariaLabel → ReactElement | SettingsDialog, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 | `parseSubtitle` | `content/subtitleParser.ts` | (string, format) → ParseResult | subtitleDragDrop, subtitleImport | Adapter: auto-detect format, parseSrt/parseVtt |
 | `findCurrentLine` | `content/subtitleSync.ts` | (SrtCue[], number) → number | subtitleOverlay | Binary search O(log n) for current subtitle line by video time |
 | `createOverlay` | `content/subtitleUI.ts` | (HTMLElement, OverlayConfig) → HTMLDivElement | subtitleOverlay | Create subtitle overlay div appended to video wrapper |
