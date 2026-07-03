@@ -1,4 +1,4 @@
-/* === Settings Popover — centered, 320px, matches prototype === */
+/* === Settings Popover — 480px, sidebar + cards (YouTube/M3 style) === */
 .overlay {
   position: absolute;
   inset: 0;
@@ -18,7 +18,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 320px;
+  width: 480px;
   max-height: calc(100% - 32px);
   transform: translate(-50%, -48%);
   background: var(--color-background);
@@ -66,13 +66,139 @@
   stroke-linejoin: round;
 }
 
-/* === Popover body === */
+/* === Popover body — 2-column: sidebar (left) + main (cards) === */
 .popoverBody {
-  padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* === Sidebar (left, 120px) — YouTube/Google style pill active === */
+.sidebar {
+  width: 120px;
+  flex-shrink: 0;
+  padding: var(--spacing-md) var(--spacing-sm);
+  border-right: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebarLabel {
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+}
+
+.sidebarItem {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.sidebarItem:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.sidebarItem.active {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* === Main column (cards, scrollable) === */
+.mainCol {
+  flex: 1;
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
+}
+
+.mainCol::-webkit-scrollbar { width: 6px; }
+.mainCol::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+.mainCol::-webkit-scrollbar-thumb:hover { background: var(--color-scrollbar-thumb-hover); }
+
+/* === Section card — YouTube style: 1px hairline border, surface header + body === */
+.section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+  scroll-margin-top: var(--spacing-md);
+  transition: box-shadow var(--transition);
+  flex-shrink: 0; /* prevent flex-shrink when mainCol overflows — let mainCol scroll instead */
+}
+
+.section.highlight {
+  box-shadow: 0 0 0 2px var(--color-primary-subtle);
+  border-color: var(--color-primary);
+}
+
+.sectionHeader {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.sectionCount {
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  background: var(--color-background);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+}
+
+.sectionDescription {
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-md) 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+  background: var(--color-surface);
+}
+
+.sectionBody {
+  padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
-  overflow-y: auto;
+  background: var(--color-background);
 }
 
 /* === Setting field — full-width stacked === */
@@ -213,8 +339,6 @@
 /* === Hint === */
 .hint {
   margin: 0;
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--color-border-subtle);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   line-height: 1.5;
