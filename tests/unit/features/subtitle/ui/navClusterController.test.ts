@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { NavClusterController } from '@/features/subtitle/ui/navClusterController';
 import { DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
 import type { SrtCue } from '@/entities/media';
@@ -267,8 +267,8 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
     });
   });
 
-  describe('repeat 3-state cycle', () => {
-    it('click 1 records start, click 2 records end + loops, click 3 cancels', () => {
+  describe('repeat — no-sub 3-state cycle (A / B / cancel)', () => {
+    it('click 1 → Repeat A (record start), click 2 → Repeat B (record end + loop), click 3 → Repeat cancel', () => {
       const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
       ctrl.init();
       const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
@@ -276,13 +276,13 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       // Click 1: record start at 2.0
       video.currentTime = 2.0;
       repeatBtn.click();
-      expect(repeatBtn.getAttribute('aria-label')).toBe('Record loop end');
+      expect(repeatBtn.getAttribute('aria-label')).toBe('Repeat B');
       expect(repeatBtn.getAttribute('aria-pressed')).toBe('false');
 
       // Click 2: record end at 4.0, start looping
       video.currentTime = 4.0;
       repeatBtn.click();
-      expect(repeatBtn.getAttribute('aria-label')).toBe('Cancel loop');
+      expect(repeatBtn.getAttribute('aria-label')).toBe('Repeat cancel');
       expect(repeatBtn.getAttribute('aria-pressed')).toBe('true');
 
       // Simulate timeupdate reaching end → seek back to start
@@ -292,12 +292,12 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
 
       // Click 3: cancel loop
       repeatBtn.click();
-      expect(repeatBtn.getAttribute('aria-label')).toBe('Record loop start');
+      expect(repeatBtn.getAttribute('aria-label')).toBe('Repeat A');
       expect(repeatBtn.getAttribute('aria-pressed')).toBe('false');
       ctrl.destroy();
     });
 
-    it('3-state cycle: start==end clamps end to start+0.1s', () => {
+    it('no-sub start==end clamps end to start+0.1s', () => {
       const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
       ctrl.init();
       const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
@@ -310,7 +310,7 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       ctrl.destroy();
     });
 
-    it('3-state cycle: no loop after cancel', () => {
+    it('no-sub no loop after cancel', () => {
       const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
       ctrl.init();
       const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
@@ -322,6 +322,56 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       video.currentTime = 3.5;
       video.dispatchEvent(new Event('timeupdate'));
       expect(video.currentTime).toBe(3.5); // no loop
+      ctrl.destroy();
+    });
+  });
+
+  describe('repeat — has-sub cue-based behavior', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('quick click repeat seeks to current cue start', () => {
+      video.currentTime = 3.5; // in cue 1 (3000-5000)
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
+      ctrl.init();
+      ctrl.updateCues(CUES, []);
+      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
+      repeatBtn.click();
+      expect(video.currentTime).toBe(3); // seek to cue start
+      expect(repeatBtn.getAttribute('aria-label')).toBe('Repeat current sentence');
+      ctrl.destroy();
+    });
+
+    it('hold ≥500ms loops current cue (no one-shot on release)', () => {
+      video.currentTime = 3.5; // in cue 1 (3000-5000)
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
+      ctrl.init();
+      ctrl.updateCues(CUES, []);
+      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
+      repeatBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      jest.advanceTimersByTime(600);
+      video.currentTime = 5.1;
+      video.dispatchEvent(new Event('timeupdate'));
+      expect(video.currentTime).toBe(3); // loop back
+      video.currentTime = 4.2;
+      repeatBtn.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+      expect(video.currentTime).toBe(4.2); // no one-shot on release
+      expect(repeatBtn.getAttribute('aria-pressed')).toBe('false');
+      ctrl.destroy();
+    });
+
+    it('click repeat in gap seeks to nearest cue', () => {
+      video.currentTime = 2.2;
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES, nativeCues: [] });
+      ctrl.init();
+      ctrl.updateCues(CUES, []);
+      const repeatBtn = container.querySelector('[data-testid="nav-cluster-repeat"]') as HTMLButtonElement;
+      repeatBtn.click();
+      expect(video.currentTime).toBe(0); // cue[0] nearest
       ctrl.destroy();
     });
   });

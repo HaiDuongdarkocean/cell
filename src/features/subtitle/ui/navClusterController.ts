@@ -5,7 +5,8 @@
 // state machine + persist debounced + fullscreen re-parent + destroy cleanup.
 
 import { buildClusterDOM, clampPosition, findNearestEdge, type NavClusterDOM } from './navClusterDom';
-import { prevSentence, nextSentence, seekBy } from './navClusterActions';
+import { NAV_CLUSTER_ICONS, type NavClusterIconName } from './navClusterIcons';
+import { prevSentence, nextSentence, seekBy, findActiveCueIndex, findNearestCueIndex } from './navClusterActions';
 
 import {
   createInitialKeyboardState,
@@ -24,6 +25,8 @@ export interface NavClusterCueSource {
   readonly nativeCues: readonly SrtCue[];
 }
 
+/** Repeat hold threshold (spec §F7). */
+const REPEAT_HOLD_MS = 500;
 /** Persist debounce (ADR-013 yOffset pattern). */
 const PERSIST_DEBOUNCE_MS = 300;
 
@@ -37,6 +40,9 @@ export class NavClusterController {
   private cueSource: NavClusterCueSource;
   private recordLoopState: 'idle' | 'recording-end' | 'looping' = 'idle';
   private recordedLoop: { start: number; end: number } | null = null;
+  private repeatHolding = false;
+  private repeatHoldTimer: ReturnType<typeof setTimeout> | null = null;
+  private repeatLoopCue: { start: number; end: number } | null = null;
   private dragStart: { px: number; py: number; pos: NavClusterPosition } | null = null;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private kbdState: NavClusterKeyboardState = createInitialKeyboardState();
@@ -105,10 +111,16 @@ export class NavClusterController {
 
   /** Teardown: remove DOM + detach all listeners. Safe to call twice. */
   destroy(): void {
+    if (this.repeatHoldTimer) {
+      clearTimeout(this.repeatHoldTimer);
+      this.repeatHoldTimer = null;
+    }
     if (this.persistTimer) {
       clearTimeout(this.persistTimer);
       this.persistTimer = null;
     }
+    this.repeatHolding = false;
+    this.repeatLoopCue = null;
     this.dragStart = null;
 
     if (this.keydownHandler) document.removeEventListener('keydown', this.keydownHandler);
@@ -156,7 +168,7 @@ export class NavClusterController {
 
   private applyNoSubState(): void {
     if (!this.dom) return;
-    const hasSub = this.cueSource.targetCues.length > 0 || this.cueSource.nativeCues.length > 0;
+    const hasSub = this.hasSubtitles();
     const { cluster, mainColumn, secondaryColumn, noSubColumn, prevBtn, repeatBtn, nextBtn, rewindBtn, forwardBtn } = this.dom;
     cluster.classList.toggle('no-sub', !hasSub);
     if (hasSub) {
@@ -166,6 +178,13 @@ export class NavClusterController {
       noSubColumn.style.display = 'none';
       mainColumn.append(prevBtn, repeatBtn, nextBtn);
       secondaryColumn.append(rewindBtn, forwardBtn);
+      // Reset no-sub recorder state and restore normal repeat icon/label
+      this.recordLoopState = 'idle';
+      this.recordedLoop = null;
+      this.setButtonIcon(repeatBtn, 'repeat');
+      repeatBtn.setAttribute('aria-label', 'Repeat current sentence');
+      repeatBtn.setAttribute('aria-pressed', 'false');
+      repeatBtn.classList.remove('nav-cluster-btn--active');
       return;
     }
     // No-sub: single column with rewind, repeat, forward
@@ -173,6 +192,14 @@ export class NavClusterController {
     secondaryColumn.style.display = 'none';
     noSubColumn.style.display = 'flex';
     noSubColumn.append(rewindBtn, repeatBtn, forwardBtn);
+    // Reset has-sub hold state and apply no-sub repeat icon
+    this.repeatHolding = false;
+    this.repeatLoopCue = null;
+    if (this.repeatHoldTimer) {
+      clearTimeout(this.repeatHoldTimer);
+      this.repeatHoldTimer = null;
+    }
+    this.applyRepeatState();
   }
 
   private applyCollapsedState(): void {
@@ -200,12 +227,23 @@ export class NavClusterController {
     this.dom.rewindBtn.addEventListener('click', () => seekBy(this.video, -5));
     this.dom.forwardBtn.addEventListener('click', () => seekBy(this.video, 10));
 
-    // Repeat button: 3-state cycle (idle → recording-end → looping → idle)
+    // Repeat button: mode depends on subtitle availability.
     this.dom.repeatBtn.addEventListener('click', () => this.handleRepeatClick());
+    this.dom.repeatBtn.addEventListener('pointerdown', () => this.startRepeatHold());
+    this.dom.repeatBtn.addEventListener('pointerup', () => this.stopRepeatHold());
+    this.dom.repeatBtn.addEventListener('pointercancel', () => this.stopRepeatHold());
   }
 
-  /** 3-state repeat cycle: idle → recording-end → looping → idle. */
+  private hasSubtitles(): boolean {
+    return this.cueSource.targetCues.length > 0 || this.cueSource.nativeCues.length > 0;
+  }
+
+  /** Repeat click: cue-based when subtitles exist, 3-state loop recorder when no subs. */
   private handleRepeatClick(): void {
+    if (this.hasSubtitles()) {
+      this.repeatOnce();
+      return;
+    }
     const currentTime = this.video.currentTime;
     if (this.recordLoopState === 'idle') {
       this.recordedLoop = { start: currentTime, end: currentTime };
@@ -227,25 +265,96 @@ export class NavClusterController {
     this.applyRepeatState();
   }
 
-  /** Update repeat button visual/ARIA state. */
+  /** Start cue-based repeat loop when repeat button is held (has-sub only). */
+  private startRepeatHold(): void {
+    if (!this.hasSubtitles() || this.repeatHolding) return;
+    this.repeatHolding = true;
+    this.applyRepeatHoldState(true);
+    this.repeatHoldTimer = setTimeout(() => {
+      this.beginRepeatLoop();
+    }, REPEAT_HOLD_MS);
+  }
+
+  private beginRepeatLoop(): void {
+    const currentMs = this.video.currentTime * 1000;
+    const { cues, index } = findActiveCueIndex(this.cueSource.targetCues, this.cueSource.nativeCues, currentMs);
+    if (index >= 0 && cues[index]) {
+      this.repeatLoopCue = { start: cues[index].start, end: cues[index].end };
+      return;
+    }
+    const nearestIndex = findNearestCueIndex(cues, currentMs);
+    if (nearestIndex >= 0 && cues[nearestIndex]) {
+      this.repeatLoopCue = { start: cues[nearestIndex].start, end: cues[nearestIndex].end };
+    }
+  }
+
+  private stopRepeatHold(): void {
+    if (!this.repeatHolding) return;
+    const wasLooping = this.repeatLoopCue !== null;
+    this.repeatHolding = false;
+    this.repeatLoopCue = null;
+    if (this.repeatHoldTimer) {
+      clearTimeout(this.repeatHoldTimer);
+      this.repeatHoldTimer = null;
+    }
+    if (this.dom) this.applyRepeatHoldState(false);
+    if (!this.hasSubtitles() || wasLooping) return;
+    this.repeatOnce();
+  }
+
+  /** One-shot repeat: seek to active/nearest cue start (has-sub only). */
+  private repeatOnce(): void {
+    const currentMs = this.video.currentTime * 1000;
+    const { cues, index } = findActiveCueIndex(this.cueSource.targetCues, this.cueSource.nativeCues, currentMs);
+    if (index >= 0 && cues[index]) {
+      this.video.currentTime = cues[index].start / 1000;
+      return;
+    }
+    const nearestIndex = findNearestCueIndex(cues, currentMs);
+    if (nearestIndex >= 0 && cues[nearestIndex]) {
+      this.video.currentTime = cues[nearestIndex].start / 1000;
+    }
+  }
+
+  private applyRepeatHoldState(active: boolean): void {
+    if (!this.dom) return;
+    this.dom.repeatBtn.setAttribute('aria-pressed', String(active));
+    this.dom.repeatBtn.classList.toggle('nav-cluster-btn--active', active);
+  }
+
+  /** Update repeat button visual/ARIA state (no-sub 3-state only). */
   private applyRepeatState(): void {
     if (!this.dom) return;
     const state = this.recordLoopState;
-    const labels: Record<typeof this.recordLoopState, string> = {
-      idle: 'Record loop start',
-      'recording-end': 'Record loop end',
-      looping: 'Cancel loop',
+    const config: Record<typeof this.recordLoopState, { label: string; icon: NavClusterIconName }> = {
+      idle: { label: 'Repeat A', icon: 'repeatA' },
+      'recording-end': { label: 'Repeat B', icon: 'repeatB' },
+      looping: { label: 'Repeat cancel', icon: 'repeatCancel' },
     };
     const active = state === 'looping';
     const btn = this.dom.repeatBtn;
-    btn.setAttribute('aria-label', labels[state]);
+    btn.setAttribute('aria-label', config[state].label);
     btn.setAttribute('aria-pressed', String(active));
     btn.classList.toggle('nav-cluster-btn--active', active);
+    this.setButtonIcon(btn, config[state].icon);
+  }
+
+  private setButtonIcon(btn: HTMLButtonElement, iconName: NavClusterIconName): void {
+    const iconHtml = NAV_CLUSTER_ICONS[iconName];
+    if (iconHtml) btn.innerHTML = iconHtml;
   }
 
   private wireTimeupdate(): void {
     this.timeupdateHandler = () => {
-      // 3-state recorded loop: loop [start, end] until user cancels.
+      // Has-sub: loop current cue while repeat button is held.
+      if (this.repeatHolding && this.repeatLoopCue) {
+        const currentMs = this.video.currentTime * 1000;
+        if (currentMs >= this.repeatLoopCue.end) {
+          this.video.currentTime = this.repeatLoopCue.start / 1000;
+        }
+        return;
+      }
+      // No-sub: loop recorded [start, end] until user cancels.
       if (this.recordLoopState === 'looping' && this.recordedLoop) {
         const { start, end } = this.recordedLoop;
         const safeEnd = Math.max(start + 0.1, end);
@@ -380,8 +489,17 @@ export class NavClusterController {
       case 'next-sentence':
         nextSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues);
         break;
-      case 'repeat-toggle':
-        this.handleRepeatClick();
+      case 'repeat-start':
+        if (this.hasSubtitles()) {
+          this.startRepeatHold();
+        } else {
+          this.handleRepeatClick();
+        }
+        break;
+      case 'repeat-stop':
+        if (this.hasSubtitles()) {
+          this.stopRepeatHold();
+        }
         break;
       case 'seek-rewind-5':
         seekBy(this.video, -5);
