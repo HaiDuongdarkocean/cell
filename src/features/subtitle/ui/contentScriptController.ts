@@ -16,11 +16,13 @@ import {
   createToggleButton,
   seekToCue,
   handleShortcutKey,
+  isEditableTarget,
   createSubtitleManagerPanel,
   createDebouncedToast,
   formatSubtitleName,
 } from '@/features/subtitle';
 import { NavClusterController } from '@/features/subtitle/ui/navClusterController';
+import { OffsetController } from '@/features/subtitle/ui/offsetController';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, Settings } from '@/entities/media';
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
@@ -78,6 +80,8 @@ export function init(video: HTMLVideoElement): () => void {
   let controller: SubtitleOverlayController | null = null;
   // ADR-018: nav cluster controller (subtitle navigation control cluster)
   let navCluster: NavClusterController | null = null;
+  // ADR-019: offset controller (subtitle time offset)
+  let offsetController: OffsetController | null = null;
   // ADR-018: track latest target/native cues for nav cluster cue source
   let latestTargetCues: SrtCue[] = [];
   let latestNativeCues: SrtCue[] = [];
@@ -127,6 +131,25 @@ export function init(video: HTMLVideoElement): () => void {
       },
     );
     navCluster.init();
+
+    // ADR-019: init offset controller — load settings snapshot (for persisted offset per-URL).
+    // Wire offset provider vào SubtitleOverlayController (lazy read — offsetController có thể null briefly).
+    let offsetSnapshot: { subtitleOffset?: Record<string, number> } = {};
+    try {
+      const settings = await loadSettings();
+      offsetSnapshot = { subtitleOffset: settings.subtitleOffset ?? {} };
+    } catch {
+      // ponytail: storage might not be available in test contexts — fallback empty
+    }
+    offsetController = new OffsetController(
+      video,
+      container,
+      window.location.href,
+      offsetSnapshot,
+    );
+    offsetController.init();
+    // Wire offset provider vào overlay (so findCurrentLine nhận offsetMs)
+    controller.setOffsetProvider(() => offsetController?.getOffsetMs() ?? 0);
 
     // ADR-015 UI v4: create manager panel after controller init so we can reuse
     // the import button created by the controller (single toolbar, no duplicate buttons).
@@ -285,6 +308,35 @@ export function init(video: HTMLVideoElement): () => void {
 
   // Wire keyboard shortcuts
   document.addEventListener('keydown', (e) => {
+    // ADR-019: fixed parallel offset shortcuts `[` `]` `{` `}` `\` (ponytail: not in
+    // ShortcutAction union — avoid config UI bloat, like NavCluster fixed shortcuts).
+    // Guard: skip when focus in editable (input/textarea/contenteditable) — avoid YouTube search conflict.
+    if (!isEditableTarget(e.target)) {
+      const key = e.key.toLowerCase();
+      if (key === '[' || key === ']' || key === '{' || key === '}' || key === '\\') {
+        if (offsetController) {
+          e.preventDefault();
+          switch (key) {
+            case '[': // -0.5s (accumulate)
+              offsetController.stepBy(-500);
+              break;
+            case ']': // +0.5s
+              offsetController.stepBy(500);
+              break;
+            case '{': // -2s
+              offsetController.stepBy(-2000);
+              break;
+            case '}': // +2s
+              offsetController.stepBy(2000);
+              break;
+            case '\\': // reset
+              offsetController.reset();
+              break;
+          }
+        }
+      }
+    }
+
     const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target);
     if (!action) return;
     e.preventDefault();
@@ -471,7 +523,11 @@ export function init(video: HTMLVideoElement): () => void {
         controller: {
           loadBilingualCues: (t: SrtCue[], n: SrtCue[]) => controller?.loadBilingualCues(t, n),
           loadCues: (c: SrtCue[]) => controller?.loadCues(c),
-          clearCues: () => controller?.clearCues(),
+          clearCues: () => {
+            controller?.clearCues();
+            // ADR-019: subtitles cleared → reset offset + cancel lazy
+            offsetController?.loadCues(false);
+          },
         },
         tabUrl: window.location.href,
         onPanelRender: (targetCues: SrtCue[], nativeCues: SrtCue[]) => {
@@ -481,6 +537,8 @@ export function init(video: HTMLVideoElement): () => void {
           latestTargetCues = targetCues;
           latestNativeCues = nativeCues;
           navCluster?.updateCues(targetCues, nativeCues);
+          // ADR-019: notify offset controller that subtitles loaded
+          offsetController?.loadCues(true);
           console.log('[content-script] onPanelRender', {
             targetCueCount: targetCues.length,
             nativeCueCount: nativeCues.length,
@@ -592,6 +650,8 @@ export function init(video: HTMLVideoElement): () => void {
       latestTargetCues = targetCues;
       latestNativeCues = nativeCues;
       navCluster?.updateCues(targetCues, nativeCues);
+      // ADR-019: load sub mới → reset offset + cancel lazy (R5)
+      offsetController?.loadCues(true);
       // ADR-015 T10: merge for Side Panel + keyboard shortcuts
       bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
       void sendMessage({
@@ -604,6 +664,8 @@ export function init(video: HTMLVideoElement): () => void {
       latestTargetCues = parsed[0].cues;
       latestNativeCues = [];
       navCluster?.updateCues(parsed[0].cues, []);
+      // ADR-019: load sub mới → reset offset + cancel lazy (R5)
+      offsetController?.loadCues(true);
     }
 
     // Active subtitle names are visible in the manager panel; chip removed.
@@ -769,6 +831,7 @@ export function init(video: HTMLVideoElement): () => void {
     toggleBtn?.remove();
     managerPanel?.destroy();
     navCluster?.destroy();
+    offsetController?.destroy();
     controller?.destroy();
   };
 }

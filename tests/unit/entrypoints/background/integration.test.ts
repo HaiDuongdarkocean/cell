@@ -631,9 +631,9 @@ describe('Background integration', () => {
     })) as MessageResponse<Settings>;
 
     expect(response.success).toBe(true);
-    // loadSettings() runs migration v0→v1→v2 which stamps schemaVersion: 2
+    // loadSettings() runs migration v0→v1→v2 which stamps schemaVersion: 3
     // (ADR-017 D8, ADR-018 D2). The returned data includes this field.
-    expect(response.data).toEqual({ ...storedSettings, schemaVersion: 2 });
+    expect(response.data).toEqual({ ...storedSettings, schemaVersion: 3 });
   });
 
   it('GET_SETTINGS returns DEFAULT_SETTINGS when storage is empty', async () => {

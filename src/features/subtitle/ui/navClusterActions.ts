@@ -18,17 +18,19 @@ export interface ActiveCueResult {
  * @param targetCues - Target language cues (primary)
  * @param nativeCues - Native language cues (fallback)
  * @param currentTimeMs - Current video time in milliseconds
+ * @param offsetMs - Time offset in ms (ADR-019, default 0). Applied at search level.
  */
 export function findActiveCueIndex(
   targetCues: readonly SrtCue[],
   nativeCues: readonly SrtCue[],
   currentTimeMs: number,
+  offsetMs: number = 0,
 ): ActiveCueResult {
   if (targetCues.length > 0) {
-    return { cues: targetCues, index: findCurrentLine(targetCues as SrtCue[], currentTimeMs) };
+    return { cues: targetCues, index: findCurrentLine(targetCues as SrtCue[], currentTimeMs, offsetMs) };
   }
   if (nativeCues.length > 0) {
-    return { cues: nativeCues, index: findCurrentLine(nativeCues as SrtCue[], currentTimeMs) };
+    return { cues: nativeCues, index: findCurrentLine(nativeCues as SrtCue[], currentTimeMs, offsetMs) };
   }
   return { cues: [], index: -1 };
 }
@@ -73,9 +75,10 @@ export function prevSentence(
   video: HTMLVideoElement,
   targetCues: readonly SrtCue[],
   nativeCues: readonly SrtCue[],
+  offsetMs: number = 0,
 ): void {
   const currentMs = video.currentTime * 1000;
-  const { cues, index } = findActiveCueIndex(targetCues, nativeCues, currentMs);
+  const { cues, index } = findActiveCueIndex(targetCues, nativeCues, currentMs, offsetMs);
   if (cues.length === 0) return;
   if (index > 0) {
     video.currentTime = cues[index - 1].start / 1000;
@@ -101,9 +104,10 @@ export function nextSentence(
   video: HTMLVideoElement,
   targetCues: readonly SrtCue[],
   nativeCues: readonly SrtCue[],
+  offsetMs: number = 0,
 ): void {
   const currentMs = video.currentTime * 1000;
-  const { cues, index } = findActiveCueIndex(targetCues, nativeCues, currentMs);
+  const { cues, index } = findActiveCueIndex(targetCues, nativeCues, currentMs, offsetMs);
   if (cues.length === 0) return;
   if (index === -1) {
     // In gap — find nearest next cue (start > currentMs)

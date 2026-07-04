@@ -44,15 +44,25 @@ export class SubtitleOverlayController {
   private bilingual: boolean = false;
   private targetStyle: OverlayStyleConfig;
   private nativeStyle: OverlayStyleConfig;
+  /** ADR-019: offset provider — returns current offset (ms) for findCurrentLine. Default 0 (no offset). */
+  private getOffsetMs: () => number;
 
   constructor(
     private readonly video: HTMLVideoElement,
     private readonly config: OverlayConfig,
     targetStyle: OverlayStyleConfig,
     nativeStyle: OverlayStyleConfig,
+    /** ADR-019: optional offset provider. Caller injects () => offsetController.getOffsetMs(). */
+    getOffsetMs?: () => number,
   ) {
     this.targetStyle = targetStyle;
     this.nativeStyle = nativeStyle;
+    this.getOffsetMs = getOffsetMs ?? (() => 0);
+  }
+
+  /** ADR-019: set/update offset provider after construction (for late-bound controller). */
+  setOffsetProvider(provider: () => number): void {
+    this.getOffsetMs = provider;
   }
 
   /**
@@ -160,10 +170,11 @@ export class SubtitleOverlayController {
 
     // video.currentTime is in seconds, cues are in milliseconds
     const currentTimeMs = this.video.currentTime * 1000;
+    const offsetMs = this.getOffsetMs();
 
     if (this.bilingual) {
-      const index = findCurrentLine(this.cues, currentTimeMs);
-      const nativeIndex = findCurrentLine(this.nativeCues, currentTimeMs);
+      const index = findCurrentLine(this.cues, currentTimeMs, offsetMs);
+      const nativeIndex = findCurrentLine(this.nativeCues, currentTimeMs, offsetMs);
       if (index === this.lastIndex && nativeIndex === this.lastNativeIndex) return;
       this.lastIndex = index;
       this.lastNativeIndex = nativeIndex;
@@ -188,7 +199,7 @@ export class SubtitleOverlayController {
 
     // Single mode: target overlay only
     if (this.cues.length === 0) return;
-    const index = findCurrentLine(this.cues, currentTimeMs);
+    const index = findCurrentLine(this.cues, currentTimeMs, offsetMs);
     if (index !== this.lastIndex) {
       this.lastIndex = index;
       if (index >= 0) {

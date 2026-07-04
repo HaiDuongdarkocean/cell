@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -81,6 +81,9 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     validateNavClusterFields(merged);
     return merged;
   },
+  // v2 → v3: add subtitleOffset (ADR-019). Additive — default {} (no offset).
+  // Existing settings không có field này → merge với DEFAULT_SETTINGS.subtitleOffset={}.
+  2: (s) => ({ ...DEFAULT_SETTINGS, ...s, subtitleOffset: s.subtitleOffset ?? {}, schemaVersion: 3 }),
 };
 
 /**

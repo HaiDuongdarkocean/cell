@@ -174,6 +174,8 @@ export const DEFAULT_SETTINGS: Settings = {
   navClusterBgOpacity: 0.7,
   navClusterButtonOpacity: 0.9,
   navClusterCollapsed: false,
+  // === Subtitle Offset (ADR-019) — schema v3 ===
+  subtitleOffset: {},
 };
 
 /**

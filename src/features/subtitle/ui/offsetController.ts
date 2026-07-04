@@ -1,0 +1,269 @@
+// OffsetController — subtitle time offset orchestrator (ADR-019).
+// ponytail: class mimics NavClusterController pattern (init/update/destroy lifecycle).
+// Wires panel (subtitleOffsetPanel) + badge (subtitleOffsetBadge) + state machine
+// (lazy/committed) + wall-clock auto-commit timer + persist per-URL.
+//
+// Lazy semantics (revised 2026-07-04, drop C2): lazy = apply all ngay (chưa persist).
+// 2 phút wall-clock không action → auto-commit + persist. Reset = value=0 (lazy, timer reset).
+
+import { createOffsetPanel, type OffsetPanelApi, type OffsetPanelHandlers } from './subtitleOffsetPanel';
+import { createOffsetBadge, type OffsetBadgeApi } from './subtitleOffsetBadge';
+import {
+  INITIAL_OFFSET_STATE,
+  AUTO_COMMIT_MS,
+  parseOffsetInput,
+  clampOffsetMs,
+  shouldAutoCommit,
+  type OffsetState,
+} from '../logic/subtitleOffset';
+import { saveSettings } from '@/shared/lib/storage/settingsStore';
+import type { Settings } from '@/entities/media';
+
+/** Cue source injected by caller (lazy read for fresh cues on every action). */
+export interface OffsetCueSource {
+  readonly targetCues: readonly unknown[];
+  readonly nativeCues: readonly unknown[];
+}
+
+/** Settings snapshot injected by caller (for initial offset load). */
+export interface OffsetSettingsSnapshot {
+  readonly subtitleOffset?: Record<string, number>;
+}
+
+/**
+ * Subtitle time offset controller.
+ * Lifecycle: init() → loadCues() → destroy()
+ *
+ * Wall-clock auto-commit: checks `shouldAutoCommit` on `timeupdate` (video playing)
+ * + `visibilitychange` (tab visible lại). No setTimeout (MV3 throttle safe).
+ */
+export class OffsetController {
+  private state: OffsetState = INITIAL_OFFSET_STATE;
+  private panel: OffsetPanelApi | null = null;
+  private badge: OffsetBadgeApi | null = null;
+  private hasSubtitle = false;
+  private readonly url: string;
+
+  // Stored listeners (for destroy cleanup)
+  private timeupdateHandler: ((e: Event) => void) | null = null;
+  private visibilityHandler: ((e: Event) => void) | null = null;
+
+  constructor(
+    private readonly video: HTMLVideoElement,
+    private readonly container: HTMLElement,
+    url: string,
+    initialSnapshot?: OffsetSettingsSnapshot,
+  ) {
+    this.url = url;
+    // Load persisted offset for this URL → mode=committed (no lazy on reload)
+    const persisted = initialSnapshot?.subtitleOffset?.[url];
+    if (typeof persisted === 'number' && persisted !== 0) {
+      this.state = {
+        valueMs: clampOffsetMs(persisted),
+        mode: 'committed',
+        lastActionAt: 0,
+      };
+    }
+  }
+
+  /** Build panel + badge + wire listeners. Idempotent (no-op if already init). */
+  init(): void {
+    if (this.panel) return;
+
+    const handlers: OffsetPanelHandlers = {
+      onStep: (deltaMs) => this.handleStep(deltaMs),
+      onInput: (valueMs) => this.handleInput(valueMs),
+      onReset: () => this.handleReset(),
+      onApply: () => this.handleApply(),
+    };
+
+    this.panel = createOffsetPanel(this.container, handlers);
+    this.badge = createOffsetBadge(this.container, () => this.handleReset());
+
+    // Initial render
+    this.panel.update(this.state, this.hasSubtitle);
+    if (this.state.mode === 'lazy' && this.state.lastActionAt > 0) {
+      this.badge.show(this.state.lastActionAt);
+    }
+
+    // Wall-clock auto-commit checks
+    this.timeupdateHandler = () => this.checkAutoCommit();
+    this.visibilityHandler = () => {
+      if (document.visibilityState === 'visible') {
+        this.checkAutoCommit();
+      }
+    };
+    this.video.addEventListener('timeupdate', this.timeupdateHandler);
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+  }
+
+  /** Update subtitle loaded state. When subtitles load → hasSubtitle=true. When unloaded → reset offset. */
+  loadCues(hasSubtitle: boolean): void {
+    const wasLoaded = this.hasSubtitle;
+    this.hasSubtitle = hasSubtitle;
+    if (hasSubtitle && !wasLoaded) {
+      // Subtitles just loaded — keep persisted offset (if any), don't reset
+      this.panel?.update(this.state, this.hasSubtitle);
+    } else if (!hasSubtitle && wasLoaded) {
+      // Subtitles unloaded → reset offset + cancel lazy (R5: load sub mới = baseline mới)
+      this.resetState();
+    }
+  }
+
+  /** Get current offset (ms) — for findCurrentLine callers. */
+  getOffsetMs(): number {
+    return this.state.valueMs;
+  }
+
+  /** ADR-019: public step API for keyboard shortcuts `[` `]` `{` `}`. Accumulate delta. */
+  stepBy(deltaMs: number): void {
+    this.handleStep(deltaMs);
+  }
+
+  /** ADR-019: public reset API for keyboard shortcut `\`. */
+  reset(): void {
+    this.handleReset();
+  }
+
+  /** Teardown: remove DOM + detach listeners. Safe to call twice. */
+  destroy(): void {
+    if (this.timeupdateHandler) {
+      this.video.removeEventListener('timeupdate', this.timeupdateHandler);
+      this.timeupdateHandler = null;
+    }
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+    this.panel?.destroy();
+    this.badge?.destroy();
+    this.panel = null;
+    this.badge = null;
+  }
+
+  // === Private: state transitions ===
+
+  /** Enter lazy mode with current value + reset timer. */
+  private enterLazy(): void {
+    const wasCommitted = this.state.mode === 'committed';
+    this.state = {
+      ...this.state,
+      mode: 'lazy',
+      lastActionAt: Date.now(),
+    };
+    if (wasCommitted || !this.badge) {
+      // Just entered lazy → show badge
+      this.badge?.show(this.state.lastActionAt);
+    } else {
+      // Already lazy → just reset timer display
+      this.badge?.show(this.state.lastActionAt);
+    }
+    this.panel?.update(this.state, this.hasSubtitle);
+  }
+
+  /** Step button: accumulate delta, enter lazy, reset timer. */
+  private handleStep(deltaMs: number): void {
+    if (!this.hasSubtitle) return;
+    this.state = {
+      ...this.state,
+      valueMs: clampOffsetMs(this.state.valueMs + deltaMs),
+    };
+    this.enterLazy();
+  }
+
+  /** Input: replace value (not accumulate), enter lazy, reset timer. */
+  private handleInput(valueMs: number | null): void {
+    if (!this.hasSubtitle) return;
+    if (valueMs === null) return; // invalid input — panel shows toast
+    this.state = {
+      ...this.state,
+      valueMs: clampOffsetMs(valueMs),
+    };
+    this.enterLazy();
+  }
+
+  /** Reset: value=0, lazy mode, timer reset. */
+  private handleReset(): void {
+    if (!this.hasSubtitle) return;
+    this.state = {
+      ...this.state,
+      valueMs: 0,
+      mode: 'lazy',
+      lastActionAt: Date.now(),
+    };
+    this.badge?.show(this.state.lastActionAt);
+    this.panel?.update(this.state, this.hasSubtitle);
+  }
+
+  /** Apply: commit + persist + flash. */
+  private handleApply(): void {
+    if (!this.hasSubtitle) return;
+    this.commit();
+  }
+
+  /** Commit: mode=committed, persist, hide badge, flash apply button. */
+  private commit(): void {
+    this.state = {
+      ...this.state,
+      mode: 'committed',
+      lastActionAt: 0,
+    };
+    this.badge?.hide();
+    this.panel?.update(this.state, this.hasSubtitle);
+    this.panel?.flashSaved();
+    void this.persist();
+  }
+
+  /** Reset to initial state (load new sub / unload). */
+  private resetState(): void {
+    this.state = INITIAL_OFFSET_STATE;
+    this.badge?.hide();
+    this.panel?.update(this.state, this.hasSubtitle);
+  }
+
+  /** Check wall-clock auto-commit: lazy + > 2 phút không action → commit. */
+  private checkAutoCommit(): void {
+    if (this.state.mode !== 'lazy') return;
+    if (this.state.lastActionAt === 0) return; // never acted
+    if (shouldAutoCommit(this.state, Date.now())) {
+      this.commit();
+    } else {
+      // Update badge timer (countdown)
+      const remaining = Math.max(0, AUTO_COMMIT_MS - (Date.now() - this.state.lastActionAt));
+      this.badge?.updateTimer(remaining);
+    }
+  }
+
+  /** Persist current offset to settingsStore (per-URL). */
+  private async persist(): Promise<void> {
+    try {
+      const settings = await this.loadSettingsOnce();
+      const existing = settings.subtitleOffset ?? {};
+      const updated = { ...existing };
+      if (this.state.valueMs === 0) {
+        // value=0 → remove key (don't store zeros)
+        delete updated[this.url];
+      } else {
+        updated[this.url] = this.state.valueMs;
+      }
+      await saveSettings({ subtitleOffset: updated } as Partial<Settings>);
+    } catch {
+      // ponytail: storage might not be available in test contexts — silent fail
+    }
+  }
+
+  /** Load settings once (cached via closure). ponytail: simple — no cache, settings small. */
+  private async loadSettingsOnce(): Promise<{ subtitleOffset?: Record<string, number> }> {
+    // Dynamic import to avoid circular dep + allow test mock
+    const { loadSettings } = await import('@/shared/lib/storage/settingsStore');
+    return loadSettings();
+  }
+}
+
+/**
+ * Parse input string → ms (delegate to pure function).
+ * Exposed for panel test convenience.
+ */
+export function tryParseInput(input: string): number | null {
+  return parseOffsetInput(input);
+}
