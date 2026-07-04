@@ -276,6 +276,11 @@ Navigation lifecycle handler (onTabUpdated loading) là shared function cho mọ
 ### Cases đã gặp
 - [media-accumulation-navigation.md](media-accumulation-navigation.md) — `onTabUpdated` loading chỉ reset auto-download guard, không clear media → media accumulate across episodes (11 → 22). Fix: thêm `clearTab` + `clearSessionMedia` + `lastCuesByTab.delete` + `updateBadgeForTab` (reuse từ `onTabRemoved`).
 
+### Apply cho
+- Chrome extension `onTabUpdated` / `onTabRemoved` lifecycle handlers
+- SPA route change cleanup (clear state khi URL change, không đợi close)
+- Any per-page state that must reset on navigation (media, cache, badge, session storage)
+
 ---
 
 ## Avoid dynamic import in code reachable from the service worker chunk
@@ -291,11 +296,20 @@ Trong MV3 extension có nhiều entry point (SW, content-script, popup, sidepane
 - Module shared giữa SW và content-script/popup (settings store, message bus, chrome API wrappers)
 - Code splitting decisions — khi nào dynamic import an toàn vs khi nào bắt buộc static
 
+---
+
+## Partial save must read-modify-write, not merge with defaults
+
+### Nguyên lý
+API nhận `Partial<T>` ngầm định merge với state hiện tại. Nếu implementation merge với `DEFAULT` thay vì stored state → bất kỳ field nào không có trong partial reset về default. Partial save bắt buộc read-modify-write (load current → merge partial → write). DEFAULT chỉ là fallback cho field thiếu trong stored, không phải base cho mọi save. Caller truyền full settings merge với full = full (idempotent, không bị ảnh hưởng).
+
+### Cases đã gặp
+- [save-settings-partial-wipe.md](save-settings-partial-wipe.md) — `saveSettings(partial)` merge với `DEFAULT_SETTINGS` thay vì stored settings → nav cluster drag `saveSettings({navClusterPosition})` wipe buttonSize/bgOpacity/buttonOpacity về default; `offsetController.saveSettings({subtitleOffset})` wipe TẤT CẢ settings khác. Fix: `saveSettings` read-modify-write (loadSettings → merge partial → setStorage); migration persist-back đổi sang `setStorage` trực tiếp để tránh recursion (loadSettings → saveSettings → loadSettings).
 
 ### Apply cho
-- Chrome extension `onTabUpdated` / `onTabRemoved` lifecycle handlers
-- SPA route change cleanup (clear state khi URL change, không đợi close)
-- Any per-page state that must reset on navigation (media, cache, badge, session storage)
+- Settings/kv store với API `save(Partial<T>)` — phải read-modify-write
+- Bất kỳ partial update API ngầm định merge (Redux dispatch partial, Zustand partial set)
+- Migration persist-back path — tránh recursion khi save gọi load
 
 ## Wait for framework render completion before injecting foreign elements
 
