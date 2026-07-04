@@ -412,6 +412,10 @@ export function init(video: HTMLVideoElement): () => void {
         tabId: undefined,
         currentTimeMs: video.currentTime * 1000,
         durationMs: video.duration * 1000 || 0,
+        // ADR-019 sync: send offset so side panel highlights the cue the
+        // overlay displays (effective = currentTimeMs + offsetMs), not the
+        // raw-time cue. Lazy read — offset may change between updates.
+        offsetMs: offsetController?.getOffsetMs() ?? 0,
       },
     });
   });
@@ -437,7 +441,10 @@ export function init(video: HTMLVideoElement): () => void {
     if (msg?.type === MESSAGE_TYPES.SEEK_TO) {
       const timeMs = (msg.payload as { timeMs: number })?.timeMs;
       if (timeMs !== undefined) {
-        video.currentTime = timeMs / 1000;
+        // ADR-019 sync: side panel clicks cue.start (raw) → seek so overlay
+        // DISPLAYS that cue → shift by -offsetMs (mirror seekToCue logic).
+        const offsetMs = offsetController?.getOffsetMs() ?? 0;
+        video.currentTime = (timeMs - offsetMs) / 1000;
       }
     }
     // Receive TOGGLE_PLAY from Side Panel (via background relay) → toggle play/pause

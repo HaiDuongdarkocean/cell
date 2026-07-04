@@ -84,6 +84,9 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
           tabId: payload.tabId,
           currentTimeMs: payload.currentTimeMs,
           durationMs: payload.durationMs,
+          // ADR-019 sync: forward offset so side panel highlights the cue the
+          // overlay displays (effective = currentTimeMs + offsetMs).
+          offsetMs: payload.offsetMs ?? 0,
         },
       });
     } catch {

@@ -120,6 +120,53 @@ describe('CueList', () => {
     });
   });
 
+  // ADR-019 sync: CueList must highlight the cue at effective time
+  // (currentTimeMs + offsetMs), matching the overlay. Without offset, raw
+  // time would highlight the wrong cue (the cue at raw video time, not the
+  // cue the overlay displays).
+  describe('offset sync (ADR-019)', () => {
+    it('offsetMs shifts highlight to effective-time cue', () => {
+      // sampleCues: [1000-3000 'Hello', 3500-5000 'How are you?']
+      // Raw time 2000ms → cue 0 ('Hello'). Offset +2000ms → effective 4000ms → cue 1.
+      render(<CueList cues={sampleCues} currentTimeMs={2000} offsetMs={2000} onSeek={jest.fn()} />);
+      const items = screen.getAllByTestId('cue-item');
+      expect(items[0].getAttribute('data-current')).toBe('false');
+      expect(items[1].getAttribute('data-current')).toBe('true');
+    });
+
+    it('negative offset shifts highlight backward', () => {
+      // Raw time 4000ms → cue 1. Offset -2000ms → effective 2000ms → cue 0.
+      render(<CueList cues={sampleCues} currentTimeMs={4000} offsetMs={-2000} onSeek={jest.fn()} />);
+      const items = screen.getAllByTestId('cue-item');
+      expect(items[0].getAttribute('data-current')).toBe('true');
+      expect(items[1].getAttribute('data-current')).toBe('false');
+    });
+
+    it('default offsetMs=0 is backward compatible (raw time highlight)', () => {
+      render(<CueList cues={sampleCues} currentTimeMs={2000} onSeek={jest.fn()} />);
+      const items = screen.getAllByTestId('cue-item');
+      expect(items[0].getAttribute('data-current')).toBe('true');
+    });
+
+    it('timestamp shifts by -offsetMs (displays video time, not raw cue time)', () => {
+      // sampleCues: [1000-3000 'Hello', 3500-5000 'How are you?']
+      // Offset -5000ms → timestamp = cue.start - (-5000) = cue.start + 5000.
+      // 'Hello' 1000 → 6000 (00:00:06), 'How are you?' 3500 → 8500 (00:00:08.500).
+      render(<CueList cues={sampleCues} currentTimeMs={0} offsetMs={-5000} onSeek={jest.fn()} />);
+      const timestamps = screen.getAllByTestId('cue-timestamp');
+      expect(timestamps[0].textContent).toBe('00:00:06');
+      expect(timestamps[1].textContent).toBe('00:00:08.500');
+    });
+
+    it('onSeek still sends raw cue.start (SEEK_TO handler subtracts offset)', () => {
+      const onSeek = jest.fn();
+      render(<CueList cues={sampleCues} currentTimeMs={0} offsetMs={-5000} onSeek={onSeek} />);
+      const timestamps = screen.getAllByTestId('cue-timestamp');
+      fireEvent.click(timestamps[0]);
+      expect(onSeek).toHaveBeenCalledWith(1000); // raw cue.start, not shifted
+    });
+  });
+
   // Regression: scrollIntoView must use behavior 'auto' (instant), not 'smooth'.
   // Smooth scroll across a long cue list (full movie) causes motion sickness.
   describe('scroll behavior', () => {

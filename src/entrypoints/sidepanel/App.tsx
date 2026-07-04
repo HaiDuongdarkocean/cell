@@ -12,6 +12,7 @@ import styles from './App.module.css';
 export function App() {
   const cues = useSidePanelStore((s) => s.cues);
   const currentTimeMs = useSidePanelStore((s) => s.currentTimeMs);
+  const offsetMs = useSidePanelStore((s) => s.offsetMs);
   const isPlaying = useSidePanelStore((s) => s.isPlaying);
   const [shortcuts] = useState<KeyboardShortcut[]>(() => {
     // Load shortcuts from storage async; start with defaults so hotkeys
@@ -80,9 +81,13 @@ export function App() {
           break;
         }
         case 'VIDEO_TIME_UPDATE': {
-          const timePayload = payload as { currentTimeMs: number; durationMs: number } | undefined;
+          const timePayload = payload as { currentTimeMs: number; durationMs: number; offsetMs?: number } | undefined;
           if (timePayload) {
-            useSidePanelStore.getState().setCurrentTime(timePayload.currentTimeMs, timePayload.durationMs);
+            useSidePanelStore.getState().setCurrentTime(
+              timePayload.currentTimeMs,
+              timePayload.durationMs,
+              timePayload.offsetMs,
+            );
           }
           break;
         }
@@ -242,7 +247,7 @@ export function App() {
           No subtitles loaded
         </div>
       ) : (
-        <CueList cues={cues} currentTimeMs={currentTimeMs} onSeek={handleSeek} />
+        <CueList cues={cues} currentTimeMs={currentTimeMs} offsetMs={offsetMs} onSeek={handleSeek} />
       )}
     </div>
   );

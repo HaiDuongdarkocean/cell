@@ -344,6 +344,8 @@ export interface VideoTimeUpdatePayload {
   readonly tabId?: number;
   readonly currentTimeMs: number;
   readonly durationMs: number;
+  /** ADR-019 sync: subtitle offset so side panel highlights the overlay cue. */
+  readonly offsetMs?: number;
 }
 
 /** Content-script → background → side panel: play/pause state. */

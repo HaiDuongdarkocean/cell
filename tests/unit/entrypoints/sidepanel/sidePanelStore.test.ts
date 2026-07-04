@@ -9,6 +9,7 @@ describe('sidePanelStore', () => {
       currentTimeMs: 0,
       durationMs: 0,
       isPlaying: false,
+      offsetMs: 0,
     });
   });
 
@@ -33,6 +34,17 @@ describe('sidePanelStore', () => {
     useSidePanelStore.getState().setCurrentTime(2500, 60000);
     expect(useSidePanelStore.getState().currentTimeMs).toBe(2500);
     expect(useSidePanelStore.getState().durationMs).toBe(60000);
+  });
+
+  it('setCurrentTime with offsetMs stores offset (ADR-019 sync)', () => {
+    useSidePanelStore.getState().setCurrentTime(2500, 60000, -5000);
+    expect(useSidePanelStore.getState().offsetMs).toBe(-5000);
+  });
+
+  it('setCurrentTime without offsetMs preserves existing offset', () => {
+    useSidePanelStore.getState().setCurrentTime(1000, 60000, -5000);
+    useSidePanelStore.getState().setCurrentTime(2000, 60000);
+    expect(useSidePanelStore.getState().offsetMs).toBe(-5000);
   });
 
   it('setPlaying updates isPlaying', () => {
@@ -63,5 +75,21 @@ describe('sidePanelStore', () => {
     useSidePanelStore.getState().setCurrentTime(4000, 60000);
     // 4000ms is within cue 2 (3500-5000)
     expect(useSidePanelStore.getState().currentCueIndex()).toBe(1);
+  });
+
+  it('currentCueIndex uses effective time (currentTimeMs + offsetMs) — ADR-019 sync', () => {
+    useSidePanelStore.getState().setCues(sampleCues);
+    // Raw time 2000ms is within cue 1 (1000-3000). With offset +2000ms,
+    // effective = 4000ms → within cue 2 (3500-5000). Highlight must match
+    // the overlay (which finds cues at effective time).
+    useSidePanelStore.getState().setCurrentTime(2000, 60000, 2000);
+    expect(useSidePanelStore.getState().currentCueIndex()).toBe(1);
+  });
+
+  it('currentCueIndex with negative offset shifts highlight backward', () => {
+    useSidePanelStore.getState().setCues(sampleCues);
+    // Raw time 4000ms is within cue 2. Offset -2000ms → effective 2000ms → cue 1.
+    useSidePanelStore.getState().setCurrentTime(4000, 60000, -2000);
+    expect(useSidePanelStore.getState().currentCueIndex()).toBe(0);
   });
 });

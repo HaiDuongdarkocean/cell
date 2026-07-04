@@ -5,6 +5,9 @@ import styles from './CueList.module.css';
 interface CueListProps {
   cues: BilingualCue[];
   currentTimeMs: number;
+  // ADR-019 sync: offset from content script. Highlight cue at
+  // effective = currentTimeMs + offsetMs to match the overlay.
+  offsetMs?: number;
   onSeek: (timeMs: number) => void;
 }
 
@@ -19,10 +22,14 @@ function formatTimestamp(ms: number): string {
   return `${pad(h)}:${pad(m)}:${pad(s)}${msStr}`;
 }
 
-export function CueList({ cues, currentTimeMs, onSeek }: CueListProps) {
+export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
+
+  // ADR-019 sync: highlight cue at effective time so the highlighted cue
+  // matches the overlay (which finds cues at currentTime + offsetMs).
+  const effectiveMs = currentTimeMs + offsetMs;
 
   // Find current cue. Half-open [start, end): at boundary t = cue[i].end =
   // cue[i+1].start, only the NEXT cue matches (subtitle semantics: a cue is
@@ -30,7 +37,7 @@ export function CueList({ cues, currentTimeMs, onSeek }: CueListProps) {
   // would match both cues and findIndex returns the earlier one → replay-cue
   // "jumps back to previous cue" bug.
   const currentIndex = cues.findIndex(
-    (c) => c.start <= currentTimeMs && c.end > currentTimeMs,
+    (c) => c.start <= effectiveMs && c.end > effectiveMs,
   );
 
   // Auto-scroll current cue into view
@@ -45,7 +52,7 @@ export function CueList({ cues, currentTimeMs, onSeek }: CueListProps) {
       // distance-aware behavior (smooth for small jumps, auto for large).
       el.scrollIntoView({ behavior: 'auto', block: 'center' });
     }
-  }, [currentIndex, currentTimeMs]);
+  }, [currentIndex, effectiveMs]);
 
   return (
     <div ref={listRef} className={styles.list}>
@@ -66,7 +73,11 @@ export function CueList({ cues, currentTimeMs, onSeek }: CueListProps) {
               onClick={() => onSeek(cue.start)}
               className={styles.timestamp}
             >
-              {formatTimestamp(cue.start)}
+              {/* ADR-019 sync: shift displayed timestamp by -offsetMs so the
+                  list shows the VIDEO time at which this cue will display
+                  (matches overlay + highlight). onSeek still sends raw
+                  cue.start; SEEK_TO handler subtracts offset. */}
+              {formatTimestamp(cue.start - offsetMs)}
             </span>
             <div data-testid="cue-target-text" className={styles.targetText}>
               {cue.targetText}
