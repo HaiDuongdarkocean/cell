@@ -25,8 +25,12 @@ src/
 │   ├── whitelist/      #   Auto-download whitelist
 │   ├── transmux/       #   TS→fMP4 transmuxing (planning/execution/merging)
 │   ├── subtitle/       #   Subtitle overlay/sync/merge/bilingual (logic/ui/service)
-│   │   └── ui/contentScriptController.ts  # M20: subtitle UI orchestration (init → returns cleanup for SPA episode-switch re-init) — ADR-018: wires NavClusterController
+│   │   └── ui/contentScriptController.ts  # M20: subtitle UI orchestration (init → returns cleanup for SPA episode-switch re-init) — ADR-018: wires NavClusterController; ADR-019: wires OffsetController + offset keyboard shortcuts
 │   │       └── ui/navCluster*.ts  # ADR-018: navClusterController + navClusterDom + navClusterActions + navClusterButton + navClusterKeyboard + navClusterIcons + navClusterCss (6-button floating cluster, inline SVG icons)
+│   │       └── ui/offsetController.ts  # ADR-019: OffsetController class — wires subtitleOffsetPanel + subtitleOffsetBadge + lazy/committed state + wall-clock auto-commit (timeupdate + visibilitychange, no setTimeout) + persist per-URL
+│   │       └── ui/subtitleOffsetPanel.ts  # ADR-019: offset panel DOM factory (4 states: disabled/default/lazy-active/committed, 4 steppers ±0.5/±2s, input + apply + reset)
+│   │       └── ui/subtitleOffsetBadge.ts  # ADR-019: lazy badge DOM factory (pill top-right, "Xem thử · M:SS" + pulse dot, click=reset, keyboard accessible)
+│   │       └── logic/subtitleOffset.ts  # ADR-019: pure offset logic — OffsetState, parseOffsetInput, clampOffsetMs, shouldAutoCommit, formatOffsetDisplay, AUTO_COMMIT_MS=120000
 │   ├── download/       #   Download queue/selection
 │   └── settings/       #   Settings UI + validation logic
 ├── entities/           # Domain entities (types/models) — M19: @/types/ fully migrated here
@@ -305,6 +309,10 @@ tests/
 | `content/navClusterKeyboard.ts` | subtitleShortcuts (isEditableTarget) | navClusterController.ts | **ADR-018**: Pure keyboard state machine — handleClusterKeydown/up (ArrowLeft/Right, R hold with e.repeat ignore + repeatHolding guard, </, >/), cancelRepeatHold (blur/visibilitychange) |
 | `content/navClusterIcons.ts` | — | navClusterDom.ts, navClusterButton.ts | **ADR-018**: Pure SVG icon string map (NAV_CLUSTER_ICONS: prev/next/repeat/rewind/forward — currentColor stroke, aria-hidden, 24x24 viewBox). Source: docs/mockups/icon-svg/ (svgrepo, recolored to currentColor) |
 | `content/navClusterCss.ts` | — | themeTokens (injectThemeTokens) | **ADR-018**: Cluster CSS injected into content-script isolated world — no button background default (transparent), hover=color primary, repeat-active=color primary + spin animation, SVG 60% of button, drag on cluster background (ADR-015 pattern, no drag handle button) |
+| `content/offsetController.ts` | subtitleOffsetPanel, subtitleOffsetBadge, subtitleOffset (logic), settingsStore (saveSettings/loadSettings), types (Settings) | contentScriptController.ts | **ADR-019**: OffsetController class — subtitle time offset orchestrator. Lifecycle: init (idempotent, builds panel+badge) → loadCues (hasSubtitle bool, reset on unload) → destroy. State machine: committed (persisted, badge hidden) ↔ lazy (apply all ngay, badge visible, timer 2 phút). Wall-clock auto-commit via timeupdate + visibilitychange (no setTimeout — MV3 throttle safe). Persist per-URL vào settings.subtitleOffset (value=0 → remove key). Public stepBy/reset cho keyboard |
+| `content/subtitleOffsetPanel.ts` | subtitleOffset (logic: OffsetState, formatOffsetDisplay) | offsetController.ts | **ADR-019**: Offset panel DOM factory — 4 states (disabled/default/lazy-active/committed), 4 steppers (±0.5s/±2s), input + apply + reset, flashSaved "✓ Đã lưu" 1.5s, role=dialog, aria-*. Inversion of control: nhận handlers callback |
+| `content/subtitleOffsetBadge.ts` | subtitleOffset (logic: AUTO_COMMIT_MS) | offsetController.ts | **ADR-019**: Lazy badge DOM factory — pill top-right overlay, "Xem thử · M:SS" + pulse dot, click=reset, keyboard accessible (Enter/Space), tabIndex=0, role=status, aria-label dynamic. Idempotent keyframes injection |
+| `content/subtitleOffset.ts` (logic) | — | subtitleOffsetPanel, subtitleOffsetBadge, offsetController, subtitleSync (findCurrentLine offsetMs) | **ADR-019**: Pure offset logic — OffsetState (valueMs/mode/lastActionAt), INITIAL_OFFSET_STATE, parseOffsetInput (string→ms|null), clampOffsetMs (±60s), shouldAutoCommit (wall-clock > 2 phút), formatOffsetDisplay (+0.500s/-2.000s), AUTO_COMMIT_MS=120000 |
 
 ### Side Panel layer (ADR-008)
 
@@ -633,7 +641,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `SearchableSelect` | `shared/ui/SearchableSelect.tsx` | options, value, onChange, ariaLabel → ReactElement | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
 | `HintIcon` | `shared/ui/HintIcon.tsx` | hint, ariaLabel → ReactElement | SettingsDialog, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 | `parseSubtitle` | `content/subtitleParser.ts` | (string, format) → ParseResult | subtitleDragDrop, subtitleImport | Adapter: auto-detect format, parseSrt/parseVtt |
-| `findCurrentLine` | `content/subtitleSync.ts` | (SrtCue[], number) → number | subtitleOverlay | Binary search O(log n) for current subtitle line by video time |
+| `findCurrentLine` | `content/subtitleSync.ts` | (SrtCue[], number, offsetMs=0) → number | subtitleOverlay, navClusterActions | Binary search O(log n) for current subtitle line by video time. ADR-019: optional offsetMs shifts search window (apply offset globally, no per-cue mutation) |
 | `createOverlay` | `content/subtitleUI.ts` | (HTMLElement, OverlayConfig) → HTMLDivElement | subtitleOverlay | Create subtitle overlay div appended to video wrapper |
 | `updateOverlayText` | `content/subtitleUI.ts` | (HTMLDivElement, string) → void | subtitleOverlay | Set text and show overlay |
 | `hideOverlay` | `content/subtitleUI.ts` | (HTMLDivElement) → void | subtitleOverlay | Clear text and hide overlay |
@@ -700,6 +708,15 @@ downloader.downloadM3u8Streaming(playlist)
 | `handleClusterKeydown` | `content/navClusterKeyboard.ts` | (KeyboardEvent, NavClusterKeyboardState) → { action, state } | navClusterController.ts | **ADR-018**: Pure keydown state machine (ArrowLeft/Right, R hold, </, >/) |
 | `handleClusterKeyup` | `content/navClusterKeyboard.ts` | (KeyboardEvent, NavClusterKeyboardState) → { action, state } | navClusterController.ts | **ADR-018**: Pure keyup state machine (R keyup → repeat-stop) |
 | `cancelRepeatHold` | `content/navClusterKeyboard.ts` | (NavClusterKeyboardState) → { action, state } | navClusterController.ts | **ADR-018**: Cancel repeat hold (blur/visibilitychange — keyup may be lost) |
+| `OffsetController` | `content/offsetController.ts` | class (video, container, url, snapshot?) → controller | contentScriptController.ts | **ADR-019**: Subtitle time offset orchestrator. init/loadCues/getOffsetMs/stepBy/reset/destroy. State machine committed↔lazy + wall-clock auto-commit (timeupdate + visibilitychange) + persist per-URL |
+| `createOffsetPanel` | `content/subtitleOffsetPanel.ts` | (container, handlers) → OffsetPanelApi | offsetController.ts | **ADR-019**: Offset panel DOM factory (4 states, 4 steppers, input+apply+reset, flashSaved, role=dialog) |
+| `createOffsetBadge` | `content/subtitleOffsetBadge.ts` | (container, onReset) → OffsetBadgeApi | offsetController.ts | **ADR-019**: Lazy badge DOM factory (pill, "Xem thử · M:SS", pulse dot, click=reset, keyboard accessible) |
+| `formatBadgeTimer` | `content/subtitleOffsetBadge.ts` | (remainingMs) → string | subtitleOffsetBadge.ts | **ADR-019**: Format remaining ms → "M:SS" (clamp negative → "0:00") |
+| `parseOffsetInput` | `content/subtitleOffset.ts` (logic) | (string) → number \| null | offsetController, subtitleOffsetPanel | **ADR-019**: Parse user input → ms (null if invalid) |
+| `clampOffsetMs` | `content/subtitleOffset.ts` (logic) | (number) → number | offsetController | **ADR-019**: Clamp offset to ±60s |
+| `shouldAutoCommit` | `content/subtitleOffset.ts` (logic) | (OffsetState, now) → boolean | offsetController | **ADR-019**: Wall-clock check — lazy + > 2 phút since lastActionAt → true |
+| `formatOffsetDisplay` | `content/subtitleOffset.ts` (logic) | (number) → string | subtitleOffsetPanel | **ADR-019**: Format offset → "+0.500s"/"-2.000s" |
+| `AUTO_COMMIT_MS` | `content/subtitleOffset.ts` (logic) | constant = 120000 | offsetController, subtitleOffsetBadge | **ADR-019**: Auto-commit threshold (2 phút wall-clock) |
 | `handleTogglePlay` | `background/index.ts` | MessageRequest → Promise<MessageResponse> | messageBus | Relay TOGGLE_PLAY → active tab content-script (resolves active tab when tabId missing) — **ADR-009 D1** |
 | `handleShortcutAction` | `background/index.ts` | MessageRequest → Promise<MessageResponse> | messageBus | Relay SHORTCUT_ACTION (prev-cue/next-cue/replay-cue/toggle-overlay) → active tab content-script — **ADR-009 D4** |
 | `handleRequestSubtitleCues` | `background/index.ts` | MessageRequest → Promise<MessageResponse> | messageBus | Re-send cached cues per tab (race condition fix: panel opens after cues sent) — **ADR-008** |
