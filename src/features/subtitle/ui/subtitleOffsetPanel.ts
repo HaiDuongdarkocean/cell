@@ -1,12 +1,24 @@
 /**
- * Subtitle offset section — DOM factory (ADR-019 V2 simplified).
+ * Subtitle offset section — DOM factory (ADR-019 V3).
  *
- * V2 (2026-07-05): drop Apply button, drop lazy badge, drop 3-state reset label.
- * UI = 1 pill với 6 ô: [−2s][−0.5s][VALUE][+0.5s][+2s][↺]
- * - Value ở giữa, to + đậm + bg primary-subtle (nhấn mạnh)
- * - Reset (↺) cuối pill, cạnh value
- * - Stepper 4 nút chia bằng hairline divider
- * - Pill shape (--radius-full), soft, không rời rạc
+ * V3 (2026-07-05): value cell ở giữa pill là <input> editable (click → edit).
+ * Bỏ input row top. Reset chuyển xuống dưới (full-width pill).
+ *
+ * Layout:
+ *   ┌─────────────────────────────────────────┐
+ *   │ OFFSET                                  │
+ *   ├─────────────────────────────────────────┤
+ *   │  ╭───────────────────────────────────╮  │  ← PILL (4 step + value-input)
+ *   │  │ −2s │ −0.5s │  +0.50s  │ +0.5s │ +2s │  │     value = <input> editable
+ *   │  ╰───────────────────────────────────╯  │
+ *   │  ╭───────────────────────────────────╮  │  ← RESET (bottom, full-width)
+ *   │  │      ↺  Đặt lại về 0              │  │
+ *   │  ╰───────────────────────────────────╯  │
+ *   └─────────────────────────────────────────┘
+ *
+ * CSS bleed fix (V3): focus ring inset (không tràn ra step buttons),
+ * divider bằng ::before pseudo-element (không shift), z-index layering,
+ * pill isolation: isolate (stacking context riêng).
  *
  * Section collapsible nested trong Subtitle Manager Panel.
  * Inversion of control: nhận handlers callback, không biết OffsetController logic.
@@ -35,8 +47,6 @@ export interface OffsetPanelHandlers {
 
 const CHEVRON_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>';
 const RESET_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M18.364 8.05026L17.6569 7.34315C14.5327 4.21896 9.46734 4.21896 6.34315 7.34315C3.21895 10.4673 3.21895 15.5327 6.34315 18.6569C9.46734 21.7811 14.5327 21.7811 17.6569 18.6569C19.4737 16.84 20.234 14.3668 19.9377 12.0005M18.364 8.05026H14.1213M18.364 8.05026V3.80762" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-const STEPPER_DELTAS = [-2000, -500, 500, 2000] as const;
 
 /**
  * Create offset section — DOM factory pattern. Nested trong Subtitle Manager Panel.
@@ -105,37 +115,39 @@ export function createOffsetSection(
   body.style.cssText = 'padding: var(--spacing-xs, 4px) var(--spacing-xs, 4px) var(--spacing-sm, 8px); display: block;';
   section.appendChild(body);
 
-  // === Pill — 1 container bo tròn, 6 ô chia bằng hairline divider ===
-  // Layout: [−2s][−0.5s][VALUE to][+0.5s][+2s][↺]
-  // Value ô có bg primary-subtle, to + đậm. Reset ô = icon.
+  // === Pill — 5 ô: [−2s][−0.5s][VALUE-input][+0.5s][+2s] ===
+  // Value ở giữa là <input> editable. Reset tách ra bottom (full-width).
+  // CSS bleed fix: isolation: isolate + z-index layering + inset focus ring.
   const pill = document.createElement('div');
   pill.setAttribute('data-testid', 'offset-pill');
   pill.setAttribute('role', 'group');
   pill.setAttribute('aria-label', 'Subtitle offset control');
   pill.style.cssText = `
     display: grid;
-    grid-template-columns: 1fr 1fr 1.4fr 1fr 1fr 0.8fr;
+    grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr;
     align-items: stretch;
     background: var(--color-surface, #f8fafc);
     border: 1px solid var(--color-border, #e2e8f0);
     border-radius: var(--radius-full, 9999px);
     padding: 3px;
     gap: 0;
-    margin-bottom: 8px;
+    margin-bottom: var(--spacing-sm, 8px);
+    isolation: isolate;
   `;
   body.appendChild(pill);
 
-  // --- Stepper buttons (4 nút: −2s, −0.5s, +0.5s, +2s) ---
+  // --- Build step button factory (lắp theo thứ tự: −2s, −0.5s, VALUE, +0.5s, +2s) ---
   const stepBtns: HTMLButtonElement[] = [];
-  for (const delta of STEPPER_DELTAS) {
+  const createStepBtn = (delta: number): HTMLButtonElement => {
     const btn = document.createElement('button');
     btn.setAttribute('type', 'button');
     btn.setAttribute('data-testid', `offset-step-${delta}`);
     const isPlus = delta > 0;
     btn.setAttribute('aria-label', isPlus ? `Tiến ${delta / 1000} giây` : `Lùi ${Math.abs(delta) / 1000} giây`);
     btn.style.cssText = `
+      position: relative;
+      z-index: 1;
       border: none;
-      border-right: 1px solid var(--color-border-subtle, #f1f5f9);
       background: transparent;
       color: ${isPlus ? 'var(--color-success, #10b981)' : 'var(--color-info, #2563eb)'};
       cursor: pointer;
@@ -160,16 +172,22 @@ export function createOffsetSection(
     btn.addEventListener('mouseleave', () => {
       if (!btn.disabled) btn.style.background = 'transparent';
     });
-    pill.appendChild(btn);
-    stepBtns.push(btn);
-  }
+    return btn;
+  };
 
-  // --- Value display (ô giữa, to + đậm + bg primary-subtle) ---
-  const valueCell = document.createElement('div');
-  valueCell.setAttribute('data-testid', 'offset-value');
-  valueCell.setAttribute('role', 'status');
-  valueCell.setAttribute('aria-label', 'Current offset');
-  valueCell.style.cssText = `
+  // --- Value INPUT (ô giữa, editable, to + đậm + bg primary-subtle) ---
+  // V3: value là <input type="text"> — click → select all → gõ số giây → Enter commit.
+  // CSS bleed fix: border-radius sm (không full), focus = inset ring (không tràn).
+  const valueInput = document.createElement('input');
+  valueInput.setAttribute('type', 'text');
+  valueInput.setAttribute('data-testid', 'offset-value');
+  valueInput.setAttribute('role', 'status');
+  valueInput.setAttribute('aria-label', 'Current offset (nhập số giây)');
+  valueInput.setAttribute('inputmode', 'decimal');
+  valueInput.value = '0s';
+  valueInput.style.cssText = `
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -179,90 +197,110 @@ export function createOffsetSection(
     font-size: var(--font-size-lg, 16px);
     font-weight: var(--font-weight-semibold, 600);
     font-variant-numeric: tabular-nums;
-    border-radius: var(--radius-full, 9999px);
+    border-radius: var(--radius-sm, 6px);
     padding: 4px 8px;
     min-height: 40px;
+    min-width: 0;
+    width: 100%;
     border: none;
-    border-right: 1px solid var(--color-border-subtle, #f1f5f9);
-    transition: color 150ms ease;
+    transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+    text-align: center;
+    outline: none;
   `;
-  pill.appendChild(valueCell);
 
-  // --- Reset button (cuối pill, icon ↺) ---
+  // --- Lắp vào pill theo thứ tự: −2s, −0.5s, VALUE, +0.5s, +2s ---
+  const minus2 = createStepBtn(-2000);
+  const minusHalf = createStepBtn(-500);
+  const plusHalf = createStepBtn(500);
+  const plus2 = createStepBtn(2000);
+  pill.appendChild(minus2);
+  pill.appendChild(minusHalf);
+  pill.appendChild(valueInput);
+  pill.appendChild(plusHalf);
+  pill.appendChild(plus2);
+  stepBtns.push(minus2, minusHalf, plusHalf, plus2);
+
+  // Value input: focus → select all. Enter/blur → parse + commit. Esc → revert.
+  valueInput.addEventListener('focus', () => {
+    valueInput.select();
+    valueInput.style.zIndex = '3';
+    valueInput.style.boxShadow = 'inset 0 0 0 2px var(--color-primary, #2563eb)';
+    valueInput.style.background = 'var(--color-background, #ffffff)';
+  });
+  const commitValueInput = (): void => {
+    const parsed = parseOffsetInputSafe(valueInput.value);
+    if (parsed !== null) {
+      handlers.onInput(parsed);
+      // Force display format after commit — update() may have skipped
+      // setting value because input was still focused at commit time.
+      valueInput.value = formatOffsetValue(parsed);
+    } else {
+      // Invalid → revert to current valueMs
+      valueInput.value = formatOffsetValue(currentValueMs);
+    }
+    valueInput.style.zIndex = '';
+    valueInput.style.boxShadow = '';
+  };
+  valueInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitValueInput();
+      valueInput.blur();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      valueInput.value = formatOffsetValue(currentValueMs);
+      valueInput.blur();
+    }
+  });
+  valueInput.addEventListener('blur', commitValueInput);
+
+  // --- Reset button (BOTTOM, full-width pill) ---
   const resetBtn = document.createElement('button');
   resetBtn.setAttribute('type', 'button');
   resetBtn.setAttribute('data-testid', 'offset-reset');
   resetBtn.setAttribute('aria-label', 'Đặt lại về 0');
   resetBtn.setAttribute('title', 'Đặt lại về 0');
   resetBtn.style.cssText = `
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted, #94a3b8);
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: var(--radius-full, 9999px);
+    background: var(--color-surface, #f8fafc);
+    color: var(--color-text-secondary, #475569);
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 40px;
-    padding: 8px 4px;
-    border-radius: var(--radius-full, 9999px);
-    transition: background 150ms ease, color 150ms ease;
+    gap: 6px;
+    font-family: var(--font-family, sans-serif);
+    font-size: var(--font-size-xs, 12px);
+    font-weight: var(--font-weight-medium, 500);
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
     -webkit-tap-highlight-color: transparent;
   `;
-  resetBtn.innerHTML = RESET_SVG;
+  const resetIcon = document.createElement('span');
+  resetIcon.innerHTML = RESET_SVG;
+  resetIcon.style.cssText = 'display: inline-flex;';
+  resetBtn.appendChild(resetIcon);
+  const resetLabel = document.createElement('span');
+  resetLabel.textContent = 'Đặt lại về 0';
+  resetBtn.appendChild(resetLabel);
   resetBtn.addEventListener('click', () => handlers.onReset());
   resetBtn.addEventListener('mouseenter', () => {
     if (!resetBtn.disabled) {
       resetBtn.style.background = 'var(--color-error-subtle, rgba(239, 68, 68, 0.08))';
       resetBtn.style.color = 'var(--color-error, #ef4444)';
+      resetBtn.style.borderColor = 'var(--color-error, #ef4444)';
     }
   });
   resetBtn.addEventListener('mouseleave', () => {
     if (!resetBtn.disabled) {
-      resetBtn.style.background = 'transparent';
-      resetBtn.style.color = 'var(--color-text-muted, #94a3b8)';
+      resetBtn.style.background = 'var(--color-surface, #f8fafc)';
+      resetBtn.style.color = 'var(--color-text-secondary, #475569)';
+      resetBtn.style.borderColor = 'var(--color-border, #e2e8f0)';
     }
   });
-  pill.appendChild(resetBtn);
-
-  // --- Input row (nhập số giây trực tiếp) ---
-  const inputRow = document.createElement('div');
-  inputRow.style.cssText = 'display: flex; gap: 3px;';
-  const inputWrap = document.createElement('div');
-  inputWrap.style.cssText = 'flex: 1; display: flex; align-items: center; border: 1px solid var(--color-border, #e2e8f0); border-radius: var(--radius-full, 9999px); background: var(--color-background, #ffffff); overflow: hidden;';
-  const input = document.createElement('input');
-  input.setAttribute('type', 'text');
-  input.setAttribute('data-testid', 'offset-input');
-  input.setAttribute('aria-label', 'Nhập độ lệch (giây)');
-  input.setAttribute('placeholder', 'nhập số giây');
-  input.style.cssText = 'flex: 1; border: none; padding: 6px 12px; min-height: 32px; background: transparent; color: var(--color-text); font-family: var(--font-family, sans-serif); font-size: var(--font-size-sm, 13px); font-variant-numeric: tabular-nums; outline: none;';
-  const inputSuffix = document.createElement('span');
-  inputSuffix.textContent = 's';
-  inputSuffix.style.cssText = 'padding: 0 10px; color: var(--color-text-muted, #94a3b8); font-size: var(--font-size-xs, 12px); user-select: none;';
-  inputWrap.appendChild(input);
-  inputWrap.appendChild(inputSuffix);
-  inputRow.appendChild(inputWrap);
-  body.appendChild(inputRow);
-
-  // Input commit on Enter + blur
-  const commitInput = (): void => {
-    const parsed = parseOffsetInputSafe(input.value);
-    if (parsed === null) {
-      // Invalid — reset input to current value
-      if (document.activeElement !== input) {
-        input.value = valueMsToText(currentValueMs);
-      }
-      return;
-    }
-    handlers.onInput(parsed);
-  };
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      commitInput();
-      input.blur();
-    }
-  });
-  input.addEventListener('blur', commitInput);
+  body.appendChild(resetBtn);
 
   // --- Disabled hint (hidden by default) ---
   const disabledHint = document.createElement('div');
@@ -288,25 +326,26 @@ export function createOffsetSection(
 
   // === Update logic ===
   let currentValueMs = 0;
-  const allControls = [resetBtn, ...stepBtns, input];
+  const allControls = [resetBtn, ...stepBtns, valueInput];
 
   function update(valueMs: number, hasSubtitle: boolean): void {
     currentValueMs = valueMs;
 
-    // Value display (to, đậm, primary color)
-    const display = formatOffsetValue(valueMs);
-    valueCell.textContent = display;
+    // Value input text — only update when NOT focused (so user can type freely)
+    if (document.activeElement !== valueInput) {
+      valueInput.value = formatOffsetValue(valueMs);
+    }
 
     // Value color: 0 = muted, + = success, - = info
     if (valueMs === 0) {
-      valueCell.style.color = 'var(--color-text-muted, #94a3b8)';
-      valueCell.style.background = 'var(--color-surface-hover, #f1f5f9)';
+      valueInput.style.color = 'var(--color-text-muted, #94a3b8)';
+      valueInput.style.background = 'var(--color-surface-hover, #f1f5f9)';
     } else if (valueMs > 0) {
-      valueCell.style.color = 'var(--color-success, #10b981)';
-      valueCell.style.background = 'var(--color-primary-subtle, rgba(37, 99, 235, 0.1))';
+      valueInput.style.color = 'var(--color-success, #10b981)';
+      valueInput.style.background = 'var(--color-primary-subtle, rgba(37, 99, 235, 0.1))';
     } else {
-      valueCell.style.color = 'var(--color-info, #2563eb)';
-      valueCell.style.background = 'var(--color-primary-subtle, rgba(37, 99, 235, 0.1))';
+      valueInput.style.color = 'var(--color-info, #2563eb)';
+      valueInput.style.background = 'var(--color-primary-subtle, rgba(37, 99, 235, 0.1))';
     }
 
     // Disabled state
@@ -316,11 +355,6 @@ export function createOffsetSection(
     } else {
       allControls.forEach((c) => ((c as HTMLButtonElement | HTMLInputElement).disabled = false));
       disabledHint.style.display = 'none';
-    }
-
-    // Input value sync (giây) — only when not focused
-    if (document.activeElement !== input) {
-      input.value = valueMsToText(valueMs);
     }
   }
 
@@ -334,32 +368,25 @@ export function createOffsetSection(
 
 // === Helpers ===
 
-/** Format ms → display string for value cell: 0 → "0s", 700 → "+0.7s", -500 → "-0.5s". */
+/** Format ms → display string for value input: 0 → "0s", 700 → "+0.7s", -500 → "−0.5s". */
 function formatOffsetValue(ms: number): string {
   if (ms === 0) return '0s';
   const seconds = ms / 1000;
   const sign = ms > 0 ? '+' : '−';
   const absSeconds = Math.abs(seconds);
-  // Trim trailing .0 — 1.0s → 1s, 0.5s → 0.5s
   const formatted = absSeconds % 1 === 0 ? String(absSeconds) : String(absSeconds);
   return `${sign}${formatted}s`;
 }
 
-/** Convert valueMs → input text (giây). 0 → "", 700 → "0.7", -500 → "-0.5". */
-function valueMsToText(ms: number): string {
-  if (ms === 0) return '';
-  return String(ms / 1000);
-}
-
-/** Parse input string → ms. Wrapper để tránh import cycle. */
+/** Parse input string → ms. Accept: "0.5", "+0.5", "-0.5", "0.5s", "+0.5s". */
 function parseOffsetInputSafe(input: string): number | null {
-  // Inline parse để giữ panel pure (không import logic module — tránh circular)
   const trimmed = input.trim();
   if (trimmed === '') return null;
+  // Strip optional "s" suffix
   const cleaned = trimmed.endsWith('s') || trimmed.endsWith('S')
     ? trimmed.slice(0, -1).trim()
     : trimmed;
-  if (cleaned === '') return null;
+  if (cleaned === '' || cleaned === '+' || cleaned === '-' || cleaned === '−') return null;
   const seconds = Number(cleaned);
   if (!Number.isFinite(seconds)) return null;
   const ms = Math.round(seconds * 1000);

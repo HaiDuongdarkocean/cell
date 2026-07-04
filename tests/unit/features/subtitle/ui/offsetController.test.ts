@@ -222,9 +222,10 @@ describe('OffsetController (V2 — direct apply + persist, no lazy/badge)', () =
       ctrl.init();
       ctrl.loadCues(true);
       ctrl.stepBy(500); // start from 500
-      const input = managerPanel.querySelector('[data-testid="offset-input"]') as HTMLInputElement;
-      input.value = '1.5';
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      // V3: value cell is the input (data-testid="offset-value")
+      const valueInput = managerPanel.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+      valueInput.value = '1.5';
+      valueInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       expect(ctrl.getOffsetMs()).toBe(1500);
       await new Promise((r) => setTimeout(r, 50));
       const stored = storage.settings as { subtitleOffset: Record<string, number> };
@@ -236,9 +237,9 @@ describe('OffsetController (V2 — direct apply + persist, no lazy/badge)', () =
       const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const input = managerPanel.querySelector('[data-testid="offset-input"]') as HTMLInputElement;
-      input.value = 'abc';
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      const valueInput = managerPanel.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+      valueInput.value = 'abc';
+      valueInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       expect(ctrl.getOffsetMs()).toBe(0);
       ctrl.destroy();
     });

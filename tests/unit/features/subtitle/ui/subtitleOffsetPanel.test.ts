@@ -1,6 +1,6 @@
 import { createOffsetSection } from '@/features/subtitle/ui/subtitleOffsetPanel';
 
-describe('subtitleOffsetSection (V2 — direct apply, no lazy/badge/apply button)', () => {
+describe('subtitleOffsetSection (V3 — value=input ở giữa pill, reset bottom full-width)', () => {
   let parentPanel: HTMLDivElement;
 
   beforeEach(() => {
@@ -43,18 +43,16 @@ describe('subtitleOffsetSection (V2 — direct apply, no lazy/badge/apply button
     expect(header.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('renders 1 pill container with 4 stepper + value + reset', () => {
+  it('renders 1 pill container with 4 stepper + value-input (5 ô)', () => {
     const { section } = createOffsetSection(parentPanel, noopHandlers);
     const pill = section.querySelector('[data-testid="offset-pill"]');
     expect(pill).not.toBeNull();
     expect(pill!.getAttribute('role')).toBe('group');
-    // 4 step buttons + value cell + reset button = 6 children
     const stepBtns = pill!.querySelectorAll('button[data-testid^="offset-step-"]');
     expect(stepBtns.length).toBe(4);
     const value = pill!.querySelector('[data-testid="offset-value"]');
     expect(value).not.toBeNull();
-    const reset = pill!.querySelector('[data-testid="offset-reset"]');
-    expect(reset).not.toBeNull();
+    expect(value!.tagName).toBe('INPUT'); // V3: value is <input>
   });
 
   it('renders 4 stepper buttons with correct aria-labels', () => {
@@ -67,30 +65,53 @@ describe('subtitleOffsetSection (V2 — direct apply, no lazy/badge/apply button
     expect(btns[3].getAttribute('aria-label')).toBe('Tiến 2 giây');
   });
 
-  it('renders input with placeholder "nhập số giây"', () => {
-    const { section } = createOffsetSection(parentPanel, noopHandlers);
-    const input = section.querySelector('[data-testid="offset-input"]') as HTMLInputElement;
-    expect(input.placeholder).toBe('nhập số giây');
-    expect(input.getAttribute('aria-label')).toBe('Nhập độ lệch (giây)');
-  });
-
   it('pill has border-radius full (pill shape)', () => {
     const { section } = createOffsetSection(parentPanel, noopHandlers);
     const pill = section.querySelector('[data-testid="offset-pill"]') as HTMLDivElement;
     expect(pill.style.borderRadius).toContain('9999');
   });
 
-  it('value cell has prominent styling (large font + semibold)', () => {
+  it('pill has isolation: isolate (CSS bleed fix)', () => {
     const { section } = createOffsetSection(parentPanel, noopHandlers);
-    const value = section.querySelector('[data-testid="offset-value"]') as HTMLDivElement;
+    const pill = section.querySelector('[data-testid="offset-pill"]') as HTMLDivElement;
+    expect(pill.style.isolation).toBe('isolate');
+  });
+
+  it('value input has prominent styling (large font + semibold)', () => {
+    const { section } = createOffsetSection(parentPanel, noopHandlers);
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
     expect(value.style.fontSize).toContain('16'); // --font-size-lg
     expect(value.style.fontWeight).toContain('600'); // --font-weight-semibold
   });
 
-  it('reset button has aria-label "Đặt lại về 0"', () => {
+  it('value input has inset focus ring (CSS bleed fix — không tràn ra step buttons)', () => {
+    const { section } = createOffsetSection(parentPanel, noopHandlers);
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+    // Trigger focus → inset box-shadow applied (not outset which would bleed)
+    value.focus();
+    expect(value.style.boxShadow).toMatch(/^inset/);
+  });
+
+  it('value input has border-radius sm (không full — tránh khoảng trống kỳ)', () => {
+    const { section } = createOffsetSection(parentPanel, noopHandlers);
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+    expect(value.style.borderRadius).toContain('6'); // --radius-sm
+  });
+
+  it('reset button is full-width (bottom, tách khỏi pill)', () => {
     const { section } = createOffsetSection(parentPanel, noopHandlers);
     const reset = section.querySelector('[data-testid="offset-reset"]') as HTMLButtonElement;
+    expect(reset).not.toBeNull();
+    expect(reset.style.width).toBe('100%');
     expect(reset.getAttribute('aria-label')).toBe('Đặt lại về 0');
+    expect(reset.textContent).toContain('Đặt lại về 0');
+  });
+
+  it('reset button NOT inside pill (separate row)', () => {
+    const { section } = createOffsetSection(parentPanel, noopHandlers);
+    const pill = section.querySelector('[data-testid="offset-pill"]') as HTMLDivElement;
+    const reset = section.querySelector('[data-testid="offset-reset"]') as HTMLButtonElement;
+    expect(pill.contains(reset)).toBe(false);
   });
 
   // === Disabled state ===
@@ -103,8 +124,8 @@ describe('subtitleOffsetSection (V2 — direct apply, no lazy/badge/apply button
     expect(reset.disabled).toBe(true);
     const btns = section.querySelectorAll('button[data-testid^="offset-step-"]');
     btns.forEach((b) => expect((b as HTMLButtonElement).disabled).toBe(true));
-    const input = section.querySelector('[data-testid="offset-input"]') as HTMLInputElement;
-    expect(input.disabled).toBe(true);
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+    expect(value.disabled).toBe(true);
   });
 
   // === Default state (offset 0) ===
@@ -113,8 +134,8 @@ describe('subtitleOffsetSection (V2 — direct apply, no lazy/badge/apply button
     update(0, true);
     const hint = section.querySelector('[data-testid="offset-disabled-hint"]') as HTMLDivElement;
     expect(hint.style.display).toBe('none');
-    const value = section.querySelector('[data-testid="offset-value"]') as HTMLDivElement;
-    expect(value.textContent).toBe('0s');
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+    expect(value.value).toBe('0s');
     expect(value.style.color).toContain('muted');
   });
 
@@ -122,8 +143,8 @@ describe('subtitleOffsetSection (V2 — direct apply, no lazy/badge/apply button
   it('positive offset +700ms — value "+0.7s" success color', () => {
     const { section, update } = createOffsetSection(parentPanel, noopHandlers);
     update(700, true);
-    const value = section.querySelector('[data-testid="offset-value"]') as HTMLDivElement;
-    expect(value.textContent).toContain('+0.7');
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+    expect(value.value).toContain('+0.7');
     expect(value.style.color).toContain('success');
   });
 
@@ -131,8 +152,8 @@ describe('subtitleOffsetSection (V2 — direct apply, no lazy/badge/apply button
   it('negative offset -500ms — value "−0.5s" info color', () => {
     const { section, update } = createOffsetSection(parentPanel, noopHandlers);
     update(-500, true);
-    const value = section.querySelector('[data-testid="offset-value"]') as HTMLDivElement;
-    expect(value.textContent).toContain('−0.5');
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+    expect(value.value).toContain('−0.5');
     expect(value.style.color).toContain('info');
   });
 
@@ -160,23 +181,41 @@ describe('subtitleOffsetSection (V2 — direct apply, no lazy/badge/apply button
     expect(onReset).toHaveBeenCalledTimes(1);
   });
 
-  it('onInput called with parsed ms when Enter pressed in input', () => {
+  it('onInput called with parsed ms when Enter pressed in value input', () => {
     const onInput = jest.fn();
     const { section } = createOffsetSection(parentPanel, { ...noopHandlers, onInput });
-    const input = section.querySelector('[data-testid="offset-input"]') as HTMLInputElement;
-    input.value = '1.5';
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+    value.value = '1.5';
+    value.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     expect(onInput).toHaveBeenCalledWith(1500);
   });
 
-  it('onInput called with null for invalid input on blur', () => {
+  it('onInput NOT called for invalid input (revert instead)', () => {
     const onInput = jest.fn();
-    const { section } = createOffsetSection(parentPanel, { ...noopHandlers, onInput });
-    const input = section.querySelector('[data-testid="offset-input"]') as HTMLInputElement;
-    input.value = 'abc';
-    input.dispatchEvent(new Event('blur'));
-    // Invalid → onInput not called (panel resets input)
+    const { section, update } = createOffsetSection(parentPanel, { ...noopHandlers, onInput });
+    update(700, true); // seed current value
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+    value.value = 'abc';
+    value.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     expect(onInput).not.toHaveBeenCalled();
+  });
+
+  it('Esc reverts value input to current valueMs', () => {
+    const { section, update } = createOffsetSection(parentPanel, noopHandlers);
+    update(700, true);
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+    value.value = '999';
+    value.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(value.value).toBe('+0.7s'); // reverted
+  });
+
+  it('focus selects all text in value input', () => {
+    const { section, update } = createOffsetSection(parentPanel, noopHandlers);
+    update(700, true);
+    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
+    value.focus();
+    // jsdom doesn't fully implement selectionStart, but select() should not throw
+    expect(document.activeElement).toBe(value);
   });
 
   // === destroy ===
