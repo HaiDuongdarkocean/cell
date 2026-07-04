@@ -1,7 +1,7 @@
 /**
- * Subtitle offset panel — DOM factory (ADR-019 Contract 5).
+ * Subtitle offset section — DOM factory (ADR-019 Contract 5).
  *
- * Mimic subtitleManagerPanel pattern: cssText inline, var(--token), aria-*.
+ * Section collapsible nested trong Subtitle Manager Panel (mimic createSection pattern).
  * Render 4 states (disabled / default / lazy-active / committed) theo mockup v2.2.
  * Source of truth UI: docs/mockups/mockup-subtitle-time-offset.html
  *
@@ -13,14 +13,16 @@
 import type { OffsetState } from '../logic/subtitleOffset';
 import { formatOffsetDisplay } from '../logic/subtitleOffset';
 
-/** Panel API — returned by createOffsetPanel. */
-export interface OffsetPanelApi {
-  readonly panel: HTMLDivElement;
+/** Section API — returned by createOffsetSection. */
+export interface OffsetSectionApi {
+  readonly section: HTMLDivElement;
+  readonly header: HTMLButtonElement;
+  readonly body: HTMLDivElement;
   /** Update UI theo state + hasSubtitle flag. */
   update(state: OffsetState, hasSubtitle: boolean): void;
   /** Flash apply button "✓ Đã lưu" 1.5s (trigger từ click OR auto-commit). */
   flashSaved(): void;
-  /** Destroy — remove panel from DOM, cleanup listeners. */
+  /** Destroy — remove section from DOM, cleanup listeners. */
   destroy(): void;
 }
 
@@ -36,122 +38,83 @@ export interface OffsetPanelHandlers {
   onApply: () => void;
 }
 
-const CLOSE_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>';
+const CHEVRON_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg>';
 const RESET_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M18.364 8.05026L17.6569 7.34315C14.5327 4.21896 9.46734 4.21896 6.34315 7.34315C3.21895 10.4673 3.21895 15.5327 6.34315 18.6569C9.46734 21.7811 14.5327 21.7811 17.6569 18.6569C19.4737 16.84 20.234 14.3668 19.9377 12.0005M18.364 8.05026H14.1213M18.364 8.05026V3.80762" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 const STEPPER_DELTAS = [-2000, -500, 500, 2000] as const;
 
 /**
- * Create offset panel — DOM factory pattern.
+ * Create offset section — DOM factory pattern. Nested trong Subtitle Manager Panel.
  *
- * @param container - Video wrapper (panel appended here, absolute positioned)
+ * @param parentPanel - Manager panel element (section appended here)
  * @param handlers - Callbacks for step/input/reset/apply
- * @returns Panel API
+ * @returns Section API
  */
-export function createOffsetPanel(
-  container: HTMLElement,
+export function createOffsetSection(
+  parentPanel: HTMLElement,
   handlers: OffsetPanelHandlers,
-): OffsetPanelApi {
-  // === Panel root ===
-  const panel = document.createElement('div');
-  panel.setAttribute('data-testid', 'offset-panel');
-  panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', 'Độ lệch subtitle');
-  panel.style.cssText = `
-    position: absolute;
-    top: 8px; left: 8px;
-    z-index: 1000002;
-    width: 240px;
-    background: var(--color-background, #ffffff);
-    color: var(--color-text, #0f172a);
-    border: 1px solid var(--color-border, #e2e8f0);
-    border-radius: var(--radius-md, 8px);
-    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
-    font-family: var(--font-family, sans-serif);
-    font-size: 13px;
-  `;
-  container.appendChild(panel);
+): OffsetSectionApi {
+  // === Section root ===
+  const section = document.createElement('div');
+  section.setAttribute('data-testid', 'offset-section');
+  section.setAttribute('data-role', 'offset');
+  parentPanel.appendChild(section);
 
-  // === Header ===
-  const header = document.createElement('div');
+  // === Header (collapsible, mimic createSection pattern) ===
+  const header = document.createElement('button');
+  header.setAttribute('type', 'button');
+  header.setAttribute('data-testid', 'offset-section-header');
+  header.setAttribute('aria-expanded', 'true');
+  header.setAttribute('aria-label', 'Toggle Offset section');
+  header.setAttribute('title', 'Toggle Offset section');
   header.style.cssText = `
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
-  `;
-  const title = document.createElement('span');
-  title.textContent = 'Độ lệch';
-  title.style.cssText = 'font-size: 12px; font-weight: 600; color: var(--color-text);';
-  const closeBtn = document.createElement('button');
-  closeBtn.setAttribute('type', 'button');
-  closeBtn.setAttribute('data-testid', 'offset-panel-close');
-  closeBtn.setAttribute('aria-label', 'Đóng');
-  closeBtn.style.cssText = `
-    width: 18px; height: 18px;
-    border: none; background: transparent;
-    color: var(--color-text-muted, #94a3b8);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
     cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
     border-radius: var(--radius-sm, 6px);
-    transition: background 150ms ease, color 150ms ease, transform 80ms ease;
+    user-select: none;
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    transition: background 150ms ease;
   `;
-  closeBtn.innerHTML = CLOSE_SVG;
-  closeBtn.addEventListener('click', () => { panel.style.display = 'none'; });
-  closeBtn.addEventListener('mouseenter', () => {
-    closeBtn.style.background = 'var(--color-surface-hover, #f1f5f9)';
-    closeBtn.style.color = 'var(--color-text)';
-  });
-  closeBtn.addEventListener('mouseleave', () => {
-    closeBtn.style.background = 'transparent';
-    closeBtn.style.color = 'var(--color-text-muted, #94a3b8)';
-  });
-  header.appendChild(title);
-  header.appendChild(closeBtn);
-  panel.appendChild(header);
+
+  const chevron = document.createElement('span');
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.innerHTML = CHEVRON_SVG;
+  chevron.style.cssText = 'display: inline-flex; color: var(--color-text-muted); transition: transform 150ms ease;';
+  header.appendChild(chevron);
+
+  const labelEl = document.createElement('span');
+  labelEl.textContent = 'OFFSET';
+  labelEl.style.cssText = `
+    font-size: var(--font-size-xs, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex: 1;
+    color: var(--color-text-muted);
+  `;
+  header.appendChild(labelEl);
+
+  // Value display in header (compact, right-aligned)
+  const valueSpan = document.createElement('span');
+  valueSpan.setAttribute('data-testid', 'offset-value');
+  valueSpan.style.cssText = 'font-size: var(--font-size-xs, 12px); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--color-text-muted);';
+  header.appendChild(valueSpan);
+
+  section.appendChild(header);
 
   // === Body ===
   const body = document.createElement('div');
-  body.style.cssText = 'padding: 8px 12px 12px;';
-  panel.appendChild(body);
-
-  // --- Value row ---
-  const valueRow = document.createElement('div');
-  valueRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 4px 0 8px;';
-  const valueSpan = document.createElement('span');
-  valueSpan.setAttribute('data-testid', 'offset-value');
-  valueSpan.style.cssText = 'font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1;';
-  const valueUnit = document.createElement('span');
-  valueUnit.style.cssText = 'font-size: 11px; font-weight: 400; color: var(--color-text-muted, #94a3b8); margin-left: 2px;';
-  valueSpan.appendChild(valueUnit);
-  const resetBtn = document.createElement('button');
-  resetBtn.setAttribute('type', 'button');
-  resetBtn.setAttribute('data-testid', 'offset-reset');
-  resetBtn.setAttribute('aria-label', 'Đặt lại');
-  resetBtn.style.cssText = `
-    width: 26px; height: 26px;
-    border: 1px solid var(--color-border, #e2e8f0);
-    border-radius: var(--radius-sm, 6px);
-    background: var(--color-surface, #f8fafc);
-    color: var(--color-text-secondary, #475569);
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 150ms ease, color 150ms ease, transform 80ms ease;
-  `;
-  resetBtn.innerHTML = RESET_SVG;
-  resetBtn.addEventListener('click', () => handlers.onReset());
-  resetBtn.addEventListener('mouseenter', () => {
-    resetBtn.style.background = 'var(--color-error-subtle, rgba(239,68,68,0.08))';
-    resetBtn.style.color = 'var(--color-error, #ef4444)';
-    resetBtn.style.borderColor = 'var(--color-error, #ef4444)';
-  });
-  resetBtn.addEventListener('mouseleave', () => {
-    resetBtn.style.background = 'var(--color-surface, #f8fafc)';
-    resetBtn.style.color = 'var(--color-text-secondary, #475569)';
-    resetBtn.style.borderColor = 'var(--color-border, #e2e8f0)';
-  });
-  valueRow.appendChild(valueSpan);
-  valueRow.appendChild(resetBtn);
-  body.appendChild(valueRow);
+  body.setAttribute('data-testid', 'offset-section-body');
+  body.style.cssText = 'padding: 0 var(--spacing-xs, 4px) var(--spacing-xs, 4px); display: block;';
+  section.appendChild(body);
 
   // --- Stepper ---
   const stepper = document.createElement('div');
@@ -235,6 +198,49 @@ export function createOffsetPanel(
   inputRow.appendChild(applyBtn);
   body.appendChild(inputRow);
 
+  // --- Reset button (full-width, below input row) ---
+  const resetBtn = document.createElement('button');
+  resetBtn.setAttribute('type', 'button');
+  resetBtn.setAttribute('data-testid', 'offset-reset');
+  resetBtn.setAttribute('aria-label', 'Đặt lại');
+  resetBtn.style.cssText = `
+    width: 100%;
+    padding: 6px 8px;
+    margin-top: 6px;
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--color-surface, #f8fafc);
+    color: var(--color-text-secondary, #475569);
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    font-family: var(--font-family, sans-serif);
+    font-size: 11px; font-weight: 500;
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  `;
+  const resetIcon = document.createElement('span');
+  resetIcon.innerHTML = RESET_SVG;
+  resetIcon.style.cssText = 'display: inline-flex;';
+  resetBtn.appendChild(resetIcon);
+  const resetLabel = document.createElement('span');
+  resetLabel.textContent = 'Đặt lại';
+  resetBtn.appendChild(resetLabel);
+  resetBtn.addEventListener('click', () => handlers.onReset());
+  resetBtn.addEventListener('mouseenter', () => {
+    if (!resetBtn.disabled) {
+      resetBtn.style.background = 'var(--color-error-subtle, rgba(239,68,68,0.08))';
+      resetBtn.style.color = 'var(--color-error, #ef4444)';
+      resetBtn.style.borderColor = 'var(--color-error, #ef4444)';
+    }
+  });
+  resetBtn.addEventListener('mouseleave', () => {
+    if (!resetBtn.disabled) {
+      resetBtn.style.background = 'var(--color-surface, #f8fafc)';
+      resetBtn.style.color = 'var(--color-text-secondary, #475569)';
+      resetBtn.style.borderColor = 'var(--color-border, #e2e8f0)';
+    }
+  });
+  body.appendChild(resetBtn);
+
   // --- Disabled hint (hidden by default) ---
   const disabledHint = document.createElement('div');
   disabledHint.setAttribute('data-testid', 'offset-disabled-hint');
@@ -242,21 +248,31 @@ export function createOffsetPanel(
   disabledHint.style.cssText = 'padding: 8px 0 0; text-align: center; color: var(--color-text-muted, #94a3b8); font-size: 11px; display: none;';
   body.appendChild(disabledHint);
 
+  // === Collapse toggle (mimic createSection headerClick) ===
+  let expanded = true;
+  header.addEventListener('click', () => {
+    expanded = !expanded;
+    body.style.display = expanded ? 'block' : 'none';
+    header.setAttribute('aria-expanded', String(expanded));
+    chevron.style.transform = expanded ? 'rotate(0deg)' : 'rotate(-90deg)';
+  });
+  header.addEventListener('mouseenter', () => {
+    header.style.background = 'var(--color-surface-hover)';
+  });
+  header.addEventListener('mouseleave', () => {
+    header.style.background = 'transparent';
+  });
+
   // === Update logic ===
   const allControls = [resetBtn, ...stepBtns, input, applyBtn];
 
   function update(state: OffsetState, hasSubtitle: boolean): void {
-    // Value display
+    // Value display in header (compact: +0.5s / -2s / 0s)
     const display = formatOffsetDisplay(state.valueMs);
-    valueSpan.firstChild ? (valueSpan.firstChild as Text).remove() : null;
-    // Reset span content: clear then rebuild
-    valueSpan.textContent = '';
     const numText = typeof display === 'string' ? display.replace(/s$/, '') : String(display);
     const sign = state.valueMs > 0 ? '+' : state.valueMs < 0 ? '−' : '';
     const absText = state.valueMs === 0 ? '0' : numText.replace(/^[+\-]/, '');
-    valueSpan.textContent = `${sign}${absText}`;
-    valueUnit.textContent = 's';
-    valueSpan.appendChild(valueUnit);
+    valueSpan.textContent = `${sign}${absText}s`;
 
     // Value color
     if (state.valueMs === 0) {
@@ -271,12 +287,15 @@ export function createOffsetPanel(
     if (state.mode === 'lazy') {
       resetBtn.setAttribute('aria-label', 'Hủy xem thử');
       resetBtn.setAttribute('title', 'Hủy xem thử');
+      resetLabel.textContent = 'Hủy xem thử';
     } else if (state.valueMs !== 0) {
       resetBtn.setAttribute('aria-label', 'Đặt lại về 0');
       resetBtn.setAttribute('title', 'Đặt lại về 0');
+      resetLabel.textContent = 'Đặt lại về 0';
     } else {
       resetBtn.setAttribute('aria-label', 'Đặt lại');
       resetBtn.removeAttribute('title');
+      resetLabel.textContent = 'Đặt lại';
     }
 
     // Disabled state
@@ -314,8 +333,8 @@ export function createOffsetPanel(
   // === Destroy ===
   function destroy(): void {
     if (flashTimer) clearTimeout(flashTimer);
-    panel.remove();
+    section.remove();
   }
 
-  return { panel, update, flashSaved, destroy };
+  return { section, header, body, update, flashSaved, destroy };
 }

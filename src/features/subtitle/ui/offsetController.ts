@@ -6,7 +6,7 @@
 // Lazy semantics (revised 2026-07-04, drop C2): lazy = apply all ngay (chưa persist).
 // 2 phút wall-clock không action → auto-commit + persist. Reset = value=0 (lazy, timer reset).
 
-import { createOffsetPanel, type OffsetPanelApi, type OffsetPanelHandlers } from './subtitleOffsetPanel';
+import { createOffsetSection, type OffsetSectionApi, type OffsetPanelHandlers } from './subtitleOffsetPanel';
 import { createOffsetBadge, type OffsetBadgeApi } from './subtitleOffsetBadge';
 import {
   INITIAL_OFFSET_STATE,
@@ -39,10 +39,11 @@ export interface OffsetSettingsSnapshot {
  */
 export class OffsetController {
   private state: OffsetState = INITIAL_OFFSET_STATE;
-  private panel: OffsetPanelApi | null = null;
+  private section: OffsetSectionApi | null = null;
   private badge: OffsetBadgeApi | null = null;
   private hasSubtitle = false;
   private readonly url: string;
+  private readonly managerPanel: HTMLElement | null;
 
   // Stored listeners (for destroy cleanup)
   private timeupdateHandler: ((e: Event) => void) | null = null;
@@ -53,8 +54,11 @@ export class OffsetController {
     private readonly container: HTMLElement,
     url: string,
     initialSnapshot?: OffsetSettingsSnapshot,
+    /** Manager panel element — offset section appended here. null = defer init until set. */
+    managerPanel?: HTMLElement | null,
   ) {
     this.url = url;
+    this.managerPanel = managerPanel ?? null;
     // Load persisted offset for this URL → mode=committed (no lazy on reload)
     const persisted = initialSnapshot?.subtitleOffset?.[url];
     if (typeof persisted === 'number' && persisted !== 0) {
@@ -66,9 +70,10 @@ export class OffsetController {
     }
   }
 
-  /** Build panel + badge + wire listeners. Idempotent (no-op if already init). */
+  /** Build section + badge + wire listeners. Idempotent (no-op if already init). */
   init(): void {
-    if (this.panel) return;
+    if (this.section) return;
+    if (!this.managerPanel) return; // defer until manager panel available
 
     const handlers: OffsetPanelHandlers = {
       onStep: (deltaMs) => this.handleStep(deltaMs),
@@ -77,11 +82,11 @@ export class OffsetController {
       onApply: () => this.handleApply(),
     };
 
-    this.panel = createOffsetPanel(this.container, handlers);
+    this.section = createOffsetSection(this.managerPanel, handlers);
     this.badge = createOffsetBadge(this.container, () => this.handleReset());
 
     // Initial render
-    this.panel.update(this.state, this.hasSubtitle);
+    this.section.update(this.state, this.hasSubtitle);
     if (this.state.mode === 'lazy' && this.state.lastActionAt > 0) {
       this.badge.show(this.state.lastActionAt);
     }
@@ -103,7 +108,7 @@ export class OffsetController {
     this.hasSubtitle = hasSubtitle;
     if (hasSubtitle && !wasLoaded) {
       // Subtitles just loaded — keep persisted offset (if any), don't reset
-      this.panel?.update(this.state, this.hasSubtitle);
+      this.section?.update(this.state, this.hasSubtitle);
     } else if (!hasSubtitle && wasLoaded) {
       // Subtitles unloaded → reset offset + cancel lazy (R5: load sub mới = baseline mới)
       this.resetState();
@@ -135,9 +140,9 @@ export class OffsetController {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
       this.visibilityHandler = null;
     }
-    this.panel?.destroy();
+    this.section?.destroy();
     this.badge?.destroy();
-    this.panel = null;
+    this.section = null;
     this.badge = null;
   }
 
@@ -158,7 +163,7 @@ export class OffsetController {
       // Already lazy → just reset timer display
       this.badge?.show(this.state.lastActionAt);
     }
-    this.panel?.update(this.state, this.hasSubtitle);
+    this.section?.update(this.state, this.hasSubtitle);
   }
 
   /** Step button: accumulate delta, enter lazy, reset timer. */
@@ -192,7 +197,7 @@ export class OffsetController {
       lastActionAt: Date.now(),
     };
     this.badge?.show(this.state.lastActionAt);
-    this.panel?.update(this.state, this.hasSubtitle);
+    this.section?.update(this.state, this.hasSubtitle);
   }
 
   /** Apply: commit + persist + flash. */
@@ -209,8 +214,8 @@ export class OffsetController {
       lastActionAt: 0,
     };
     this.badge?.hide();
-    this.panel?.update(this.state, this.hasSubtitle);
-    this.panel?.flashSaved();
+    this.section?.update(this.state, this.hasSubtitle);
+    this.section?.flashSaved();
     void this.persist();
   }
 
@@ -218,7 +223,7 @@ export class OffsetController {
   private resetState(): void {
     this.state = INITIAL_OFFSET_STATE;
     this.badge?.hide();
-    this.panel?.update(this.state, this.hasSubtitle);
+    this.section?.update(this.state, this.hasSubtitle);
   }
 
   /** Check wall-clock auto-commit: lazy + > 2 phút không action → commit. */

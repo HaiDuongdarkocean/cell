@@ -132,8 +132,17 @@ export function init(video: HTMLVideoElement): () => void {
     );
     navCluster.init();
 
-    // ADR-019: init offset controller — load settings snapshot (for persisted offset per-URL).
-    // Wire offset provider vào SubtitleOverlayController (lazy read — offsetController có thể null briefly).
+    // ADR-015 UI v4: create manager panel after controller init so we can reuse
+    // the import button created by the controller (single toolbar, no duplicate buttons).
+    // Legacy target/native dropdowns are removed; the manager panel handles selection
+    // for both auto-detected and imported subtitles via a unified onSelect handler.
+    managerPanel = createSubtitleManagerPanel(container, controller.importButton!, {
+      onSelect: (role, index) => { void onManagerSelect(role, index); },
+    });
+
+    // ADR-019: init offset controller — offset section nested trong manager panel.
+    // Load settings snapshot (for persisted offset per-URL).
+    // Wire offset provider vào SubtitleOverlayController (lazy read).
     let offsetSnapshot: { subtitleOffset?: Record<string, number> } = {};
     try {
       const settings = await loadSettings();
@@ -146,18 +155,11 @@ export function init(video: HTMLVideoElement): () => void {
       container,
       window.location.href,
       offsetSnapshot,
+      managerPanel.panel,
     );
     offsetController.init();
     // Wire offset provider vào overlay (so findCurrentLine nhận offsetMs)
     controller.setOffsetProvider(() => offsetController?.getOffsetMs() ?? 0);
-
-    // ADR-015 UI v4: create manager panel after controller init so we can reuse
-    // the import button created by the controller (single toolbar, no duplicate buttons).
-    // Legacy target/native dropdowns are removed; the manager panel handles selection
-    // for both auto-detected and imported subtitles via a unified onSelect handler.
-    managerPanel = createSubtitleManagerPanel(container, controller.importButton!, {
-      onSelect: (role, index) => { void onManagerSelect(role, index); },
-    });
 
     // Wire file picker (import button) → processImportedFiles. Must run AFTER
     // managerPanel creation because the import button is created inside the

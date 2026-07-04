@@ -21,6 +21,7 @@ const chromeMock = {
 describe('OffsetController', () => {
   let video: HTMLVideoElement;
   let container: HTMLDivElement;
+  let managerPanel: HTMLDivElement;
   const url = 'https://example.com/video?id=abc';
 
   beforeEach(() => {
@@ -29,6 +30,9 @@ describe('OffsetController', () => {
     chromeMock.storage.local.set.mockClear();
     video = document.createElement('video');
     container = document.createElement('div');
+    managerPanel = document.createElement('div');
+    managerPanel.setAttribute('data-testid', 'subtitle-manager-panel');
+    container.appendChild(managerPanel);
     document.body.appendChild(container);
     // Mock Date.now
     jest.spyOn(Date, 'now').mockReturnValue(1000000);
@@ -40,20 +44,28 @@ describe('OffsetController', () => {
   });
 
   describe('init', () => {
-    it('creates panel + badge, hidden by default', () => {
-      const ctrl = new OffsetController(video, container, url);
+    it('creates section (nested trong manager panel) + badge (floating)', () => {
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
-      const panel = container.querySelector('[data-testid="offset-panel"]');
+      const section = managerPanel.querySelector('[data-testid="offset-section"]');
       const badge = container.querySelector('[data-testid="offset-lazy-badge"]');
-      expect(panel).not.toBeNull();
+      expect(section).not.toBeNull();
       expect(badge).not.toBeNull();
       expect((badge as HTMLElement).style.display).toBe('none');
       ctrl.destroy();
     });
 
+    it('defers init when managerPanel null (no-op)', () => {
+      const ctrl = new OffsetController(video, container, url, undefined, null);
+      ctrl.init();
+      // Section not created
+      expect(managerPanel.querySelector('[data-testid="offset-section"]')).toBeNull();
+      ctrl.destroy();
+    });
+
     it('loads persisted offset on init (mode=committed, no lazy)', () => {
       const snapshot = { subtitleOffset: { [url]: 700 } };
-      const ctrl = new OffsetController(video, container, url, snapshot);
+      const ctrl = new OffsetController(video, container, url, snapshot, managerPanel);
       ctrl.init();
       expect(ctrl.getOffsetMs()).toBe(700);
       // Badge should NOT show (committed mode)
@@ -64,7 +76,7 @@ describe('OffsetController', () => {
 
     it('clamps persisted offset to ±60s', () => {
       const snapshot = { subtitleOffset: { [url]: 999999 } };
-      const ctrl = new OffsetController(video, container, url, snapshot);
+      const ctrl = new OffsetController(video, container, url, snapshot, managerPanel);
       ctrl.init();
       expect(ctrl.getOffsetMs()).toBe(60000); // clamped to max
       ctrl.destroy();
@@ -72,7 +84,7 @@ describe('OffsetController', () => {
 
     it('ignores persisted offset of 0 (no key stored)', () => {
       const snapshot = { subtitleOffset: { [url]: 0 } };
-      const ctrl = new OffsetController(video, container, url, snapshot);
+      const ctrl = new OffsetController(video, container, url, snapshot, managerPanel);
       ctrl.init();
       expect(ctrl.getOffsetMs()).toBe(0);
       ctrl.destroy();
@@ -80,24 +92,24 @@ describe('OffsetController', () => {
   });
 
   describe('loadCues', () => {
-    it('loadCues(true) sets hasSubtitle, panel updates', () => {
-      const ctrl = new OffsetController(video, container, url);
+    it('loadCues(true) sets hasSubtitle, section updates', () => {
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      // Panel should reflect hasSubtitle=true (controls enabled)
-      const reset = container.querySelector('[data-testid="offset-reset"]') as HTMLButtonElement;
+      // Section should reflect hasSubtitle=true (controls enabled)
+      const reset = managerPanel.querySelector('[data-testid="offset-reset"]') as HTMLButtonElement;
       expect(reset.disabled).toBe(false);
       ctrl.destroy();
     });
 
     it('loadCues(false) after true resets offset to 0', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
       // Simulate step +500
       ctrl.loadCues(true); // no-op (already loaded)
-      // Step via panel click
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      // Step via section click
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       const plusBtn = stepper.querySelectorAll('button')[2] as HTMLButtonElement; // +0.5s
       plusBtn.click();
       expect(ctrl.getOffsetMs()).toBe(500);
@@ -110,10 +122,10 @@ describe('OffsetController', () => {
 
   describe('handleStep (accumulate)', () => {
     it('step +500 then +2000 → 2500', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       const btns = stepper.querySelectorAll('button');
       (btns[2] as HTMLButtonElement).click(); // +0.5s
       (btns[3] as HTMLButtonElement).click(); // +2s
@@ -122,10 +134,10 @@ describe('OffsetController', () => {
     });
 
     it('step -500 then -2000 → -2500', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       const btns = stepper.querySelectorAll('button');
       (btns[1] as HTMLButtonElement).click(); // -0.5s
       (btns[0] as HTMLButtonElement).click(); // -2s
@@ -134,10 +146,10 @@ describe('OffsetController', () => {
     });
 
     it('step enters lazy mode + shows badge', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       const plusBtn = stepper.querySelectorAll('button')[2] as HTMLButtonElement;
       plusBtn.click();
       const badge = container.querySelector('[data-testid="offset-lazy-badge"]') as HTMLElement;
@@ -146,10 +158,10 @@ describe('OffsetController', () => {
     });
 
     it('step does nothing when no subtitle loaded', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       // Don't loadCues — hasSubtitle=false
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       const plusBtn = stepper.querySelectorAll('button')[2] as HTMLButtonElement;
       plusBtn.click();
       expect(ctrl.getOffsetMs()).toBe(0);
@@ -157,10 +169,10 @@ describe('OffsetController', () => {
     });
 
     it('step clamps to ±60s', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       const btns = stepper.querySelectorAll('button');
       // Click +2s 31 times → 62s → clamp to 60s
       for (let i = 0; i < 31; i++) {
@@ -173,14 +185,14 @@ describe('OffsetController', () => {
 
   describe('handleReset', () => {
     it('reset sets value=0, stays lazy, timer reset', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       (stepper.querySelectorAll('button')[2] as HTMLButtonElement).click(); // +0.5s
       expect(ctrl.getOffsetMs()).toBe(500);
       // Reset
-      const reset = container.querySelector('[data-testid="offset-reset"]') as HTMLButtonElement;
+      const reset = managerPanel.querySelector('[data-testid="offset-reset"]') as HTMLButtonElement;
       reset.click();
       expect(ctrl.getOffsetMs()).toBe(0);
       // Badge still visible (lazy mode)
@@ -192,13 +204,13 @@ describe('OffsetController', () => {
 
   describe('handleApply (commit + persist)', () => {
     it('apply commits + persists to settingsStore', async () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       (stepper.querySelectorAll('button')[2] as HTMLButtonElement).click(); // +0.5s
       // Apply
-      const apply = container.querySelector('[data-testid="offset-apply"]') as HTMLButtonElement;
+      const apply = managerPanel.querySelector('[data-testid="offset-apply"]') as HTMLButtonElement;
       apply.click();
       // Wait for persist (async)
       await new Promise((r) => setTimeout(r, 50));
@@ -216,13 +228,13 @@ describe('OffsetController', () => {
       // Pre-populate storage with offset
       storage.settings = { subtitleOffset: { [url]: 500 }, schemaVersion: 3 };
       const snapshot = { subtitleOffset: { [url]: 500 } };
-      const ctrl = new OffsetController(video, container, url, snapshot);
+      const ctrl = new OffsetController(video, container, url, snapshot, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
       // Reset to 0 then apply
-      const reset = container.querySelector('[data-testid="offset-reset"]') as HTMLButtonElement;
+      const reset = managerPanel.querySelector('[data-testid="offset-reset"]') as HTMLButtonElement;
       reset.click();
-      const apply = container.querySelector('[data-testid="offset-apply"]') as HTMLButtonElement;
+      const apply = managerPanel.querySelector('[data-testid="offset-apply"]') as HTMLButtonElement;
       apply.click();
       await new Promise((r) => setTimeout(r, 50));
       const stored = storage.settings as { subtitleOffset: Record<string, number> };
@@ -231,12 +243,12 @@ describe('OffsetController', () => {
     });
 
     it('apply flashes "✓ Đã lưu" on button', async () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       (stepper.querySelectorAll('button')[2] as HTMLButtonElement).click();
-      const apply = container.querySelector('[data-testid="offset-apply"]') as HTMLButtonElement;
+      const apply = managerPanel.querySelector('[data-testid="offset-apply"]') as HTMLButtonElement;
       apply.click();
       // Flash should change text
       expect(apply.textContent).toContain('Đã lưu');
@@ -246,7 +258,7 @@ describe('OffsetController', () => {
 
   describe('auto-commit (wall-clock)', () => {
     it('does not auto-commit when mode=committed', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
       // Advance time beyond 2 phút
@@ -258,10 +270,10 @@ describe('OffsetController', () => {
     });
 
     it('auto-commits when lazy + > 2 phút since last action (timeupdate)', async () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       (stepper.querySelectorAll('button')[2] as HTMLButtonElement).click(); // +0.5s, lazy
       expect(ctrl.getOffsetMs()).toBe(500);
       // Advance time beyond 2 phút
@@ -279,10 +291,10 @@ describe('OffsetController', () => {
     });
 
     it('auto-commits on visibilitychange (tab visible lại after 2 phút)', async () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       (stepper.querySelectorAll('button')[2] as HTMLButtonElement).click(); // +0.5s, lazy
       // Simulate tab sleep 2 phút
       jest.spyOn(Date, 'now').mockReturnValue(1000000 + AUTO_COMMIT_MS + 500);
@@ -299,10 +311,10 @@ describe('OffsetController', () => {
     });
 
     it('does NOT auto-commit when lazy but < 2 phút (timer still running)', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       (stepper.querySelectorAll('button')[2] as HTMLButtonElement).click();
       // Advance only 90s
       jest.spyOn(Date, 'now').mockReturnValue(1000000 + 90000);
@@ -315,10 +327,10 @@ describe('OffsetController', () => {
     });
 
     it('each action resets timer (90s + 90s + 30s = no commit)', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       (stepper.querySelectorAll('button')[2] as HTMLButtonElement).click(); // t=0
       // 90s later, click again → timer reset
       jest.spyOn(Date, 'now').mockReturnValue(1000000 + 90000);
@@ -333,28 +345,28 @@ describe('OffsetController', () => {
   });
 
   describe('destroy', () => {
-    it('removes panel + badge from DOM', () => {
-      const ctrl = new OffsetController(video, container, url);
+    it('removes section + badge from DOM', () => {
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
-      expect(container.querySelector('[data-testid="offset-panel"]')).not.toBeNull();
+      expect(managerPanel.querySelector('[data-testid="offset-section"]')).not.toBeNull();
       expect(container.querySelector('[data-testid="offset-lazy-badge"]')).not.toBeNull();
       ctrl.destroy();
-      expect(container.querySelector('[data-testid="offset-panel"]')).toBeNull();
+      expect(managerPanel.querySelector('[data-testid="offset-section"]')).toBeNull();
       expect(container.querySelector('[data-testid="offset-lazy-badge"]')).toBeNull();
     });
 
     it('safe to call twice', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.destroy();
       expect(() => ctrl.destroy()).not.toThrow();
     });
 
     it('removes timeupdate + visibilitychange listeners', () => {
-      const ctrl = new OffsetController(video, container, url);
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
       ctrl.init();
       ctrl.loadCues(true);
-      const stepper = container.querySelector('[data-testid="offset-stepper"]')!;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
       (stepper.querySelectorAll('button')[2] as HTMLButtonElement).click();
       ctrl.destroy();
       // Advance time + trigger events → no commit (listeners removed)
