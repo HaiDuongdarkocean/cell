@@ -39,6 +39,7 @@ docs/           # Tài liệu dự án
 │   └── intent-subtitle-navigation-control.md # Subtitle navigation control cluster (floating prev/repeat/next + seek 5s/10s + drag handle ⋯ + collapse half-circle, touch+mouse)
 │   └── intent-settings-controls-restyle.md # Settings controls restyle (vỏ→ruột: Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
 │   └── intent-settings-dialog-rearrange.md # Settings dialog rearrange (UI/UX: pair fields, fix Nav Cluster missing position, indent child, dividers)
+│   └── intent-youtube-subtitle-detection.md # YouTube subtitle detection (proactive parse ytInitialPlayerResponse, include ASR, site adapter pattern, subtitle only)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
