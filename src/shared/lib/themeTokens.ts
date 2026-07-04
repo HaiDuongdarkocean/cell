@@ -17,6 +17,7 @@
 
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import { NAV_CLUSTER_CSS } from '@/features/subtitle/ui/navClusterCss';
 
 // Token definitions — mirrors src/entrypoints/popup/styles/theme.css (keep in sync).
@@ -139,16 +140,19 @@ ${NAV_CLUSTER_CSS}
     document.head.appendChild(style);
   }
 
-  // Set initial theme from storage
   const applyTheme = (theme: 'light' | 'dark'): void => {
     container.setAttribute('data-theme', theme);
   };
 
+  // Apply default synchronously so panel/toast/cluster are themed before
+  // async storage finishes loading. This prevents a light-mode flash when
+  // the persisted theme is dark (the current default).
+  applyTheme(DEFAULT_SETTINGS.theme);
+
   loadSettings().then((settings) => {
-    applyTheme(settings.theme ?? 'light');
-  }).catch(() => {
-    applyTheme('light');
+    applyTheme(settings.theme ?? DEFAULT_SETTINGS.theme);
   });
+  // On error keep the default theme; do not fall back to light.
 
   // Listen for theme changes (realtime)
   const onChanged = (changes: { [key: string]: chrome.storage.StorageChange }, area: string): void => {

@@ -56,12 +56,13 @@ describe('injectThemeTokens (ADR-015 T12)', () => {
     expect(styles.length).toBe(1);
   });
 
-  it('sets data-theme="light" by default when no settings', async () => {
+  it('sets data-theme="dark" by default synchronously and after load', async () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
+    expect(container.getAttribute('data-theme')).toBe('dark');
     await flushMicrotasks();
-    expect(container.getAttribute('data-theme')).toBe('light');
+    expect(container.getAttribute('data-theme')).toBe('dark');
   });
 
   it('sets data-theme="dark" when settings.theme = dark', async () => {
@@ -78,8 +79,13 @@ describe('injectThemeTokens (ADR-015 T12)', () => {
     document.body.appendChild(container);
     injectThemeTokens(container);
     await flushMicrotasks();
+    expect(container.getAttribute('data-theme')).toBe('dark');
+    // Simulate storage change to light
+    for (const listener of storageListeners) {
+      listener({ settings: { newValue: { theme: 'light' } } }, 'local');
+    }
     expect(container.getAttribute('data-theme')).toBe('light');
-    // Simulate storage change
+    // Simulate storage change back to dark
     for (const listener of storageListeners) {
       listener({ settings: { newValue: { theme: 'dark' } } }, 'local');
     }
