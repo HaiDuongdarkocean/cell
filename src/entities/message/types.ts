@@ -437,6 +437,7 @@ export interface InnertubeFallbackPayload {
   readonly tabId?: number; // background resolves from sender.tab.id
   readonly videoId: string;
   readonly apiKey: string;
+  readonly visitorData?: string; // from ytcfg INNERTUBE_CONTEXT.client.visitorData
 }
 
 // === Typed Message Helpers ===

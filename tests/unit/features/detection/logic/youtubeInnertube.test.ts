@@ -35,10 +35,17 @@ describe('extractClientVersion', () => {
 });
 
 describe('buildInnerTubeContext', () => {
-  it('builds a WEB client context', () => {
-    const ctx = buildInnerTubeContext('2.20240705.01.00');
-    expect(ctx.clientName).toBe('WEB');
-    expect(ctx.clientVersion).toBe('2.20240705.01.00');
+  it('builds an ANDROID client context', () => {
+    const ctx = buildInnerTubeContext('20.10.38');
+    expect(ctx.clientName).toBe('ANDROID');
+    expect(ctx.clientVersion).toBe('20.10.38');
+  });
+
+  it('builds an ANDROID client context with visitorData', () => {
+    const ctx = buildInnerTubeContext('20.10.38', 'visitor-123');
+    expect(ctx.clientName).toBe('ANDROID');
+    expect(ctx.clientVersion).toBe('20.10.38');
+    expect(ctx.visitorData).toBe('visitor-123');
   });
 });
 
@@ -117,7 +124,7 @@ describe('fetchCaptionTracksViaInnerTube', () => {
     warnSpy.mockRestore();
   });
 
-  it('sends a POST with WEB client context and the API key in the URL', async () => {
+  it('sends a POST with ANDROID client context and the API key in the URL', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -125,15 +132,32 @@ describe('fetchCaptionTracksViaInnerTube', () => {
     } as Response);
     global.fetch = fetchMock;
 
-    await fetchCaptionTracksViaInnerTube('vid', 'apikey', '2.0.0');
+    await fetchCaptionTracksViaInnerTube('vid', 'apikey', 'visitor-data-123');
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('key=apikey');
     expect(init?.method).toBe('POST');
     const body = JSON.parse(init?.body as string);
-    expect(body.context.client.clientName).toBe('WEB');
-    expect(body.context.client.clientVersion).toBe('2.0.0');
+    expect(body.context.client.clientName).toBe('ANDROID');
+    expect(body.context.client.clientVersion).toBe('20.10.38');
+    expect(body.context.client.visitorData).toBe('visitor-data-123');
     expect(body.videoId).toBe('vid');
+  });
+
+  it('sends ANDROID client context without visitorData when not provided', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as Response);
+    global.fetch = fetchMock;
+
+    await fetchCaptionTracksViaInnerTube('vid', 'apikey');
+
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(init?.body as string);
+    expect(body.context.client.clientName).toBe('ANDROID');
+    expect(body.context.client.visitorData).toBeUndefined();
   });
 });

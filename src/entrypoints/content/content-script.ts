@@ -49,35 +49,48 @@ window.addEventListener('message', (event) => {
         tabId: undefined,
         videoId: (data as { videoId?: string }).videoId ?? '',
         apiKey: (data as { apiKey?: string }).apiKey ?? '',
+        visitorData: (data as { visitorData?: string }).visitorData,
       },
     });
   }
 });
 
-// Scan on page load — gửi không tabId, background resolve từ sender
-const urls = scanner.scan();
-if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
-  void sendMessage({
-    type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
-    payload: {
-      tabId: undefined,
-      videoUrls: urls.videoUrls,
-      subtitleUrls: urls.subtitleUrls
-    },
+// Scan on page load — defer to DOMContentLoaded because content-script now
+// runs at document_start (ADR-020: listener must register before MAIN world
+// posts `__YT_DETECTED_SUBTITLES` after InnerTube fetch ~3-4s after start).
+// Page scanning needs DOM ready, but the message listener above registers
+// immediately at document_start (no DOM dependency).
+function runPageScan(): void {
+  const urls = scanner.scan();
+  if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
+    void sendMessage({
+      type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
+      payload: {
+        tabId: undefined,
+        videoUrls: urls.videoUrls,
+        subtitleUrls: urls.subtitleUrls
+      },
+    });
+  }
+
+  // Start observing for dynamically loaded content
+  scanner.startObserving((newUrls) => {
+    void sendMessage({
+      type: 'PAGE_SCAN_RESULT',
+      payload: {
+        tabId: undefined,
+        videoUrls: newUrls.videoUrls,
+        subtitleUrls: newUrls.subtitleUrls
+      },
+    });
   });
 }
 
-// Start observing for dynamically loaded content
-scanner.startObserving((newUrls) => {
-  void sendMessage({
-    type: 'PAGE_SCAN_RESULT',
-    payload: {
-      tabId: undefined,
-      videoUrls: newUrls.videoUrls,
-      subtitleUrls: newUrls.subtitleUrls
-    },
-  });
-});
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => runPageScan());
+} else {
+  runPageScan();
+}
 
 // Find video element and init overlay (defer until DOM ready, observe SPA late mounts)
 // ADR-012: SPA frameworks (Angular on kisskh.co) render <video> in two phases —

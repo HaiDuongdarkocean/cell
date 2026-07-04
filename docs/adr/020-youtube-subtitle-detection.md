@@ -131,35 +131,30 @@ export async function handleDetectedSubtitles(
 
 **Note**: Background không change `detectSubtitle` dispatch (review fix #8). Đây là handler mới, riêng cho `DETECTED_SUBTITLES` message type.
 
-### Contract 5 — InnerTube fallback (background SW fetch, review fix #3)
+### Contract 5 — InnerTube fallback (MAIN world fetch, ANDROID client — revised 2026-07-04)
 
 ```typescript
-// src/features/detection/logic/youtubeInnertube.ts (NEW)
+// src/features/detection/logic/youtubeInnertube.ts (revised)
 
-/** InnerTube fallback: POST /youtubei/v1/player (WEB client, no User-Agent override). */
+/** InnerTube fallback: POST /youtubei/v1/player (ANDROID client — NO PO Token). */
 export async function fetchCaptionTracksViaInnerTube(
   videoId: string,
   apiKey: string,
+  visitorData?: string,
 ): Promise<YouTubeCaptionTrack[]>;
 
 /** Extract INNERTUBE_API_KEY from page HTML (MAIN world, regex). */
 export function extractInnertubeApiKey(html: string): string | null;
 ```
 
-```typescript
-// src/entrypoints/background/handlers/youtubeDetection.ts
+**Browser verify 2026-07-04 (revised)**:
+- WEB client `ytInitialPlayerResponse` tracks ALL have `exp=xpe` (PO Token required, ephemeral). Fetching VTT without PO Token returns empty (200 OK, 0 bytes).
+- ANDROID InnerTube client returns tracks with `exp=null` (NO PO Token). Verified on `YQHsXMglC9A` — VTT fetch returns 18019 bytes WebVTT, 139 cues parsed.
+- ANDROID client works from PAGE context (has YouTube cookies + origin). Background SW fetch returns 403 (no cookies/origin — cross-origin block).
+- ANDROID client works WITHOUT User-Agent override (verified empirically — API accepts browser's default User-Agent).
+- **Architecture change**: InnerTube fetch moved from background SW → MAIN world script (page context has cookies + origin). MAIN world fetches ANDROID client → postMessage `__YT_DETECTED_SUBTITLES` → ISOLATED content-script relays to background → auto-load.
 
-// Handle INNERTUBE_FALLBACK_REQUEST: background SW fetch (no User-Agent restriction)
-async function handleInnerTubeFallback(
-  payload: { videoId: string; apiKey: string; tabId: number },
-): Promise<void> {
-  const tracks = await fetchCaptionTracksViaInnerTube(payload.videoId, payload.apiKey);
-  const subtitles = mapYouTubeCaptionTracks(tracks, payload.tabId);
-  // → existing auto-load flow
-}
-```
-
-**Constraint**: Content script KHÔNG set `User-Agent` (forbidden header — MDN). Background SW `fetch` không có restriction. WEB-client InnerTube (ANDROID client unfeasible).
+**Constraint**: Content script KHÔNG set `User-Agent` (forbidden header — MDN). ANDROID client works without User-Agent override (empirically verified). MAIN world fetch (page context) required — SW fetch 403s (no cookies/origin).
 
 ### Contract 6 — SPA re-detect (`yt-navigate-finish` + videoId dedup, review fix #5)
 
@@ -258,8 +253,8 @@ detectYouTubeSubtitles();
 ### A2: `CustomEvent` MAIN↔ISOLATED bridge
 - **Rejected** (review CRITICAL #2): Contradict `fetchInterceptor.iife.ts` (ADR-011) proven `window.postMessage` pattern. Consistency > personal preference.
 
-### A3: ANDROID client InnerTube
-- **Rejected** (review CRITICAL #3): `User-Agent` is forbidden header (MDN) — content script không set được. Without ANDROID User-Agent → YouTube returns WEB client response (already failed). Background SW route + WEB-client only.
+### A3: ANDROID client InnerTube (revised 2026-07-04)
+- **Accepted** (browser verify 2026-07-04): ANDROID InnerTube client returns tracks WITHOUT PO Token (`exp=null`). Works from PAGE context (MAIN world) — SW fetch 403s (no cookies/origin). ANDROID client works WITHOUT User-Agent override (empirically verified). This is now the PRIMARY detection path — WEB client tracks all require PO Token (ephemeral).
 
 ### A4: ADR-010 `reportEpisodeChangedIfReplacement` for SPA
 - **Rejected** (review HIGH #5): YouTube SPA reuse same `<video>` element (only src changes) → element-identity watcher không fire. `yt-navigate-finish` + videoId dedup là correct signal.

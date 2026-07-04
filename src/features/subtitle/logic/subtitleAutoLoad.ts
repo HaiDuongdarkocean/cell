@@ -30,6 +30,7 @@ import type {
   SubtitleForOverlayResult,
 } from '@/entities/message';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import type { ToastVariant } from '@/features/subtitle/ui/subtitleUI';
 
 /**
  * Decide whether auto-load should trigger.
@@ -87,6 +88,16 @@ export function formatFromUrl(url: string): SubtitleFormat {
   const ext = path.slice(path.lastIndexOf('.')).toLowerCase();
   if (ext === '.vtt') return 'vtt';
   if (ext === '.ass' || ext === '.ssa') return 'ass';
+  // YouTube timedtext URLs have no file extension — detect via `fmt` query
+  // param (fmt=vtt → WebVTT, fmt=srv3/srv → XML, fmt=json3 → JSON3).
+  // ADR-020: YouTube ANDROID client baseUrl uses fmt=srv3; buildVttUrl
+  // rewrites to fmt=vtt for reuse with parseVtt.
+  try {
+    const fmt = new URL(url).searchParams.get('fmt');
+    if (fmt === 'vtt') return 'vtt';
+  } catch {
+    // Not a valid URL — fall through to srt default.
+  }
   return 'srt';
 }
 
@@ -172,7 +183,7 @@ export interface AutoLoadController {
 export interface AutoLoadDeps {
   readonly controller: AutoLoadController;
   readonly onPanelRender?: (targetCues: SrtCue[], nativeCues: SrtCue[]) => void;
-  readonly onToast?: (message: string) => void;
+  readonly onToast?: (message: string, variant?: ToastVariant) => void;
   /** Page URL for resolving relative subtitle URLs (CORS fallback, spec F9). */
   readonly tabUrl?: string;
   /**
@@ -215,28 +226,32 @@ export async function handleAutoLoadSubtitles(
     nativeError: nativeResult && !nativeResult.success ? nativeResult.error : undefined,
   });
 
-  // Toast on fetch/parse failure (spec F8). Never log full URL (ADR-007 D8).
-  if (target && targetResult && !targetResult.success) {
-    deps.onToast?.(`Auto-load target failed: ${targetResult.error ?? 'unknown'}`);
-  }
-  if (native && nativeResult && !nativeResult.success) {
-    deps.onToast?.(`Auto-load native failed: ${nativeResult.error ?? 'unknown'}`);
-  }
-
   const targetCues = targetResult?.success ? targetResult.cues : [];
   const nativeCues = nativeResult?.success ? nativeResult.cues : [];
 
+  // Toast on fetch/parse failure (spec F8). Never log full URL (ADR-007 D8).
+  // Keep technical details in console; user-facing toast is concise and product-oriented.
+  if (target && targetResult && !targetResult.success) {
+    console.error('[handleAutoLoadSubtitles] target failed', targetResult.error);
+    deps.onToast?.('Could not load target subtitle', 'error');
+  }
+  if (native && nativeResult && !nativeResult.success) {
+    console.error('[handleAutoLoadSubtitles] native failed', nativeResult.error);
+    deps.onToast?.('Could not load native subtitle', 'error');
+  }
+
   // Both empty (both failed or both null) → nothing to load.
   if (targetCues.length === 0 && nativeCues.length === 0) {
-    deps.onToast?.('Auto-load: no cues loaded (both empty)');
+    deps.onToast?.('Could not load subtitles', 'error');
     return;
   }
 
-  // Toast success — anh yêu cần nhìn thấy kết quả auto-load để debug.
+  // Toast success — concise, product-oriented message. — anh yêu cần nhìn thấy kết quả auto-load để debug.
   const parts: string[] = [];
-  if (targetCues.length > 0) parts.push(`target ${targetCues.length} cues`);
-  if (nativeCues.length > 0) parts.push(`native ${nativeCues.length} cues`);
-  deps.onToast?.(`Auto-load OK: ${parts.join(' + ')}`);
+  if (targetCues.length > 0) parts.push('target');
+  if (nativeCues.length > 0) parts.push('native');
+  const sideLabel = parts.length > 1 ? 'Subtitles loaded' : 'Subtitle loaded';
+  deps.onToast?.(`${sideLabel} (${parts.join(' + ')})`, 'success');
 
   deps.controller.loadBilingualCues(targetCues, nativeCues);
   deps.onPanelRender?.(targetCues, nativeCues);

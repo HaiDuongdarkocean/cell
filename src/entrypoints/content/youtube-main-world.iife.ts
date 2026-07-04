@@ -1,38 +1,42 @@
 // === YouTube MAIN-world subtitle detector (ADR-020) ===
 // Runs in the PAGE's main world (world: 'MAIN', run_at: 'document_start',
-// matches: *://*.youtube.com/*) to read `window.ytInitialPlayerResponse`
-// — which is NOT accessible from the isolated-world content-script.
+// matches: *://*.youtube.com/*) to fetch caption tracks via the InnerTube
+// ANDROID client — which returns tracks WITHOUT PO Token requirement.
 //
-// Detected caption tracks are forwarded to the isolated-world content-script
-// via `window.postMessage` (main world has no `chrome.runtime` access).
-// The isolated content-script listens and relays `DETECTED_SUBTITLES` to the
-// background, which maps them to `DetectedSubtitle[]` and triggers auto-load.
+// Browser verify (2026-07-04):
+// - YouTube's WEB client `ytInitialPlayerResponse` caption tracks ALL have
+//   `exp=xpe` (PO Token required, ephemeral). Fetching VTT without PO Token
+//   returns empty (200 OK, 0 bytes).
+// - The ANDROID InnerTube client returns tracks with `exp=null` (NO PO Token).
+//   Verified on `YQHsXMglC9A` (Adele - Hello) — VTT fetch returns 18019 bytes.
+// - ANDROID client works from PAGE context (has YouTube cookies + origin).
+//   Background SW fetch returns 403 (no cookies/origin — cross-origin block).
+//   Content scripts cannot set User-Agent (forbidden header), but ANDROID
+//   client works WITHOUT User-Agent override (verified empirically).
+//
+// Architecture: MAIN world fetches InnerTube ANDROID → extracts caption tracks
+// → postMessage `__YT_DETECTED_SUBTITLES` to ISOLATED content-script → relays
+// to background as DETECTED_SUBTITLES → maps to DetectedSubtitle[] → auto-load.
 //
 // ponytail: self-contained IIFE (no imports — consistency with
 // fetchInterceptor.iife.ts ADR-011 precedent). CRXJS emits this as a
 // standalone bundle via the `.iife.ts` suffix.
-// Ceiling: if YouTube renames `ytInitialPlayerResponse`, detection fails
-// silently — the InnerTube fallback (background SW fetch) covers this.
-// Upgrade: also hook `ytplayer.config` or `ytInitialData` for resilience.
+// Ceiling: if YouTube blocks ANDROID client or renames `ytcfg`, detection
+// fails silently. Upgrade: try IOS client as fallback (also returns tracks
+// without PO Token — verified 2026-07-04).
 (() => {
-  // === Inline extractors (mirror youtubeSubtitleDetector.ts — kept in sync) ===
-  function extractCaptionTracks(playerResponse: unknown): unknown[] {
-    if (typeof playerResponse !== 'object' || playerResponse === null) return [];
-    const captions = (playerResponse as Record<string, unknown>).captions;
-    if (typeof captions !== 'object' || captions === null) return [];
-    const renderer = (captions as Record<string, unknown>)
-      .playerCaptionsTracklistRenderer;
-    if (typeof renderer !== 'object' || renderer === null) return [];
-    const tracks = (renderer as Record<string, unknown>).captionTracks;
-    return Array.isArray(tracks) ? tracks : [];
-  }
+  // Marker for injection verification (visible from DevTools evaluate_script).
+  (window as unknown as Record<string, unknown>).__YT_MAIN_WORLD_INJECTED = true;
+
+  const ANDROID_CLIENT_VERSION = '20.10.38';
+  const INNERTUBE_ENDPOINT = 'https://www.youtube.com/youtubei/v1/player';
 
   function extractInnertubeApiKey(html: string): string | null {
     const match = html.match(/"INNERTUBE_API_KEY"\s*:\s*"([^"]+)"/);
     return match?.[1] ?? null;
   }
 
-  function getVideoId(playerResponse: unknown): string | null {
+  function getVideoIdFromPlayerResponse(playerResponse: unknown): string | null {
     if (typeof playerResponse !== 'object' || playerResponse === null) return null;
     const details = (playerResponse as Record<string, unknown>).videoDetails;
     if (typeof details !== 'object' || details === null) return null;
@@ -40,32 +44,100 @@
     return typeof id === 'string' ? id : null;
   }
 
+  function getVideoIdFromUrl(): string | null {
+    try {
+      const url = new URL(location.href);
+      return url.searchParams.get('v');
+    } catch {
+      return null;
+    }
+  }
+
+  /** Extract visitorData from ytcfg INNERTUBE_CONTEXT (MAIN world only). */
+  function getVisitorData(): string | undefined {
+    try {
+      const ytcfg = (window as unknown as { ytcfg?: { get?: (k: string) => unknown } }).ytcfg;
+      if (!ytcfg?.get) return undefined;
+      const ctx = ytcfg.get('INNERTUBE_CONTEXT') as
+        | { client?: { visitorData?: string } }
+        | undefined;
+      return ctx?.client?.visitorData;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Fetch caption tracks via InnerTube ANDROID client (NO PO Token).
+   * MUST run in MAIN world — needs YouTube cookies + origin (SW fetch 403s).
+   */
+  async function fetchCaptionTracksViaInnerTube(
+    videoId: string,
+    apiKey: string,
+    visitorData?: string,
+  ): Promise<unknown[]> {
+    const client: Record<string, unknown> = {
+      clientName: 'ANDROID',
+      clientVersion: ANDROID_CLIENT_VERSION,
+    };
+    if (visitorData) client.visitorData = visitorData;
+    const body = { context: { client }, videoId };
+    const url = `${INNERTUBE_ENDPOINT}?key=${encodeURIComponent(apiKey)}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        console.warn(`[youtube-main-world] InnerTube HTTP ${response.status}`);
+        return [];
+      }
+      const json: unknown = await response.json();
+      if (typeof json !== 'object' || json === null) return [];
+      const captions = (json as Record<string, unknown>).captions;
+      if (typeof captions !== 'object' || captions === null) return [];
+      const renderer = (captions as Record<string, unknown>)
+        .playerCaptionsTracklistRenderer;
+      if (typeof renderer !== 'object' || renderer === null) return [];
+      const tracks = (renderer as Record<string, unknown>).captionTracks;
+      return Array.isArray(tracks) ? tracks : [];
+    } catch (err) {
+      console.warn('[youtube-main-world] InnerTube fetch failed:', err);
+      return [];
+    }
+  }
+
   let lastVideoId: string | null = null;
 
-  function detect(): void {
+  async function detect(): Promise<void> {
     try {
       const playerResponse = (window as unknown as Record<string, unknown>)
         .ytInitialPlayerResponse;
-      const videoId = getVideoId(playerResponse);
+      const videoId =
+        getVideoIdFromPlayerResponse(playerResponse) ?? getVideoIdFromUrl();
       if (!videoId || videoId === lastVideoId) return;
       lastVideoId = videoId;
 
-      const tracks = extractCaptionTracks(playerResponse);
+      const apiKey = extractInnertubeApiKey(document.documentElement.innerHTML);
+      if (!apiKey) {
+        console.warn('[youtube-main-world] no INNERTUBE_API_KEY found');
+        return;
+      }
+      const visitorData = getVisitorData();
+
+      // Fetch via ANDROID client — returns tracks WITHOUT PO Token (exp=null).
+      // WEB client tracks all require PO Token (exp=xpe, ephemeral).
+      const tracks = await fetchCaptionTracksViaInnerTube(videoId, apiKey, visitorData);
+      console.log(`[youtube-main-world] ANDROID InnerTube returned ${tracks.length} tracks`, {
+        videoId,
+        hasVisitorData: !!visitorData,
+      });
+
       if (tracks.length > 0) {
         window.postMessage(
           { type: '__YT_DETECTED_SUBTITLES', tracks, videoId },
-          '*',
-        );
-        return;
-      }
-
-      // No caption tracks in DOM → InnerTube fallback (background SW fetch).
-      // MAIN world cannot fetch with User-Agent override, so it requests the
-      // background to do it (ADR-020 Contract 5).
-      const apiKey = extractInnertubeApiKey(document.documentElement.innerHTML);
-      if (apiKey) {
-        window.postMessage(
-          { type: '__YT_INNERTUBE_FALLBACK', videoId, apiKey },
           '*',
         );
       }
@@ -80,10 +152,11 @@
     const interval = setInterval(() => {
       const playerResponse = (window as unknown as Record<string, unknown>)
         .ytInitialPlayerResponse;
-      const currentVideoId = getVideoId(playerResponse);
+      const currentVideoId =
+        getVideoIdFromPlayerResponse(playerResponse) ?? getVideoIdFromUrl();
       if (currentVideoId && currentVideoId !== lastVideoId) {
         clearInterval(interval);
-        detect();
+        void detect();
       } else if (Date.now() - start > timeoutMs) {
         clearInterval(interval);
       }
@@ -106,6 +179,9 @@
     return result;
   };
 
-  // Initial detection on script load (covers first page load + reinject).
-  detect();
+  // Initial detection: poll until `ytInitialPlayerResponse` is available.
+  // At document_start the global is NOT yet defined (YouTube's script injects
+  // it later) → a direct `detect()` call returns early and never retries.
+  // Poll for up to 5s (covers slow first paint + reinject after SPA nav).
+  pollForVideoIdChange(5000);
 })();

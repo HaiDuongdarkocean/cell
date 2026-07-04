@@ -42,6 +42,26 @@ describe('buildVttUrl', () => {
     expect(url).toContain('pot=token123');
     expect(url).not.toContain('xosf');
   });
+
+  it('strips existing fmt param (ANDROID client uses fmt=srv3)', () => {
+    const url = buildVttUrl(
+      'https://www.youtube.com/api/timedtext?v=abc&fmt=srv3&lang=en',
+    );
+    expect(url).not.toContain('fmt=srv3');
+    expect(url).toContain('fmt=vtt');
+    expect(url).toContain('v=abc');
+    expect(url).toContain('lang=en');
+  });
+
+  it('replaces fmt=srv3 with fmt=vtt preserving all other params', () => {
+    const url = buildVttUrl(
+      'https://www.youtube.com/api/timedtext?v=abc&ei=xyz&fmt=srv3&signature=abc123&lang=en',
+    );
+    expect(url).not.toContain('fmt=srv3');
+    expect(url).toContain('fmt=vtt');
+    expect(url).toContain('signature=abc123');
+    expect(url).toContain('ei=xyz');
+  });
 });
 
 describe('requiresPoToken', () => {

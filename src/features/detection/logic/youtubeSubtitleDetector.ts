@@ -41,7 +41,10 @@ export interface YouTubeCaptionTrack {
 const POT_TOKEN_INDICATORS = /(?:^|[,])xpe(?:$|[,])|(?:^|[,])xpv(?:$|[,])/;
 
 /** yt-dlp #13654: `xosf` param damages subtitles — strip before appending fmt. */
-const XOSF_PARAM = /(^|[?&])xosf=[^&]*/gi;
+const XOSF_PARAM = /[?&]xosf=[^&]*/gi;
+
+/** Existing `fmt` param — strip before appending `fmt=vtt` (ANDROID client uses `fmt=srv3`). */
+const FMT_PARAM = /[?&]fmt=[^&]*/gi;
 
 function generateId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -54,15 +57,19 @@ function generateId(): string {
  * Build the VTT fetch URL from a YouTube caption track `baseUrl`.
  *
  * - Strip `xosf` param (yt-dlp #13654 — damaged subtitles).
- * - Append `&fmt=vtt` so the response is WebVTT (reuse `parseVtt`).
+ * - Strip existing `fmt` param (ANDROID client uses `fmt=srv3` — must replace
+ *   with `fmt=vtt` to get WebVTT for reuse with `parseVtt`).
+ * - Append `&fmt=vtt` so the response is WebVTT.
  * - Preserve all other params (signature, pot token, etc.).
  */
 export function buildVttUrl(baseUrl: string): string {
-  const withoutXosf = baseUrl.replace(XOSF_PARAM, (_m, prefix: string) =>
-    prefix.startsWith('?') || prefix.startsWith('&') ? prefix[0] ?? '' : '',
-  );
-  const joiner = withoutXosf.includes('?') ? '&' : '?';
-  return `${withoutXosf}${joiner}fmt=vtt`;
+  const withoutXosf = baseUrl.replace(XOSF_PARAM, '');
+  const withoutFmt = withoutXosf.replace(FMT_PARAM, '');
+  // Fixup: if `?fmt=...` was stripped and `&` remains at the query start,
+  // restore `?` (e.g. `?fmt=srv3&lang=en` → `&lang=en` → `?lang=en`).
+  const fixedQuery = withoutFmt.replace(/[?]&/, '?').replace(/&$/, '');
+  const joiner = fixedQuery.includes('?') ? '&' : '?';
+  return `${fixedQuery}${joiner}fmt=vtt`;
 }
 
 /**

@@ -93,13 +93,15 @@ export function registerYouTubeDetectionHandlers(ctx: BackgroundContext): void {
         };
       }
 
-      console.log('[bg INNERTUBE_FALLBACK] fetching via InnerTube', {
+      console.log('[bg INNERTUBE_FALLBACK] fetching via InnerTube ANDROID', {
         tabId,
         videoId: payload.videoId,
+        hasVisitorData: !!payload.visitorData,
       });
       const tracks = await fetchCaptionTracksViaInnerTube(
         payload.videoId,
         payload.apiKey,
+        payload.visitorData,
       );
       const subtitles = mapYouTubeCaptionTracks(tracks, tabId);
       if (subtitles.length === 0) {
