@@ -54,6 +54,7 @@ docs/           # Tài liệu dự án
 │   └── spec-subtitle-navigation-control.md # Subtitle navigation control cluster PRD (6-nút 2 cột + drag + collapse + no-sub adaptive + settings)
 │   └── spec-settings-controls-restyle.md
 │   └── spec-settings-dialog-rearrange.md # Settings dialog rearrange spec (pair/indent/divider, fix Nav Cluster position) # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
+│   └── spec-youtube-subtitle-detection.md # YouTube subtitle detection spec (proactive parse ytInitialPlayerResponse, MAIN world, adapter pattern, ASR badge, PO Token skip, InnerTube fallback)
 │   ├── feature-inventory.md           # Feature inventory
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
