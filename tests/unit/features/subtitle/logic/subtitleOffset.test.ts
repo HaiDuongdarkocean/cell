@@ -3,12 +3,9 @@ import {
   clampOffsetMs,
   effectiveTime,
   formatOffsetDisplay,
-  shouldAutoCommit,
-  INITIAL_OFFSET_STATE,
 } from '@/features/subtitle/logic/subtitleOffset';
-import type { OffsetState } from '@/features/subtitle/logic/subtitleOffset';
 
-describe('subtitleOffset — pure functions', () => {
+describe('subtitleOffset — pure functions (V2 — no lazy/auto-commit)', () => {
   // === parseOffsetInput ===
   describe('parseOffsetInput', () => {
     it('parses positive seconds string', () => {
@@ -124,78 +121,6 @@ describe('subtitleOffset — pure functions', () => {
     it('trims trailing zero (1.0s → 1s)', () => {
       expect(formatOffsetDisplay(1000)).toBe('+1s');
       expect(formatOffsetDisplay(-1000)).toBe('-1s');
-    });
-  });
-
-  // === shouldAutoCommit ===
-  describe('shouldAutoCommit', () => {
-    it('returns false when mode is committed', () => {
-      const state: OffsetState = { ...INITIAL_OFFSET_STATE, mode: 'committed' };
-      expect(shouldAutoCommit(state, Date.now() + 200000)).toBe(false);
-    });
-
-    it('returns false when lazy but within 2 minutes', () => {
-      const now = 1000000;
-      const state: OffsetState = {
-        valueMs: 500,
-        mode: 'lazy',
-        lastActionAt: now,
-      };
-      expect(shouldAutoCommit(state, now + 90000)).toBe(false); // 90s after
-    });
-
-    it('returns true when lazy and > 2 minutes since last action', () => {
-      const now = 1000000;
-      const state: OffsetState = {
-        valueMs: 500,
-        mode: 'lazy',
-        lastActionAt: now,
-      };
-      expect(shouldAutoCommit(state, now + 120001)).toBe(true); // 2min + 1ms
-    });
-
-    it('returns true at exactly 120000ms boundary', () => {
-      const now = 1000000;
-      const state: OffsetState = {
-        valueMs: 500,
-        mode: 'lazy',
-        lastActionAt: now,
-      };
-      expect(shouldAutoCommit(state, now + 120000)).toBe(true);
-    });
-
-    it('returns false when lazy and exactly 119999ms (just under boundary)', () => {
-      const now = 1000000;
-      const state: OffsetState = {
-        valueMs: 500,
-        mode: 'lazy',
-        lastActionAt: now,
-      };
-      expect(shouldAutoCommit(state, now + 119999)).toBe(false);
-    });
-
-    it('returns false when lastActionAt is 0 (never acted) even if now large', () => {
-      const state: OffsetState = {
-        valueMs: 0,
-        mode: 'lazy',
-        lastActionAt: 0,
-      };
-      // lastActionAt=0 means never entered lazy via action — should not auto-commit
-      // (controller sets lastActionAt on first action)
-      expect(shouldAutoCommit(state, 999999999)).toBe(true); // technically > 120000 from 0
-      // NOTE: this is acceptable — controller guards by only calling shouldAutoCommit when mode=lazy AND lastActionAt>0
-    });
-  });
-
-  // === INITIAL_OFFSET_STATE ===
-  describe('INITIAL_OFFSET_STATE', () => {
-    it('starts committed with zero offset', () => {
-      expect(INITIAL_OFFSET_STATE.valueMs).toBe(0);
-      expect(INITIAL_OFFSET_STATE.mode).toBe('committed');
-    });
-
-    it('has zero lastActionAt', () => {
-      expect(INITIAL_OFFSET_STATE.lastActionAt).toBe(0);
     });
   });
 });
