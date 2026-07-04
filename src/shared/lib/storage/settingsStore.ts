@@ -122,18 +122,29 @@ export async function loadSettings(): Promise<Settings> {
     }
   }
 
-  // Persist migrated settings back to storage.
+  // Persist migrated settings back to storage. Write directly via setStorage
+  // (NOT via saveSettings) — saveSettings now does read-modify-write and calls
+  // loadSettings, which would re-trigger migration and recurse infinitely.
   const result = migrated as unknown as StoredSettings;
-  void saveSettings(result);
+  void setStorage({ [STORAGE_KEYS.SETTINGS]: result });
   return result;
 }
 
 /**
  * Save settings to chrome.storage.local with the current schema version stamped.
+ *
+ * Read-modify-write: merges `settings` (partial) with the currently stored
+ * settings, NOT with `DEFAULT_SETTINGS`. This preserves fields the caller
+ * did not include — critical for partial persists like nav cluster drag
+ * (`saveSettings({ navClusterPosition })`) and offset persist
+ * (`saveSettings({ subtitleOffset })`), which would otherwise wipe every
+ * other field to its default. Callers passing full settings (popup,
+ * background UPDATE_SETTINGS) are unaffected — full merged with full is full.
  */
 export async function saveSettings(settings: Partial<Settings>): Promise<void> {
+  const current = await loadSettings();
   const toStore: StoredSettings = {
-    ...DEFAULT_SETTINGS,
+    ...current,
     ...settings,
     schemaVersion: CURRENT_SCHEMA_VERSION,
   } as StoredSettings;

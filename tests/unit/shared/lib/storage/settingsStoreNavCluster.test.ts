@@ -142,6 +142,32 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     expect(stored.schemaVersion).toBe(3);
   });
 
+  it('saveSettings partial preserves existing stored fields (read-modify-write)', async () => {
+    // Bug: saveSettings({position}) after drag wiped buttonSize/bgOpacity/buttonOpacity
+    // to defaults because it merged with DEFAULT_SETTINGS, not current stored settings.
+    const existing = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      navClusterEnabled: true,
+      navClusterButtonSize: 56,
+      navClusterBgOpacity: 0.3,
+      navClusterButtonOpacity: 0.5,
+      navClusterPosition: { x: 20, y: 30 },
+    };
+    storage[STORAGE_KEYS.SETTINGS] = existing;
+
+    // Simulate nav cluster drag persist: only position in partial.
+    await saveSettings({ navClusterPosition: { x: 24, y: 34 } } as Partial<typeof DEFAULT_SETTINGS>);
+
+    const stored = storage[STORAGE_KEYS.SETTINGS] as typeof DEFAULT_SETTINGS;
+    expect(stored.navClusterPosition).toEqual({ x: 24, y: 34 });
+    // Other nav cluster fields MUST be preserved (not reset to defaults).
+    expect(stored.navClusterButtonSize).toBe(56);
+    expect(stored.navClusterBgOpacity).toBe(0.3);
+    expect(stored.navClusterButtonOpacity).toBe(0.5);
+    expect(stored.navClusterEnabled).toBe(true);
+  });
+
   it('v2 settings migrate to v3 with subtitleOffset default {}', async () => {
     const v2Settings = {
       ...DEFAULT_SETTINGS,
