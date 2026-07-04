@@ -1,5 +1,12 @@
 import { OffsetController, tryParseInput } from '@/features/subtitle/ui/offsetController';
 import { INITIAL_OFFSET_STATE, AUTO_COMMIT_MS } from '@/features/subtitle/logic/subtitleOffset';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+
+// Mock chrome runtime messaging (OffsetController broadcasts offset changes to side panel)
+jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
+  sendMessage: jest.fn(),
+}));
+const mockedSendMessage = sendMessage as jest.MockedFunction<typeof sendMessage>;
 
 // Mock settingsStore
 const storage: Record<string, unknown> = {};
@@ -165,6 +172,25 @@ describe('OffsetController', () => {
       const plusBtn = stepper.querySelectorAll('button')[2] as HTMLButtonElement;
       plusBtn.click();
       expect(ctrl.getOffsetMs()).toBe(0);
+      ctrl.destroy();
+    });
+
+    it('broadcasts VIDEO_TIME_UPDATE to side panel when offset changes', () => {
+      const ctrl = new OffsetController(video, container, url, undefined, managerPanel);
+      ctrl.init();
+      ctrl.loadCues(true);
+      mockedSendMessage.mockClear();
+      video.currentTime = 123;
+      const stepper = managerPanel.querySelector('[data-testid="offset-stepper"]')!;
+      (stepper.querySelectorAll('button')[2] as HTMLButtonElement).click(); // +0.5s
+      expect(mockedSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+        type: 'VIDEO_TIME_UPDATE',
+        payload: expect.objectContaining({
+          currentTimeMs: 123000,
+          durationMs: 0,
+          offsetMs: 500,
+        }),
+      }));
       ctrl.destroy();
     });
 

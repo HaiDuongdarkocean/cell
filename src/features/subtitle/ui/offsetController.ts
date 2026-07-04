@@ -17,6 +17,8 @@ import {
   type OffsetState,
 } from '../logic/subtitleOffset';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { Settings } from '@/entities/media';
 
 /** Cue source injected by caller (lazy read for fresh cues on every action). */
@@ -164,6 +166,21 @@ export class OffsetController {
       this.badge?.show(this.state.lastActionAt);
     }
     this.section?.update(this.state, this.hasSubtitle);
+    this.broadcastToSidePanel();
+  }
+
+  /** Push current time + offset to side panel so its list updates immediately
+   * when the offset changes (video may be paused, so timeupdate won't fire). */
+  private broadcastToSidePanel(): void {
+    void sendMessage({
+      type: MESSAGE_TYPES.VIDEO_TIME_UPDATE,
+      payload: {
+        tabId: undefined,
+        currentTimeMs: this.video.currentTime * 1000,
+        durationMs: this.video.duration * 1000 || 0,
+        offsetMs: this.state.valueMs,
+      },
+    });
   }
 
   /** Step button: accumulate delta, enter lazy, reset timer. */
@@ -198,6 +215,7 @@ export class OffsetController {
     };
     this.badge?.show(this.state.lastActionAt);
     this.section?.update(this.state, this.hasSubtitle);
+    this.broadcastToSidePanel();
   }
 
   /** Apply: commit + persist + flash. */
@@ -216,6 +234,7 @@ export class OffsetController {
     this.badge?.hide();
     this.section?.update(this.state, this.hasSubtitle);
     this.section?.flashSaved();
+    this.broadcastToSidePanel();
     void this.persist();
   }
 
@@ -224,6 +243,7 @@ export class OffsetController {
     this.state = INITIAL_OFFSET_STATE;
     this.badge?.hide();
     this.section?.update(this.state, this.hasSubtitle);
+    this.broadcastToSidePanel();
   }
 
   /** Check wall-clock auto-commit: lazy + > 2 phút không action → commit. */
