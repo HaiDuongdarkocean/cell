@@ -362,4 +362,107 @@ updateCues(targetCues: readonly SrtCue[], nativeCues: readonly SrtCue[]): void {
 - **Plan**: `docs/plan/plan-subtitle-navigation-control.md`
 - **Builds on**: ADR-013 (overlay layer + persist), ADR-015 (Pointer Events drag), `subtitleSync.ts` (`findCurrentLine`), `subtitleShortcuts.ts` (`isEditableTarget`), `subtitlePanel.ts` (`seekToCue`), `settingsStore.ts` (schema migration).
 - **Does NOT break**: existing kbd shortcuts (a/d/s/w/t), subtitle overlay drag (ADR-015), bilingual subtitle auto-load (ADR-007), subtitle manager panel (ADR-015 T11).
+
+---
+
+## Supplement D5-rev: Grip tab drag handle (replaces border-zone hit-test)
+
+**Status**: Approved (mockup `docs/mockups/mockup-nav-cluster-grip-tab.html` v1, variant (b) pill bar)
+
+### Context — why revise D5
+
+D5 specified "drag handle" but G4 implementation drifted to **border-zone hit-test** (4px padding strip around cluster edge). This works for mouse (`cursor: move` is visible) but is unusable on touch devices:
+
+- Touch target 4px << HIG minimum 44pt / Material 48dp / WCAG 2.5.5 44 CSS px.
+- Finger covers the 4px strip when trying to hit it — no visual feedback, no hit.
+- `cursor: move` is a desktop affordance — invisible to touch users (no discoverability).
+
+### Decision — grip tab (drawer-pull metaphor)
+
+Add a dedicated drag handle element (grip tab) attached to the top edge of the cluster:
+
+```typescript
+// navClusterDom.ts — buildClusterDOM adds grip element
+const grip = document.createElement('div');
+grip.className = 'nav-cluster-grip';
+grip.setAttribute('role', 'button');
+grip.setAttribute('aria-label', 'Kéo để di chuyển cluster');
+grip.setAttribute('tabindex', '0');
+cluster.append(grip, mainColumn, secondaryColumn, noSubColumn, gapCover);
+```
+
+```css
+/* navClusterCss.ts — grip tab */
+.nav-cluster-grip {
+  position: absolute;
+  top: -22px;               /* hit-area extends 22px above cluster top edge */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;              /* HIG minimum hit-area width */
+  height: 24px;             /* HIG minimum hit-area height */
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab;
+  touch-action: none;       /* prevent page scroll while drag on touch */
+  z-index: 11;
+}
+.nav-cluster-grip::before {
+  /* visual pill bar — 28×4px, centered in 44×24 hit-area */
+  content: '';
+  width: 28px; height: 4px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-text-muted, #94a3b8);
+  opacity: 0.35;
+  transition: opacity 150ms ease, background 150ms ease;
+}
+.nav-cluster-grip:hover::before { opacity: 0.7; }
+.nav-cluster.dragging .nav-cluster-grip::before {
+  opacity: 0.9;
+  background: var(--color-text, #0f172a);
+}
+.nav-cluster.dragging .nav-cluster-grip { cursor: grabbing; }
+
+/* Drop cursor:move on cluster body — drag is via grip only now */
+.nav-cluster { cursor: default; }   /* was: cursor: move !important */
+
+/* Collapsed: grip hidden — collapsed circle IS the handle (no buttons inside) */
+.nav-cluster.collapsed { cursor: grab; }
+.nav-cluster.collapsed.dragging { cursor: grabbing; }
+.nav-cluster.collapsed .nav-cluster-grip { display: none; }
+```
+
+### Drag logic refactor (navClusterController.ts)
+
+- **Before**: `pointerdown` on cluster → hit-test `e.target === cluster && within 4px of edge` → drag.
+- **After**: `pointerdown` on grip (expanded) OR cluster (collapsed) → drag. No border math.
+- `dblclick` reset moves from cluster border → grip (collapsed: dblclick on cluster circle).
+- `aria-grabbed` moves from cluster → grip (expanded); stays on cluster (collapsed).
+
+### Why grip tab wins over alternatives
+
+| Option | Touch target | Discoverability | Minimalism | Conflict risk | Verdict |
+|---|---|---|---|---|---|
+| **Grip tab (chosen)** | 44×24 ✅ | visual affordance ✅ | +1 subtle element | none | ✅ |
+| Long-press anywhere | whole cluster ✅ | hidden ❌ | zero visual ✅ | button long-press ⚠️ | rejected |
+| Invisible touch ring | 20px ring ⚠️ | hidden ❌ | zero visual ✅ | overlap video controls ⚠️ | rejected |
+| 6th drag button | explicit ✅ | explicit ✅ | breaks 5-btn grid ❌ | none | rejected (not minimal) |
+
+### Ponytail
+
+- Rung 4 (native CSS + 1 div): no SVG asset, no JS timer for long-press.
+- Reuses ADR-015 Pointer Events + `setPointerCapture` — no new drag infra.
+- Removes border-zone hit-test math (4px pad check) — simpler controller code.
+- One drag mechanism for mouse + touch + keyboard (grip is focusable, arrow keys nudge).
+
+### Accessibility
+
+- `role="button"` + `aria-label="Kéo để di chuyển cluster"` + `tabindex="0"` → keyboard reachable.
+- Arrow keys nudge 1% (Shift+arrow = 5%); Enter/Space = reset to default position.
+- `aria-grabbed` on grip (expanded) communicates drag state to AT.
+
+### Verification (G5)
+
+- [ ] Unit: `navClusterDom.test.ts` — grip element present, role/aria-label/tabindex.
+- [ ] Unit: `navClusterController.test.ts` — drag via grip (expanded), drag via cluster (collapsed), dblclick grip → reset, border click does NOT drag.
+- [ ] Browser (Edge MCP): touch drag via grip (device toolbar), mouse drag via grip, collapsed drag, dblclick reset, keyboard nudge.
+- [ ] `npx tsc --noEmit` exit 0, `npm run test:unit` pass.
 - **Ceiling v2**: migrate existing kbd to `findCurrentLine` (resolve cue source divergence), configurable cluster shortcuts, `noSubtitleLoopSeconds` setting.
