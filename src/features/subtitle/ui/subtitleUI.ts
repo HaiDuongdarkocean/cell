@@ -110,7 +110,11 @@ export function createOverlayLayer(
   // Text span keeps pointer-events: auto + user-select: text below.
   overlay.style.pointerEvents = 'auto';
   overlay.style.cursor = 'ns-resize'; // hover affordance — ADR-015 D1
-  overlay.style.whiteSpace = 'pre-wrap';
+  // G7: guard against host CSS leaking line-height / white-space and breaking
+  // multi-line subtitle cues. Use !important because the overlay lives in a
+  // hostile page and must keep its own typography regardless of site resets.
+  overlay.style.setProperty('white-space', 'pre-wrap', 'important');
+  overlay.style.setProperty('line-height', '1.4', 'important');
   overlay.style.maxWidth = '90%';
   overlay.style.zIndex = role === 'target' ? '999999' : '999998';
 
@@ -129,6 +133,9 @@ export function createOverlayLayer(
   textSpan.style.pointerEvents = 'auto';
   textSpan.style.userSelect = 'text';
   textSpan.style.cursor = 'text';
+  // G7: line-height guard inherited from overlay, but set directly with
+  // !important on the span as well to defeat any host selector targeting the span.
+  textSpan.style.setProperty('line-height', '1.4', 'important');
   overlay.appendChild(textSpan);
 
   // Apply initial style
@@ -155,6 +162,9 @@ export function applyStyle(config: OverlayStyleConfig, overlay: HTMLDivElement):
   overlay.style.fontFamily = sanitizeFontFamily(config.fontFamily);
   overlay.style.bottom = `${config.yOffsetPercent}%`;
   overlay.style.textAlign = config.horizontalAlign;
+  // G7: re-apply line-height guard whenever style is refreshed; host CSS may
+  // have overridden it via !important or high-specificity selectors.
+  overlay.style.setProperty('line-height', '1.4', 'important');
   // Only hide when visible=false. When visible=true, do NOT force display:block —
   // display is managed by timeupdate (updateOverlayText/hideOverlay) based on
   // current cue. Forcing block here shows drag handle with no subtitle (bug fix).

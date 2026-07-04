@@ -69,6 +69,27 @@ describe('createOverlayLayer', () => {
     const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
     expect(overlay.style.display).toBe('none');
   });
+
+  it('G7: resets overlay line-height with !important to block host CSS leak', () => {
+    const container = document.createElement('div');
+    const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
+    expect(overlay.style.getPropertyValue('line-height')).toBe('1.4');
+    expect(overlay.style.getPropertyPriority('line-height')).toBe('important');
+  });
+
+  it('G7: resets text span line-height with !important to block host CSS leak', () => {
+    const container = document.createElement('div');
+    const { textSpan } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
+    expect(textSpan.style.getPropertyValue('line-height')).toBe('1.4');
+    expect(textSpan.style.getPropertyPriority('line-height')).toBe('important');
+  });
+
+  it('G7: protects white-space pre-wrap with !important for multi-line cues', () => {
+    const container = document.createElement('div');
+    const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
+    expect(overlay.style.getPropertyValue('white-space')).toBe('pre-wrap');
+    expect(overlay.style.getPropertyPriority('white-space')).toBe('important');
+  });
 });
 
 describe('applyStyle', () => {
@@ -156,5 +177,15 @@ describe('applyStyle', () => {
     const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
     applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, yOffsetPercent: 42 }, overlay);
     expect(overlay.getAttribute('aria-valuenow')).toBe('42');
+  });
+
+  it('G7: applyStyle re-applies line-height with !important even after host override', () => {
+    const container = document.createElement('div');
+    const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
+    // Simulate a hostile host CSS override (e.g. line-height: 0.5 !important).
+    overlay.style.setProperty('line-height', '0.5', 'important');
+    applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, fontSize: 32 }, overlay);
+    expect(overlay.style.getPropertyValue('line-height')).toBe('1.4');
+    expect(overlay.style.getPropertyPriority('line-height')).toBe('important');
   });
 });
