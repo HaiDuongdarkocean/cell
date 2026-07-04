@@ -121,11 +121,11 @@ export interface Settings {
   readonly preferredVideoFormat: 'mp4' | 'm3u8';
   /** When true, popup auto-selects media matching preferences on open. */
   readonly autoSelectEnabled: boolean;
-  /** Target language for subtitle overlay (ISO 639-1 code, e.g. 'en'). Empty = no target. */
+  /** Target language for subtitle overlay (ISO 639-1 code, e.g. 'en'). Default 'en' (V4). */
   readonly subtitleOverlayTargetLanguage: string;
-  /** Native language for bilingual subtitle overlay (ISO 639-1 code, e.g. 'vi'). Empty = no native. Migration fills 'vi' for existing users. */
+  /** Native language for bilingual subtitle overlay (ISO 639-1 code, e.g. 'vi'). Default 'vi' (V4). */
   readonly subtitleOverlayNativeLanguage: string;
-  /** When true, subtitle overlay auto-loads from extension-detected subtitles matching target language. */
+  /** When true, subtitle overlay auto-loads from extension-detected subtitles matching target language. Default true (V4). */
   readonly subtitleOverlayAutoLoad: boolean;
   /** Per-layer appearance config for target subtitle overlay (ADR-013). Independent from native. */
   readonly subtitleOverlayTargetStyle?: OverlayStyleConfig;

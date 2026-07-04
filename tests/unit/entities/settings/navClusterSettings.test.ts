@@ -7,7 +7,7 @@ describe('NavClusterSettings types + defaults', () => {
     expect(DEFAULT_NAV_CLUSTER_SETTINGS).toBeDefined();
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.enabled).toBe(true);
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.position).toEqual({ x: 0, y: 75 });
-    expect(DEFAULT_NAV_CLUSTER_SETTINGS.buttonSize).toBe(48);
+    expect(DEFAULT_NAV_CLUSTER_SETTINGS.buttonSize).toBe(34);
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.bgOpacity).toBe(0.7);
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.buttonOpacity).toBe(0.9);
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.collapsed).toBe(false);
@@ -16,7 +16,7 @@ describe('NavClusterSettings types + defaults', () => {
   it('DEFAULT_SETTINGS includes all 6 navCluster flat fields', () => {
     expect(DEFAULT_SETTINGS.navClusterEnabled).toBe(true);
     expect(DEFAULT_SETTINGS.navClusterPosition).toEqual({ x: 0, y: 75 });
-    expect(DEFAULT_SETTINGS.navClusterButtonSize).toBe(48);
+    expect(DEFAULT_SETTINGS.navClusterButtonSize).toBe(34);
     expect(DEFAULT_SETTINGS.navClusterBgOpacity).toBe(0.7);
     expect(DEFAULT_SETTINGS.navClusterButtonOpacity).toBe(0.9);
     expect(DEFAULT_SETTINGS.navClusterCollapsed).toBe(false);
@@ -48,9 +48,9 @@ describe('NavClusterSettings types + defaults', () => {
 
   it('buttonSize is a number in free range 10-100 (ADR-018 D2-rev)', () => {
     // Type is now `number` (was union 40|48|56). Validation lives in
-    // settingsStore.validateNavClusterFields (clamp 10-100, default 48).
-    const valid: Array<NavClusterSettings['buttonSize']> = [10, 33, 48, 56, 100];
-    expect(valid).toHaveLength(5);
+    // settingsStore.validateNavClusterFields (clamp 10-100, default 34).
+    const valid: Array<NavClusterSettings['buttonSize']> = [10, 33, 34, 48, 56, 100];
+    expect(valid).toHaveLength(6);
     expect(valid.every((v) => typeof v === 'number')).toBe(true);
   });
 });

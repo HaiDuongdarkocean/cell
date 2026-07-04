@@ -631,9 +631,9 @@ describe('Background integration', () => {
     })) as MessageResponse<Settings>;
 
     expect(response.success).toBe(true);
-    // loadSettings() runs migration v0→v1→v2 which stamps schemaVersion: 3
-    // (ADR-017 D8, ADR-018 D2). The returned data includes this field.
-    expect(response.data).toEqual({ ...storedSettings, schemaVersion: 3 });
+    // loadSettings() runs migration v0→v1→v2→v3→v4→v5 which stamps schemaVersion: 5
+    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize).
+    expect(response.data).toEqual({ ...storedSettings, schemaVersion: 5 });
   });
 
   it('GET_SETTINGS returns DEFAULT_SETTINGS when storage is empty', async () => {
@@ -1705,12 +1705,17 @@ https://cdn.example.com/low.m3u8`;
   });
 
   it('PAGE_SCAN_RESULT does NOT push AUTO_LOAD_SUBTITLES when autoLoad off', async () => {
+    // V4: user explicit disabled auto-load (schemaVersion=4 → migration skips flip).
     const settings: Settings = {
       ...DEFAULT_SETTINGS,
       subtitleOverlayAutoLoad: false,
       subtitleOverlayTargetLanguage: 'en',
       subtitleOverlayNativeLanguage: 'vi',
-    };
+      // Stamp schemaVersion=4 so loadSettings() skips v3→v4 migration (which
+      // would flip false→true for pre-V4 users). This simulates a V4 user who
+      // explicitly turned auto-load OFF after the V4 default was applied.
+    } as Settings & { schemaVersion: number };
+    (settings as { schemaVersion: number }).schemaVersion = 4;
     mockChrome.storage.local.get.mockImplementation(async (keys) => {
       const result: Record<string, unknown> = {};
       const keyList = typeof keys === 'string' ? [keys] : (keys as string[]);

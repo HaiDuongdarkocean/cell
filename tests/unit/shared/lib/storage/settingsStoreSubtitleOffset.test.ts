@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+﻿import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { CURRENT_SCHEMA_VERSION, loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 
@@ -30,8 +30,8 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(DEFAULT_SETTINGS.subtitleOffset).toEqual({});
   });
 
-  it('CURRENT_SCHEMA_VERSION is 3', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(3);
+  it('CURRENT_SCHEMA_VERSION is 5', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(5);
   });
 
   it('migrates v2 settings (no subtitleOffset) to v3 with default {}', async () => {
@@ -47,7 +47,7 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(result.subtitleOffset).toEqual({});
     // Persisted back as v3
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; subtitleOffset: Record<string, number> };
-    expect(stored.schemaVersion).toBe(3);
+    expect(stored.schemaVersion).toBe(5);
     expect(stored.subtitleOffset).toEqual({});
   });
 
@@ -108,16 +108,16 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(loaded.subtitleOffset).toEqual(offsets);
   });
 
-  it('saveSettings stamps schemaVersion 3', async () => {
+  it('saveSettings stamps schemaVersion 5', async () => {
     await saveSettings({ subtitleOffset: { 'https://x.com': 100 } });
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(3);
+    expect(stored.schemaVersion).toBe(5);
   });
 
   it('v3 settings pass through without re-migration', async () => {
     const v3Settings = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 3,
+      schemaVersion: 5,
       subtitleOffset: { 'https://example.com': 800 },
     };
     storage[STORAGE_KEYS.SETTINGS] = v3Settings;
@@ -137,6 +137,6 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
 
     expect(result.subtitleOffset).toEqual({});
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(3);
+    expect(stored.schemaVersion).toBe(5);
   });
 });

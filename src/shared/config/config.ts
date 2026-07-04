@@ -151,7 +151,7 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultQuality: DEFAULT_QUALITY,
   defaultSubtitleLanguage: DEFAULT_SUBTITLE_LANGUAGE,
   selectedSubtitleLanguages: DEFAULT_SELECTED_SUBTITLE_LANGUAGES,
-  theme: 'light',
+  theme: 'dark',
   convertToMp4: 'always',
   parallelConversion: 'auto',
   manualWorkerCount: DEFAULT_MANUAL_WORKER_COUNT,
@@ -160,9 +160,11 @@ export const DEFAULT_SETTINGS: Settings = {
   filenameSource: DEFAULT_FILENAME_SOURCE,
   preferredVideoFormat: DEFAULT_PREFERRED_VIDEO_FORMAT,
   autoSelectEnabled: DEFAULT_AUTO_SELECT_ENABLED,
-  subtitleOverlayTargetLanguage: '',
-  subtitleOverlayNativeLanguage: '',
-  subtitleOverlayAutoLoad: false,
+  // V4 defaults (2026-07-05): auto-load ON + target=en + native=vi — anh yêu
+  // không cần setup mỗi lần. Existing users migrated via v3→v4 migration.
+  subtitleOverlayTargetLanguage: 'en',
+  subtitleOverlayNativeLanguage: 'vi',
+  subtitleOverlayAutoLoad: true,
   subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
   subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
   subtitlePreference: {},
@@ -170,7 +172,7 @@ export const DEFAULT_SETTINGS: Settings = {
   // === Nav Cluster (ADR-018) — schema v2 ===
   navClusterEnabled: true,
   navClusterPosition: { x: 0, y: 75 },
-  navClusterButtonSize: 48,
+  navClusterButtonSize: 34,
   navClusterBgOpacity: 0.7,
   navClusterButtonOpacity: 0.9,
   navClusterCollapsed: false,
@@ -185,7 +187,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export const DEFAULT_NAV_CLUSTER_SETTINGS: NavClusterSettings = {
   enabled: true,
   position: { x: 0, y: 75 },
-  buttonSize: 48,
+  buttonSize: 34,
   bgOpacity: 0.7,
   buttonOpacity: 0.9,
   collapsed: false,

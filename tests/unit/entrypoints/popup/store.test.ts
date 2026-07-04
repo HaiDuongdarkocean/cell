@@ -255,9 +255,9 @@ describe('usePopupStore', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(storageLocalSetMock).toHaveBeenCalledTimes(1);
     const [arg] = storageLocalSetMock.mock.calls[0];
-    // saveSettings stamps schemaVersion (ADR-017 D8 / ADR-018 D2) — the persisted
-    // payload includes schemaVersion: 3 in addition to the merged settings.
-    expect(arg[STORAGE_KEYS.SETTINGS]).toEqual({ ...settings, schemaVersion: 3 });
+    // saveSettings stamps schemaVersion (ADR-017 D8 / ADR-018 D2 / V4 / V5) — the persisted
+    // payload includes schemaVersion: 5 in addition to the merged settings.
+    expect(arg[STORAGE_KEYS.SETTINGS]).toEqual({ ...settings, schemaVersion: 5 });
   });
 
   it('setExtensionActive updates the flag and persists to chrome.storage.local', () => {
@@ -388,8 +388,9 @@ describe('usePopupStore', () => {
 
   // --- Migration: subtitleOverlayNativeLanguage (bilingual auto-load) ---
 
-  it('DEFAULT_SETTINGS.subtitleOverlayNativeLanguage defaults to empty string', () => {
-    expect(DEFAULT_SETTINGS.subtitleOverlayNativeLanguage).toBe('');
+  it('DEFAULT_SETTINGS.subtitleOverlayNativeLanguage defaults to "vi" (V4)', () => {
+    // V4 (2026-07-05): default native language = 'vi' — anh yêu không cần setup.
+    expect(DEFAULT_SETTINGS.subtitleOverlayNativeLanguage).toBe('vi');
   });
 
   it('loadPersistedSettings fills missing subtitleOverlayNativeLanguage with "vi"', async () => {
@@ -420,18 +421,20 @@ describe('usePopupStore', () => {
     expect(usePopupStore.getState().settings.subtitleOverlayNativeLanguage).toBe('ja');
   });
 
-  it('loadPersistedSettings keeps empty subtitleOverlayNativeLanguage when explicitly empty', async () => {
-    // New users get '' default — migration must NOT overwrite explicit ''.
+  it('loadPersistedSettings fills empty subtitleOverlayNativeLanguage with "vi" (V4 migration)', async () => {
+    // V4 migration: pre-V4 default was '' — fill 'vi' so existing users don't
+    // need setup. User who wants to disable native sets '' AFTER loading V4.
     storageLocalGetMock.mockResolvedValue({
       [STORAGE_KEYS.SETTINGS]: {
         ...DEFAULT_SETTINGS,
         subtitleOverlayNativeLanguage: '',
+        schemaVersion: 3, // pre-V4
       },
     });
 
     await usePopupStore.getState().loadPersistedSettings();
 
-    expect(usePopupStore.getState().settings.subtitleOverlayNativeLanguage).toBe('');
+    expect(usePopupStore.getState().settings.subtitleOverlayNativeLanguage).toBe('vi');
   });
 
   it('loadPersistedSettings normalizes invalid subtitleOverlayTargetLanguage to empty', async () => {

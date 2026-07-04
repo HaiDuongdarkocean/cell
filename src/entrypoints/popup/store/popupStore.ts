@@ -183,12 +183,14 @@ export const usePopupStore = create<PopupState>((set) => ({
         settings = { ...settings, keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS };
       }
       // Migration: subtitleOverlayNativeLanguage missing in pre-bilingual settings.
-      // Fill 'vi' for backward compat (existing users). New users keep '' default.
+      // Fill 'vi' for backward compat. V4 default đã là 'vi' (config.ts) nên
+      // branch này chỉ chạy cho settings rất cũ chưa có field.
       if (settings.subtitleOverlayNativeLanguage === undefined) {
         settings = { ...settings, subtitleOverlayNativeLanguage: 'vi' };
       }
       // Migration: normalize subtitleOverlayTargetLanguage to ISO 639-1 (2 lowercase letters)
       // or empty. Invalid values (e.g. 'english', 'EN-', whitespace) reset to ''.
+      // V4 default đã là 'en' (config.ts) — branch này chỉ normalize user input.
       const targetLang = settings.subtitleOverlayTargetLanguage ?? '';
       const normalizedTarget = targetLang.trim().toLowerCase();
       if (normalizedTarget && !/^[a-z]{2}$/.test(normalizedTarget)) {

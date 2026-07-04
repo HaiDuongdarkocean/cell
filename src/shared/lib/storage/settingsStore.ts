@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -26,7 +26,7 @@ interface StoredSettings extends Settings {
 /** Valid nav cluster button size range (ADR-018 D2-rev: free range 10-100px). */
 const BUTTON_SIZE_MIN = 10;
 const BUTTON_SIZE_MAX = 100;
-const BUTTON_SIZE_DEFAULT: NavClusterButtonSize = 48;
+const BUTTON_SIZE_DEFAULT: NavClusterButtonSize = 34;
 
 /** Clamp a numeric value to [min, max]. Returns fallback if not a finite number. */
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
@@ -82,6 +82,33 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   // v2 → v3: add subtitleOffset (ADR-019). Additive — default {} (no offset).
   // Existing settings không có field này → merge với DEFAULT_SETTINGS.subtitleOffset={}.
   2: (s) => ({ ...DEFAULT_SETTINGS, ...s, subtitleOffset: s.subtitleOffset ?? {}, schemaVersion: 3 }),
+  // v3 → v4: flip subtitle overlay defaults — auto-load ON, target=en, native=vi
+  // (anh yêu không muốn setup mỗi lần). Fill default cho empty/undefined vì
+  // pre-V4 default là '' (không phân biệt "user chọn ''" vs "default cũ ''").
+  // User muốn tắt native → set '' sau khi load V4 (qua saveSettings).
+  // User đã chọn lang khác hoặc tắt auto-load (false) → giữ nguyên.
+  3: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 4 } as Record<string, unknown>;
+    if (!merged.subtitleOverlayTargetLanguage) merged.subtitleOverlayTargetLanguage = 'en';
+    if (!merged.subtitleOverlayNativeLanguage) merged.subtitleOverlayNativeLanguage = 'vi';
+    if (merged.subtitleOverlayAutoLoad === undefined || merged.subtitleOverlayAutoLoad === false) {
+      // pre-V4 default was false — treat as "not set" → flip to true.
+      // User who explicitly disabled would re-disable after seeing auto-load ON.
+      merged.subtitleOverlayAutoLoad = true;
+    }
+    return merged;
+  },
+  // v4 → v5: flip theme → dark + nav cluster button size → 34px (anh yêu
+  // không cần setup mỗi lần). Only flip khi user đang ở pre-V5 default
+  // (theme='light', buttonSize=48). User đã chọn khác → giữ nguyên.
+  4: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 5 } as Record<string, unknown>;
+    if (merged.theme === 'light' || merged.theme === undefined) merged.theme = 'dark';
+    if (merged.navClusterButtonSize === 48 || merged.navClusterButtonSize === undefined) {
+      merged.navClusterButtonSize = 34;
+    }
+    return merged;
+  },
 };
 
 /**
