@@ -67,10 +67,33 @@ async function loadShortcuts(): Promise<KeyboardShortcut[]> {
   return DEFAULT_KEYBOARD_SHORTCUTS;
 }
 
+/**
+ * Find the overlay container for a video — ADR-008 D2.
+ *
+ * Starts at `video.parentElement` and walks up to the first ancestor whose
+ * height is at least 50% of the video's height. This handles sites where
+ * `video.parentElement` has zero height (e.g. YouTube's `.html5-video-container`
+ * has `height:0` with the `<video>` absolutely positioned inside it, while the
+ * real sized container is `#movie_player` — the grandparent). On normal sites
+ * the parent already matches the video height, so the walk-up stops immediately.
+ * Falls back to `document.body` if no suitable ancestor is found.
+ */
+function findVideoContainer(video: HTMLVideoElement): HTMLElement {
+  const videoHeight = video.getBoundingClientRect().height;
+  let el: HTMLElement | null = video.parentElement;
+  while (el && el !== document.body) {
+    const h = el.getBoundingClientRect().height;
+    if (videoHeight > 0 && h >= videoHeight * 0.5) return el;
+    el = el.parentElement;
+  }
+  return video.parentElement ?? document.body;
+}
+
 export function init(video: HTMLVideoElement): () => void {
-  // ADR-008 D2: overlay UI neo vào video.parentElement — không cần F0, không cần
+  // ADR-008 D2: overlay UI neo vào video container — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
-  const container = video.parentElement ?? document.body;
+  // G8: walk-up để xử lý sites có video.parentElement height=0 (YouTube pattern).
+  const container = findVideoContainer(video);
 
   // ADR-015 T12: inject theme tokens so panel/toast var(--color-*) resolve.
   // Content-script isolated world cannot access popup's theme.css.
