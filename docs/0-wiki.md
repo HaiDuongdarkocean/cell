@@ -135,6 +135,7 @@ docs/           # Tài liệu dự án
 │   ├── architecture-research-synthesis.md # Architecture research synthesis
 │   ├── software-production-process-research.md # Software production process research
 │   └── software-org-roles.md          # Software organization roles
+│   └── youtube-subtitle-format-research.md # YouTube subtitle format research (timedtext API, captionTracks, json3/vtt, PO Token) — pre-G1 grounding cho YouTube subtitle detection
 └── reading-summaries/                 # Reading summaries
 
 src/            # Source code (chi tiết trong 2-architechture-system.md)
