@@ -16,7 +16,7 @@ import {
   shouldAutoCommit,
   type OffsetState,
 } from '../logic/subtitleOffset';
-import { saveSettings } from '@/shared/lib/storage/settingsStore';
+import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import type { Settings } from '@/entities/media';
 
 /** Cue source injected by caller (lazy read for fresh cues on every action). */
@@ -257,10 +257,13 @@ export class OffsetController {
     }
   }
 
-  /** Load settings once (cached via closure). ponytail: simple — no cache, settings small. */
+  /** Load settings (ponytail: simple — no cache, settings small). */
   private async loadSettingsOnce(): Promise<{ subtitleOffset?: Record<string, number> }> {
-    // Dynamic import to avoid circular dep + allow test mock
-    const { loadSettings } = await import('@/shared/lib/storage/settingsStore');
+    // ponytail: static import — dynamic import caused Vite to inject
+    // modulepreload-polyfill (uses `document`) into the shared settingsStore chunk,
+    // crashing the background SW (no `document` in SW → "Service worker registration
+    // failed. Status code: 15"). saveSettings is already statically imported, so the
+    // module is in the bundle regardless — no benefit to dynamic import here.
     return loadSettings();
   }
 }
