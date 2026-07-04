@@ -116,24 +116,54 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     expect(result.navClusterButtonOpacity).toBe(0);
   });
 
-  it('snaps invalid navClusterButtonSize=33 to nearest preset (40)', async () => {
+  it('accepts in-range navClusterButtonSize=33 (free range 10-100, ADR-018 D2-rev)', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 3,
       navClusterButtonSize: 33,
     };
     const result = await loadSettings();
-    expect(result.navClusterButtonSize).toBe(40);
+    expect(result.navClusterButtonSize).toBe(33);
   });
 
-  it('snaps invalid navClusterButtonSize=52 to nearest preset (56)', async () => {
+  it('accepts in-range navClusterButtonSize=52 (free range 10-100)', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 3,
       navClusterButtonSize: 52,
     };
     const result = await loadSettings();
-    expect(result.navClusterButtonSize).toBe(56);
+    expect(result.navClusterButtonSize).toBe(52);
+  });
+
+  it('clamps below-range navClusterButtonSize=5 to min 10', async () => {
+    storage[STORAGE_KEYS.SETTINGS] = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 3,
+      navClusterButtonSize: 5,
+    };
+    const result = await loadSettings();
+    expect(result.navClusterButtonSize).toBe(10);
+  });
+
+  it('clamps above-range navClusterButtonSize=150 to max 100', async () => {
+    storage[STORAGE_KEYS.SETTINGS] = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 3,
+      navClusterButtonSize: 150,
+    };
+    const result = await loadSettings();
+    expect(result.navClusterButtonSize).toBe(100);
+  });
+
+  it('falls back to default 48 when navClusterButtonSize is non-numeric', async () => {
+    storage[STORAGE_KEYS.SETTINGS] = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 3,
+      navClusterButtonSize: 'big' as unknown as number,
+    };
+    const result = await loadSettings();
+    expect(result.navClusterButtonSize).toBe(48);
   });
 
   it('saveSettings stamps schemaVersion 3', async () => {

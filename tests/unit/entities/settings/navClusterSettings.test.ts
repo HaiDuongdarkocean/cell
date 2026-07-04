@@ -46,8 +46,11 @@ describe('NavClusterSettings types + defaults', () => {
     expect(s.navClusterPosition.x).toBe(0);
   });
 
-  it('buttonSize only accepts 40 | 48 | 56', () => {
-    const valid: Array<NavClusterSettings['buttonSize']> = [40, 48, 56];
-    expect(valid).toHaveLength(3);
+  it('buttonSize is a number in free range 10-100 (ADR-018 D2-rev)', () => {
+    // Type is now `number` (was union 40|48|56). Validation lives in
+    // settingsStore.validateNavClusterFields (clamp 10-100, default 48).
+    const valid: Array<NavClusterSettings['buttonSize']> = [10, 33, 48, 56, 100];
+    expect(valid).toHaveLength(5);
+    expect(valid.every((v) => typeof v === 'number')).toBe(true);
   });
 });

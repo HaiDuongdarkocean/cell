@@ -27,8 +27,8 @@ export interface NavClusterPosition {
   readonly y: number;
 }
 
-/** Nav cluster button size preset (WCAG 2.5.5 touch target). */
-export type NavClusterButtonSize = 40 | 48 | 56;
+/** Nav cluster button size in px (free range 10-100, ADR-018 D2-rev). */
+export type NavClusterButtonSize = number;
 
 /** Settings slice for nav cluster (flat keys in Settings, ADR-018 D2). */
 export interface NavClusterSettings {
@@ -137,6 +137,12 @@ export interface Settings {
    * matches. Fallback first-match when index out of range (B8).
    */
   readonly subtitlePreference?: Record<string, Record<string, number>>;
+  /**
+   * Per-URL subtitle time offset in ms (ADR-019). Key = window.location.href (full URL),
+   * value = offsetMs. +offset = sub muộn hơn, -offset = sub sớm hơn.
+   * Persist khi auto-commit (2 phút không action). Reset khi load sub file mới.
+   */
+  readonly subtitleOffset?: Record<string, number>;
   /** Keyboard shortcuts for subtitle floating panel. Default: a/d/s/w/t. */
   readonly keyboardShortcuts: KeyboardShortcut[];
   // === Nav Cluster (ADR-018) — flat keys, schema v2 ===

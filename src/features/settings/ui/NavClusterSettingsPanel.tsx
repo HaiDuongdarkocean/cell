@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import type { NavClusterSettings, NavClusterButtonSize } from '@/entities/settings';
+import type { NavClusterSettings } from '@/entities/settings';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Slider } from '@/shared/ui/Slider';
 import styles from './NavClusterSettingsPanel.module.css';
@@ -11,19 +11,13 @@ interface NavClusterSettingsPanelProps {
   onChange: (partial: Partial<NavClusterSettings>) => void;
 }
 
-const BUTTON_SIZE_PRESETS: readonly NavClusterButtonSize[] = [40, 48, 56];
-
-/** Snap a numeric button size to the nearest valid preset (ADR-018 D2). */
-function snapButtonSize(size: number): NavClusterButtonSize {
-  return BUTTON_SIZE_PRESETS.reduce<NavClusterButtonSize>(
-    (best, preset) => (Math.abs(preset - size) <= Math.abs(best - size) ? preset : best),
-    48,
-  );
-}
+/** Button size slider bounds (ADR-018 D2-rev: free range 10-100px). */
+const BUTTON_SIZE_MIN = 10;
+const BUTTON_SIZE_MAX = 100;
 
 /**
  * Nav cluster settings panel (ADR-018 D2, spec §A9).
- * 3 sliders (button size, bg opacity, button opacity) + enable toggle.
+ * Enable toggle + 3 sliders (button size, bg opacity, button opacity).
  * Each control calls onChange(partial) → parent persists → storage.onChanged
  * → content-script updateSettings (realtime).
  *
@@ -34,7 +28,7 @@ export function NavClusterSettingsPanel({
   onChange,
 }: NavClusterSettingsPanelProps): ReactElement {
   const handleButtonSizeChange = (raw: number): void => {
-    onChange({ buttonSize: snapButtonSize(raw) });
+    onChange({ buttonSize: raw });
   };
 
   const handleBgOpacityChange = (v: number): void => {
@@ -62,6 +56,9 @@ export function NavClusterSettingsPanel({
         />
       </div>
 
+      {/* Divider: behavior → visual (settings-dialog-rearrange) */}
+      <div className={styles.divider} />
+
       {/* Button size */}
       <div className={styles.field}>
         <div className={styles.sliderHeader}>
@@ -71,8 +68,8 @@ export function NavClusterSettingsPanel({
         <Slider
           id="nav-cluster-button-size"
           value={settings.buttonSize}
-          min={40}
-          max={56}
+          min={BUTTON_SIZE_MIN}
+          max={BUTTON_SIZE_MAX}
           step={1}
           onChange={handleButtonSizeChange}
           aria-label="Nav cluster button size"

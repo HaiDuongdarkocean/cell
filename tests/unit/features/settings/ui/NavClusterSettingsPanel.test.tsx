@@ -41,12 +41,20 @@ describe('NavClusterSettingsPanel (ADR-018 D2, spec §A9)', () => {
     expect(screen.getByTestId('nav-cluster-enabled-toggle')).toBeInTheDocument();
   });
 
-  it('button size slider change calls onChange with new buttonSize', () => {
+  it('button size slider change calls onChange with raw value (free range, no snap)', () => {
     const props = makeProps();
     render(<NavClusterSettingsPanel {...props} />);
     const slider = screen.getByTestId('nav-cluster-button-size') as HTMLInputElement;
     fireEvent.change(slider, { target: { value: '56' } });
     expect(props.onChange).toHaveBeenCalledWith({ buttonSize: 56 });
+  });
+
+  it('button size slider has min=10 max=100 (ADR-018 D2-rev free range)', () => {
+    render(<NavClusterSettingsPanel {...makeProps()} />);
+    const slider = screen.getByTestId('nav-cluster-button-size') as HTMLInputElement;
+    expect(slider.min).toBe('10');
+    expect(slider.max).toBe('100');
+    expect(slider.step).toBe('1');
   });
 
   it('bg opacity slider change calls onChange with new bgOpacity', () => {
@@ -91,11 +99,11 @@ describe('NavClusterSettingsPanel (ADR-018 D2, spec §A9)', () => {
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('button size slider snaps to nearest preset on change', () => {
+  it('button size slider passes through non-preset value (free range, no snap)', () => {
     const props = makeProps();
     render(<NavClusterSettingsPanel {...props} />);
     const slider = screen.getByTestId('nav-cluster-button-size') as HTMLInputElement;
     fireEvent.change(slider, { target: { value: '52' } });
-    expect(props.onChange).toHaveBeenCalledWith({ buttonSize: 56 });
+    expect(props.onChange).toHaveBeenCalledWith({ buttonSize: 52 });
   });
 });

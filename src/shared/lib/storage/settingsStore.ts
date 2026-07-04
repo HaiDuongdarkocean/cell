@@ -23,17 +23,10 @@ interface StoredSettings extends Settings {
   schemaVersion: number;
 }
 
-/** Valid nav cluster button size presets (ADR-018 D2). */
-const BUTTON_SIZE_PRESETS: readonly NavClusterButtonSize[] = [40, 48, 56];
-
-/** Snap a numeric button size to the nearest valid preset (ADR-018 D2). */
-function snapButtonSize(size: unknown): NavClusterButtonSize {
-  if (typeof size !== 'number' || !Number.isFinite(size)) return 48;
-  return BUTTON_SIZE_PRESETS.reduce<NavClusterButtonSize>(
-    (best, preset) => (Math.abs(preset - size) <= Math.abs(best - size) ? preset : best),
-    48,
-  );
-}
+/** Valid nav cluster button size range (ADR-018 D2-rev: free range 10-100px). */
+const BUTTON_SIZE_MIN = 10;
+const BUTTON_SIZE_MAX = 100;
+const BUTTON_SIZE_DEFAULT: NavClusterButtonSize = 48;
 
 /** Clamp a numeric value to [min, max]. Returns fallback if not a finite number. */
 function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
@@ -58,7 +51,12 @@ function validateNavClusterFields(s: Record<string, unknown>): void {
   }
   s.navClusterBgOpacity = clampNumber(s.navClusterBgOpacity, 0, 1, 0.7);
   s.navClusterButtonOpacity = clampNumber(s.navClusterButtonOpacity, 0, 1, 0.9);
-  s.navClusterButtonSize = snapButtonSize(s.navClusterButtonSize);
+  s.navClusterButtonSize = clampNumber(
+    s.navClusterButtonSize,
+    BUTTON_SIZE_MIN,
+    BUTTON_SIZE_MAX,
+    BUTTON_SIZE_DEFAULT,
+  );
   s.navClusterEnabled = coerceBoolean(s.navClusterEnabled, true);
   s.navClusterCollapsed = coerceBoolean(s.navClusterCollapsed, false);
 }
