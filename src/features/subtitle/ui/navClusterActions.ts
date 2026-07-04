@@ -78,16 +78,21 @@ export function prevSentence(
   offsetMs: number = 0,
 ): void {
   const currentMs = video.currentTime * 1000;
+  // ADR-019 sync: gap-fill search must use effective time (currentMs + offset),
+  // same as findActiveCueIndex. Without this, offset shifted the active-cue
+  // lookup but gap-fill used raw time → jumped to wrong cue in gaps.
+  const effectiveMs = currentMs + offsetMs;
   const { cues, index } = findActiveCueIndex(targetCues, nativeCues, currentMs, offsetMs);
   if (cues.length === 0) return;
   if (index > 0) {
-    video.currentTime = cues[index - 1].start / 1000;
+    // ADR-019 sync: seek so overlay DISPLAYS cues[index-1] → shift by -offsetMs.
+    video.currentTime = (cues[index - 1].start - offsetMs) / 1000;
     return;
   }
   if (index === -1) {
-    // In gap — find nearest previous cue (end < currentMs)
-    const prevCue = [...cues].reverse().find((c) => c.end < currentMs);
-    if (prevCue) video.currentTime = prevCue.start / 1000;
+    // In gap — find nearest previous cue (end < effectiveMs)
+    const prevCue = [...cues].reverse().find((c) => c.end < effectiveMs);
+    if (prevCue) video.currentTime = (prevCue.start - offsetMs) / 1000;
     return;
   }
   // index === 0 → no-op (first cue)
@@ -107,16 +112,19 @@ export function nextSentence(
   offsetMs: number = 0,
 ): void {
   const currentMs = video.currentTime * 1000;
+  // ADR-019 sync: gap-fill search must use effective time (currentMs + offset).
+  const effectiveMs = currentMs + offsetMs;
   const { cues, index } = findActiveCueIndex(targetCues, nativeCues, currentMs, offsetMs);
   if (cues.length === 0) return;
   if (index === -1) {
-    // In gap — find nearest next cue (start > currentMs)
-    const nextCue = cues.find((c) => c.start > currentMs);
-    if (nextCue) video.currentTime = nextCue.start / 1000;
+    // In gap — find nearest next cue (start > effectiveMs)
+    const nextCue = cues.find((c) => c.start > effectiveMs);
+    if (nextCue) video.currentTime = (nextCue.start - offsetMs) / 1000;
     return;
   }
   if (index < cues.length - 1) {
-    video.currentTime = cues[index + 1].start / 1000;
+    // ADR-019 sync: seek so overlay DISPLAYS cues[index+1] → shift by -offsetMs.
+    video.currentTime = (cues[index + 1].start - offsetMs) / 1000;
   }
   // index === length-1 → no-op (last cue)
 }

@@ -332,6 +332,58 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
     });
   });
 
+  describe('offset provider (ADR-019 sync — nav seeks so overlay DISPLAYS target cue)', () => {
+    // 3 cues so prev/next have room and seek targets stay non-negative with offset.
+    const CUES3: SrtCue[] = [
+      { index: 1, start: 0, end: 2000, text: 'A' },
+      { index: 2, start: 3000, end: 5000, text: 'B' },
+      { index: 3, start: 6000, end: 8000, text: 'C' },
+    ];
+
+    it('prev seeks to (prevCue.start - offsetMs) so overlay displays the previous cue', () => {
+      // Video at 4s (raw in 'B'), offset +3000ms → effective 7000ms → 'C' (index 2).
+      // prev → cues[1] 'B'. Seek target = (B.start - offset) / 1000 = (3000-3000)/1000 = 0s.
+      // After seek at 0s, effective = 3000 → overlay shows 'B' (the previous displayed cue). ✓
+      // BUG (old fix): seek to B.start/1000 = 3s → effective 6000 → overlay shows 'C' (forward!). 
+      video.currentTime = 4;
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES3, nativeCues: [] });
+      ctrl.init();
+      ctrl.updateCues(CUES3, []);
+      ctrl.setOffsetProvider(() => 3000);
+      const prevBtn = container.querySelector('[data-testid="nav-cluster-prev"]') as HTMLButtonElement;
+      prevBtn.click();
+      expect(video.currentTime).toBe(0); // (3000 - 3000) / 1000
+      ctrl.destroy();
+    });
+
+    it('next seeks to (nextCue.start - offsetMs) so overlay displays the next cue', () => {
+      // Video at 1s (raw in 'A'), offset +3000ms → effective 4000ms → 'B' (index 1).
+      // next → cues[2] 'C'. Seek target = (C.start - offset) / 1000 = (6000-3000)/1000 = 3s.
+      // After seek at 3s, effective = 6000 → overlay shows 'C' (the next displayed cue). ✓
+      video.currentTime = 1;
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES3, nativeCues: [] });
+      ctrl.init();
+      ctrl.updateCues(CUES3, []);
+      ctrl.setOffsetProvider(() => 3000);
+      const nextBtn = container.querySelector('[data-testid="nav-cluster-next"]') as HTMLButtonElement;
+      nextBtn.click();
+      expect(video.currentTime).toBe(3); // (6000 - 3000) / 1000
+      ctrl.destroy();
+    });
+
+    it('default offset provider returns 0 — seek target = cue.start/1000 (backward compat)', () => {
+      // No setOffsetProvider → default () => 0. prev → cues[0].start/1000 = 0s.
+      video.currentTime = 4;
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: CUES3, nativeCues: [] });
+      ctrl.init();
+      ctrl.updateCues(CUES3, []);
+      const prevBtn = container.querySelector('[data-testid="nav-cluster-prev"]') as HTMLButtonElement;
+      prevBtn.click();
+      expect(video.currentTime).toBe(0); // (0 - 0) / 1000
+      ctrl.destroy();
+    });
+  });
+
   describe('repeat — no-sub 3-state cycle (A / B / cancel)', () => {
     it('click 1 → Repeat A (record start), click 2 → Repeat B (record end + loop), click 3 → Repeat cancel', () => {
       const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });

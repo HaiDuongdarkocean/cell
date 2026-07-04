@@ -55,6 +55,11 @@ export class NavClusterController {
   private onFullscreenChange: (() => void) | null = null;
   private timeupdateHandler: (() => void) | null = null;
   private onPersistSettings: ((settings: Partial<NavClusterSettings>) => void) | null = null;
+  // ADR-019 sync: lazy offset provider so nav actions read current offsetMs
+  // (same pattern as SubtitleOverlayController.setOffsetProvider). Without this,
+  // cluster nav used offset=0 while overlay used real offset → nav jumped to
+  // wrong cue (sub at t+offset, nav searched at t).
+  private getOffsetMs: () => number = () => 0;
 
   constructor(
     private readonly video: HTMLVideoElement,
@@ -92,6 +97,15 @@ export class NavClusterController {
   updateCues(targetCues: readonly SrtCue[], nativeCues: readonly SrtCue[]): void {
     this.cueSource = { targetCues, nativeCues };
     this.applyNoSubState();
+  }
+
+  /**
+   * Wire offset provider (ADR-019 sync). Nav actions read current offsetMs
+   * so prev/next/repeat jump to the same cue the overlay is showing.
+   * Mirror of SubtitleOverlayController.setOffsetProvider.
+   */
+  setOffsetProvider(provider: () => number): void {
+    this.getOffsetMs = provider;
   }
 
   /** Update settings (called on chrome.storage.onChanged). Realtime apply. */
@@ -220,10 +234,10 @@ export class NavClusterController {
   private wireButtonActions(): void {
     if (!this.dom) return;
     this.dom.prevBtn.addEventListener('click', () => {
-      prevSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues);
+      prevSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues, this.getOffsetMs());
     });
     this.dom.nextBtn.addEventListener('click', () => {
-      nextSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues);
+      nextSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues, this.getOffsetMs());
     });
     this.dom.rewindBtn.addEventListener('click', () => seekBy(this.video, -5));
     this.dom.forwardBtn.addEventListener('click', () => seekBy(this.video, 10));
@@ -278,7 +292,7 @@ export class NavClusterController {
 
   private beginRepeatLoop(): void {
     const currentMs = this.video.currentTime * 1000;
-    const { cues, index } = findActiveCueIndex(this.cueSource.targetCues, this.cueSource.nativeCues, currentMs);
+    const { cues, index } = findActiveCueIndex(this.cueSource.targetCues, this.cueSource.nativeCues, currentMs, this.getOffsetMs());
     if (index >= 0 && cues[index]) {
       this.repeatLoopCue = { start: cues[index].start, end: cues[index].end };
       return;
@@ -306,14 +320,16 @@ export class NavClusterController {
   /** One-shot repeat: seek to active/nearest cue start (has-sub only). */
   private repeatOnce(): void {
     const currentMs = this.video.currentTime * 1000;
-    const { cues, index } = findActiveCueIndex(this.cueSource.targetCues, this.cueSource.nativeCues, currentMs);
+    const offsetMs = this.getOffsetMs();
+    const { cues, index } = findActiveCueIndex(this.cueSource.targetCues, this.cueSource.nativeCues, currentMs, offsetMs);
     if (index >= 0 && cues[index]) {
-      this.video.currentTime = cues[index].start / 1000;
+      // ADR-019 sync: seek so overlay DISPLAYS this cue → shift by -offsetMs.
+      this.video.currentTime = (cues[index].start - offsetMs) / 1000;
       return;
     }
     const nearestIndex = findNearestCueIndex(cues, currentMs);
     if (nearestIndex >= 0 && cues[nearestIndex]) {
-      this.video.currentTime = cues[nearestIndex].start / 1000;
+      this.video.currentTime = (cues[nearestIndex].start - offsetMs) / 1000;
     }
   }
 
@@ -485,10 +501,10 @@ export class NavClusterController {
   private executeKeyAction(action: NavClusterKeyAction): void {
     switch (action) {
       case 'prev-sentence':
-        prevSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues);
+        prevSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues, this.getOffsetMs());
         break;
       case 'next-sentence':
-        nextSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues);
+        nextSentence(this.video, this.cueSource.targetCues, this.cueSource.nativeCues, this.getOffsetMs());
         break;
       case 'repeat-start':
         if (this.hasSubtitles()) {

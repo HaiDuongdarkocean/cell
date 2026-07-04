@@ -65,10 +65,14 @@ export function createToggleButton(container: HTMLElement): HTMLButtonElement {
 }
 
 /**
- * Seek video to cue start time.
+ * Seek video so the overlay DISPLAYS the given cue (ADR-019 sync).
+ * Overlay shows cue C when video.currentTime = (C.start - offsetMs) / 1000,
+ * because findCurrentLine searches at effective = currentTime + offsetMs.
+ * Default offsetMs=0 → raw cue.start/1000 (backward compatible).
  * @param video - Target video element
  * @param cue - Cue to seek to (uses cue.start in milliseconds → seconds)
+ * @param offsetMs - Subtitle offset in ms (default 0). Seek target shifts by -offsetMs.
  */
-export function seekToCue(video: HTMLVideoElement, cue: { start: number }): void {
-  video.currentTime = cue.start / 1000;
+export function seekToCue(video: HTMLVideoElement, cue: { start: number }, offsetMs: number = 0): void {
+  video.currentTime = (cue.start - offsetMs) / 1000;
 }

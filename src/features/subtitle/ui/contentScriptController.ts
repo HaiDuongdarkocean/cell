@@ -160,6 +160,11 @@ export function init(video: HTMLVideoElement): () => void {
     offsetController.init();
     // Wire offset provider vào overlay (so findCurrentLine nhận offsetMs)
     controller.setOffsetProvider(() => offsetController?.getOffsetMs() ?? 0);
+    // ADR-019 sync: wire same provider vào navCluster so prev/next/repeat
+    // jump to the same cue the overlay is showing (was offset=0 → wrong cue).
+    if (navCluster) {
+      navCluster.setOffsetProvider(() => offsetController?.getOffsetMs() ?? 0);
+    }
 
     // Wire file picker (import button) → processImportedFiles. Must run AFTER
     // managerPanel creation because the import button is created inside the
@@ -345,24 +350,28 @@ export function init(video: HTMLVideoElement): () => void {
 
     switch (action) {
       case 'prev-cue': {
-        const currentMs = video.currentTime * 1000;
-        const prevCue = [...bilingualCues].reverse().find((c) => c.end < currentMs);
-        if (prevCue) seekToCue(video, prevCue);
+        // ADR-019 sync: find cue via effective time, seek so overlay DISPLAYS it.
+        const offsetMs = offsetController?.getOffsetMs() ?? 0;
+        const effectiveMs = video.currentTime * 1000 + offsetMs;
+        const prevCue = [...bilingualCues].reverse().find((c) => c.end < effectiveMs);
+        if (prevCue) seekToCue(video, prevCue, offsetMs);
         break;
       }
       case 'next-cue': {
-        const currentMs = video.currentTime * 1000;
-        const nextCue = bilingualCues.find((c) => c.start > currentMs + 100);
-        if (nextCue) seekToCue(video, nextCue);
+        const offsetMs = offsetController?.getOffsetMs() ?? 0;
+        const effectiveMs = video.currentTime * 1000 + offsetMs;
+        const nextCue = bilingualCues.find((c) => c.start > effectiveMs + 100);
+        if (nextCue) seekToCue(video, nextCue, offsetMs);
         break;
       }
       case 'replay-cue': {
-        const currentMs = video.currentTime * 1000;
+        const offsetMs = offsetController?.getOffsetMs() ?? 0;
+        const effectiveMs = video.currentTime * 1000 + offsetMs;
         // Half-open [start, end) — at boundary t = cue[i].end = cue[i+1].start,
         // match the NEXT cue, not the previous one (replay-cue "jump back" bug).
-        const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end > currentMs)
-          ?? [...bilingualCues].reverse().find((c) => c.start < currentMs);
-        if (currentCue) seekToCue(video, currentCue);
+        const currentCue = bilingualCues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
+          ?? [...bilingualCues].reverse().find((c) => c.start < effectiveMs);
+        if (currentCue) seekToCue(video, currentCue, offsetMs);
         break;
       }
       case 'toggle-overlay': {
@@ -443,23 +452,25 @@ export function init(video: HTMLVideoElement): () => void {
     // cue navigation. Reuses the same logic as the in-page keydown handler.
     if (msg?.type === MESSAGE_TYPES.SHORTCUT_ACTION) {
       const action = (msg.payload as { action: string })?.action;
-      const currentMs = video.currentTime * 1000;
+      // ADR-019 sync: find cue via effective time, seek so overlay DISPLAYS it.
+      const offsetMs = offsetController?.getOffsetMs() ?? 0;
+      const effectiveMs = video.currentTime * 1000 + offsetMs;
       switch (action) {
         case 'prev-cue': {
-          const prevCue = [...bilingualCues].reverse().find((c) => c.end < currentMs);
-          if (prevCue) seekToCue(video, prevCue);
+          const prevCue = [...bilingualCues].reverse().find((c) => c.end < effectiveMs);
+          if (prevCue) seekToCue(video, prevCue, offsetMs);
           break;
         }
         case 'next-cue': {
-          const nextCue = bilingualCues.find((c) => c.start > currentMs + 100);
-          if (nextCue) seekToCue(video, nextCue);
+          const nextCue = bilingualCues.find((c) => c.start > effectiveMs + 100);
+          if (nextCue) seekToCue(video, nextCue, offsetMs);
           break;
         }
         case 'replay-cue': {
           // Half-open [start, end) — see in-page keydown handler above.
-          const currentCue = bilingualCues.find((c) => c.start <= currentMs && c.end > currentMs)
-            ?? [...bilingualCues].reverse().find((c) => c.start < currentMs);
-          if (currentCue) seekToCue(video, currentCue);
+          const currentCue = bilingualCues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
+            ?? [...bilingualCues].reverse().find((c) => c.start < effectiveMs);
+          if (currentCue) seekToCue(video, currentCue, offsetMs);
           break;
         }
         case 'toggle-overlay': {
