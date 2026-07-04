@@ -27,6 +27,8 @@ docs/           # Tài liệu dự án
 │   └── 016-fsd-screaming-architecture-worktree.md # FSD + Screaming Architecture worktree (refactor src/ + tests/ cho Orca platform, 6 layer + dependency rule + port/adapter)
 │   └── 017-refactor-architecture-debt.md
 │   └── 018-subtitle-navigation-control-cluster.md # Nav cluster controller contract (NavClusterController class, settings schema v2 flat keys, cue source findCurrentLine, kbd fixed parallel, Pointer Events drag, CSS half-circle collapse) # Refactor architecture debt phase 2 (8 decisions D1-D8 from architecture review 2026-07-01, M14-M21)
+│   └── 019-subtitle-time-offset.md # Subtitle time offset V1 interface contracts (OffsetController class, lazy/committed mode, settings schema)
+│   └── 020-youtube-subtitle-detection.md # YouTube subtitle detection interface contracts (Two Detection Paths, MAIN world postMessage bridge, InnerTube fallback via background SW, SPA yt-navigate-finish + videoId dedup, DetectedSubtitle isAsr?/displayName?)
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -54,8 +56,6 @@ docs/           # Tài liệu dự án
 │   └── spec-subtitle-navigation-control.md # Subtitle navigation control cluster PRD (6-nút 2 cột + drag + collapse + no-sub adaptive + settings)
 │   └── spec-settings-controls-restyle.md
 │   └── spec-settings-dialog-rearrange.md # Settings dialog rearrange spec (pair/indent/divider, fix Nav Cluster position) # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
-│   └── spec-youtube-subtitle-detection.md # YouTube subtitle detection spec (proactive parse ytInitialPlayerResponse, MAIN world, adapter pattern, ASR badge, PO Token skip, InnerTube fallback)
-│   ├── feature-inventory.md           # Feature inventory
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
@@ -72,6 +72,8 @@ docs/           # Tài liệu dự án
 │   └── plan-subtitle-navigation-control.md # Subtitle navigation control cluster — implementation plan (G2, 10 AD, 6 milestones, cue source divergence + settings schema v2)
 │   └── plan-settings-controls-restyle.md
 │   └── plan-settings-dialog-rearrange.md # Settings dialog rearrange plan (5 milestones M1-M5, CSS-first) # Settings controls restyle — implementation plan (G2, 10 milestones M1-M10, bottom-up atoms→integrate, cite spec-settings-controls-restyle)
+│   └── plan-subtitle-time-offset.md # Subtitle time offset — implementation plan (G2, 6 AD, 7 milestones M1-M7, lazy/committed offset)
+│   └── plan-youtube-subtitle-detection.md # YouTube subtitle detection — implementation plan (G2, 6 AD, 7 milestones M1-M7, Two Detection Paths, cite spec-youtube-subtitle-detection)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
@@ -121,6 +123,7 @@ docs/           # Tài liệu dự án
 │   └── review-subtitle-navigation-control.md # Spec review: subtitle navigation control cluster (BLOCKED Kimi 2.7 → patched → APPROVED Opus 4.8, 9 risks resolved, 1 LOW non-blocking)
 │   └── design-system-inventory-2026-07-02-nav-cluster.md # Design system inventory nav cluster (G3: 0 inconsist baseline, 10 new tokens, NavClusterButton atom, 3-layer enforcement)
 │   └── nav-cluster-frontend-design.md # Frontend UI engineering nav cluster (G3 build HOW: DOM tree, state machines, ARIA toolbar, responsive touch target, perf, anti-AI-aesthetic)
+│   └── review-youtube-subtitle-detection.md # Spec review: YouTube subtitle detection (APPROVED_WITH_CONDITIONS → revised → APPROVED, Opus 4.8, 3 CRITICAL + 4 HIGH resolved)
 ├── design-system/                     # Living design system documentation + mockups
 │   ├── design-system.md               # Living Design System Documentation (DSDS-inspired, 7 sections: tokens + components + patterns + a11y + runtime + sync + guidelines)
 │   ├── nav-cluster-frontend-design.md # (legacy) Frontend UI engineering nav cluster — kept as reference, not updated
@@ -136,7 +139,7 @@ docs/           # Tài liệu dự án
 │   ├── architecture-research-synthesis.md # Architecture research synthesis
 │   ├── software-production-process-research.md # Software production process research
 │   └── software-org-roles.md          # Software organization roles
-│   └── youtube-subtitle-format-research.md # YouTube subtitle format research (timedtext API, captionTracks, json3/vtt, PO Token) — pre-G1 grounding cho YouTube subtitle detection
+│   └── youtube-subtitle-format-research.md # YouTube subtitle format research (timedtext API, captionTracks structure, fmt=vtt/json3, PO Token, InnerTube fallback)
 └── reading-summaries/                 # Reading summaries
 
 src/            # Source code (chi tiết trong 2-architechture-system.md)
