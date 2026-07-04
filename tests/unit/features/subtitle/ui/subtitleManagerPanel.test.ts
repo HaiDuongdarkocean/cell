@@ -61,6 +61,15 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     expect(panel.style.display).toBe('block');
   });
 
+  it('panel resets inherited text-shadow to avoid blurred/frosted text', () => {
+    // Host players (e.g. Artplayer) often set text-shadow on their container.
+    // Our panel is injected inside that container, so it inherits the shadow
+    // and text looks slightly blurred. We explicitly reset it.
+    container.style.textShadow = '0 0 2px rgba(0,0,0,0.5)';
+    const { panel } = createSubtitleManagerPanel(container, createImportButton());
+    expect(panel.style.textShadow).toBe('none');
+  });
+
   it('panel has 2 sections (Target + Native)', () => {
     const { panel } = createSubtitleManagerPanel(container, createImportButton());
     const headers = panel.querySelectorAll('[data-testid="manager-section-header"]');

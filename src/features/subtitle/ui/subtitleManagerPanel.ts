@@ -126,6 +126,10 @@ export function createSubtitleManagerPanel(
     padding: var(--spacing-xs, 4px);
     font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
     font-size: var(--font-size-base, 14px);
+    /* Reset inherited text-shadow from host player (e.g. Artplayer sets
+       text-shadow on its container; our panel is injected inside it). Without
+       this reset, panel text looks slightly blurred/frosted. */
+    text-shadow: none;
   `;
   container.appendChild(panel);
 
