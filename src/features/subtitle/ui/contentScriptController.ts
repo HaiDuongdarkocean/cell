@@ -538,7 +538,12 @@ export function init(video: HTMLVideoElement): () => void {
         nativeUrl: payload?.native?.url,
         targetLang: payload?.target?.language,
         nativeLang: payload?.native?.language,
+        targetMatchesCount: payload?.targetMatches?.length,
+        nativeMatchesCount: payload?.nativeMatches?.length,
       });
+      if (!payload?.target && !payload?.native) {
+        showToast('Auto-load: received but no target/native in payload', container);
+      }
       void handleAutoLoadSubtitles(payload, {
         controller: {
           loadBilingualCues: (t: SrtCue[], n: SrtCue[]) => controller?.loadBilingualCues(t, n),

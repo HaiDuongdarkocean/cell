@@ -479,7 +479,14 @@ export async function pushAutoLoadSubtitles(
       }
     }
 
-    if (!result) return;
+    if (!result) {
+      console.log('[bg pushAutoLoadSubtitles] no match — subtitles detected but none match target/native lang', {
+        targetLang: settings.subtitleOverlayTargetLanguage,
+        nativeLang: settings.subtitleOverlayNativeLanguage,
+        detectedLanguages: subtitles.map((s) => s.language),
+      });
+      return;
+    }
     const payload: AutoLoadSubtitlesPayload = {
       tabId,
       target: result.target,

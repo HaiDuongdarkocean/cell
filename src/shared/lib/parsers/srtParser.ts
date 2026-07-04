@@ -52,14 +52,24 @@ export function parseSrt(content: string): SrtSubtitle {
       continue;
     }
 
-    const timingLine = lines[lineIndex].trim();
-    const timing = parseTimingLine(timingLine);
-    lineIndex += 1;
+    let timingLine = lines[lineIndex].trim();
+    let timing = parseTimingLine(timingLine);
+
+    // Non-standard SRT (kisskh.buzz/angkortv): first line is a literal like
+    // "None" instead of a numeric index. Skip non-timing lines until we find
+    // the timing line — without this, every cue is skipped and auto-load
+    // fails with "No cues found in SRT content".
+    while (timing === null && lineIndex + 1 < lines.length) {
+      lineIndex += 1;
+      timingLine = lines[lineIndex].trim();
+      timing = parseTimingLine(timingLine);
+    }
 
     if (timing === null) {
-      // Malformed timing → skip this cue
+      // No timing line found in this block → skip
       continue;
     }
+    lineIndex += 1;
 
     const textLines = lines.slice(lineIndex);
     const text = stripSubtitleTags(textLines.join('\n')).trim();

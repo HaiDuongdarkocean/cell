@@ -227,7 +227,16 @@ export async function handleAutoLoadSubtitles(
   const nativeCues = nativeResult?.success ? nativeResult.cues : [];
 
   // Both empty (both failed or both null) → nothing to load.
-  if (targetCues.length === 0 && nativeCues.length === 0) return;
+  if (targetCues.length === 0 && nativeCues.length === 0) {
+    deps.onToast?.('Auto-load: no cues loaded (both empty)');
+    return;
+  }
+
+  // Toast success — anh yêu cần nhìn thấy kết quả auto-load để debug.
+  const parts: string[] = [];
+  if (targetCues.length > 0) parts.push(`target ${targetCues.length} cues`);
+  if (nativeCues.length > 0) parts.push(`native ${nativeCues.length} cues`);
+  deps.onToast?.(`Auto-load OK: ${parts.join(' + ')}`);
 
   deps.controller.loadBilingualCues(targetCues, nativeCues);
   deps.onPanelRender?.(targetCues, nativeCues);

@@ -49,6 +49,23 @@ Second cue`;
     expect(result.cues[1].text).toBe('Second cue');
   });
 
+  test('parses kisskh/angkortv SRT with "None" literal as cue index', () => {
+    // kisskh.buzz serves SRT where each cue starts with literal "None"
+    // instead of a numeric index. Without the non-timing-line skip logic,
+    // every cue is skipped → "No cues found in SRT content" → auto-load fails.
+    const content = `None\r\n00:00:10,580 --> 00:00:13,280\r\n(Kim Da Mi)\r\n\r\nNone\r\n00:00:14,320 --> 00:00:16,190\r\n(Shin Ye Eun)\r\n\r\nNone\r\n00:00:18,120 --> 00:00:20,560\r\n(Heo Nam Jun)`;
+
+    const result = parseSrt(content);
+
+    expect(result.cues).toHaveLength(3);
+    expect(result.cues[0].index).toBe(1);
+    expect(result.cues[0].start).toBe(10580);
+    expect(result.cues[0].end).toBe(13280);
+    expect(result.cues[0].text).toBe('(Kim Da Mi)');
+    expect(result.cues[1].text).toBe('(Shin Ye Eun)');
+    expect(result.cues[2].text).toBe('(Heo Nam Jun)');
+  });
+
   test('skips cue with malformed timing', () => {
     const content = `1
 00:00:01,000 --> 00:00:05,000

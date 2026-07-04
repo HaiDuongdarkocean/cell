@@ -75,6 +75,20 @@ function extractLanguage(url: string): string {
     }
   }
 
+  // Kebab-case language suffix: some sites (kisskh.buzz) use
+  // `episode-1-en.srt` instead of `episode-1.en.srt`. Split by '-' and check
+  // the last segment as a BCP47 primary subtag. isValidIsoCode guards against
+  // false positives like "memories", "episode", "1" (not 2-3 letters or not
+  // in ISO map).
+  const kebabParts = filenameWithoutExt.split('-');
+  if (kebabParts.length >= 2) {
+    const candidate = kebabParts[kebabParts.length - 1] ?? '';
+    if (BCP47_PATTERN.test(candidate)) {
+      const primary = candidate.split('-')[0].toLowerCase();
+      if (isValidIsoCode(primary)) return primary;
+    }
+  }
+
   const segments = pathname.split('/').filter((s) => s.length > 0);
   if (segments.length >= 2) {
     const candidate = segments[segments.length - 2] ?? '';
