@@ -78,6 +78,7 @@ export class NavClusterController {
     this.applyVisibility();
     this.applyNoSubState();
     this.applyAppearance();
+    this.applyCollapsedState();
     this.container.appendChild(dom.cluster);
 
     this.wireButtonActions();
@@ -369,27 +370,29 @@ export class NavClusterController {
   private wireDrag(): void {
     if (!this.dom) return;
     const cluster = this.dom.cluster;
+    const grip = this.dom.grip;
+
+    // ADR-018 D5-rev: drag via grip tab (expanded) OR cluster (collapsed).
+    // Collapsed state has no buttons inside → whole circle is the handle.
+    // Expanded state: only grip tab triggers drag (cluster body = buttons).
+    const isDragTarget = (target: EventTarget | null): boolean => {
+      if (cluster.classList.contains('collapsed')) return target === cluster;
+      return target === grip;
+    };
+    // The element that receives pointer capture + aria-grabbed.
+    const dragHandle = (): HTMLElement => (cluster.classList.contains('collapsed') ? cluster : grip);
 
     const onPointerDown = (e: PointerEvent): void => {
-      // Drag only on outer border (viền) — 4px padding zone around cluster edge.
-      // e.target === cluster means pointer is on cluster's direct area (padding
-      // frame OR inter-column gap). Exclude interior by checking pointer is within
-      // 4px of any edge.
-      if (e.target !== cluster) return;
-      const rect = cluster.getBoundingClientRect();
-      const pad = 4; // matches CSS padding: 4px
-      const ox = e.clientX - rect.left;
-      const oy = e.clientY - rect.top;
-      const onBorder = ox < pad || ox > rect.width - pad || oy < pad || oy > rect.height - pad;
-      if (!onBorder) return;
-
+      if (!isDragTarget(e.target)) return;
       e.preventDefault();
+      const handle = dragHandle();
       try {
-        cluster.setPointerCapture(e.pointerId);
+        handle.setPointerCapture(e.pointerId);
       } catch {
         // setPointerCapture can throw if pointerId invalid — ignore
       }
-      cluster.setAttribute('aria-grabbed', 'true');
+      handle.setAttribute('aria-grabbed', 'true');
+      cluster.classList.add('dragging');
       this.dragStart = {
         px: e.clientX,
         py: e.clientY,
@@ -416,30 +419,28 @@ export class NavClusterController {
 
     const onPointerUp = (e: PointerEvent): void => {
       if (!this.dragStart) return;
+      const handle = dragHandle();
       try {
-        cluster.releasePointerCapture(e.pointerId);
+        handle.releasePointerCapture(e.pointerId);
       } catch {
         // ignore
       }
-      cluster.setAttribute('aria-grabbed', 'false');
+      handle.setAttribute('aria-grabbed', 'false');
+      cluster.classList.remove('dragging');
       this.dragStart = null;
       this.persistSettings({ position: this.settings.position });
     };
 
     const onDblClick = (e: MouseEvent): void => {
-      // Only reset on double-click of outer border (viền), not interior or buttons.
-      if (e.target !== cluster) return;
-      const rect = cluster.getBoundingClientRect();
-      const pad = 4;
-      const ox = e.clientX - rect.left;
-      const oy = e.clientY - rect.top;
-      const onBorder = ox < pad || ox > rect.width - pad || oy < pad || oy > rect.height - pad;
-      if (!onBorder) return;
+      // Reset on double-click of drag handle (grip when expanded, cluster when collapsed).
+      if (!isDragTarget(e.target)) return;
       const defaultPos: NavClusterPosition = { x: 0, y: 75 };
       this.updateSettings({ position: defaultPos, collapsed: false });
       this.persistSettings({ position: defaultPos, collapsed: false });
     };
 
+    // Listen on cluster (capture phase) so grip + collapsed-cluster both work
+    // with a single listener set. Grip is a child of cluster → events bubble.
     cluster.addEventListener('pointerdown', onPointerDown);
     cluster.addEventListener('pointermove', onPointerMove);
     cluster.addEventListener('pointerup', onPointerUp);

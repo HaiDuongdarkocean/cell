@@ -32,6 +32,11 @@ beforeAll(() => {
 beforeEach(() => {
   storageLocalSetMock.mockReset();
   storageLocalSetMock.mockResolvedValue(undefined);
+  // saveSettings now does read-modify-write (calls loadSettings → getStorage).
+  // Default to empty object so loadSettings returns DEFAULT_SETTINGS (raw undefined
+  // path). Tests that need specific stored values override this mock per-test.
+  storageLocalGetMock.mockReset();
+  storageLocalGetMock.mockResolvedValue({});
   // Reset the store to its initial state before each test.
   usePopupStore.getState().reset();
 });
@@ -234,7 +239,7 @@ describe('usePopupStore', () => {
     expect(usePopupStore.getState().downloads).toEqual([]);
   });
 
-  it('updateSettings merges partial settings and persists to chrome.storage.local', () => {
+  it('updateSettings merges partial settings and persists to chrome.storage.local', async () => {
     const partial: Partial<Settings> = { theme: 'dark', concurrentDownloads: 5 };
     usePopupStore.getState().updateSettings(partial);
 
@@ -245,6 +250,9 @@ describe('usePopupStore', () => {
     expect(settings.defaultQuality).toBe(DEFAULT_SETTINGS.defaultQuality);
     expect(settings.defaultSubtitleLanguage).toBe(DEFAULT_SETTINGS.defaultSubtitleLanguage);
 
+    // saveSettings is async (read-modify-write: loadSettings → merge → setStorage).
+    // Flush the microtask queue so the void saveSettings() inside updateSettings settles.
+    await new Promise((r) => setTimeout(r, 0));
     expect(storageLocalSetMock).toHaveBeenCalledTimes(1);
     const [arg] = storageLocalSetMock.mock.calls[0];
     // saveSettings stamps schemaVersion (ADR-017 D8 / ADR-018 D2) — the persisted

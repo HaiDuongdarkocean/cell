@@ -82,12 +82,38 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       ctrl.destroy();
     });
 
-    it('drag on cluster background starts drag (ADR-015)', () => {
+    it('grip tab has aria-grabbed=false by default (ADR-018 D5-rev)', () => {
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const grip = container.querySelector('[data-testid="nav-cluster-grip"]') as HTMLElement;
+      expect(grip).not.toBeNull();
+      expect(grip.getAttribute('aria-grabbed')).toBe('false');
+      expect(grip.getAttribute('role')).toBe('button');
+      expect(grip.getAttribute('aria-label')).toBe('Kéo để di chuyển cluster');
+      expect(grip.getAttribute('tabindex')).toBe('0');
+      ctrl.destroy();
+    });
+
+    it('drag on grip tab starts drag (ADR-018 D5-rev — grip is the handle)', () => {
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const grip = container.querySelector('[data-testid="nav-cluster-grip"]') as HTMLElement;
+      grip.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      expect(grip.getAttribute('aria-grabbed')).toBe('true');
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.classList.contains('dragging')).toBe(true);
+      ctrl.destroy();
+    });
+
+    it('drag on cluster body (not grip) is skipped (ADR-018 D5-rev — body is not a handle)', () => {
       const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
       ctrl.init();
       const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      // pointerdown directly on cluster (not on grip child) → no drag
       cluster.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      expect(cluster.getAttribute('aria-grabbed')).toBe('true');
+      const grip = container.querySelector('[data-testid="nav-cluster-grip"]') as HTMLElement;
+      expect(grip.getAttribute('aria-grabbed')).toBe('false');
+      expect(cluster.classList.contains('dragging')).toBe(false);
       ctrl.destroy();
     });
 
@@ -96,8 +122,8 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       ctrl.init();
       const prevBtn = container.querySelector('[data-testid="nav-cluster-prev"]') as HTMLButtonElement;
       prevBtn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
-      expect(cluster.getAttribute('aria-grabbed')).toBe('false');
+      const grip = container.querySelector('[data-testid="nav-cluster-grip"]') as HTMLElement;
+      expect(grip.getAttribute('aria-grabbed')).toBe('false');
       ctrl.destroy();
     });
 
@@ -109,8 +135,8 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       const svg = prevBtn.querySelector('svg');
       expect(svg).not.toBeNull();
       svg!.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
-      expect(cluster.getAttribute('aria-grabbed')).toBe('false');
+      const grip = container.querySelector('[data-testid="nav-cluster-grip"]') as HTMLElement;
+      expect(grip.getAttribute('aria-grabbed')).toBe('false');
       ctrl.destroy();
     });
 
@@ -128,15 +154,54 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       ctrl.destroy();
     });
 
-    it('double-click on cluster background resets position to default', () => {
+    it('double-click on grip tab resets position to default (ADR-018 D5-rev)', () => {
+      const customPos = { x: 50, y: 50 };
+      const ctrl = new NavClusterController(video, container, { ...DEFAULT_NAV_CLUSTER_SETTINGS, position: customPos }, { targetCues: CUES, nativeCues: [] });
+      ctrl.init();
+      ctrl.updateCues(CUES, []);
+      const grip = container.querySelector('[data-testid="nav-cluster-grip"]') as HTMLElement;
+      grip.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.style.left).toBe('0%');
+      expect(cluster.style.top).toBe('75%');
+      ctrl.destroy();
+    });
+
+    it('double-click on cluster body (not grip) does NOT reset (ADR-018 D5-rev)', () => {
       const customPos = { x: 50, y: 50 };
       const ctrl = new NavClusterController(video, container, { ...DEFAULT_NAV_CLUSTER_SETTINGS, position: customPos }, { targetCues: CUES, nativeCues: [] });
       ctrl.init();
       ctrl.updateCues(CUES, []);
       const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
       cluster.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-      expect(cluster.style.left).toBe('0%');
-      expect(cluster.style.top).toBe('75%');
+      expect(cluster.style.left).toBe('50%');
+      expect(cluster.style.top).toBe('50%');
+      ctrl.destroy();
+    });
+
+    it('collapsed cluster: drag on cluster circle starts drag (no buttons inside)', () => {
+      const ctrl = new NavClusterController(video, container, { ...DEFAULT_NAV_CLUSTER_SETTINGS, collapsed: true }, { targetCues: CUES, nativeCues: [] });
+      ctrl.init();
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.classList.contains('collapsed')).toBe(true);
+      cluster.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      // collapsed → cluster itself is the handle → aria-grabbed on cluster
+      expect(cluster.getAttribute('aria-grabbed')).toBe('true');
+      expect(cluster.classList.contains('dragging')).toBe(true);
+      ctrl.destroy();
+    });
+
+    it('collapsed cluster: grip tab hidden via CSS class (verified in browser, not jsdom)', () => {
+      const ctrl = new NavClusterController(video, container, { ...DEFAULT_NAV_CLUSTER_SETTINGS, collapsed: true }, { targetCues: CUES, nativeCues: [] });
+      ctrl.init();
+      const grip = container.querySelector('[data-testid="nav-cluster-grip"]') as HTMLElement;
+      // Grip element exists in DOM; CSS (.nav-cluster.collapsed .nav-cluster-grip
+      // { display: none }) hides it. jsdom doesn't load CSS → verify via class
+      // on cluster (collapsed) which is the CSS hook. Visual hide verified in
+      // browser test (mockup + Edge MCP).
+      expect(grip).not.toBeNull();
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.classList.contains('collapsed')).toBe(true);
       ctrl.destroy();
     });
   });

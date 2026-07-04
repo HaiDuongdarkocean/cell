@@ -11,6 +11,7 @@ export type NavClusterEdge = 'left' | 'right';
 /** Built cluster DOM elements (references for controller wiring). */
 export interface NavClusterDOM {
   readonly cluster: HTMLDivElement;
+  readonly grip: HTMLDivElement;
   readonly mainColumn: HTMLDivElement;
   readonly secondaryColumn: HTMLDivElement;
   readonly noSubColumn: HTMLDivElement;
@@ -49,6 +50,18 @@ export function buildClusterDOM(): NavClusterDOM {
   cluster.setAttribute('aria-grabbed', 'false');
   cluster.className = 'nav-cluster';
 
+  // ADR-018 D5-rev: grip tab — dedicated drag handle for touch + mouse.
+  // Visual: 28×4px pill bar; hit-area: 44×24px (HIG minimum). Attached to
+  // top edge of cluster, centered. Collapsed state hides it (cluster circle
+  // becomes the handle). See ADR-018 supplement D5-rev for rationale.
+  const grip = document.createElement('div');
+  grip.setAttribute('data-testid', 'nav-cluster-grip');
+  grip.setAttribute('role', 'button');
+  grip.setAttribute('aria-label', 'Kéo để di chuyển cluster');
+  grip.setAttribute('aria-grabbed', 'false');
+  grip.setAttribute('tabindex', '0');
+  grip.className = 'nav-cluster-grip';
+
   const mainColumn = document.createElement('div');
   mainColumn.setAttribute('data-testid', 'nav-cluster-main');
   mainColumn.className = 'nav-cluster-main';
@@ -80,9 +93,9 @@ export function buildClusterDOM(): NavClusterDOM {
   gapCover.className = 'nav-cluster-gap-cover';
   gapCover.setAttribute('aria-hidden', 'true');
 
-  cluster.append(mainColumn, secondaryColumn, noSubColumn, gapCover);
+  cluster.append(grip, mainColumn, secondaryColumn, noSubColumn, gapCover);
 
-  return { cluster, mainColumn, secondaryColumn, noSubColumn, prevBtn, repeatBtn, nextBtn, rewindBtn, forwardBtn };
+  return { cluster, grip, mainColumn, secondaryColumn, noSubColumn, prevBtn, repeatBtn, nextBtn, rewindBtn, forwardBtn };
 }
 
 /**

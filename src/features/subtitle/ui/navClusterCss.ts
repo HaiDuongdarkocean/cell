@@ -20,10 +20,15 @@ export const NAV_CLUSTER_CSS = `
   z-index: var(--nav-cluster-z-index, 1000001);
   font-family: system-ui, -apple-system, sans-serif;
   user-select: none;
-  transition: transform 150ms ease, opacity 150ms ease;
+  transition: transform 150ms ease, opacity 150ms ease, box-shadow 150ms ease;
   pointer-events: auto;
-  cursor: move !important;
+  /* ADR-018 D5-rev: drag is via grip tab only — cluster body = default cursor */
+  cursor: default;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.nav-cluster.dragging {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  transform: scale(1.03);
 }
 /* Background layer with opacity so controls can change opacity without affecting
    buttons/icons. Backdrop-filter stays here to blur the video behind cluster. */
@@ -40,6 +45,48 @@ export const NAV_CLUSTER_CSS = `
 .nav-cluster[aria-grabbed="true"] {
   cursor: grabbing !important;
 }
+/* ADR-018 D5-rev: grip tab — dedicated drag handle (touch + mouse).
+   Visual: 28×4px pill bar (::before). Hit-area: 44×24px (HIG minimum).
+   Attached to top edge of cluster, centered. Collapsed hides it. */
+.nav-cluster-grip {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  z-index: 11;
+}
+.nav-cluster-grip::before {
+  content: '';
+  width: 28px;
+  height: 4px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-text-muted, #94a3b8);
+  opacity: 0.35;
+  transition: opacity 150ms ease, background 150ms ease;
+}
+.nav-cluster-grip:hover::before {
+  opacity: 0.7;
+}
+.nav-cluster-grip:focus-visible {
+  outline: 2px solid var(--color-border-focus, #60a5fa);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm, 6px);
+}
+.nav-cluster.dragging .nav-cluster-grip::before {
+  opacity: 0.9;
+  background: var(--color-text, #f1f5f9);
+}
+.nav-cluster.dragging .nav-cluster-grip {
+  cursor: grabbing;
+}
 .nav-cluster-main,
 .nav-cluster-secondary {
   display: flex;
@@ -49,9 +96,8 @@ export const NAV_CLUSTER_CSS = `
   justify-content: center;
   cursor: default !important;
 }
-/* Cover inter-column gap so cursor shows default (not move) — real DOM element
-   is the event target instead of cluster, so border-zone drag check (e.target
-   === cluster) fails here. ponytail: 1 div, no JS logic. */
+/* Cover inter-column gap so cursor shows default — real DOM element
+   is the event target instead of cluster, so gap clicks don't hit grip logic. */
 .nav-cluster-gap-cover {
   position: absolute;
   top: 4px;
@@ -127,10 +173,18 @@ export const NAV_CLUSTER_CSS = `
   height: var(--nav-cluster-collapse-size, var(--nav-cluster-btn-size, 48px));
   overflow: hidden;
   border-radius: 50% 0 0 50%;
+  /* ADR-018 D5-rev: collapsed circle = drag handle (no buttons inside) */
+  cursor: grab;
+}
+.nav-cluster.collapsed.dragging {
+  cursor: grabbing;
 }
 .nav-cluster.collapsed.mirror-right {
   border-radius: 0 50% 50% 0;
   transform: scaleX(-1);
+}
+.nav-cluster.collapsed .nav-cluster-grip {
+  display: none;
 }
 .nav-cluster.collapsed .nav-cluster-main .nav-cluster-btn,
 .nav-cluster.collapsed .nav-cluster-secondary {

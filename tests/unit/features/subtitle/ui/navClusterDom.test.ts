@@ -47,9 +47,17 @@ describe('navClusterDom — pure helpers (ADR-018 D1, frontend design)', () => {
       expect(dom.cluster.getAttribute('aria-grabbed')).toBe('false');
     });
 
-    it('no drag handle button (ADR-015 — drag on cluster background)', () => {
+    it('creates grip tab drag handle (ADR-018 D5-rev — touch + mouse)', () => {
       const dom = buildClusterDOM();
-      expect(dom.cluster.querySelector('[data-testid="nav-cluster-drag-handle"]')).toBeNull();
+      expect(dom.grip).toBeDefined();
+      expect(dom.grip.getAttribute('data-testid')).toBe('nav-cluster-grip');
+      expect(dom.grip.getAttribute('role')).toBe('button');
+      expect(dom.grip.getAttribute('aria-label')).toBe('Kéo để di chuyển cluster');
+      expect(dom.grip.getAttribute('aria-grabbed')).toBe('false');
+      expect(dom.grip.getAttribute('tabindex')).toBe('0');
+      expect(dom.grip.className).toBe('nav-cluster-grip');
+      // Grip is first child of cluster (appended before columns)
+      expect(dom.cluster.firstElementChild).toBe(dom.grip);
     });
 
     it('action buttons render inline SVG icons (not text glyphs)', () => {
