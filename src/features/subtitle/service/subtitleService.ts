@@ -51,13 +51,25 @@ export function findSubtitlesForOverlay(
     targetLang && subtitles.filter((s) => s.language.toLowerCase() === targetLang).length >= 2
       ? subtitles
           .filter((s) => s.language.toLowerCase() === targetLang)
-          .map((s) => ({ url: s.url, language: s.language, format: s.format }))
+          .map((s) => ({
+            url: s.url,
+            language: s.language,
+            format: s.format,
+            isAsr: s.isAsr,
+            displayName: s.displayName,
+          }))
       : [];
   const nativeMatches =
     nativeLang && subtitles.filter((s) => s.language.toLowerCase() === nativeLang).length >= 2
       ? subtitles
           .filter((s) => s.language.toLowerCase() === nativeLang)
-          .map((s) => ({ url: s.url, language: s.language, format: s.format }))
+          .map((s) => ({
+            url: s.url,
+            language: s.language,
+            format: s.format,
+            isAsr: s.isAsr,
+            displayName: s.displayName,
+          }))
       : [];
 
   return { target, native, targetMatches, nativeMatches };
@@ -89,5 +101,11 @@ export function findPreferredMatch(
       ? preferredIndex
       : 0;
   const match = matches[index];
-  return { url: match.url, language: match.language, format: match.format };
+  return {
+    url: match.url,
+    language: match.language,
+    format: match.format,
+    isAsr: match.isAsr,
+    displayName: match.displayName,
+  };
 }

@@ -115,7 +115,24 @@ export function createSubtitleDropdown(
         gap: 8px;
         ${index === currentActiveIndex ? 'background: rgba(255,255,255,0.15); font-weight: bold;' : ''}
       `;
-      item.textContent = formatSubtitleName('auto', sub.language, index);
+      item.textContent = formatSubtitleName(
+        'auto',
+        sub.language,
+        index,
+        undefined,
+        sub.displayName,
+      );
+      // ADR-020: render ASR badge for YouTube auto-generated captions.
+      if (sub.isAsr === true) {
+        const badge = document.createElement('span');
+        badge.style.cssText =
+          'font-size: 9px; font-weight: 600; text-transform: uppercase;' +
+          'letter-spacing: 0.5px; padding: 1px 5px; border-radius: 3px;' +
+          'background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.85);' +
+          'margin-left: 4px;';
+        badge.textContent = 'auto';
+        item.appendChild(badge);
+      }
       const meta = document.createElement('span');
       meta.style.cssText = 'opacity: 0.7; font-size: 11px;';
       meta.textContent = sub.format.toUpperCase();

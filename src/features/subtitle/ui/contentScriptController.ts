@@ -565,7 +565,7 @@ export function init(video: HTMLVideoElement): () => void {
         nativeMatchesCount: payload?.nativeMatches?.length,
       });
       if (!payload?.target && !payload?.native) {
-        showToast('Auto-load: received but no target/native in payload', container);
+        showToast('No subtitles detected', container, { variant: 'warning' });
       }
       void handleAutoLoadSubtitles(payload, {
         controller: {
@@ -598,7 +598,7 @@ export function init(video: HTMLVideoElement): () => void {
             payload: { tabId: undefined, cues: bilingualCues },
           });
         },
-        onToast: (message: string) => showToast(message, container),
+        onToast: (message, variant) => showToast(message, container, { variant }),
         onSubtitleMatches: (targetM, nativeM) => {
           targetMatches = targetM;
           nativeMatches = nativeM;
@@ -612,19 +612,21 @@ export function init(video: HTMLVideoElement): () => void {
           // Build panel items from matches so panel shows even with 1 sub.
           autoTargetItems = targetM.map((m, i) => ({
             id: `auto-target-${i}`,
-            name: formatSubtitleName('auto', m.language, i),
+            name: formatSubtitleName('auto', m.language, i, undefined, m.displayName),
             format: m.format,
             source: 'auto' as const,
             role: 'target' as const,
             index: i,
+            isAsr: m.isAsr,
           }));
           autoNativeItems = nativeM.map((m, i) => ({
             id: `auto-native-${i}`,
-            name: formatSubtitleName('auto', m.language, i),
+            name: formatSubtitleName('auto', m.language, i, undefined, m.displayName),
             format: m.format,
             source: 'auto' as const,
             role: 'native' as const,
             index: i,
+            isAsr: m.isAsr,
           }));
           // ADR-015 T10 fix: merge auto + imported items in panel (both visible).
           // Previously: imported items replaced auto items → auto subtitles vanished.
@@ -654,7 +656,7 @@ export function init(video: HTMLVideoElement): () => void {
     const { targetLang, nativeLang } = await loadTargetNativeLangs();
     const parsed = await parseAndDetectFiles(files);
     if (parsed.length === 0) {
-      debouncedToast('Import failed: no valid subtitle files', _container);
+      debouncedToast('No valid subtitle files', _container, { variant: 'error' });
       return;
     }
     const assignment = assignImportRole(parsed, targetLang, nativeLang);
@@ -721,13 +723,13 @@ export function init(video: HTMLVideoElement): () => void {
     const total = assignment.target.length + assignment.native.length;
     const ignoredCount = assignment.ignored.length;
     if (total === 1) {
-      debouncedToast(`✓ Imported ${parsed[0].file.name}`, _container);
+      debouncedToast(`Imported ${parsed[0].file.name}`, _container, { variant: 'success' });
     } else {
       const parts: string[] = [];
-      if (assignment.target.length > 0) parts.push(`Target:${assignment.target.length}`);
-      if (assignment.native.length > 0) parts.push(`Native:${assignment.native.length}`);
+      if (assignment.target.length > 0) parts.push(`target:${assignment.target.length}`);
+      if (assignment.native.length > 0) parts.push(`native:${assignment.native.length}`);
       const ignoredTxt = ignoredCount > 0 ? ` (${ignoredCount} ignored)` : '';
-      debouncedToast(`✓ Imported ${total} files → ${parts.join(' + ')}${ignoredTxt}`, _container);
+      debouncedToast(`Imported ${total} subtitle files (${parts.join(', ')})${ignoredTxt}`, _container, { variant: 'success' });
     }
   }
 
@@ -772,7 +774,7 @@ export function init(video: HTMLVideoElement): () => void {
     } else {
       controller?.loadBilingualCues([], parsed.cues);
     }
-    debouncedToast(`Switched to ${parsed.file.name}`, container);
+    debouncedToast(`Switched to ${parsed.file.name}`, container, { variant: 'success' });
   }
 
   // ADR-015 T10: side maps moved to state block above (importedParsedTarget/Native)
@@ -814,7 +816,8 @@ export function init(video: HTMLVideoElement): () => void {
     try {
       const result = await fetchAndParseSubtitle(sub.url, formatFromUrl(sub.url), window.location.href);
       if (!result.success || result.cues.length === 0) {
-        showToast(`Failed to load sub #${index + 1}: ${result.error ?? 'empty'}`, container);
+        console.error('[onSubtitleSelect] failed', result.error);
+        showToast(`Could not load subtitle track ${index + 1}`, container, { variant: 'error' });
         return;
       }
       // D1 merge: loadBilingualCues keeps other side when this side is empty.
@@ -830,10 +833,11 @@ export function init(video: HTMLVideoElement): () => void {
         latestNativeCues = result.cues;
         navCluster?.updateCues(latestTargetCues, latestNativeCues);
       }
-      showToast(`Switched to sub #${index + 1}`, container);
+      showToast(`Switched to subtitle track ${index + 1}`, container, { variant: 'success' });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      showToast(`Switch failed: ${msg}`, container);
+      console.error('[onSubtitleSelect] error', msg);
+      showToast('Could not switch subtitle', container, { variant: 'error' });
     }
 
     // Save preference: origin → lang → index

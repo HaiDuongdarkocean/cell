@@ -10,6 +10,7 @@ export interface SubtitlePanelItem {
   readonly source: 'auto' | 'imported';
   readonly role: 'target' | 'native';
   readonly index: number; // position within role section
+  readonly isAsr?: boolean; // ADR-020: YouTube auto-generated captions badge
 }
 
 /**
@@ -250,6 +251,21 @@ export function createSubtitleManagerPanel(
         letter-spacing: 0.04em;
       `;
       meta.appendChild(formatBadge);
+      // ADR-020: ASR badge for YouTube auto-generated captions.
+      if (item.isAsr === true) {
+        const asrBadge = document.createElement('span');
+        asrBadge.textContent = 'AUTO';
+        asrBadge.style.cssText = `
+          padding: 1px 5px;
+          border-radius: var(--radius-sm, 6px);
+          background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
+          color: var(--color-warning, #f59e0b);
+          font-weight: 600;
+          font-size: 9px;
+          letter-spacing: 0.04em;
+        `;
+        meta.appendChild(asrBadge);
+      }
       if (item.size) {
         const size = document.createElement('span');
         size.textContent = formatBytes(item.size);

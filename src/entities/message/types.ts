@@ -63,6 +63,8 @@ export type MessageType =
   | 'SHORTCUT_ACTION'
   | 'VIDEO_EPISODE_CHANGED'
   | 'DETECTED_SUBTITLE_URL'
+  | 'DETECTED_SUBTITLES'
+  | 'INNERTUBE_FALLBACK_REQUEST'
   | 'FETCH_REQUEST'
   | 'FETCH_RESPONSE';
 
@@ -124,6 +126,8 @@ export interface SubtitleForOverlayResult {
   readonly url: string;
   readonly language: string;
   readonly format: string;
+  readonly isAsr?: boolean; // ADR-020: YouTube auto-generated captions
+  readonly displayName?: string; // ADR-020: YouTube "English (auto-generated)"
 }
 
 /**
@@ -411,6 +415,28 @@ export interface VideoEpisodeChangedPayload {
 export interface DetectedSubtitleUrlPayload {
   readonly tabId?: number; // background resolves from sender.tab.id
   readonly url: string;
+}
+
+/**
+ * YouTube caption tracks detected by the MAIN-world script (ADR-020).
+ * The isolated content-script relays this to the background, which maps
+ * the raw tracks to `DetectedSubtitle[]` and triggers auto-load.
+ */
+export interface DetectedSubtitlesPayload {
+  readonly tabId?: number; // background resolves from sender.tab.id
+  readonly tracks: readonly unknown[]; // YouTubeCaptionTrack[] (untyped at boundary)
+  readonly videoId: string;
+}
+
+/**
+ * InnerTube fallback request — the MAIN-world script cannot fetch with a
+ * `User-Agent` override (forbidden header), so it asks the background SW
+ * to call InnerTube (ADR-020 Contract 5).
+ */
+export interface InnertubeFallbackPayload {
+  readonly tabId?: number; // background resolves from sender.tab.id
+  readonly videoId: string;
+  readonly apiKey: string;
 }
 
 // === Typed Message Helpers ===

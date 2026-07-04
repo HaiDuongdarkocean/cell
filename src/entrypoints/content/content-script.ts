@@ -21,11 +21,37 @@ const scanner = new PageScanner();
 window.addEventListener('message', (event) => {
   if (event.source !== window) return;
   const data = event.data as { type?: string; url?: string } | null;
-  if (data?.type !== '__DETECTED_SUBTITLE_FETCH' || !data.url) return;
-  void sendMessage({
-    type: MESSAGE_TYPES.DETECTED_SUBTITLE_URL,
-    payload: { tabId: undefined, url: data.url },
-  });
+  if (data?.type === '__DETECTED_SUBTITLE_FETCH' && data.url) {
+    void sendMessage({
+      type: MESSAGE_TYPES.DETECTED_SUBTITLE_URL,
+      payload: { tabId: undefined, url: data.url },
+    });
+    return;
+  }
+  // === YouTube MAIN-world bridge (ADR-020) ===
+  // youtube-main-world.iife.ts reads `window.ytInitialPlayerResponse` (MAIN
+  // world only) and posts caption tracks / InnerTube fallback requests.
+  if (data?.type === '__YT_DETECTED_SUBTITLES') {
+    void sendMessage({
+      type: MESSAGE_TYPES.DETECTED_SUBTITLES,
+      payload: {
+        tabId: undefined,
+        tracks: (data as { tracks?: unknown[] }).tracks ?? [],
+        videoId: (data as { videoId?: string }).videoId ?? '',
+      },
+    });
+    return;
+  }
+  if (data?.type === '__YT_INNERTUBE_FALLBACK') {
+    void sendMessage({
+      type: MESSAGE_TYPES.INNERTUBE_FALLBACK_REQUEST,
+      payload: {
+        tabId: undefined,
+        videoId: (data as { videoId?: string }).videoId ?? '',
+        apiKey: (data as { apiKey?: string }).apiKey ?? '',
+      },
+    });
+  }
 });
 
 // Scan on page load — gửi không tabId, background resolve từ sender

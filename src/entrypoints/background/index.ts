@@ -62,6 +62,7 @@ import { registerMediaDetectionHandlers } from './handlers/mediaDetection';
 import { registerSubtitleHandlers } from './handlers/subtitle';
 import { registerSettingsHandlers } from './handlers/settings';
 import { registerSidePanelRelayHandlers } from './handlers/sidePanelRelay';
+import { registerYouTubeDetectionHandlers } from './handlers/youtubeDetection';
 import type { MessageHandler } from '@/entities/message';
 import type {
   DetectedVideo,
@@ -212,6 +213,7 @@ export class BackgroundService implements BackgroundContext {
     registerSubtitleHandlers(this);
     registerSettingsHandlers(this);
     registerSidePanelRelayHandlers(this);
+    registerYouTubeDetectionHandlers(this);
   }
 
   /** Type-safe wrapper around messageBus.on. */

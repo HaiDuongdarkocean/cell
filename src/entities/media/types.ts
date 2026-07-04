@@ -18,6 +18,8 @@ export interface DetectedSubtitle {
   readonly detectedAt: number;
   readonly videoId?: string;
   readonly size?: number; // File size in bytes
+  readonly isAsr?: boolean; // YouTube auto-generated captions (kind === "asr") — ADR-020
+  readonly displayName?: string; // YouTube "English (auto-generated)" — ADR-020
 }
 
 // Parsed subtitle structures

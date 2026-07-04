@@ -249,6 +249,31 @@ export class NetworkInterceptor {
   }
 
   /**
+   * Add pre-detected subtitles (e.g. from the YouTube MAIN-world DOM parse,
+   * ADR-020) directly into the subtitle map, bypassing `handleRequest`'s
+   * network-interception path. Deduplicates by URL within the same tab and
+   * notifies listeners when at least one new subtitle is added.
+   *
+   * Returns the number of newly-added subtitles (0 = all duplicates).
+   */
+  addDetectedSubtitles(subtitles: DetectedSubtitle[]): number {
+    let added = 0;
+    for (const subtitle of subtitles) {
+      const existing = this.getSubtitles(subtitle.tabId).find(
+        (s) => s.url === subtitle.url,
+      );
+      if (existing === undefined) {
+        this.subtitles.set(subtitle.id, subtitle);
+        added++;
+      }
+    }
+    if (added > 0) {
+      this.notifyListeners(subtitles[0]?.tabId ?? 0);
+    }
+    return added;
+  }
+
+  /**
    * Subscribe to media detection updates. The provided callback is invoked
    * with the current set of detected videos and subtitles for the relevant tab
    * whenever a new detection occurs.

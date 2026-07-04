@@ -14,6 +14,18 @@ export {
   detectSubtitle,
 } from './logic/subtitleDetector';
 export {
+  mapYouTubeCaptionTracks,
+  extractCaptionTracks,
+  buildVttUrl,
+  requiresPoToken,
+  type YouTubeCaptionTrack,
+} from './logic/youtubeSubtitleDetector';
+export {
+  fetchCaptionTracksViaInnerTube,
+  extractInnertubeApiKey,
+  extractClientVersion,
+} from './logic/youtubeInnertube';
+export {
   detectScript,
   scriptToCandidateLanguages,
   SCRIPT_RANGES,
