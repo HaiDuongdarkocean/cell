@@ -276,6 +276,22 @@ Navigation lifecycle handler (onTabUpdated loading) là shared function cho mọ
 ### Cases đã gặp
 - [media-accumulation-navigation.md](media-accumulation-navigation.md) — `onTabUpdated` loading chỉ reset auto-download guard, không clear media → media accumulate across episodes (11 → 22). Fix: thêm `clearTab` + `clearSessionMedia` + `lastCuesByTab.delete` + `updateBadgeForTab` (reuse từ `onTabRemoved`).
 
+---
+
+## Avoid dynamic import in code reachable from the service worker chunk
+
+### Nguyên lý
+Trong MV3 extension có nhiều entry point (SW, content-script, popup, sidepanel, offscreen), một module có thể nằm trong shared chunk được import bởi cả DOM context (popup/content) lẫn non-DOM context (SW). Vite inject `modulepreload-polyfill` (dùng `document`) vào bất kỳ chunk nào có dynamic `import()`. Nếu chunk đó reachable từ SW → SW load polyfill → `ReferenceError: document is not defined` → SW registration fail. Rule: với module shared với SW bundle, luôn static import. Dynamic import chỉ an toàn khi module KHÔNG reachable từ SW (UI-only module chỉ popup/sidepanel dùng).
+
+### Cases đã gặp
+- [no-dynamic-import-shared-sw-chunk.md](no-dynamic-import-shared-sw-chunk.md) — `offsetController.ts` thêm `await import('@/shared/lib/storage/settingsStore')` → Vite inject `modulepreload-polyfill` vào shared `settingsStore` chunk (cũng import bởi SW via helpers) → SW crash "Service worker registration failed. Status code: 15" → content-script `PAGE_SCAN_RESULT` fail "Receiving end does not exist" → popup không detect media trên themoviebox. Fix: đổi dynamic → static import (`saveSettings` đã static import sẵn, dynamic import vô nghĩa).
+
+### Apply cho
+- MV3 extension với Vite/`@crxjs/vite-plugin` (hoặc bất kỳ bundler auto-inject polyfill theo dynamic import)
+- Module shared giữa SW và content-script/popup (settings store, message bus, chrome API wrappers)
+- Code splitting decisions — khi nào dynamic import an toàn vs khi nào bắt buộc static
+
+
 ### Apply cho
 - Chrome extension `onTabUpdated` / `onTabRemoved` lifecycle handlers
 - SPA route change cleanup (clear state khi URL change, không đợi close)
