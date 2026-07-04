@@ -38,6 +38,7 @@ docs/           # Tài liệu dự án
 │   └── intent-refactor-system-architecture.md # Refactor system architecture (G0 research 53 nguồn + 7 nguyên lý + architecture review 2026-07-01 findings + 8 findings scope)
 │   └── intent-subtitle-navigation-control.md # Subtitle navigation control cluster (floating prev/repeat/next + seek 5s/10s + drag handle ⋯ + collapse half-circle, touch+mouse)
 │   └── intent-settings-controls-restyle.md # Settings controls restyle (vỏ→ruột: Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
+│   └── intent-settings-dialog-rearrange.md # Settings dialog rearrange (UI/UX: pair fields, fix Nav Cluster missing position, indent child, dividers)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
@@ -50,7 +51,8 @@ docs/           # Tài liệu dự án
 │   └── spec-refactor-system-architecture.md # Refactor system architecture PRD (FSD + Screaming Architecture worktree cho Orca platform extensibility)
 │   └── spec-refactor-architecture-debt.md # Refactor architecture debt PRD phase 2 (8 findings: C1-C3 + H1-H5 from architecture review 2026-07-01)
 │   └── spec-subtitle-navigation-control.md # Subtitle navigation control cluster PRD (6-nút 2 cột + drag + collapse + no-sub adaptive + settings)
-│   └── spec-settings-controls-restyle.md # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
+│   └── spec-settings-controls-restyle.md
+│   └── spec-settings-dialog-rearrange.md # Settings dialog rearrange spec (pair/indent/divider, fix Nav Cluster position) # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
 │   ├── feature-inventory.md           # Feature inventory
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
@@ -66,7 +68,8 @@ docs/           # Tài liệu dự án
 │   └── plan-refactor-system-architecture.md # Refactor system architecture — implementation plan (G2, 14 milestone + dependency graph + checkpoint A-E)
 │   └── plan-refactor-architecture-debt.md # Refactor architecture debt — implementation plan phase 2 (G2, 8 milestones M14-M21, cite spec-refactor-architecture-debt)
 │   └── plan-subtitle-navigation-control.md # Subtitle navigation control cluster — implementation plan (G2, 10 AD, 6 milestones, cue source divergence + settings schema v2)
-│   └── plan-settings-controls-restyle.md # Settings controls restyle — implementation plan (G2, 10 milestones M1-M10, bottom-up atoms→integrate, cite spec-settings-controls-restyle)
+│   └── plan-settings-controls-restyle.md
+│   └── plan-settings-dialog-rearrange.md # Settings dialog rearrange plan (5 milestones M1-M5, CSS-first) # Settings controls restyle — implementation plan (G2, 10 milestones M1-M10, bottom-up atoms→integrate, cite spec-settings-controls-restyle)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
@@ -98,6 +101,8 @@ docs/           # Tài liệu dự án
 │   ├── half-open-interval-cue-matching.md         # Half-open [start,end) for cue boundary matching
 │   ├── instant-scroll-long-lists.md               # Instant scroll for long lists (motion sickness)
 │   ├── sidepanel-active-tab-race.md               # Sidepanel stuck on "No subtitles loaded" after tab switch (activeTabIdForPanel race)
+│   ├── srt-parser-none-literal-index.md           # kisskh SRT "None" literal cue index → parser skip noise lines
+│   ├── url-lang-multi-separator-extraction.md     # kisskh kebab-case URL lang → multi-separator + domain guard
 │   └── skill-output-routing.md                    # Skill output routing (filled artifacts → project docs/, not skill dir)
 ├── test-reports/                      # MCP browser test reports — "does it work in real browser"
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md
@@ -120,6 +125,9 @@ docs/           # Tài liệu dự án
 │   └── icon-svg/                      # SVG icons used in mockups
 ├── mockups/                           # HTML mockups (design-driven-development output, G0.5)
 │   └── subtitle-selector-mockup.html  # Subtitle selector mockup v4 (ADR-014 enhancement)
+│   └── mockup-settings-grouped.html   # Settings dialog grouped layout v1 (sidebar + cards)
+│   └── mockup-settings-searchable-and-hint.html # Settings SearchableSelect + HintIcon atoms mockup
+│   └── mockup-settings-rearrange.html # Settings dialog rearrange v2 (pair/indent/divider, fix Nav Cluster position)
 ├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"
 │   ├── chrome-devtools-mcp.md
 │   ├── e2e-debugging.md

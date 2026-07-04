@@ -385,3 +385,35 @@ Khi một event được relay/filter dựa trên một mutable identity (active
 - Event bus filtering by `currentUser`, `selectedItem`, `activeRoom`
 - WebSocket/WebRTC message routing dựa trên "active session"
 - Any filter/render that reads `activeX` state khi vừa đổi active scope
+
+---
+
+## Parser tolerance — skip noise lines, don't reject whole block
+
+### Nguyên lý
+Parser phải tolerant với non-standard format — skip noise lines thay vì reject cả block khi 1 line không match format kỳ vọng. Real-world data (subtitle sources, log files, CSV exports) có format variant: literal placeholder thay vì số index, missing field, extra metadata lines. Reject cả block = mất toàn bộ record; skip noise line = giữ được record. Structural anchor (regex match timing/format) là anchor, text/index là noise-tolerant — advance lineIndex cho đến khi tìm thấy anchor, chỉ reject khi hết dòng mà không có anchor.
+
+### Cases đã gặp
+- [srt-parser-none-literal-index.md](srt-parser-none-literal-index.md) — kisskh.buzz/angkortv SRT dùng literal `None` thay vì số index cho mỗi cue. `parseSrt` cũ: `lines[0]="None"` → không match `/^\d+$/` → `timingLine="None"` → `parseTimingLine` null → `continue` (skip cả cue) → 0 cues → auto-load fail "No cues found in SRT content". Fix: while-loop skip non-timing lines cho đến khi tìm thấy timing line, chỉ reject block khi hết dòng không có anchor.
+
+### Apply cho
+- Subtitle parser (SRT, VTT, ASS — fansub sites có format variant)
+- Log parser (log lines có extra metadata, missing fields)
+- CSV/TSV parser (rows có extra columns, missing delimiters)
+- Any line-based parser với structural anchor (regex match) — advance past noise lines, don't reject block on first non-match
+
+---
+
+## Multi-separator extraction — try multiple separators, validate with domain guard
+
+### Nguyên lý
+Khi extract structured data (language code, version, episode number) từ URL/filename, thử nhiều separator convention (`.`, `-`, `_`) — các site khác nhau dùng convention khác nhau. Validate candidate với domain guard (`isValidIsoCode` cho language, regex cho version pattern) để tránh false positives từ word fragments. Order: most-specific convention first (dot-split cho lang suffix), broader convention second (kebab-split), structural fallback last (folder segment). Domain guard là bắt buộc — không validate = false positives (`"memories"`, `"episode"` match BCP47 shape 2-3 letters nhưng không phải language code).
+
+### Cases đã gặp
+- [url-lang-multi-separator-extraction.md](url-lang-multi-separator-extraction.md) — kisskh.buzz URL `a-hundred-memories-episode-1-en.srt` dùng kebab-case (`-en`) thay vì dot-separated (`episode-1.en.srt`). `extractLanguage` cũ chỉ split theo `.` → `parts.length=1` → `'unknown'` → `findSubtitlesForOverlay` không match target lang `'en'` → auto-load không trigger. Fix: thêm kebab-case fallback (split theo `-`, check last segment là BCP47 + `isValidIsoCode`) giữa dot-split và folder segment fallback.
+
+### Apply cho
+- URL/filename language extraction (subtitle, media, document)
+- Version parsing từ filename (`file-1-2-3.txt` vs `file.1.2.3.txt` vs `file_1_2_3.txt`)
+- Episode/season number extraction (`show-s01-e02` vs `show.s01e02` vs `show_01_02`)
+- Any structured data extraction từ URL/filename nơi các site dùng separator convention khác nhau
