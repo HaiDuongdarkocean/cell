@@ -153,7 +153,6 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultQuality: DEFAULT_QUALITY,
   defaultSubtitleLanguage: DEFAULT_SUBTITLE_LANGUAGE,
   selectedSubtitleLanguages: DEFAULT_SELECTED_SUBTITLE_LANGUAGES,
-  theme: 'dark',
   convertToMp4: 'always',
   parallelConversion: 'auto',
   manualWorkerCount: DEFAULT_MANUAL_WORKER_COUNT,

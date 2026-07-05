@@ -616,7 +616,6 @@ describe('Background integration', () => {
       defaultQuality: '720p',
       defaultSubtitleLanguage: 'ja',
       selectedSubtitleLanguages: ['ja'],
-      theme: 'dark',
       parallelFallback: 'save-ts',
       preferredVideoFormat: 'mp4',
       autoSelectEnabled: true,
@@ -655,7 +654,6 @@ describe('Background integration', () => {
         concurrentDownloads: 3,
         defaultQuality: 'highest',
         defaultSubtitleLanguage: 'en',
-        theme: 'light',
         convertToMp4: 'always',
         // parallelConversion, manualWorkerCount, parallelFallback missing
       },

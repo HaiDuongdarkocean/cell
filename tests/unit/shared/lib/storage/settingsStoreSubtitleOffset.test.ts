@@ -129,7 +129,6 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     // Unversioned settings (no schemaVersion) treated as v0
     const v0Settings = {
       concurrentDownloads: 3,
-      theme: 'dark',
     };
     storage[STORAGE_KEYS.SETTINGS] = v0Settings;
 

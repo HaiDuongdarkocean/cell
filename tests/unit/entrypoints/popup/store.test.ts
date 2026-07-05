@@ -240,11 +240,10 @@ describe('usePopupStore', () => {
   });
 
   it('updateSettings merges partial settings and persists to chrome.storage.local', async () => {
-    const partial: Partial<Settings> = { theme: 'dark', concurrentDownloads: 5 };
+    const partial: Partial<Settings> = { concurrentDownloads: 5 };
     usePopupStore.getState().updateSettings(partial);
 
     const settings = usePopupStore.getState().settings;
-    expect(settings.theme).toBe('dark');
     expect(settings.concurrentDownloads).toBe(5);
     // Untouched fields retain their default values.
     expect(settings.defaultQuality).toBe(DEFAULT_SETTINGS.defaultQuality);
@@ -290,7 +289,7 @@ describe('usePopupStore', () => {
     usePopupStore.getState().setVideos([makeVideo('1')]);
     usePopupStore.getState().setSubtitles([makeSubtitle('1')]);
     usePopupStore.getState().addDownload(makeDownload('1'));
-    usePopupStore.getState().updateSettings({ theme: 'dark' });
+    usePopupStore.getState().updateSettings({ concurrentDownloads: 5 });
     usePopupStore.getState().setExtensionActive(false);
     usePopupStore.getState().setLoading(true);
     usePopupStore.getState().setError('boom');
@@ -310,7 +309,6 @@ describe('usePopupStore', () => {
   it('loadPersistedSettings loads saved settings from chrome.storage.local', async () => {
     const savedSettings: Settings = {
       ...DEFAULT_SETTINGS,
-      theme: 'dark',
       concurrentDownloads: 5,
     };
     storageLocalGetMock.mockResolvedValue({
@@ -320,7 +318,6 @@ describe('usePopupStore', () => {
     await usePopupStore.getState().loadPersistedSettings();
 
     const state = usePopupStore.getState();
-    expect(state.settings.theme).toBe('dark');
     expect(state.settings.concurrentDownloads).toBe(5);
     expect(state.isSettingsLoaded).toBe(true);
     expect(storageLocalGetMock).toHaveBeenCalledWith(STORAGE_KEYS.SETTINGS);
@@ -368,7 +365,6 @@ describe('usePopupStore', () => {
         concurrentDownloads: 3,
         defaultQuality: 'highest',
         defaultSubtitleLanguage: 'en',
-        theme: 'light',
         convertToMp4: 'always',
         // parallelConversion, manualWorkerCount, parallelFallback missing
       },

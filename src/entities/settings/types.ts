@@ -94,7 +94,6 @@ export interface Settings {
   readonly defaultSubtitleLanguage?: string;
   /** Multi-select subtitle languages (ISO 639-1 codes). `['all']` = any. */
   readonly selectedSubtitleLanguages: string[];
-  readonly theme: 'light' | 'dark';
   /** When to attempt TS→MP4 conversion during M3U8 downloads. */
   readonly convertToMp4: ConvertToMp4Mode;
   /**

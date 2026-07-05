@@ -59,7 +59,6 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
       ...DEFAULT_SETTINGS,
       schemaVersion: 1,
       concurrentDownloads: 7,
-      theme: 'dark' as const,
     };
     delete (v1Settings as Record<string, unknown>).navClusterEnabled;
     delete (v1Settings as Record<string, unknown>).navClusterPosition;
@@ -72,7 +71,6 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     const result = await loadSettings();
 
     expect(result.concurrentDownloads).toBe(7);
-    expect(result.theme).toBe('dark');
     expect(result.navClusterEnabled).toBe(true); // merged default
   });
 

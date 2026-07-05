@@ -98,12 +98,14 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     }
     return merged;
   },
-  // v4 → v5: flip theme → dark + nav cluster button size → 34px (anh yêu
-  // không cần setup mỗi lần). Only flip khi user đang ở pre-V5 default
-  // (theme='light', buttonSize=48). User đã chọn khác → giữ nguyên.
+  // v4 → v5: flip nav cluster button size → 34px (anh yêu không cần setup
+  // mỗi lần). Only flip khi user đang ở pre-V5 default (buttonSize=48).
+  // User đã chọn khác → giữ nguyên. (ADR-022 port: theme field removed from
+  // Settings — theme now managed by themeStore/themeMode storage key. The
+  // v4→v5 theme flip is no longer needed; themeStore.init() seeds themeMode
+  // from legacy settings.theme if present.)
   4: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 5 } as Record<string, unknown>;
-    if (merged.theme === 'light' || merged.theme === undefined) merged.theme = 'dark';
     if (merged.navClusterButtonSize === 48 || merged.navClusterButtonSize === undefined) {
       merged.navClusterButtonSize = 34;
     }

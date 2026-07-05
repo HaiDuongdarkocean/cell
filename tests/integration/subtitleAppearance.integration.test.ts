@@ -125,7 +125,6 @@ describe('ADR-013 storage.onChanged → overlay realtime sync', () => {
     // loadOverlayStyles() in content-script falls back to DEFAULT_OVERLAY_STYLE_*
     const oldSettings = {
       concurrentDownloads: 3,
-      theme: 'light',
       // No subtitleOverlayTargetStyle / subtitleOverlayNativeStyle
     };
 
