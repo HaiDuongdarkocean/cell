@@ -417,3 +417,67 @@ Khi extract structured data (language code, version, episode number) từ URL/fi
 - Version parsing từ filename (`file-1-2-3.txt` vs `file.1.2.3.txt` vs `file_1_2_3.txt`)
 - Episode/season number extraction (`show-s01-e02` vs `show.s01e02` vs `show_01_02`)
 - Any structured data extraction từ URL/filename nơi các site dùng separator convention khác nhau
+
+---
+
+## Ephemeral runtime auth token → alternative client without token
+
+### Nguyên lý
+Khi một service yêu cầu auth token ephemeral (single-use, short-lived, chỉ generate được từ runtime context của service — browser player, native app), không thể fetch out-of-context (extension SW, server, headless). Thay vì cố lấy token (ephemeral = không reuse được), dùng alternative client/context mà service không yêu cầu token đó. Thường các service có nhiều client type (WEB, ANDROID, IOS, TV) với auth requirement khác nhau — client ít protected hơn (mobile/TV) thường skip token requirement.
+
+### Cases đã gặp
+- [youtube-po-token-sw-403-main-world.md](youtube-po-token-sw-403-main-world.md) — YouTube WEB InnerTube client yêu cầu PO Token (`exp=xpe`, ephemeral single-use, chỉ có từ player runtime) cho caption tracks → fetch từ extension trả empty. ANDROID InnerTube client (`clientName: 'ANDROID'`) trả tracks với `exp=null` (không cần PO Token). Fix: đổi WEB→ANDROID client — không cần lấy PO Token.
+
+### Apply cho
+- YouTube InnerTube API (WEB requires PO Token, ANDROID/IOS không)
+- Google APIs với multiple client contexts (WEB vs MOBILE vs TV)
+- Any service với ephemeral runtime-only auth (anti-bot token, session token từ player/app)
+- Scraping protected APIs — thử alternative client type trước khi cố reverse-engineer token generation
+
+---
+
+## Extension SW lacks page context → MAIN world fetch
+
+### Nguyên lý
+MV3 service worker `fetch()` chạy trong extension origin (`chrome-extension://...`), KHÔNG có page context (cookies của site, origin header, referer). Site yêu cầu cookies + origin (YouTube, Google, login-gated sites) → SW fetch 403/401. MAIN world content script (`"world": "MAIN"` trong manifest) chạy trong page origin (`https://site.com`) → có đầy đủ cookies + origin → fetch thành công. Khi SW fetch bị 403 do thiếu page context, chuyển fetch sang MAIN world script, relay kết quả về SW qua `window.postMessage` → ISOLATED content-script → `chrome.runtime.sendMessage`.
+
+### Cases đã gặp
+- [youtube-po-token-sw-403-main-world.md](youtube-po-token-sw-403-main-world.md) — YouTube InnerTube API fetch từ background SW trả 403 (no YouTube cookies, no page origin). MAIN world content script (`youtube-main-world.iife.ts`, `run_at: document_start`, `world: MAIN`) fetch thành công (có cookies + origin) → postMessage `__YT_DETECTED_SUBTITLES` → ISOLATED content-script relay → background → auto-load.
+
+### Apply cho
+- Chrome MV3 extension fetch tới cookie/origin-gated sites (YouTube, Google, login-gated)
+- Any SW fetch returning 403 where the page itself can fetch successfully (diagnose: page DevTools fetch works, SW fetch 403s)
+- Cross-origin requests needing session cookies (SAPISID, HSID, session cookies)
+- Alternative: `chrome.cookies.getAll()` + manual cookie header (works but misses origin/referer — MAIN world is cleaner when page context is available)
+
+---
+
+## Register listeners at earliest lifecycle before producers post
+
+### Nguyên lý
+`window.postMessage` (và fire-and-forget events nói chung) không buffer — message posted khi không có listener = lost forever (no replay, no retry). Khi producer post async (sau `document_start`, ~3-4s) và consumer listen, consumer MUST register listener tại earliest lifecycle point (`document_start`), KHÔNG phải `document_idle` (fires sau DOM parse ~3-4s — producer có thể đã post trước đó). Tách logic theo DOM dependency: DOM-independent listeners (chỉ đọc `event.data`) register tại `document_start`; DOM-dependent logic (querySelector, body access) defer đến `DOMContentLoaded`. Không tách = hoặc listener trễ (miss message) hoặc logic sớm (crash trên null DOM).
+
+### Cases đã gặp
+- [content-script-listener-race.md](content-script-listener-race.md) — YouTube MAIN world script (`document_start`) fetch InnerTube async ~3-4s → postMessage `__YT_DETECTED_SUBTITLES`. ISOLATED content-script `document_idle` register listener sau ~3-4s → message đã post trước khi listener register → lost. Fix: content-script `run_at: document_start` (listener register ngay), page scan defer đến `DOMContentLoaded` (cần DOM).
+
+### Apply cho
+- `window.postMessage` giữa MAIN world và ISOLATED content script (Chrome extension)
+- `BroadcastChannel` (fire-and-forget, no buffering)
+- Any fire-and-forget event bus where producer posts async after lifecycle start
+- Content script `run_at` decision: `document_start` cho listeners, `document_idle` cho DOM logic — tách theo dependency, không dùng 1 timing cho cả 2
+
+---
+
+## Format detection — check query params, not just file extension
+
+### Nguyên lý
+Format detection bằng file extension alone fails cho URLs không có extension — phổ biến với API endpoints encode format trong query params (`?fmt=vtt`, `?format=srt`, `?output=ass`, `?type=json3`). Extension check là fast path (no URL parsing, unambiguous cho `.vtt`/`.ass` files), nhưng cần query-param fallback cho extension-less URLs. Order: extension (fast, unambiguous) → query param (fallback cho APIs) → default. Cùng pattern với multi-separator extraction (thử nhiều convention), áp dụng cho format detection thay vì language extraction.
+
+### Cases đã gặp
+- [format-from-url-query-param.md](format-from-url-query-param.md) — YouTube `timedtext` URL không có extension (`/api/timedtext?v=...&fmt=vtt`). `formatFromUrl` cũ chỉ check `.vtt` extension → trả `'srt'` → `parseSrt` trên WebVTT content → 0 cues → "No cues found in SRT content". Fix: thêm `fmt=vtt` query param check (via `new URL(url).searchParams.get('fmt')`) giữa extension check và srt default.
+
+### Apply cho
+- Subtitle format detection (YouTube `fmt=`, other APIs `format=`/`output=`)
+- Media type detection từ API URLs (no extension, format in query)
+- Any format/type inference từ URL nơi extension-only check fails
+- API endpoints that encode output format in query params instead of file extension
