@@ -4,7 +4,7 @@ import { CueList } from './components/CueList';
 import { getActiveContentTabId } from '@/entrypoints/popup/utils/getActiveContentTab';
 import { handleShortcutKey } from '@/features/subtitle';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
-import { sendMessage, onMessage, removeOnMessageListener, addOnTabActivatedListener, addOnTabUpdatedListener, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { sendMessage, onMessage, removeOnMessageListener, addOnTabActivatedListener, addOnTabUpdatedListener } from '@/shared/lib/chrome-apis';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import type { BilingualCue, KeyboardShortcut } from '@/entities/media';
 import styles from './App.module.css';
@@ -228,29 +228,9 @@ export function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [shortcuts]);
 
-  // Apply theme to sidepanel document. theme.css uses [data-theme="dark"]
-  // selector (not prefers-color-scheme), so the attribute must be set
-  // explicitly. Sidepanel is long-lived (unlike popup which reloads on
-  // open), so also listen to chrome.storage.onChanged to sync realtime
-  // when the user toggles theme in the popup.
-  useEffect(() => {
-    const applyTheme = (theme: 'light' | 'dark'): void => {
-      document.documentElement.dataset.theme = theme;
-    };
-    loadSettings()
-      .then((settings) => applyTheme(settings.theme ?? 'light'))
-      .catch(() => applyTheme('light'));
-    const onChanged = (
-      changes: { [key: string]: chrome.storage.StorageChange },
-      area: string,
-    ): void => {
-      if (area !== 'local') return;
-      const newSettings = changes.settings?.newValue as { theme?: 'light' | 'dark' } | undefined;
-      if (newSettings?.theme) applyTheme(newSettings.theme);
-    };
-    onStorageChanged(onChanged);
-    return () => removeOnStorageChangedListener(onChanged);
-  }, []);
+  // ADR-022: theme áp dụng qua ThemeProvider (wraps sidepanel in main.tsx).
+  // Removed duplicate theme effect — ThemeProvider handles :root CSS vars +
+  // data-theme attr + storage.onChanged sync (themeMode + themeConfig keys).
 
   return (
     <div className={styles.app}>

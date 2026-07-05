@@ -40,18 +40,20 @@ describe('Nav cluster tokens — theme.css + themeTokens.ts mirror sync (ADR-018
     }
   });
 
-  it('themeTokens.ts LIGHT_TOKENS contains all 10 nav-cluster tokens', () => {
-    const lightBlock = themeTokensTs.split('LIGHT_TOKENS = `')[1]?.split('`')[0] ?? '';
+  it('themeTokens.ts STATIC_TOKENS contains all 10 nav-cluster tokens', () => {
+    // ADR-022 port: LIGHT_TOKENS replaced by STATIC_TOKENS (non-color tokens)
+    // + buildColorTokens (color tokens from customColors palette).
+    const staticBlock = themeTokensTs.split('STATIC_TOKENS = `')[1]?.split('`')[0] ?? '';
     for (const name of NAV_CLUSTER_TOKEN_NAMES) {
-      expect(lightBlock).toContain(name);
+      expect(staticBlock).toContain(name);
     }
   });
 
-  it('token values match between theme.css :root and themeTokens.ts LIGHT_TOKENS', () => {
+  it('token values match between theme.css :root and themeTokens.ts STATIC_TOKENS', () => {
     const rootBlock = themeCss.split(':root')[1]?.split('}')[0] ?? '';
-    const lightBlock = themeTokensTs.split('LIGHT_TOKENS = `')[1]?.split('`')[0] ?? '';
+    const staticBlock = themeTokensTs.split('STATIC_TOKENS = `')[1]?.split('`')[0] ?? '';
     const cssValues = extractTokenValues(rootBlock, NAV_CLUSTER_TOKEN_NAMES);
-    const tsValues = extractTokenValues(lightBlock, NAV_CLUSTER_TOKEN_NAMES);
+    const tsValues = extractTokenValues(staticBlock, NAV_CLUSTER_TOKEN_NAMES);
     for (const name of NAV_CLUSTER_TOKEN_NAMES) {
       expect(tsValues[name]).toBe(cssValues[name]);
     }

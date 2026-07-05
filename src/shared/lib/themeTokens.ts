@@ -1,48 +1,31 @@
 /**
- * Inject design-system theme tokens into a container (ADR-015 T12).
+ * Inject design-system theme tokens into a container (ADR-015 T12, ADR-022 D3).
  *
- * The popup has `theme.css` bundled via Vite, but content-scripts run in an
- * isolated world that cannot access popup stylesheets. The Subtitle Manager
- * Panel + chip + toast use `var(--color-*)` tokens, so we inject a `<style>`
- * block with the same tokens (light + dark) into the video container.
+ * Content-script isolated world — cannot access popup stylesheets. Injects a
+ * `<style>` block with theme tokens (light + dark) into document.head, sets
+ * `data-theme` on the video container.
  *
- * Toggle: reads `chrome.storage.local.settings.theme` → sets `data-theme`
- * attribute on container. Listens to `chrome.storage.onChanged` for realtime
- * theme switching.
+ * ADR-022 port: tokens now generated from chrome.storage.local.themeConfig
+ * (customColors palette) instead of hardcoded strings. Falls back to
+ * DEFAULT_THEME_CONFIG when storage absent. Listens to storage.onChanged for
+ * realtime theme switching (themeMode + themeConfig keys).
  *
- * ponytail ceiling: extract `tokens.css` as a shared asset V3 (build-time
- * import in both popup + content-script). V2 inlines the tokens here to avoid
- * a new build pipeline.
+ * Static tokens (fonts, spacing, radius, shadows, nav-cluster) stay constant —
+ * only color tokens are user-customizable.
  */
 
-import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
-import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { onStorageChanged, removeOnStorageChangedListener, getStorage } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
+import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
+import { DEFAULT_THEME_MODE } from '@/features/theme/logic/themeStorage';
+import { generateHoverColor, generateShade, hexToRgb } from '@/features/theme/logic/colorGenerator';
 import { NAV_CLUSTER_CSS } from '@/features/subtitle/ui/navClusterCss';
+import type { ThemeMode, ThemeConfig, ResolvedMode, CoreColorTokens } from '@/entities/theme';
 
-// Token definitions — mirrors src/entrypoints/popup/styles/theme.css (keep in sync).
-const LIGHT_TOKENS = `
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-subtle: rgba(37, 99, 235, 0.1);
-  --color-background: #ffffff;
-  --color-surface: #f8fafc;
-  --color-surface-hover: #f1f5f9;
-  --color-text: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94a3b8;
-  --color-text-inverse: #ffffff;
-  --color-border: #e2e8f0;
-  --color-border-subtle: #f1f5f9;
-  --color-border-focus: #2563eb;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #2563eb;
-  --color-error-subtle: rgba(239, 68, 68, 0.08);
-  --color-warning-subtle: rgba(245, 158, 11, 0.1);
-  --color-scrollbar-thumb: #cbd5e1;
-  --color-scrollbar-thumb-hover: #94a3b8;
-  --color-scrollbar-track: transparent;
+const STYLE_ID = 'subtitle-theme-tokens';
+
+/** Static (non-color) tokens — fonts, spacing, radius, shadows, nav-cluster. */
+const STATIC_TOKENS = `
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-size-xs: 12px;
   --font-size-sm: 13px;
@@ -62,8 +45,6 @@ const LIGHT_TOKENS = `
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-full: 9999px;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
   --transition: 150ms ease;
   --transition-fast: 150ms;
   --transition-normal: 200ms;
@@ -80,53 +61,52 @@ const LIGHT_TOKENS = `
   --nav-cluster-no-sub-window-ms: 3000;
 `;
 
-const DARK_TOKENS = `
-  --color-primary: #60a5fa;
-  --color-primary-hover: #3b82f6;
-  --color-primary-subtle: rgba(96, 165, 250, 0.15);
-  --color-background: #0f172a;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-  --color-text: #f1f5f9;
-  --color-text-secondary: #cbd5e1;
-  --color-text-muted: #64748b;
-  --color-text-inverse: #0f172a;
-  --color-border: #334155;
-  --color-border-subtle: #1e293b;
-  --color-border-focus: #60a5fa;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #60a5fa;
-  --color-error-subtle: rgba(239, 68, 68, 0.15);
-  --color-warning-subtle: rgba(245, 158, 11, 0.15);
-  --color-scrollbar-thumb: #475569;
-  --color-scrollbar-thumb-hover: #64748b;
-  --color-scrollbar-track: transparent;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-`;
+/** Build color token CSS string for one mode (9 core + derived). */
+function buildColorTokens(colors: CoreColorTokens, mode: ResolvedMode): string {
+  const rgba = (hex: string, alpha: number): string => {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+  const lines: string[] = [
+    `--color-primary: ${colors.primary};`,
+    `--color-primary-hover: ${generateHoverColor(colors.primary)};`,
+    `--color-primary-subtle: ${rgba(colors.primary, 0.1)};`,
+    `--color-background: ${colors.background};`,
+    `--color-surface: ${colors.surface};`,
+    `--color-surface-hover: ${generateHoverColor(colors.surface)};`,
+    `--color-text: ${colors.text};`,
+    `--color-text-secondary: ${colors.textSecondary};`,
+    `--color-text-muted: ${generateShade(colors.textSecondary, 20)};`,
+    `--color-text-inverse: ${colors.background};`,
+    `--color-border: ${colors.border};`,
+    `--color-border-subtle: ${generateShade(colors.surface, 5)};`,
+    `--color-border-focus: ${colors.primary};`,
+    `--color-success: ${colors.success};`,
+    `--color-warning: ${colors.warning};`,
+    `--color-error: ${colors.error};`,
+    `--color-info: ${colors.primary};`,
+    `--color-error-subtle: ${rgba(colors.error, mode === 'dark' ? 0.15 : 0.08)};`,
+    `--color-warning-subtle: ${rgba(colors.warning, mode === 'dark' ? 0.15 : 0.1)};`,
+    `--color-scrollbar-thumb: ${mode === 'dark' ? '#475569' : '#cbd5e1'};`,
+    `--color-scrollbar-thumb-hover: ${mode === 'dark' ? '#64748b' : '#94a3b8'};`,
+    `--color-scrollbar-track: transparent;`,
+    `--shadow-sm: 0 1px 2px rgba(0, 0, 0, ${mode === 'dark' ? 0.3 : 0.05});`,
+    `--shadow-md: 0 4px 12px rgba(0, 0, 0, ${mode === 'dark' ? 0.4 : 0.08});`,
+  ];
+  return lines.join('\n  ');
+}
 
-const STYLE_ID = 'subtitle-theme-tokens';
-
-/**
- * Inject theme tokens `<style>` into container + set initial `data-theme`.
- * Returns a cleanup function that removes the style + storage listener.
- *
- * @param container - Video wrapper (panel/chip/toast parent)
- * @returns cleanup function
- */
-export function injectThemeTokens(container: HTMLElement): () => void {
-  // Inject <style> once (idempotent — skip if already present)
-  if (!document.getElementById(STYLE_ID)) {
-    const style = document.createElement('style');
-    style.id = STYLE_ID;
-    style.textContent = `
+/** Build the full `<style>` text content from a ThemeConfig. */
+function buildStyleContent(config: ThemeConfig): string {
+  const lightTokens = buildColorTokens(config.customColors.light, 'light');
+  const darkTokens = buildColorTokens(config.customColors.dark, 'dark');
+  return `
 [data-theme="light"], :root {
-${LIGHT_TOKENS}
+  ${lightTokens}
+${STATIC_TOKENS}
 }
 [data-theme="dark"] {
-${DARK_TOKENS}
+  ${darkTokens}
 }
 
 @keyframes subtitle-toast-in {
@@ -136,31 +116,85 @@ ${DARK_TOKENS}
 
 ${NAV_CLUSTER_CSS}
 `;
+}
+
+/** Resolve 'system' mode → 'light'|'dark' via prefers-color-scheme. */
+function resolveSystemMode(): ResolvedMode {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function resolveMode(mode: ThemeMode): ResolvedMode {
+  return mode === 'system' ? resolveSystemMode() : mode;
+}
+
+/**
+ * Inject theme tokens `<style>` into document.head + set initial `data-theme`
+ * on container. Returns a cleanup function that removes the style + storage listener.
+ *
+ * @param container - Video wrapper (panel/chip/toast parent)
+ * @returns cleanup function
+ */
+export function injectThemeTokens(container: HTMLElement): () => void {
+  // Inject <style> once (idempotent — skip if already present)
+  if (!document.getElementById(STYLE_ID)) {
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = buildStyleContent(DEFAULT_THEME_CONFIG);
     document.head.appendChild(style);
   }
 
-  // Set initial theme synchronously to default 'dark' (V6 default) to avoid
-  // FOUC — loadSettings() is async and would leave data-theme unset until the
-  // microtask settles, causing a flash of unthemed content. loadSettings()
-  // below overrides if the user chose a different theme.
-  const applyTheme = (theme: 'light' | 'dark'): void => {
-    container.setAttribute('data-theme', theme);
-  };
-  applyTheme('dark');
+  // Set initial theme synchronously to default 'dark' to avoid FOUC.
+  container.setAttribute('data-theme', 'dark');
 
-  loadSettings().then((settings) => {
-    applyTheme(settings.theme ?? 'dark');
+  // Load mode + config from storage, then apply.
+  let currentMode: ThemeMode = DEFAULT_THEME_MODE;
+  let currentConfig: ThemeConfig = DEFAULT_THEME_CONFIG;
+
+  const applyResolved = (mode: ThemeMode, config: ThemeConfig): void => {
+    const resolved = resolveMode(mode);
+    container.setAttribute('data-theme', resolved);
+    // Re-inject <style> with custom palette (if config != default).
+    const style = document.getElementById(STYLE_ID);
+    if (style) style.textContent = buildStyleContent(config);
+  };
+
+  // Load themeMode + themeConfig from storage.
+  Promise.all([
+    getStorage<Record<string, unknown>>(STORAGE_KEYS.THEME_MODE),
+    getStorage<Record<string, unknown>>(STORAGE_KEYS.THEME_CONFIG),
+  ]).then(([modeData, configData]) => {
+    const storedMode = modeData[STORAGE_KEYS.THEME_MODE];
+    if (storedMode === 'light' || storedMode === 'dark' || storedMode === 'system') {
+      currentMode = storedMode;
+    }
+    const storedConfig = configData[STORAGE_KEYS.THEME_CONFIG] as ThemeConfig | undefined;
+    if (storedConfig?.customColors?.light && storedConfig?.customColors?.dark) {
+      currentConfig = storedConfig;
+    }
+    applyResolved(currentMode, currentConfig);
   }).catch(() => {
-    applyTheme('dark');
+    applyResolved(currentMode, currentConfig);
   });
 
-  // Listen for theme changes (realtime)
-  const onChanged = (changes: { [key: string]: chrome.storage.StorageChange }, area: string): void => {
+  // Listen for theme changes (realtime) — themeMode + themeConfig keys.
+  const onChanged = (changes: Record<string, chrome.storage.StorageChange>, area: string): void => {
     if (area !== 'local') return;
-    const newSettings = changes.settings?.newValue as { theme?: 'light' | 'dark' } | undefined;
-    if (newSettings?.theme) {
-      applyTheme(newSettings.theme);
+    let changed = false;
+    if (changes[STORAGE_KEYS.THEME_MODE]?.newValue) {
+      const newMode = changes[STORAGE_KEYS.THEME_MODE].newValue;
+      if (newMode === 'light' || newMode === 'dark' || newMode === 'system') {
+        currentMode = newMode;
+        changed = true;
+      }
     }
+    if (changes[STORAGE_KEYS.THEME_CONFIG]?.newValue) {
+      const newConfig = changes[STORAGE_KEYS.THEME_CONFIG].newValue as ThemeConfig | undefined;
+      if (newConfig?.customColors?.light && newConfig?.customColors?.dark) {
+        currentConfig = newConfig;
+        changed = true;
+      }
+    }
+    if (changed) applyResolved(currentMode, currentConfig);
   };
   onStorageChanged(onChanged);
 
@@ -169,3 +203,6 @@ ${NAV_CLUSTER_CSS}
     removeOnStorageChangedListener(onChanged);
   };
 }
+
+// Export for testing.
+export { buildStyleContent, buildColorTokens };

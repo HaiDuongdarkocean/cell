@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { usePopupStore } from '@/entrypoints/popup/store/popupStore';
+import { useThemeStore } from '@/stores/themeStore';
+import { resolveMode } from '@/features/theme/logic/themeManager';
 import { useDetectedMedia } from '@/entrypoints/popup/hooks/useDetectedMedia';
 import { useDownloadProgress } from '@/entrypoints/popup/hooks/useDownloadProgress';
 import { useExtensionStatus } from '@/entrypoints/popup/hooks/useExtensionStatus';
@@ -33,6 +35,10 @@ export function AppRedesigned(): React.JSX.Element {
   const setVideos = usePopupStore((state) => state.setVideos);
   const setError = usePopupStore((state) => state.setError);
 
+  // ADR-022: theme mode từ themeStore (source of truth tách riêng khỏi settings).
+  const themeMode = useThemeStore((state) => state.mode);
+  const switchThemeMode = useThemeStore((state) => state.switchMode);
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isAutoDownloadActive, setIsAutoDownloadActive] = useState(false);
@@ -49,11 +55,8 @@ export function AppRedesigned(): React.JSX.Element {
     void load();
   }, [loadPersistedSettings, loadExtensionStatus]);
 
-  useEffect(() => {
-    if (isSettingsLoaded) {
-      document.documentElement.dataset.theme = settings.theme;
-    }
-  }, [settings.theme, isSettingsLoaded]);
+  // ADR-022: theme áp dụng qua ThemeProvider (wraps popup in main.tsx).
+  // Removed duplicate dataset.theme effect — ThemeProvider handles :root CSS vars.
 
   // Check if current tab URL is in auto-download whitelist
   useEffect(() => {
@@ -241,9 +244,13 @@ export function AppRedesigned(): React.JSX.Element {
   };
 
   const handleThemeToggle = (): void => {
-    const nextTheme = settings.theme === 'light' ? 'dark' : 'light';
-    document.documentElement.dataset.theme = nextTheme;
-    updateSettings({ theme: nextTheme });
+    // ADR-022: toggle qua themeStore (source of truth). Cycle light → dark → system → light.
+    const cycle: Record<string, 'light' | 'dark' | 'system'> = {
+      light: 'dark',
+      dark: 'system',
+      system: 'light',
+    };
+    switchThemeMode(cycle[themeMode] ?? 'dark');
   };
 
   const handleSettingsChange = (nextSettings: Settings): void => {
@@ -287,13 +294,13 @@ export function AppRedesigned(): React.JSX.Element {
   const selectionCount = selectedIds.size;
 
   return (
-    <div className={styles.popup} data-testid="app-root" data-theme={settings.theme}>
+    <div className={styles.popup} data-testid="app-root" data-theme={resolveMode(themeMode)}>
       <Header
         isActive={isActive}
         onToggleExtension={toggle}
         onToggleTheme={handleThemeToggle}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        currentTheme={settings.theme}
+        currentTheme={resolveMode(themeMode)}
         isAutoDownloadActive={isAutoDownloadActive}
         onToggleAutoDownload={handleToggleAutoDownload}
       />

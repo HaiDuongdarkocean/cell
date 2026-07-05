@@ -1,0 +1,69 @@
+// ThemeProvider — boot theme system cho popup/sidepanel/options (ADR-022 D3).
+//
+// 1. themeStore.init() — load mode + config from storage (seed legacy settings.theme)
+// 2. applyTheme(resolvedMode, config) — set :root CSS vars + data-theme attr
+// 3. registerSystemModeListener — re-apply khi OS theme đổi (chỉ khi mode='system')
+// 4. storage.onChanged listener — re-apply khi themeMode/themeConfig đổi từ nơi khác
+//
+// Content-script KHÔNG dùng ThemeProvider (isolated world) — dùng themeTokens.ts.
+
+import { useEffect, type ReactNode } from 'react';
+import { useThemeStore } from '@/stores/themeStore';
+import { applyTheme, resolveMode, registerSystemModeListener } from '@/features/theme/logic/themeManager';
+import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
+import type { ThemeConfig } from '@/entities/theme';
+
+interface ThemeProviderProps {
+  /** Children to wrap. */
+  children: ReactNode;
+}
+
+export function ThemeProvider({ children }: ThemeProviderProps): React.JSX.Element {
+  const mode = useThemeStore((s) => s.mode);
+  const config = useThemeStore((s) => s.config);
+  const isLoaded = useThemeStore((s) => s.isLoaded);
+  const init = useThemeStore((s) => s.init);
+
+  // Boot: init store once.
+  useEffect(() => {
+    void init();
+  }, [init]);
+
+  // Apply theme whenever mode/config changes (after init).
+  useEffect(() => {
+    if (!isLoaded) return;
+    applyTheme(resolveMode(mode), config);
+  }, [mode, config, isLoaded]);
+
+  // System mode listener — re-apply when OS theme changes (only matters if mode='system').
+  useEffect(() => {
+    if (!isLoaded || mode !== 'system') return;
+    const cleanup = registerSystemModeListener((resolved) => {
+      applyTheme(resolved, useThemeStore.getState().config);
+    });
+    return cleanup;
+  }, [mode, isLoaded]);
+
+  // storage.onChanged — sync từ nơi khác (e.g. options page thay đổi, popup phải follow).
+  useEffect(() => {
+    if (!isLoaded) return;
+    const onChanged = (changes: Record<string, chrome.storage.StorageChange>, area: string): void => {
+      if (area !== 'local') return;
+      if (changes[STORAGE_KEYS.THEME_MODE]?.newValue) {
+        const newMode = changes[STORAGE_KEYS.THEME_MODE].newValue;
+        if (newMode === 'light' || newMode === 'dark' || newMode === 'system') {
+          useThemeStore.setState({ mode: newMode });
+        }
+      }
+      if (changes[STORAGE_KEYS.THEME_CONFIG]?.newValue) {
+        const newConfig = changes[STORAGE_KEYS.THEME_CONFIG].newValue as ThemeConfig;
+        useThemeStore.setState({ config: newConfig });
+      }
+    };
+    onStorageChanged(onChanged);
+    return () => removeOnStorageChangedListener(onChanged);
+  }, [isLoaded]);
+
+  return <>{children}</>;
+}

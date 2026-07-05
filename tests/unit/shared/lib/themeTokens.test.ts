@@ -1,41 +1,54 @@
-import { injectThemeTokens } from '@/shared/lib/themeTokens';
+import { injectThemeTokens, buildStyleContent, buildColorTokens } from '@/shared/lib/themeTokens';
+import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
+import { STORAGE_KEYS } from '@/shared/config/config';
+import type { ThemeConfig } from '@/entities/theme';
 
 // Mock chrome.storage.local
-const storageData: { settings?: { theme?: 'light' | 'dark' } } = {};
-const storageListeners: Array<(changes: any, area: string) => void> = [];
+const storageData: Record<string, unknown> = {};
+const storageListeners: Array<(changes: Record<string, chrome.storage.StorageChange>, area: string) => void> = [];
 
 beforeAll(() => {
-  (global as any).chrome = (global as any).chrome ?? {};
-  (global as any).chrome.storage = (global as any).chrome.storage ?? {};
-  (global as any).chrome.storage.local = {
+  const g = global as unknown as { chrome?: unknown };
+  g.chrome = g.chrome ?? {};
+  const c = g.chrome as { storage: Record<string, unknown> };
+  c.storage = c.storage ?? {};
+  c.storage.local = {
     get: jest.fn((_key: string) => Promise.resolve(storageData)),
-    set: jest.fn((obj: any) => { Object.assign(storageData, obj); return Promise.resolve(); }),
+    set: jest.fn((obj: Record<string, unknown>) => { Object.assign(storageData, obj); return Promise.resolve(); }),
   };
-  (global as any).chrome.storage.onChanged = {
-    addListener: jest.fn((cb: (changes: any, area: string) => void) => { storageListeners.push(cb); }),
-    removeListener: jest.fn((cb: (changes: any, area: string) => void) => {
+  c.storage.onChanged = {
+    addListener: jest.fn((cb: (changes: Record<string, chrome.storage.StorageChange>, area: string) => void) => { storageListeners.push(cb); }),
+    removeListener: jest.fn((cb: (changes: Record<string, chrome.storage.StorageChange>, area: string) => void) => {
       const idx = storageListeners.indexOf(cb);
       if (idx >= 0) storageListeners.splice(idx, 1);
     }),
   };
+  // matchMedia mock (jsdom)
+  window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })) as unknown as typeof window.matchMedia;
 });
 
 beforeEach(() => {
-  delete storageData.settings;
+  for (const k of Object.keys(storageData)) delete storageData[k];
   document.head.innerHTML = '';
   storageListeners.length = 0;
 });
 
-// loadSettings() has a deeper async chain than the old direct getStorage call
-// (async function → await getStorage → return → .then). Flush enough microtasks
-// so the theme is applied before assertions run.
 async function flushMicrotasks(): Promise<void> {
   for (let i = 0; i < 5; i++) {
     await Promise.resolve();
   }
 }
 
-describe('injectThemeTokens (ADR-015 T12)', () => {
+describe('injectThemeTokens (ADR-015 T12, ADR-022 D3)', () => {
   it('injects <style> with theme tokens into document.head', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -65,8 +78,17 @@ describe('injectThemeTokens (ADR-015 T12)', () => {
     expect(container.getAttribute('data-theme')).toBe('dark');
   });
 
-  it('sets data-theme="dark" when settings.theme = dark', async () => {
-    storageData.settings = { theme: 'dark' };
+  it('sets data-theme="light" when themeMode = light', async () => {
+    storageData[STORAGE_KEYS.THEME_MODE] = 'light';
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    injectThemeTokens(container);
+    await flushMicrotasks();
+    expect(container.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('sets data-theme="dark" when themeMode = dark', async () => {
+    storageData[STORAGE_KEYS.THEME_MODE] = 'dark';
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
@@ -74,22 +96,59 @@ describe('injectThemeTokens (ADR-015 T12)', () => {
     expect(container.getAttribute('data-theme')).toBe('dark');
   });
 
-  it('responds to chrome.storage.onChanged for theme', async () => {
+  it('resolves system mode via prefers-color-scheme (light)', async () => {
+    storageData[STORAGE_KEYS.THEME_MODE] = 'system';
+    (window.matchMedia as unknown as jest.Mock).mockReturnValue({ matches: false });
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    injectThemeTokens(container);
+    await flushMicrotasks();
+    expect(container.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('resolves system mode via prefers-color-scheme (dark)', async () => {
+    storageData[STORAGE_KEYS.THEME_MODE] = 'system';
+    (window.matchMedia as unknown as jest.Mock).mockReturnValue({ matches: true });
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
     await flushMicrotasks();
     expect(container.getAttribute('data-theme')).toBe('dark');
-    // Simulate storage change to light
+  });
+
+  it('responds to chrome.storage.onChanged for themeMode', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    injectThemeTokens(container);
+    await flushMicrotasks();
+    expect(container.getAttribute('data-theme')).toBe('dark');
     for (const listener of storageListeners) {
-      listener({ settings: { newValue: { theme: 'light' } } }, 'local');
+      listener({ [STORAGE_KEYS.THEME_MODE]: { newValue: 'light' } }, 'local');
     }
     expect(container.getAttribute('data-theme')).toBe('light');
-    // Simulate storage change back to dark
     for (const listener of storageListeners) {
-      listener({ settings: { newValue: { theme: 'dark' } } }, 'local');
+      listener({ [STORAGE_KEYS.THEME_MODE]: { newValue: 'dark' } }, 'local');
     }
     expect(container.getAttribute('data-theme')).toBe('dark');
+  });
+
+  it('responds to chrome.storage.onChanged for themeConfig (re-injects style)', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    injectThemeTokens(container);
+    await flushMicrotasks();
+    const customConfig: ThemeConfig = {
+      customColors: {
+        light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#ff0000' },
+        dark: { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#00ff00' },
+      },
+    };
+    for (const listener of storageListeners) {
+      listener({ [STORAGE_KEYS.THEME_CONFIG]: { newValue: customConfig } }, 'local');
+    }
+    const style = document.getElementById('subtitle-theme-tokens');
+    expect(style?.textContent).toContain('#ff0000'); // custom light primary
+    expect(style?.textContent).toContain('#00ff00'); // custom dark primary
   });
 
   it('cleanup removes storage listener', () => {
@@ -101,13 +160,71 @@ describe('injectThemeTokens (ADR-015 T12)', () => {
     expect(storageListeners.length).toBe(beforeCount - 1);
   });
 
-  it('style contains both light + dark token blocks', () => {
+  it('style contains both light + dark token blocks with default palette', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     injectThemeTokens(container);
     const style = document.getElementById('subtitle-theme-tokens');
     expect(style?.textContent).toContain('[data-theme="dark"]');
-    expect(style?.textContent).toContain('#2563eb'); // light primary
-    expect(style?.textContent).toContain('#60a5fa'); // dark primary
+    expect(style?.textContent).toContain('#2563eb'); // default light primary
+    expect(style?.textContent).toContain('#60a5fa'); // default dark primary
+  });
+
+  it('applies custom themeConfig from storage on load', async () => {
+    const customConfig: ThemeConfig = {
+      customColors: {
+        light: { ...DEFAULT_THEME_CONFIG.customColors.light, primary: '#abcdef' },
+        dark: DEFAULT_THEME_CONFIG.customColors.dark,
+      },
+    };
+    storageData[STORAGE_KEYS.THEME_CONFIG] = customConfig;
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    injectThemeTokens(container);
+    await flushMicrotasks();
+    const style = document.getElementById('subtitle-theme-tokens');
+    expect(style?.textContent).toContain('#abcdef');
+  });
+});
+
+describe('buildStyleContent', () => {
+  it('returns CSS string with light + dark blocks', () => {
+    const css = buildStyleContent(DEFAULT_THEME_CONFIG);
+    expect(css).toContain('[data-theme="light"]');
+    expect(css).toContain('[data-theme="dark"]');
+    expect(css).toContain('--color-primary');
+  });
+
+  it('includes static tokens (fonts, spacing)', () => {
+    const css = buildStyleContent(DEFAULT_THEME_CONFIG);
+    expect(css).toContain('--font-family');
+    expect(css).toContain('--spacing-md');
+    expect(css).toContain('--radius-md');
+  });
+
+  it('includes nav-cluster CSS', () => {
+    const css = buildStyleContent(DEFAULT_THEME_CONFIG);
+    expect(css).toContain('nav-cluster');
+  });
+});
+
+describe('buildColorTokens', () => {
+  it('returns 9 core + derived token lines', () => {
+    const css = buildColorTokens(DEFAULT_THEME_CONFIG.customColors.dark, 'dark');
+    expect(css).toContain('--color-primary:');
+    expect(css).toContain('--color-primary-hover:');
+    expect(css).toContain('--color-primary-subtle:');
+    expect(css).toContain('--color-background:');
+    expect(css).toContain('--color-surface:');
+    expect(css).toContain('--color-text:');
+    expect(css).toContain('--color-border:');
+    expect(css).toContain('--color-success:');
+    expect(css).toContain('--color-error:');
+  });
+
+  it('uses custom primary color', () => {
+    const custom = { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#ff0000' };
+    const css = buildColorTokens(custom, 'dark');
+    expect(css).toContain('--color-primary: #ff0000;');
   });
 });
