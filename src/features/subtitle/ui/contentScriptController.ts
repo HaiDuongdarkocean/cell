@@ -544,31 +544,39 @@ export function init(video: HTMLVideoElement): () => void {
       }
     }
     // Receive SHORTCUT_ACTION from Side Panel (via background relay) →
-    // cue navigation. Reuses the same logic as the in-page keydown handler.
+    // cue navigation. ADR-021 D8: if seekTime provided (from sidepanel's local
+    // calculation), seek directly — avoids stale video.currentTime at arrival.
+    // Fallback: calculate from video.currentTime (for in-page keydown handler).
     if (m?.type === MESSAGE_TYPES.SHORTCUT_ACTION) {
-      const action = (m.payload as { action: string })?.action;
-      // ADR-019 sync: find cue via effective time, seek so overlay DISPLAYS it.
+      const payload = m.payload as { action: string; seekTime?: number };
+      const action = payload?.action;
       const offsetMs = offsetController?.getOffsetMs() ?? 0;
-      const effectiveMs = video.currentTime * 1000 + offsetMs;
-      switch (action) {
-        case 'prev-cue': {
-          const prevCue = [...bilingualCues].reverse().find((c) => c.end < effectiveMs);
-          if (prevCue) seekToCue(video, prevCue, offsetMs);
-          break;
-        }
-        case 'next-cue': {
-          const nextCue = bilingualCues.find((c) => c.start > effectiveMs + 100);
-          if (nextCue) seekToCue(video, nextCue, offsetMs);
-          break;
-        }
-        case 'replay-cue': {
-          // Half-open [start, end) — see in-page keydown handler above.
-          const currentCue = bilingualCues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
-            ?? [...bilingualCues].reverse().find((c) => c.start < effectiveMs);
-          if (currentCue) seekToCue(video, currentCue, offsetMs);
-          break;
-        }
-        case 'toggle-overlay': {
+      // ADR-021 D8: sidepanel sends seekTime (calculated at keypress time).
+      // Seek directly — no need to find cue from stale video.currentTime.
+      if (payload?.seekTime !== undefined && (action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue')) {
+        video.currentTime = (payload.seekTime - offsetMs) / 1000;
+      } else {
+        // Fallback: calculate from video.currentTime (in-page keydown path)
+        const effectiveMs = video.currentTime * 1000 + offsetMs;
+        switch (action) {
+          case 'prev-cue': {
+            const prevCue = [...bilingualCues].reverse().find((c) => c.end < effectiveMs);
+            if (prevCue) seekToCue(video, prevCue, offsetMs);
+            break;
+          }
+          case 'next-cue': {
+            const nextCue = bilingualCues.find((c) => c.start > effectiveMs + 100);
+            if (nextCue) seekToCue(video, nextCue, offsetMs);
+            break;
+          }
+          case 'replay-cue': {
+            // Half-open [start, end) — see in-page keydown handler above.
+            const currentCue = bilingualCues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
+              ?? [...bilingualCues].reverse().find((c) => c.start < effectiveMs);
+            if (currentCue) seekToCue(video, currentCue, offsetMs);
+            break;
+          }
+          case 'toggle-overlay': {
           overlayVisible = !overlayVisible;
           const overlay = document.querySelector('[data-testid="subtitle-overlay"]') as HTMLElement | null;
           if (overlay) {
@@ -626,6 +634,7 @@ export function init(video: HTMLVideoElement): () => void {
             })();
           }
           break;
+        }
         }
       }
     }

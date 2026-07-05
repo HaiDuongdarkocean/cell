@@ -192,9 +192,29 @@ export function App() {
       switch (action) {
         case 'prev-cue':
         case 'next-cue':
-        case 'replay-cue':
-          void sendMessage({ type: 'SHORTCUT_ACTION', payload: { action } });
+        case 'replay-cue': {
+          // ADR-021 D8: calculate seek target locally from sidepanel's currentTimeMs
+          // (close to keypress time) instead of letting content script calculate from
+          // video.currentTime at message arrival (~300ms later, video has advanced).
+          // This prevents highlight from jumping forward before seek arrives.
+          const store = useSidePanelStore.getState();
+          const cues = store.cues;
+          const effectiveMs = store.currentTimeMs + (store.offsetMs ?? 0);
+          let targetCue: BilingualCue | undefined;
+          if (action === 'prev-cue') {
+            targetCue = [...cues].reverse().find((c) => c.end < effectiveMs);
+          } else if (action === 'next-cue') {
+            targetCue = cues.find((c) => c.start > effectiveMs + 100);
+          } else {
+            // replay-cue: half-open [start, end), fallback to last cue before effective
+            targetCue = cues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
+              ?? [...cues].reverse().find((c) => c.start < effectiveMs);
+          }
+          if (targetCue) {
+            void sendMessage({ type: 'SHORTCUT_ACTION', payload: { action, seekTime: targetCue.start } });
+          }
           break;
+        }
         case 'toggle-overlay':
           // Overlay lives in the content page — relay via background
           void sendMessage({ type: 'SHORTCUT_ACTION', payload: { action: 'toggle-overlay' } });
