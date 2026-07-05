@@ -516,3 +516,19 @@ Format detection bằng file extension alone fails cho URLs không có extension
 - Media type detection từ API URLs (no extension, format in query)
 - Any format/type inference từ URL nơi extension-only check fails
 - API endpoints that encode output format in query params instead of file extension
+
+---
+
+## Prefer freshest source for identity, not richest
+
+### Nguyên lý
+`??` (nullish coalescing) picks the left operand whenever it is non-null/undefined — even if that value is stale. When two sources can provide an *identity* (which entity is this?), pick the **freshest** source, not the richest. Richness (more metadata) and freshness (how recently mutated) are orthogonal — for identity, freshness wins. A stale-but-rich cache will short-circuit `??` and hide the fresher signal. Reserve the rich source for *attributes* of the already-identified entity; resolve identity from the source the platform mutates first.
+
+### Cases đã gặp
+- [url-first-spa-nav-stale-player-response.md](url-first-spa-nav-stale-player-response.md) — YouTube SPA navigation (radio mix) updates `location.href` immediately but `ytInitialPlayerResponse` stays stale (old videoId) indefinitely. Detector used `getVideoIdFromPlayerResponse(...) ?? getVideoIdFromUrl()` → stale playerResponse (non-null) short-circuited `??` → `currentVideoId === lastVideoId` → poll never re-triggered detect → no subtitle autoload. Fix: swap to URL-first `getVideoIdFromUrl() ?? getVideoIdFromPlayerResponse(...)`.
+
+### Apply cho
+- SPA navigation identity (URL vs cached player response / app state)
+- `??` / `||` chains where the left operand can be stale-but-non-null
+- Polling/retry keyed off identity (re-run only when identity changes) — read identity from the freshest source
+- Any "two sources of truth for identity" situation (URL vs cache, route param vs store, prop vs state)
