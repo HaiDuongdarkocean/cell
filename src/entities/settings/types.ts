@@ -11,12 +11,20 @@ export type ShortcutAction =
   | 'next-cue'
   | 'replay-cue'
   | 'toggle-overlay'
-  | 'toggle-panel';
+  | 'toggle-panel'
+  | 'toggle-translate';
 
-/** A single keyboard shortcut binding: action ↔ key. */
+/** A single keyboard shortcut binding: action ↔ key (with optional modifiers for combos). */
 export interface KeyboardShortcut {
   readonly action: ShortcutAction;
-  readonly key: string; // single lowercase letter, e.g. 'a'
+  /** Lowercase single key, e.g. 'a', 'arrowleft'. For combo: the final key. */
+  readonly key: string;
+  /** Ctrl modifier (combo support, ADR-021 D7). Default false (backward compat). */
+  readonly ctrl?: boolean;
+  /** Shift modifier (combo support, ADR-021 D7). Default false (backward compat). */
+  readonly shift?: boolean;
+  /** Alt modifier (combo support, ADR-021 D7). Default false (backward compat). */
+  readonly alt?: boolean;
 }
 
 // === Nav Cluster Types (ADR-018) ===
@@ -134,6 +142,14 @@ export interface Settings {
    * bật thủ công khi cần. Applies to both target + native sides.
    */
   readonly subtitleOverlayAutoLoadAsr: boolean;
+  /**
+   * When true, if site has no native subtitle track → auto-translate target→native
+   * via Google Translate unofficial endpoint (ADR-021). Background sequential prefill,
+   * 0 setting params (chunk size, gap, budget hardcode). Default true (auto-dịch khi
+   * native thiếu — kim chỉ nam "user vào và học thôi"). Cache per-session in-memory,
+   * clear on SPA nav.
+   */
+  readonly subtitleOverlayAutoTranslate: boolean;
   /** Per-layer appearance config for target subtitle overlay (ADR-013). Independent from native. */
   readonly subtitleOverlayTargetStyle?: OverlayStyleConfig;
   /** Per-layer appearance config for native subtitle overlay (ADR-013). Independent from target. */

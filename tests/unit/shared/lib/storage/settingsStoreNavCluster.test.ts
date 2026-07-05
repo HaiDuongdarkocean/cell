@@ -26,8 +26,8 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 6 (bumped for V6 ASR auto-load toggle)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(6);
+  it('CURRENT_SCHEMA_VERSION is 7 (bumped for V6 ASR auto-load toggle)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(7);
   });
 
   it('migrates v1 settings to v2 with nav cluster defaults merged', async () => {
@@ -79,7 +79,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('clamps invalid navClusterPosition.x > 100 to 100', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 6,
+      schemaVersion: 7,
       navClusterPosition: { x: 150, y: 75 },
     };
     const result = await loadSettings();
@@ -89,7 +89,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('clamps invalid navClusterPosition.y < 0 to 0', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 6,
+      schemaVersion: 7,
       navClusterPosition: { x: 0, y: -10 },
     };
     const result = await loadSettings();
@@ -99,7 +99,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('clamps invalid navClusterBgOpacity > 1 to 1', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 6,
+      schemaVersion: 7,
       navClusterBgOpacity: 1.5,
     };
     const result = await loadSettings();
@@ -109,7 +109,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('clamps invalid navClusterButtonOpacity < 0 to 0', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 6,
+      schemaVersion: 7,
       navClusterButtonOpacity: -0.3,
     };
     const result = await loadSettings();
@@ -119,7 +119,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('accepts in-range navClusterButtonSize=33 (free range 10-100, ADR-018 D2-rev)', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 6,
+      schemaVersion: 7,
       navClusterButtonSize: 33,
     };
     const result = await loadSettings();
@@ -129,7 +129,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('accepts in-range navClusterButtonSize=52 (free range 10-100)', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 6,
+      schemaVersion: 7,
       navClusterButtonSize: 52,
     };
     const result = await loadSettings();
@@ -139,7 +139,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('clamps below-range navClusterButtonSize=5 to min 10', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 6,
+      schemaVersion: 7,
       navClusterButtonSize: 5,
     };
     const result = await loadSettings();
@@ -149,7 +149,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('clamps above-range navClusterButtonSize=150 to max 100', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 6,
+      schemaVersion: 7,
       navClusterButtonSize: 150,
     };
     const result = await loadSettings();
@@ -159,7 +159,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('falls back to default 34 when navClusterButtonSize is non-numeric', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 6,
+      schemaVersion: 7,
       navClusterButtonSize: 'big' as unknown as number,
     };
     const result = await loadSettings();
@@ -169,7 +169,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('saveSettings stamps schemaVersion 6', async () => {
     await saveSettings({ navClusterEnabled: false });
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(6);
+    expect(stored.schemaVersion).toBe(7);
   });
 
   it('saveSettings partial preserves existing stored fields (read-modify-write)', async () => {
@@ -213,6 +213,8 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     expect(result.subtitleOffset).toEqual({});
   });
 });
+
+
 
 
 

@@ -22,7 +22,7 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
     expect(screen.getByRole('heading', { name: /keyboard shortcuts/i, level: 4 })).toBeInTheDocument();
   });
 
-  it('renders input field for each shortcut action', () => {
+  it('renders input field for each shortcut action (6 actions incl. toggle-translate)', () => {
     render(
       <SettingsDialog
         isOpen={true}
@@ -31,15 +31,16 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
         onClose={noop}
       />,
     );
-    // 5 actions: prev-cue, next-cue, replay-cue, toggle-overlay, toggle-panel
+    // 6 actions: prev-cue, next-cue, replay-cue, toggle-overlay, toggle-panel, toggle-translate
     expect(screen.getByTestId('shortcut-prev-cue')).toBeInTheDocument();
     expect(screen.getByTestId('shortcut-next-cue')).toBeInTheDocument();
     expect(screen.getByTestId('shortcut-replay-cue')).toBeInTheDocument();
     expect(screen.getByTestId('shortcut-toggle-overlay')).toBeInTheDocument();
     expect(screen.getByTestId('shortcut-toggle-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('shortcut-toggle-translate')).toBeInTheDocument();
   });
 
-  it('displays current key values from settings', () => {
+  it('displays current key values from settings (pill text content)', () => {
     render(
       <SettingsDialog
         isOpen={true}
@@ -48,14 +49,21 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
         onClose={noop}
       />,
     );
-    expect((screen.getByTestId('shortcut-prev-cue') as HTMLInputElement).value).toBe('a');
-    expect((screen.getByTestId('shortcut-next-cue') as HTMLInputElement).value).toBe('d');
-    expect((screen.getByTestId('shortcut-replay-cue') as HTMLInputElement).value).toBe('s');
-    expect((screen.getByTestId('shortcut-toggle-overlay') as HTMLInputElement).value).toBe('w');
-    expect((screen.getByTestId('shortcut-toggle-panel') as HTMLInputElement).value).toBe('t');
+    // ADR-021 D7: ShortcutInput is now a pill (role=button), not a textbox.
+    // Single-char shows uppercase; combo shows modifier + key chips.
+    expect(screen.getByTestId('shortcut-prev-cue').textContent).toBe('A');
+    expect(screen.getByTestId('shortcut-next-cue').textContent).toBe('D');
+    expect(screen.getByTestId('shortcut-replay-cue').textContent).toBe('S');
+    expect(screen.getByTestId('shortcut-toggle-overlay').textContent).toBe('W');
+    expect(screen.getByTestId('shortcut-toggle-panel').textContent).toBe('T');
+    // toggle-translate = Ctrl+Shift+T combo
+    const translatePill = screen.getByTestId('shortcut-toggle-translate');
+    expect(translatePill.textContent).toContain('Ctrl');
+    expect(translatePill.textContent).toContain('Shift');
+    expect(translatePill.textContent).toContain('T');
   });
 
-  it('calls onChange with updated key when input changes', () => {
+  it('calls onChange with updated key when user presses a key', () => {
     const onChange = jest.fn();
     render(
       <SettingsDialog
@@ -65,8 +73,9 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
         onClose={noop}
       />,
     );
-    const input = screen.getByTestId('shortcut-prev-cue') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: 'q' } });
+    const pill = screen.getByTestId('shortcut-prev-cue');
+    pill.focus();
+    fireEvent.keyDown(pill, { key: 'q' });
     expect(onChange).toHaveBeenCalledTimes(1);
     const newSettings = onChange.mock.calls[0][0] as Settings;
     const prevCue = newSettings.keyboardShortcuts.find((s) => s.action === 'prev-cue');
@@ -83,8 +92,9 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
         onClose={noop}
       />,
     );
-    const input = screen.getByTestId('shortcut-next-cue') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: 'E' } });
+    const pill = screen.getByTestId('shortcut-next-cue');
+    pill.focus();
+    fireEvent.keyDown(pill, { key: 'E' });
     const newSettings = onChange.mock.calls[0][0] as Settings;
     const nextCue = newSettings.keyboardShortcuts.find((s) => s.action === 'next-cue');
     expect(nextCue?.key).toBe('e');
@@ -104,5 +114,6 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
     expect(screen.getByText(/replay cue/i)).toBeInTheDocument();
     expect(screen.getByText(/toggle overlay/i)).toBeInTheDocument();
     expect(screen.getByText(/toggle panel/i)).toBeInTheDocument();
+    expect(screen.getByText(/toggle auto-translate/i)).toBeInTheDocument();
   });
 });

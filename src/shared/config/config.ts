@@ -99,13 +99,15 @@ export const PARALLEL_LARGE_FILE_BYTES = 300 * 1024 * 1024; // 300 MB
 
 // === Default Settings ===
 
-/** Default keyboard shortcuts for subtitle floating panel (a/d/s/w/t). */
+/** Default keyboard shortcuts for subtitle floating panel (a/d/s/w/t + Ctrl+Shift+T). */
 export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   { action: 'prev-cue', key: 'a' },
   { action: 'next-cue', key: 'd' },
   { action: 'replay-cue', key: 's' },
   { action: 'toggle-overlay', key: 'w' },
   { action: 'toggle-panel', key: 't' },
+  // ADR-021 D7: combo Ctrl+Shift+T toggle auto-translate (no conflict with single 't' toggle-panel).
+  { action: 'toggle-translate', key: 't', ctrl: true, shift: true },
 ];
 
 // === Default Overlay Style (ADR-013) ===
@@ -169,6 +171,9 @@ export const DEFAULT_SETTINGS: Settings = {
   // auto-generated captions mặc định, bật thủ công khi cần. Existing users
   // migrated via v5→v6 (treat missing/true → false).
   subtitleOverlayAutoLoadAsr: false,
+  // ADR-021: auto-translate target→native when site has no native track.
+  // Default true — kim chỉ nam "user vào và học thôi" (auto-dịch khi native thiếu).
+  subtitleOverlayAutoTranslate: true,
   subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
   subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
   subtitlePreference: {},

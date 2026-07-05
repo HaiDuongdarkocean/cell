@@ -280,6 +280,7 @@ tests/
 | `background/offscreenFetch.ts` | messages, offscreenManager, types | `background/helpers.ts`, `background/handlers/subtitle.ts` | **M15 fetch adapter**: `offscreenFetch(url, options)` → delegates fetch() to offscreen document via FETCH_REQUEST message. SW idle eviction safety — offscreen persists for fetch duration. Used by: enrichM3u8Variants, resolveUnknownSubtitleLanguages, handleFetchSubtitleContent |
 | `background/handlers/sidePanelRelay.ts` | messages, helpers, types | `background/index.ts` (via registerSidePanelRelayHandlers) | 9 side panel relay handlers: OPEN_SIDE_PANEL, **CLOSE_SIDE_PANEL** (Chrome 141+ `chrome.sidePanel.close` via windowId resolved from tabId), VIDEO_TIME_UPDATE, VIDEO_PLAY_STATE, SEEK_TO, TOGGLE_PLAY, SHORTCUT_ACTION, VIDEO_EPISODE_CHANGED (ADR-008/009/010/011) |
 | `background/handlers/youtubeDetection.ts` | messages, detection (mapYouTubeCaptionTracks, fetchCaptionTracksViaInnerTube), helpers, types | `background/index.ts` (via registerYouTubeDetectionHandlers) | **ADR-020**: 2 YouTube handlers: DETECTED_SUBTITLES (map tracks → DetectedSubtitle[] → addDetectedSubtitles → broadcast + pushAutoLoadSubtitles), INNERTUBE_FALLBACK_REQUEST (background SW fetch InnerTube WEB client — content script cannot set User-Agent) |
+| `background/handlers/translate.ts` | messages, translateService, types | `background/index.ts` (via registerTranslateHandlers) | **ADR-021**: 1 translate handler: TRANSLATE (content-script → background SW fetch Google Translate unofficial endpoint, CORS bypass, return parsed string[]) |
 | `background/networkInterceptor.ts` | videoDetector, subtitleDetector, types | `background/index.ts`, `background/wireEvents.ts` | Media detection, dedup, clearTab |
 | `background/downloader.ts` | m3u8Parser, assToSrt, vttToSrt, srtNormalizer, conversionTimer, parallelPlanner, **fileUtils**, opfsStorage, types, config | `background/index.ts` | Download + convert + filename, **pause/resume/retry** (cancel flag pattern), **two-phase progress** (downloadProgress + convertProgress), **AES-128 decrypt** (fetchKey, decryptSegment, WebCrypto AES-CBC), **fMP4 concat** (init segment + .m4s → .mp4, no transmux), **byte-range** (Range header, 206/200), **ad skip** (section-based, even=content/odd=ad), **nested master** (max depth 3) |
 | `background/downloadQueue.ts` | types | `background/index.ts` | Queue concurrency, pause/resume, **retry** (reset+requeue), **remove** (delete item) |
@@ -354,7 +355,7 @@ tests/
 | `popup/components/settings/MultiSelect.tsx` | — | SettingsDialog | Reusable searchable multi-select (search input + checkbox list + footer). Used cho subtitle language selection |
 | `shared/ui/Toggle.tsx` | — | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
 | `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
-| `shared/ui/ShortcutInput.tsx` | — | SettingsDialog | Uppercase + center single-char input (settings-controls-restyle F3) |
+| `shared/ui/ShortcutInput.tsx` | — | SettingsDialog | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
 | `shared/ui/SearchableSelect.tsx` | — | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
 | `shared/ui/HintIcon.tsx` | — | SettingsDialog, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 
@@ -365,7 +366,7 @@ tests/
 | `shared/ui/IconButton.tsx` | — | Header, SettingsDialog, VideoCard, SubtitleCard, SelectionBar, DownloadCard | Icon-only transparent button (11 call sites) |
 | `shared/ui/Toggle.tsx` | — | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
 | `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
-| `shared/ui/ShortcutInput.tsx` | — | SettingsDialog | Uppercase + center single-char input (settings-controls-restyle F3) |
+| `shared/ui/ShortcutInput.tsx` | — | SettingsDialog | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
 | `shared/ui/SearchableSelect.tsx` | — | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
 | `shared/ui/HintIcon.tsx` | — | SettingsDialog, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 
@@ -643,6 +644,13 @@ downloader.downloadM3u8Streaming(playlist)
 | `fetchCaptionTracksViaInnerTube` | `features/detection/logic/youtubeInnertube.ts` | (videoId, apiKey, clientVersion?) → Promise<YouTubeCaptionTrack[]> | background/handlers/youtubeDetection.ts | **ADR-020**: InnerTube fallback (WEB client, background SW fetch — content script cannot set User-Agent) |
 | `extractInnertubeApiKey` | `features/detection/logic/youtubeInnertube.ts` | string → string \| null | youtube-main-world.iife.ts | Regex extract INNERTUBE_API_KEY from page HTML |
 | `addDetectedSubtitles` | `background/networkInterceptor.ts` | DetectedSubtitle[] → number | background/handlers/youtubeDetection.ts | **ADR-020**: Insert pre-detected subtitles (YouTube path) bypassing handleRequest, dedup by URL+tabId, notify listeners |
+| `buildTranslateUrl` | `features/translate/service/translateService.ts` | (text, sl, tl) → string | background/handlers/translate.ts | **ADR-021 D2**: Build Google Translate unofficial endpoint URL (client=gtx, dt=t) |
+| `parseGoogleResponse` | `features/translate/service/translateService.ts` | unknown → string[] | background/handlers/translate.ts | **ADR-021 D2**: Parse Google Translate response → translated segments (never throws) |
+| `joinCueTexts` | `features/translate/service/translateService.ts` | string[] → string | translatePrefill.ts | Join cue texts with \n for one Google request |
+| `alignTranslatedSegments` | `features/translate/service/translateService.ts` | (string[], n) → string[] | translatePrefill.ts | Align translated segments to expected cue count (pad/truncate) |
+| `chunkCuesByCharBudget` | `features/translate/logic/translateChunker.ts` | (SrtCue[], number[], budget) → number[][] | translatePrefill.ts | **ADR-021 D3**: Chunk cue indices by char budget (default 1500) |
+| `buildSequentialIndices` | `features/translate/logic/translateChunker.ts` | (total, start) → number[] | translatePrefill.ts | Build [start..n-1] index range for prefill |
+| `BackgroundPrefillController` | `features/translate/logic/translatePrefill.ts` | PrefillOptions → controller | contentScriptController.ts | **ADR-021 D1**: Sequential prefill queue + cache + guards (play, tab hidden, SPA nav) + backoff |
 | `detectScript` | `lib/detectors/scriptDetector.ts` | string → Script \| null | languageDetector.ts | Detect Unicode script (26 scripts) |
 | `detectLanguage` | `lib/detectors/languageDetector.ts` | string → string (ISO 639-1) | subtitleDetector.ts | Hybrid: script + frequency → language |
 | `selectBestMedia` | `lib/selectors/selectBestMedia.ts` | DetectedMedia[] → AutoSelectResult \| null | autoDownload.ts | Pure: select best video + subtitles by prefs |
@@ -651,7 +659,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `stripSubtitleTags` | `lib/parsers/srtNormalizer.ts` | string → string | srtParser, vttParser, srtNormalizer | Strip `<i>`/`<b>`/`<c>`/`<v>`/`{\an8}` tags, preserve newlines (display path) |
 | `Toggle` | `shared/ui/Toggle.tsx` | checked, onChange, ariaLabel → ReactElement | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
 | `Slider` | `shared/ui/Slider.tsx` | value, min, max, step, onChange, ariaLabel → ReactElement | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
-| `ShortcutInput` | `shared/ui/ShortcutInput.tsx` | value, onChange, ariaLabel → ReactElement | SettingsDialog | Uppercase + center single-char input (settings-controls-restyle F3) |
+| `ShortcutInput` | `shared/ui/ShortcutInput.tsx` | value: ShortcutValue, onChange: (ShortcutValue) => void, ariaLabel → ReactElement | SettingsDialog | **ADR-021 D7**: Pill-style input — single-char + combo (Ctrl+Shift+T). Captures keydown, supports modifiers. |
 | `SearchableSelect` | `shared/ui/SearchableSelect.tsx` | options, value, onChange, ariaLabel → ReactElement | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
 | `HintIcon` | `shared/ui/HintIcon.tsx` | hint, ariaLabel → ReactElement | SettingsDialog, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 | `parseSubtitle` | `content/subtitleParser.ts` | (string, format) → ParseResult | subtitleDragDrop, subtitleImport | Adapter: auto-detect format, parseSrt/parseVtt |

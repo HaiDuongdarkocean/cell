@@ -59,10 +59,11 @@ const SHORTCUT_ACTION_LABELS: Record<ShortcutAction, string> = {
   'replay-cue': 'Replay cue',
   'toggle-overlay': 'Toggle overlay',
   'toggle-panel': 'Toggle panel',
+  'toggle-translate': 'Toggle auto-translate',
 };
 
 const SHORTCUT_ACTION_ORDER: readonly ShortcutAction[] = [
-  'prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay', 'toggle-panel',
+  'prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay', 'toggle-panel', 'toggle-translate',
 ];
 
 /**
@@ -499,6 +500,24 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                       disabled={!settings.subtitleOverlayAutoLoad}
                     />
                   </div>
+
+                  {/* ADR-021: Auto-translate when native missing */}
+                  <div className={styles.pairRow}>
+                    <span className={styles.labelWithHint}>
+                      <label className={styles.label} htmlFor="set-overlay-auto-translate">Auto-translate when native missing</label>
+                      <HintIcon
+                        hint="Khi bật, nếu site không có track native → tự dịch target→native qua Google Translate (miễn phí, không API key). Background prefill, 0 setting. Default ON."
+                        ariaLabel="Show hint for Auto-translate when native missing"
+                      />
+                    </span>
+                    <Toggle
+                      checked={settings.subtitleOverlayAutoTranslate}
+                      onChange={(next) => update('subtitleOverlayAutoTranslate', next)}
+                      ariaLabel="Toggle auto-translate when native missing"
+                      title={`Auto-translate when native missing: ${settings.subtitleOverlayAutoTranslate ? 'ON' : 'OFF'}`}
+                      disabled={!settings.subtitleOverlayAutoLoad}
+                    />
+                  </div>
                 </div>
 
                 {/* Divider: behavior → languages (settings-dialog-rearrange) */}
@@ -594,22 +613,25 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                 <div className={styles.shortcutGrid}>
                   {SHORTCUT_ACTION_ORDER.map((action) => {
                     const shortcut = settings.keyboardShortcuts.find((s) => s.action === action);
-                    const currentKey = shortcut?.key ?? '';
+                    const currentValue = shortcut
+                      ? { key: shortcut.key, ctrl: shortcut.ctrl, shift: shortcut.shift, alt: shortcut.alt }
+                      : { key: '' };
                     return (
                       <div key={action} className={styles.shortcutField}>
                         <label className={styles.label} htmlFor={`set-shortcut-${action}`}>{SHORTCUT_ACTION_LABELS[action]}</label>
                         <ShortcutInput
                           id={`set-shortcut-${action}`}
                           data-testid={`shortcut-${action}`}
-                          value={currentKey}
-                          onChange={(newKey) => {
+                          value={currentValue}
+                          onChange={(newShortcut) => {
                             const updated = settings.keyboardShortcuts.map((s) =>
-                              s.action === action ? { ...s, key: newKey } : s,
+                              s.action === action
+                                ? { ...s, key: newShortcut.key, ctrl: newShortcut.ctrl, shift: newShortcut.shift, alt: newShortcut.alt }
+                                : s,
                             );
                             update('keyboardShortcuts', updated);
                           }}
                           aria-label={SHORTCUT_ACTION_LABELS[action]}
-                          className="keyboard-cue"
                         />
                       </div>
                     );

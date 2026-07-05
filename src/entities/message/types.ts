@@ -66,7 +66,8 @@ export type MessageType =
   | 'DETECTED_SUBTITLES'
   | 'INNERTUBE_FALLBACK_REQUEST'
   | 'FETCH_REQUEST'
-  | 'FETCH_RESPONSE';
+  | 'FETCH_RESPONSE'
+  | 'TRANSLATE';
 
 // === Message Request ===
 
@@ -296,6 +297,22 @@ export interface FetchSubtitleContentPayload {
 export interface FetchSubtitleContentResult {
   readonly content: string;
   readonly finalUrl: string;
+}
+
+/**
+ * Content-script → background: translate text via Google Translate unofficial
+ * endpoint (ADR-021 D2). Background SW fetch bypasses CORS. `sl`/`tl` = ISO 639-1
+ * source/target language codes. `text` = multi-line joined cues (chunk ≤ 1500 chars).
+ */
+export interface TranslatePayload {
+  readonly text: string;
+  readonly sl: string;
+  readonly tl: string;
+}
+
+/** Background → content-script: translated text segments (1 per input line). */
+export interface TranslateResult {
+  readonly translated: string[];
 }
 
 /** Background → offscreen: delegate a fetch() call (M15 — SW idle eviction safety). */

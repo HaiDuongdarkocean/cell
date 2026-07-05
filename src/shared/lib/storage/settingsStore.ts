@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -116,6 +116,21 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 6 } as Record<string, unknown>;
     if (merged.subtitleOverlayAutoLoadAsr === undefined) {
       merged.subtitleOverlayAutoLoadAsr = false;
+    }
+    return merged;
+  },
+  // v6 → v7: add subtitleOverlayAutoTranslate (ADR-021, default true) +
+  // 'toggle-translate' shortcut (Ctrl+Shift+T). Existing users get default true
+  // (auto-dịch khi native thiếu — kim chỉ nam "user vào và học thôi").
+  6: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 7 } as Record<string, unknown>;
+    if (merged.subtitleOverlayAutoTranslate === undefined) {
+      merged.subtitleOverlayAutoTranslate = true;
+    }
+    // Ensure toggle-translate shortcut exists in keyboardShortcuts.
+    const shortcuts = Array.isArray(merged.keyboardShortcuts) ? merged.keyboardShortcuts : [];
+    if (!shortcuts.some((sc: { action: string }) => sc.action === 'toggle-translate')) {
+      merged.keyboardShortcuts = [...shortcuts, { action: 'toggle-translate', key: 't', ctrl: true, shift: true }];
     }
     return merged;
   },

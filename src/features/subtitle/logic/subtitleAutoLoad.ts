@@ -191,6 +191,14 @@ export interface AutoLoadDeps {
    * Receives all matches + active index per role. Empty array = no dropdown.
    */
   readonly onSubtitleMatches?: (target: readonly SubtitleForOverlayResult[], native: readonly SubtitleForOverlayResult[]) => void;
+  /**
+   * ADR-021: called when target cues loaded but no native track + autoTranslate ON.
+   * Caller starts BackgroundPrefillController to translate target→native.
+   * Receives target cues (already parsed). Caller manages prefill lifecycle.
+   */
+  readonly onStartTranslatePrefill?: (targetCues: SrtCue[]) => void;
+  /** ADR-021: auto-translate setting (true = translate when native missing). */
+  readonly autoTranslate?: boolean;
 }
 
 /**
@@ -255,6 +263,15 @@ export async function handleAutoLoadSubtitles(
 
   deps.controller.loadBilingualCues(targetCues, nativeCues);
   deps.onPanelRender?.(targetCues, nativeCues);
+
+  // ADR-021: if no native track + autoTranslate ON → start background prefill
+  // to translate target→native. Caller (contentScriptController) owns the
+  // BackgroundPrefillController instance + manages lifecycle (SPA nav clear,
+  // tab hidden pause). Prefill feeds loadBilingualCues on each chunk.
+  if (nativeCues.length === 0 && targetCues.length > 0 && deps.autoTranslate && deps.onStartTranslatePrefill) {
+    console.log('[handleAutoLoadSubtitles] no native track + autoTranslate ON → start prefill');
+    deps.onStartTranslatePrefill(targetCues);
+  }
 
   // ADR-014 D3 + ADR-015: notify content-script of all matches for panel + dropdown render.
   // Show panel/chip when at least 1 subtitle (target or native) is auto-detected —

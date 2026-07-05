@@ -1,42 +1,75 @@
-/* === ShortcutInput atom — uppercase + center single-char (settings-controls-restyle spec F3) ===
-   Replaces plain text input in SettingsDialog keyboard shortcuts section.
-   Consumes tokens only — no raw hex/radius. */
+/* === ShortcutInput atom — pill-style input (ADR-021 D7 combo support) ===
+   All instances share the same min-width (pill radius-full) for visual alignment.
+   Single-char: pill shows uppercase char centered.
+   Combo: pill shows kbd chips (Ctrl + Shift + T), modifier subtle bg, key solid primary. */
 
-.shortcutInput {
-  width: 40px;
-  padding: 6px 8px;
+.shortcutPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 140px;
+  padding: 4px 10px;
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  text-align: center;
-  text-transform: uppercase;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.shortcutInput:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
-}
-
-.shortcutInput:focus {
+.shortcutPill:focus-visible {
+  outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-subtle);
 }
 
-/* === keyboard-cue variant — for keyboard shortcuts section === */
-.keyboardCue {
-  width: 40px;
-  padding: 4px 8px;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  text-align: center;
+.shortcutPill:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+}
+
+/* Single-char display — uppercase center */
+.kbdSingle {
   text-transform: uppercase;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Combo: modifier chip — subtle bg */
+.kbdModifier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover);
   color: var(--color-text);
+  line-height: 1;
+}
+
+/* Combo: key chip — solid bg primary */
+.kbdKey {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  line-height: 1;
 }

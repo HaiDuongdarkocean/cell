@@ -23,6 +23,8 @@ import {
 } from '@/features/subtitle';
 import { NavClusterController } from '@/features/subtitle/ui/navClusterController';
 import { OffsetController } from '@/features/subtitle/ui/offsetController';
+import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
+import type { TranslateResult } from '@/entities/message';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, Settings } from '@/entities/media';
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
@@ -114,6 +116,9 @@ export function init(video: HTMLVideoElement): () => void {
   // Without a clear on URL change, a partial load on the new video (target
   // only, no native or vice versa) leaves the previous video's cues visible.
   let lastAutoLoadUrl: string | undefined;
+  // ADR-021: background prefill controller for target→native translation.
+  // One instance per video session. Cleared on SPA nav. Paused on tab hidden.
+  let translatePrefill: BackgroundPrefillController | null = null;
 
   loadOverlayStyles().then(async ({ target, native }) => {
     controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG, target, native);
@@ -373,7 +378,11 @@ export function init(video: HTMLVideoElement): () => void {
       }
     }
 
-    const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target);
+    const action = handleShortcutKey(e.key.toLowerCase(), shortcuts, e.target, {
+      ctrl: e.ctrlKey,
+      shift: e.shiftKey,
+      alt: e.altKey,
+    });
     if (!action) return;
     e.preventDefault();
 
@@ -423,6 +432,55 @@ export function init(video: HTMLVideoElement): () => void {
           type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
           payload: { tabId: undefined },
         });
+        break;
+      }
+      case 'toggle-translate': {
+        // ADR-021 D7: temporary toggle (no setting change). Same logic as
+        // SHORTCUT_ACTION handler above — extract to shared helper if grows.
+        if (translatePrefill?.isRunning) {
+          translatePrefill.clear();
+          translatePrefill = null;
+          controller?.loadBilingualCues(latestTargetCues, []);
+          bilingualCues = mergeCuesForPanel(latestTargetCues, []);
+          latestNativeCues = [];
+          navCluster?.updateCues(latestTargetCues, []);
+          showToast('Auto-translate off', container, { variant: 'info' });
+        } else if (latestTargetCues.length > 0) {
+          void (async () => {
+            const s = await loadSettings();
+            const sl = s.subtitleOverlayTargetLanguage;
+            const tl = s.subtitleOverlayNativeLanguage;
+            if (!sl || !tl || sl === tl) return;
+            translatePrefill?.clear();
+            translatePrefill = new BackgroundPrefillController({
+              translate: async (text: string): Promise<string[]> => {
+                const res = await sendMessage<{ success?: boolean; data?: TranslateResult; error?: string }>({
+                  type: MESSAGE_TYPES.TRANSLATE,
+                  payload: { text, sl, tl },
+                });
+                if (!res?.success || !res.data?.translated) {
+                  throw new Error(res?.error ?? 'translate failed');
+                }
+                return res.data.translated;
+              },
+              onChunkTranslated: (translatedCues: SrtCue[]) => {
+                controller?.loadBilingualCues(latestTargetCues, translatedCues);
+                bilingualCues = mergeCuesForPanel(latestTargetCues, translatedCues);
+                latestNativeCues = translatedCues;
+                navCluster?.updateCues(latestTargetCues, translatedCues);
+                void sendMessage({
+                  type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+                  payload: { tabId: undefined, cues: bilingualCues },
+                });
+              },
+              onError: (msg: string) => {
+                showToast(msg, container, { variant: 'error' });
+              },
+            });
+            translatePrefill.start(latestTargetCues, sl, tl);
+            showToast('Auto-translate on', container, { variant: 'success' });
+          })();
+        }
         break;
       }
     }
@@ -518,6 +576,57 @@ export function init(video: HTMLVideoElement): () => void {
           }
           break;
         }
+        case 'toggle-translate': {
+          // ADR-021 D7: temporary toggle (no setting change).
+          // If prefill running → clear + hide native overlay. If not → restart from latestTargetCues.
+          if (translatePrefill?.isRunning) {
+            translatePrefill.clear();
+            translatePrefill = null;
+            // Reload target-only (no native) to hide translated overlay
+            controller?.loadBilingualCues(latestTargetCues, []);
+            bilingualCues = mergeCuesForPanel(latestTargetCues, []);
+            latestNativeCues = [];
+            navCluster?.updateCues(latestTargetCues, []);
+            showToast('Auto-translate off', container, { variant: 'info' });
+          } else if (latestTargetCues.length > 0) {
+            // Restart prefill — load settings for sl/tl
+            void (async () => {
+              const s = await loadSettings();
+              const sl = s.subtitleOverlayTargetLanguage;
+              const tl = s.subtitleOverlayNativeLanguage;
+              if (!sl || !tl || sl === tl) return;
+              translatePrefill?.clear();
+              translatePrefill = new BackgroundPrefillController({
+                translate: async (text: string): Promise<string[]> => {
+                  const res = await sendMessage<{ success?: boolean; data?: TranslateResult; error?: string }>({
+                    type: MESSAGE_TYPES.TRANSLATE,
+                    payload: { text, sl, tl },
+                  });
+                  if (!res?.success || !res.data?.translated) {
+                    throw new Error(res?.error ?? 'translate failed');
+                  }
+                  return res.data.translated;
+                },
+                onChunkTranslated: (translatedCues: SrtCue[]) => {
+                  controller?.loadBilingualCues(latestTargetCues, translatedCues);
+                  bilingualCues = mergeCuesForPanel(latestTargetCues, translatedCues);
+                  latestNativeCues = translatedCues;
+                  navCluster?.updateCues(latestTargetCues, translatedCues);
+                  void sendMessage({
+                    type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+                    payload: { tabId: undefined, cues: bilingualCues },
+                  });
+                },
+                onError: (msg: string) => {
+                  showToast(msg, container, { variant: 'error' });
+                },
+              });
+              translatePrefill.start(latestTargetCues, sl, tl);
+              showToast('Auto-translate on', container, { variant: 'success' });
+            })();
+          }
+          break;
+        }
       }
     }
     return false; // synchronous listener
@@ -594,9 +703,19 @@ export function init(video: HTMLVideoElement): () => void {
         controller?.clearCues();
         offsetController?.loadCues(false);
         navCluster?.updateCues([], []);
+        // ADR-021: clear translate prefill on SPA nav to video with no subtitles
+        translatePrefill?.clear();
+        translatePrefill = null;
         showToast('No subtitles detected', container, { variant: 'warning' });
       }
-      void handleAutoLoadSubtitles(payload, {
+      // ADR-021: clear translate prefill on SPA nav (URL changed)
+      if (lastAutoLoadUrl !== undefined && lastAutoLoadUrl !== currentUrl) {
+        translatePrefill?.clear();
+        translatePrefill = null;
+      }
+      void (async () => {
+        const currentSettings = await loadSettings();
+        await handleAutoLoadSubtitles(payload, {
         controller: {
           loadBilingualCues: (t: SrtCue[], n: SrtCue[]) => controller?.loadBilingualCues(t, n),
           loadCues: (c: SrtCue[]) => controller?.loadCues(c),
@@ -628,6 +747,45 @@ export function init(video: HTMLVideoElement): () => void {
           });
         },
         onToast: (message, variant) => showToast(message, container, { variant }),
+        autoTranslate: currentSettings.subtitleOverlayAutoTranslate,
+        onStartTranslatePrefill: (targetCues: SrtCue[]) => {
+          // ADR-021: start background prefill to translate target→native.
+          // Translate function sends TRANSLATE message to background SW (CORS bypass).
+          const sl = currentSettings.subtitleOverlayTargetLanguage;
+          const tl = currentSettings.subtitleOverlayNativeLanguage;
+          if (!sl || !tl || sl === tl) return;
+          // Clear any previous prefill (SPA nav or re-trigger)
+          translatePrefill?.clear();
+          translatePrefill = new BackgroundPrefillController({
+            translate: async (text: string): Promise<string[]> => {
+              const res = await sendMessage<{ success?: boolean; data?: TranslateResult; error?: string }>({
+                type: MESSAGE_TYPES.TRANSLATE,
+                payload: { text, sl, tl },
+              });
+              if (!res?.success || !res.data?.translated) {
+                throw new Error(res?.error ?? 'translate failed');
+              }
+              return res.data.translated;
+            },
+            onChunkTranslated: (translatedCues: SrtCue[]) => {
+              // Feed translated cues to overlay (reuse loadBilingualCues path ADR-013/014)
+              controller?.loadBilingualCues(targetCues, translatedCues);
+              // Update panel + nav cluster with bilingual cues
+              bilingualCues = mergeCuesForPanel(targetCues, translatedCues);
+              latestTargetCues = targetCues;
+              latestNativeCues = translatedCues;
+              navCluster?.updateCues(targetCues, translatedCues);
+              void sendMessage({
+                type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+                payload: { tabId: undefined, cues: bilingualCues },
+              });
+            },
+            onError: (msg: string) => {
+              showToast(msg, container, { variant: 'error' });
+            },
+          });
+          translatePrefill.start(targetCues, sl, tl);
+        },
         onSubtitleMatches: (targetM, nativeM) => {
           targetMatches = targetM;
           nativeMatches = nativeM;
@@ -663,6 +821,7 @@ export function init(video: HTMLVideoElement): () => void {
           refreshPanel('native');
         },
       });
+      })();
     }
     return false; // synchronous listener, no async response
   });
@@ -893,12 +1052,17 @@ export function init(video: HTMLVideoElement): () => void {
   // signal for "tab became active again" — no polling, no chrome.tabs API needed
   // (content-script cannot access chrome.tabs).
   const onVisibilityChange = (): void => {
-    if (document.visibilityState !== 'visible') return;
-    if (bilingualCues.length === 0) return;
-    void sendMessage({
-      type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-      payload: { tabId: undefined, cues: bilingualCues },
-    });
+    // ADR-021 D6: pause translate prefill when tab hidden, resume when visible
+    if (document.visibilityState === 'hidden') {
+      translatePrefill?.pause();
+    } else if (document.visibilityState === 'visible') {
+      translatePrefill?.resume();
+      if (bilingualCues.length === 0) return;
+      void sendMessage({
+        type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+        payload: { tabId: undefined, cues: bilingualCues },
+      });
+    }
   };
   document.addEventListener('visibilitychange', onVisibilityChange);
 
