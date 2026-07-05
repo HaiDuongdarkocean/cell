@@ -455,16 +455,51 @@ MV3 service worker `fetch()` chạy trong extension origin (`chrome-extension://
 ## Register listeners at earliest lifecycle before producers post
 
 ### Nguyên lý
-`window.postMessage` (và fire-and-forget events nói chung) không buffer — message posted khi không có listener = lost forever (no replay, no retry). Khi producer post async (sau `document_start`, ~3-4s) và consumer listen, consumer MUST register listener tại earliest lifecycle point (`document_start`), KHÔNG phải `document_idle` (fires sau DOM parse ~3-4s — producer có thể đã post trước đó). Tách logic theo DOM dependency: DOM-independent listeners (chỉ đọc `event.data`) register tại `document_start`; DOM-dependent logic (querySelector, body access) defer đến `DOMContentLoaded`. Không tách = hoặc listener trễ (miss message) hoặc logic sớm (crash trên null DOM).
+`window.postMessage` (và fire-and-forget events nói chung) không buffer — message posted khi không có listener = lost forever (no replay, no retry). Khi producer post async (sau `document_start`, ~3-4s) và consumer listen, consumer MUST register listener tại earliest lifecycle point (`document_start`), KHÔNG phải `document_idle` (fires sau DOM parse ~3-4s — producer có thể đã post trước đó). Tách logic theo DOM dependency: DOM-independent listeners (chỉ đọc `event.data`) register tại `document_start`; DOM-dependent logic (querySelector, body access) defer đến `DOMContentLoaded`. Không tách = hoặc listener trễ (miss message) hoặc logic sớm (crash trên null DOM). **Khi `document_start` không đủ** (bundler async loader delays listener — xem [Receiver-announces-readiness handshake](#receiver-announces-readiness-handshake-for-fire-and-forget-messages)), dùng handshake pattern: receiver posts ready signal, sender re-posts last message on receipt.
 
 ### Cases đã gặp
 - [content-script-listener-race.md](content-script-listener-race.md) — YouTube MAIN world script (`document_start`) fetch InnerTube async ~3-4s → postMessage `__YT_DETECTED_SUBTITLES`. ISOLATED content-script `document_idle` register listener sau ~3-4s → message đã post trước khi listener register → lost. Fix: content-script `run_at: document_start` (listener register ngay), page scan defer đến `DOMContentLoaded` (cần DOM).
+- [crxjs-async-loader-handshake.md](crxjs-async-loader-handshake.md) — `document_start` fix không đủ: CRXJS async dynamic-import loader delays ISOLATED listener past MAIN-world post on SPA navigation (MAIN world persistent, content-script re-injected). Fix: handshake `__YT_CS_READY` — content-script posts ready signal khi listener register, MAIN world re-posts last tracks on receipt. Dedup by videoId.
 
 ### Apply cho
 - `window.postMessage` giữa MAIN world và ISOLATED content script (Chrome extension)
 - `BroadcastChannel` (fire-and-forget, no buffering)
 - Any fire-and-forget event bus where producer posts async after lifecycle start
 - Content script `run_at` decision: `document_start` cho listeners, `document_idle` cho DOM logic — tách theo dependency, không dùng 1 timing cho cả 2
+- Bundler-wrapped content-scripts (CRXJS, WXT) nơi async loader delays listener registration — `document_start` là necessary but not sufficient, cần handshake
+
+---
+
+## Receiver-announces-readiness handshake for fire-and-forget messages
+
+### Nguyên lý
+Khi producer persistent (survives navigation) post fire-and-forget message và consumer re-injected per-navigation với listener registration delayed (bundler async loader), `document_start` registration không đủ — producer có thể post trước khi consumer listener register. Handshake giải quyết deterministic: consumer posts "ready" signal khi listener register, producer re-posts last message trên receipt. Timing-independent — không guess loader delay. Consumer dedup by id (videoId, requestId) để tránh double-process khi cả original post lẫn re-post đều đến.
+
+### Cases đã gặp
+- [crxjs-async-loader-handshake.md](crxjs-async-loader-handshake.md) — YouTube SPA navigation: MAIN world script persistent post `__YT_DETECTED_SUBTITLES` ~450-930ms, ISOLATED content-script re-injected với CRXJS async loader register listener ~6000ms+. Fix: content-script posts `__YT_CS_READY` khi listener register, MAIN world re-posts last tracks on receipt. Content-script dedup by `videoId` (`__YT_LAST_RELAYED_VIDEO_ID`).
+
+### Apply cho
+- MAIN world ↔ ISOLATED content-script messaging trên SPA navigation (Chrome extension)
+- Persistent producer + per-navigation consumer (service worker ↔ re-injected content script)
+- Any fire-and-forget message bus nơi consumer registration timing không guaranteed (bundler async loader, lazy module load)
+- WebSocket reconnect (client announces ready, server replays last message)
+- Event sourcing replay (consumer announces position, producer replays from position)
+
+---
+
+## Commit state only after precondition confirmed (gate retry)
+
+### Nguyên lý
+Khi function có precondition (e.g., "API key must be available") và retry mechanism key off state (e.g., "only re-run if videoId changed"), commit state (cache `lastVideoId`) CHỈ SAU khi precondition confirmed. Commit trước precondition check blocks retry — retry condition (`videoId !== lastVideoId`) trở thành permanently false, precondition failure không bao giờ re-evaluate dù precondition trở thành true sau đó. Đây là "early commit" anti-pattern: function claim đã "processed" videoId (cache nó) khi thực tế fail, blocking future attempts. Gate cả trigger (poll) trên precondition nữa — không waste attempt khi precondition chưa ready.
+
+### Cases đã gặp
+- [detect-precondition-gating.md](detect-precondition-gating.md) — YouTube MAIN world `detect()` cache `lastVideoId = videoId` trước check `apiKey` → fail "no API key" (HTML chưa render full) → `lastVideoId` committed → poll `currentVideoId !== lastVideoId` false → no retry dù API key available sau. Fix: move `lastVideoId = videoId` SAU `apiKey` check; gate `pollForVideoIdChange` trên cả videoId change AND apiKey availability; extend poll timeout 5s → 10s.
+
+### Apply cho
+- Polling với retry condition key off cached state (videoId, requestId, sessionId)
+- Precondition chậm available (API key injected after paint, config loaded async, token refreshed)
+- Any "detect once, cache, never retry" pattern nơi precondition fail blocks future attempts
+- Idempotent operations với precondition gate (don't claim done before precondition met)
 
 ---
 
