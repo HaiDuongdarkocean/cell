@@ -42,6 +42,7 @@ docs/           # Tài liệu dự án
 │   └── intent-settings-controls-restyle.md # Settings controls restyle (vỏ→ruột: Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
 │   └── intent-settings-dialog-rearrange.md # Settings dialog rearrange (UI/UX: pair fields, fix Nav Cluster missing position, indent child, dividers)
 │   └── intent-youtube-subtitle-detection.md # YouTube subtitle detection (proactive parse ytInitialPlayerResponse, include ASR, site adapter pattern, subtitle only)
+│   └── intent-translate-subtitle-target-to-native.md # Translate subtitle target→native (Google unofficial, lazy sliding-window, real-time)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
