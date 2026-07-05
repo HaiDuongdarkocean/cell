@@ -9,7 +9,7 @@
 
 import { BatchProcessor } from '../logic/batchProcessor';
 import { normalizeWord } from '../logic/normalizationPipeline';
-import type { ImportFormat } from '@/entities/dictionary';
+import type { ImportFormat, FrequencyEntry, DictionaryEntry } from '@/entities/dictionary';
 
 /** Raw entry from parser (before normalization). */
 export interface RawFrequencyEntry {
@@ -101,10 +101,10 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
 }
 
 /** Base for frequency strategies (writes to frequencyRepository). */
-export abstract class BaseFrequencyStrategy extends BaseImportStrategy<RawFrequencyEntry, Omit<import('@/entities/dictionary').FrequencyEntry, 'id'>> {
+export abstract class BaseFrequencyStrategy extends BaseImportStrategy<RawFrequencyEntry, Omit<FrequencyEntry, 'id'>> {
   readonly format: ImportFormat = 'txt';
 
-  protected transformEntry(raw: RawFrequencyEntry, _index: number): Omit<import('@/entities/dictionary').FrequencyEntry, 'id'> | null {
+  protected transformEntry(raw: RawFrequencyEntry, _index: number): Omit<FrequencyEntry, 'id'> | null {
     const term = normalizeWord(raw.term);
     if (term.length === 0) return null;
     const reading = raw.reading ? raw.reading.trim().normalize('NFC') : term;
@@ -118,10 +118,10 @@ export abstract class BaseFrequencyStrategy extends BaseImportStrategy<RawFreque
 }
 
 /** Base for dictionary strategies (writes to dictionaryRepository). */
-export abstract class BaseDictionaryStrategy extends BaseImportStrategy<RawDictionaryEntry, Omit<import('@/entities/dictionary').DictionaryEntry, 'id'>> {
+export abstract class BaseDictionaryStrategy extends BaseImportStrategy<RawDictionaryEntry, Omit<DictionaryEntry, 'id'>> {
   readonly format: ImportFormat = 'cambridge-json';
 
-  protected transformEntry(raw: RawDictionaryEntry, _index: number): Omit<import('@/entities/dictionary').DictionaryEntry, 'id'> | null {
+  protected transformEntry(raw: RawDictionaryEntry, _index: number): Omit<DictionaryEntry, 'id'> | null {
     const term = normalizeWord(raw.term);
     if (term.length === 0) return null;
     return {

@@ -1,0 +1,33 @@
+.dropzone {
+  border: 2px dashed var(--color-border, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--spacing-lg, 16px);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
+  background: var(--color-surface, #f8fafc);
+}
+
+.dropzone:hover:not(.disabled) {
+  border-color: var(--color-primary, #2563eb);
+}
+
+.dragging {
+  border-color: var(--color-primary, #2563eb);
+  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.label {
+  margin: 0;
+  font-size: var(--font-size-sm, 13px);
+  color: var(--color-text-secondary, #475569);
+}
+
+.input {
+  display: none;
+}

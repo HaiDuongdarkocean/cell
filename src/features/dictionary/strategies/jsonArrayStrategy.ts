@@ -3,10 +3,12 @@
 // ["word1", "word2", ...] — frequency list. Token-level streaming parse
 // (không load full array vào RAM). Memory ~1 string at a time.
 
-import { BaseFrequencyStrategy, RawFrequencyEntry } from './baseImportStrategy';
+import { BaseFrequencyStrategy } from './baseImportStrategy';
+import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
 import { decodeText } from '../logic/fileDetector';
 import { ParseError } from '../logic/importErrors';
-import type { StrategyOptions } from './baseImportStrategy';
+import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
+import type { FrequencyEntry } from '@/entities/dictionary';
 
 /** Options for jsonArrayStrategy. */
 export interface JsonArrayStrategyOptions {
@@ -59,8 +61,7 @@ export class JsonArrayStrategy extends BaseFrequencyStrategy {
     }
   }
 
-  protected async flushBatch(batch: ReadonlyArray<Omit<import('@/entities/dictionary').FrequencyEntry, 'id'>>): Promise<void> {
-    const { bulkInsertFrequencyEntries } = await import('../repositories/frequencyRepository');
+  protected async flushBatch(batch: ReadonlyArray<Omit<FrequencyEntry, 'id'>>): Promise<void> {
     await bulkInsertFrequencyEntries(this.options.langCode, batch);
   }
 }

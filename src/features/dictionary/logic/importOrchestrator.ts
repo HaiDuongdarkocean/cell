@@ -20,6 +20,7 @@ import {
   getResource,
   findResourceBySignature,
   deleteResource,
+  getAllResources,
 } from '../repositories/resourceRepository';
 import { deleteFrequencyByResource } from '../repositories/frequencyRepository';
 import { deleteDictionaryByResource } from '../repositories/dictionaryRepository';
@@ -117,6 +118,5 @@ export async function deleteResourceCascade(langCode: string, resourceId: number
 
 /** List all resources for a lang. */
 export async function listResources(langCode: string): Promise<ResourceInfo[]> {
-  const { getAllResources } = await import('../repositories/resourceRepository');
   return getAllResources(langCode);
 }

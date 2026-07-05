@@ -3,10 +3,12 @@
 // unzip all, parse index.json, sort term_meta_bank_*.json, yield {term, reading, frequency}.
 // Yomitan term_meta_bank format: [[term, type, {reading, frequency}], ...]
 
-import { BaseFrequencyStrategy, RawFrequencyEntry } from './baseImportStrategy';
+import { BaseFrequencyStrategy } from './baseImportStrategy';
+import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
 import { unzipAll, decodeText } from '../logic/fileDetector';
 import { ParseError, CorruptedFileError } from '../logic/importErrors';
-import type { StrategyOptions } from './baseImportStrategy';
+import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
+import type { FrequencyEntry } from '@/entities/dictionary';
 
 /** Options for yomitanStrategy. */
 export interface YomitanStrategyOptions {
@@ -88,8 +90,7 @@ export class YomitanStrategy extends BaseFrequencyStrategy {
     }
   }
 
-  protected async flushBatch(batch: ReadonlyArray<Omit<import('@/entities/dictionary').FrequencyEntry, 'id'>>): Promise<void> {
-    const { bulkInsertFrequencyEntries } = await import('../repositories/frequencyRepository');
+  protected async flushBatch(batch: ReadonlyArray<Omit<FrequencyEntry, 'id'>>): Promise<void> {
     await bulkInsertFrequencyEntries(this.options.langCode, batch);
   }
 }

@@ -2,9 +2,12 @@
 //
 // Auto-unzip if .zip. ReadableStream line-by-line + TextDecoder. Memory ~1 line.
 
-import { BaseFrequencyStrategy, RawFrequencyEntry } from './baseImportStrategy';
+import { BaseFrequencyStrategy } from './baseImportStrategy';
+import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
 import { isZip, unzipAll, decodeText } from '../logic/fileDetector';
 import { CorruptedFileError } from '../logic/importErrors';
+import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
+import type { FrequencyEntry } from '@/entities/dictionary';
 
 /** Options for txtLineStrategy. */
 export interface TxtStrategyOptions {
@@ -58,12 +61,10 @@ export class TxtLineStrategy extends BaseFrequencyStrategy {
     }
   }
 
-  protected async flushBatch(batch: ReadonlyArray<Omit<import('@/entities/dictionary').FrequencyEntry, 'id'>>): Promise<void> {
-    const { bulkInsertFrequencyEntries } = await import('../repositories/frequencyRepository');
+  protected async flushBatch(batch: ReadonlyArray<Omit<FrequencyEntry, 'id'>>): Promise<void> {
     await bulkInsertFrequencyEntries(this.options.langCode, batch);
   }
 }
 
 // Re-export StrategyOptions for convenience
-export type { StrategyOptions } from './baseImportStrategy';
-import type { StrategyOptions } from './baseImportStrategy';
+export type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';

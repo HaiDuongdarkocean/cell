@@ -3,10 +3,12 @@
 // JSON array [{term, altterm, pronunciation, definition, pos, examples, audio}, ...].
 // Parse + yield dictionary entries with rich fields.
 
-import { BaseDictionaryStrategy, RawDictionaryEntry } from './baseImportStrategy';
+import { BaseDictionaryStrategy } from './baseImportStrategy';
+import type { StrategyOptions, RawDictionaryEntry } from './baseImportStrategy';
 import { decodeText } from '../logic/fileDetector';
 import { ParseError } from '../logic/importErrors';
-import type { StrategyOptions } from './baseImportStrategy';
+import { bulkInsertDictionaryEntries } from '../repositories/dictionaryRepository';
+import type { DictionaryEntry } from '@/entities/dictionary';
 
 /** Options for cambridgeJsonStrategy. */
 export interface CambridgeJsonStrategyOptions {
@@ -69,8 +71,7 @@ export class CambridgeJsonStrategy extends BaseDictionaryStrategy {
     }
   }
 
-  protected async flushBatch(batch: ReadonlyArray<Omit<import('@/entities/dictionary').DictionaryEntry, 'id'>>): Promise<void> {
-    const { bulkInsertDictionaryEntries } = await import('../repositories/dictionaryRepository');
+  protected async flushBatch(batch: ReadonlyArray<Omit<DictionaryEntry, 'id'>>): Promise<void> {
     await bulkInsertDictionaryEntries(this.options.langCode, batch);
   }
 }

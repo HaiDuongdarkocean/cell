@@ -44,6 +44,7 @@
   "side_panel": {
     "default_path": "src/entrypoints/sidepanel/index.html"
   },
+  "options_page": "src/entrypoints/options/index.html",
   "action": {
     "default_popup": "src/entrypoints/popup/index.html",
     "default_title": "Video Downloader",
@@ -59,7 +60,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/*"],
+      "resources": ["assets/*", "sql-wasm.wasm"],
       "matches": ["<all_urls>"]
     }
   ]

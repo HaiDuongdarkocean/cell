@@ -4,10 +4,12 @@
 // sql.js wasm ~1MB lazy fetch from web_accessible_resources.
 // wasm load fail → DatabaseError → orchestrator catch → rollback.
 
-import { BaseFrequencyStrategy, RawFrequencyEntry } from './baseImportStrategy';
+import { BaseFrequencyStrategy } from './baseImportStrategy';
+import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
 import { gunzipFile, isGzip, isSqlite } from '../logic/fileDetector';
 import { DatabaseError, ParseError } from '../logic/importErrors';
-import type { StrategyOptions } from './baseImportStrategy';
+import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
+import type { FrequencyEntry } from '@/entities/dictionary';
 import type { Database, QueryExecResult, SqlJsStatic } from 'sql.js';
 
 /** Options for sqliteStrategy. */
@@ -92,8 +94,7 @@ export class SqliteStrategy extends BaseFrequencyStrategy {
     }
   }
 
-  protected async flushBatch(batch: ReadonlyArray<Omit<import('@/entities/dictionary').FrequencyEntry, 'id'>>): Promise<void> {
-    const { bulkInsertFrequencyEntries } = await import('../repositories/frequencyRepository');
+  protected async flushBatch(batch: ReadonlyArray<Omit<FrequencyEntry, 'id'>>): Promise<void> {
     await bulkInsertFrequencyEntries(this.options.langCode, batch);
   }
 }
