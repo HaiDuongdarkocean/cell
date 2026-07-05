@@ -532,3 +532,19 @@ Format detection bằng file extension alone fails cho URLs không có extension
 - `??` / `||` chains where the left operand can be stale-but-non-null
 - Polling/retry keyed off identity (re-run only when identity changes) — read identity from the freshest source
 - Any "two sources of truth for identity" situation (URL vs cache, route param vs store, prop vs state)
+
+---
+
+## Signal absence is not absence of signal
+
+### Nguyên lý
+"0 items" is not "no information" — it is the positive signal "this entity has no items". When a pipeline has multiple guards that each treat empty as a no-op (early return on empty, skip post on empty, skip push on empty), the empty case becomes a silent dead path: every layer optimises for "don't do redundant work on empty" and collectively they ensure nothing ever happens on empty. For stateful UI showing the previous entity's data, the empty case MUST be handled as an explicit clear signal — post the empty result, clear the store, broadcast the empty update, clear the view. Empty is a value, not the absence of a value. Distinguish "no data yet" (transient, retry) from "confirmed empty" (terminal, clear).
+
+### Cases đã gặp
+- [clear-subtitle-on-no-subtitle-video.md](clear-subtitle-on-no-subtitle-video.md) — SPA nav from a YouTube video WITH subtitles to one WITHOUT left the previous video's overlay visible. 3 layers each skipped the clear on empty: MAIN world gated post on `tracks.length > 0`, background returned early on 0 tracks, overlay only toasted on null target+native. Composed, they formed a silent dead path. Fix: post on every detect (incl. 0), clear tab + broadcast + send null AUTO_LOAD_SUBTITLES on 0 tracks, clearCues on null payload.
+
+### Apply cho
+- Stateful UI keyed off a previous entity's data (overlay, panel, cache) — empty new entity must clear, not be ignored
+- Multi-layer pipelines where each layer guards on empty — verify the empty case reaches the final consumer
+- "Don't store empty" / "don't push empty" guards — compose into dead paths; replace with "store empty + clear downstream"
+- Detection pipelines (0 results is a result — surface it, don't swallow it)

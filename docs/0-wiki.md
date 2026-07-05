@@ -108,6 +108,7 @@ docs/           # Tài liệu dự án
 │   ├── srt-parser-none-literal-index.md           # kisskh SRT "None" literal cue index → parser skip noise lines
 │   ├── url-lang-multi-separator-extraction.md     # kisskh kebab-case URL lang → multi-separator + domain guard
 │   ├── url-first-spa-nav-stale-player-response.md # URL-first videoId — ytInitialPlayerResponse stale on SPA nav radio mix
+│   ├── clear-subtitle-on-no-subtitle-video.md     # Clear previous video subtitles when new video has none (3-layer dead path)
 │   └── skill-output-routing.md                    # Skill output routing (filled artifacts → project docs/, not skill dir)
 ├── test-reports/                      # MCP browser test reports — "does it work in real browser"
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md
