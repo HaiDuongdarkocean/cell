@@ -36,6 +36,15 @@ docs/mockups/mockup-*
 !docs/mockups/mockup-*.html
 !docs/mockups/mockup-*.md
 
+# IDE temp files: *.test without extension (truncated from *.test.ts)
+*.test
+!*.test.ts
+!*.test.tsx
+
+# Benchmark/temp scripts in data-test (not real tests)
+tests/data-test/translate-bench*
+tests/data-test/translate-demo*
+
 # OS
 .DS_Store
 Thumbs.db
