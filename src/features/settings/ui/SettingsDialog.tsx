@@ -502,9 +502,9 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                   </div>
 
                   {/* ADR-021: Auto-translate when native missing */}
-                  <div className={styles.pairRow}>
-                    <span className={styles.labelWithHint}>
-                      <label className={styles.label} htmlFor="set-overlay-auto-translate">Auto-translate when native missing</label>
+                  <div className={styles.asRow}>
+                    <span className={styles.asLabel}>
+                      Auto-translate when native missing
                       <HintIcon
                         hint="Khi bật, nếu site không có track native → tự dịch target→native qua Google Translate (miễn phí, không API key). Background prefill, 0 setting. Default ON."
                         ariaLabel="Show hint for Auto-translate when native missing"

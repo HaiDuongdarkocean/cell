@@ -3,7 +3,8 @@
  *
  * Lifecycle:
  *  1. start(targetCues, sl, tl) on video 'play' event + autoTranslate ON + no native track
- *  2. Chunks cues by 1500 chars, translates sequentially with 1.5s gap
+ *  2. Chunks cues by 1500 chars (multi-cue per request), encodes sentence-terminal
+ *     punctuation so Google does not split → 1 segment per cue → 100% alignment
  *  3. Caches each cue (Map<cueIndex, string>), feeds loadBilingualCues on each chunk
  *  4. Guards: pause on tab hidden, resume on visible; clear on SPA nav
  *  5. Seek → cache hit instant / miss → chunk [seekIdx, +1500 chars], resume sequential
@@ -11,12 +12,12 @@
  */
 
 import type { SrtCue } from '@/entities/media';
-import { buildSequentialIndices } from './translateChunker';
+import { chunkCuesByCharBudget, buildSequentialIndices } from './translateChunker';
 import { joinCueTexts, alignTranslatedSegments } from '../service/translateService';
 
 /** Hardcode params (ADR-021 D3 — 0 setting, kim chỉ nam "user vào và học thôi"). */
 export const CHAR_BUDGET = 1500;
-export const MIN_REQUEST_GAP_MS = 300; // 1 cue/request → 300ms gap (was 1.5s for multi-cue)
+export const MIN_REQUEST_GAP_MS = 1500; // multi-cue/request → 1.5s gap (rate-limit safe)
 export const MAX_RETRIES = 3;
 export const BACKOFF_BASE_MS = 1000; // 1s → 2s → 4s
 
@@ -82,9 +83,13 @@ export class BackgroundPrefillController {
     this.tl = tl;
     this.cancelled = false;
     this.paused = false;
-    // ADR-021 D3 fix: 1 cue per request (Google doesn't preserve \n boundaries).
-    // Each chunk = [cueIdx], processed sequentially with requestGapMs between.
-    this.queue = buildSequentialIndices(targetCues.length, seekIdx).map((i) => [i]);
+    // ADR-021 D3: chunk cues by 1500 chars (multi-cue per request).
+    // encodePunctuation in joinCueTexts prevents Google sentence-splitting → 1:1 alignment.
+    this.queue = chunkCuesByCharBudget(
+      targetCues,
+      buildSequentialIndices(targetCues.length, seekIdx),
+      this.opts.charBudget,
+    );
     this.queueIdx = 0;
     this.running = true;
     void this.run();
@@ -150,7 +155,7 @@ export class BackgroundPrefillController {
     return this.cache.size;
   }
 
-  /** Main loop — process cues sequentially (1 cue per request) with gap + backoff. */
+  /** Main loop — process chunks sequentially (multi-cue per request) with gap + backoff. */
   private async run(): Promise<void> {
     while (this.queueIdx < this.queue.length && !this.cancelled) {
       // Wait while paused (tab hidden)
@@ -162,20 +167,21 @@ export class BackgroundPrefillController {
       const chunk = this.queue[this.queueIdx];
       if (!chunk) break;
 
-      // ADR-021 D3 fix: send 1 cue per request (Google doesn't preserve \n)
-      // chunk always has exactly 1 cue index (chunker produces single-cue chunks)
-      const cueIdx = chunk[0];
-      const text = this.targetCues[cueIdx]?.text ?? '';
-      const joined = joinCueTexts([text]);
+      // ADR-021 D3: multi-cue per request. joinCueTexts encodes sentence-terminal
+      // punctuation (. ? ! ;) → Google sees no sentence boundaries → 1 segment per cue.
+      const texts = chunk.map((i) => this.targetCues[i]?.text ?? '');
+      const joined = joinCueTexts(texts);
 
       let success = false;
       for (let attempt = 0; attempt < this.opts.maxRetries; attempt++) {
         if (this.cancelled) return;
         try {
           const translated = await this.opts.translate(joined, this.sl, this.tl);
-          // expectedCount=1 → alignTranslatedSegments joins all segments
-          const aligned = alignTranslatedSegments(translated, 1);
-          this.cache.set(cueIdx, aligned[0] ?? '');
+          // alignTranslatedSegments decodes placeholders → original punctuation
+          const aligned = alignTranslatedSegments(translated, chunk.length);
+          chunk.forEach((cueIdx, j) => {
+            this.cache.set(cueIdx, aligned[j] ?? '');
+          });
           success = true;
           break;
         } catch {
@@ -195,7 +201,7 @@ export class BackgroundPrefillController {
       this.opts.onChunkTranslated(this.getTranslatedCues());
 
       this.queueIdx++;
-      // Gap between requests (except after last cue)
+      // Gap between requests (except after last chunk)
       if (this.queueIdx < this.queue.length && !this.cancelled) {
         await sleep(this.opts.requestGapMs);
       }
