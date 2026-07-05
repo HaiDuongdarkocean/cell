@@ -29,6 +29,9 @@ docs/           # Tài liệu dự án
 │   └── 018-subtitle-navigation-control-cluster.md # Nav cluster controller contract (NavClusterController class, settings schema v2 flat keys, cue source findCurrentLine, kbd fixed parallel, Pointer Events drag, CSS half-circle collapse) # Refactor architecture debt phase 2 (8 decisions D1-D8 from architecture review 2026-07-01, M14-M21)
 │   └── 019-subtitle-time-offset.md # Subtitle time offset V1 interface contracts (OffsetController class, lazy/committed mode, settings schema)
 │   └── 020-youtube-subtitle-detection.md # YouTube subtitle detection interface contracts (Two Detection Paths, MAIN world postMessage bridge, InnerTube fallback via background SW, SPA yt-navigate-finish + videoId dedup, DetectedSubtitle isAsr?/displayName?)
+│   └── 021-translate-subtitle-background-prefill.md # ADR-021 background prefill + Google unofficial + 0 setting + cache per-session + ShortcutInput combo (cite spec)
+│   └── 022-port-theocean-theme-system.md # ADR-022 port theocean theme: storage tách riêng (themeMode + themeConfig no mode), 9 core tokens runtime + derive secondary, system mode, content-script inject customColors, SettingsDialog giữ toggle shortcut, ThemeProvider init 3 entrypoint
+│   └── 023-port-theocean-dictionary-import.md # ADR-023 port theocean dict: IndexedDB 3 stores + dbHash random, migration v9 create-all only, strategy template method (5 + base), fflate gzip+zip, sql.js lazy-load (wasm-unsafe-eval CSP đã có), atomic rollback, SHA-256 dedupe 1MB sample, batch 5000 streaming
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -60,7 +63,6 @@ docs/           # Tài liệu dự án
 │   └── spec-settings-dialog-rearrange.md # Settings dialog rearrange spec (pair/indent/divider, fix Nav Cluster position) # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
 │   └── spec-translate-subtitle-target-to-native.md # Translate subtitle target→native PRD (background prefill, Google unofficial, ShortcutInput combo, general mọi site)
 │   └── spec-port-theocean-dict-and-theme.md # Port theocean-dict reference: theme system (runtime configurable, 9 core tokens, WCAG, import/export, system mode) + dict import 5 format → IndexedDB. Options page mới. Theme trước, dict sau.
-│   └── 021-translate-subtitle-background-prefill.md # ADR-021 background prefill + Google unofficial + 0 setting + cache per-session + ShortcutInput combo (cite spec)
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
