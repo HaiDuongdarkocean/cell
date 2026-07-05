@@ -244,18 +244,40 @@ export function createDragHint(container: HTMLElement): HTMLDivElement {
   return hint;
 }
 
-const CHECK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>`;
+export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
+
+export interface ToastOptions {
+  variant?: ToastVariant;
+}
+
+const ICONS: Record<ToastVariant, string> = {
+  success: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>`,
+  error: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>`,
+  warning: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  info: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+};
+
+const VARIANT_COLORS: Record<ToastVariant, string> = {
+  success: 'var(--color-success)',
+  error: 'var(--color-error)',
+  warning: 'var(--color-warning)',
+  info: 'var(--color-info)',
+};
 
 /**
  * Show a temporary toast notification at bottom-center of video (UI v4).
- * Matches docs/mockups/subtitle-selector-mockup.html: bottom 30%, check icon,
- * theme tokens, bordered card. Auto-hides after 3 seconds.
+ * Matches docs/mockups/subtitle-selector-mockup.html: bottom 30%, theme tokens,
+ * bordered card. Auto-hides after 3 seconds.
  * ponytail: position absolute in video parent (same pattern as overlay/dragHint),
  * not fixed viewport — toast stays anchored to video even on scroll.
  */
-export function showToast(message: string, container: HTMLElement): void {
+export function showToast(message: string, container: HTMLElement, options: ToastOptions = {}): void {
+  const { variant = 'info' } = options;
+  const color = VARIANT_COLORS[variant];
+
   const toast = document.createElement('div');
   toast.setAttribute('data-testid', 'subtitle-toast');
+  toast.setAttribute('data-variant', variant);
 
   toast.style.cssText = `
     position: absolute;
@@ -266,6 +288,7 @@ export function showToast(message: string, container: HTMLElement): void {
     background: var(--color-background);
     color: var(--color-text);
     border: 1px solid var(--color-border);
+    border-left: 3px solid ${color};
     border-radius: var(--radius-md, 8px);
     padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
     font-size: var(--font-size-sm, 13px);
@@ -282,8 +305,8 @@ export function showToast(message: string, container: HTMLElement): void {
   `;
 
   const icon = document.createElement('span');
-  icon.style.cssText = 'color: var(--color-success); display: inline-flex; flex-shrink: 0;';
-  icon.innerHTML = CHECK_SVG;
+  icon.style.cssText = `color: ${color}; display: inline-flex; flex-shrink: 0;`;
+  icon.innerHTML = ICONS[variant];
   toast.appendChild(icon);
 
   const text = document.createElement('span');

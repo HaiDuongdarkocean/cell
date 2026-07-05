@@ -29,7 +29,7 @@ export function ShortcutInput({
     const normalized = e.currentTarget.value.toLowerCase().slice(0, 1);
     onChange(normalized);
   };
-  const cls = `${styles.shortcutInput} ${className ?? ''}`.trim();
+  const cls = className === 'keyboard-cue' ? `${styles.shortcutInput} ${styles.keyboardCue}` : styles.shortcutInput;
   return (
     <input
       type="text"

@@ -25,7 +25,7 @@
 **Estimated scope**: S (3 files)
 
 #### Task 2: Settings UI — 2 CustomSelect
-**Description**: Thay text input bằng 2 `CustomSelect` single-select: "Overlay target language" + "Overlay native language". Reuse `SUBTITLE_LANGUAGES` (bỏ option `all`). Giữ toggle auto-load.
+**Description**: Thay text input bằng 2 `CustomSelect` single-select: "Target language" + "Native language". Reuse `SUBTITLE_LANGUAGES` (bỏ option `all`). Giữ toggle auto-load.
 **Acceptance criteria** (Spec F1):
 - [ ] 2 `CustomSelect` hiển thị: target + native (cả 2 default `''`)
 - [ ] Option `all` bị loại

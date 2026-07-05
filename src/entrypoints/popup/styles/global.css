@@ -24,7 +24,7 @@ html, body { font-family: var(--font-family); font-size: var(--font-size-base); 
 }
 
 /* ============================================================
-   Body + Container — 400×600 popup
+   Body + Container — 480×600 popup (widened for settings sidebar)
    ============================================================ */
 body {
   background-color: var(--color-background);
@@ -34,7 +34,7 @@ body {
 }
 
 #root {
-  width: 400px;
+  width: 480px;
   min-height: 600px;
   margin: 0 auto;
 }

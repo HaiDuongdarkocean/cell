@@ -3,7 +3,7 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   padding: var(--spacing-sm) 0;
 }
 
@@ -15,12 +15,32 @@
 
 .fieldRow {
   display: flex;
-  gap: var(--spacing-sm);
-  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  align-items: stretch;
 }
 
 .fieldRow > .field {
-  flex: 1;
+  min-width: 0;
+}
+
+/* === Pair row — 2 fields side-by-side (settings-dialog-rearrange) === */
+.pairRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  align-items: start;
+}
+
+.pairRow > .field {
+  min-width: 0;
+}
+
+/* === Divider — group separator within section body === */
+.divider {
+  height: 1px;
+  background: var(--color-border-subtle);
+  margin: var(--spacing-xs) 0;
 }
 
 .label {
@@ -30,6 +50,12 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
+}
+
+.labelText {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .valueBadge {
@@ -115,17 +141,24 @@
 
 .radioRow {
   display: flex;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-xs);
 }
 
 .radioLabel {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  font-size: var(--font-size-sm);
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: var(--font-size-xs);
   color: var(--color-text);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .toggleRow {

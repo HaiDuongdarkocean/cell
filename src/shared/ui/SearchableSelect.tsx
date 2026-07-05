@@ -27,6 +27,8 @@ export interface SearchableSelectProps {
   placeholder?: string;
   /** Max height of the option list in pixels. Defaults to 220. */
   maxHeight?: number;
+  /** Whether the select is disabled. */
+  disabled?: boolean;
 }
 
 /**
@@ -53,6 +55,7 @@ export function SearchableSelect({
   dataTestId,
   placeholder = 'Search...',
   maxHeight = 220,
+  disabled = false,
 }: SearchableSelectProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -130,11 +133,12 @@ export function SearchableSelect({
         type="button"
         id={id}
         data-testid={dataTestId}
-        className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''}`}
+        className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''} ${disabled ? styles.triggerDisabled : ''}`}
         aria-label={ariaLabel}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        onClick={handleTriggerClick}
+        onClick={disabled ? undefined : handleTriggerClick}
+        disabled={disabled}
       >
         <span className={styles.value}>
           {selectedOption?.label || placeholder}

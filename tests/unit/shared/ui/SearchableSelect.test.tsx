@@ -183,4 +183,33 @@ describe('SearchableSelect', () => {
     const trigger = screen.getByRole('button', { name: 'Select language' });
     expect(trigger).toHaveAttribute('id', 'select-id');
   });
+
+  it('disables trigger when disabled prop is true', () => {
+    render(
+      <SearchableSelect
+        options={options}
+        value="en"
+        onChange={jest.fn()}
+        ariaLabel="Select language"
+        disabled
+      />
+    );
+    const trigger = screen.getByRole('button', { name: 'Select language' });
+    expect(trigger).toBeDisabled();
+  });
+
+  it('does not open menu when disabled trigger is clicked', () => {
+    render(
+      <SearchableSelect
+        options={options}
+        value="en"
+        onChange={jest.fn()}
+        ariaLabel="Select language"
+        disabled
+      />
+    );
+    const trigger = screen.getByRole('button', { name: 'Select language' });
+    fireEvent.click(trigger);
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
 });

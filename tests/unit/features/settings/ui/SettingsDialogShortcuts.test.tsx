@@ -19,7 +19,7 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
         onClose={noop}
       />,
     );
-    expect(screen.getByText(/keyboard shortcuts/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /keyboard shortcuts/i, level: 4 })).toBeInTheDocument();
   });
 
   it('renders input field for each shortcut action', () => {

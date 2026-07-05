@@ -1,6 +1,6 @@
-/* === Popup Container — 400×600, matches prototype === */
+/* === Popup Container — 480×600, matches prototype === */
 .popup {
-  width: 400px;
+  width: 480px;
   height: 600px;
   background: var(--color-background);
   color: var(--color-text);

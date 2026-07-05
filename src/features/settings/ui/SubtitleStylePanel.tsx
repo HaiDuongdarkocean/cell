@@ -79,7 +79,7 @@ export function SubtitleStylePanel({
       {/* Live preview */}
       <SubtitlePreview style={style} role={role} />
 
-      {/* Font size */}
+      {/* Font size — moved to top row (full-width slider) */}
       <div className={styles.field}>
         <label className={styles.label} htmlFor={`style-${role}-font-size`}>
           Font size
@@ -98,23 +98,80 @@ export function SubtitleStylePanel({
         />
       </div>
 
-      {/* Text color */}
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor={`style-${role}-text-color`}>
-          Text color
-        </label>
-        <input
-          id={`style-${role}-text-color`}
-          type="color"
-          value={style.textColor}
-          onChange={(e) => onChange({ textColor: e.target.value })}
-          className={styles.colorInput}
-          aria-label="Text color"
-        />
+      {/* PAIR: Position (Y-offset) + Font family — Position replaces Font size in pair row */}
+      <div className={styles.pairRow}>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor={`style-${role}-y-offset`}>
+            <span className={styles.labelText}>
+              Position (Y)
+              <HintIcon
+                hint="0% = top, 95% = bottom. Drag handle on video also sets this."
+                ariaLabel="Show hint for Vertical position"
+              />
+            </span>
+          </label>
+          <input
+            id={`style-${role}-y-offset`}
+            type="number"
+            min={0}
+            max={95}
+            step={1}
+            value={style.yOffsetPercent}
+            onChange={(e) => onChange({ yOffsetPercent: Math.max(0, Math.min(95, Number(e.target.value))) })}
+            className={styles.numberInput}
+            aria-label={`Vertical position ${style.yOffsetPercent} percent`}
+          />
+        </div>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor={`style-${role}-font-family`}>Font family</label>
+          <select
+            id={`style-${role}-font-family`}
+            value={isCustomFont ? '__custom__' : style.fontFamily}
+            onChange={(e) => {
+              if (e.target.value === '__custom__') {
+                setCustomFontOpen(true);
+              } else {
+                onChange({ fontFamily: e.target.value });
+                setCustomFontOpen(false);
+              }
+            }}
+            className={styles.select}
+            aria-label="Font family"
+          >
+            {FONT_FAMILY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+            <option value="__custom__">Custom…</option>
+          </select>
+          {(customFontOpen || isCustomFont) && (
+            <input
+              type="text"
+              value={isCustomFont ? style.fontFamily : ''}
+              placeholder="e.g. 'Noto Sans JP', sans-serif"
+              onChange={(e) => onChange({ fontFamily: e.target.value })}
+              className={styles.textInput}
+              aria-label="Custom font family CSS string"
+              data-testid={`style-${role}-font-family-custom`}
+            />
+          )}
+        </div>
       </div>
 
-      {/* Background color + opacity */}
-      <div className={styles.fieldRow}>
+      {/* PAIR: Text color + Background color */}
+      <div className={styles.pairRow}>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor={`style-${role}-text-color`}>
+            Text color
+          </label>
+          <input
+            id={`style-${role}-text-color`}
+            type="color"
+            value={style.textColor}
+            onChange={(e) => onChange({ textColor: e.target.value })}
+            className={styles.colorInput}
+            aria-label="Text color"
+          />
+        </div>
         <div className={styles.field}>
           <label className={styles.label} htmlFor={`style-${role}-bg-color`}>
             Background color
@@ -126,6 +183,27 @@ export function SubtitleStylePanel({
             onChange={(e) => onChange({ backgroundColor: e.target.value })}
             className={styles.colorInput}
             aria-label="Background color"
+          />
+        </div>
+      </div>
+
+      {/* PAIR: Text opacity + BG opacity */}
+      <div className={styles.pairRow}>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor={`style-${role}-text-opacity`}>
+            Text opacity
+            <span className={styles.valueBadge}>{style.textOpacity.toFixed(2)}</span>
+          </label>
+          <input
+            id={`style-${role}-text-opacity`}
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={style.textOpacity}
+            onChange={(e) => onChange({ textOpacity: Number(e.target.value) })}
+            className={styles.slider}
+            aria-label={`Text opacity ${style.textOpacity}`}
           />
         </div>
         <div className={styles.field}>
@@ -147,42 +225,43 @@ export function SubtitleStylePanel({
         </div>
       </div>
 
-      {/* Text opacity */}
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor={`style-${role}-text-opacity`}>
-          Text opacity
-          <span className={styles.valueBadge}>{style.textOpacity.toFixed(2)}</span>
-        </label>
-        <input
-          id={`style-${role}-text-opacity`}
-          type="range"
-          min={0}
-          max={1}
-          step={0.05}
-          value={style.textOpacity}
-          onChange={(e) => onChange({ textOpacity: Number(e.target.value) })}
-          className={styles.slider}
-          aria-label={`Text opacity ${style.textOpacity}`}
-        />
-      </div>
-
-      {/* Text shadow preset */}
-      <div className={styles.field}>
-        <label className={styles.label}>Text shadow</label>
-        <div className={styles.radioRow} role="radiogroup" aria-label="Text shadow preset">
-          {TEXT_SHADOW_PRESETS.map((preset) => (
-            <label key={preset} className={styles.radioLabel}>
-              <input
-                type="radio"
-                name={`style-${role}-shadow-preset`}
-                value={preset}
-                checked={style.textShadow.preset === preset}
-                onChange={() => handleShadowPresetChange(preset)}
-                aria-label={`${TEXT_SHADOW_LABELS[preset]} shadow`}
-              />
-              <span>{TEXT_SHADOW_LABELS[preset]}</span>
-            </label>
-          ))}
+      {/* Horizontal align + Text shadow preset (existing fieldRow) */}
+      <div className={styles.fieldRow}>
+        <div className={styles.field}>
+          <label className={styles.label}>Horizontal align</label>
+          <div className={styles.radioRow} role="radiogroup" aria-label="Horizontal align">
+            {HORIZONTAL_ALIGN_OPTIONS.map((align) => (
+              <label key={align} className={styles.radioLabel}>
+                <input
+                  type="radio"
+                  name={`style-${role}-align`}
+                  value={align}
+                  checked={style.horizontalAlign === align}
+                  onChange={() => onChange({ horizontalAlign: align })}
+                  aria-label={`Align ${align}`}
+                />
+                <span style={{ textTransform: 'capitalize' }}>{align}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className={styles.field}>
+          <label className={styles.label}>Text shadow</label>
+          <div className={styles.radioRow} role="radiogroup" aria-label="Text shadow preset">
+            {TEXT_SHADOW_PRESETS.map((preset) => (
+              <label key={preset} className={styles.radioLabel}>
+                <input
+                  type="radio"
+                  name={`style-${role}-shadow-preset`}
+                  value={preset}
+                  checked={style.textShadow.preset === preset}
+                  onChange={() => handleShadowPresetChange(preset)}
+                  aria-label={`${TEXT_SHADOW_LABELS[preset]} shadow`}
+                />
+                <span>{TEXT_SHADOW_LABELS[preset]}</span>
+              </label>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -254,83 +333,9 @@ export function SubtitleStylePanel({
         </div>
       )}
 
-      {/* Font family */}
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor={`style-${role}-font-family`}>Font family</label>
-        <select
-          id={`style-${role}-font-family`}
-          value={isCustomFont ? '__custom__' : style.fontFamily}
-          onChange={(e) => {
-            if (e.target.value === '__custom__') {
-              setCustomFontOpen(true);
-            } else {
-              onChange({ fontFamily: e.target.value });
-              setCustomFontOpen(false);
-            }
-          }}
-          className={styles.select}
-          aria-label="Font family"
-        >
-          {FONT_FAMILY_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-          <option value="__custom__">Custom…</option>
-        </select>
-        {(customFontOpen || isCustomFont) && (
-          <input
-            type="text"
-            value={isCustomFont ? style.fontFamily : ''}
-            placeholder="e.g. 'Noto Sans JP', sans-serif"
-            onChange={(e) => onChange({ fontFamily: e.target.value })}
-            className={styles.textInput}
-            aria-label="Custom font family CSS string"
-            data-testid={`style-${role}-font-family-custom`}
-          />
-        )}
-      </div>
+      {/* Font family — moved into pair row above (settings-dialog-rearrange) */}
 
-      {/* Horizontal align */}
-      <div className={styles.field}>
-        <label className={styles.label}>Horizontal align</label>
-        <div className={styles.radioRow} role="radiogroup" aria-label="Horizontal align">
-          {HORIZONTAL_ALIGN_OPTIONS.map((align) => (
-            <label key={align} className={styles.radioLabel}>
-              <input
-                type="radio"
-                name={`style-${role}-align`}
-                value={align}
-                checked={style.horizontalAlign === align}
-                onChange={() => onChange({ horizontalAlign: align })}
-                aria-label={`Align ${align}`}
-              />
-              <span style={{ textTransform: 'capitalize' }}>{align}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Y-offset (position) */}
-      <div className={styles.field}>
-        <label className={styles.label} htmlFor={`style-${role}-y-offset`}>
-          Position (Y-offset)
-          <span className={styles.valueBadge}>{style.yOffsetPercent}%</span>
-        </label>
-        <input
-          id={`style-${role}-y-offset`}
-          type="number"
-          min={0}
-          max={95}
-          step={1}
-          value={style.yOffsetPercent}
-          onChange={(e) => onChange({ yOffsetPercent: Math.max(0, Math.min(95, Number(e.target.value))) })}
-          className={styles.numberInput}
-          aria-label={`Vertical position ${style.yOffsetPercent} percent`}
-        />
-        <HintIcon
-          hint="0% = top, 95% = bottom. Drag handle on video also sets this."
-          ariaLabel="Show hint for Vertical position"
-        />
-      </div>
+      {/* Position (Y-offset) — moved into pair row above */}
 
       {/* Visible toggle (native only — target always visible) */}
       {role === 'native' && (
@@ -342,16 +347,18 @@ export function SubtitleStylePanel({
               onChange={(e) => onChange({ visible: e.target.checked })}
               aria-label="Show native overlay"
             />
-            <span>Show native overlay</span>
-            <HintIcon
-              hint="When off, native overlay is fully hidden (not just transparent)."
-              ariaLabel="Show hint for Show native overlay"
-            />
+            <span className={styles.labelText}>
+              Show native overlay
+              <HintIcon
+                hint="When off, native overlay is fully hidden (not just transparent)."
+                ariaLabel="Show hint for Show native overlay"
+              />
+            </span>
           </label>
         </div>
       )}
 
-      {/* Reset button */}
+      {/* Reset button — in panel, justify-end (settings-dialog-rearrange) */}
       <div className={styles.resetRow}>
         {!showResetConfirm ? (
           <button

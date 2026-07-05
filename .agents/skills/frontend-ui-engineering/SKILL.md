@@ -162,6 +162,84 @@ Don't skip heading levels. Don't use heading styles for non-heading content.
 - Ensure sufficient contrast (4.5:1 for normal text, 3:1 for large text)
 - Don't rely solely on color to convey information (use icons, text, or patterns too)
 
+## YouTube + Google Design Principles (research 2026-07-03)
+
+> **Source**: 27 sources researched (Material Design 3, Google Design, YouTube Blog, YouTube Design System, Android Settings Guidelines, NN/g, SaaS patterns, conference talks). Full reference: project `docs/design-system/design-system.md §8/9/10`.
+
+### Core Philosophy (apply to every UI)
+
+| Principle | Meaning | Bad → Good |
+|---|---|---|
+| **Content-First Utility** | UI is near-monochrome canvas, doesn't compete with content | Purple gradients everywhere → restrained palette letting content shine |
+| **Natural Evolution** | Design changes = evolution, not revolution | Redesign from scratch → iterate on existing patterns |
+| **Rounded Shapes Philosophy** | Rounded = friendly, inviting. Radii scale with element size | Random radius values → `--radius-sm/md/lg` scale (4/8/12px) |
+| **Softened Contrast** | Use `#0f0f0f`-style black, not pure `#000000` | Pure black (`#000`) → softened black (`#0f172a` or `#0f0f0f`) |
+| **Strategic Color Usage** | Reserve branded/primary color for key actions ONLY | Primary color everywhere → monochromatic defaults, primary for active/focus/key actions |
+| **4dp Grid System** | All spacing follows 4dp base unit | `13px`, `2.3rem` → `4/8/12/16/24/32px` scale |
+| **Semantic Color Roles** | Colors assigned by role, not arbitrary | `#2563eb` inline → `--color-primary` token |
+
+### Settings UI Patterns (when building settings panels)
+
+| Pattern | Spec | Anti-pattern |
+|---|---|---|
+| **Sidebar navigation** | Left, 120-240px, pill active state (bg + text color) | Right sidebar, color-only active |
+| **Card grouping** | 1px hairline border (not shadow), max 4-5 settings per card | Shadow-heavy cards, 10+ settings per card |
+| **Typography hierarchy** | Page title > section header (14px/500) > field label > description | Skip heading levels, same size for all |
+| **Progressive disclosure** | Core settings visible, advanced collapse | Wall of toggles, all settings visible |
+| **User intent organization** | Group by what users want to DO | Group by system architecture ("Account/System/Preferences") |
+| **Immediate feedback** | Toggle/select persists immediately, no save button | Hidden save at bottom of long form |
+| **Stable category names** | Don't relabel frequently | Relabel → users relearn location each change |
+| **Dependency explanation** | Dependent setting below parent + explain why unavailable | Dependent setting far from parent, no explanation |
+| **Danger zone** | Destructive actions at bottom, distinct visual framing | Delete next to routine save |
+| **Polite defaults** | Common, no risk, no battery drain | Aggressive defaults requiring opt-out |
+| **10-15 items per screen** | Over 15 → move to subscreen | 30+ items in flat list |
+
+### Form Controls (YouTube/M3 reference)
+
+| Control | Spec |
+|---|---|
+| Select dropdown | 40px height, 1px border, 4-8px radius, 8-12px padding |
+| Toggle switch | Immediate effect, active = primary color, no save needed |
+| Text input | 40px height, 1px border, focus = 2px solid primary + 2px offset |
+| Focus indicator | **2px solid `--color-primary`, 2px offset** — always visible |
+| Touch target | ≥44px desktop, ≥48dp M3, ≥56px touch |
+
+### Anti-Patterns to Avoid
+
+| Category | Anti-pattern | Do instead |
+|---|---|---|
+| Organization | Organize by system architecture | Group by user intent |
+| Organization | Wall of toggles (30+ no grouping) | Group into cards, max 4-5 per card |
+| Organization | Settings as storage closet | Solve in main UI, settings = last resort |
+| Navigation | 20+ sidebar items | Max 7-8 items, use sub-sections |
+| Navigation | Nesting deeper than 1 level | Flat categories, sub-sections in content |
+| Navigation | Inconsistent active states | Pill bg + text color, consistent |
+| Visual | Pure `#000000` | Softened black (`#0f0f0f` or `#0f172a`) |
+| Visual | Shadows instead of borders | 1px hairline borders for cards, shadows for floating only |
+| Visual | Inconsistent rounding | `--radius-sm/md/lg` scale, scale with size |
+| Visual | Color as sole info carrier | Add shape/text/icon backup |
+| Visual | Jargon in labels | Plain language ("Use real-time updates" not "Enable WebSocket") |
+| A11y | Below 4.5:1 contrast | Verify token pairs in both themes |
+| A11y | Color-only states | Active = pill bg + text color, not just color |
+| A11y | Small touch targets (<44px) | Min 44px desktop, 48dp M3, 56px touch |
+| A11y | No focus indicators | 2px solid primary, 2px offset |
+
+### Quick Checklist (run before "done" on any UI)
+
+- [ ] Spacing on 4dp grid (4/8/12/16/24/32px) — no `13px` or `2.3rem`
+- [ ] Border-radius from scale (`--radius-sm/md/lg`) — no random values
+- [ ] Semantic color tokens, not raw hex
+- [ ] Primary color reserved for active/focus/key actions — not everywhere
+- [ ] Focus indicator: 2px solid primary + 2px offset on all interactive elements
+- [ ] Active state: pill bg + text color change (not color-only)
+- [ ] Touch targets ≥44px
+- [ ] Contrast ≥4.5:1 (normal text), ≥3:1 (large text)
+- [ ] Heading hierarchy: h1 → h2 → h3 (no skips)
+- [ ] Plain language labels (no jargon)
+- [ ] Settings: grouped by user intent, max 4-5 per card
+- [ ] Settings: immediate feedback (no save button for toggles)
+- [ ] Empty/loading/error states handled
+
 ## Accessibility (WCAG 2.1 AA)
 
 Every component must meet these standards:

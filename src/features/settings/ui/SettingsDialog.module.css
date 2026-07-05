@@ -158,12 +158,13 @@
 }
 
 .sectionHeader {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-bottom: 0;
 }
 
 .sectionTitle {
@@ -186,7 +187,7 @@
 
 .sectionDescription {
   margin: 0;
-  padding: var(--spacing-xs) var(--spacing-md) 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   line-height: var(--leading-normal);
@@ -208,6 +209,32 @@
   gap: 6px;
 }
 
+/* === Pair row — 2 fields side-by-side (settings-dialog-rearrange) === */
+.pairRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  align-items: start;
+}
+
+.pairRow > * {
+  min-width: 0;
+}
+
+/* === Divider — group separator within section body === */
+.divider {
+  height: 1px;
+  background: var(--color-border-subtle);
+  margin: var(--spacing-xs) 0;
+}
+
+/* === Shortcut grid — 2-column compact (settings-dialog-rearrange) === */
+.shortcutGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-xs);
+}
+
 /* === Text input — for short code fields (e.g. language code) === */
 .textInput {
   width: 100%;
@@ -220,11 +247,19 @@
 }
 
 .label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
   letter-spacing: 0.01em;
   user-select: none;
+}
+
+/* === Label in shortcut field — not full width === */
+.shortcutField .label {
+  flex: 0 0 auto;
 }
 
 /* === Custom Select — matches prototype exactly === */
@@ -353,6 +388,9 @@
 }
 
 .asLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
@@ -365,6 +403,22 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   line-height: 1.5;
+}
+
+/* === Shortcut field — horizontal layout for keyboard shortcuts === */
+.shortcutField {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+
+.shortcutField:hover {
+  background: var(--color-surface-hover);
 }
 
 /* === ADR-013: Subtitle style tab (Target/Native) === */

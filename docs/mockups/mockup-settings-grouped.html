@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <title>Settings — Grouped Layout Mockup v1</title>
+  <!--
+    Mockup: SettingsDialog với 5 visual cards + sidebar TRÁI theo style Google/YouTube.
+    Decisions (confirmed with anh 2026-07-03):
+      - Layout: Visual cards + sidebar dọc bên TRÁI (anchor jump)
+      - Popup width: 480px (sidebar 120px + main 340px + padding)
+      - Sidebar items: 5 nhóm đầy đủ (Media / Overlay / Shortcuts / Nav Cluster / Download)
+      - Active item: pill background (Google style) — không chỉ đổi màu chữ
+      - Section header: chỉ label, không icon
+      - Card: background phân tầng (surface header + body) + optional description
+      - Default state: tất cả expand
+    Research applied (YouTube + M3, 27 sources — see docs/design-system/design-system.md §8/9/10):
+      - Pill active: --color-primary-subtle bg + --color-primary text + --radius-md (YouTube 10px → our 8px)
+      - Card hairline border: 1px solid --color-border (YouTube principle: borders not shadows)
+      - Typography: section title --font-size-base + --font-weight-semibold (YouTube 14px/500)
+      - Card description: Windows SettingsCard pattern (header + description + body)
+      - Focus indicator: 2px solid --color-primary + 2px offset (YouTube 2px signal blue)
+      - Section gap: 16px (compact popup, YouTube 24-32px desktop)
+      - 4dp grid: --spacing-xs/sm/md/lg/xl (4/8/12/16/24) — M3 principle, already followed
+    Tokens: import từ theme.css (no invented tokens).
+  -->
+  <style>
+    /* === Tokens (copy từ theme.css — source of truth) === */
+    :root {
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-subtle: rgba(37, 99, 235, 0.1);
+      --color-background: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-hover: #f1f5f9;
+      --color-text: #0f172a;
+      --color-text-secondary: #475569;
+      --color-text-muted: #94a3b8;
+      --color-text-inverse: #ffffff;
+      --color-border: #e2e8f0;
+      --color-border-subtle: #f1f5f9;
+      --color-border-focus: #2563eb;
+      --color-success: #10b981;
+      --color-warning: #f59e0b;
+      --color-error: #ef4444;
+      --color-info: #2563eb;
+      --color-error-subtle: rgba(239, 68, 68, 0.08);
+      --color-warning-subtle: rgba(245, 158, 11, 0.1);
+      --color-scrollbar-thumb: #cbd5e1;
+      --color-scrollbar-thumb-hover: #94a3b8;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-size-xs: 12px;
+      --font-size-sm: 13px;
+      --font-size-base: 14px;
+      --font-size-lg: 16px;
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --leading-tight: 1.25;
+      --leading-normal: 1.5;
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 12px;
+      --spacing-lg: 16px;
+      --spacing-xl: 24px;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --transition: 150ms ease;
+      --transition-fast: 150ms;
+      --transition-normal: 200ms;
+      --ease-standard: ease;
+    }
+
+    [data-theme="dark"] {
+      --color-primary: #60a5fa;
+      --color-primary-hover: #3b82f6;
+      --color-primary-subtle: rgba(96, 165, 250, 0.15);
+      --color-background: #0f172a;
+      --color-surface: #1e293b;
+      --color-surface-hover: #334155;
+      --color-text: #f1f5f9;
+      --color-text-secondary: #cbd5e1;
+      --color-text-muted: #64748b;
+      --color-text-inverse: #0f172a;
+      --color-border: #334155;
+      --color-border-subtle: #1e293b;
+      --color-border-focus: #60a5fa;
+      --color-error-subtle: rgba(239, 68, 68, 0.15);
+      --color-warning-subtle: rgba(245, 158, 11, 0.15);
+      --color-scrollbar-thumb: #475569;
+      --color-scrollbar-thumb-hover: #64748b;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    /* === Page shell (mockup-only — real popup mounts via #root) === */
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-family);
+      background: #e5e7eb;
+      color: var(--color-text);
+      min-height: 100vh;
+    }
+    [data-theme="dark"] body { background: #020617; }
+
+    .mockup-shell {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: var(--spacing-xl);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-lg);
+    }
+
+    .mockup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+    }
+    .mockup-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text);
+      margin: 0;
+    }
+    .mockup-meta {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+    }
+    .decision-note {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: var(--spacing-md);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+    .decision-note strong { color: var(--color-text); }
+    .theme-toggle {
+      padding: 6px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-background);
+      color: var(--color-text);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .theme-toggle:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+    .theme-toggle:hover { background: var(--color-surface-hover); }
+
+    /* === Popup popover (480px — sidebar + main) === */
+    .popover {
+      width: 480px;
+      max-height: 600px;
+      margin: 0 auto;
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .popoverHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+      flex-shrink: 0;
+    }
+    .popoverTitle {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text);
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+    .close-btn {
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .close-btn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+    .close-btn:hover { background: var(--color-surface-hover); color: var(--color-text); }
+    .close-btn svg { width: 16px; height: 16px; }
+
+    /* === Body: 2-column layout (main + sidebar) === */
+    .popoverBody {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+
+    .mainCol {
+      flex: 1;
+      padding: var(--spacing-lg);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-lg);
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-scrollbar-thumb) transparent;
+    }
+    .mainCol::-webkit-scrollbar { width: 8px; }
+    .mainCol::-webkit-scrollbar-thumb {
+      background: var(--color-scrollbar-thumb);
+      border-radius: 4px;
+    }
+    .mainCol::-webkit-scrollbar-thumb:hover { background: var(--color-scrollbar-thumb-hover); }
+
+    /* === Sidebar (left, 120px) — Google/YouTube style pill active === */
+    .sidebar {
+      width: 120px;
+      flex-shrink: 0;
+      padding: var(--spacing-md) var(--spacing-sm);
+      border-right: 1px solid var(--color-border-subtle);
+      background: var(--color-surface);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      order: -1;
+    }
+    .sidebarLabel {
+      font-size: 10px;
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: var(--spacing-xs) var(--spacing-sm);
+      margin-bottom: var(--spacing-xs);
+    }
+    .sidebarItem {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-family: var(--font-family);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      text-align: left;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .sidebarItem:hover {
+      background: var(--color-surface-hover);
+      color: var(--color-text);
+    }
+    .sidebarItem:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+    .sidebarItem.active {
+      background: var(--color-primary-subtle);
+      color: var(--color-primary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    /* === Section card — Google/YouTube style: surface background, no heavy border === */
+    .section {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      overflow: hidden;
+      scroll-margin-top: var(--spacing-md);
+      transition: box-shadow var(--transition);
+    }
+    .section.highlight {
+      box-shadow: 0 0 0 2px var(--color-primary-subtle);
+      border-color: var(--color-primary);
+    }
+    .sectionHeader {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+      background: var(--color-surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sectionTitle {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text);
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+    .sectionCount {
+      font-size: 10px;
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-muted);
+      background: var(--color-background);
+      padding: 2px 6px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+    }
+    .sectionDescription {
+      margin: 0;
+      padding: var(--spacing-xs) var(--spacing-md) 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      line-height: var(--leading-normal);
+      background: var(--color-surface);
+    }
+    .sectionBody {
+      padding: var(--spacing-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+      background: var(--color-background);
+    }
+
+    /* === Setting field (mimic existing) === */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      letter-spacing: 0.01em;
+      user-select: none;
+    }
+    .hint {
+      margin: 0;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+
+    /* === Custom select (trigger only — mockup) === */
+    .customSelect {
+      position: relative;
+      width: 100%;
+    }
+    .customSelectTrigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-sm);
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      text-align: left;
+    }
+    .customSelectTrigger:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+    .customSelectTrigger:hover {
+      border-color: var(--color-text-muted);
+      background: var(--color-surface-hover);
+    }
+    .customSelectValue { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chevron { width: 16px; height: 16px; flex-shrink: 0; color: var(--color-text-muted); }
+
+    /* === Toggle row (auto-select, overlay auto-load) === */
+    .toggleRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-sm);
+    }
+    .toggleLabel {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+    }
+    .toggle {
+      width: 32px;
+      height: 18px;
+      border-radius: var(--radius-full);
+      background: var(--color-border);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: background var(--transition);
+      flex-shrink: 0;
+    }
+    .toggle:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+    .toggle.on { background: var(--color-primary); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: white;
+      transition: transform var(--transition);
+    }
+    .toggle.on::after { transform: translateX(14px); }
+
+    /* === Tab row (subtitle appearance Target/Native) === */
+    .tabRow {
+      display: flex;
+      gap: 4px;
+      padding: 2px;
+      background: var(--color-surface-hover);
+      border-radius: var(--radius-sm);
+    }
+    .tabBtn {
+      flex: 1;
+      padding: 6px 12px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .tabBtn:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+    .tabBtn.active {
+      background: var(--color-background);
+      color: var(--color-text);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    /* === Slider (nav cluster) === */
+    .sliderRow {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .sliderHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sliderValue {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text);
+    }
+    .slider {
+      width: 100%;
+      height: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: var(--color-border);
+      border-radius: 2px;
+      outline: none;
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      cursor: pointer;
+      border: 2px solid var(--color-background);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    /* === Shortcut input === */
+    .shortcutInput {
+      width: 40px;
+      padding: 6px 8px;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      text-align: center;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      color: var(--color-text);
+      text-transform: uppercase;
+    }
+
+    /* === Subtitle preview box === */
+    .previewBox {
+      margin-top: var(--spacing-sm);
+      padding: var(--spacing-md);
+      background: #000;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      color: #fff;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    /* === Footer hint === */
+    .footerHint {
+      padding: var(--spacing-sm) var(--spacing-lg);
+      border-top: 1px solid var(--color-border-subtle);
+      font-size: 10px;
+      color: var(--color-text-muted);
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* === Mockup-only annotation === */
+    .annotation {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: var(--spacing-md);
+      background: var(--color-warning-subtle);
+      border: 1px solid var(--color-warning);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xs);
+      color: var(--color-text);
+      line-height: 1.5;
+    }
+    .annotation strong { color: var(--color-warning); }
+  </style>
+</head>
+<body>
+  <div class="mockup-shell">
+    <div class="mockup-header">
+      <div>
+        <h1 class="mockup-title">Settings — Grouped Layout</h1>
+        <div class="mockup-meta">v1 mockup · 2026-07-03 · 480px popup · sidebar + cards</div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙 Dark</button>
+    </div>
+
+    <div class="decision-note">
+      <strong>Updated with Google/YouTube style + M3 research (27 sources):</strong>
+      Sidebar trái · pill active (--color-primary-subtle + --radius-md) · card hairline border (1px, not shadow) ·
+      card description (Windows SettingsCard pattern) · focus indicator 2px solid primary + 2px offset ·
+      4dp spacing grid (already followed). See <code>docs/design-system/design-system.md §8/9/10</code> for full principles.
+    </div>
+
+    <!-- === Popover === -->
+    <div class="popover" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="popoverHeader">
+        <h3 id="settings-title" class="popoverTitle">Settings</h3>
+        <button class="close-btn" aria-label="Close settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="popoverBody">
+        <!-- === Main column (cards) === -->
+        <div class="mainCol" id="mainCol">
+
+          <!-- === Card 1: Media Selection === -->
+          <section class="section" id="card-media" data-section="media">
+            <div class="sectionHeader">
+              <h4 class="sectionTitle">Media Selection</h4>
+              <span class="sectionCount">4</span>
+            </div>
+            <p class="sectionDescription">Configure how media is automatically selected and preferred defaults.</p>
+            <div class="sectionBody">
+              <!-- Auto select toggle -->
+              <div class="field">
+                <div class="toggleRow">
+                  <span class="toggleLabel">Auto select media</span>
+                  <button class="toggle on" aria-pressed="true" aria-label="Toggle auto select"></button>
+                </div>
+                <p class="hint">Khi bật, mở popup → media tự chọn theo preference.</p>
+              </div>
+              <!-- Preferred format -->
+              <div class="field">
+                <label class="label">Preferred format</label>
+                <div class="customSelect">
+                  <button class="customSelectTrigger">
+                    <span class="customSelectValue">m3u8 (HLS)</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+              <!-- Default quality -->
+              <div class="field">
+                <label class="label">Default quality</label>
+                <div class="customSelect">
+                  <button class="customSelectTrigger">
+                    <span class="customSelectValue">Auto (best)</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+              <!-- Select subtitle -->
+              <div class="field">
+                <label class="label">Select subtitle</label>
+                <div class="customSelect">
+                  <button class="customSelectTrigger">
+                    <span class="customSelectValue">All languages</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- === Card 2: Subtitle Overlay === -->
+          <section class="section" id="card-overlay" data-section="overlay">
+            <div class="sectionHeader">
+              <h4 class="sectionTitle">Subtitle Overlay</h4>
+              <span class="sectionCount">4</span>
+            </div>
+            <p class="sectionDescription">Languages and appearance for the floating subtitle overlay.</p>
+            <div class="sectionBody">
+              <!-- Target language -->
+              <div class="field">
+                <label class="label">Target language</label>
+                <div class="customSelect">
+                  <button class="customSelectTrigger">
+                    <span class="customSelectValue">English</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+              <!-- Native language -->
+              <div class="field">
+                <label class="label">Native language</label>
+                <div class="customSelect">
+                  <button class="customSelectTrigger">
+                    <span class="customSelectValue">Tiếng Việt</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+              <!-- Overlay auto-load toggle -->
+              <div class="field">
+                <div class="toggleRow">
+                  <span class="toggleLabel">Overlay auto-load</span>
+                  <button class="toggle on" aria-pressed="true" aria-label="Toggle overlay auto-load"></button>
+                </div>
+                <p class="hint">Khi bật, overlay tự load subtitle detect được cùng target language.</p>
+              </div>
+              <!-- Subtitle appearance (Target/Native tabs) -->
+              <div class="field">
+                <label class="label">Subtitle appearance</label>
+                <div class="tabRow" role="tablist" aria-label="Subtitle style tab">
+                  <button class="tabBtn active" role="tab" aria-selected="true">Target</button>
+                  <button class="tabBtn" role="tab" aria-selected="false">Native</button>
+                </div>
+                <div class="previewBox">This is how the target subtitle will look.</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- === Card 3: Keyboard Shortcuts === -->
+          <section class="section" id="card-shortcuts" data-section="shortcuts">
+            <div class="sectionHeader">
+              <h4 class="sectionTitle">Keyboard Shortcuts</h4>
+              <span class="sectionCount">5</span>
+            </div>
+            <p class="sectionDescription">Remap keys for subtitle panel navigation actions.</p>
+            <div class="sectionBody">
+              <p class="hint">Single character per action.</p>
+              <div class="field">
+                <label class="label">Previous cue</label>
+                <input class="shortcutInput" value="A" readonly />
+              </div>
+              <div class="field">
+                <label class="label">Next cue</label>
+                <input class="shortcutInput" value="D" readonly />
+              </div>
+              <div class="field">
+                <label class="label">Replay cue</label>
+                <input class="shortcutInput" value="R" readonly />
+              </div>
+              <div class="field">
+                <label class="label">Toggle overlay</label>
+                <input class="shortcutInput" value="O" readonly />
+              </div>
+              <div class="field">
+                <label class="label">Toggle panel</label>
+                <input class="shortcutInput" value="P" readonly />
+              </div>
+            </div>
+          </section>
+
+          <!-- === Card 4: Navigation Cluster === -->
+          <section class="section" id="card-navcluster" data-section="navcluster">
+            <div class="sectionHeader">
+              <h4 class="sectionTitle">Navigation Cluster</h4>
+              <span class="sectionCount">5</span>
+            </div>
+            <p class="sectionDescription">Floating subtitle navigation buttons on video pages.</p>
+            <div class="sectionBody">
+              <!-- Enable toggle -->
+              <div class="field">
+                <div class="toggleRow">
+                  <span class="toggleLabel">Enable cluster</span>
+                  <button class="toggle on" aria-pressed="true" aria-label="Toggle nav cluster"></button>
+                </div>
+              </div>
+              <!-- Button size slider -->
+              <div class="field">
+                <div class="sliderHeader">
+                  <label class="label">Button size</label>
+                  <span class="sliderValue">48px</span>
+                </div>
+                <input class="slider" type="range" min="40" max="56" value="48" />
+              </div>
+              <!-- BG opacity slider -->
+              <div class="field">
+                <div class="sliderHeader">
+                  <label class="label">Background opacity</label>
+                  <span class="sliderValue">70%</span>
+                </div>
+                <input class="slider" type="range" min="0" max="100" value="70" />
+              </div>
+              <!-- Button opacity slider -->
+              <div class="field">
+                <div class="sliderHeader">
+                  <label class="label">Button opacity</label>
+                  <span class="sliderValue">90%</span>
+                </div>
+                <input class="slider" type="range" min="0" max="100" value="90" />
+              </div>
+              <!-- Position select -->
+              <div class="field">
+                <label class="label">Position</label>
+                <div class="customSelect">
+                  <button class="customSelectTrigger">
+                    <span class="customSelectValue">Bottom-right</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- === Card 5: Download === -->
+          <section class="section" id="card-download" data-section="download">
+            <div class="sectionHeader">
+              <h4 class="sectionTitle">Download</h4>
+              <span class="sectionCount">5</span>
+            </div>
+            <p class="sectionDescription">Download concurrency, conversion, and filename options.</p>
+            <div class="sectionBody">
+              <!-- Concurrent downloads -->
+              <div class="field">
+                <label class="label">Downloads at once</label>
+                <div class="customSelect">
+                  <button class="customSelectTrigger">
+                    <span class="customSelectValue">3</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+              <!-- Convert to MP4 -->
+              <div class="field">
+                <label class="label">Convert to MP4</label>
+                <div class="customSelect">
+                  <button class="customSelectTrigger">
+                    <span class="customSelectValue">Small only (≤500MB)</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+              <!-- Parallel conversion -->
+              <div class="field">
+                <label class="label">Parallel conversion</label>
+                <div class="customSelect">
+                  <button class="customSelectTrigger">
+                    <span class="customSelectValue">Auto</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+              <!-- Filename source -->
+              <div class="field">
+                <label class="label">Filename source</label>
+                <div class="customSelect">
+                  <button class="customSelectTrigger">
+                    <span class="customSelectValue">Title (fallback URL)</span>
+                    <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                </div>
+              </div>
+              <p class="hint">Parallel conversion: auto (số lượng tùy vào GPU của máy tính hiện có)</p>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- === Sidebar (right) — anchor jump === -->
+        <nav class="sidebar" aria-label="Settings sections">
+          <div class="sidebarLabel">Sections</div>
+          <button class="sidebarItem active" data-target="card-media">Media</button>
+          <button class="sidebarItem" data-target="card-overlay">Overlay</button>
+          <button class="sidebarItem" data-target="card-shortcuts">Shortcuts</button>
+          <button class="sidebarItem" data-target="card-navcluster">Nav Cluster</button>
+          <button class="sidebarItem" data-target="card-download">Download</button>
+        </nav>
+      </div>
+
+      <div class="footerHint">Sidebar left · Google-style pill active · Click to jump · All sections expanded</div>
+    </div>
+  </div>
+
+  <script>
+    // === Theme toggle ===
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', () => {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      themeToggle.textContent = isDark ? '🌙 Dark' : '☀️ Light';
+    });
+
+    // === Sidebar anchor jump + highlight ===
+    const mainCol = document.getElementById('mainCol');
+    const sidebarItems = document.querySelectorAll('.sidebarItem');
+    sidebarItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const target = document.getElementById(item.dataset.target);
+        if (!target) return;
+        // Scroll into view (smooth, within mainCol)
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Highlight card temporarily
+        document.querySelectorAll('.section.highlight').forEach(s => s.classList.remove('highlight'));
+        target.classList.add('highlight');
+        setTimeout(() => target.classList.remove('highlight'), 2000);
+        // Update active sidebar item
+        sidebarItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+
+    // === Update active sidebar item on scroll (IntersectionObserver) ===
+    const sections = document.querySelectorAll('.section');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          sidebarItems.forEach(i => {
+            i.classList.toggle('active', i.dataset.target === id);
+          });
+        }
+      });
+    }, { root: mainCol, rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+    sections.forEach(s => observer.observe(s));
+
+    // === Toggle switches (visual only) ===
+    document.querySelectorAll('.toggle').forEach(t => {
+      t.addEventListener('click', () => {
+        t.classList.toggle('on');
+        t.setAttribute('aria-pressed', t.classList.contains('on'));
+      });
+    });
+
+    // === Tab buttons (visual only) ===
+    document.querySelectorAll('.tabRow').forEach(row => {
+      row.querySelectorAll('.tabBtn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          row.querySelectorAll('.tabBtn').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+          });
+          btn.classList.add('active');
+          btn.setAttribute('aria-selected', 'true');
+        });
+      });
+    });
+
+    // === Slider value update (visual only) ===
+    document.querySelectorAll('.slider').forEach(slider => {
+      slider.addEventListener('input', () => {
+        const valueEl = slider.parentElement.querySelector('.sliderValue');
+        if (!valueEl) return;
+        const max = Number(slider.max);
+        if (max === 100) valueEl.textContent = `${slider.value}%`;
+        else valueEl.textContent = `${slider.value}px`;
+      });
+    });
+  </script>
+</body>
+</html>
