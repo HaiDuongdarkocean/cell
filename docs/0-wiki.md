@@ -43,6 +43,7 @@ docs/           # Tài liệu dự án
 │   └── intent-settings-dialog-rearrange.md # Settings dialog rearrange (UI/UX: pair fields, fix Nav Cluster missing position, indent child, dividers)
 │   └── intent-youtube-subtitle-detection.md # YouTube subtitle detection (proactive parse ytInitialPlayerResponse, include ASR, site adapter pattern, subtitle only)
 │   └── intent-translate-subtitle-target-to-native.md # Translate subtitle target→native (Google unofficial, background prefill, real-time)
+│   └── intent-port-theocean-dict-and-theme.md # Port theocean-dict reference: theme system (runtime configurable, thay DSDS) + import dict/freq 5 format → IndexedDB. Theme trước, dict sau.
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
