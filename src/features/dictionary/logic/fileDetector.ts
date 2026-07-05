@@ -141,15 +141,22 @@ export class CorruptedFileError extends Error {
   }
 }
 
-/** Read file as Uint8Array (from File/Blob). */
-export async function readFileBytes(file: Blob): Promise<Uint8Array> {
-  const buffer = await file.arrayBuffer();
+/** Minimal file-like interface for reading bytes. */
+export interface ReadableFile {
+  readonly size: number;
+  readonly name: string;
+  slice(start: number, end: number): { arrayBuffer(): Promise<ArrayBuffer> };
+}
+
+/** Read file as Uint8Array (from File/Blob or ReadableFile). */
+export async function readFileBytes(file: ReadableFile): Promise<Uint8Array> {
+  const buffer = await file.slice(0, file.size).arrayBuffer();
   return new Uint8Array(buffer);
 }
 
 /** Read first 1MB of a file as Uint8Array (for signature — ADR-023 D7). */
-export async function readFileHead(file: Blob, maxBytes = 1024 * 1024): Promise<Uint8Array> {
-  const slice = file.slice(0, maxBytes);
+export async function readFileHead(file: ReadableFile, maxBytes = 1024 * 1024): Promise<Uint8Array> {
+  const slice = file.slice(0, Math.min(maxBytes, file.size));
   const buffer = await slice.arrayBuffer();
   return new Uint8Array(buffer);
 }
