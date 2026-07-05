@@ -145,8 +145,13 @@
     try {
       const playerResponse = (window as unknown as Record<string, unknown>)
         .ytInitialPlayerResponse;
+      // URL-first: on SPA navigation (radio mix, playlist click) YouTube updates
+      // the URL immediately but `ytInitialPlayerResponse` stays stale (old videoId)
+      // indefinitely — prioritising playerResponse made currentVideoId ===
+      // lastVideoId so poll never triggered detect. URL changes first on SPA nav,
+      // and on hard nav `location.href` already has `v` at document_start.
       const videoId =
-        getVideoIdFromPlayerResponse(playerResponse) ?? getVideoIdFromUrl();
+        getVideoIdFromUrl() ?? getVideoIdFromPlayerResponse(playerResponse);
       debug.lastVideoId = videoId;
       if (!videoId || videoId === lastVideoId) return;
 
@@ -191,7 +196,7 @@
       const playerResponse = (window as unknown as Record<string, unknown>)
         .ytInitialPlayerResponse;
       const currentVideoId =
-        getVideoIdFromPlayerResponse(playerResponse) ?? getVideoIdFromUrl();
+        getVideoIdFromUrl() ?? getVideoIdFromPlayerResponse(playerResponse);
       // Only trigger detect when BOTH videoId is new AND API key is available
       // (YouTube injects INNERTUBE_API_KEY into HTML after initial paint —
       // detecting before that fails with "no API key" and wastes the attempt).
