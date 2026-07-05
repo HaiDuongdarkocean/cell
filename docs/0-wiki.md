@@ -42,7 +42,7 @@ docs/           # Tài liệu dự án
 │   └── intent-settings-controls-restyle.md # Settings controls restyle (vỏ→ruột: Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
 │   └── intent-settings-dialog-rearrange.md # Settings dialog rearrange (UI/UX: pair fields, fix Nav Cluster missing position, indent child, dividers)
 │   └── intent-youtube-subtitle-detection.md # YouTube subtitle detection (proactive parse ytInitialPlayerResponse, include ASR, site adapter pattern, subtitle only)
-│   └── intent-translate-subtitle-target-to-native.md # Translate subtitle target→native (Google unofficial, lazy sliding-window, real-time)
+│   └── intent-translate-subtitle-target-to-native.md # Translate subtitle target→native (Google unofficial, background prefill, real-time)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
@@ -57,6 +57,7 @@ docs/           # Tài liệu dự án
 │   └── spec-subtitle-navigation-control.md # Subtitle navigation control cluster PRD (6-nút 2 cột + drag + collapse + no-sub adaptive + settings)
 │   └── spec-settings-controls-restyle.md
 │   └── spec-settings-dialog-rearrange.md # Settings dialog rearrange spec (pair/indent/divider, fix Nav Cluster position) # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
+│   └── spec-translate-subtitle-target-to-native.md # Translate subtitle target→native PRD (background prefill, Google unofficial, ShortcutInput combo, general mọi site)
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
