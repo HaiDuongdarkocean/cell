@@ -80,6 +80,7 @@ docs/           # Tài liệu dự án
 │   └── plan-subtitle-time-offset.md # Subtitle time offset — implementation plan (G2, 6 AD, 7 milestones M1-M7, lazy/committed offset)
 │   └── plan-youtube-subtitle-detection.md # YouTube subtitle detection — implementation plan (G2, 6 AD, 7 milestones M1-M7, Two Detection Paths, cite spec-youtube-subtitle-detection)
 │   └── plan-translate-subtitle-target-to-native.md # Translate subtitle target→native plan (G2, 6 milestones M1-M6, background prefill, cite spec)
+│   └── plan-port-theocean-dict-and-theme.md # Port theocean-dict + theme plan (G2, 12 milestones M1-M12, theme trước F1-F6 → dict sau F7-F12, options page mới, cite spec)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
