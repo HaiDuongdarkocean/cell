@@ -43,3 +43,16 @@
 .toggle[aria-pressed="true"] .thumb {
   transform: translateX(14px);
 }
+
+.toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toggle:disabled:hover {
+  background: var(--color-border);
+}
+
+.toggle[aria-pressed="true"]:disabled:hover {
+  background: var(--color-primary);
+}

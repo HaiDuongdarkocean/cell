@@ -14,6 +14,8 @@ export interface ToggleProps {
   dataTestId?: string;
   /** Optional title attribute */
   title?: string;
+  /** When true, toggle is disabled (not clickable, dimmed). */
+  disabled?: boolean;
 }
 
 export function Toggle({
@@ -23,6 +25,7 @@ export function Toggle({
   id,
   dataTestId,
   title,
+  disabled,
 }: ToggleProps): ReactElement {
   return (
     <button
@@ -33,6 +36,7 @@ export function Toggle({
       aria-pressed={checked}
       aria-label={ariaLabel}
       title={title}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
     >
       <span className={styles.thumb} />

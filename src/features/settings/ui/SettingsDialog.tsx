@@ -10,7 +10,6 @@ import {
 } from '@/shared/config/config';
 import { MultiSelect } from './MultiSelect';
 import { SubtitleStylePanel } from './SubtitleStylePanel';
-import { SubtitlePreview } from './SubtitlePreview';
 import { NavClusterSettingsPanel } from './NavClusterSettingsPanel';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Toggle } from '@/shared/ui/Toggle';
@@ -414,18 +413,19 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
             >
               <div className={styles.sectionHeader}>
                 <h4 className={styles.sectionTitle}>Media Selection</h4>
-                <span className={styles.sectionCount}>4</span>
               </div>
-              <p className={styles.sectionDescription}>Configure how media is automatically selected and preferred defaults.</p>
+              <p className={styles.sectionDescription}>Configure how media is automatically selected.</p>
               <div className={styles.sectionBody}>
                 {/* Auto select media */}
                 <div className={styles.field}>
                   <div className={styles.asRow}>
-                    <span className={styles.asLabel}>Auto select media</span>
-                    <HintIcon
-                      hint="Khi bật, mở popup → media tự chọn theo preference."
-                      ariaLabel="Show hint for Auto select media"
-                    />
+                    <span className={styles.asLabel}>
+                      Auto select media
+                      <HintIcon
+                        hint="Khi bật, mở popup → media tự chọn theo preference."
+                        ariaLabel="Show hint for Auto select media"
+                      />
+                    </span>
                     <Toggle
                       checked={settings.autoSelectEnabled}
                       onChange={(next) => update('autoSelectEnabled', next)}
@@ -435,36 +435,19 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                   </div>
                 </div>
 
-                {/* Preferred format */}
-                <SettingField label="Preferred format" htmlFor="set-format">
-                  <CustomSelect
-                    testId="format-select"
-                    value={settings.preferredVideoFormat}
-                    options={PREFERRED_FORMAT_OPTIONS.map((f) => ({ value: f, label: PREFERRED_FORMAT_LABELS[f] }))}
-                    onSelect={(val) => update('preferredVideoFormat', val as 'mp4' | 'm3u8')}
-                  />
-                </SettingField>
-
-                {/* Default quality */}
-                <SettingField label="Default quality" htmlFor="set-quality">
-                  <CustomSelect
-                    testId="quality-select"
-                    value={settings.defaultQuality}
-                    options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABELS[q] }))}
-                    onSelect={(val) => update('defaultQuality', val as VideoQuality)}
-                  />
-                </SettingField>
-
-                {/* Select subtitle */}
-                <SettingField label="Select subtitle" htmlFor="set-subtitle-lang">
-                  <MultiSelect
-                    testId="subtitle-lang-multiselect"
-                    options={SUBTITLE_LANGUAGES}
-                    selectedValues={settings.selectedSubtitleLanguages}
-                    onChange={(values) => update('selectedSubtitleLanguages', values)}
-                    placeholder="Search languages..."
-                  />
-                </SettingField>
+                {/* Select subtitle - only shown when auto select is enabled — indented child (settings-dialog-rearrange) */}
+                {settings.autoSelectEnabled && (
+                  <div className={`${styles.field} ${styles.childField}`}>
+                    <label className={styles.label} htmlFor="set-subtitle-lang"></label>
+                    <MultiSelect
+                      testId="subtitle-lang-multiselect"
+                      options={SUBTITLE_LANGUAGES}
+                      selectedValues={settings.selectedSubtitleLanguages}
+                      onChange={(values) => update('selectedSubtitleLanguages', values)}
+                      placeholder="Search languages..."
+                    />
+                  </div>
+                )}
               </div>
             </section>
 
@@ -476,42 +459,19 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
             >
               <div className={styles.sectionHeader}>
                 <h4 className={styles.sectionTitle}>Subtitle Overlay</h4>
-                <span className={styles.sectionCount}>4</span>
               </div>
               <p className={styles.sectionDescription}>Languages and appearance for the floating subtitle overlay.</p>
               <div className={styles.sectionBody}>
-                {/* Subtitle overlay target language */}
-                <SettingField label="Overlay target language" htmlFor="set-overlay-lang">
-                  <SearchableSelect
-                    testId="overlay-target-language"
-                    dataTestId="overlay-target-language"
-                    value={settings.subtitleOverlayTargetLanguage}
-                    options={OVERLAY_LANGUAGE_OPTIONS}
-                    onChange={(val) => update('subtitleOverlayTargetLanguage', val)}
-                    ariaLabel="Select overlay target language"
-                  />
-                </SettingField>
-
-                {/* Subtitle overlay native language */}
-                <SettingField label="Overlay native language" htmlFor="set-overlay-native-lang">
-                  <SearchableSelect
-                    testId="overlay-native-language"
-                    dataTestId="overlay-native-language"
-                    value={settings.subtitleOverlayNativeLanguage}
-                    options={OVERLAY_LANGUAGE_OPTIONS}
-                    onChange={(val) => update('subtitleOverlayNativeLanguage', val)}
-                    ariaLabel="Select overlay native language"
-                  />
-                </SettingField>
-
                 {/* Subtitle overlay auto-load */}
                 <div className={styles.field}>
                   <div className={styles.asRow}>
-                    <span className={styles.asLabel}>Overlay auto-load</span>
-                    <HintIcon
-                      hint="Khi bật, overlay tự load subtitle detect được cùng target language."
-                      ariaLabel="Show hint for Overlay auto-load"
-                    />
+                    <span className={styles.asLabel}>
+                      Overlay auto-load
+                      <HintIcon
+                        hint="Khi bật, overlay tự load subtitle detect được cùng target language."
+                        ariaLabel="Show hint for Overlay auto-load"
+                      />
+                    </span>
                     <Toggle
                       checked={settings.subtitleOverlayAutoLoad}
                       onChange={(next) => update('subtitleOverlayAutoLoad', next)}
@@ -520,6 +480,58 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                     />
                   </div>
                 </div>
+
+                {/* Auto-load YouTube ASR (auto-generated captions) — V6 */}
+                <div className={styles.field}>
+                  <div className={styles.asRow}>
+                    <span className={styles.asLabel}>
+                      Auto-load YouTube ASR
+                      <HintIcon
+                        hint="Khi bật, YouTube auto-generated captions (ASR) được auto-load. Khi tắt, chỉ manual captions mới auto-load. Áp dụng cho cả target + native."
+                        ariaLabel="Show hint for Auto-load YouTube ASR"
+                      />
+                    </span>
+                    <Toggle
+                      checked={settings.subtitleOverlayAutoLoadAsr}
+                      onChange={(next) => update('subtitleOverlayAutoLoadAsr', next)}
+                      ariaLabel="Toggle auto-load YouTube ASR"
+                      title={`Auto-load YouTube ASR: ${settings.subtitleOverlayAutoLoadAsr ? 'ON' : 'OFF'}`}
+                      disabled={!settings.subtitleOverlayAutoLoad}
+                    />
+                  </div>
+                </div>
+
+                {/* Divider: behavior → languages (settings-dialog-rearrange) */}
+                <div className={styles.divider} />
+
+                {/* PAIR: Target + Native language (settings-dialog-rearrange) */}
+                <div className={styles.pairRow}>
+                  <SettingField label="Target language" htmlFor="set-overlay-lang">
+                    <SearchableSelect
+                      testId="overlay-target-language"
+                      dataTestId="overlay-target-language"
+                      value={settings.subtitleOverlayTargetLanguage}
+                      options={OVERLAY_LANGUAGE_OPTIONS}
+                      onChange={(val) => update('subtitleOverlayTargetLanguage', val)}
+                      ariaLabel="Select Target language"
+                      disabled={!settings.subtitleOverlayAutoLoad}
+                    />
+                  </SettingField>
+                  <SettingField label="Native language" htmlFor="set-overlay-native-lang">
+                    <SearchableSelect
+                      testId="overlay-native-language"
+                      dataTestId="overlay-native-language"
+                      value={settings.subtitleOverlayNativeLanguage}
+                      options={OVERLAY_LANGUAGE_OPTIONS}
+                      onChange={(val) => update('subtitleOverlayNativeLanguage', val)}
+                      ariaLabel="Select Native language"
+                      disabled={!settings.subtitleOverlayAutoLoad}
+                    />
+                  </SettingField>
+                </div>
+
+                {/* Divider: languages → appearance (settings-dialog-rearrange) */}
+                <div className={styles.divider} />
 
                 {/* === ADR-013: Subtitle appearance (Target/Native tabs) === */}
                 <div className={styles.field}>
@@ -547,33 +559,21 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                     </button>
                   </div>
                   {styleTab === 'target' ? (
-                    <>
-                      <SubtitlePreview
-                        style={settings.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET}
-                        role="target"
-                      />
-                      <SubtitleStylePanel
-                        role="target"
-                        style={settings.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET}
-                        onChange={(partial) => updateOverlayStyle('target', partial)}
-                        onReset={() => resetOverlayStyle('target')}
-                        defaultStyle={DEFAULT_OVERLAY_STYLE_TARGET}
-                      />
-                    </>
+                    <SubtitleStylePanel
+                      role="target"
+                      style={settings.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET}
+                      onChange={(partial) => updateOverlayStyle('target', partial)}
+                      onReset={() => resetOverlayStyle('target')}
+                      defaultStyle={DEFAULT_OVERLAY_STYLE_TARGET}
+                    />
                   ) : (
-                    <>
-                      <SubtitlePreview
-                        style={settings.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE}
-                        role="native"
-                      />
-                      <SubtitleStylePanel
-                        role="native"
-                        style={settings.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE}
-                        onChange={(partial) => updateOverlayStyle('native', partial)}
-                        onReset={() => resetOverlayStyle('native')}
-                        defaultStyle={DEFAULT_OVERLAY_STYLE_NATIVE}
-                      />
-                    </>
+                    <SubtitleStylePanel
+                      role="native"
+                      style={settings.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE}
+                      onChange={(partial) => updateOverlayStyle('native', partial)}
+                      onReset={() => resetOverlayStyle('native')}
+                      defaultStyle={DEFAULT_OVERLAY_STYLE_NATIVE}
+                    />
                   )}
                 </div>
               </div>
@@ -587,37 +587,34 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
             >
               <div className={styles.sectionHeader}>
                 <h4 className={styles.sectionTitle}>Keyboard Shortcuts</h4>
-                <span className={styles.sectionCount}>5</span>
               </div>
               <p className={styles.sectionDescription}>Remap keys for subtitle panel navigation actions.</p>
               <div className={styles.sectionBody}>
-                <div className={styles.field}>
-                  <span className={styles.label}>Keyboard shortcuts</span>
-                  <HintIcon
-                    hint="Single character per action."
-                    ariaLabel="Show hint for Keyboard shortcuts"
-                  />
+                {/* 2-column grid (settings-dialog-rearrange) — pair prev/next, replay/toggle-overlay */}
+                <div className={styles.shortcutGrid}>
+                  {SHORTCUT_ACTION_ORDER.map((action) => {
+                    const shortcut = settings.keyboardShortcuts.find((s) => s.action === action);
+                    const currentKey = shortcut?.key ?? '';
+                    return (
+                      <div key={action} className={styles.shortcutField}>
+                        <label className={styles.label} htmlFor={`set-shortcut-${action}`}>{SHORTCUT_ACTION_LABELS[action]}</label>
+                        <ShortcutInput
+                          id={`set-shortcut-${action}`}
+                          data-testid={`shortcut-${action}`}
+                          value={currentKey}
+                          onChange={(newKey) => {
+                            const updated = settings.keyboardShortcuts.map((s) =>
+                              s.action === action ? { ...s, key: newKey } : s,
+                            );
+                            update('keyboardShortcuts', updated);
+                          }}
+                          aria-label={SHORTCUT_ACTION_LABELS[action]}
+                          className="keyboard-cue"
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
-                {SHORTCUT_ACTION_ORDER.map((action) => {
-                  const shortcut = settings.keyboardShortcuts.find((s) => s.action === action);
-                  const currentKey = shortcut?.key ?? '';
-                  return (
-                    <SettingField key={action} label={SHORTCUT_ACTION_LABELS[action]} htmlFor={`set-shortcut-${action}`}>
-                      <ShortcutInput
-                        id={`set-shortcut-${action}`}
-                        data-testid={`shortcut-${action}`}
-                        value={currentKey}
-                        onChange={(newKey) => {
-                          const updated = settings.keyboardShortcuts.map((s) =>
-                            s.action === action ? { ...s, key: newKey } : s,
-                          );
-                          update('keyboardShortcuts', updated);
-                        }}
-                        aria-label={SHORTCUT_ACTION_LABELS[action]}
-                      />
-                    </SettingField>
-                  );
-                })}
               </div>
             </section>
 
@@ -629,7 +626,6 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
             >
               <div className={styles.sectionHeader}>
                 <h4 className={styles.sectionTitle}>Navigation Cluster</h4>
-                <span className={styles.sectionCount}>5</span>
               </div>
               <p className={styles.sectionDescription}>Floating subtitle navigation buttons on video pages.</p>
               <div className={styles.sectionBody}>
@@ -655,11 +651,10 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
             >
               <div className={styles.sectionHeader}>
                 <h4 className={styles.sectionTitle}>Download</h4>
-                <span className={styles.sectionCount}>5</span>
               </div>
-              <p className={styles.sectionDescription}>Download concurrency, conversion, and filename options.</p>
+              <p className={styles.sectionDescription}>Download format, quality, concurrency, conversion, and filename options.</p>
               <div className={styles.sectionBody}>
-                {/* Downloads at once */}
+                {/* === Group 1: Concurrency (settings-dialog-rearrange) === */}
                 <SettingField label="Downloads at once" htmlFor="set-concurrent">
                   <CustomSelect
                     testId="concurrent-select"
@@ -669,7 +664,31 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                   />
                 </SettingField>
 
-                {/* Convert to MP4 */}
+                <div className={styles.divider} />
+
+                {/* === Group 2: Format + Quality (pair) === */}
+                <div className={styles.pairRow}>
+                  <SettingField label="Preferred format" htmlFor="set-format">
+                    <CustomSelect
+                      testId="format-select"
+                      value={settings.preferredVideoFormat}
+                      options={PREFERRED_FORMAT_OPTIONS.map((f) => ({ value: f, label: PREFERRED_FORMAT_LABELS[f] }))}
+                      onSelect={(val) => update('preferredVideoFormat', val as 'mp4' | 'm3u8')}
+                    />
+                  </SettingField>
+                  <SettingField label="Default quality" htmlFor="set-quality">
+                    <CustomSelect
+                      testId="quality-select"
+                      value={settings.defaultQuality}
+                      options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABELS[q] }))}
+                      onSelect={(val) => update('defaultQuality', val as VideoQuality)}
+                    />
+                  </SettingField>
+                </div>
+
+                <div className={styles.divider} />
+
+                {/* === Group 3: Conversion === */}
                 <SettingField label="Convert to MP4" htmlFor="set-convert">
                   <CustomSelect
                     testId="convert-select"
@@ -679,29 +698,39 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                   />
                 </SettingField>
 
-                {/* Parallel conversion */}
-                <SettingField label="Parallel conversion" htmlFor="set-parallel">
+                {/* Parallel conversion — hint icon moved into label (settings-dialog-rearrange) */}
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="set-parallel">
+                    Parallel conversion
+                    <HintIcon
+                      hint={`Parallel conversion: ${settings.parallelConversion} (số lượng tùy vào GPU của máy tính hiện có)`}
+                      ariaLabel="Show hint for Parallel conversion"
+                    />
+                  </label>
                   <CustomSelect
                     testId="parallel-select"
                     value={settings.parallelConversion}
                     options={PARALLEL_OPTIONS.map((m) => ({ value: m, label: PARALLEL_LABELS[m] }))}
                     onSelect={(val) => update('parallelConversion', val as ParallelConversionMode)}
                   />
-                </SettingField>
+                </div>
 
-                {/* Workers (only when manual) — dependency pattern: child below parent */}
+                {/* Workers (only when manual) — indented child under Parallel conversion */}
                 {settings.parallelConversion === 'manual' && (
-                  <SettingField label="Workers" htmlFor="set-workers">
+                  <div className={`${styles.field} ${styles.childField}`}>
+                    <label className={styles.label} htmlFor="set-workers">Workers</label>
                     <CustomSelect
                       testId="workers-select"
                       value={String(settings.manualWorkerCount)}
                       options={WORKER_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
                       onSelect={(val) => update('manualWorkerCount', Math.max(MIN_PARALLEL_WORKERS, Math.min(MAX_PARALLEL_WORKERS, Number(val))))}
                     />
-                  </SettingField>
+                  </div>
                 )}
 
-                {/* Filename source */}
+                <div className={styles.divider} />
+
+                {/* === Group 4: Filename === */}
                 <SettingField label="Filename source" htmlFor="set-filename-source">
                   <CustomSelect
                     testId="filename-source-select"
@@ -710,14 +739,6 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                     onSelect={(val) => update('filenameSource', val as FilenameSource)}
                   />
                 </SettingField>
-
-                <div className={styles.field}>
-                  <span className={styles.label}>Parallel conversion info</span>
-                  <HintIcon
-                    hint={`Parallel conversion: ${settings.parallelConversion} (số lượng tùy vào GPU của máy tính hiện có)`}
-                    ariaLabel="Show hint for Parallel conversion"
-                  />
-                </div>
               </div>
             </section>
 

@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -106,6 +106,16 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     if (merged.theme === 'light' || merged.theme === undefined) merged.theme = 'dark';
     if (merged.navClusterButtonSize === 48 || merged.navClusterButtonSize === undefined) {
       merged.navClusterButtonSize = 34;
+    }
+    return merged;
+  },
+  // v5 → v6: add subtitleOverlayAutoLoadAsr (default false). Existing users
+  // who had auto-load ON were implicitly loading ASR — now ASR is opt-in.
+  // Missing field → false (V6 default). No flip of existing explicit value.
+  5: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 6 } as Record<string, unknown>;
+    if (merged.subtitleOverlayAutoLoadAsr === undefined) {
+      merged.subtitleOverlayAutoLoadAsr = false;
     }
     return merged;
   },

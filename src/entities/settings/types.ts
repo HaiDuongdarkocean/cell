@@ -127,6 +127,13 @@ export interface Settings {
   readonly subtitleOverlayNativeLanguage: string;
   /** When true, subtitle overlay auto-loads from extension-detected subtitles matching target language. Default true (V4). */
   readonly subtitleOverlayAutoLoad: boolean;
+  /**
+   * When true, YouTube auto-generated captions (ASR, kind="asr") are eligible
+   * for auto-load. When false, ASR tracks are filtered out — only manual
+   * captions auto-load. Default false (V6) — anh yêu muốn tắt ASR mặc định,
+   * bật thủ công khi cần. Applies to both target + native sides.
+   */
+  readonly subtitleOverlayAutoLoadAsr: boolean;
   /** Per-layer appearance config for target subtitle overlay (ADR-013). Independent from native. */
   readonly subtitleOverlayTargetStyle?: OverlayStyleConfig;
   /** Per-layer appearance config for native subtitle overlay (ADR-013). Independent from target. */

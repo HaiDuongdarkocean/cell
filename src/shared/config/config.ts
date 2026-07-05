@@ -165,6 +165,10 @@ export const DEFAULT_SETTINGS: Settings = {
   subtitleOverlayTargetLanguage: 'en',
   subtitleOverlayNativeLanguage: 'vi',
   subtitleOverlayAutoLoad: true,
+  // V6 default (2026-10): ASR auto-load OFF — anh yêu muốn tắt YouTube
+  // auto-generated captions mặc định, bật thủ công khi cần. Existing users
+  // migrated via v5→v6 (treat missing/true → false).
+  subtitleOverlayAutoLoadAsr: false,
   subtitleOverlayTargetStyle: DEFAULT_OVERLAY_STYLE_TARGET,
   subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
   subtitlePreference: {},

@@ -40,16 +40,21 @@ export function findSubtitlesForOverlay(
 
   if (!targetLang && !nativeLang) return null;
 
-  const target = findPreferredMatch(subtitles, targetLang, preferences?.target);
-  const native = findPreferredMatch(subtitles, nativeLang, preferences?.native);
+  // V6: filter out ASR tracks when auto-load ASR toggle is OFF. Applies to
+  // both target + native. Manual captions only when OFF.
+  const includeAsr = settings.subtitleOverlayAutoLoadAsr;
+  const eligible = includeAsr ? subtitles : subtitles.filter((s) => !s.isAsr);
+
+  const target = findPreferredMatch(eligible, targetLang, preferences?.target);
+  const native = findPreferredMatch(eligible, nativeLang, preferences?.native);
 
   if (!target && !native) return null;
 
   // ADR-014 D3: include all matches for dropdown (V2 subtitle selector).
   // Only populated when ≥2 matches (V1 behavior when 1 match).
   const targetMatches =
-    targetLang && subtitles.filter((s) => s.language.toLowerCase() === targetLang).length >= 2
-      ? subtitles
+    targetLang && eligible.filter((s) => s.language.toLowerCase() === targetLang).length >= 2
+      ? eligible
           .filter((s) => s.language.toLowerCase() === targetLang)
           .map((s) => ({
             url: s.url,
@@ -60,8 +65,8 @@ export function findSubtitlesForOverlay(
           }))
       : [];
   const nativeMatches =
-    nativeLang && subtitles.filter((s) => s.language.toLowerCase() === nativeLang).length >= 2
-      ? subtitles
+    nativeLang && eligible.filter((s) => s.language.toLowerCase() === nativeLang).length >= 2
+      ? eligible
           .filter((s) => s.language.toLowerCase() === nativeLang)
           .map((s) => ({
             url: s.url,
