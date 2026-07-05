@@ -20,8 +20,7 @@ export const QUALITY_RANK: Readonly<Record<Exclude<VideoQuality, 'highest' | 'au
 };
 
 /** Concrete qualities ordered from lowest to highest. */
-const ORDERED_QUALITIES = ['360p', '480p', '720p', '1080p'] as const;
-type ConcreteQuality = (typeof ORDERED_QUALITIES)[number];
+type ConcreteQuality = '360p' | '480p' | '720p' | '1080p';
 
 /**
  * Pick the best video + matching subtitles from detected media according to

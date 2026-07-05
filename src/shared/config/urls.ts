@@ -36,7 +36,7 @@ export const SUBTITLE_URL_PATTERNS: readonly RegExp[] = [
   /\.vtt(\?|$)/i,
   /\.srt(\?|$)/i,
   // Match subtitle URLs with common query parameters
-  /[\?&](format|type|subtype)=(vtt|srt|ass)(?:&|$)/i,
+  /[?&](format|type|subtype)=(vtt|srt|ass)(?:&|$)/i,
   // Match common subtitle path patterns
   /\/(subtitles|subs|caption|cc)\//i,
 ];

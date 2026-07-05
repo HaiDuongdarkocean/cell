@@ -464,11 +464,12 @@ export function init(video: HTMLVideoElement): () => void {
   });
 
   // Receive SEEK_TO from Side Panel (via background relay) → seek video
-  // msg typed as any to match chrome.runtime.onMessage.addListener's signature
-  // (adapter tightens to unknown, but callers need property access)
-  onMessage((msg: any, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
-    if (msg?.type === MESSAGE_TYPES.SEEK_TO) {
-      const timeMs = (msg.payload as { timeMs: number })?.timeMs;
+  // msg is `unknown` per onMessage signature; narrow to { type?, payload? }
+  // for property access. Safe because chrome.runtime messages are plain objects.
+  onMessage((msg: unknown, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
+    const m = msg as { type?: string; payload?: unknown };
+    if (m?.type === MESSAGE_TYPES.SEEK_TO) {
+      const timeMs = (m.payload as { timeMs: number })?.timeMs;
       if (timeMs !== undefined) {
         // ADR-019 sync: side panel clicks cue.start (raw) → seek so overlay
         // DISPLAYS that cue → shift by -offsetMs (mirror seekToCue logic).
@@ -477,7 +478,7 @@ export function init(video: HTMLVideoElement): () => void {
       }
     }
     // Receive TOGGLE_PLAY from Side Panel (via background relay) → toggle play/pause
-    if (msg?.type === MESSAGE_TYPES.TOGGLE_PLAY) {
+    if (m?.type === MESSAGE_TYPES.TOGGLE_PLAY) {
       if (video.paused) {
         video.play().catch(() => { /* autoplay may be blocked */ });
       } else {
@@ -486,8 +487,8 @@ export function init(video: HTMLVideoElement): () => void {
     }
     // Receive SHORTCUT_ACTION from Side Panel (via background relay) →
     // cue navigation. Reuses the same logic as the in-page keydown handler.
-    if (msg?.type === MESSAGE_TYPES.SHORTCUT_ACTION) {
-      const action = (msg.payload as { action: string })?.action;
+    if (m?.type === MESSAGE_TYPES.SHORTCUT_ACTION) {
+      const action = (m.payload as { action: string })?.action;
       // ADR-019 sync: find cue via effective time, seek so overlay DISPLAYS it.
       const offsetMs = offsetController?.getOffsetMs() ?? 0;
       const effectiveMs = video.currentTime * 1000 + offsetMs;
@@ -557,11 +558,12 @@ export function init(video: HTMLVideoElement): () => void {
   });
 
   // === Bilingual auto-load wiring (ADR-007 D1, spec F3/F4/F7) ===
-  // msg typed as any to match chrome.runtime.onMessage.addListener's signature
-  // (adapter tightens to unknown, but callers need property access)
-  onMessage((msg: any, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
-    if (msg?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
-      const payload = msg.payload as AutoLoadSubtitlesPayload;
+  // msg is `unknown` per onMessage signature; narrow to { type?, payload? }
+  // for property access. Safe because chrome.runtime messages are plain objects.
+  onMessage((msg: unknown, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
+    const m = msg as { type?: string; payload?: unknown };
+    if (m?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
+      const payload = m.payload as AutoLoadSubtitlesPayload;
       console.log('[content-script] AUTO_LOAD_SUBTITLES received', {
         targetUrl: payload?.target?.url,
         nativeUrl: payload?.native?.url,

@@ -58,6 +58,11 @@ export default tseslint.config(
     files: ['**/*.test.ts', '**/*.test.tsx', 'tests/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
+      // Tests use require() for dynamic import of CommonJS libs (mux.js) and
+      // `this` aliasing for class-context binding in worker-thread setups —
+      // both legitimate test patterns, not production debt.
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-this-alias': 'off',
     },
   },
 

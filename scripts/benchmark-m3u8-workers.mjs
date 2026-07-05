@@ -8,11 +8,11 @@
  * separate CPU cores — true parallelism, not just concurrency.
  */
 
-import { writeFileSync, readFileSync, mkdirSync, existsSync, rmSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { Worker, isMainThread, parentPort, workerData } from 'worker_threads';
+import { Worker } from 'worker_threads';
 import { cpus } from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -242,7 +242,7 @@ async function transmuxParallelWorkers(inputBuffer, segmentRanges, workerCount) 
   });
 
   // Clean up temp worker file
-  try { rmSync(join(__dirname, '_transmux-worker.cjs')); } catch {}
+  try { rmSync(join(__dirname, '_transmux-worker.cjs')); } catch { /* best-effort cleanup */ }
 
   return {
     durationMs: totalDurationMs,

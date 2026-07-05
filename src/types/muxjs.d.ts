@@ -3,6 +3,7 @@
  * types). Only the `mp4.Transmuxer` surface used by `tsTransmuxer.ts` is
  * declared.
  */
+/* eslint-disable @typescript-eslint/no-unused-vars -- ambient .d.ts declarations are type-only by design */
 
 declare module 'mux.js' {
   interface TransmuxerSegment {

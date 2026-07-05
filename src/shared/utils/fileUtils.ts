@@ -217,7 +217,7 @@ export function buildSubtitleFileName(
     return `${sanitizedBase}.${ext}`;
   }
   const sanitizedLang = langTrimmed
-    .replace(/[<>:"/\\|?*\[\](){}]/g, '')
+    .replace(/[<>:"/\\|?*[\](){}]/g, '')
     .replace(/ /g, '_')
     .toLowerCase();
   if (sanitizedLang.length === 0) {

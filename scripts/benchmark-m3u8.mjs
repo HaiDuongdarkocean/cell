@@ -8,7 +8,7 @@
  * then runs both sequential and parallel transmux and compares timing.
  */
 
-import { writeFileSync, readFileSync, mkdirSync, existsSync, rmSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -26,7 +26,6 @@ function parseM3u8(text) {
   const lines = text.split('\n').map(l => l.trim());
   const segments = [];
   let duration = 0;
-  let baseUrl = '';
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
