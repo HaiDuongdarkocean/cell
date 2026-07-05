@@ -48,7 +48,7 @@ describe('ConversionTimer', () => {
   });
 
   it('logSummary includes all recorded phases', () => {
-    const consoleSpy = jest.spyOn(console, 'debug').mockImplementation();
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
     const timer = new ConversionTimer('dl-2');
     timer.start('download');
     jest.advanceTimersByTime(5000);

@@ -139,15 +139,19 @@ ${NAV_CLUSTER_CSS}
     document.head.appendChild(style);
   }
 
-  // Set initial theme from storage
+  // Set initial theme synchronously to default 'dark' (V6 default) to avoid
+  // FOUC — loadSettings() is async and would leave data-theme unset until the
+  // microtask settles, causing a flash of unthemed content. loadSettings()
+  // below overrides if the user chose a different theme.
   const applyTheme = (theme: 'light' | 'dark'): void => {
     container.setAttribute('data-theme', theme);
   };
+  applyTheme('dark');
 
   loadSettings().then((settings) => {
-    applyTheme(settings.theme ?? 'light');
+    applyTheme(settings.theme ?? 'dark');
   }).catch(() => {
-    applyTheme('light');
+    applyTheme('dark');
   });
 
   // Listen for theme changes (realtime)

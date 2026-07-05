@@ -77,7 +77,7 @@ describe('SubtitleStylePanel', () => {
 
   it('clamps yOffsetPercent to 0-95', () => {
     render(<SubtitleStylePanel {...defaultProps} />);
-    const input = screen.getByLabelText(/Vertical position/) as HTMLInputElement;
+    const input = screen.getByLabelText(/^Vertical position \d+ percent$/) as HTMLInputElement;
     fireEvent.change(input, { target: { value: '150' } });
     expect(defaultProps.onChange).toHaveBeenCalledWith({ yOffsetPercent: 95 });
   });
