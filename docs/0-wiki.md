@@ -58,6 +58,7 @@ docs/           # Tài liệu dự án
 │   └── spec-settings-controls-restyle.md
 │   └── spec-settings-dialog-rearrange.md # Settings dialog rearrange spec (pair/indent/divider, fix Nav Cluster position) # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
 │   └── spec-translate-subtitle-target-to-native.md # Translate subtitle target→native PRD (background prefill, Google unofficial, ShortcutInput combo, general mọi site)
+│   └── 021-translate-subtitle-background-prefill.md # ADR-021 background prefill + Google unofficial + 0 setting + cache per-session + ShortcutInput combo (cite spec)
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
@@ -76,6 +77,7 @@ docs/           # Tài liệu dự án
 │   └── plan-settings-dialog-rearrange.md # Settings dialog rearrange plan (5 milestones M1-M5, CSS-first) # Settings controls restyle — implementation plan (G2, 10 milestones M1-M10, bottom-up atoms→integrate, cite spec-settings-controls-restyle)
 │   └── plan-subtitle-time-offset.md # Subtitle time offset — implementation plan (G2, 6 AD, 7 milestones M1-M7, lazy/committed offset)
 │   └── plan-youtube-subtitle-detection.md # YouTube subtitle detection — implementation plan (G2, 6 AD, 7 milestones M1-M7, Two Detection Paths, cite spec-youtube-subtitle-detection)
+│   └── plan-translate-subtitle-target-to-native.md # Translate subtitle target→native plan (G2, 6 milestones M1-M6, background prefill, cite spec)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)

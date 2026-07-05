@@ -19,6 +19,23 @@ test-results/
 .vscode/
 .idea/
 
+# IDE temp files (no extension, created when writing long-named files)
+docs/int
+docs/mock
+docs/spec
+docs/specs/spec
+docs/specs/spec-*
+!docs/specs/spec-*.md
+docs/intent/int
+docs/intent/intent
+docs/intent/intent-*
+!docs/intent/intent-*.md
+docs/mockups/mock
+docs/mockups/mockup
+docs/mockups/mockup-*
+!docs/mockups/mockup-*.html
+!docs/mockups/mockup-*.md
+
 # OS
 .DS_Store
 Thumbs.db
