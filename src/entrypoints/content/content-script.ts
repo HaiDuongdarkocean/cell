@@ -4,6 +4,37 @@ import { clearAutoLoadCache, initContentScriptController } from '@/features/subt
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 
+// ISOLATED content-script marker (verify injection from DevTools — MAIN world
+// cannot see this because ISOLATED world globals are not shared with MAIN).
+(window as unknown as Record<string, unknown>).__YT_CS_INJECTED = true;
+const csInjectTime = performance.now();
+(window as unknown as Record<string, unknown>).__YT_CS_INJECT_TIME = csInjectTime;
+console.log('[content-script] injected at', document.readyState, 'time:', csInjectTime);
+
+// ADR-020 race fix: notify the MAIN-world YouTube script that our message
+// listener is registered. CRXJS async dynamic-import loader delays ISOLATED
+// content-script injection past the MAIN-world `__YT_DETECTED_SUBTITLES` post
+// on SPA navigation → the MAIN world re-posts last tracks on this handshake.
+window.postMessage({ type: '__YT_CS_READY', time: csInjectTime }, '*');
+
+// Debug: respond to PING from SW/DevTools so we can verify injection.
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg?.type === 'PING') {
+    sendResponse({
+      ok: true,
+      csInjected: true,
+      readyState: document.readyState,
+      url: location.href,
+      hasYtDebug: typeof (window as unknown as Record<string, unknown>).__YT_DEBUG !== 'undefined',
+      csInjectTime: (window as unknown as Record<string, unknown>).__YT_CS_INJECT_TIME,
+      msgListenerRegistered: true,
+      lastRelayedVideoId: (window as unknown as Record<string, unknown>).__YT_LAST_RELAYED_VIDEO_ID,
+    });
+    return false;
+  }
+  return false;
+});
+
 // ponytail: content script không có chrome.tabs API — gửi message không tabId,
 // background tự lấy từ sender.tab.id (xem messageBus.handleMessage)
 // Clear auto-load cache on every (re)inject — tab navigate re-injects the
@@ -20,7 +51,7 @@ const scanner = new PageScanner();
 // cached responses).
 window.addEventListener('message', (event) => {
   if (event.source !== window) return;
-  const data = event.data as { type?: string; url?: string } | null;
+  const data = event.data as { type?: string; url?: string; postTime?: number } | null;
   if (data?.type === '__DETECTED_SUBTITLE_FETCH' && data.url) {
     void sendMessage({
       type: MESSAGE_TYPES.DETECTED_SUBTITLE_URL,
@@ -32,14 +63,29 @@ window.addEventListener('message', (event) => {
   // youtube-main-world.iife.ts reads `window.ytInitialPlayerResponse` (MAIN
   // world only) and posts caption tracks / InnerTube fallback requests.
   if (data?.type === '__YT_DETECTED_SUBTITLES') {
+    const videoId = (data as { videoId?: string }).videoId ?? '';
+    // Dedup by videoId: MAIN world re-posts on __YT_CS_READY handshake, so the
+    // same videoId may arrive twice. Only relay once per videoId to avoid
+    // duplicate auto-load (ADR-020 race fix).
+    const lastRelayedVideoId = (window as unknown as Record<string, unknown>).__YT_LAST_RELAYED_VIDEO_ID as string | undefined;
+    if (videoId && lastRelayedVideoId === videoId) return;
+    (window as unknown as Record<string, unknown>).__YT_LAST_RELAYED_VIDEO_ID = videoId;
+    console.log('[content-script] __YT_DETECTED_SUBTITLES received', {
+      trackCount: (data as { tracks?: unknown[] }).tracks?.length,
+      videoId,
+      postTime: data.postTime,
+    });
     void sendMessage({
       type: MESSAGE_TYPES.DETECTED_SUBTITLES,
       payload: {
         tabId: undefined,
         tracks: (data as { tracks?: unknown[] }).tracks ?? [],
-        videoId: (data as { videoId?: string }).videoId ?? '',
+        videoId,
       },
-    });
+    }).then(
+      (r) => console.log('[content-script] DETECTED_SUBTITLES bg response', r),
+      (e) => console.error('[content-script] DETECTED_SUBTITLES bg error', e),
+    );
     return;
   }
   if (data?.type === '__YT_INNERTUBE_FALLBACK') {

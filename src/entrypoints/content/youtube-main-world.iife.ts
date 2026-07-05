@@ -110,58 +110,120 @@
   }
 
   let lastVideoId: string | null = null;
+  // Cache last detected tracks so a late-injecting content-script can request
+  // a re-post via `__YT_CS_READY` handshake (ADR-020 race fix: CRXJS async
+  // dynamic-import loader delays ISOLATED content-script listener registration
+  // past the MAIN-world post on SPA navigation).
+  let lastDetectedTracks: unknown[] = [];
+  let lastDetectedVideoId: string | null = null;
+  const debug: { detectCalls: number; lastVideoId: string | null; lastError: string | null; lastTrackCount: number; pollCycles: number; repostCount: number; postTime: number } = {
+    detectCalls: 0,
+    lastVideoId: null,
+    lastError: null,
+    lastTrackCount: -1,
+    pollCycles: 0,
+    repostCount: 0,
+    postTime: -1,
+  };
+  (window as unknown as Record<string, unknown>).__YT_DEBUG = debug;
+
+  function postDetectedSubtitles(tracks: unknown[], videoId: string): void {
+    const postTime = performance.now();
+    debug.postTime = postTime;
+    console.log(`[youtube-main-world] posting __YT_DETECTED_SUBTITLES at ${postTime}`, {
+      videoId,
+      trackCount: tracks.length,
+    });
+    window.postMessage(
+      { type: '__YT_DETECTED_SUBTITLES', tracks, videoId, postTime },
+      '*',
+    );
+  }
 
   async function detect(): Promise<void> {
+    debug.detectCalls++;
     try {
       const playerResponse = (window as unknown as Record<string, unknown>)
         .ytInitialPlayerResponse;
       const videoId =
         getVideoIdFromPlayerResponse(playerResponse) ?? getVideoIdFromUrl();
+      debug.lastVideoId = videoId;
       if (!videoId || videoId === lastVideoId) return;
-      lastVideoId = videoId;
 
       const apiKey = extractInnertubeApiKey(document.documentElement.innerHTML);
       if (!apiKey) {
-        console.warn('[youtube-main-world] no INNERTUBE_API_KEY found');
+        // Page HTML not yet fully rendered (API key injected by YouTube's
+        // script after initial paint). Do NOT cache lastVideoId — allow retry
+        // on next poll cycle / yt-navigate-finish.
+        console.warn('[youtube-main-world] no INNERTUBE_API_KEY yet, will retry');
+        debug.lastError = 'no API key';
         return;
       }
+      // API key available → commit to this videoId (prevent duplicate detect).
+      lastVideoId = videoId;
       const visitorData = getVisitorData();
 
       // Fetch via ANDROID client — returns tracks WITHOUT PO Token (exp=null).
       // WEB client tracks all require PO Token (exp=xpe, ephemeral).
       const tracks = await fetchCaptionTracksViaInnerTube(videoId, apiKey, visitorData);
+      debug.lastTrackCount = tracks.length;
       console.log(`[youtube-main-world] ANDROID InnerTube returned ${tracks.length} tracks`, {
         videoId,
         hasVisitorData: !!visitorData,
       });
 
       if (tracks.length > 0) {
-        window.postMessage(
-          { type: '__YT_DETECTED_SUBTITLES', tracks, videoId },
-          '*',
-        );
+        lastDetectedTracks = tracks;
+        lastDetectedVideoId = videoId;
+        postDetectedSubtitles(tracks, videoId);
       }
     } catch (err) {
       // Swallow — never break the page on instrumentation error (ADR-011 precedent).
+      debug.lastError = err instanceof Error ? err.message : String(err);
       console.warn('[youtube-main-world] detect failed:', err);
     }
   }
 
   function pollForVideoIdChange(timeoutMs: number): void {
     const start = Date.now();
+    debug.pollCycles++;
     const interval = setInterval(() => {
       const playerResponse = (window as unknown as Record<string, unknown>)
         .ytInitialPlayerResponse;
       const currentVideoId =
         getVideoIdFromPlayerResponse(playerResponse) ?? getVideoIdFromUrl();
+      // Only trigger detect when BOTH videoId is new AND API key is available
+      // (YouTube injects INNERTUBE_API_KEY into HTML after initial paint —
+      // detecting before that fails with "no API key" and wastes the attempt).
       if (currentVideoId && currentVideoId !== lastVideoId) {
-        clearInterval(interval);
-        void detect();
+        const apiKey = extractInnertubeApiKey(document.documentElement.innerHTML);
+        if (apiKey) {
+          clearInterval(interval);
+          void detect();
+        }
       } else if (Date.now() - start > timeoutMs) {
         clearInterval(interval);
       }
     }, 100);
   }
+
+  // Handshake: content-script posts `__YT_CS_READY` when its ISOLATED-world
+  // message listener registers (CRXJS async loader delays this past the MAIN
+  // world post on SPA navigation). Re-post last detected tracks so the late
+  // listener receives them. Dedup is the content-script's responsibility
+  // (it ignores duplicates by videoId).
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    const data = event.data as { type?: string } | null;
+    if (data?.type === '__YT_CS_READY' && lastDetectedTracks.length > 0 && lastDetectedVideoId) {
+      debug.repostCount++;
+      console.log('[youtube-main-world] __YT_CS_READY received, re-posting last tracks', {
+        videoId: lastDetectedVideoId,
+        trackCount: lastDetectedTracks.length,
+      });
+      postDetectedSubtitles(lastDetectedTracks, lastDetectedVideoId);
+    }
+  });
 
   // Primary SPA trigger: YouTube fires `yt-navigate-finish` after SPA nav.
   // Race condition: `ytInitialPlayerResponse` may not be updated yet when the
@@ -182,6 +244,7 @@
   // Initial detection: poll until `ytInitialPlayerResponse` is available.
   // At document_start the global is NOT yet defined (YouTube's script injects
   // it later) → a direct `detect()` call returns early and never retries.
-  // Poll for up to 5s (covers slow first paint + reinject after SPA nav).
-  pollForVideoIdChange(5000);
+  // Poll for up to 10s (covers slow first paint + API key injection + reinject
+  // after SPA nav).
+  pollForVideoIdChange(10000);
 })();
