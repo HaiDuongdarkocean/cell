@@ -565,6 +565,12 @@ export function init(video: HTMLVideoElement): () => void {
         nativeMatchesCount: payload?.nativeMatches?.length,
       });
       if (!payload?.target && !payload?.native) {
+        // New video has no subtitles (SPA nav from a video WITH subtitles to
+        // one WITHOUT). Clear the previous video's overlay + nav cluster so
+        // stale cues do not persist into the new video.
+        controller?.clearCues();
+        offsetController?.loadCues(false);
+        navCluster?.updateCues([], []);
         showToast('No subtitles detected', container, { variant: 'warning' });
       }
       void handleAutoLoadSubtitles(payload, {

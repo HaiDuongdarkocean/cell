@@ -13,6 +13,7 @@
  * InnerTube (content scripts cannot set `User-Agent` — forbidden header).
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { sendTabMessage } from '@/shared/lib/chrome-apis';
 import {
   mapYouTubeCaptionTracks,
   fetchCaptionTracksViaInnerTube,
@@ -28,6 +29,7 @@ import type {
   MessageResponse,
   DetectedSubtitlesPayload,
   InnertubeFallbackPayload,
+  AutoLoadSubtitlesPayload,
 } from '@/entities/message';
 import type { DetectedMediaUpdatePayload } from '@/entities/message';
 
@@ -46,9 +48,36 @@ export function registerYouTubeDetectionHandlers(ctx: BackgroundContext): void {
       const tracks = payload.tracks as YouTubeCaptionTrack[];
       const subtitles = mapYouTubeCaptionTracks(tracks, tabId);
       if (subtitles.length === 0) {
-        console.log('[bg DETECTED_SUBTITLES] no usable tracks after mapping', {
+        // New video detected with NO subtitles (SPA nav from a video WITH
+        // subtitles to one WITHOUT). Clear the previous video's subtitles so
+        // the overlay does not persist into the new video. Broadcast empty
+        // media update + send AUTO_LOAD_SUBTITLES with null target/native so
+        // the content-script overlay clears its cues.
+        console.log('[bg DETECTED_SUBTITLES] no tracks — clearing previous subtitles', {
           tabId,
           videoId: payload.videoId,
+        });
+        ctx.networkInterceptor.clearTab(tabId);
+        ctx.autoDownloadedTabs.delete(tabId);
+        ctx.lastCuesByTab.delete(tabId);
+        ctx.messageBus.broadcast({
+          type: MESSAGE_TYPES.DETECTED_MEDIA_UPDATE,
+          payload: {
+            videos: ctx.networkInterceptor.getVideos(tabId),
+            subtitles: [],
+            tabId,
+          } satisfies DetectedMediaUpdatePayload,
+        });
+        updateBadgeForTab(ctx, tabId);
+        await sendTabMessage(tabId, {
+          type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+          payload: {
+            tabId,
+            target: null,
+            native: null,
+            targetMatches: [],
+            nativeMatches: [],
+          } satisfies AutoLoadSubtitlesPayload,
         });
         return { success: true };
       }

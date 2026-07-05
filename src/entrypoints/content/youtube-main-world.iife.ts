@@ -180,8 +180,14 @@
       if (tracks.length > 0) {
         lastDetectedTracks = tracks;
         lastDetectedVideoId = videoId;
-        postDetectedSubtitles(tracks, videoId);
       }
+      // Always post on a successful detect — even when 0 tracks. The background
+      // uses this signal to clear the previous video's subtitles when the new
+      // video has none (SPA nav from a video WITH subtitles to one WITHOUT).
+      // Without the 0-track post, the background never learns the video changed
+      // and the previous overlay persists. Cache lastDetectedTracks only when
+      // non-empty (handshake re-post is for videos that HAVE tracks).
+      postDetectedSubtitles(tracks, videoId);
     } catch (err) {
       // Swallow — never break the page on instrumentation error (ADR-011 precedent).
       debug.lastError = err instanceof Error ? err.message : String(err);
