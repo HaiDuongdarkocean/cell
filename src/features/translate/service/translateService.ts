@@ -47,35 +47,43 @@ export function parseGoogleResponse(response: unknown): string[] {
 }
 
 /**
- * Join cue texts into a single multi-line string for one Google request.
+ * Join cue texts into a single string for one Google request.
  *
- * Google Translate preserves line breaks in the response — each line maps to
- * one input cue. We join with `\n` so `parseGoogleResponse` returns one segment
- * per cue (ADR-021 D3 chunk strategy).
+ * ADR-021 D3 fix: Google Translate unofficial endpoint does NOT preserve `\n`
+ * boundaries — it returns sentence-level segments, not line-level. Sending
+ * multiple cues joined by `\n` causes misalignment (segments don't map 1:1 to
+ * input lines). Fix: send 1 cue per request, join all returned segments for
+ * that cue.
  *
- * @param texts - Cue texts to join.
- * @returns Multi-line string (texts joined by `\n`).
+ * @param texts - Cue texts to join (typically 1 text for single-cue request).
+ * @returns Single string (texts joined by `\n` for Google request).
  */
 export function joinCueTexts(texts: readonly string[]): string {
   return texts.join('\n');
 }
 
 /**
- * Split a translated multi-line response back into per-cue texts.
+ * Align translated segments back to per-cue texts.
  *
- * Google may merge/split lines in edge cases — we align by count first, then
- * fall back to splitting by `\n` (ADR-021 D3: best-effort alignment).
+ * ADR-021 D3 fix: when expectedCount === 1 (single-cue request), join ALL
+ * segments into one string — Google may split one cue into multiple sentence-
+ * level segments. When expectedCount > 1, pad/truncate best-effort (legacy
+ * multi-cue path, kept for backward compat but not used in production).
  *
  * @param translated - Translated text segments from `parseGoogleResponse`.
- * @param expectedCount - Number of input cues (for alignment check).
- * @returns Array of translated texts, length = expectedCount (padded/truncated).
+ * @param expectedCount - Number of input cues (1 for single-cue request).
+ * @returns Array of translated texts, length = expectedCount.
  */
 export function alignTranslatedSegments(
   translated: readonly string[],
   expectedCount: number,
 ): string[] {
+  // Single-cue request: join all segments (Google splits sentences)
+  if (expectedCount === 1) {
+    return [translated.join(' ').trim()];
+  }
+  // Multi-cue (legacy): best-effort pad/truncate
   if (translated.length === expectedCount) return [...translated];
-  // Mismatch — Google merged/split. Best-effort: pad/truncate to expected count.
   const result: string[] = [];
   for (let i = 0; i < expectedCount; i++) {
     result.push(translated[i] ?? '');

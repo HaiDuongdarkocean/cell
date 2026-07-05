@@ -11,12 +11,12 @@
  */
 
 import type { SrtCue } from '@/entities/media';
-import { chunkCuesByCharBudget, buildSequentialIndices } from './translateChunker';
+import { buildSequentialIndices } from './translateChunker';
 import { joinCueTexts, alignTranslatedSegments } from '../service/translateService';
 
 /** Hardcode params (ADR-021 D3 — 0 setting, kim chỉ nam "user vào và học thôi"). */
 export const CHAR_BUDGET = 1500;
-export const MIN_REQUEST_GAP_MS = 1500;
+export const MIN_REQUEST_GAP_MS = 300; // 1 cue/request → 300ms gap (was 1.5s for multi-cue)
 export const MAX_RETRIES = 3;
 export const BACKOFF_BASE_MS = 1000; // 1s → 2s → 4s
 
@@ -82,7 +82,9 @@ export class BackgroundPrefillController {
     this.tl = tl;
     this.cancelled = false;
     this.paused = false;
-    this.queue = chunkCuesByCharBudget(targetCues, buildSequentialIndices(targetCues.length, seekIdx), this.opts.charBudget);
+    // ADR-021 D3 fix: 1 cue per request (Google doesn't preserve \n boundaries).
+    // Each chunk = [cueIdx], processed sequentially with requestGapMs between.
+    this.queue = buildSequentialIndices(targetCues.length, seekIdx).map((i) => [i]);
     this.queueIdx = 0;
     this.running = true;
     void this.run();
@@ -148,7 +150,7 @@ export class BackgroundPrefillController {
     return this.cache.size;
   }
 
-  /** Main loop — process chunks sequentially with gap + backoff. */
+  /** Main loop — process cues sequentially (1 cue per request) with gap + backoff. */
   private async run(): Promise<void> {
     while (this.queueIdx < this.queue.length && !this.cancelled) {
       // Wait while paused (tab hidden)
@@ -160,18 +162,20 @@ export class BackgroundPrefillController {
       const chunk = this.queue[this.queueIdx];
       if (!chunk) break;
 
-      const texts = chunk.map((i) => this.targetCues[i]?.text ?? '');
-      const joined = joinCueTexts(texts);
+      // ADR-021 D3 fix: send 1 cue per request (Google doesn't preserve \n)
+      // chunk always has exactly 1 cue index (chunker produces single-cue chunks)
+      const cueIdx = chunk[0];
+      const text = this.targetCues[cueIdx]?.text ?? '';
+      const joined = joinCueTexts([text]);
 
       let success = false;
       for (let attempt = 0; attempt < this.opts.maxRetries; attempt++) {
         if (this.cancelled) return;
         try {
           const translated = await this.opts.translate(joined, this.sl, this.tl);
-          const aligned = alignTranslatedSegments(translated, chunk.length);
-          chunk.forEach((cueIdx, j) => {
-            this.cache.set(cueIdx, aligned[j] ?? '');
-          });
+          // expectedCount=1 → alignTranslatedSegments joins all segments
+          const aligned = alignTranslatedSegments(translated, 1);
+          this.cache.set(cueIdx, aligned[0] ?? '');
           success = true;
           break;
         } catch {
@@ -191,7 +195,7 @@ export class BackgroundPrefillController {
       this.opts.onChunkTranslated(this.getTranslatedCues());
 
       this.queueIdx++;
-      // Gap between requests (except after last chunk)
+      // Gap between requests (except after last cue)
       if (this.queueIdx < this.queue.length && !this.cancelled) {
         await sleep(this.opts.requestGapMs);
       }
