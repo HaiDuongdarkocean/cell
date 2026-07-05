@@ -108,6 +108,12 @@ export function init(video: HTMLVideoElement): () => void {
   // ADR-018: track latest target/native cues for nav cluster cue source
   let latestTargetCues: SrtCue[] = [];
   let latestNativeCues: SrtCue[] = [];
+  // Track the URL the overlay currently shows cues for. On SPA navigation the
+  // URL changes but `loadBilingualCues` uses ADR-014 D1 merge semantics (keep
+  // old side when new side empty — designed for same-video incremental re-push).
+  // Without a clear on URL change, a partial load on the new video (target
+  // only, no native or vice versa) leaves the previous video's cues visible.
+  let lastAutoLoadUrl: string | undefined;
 
   loadOverlayStyles().then(async ({ target, native }) => {
     controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG, target, native);
@@ -564,6 +570,21 @@ export function init(video: HTMLVideoElement): () => void {
         targetMatchesCount: payload?.targetMatches?.length,
         nativeMatchesCount: payload?.nativeMatches?.length,
       });
+      // SPA navigation: URL changed → clear the previous video's cues before
+      // loading the new one. `loadBilingualCues` uses ADR-014 D1 merge semantics
+      // (keep old side when new side empty — for same-video incremental re-push),
+      // so without this clear a partial load on the new video (target only, no
+      // native or vice versa) leaves the previous video's cues visible. Covers
+      // all cases: 0 tracks, partial, full — any URL change clears both sides.
+      const currentUrl = location.href;
+      if (lastAutoLoadUrl !== undefined && lastAutoLoadUrl !== currentUrl) {
+        controller?.clearCues();
+        offsetController?.loadCues(false);
+        navCluster?.updateCues([], []);
+        latestTargetCues = [];
+        latestNativeCues = [];
+      }
+      lastAutoLoadUrl = currentUrl;
       if (!payload?.target && !payload?.native) {
         // New video has no subtitles (SPA nav from a video WITH subtitles to
         // one WITHOUT). Clear the previous video's overlay + nav cluster so
