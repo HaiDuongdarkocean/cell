@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<!--
+  Mockup: translate-subtitle-target-to-native
+  Intent: docs/intent/intent-translate-subtitle-target-to-native.md
+  ADR: docs/adr/<NNN>-translate-subtitle-background-prefill.md (pending G3)
+  Design system: docs/design-system/design-system.md
+  Approved by anh on: <pending>
+  Mockup revision: v6 — tất cả shortcut input cùng width (min-width 140px = combo pill dài nhất), single-char pill + combo pill align
+  Runtime: popup (settings) + content-script (overlay + toast)
+-->
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Translate Subtitle Target → Native — Design Mockup v6</title>
+<style>
+  /* === Design tokens from theme.css (copy-paste, do NOT invent) === */
+  :root {
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+    --color-primary-subtle: rgba(37, 99, 235, 0.1);
+    --color-background: #ffffff;
+    --color-surface: #f8fafc;
+    --color-surface-hover: #f1f5f9;
+    --color-text: #0f172a;
+    --color-text-secondary: #475569;
+    --color-text-muted: #94a3b8;
+    --color-text-inverse: #ffffff;
+    --color-border: #e2e8f0;
+    --color-border-subtle: #f1f5f9;
+    --color-border-focus: #2563eb;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #2563eb;
+    --color-error-subtle: rgba(239, 68, 68, 0.08);
+    --color-warning-subtle: rgba(245, 158, 11, 0.1);
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-base: 14px;
+    --font-size-lg: 16px;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 24px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-full: 9999px;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --transition: 150ms ease;
+  }
+
+  [data-theme="dark"] {
+    --color-primary: #60a5fa;
+    --color-primary-hover: #3b82f6;
+    --color-primary-subtle: rgba(96, 165, 250, 0.15);
+    --color-background: #0f172a;
+    --color-surface: #1e293b;
+    --color-surface-hover: #334155;
+    --color-text: #f1f5f9;
+    --color-text-secondary: #cbd5e1;
+    --color-text-muted: #64748b;
+    --color-text-inverse: #0f172a;
+    --color-border: #334155;
+    --color-border-subtle: #1e293b;
+    --color-border-focus: #60a5fa;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #60a5fa;
+    --color-error-subtle: rgba(239, 68, 68, 0.15);
+    --color-warning-subtle: rgba(245, 158, 11, 0.15);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--color-background); color: var(--color-text);
+    font-family: var(--font-family); font-size: var(--font-size-base); line-height: 1.5;
+    padding: var(--spacing-xl);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* === Theme toggle (top-right) === */
+  .theme-toggle {
+    position: fixed; top: var(--spacing-lg); right: var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); cursor: pointer;
+    font-size: var(--font-size-sm); color: var(--color-text);
+    transition: var(--transition);
+  }
+  .theme-toggle:hover { background: var(--color-surface-hover); }
+
+  /* === Page header === */
+  .page-header { margin-bottom: var(--spacing-xl); }
+  .page-header h1 {
+    font-size: 20px; font-weight: var(--font-weight-semibold);
+    letter-spacing: -0.01em; margin-bottom: var(--spacing-xs);
+  }
+  .page-header p { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+  .page-header .meta {
+    margin-top: var(--spacing-sm); font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+  .page-header .meta a { color: var(--color-primary); text-decoration: none; }
+
+  /* === State sections === */
+  .state-section { margin-bottom: var(--spacing-xl); }
+  .state-section h2 {
+    font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--spacing-md); padding-bottom: var(--spacing-xs);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .state-section .description {
+    font-size: var(--font-size-sm); color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-md);
+  }
+  .state-section .runtime-tag {
+    display: inline-block; padding: 2px var(--spacing-sm);
+    background: var(--color-primary-subtle); color: var(--color-primary);
+    border-radius: var(--radius-sm); font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium); margin-left: var(--spacing-sm);
+    vertical-align: middle;
+  }
+
+  .component-card {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* === Settings section (mimic SettingsDialog) === */
+  .settings-card {
+    background: var(--color-background); border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); overflow: hidden; max-width: 420px;
+  }
+  .sectionHeader {
+    padding: var(--spacing-md); border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .sectionTitle { font-size: 14px; font-weight: 600; }
+  .sectionDescription {
+    padding: var(--spacing-xs) var(--spacing-md) 0;
+    font-size: 11px; color: var(--color-text-muted); line-height: 1.5;
+  }
+  .sectionBody {
+    padding: var(--spacing-md);
+    display: flex; flex-direction: column; gap: var(--spacing-md);
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .toggleRow {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .toggleLabel {
+    font-size: 12px; font-weight: 500; color: var(--color-text-secondary);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .hint-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--color-border); color: var(--color-text-secondary);
+    font-size: 10px; cursor: help; flex-shrink: 0;
+  }
+  .toggle {
+    width: 32px; height: 18px; border-radius: var(--radius-full);
+    background: var(--color-border); border: none; cursor: pointer;
+    position: relative; transition: background var(--transition); flex-shrink: 0;
+    padding: 0;
+  }
+  .toggle.on { background: var(--color-primary); }
+  .toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; border-radius: 50%; background: white;
+    transition: transform var(--transition);
+  }
+  .toggle.on::after { transform: translateX(14px); }
+  .toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+  .toggle:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
+
+  .divider {
+    height: 1px; background: var(--color-border-subtle); margin: 0;
+  }
+
+  /* === Slider (chunk size) === */
+  .sliderRow {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .sliderHeader {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .sliderValue {
+    font-size: 12px; font-weight: 600; color: var(--color-primary);
+    background: var(--color-primary-subtle); padding: 2px 8px;
+    border-radius: var(--radius-sm);
+  }
+  .slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 4px; border-radius: 2px;
+    background: var(--color-border); outline: none;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--color-primary); cursor: pointer;
+    border: 2px solid var(--color-background);
+  }
+  .slider::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--color-primary); cursor: pointer;
+    border: 2px solid var(--color-background);
+  }
+  .sliderHint {
+    font-size: 11px; color: var(--color-text-muted); line-height: 1.4;
+  }
+
+  /* === Shortcut display (mimic ShortcutInput read-only) === */
+  .shortcutRow {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  /* === Shortcut grid — mimic SettingsDialog.module.css .shortcutGrid (1-column) === */
+  .shortcutGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
+  /* === Shortcut field — mimic .shortcutField: flex row space-between, hover bg === */
+  .shortcutField {
+    display: flex; flex-direction: row; justify-content: space-between;
+    align-items: center; gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    transition: background var(--transition);
+  }
+  .shortcutField:hover { background: var(--color-surface-hover); }
+  .shortcutField .label {
+    flex: 0 0 auto;
+    font-size: 11px; font-weight: 500; color: var(--color-text-secondary);
+  }
+  /* === ShortcutInput atom — mimic .keyboardCue nhưng pill dài (align combo) ===
+     Tất cả shortcut input cùng width = combo pill dài nhất (Ctrl+Shift+T).
+     Single-char: pill chứa 1 chip, text-align center.
+     Combo: pill chứa nhiều chip nằm ngang. */
+  .shortcutInput,
+  .shortcutCombo {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    min-width: 140px;  /* = combo pill Ctrl+Shift+T width, tất cả align */
+    padding: 4px 8px;
+    border: 1px solid var(--color-border); border-radius: var(--radius-full);
+    background: var(--color-surface); color: var(--color-text);
+    transition: border-color var(--transition), box-shadow var(--transition);
+  }
+  .shortcutInput:focus-visible,
+  .shortcutCombo:focus-within {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-subtle);
+  }
+  /* Single-char input: text uppercase center, không chip */
+  .shortcutInput {
+    font-family: var(--font-family); font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    text-align: center; text-transform: uppercase;
+  }
+  /* Key chip bên trong combo pill */
+  .shortcutCombo .kbd {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 20px; height: 20px; padding: 0 6px;
+    font-family: var(--font-family); font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    border-radius: var(--radius-full);
+    background: var(--color-surface-hover); color: var(--color-text);
+    line-height: 1;
+  }
+  .shortcutCombo .kbd.key {
+    /* Key chính (T) — solid bg primary để nhấn mạnh */
+    background: var(--color-primary); color: var(--color-text-inverse);
+  }
+  .shortcutCombo .plus {
+    color: var(--color-text-muted); font-size: 10px; font-weight: 500;
+  }
+  .kbd {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 22px; padding: 0 6px;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm); font-size: 11px; font-weight: 500;
+    box-shadow: 0 1px 0 var(--color-border);
+    color: var(--color-text);
+  }
+
+  /* === Video player mockup (content-script overlay) === */
+  .player-mock {
+    position: relative; width: 100%; max-width: 720px; aspect-ratio: 16/9;
+    background: #000; border-radius: var(--radius-md); overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .player-mock::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 30% 40%, rgba(96, 165, 250, 0.15), transparent 50%),
+      radial-gradient(circle at 70% 60%, rgba(245, 158, 11, 0.1), transparent 50%);
+  }
+  .player-label {
+    position: absolute; top: var(--spacing-md); left: var(--spacing-md);
+    color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .player-time {
+    position: absolute; bottom: var(--spacing-md); right: var(--spacing-md);
+    color: rgba(255,255,255,0.7); font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .player-progress {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+    background: rgba(255,255,255,0.2);
+  }
+  .player-progress-fill {
+    height: 100%; background: var(--color-error); width: 35%;
+  }
+
+  /* === Subtitle overlay (target + native) — mimic ADR-013/014 === */
+  .subtitle-overlay {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.9);
+    line-height: 1.3;
+  }
+  .subtitle-target {
+    bottom: 14%; color: #ffffff; font-size: 18px; font-weight: 500;
+    max-width: 80%;
+  }
+  .subtitle-native {
+    bottom: 7%; color: #fde68a; font-size: 16px; font-weight: 400;
+    max-width: 80%; font-style: italic;
+  }
+  .subtitle-native.translated {
+    /* No visual indicator on overlay (confirmed by anh) — looks identical to real native track */
+  }
+
+  /* === Toast (error state) — mimic subtitleToast.ts === */
+  .toast {
+    position: absolute; top: var(--spacing-lg); left: 50%;
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-surface); color: var(--color-text);
+    border: 1px solid var(--color-error); border-left: 3px solid var(--color-error);
+    border-radius: var(--radius-md); box-shadow: var(--shadow-md);
+    font-size: var(--font-size-sm); max-width: 90%;
+  }
+  .toast-icon {
+    color: var(--color-error); font-size: 16px; flex-shrink: 0;
+  }
+  .toast-text { line-height: 1.4; }
+  .toast-text strong { font-weight: 600; }
+  .toast-text .toast-hint {
+    display: block; font-size: 11px; color: var(--color-text-muted); margin-top: 2px;
+  }
+
+  /* === Annotation labels (mockup-only, not in production) === */
+  .annotation {
+    display: inline-block; padding: 2px 6px;
+    background: var(--color-warning-subtle); color: var(--color-warning);
+    border-radius: var(--radius-sm); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-left: var(--spacing-sm);
+  }
+  .annotation.info {
+    background: var(--color-primary-subtle); color: var(--color-primary);
+  }
+
+  /* === Variant comparison === */
+  .variant-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+  }
+  .variant-label {
+    font-size: 11px; font-weight: 600; color: var(--color-text-secondary);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  /* === Disabled-state note === */
+  .disabled-note {
+    font-size: 11px; color: var(--color-text-muted);
+    font-style: italic; margin-top: var(--spacing-xs);
+  }
+</style>
+</head>
+<body data-theme="light">
+  <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+
+  <div class="page-header">
+    <h1>Translate Subtitle Target → Native — Mockup v6</h1>
+    <p>Dịch subtitle từ target (gốc) sang native (tiếng Việt) khi site không có track native. Áp dụng cho mọi site extension đã support detect subtitle. Background sequential prefill, Google Translate unofficial, real-time khi xem. 0 setting cho translation params — user chỉ toggle on/off.</p>
+    <div class="meta">
+      Intent: <a href="../intent/intent-translate-subtitle-target-to-native.md">intent-translate-subtitle-target-to-native.md</a> ·
+      ADR: <em>pending G3</em> ·
+      Runtime: popup (settings) + content-script (overlay + toast)
+    </div>
+  </div>
+
+  <!-- === State: Default — Popup Settings === -->
+  <section class="state-section">
+    <h2>State: Default <span class="runtime-tag">popup settings</span></h2>
+    <p class="description">
+      Section "Subtitle Overlay" trong SettingsDialog, thêm 1 field mới dưới field "Auto-load YouTube ASR":
+      Toggle "Auto-translate when native missing".
+      Reuse Toggle atom + section pattern đã có. Toggle disabled khi overlay auto-load OFF.
+      <strong>0 setting cho translation params</strong> (chunk size, gap, budget hardcode — đúng kim chỉ nam "user vào và học thôi").
+      Shortcut Ctrl+Shift+T đặt ở <strong>Keyboard Shortcuts tab</strong> (xem section dưới).
+    </p>
+    <div class="component-card">
+      <div class="settings-card">
+        <div class="sectionHeader">
+          <div class="sectionTitle">Subtitle Overlay</div>
+        </div>
+        <div class="sectionDescription">Languages and appearance for the floating subtitle overlay.</div>
+        <div class="sectionBody">
+
+          <!-- Existing: Overlay auto-load (context, không phải field mới) -->
+          <div class="field">
+            <div class="toggleRow">
+              <span class="toggleLabel">
+                Overlay auto-load
+                <span class="hint-icon" title="Khi bật, overlay tự load subtitle detect được cùng target language.">?</span>
+              </span>
+              <button class="toggle on" aria-pressed="true" aria-label="Toggle overlay auto-load"></button>
+            </div>
+          </div>
+
+          <!-- Existing: Auto-load YouTube ASR (context) -->
+          <div class="field">
+            <div class="toggleRow">
+              <span class="toggleLabel">
+                Auto-load YouTube ASR
+                <span class="hint-icon" title="Khi bật, YouTube auto-generated captions (ASR) được auto-load.">?</span>
+              </span>
+              <button class="toggle on" aria-pressed="true" aria-label="Toggle auto-load YouTube ASR"></button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- NEW: Auto-translate when native missing -->
+          <div class="field">
+            <div class="toggleRow">
+              <span class="toggleLabel">
+                Auto-translate when native missing
+                <span class="hint-icon" title="Khi bật, nếu YouTube không có track native language → tự dịch từ target sang native bằng Google Translate (miễn phí, không API key). Lazy sliding-window: dịch theo chunk khi video chạy, không dịch hết upfront.">?</span>
+              </span>
+              <button class="toggle on" aria-pressed="true" aria-label="Toggle auto-translate when native missing"></button>
+            </div>
+            <div class="disabled-note">
+              Chỉ kích hoạt khi overlay auto-load ON và YouTube không có track native language.
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <p style="margin-top: var(--spacing-sm); font-size: 11px; color: var(--color-text-muted);">
+        <span class="annotation">NEW</span> 1 field mới (toggle). Reuse Toggle atom, section pattern, divider — không invent component mới. Translation params (chunk size, gap, budget) hardcode, 0 setting. Shortcut ở Keyboard tab (xem dưới).
+      </p>
+    </div>
+  </section>
+
+  <!-- === State: Default — Content-script Overlay === -->
+  <section class="state-section">
+    <h2>State: Default <span class="runtime-tag">content-script overlay</span></h2>
+    <p class="description">
+      Video tiếng Anh trên bất kỳ site, site KHÔNG có track Việt → auto-translate ON → overlay song ngữ.
+      Background prefill: dịch từ cue 0 ở background, 5-10 phút đầu catch up, sau đó seek instant toàn video.
+      Target overlay (trên, trắng) + Native overlay (dưới, vàng nhạt, italic) — translated cues dùng
+      <strong>cùng style native</strong> đã có (ADR-013/014). <strong>Không có indicator nào</strong> phân biệt
+      translated vs real native track trên overlay (confirmed by anh — chỉ phân biệt trong settings).
+    </p>
+    <div class="component-card">
+      <div class="player-mock">
+        <div class="player-label">Site · en → vi (translated)</div>
+        <div class="player-time">02:14 / 06:23</div>
+        <div class="player-progress"><div class="player-progress-fill"></div></div>
+
+        <!-- Target overlay (gốc) -->
+        <div class="subtitle-overlay subtitle-target" aria-live="polite">
+          The quick brown fox jumps over the lazy dog.
+        </div>
+
+        <!-- Native overlay (translated — không indicator, cùng style real native) -->
+        <div class="subtitle-overlay subtitle-native translated" aria-live="polite">
+          Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng.
+        </div>
+      </div>
+      <p style="margin-top: var(--spacing-sm); font-size: 11px; color: var(--color-text-muted);">
+        <span class="annotation info">REUSE</span> Overlay infrastructure ADR-013/014 — <code>loadBilingualCues(targetCues, translatedCues)</code>. Translated cues giữ timing target, thay text. 0 thay đổi overlay code. Background prefill: 5-10 phút catch up, seek instant sau đó.
+      </p>
+    </div>
+  </section>
+
+  <!-- === Keyboard Shortcuts tab — Shortcut mới === -->
+  <section class="state-section">
+    <h2>Keyboard Shortcuts tab <span class="runtime-tag">popup settings</span></h2>
+    <p class="description">
+      Card 3 "Keyboard Shortcuts" trong SettingsDialog — grid 1-column, mỗi row = label trái + input phải (flex row space-between, hover bg).
+      5 shortcut hiện tại = single-char (←/→/R/O/P) qua <code>ShortcutInput</code> atom (40px box, uppercase, center).
+      Thêm 1 shortcut mới "Toggle auto-translate" = <strong>combo Ctrl+Shift+T</strong> → <strong>mở rộng ShortcutInput support combo</strong>
+      (hiển thị kbd chips nằm ngang, modifier subtle bg). User remap được như các shortcut khác.
+    </p>
+    <div class="component-card">
+      <div class="settings-card">
+        <div class="sectionHeader">
+          <div class="sectionTitle">Keyboard Shortcuts</div>
+        </div>
+        <div class="sectionDescription">Remap keys for subtitle panel navigation actions.</div>
+        <div class="sectionBody">
+          <div class="shortcutGrid">
+            <!-- Existing shortcuts (single-char, pill cùng width combo) -->
+            <div class="shortcutField">
+              <label class="label" htmlFor="set-shortcut-prev-cue">Previous cue</label>
+              <div class="shortcutInput" tabindex="0" aria-label="Previous cue">←</div>
+            </div>
+            <div class="shortcutField">
+              <label class="label" htmlFor="set-shortcut-next-cue">Next cue</label>
+              <div class="shortcutInput" tabindex="0" aria-label="Next cue">→</div>
+            </div>
+            <div class="shortcutField">
+              <label class="label" htmlFor="set-shortcut-replay-cue">Replay cue</label>
+              <div class="shortcutInput" tabindex="0" aria-label="Replay cue">R</div>
+            </div>
+            <div class="shortcutField">
+              <label class="label" htmlFor="set-shortcut-toggle-overlay">Toggle overlay</label>
+              <div class="shortcutInput" tabindex="0" aria-label="Toggle overlay">O</div>
+            </div>
+            <div class="shortcutField">
+              <label class="label" htmlFor="set-shortcut-toggle-panel">Toggle panel</label>
+              <div class="shortcutInput" tabindex="0" aria-label="Toggle panel">P</div>
+            </div>
+            <!-- NEW: Toggle auto-translate (combo — pill input chứa key chips nằm ngang) -->
+            <div class="shortcutField">
+              <label class="label" htmlFor="set-shortcut-toggle-translate">
+                Toggle auto-translate <span class="annotation">NEW</span>
+              </label>
+              <div class="shortcutCombo" aria-label="Toggle auto-translate" tabindex="0">
+                <span class="kbd">Ctrl</span>
+                <span class="plus">+</span>
+                <span class="kbd">Shift</span>
+                <span class="plus">+</span>
+                <span class="kbd key">T</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="margin-top: var(--spacing-sm); font-size: 11px; color: var(--color-text-muted);">
+        <span class="annotation">NEW</span> 1 shortcut mới (combo Ctrl+Shift+T) + <strong>mở rộng ShortcutInput atom</strong> support combo. <strong>Tất cả shortcut input cùng width</strong> (min-width 140px = combo pill dài nhất) — single-char pill (←/→/R/O/P) align combo pill (Ctrl+Shift+T). Combo = pill radius-full chứa key chips nằm ngang, key chính (T) solid bg primary, modifier subtle bg. Focus ring trên pill (focus-within). Layout mimic <code>.shortcutField</code> thật: flex row space-between, label trái + input phải, hover bg.
+      </p>
+    </div>
+  </section>
+
+  <!-- === State: Error — Google rate-limit / block === -->
+  <section class="state-section">
+    <h2>State: Error <span class="runtime-tag">content-script toast</span></h2>
+    <p class="description">
+      Google Translate rate-limit (429) hoặc block endpoint → toast error hiển thị trên player.
+      Target overlay vẫn hiện (subtitle gốc không ảnh hưởng). Native overlay ẩn (không có cue dịch).
+      Reuse <code>subtitleToast.ts</code> đã có. Auto-retry với exponential backoff (1s → 2s → 4s → give up + toast).
+    </p>
+    <div class="component-card">
+      <div class="player-mock">
+        <div class="player-label">Site · en → vi (translated — ERROR)</div>
+        <div class="player-time">02:14 / 06:23</div>
+        <div class="player-progress"><div class="player-progress-fill"></div></div>
+
+        <!-- Error toast (top, mimic subtitleToast.ts) -->
+        <div class="toast" role="alert" aria-live="assertive">
+          <span class="toast-icon">⚠</span>
+          <div class="toast-text">
+            <strong>Translation temporarily unavailable</strong>
+            <span class="toast-hint">Google Translate rate-limit. Retrying in 4s… Target subtitle vẫn hoạt động.</span>
+          </div>
+        </div>
+
+        <!-- Target overlay vẫn hiện -->
+        <div class="subtitle-overlay subtitle-target" aria-live="polite">
+          The quick brown fox jumps over the lazy dog.
+        </div>
+
+        <!-- Native overlay ẩn (không có cue dịch) -->
+      </div>
+      <p style="margin-top: var(--spacing-sm); font-size: 11px; color: var(--color-text-muted);">
+        <span class="annotation">ERROR</span> Graceful degradation: target overlay không ảnh hưởng, native overlay ẩn, toast giải thích + retry status. Không crash, không spam toast.
+      </p>
+    </div>
+  </section>
+
+  <!-- === Variant comparison: real native vs translated (overlay identical) === -->
+  <section class="state-section">
+    <h2>Variant: Real native vs Translated <span class="runtime-tag">overlay identical</span></h2>
+    <p class="description">
+      Anh đã confirm: overlay <strong>không phân biệt</strong> translated vs real native track (chỉ phân biệt trong settings).
+      2 player mockup bên dưới — overlay native nhìn giống hệt nhau. Phân biệt chỉ qua text "Auto-translate: on" trong settings.
+    </p>
+    <div class="component-card">
+      <div class="variant-row">
+        <div>
+          <div class="variant-label">Real native track (YouTube có track vi)</div>
+          <div class="player-mock">
+            <div class="player-label">Site · en + vi (real)</div>
+            <div class="player-time">02:14 / 06:23</div>
+            <div class="player-progress"><div class="player-progress-fill"></div></div>
+            <div class="subtitle-overlay subtitle-target" aria-live="polite">
+              The quick brown fox jumps over the lazy dog.
+            </div>
+            <div class="subtitle-overlay subtitle-native" aria-live="polite">
+              Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng.
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="variant-label">Translated native (auto-translate ON)</div>
+          <div class="player-mock">
+            <div class="player-label">Site · en → vi (translated)</div>
+            <div class="player-time">02:14 / 06:23</div>
+            <div class="player-progress"><div class="player-progress-fill"></div></div>
+            <div class="subtitle-overlay subtitle-target" aria-live="polite">
+              The quick brown fox jumps over the lazy dog.
+            </div>
+            <div class="subtitle-overlay subtitle-native translated" aria-live="polite">
+              Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng.
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="margin-top: var(--spacing-sm); font-size: 11px; color: var(--color-text-muted);">
+        <span class="annotation info">A11Y</span> Cả 2 overlay đều <code>aria-live="polite"</code> — screen reader đọc cue dịch. Color blind safe: không dùng màu duy nhất phân biệt (đã confirm chỉ text trong settings).
+      </p>
+    </div>
+  </section>
+
+  <script>
+    function toggleTheme() {
+      const body = document.body;
+      const btn = document.querySelector('.theme-toggle');
+      if (body.getAttribute('data-theme') === 'dark') {
+        body.setAttribute('data-theme', 'light');
+        btn.textContent = '🌙 Dark';
+      } else {
+        body.setAttribute('data-theme', 'dark');
+        btn.textContent = '☀️ Light';
+      }
+    }
+
+    // Interactive toggles (mockup-only, demo state)
+    document.querySelectorAll('.toggle').forEach((t) => {
+      t.addEventListener('click', () => {
+        t.classList.toggle('on');
+        t.setAttribute('aria-pressed', t.classList.contains('on'));
+      });
+    });
+
+    // Slider value display
+    const slider = document.querySelector('.slider');
+    const sliderValue = document.querySelector('.sliderValue');
+    if (slider && sliderValue) {
+      slider.addEventListener('input', (e) => {
+        sliderValue.textContent = e.target.value + ' cues';
+      });
+    }
+  </script>
+</body>
+</html>
