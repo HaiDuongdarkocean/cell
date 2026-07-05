@@ -32,11 +32,13 @@ src/
 │   │       └── ui/subtitleOffsetBadge.ts  # ADR-019: lazy badge DOM factory (pill top-right, "Xem thử · M:SS" + pulse dot, click=reset, keyboard accessible)
 │   │       └── logic/subtitleOffset.ts  # ADR-019: pure offset logic — OffsetState, parseOffsetInput, clampOffsetMs, shouldAutoCommit, formatOffsetDisplay, AUTO_COMMIT_MS=120000
 │   ├── download/       #   Download queue/selection
-│   └── settings/       #   Settings UI + validation logic
+│   ├── settings/       #   Settings UI + validation logic
+│   └── theme/          #   Theme system (ADR-022) — logic/colorGenerator, contrastValidator, themeManager, themeStorage, themeConfig; ui/ThemePanel, ThemeProvider, ModeCards, ColorCustomization, ThemePreview, ContrastBadges, ThemeImportExport
 ├── entities/           # Domain entities (types/models) — M19: @/types/ fully migrated here
 │   ├── video/          #   DetectedVideo, M3u8*, TsSegment
 │   ├── subtitle/       #   Subtitle overlay types (canonical SubtitleFormat)
 │   ├── settings/       #   Settings, FilenameSource (schemaVersion field M21)
+│   ├── theme/          #   ThemeMode, ResolvedMode, CoreColorTokens, ThemeConfig (ADR-022)
 │   ├── media/          #   DownloadItem, Ass/Vtt/Srt types (re-exports video+settings)
 │   └── message/        #   Message bus types
 ├── shared/             # Shared infrastructure (cross-feature)
@@ -658,6 +660,17 @@ downloader.downloadM3u8Streaming(playlist)
 | `parseVtt` | `lib/parsers/vttParser.ts` | string → VttSubtitle | subtitleParser.ts | Parse VTT format to VttCue[]; **strips inline tags** via stripSubtitleTags |
 | `stripSubtitleTags` | `lib/parsers/srtNormalizer.ts` | string → string | srtParser, vttParser, srtNormalizer | Strip `<i>`/`<b>`/`<c>`/`<v>`/`{\an8}` tags, preserve newlines (display path) |
 | `Toggle` | `shared/ui/Toggle.tsx` | checked, onChange, ariaLabel → ReactElement | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
+| `hexToRgb` | `features/theme/logic/colorGenerator.ts` | string → {r,g,b} | themeManager, contrastValidator | **ADR-022**: Parse hex → RGB (3/6 digit, case-insensitive) |
+| `getLuminance` | `features/theme/logic/colorGenerator.ts` | string → number | contrastValidator | **ADR-022**: WCAG 2.1 relative luminance (0-1) |
+| `generateShade` | `features/theme/logic/colorGenerator.ts` | (hex, percent) → hex | themeManager | **ADR-022**: Darken hex by percent (0-100) |
+| `generateHoverColor` | `features/theme/logic/colorGenerator.ts` | hex → hex | themeManager | **ADR-022**: Hover = shade 10% |
+| `getContrastRatio` | `features/theme/logic/contrastValidator.ts` | (fg, bg) → number | contrastValidator | **ADR-022**: WCAG contrast ratio (1-21) |
+| `validateTheme` | `features/theme/logic/contrastValidator.ts` | CoreColorTokens → ValidationResult | ThemePanel | **ADR-022**: Validate 3 pairs (text/canvas, textSecondary/canvas, white/primary) |
+| `applyTheme` | `features/theme/logic/themeManager.ts` | (ResolvedMode, ThemeConfig) → void | ThemeProvider, ThemePanel | **ADR-022**: Set 9 core + derived CSS vars on :root + data-theme attr |
+| `resolveMode` | `features/theme/logic/themeManager.ts` | ThemeMode → ResolvedMode | ThemeProvider, ThemePanel, popup App | **ADR-022**: system → light/dark via prefers-color-scheme |
+| `useThemeStore` | `stores/themeStore.ts` | Zustand store | ThemeProvider, ThemePanel, popup App | **ADR-022**: mode + config + init/switchMode/updateColor/setConfig/resetTheme |
+| `injectThemeTokens` | `shared/lib/themeTokens.ts` | HTMLElement → cleanup | contentScriptController | **ADR-022**: Content-script `<style>` injection from themeConfig + storage.onChanged |
+| `ThemeProvider` | `features/theme/ui/ThemeProvider.tsx` | children → JSX | popup/sidepanel main.tsx | **ADR-022**: Boot themeStore + applyTheme + system listener + storage.onChanged sync |
 | `Slider` | `shared/ui/Slider.tsx` | value, min, max, step, onChange, ariaLabel → ReactElement | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
 | `ShortcutInput` | `shared/ui/ShortcutInput.tsx` | value: ShortcutValue, onChange: (ShortcutValue) => void, ariaLabel → ReactElement | SettingsDialog | **ADR-021 D7**: Pill-style input — single-char + combo (Ctrl+Shift+T). Captures keydown, supports modifiers. |
 | `SearchableSelect` | `shared/ui/SearchableSelect.tsx` | options, value, onChange, ariaLabel → ReactElement | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
