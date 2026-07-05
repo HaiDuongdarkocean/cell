@@ -19,7 +19,8 @@ src/
 │   ├── content/        #   Content scripts (ISOLATED + MAIN world) — thin (M20: 178 lines)
 │   ├── offscreen/      #   Offscreen document (OPFS, workers, fetch proxy M15)
 │   ├── popup/          #   Popup UI (React)
-│   └── sidepanel/      #   Side panel UI (React)
+│   ├── sidepanel/      #   Side panel UI (React)
+│   └── options/        #   Options page (React) — ADR-023: ResourcesPanel + ThemePanel + settings tabs
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection
 │   ├── whitelist/      #   Auto-download whitelist
@@ -33,12 +34,14 @@ src/
 │   │       └── logic/subtitleOffset.ts  # ADR-019: pure offset logic — OffsetState, parseOffsetInput, clampOffsetMs, shouldAutoCommit, formatOffsetDisplay, AUTO_COMMIT_MS=120000
 │   ├── download/       #   Download queue/selection
 │   ├── settings/       #   Settings UI + validation logic
-│   └── theme/          #   Theme system (ADR-022) — logic/colorGenerator, contrastValidator, themeManager, themeStorage, themeConfig; ui/ThemePanel, ThemeProvider, ModeCards, ColorCustomization, ThemePreview, ContrastBadges, ThemeImportExport
+│   ├── theme/          #   Theme system (ADR-022) — logic/colorGenerator, contrastValidator, themeManager, themeStorage, themeConfig; ui/ThemePanel, ThemeProvider, ModeCards, ColorCustomization, ThemePreview, ContrastBadges, ThemeImportExport
+│   └── dictionary/     #   Dictionary import system (ADR-023) — logic/fileDetector, formatDetector, signatureGenerator, importErrors, batchProcessor, normalizationPipeline, importOrchestrator; repositories/baseRepository, resourceRepository, frequencyRepository, dictionaryRepository; strategies/baseImportStrategy, txtLineStrategy, jsonArrayStrategy, yomitanStrategy, cambridgeJsonStrategy, sqliteStrategy, strategyFactory; ui/ResourcesPanel, Dropzone, ResourceCard, ImportProgress, DeleteConfirmModal
 ├── entities/           # Domain entities (types/models) — M19: @/types/ fully migrated here
 │   ├── video/          #   DetectedVideo, M3u8*, TsSegment
 │   ├── subtitle/       #   Subtitle overlay types (canonical SubtitleFormat)
 │   ├── settings/       #   Settings, FilenameSource (schemaVersion field M21)
 │   ├── theme/          #   ThemeMode, ResolvedMode, CoreColorTokens, ThemeConfig (ADR-022)
+│   ├── dictionary/     #   ImportFormat, ResourceType, ResourceInfo, FrequencyEntry, DictionaryEntry, ImportOptions, ImportResult (ADR-023)
 │   ├── media/          #   DownloadItem, Ass/Vtt/Srt types (re-exports video+settings)
 │   └── message/        #   Message bus types
 ├── shared/             # Shared infrastructure (cross-feature)
@@ -160,6 +163,12 @@ src/
 │   └── components/
 │       └── CueList.tsx            # Cue list: timestamps, bilingual text, highlight, auto-scroll, click → onSeek
 │
+├── options/                       # Options page (React) — ADR-023
+│   ├── index.html                 # HTML shell
+│   ├── main.tsx                   # Entry → render OptionsApp (ThemeProvider wrap)
+│   ├── OptionsApp.tsx             # 3 tabs: Tài nguyên (ResourcesPanel) / Giao diện (ThemePanel) / Cài đặt
+│   └── OptionsApp.module.css      # Tab styles
+│
 ├── lib/
 │   ├── detectors/
 │   │   ├── videoDetector.ts          # detectVideo(request) → DetectedVideo | null
@@ -256,7 +265,7 @@ tests/
 │   ├── sidepanel/                    # Side Panel store + CueList tests (ADR-008)
 │   ├── subtitleOverlay/              # Subtitle overlay + panel tests
 │   └── utils/                        # Utility tests
-└── integration/                      # Integration tests (network, real m3u8 download)
+└── integration/                      # Integration tests (network, real m3u8 download, dictionary import smoke ADR-023)
     ├── setup/                        # globalSetup + fixtures
     ├── compare.integration.test.ts
     ├── parallel.integration.test.ts
@@ -670,7 +679,19 @@ downloader.downloadM3u8Streaming(playlist)
 | `resolveMode` | `features/theme/logic/themeManager.ts` | ThemeMode → ResolvedMode | ThemeProvider, ThemePanel, popup App | **ADR-022**: system → light/dark via prefers-color-scheme |
 | `useThemeStore` | `stores/themeStore.ts` | Zustand store | ThemeProvider, ThemePanel, popup App | **ADR-022**: mode + config + init/switchMode/updateColor/setConfig/resetTheme |
 | `injectThemeTokens` | `shared/lib/themeTokens.ts` | HTMLElement → cleanup | contentScriptController | **ADR-022**: Content-script `<style>` injection from themeConfig + storage.onChanged |
-| `ThemeProvider` | `features/theme/ui/ThemeProvider.tsx` | children → JSX | popup/sidepanel main.tsx | **ADR-022**: Boot themeStore + applyTheme + system listener + storage.onChanged sync |
+| `ThemeProvider` | `features/theme/ui/ThemeProvider.tsx` | children → JSX | popup/sidepanel/options main.tsx | **ADR-022**: Boot themeStore + applyTheme + system listener + storage.onChanged sync |
+| `importFile` | `features/dictionary/logic/importOrchestrator.ts` | (file, resourceType, options) → ImportResult | ResourcesPanel | **ADR-023**: validate → detect → signature → dedupe → create resource → strategy.execute() → finalize; error → rollbackImport |
+| `rollbackImport` | `features/dictionary/logic/importOrchestrator.ts` | (langCode, resourceId) → void | importOrchestrator | **ADR-023 D6**: Delete dictionary + frequency + resource (cascade); rollback-during-rollback → RollbackError |
+| `detectFormat` | `features/dictionary/logic/formatDetector.ts` | (name, head) → ImportFormat | importOrchestrator | **ADR-023 D4**: Hybrid magic+ext+zip sniff (gzip→sqlite, zip→yomitan/json-array/txt, sqlite magic, JSON content) |
+| `computeSignature` | `features/dictionary/logic/signatureGenerator.ts` | (file) → string | importOrchestrator | **ADR-023 D7**: SHA-256(first1MB)_size_nameWithoutExt — dedupe key |
+| `createStrategy` | `features/dictionary/strategies/strategyFactory.ts` | (format, resourceType, options, fileData) → Strategy | importOrchestrator | **ADR-023 D3**: Route format → strategy (txt/json-array/yomitan/sqlite/cambridge-json) |
+| `TxtLineStrategy` | `features/dictionary/strategies/txtLineStrategy.ts` | extends BaseFrequencyStrategy | strategyFactory | **ADR-023 D3**: TXT line-by-line, auto-unzip, order-based frequency |
+| `JsonArrayStrategy` | `features/dictionary/strategies/jsonArrayStrategy.ts` | extends BaseFrequencyStrategy | strategyFactory | **ADR-023 D3**: JSON array of strings, streaming regex + JSON.parse unescape |
+| `YomitanStrategy` | `features/dictionary/strategies/yomitanStrategy.ts` | extends BaseFrequencyStrategy | strategyFactory | **ADR-023 D3**: unzip + index.json + term_meta_bank sort, freq type filter |
+| `CambridgeJsonStrategy` | `features/dictionary/strategies/cambridgeJsonStrategy.ts` | extends BaseDictionaryStrategy | strategyFactory | **ADR-023 D3**: JSON array of {term, definition, ...} rich fields |
+| `SqliteStrategy` | `features/dictionary/strategies/sqliteStrategy.ts` | extends BaseFrequencyStrategy | strategyFactory | **ADR-023 D5**: gunzip + sql.js lazy-load + exec SQL, DatabaseError on wasm fail |
+| `ResourcesPanel` | `features/dictionary/ui/ResourcesPanel.tsx` | { langCode } → JSX | OptionsApp | **ADR-023 F11**: 2 sections (dictionary + frequency) + list + import flow + delete confirm |
+| `Dropzone` | `features/dictionary/ui/Dropzone.tsx` | { label, accept, disabled, onFiles } → JSX | ResourcesPanel | **ADR-023 F11**: Drag-drop + click file picker |
 | `Slider` | `shared/ui/Slider.tsx` | value, min, max, step, onChange, ariaLabel → ReactElement | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
 | `ShortcutInput` | `shared/ui/ShortcutInput.tsx` | value: ShortcutValue, onChange: (ShortcutValue) => void, ariaLabel → ReactElement | SettingsDialog | **ADR-021 D7**: Pill-style input — single-char + combo (Ctrl+Shift+T). Captures keydown, supports modifiers. |
 | `SearchableSelect` | `shared/ui/SearchableSelect.tsx` | options, value, onChange, ariaLabel → ReactElement | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
