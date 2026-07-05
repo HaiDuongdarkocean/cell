@@ -59,8 +59,8 @@ E2E:              npm run test:e2e
 
 ```
 src/
-├── app/                                # (sẽ thêm) ThemeProvider init ở popup/options/sidepanel
-├── stores/
+├── app/                                # (sửa) thêm ThemeProvider init ở popup/options/sidepanel (dir đã có .gitkeep)
+├── stores/                             # (dir đã có .gitkeep)
 │   └── themeStore.ts                   # (mới) Zustand store: themeMode, themeConfig, actions
 ├── entrypoints/
 │   ├── options/                        # (MỚI) Options page entrypoint
@@ -116,7 +116,7 @@ src/
 │   │       ├── ResourceCard.tsx        #   Resource item: name, wordCount, format badge, delete
 │   │       ├── ImportProgress.tsx      #   Progress bar + percent + cancel
 │   │       └── DeleteConfirmModal.tsx  #   Confirm dialog before delete
-│   └── settings/                       # (sửa) SettingsDialog: bỏ theme toggle (đã có ThemePanel riêng)
+│   └── settings/                       # (sửa) SettingsDialog: GIỮ theme toggle làm shortcut (light/dark quick switch), ThemePanel (options page) là full config source of truth
 ├── entities/
 │   ├── theme/                          # (MỚI) ThemeConfig, ThemeMode, ColorTokens types
 │   └── dictionary/                     # (MỚI) ResourceInfo, FrequencyEntry, DictionaryEntry, ImportFormat types
@@ -129,7 +129,7 @@ src/
 │   └── config/
 │       └── config.ts                   # (sửa) bỏ settings.theme, thêm themeStorage keys
 └── types/
-manifest.json                           # (sửa) + options_page + web_accessible_resources (sql-wasm.wasm)
+public/manifest.json                    # (sửa) + options_page + web_accessible_resources (sql-wasm.wasm + sql-wasm.js)
 ```
 
 **Test colocate** (Rule of Three + colocate tests convention):
@@ -184,6 +184,7 @@ export abstract class BaseImportStrategy {
 | Repositories (IndexedDB CRUD) | Jest 30 + `fake-indexeddb` | `src/features/dictionary/repositories/*.test.ts` | All public methods |
 | Strategies (parse + transform) | Jest 30 + `fake-indexeddb` | `src/features/dictionary/logic/strategies/*.test.ts` | Each format 1 test file |
 | UI components | Jest 30 + Testing Library | `src/features/*/ui/*.test.tsx` | Render + a11y + interaction |
+| Schema migration | Jest 30 + fake-indexeddb | `src/features/dictionary/repositories/baseRepository.migration.test.ts` | v0→v9 upgrade chain (3 stores + all indexes) |
 | Integration (real import flow) | Jest 30 (integration project) | `tests/integration/dictionary.integration.test.ts` | 1 smoke test per format (opt-in) |
 | E2E (options page) | Playwright | `tests/e2e/` | Theme switch + 1 dict import |
 
@@ -218,6 +219,20 @@ export abstract class BaseImportStrategy {
 - Skip browser verify cho options page / theme apply
 - Mix docs + code trong 1 commit
 
+## Out of Scope (xem `docs/intent/intent-port-theocean-dict-and-theme.md` line 55-65)
+
+Không port đợt này (ghi rõ để G2 planner/G4 implementer không scope-creep):
+
+- **Wire dict vào subtitle lookup** — G sau, riêng feature (intent mới)
+- **i+1 sentence mining** — `IPlusOneSelector`, `SentenceExtractor`, `WordTokenizer` (pure logic có trong reference nhưng chưa wire UI)
+- **WordStatus SRS tracking** — `WordStatusRepository`, status flow unknown→tracking→learning→known→ignore
+- **Google OAuth + Drive sync** — `AuthService`, `AccountService`, `UserRepository`, `chrome.identity.launchWebAuthFlow`
+- **Per-site permission + blacklist** — `PermissionService`, `OptionsBlacklistController`
+- **Multi-language profile + tier enforcement** — `ProfileService`, `ProfileRepository`, `LanguageProfileService`, `CONFIG.tierLimits` (reference đang WIP)
+- **Bootstrap download onboarding** — `BootstrapDownloadService`, `OnboardingController` (cell đã có onboarding riêng)
+- **TabCoordinationService** — broadcast messaging + dedup (cell đã có `getActiveContentTab` + `tabId` payload pattern riêng)
+- **PerformanceMonitor** — metrics infra
+
 ---
 
 ## Success Criteria
@@ -225,9 +240,10 @@ export abstract class BaseImportStrategy {
 ### Theme system (F1-F6)
 
 **F1 — Theme storage + store** (logic)
-- [ ] `chrome.storage.local.themeConfig` (object: `{ mode, customColors: { light: {...}, dark: {...} } }`) + `themeMode` ('light'|'dark'|'system') tách riêng khỏi settings
+- [ ] `chrome.storage.local.themeConfig` (object: `{ customColors: { light: {...9 tokens...}, dark: {...9 tokens...} } }`) — KHÔNG chứa `mode` (mode là source of truth ở `themeMode` riêng) + `themeMode` ('light'|'dark'|'system') tách riêng khỏi settings
 - [ ] Migration: `settings.theme: 'dark'` (schema v7) → `themeMode: 'dark'` (separate key), bump settings schema v8 (xóa field `theme`)
 - [ ] Zustand `themeStore` với actions: `init()`, `switchMode(mode)`, `updateColor(mode, token, hex)`, `setConfig(config)`, `resetTheme()`
+- Verify: `themeStore.test.ts` (assert init reads themeMode + themeConfig, switchMode persists, updateColor updates config + re-apply); `settingsStore.migration.test.ts` v7→v8 (assert settings.theme removed, themeMode written)
 
 **F2 — Theme apply** (logic + infra)
 - [ ] `themeManager.applyTheme(mode)`: set 9 core CSS vars trên `:root` (`--color-primary`, `--color-background`, `--color-surface`, `--color-text`, `--color-text-secondary`, `--color-border`, `--color-success`, `--color-warning`, `--color-error`)
@@ -235,11 +251,13 @@ export abstract class BaseImportStrategy {
 - [ ] System mode: `prefers-color-scheme` media query + listener, re-apply khi system đổi
 - [ ] Applier chạy ở popup + options + sidepanel + content-script (themeTokens.ts inject)
 - [ ] Smooth CSS transition 200ms khi switch (color/background-color/border-color)
+- Verify: `themeManager.test.ts` (assert `document.documentElement.style.getPropertyValue('--color-primary')` === config.primary sau applyTheme); browser MCP edge-devtools — switch mode, assert `[data-theme]` attr + computed color trên sample element
 
 **F3 — Color generator + contrast validator** (pure logic)
 - [ ] `colorGenerator`: `hexToRgb`, `rgbToHex`, `getLuminance`, `generateTint`, `generateShade`, `generateHoverColor` (shade 10%), `generatePalette` (50-950)
 - [ ] `contrastValidator`: `getContrastRatio(c1, c2)`, `meetsAA` (4.5:1), `meetsAAA` (7:1), `meetsAALarge` (3:1), `getRating` → `{ level, ratio, pass }`, `validateTheme(colors)` → 3 pairs (text/canvas, text-secondary/canvas, white/primary)
 - [ ] 100% branch coverage cho pure functions
+- Verify: `colorGenerator.test.ts` + `contrastValidator.test.ts` (100% branches — hexToRgb invalid input, luminance boundary, tint/shade 0%/100%, contrast ratio black/white = 21, AA/AAA/AALarge thresholds)
 
 **F4 — ThemePanel UI** (options page tab "Giao diện")
 - [ ] ModeCards: 3 card (Light/Dark/System) radio + preview + a11y (role=radio, keyboard)
@@ -249,49 +267,59 @@ export abstract class BaseImportStrategy {
 - [ ] ThemeImportExport: export `.json` (download), copy JSON, import file `.json`, paste JSON textarea, apply + validation error surface
 - [ ] Reset button → confirm → reset to defaults
 - [ ] Persistence: mọi change lưu `chrome.storage.local` ngay (debounce 300ms cho color picker drag)
+- Verify: `ThemePanel.test.tsx` + `ModeCards.test.tsx` + `ColorCustomization.test.tsx` + `ThemeImportExport.test.tsx` (render + a11y roles + interaction: pick color → assert themeStore.updateColor called, import invalid JSON → assert error surface); browser MCP edge-devtools — open options, switch mode, assert preview updates live
 
 **F5 — Integration popup/sidepanel/content-script**
 - [ ] Popup: boot `themeStore.init()` trước render, áp dụng theme runtime
 - [ ] Sidepanel: tương tự popup
-- [ ] Content-script: `themeTokens.ts` đọc `themeMode` + `themeConfig` thay vì hardcoded tokens, inject CSS vars vào container
+- [ ] Content-script: `themeTokens.ts` đọc `themeMode` + `themeConfig.customColors[resolvedMode]` thay vì hardcoded LIGHT_TOKENS/DARK_TOKENS strings; inject 9 core CSS vars + derive secondary (hover/subtle/border-focus) via `colorGenerator` (content-script-safe, no DOM deps) vào container `<style>`
 - [ ] `chrome.storage.onChanged` listener: realtime sync giữa options/popup/sidepanel/content-script
+- Verify: `themeTokens.test.ts` (assert inject đọc customColors từ storage, không fallback hardcoded strings); browser MCP edge-devtools — change color in options, assert content-script overlay updates without reload
 
 **F6 — design-system.md update**
 - [ ] Update `docs/design-system/design-system.md` Section 1.1: mark 9 core tokens là "runtime customizable", giữ secondary tokens "stable/derived"
 - [ ] Add Section: "Theme runtime customization" (mode, custom palette, WCAG, import/export)
+- Verify: `ls docs/design-system/design-system.md` + read Section 1.1 (assert 9 tokens marked "runtime customizable") + new Section exists
+
+### Dictionary import (F7-F12)
 
 ### Dictionary import (F7-F12)
 
 **F7 — IndexedDB schema + repositories** (infra)
-- [ ] DB name `orca-dict-{hash8}-en`, hash sinh trên `chrome.runtime.onInstalled` (lưu `chrome.storage.local.orca.dbHash`)
+- [ ] DB name `orca-dict-{hash8}-en`, hash sinh trên `chrome.runtime.onInstalled` (lưu `chrome.storage.local.orca.dbHash`). Tests dùng fallback `'devmode0'` khi chrome.storage absent (reference pattern)
 - [ ] 3 object stores: `langResourceInfo` (keyPath `id` auto, indexes: by_signature, by_type, by_order), `langFrequencyEntry` (keyPath `id` auto, indexes: by_resource, by_term, by_backwardTerm), `langDictionaryEntry` (keyPath `id` auto, indexes: by_resource, by_term, by_backwardTerm)
-- [ ] `baseRepository`: openDB (singleton promise), getStore, getIndex, txDone, schema migration v1→v9 (giữ migration chain reference)
+- [ ] `baseRepository`: openDB (singleton promise), getStore, getIndex, txDone, schema migration. **Cell là DB mới (không có user v1-v8)** → chỉ cần `oldVersion < 9` create-all branch (3 stores + all indexes). Full v1→v9 chain là dead code — decide ở G3 ADR-023 (recommend: chỉ create-all + `ponytail:` comment)
 - [ ] `resourceRepository`: create, getById, getAllOrdered, update, delete, findBySignature, search, updateOrders
 - [ ] `frequencyRepository` + `dictionaryRepository`: bulkInsert, findByTerm, findByPrefix, findBySuffix (backwardTerm trick), getByResource (cursor pagination), countByResource, deleteByResource (cascade + progress)
-- [ ] Test với `fake-indexeddb`
+- [ ] Migration chain test (`baseRepository.migration.test.ts` với `fake-indexeddb`): openDB at v0 → assert upgrade tạo đủ 3 stores + all indexes (by_signature, by_type, by_order, by_resource, by_term, by_backwardTerm)
+- Verify: `baseRepository.test.ts` + `resourceRepository.test.ts` + `frequencyRepository.test.ts` + `dictionaryRepository.test.ts` + `baseRepository.migration.test.ts` (all với fake-indexeddb — CRUD + migration v0→v9)
 
 **F8 — File/format detection + signature** (pure logic)
 - [ ] `fileDetector`: validateFile (max 500MB), readMagicBytes, isGzip/isZip/isSqlite, gunzipFile (fflate), unzipAll (fflate), listZipEntries, extractZipFile
 - [ ] `formatDetector.detect(file)` → `'TXT_PLAIN'|'TXT_ZIPPED'|'JSON_PLAIN'|'JSON_ZIPPED'|'YOMITAN'|'GZIP_WRAPPED'` (hybrid magic bytes + extension + ZIP content sniff)
 - [ ] `signatureGenerator.compute(file)` → `SHA-256(first 1MB)_size_nameWithoutExt`
 - [ ] 100% branch coverage
+- Verify: `fileDetector.test.ts` + `formatDetector.test.ts` + `signatureGenerator.test.ts` (magic bytes gzip/zip/sqlite, 500MB+1 reject, ZIP content sniff Yomitan vs TXT, SHA-256 deterministic)
 
 **F9 — Strategies** (template method pattern)
 - [ ] `baseImportStrategy`: template method `execute()` (parse → transformEntry → batchProcessor.add → flush), subclass override `parse()` + `transformEntry()` + `getRepository()`
 - [ ] `txtLineStrategy`: streaming line-by-line via ReadableStream + TextDecoder, auto-unzip if `.zip`
 - [ ] `jsonArrayStrategy`: streaming token-level JSON string-array parse (không load full JSON)
 - [ ] `yomitanStrategy`: unzip all, parse `index.json` (metadata), sort `term_meta_bank_*.json`, yield `{term, reading, frequency}` (handle 3 freq meta variants)
-- [ ] `sqliteStrategy`: gunzip → load sql.js wasm (lazy, web_accessible_resources) → exec SQL → yield `{term, reading, frequency}` + metadata
+- [ ] `sqliteStrategy`: gunzip → load sql.js wasm (lazy, `web_accessible_resources`) → exec SQL → yield `{term, reading, frequency}` + metadata. **Nếu sql.js wasm load fail (fetch error / wasm parse error) → throw `ImportError(DatabaseError)` — không crash, orchestrator catch → rollback**
 - [ ] `cambridgeJsonStrategy`: parse JSON array `[{term, altterm, pronunciation, definition, pos, examples, audio}]` → dict entry
 - [ ] `baseDictionaryStrategy`: dict variant (DictionaryRepository + rich fields: definition, pos, examples, audio)
 - [ ] `strategyFactory.create(format, file, resourceId, options)` — `options.resourceType === 'DICTIONARY'` route JSON → Cambridge
 - [ ] Each strategy 1 test file với fake file content
+- Verify: `baseImportStrategy.test.ts` + `txtLineStrategy.test.ts` + `jsonArrayStrategy.test.ts` + `yomitanStrategy.test.ts` + `sqliteStrategy.test.ts` (mock sql.js load fail → assert ImportError) + `cambridgeJsonStrategy.test.ts` + `strategyFactory.test.ts`
 
 **F10 — ImportOrchestrator** (use-case)
 - [ ] `importFile(file, langCode, options)`: validate → detect → signature → checkDuplicate → create resource (installationFinished=false) → strategy.execute() → update resource (wordCount, installationFinished=true, metadata) → return `{resourceId, format, totalWords, skipped, durationMs}`
 - [ ] Atomic rollback: catch error → `rollbackImport(resourceId)` (deleteByResource + resourceService.delete) → rethrow (hoặc RollbackError nếu rollback cũng fail)
+- [ ] Rollback trigger bao gồm: strategy parse/transform error, **wasm load failure**, quota exceeded, user cancel
 - [ ] Progress callback: `onProgress(processed, estimatedTotal)`, `onResourceCreated(resourceId)`
-- [ ] Test: mock strategies + repositories, verify rollback path
+- [ ] Test: mock strategies + repositories, verify rollback path (incl. wasm load fail → rollback, rollback-during-rollback → RollbackError)
+- Verify: `importOrchestrator.test.ts` (happy path + duplicate + rollback + wasm fail + cancel mid-batch)
 
 **F11 — ResourcesPanel UI** (options page tab "Tài nguyên")
 - [ ] 2 section: Dictionary (Cambridge JSON/ZIP) + Frequency (TXT/JSON/Yomitan/SQLite)
@@ -300,25 +328,47 @@ export abstract class BaseImportStrategy {
 - [ ] ResourceCard list: name, format badge, wordCount, createdAt, delete button → DeleteConfirmModal
 - [ ] Toast: success (wordCount + duration) / error (ImportError.getUserMessage())
 - [ ] Empty state: hint text + format help tooltip
+- Verify: `ResourcesPanel.test.tsx` + `Dropzone.test.tsx` + `ResourceCard.test.tsx` + `ImportProgress.test.tsx` + `DeleteConfirmModal.test.tsx` (render + drag-drop + cancel + delete confirm); browser MCP edge-devtools — import TXT nhỏ, assert progress + success toast + resource card appears
 
 **F12 — Options page entrypoint + manifest**
 - [ ] `src/entrypoints/options/` (index.html, main.tsx, OptionsApp.tsx) — tab shell 3 tab: Tài nguyên | Giao diện | Cài đặt
-- [ ] `manifest.json`: thêm `options_page: "src/entrypoints/options/index.html"`, `web_accessible_resources` cho `sql-wasm.wasm` + `sql-wasm.js`
+- [ ] `public/manifest.json`: thêm `options_page: "src/entrypoints/options/index.html"`, `web_accessible_resources` cho `sql-wasm.wasm` + `sql-wasm.js`. **CSP đã verified: `public/manifest.json:58` đã có `script-src 'self' 'wasm-unsafe-eval'` — KHÔNG cần đổi CSP**
 - [ ] Vite + @crxjs config: thêm options entry
 - [ ] Browser verify: load unpacked, mở options page, theme switch + 1 dict import (TXT nhỏ) chạy được
+- Verify: `npm run build` (assert options entry bundled); browser MCP edge-devtools — load unpacked, chrome://extensions → Details → Extension options, assert 3 tab render, theme switch + TXT import end-to-end
+
+### Edge cases (test coverage — T2 fix)
+
+**Theme (US-TH-1)**:
+- System pref change mid-session (listener re-apply)
+- Import invalid JSON (missing `customColors` → validation error surface)
+- Color picker drag rapid-fire (debounce 300ms coalesce)
+- Reset confirm cancel (no-op, config unchanged)
+- Contrast Fail on user color (badge hiển thị Fail, cho phép save)
+
+**Dict (US-DI-1)**:
+- Empty file (0 bytes → 0 words, resource created with wordCount=0)
+- Wrong format (txt content in `.json` file → JsonArrayStrategy parse error → rollback)
+- Corrupt zip (fflate throw → CorruptedZipError → rollback)
+- 500MB+1 byte rejected (FileTooLargeError trước parse)
+- sql.js wasm load fail (fetch error → ImportError DatabaseError → rollback)
+- Duplicate signature (re-import same file → DuplicateFileError, no resource created)
+- Rollback-during-rollback (delete fails → RollbackError surfaced)
+- Cancel mid-batch (user click cancel → strategy abort → rollback partial)
+- 0 words parsed (empty JSON array `[]` → resource wordCount=0, installationFinished=true)
 
 ---
 
-## Open Questions
+## Open Questions (resolved after spec review 2026-07-05)
 
-1. **sql.js bundle**: `sql-wasm.wasm` ~1MB+ — lazy load chỉ khi user import `.db.gz`, hay require upfront? Em guess lazy (ponytail: chỉ load khi cần). Cần check `web_accessible_resources` + CSP `wasm-unsafe-eval` (cell CSP hiện tại?).
-2. **fflate vs native**: Browser có `DecompressionStream` (gzip native, Chrome 80+). Có nên dùng native thay fflate cho gzip? ZIP native thì không có (cần fflate hoặc JSZip). Em guess: fflate cho cả 2 (consistency, ZIP không có native).
-3. **DB hash strategy**: Reference sinh hash random trên install → DB name `orca-dict-{hash}-en`. Cell có nên dùng pattern này không, hay hardcode `orca-dict-en`? Random hash tránh conflict nếu install lại, nhưng phức tạp hơn. Em guess: dùng random hash (giữ reference pattern).
-4. **Theme tokens `--color-info`**: Cell có `--color-info` (= primary), reference không có. Giữ hay bỏ? Em guess giữ (cell đang dùng).
-5. **SettingsDialog theme toggle**: Hiện tại SettingsDialog có theme toggle (light/dark). Sau port, bỏ toggle này (đã có ThemePanel riêng) hay giữ làm shortcut? Em guess bỏ (single source of truth = ThemePanel).
-6. **design-system.md fate**: Living doc hiện tại documents 30+ tokens. Sau port, 9 core tokens runtime configurable. Rewrite doc hay giữ + add section? Em guess giữ + add section (F6).
-7. **Migration `settings.theme`**: Field hiện tại `'dark'` default. Migration v7→v8: đọc `settings.theme` → write `themeMode` → delete `settings.theme`. User đã set 'light' giữ nguyên. OK?
-8. **i18n**: Reference UI tiếng Việt. Cell UI cũng tiếng Việt (messages.ts). Giữ tiếng Việt hay add i18n layer? Em guess giữ tiếng Việt (cell chưa có i18n, ponytail).
+1. **sql.js bundle + CSP** — ✅ RESOLVED: `sql-wasm.wasm` ~1MB+ lazy load chỉ khi user import `.db.gz` (decide G3 ADR-023). **CSP ĐÃ VERIFIED**: `public/manifest.json:58` đã có `script-src 'self' 'wasm-unsafe-eval'` — KHÔNG cần đổi CSP, chỉ cần thêm `web_accessible_resources` cho `sql-wasm.wasm` + `sql-wasm.js`.
+2. **fflate vs native** — ✅ ANSWERED: **fflate cho cả gzip + zip** (consistency, ZIP không có native, gzip native saves ~10KB nhưng adds 2 code paths — ponytail: 1 lib đơn giản hơn 2 code paths).
+3. **DB hash strategy** — ✅ ANSWERED: **Random hash 8 chars** sinh trên `chrome.runtime.onInstalled`, lưu `chrome.storage.local.orca.dbHash`. DB name `orca-dict-{hash}-en`. Tests dùng fallback `'devmode0'` khi chrome.storage absent (reference pattern).
+4. **`--color-info` token** — DEFER G3 ADR-022: recommend giữ (cell đang dùng, design-system.md documents it).
+5. **SettingsDialog theme toggle** — ✅ ANSWERED: **GIỮ theme toggle trong SettingsDialog làm shortcut** (light/dark quick switch). ThemePanel (options page) là full config source of truth. SettingsDialog toggle gọi `themeStore.switchMode()` — cùng store, không conflict.
+6. **design-system.md fate** — ✅ CLOSED: F6 đã quyết định (giữ + add section "Theme runtime customization").
+7. **Migration `settings.theme` v7→v8** — ✅ CLOSED: F1 đã specify (read `settings.theme` → write `themeMode` → delete field). Migration test added ở F7 (Risk #5 fix).
+8. **i18n** — DEFER G3 ADR: recommend giữ tiếng Việt (cell chưa có i18n layer, ponytail).
 
 ---
 
