@@ -1,0 +1,45 @@
+/* ModeCards — 3-card radio selector (Light/Dark/System) */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md, 12px);
+  margin-bottom: var(--spacing-lg, 16px);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  padding: var(--spacing-md, 12px);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: border-color var(--transition-normal, 200ms) ease, background var(--transition-normal, 200ms) ease;
+}
+
+.card:hover {
+  background: var(--color-surface-hover);
+}
+
+.card.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.label {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

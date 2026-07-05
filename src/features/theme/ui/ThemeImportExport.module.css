@@ -1,0 +1,66 @@
+/* ThemeImportExport — export/import theme JSON */
+.wrapper {
+  margin-top: var(--spacing-md, 12px);
+  padding: var(--spacing-md, 12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-surface);
+}
+
+.row {
+  display: flex;
+  gap: var(--spacing-sm, 8px);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-sm, 8px);
+}
+
+.btn {
+  padding: var(--spacing-xs, 4px) var(--spacing-md, 12px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-background);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: var(--font-size-sm, 13px);
+}
+
+.btn:hover {
+  background: var(--color-surface-hover);
+}
+
+.btnPrimary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse, #fff);
+  border-color: var(--color-primary);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: var(--spacing-sm, 8px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: monospace;
+  font-size: var(--font-size-xs, 12px);
+  resize: vertical;
+}
+
+.error {
+  color: var(--color-error);
+  font-size: var(--font-size-xs, 12px);
+  margin-top: var(--spacing-xs, 4px);
+}
+
+.success {
+  color: var(--color-success);
+  font-size: var(--font-size-xs, 12px);
+  margin-top: var(--spacing-xs, 4px);
+}
+
+.label {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs, 4px);
+}

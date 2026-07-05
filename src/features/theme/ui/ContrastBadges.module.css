@@ -1,0 +1,42 @@
+/* ContrastBadges — WCAG AA/AAA/Fail badges per pair */
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs, 4px);
+  margin-top: var(--spacing-sm, 8px);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--spacing-sm, 8px);
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-semibold, 600);
+  cursor: help;
+  border: 1px solid transparent;
+}
+
+.aa {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.aaa {
+  background: rgba(37, 99, 235, 0.15);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.fail {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.ratio {
+  font-weight: var(--font-weight-regular, 400);
+  opacity: 0.8;
+}
