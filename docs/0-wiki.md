@@ -59,6 +59,7 @@ docs/           # Tài liệu dự án
 │   └── spec-settings-controls-restyle.md
 │   └── spec-settings-dialog-rearrange.md # Settings dialog rearrange spec (pair/indent/divider, fix Nav Cluster position) # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
 │   └── spec-translate-subtitle-target-to-native.md # Translate subtitle target→native PRD (background prefill, Google unofficial, ShortcutInput combo, general mọi site)
+│   └── spec-port-theocean-dict-and-theme.md # Port theocean-dict reference: theme system (runtime configurable, 9 core tokens, WCAG, import/export, system mode) + dict import 5 format → IndexedDB. Options page mới. Theme trước, dict sau.
 │   └── 021-translate-subtitle-background-prefill.md # ADR-021 background prefill + Google unofficial + 0 setting + cache per-session + ShortcutInput combo (cite spec)
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
