@@ -215,6 +215,10 @@ export const STORAGE_KEYS = {
   SESSION_DOWNLOADS: 'session_downloads',
   /** Auto-download whitelist (origin+pathname → auto-download on visit). */
   AUTO_DOWNLOAD_WHITELIST: 'auto_download_whitelist',
+  /** ADR-022 D1: theme mode tách riêng khỏi settings ('light'|'dark'|'system'). */
+  THEME_MODE: 'themeMode',
+  /** ADR-022 D1: theme config (customColors palette) tách riêng khỏi settings. */
+  THEME_CONFIG: 'themeConfig',
 } as const;
 
 // === Popup Dimensions ===
