@@ -44,8 +44,13 @@ export async function detectFormat(name: string, head: Uint8Array): Promise<Impo
     try {
       const files = unzipAll(head);
       const paths = Object.keys(files);
-      // Yomitan: has index.json + term_meta_bank_*.json
-      if (paths.some((p) => p.endsWith('index.json')) && paths.some((p) => p.includes('term_meta_bank'))) {
+      // Yomitan: has index.json + (term_bank OR term_meta_bank)
+      // term_bank = dictionary, term_meta_bank = frequency — both return 'yomitan'
+      // (strategy decides which to parse based on resourceType)
+      if (
+        paths.some((p) => p.endsWith('index.json')) &&
+        (paths.some((p) => p.includes('term_bank')) || paths.some((p) => p.includes('term_meta_bank')))
+      ) {
         return 'yomitan';
       }
       // Cambridge JSON inside zip: single .json with array of {term, definition}

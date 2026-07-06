@@ -49,6 +49,7 @@ function makeDictEntry(term: string, resourceId = RESOURCE_ID) {
   return {
     resourceId,
     term,
+    reading: term,
     altterm: '',
     pronunciation: '',
     definition: `meaning of ${term}`,

@@ -16,7 +16,7 @@ import type { BaseImportStrategy } from './baseImportStrategy';
 /** Create a strategy for a format + resource type. */
 export function createStrategy(
   format: ImportFormat,
-  _resourceType: ResourceType,
+  resourceType: ResourceType,
   options: StrategyOptions,
   fileData: { data: Uint8Array; fileName: string },
 ): BaseImportStrategy<unknown, unknown> {
@@ -26,9 +26,9 @@ export function createStrategy(
     case 'json-array':
       return new JsonArrayStrategy(options, fileData) as unknown as BaseImportStrategy<unknown, unknown>;
     case 'yomitan':
-      return new YomitanStrategy(options, fileData) as unknown as BaseImportStrategy<unknown, unknown>;
+      return new YomitanStrategy(options, { ...fileData, resourceType }) as unknown as BaseImportStrategy<unknown, unknown>;
     case 'sqlite':
-      return new SqliteStrategy(options, fileData) as unknown as BaseImportStrategy<unknown, unknown>;
+      return new SqliteStrategy(options, { ...fileData, resourceType }) as unknown as BaseImportStrategy<unknown, unknown>;
     case 'cambridge-json':
       return new CambridgeJsonStrategy(options, fileData) as unknown as BaseImportStrategy<unknown, unknown>;
     default:

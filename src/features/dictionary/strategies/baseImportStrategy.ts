@@ -21,6 +21,7 @@ export interface RawFrequencyEntry {
 /** Raw dictionary entry from parser. */
 export interface RawDictionaryEntry {
   readonly term: string;
+  readonly reading?: string;
   readonly altterm?: string;
   readonly pronunciation?: string;
   readonly definition?: string;
@@ -32,6 +33,7 @@ export interface RawDictionaryEntry {
 /** Result of a strategy run. */
 export interface StrategyResult {
   readonly wordCount: number;
+  readonly format: string;
 }
 
 /** Options passed to strategy. */
@@ -79,7 +81,7 @@ export abstract class BaseImportStrategy<TRaw, TStored> {
       }
       throw e;
     }
-    return { wordCount: count };
+    return { wordCount: count, format: this.format };
   }
 
   /** Hook 1: streaming parser — yield raw entries 1 at a time. */
@@ -127,6 +129,7 @@ export abstract class BaseDictionaryStrategy extends BaseImportStrategy<RawDicti
     return {
       resourceId: this.options.resourceId,
       term,
+      reading: raw.reading ? normalizeWord(raw.reading) : term,
       altterm: raw.altterm ? normalizeWord(raw.altterm) : '',
       pronunciation: raw.pronunciation?.trim().normalize('NFC') ?? '',
       definition: raw.definition?.trim().normalize('NFC').replace(/\s+/g, ' ') ?? '',

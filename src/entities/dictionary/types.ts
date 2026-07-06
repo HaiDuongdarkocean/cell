@@ -43,6 +43,7 @@ export interface DictionaryEntry {
   readonly id?: number;
   readonly resourceId: number;
   readonly term: string;
+  readonly reading: string;
   readonly altterm: string;
   readonly pronunciation: string;
   readonly definition: string;

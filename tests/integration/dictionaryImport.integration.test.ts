@@ -10,6 +10,21 @@ import { countFrequencyByResource } from '@/features/dictionary/repositories/fre
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import { DuplicateFileError } from '@/features/dictionary/logic/importErrors';
 
+// Mock sql.js — use Node version (not browser) to avoid fetch in jest/jsdom.
+// The real sql.js Node version loads wasm from fs, not fetch.
+jest.mock('sql.js', () => {
+  const initSqlJs = require('sql.js/dist/sql-wasm.js');
+  return {
+    __esModule: true,
+    default: async () => {
+      const SQL = await initSqlJs({
+        locateFile: (file: string) => join(process.cwd(), 'node_modules', 'sql.js', 'dist', file),
+      });
+      return SQL;
+    },
+  };
+});
+
 const RESOURCE_DIR = join(__dirname, '..', '..', 'tests', 'data-test', 'resource', 'en');
 
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
@@ -133,4 +148,18 @@ describe('dictionary import smoke — real test resources', () => {
     expect(list.find((r) => r.id === result.resourceId)).toBeUndefined();
     expect(await countFrequencyByResource(LANG, result.resourceId)).toBe(0);
   }, 30000);
+
+  it('imports Yomitan dictionary ZIP (dict-oald.zip with term_bank)', async () => {
+    const file = readResource(join('dictionary', 'dict-oald.zip'));
+    const result = await importFileFromData(file, 'DICTIONARY');
+    expect(result.wordCount).toBeGreaterThan(0);
+    expect(result.format).toBe('yomitan');
+  }, 60000);
+
+  it('imports Migaku SQLite dictionary (Wordset.db with langResourceEntry)', async () => {
+    const file = readResource(join('dictionary', 'Wordset.db'));
+    const result = await importFileFromData(file, 'DICTIONARY');
+    expect(result.wordCount).toBeGreaterThan(0);
+    expect(result.format).toBe('sqlite');
+  }, 120000); // Wordset.db has 108K entries — generous timeout
 });

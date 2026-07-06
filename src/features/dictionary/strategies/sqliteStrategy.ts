@@ -1,34 +1,52 @@
-// sqliteStrategy — Migaku SQLite .db.gz (ADR-023 D5, spec F9).
+// sqliteStrategy — Migaku SQLite .db / .db.gz (ADR-023 D5, spec F9).
 //
-// gunzip → sql.js lazy-load → exec SQL → yield {term, reading, frequency}.
+// Migaku schema:
+// - Dictionary: langResourceEntry(term, backwardTerm, displayTerm, termAlt, reading, definition)
+// - Frequency: langFrequencyEntry(term, reading, frequency)
+//
+// gunzip → sql.js lazy-load → exec SQL → yield entries.
 // sql.js wasm ~1MB lazy fetch from web_accessible_resources.
 // wasm load fail → DatabaseError → orchestrator catch → rollback.
 
-import { BaseFrequencyStrategy } from './baseImportStrategy';
-import type { StrategyOptions, RawFrequencyEntry } from './baseImportStrategy';
+import { BaseImportStrategy, type RawFrequencyEntry, type RawDictionaryEntry, type StrategyOptions } from './baseImportStrategy';
 import { gunzipFile, isGzip, isSqlite } from '../logic/fileDetector';
 import { DatabaseError, ParseError } from '../logic/importErrors';
-import { bulkInsertFrequencyEntries } from '../repositories/frequencyRepository';
-import type { FrequencyEntry } from '@/entities/dictionary';
-import type { Database, QueryExecResult, SqlJsStatic } from 'sql.js';
+import type { FrequencyEntry, DictionaryEntry, ResourceType } from '@/entities/dictionary';
+
+// Local type stubs for sql.js (avoid `import type from 'sql.js'` — ts-jest
+// doesn't erase it, causing ESM parse error in jest CJS context).
+interface SqlJsStatic {
+  Database: new (data?: Uint8Array) => Database;
+}
+interface Database {
+  exec(sql: string): QueryExecResult[];
+  close(): void;
+}
+interface QueryExecResult {
+  columns: string[];
+  values: unknown[][];
+}
 
 /** Options for sqliteStrategy. */
 export interface SqliteStrategyOptions {
   readonly data: Uint8Array;
   readonly fileName: string;
+  readonly resourceType: ResourceType;
 }
 
-/** SQLite strategy — gunzip + sql.js lazy-load. */
-export class SqliteStrategy extends BaseFrequencyStrategy {
+/** SQLite strategy — gunzip + sql.js lazy-load + Migaku schema. */
+export class SqliteStrategy extends BaseImportStrategy<RawFrequencyEntry | RawDictionaryEntry, Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>> {
   readonly format = 'sqlite' as const;
   private readonly data: Uint8Array;
+  private readonly resourceType: ResourceType;
 
   constructor(options: StrategyOptions, fileData: SqliteStrategyOptions) {
     super(options);
     this.data = fileData.data;
+    this.resourceType = fileData.resourceType;
   }
 
-  protected async *parse(): AsyncGenerator<RawFrequencyEntry> {
+  protected async *parse(): AsyncGenerator<RawFrequencyEntry | RawDictionaryEntry> {
     // 1. Gunzip if needed
     let dbData: Uint8Array;
     if (isGzip(this.data)) {
@@ -54,7 +72,7 @@ export class SqliteStrategy extends BaseFrequencyStrategy {
       throw new DatabaseError('Failed to load sql.js wasm.', e);
     }
 
-    // 4. Open database + exec query
+    // 4. Open database
     let db: Database;
     try {
       db = new SQL.Database(dbData);
@@ -63,49 +81,126 @@ export class SqliteStrategy extends BaseFrequencyStrategy {
     }
 
     try {
-      // Try common Migaku schema: entries(term, reading, frequency)
-      let result: QueryExecResult[];
-      try {
-        result = db.exec('SELECT term, reading, frequency FROM entries');
-      } catch {
-        // Fallback: try word column
-        try {
-          result = db.exec('SELECT word as term, word as reading, 0 as frequency FROM entries');
-        } catch (e) {
-          throw new ParseError('SQLite: no entries table with term/reading/frequency columns.', e);
-        }
-      }
-
-      if (result.length === 0) return;
-
-      const { columns, values } = result[0]!;
-      const termIdx = columns.indexOf('term');
-      const readingIdx = columns.indexOf('reading');
-      const freqIdx = columns.indexOf('frequency');
-
-      for (const row of values) {
-        const term = String(row[termIdx] ?? '');
-        const reading = String(row[readingIdx] ?? term);
-        const frequency = Number(row[freqIdx] ?? 0);
-        if (term) yield { term, reading, frequency };
+      if (this.resourceType === 'DICTIONARY') {
+        yield* this.parseDictionaryTable(db);
+      } else {
+        yield* this.parseFrequencyTable(db);
       }
     } finally {
       db.close();
     }
   }
 
-  protected async flushBatch(batch: ReadonlyArray<Omit<FrequencyEntry, 'id'>>): Promise<void> {
-    await bulkInsertFrequencyEntries(this.options.langCode, batch);
+  /** Parse Migaku langResourceEntry table → dictionary entries. */
+  private async *parseDictionaryTable(db: Database): AsyncGenerator<RawDictionaryEntry> {
+    let result: QueryExecResult[];
+    try {
+      result = db.exec('SELECT term, reading, definition FROM langResourceEntry');
+    } catch (e) {
+      throw new ParseError('SQLite: no langResourceEntry table with term/reading/definition columns.', e);
+    }
+    if (result.length === 0) return;
+
+    const { columns, values } = result[0]!;
+    const termIdx = columns.indexOf('term');
+    const readingIdx = columns.indexOf('reading');
+    const defIdx = columns.indexOf('definition');
+
+    for (const row of values) {
+      const term = String(row[termIdx] ?? '');
+      const reading = String(row[readingIdx] ?? term);
+      const definition = String(row[defIdx] ?? '');
+      if (term) yield { term, reading, definition };
+    }
+  }
+
+  /** Parse Migaku langFrequencyEntry table → frequency entries. */
+  private async *parseFrequencyTable(db: Database): AsyncGenerator<RawFrequencyEntry> {
+    let result: QueryExecResult[];
+    try {
+      result = db.exec('SELECT term, reading, frequency FROM langFrequencyEntry');
+    } catch {
+      // Fallback: try legacy entries table
+      try {
+        result = db.exec('SELECT term, reading, frequency FROM entries');
+      } catch (e) {
+        throw new ParseError('SQLite: no langFrequencyEntry or entries table with term/reading/frequency.', e);
+      }
+    }
+    if (result.length === 0) return;
+
+    const { columns, values } = result[0]!;
+    const termIdx = columns.indexOf('term');
+    const readingIdx = columns.indexOf('reading');
+    const freqIdx = columns.indexOf('frequency');
+
+    for (const row of values) {
+      const term = String(row[termIdx] ?? '');
+      const reading = String(row[readingIdx] ?? term);
+      const frequency = Number(row[freqIdx] ?? 0);
+      if (term) yield { term, reading, frequency };
+    }
+  }
+
+  protected transformEntry(raw: RawFrequencyEntry | RawDictionaryEntry): Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'> | null {
+    if (this.resourceType === 'DICTIONARY') {
+      return this.transformDictionaryEntry(raw as RawDictionaryEntry);
+    }
+    return this.transformFrequencyEntry(raw as RawFrequencyEntry);
+  }
+
+  private transformDictionaryEntry(raw: RawDictionaryEntry): Omit<DictionaryEntry, 'id'> | null {
+    const term = raw.term.trim().normalize('NFC').toLowerCase();
+    if (term.length === 0) return null;
+    return {
+      resourceId: this.options.resourceId,
+      term,
+      reading: raw.reading ? raw.reading.trim().normalize('NFC').toLowerCase() : term,
+      altterm: '',
+      pronunciation: '',
+      definition: (raw.definition ?? '').trim().normalize('NFC').replace(/\s+/g, ' '),
+      pos: '',
+      examples: '',
+      audio: '',
+    };
+  }
+
+  private transformFrequencyEntry(raw: RawFrequencyEntry): Omit<FrequencyEntry, 'id'> | null {
+    const term = raw.term.trim().normalize('NFC').toLowerCase();
+    if (term.length === 0) return null;
+    const reading = raw.reading ? raw.reading.trim().normalize('NFC') : term;
+    return {
+      resourceId: this.options.resourceId,
+      term,
+      reading,
+      frequency: Math.max(0, Math.floor(raw.frequency)),
+    };
+  }
+
+  protected async flushBatch(batch: ReadonlyArray<Omit<FrequencyEntry, 'id'> | Omit<DictionaryEntry, 'id'>>): Promise<void> {
+    // Dynamic imports — avoid static import of repositories to prevent
+    // jest CJS transform issues with transitive ESM deps (ADR-023 D3).
+    if (this.resourceType === 'DICTIONARY') {
+      const { bulkInsertDictionaryEntries } = await import('../repositories/dictionaryRepository');
+      await bulkInsertDictionaryEntries(
+        this.options.langCode,
+        batch as ReadonlyArray<Omit<DictionaryEntry, 'id'>>,
+      );
+    } else {
+      const { bulkInsertFrequencyEntries } = await import('../repositories/frequencyRepository');
+      await bulkInsertFrequencyEntries(
+        this.options.langCode,
+        batch as ReadonlyArray<Omit<FrequencyEntry, 'id'>>,
+      );
+    }
   }
 }
 
-/** Lazy-load sql.js — isolated for mockability. Returns the SQL static with Database constructor. */
+/** Lazy-load sql.js — returns the SQL static with Database constructor. */
 async function importSqlJs(): Promise<SqlJsStatic> {
   const initSqlJs = (await import('sql.js')).default;
   return initSqlJs({
     locateFile: (file: string) => {
-      // In extension: chrome.runtime.getURL('sql-wasm.wasm')
-      // In test: mock provides the wasm
       if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
         return chrome.runtime.getURL(file);
       }
