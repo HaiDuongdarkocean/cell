@@ -1,7 +1,9 @@
 ---
 name: frontend-ui-engineering
-description: Builds production-quality UIs. Use when building or modifying user-facing interfaces. Use when creating components, implementing layouts, managing state, or when the output needs to look and feel production-quality rather than AI-generated.
+description: "[DEPRECATED] Merged into design-driven-development (Phase 2 implementation). Do not invoke. Use design-driven-development instead."
 ---
+
+> **DEPRECATED** — This skill has been merged into `design-driven-development` (Phase 2: implement). Do not invoke this skill. Use `design-driven-development` instead. Kept for reference only.
 
 # Frontend UI Engineering
 

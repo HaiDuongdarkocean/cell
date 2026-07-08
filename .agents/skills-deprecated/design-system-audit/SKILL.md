@@ -1,7 +1,9 @@
 ---
 name: design-system-audit
-description: Audits the codebase against docs/design-system/design-system.md and updates the living document to match reality. Use when the design system may have drifted (after refactors, token renames, new components, new ADRs), when onboarding to the UI codebase, before a visual refactor, or quarterly. Triggers on "audit design system", "update design-system.md", "design system drift", "is design-system.md current", "kiểm tra design system", "design system có drift không".
+description: "[DEPRECATED] Merged into design-driven-development (Step 3 audit + design-checklist.md). Do not invoke. Use design-driven-development instead."
 ---
+
+> **DEPRECATED** — This skill has been merged into `design-driven-development` (Step 3: audit existing code, and `checklists/design-checklist.md` audit section). Do not invoke this skill. Use `design-driven-development` instead. Kept for reference only.
 
 # Design System Audit
 

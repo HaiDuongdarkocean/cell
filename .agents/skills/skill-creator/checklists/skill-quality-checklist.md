@@ -1,19 +1,23 @@
-# Skill Quality Checklist — 12 Principles
+# Skill Quality Checklist — 18 Principles
 
-> Run this checklist against any new or improved skill. All 12 must pass before saving.
-> Sources: Anthropic, OpenAI Codex, Windsurf, Andrew Ng (DeepLearning.AI), Andrej Karpathy.
+> Run this checklist against any new or improved skill. All 18 must pass before saving.
+> Sources: Anthropic Claude Platform Docs, Anthropic Engineering Blog, Agent Skills Specification (open standard), OpenAI Codex, Andrej Karpathy, Andrew Ng (DeepLearning.AI), Lalit Madan (SKILL.md Playbook), mdskills.ai, Windsurf Cascade Rules.
 
 ## How to Use
 
 For each principle, mark PASS or FAIL with a one-line note. If any FAIL, fix before saving.
 
-## The 12 Principles
+## The 18 Principles
 
-### 1. Description is the gateway
-- [ ] **PASS / FAIL**: `description` field says WHAT the skill does + WHEN to use it + 2-4 trigger phrases
-- [ ] **PASS / FAIL**: Description is specific (no "help with", "assist on", "improve")
-- [ ] **PASS / FAIL**: Description is ≤1024 characters
-- Note: <if FAIL, what's missing>
+### 1. Description is the gateway (sourced from Anthropic Claude Platform Docs)
+- [ ] **PASS / FAIL**: `description` says WHAT the skill does (verb-first, 1-2 sentences) + WHEN to use it (specific scenarios + key terms)
+- [ ] **PASS / FAIL**: Written in **third person** (no "I can help you", no "You can use this") — inconsistent POV breaks discovery
+- [ ] **PASS / FAIL**: Specific, not vague (no "helps with documents", "processes data", "does stuff with files")
+- [ ] **PASS / FAIL**: Includes **key terms the user actually says** (keyword matching drives trigger)
+- [ ] **PASS / FAIL**: Includes **negative triggers** if skill could be confused with adjacent skills (OpenAI Codex principle)
+- [ ] **PASS / FAIL**: Follows pattern `[WHAT]. Use when [WHEN].`
+- [ ] **PASS / FAIL**: ≤1024 characters, non-empty, no XML tags, no reserved words ("anthropic", "claude")
+- Note: <if FAIL, which principle violated>
 
 ### 2. One skill = one job
 - [ ] **PASS / FAIL**: The skill does exactly one job (not 2+)
@@ -21,7 +25,7 @@ For each principle, mark PASS or FAIL with a one-line note. If any FAIL, fix bef
 - Note: <if FAIL, which jobs are mixed>
 
 ### 3. Progressive disclosure
-- [ ] **PASS / FAIL**: SKILL.md body is <500 lines
+- [ ] **PASS / FAIL**: SKILL.md body is ≤100 lines (hard cap — split detail to `checklists/`/`templates/`/`examples/` if over)
 - [ ] **PASS / FAIL**: Detailed content is in supporting files, not in SKILL.md
 - [ ] **PASS / FAIL**: Supporting files are referenced from SKILL.md
 - Note: <if FAIL, what to move out>
@@ -80,6 +84,43 @@ For each principle, mark PASS or FAIL with a one-line note. If any FAIL, fix bef
 - [ ] **PASS / FAIL**: Skill is the minimum needed to do the job well
 - Note: <if FAIL, what's over-engineered>
 
+### 13. Skill independence (stands alone)
+- [ ] **PASS / FAIL**: No phase-system labels in the SKILL.md body (no "G0", "G1", "G4", "phase 0", "stage 2") — use phase-agnostic nouns ("intent", "spec", "implementation", "verification")
+- [ ] **PASS / FAIL**: No cross-skill citations inside the body (no "pattern borrowed from `interview-me`", no "follows the `spec-driven-development` flow") — state patterns inline
+- [ ] **PASS / FAIL**: Handoff mentions (if any) are minimal and do not name a hard dependency on another skill
+- [ ] **PASS / FAIL**: Frontmatter `description` trigger phrases are the only allowed external reference (user-facing, not skill-coupling)
+- [ ] **PASS / FAIL**: SKILL.md body has a single primary language — dominant language identified by content volume, all minority-language content converted to primary (no mid-skill mixing; near 50/50 split was resolved by asking the user)
+- Note: <if FAIL, what coupling or language mixing exists>
+
+### 14. Need verified (Lalit Madan — don't write skill from vibes)
+- [ ] **PASS / FAIL**: Task was run without a skill first → result was NOT good enough → skill is justified
+- [ ] **PASS / FAIL**: Skill is NOT for a one-off task (will be reused)
+- [ ] **PASS / FAIL**: Skill is NOT just general advice ("write clean code", "be thorough")
+- Note: <if FAIL, skill may be context tax with no improvement>
+
+### 15. Extracted from real work (Lalit + Karpathy)
+- [ ] **PASS / FAIL**: Skill content comes from real corrections/observations with an agent, not imagination
+- [ ] **PASS / FAIL**: Each behavioral rule traces to a concrete failure mode the agent exhibited
+- Note: <if FAIL, skill may be generic restatement of what model already knows>
+
+### 16. Freedom matched to fragility (Anthropic + mdskills)
+- [ ] **PASS / FAIL**: Fragile/irreversible operations use LOW freedom (exact scripts, no modification)
+- [ ] **PASS / FAIL**: Flexible/context-dependent tasks use HIGH freedom (prose steps)
+- [ ] **PASS / FAIL**: Default is high freedom; low freedom only where justified
+- Note: <if FAIL, freedom level mismatched to task fragility>
+
+### 17. Tested against real prompts (Karpathy + Andrew Ng + Lalit)
+- [ ] **PASS / FAIL**: 2-3 real user prompts tested → skill triggered correctly
+- [ ] **PASS / FAIL**: 1-2 adjacent prompts tested → skill did NOT trigger (negative triggers work)
+- [ ] **PASS / FAIL**: Agent followed process steps correctly in test runs
+- [ ] **PASS / FAIL**: Output matched expected format in test runs
+- Note: <if FAIL, which test failed — description routing or body procedure>
+
+### 18. Iteration plan (Anthropic Engineering Blog)
+- [ ] **PASS / FAIL**: Skill is treated as living document (not ship-and-forget)
+- [ ] **PASS / FAIL**: Plan exists to capture improvements from real usage (self-reflect, capture successes, capture mistakes)
+- Note: <if FAIL, skill will stagnate — no iteration mechanism>
+
 ## Summary
 
 | Principle | Status |
@@ -96,5 +137,11 @@ For each principle, mark PASS or FAIL with a one-line note. If any FAIL, fix bef
 | 10. Evaluation-driven output | PASS / FAIL |
 | 11. Clear tool descriptions | PASS / FAIL / N/A |
 | 12. Boring over clever | PASS / FAIL |
+| 13. Skill independence | PASS / FAIL |
+| 14. Need verified | PASS / FAIL |
+| 15. Extracted from real work | PASS / FAIL |
+| 16. Freedom matched to fragility | PASS / FAIL |
+| 17. Tested against real prompts | PASS / FAIL |
+| 18. Iteration plan | PASS / FAIL |
 
 **Overall**: APPROVED / NEEDS_FIXES (fix all FAIL before saving)

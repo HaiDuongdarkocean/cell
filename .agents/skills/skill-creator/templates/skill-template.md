@@ -62,13 +62,17 @@ After running this skill:
 
 ## Boundaries (optional)
 
-- **Always do**: <rules>
-- **Ask first**: <rules>
-- **Never do**: <rules>
+- **Always do**: <rules>. Identify the primary language by content volume and sync the whole skill to it. Keep the skill self-contained — no phase labels (G0/G1/...), no citations of other skills inside the body.
+- **Ask first**: <rules>. When language split is near 50/50, ask the user which is primary.
+- **Never do**: <rules>. Mix languages mid-skill without identifying a primary. Reference other skills as hard dependencies.
 
 ## Anti-patterns (optional)
 
 - <What NOT to do and why>
+
+## Red Flags (optional)
+
+- <Signs you're doing it wrong right now — distinct from anti-patterns, which are bad approaches>
 ```
 
 ## Supporting files (optional)

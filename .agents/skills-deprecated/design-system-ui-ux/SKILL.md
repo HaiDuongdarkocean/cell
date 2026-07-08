@@ -1,7 +1,9 @@
 ---
 name: design-system-ui-ux
-description: Establishes and audits a design system foundation (tokens, atoms, enforcement) before building UI. Use when starting a new project, when UI feels inconsistent ("râu ông cắm cằm bà kia"), when adding the Nth screen, before a visual refactor, or when onboarding to an unfamiliar UI codebase. Triggers on "design system", "UI inconsistent", "design tokens", "atom component", "audit UI", "thiết kế không nhất quán", "giao diện chắp vá", "refactor UI". Complements `frontend-ui-engineering` (which builds components); this skill decides WHAT the components must share.
+description: "[DEPRECATED] Merged into design-driven-development (Step 9 token definition). Do not invoke. Use design-driven-development instead."
 ---
+
+> **DEPRECATED** — This skill has been merged into `design-driven-development` (Step 9: design token definition). Do not invoke this skill. Use `design-driven-development` instead. Kept for reference only.
 
 # Design System UI/UX
 

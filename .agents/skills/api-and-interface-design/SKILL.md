@@ -292,3 +292,103 @@ After designing an API:
 - [ ] New fields are additive and optional (backward compatible)
 - [ ] Naming follows consistent conventions across all endpoints
 - [ ] API documentation or types are committed alongside the implementation
+
+## Logic/Frontend Phase Contract (UI features — G4 phase split)
+
+> **When to use**: invoked by `software-production-workflow` G4 when a feature has ANY UI surface (G0.5 mockup approved). Defines the typed contract between Phase L (Logic, headless) and Phase F (Frontend, design-system-bound) so the two phases can run in parallel and bind safely at a freeze point.
+> **When NOT to use**: feature has ZERO UI surface (pure background logic) → no phase split, no contract.json needed.
+
+### Why split (root cause this contract solves)
+
+Mixing logic and UI in one G4 phase causes **logic-first bias**: the agent prioritizes testable logic, treats UI as a "wrapper to call logic", and ships generic UI that drifts from the design system and lacks edge states (loading/error/empty). Splitting forces each phase to have its own done criteria, its own verify, and its own atomic commit. The JSON contract is the **freeze point** that lets Phase F bind safely without Phase L changing signatures mid-flight.
+
+### Phase structure
+
+```
+G4 (UI feature)
+├── Phase L — Logic (headless, testable)
+│   ├── Input: spec (functional requirements)
+│   ├── Output: src/features/<feature>/<feature>.contract.json (typed I/O schema)
+│   │   ├── actions: { name, input, output, errors }[] — UI calls logic
+│   │   ├── state: { shape, initial, transitions } — logic exposes to UI
+│   │   ├── events: { name, payload }[] — logic emits to UI
+│   │   └── errors: { code, message, recovery }[] — logic exposes for UI render
+│   └── Test: unit + integration, NO UI dependency
+│
+├── Phase F prep — Frontend prep (parallel with Phase L)
+│   ├── Input: mockup approved (G0.5) + design-system.md
+│   ├── Output: token audit + component skeleton + Zustand store shape (from mockup)
+│   └── Does NOT bind logic until contract.json freezes
+│
+└── Integration gate (after contract.json freeze)
+    ├── Wire UI → logic via contract (typed binding, no ad-hoc calls)
+    ├── E2E: user flow end-to-end
+    └── Browser verify: MCP screenshot real render vs mockup (drift check)
+```
+
+### Contract format — `<feature>.contract.json`
+
+JSON file at `src/features/<feature>/<feature>.contract.json` — version-controlled, diff-able, anh can review. Schema:
+
+```json
+{
+  "feature": "<name>",
+  "version": "1.0.0",
+  "actions": [
+    {
+      "name": "importDictionary",
+      "input": { "file": "File", "options": "ImportOptions" },
+      "output": { "result": "ImportResult", "progress": "ProgressEvent" },
+      "errors": ["FILE_INVALID", "FORMAT_UNSUPPORTED", "DB_WRITE_FAILED"]
+    }
+  ],
+  "state": {
+    "shape": { "dictionaries": "DictionaryMeta[]", "importing": "boolean", "progress": "number" },
+    "initial": { "dictionaries": [], "importing": false, "progress": 0 },
+    "transitions": [
+      { "on": "importDictionary.start", "to": { "importing": true } },
+      { "on": "importDictionary.progress", "to": { "progress": "payload.percent" } },
+      { "on": "importDictionary.done", "to": { "importing": false, "dictionaries": "result.added" } }
+    ]
+  },
+  "events": [
+    { "name": "importProgress", "payload": { "percent": "number", "current": "string" } },
+    { "name": "importError", "payload": { "code": "string", "message": "string" } }
+  ],
+  "errors": [
+    { "code": "FILE_INVALID", "message": "File không hợp lệ", "recovery": "retry" },
+    { "code": "DB_WRITE_FAILED", "message": "Lỗi ghi database", "recovery": "rollback" }
+  ]
+}
+```
+
+### Freeze point rule (Hyrum's Law applied)
+
+Contract.json is the **freeze point**. After Phase L freezes it:
+- Phase L must NOT change action/state/event **signatures** (additive-only extensions OK with Phase F ack — see "Prefer Addition Over Modification" principle above).
+- Phase F binds against the frozen contract — typed binding, no ad-hoc calls bypassing the contract.
+- Every observable behavior in the contract becomes a de facto commitment (Hyrum's Law) — be intentional about what `actions`, `state`, `events`, `errors` expose.
+
+### Parallel execution (subagents)
+
+Launch 2 background subagents:
+- **Subagent L** — Phase L: logic + contract.json + unit/integration tests (no UI).
+- **Subagent F** — Phase F prep: token audit + component skeleton + Zustand store shape from mockup (no logic binding until freeze).
+
+After Subagent L freezes contract.json → Subagent F binds → integration gate runs in main session (wire + E2E + browser verify).
+
+### Git — atomic commits separated
+
+- `feat: Mx-L <feature> logic + contract` — Phase L output (logic + contract.json + unit/integration tests, NO UI).
+- `feat: Mx-F <feature> UI` — Phase F output (components + store binding + browser verify, NO logic changes).
+- `feat: Mx-I <feature> integration` — Integration gate (wire + E2E + drift check) — only if integration adds non-trivial glue beyond Phase F binding.
+
+### Verification (phase-split specific)
+
+- [ ] `src/features/<feature>/<feature>.contract.json` exists, valid JSON, version-controlled
+- [ ] Contract covers all actions/state/events/errors from spec
+- [ ] Phase L tests pass with NO UI dependency (headless)
+- [ ] Phase F components render all states from mockup (default + loading + error + empty)
+- [ ] Integration gate: E2E user flow passes
+- [ ] Browser verify: MCP screenshot real render matches mockup (drift check)
+- [ ] Commits separated: logic ≠ UI (atomic per phase)
