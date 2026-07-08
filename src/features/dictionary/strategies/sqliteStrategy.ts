@@ -201,10 +201,13 @@ async function importSqlJs(): Promise<SqlJsStatic> {
   const initSqlJs = (await import('sql.js')).default;
   return initSqlJs({
     locateFile: (file: string) => {
+      // sql.js browser build requests "sql-wasm-browser.wasm" but our
+      // web_accessible_resource is named "sql-wasm.wasm" — map the name.
+      const mapped = file.replace('sql-wasm-browser.wasm', 'sql-wasm.wasm');
       if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
-        return chrome.runtime.getURL(file);
+        return chrome.runtime.getURL(mapped);
       }
-      return file;
+      return mapped;
     },
   });
 }
