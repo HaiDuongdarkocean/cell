@@ -137,7 +137,7 @@ docs/           # Tài liệu dự án
 │   └── nav-cluster-frontend-design.md # Frontend UI engineering nav cluster (G3 build HOW: DOM tree, state machines, ARIA toolbar, responsive touch target, perf, anti-AI-aesthetic)
 │   └── review-youtube-subtitle-detection.md # Spec review: YouTube subtitle detection (APPROVED_WITH_CONDITIONS → revised → APPROVED, Opus 4.8, 3 CRITICAL + 4 HIGH resolved)
 ├── design-system/                     # Living design system documentation + mockups
-│   ├── design-system.md               # Living Design System Documentation (DSDS-inspired, 7 sections: tokens + components + patterns + a11y + runtime + sync + guidelines)
+│   ├── README.md                      # Living Design System (DSDS-inspired, 7 layer folders: principles + tokens + components + patterns + guidelines + runtime + governance + references)
 │   ├── nav-cluster-frontend-design.md # (legacy) Frontend UI engineering nav cluster — kept as reference, not updated
 │   └── icon-svg/                      # SVG icons used in mockups
 ├── mockups/                           # HTML mockups (design-driven-development output, G0.5)
