@@ -15,9 +15,9 @@
 
 .fieldRow {
   display: flex;
-  flex-direction: column;
   gap: var(--spacing-md);
-  align-items: stretch;
+  align-items: start;
+  flex-direction: column;
 }
 
 .fieldRow > .field {
