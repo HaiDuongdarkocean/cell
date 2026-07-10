@@ -48,7 +48,7 @@ ASSUMPTIONS I'M MAKING:
 
 Don't silently fill in ambiguous requirements. The spec's entire purpose is to surface misunderstandings *before* code gets written — assumptions are the most dangerous form of misunderstanding.
 
-**Write a spec document covering these six core areas:**
+**Write a spec document covering these seven core areas:**
 
 1. **Objective** — What are we building and why? Who is the user? What does success look like?
 
@@ -79,6 +79,39 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
    - **Ask first:** Database schema changes, adding dependencies, changing CI config
    - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
 
+7. **Data Contract** — The schema that lets logic and UI be built in parallel. Define this BEFORE any code. Two parts:
+
+   **TypeScript types** (compile-time check — logic + UI import, build fails if shape wrong):
+   ```typescript
+   // Logic output → UI input
+   export type ImportResult = {
+     dictId: string;
+     entries: number;
+     status: 'success' | 'partial' | 'failed';
+     error: string | null;
+   };
+   ```
+
+   **Zod schema** (runtime check — logic validates data from IndexedDB/network before processing; UI validates data from message passing before render; test uses `parse()` to grade):
+   ```typescript
+   import { z } from 'zod';
+   export const ImportResultSchema = z.object({
+     dictId: z.string(),
+     entries: z.number().int().min(0),
+     status: z.enum(['success', 'partial', 'failed']),
+     error: z.string().nullable(),
+   });
+   ```
+
+   **Where files live** (NOT in test folder — runtime validation belongs at the boundary):
+   - `src/<feature>/types.ts` — TypeScript types, logic + UI import (compile-time)
+   - `src/<feature>/schema.ts` — Zod schema, logic + UI + test import (runtime + test)
+   - `tests/unit/<feature>/` — test imports schema from `src/`, does NOT redefine
+
+   **Rule**: Zod goes in `src/` when data crosses a boundary (IndexedDB, network, user input, MV3 message passing). Zod stays in `test/` only for purely internal data that never leaves the module. Chrome extensions MV3 have message passing everywhere → default to `src/`.
+
+   **Why this matters**: logic agent and UI agent can work in parallel in separate worktrees, both importing the same `types.ts` + `schema.ts`. Test (TDD) is the verifier — `ImportResultSchema.parse(output)` grades pass/fail. No separate verifier agent needed.
+
 **Spec template:**
 
 ```markdown
@@ -106,6 +139,9 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
 - Always: [...]
 - Ask first: [...]
 - Never: [...]
+
+## Data Contract
+[TypeScript types + Zod schema for logic↔UI boundary. Lets logic and UI be built in parallel. See skill body for template.]
 
 ## Success Criteria
 [How we'll know this is done — specific, testable conditions]

@@ -1,17 +1,69 @@
 # Example — Redesigning OptionsApp
 
-> Worked example. Phase 1 (design with anh) + Phase 2 (implement) for a Chrome extension settings panel.
+> Worked example. Mode A (full screen redesign). Gate 1 (wireframe) + Gate 2 (UI-UX-Contract) for a Chrome extension settings panel. Implement is downstream (not shown here).
 
 ## Context
-Cell, Chrome Extension MV3 video downloader. Options page (`src/entrypoints/options/`) has 3 tabs: Resources, Theme, Settings. CSS Modules + CSS variables, no Tailwind. User wants redesign.
+Cell, Chrome Extension MV3 video downloader. Options page (`src/entrypoints/options/`) has 3 tabs: Resources, Theme, Settings. CSS Modules + CSS variables, no Tailwind. User wants redesign — structure feels sparse, settings tab is a placeholder, UX lacks grouping depth.
 
-## Phase 1 — Design
+## Input fetch (before any design)
+- **Upstream**: none ran. Ask ONE question on cache miss only.
+- **Codebase audit**: read `OptionsApp.tsx`, `OptionsApp.module.css`, `ResourcesPanel.tsx`, `ThemePanel.tsx`, `SettingsDialog.tsx` (legacy). Found 3 tabs, SettingsPlaceholder stub, no aria-controls linking.
+- **Docs**: `manifest.json` (MV3, options page full tab), `AGENTS.md` (CSS Modules + CSS vars, no Tailwind, named export, function component + hooks).
+- **Design system**: existing CSS variables `--spacing-*`, `--color-*`, `--font-*`. Reuse tokens.
+- **User context**: cache miss → ask "Which tab do you open most often?" → answer: "Tài nguyên (import dict)".
 
-**Step 1 — Intent**: "Reading this as: settings panel for extension users (technical enough to install, not developers), editorial-clean language, leaning minimalist-ui."
+## Gate 1 — Wireframe (UX structure)
 
-**Step 2 — Dials**: `variance: 4` (settings need predictability), `motion: 3` (functional hover/active only), `density: 5` (3 tabs + content, balanced).
+**Step 1 — Inventory**:
+```yaml
+functions:
+  - { id: F1, name: "Manage dictionaries (import/delete/list)", frequency: frequent, destructive: false }
+  - { id: F2, name: "Customize theme (color/font/overlay)", frequency: occasional, destructive: false }
+  - { id: F3, name: "App settings (general config)", frequency: rare, destructive: false }
+  - { id: F4, name: "Reset all data", frequency: rare, destructive: true }
+```
 
-**Step 3 — Audit** (existing `OptionsApp.tsx` + `.module.css`):
+**Step 2 — IA model**: `scope-first` (settings page → me/team/system). Reason: 3 distinct concern areas, user thinks "my stuff / my look / my config".
+
+**Step 3 — Grouping**: 3 groups → tabs (2-4 = tabs rule). Labels use user vocabulary: "Tài nguyên" (not "dictionary-feature"), "Giao diện" (not "theme-panel"), "Cài đặt" (not "settings-config"). No dump group. ≤5 per group (Miller).
+
+**Step 4 — Order**: Within each tab, frequent first. F4 (reset, destructive) → bottom of Cài đặt, separated, confirm-guarded.
+
+**Step 5 — Zones**: F1 primary (above-fold, frequent), F2 primary (above-fold, occasional but visual), F3 secondary (below-fold, rare), F4 tertiary (bottom, destructive).
+
+**Step 6 — Whitespace**: Large gap between tab nav and panel (24px, separates). Small gap within panel sections (12px, unites). No border on cards — proximity groups. Border only under tab nav (active indicator).
+
+**Step 7 — ASCII wireframe** (variant A, recommended):
+```
+┌─────────────────────────────────────────┐
+│  Tùy chọn                               │  ← no em-dash
+├─────────────────────────────────────────┤
+│ [Tài nguyên] [Giao diện] [Cài đặt]      │  ← tabs, underline active
+├─────────────────────────────────────────┤
+│                                         │
+│  ┌─ Tài nguyên ──────────────────────┐  │
+│  │  [Drag file hoặc click import]    │  │  ← F1 primary
+│  │  ─────────────────────────────    │  │
+│  │  • dict-en.yomitan  [xóa]         │  │
+│  │  • dict-ja.yomitan  [xóa]         │  │
+│  └───────────────────────────────────┘  │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+Variant B (sidebar instead of tabs) — rejected: 3 groups = tabs convention (Jakob), sidebar overkill for 3.
+
+**Responsive**: mobile → tabs become bottom-tab bar (≤5 groups rule), content parity (same 3 groups), F4 stays bottom of Cài đặt with confirm.
+
+**[GATE 1 APPROVAL]**: Anh picks variant A. Proceed to Gate 2.
+
+## Gate 2 — UI-UX-Contract (full surface)
+
+**Step 8 — Intent**: "Reading this as: settings panel for extension users (technical enough to install, not developers), editorial-clean language, leaning minimalist-ui."
+
+**Step 9 — Dials**: `variance: 4` (settings need predictability), `motion: 3` (functional hover/active only), `density: 5` (3 tabs + content, balanced).
+
+**Step 10 — Audit** (existing `OptionsApp.tsx` + `.module.css`):
 - Typography: Inter (AI-slop), title 16px lacks presence, only 400/600.
 - Color: `#2563eb` accent sat 92% (>80%), flat zero texture.
 - Layout: `min-height: 100vh` (iOS bug), padding 24px tight, tab padding 8px (<44px touch).
@@ -21,52 +73,45 @@ Cell, Chrome Extension MV3 video downloader. Options page (`src/entrypoints/opti
 - Iconography: zero icons (tabs lack scannability).
 - Code: missing `aria-controls` + `id` linking tabs→tabpanels.
 
-**Step 4 — Placement matrix**:
+**Step 11 — Placement matrix** (reuses Gate 1 grouping):
 ```yaml
 functions:
-  - { id: F1, name: "Manage dictionaries (import/delete/list)", element: panel, tab: "Tài nguyên", zone: primary, priority: above-fold, affordance: "drag-drop zone + hint + list + import button", steps_to_complete: 2, flow_ok: true }
-  - { id: F2, name: "Customize theme (color/font/overlay)", element: panel, tab: "Giao diện", zone: primary, priority: above-fold, affordance: "live preview + sliders", steps_to_complete: 1, flow_ok: true }
-  - { id: F3, name: "App settings (general config)", element: panel, tab: "Cài đặt", zone: primary, priority: above-fold, affordance: "grouped form sections", steps_to_complete: 1, flow_ok: true }
+  - { id: F1, name: "Manage dictionaries", element: panel, tab: "Tài nguyên", zone: primary, priority: above-fold, affordance: "drag-drop zone + hint + list + import button", steps_to_complete: 2, flow_ok: true }
+  - { id: F2, name: "Customize theme", element: panel, tab: "Giao diện", zone: primary, priority: above-fold, affordance: "live preview + sliders", steps_to_complete: 1, flow_ok: true }
+  - { id: F3, name: "App settings", element: panel, tab: "Cài đặt", zone: secondary, priority: below-fold, affordance: "grouped form sections", steps_to_complete: 1, flow_ok: true }
+  - { id: F4, name: "Reset all data", element: button, tab: "Cài đặt", zone: tertiary, priority: on-demand, affordance: "bottom, separated, confirm dialog", steps_to_complete: 2, flow_ok: true }
 ```
 
-**Step 5 — Flows**: Import dict = [drag file, confirm] (2). Delete dict = [click delete, confirm] (2). Change theme = [click Giao diện, drag slider] (2). All ≤ 3, `ok: true`.
+**Step 12 — Flows**: Import dict = [drag file, confirm] (2). Delete dict = [click delete, confirm] (2). Change theme = [click Giao diện, drag slider] (2). Reset = [click reset, confirm dialog] (2). All ≤ 3, `ok: true`.
 
-**Step 6 — IA**: `nav_type: tabs`, items [Tài nguyên, Giao diện, Cài đặt], grouping "3 horizontal tabs, underline active, 1 panel visible", default Tài nguyên, back_nav false, search false.
+**Step 13 — IA**: `nav_type: tabs`, items [Tài nguyên, Giao diện, Cài đặt], grouping "scope-first: my stuff / my look / my config", default Tài nguyên, back_nav false, search false.
 
-**Step 7 — Hierarchy**: F-pattern left-aligned tabs + content below. Gestalt proximity: tab group tight 4px, panel generous 24px. Similarity: one accent for active underline + focus ring.
+**Step 14 — Hierarchy**: F-pattern left-aligned tabs + content below. Gestalt proximity: tab group tight 4px, panel generous 24px. Similarity: one accent for active underline + focus ring.
 
-**Step 8 — Aesthetic**: `selected: minimalist-ui`. Rejected: high-end-visual-design ("settings is a tool, not premium consumer"), industrial-brutalist-ui ("not a data-heavy dashboard").
+**Step 15 — Aesthetic**: `selected: minimalist-ui`. Rejected: high-end-visual-design ("settings is a tool, not premium consumer"), industrial-brutalist-ui ("not a data-heavy dashboard").
 
-**Step 9 — Tokens**:
+**Step 16 — Reference design system** (DO NOT re-define tokens):
 ```yaml
-fonts: { display: Geist, body: Geist, mono: Geist Mono }
-palette: { canvas: "#FBFBFA", surface: "#FFFFFF", text_primary: "#18181B", text_secondary: "#71717A", border: "rgba(0,0,0,0.06)", accent: "#1F6C9F" }
-shape: { card_radius: "12px", button_radius: "6px", input_radius: "6px", rule: "buttons 6px, cards 12px, inputs 6px" }
-motion: { duration: "200ms", easing: "cubic-bezier(0.16, 1, 0.3, 1)" }
+design_system:
+  tokens: "docs/design-system/tokens/*"          # color, typography, spacing, shape-elevation-motion
+  components: "docs/design-system/components/*"   # popup-react, controllers, etc.
+  guidelines: "docs/design-system/guidelines/*"   # visual, layout, accessibility, content, development
+  patterns: "docs/design-system/patterns/*"       # interaction, settings
+  aesthetic: minimalist-ui
+  deviations: []   # full compliance, no new tokens
 ```
+Implementer reads design system files directly — contract does not copy token values.
 
-**Step 10 — States**: TabButton (hover color shift, active scale(0.98)+translate-y(1px), focus 2px ring). ResourcesPanel (loading skeleton list, empty composed getting-started+drag-drop hint, error inline+retry). ThemePanel (skeleton sliders, error inline). SettingsPanel (error inline per field).
+**Step 17 — States**: TabButton (hover color shift, active scale(0.98)+translate-y(1px), focus 2px ring). ResourcesPanel (loading skeleton list, empty composed getting-started+drag-drop hint, error inline+retry). ThemePanel (skeleton sliders, error inline). SettingsPanel (error inline per field). Reset button (disabled until confirm checkbox).
 
-**Step 11 — Anti-slop**: bans [em_dash, inter_font, ai_purple_gradient, three_equal_cards, fake_screenshot_div, scroll_cue, locale_strip, version_footer, eyebrow_overuse].
+**Step 18 — Anti-slop**: bans [em_dash, inter_font, ai_purple_gradient, three_equal_cards, fake_screenshot_div, scroll_cue, locale_strip, version_footer, eyebrow_overuse].
 
-**Step 12 — ATs**: AT1-AT7 per `design-checklist.md`.
+**Step 19 — ATs**: AT1-AT7 per `design-checklist.md`.
 
-**Step 13 — Mockup**: `mockups/options-app.html` — 3 tabs (Tài nguyên active underline), title "Tùy chọn" (no em-dash), ResourcesPanel drag-drop + list, token colors + Geist, desktop + mobile side by side.
+**Step 20 — Mockup**: `mockups/options-app.html` — 3 tabs (Tài nguyên active underline), title "Tùy chọn" (no em-dash), ResourcesPanel drag-drop + list, token colors + Geist, desktop + mobile side by side.
 
-**Step 14 — Approval**: Present contract + mockup. Anh approves. Proceed to Phase 2.
+**Step 21 — [GATE 2 APPROVAL]**: Anh approves contract. Hand off `UI-UX-Contract.md` to implement loop.
 
-## Phase 2 — Implement
+## Handoff
 
-**Step 15-16 — Read contract, detect stack**: CSS Modules + CSS variables, React 19, TypeScript. No Tailwind. Use existing stack.
-
-**Step 17 — Build**: `OptionsApp.tsx` (tabs with `aria-controls`+`id`, padding 12px 20px). `OptionsApp.module.css` (padding-block 48px, min-height 100dvh, Geist, accent `#1F6C9F`). `ResourcesPanel.tsx` (skeleton/empty/error). `ThemePanel.tsx` (skeleton). `SettingsPanel.tsx` (new, replaces SettingsPlaceholder).
-
-**Step 18 — States**: All per contract state coverage table.
-
-**Step 19 — A11y**: Contrast `#18181B` on `#FBFBFA` = 15.3:1 (AAA). Focus 2px `#1F6C9F` 3:1. ARIA tablist/tab/tabpanel with `aria-controls`+`id`+`aria-labelledby`. Keyboard arrows in tablist, Tab to panel, Home/End. Skip link added.
-
-**Step 20 — Evidence** (MCP `edge-devtools`): `desktop_full.png` 1440x900, `mobile_375.png` 375x812, `tab_active_state.png`, `empty_state.png`, `error_state.png`, `console_log.txt` (0 errors), `a11y_report.txt` (0 violations), `flow_simulation.md` (3 tasks ≤2 steps), `code_diff.patch`.
-
-**Step 21 — Gates**: `npm run test:unit` + `npx tsc --noEmit` + `npm run lint` all pass.
-
-**Step 22 — Hand off**: Pass `UI-Contract.md` + evidence to ui-ux-reviewer. Await PASS or FAIL list.
+Output: `UI-UX-Contract.md` (single file, all 16 YAML sections filled). Implement loop (downstream) reads this file, implements code per contract, rebuilds `dist/`, then `ui-checker` runs AT1-AT7 via MCP edge-devtools (Layer 1 machine-verifiable) + adversarial subagent (Layer 2 cognitive) against the contract.
