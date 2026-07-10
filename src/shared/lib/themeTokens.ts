@@ -100,11 +100,18 @@ function buildColorTokens(colors: CoreColorTokens, mode: ResolvedMode): string {
 function buildStyleContent(config: ThemeConfig): string {
   const lightTokens = buildColorTokens(config.customColors.light, 'light');
   const darkTokens = buildColorTokens(config.customColors.dark, 'dark');
+  // ADR-024: static tokens live on :root; color tokens only apply inside a
+  // [data-theme] boundary. This prevents elements that lose their container
+  // context from inheriting the light :root color tokens.
   return `
-[data-theme="light"], :root {
-  ${lightTokens}
+:root {
 ${STATIC_TOKENS}
 }
+
+[data-theme="light"] {
+  ${lightTokens}
+}
+
 [data-theme="dark"] {
   ${darkTokens}
 }
@@ -125,6 +132,37 @@ function resolveSystemMode(): ResolvedMode {
 
 function resolveMode(mode: ThemeMode): ResolvedMode {
   return mode === 'system' ? resolveSystemMode() : mode;
+}
+
+/**
+ * Sync the resolved `data-theme` attribute from a container to a portable
+ * element. Portable content-script components (e.g. nav cluster) may be
+ * re-parented to a different element, so they cannot rely solely on the
+ * container's `data-theme` boundary. Uses MutationObserver to keep the
+ * attribute in realtime sync.
+ *
+ * @param element - The component root that should carry its own data-theme
+ * @param container - The source-of-truth element (usually the video wrapper)
+ * @returns cleanup function to disconnect the observer
+ */
+export function syncElementTheme(element: HTMLElement, container: HTMLElement): () => void {
+  const apply = (): void => {
+    const theme = container.getAttribute('data-theme') ?? 'dark';
+    element.setAttribute('data-theme', theme);
+  };
+  apply();
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+        apply();
+        break;
+      }
+    }
+  });
+  observer.observe(container, { attributes: true, attributeFilter: ['data-theme'] });
+
+  return () => observer.disconnect();
 }
 
 /**

@@ -1,4 +1,4 @@
-import { injectThemeTokens, buildStyleContent, buildColorTokens } from '@/shared/lib/themeTokens';
+import { injectThemeTokens, buildStyleContent, buildColorTokens, syncElementTheme } from '@/shared/lib/themeTokens';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { ThemeConfig } from '@/entities/theme';
@@ -226,5 +226,46 @@ describe('buildColorTokens', () => {
     const custom = { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#ff0000' };
     const css = buildColorTokens(custom, 'dark');
     expect(css).toContain('--color-primary: #ff0000;');
+  });
+});
+
+describe('syncElementTheme (ADR-024)', () => {
+  it('sets element data-theme to match container', () => {
+    const container = document.createElement('div');
+    const element = document.createElement('div');
+    container.setAttribute('data-theme', 'light');
+    syncElementTheme(element, container);
+    expect(element.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('defaults to dark when container has no data-theme', () => {
+    const container = document.createElement('div');
+    const element = document.createElement('div');
+    syncElementTheme(element, container);
+    expect(element.getAttribute('data-theme')).toBe('dark');
+  });
+
+  it('updates element when container data-theme changes', async () => {
+    const container = document.createElement('div');
+    const element = document.createElement('div');
+    container.setAttribute('data-theme', 'dark');
+    syncElementTheme(element, container);
+    expect(element.getAttribute('data-theme')).toBe('dark');
+
+    container.setAttribute('data-theme', 'light');
+    await new Promise<void>((r) => setTimeout(r, 0));
+    expect(element.getAttribute('data-theme')).toBe('light');
+  });
+
+  it('cleanup stops updates', async () => {
+    const container = document.createElement('div');
+    const element = document.createElement('div');
+    const cleanup = syncElementTheme(element, container);
+    expect(element.getAttribute('data-theme')).toBe('dark');
+
+    cleanup();
+    container.setAttribute('data-theme', 'light');
+    await new Promise<void>((r) => setTimeout(r, 0));
+    expect(element.getAttribute('data-theme')).toBe('dark');
   });
 });

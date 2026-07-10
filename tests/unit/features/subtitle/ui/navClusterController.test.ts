@@ -509,4 +509,65 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       expect(() => ctrl.destroy()).not.toThrow();
     });
   });
+
+  describe('theme sync (ADR-024)', () => {
+    it('sets cluster data-theme to match container on init', () => {
+      container.setAttribute('data-theme', 'dark');
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.getAttribute('data-theme')).toBe('dark');
+      ctrl.destroy();
+    });
+
+    it('defaults cluster data-theme to dark when container has no data-theme', () => {
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.getAttribute('data-theme')).toBe('dark');
+      ctrl.destroy();
+    });
+
+    it('syncs cluster data-theme when container changes', async () => {
+      container.setAttribute('data-theme', 'dark');
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.getAttribute('data-theme')).toBe('dark');
+
+      container.setAttribute('data-theme', 'light');
+      await new Promise<void>((r) => setTimeout(r, 0));
+      expect(cluster.getAttribute('data-theme')).toBe('light');
+      ctrl.destroy();
+    });
+
+    it('preserves cluster data-theme after fullscreen re-parent', async () => {
+      // Simulate fullscreen where document.fullscreenElement is the <html> element.
+      container.setAttribute('data-theme', 'dark');
+      Object.defineProperty(document, 'fullscreenElement', {
+        value: document.documentElement,
+        writable: true,
+        configurable: true,
+      });
+
+      const ctrl = new NavClusterController(video, container, DEFAULT_NAV_CLUSTER_SETTINGS, { targetCues: [], nativeCues: [] });
+      ctrl.init();
+      const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
+      expect(cluster.getAttribute('data-theme')).toBe('dark');
+
+      document.dispatchEvent(new Event('fullscreenchange'));
+      await new Promise<void>((r) => setTimeout(r, 0));
+
+      expect(cluster.parentElement).toBe(document.documentElement);
+      expect(cluster.getAttribute('data-theme')).toBe('dark');
+
+      ctrl.destroy();
+      // Restore the getter so other tests are not affected.
+      Object.defineProperty(document, 'fullscreenElement', {
+        value: undefined,
+        writable: false,
+        configurable: false,
+      });
+    });
+  });
 });

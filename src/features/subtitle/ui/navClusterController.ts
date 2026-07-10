@@ -7,6 +7,7 @@
 import { buildClusterDOM, clampPosition, findNearestEdge, type NavClusterDOM } from './navClusterDom';
 import { NAV_CLUSTER_ICONS, type NavClusterIconName } from './navClusterIcons';
 import { prevSentence, nextSentence, seekBy, findActiveCueIndex, findNearestCueIndex } from './navClusterActions';
+import { syncElementTheme } from '@/shared/lib/themeTokens';
 
 import {
   createInitialKeyboardState,
@@ -55,6 +56,9 @@ export class NavClusterController {
   private onFullscreenChange: (() => void) | null = null;
   private timeupdateHandler: (() => void) | null = null;
   private onPersistSettings: ((settings: Partial<NavClusterSettings>) => void) | null = null;
+  // ADR-024: cleanup for syncElementTheme — keeps the cluster's own data-theme
+  // attribute in sync with the container, even when the cluster is re-parented.
+  private themeSyncCleanup: (() => void) | null = null;
   // ADR-019 sync: lazy offset provider so nav actions read current offsetMs
   // (same pattern as SubtitleOverlayController.setOffsetProvider). Without this,
   // cluster nav used offset=0 while overlay used real offset → nav jumped to
@@ -85,6 +89,10 @@ export class NavClusterController {
     this.applyAppearance();
     this.applyCollapsedState();
     this.container.appendChild(dom.cluster);
+
+    // ADR-024: cluster is a portable component (re-parented in fullscreen) so
+    // it must carry its own data-theme attribute instead of relying on container.
+    this.themeSyncCleanup = syncElementTheme(dom.cluster, this.container);
 
     this.wireButtonActions();
     this.wireDrag();
@@ -151,6 +159,12 @@ export class NavClusterController {
     this.onVisibilityCancel = null;
     this.onFullscreenChange = null;
     this.timeupdateHandler = null;
+
+    // ADR-024: disconnect theme observer before removing DOM.
+    if (this.themeSyncCleanup) {
+      this.themeSyncCleanup();
+      this.themeSyncCleanup = null;
+    }
 
     if (this.dom) {
       this.dom.cluster.remove();

@@ -32,6 +32,7 @@ docs/           # Tài liệu dự án
 │   └── 021-translate-subtitle-background-prefill.md # ADR-021 background prefill + Google unofficial + 0 setting + cache per-session + ShortcutInput combo (cite spec)
 │   └── 022-port-theocean-theme-system.md # ADR-022 port theocean theme: storage tách riêng (themeMode + themeConfig no mode), 9 core tokens runtime + derive secondary, system mode, content-script inject customColors, SettingsDialog giữ toggle shortcut, ThemeProvider init 3 entrypoint
 │   └── 023-port-theocean-dictionary-import.md # ADR-023 port theocean dict: IndexedDB 3 stores + dbHash random, migration v9 create-all only, strategy template method (5 + base), fflate gzip+zip, sql.js lazy-load (wasm-unsafe-eval CSP đã có), atomic rollback, SHA-256 dedupe 1MB sample, batch 5000 streaming
+│   └── 024-portable-theme-boundary.md # ADR-024: component-level data-theme boundary cho portable content-script UI (amends ADR-022 D4)
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
