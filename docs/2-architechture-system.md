@@ -163,11 +163,15 @@ src/
 │   └── components/
 │       └── CueList.tsx            # Cue list: timestamps, bilingual text, highlight, auto-scroll, click → onSeek
 │
-├── options/                       # Options page (React) — ADR-023
-│   ├── index.html                 # HTML shell
+├── options/                       # Options page (React) — ADR-023, redesign sidebar nav (UI-UX-Contract)
+│   ├── index.html                 # HTML shell — Mona Sans font, responsive #root
 │   ├── main.tsx                   # Entry → render OptionsApp (ThemeProvider wrap)
-│   ├── OptionsApp.tsx             # 3 tabs: Tài nguyên (ResourcesPanel) / Giao diện (ThemePanel) / Cài đặt
-│   └── OptionsApp.module.css      # Tab styles
+│   ├── OptionsApp.tsx             # Sidebar nav (3 items) + 3 tabpanels + skip link + arrow key nav + mobile drawer
+│   ├── OptionsApp.module.css      # Sidebar 200px desktop / 56px tablet icon-only / drawer mobile, gap 64px
+│   ├── SidebarItem.tsx            # Atom: sidebar nav button (role=tab, aria-controls, aria-selected)
+│   ├── SidebarItem.module.css     # Active: terminal-green left border + snow text; tablet: label hidden
+│   ├── types.ts                   # Data contract types — ResourcesPanelState, ThemePanelState, Tab, SidebarItem
+│   └── schema.ts                  # Zod schemas — ResourceInfoSchema, ResourcesPanelStateSchema, TabSchema (runtime validation)
 │
 ├── lib/
 │   ├── detectors/

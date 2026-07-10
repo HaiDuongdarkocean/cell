@@ -1,38 +1,63 @@
 .progress {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm, 8px);
-  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
-  background: var(--color-surface, #f8fafc);
-  border-radius: var(--radius-md, 8px);
+  gap: var(--spacing-12, 12px);
+  padding: var(--spacing-12, 12px) var(--spacing-16, 16px);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-slate-edge, #21262d);
+  border-radius: 16px;
 }
 
 .bar {
   flex: 1;
   height: 6px;
-  background: var(--color-border, #e2e8f0);
-  border-radius: var(--radius-full, 9999px);
+  background: var(--color-slate-edge, #21262d);
+  border-radius: 9999px;
   overflow: hidden;
 }
 
 .fill {
   height: 100%;
-  background: var(--color-primary, #2563eb);
-  transition: width 150ms ease;
+  background: var(--color-terminal-green, #08872b);
+  transition: width 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .label {
-  font-size: var(--font-size-xs, 12px);
-  color: var(--color-text-secondary, #475569);
+  font-size: var(--text-caption, 12px);
+  color: var(--color-pearl, #a4aea6);
   white-space: nowrap;
+  font-family: var(--font-mona-sans-mono, 'Mona Sans Mono', monospace);
+  letter-spacing: 0.015em;
 }
 
 .cancel {
-  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  padding: var(--spacing-8, 8px) var(--spacing-12, 12px);
   background: transparent;
-  border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: var(--radius-sm, 6px);
-  color: var(--color-error, #ef4444);
-  font-size: var(--font-size-xs, 12px);
+  border: 1px solid var(--color-slate-edge, #21262d);
+  border-radius: 6px;
+  color: var(--color-pearl, #a4aea6);
+  font-size: var(--text-caption, 12px);
   cursor: pointer;
+  min-height: 44px;
+}
+
+.cancel:hover {
+  color: var(--color-snow, #ffffff);
+  border-color: rgba(255, 0, 0, 0.5);
+}
+
+.cancel:focus-visible {
+  outline: 2px solid var(--color-terminal-green, #08872b);
+  outline-offset: -2px;
+}
+
+.error {
+  width: 100%;
+  padding: var(--spacing-8, 8px) var(--spacing-12, 12px);
+  background: rgba(255, 0, 0, 0.1);
+  color: var(--color-snow, #ffffff);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 6px;
+  font-size: var(--text-caption, 12px);
+  margin-top: var(--spacing-8, 8px);
 }

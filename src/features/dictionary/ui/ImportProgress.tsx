@@ -7,9 +7,10 @@ interface ImportProgressProps {
   readonly processed: number;
   readonly total: number;
   readonly onCancel?: () => void;
+  readonly error?: string | null;
 }
 
-export function ImportProgress({ processed, total, onCancel }: ImportProgressProps): ReactElement {
+export function ImportProgress({ processed, total, onCancel, error }: ImportProgressProps): ReactElement {
   const pct = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
   return (
     <div className={styles.progress} data-testid="import-progress">
@@ -24,6 +25,7 @@ export function ImportProgress({ processed, total, onCancel }: ImportProgressPro
           Hủy
         </button>
       )}
+      {error && <div className={styles.error} role="alert">{error}</div>}
     </div>
   );
 }

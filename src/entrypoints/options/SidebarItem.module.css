@@ -1,0 +1,64 @@
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-12, 12px);
+  width: 100%;
+  padding: var(--spacing-12, 12px) var(--spacing-16, 16px);
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--color-pearl, #a4aea6);
+  font-family: var(--font-mona-sans, 'Mona Sans', sans-serif);
+  font-size: var(--text-body, 16px);
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  transition: color 150ms cubic-bezier(0.16, 1, 0.3, 1), background 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 44px;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-snow, #ffffff);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--color-terminal-green, #08872b);
+  outline-offset: -2px;
+}
+
+.itemActive {
+  border-left-color: var(--color-terminal-green, #08872b);
+  color: var(--color-snow, #ffffff);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tablet 768-1023px — icon-only, label hidden */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .item {
+    justify-content: center;
+    padding: var(--spacing-12, 12px) var(--spacing-8, 8px);
+  }
+  .label {
+    display: none;
+  }
+  .icon {
+    margin: 0 auto;
+  }
+}

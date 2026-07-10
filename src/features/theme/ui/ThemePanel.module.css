@@ -1,44 +1,56 @@
-/* ThemePanel — options page tab "Giao diện" */
+/* ThemePanel — options page tab "Giao diện" — design-dark-github */
 .panel {
-  padding: var(--spacing-lg, 16px);
+  padding: var(--spacing-24, 24px);
   max-width: 720px;
   margin: 0 auto;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-slate-edge, #21262d);
+  border-radius: 24px;
 }
 
 .section {
-  margin-bottom: var(--spacing-xl, 24px);
+  margin-bottom: var(--spacing-24, 24px);
 }
 
 .heading {
-  font-size: var(--font-size-lg, 16px);
-  font-weight: var(--font-weight-semibold, 600);
-  color: var(--color-text);
-  margin: 0 0 var(--spacing-sm, 8px) 0;
+  font-size: var(--text-subheading, 22px);
+  font-weight: 425;
+  color: var(--color-snow, #ffffff);
+  margin: 0 0 var(--spacing-12, 12px) 0;
+  font-family: var(--font-mona-sans, 'Mona Sans', sans-serif);
+  letter-spacing: -0.01em;
 }
 
 .resetBtn {
-  padding: var(--spacing-xs, 4px) var(--spacing-md, 12px);
-  border: 1px solid var(--color-error);
-  border-radius: var(--radius-sm, 6px);
-  background: var(--color-error-subtle, rgba(239,68,68,0.08));
-  color: var(--color-error);
+  padding: var(--spacing-8, 8px) var(--spacing-16, 16px);
+  border: 1px solid rgba(255, 0, 0, 0.4);
+  border-radius: 6px;
+  background: rgba(255, 0, 0, 0.15);
+  color: var(--color-snow, #ffffff);
   cursor: pointer;
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--text-body-sm, 14px);
+  font-family: var(--font-mona-sans, 'Mona Sans', sans-serif);
+  min-height: 44px;
+  transition: background 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .resetBtn:hover {
-  background: var(--color-error);
-  color: #fff;
+  background: rgba(255, 0, 0, 0.25);
+}
+
+.resetBtn:focus-visible {
+  outline: 2px solid var(--color-terminal-green, #08872b);
+  outline-offset: -2px;
 }
 
 .confirmRow {
   display: flex;
-  gap: var(--spacing-sm, 8px);
-  margin-top: var(--spacing-sm, 8px);
+  gap: var(--spacing-12, 12px);
+  margin-top: var(--spacing-12, 12px);
   align-items: center;
 }
 
 .confirmText {
-  font-size: var(--font-size-sm, 13px);
-  color: var(--color-text);
+  font-size: var(--text-body-sm, 14px);
+  color: var(--color-pearl, #a4aea6);
 }

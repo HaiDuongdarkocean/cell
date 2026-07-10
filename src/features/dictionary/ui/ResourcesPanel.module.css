@@ -1,46 +1,58 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg, 16px);
+  gap: var(--spacing-40, 40px);
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm, 8px);
+  gap: var(--spacing-16, 16px);
+  padding: var(--spacing-24, 24px);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-slate-edge, #21262d);
+  border-radius: 24px;
 }
 
 .sectionTitle {
-  font-size: var(--font-size-base, 14px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--text-subheading, 22px);
+  font-weight: 425;
   margin: 0;
+  color: var(--color-snow, #ffffff);
+  font-family: var(--font-mona-sans, 'Mona Sans', sans-serif);
+  letter-spacing: -0.01em;
 }
 
 .resourceList {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs, 4px);
+  gap: var(--spacing-8, 8px);
 }
 
 .empty {
-  color: var(--color-text-muted, #94a3b8);
-  font-size: var(--font-size-sm, 13px);
-  padding: var(--spacing-md, 12px);
+  color: var(--color-pearl, #a4aea6);
+  font-size: var(--text-body-sm, 14px);
+  padding: var(--spacing-16, 16px);
   text-align: center;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  border: 1px dashed var(--color-slate-edge, #21262d);
 }
 
 .error {
-  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
-  background: var(--color-error-subtle, rgba(239, 68, 68, 0.08));
-  color: var(--color-error, #ef4444);
-  border-radius: var(--radius-md, 8px);
-  font-size: var(--font-size-sm, 13px);
+  padding: var(--spacing-12, 12px) var(--spacing-16, 16px);
+  background: rgba(255, 0, 0, 0.1);
+  color: var(--color-snow, #ffffff);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 8px;
+  font-size: var(--text-body-sm, 14px);
 }
 
 .success {
-  padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
-  background: rgba(16, 185, 129, 0.08);
-  color: var(--color-success, #10b981);
-  border-radius: var(--radius-md, 8px);
-  font-size: var(--font-size-sm, 13px);
+  padding: var(--spacing-12, 12px) var(--spacing-16, 16px);
+  background: rgba(95, 237, 131, 0.08);
+  color: var(--color-phosphor, #5fed83);
+  border: 1px solid rgba(95, 237, 131, 0.3);
+  border-radius: 8px;
+  font-size: var(--text-body-sm, 14px);
 }

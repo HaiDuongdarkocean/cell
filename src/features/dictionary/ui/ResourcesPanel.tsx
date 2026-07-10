@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, type ReactElement } from 'react';
 import { Dropzone } from './Dropzone';
 import { ResourceCard } from './ResourceCard';
 import { ImportProgress } from './ImportProgress';
+import { ResourceCardSkeleton } from './ResourceCard';
 import { DeleteConfirmModal } from './DeleteConfirmModal';
 import { listResources, importFile, deleteResourceCascade } from '@/features/dictionary/logic/importOrchestrator';
 import { getUserMessage, isImportError } from '@/features/dictionary/logic/importErrors';
@@ -97,7 +98,7 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
       )}
 
       {importing && (
-        <ImportProgress processed={progress} total={progressTotal} />
+        <ImportProgress processed={progress} total={progressTotal} error={error} />
       )}
 
       <section className={styles.section}>
@@ -110,9 +111,12 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
         />
         <div className={styles.resourceList}>
           {loading ? (
-            <p className={styles.empty}>Đang tải...</p>
+            <>
+              <ResourceCardSkeleton />
+              <ResourceCardSkeleton />
+            </>
           ) : dictionaryResources.length === 0 ? (
-            <p className={styles.empty}>Chưa có từ điển nào.</p>
+            <p className={styles.empty}>Chưa có từ điển nào — kéo thả file vào dropzone để bắt đầu.</p>
           ) : (
             dictionaryResources.map((r) => (
               <ResourceCard key={r.id} resource={r} onDelete={() => setDeleteTarget(r)} />
@@ -131,9 +135,12 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
         />
         <div className={styles.resourceList}>
           {loading ? (
-            <p className={styles.empty}>Đang tải...</p>
+            <>
+              <ResourceCardSkeleton />
+              <ResourceCardSkeleton />
+            </>
           ) : frequencyResources.length === 0 ? (
-            <p className={styles.empty}>Chưa có danh sách nào.</p>
+            <p className={styles.empty}>Chưa có danh sách nào — kéo thả .txt/.json để bắt đầu.</p>
           ) : (
             frequencyResources.map((r) => (
               <ResourceCard key={r.id} resource={r} onDelete={() => setDeleteTarget(r)} />

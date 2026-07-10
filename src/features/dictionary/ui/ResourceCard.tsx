@@ -31,3 +31,7 @@ export function ResourceCard({ resource, onDelete }: ResourceCardProps): ReactEl
     </div>
   );
 }
+
+export function ResourceCardSkeleton(): ReactElement {
+  return <div className={styles.skeleton} data-testid="resource-card-skeleton" aria-hidden="true" />;
+}
