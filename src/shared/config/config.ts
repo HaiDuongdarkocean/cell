@@ -194,7 +194,10 @@ export const DEFAULT_SETTINGS: Settings = {
  */
 export const DEFAULT_NAV_CLUSTER_SETTINGS: NavClusterSettings = {
   enabled: true,
-  position: { x: 0, y: 75 },
+  // Center-based position: the value is the point on the video where the
+  // center of the cluster should sit. Default is 4% from the left edge and
+  // 75% down the video height.
+  position: { x: 4, y: 75 },
   buttonSize: 34,
   bgOpacity: 0.7,
   buttonOpacity: 0.9,

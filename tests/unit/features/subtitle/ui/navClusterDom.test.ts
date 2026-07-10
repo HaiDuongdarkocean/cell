@@ -83,31 +83,33 @@ describe('navClusterDom — pure helpers (ADR-018 D1, frontend design)', () => {
     const containerRect = { width: 800, height: 600 } as DOMRect;
     const clusterRect = { width: 120, height: 160 } as DOMRect;
 
-    it('clamps x > 100 to max valid (100 - clusterWidth%)', () => {
+    it('clamps x > 100 to max valid center (100 - half clusterWidth%)', () => {
       const pos: NavClusterPosition = { x: 150, y: 50 };
       const result = clampPosition(pos, containerRect, clusterRect);
-      // max x% = 100 - (120/800)*100 = 100 - 15 = 85
-      expect(result.x).toBe(85);
+      // max x% = 100 - (120/800)*50 = 100 - 7.5 = 92.5
+      expect(result.x).toBe(92.5);
       expect(result.y).toBe(50);
     });
 
-    it('clamps y > 100 to max valid (100 - clusterHeight%)', () => {
+    it('clamps y > 100 to max valid center (100 - half clusterHeight%)', () => {
       const pos: NavClusterPosition = { x: 50, y: 200 };
       const result = clampPosition(pos, containerRect, clusterRect);
-      // max y% = 100 - (160/600)*100 = 100 - 26.67 = 73.33
-      expect(result.y).toBeCloseTo(73.33, 1);
+      // max y% = 100 - (160/600)*50 = 100 - 13.33 = 86.67
+      expect(result.y).toBeCloseTo(86.67, 1);
     });
 
-    it('clamps x < 0 to 0', () => {
+    it('clamps x < 0 to half clusterWidth%', () => {
       const pos: NavClusterPosition = { x: -10, y: 50 };
       const result = clampPosition(pos, containerRect, clusterRect);
-      expect(result.x).toBe(0);
+      // min x% = (120/800)*50 = 7.5
+      expect(result.x).toBe(7.5);
     });
 
-    it('clamps y < 0 to 0', () => {
+    it('clamps y < 0 to half clusterHeight%', () => {
       const pos: NavClusterPosition = { x: 50, y: -5 };
       const result = clampPosition(pos, containerRect, clusterRect);
-      expect(result.y).toBe(0);
+      // min y% = (160/600)*50 = 13.33
+      expect(result.y).toBeCloseTo(13.33, 1);
     });
 
     it('passes through valid position unchanged', () => {
@@ -115,6 +117,12 @@ describe('navClusterDom — pure helpers (ADR-018 D1, frontend design)', () => {
       const result = clampPosition(pos, containerRect, clusterRect);
       expect(result.x).toBe(40);
       expect(result.y).toBe(30);
+    });
+
+    it('returns a copy when container or cluster rect has zero size', () => {
+      const pos: NavClusterPosition = { x: 40, y: 30 };
+      expect(clampPosition(pos, { width: 0, height: 600 } as DOMRect, clusterRect)).toEqual(pos);
+      expect(clampPosition(pos, containerRect, { width: 0, height: 0 } as DOMRect)).toEqual(pos);
     });
   });
 

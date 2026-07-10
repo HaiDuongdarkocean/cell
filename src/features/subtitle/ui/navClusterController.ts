@@ -19,6 +19,7 @@ import {
 } from './navClusterKeyboard';
 import type { NavClusterSettings, NavClusterPosition } from '@/entities/settings';
 import type { SrtCue } from '@/entities/media';
+import { DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
 
 /** Cue source injected by caller (lazy read for fresh cues on every action). */
 export interface NavClusterCueSource {
@@ -83,16 +84,19 @@ export class NavClusterController {
     if (this.dom) return;
     const dom = buildClusterDOM();
     this.dom = dom;
-    this.applyPosition(this.settings.position);
-    this.applyVisibility();
-    this.applyNoSubState();
-    this.applyAppearance();
-    this.applyCollapsedState();
     this.container.appendChild(dom.cluster);
 
     // ADR-024: cluster is a portable component (re-parented in fullscreen) so
     // it must carry its own data-theme attribute instead of relying on container.
     this.themeSyncCleanup = syncElementTheme(dom.cluster, this.container);
+
+    // Apply state in order so applyPosition can read the final rendered size
+    // (display, collapsed, button size, no-sub state all affect bounding rect).
+    this.applyVisibility();
+    this.applyNoSubState();
+    this.applyAppearance();
+    this.applyCollapsedState();
+    this.applyPosition(this.settings.position);
 
     this.wireButtonActions();
     this.wireDrag();
@@ -105,6 +109,8 @@ export class NavClusterController {
   updateCues(targetCues: readonly SrtCue[], nativeCues: readonly SrtCue[]): void {
     this.cueSource = { targetCues, nativeCues };
     this.applyNoSubState();
+    // Re-clamp position because the cluster width changes between 2-column and no-sub.
+    this.applyPosition(this.settings.position);
   }
 
   /**
@@ -119,12 +125,13 @@ export class NavClusterController {
   /** Update settings (called on chrome.storage.onChanged). Realtime apply. */
   updateSettings(partial: Partial<NavClusterSettings>): void {
     this.settings = { ...this.settings, ...partial };
-    if (partial.position) this.applyPosition(this.settings.position);
     if (partial.enabled !== undefined) this.applyVisibility();
     if (partial.collapsed !== undefined) this.applyCollapsedState();
     if (partial.buttonSize !== undefined || partial.bgOpacity !== undefined || partial.buttonOpacity !== undefined) {
       this.applyAppearance();
     }
+    // Re-apply position last so display/size changes are reflected and clamped.
+    this.applyPosition(this.settings.position);
   }
 
   /** Show/hide cluster (off toggle). */
@@ -176,10 +183,14 @@ export class NavClusterController {
 
   private applyPosition(pos: NavClusterPosition): void {
     if (!this.dom) return;
-    // transform: translate(x%, y%) — but % of element itself, not container.
-    // Use left/top % of container for absolute positioning.
-    this.dom.cluster.style.left = `${pos.x}%`;
-    this.dom.cluster.style.top = `${pos.y}%`;
+    // With CSS transform: translate(-50%, -50%), left/top define the *center*
+    // of the cluster. Clamp so the cluster body stays inside the container.
+    const containerRect = this.container.getBoundingClientRect();
+    const clusterRect = this.dom.cluster.getBoundingClientRect();
+    const clamped = clampPosition(pos, containerRect, clusterRect);
+    this.settings = { ...this.settings, position: clamped };
+    this.dom.cluster.style.left = `${clamped.x}%`;
+    this.dom.cluster.style.top = `${clamped.y}%`;
   }
 
   private applyAppearance(): void {
@@ -464,7 +475,7 @@ export class NavClusterController {
     const onDblClick = (e: MouseEvent): void => {
       // Reset on double-click of drag handle (grip when expanded, cluster when collapsed).
       if (!isDragTarget(e.target)) return;
-      const defaultPos: NavClusterPosition = { x: 0, y: 75 };
+      const defaultPos = DEFAULT_NAV_CLUSTER_SETTINGS.position;
       this.updateSettings({ position: defaultPos, collapsed: false });
       this.persistSettings({ position: defaultPos, collapsed: false });
     };

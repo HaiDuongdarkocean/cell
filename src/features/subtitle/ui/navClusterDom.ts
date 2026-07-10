@@ -99,27 +99,31 @@ export function buildClusterDOM(): NavClusterDOM {
 }
 
 /**
- * Clamp a position (percent 0-100) so the cluster stays within container bounds.
- * Max x = 100 - (clusterWidth / containerWidth) * 100.
- * Max y = 100 - (clusterHeight / containerHeight) * 100.
+ * Clamp a position (percent 0-100) so the *center* of the cluster stays within
+ * the container bounds. With `transform: translate(-50%, -50%)` on the cluster,
+ * left/top are the anchor point. The center must be at least half the cluster
+ * size from each edge.
  */
 export function clampPosition(
   pos: NavClusterPosition,
   containerRect: DOMRect,
   clusterRect: DOMRect,
 ): NavClusterPosition {
-  const maxX = Math.max(0, 100 - (clusterRect.width / containerRect.width) * 100);
-  const maxY = Math.max(0, 100 - (clusterRect.height / containerRect.height) * 100);
+  if (!containerRect.width || !containerRect.height || !clusterRect.width || !clusterRect.height) {
+    return { ...pos };
+  }
+  const halfWidthPct = (clusterRect.width / containerRect.width) * 50;
+  const halfHeightPct = (clusterRect.height / containerRect.height) * 50;
   return {
-    x: Math.max(0, Math.min(maxX, pos.x)),
-    y: Math.max(0, Math.min(maxY, pos.y)),
+    x: Math.max(halfWidthPct, Math.min(100 - halfWidthPct, pos.x)),
+    y: Math.max(halfHeightPct, Math.min(100 - halfHeightPct, pos.y)),
   };
 }
 
 /**
  * Find the nearest horizontal edge for collapse mirroring.
  * Left half (x < 50) → 'left'; right half (x >= 50) → 'right'.
- * Tie at x=50 → 'left' (default position is x=0).
+ * Tie at x=50 → 'left' (default position is x=4).
  */
 export function findNearestEdge(pos: NavClusterPosition, _containerRect: DOMRect): NavClusterEdge {
   return pos.x <= 50 ? 'left' : 'right';

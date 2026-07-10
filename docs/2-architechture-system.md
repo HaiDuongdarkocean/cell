@@ -378,7 +378,35 @@ tests/
 
 | File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
 |------|-----------|-----------------|--------------------------|
+| `shared/ui/Alert.tsx` | — | ThemeImportExport | Inline message banner with variants |
+| `shared/ui/Badge.tsx` | — | — | Small status label with variants/sizes |
+| `shared/ui/Button.tsx` | — | App.redesigned, OptionsApp, ResourceCard, Dropzone, ImportProgress, DeleteConfirmModal, ResourcesPanel, ThemePanel, ThemeImportExport, SelectionBar | Text button: primary/secondary/outline/ghost/destructive/link, sm/md/lg, loading, disabled |
+| `shared/ui/EmptyState.tsx` | — | MediaEmpty | Empty list/panel placeholder |
+| `shared/ui/Tooltip.tsx` | — | — | Accessible hover/focus tooltip |
+| `shared/ui/Card.tsx` | — | ResourceCard, ResourcesPanel, ThemePanel | Surface container: default/interactive/selected variants |
+| `shared/ui/Checkbox.tsx` | — | CheckboxGroup | Checkbox with label, indeterminate, error, disabled states |
+| `shared/ui/CheckboxGroup.tsx` | — | — | Managed list of checkboxes |
+| `shared/ui/Dialog.tsx` | — | DeleteConfirmModal | Accessible modal overlay + panel |
+| `shared/ui/Drawer.tsx` | — | — | Slide-in panel with overlay |
+| `shared/ui/FormGroup.tsx` | — | — | Label + children wrapper with consistent spacing |
+| `shared/ui/Header.tsx` | — | App.redesigned, OptionsApp | Top chrome with title and actions |
 | `shared/ui/IconButton.tsx` | — | Header, SettingsDialog, VideoCard, SubtitleCard, SelectionBar, DownloadCard | Icon-only transparent button (11 call sites) |
+| `shared/ui/Sidebar.tsx` | — | OptionsApp | Vertical nav container with optional collapse |
+| `shared/ui/Input.tsx` | — | InputField, SearchField | Text input with error state and size variants |
+| `shared/ui/InputField.tsx` | — | SettingsDialog (planned) | Label + Input + helper/error text |
+| `shared/ui/Label.tsx` | — | InputField, Checkbox, Radio, FormGroup | Form control label with required/disabled states |
+| `shared/ui/ListItem.tsx` | — | — | Row with leading/trailing content and active state |
+| `shared/ui/NavItem.tsx` | — | Sidebar (planned), OptionsApp | Navigation item (sidebar/horizontal) |
+| `shared/ui/Progress.tsx` | — | DownloadCard, ImportProgress | Horizontal progress bar |
+| `shared/ui/Radio.tsx` | — | RadioGroup | Radio with label, error, disabled states |
+| `shared/ui/RadioGroup.tsx` | — | — | Managed list of radios |
+| `shared/ui/SearchField.tsx` | — | — | Input with leading search icon + clear button |
+| `shared/ui/Select.tsx` | — | SettingsDialog (planned) | Plain HTML select wrapper with placeholder/error |
+| `shared/ui/Tabs.tsx` | — | ColorCustomization, SettingsDialog | Compound tab list/trigger/content |
+| `shared/ui/Accordion.tsx` | — | — | Collapsible single/multiple sections |
+| `shared/ui/Skeleton.tsx` | — | — | Placeholder loading shape |
+| `shared/ui/Spinner.tsx` | — | Button, Loading surfaces | Animated loading indicator |
+| `shared/ui/Textarea.tsx` | — | ThemeImportExport | Multiline input with resize/error/disabled |
 | `shared/ui/Toggle.tsx` | — | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
 | `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
 | `shared/ui/ShortcutInput.tsx` | — | SettingsDialog | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
@@ -755,9 +783,9 @@ downloader.downloadM3u8Streaming(playlist)
 | `seekToCue` | `content/subtitlePanel.ts` | (HTMLVideoElement, { start: number }) → void | content-script.ts | Seek video to cue start (ms → seconds) — **implemented Task 5** |
 | `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | content-script.ts, **sidepanel/App.tsx** | Pure: map key → action, guard input/textarea focus — **implemented Task 3, reused ADR-009** |
 | `isEditableTarget` | `content/subtitleShortcuts.ts` | EventTarget \| null → boolean | subtitleShortcuts.ts | Check if target is input/textarea/select/contenteditable — **implemented Task 3** |
-| `NavClusterController` | `content/navClusterController.ts` | class (video, container, settings, cueSource, onPersist?) → controller | contentScriptController.ts | **ADR-018**: Floating 6-button subtitle navigation cluster. init/updateCues/updateSettings/setVisible/destroy. Wires drag + repeat (click=one-shot seek to cue start, hold≥500ms=loop) + keyboard + persist + fullscreen |
+| `NavClusterController` | `content/navClusterController.ts` | class (video, container, settings, cueSource, onPersist?) → controller | contentScriptController.ts | **ADR-018**: Floating 6-button subtitle navigation cluster. init/updateCues/updateSettings/setVisible/destroy. Wires drag + repeat (click=one-shot seek to cue start, hold≥500ms=loop) + keyboard + persist + fullscreen. Position values represent the cluster center and are clamped to the container |
 | `buildClusterDOM` | `content/navClusterDom.ts` | () → NavClusterDOM | navClusterController.ts | **ADR-018**: Build cluster DOM tree (6 buttons, 2 columns, role=toolbar, data-testid) |
-| `clampPosition` | `content/navClusterDom.ts` | (NavClusterPosition, DOMRect, DOMRect) → NavClusterPosition | navClusterController.ts | **ADR-018**: Clamp position percent so cluster stays within container bounds |
+| `clampPosition` | `content/navClusterDom.ts` | (NavClusterPosition, DOMRect, DOMRect) → NavClusterPosition | navClusterController.ts | **ADR-018**: Clamp position percent so the *center* of the cluster stays within container bounds (uses cluster half-size as margin). Guards zero-size rects |
 | `findNearestEdge` | `content/navClusterDom.ts` | (NavClusterPosition, DOMRect) → 'left' \| 'right' | navClusterController.ts | **ADR-018**: Find nearest horizontal edge for collapse mirroring |
 | `findActiveCueIndex` | `content/navClusterActions.ts` | (SrtCue[], SrtCue[], number) → { cues, index } | navClusterController.ts | **ADR-018**: Find active cue (target-primary, native-fallback) via findCurrentLine |
 | `prevSentence` | `content/navClusterActions.ts` | (HTMLVideoElement, SrtCue[], SrtCue[]) → void | navClusterController.ts | **ADR-018**: Seek to previous subtitle sentence (gap fallback) |

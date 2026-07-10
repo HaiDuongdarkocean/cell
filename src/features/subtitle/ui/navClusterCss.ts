@@ -25,10 +25,13 @@ export const NAV_CLUSTER_CSS = `
   /* ADR-018 D5-rev: drag is via grip tab only — cluster body = default cursor */
   cursor: default;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  /* ADR-024: position values represent the *center* of the cluster, not the
+     top-left corner. translate(-50%, -50%) makes left/top the anchor point. */
+  transform: translate(-50%, -50%);
 }
 .nav-cluster.dragging {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  transform: scale(1.03);
+  transform: translate(-50%, -50%) scale(1.03);
 }
 /* Background layer with opacity so controls can change opacity without affecting
    buttons/icons. Backdrop-filter stays here to blur the video behind cluster. */
@@ -181,7 +184,7 @@ export const NAV_CLUSTER_CSS = `
 }
 .nav-cluster.collapsed.mirror-right {
   border-radius: 0 50% 50% 0;
-  transform: scaleX(-1);
+  transform: translate(-50%, -50%) scaleX(-1);
 }
 .nav-cluster.collapsed .nav-cluster-grip {
   display: none;
