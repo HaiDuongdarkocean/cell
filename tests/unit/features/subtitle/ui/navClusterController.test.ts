@@ -54,12 +54,12 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       ctrl.destroy();
     });
 
-    it('applies initial position via left/top %', () => {
+    it('applies initial position via left px / top %', () => {
       const settings = { ...DEFAULT_NAV_CLUSTER_SETTINGS, position: { x: 30, y: 60 } };
       const ctrl = new NavClusterController(video, container, settings, { targetCues: [], nativeCues: [] });
       ctrl.init();
       const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
-      expect(cluster.style.left).toBe('30%');
+      expect(cluster.style.left).toBe('30px');
       expect(cluster.style.top).toBe('60%');
       ctrl.destroy();
     });
@@ -148,8 +148,8 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       const prevBtn = container.querySelector('[data-testid="nav-cluster-prev"]') as HTMLButtonElement;
       prevBtn.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
-      // Position should NOT reset to default (4, 75)
-      expect(cluster.style.left).toBe('50%');
+      // Position should NOT reset to default (8, 75)
+      expect(cluster.style.left).toBe('50px');
       expect(cluster.style.top).toBe('50%');
       ctrl.destroy();
     });
@@ -162,7 +162,7 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       const grip = container.querySelector('[data-testid="nav-cluster-grip"]') as HTMLElement;
       grip.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
-      expect(cluster.style.left).toBe('4%');
+      expect(cluster.style.left).toBe('8px');
       expect(cluster.style.top).toBe('75%');
       ctrl.destroy();
     });
@@ -174,7 +174,7 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       ctrl.updateCues(CUES, []);
       const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
       cluster.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-      expect(cluster.style.left).toBe('50%');
+      expect(cluster.style.left).toBe('50px');
       expect(cluster.style.top).toBe('50%');
       ctrl.destroy();
     });
@@ -250,7 +250,7 @@ describe('NavClusterController (ADR-018 D1, frontend design)', () => {
       ctrl.init();
       ctrl.updateSettings({ position: { x: 50, y: 25 } });
       const cluster = container.querySelector('[data-testid="nav-cluster"]') as HTMLElement;
-      expect(cluster.style.left).toBe('50%');
+      expect(cluster.style.left).toBe('50px');
       expect(cluster.style.top).toBe('25%');
       ctrl.destroy();
     });

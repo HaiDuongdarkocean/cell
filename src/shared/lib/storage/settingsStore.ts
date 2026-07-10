@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -40,12 +40,16 @@ function coerceBoolean(value: unknown, fallback: boolean): boolean {
   return fallback;
 }
 
+/** Max plausible left-edge x in px (4K-ish video width minus cluster width). */
+const POS_X_MAX = 10000;
+
 /** Validate + clamp nav cluster fields after migration (ADR-018 D2 boundary validation). */
 function validateNavClusterFields(s: Record<string, unknown>): void {
   const pos = s.navClusterPosition as { x?: number; y?: number } | undefined;
   if (pos && typeof pos === 'object') {
     s.navClusterPosition = {
-      x: clampNumber(pos.x, 0, 100, 0),
+      // x is now a fixed left-edge offset in pixels, not a percent.
+      x: clampNumber(pos.x, 0, POS_X_MAX, 8),
       y: clampNumber(pos.y, 0, 100, 75),
     };
   }
@@ -134,6 +138,15 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     if (!shortcuts.some((sc: { action: string }) => sc.action === 'toggle-translate')) {
       merged.keyboardShortcuts = [...shortcuts, { action: 'toggle-translate', key: 't', ctrl: true, shift: true }];
     }
+    return merged;
+  },
+  // v7 → v8: navClusterPosition.x unit changed from percent to fixed left-edge
+  // pixels. Old percent values cannot be reliably converted without the runtime
+  // container width, so reset to the new default { x: 8, y: 75 }.
+  7: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 8 } as Record<string, unknown>;
+    merged.navClusterPosition = DEFAULT_SETTINGS.navClusterPosition;
+    validateNavClusterFields(merged);
     return merged;
   },
 };

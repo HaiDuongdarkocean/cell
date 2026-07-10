@@ -630,9 +630,9 @@ describe('Background integration', () => {
     })) as MessageResponse<Settings>;
 
     expect(response.success).toBe(true);
-    // loadSettings() runs migration v0→v1→v2→v3→v4→v5→v6→v7 which stamps schemaVersion: 7
-    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate).
-    expect(response.data).toEqual({ ...storedSettings, schemaVersion: 7 });
+    // loadSettings() runs migration v0→v1→v2→v3→v4→v5→v6→v7→v8 which stamps schemaVersion: 8
+    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px).
+    expect(response.data).toEqual({ ...storedSettings, schemaVersion: 8 });
   });
 
   it('GET_SETTINGS returns DEFAULT_SETTINGS when storage is empty', async () => {

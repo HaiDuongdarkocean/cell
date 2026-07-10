@@ -83,12 +83,17 @@ describe('navClusterDom — pure helpers (ADR-018 D1, frontend design)', () => {
     const containerRect = { width: 800, height: 600 } as DOMRect;
     const clusterRect = { width: 120, height: 160 } as DOMRect;
 
-    it('clamps x > 100 to max valid center (100 - half clusterWidth%)', () => {
-      const pos: NavClusterPosition = { x: 150, y: 50 };
+    it('clamps x (px left edge) to [0, containerWidth - clusterWidth]', () => {
+      const pos: NavClusterPosition = { x: 1000, y: 50 };
       const result = clampPosition(pos, containerRect, clusterRect);
-      // max x% = 100 - (120/800)*50 = 100 - 7.5 = 92.5
-      expect(result.x).toBe(92.5);
+      expect(result.x).toBe(680); // 800 - 120
       expect(result.y).toBe(50);
+    });
+
+    it('clamps x < 0 to 0', () => {
+      const pos: NavClusterPosition = { x: -10, y: 50 };
+      const result = clampPosition(pos, containerRect, clusterRect);
+      expect(result.x).toBe(0);
     });
 
     it('clamps y > 100 to max valid center (100 - half clusterHeight%)', () => {
@@ -96,13 +101,6 @@ describe('navClusterDom — pure helpers (ADR-018 D1, frontend design)', () => {
       const result = clampPosition(pos, containerRect, clusterRect);
       // max y% = 100 - (160/600)*50 = 100 - 13.33 = 86.67
       expect(result.y).toBeCloseTo(86.67, 1);
-    });
-
-    it('clamps x < 0 to half clusterWidth%', () => {
-      const pos: NavClusterPosition = { x: -10, y: 50 };
-      const result = clampPosition(pos, containerRect, clusterRect);
-      // min x% = (120/800)*50 = 7.5
-      expect(result.x).toBe(7.5);
     });
 
     it('clamps y < 0 to half clusterHeight%', () => {
@@ -128,30 +126,24 @@ describe('navClusterDom — pure helpers (ADR-018 D1, frontend design)', () => {
 
   describe('findNearestEdge', () => {
     const containerRect = { width: 800, height: 600, left: 0, top: 0 } as DOMRect;
+    const clusterRect = { width: 120, height: 160, left: 0, top: 0 } as DOMRect;
 
-    it('returns left when x is near left edge', () => {
+    it('returns left when cluster center is in left half', () => {
       const pos: NavClusterPosition = { x: 5, y: 50 };
-      expect(findNearestEdge(pos, containerRect)).toBe('left');
+      // center x = 5 + 60 = 65 < 400
+      expect(findNearestEdge(pos, containerRect, clusterRect)).toBe('left');
     });
 
-    it('returns right when x is near right edge', () => {
-      const pos: NavClusterPosition = { x: 95, y: 50 };
-      expect(findNearestEdge(pos, containerRect)).toBe('right');
+    it('returns right when cluster center is in right half', () => {
+      const pos: NavClusterPosition = { x: 700, y: 50 };
+      // center x = 700 + 60 = 760 > 400
+      expect(findNearestEdge(pos, containerRect, clusterRect)).toBe('right');
     });
 
-    it('returns left when x is in left half (default for middle)', () => {
-      const pos: NavClusterPosition = { x: 40, y: 50 };
-      expect(findNearestEdge(pos, containerRect)).toBe('left');
-    });
-
-    it('returns right when x is in right half', () => {
-      const pos: NavClusterPosition = { x: 60, y: 50 };
-      expect(findNearestEdge(pos, containerRect)).toBe('right');
-    });
-
-    it('returns left at x=50 boundary (left wins tie)', () => {
-      const pos: NavClusterPosition = { x: 50, y: 50 };
-      expect(findNearestEdge(pos, containerRect)).toBe('left');
+    it('returns left at exact center boundary (left wins tie)', () => {
+      const pos: NavClusterPosition = { x: 340, y: 50 };
+      // center x = 340 + 60 = 400
+      expect(findNearestEdge(pos, containerRect, clusterRect)).toBe('left');
     });
   });
 });

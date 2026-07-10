@@ -183,13 +183,13 @@ export class NavClusterController {
 
   private applyPosition(pos: NavClusterPosition): void {
     if (!this.dom) return;
-    // With CSS transform: translate(-50%, -50%), left/top define the *center*
-    // of the cluster. Clamp so the cluster body stays inside the container.
+    // x is the left edge offset in px; y is the vertical center in percent.
+    // With transform: translate(-50%, -50%), left is the center x, so add half
+    // the cluster width to keep the visual left edge at `clamped.x`.
     const containerRect = this.container.getBoundingClientRect();
     const clusterRect = this.dom.cluster.getBoundingClientRect();
     const clamped = clampPosition(pos, containerRect, clusterRect);
-    this.settings = { ...this.settings, position: clamped };
-    this.dom.cluster.style.left = `${clamped.x}%`;
+    this.dom.cluster.style.left = `${clamped.x + clusterRect.width / 2}px`;
     this.dom.cluster.style.top = `${clamped.y}%`;
   }
 
@@ -245,7 +245,11 @@ export class NavClusterController {
   private applyCollapsedState(): void {
     if (!this.dom) return;
     if (this.settings.collapsed) {
-      const edge = findNearestEdge(this.settings.position, this.video.getBoundingClientRect());
+      const edge = findNearestEdge(
+        this.settings.position,
+        this.video.getBoundingClientRect(),
+        this.dom.cluster.getBoundingClientRect(),
+      );
       this.dom.cluster.classList.add('collapsed');
       this.dom.cluster.classList.toggle('mirror-left', edge === 'left');
       this.dom.cluster.classList.toggle('mirror-right', edge === 'right');
@@ -447,10 +451,9 @@ export class NavClusterController {
       const dy = e.clientY - this.dragStart.py;
       const containerRect = this.video.getBoundingClientRect();
       const clusterRect = this.dom!.cluster.getBoundingClientRect();
-      const deltaXPercent = (dx / containerRect.width) * 100;
       const deltaYPercent = (dy / containerRect.height) * 100;
       const newPos = clampPosition(
-        { x: this.dragStart.pos.x + deltaXPercent, y: this.dragStart.pos.y + deltaYPercent },
+        { x: this.dragStart.pos.x + dx, y: this.dragStart.pos.y + deltaYPercent },
         containerRect,
         clusterRect,
       );

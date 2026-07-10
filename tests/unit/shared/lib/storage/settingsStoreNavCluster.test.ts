@@ -26,8 +26,8 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 7 (bumped for V6 ASR auto-load toggle)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(7);
+  it('CURRENT_SCHEMA_VERSION is 8 (bumped for navCluster x unit: percent -> px)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(8);
   });
 
   it('migrates v1 settings to v2 with nav cluster defaults merged', async () => {
@@ -47,7 +47,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     const result = await loadSettings();
 
     expect(result.navClusterEnabled).toBe(true);
-    expect(result.navClusterPosition).toEqual({ x: 0, y: 75 });
+    expect(result.navClusterPosition).toEqual({ x: 8, y: 75 });
     expect(result.navClusterButtonSize).toBe(34);
     expect(result.navClusterBgOpacity).toBe(0.7);
     expect(result.navClusterButtonOpacity).toBe(0.9);
@@ -74,21 +74,21 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     expect(result.navClusterEnabled).toBe(true); // merged default
   });
 
-  it('clamps invalid navClusterPosition.x > 100 to 100', async () => {
+  it('resets pre-v8 navClusterPosition to new default { x: 8, y: 75 }', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 7,
       navClusterPosition: { x: 150, y: 75 },
     };
     const result = await loadSettings();
-    expect(result.navClusterPosition.x).toBe(100);
+    expect(result.navClusterPosition).toEqual({ x: 8, y: 75 });
   });
 
-  it('clamps invalid navClusterPosition.y < 0 to 0', async () => {
+  it('clamps invalid v8 navClusterPosition.y < 0 to 0', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 7,
-      navClusterPosition: { x: 0, y: -10 },
+      schemaVersion: 8,
+      navClusterPosition: { x: 8, y: -10 },
     };
     const result = await loadSettings();
     expect(result.navClusterPosition.y).toBe(0);
@@ -164,10 +164,10 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     expect(result.navClusterButtonSize).toBe(34);
   });
 
-  it('saveSettings stamps schemaVersion 6', async () => {
+  it('saveSettings stamps schemaVersion 8', async () => {
     await saveSettings({ navClusterEnabled: false });
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(7);
+    expect(stored.schemaVersion).toBe(8);
   });
 
   it('saveSettings partial preserves existing stored fields (read-modify-write)', async () => {
@@ -196,7 +196,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     expect(stored.navClusterEnabled).toBe(true);
   });
 
-  it('v2 settings migrate to v3 with subtitleOffset default {}', async () => {
+  it('v2 settings migrate through v8 and reset pre-v8 navClusterPosition to default', async () => {
     const v2Settings = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 2,
@@ -207,7 +207,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
     storage[STORAGE_KEYS.SETTINGS] = v2Settings;
     const result = await loadSettings();
     expect(result.navClusterEnabled).toBe(false);
-    expect(result.navClusterPosition).toEqual({ x: 50, y: 50 });
+    expect(result.navClusterPosition).toEqual({ x: 8, y: 75 });
     expect(result.subtitleOffset).toEqual({});
   });
 });

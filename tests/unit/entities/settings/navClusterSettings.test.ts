@@ -6,7 +6,7 @@ describe('NavClusterSettings types + defaults', () => {
   it('DEFAULT_NAV_CLUSTER_SETTINGS is exported with all 6 fields', () => {
     expect(DEFAULT_NAV_CLUSTER_SETTINGS).toBeDefined();
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.enabled).toBe(true);
-    expect(DEFAULT_NAV_CLUSTER_SETTINGS.position).toEqual({ x: 0, y: 75 });
+    expect(DEFAULT_NAV_CLUSTER_SETTINGS.position).toEqual({ x: 8, y: 75 });
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.buttonSize).toBe(34);
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.bgOpacity).toBe(0.7);
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.buttonOpacity).toBe(0.9);
@@ -15,7 +15,7 @@ describe('NavClusterSettings types + defaults', () => {
 
   it('DEFAULT_SETTINGS includes all 6 navCluster flat fields', () => {
     expect(DEFAULT_SETTINGS.navClusterEnabled).toBe(true);
-    expect(DEFAULT_SETTINGS.navClusterPosition).toEqual({ x: 0, y: 75 });
+    expect(DEFAULT_SETTINGS.navClusterPosition).toEqual({ x: 8, y: 75 });
     expect(DEFAULT_SETTINGS.navClusterButtonSize).toBe(34);
     expect(DEFAULT_SETTINGS.navClusterBgOpacity).toBe(0.7);
     expect(DEFAULT_SETTINGS.navClusterButtonOpacity).toBe(0.9);
@@ -43,7 +43,7 @@ describe('NavClusterSettings types + defaults', () => {
   it('Settings interface includes navCluster fields', () => {
     const s: Settings = { ...DEFAULT_SETTINGS };
     expect(s.navClusterEnabled).toBe(true);
-    expect(s.navClusterPosition.x).toBe(0);
+    expect(s.navClusterPosition.x).toBe(8);
   });
 
   it('buttonSize is a number in free range 10-100 (ADR-018 D2-rev)', () => {

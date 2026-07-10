@@ -29,7 +29,14 @@ export interface KeyboardShortcut {
 
 // === Nav Cluster Types (ADR-018) ===
 
-/** Cluster position as percent of video container (0-100). Default {x:0, y:75}. */
+/**
+ * Cluster position.
+ * - x: distance in pixels from the left edge of the container to the left edge
+ *   of the cluster. This keeps the horizontal offset fixed regardless of screen
+ *   width.
+ * - y: percent of container height (0-100) where the *center* of the cluster sits.
+ * Default { x: 8, y: 75 }.
+ */
 export interface NavClusterPosition {
   readonly x: number;
   readonly y: number;
@@ -170,7 +177,7 @@ export interface Settings {
   // === Nav Cluster (ADR-018) — flat keys, schema v2 ===
   /** Nav cluster master toggle. Default: true. */
   readonly navClusterEnabled: boolean;
-  /** Nav cluster position as percent of video container. Default: { x: 0, y: 75 }. */
+  /** Nav cluster position. Default: { x: 8, y: 75 }. */
   readonly navClusterPosition: NavClusterPosition;
   /** Nav cluster button size preset. Default: 48 (medium). */
   readonly navClusterButtonSize: NavClusterButtonSize;

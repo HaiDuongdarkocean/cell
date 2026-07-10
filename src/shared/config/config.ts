@@ -179,7 +179,9 @@ export const DEFAULT_SETTINGS: Settings = {
   keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
   // === Nav Cluster (ADR-018) — schema v2 ===
   navClusterEnabled: true,
-  navClusterPosition: { x: 0, y: 75 },
+  // x is in px (left edge), y is % of container height (center). x=8 keeps the
+  // cluster aligned with the left edge of the subtitle toolbar / upload button.
+  navClusterPosition: { x: 8, y: 75 },
   navClusterButtonSize: 34,
   navClusterBgOpacity: 0.7,
   navClusterButtonOpacity: 0.9,
@@ -194,10 +196,10 @@ export const DEFAULT_SETTINGS: Settings = {
  */
 export const DEFAULT_NAV_CLUSTER_SETTINGS: NavClusterSettings = {
   enabled: true,
-  // Center-based position: the value is the point on the video where the
-  // center of the cluster should sit. Default is 4% from the left edge and
-  // 75% down the video height.
-  position: { x: 4, y: 75 },
+  // Position: x is the fixed left edge offset in px (matches the subtitle
+  // toolbar / upload button left edge). y is the vertical center as percent of
+  // the container height.
+  position: { x: 8, y: 75 },
   buttonSize: 34,
   bgOpacity: 0.7,
   buttonOpacity: 0.9,

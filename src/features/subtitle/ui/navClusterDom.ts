@@ -99,10 +99,12 @@ export function buildClusterDOM(): NavClusterDOM {
 }
 
 /**
- * Clamp a position (percent 0-100) so the *center* of the cluster stays within
- * the container bounds. With `transform: translate(-50%, -50%)` on the cluster,
- * left/top are the anchor point. The center must be at least half the cluster
- * size from each edge.
+ * Clamp a mixed-unit position so the cluster stays inside the container.
+ * - x is the left edge offset in pixels -> clamp to [0, containerWidth - clusterWidth].
+ * - y is the vertical center as percent -> clamp so the cluster's center is at
+ *   least half the cluster height from the top/bottom edges.
+ * With `transform: translate(-50%, -50%)` on the cluster, `left` is the center
+ * x and `top` is the center y; the clamped values here are the logical position.
  */
 export function clampPosition(
   pos: NavClusterPosition,
@@ -112,19 +114,23 @@ export function clampPosition(
   if (!containerRect.width || !containerRect.height || !clusterRect.width || !clusterRect.height) {
     return { ...pos };
   }
-  const halfWidthPct = (clusterRect.width / containerRect.width) * 50;
   const halfHeightPct = (clusterRect.height / containerRect.height) * 50;
   return {
-    x: Math.max(halfWidthPct, Math.min(100 - halfWidthPct, pos.x)),
+    x: Math.max(0, Math.min(containerRect.width - clusterRect.width, pos.x)),
     y: Math.max(halfHeightPct, Math.min(100 - halfHeightPct, pos.y)),
   };
 }
 
 /**
  * Find the nearest horizontal edge for collapse mirroring.
- * Left half (x < 50) → 'left'; right half (x >= 50) → 'right'.
- * Tie at x=50 → 'left' (default position is x=4).
+ * Uses the cluster center x: left half of container -> 'left', otherwise 'right'.
+ * Tie at exact center -> 'left' (default position is at the left side).
  */
-export function findNearestEdge(pos: NavClusterPosition, _containerRect: DOMRect): NavClusterEdge {
-  return pos.x <= 50 ? 'left' : 'right';
+export function findNearestEdge(
+  pos: NavClusterPosition,
+  containerRect: DOMRect,
+  clusterRect: DOMRect,
+): NavClusterEdge {
+  const centerX = pos.x + clusterRect.width / 2;
+  return centerX <= containerRect.width / 2 ? 'left' : 'right';
 }

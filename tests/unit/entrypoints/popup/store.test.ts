@@ -254,9 +254,9 @@ describe('usePopupStore', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(storageLocalSetMock).toHaveBeenCalledTimes(1);
     const [arg] = storageLocalSetMock.mock.calls[0];
-    // saveSettings stamps schemaVersion (ADR-017 D8 / ADR-018 D2 / V4 / V5 / V6 / V7) — the persisted
-    // payload includes schemaVersion: 7 in addition to the merged settings.
-    expect(arg[STORAGE_KEYS.SETTINGS]).toEqual({ ...settings, schemaVersion: 7 });
+    // saveSettings stamps schemaVersion (ADR-017 D8 / ADR-018 D2 / V4 / V5 / V6 / V7 / V8) — the persisted
+    // payload includes schemaVersion: 8 in addition to the merged settings.
+    expect(arg[STORAGE_KEYS.SETTINGS]).toEqual({ ...settings, schemaVersion: 8 });
   });
 
   it('setExtensionActive updates the flag and persists to chrome.storage.local', () => {
