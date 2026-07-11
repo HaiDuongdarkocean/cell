@@ -7,14 +7,24 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  padding-top: var(--space-2);
+  background: var(--color-background);
 }
 
-/* === Alert (mirrors design-system §3.6 Alert) === */
+.mobile .body {
+  padding-top: 0;
+}
+
+/* === Alert (notice style: left border only) === */
 .alert {
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
   background: var(--color-warning-subtle);
-  border: 1px solid var(--color-warning);
+  border: none;
+  border-left: 3px solid var(--color-warning);
   color: var(--color-foreground);
   font-size: var(--font-size-sm);
   line-height: var(--leading-normal);
@@ -22,20 +32,32 @@
 
 .alertError {
   background: var(--color-error-subtle);
-  border-color: var(--color-error);
+  border-left-color: var(--color-error);
 }
 
 .alertSuccess {
   background: var(--color-success-subtle);
-  border-color: var(--color-success);
+  border-left-color: var(--color-success);
 }
 
-/* === Section (design-system Card variant: border + surface bg + padding) === */
+.alertIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-warning);
+}
+
+.alertError .alertIcon {
+  color: var(--color-error);
+}
+
+.alertSuccess .alertIcon {
+  color: var(--color-success);
+}
+
+/* === Section (title + gap, no bordered wrapper) === */
 .section {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-  background: var(--color-card);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -44,7 +66,7 @@
 .sectionTitle {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-foreground);
+  color: var(--color-text);
   margin: 0;
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
@@ -54,7 +76,7 @@
 .pairRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  gap: var(--space-4);
   align-items: start;
 }
 
@@ -86,6 +108,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  margin-top: var(--space-5);
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-border-subtle);
 }

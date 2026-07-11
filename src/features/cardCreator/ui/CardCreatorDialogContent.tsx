@@ -64,13 +64,41 @@ export function CardCreatorDialogContent({
       {/* Alert: no recent card */}
       {showNoRecentAlert && (
         <div className={styles.alert} role="status" data-testid="cc-alert-no-recent">
-          No existing card found in this deck. Fill in the fields below to create a new card.
+          <svg
+            className={styles.alertIcon}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4" />
+            <path d="M12 8h.01" />
+          </svg>
+          <span>No existing card found in this deck. Fill in the fields below to create a new card.</span>
         </div>
       )}
       {/* Alert: load error */}
       {loadStatus === 'error' && (
         <div className={`${styles.alert} ${styles.alertError}`} role="alert" data-testid="cc-alert-error">
-          Failed to load from AnkiConnect: {loadError}. Check the URL in Settings → Card Creator.
+          <svg
+            className={styles.alertIcon}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>Failed to load from AnkiConnect: {loadError}. Check the URL in Settings → Card Creator.</span>
         </div>
       )}
 
