@@ -14,6 +14,7 @@
 import { createRoot, type Root } from 'react-dom/client';
 import { createElement, type ReactElement } from 'react';
 import { CardCreatorDialog } from './CardCreatorDialog';
+import { CardCreatorBottomSheet } from './CardCreatorBottomSheet';
 import { syncElementTheme, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import type { CardCreatorSettings } from '@/entities/settings';
 import type { BilingualCue } from '@/entities/media';
@@ -139,6 +140,12 @@ export function mountCardCreatorDialog(
   let initialAction: CardCreatorAction | undefined;
   let root: Root | null = createRoot(rootEl);
 
+  /** Determine whether to render the bottom sheet variant based on viewport width. */
+  const isMobile = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 768px)').matches;
+  };
+
   const render = (): void => {
     if (!root) return;
     // ADR-026: sync rootEl pointer-events with the open state. When closed,
@@ -147,21 +154,22 @@ export function mountCardCreatorDialog(
     // it blocks all clicks on the page underneath. Toggle to 'none' when
     // closed so the host becomes click-through except when the dialog is open.
     rootEl.style.pointerEvents = open ? 'auto' : 'none';
+    const commonProps = {
+      open,
+      onOpenChange: (next: boolean) => {
+        open = next;
+        if (!next) {
+          context = null;
+          initialAction = undefined;
+        }
+        render();
+      },
+      settings,
+      openContext: context,
+      initialAction,
+    };
     root.render(
-      createElement(CardCreatorDialog, {
-        open,
-        onOpenChange: (next: boolean) => {
-          open = next;
-          if (!next) {
-            context = null;
-            initialAction = undefined;
-          }
-          render();
-        },
-        settings,
-        openContext: context,
-        initialAction,
-      }) as ReactElement,
+      createElement(isMobile() ? CardCreatorBottomSheet : CardCreatorDialog, commonProps) as ReactElement,
     );
   };
 

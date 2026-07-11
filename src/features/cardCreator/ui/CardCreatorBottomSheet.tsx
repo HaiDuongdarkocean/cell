@@ -9,7 +9,6 @@
 import type { ReactElement } from 'react';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import type { CardCreatorSettings } from '@/entities/settings';
-import type { BilingualCue } from '@/entities/media';
 import { CardCreatorDialogContent } from './CardCreatorDialogContent';
 import { useCardCreatorState, type OpenContext } from './useCardCreatorState';
 
@@ -20,8 +19,10 @@ interface CardCreatorBottomSheetProps {
   onOpenChange: (open: boolean) => void;
   /** Card Creator settings (URL, defaults). */
   settings: CardCreatorSettings;
-  /** Context for media extraction (video + cue + languages). */
-  openContext: { video: HTMLVideoElement; cue: BilingualCue; sourceLang: string; targetLang: string } | null;
+  /** Context for media extraction (video + cue + languages + pre-captured media). */
+  openContext: OpenContext | null;
+  /** Initial action hint ('quick-update' pre-selects Update, 'edit-card' is neutral). */
+  initialAction?: 'quick-update' | 'edit-card';
 }
 
 export function CardCreatorBottomSheet({
@@ -29,9 +30,10 @@ export function CardCreatorBottomSheet({
   onOpenChange,
   settings,
   openContext,
+  initialAction,
 }: CardCreatorBottomSheetProps): ReactElement | null {
   const ctx: OpenContext | null = open ? openContext : null;
-  const state = useCardCreatorState(settings, ctx);
+  const state = useCardCreatorState(settings, ctx, initialAction);
 
   if (!open) return null;
 
