@@ -1,44 +1,134 @@
-/* === MediaList — list of media files + add button (Card Creator) ===
+/* === MediaList — media zone + image gallery + audio list (Card Creator) ===
    ADR-026: uses design-system tokens (--space-*, --color-*, --radius-*) per
    docs/design-system/design-system.md §2.2.
 */
 
-.mediaList {
+.mediaZone {
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+}
+
+/* === Empty dropzone (image or audio) === */
+.emptyDropzone {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-}
-
-.mediaRow {
-  display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
+  width: 100%;
+  min-height: 120px;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-in-out),
+              color var(--duration-fast) var(--ease-in-out);
 }
 
-.mediaThumb {
-  width: var(--iconbutton-size-md);
-  height: var(--iconbutton-size-md);
+.emptyDropzone:hover {
+  border-color: var(--color-border-focus);
+  color: var(--color-text-secondary);
+}
+
+.emptyDropzone:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* === Image gallery === */
+.imageGallery {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+
+.imageThumb {
+  position: relative;
+  flex-shrink: 0;
+  height: 120px;
+  width: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--iconbutton-fg);
-  flex-shrink: 0;
-  border-radius: var(--iconbutton-radius);
-  background: var(--iconbutton-bg);
-  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
   cursor: pointer;
-  padding: 0;
+}
+
+.imageImg {
+  height: 120px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.imageRemoveButton {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  cursor: pointer;
   transition: background var(--duration-fast) var(--ease-in-out),
               color var(--duration-fast) var(--ease-in-out);
 }
 
-.mediaThumb:hover {
-  background: var(--iconbutton-active-bg);
-  color: var(--iconbutton-active-fg);
+.imageRemoveButton:hover {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+}
+
+.imageRemoveButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+}
+
+.imageAddButton {
+  flex-shrink: 0;
+  width: 80px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-in-out),
+              color var(--duration-fast) var(--ease-in-out);
+}
+
+.imageAddButton:hover {
+  border-color: var(--color-border-focus);
+  color: var(--color-primary);
+}
+
+.imageAddButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.imageAddButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
 }
 
 /* Image icon has more continuous strokes (rect frame + mountain + sun) than the
@@ -46,11 +136,6 @@
  * the same perceived brightness as the waveform icon. */
 .imageThumbIcon {
   opacity: 0.85;
-}
-
-.mediaThumb:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
 }
 
 /* === Image preview overlay (design-system §3.5 Dialog overlay pattern) === */
@@ -98,6 +183,50 @@
 }
 
 .previewClose:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+}
+
+/* === Audio list === */
+.mediaList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mediaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+}
+
+.mediaThumb {
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--iconbutton-fg);
+  flex-shrink: 0;
+  border-radius: var(--iconbutton-radius);
+  background: var(--iconbutton-bg);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--duration-fast) var(--ease-in-out),
+              color var(--duration-fast) var(--ease-in-out);
+}
+
+.mediaThumb:hover {
+  background: var(--iconbutton-active-bg);
+  color: var(--iconbutton-active-fg);
+}
+
+.mediaThumb:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
 }
