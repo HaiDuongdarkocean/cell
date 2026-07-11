@@ -285,7 +285,15 @@ function AudioList({
 }): ReactElement {
   return (
     <div className={styles.mediaList}>
-      {files.length === 0 && <div className={styles.empty}>No audio attached yet.</div>}
+      {files.length === 0 && (
+        <EmptyDropzone
+          kind="audio"
+          addLabel={addLabel}
+          onAdd={onAdd}
+          addDisabled={addDisabled}
+          testId={testId}
+        />
+      )}
       {files.map((file, index) => (
         <div className={styles.mediaRow} key={`${file.filename}-${index}`}>
           <button
@@ -295,7 +303,7 @@ function AudioList({
             aria-label={`Play ${file.filename}`}
             data-testid={testId ? `${testId}-view-${index}` : undefined}
           >
-            <ThumbIcon kind="audio" />
+            <ThumbIcon kind="audio" size={16} />
           </button>
           <span className={styles.mediaName}>{file.filename}</span>
           <button
@@ -309,15 +317,17 @@ function AudioList({
           </button>
         </div>
       ))}
-      <button
-        type="button"
-        className={styles.addButton}
-        onClick={onAdd}
-        disabled={addDisabled}
-        data-testid={testId ? `${testId}-add` : undefined}
-      >
-        + {addLabel}
-      </button>
+      {files.length > 0 && (
+        <button
+          type="button"
+          className={styles.addButton}
+          onClick={onAdd}
+          disabled={addDisabled}
+          data-testid={testId ? `${testId}-add` : undefined}
+        >
+          + {addLabel}
+        </button>
+      )}
     </div>
   );
 }

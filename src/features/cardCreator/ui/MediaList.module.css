@@ -18,7 +18,7 @@
   gap: var(--space-2);
   width: 100%;
   min-height: 120px;
-  padding: var(--space-3);
+  padding: var(--space-4);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
   background: transparent;
@@ -199,21 +199,20 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-background);
 }
 
 .mediaThumb {
-  width: var(--iconbutton-size-md);
-  height: var(--iconbutton-size-md);
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--iconbutton-fg);
+  color: var(--color-text-muted);
   flex-shrink: 0;
-  border-radius: var(--iconbutton-radius);
-  background: var(--iconbutton-bg);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-hover);
   border: none;
   cursor: pointer;
   padding: 0;
@@ -222,8 +221,7 @@
 }
 
 .mediaThumb:hover {
-  background: var(--iconbutton-active-bg);
-  color: var(--iconbutton-active-fg);
+  color: var(--color-text);
 }
 
 .mediaThumb:focus-visible {
@@ -234,24 +232,24 @@
 .mediaName {
   flex: 1;
   font-size: var(--font-size-sm);
-  color: var(--color-foreground);
+  color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .removeButton {
-  width: var(--iconbutton-size-xs);
-  height: var(--iconbutton-size-xs);
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  background: var(--iconbutton-bg);
-  color: var(--iconbutton-fg);
+  background: transparent;
+  color: var(--color-text-muted);
   cursor: pointer;
-  border-radius: var(--iconbutton-radius);
-  font-size: var(--font-size-base);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
   line-height: 1;
   flex-shrink: 0;
   transition: background var(--duration-fast) var(--ease-in-out),
@@ -259,8 +257,8 @@
 }
 
 .removeButton:hover {
-  background: var(--iconbutton-danger-hover-bg);
-  color: var(--iconbutton-danger-hover-fg);
+  background: var(--color-error-subtle);
+  color: var(--color-error);
 }
 
 .removeButton:focus-visible {
@@ -274,29 +272,23 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  border: 1px dashed var(--color-border);
+  border: none;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   font-family: inherit;
   cursor: pointer;
-  transition: border-color var(--duration-fast) var(--ease-in-out),
-              color var(--duration-fast) var(--ease-in-out);
+  transition: color var(--duration-fast) var(--ease-in-out),
+              background var(--duration-fast) var(--ease-in-out);
 }
 
 .addButton:hover {
-  border-color: var(--color-border-focus);
   color: var(--color-primary);
+  background: var(--color-primary-subtle);
 }
 
 .addButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.empty {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  padding: var(--space-1) 0;
 }

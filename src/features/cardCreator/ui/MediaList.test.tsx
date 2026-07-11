@@ -114,6 +114,25 @@ describe('MediaList — audio list', () => {
     data: new Uint8Array([1, 2, 3]).buffer,
   };
 
+  it('renders empty dropzone for audio when no files are attached', () => {
+    const onAdd = jest.fn();
+    render(
+      <MediaList
+        files={[]}
+        kind="audio"
+        addLabel="Add sentence audio"
+        onAdd={onAdd}
+        onRemove={jest.fn()}
+        testId="cc-audio"
+      />
+    );
+
+    expect(screen.getByTestId('cc-audio-empty')).toBeInTheDocument();
+    expect(screen.getByText('Drop audio here or click to add')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('cc-audio-empty'));
+    expect(onAdd).toHaveBeenCalled();
+  });
+
   it('renders audio rows and an add button', () => {
     render(
       <MediaList
@@ -146,5 +165,22 @@ describe('MediaList — audio list', () => {
 
     fireEvent.click(screen.getByTestId('cc-audio-remove-0'));
     expect(onRemove).toHaveBeenCalledWith(0);
+  });
+
+  it('calls onAdd when the audio add button is clicked', () => {
+    const onAdd = jest.fn();
+    render(
+      <MediaList
+        files={[audio]}
+        kind="audio"
+        addLabel="Add sentence audio"
+        onAdd={onAdd}
+        onRemove={jest.fn()}
+        testId="cc-audio"
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('cc-audio-add'));
+    expect(onAdd).toHaveBeenCalled();
   });
 });
