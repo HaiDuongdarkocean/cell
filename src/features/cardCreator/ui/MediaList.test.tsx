@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MediaList } from './MediaList';
 import type { MediaFile } from '../media/mediaFile';
 
@@ -20,6 +20,17 @@ describe('MediaList — image gallery', () => {
         value: jest.fn(),
         writable: true,
       });
+    }
+    if (typeof Blob !== 'undefined' && typeof Blob.prototype.arrayBuffer !== 'function') {
+      Blob.prototype.arrayBuffer = function arrayBuffer(): Promise<ArrayBuffer> {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.addEventListener('loadend', () => resolve(reader.result as ArrayBuffer));
+          reader.addEventListener('error', () => reject(reader.error));
+          reader.readAsArrayBuffer(this);
+        });
+      };
+      File.prototype.arrayBuffer = Blob.prototype.arrayBuffer as unknown as File['arrayBuffer'];
     }
   });
 
@@ -103,6 +114,61 @@ describe('MediaList — image gallery', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Preview cell-image-1.png/i }));
     expect(screen.getByRole('dialog', { name: 'Image preview' })).toBeInTheDocument();
+  });
+
+  it('calls onFilesDrop with converted image files when dropped', async () => {
+    const onFilesDrop = jest.fn();
+    const file = new File([new Uint8Array([1, 2, 3])], 'dropped.png', { type: 'image/png' });
+    render(
+      <MediaList
+        files={[]}
+        kind="image"
+        addLabel="Add image"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onFilesDrop={onFilesDrop}
+        testId="cc-images"
+      />
+    );
+
+    fireEvent.dragEnter(screen.getByTestId('cc-images'));
+    fireEvent.drop(screen.getByTestId('cc-images'), { dataTransfer: { files: [file] } });
+
+    await waitFor(() => {
+      expect(onFilesDrop).toHaveBeenCalled();
+    });
+
+    const [files, invalidCount] = onFilesDrop.mock.calls[0];
+    expect(files).toHaveLength(1);
+    expect(files[0].kind).toBe('image');
+    expect(files[0].filename).toBe('dropped.png');
+    expect(invalidCount).toBe(0);
+  });
+
+  it('reports ignored invalid files when an audio file is dropped on an image list', async () => {
+    const onFilesDrop = jest.fn();
+    const invalid = new File([new Uint8Array([1, 2, 3])], 'audio.mp3', { type: 'audio/mpeg' });
+    render(
+      <MediaList
+        files={[]}
+        kind="image"
+        addLabel="Add image"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onFilesDrop={onFilesDrop}
+        testId="cc-images"
+      />
+    );
+
+    fireEvent.drop(screen.getByTestId('cc-images'), { dataTransfer: { files: [invalid] } });
+
+    await waitFor(() => {
+      expect(onFilesDrop).toHaveBeenCalled();
+    });
+
+    const [files, invalidCount] = onFilesDrop.mock.calls[0];
+    expect(files).toHaveLength(0);
+    expect(invalidCount).toBe(1);
   });
 });
 

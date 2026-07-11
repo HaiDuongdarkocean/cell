@@ -46,6 +46,7 @@ export function CardCreatorDialogContent({
     changeDeck,
     updateDraft,
     addFileFromDisk,
+    addFiles,
     removeMedia,
     translateSentenceField,
     submit,
@@ -213,6 +214,7 @@ export function CardCreatorDialogContent({
             addLabel="Add image"
             onAdd={() => void addFileFromDisk('images')}
             onRemove={(i) => removeMedia('images', i)}
+            onFilesDrop={(files, invalidCount) => addFiles('images', files, invalidCount)}
             addDisabled={capturingMedia}
             testId="cc-images-list"
           />
@@ -231,6 +233,7 @@ export function CardCreatorDialogContent({
             addLabel="Add sentence audio"
             onAdd={() => void addFileFromDisk('sentenceAudios')}
             onRemove={(i) => removeMedia('sentenceAudios', i)}
+            onFilesDrop={(files, invalidCount) => addFiles('sentenceAudios', files, invalidCount)}
             addDisabled={capturingMedia}
             testId="cc-sentence-audios-list"
           />
@@ -249,6 +252,7 @@ export function CardCreatorDialogContent({
             addLabel="Add word audio"
             onAdd={() => void addFileFromDisk('wordAudios')}
             onRemove={(i) => removeMedia('wordAudios', i)}
+            onFilesDrop={(files, invalidCount) => addFiles('wordAudios', files, invalidCount)}
             addDisabled={capturingMedia}
             testId="cc-word-audios-list"
           />

@@ -7,6 +7,12 @@
   padding: var(--space-2);
   background: var(--color-surface);
   border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: border-color var(--duration-fast) var(--ease-in-out);
+}
+
+.mediaZoneDragOver {
+  border-color: var(--color-border-focus);
 }
 
 /* === Empty dropzone (image or audio) === */

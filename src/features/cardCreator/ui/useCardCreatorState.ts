@@ -104,6 +104,8 @@ export interface CardCreatorState {
   /** Add a media file from disk (file picker). Kind determines which list +
    *  how the file is validated (image vs audio accept filter). */
   addFileFromDisk: (kind: 'images' | 'sentenceAudios' | 'wordAudios') => Promise<void>;
+  /** Add one or more MediaFiles to the given list. Used by drag-and-drop. */
+  addFiles: (kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[], invalidCount?: number) => void;
   /** Remove a media file by kind + index. */
   removeMedia: (kind: 'images' | 'sentenceAudios' | 'wordAudios', index: number) => void;
   /** Translate the current sentence. */
@@ -410,6 +412,24 @@ export function useCardCreatorState(
     }
   }, [pushToast]);
 
+  /** Add one or more MediaFiles to the given draft list. */
+  const addFiles = useCallback(
+    (kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[], invalidCount = 0) => {
+      if (files.length === 0 && invalidCount === 0) return;
+      if (files.length > 0) {
+        setDraft((prev) => ({
+          ...prev,
+          fields: { ...prev.fields, [kind]: [...prev.fields[kind], ...files] },
+        }));
+      }
+      if (invalidCount > 0) {
+        const kindLabel = kind === 'images' ? 'images' : 'audio files';
+        pushToast('warning', `Ignored ${invalidCount} unsupported file(s). Drop only ${kindLabel} here.`);
+      }
+    },
+    [pushToast],
+  );
+
   /** Add a media file from disk via the browser file picker.
    *  ADR-026: the "+ Add ..." buttons in each MediaList open a file picker so
    *  the user can attach their own image/audio files (e.g. a word audio from
@@ -453,17 +473,13 @@ export function useCardCreatorState(
       input.click();
       try {
         const mediaFiles = await picked;
-        if (mediaFiles.length === 0) return;
-        setDraft((prev) => ({
-          ...prev,
-          fields: { ...prev.fields, [kind]: [...prev.fields[kind], ...mediaFiles] },
-        }));
+        addFiles(kind, mediaFiles);
       } finally {
         // Clean up the input element from the DOM.
         input.remove();
       }
     },
-    [],
+    [addFiles],
   );
 
   /** Remove a media file. */
@@ -649,6 +665,7 @@ export function useCardCreatorState(
     addScreenshot,
     addSentenceAudio,
     addFileFromDisk,
+    addFiles,
     removeMedia,
     translateSentenceField,
     submit,

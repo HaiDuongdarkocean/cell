@@ -24,6 +24,8 @@ interface MediaListProps {
   onAdd: () => void;
   /** Called when the user clicks remove on a file. Receives the index. */
   onRemove: (index: number) => void;
+  /** Called when files are dropped onto the media zone. Receives valid files and the count of ignored invalid files. */
+  onFilesDrop?: (files: MediaFile[], invalidCount: number) => void;
   /** Whether the add button is disabled (e.g. while capturing). */
   addDisabled?: boolean;
   /** Optional test id prefix. */
@@ -91,6 +93,30 @@ function PlusIcon(): ReactElement {
       <path d="M5 12h14" />
     </svg>
   );
+}
+
+/** Determine whether a File is an image or an audio file.
+ *  Prefer the MIME type; fall back to filename extension for files with an empty type. */
+function isAcceptedFile(file: File, kind: 'image' | 'audio'): boolean {
+  if (file.type) {
+    return kind === 'image' ? file.type.startsWith('image/') : file.type.startsWith('audio/');
+  }
+  const ext = file.name.split('.').pop()?.toLowerCase();
+  if (kind === 'image') {
+    return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].includes(ext ?? '');
+  }
+  return ['mp3', 'webm', 'ogg', 'wav', 'flac', 'm4a', 'aac', 'oga', 'opus'].includes(ext ?? '');
+}
+
+/** Convert a File dropped into the media zone into a MediaFile. */
+async function fileToMediaFile(file: File, kind: 'image' | 'audio'): Promise<MediaFile> {
+  const data = await file.arrayBuffer();
+  return {
+    kind,
+    filename: file.name,
+    mimeType: file.type || (kind === 'image' ? 'image/png' : 'audio/webm'),
+    data,
+  };
 }
 
 /** Build a Blob URL from a MediaFile (for image preview + audio playback). */
@@ -338,11 +364,14 @@ export function MediaList({
   addLabel,
   onAdd,
   onRemove,
+  onFilesDrop,
   addDisabled,
   testId,
 }: MediaListProps): ReactElement {
   const [previewFile, setPreviewFile] = useState<MediaFile | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const dragCounterRef = useRef(0);
 
   /** Play an audio file via Blob URL. */
   const playAudio = (file: MediaFile): void => {
@@ -365,8 +394,68 @@ export function MediaList({
     }
   };
 
+  /** Process dropped files: filter by kind, convert, and call onFilesDrop. */
+  const processDrop = async (dt: DataTransfer | null): Promise<void> => {
+    if (!onFilesDrop || !dt) return;
+    const droppedFiles = Array.from(dt.files);
+    const valid: File[] = [];
+    const invalid: File[] = [];
+    for (const f of droppedFiles) {
+      if (isAcceptedFile(f, kind)) {
+        valid.push(f);
+      } else {
+        invalid.push(f);
+      }
+    }
+    const mediaFiles = await Promise.all(valid.map((f) => fileToMediaFile(f, kind)));
+    onFilesDrop(mediaFiles, invalid.length);
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current += 1;
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      setIsDragOver(false);
+      dragCounterRef.current = 0;
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragOver(false);
+    void processDrop(e.dataTransfer);
+  };
+
+  const zoneClass = isDragOver ? `${styles.mediaZone} ${styles.mediaZoneDragOver}` : styles.mediaZone;
+
   return (
-    <div className={styles.mediaZone} data-testid={testId} data-kind={kind}>
+    <div
+      className={zoneClass}
+      data-testid={testId}
+      data-kind={kind}
+      onDragEnter={onFilesDrop ? handleDragEnter : undefined}
+      onDragLeave={onFilesDrop ? handleDragLeave : undefined}
+      onDragOver={onFilesDrop ? handleDragOver : undefined}
+      onDrop={onFilesDrop ? handleDrop : undefined}
+    >
       {kind === 'image' ? (
         files.length === 0 ? (
           <EmptyDropzone
