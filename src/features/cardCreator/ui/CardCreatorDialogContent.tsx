@@ -15,6 +15,7 @@ import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
 import { FieldRow, FieldInput, FieldTextarea } from './FieldRow';
 import { MediaList } from './MediaList';
+import { PreviewBlock } from './PreviewBlock';
 import type { useCardCreatorState } from './useCardCreatorState';
 import styles from './CardCreatorDialog.module.css';
 
@@ -99,6 +100,12 @@ export function CardCreatorDialogContent({
           </div>
         </div>
       </div>
+
+      <PreviewBlock
+        targetWord={draft.fields.targetWord}
+        sentence={draft.fields.sentence}
+        testId="cc-preview"
+      />
 
       {/* Section: Fields */}
       <div className={styles.section}>
