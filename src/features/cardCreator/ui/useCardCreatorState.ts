@@ -108,6 +108,8 @@ export interface CardCreatorState {
   addFiles: (kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[], invalidCount?: number) => void;
   /** Remove a media file by kind + index. */
   removeMedia: (kind: 'images' | 'sentenceAudios' | 'wordAudios', index: number) => void;
+  /** Reorder a media file within its list (move from index to index). */
+  reorderMedia: (kind: 'images' | 'sentenceAudios' | 'wordAudios', fromIndex: number, toIndex: number) => void;
   /** Translate the current sentence. */
   translateSentenceField: () => Promise<void>;
   /** Submit: Add (create new) or Update (existing note). */
@@ -496,6 +498,20 @@ export function useCardCreatorState(
     [],
   );
 
+  /** Reorder a media file within its list (move from index to target index). */
+  const reorderMedia = useCallback(
+    (kind: 'images' | 'sentenceAudios' | 'wordAudios', fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return;
+      setDraft((prev) => {
+        const next = [...prev.fields[kind]];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        return { ...prev, fields: { ...prev.fields, [kind]: next } };
+      });
+    },
+    [],
+  );
+
   /** Translate the current sentence via Google Translate. */
   const translateSentenceField = useCallback(async () => {
     const ctx = openContextRef.current;
@@ -667,6 +683,7 @@ export function useCardCreatorState(
     addFileFromDisk,
     addFiles,
     removeMedia,
+    reorderMedia,
     translateSentenceField,
     submit,
     dismissToast,

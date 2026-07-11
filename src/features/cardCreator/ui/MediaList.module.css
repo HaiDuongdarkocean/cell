@@ -66,6 +66,15 @@
   border-radius: var(--radius-sm);
   background: var(--color-background);
   cursor: pointer;
+  transition: opacity var(--duration-fast) var(--ease-in-out);
+}
+
+.imageThumbDragging {
+  opacity: 0.4;
+}
+
+.imageThumbDragOver {
+  box-shadow: 0 0 0 2px var(--color-border-focus);
 }
 
 .imageImg {
@@ -207,6 +216,15 @@
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--color-background);
+  transition: opacity var(--duration-fast) var(--ease-in-out);
+}
+
+.mediaRowDragging {
+  opacity: 0.4;
+}
+
+.mediaRowDragOver {
+  box-shadow: 0 0 0 2px var(--color-border-focus);
 }
 
 .mediaThumb {

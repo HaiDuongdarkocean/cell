@@ -101,6 +101,31 @@ describe('MediaList — image gallery', () => {
     expect(onAdd).toHaveBeenCalled();
   });
 
+  it('calls onReorder when an image thumbnail is dragged onto another', () => {
+    const onReorder = jest.fn();
+    const image2: MediaFile = {
+      kind: 'image',
+      filename: 'cell-image-2.png',
+      mimeType: 'image/png',
+      data: new Uint8Array([4, 5, 6]).buffer,
+    };
+    render(
+      <MediaList
+        files={[image, image2]}
+        kind="image"
+        addLabel="Add image"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onReorder={onReorder}
+        testId="cc-images"
+      />
+    );
+
+    fireEvent.dragStart(screen.getByTestId('cc-images-thumb-0'), { dataTransfer: {} });
+    fireEvent.drop(screen.getByTestId('cc-images-thumb-1'), { dataTransfer: {} });
+    expect(onReorder).toHaveBeenCalledWith(0, 1);
+  });
+
   it('opens the image preview overlay when a thumbnail is clicked', () => {
     render(
       <MediaList
@@ -248,5 +273,30 @@ describe('MediaList — audio list', () => {
 
     fireEvent.click(screen.getByTestId('cc-audio-add'));
     expect(onAdd).toHaveBeenCalled();
+  });
+
+  it('calls onReorder when an audio row is dragged onto another', () => {
+    const onReorder = jest.fn();
+    const audio2: MediaFile = {
+      kind: 'audio',
+      filename: 'cell-audio-2.webm',
+      mimeType: 'audio/webm',
+      data: new Uint8Array([4, 5, 6]).buffer,
+    };
+    render(
+      <MediaList
+        files={[audio, audio2]}
+        kind="audio"
+        addLabel="Add sentence audio"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onReorder={onReorder}
+        testId="cc-audio"
+      />
+    );
+
+    fireEvent.dragStart(screen.getByTestId('cc-audio-view-0'), { dataTransfer: {} });
+    fireEvent.drop(screen.getByTestId('cc-audio-view-1'), { dataTransfer: {} });
+    expect(onReorder).toHaveBeenCalledWith(0, 1);
   });
 });

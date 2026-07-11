@@ -26,6 +26,8 @@ interface MediaListProps {
   onRemove: (index: number) => void;
   /** Called when files are dropped onto the media zone. Receives valid files and the count of ignored invalid files. */
   onFilesDrop?: (files: MediaFile[], invalidCount: number) => void;
+  /** Called when the user reorders media items. Receives (fromIndex, toIndex). */
+  onReorder?: (fromIndex: number, toIndex: number) => void;
   /** Whether the add button is disabled (e.g. while capturing). */
   addDisabled?: boolean;
   /** Optional test id prefix. */
@@ -203,12 +205,26 @@ function ImageThumb({
   index,
   onRemove,
   onPreview,
+  draggable,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  isDragging,
+  isDragOver,
   testId,
 }: {
   file: MediaFile;
   index: number;
   onRemove: (index: number) => void;
   onPreview: (file: MediaFile) => void;
+  draggable?: boolean;
+  onDragStart?: React.DragEventHandler<HTMLDivElement>;
+  onDragOver?: React.DragEventHandler<HTMLDivElement>;
+  onDrop?: React.DragEventHandler<HTMLDivElement>;
+  onDragEnd?: React.DragEventHandler<HTMLDivElement>;
+  isDragging?: boolean;
+  isDragOver?: boolean;
   testId?: string;
 }): ReactElement {
   const url = useBlobUrl(file);
@@ -220,14 +236,25 @@ function ImageThumb({
     }
   };
 
+  const thumbClass = [styles.imageThumb]
+    .concat(isDragging ? styles.imageThumbDragging : [])
+    .concat(isDragOver ? styles.imageThumbDragOver : [])
+    .join(' ');
+
   return (
     <div
-      className={styles.imageThumb}
+      className={thumbClass}
       role="button"
       tabIndex={0}
+      draggable={draggable}
       aria-label={`Preview ${file.filename}`}
       onClick={() => onPreview(file)}
       onKeyDown={handleKeyDown}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      data-index={index}
       data-testid={testId ? `${testId}-thumb-${index}` : undefined}
     >
       {url && <img className={styles.imageImg} src={url} alt={file.filename} />}
@@ -253,6 +280,7 @@ function ImageGallery({
   onAdd,
   onRemove,
   onPreview,
+  onReorder,
   addDisabled,
   addLabel,
   testId,
@@ -261,12 +289,52 @@ function ImageGallery({
   onAdd: () => void;
   onRemove: (index: number) => void;
   onPreview: (file: MediaFile) => void;
+  onReorder?: (fromIndex: number, toIndex: number) => void;
   addDisabled?: boolean;
   addLabel: string;
   testId?: string;
 }): ReactElement {
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (index: number) => (e: React.DragEvent<HTMLDivElement>): void => {
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingIndex(index);
+    setDragOverIndex(null);
+  };
+
+  const handleDragOver = (index: number) => (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (index: number) => (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggingIndex !== null && draggingIndex !== index) {
+      onReorder?.(draggingIndex, index);
+    }
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = (): void => {
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleGalleryDrop = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const draggable = onReorder !== undefined;
+
   return (
-    <div className={styles.imageGallery} role="list">
+    <div className={styles.imageGallery} role="list" onDrop={handleGalleryDrop}>
       {files.map((file, index) => (
         <ImageThumb
           key={`${file.filename}-${index}`}
@@ -274,6 +342,13 @@ function ImageGallery({
           index={index}
           onRemove={onRemove}
           onPreview={onPreview}
+          draggable={draggable}
+          onDragStart={handleDragStart(index)}
+          onDragOver={handleDragOver(index)}
+          onDrop={handleDrop(index)}
+          onDragEnd={handleDragEnd}
+          isDragging={draggingIndex === index}
+          isDragOver={dragOverIndex === index}
           testId={testId}
         />
       ))}
@@ -297,6 +372,7 @@ function AudioList({
   onAdd,
   onRemove,
   onPlay,
+  onReorder,
   addDisabled,
   addLabel,
   testId,
@@ -305,12 +381,52 @@ function AudioList({
   onAdd: () => void;
   onRemove: (index: number) => void;
   onPlay: (file: MediaFile) => void;
+  onReorder?: (fromIndex: number, toIndex: number) => void;
   addDisabled?: boolean;
   addLabel: string;
   testId?: string;
 }): ReactElement {
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (index: number) => (e: React.DragEvent<HTMLDivElement>): void => {
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingIndex(index);
+    setDragOverIndex(null);
+  };
+
+  const handleDragOver = (index: number) => (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (index: number) => (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggingIndex !== null && draggingIndex !== index) {
+      onReorder?.(draggingIndex, index);
+    }
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = (): void => {
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleListDrop = (e: React.DragEvent<HTMLDivElement>): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const draggable = onReorder !== undefined;
+
   return (
-    <div className={styles.mediaList}>
+    <div className={styles.mediaList} onDrop={handleListDrop}>
       {files.length === 0 && (
         <EmptyDropzone
           kind="audio"
@@ -320,29 +436,44 @@ function AudioList({
           testId={testId}
         />
       )}
-      {files.map((file, index) => (
-        <div className={styles.mediaRow} key={`${file.filename}-${index}`}>
-          <button
-            type="button"
-            className={styles.mediaThumb}
-            onClick={() => onPlay(file)}
-            aria-label={`Play ${file.filename}`}
-            data-testid={testId ? `${testId}-view-${index}` : undefined}
+      {files.map((file, index) => {
+        const rowClass = [styles.mediaRow]
+          .concat(draggingIndex === index ? styles.mediaRowDragging : [])
+          .concat(dragOverIndex === index ? styles.mediaRowDragOver : [])
+          .join(' ');
+        return (
+          <div
+            className={rowClass}
+            key={`${file.filename}-${index}`}
+            draggable={draggable}
+            onDragStart={handleDragStart(index)}
+            onDragOver={handleDragOver(index)}
+            onDrop={handleDrop(index)}
+            onDragEnd={handleDragEnd}
+            data-index={index}
           >
-            <ThumbIcon kind="audio" size={16} />
-          </button>
-          <span className={styles.mediaName}>{file.filename}</span>
-          <button
-            type="button"
-            className={styles.removeButton}
-            onClick={() => onRemove(index)}
-            aria-label={`Remove ${file.filename}`}
-            data-testid={testId ? `${testId}-remove-${index}` : undefined}
-          >
-            ×
-          </button>
-        </div>
-      ))}
+            <button
+              type="button"
+              className={styles.mediaThumb}
+              onClick={() => onPlay(file)}
+              aria-label={`Play ${file.filename}`}
+              data-testid={testId ? `${testId}-view-${index}` : undefined}
+            >
+              <ThumbIcon kind="audio" size={16} />
+            </button>
+            <span className={styles.mediaName}>{file.filename}</span>
+            <button
+              type="button"
+              className={styles.removeButton}
+              onClick={() => onRemove(index)}
+              aria-label={`Remove ${file.filename}`}
+              data-testid={testId ? `${testId}-remove-${index}` : undefined}
+            >
+              ×
+            </button>
+          </div>
+        );
+      })}
       {files.length > 0 && (
         <button
           type="button"
@@ -365,6 +496,7 @@ export function MediaList({
   onAdd,
   onRemove,
   onFilesDrop,
+  onReorder,
   addDisabled,
   testId,
 }: MediaListProps): ReactElement {
@@ -471,6 +603,7 @@ export function MediaList({
             onAdd={onAdd}
             onRemove={onRemove}
             onPreview={setPreviewFile}
+            onReorder={onReorder}
             addDisabled={addDisabled}
             addLabel={addLabel}
             testId={testId}
@@ -482,6 +615,7 @@ export function MediaList({
           onAdd={onAdd}
           onRemove={onRemove}
           onPlay={playAudio}
+          onReorder={onReorder}
           addDisabled={addDisabled}
           addLabel={addLabel}
           testId={testId}
