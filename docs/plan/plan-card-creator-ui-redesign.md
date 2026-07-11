@@ -1,76 +1,118 @@
-# Implementation Plan — Card Creator UI Redesign
+# Plan — Card Creator UI redesign
 
-> Plan for turning `docs/specs/spec-card-creator-ui-redesign.md` into working code. Follows the LOOP model: design → align → implement → verify → ship.
+> Implementation plan for `docs/specs/spec-card-creator-ui-redesign.md`.
+> Intent: `docs/intent/intent-card-creator-ui-redesign.md`
+> Mockup: `docs/mockups/anki-card-mockup.html`
 
-## 1. Overview
+## Overview
 
-Redesign the Card Creator dialog and settings connection card to be cleaner, more minimalist, and better aligned with the Cell design system. The work is UI-only: no data-flow, AnkiConnect, or media-extraction changes.
+Redesign Card Creator UI in vertical slices: preview block, selector redesign, media list redesign, drag-and-drop/reorder, then integrate into desktop Dialog and mobile BottomSheet. Each milestone is independently testable.
 
-## 2. Architecture decisions
+## Milestones
 
-- **Design-first:** The updated `docs/mockups/anki-card-mockup.html` is the source of truth. Code is updated to match the mockup, not the other way around.
-- **Token-only:** No new primitive colors. Any new visual concept (e.g. the `Notice` alert) is expressed as a semantic/component token alias in `themeTokens.ts`.
-- **Content-script safe:** All sizes in the content-script CSS remain `px` (no `rem`) per `design-system.md` §6.
-- **Incremental:** Update the mockup first, then the shared CSS modules, then the React components, then verify. This keeps the system buildable after each checkpoint.
+### M1 — Preview block (foundation)
 
-## 3. Phases
+- Create `PreviewBlock.tsx` + `PreviewBlock.module.css`.
+- Implement `highlightOccurrences` helper (pure, testable).
+- Add unit tests for preview text and highlighting.
+- Wire into `CardCreatorDialogContent` above the Fields section.
+- **Verify:** `npm run test:unit`; browser mockup visual match.
 
-### Phase 1 — Design mockup
+### M2 — Field mapping selector redesign
 
-Produce the new visual design in `docs/mockups/anki-card-mockup.html`.
+- Update `FieldRow.tsx` to render a label-style selector (no background/border, small chevron, fit-to-content).
+- Update `FieldRow.module.css`.
+- Add `FieldRow.test.tsx` for selector style and callback.
+- **Verify:** unit tests pass; visual QA.
 
-- Rewrite the mockup HTML/CSS with the spec design.
-- Keep the video player + subtitle block context and the settings page.
-- Include dark/light theme toggle and all form states.
+### M3 — Section/card layout cleanup
 
-**Checkpoint:** Open the mockup in a browser and confirm it matches the spec visually.
+- Update `CardCreatorDialog.module.css` to remove bordered section boxes, switch to section titles + gap spacing.
+- Update alert style to left-bordered notice.
+- Update `CardCreatorDialogContent` markup to drop `section` bordered wrappers.
+- **Verify:** `npm run test:unit` (existing `CardCreatorDialog.test.tsx` may need snapshot updates).
 
-### Phase 2 — Align documentation
+### M4 — Image media gallery
 
-- Update `docs/specs/spec-card-creator.md` UI section to reference the new mockup and design tokens.
-- Update `docs/0-wiki.md` index if new files are added.
-- If any new tokens are introduced, add them to `docs/design-system/design-system.md` §2.3 component tokens.
+- Refactor `MediaList` to branch by `kind`: `kind='image'` renders horizontal gallery.
+- Update `MediaList.module.css` for gallery, thumbnail (120px height, remove button top-right, add button at end).
+- Keep existing audio list behavior for `kind='audio'`.
+- Add tests for image gallery rendering and remove callback.
+- **Verify:** unit tests; mockup visual match.
 
-**Checkpoint:** Docs are consistent and the spec has no unaddressed open questions.
+### M5 — Audio media list redesign
 
-### Phase 3 — Implement mockup CSS
+- Update `MediaList` audio row style: waveform icon, filename, remove, list layout.
+- Update `MediaList.module.css`.
+- Add tests for audio list rendering and play/remove callbacks.
+- **Verify:** unit tests; mockup visual match.
 
-Update the CSS modules in `src/features/cardCreator/ui` to match the mockup.
+### M6 — Drag-and-drop file add
 
-- `CardCreatorDialog.module.css` — layout, alert, sections, footer.
-- `FieldRow.module.css` — label row, mapping select, inputs/textareas.
-- `MediaList.module.css` — media row, thumbnail, remove, add button.
+- Add `onDragOver`/`onDrop` handlers on media zone.
+- Filter files by `kind` and append via `useCardCreatorState` (or `CardCreatorDialogContent` state update).
+- Add `onFilesDrop` callback to `MediaList`/`SortableMediaList`.
+- **Verify:** unit tests with `fireEvent.drop`; manual browser QA.
 
-**Checkpoint:** `npm run test:unit` passes; `npm run build` passes.
+### M7 — Drag-to-reorder
 
-### Phase 4 — Implement React structure
+- Implement `SortableMediaList.tsx` using native HTML5 drag-and-drop for desktop.
+- Implement mobile long-press drag with touch events.
+- Add `onReorder` callback to `MediaList` (or replace `MediaList` with `SortableMediaList` in `CardCreatorDialogContent`).
+- Update `useCardCreatorState` only if needed (prefer state update in `CardCreatorDialogContent`).
+- **Verify:** unit tests for reorder callback; manual browser QA on desktop + mobile.
 
-Adjust JSX only if the CSS changes require different DOM (e.g. the notice icon, media row structure).
+### M8 — Mobile bottom sheet integration
 
-- `CardCreatorDialogContent.tsx` — alert markup, section wrappers, footer.
-- `FieldRow.tsx` — mapping select wrapper.
-- `MediaList.tsx` — row structure, thumbnail button, empty state.
+- Ensure `CardCreatorDialogContent` with `variant='mobile'` renders the redesigned layout correctly.
+- Update `CardCreatorBottomSheet`/`BottomSheet` CSS if needed.
+- **Verify:** browser MCP mobile viewport.
 
-**Checkpoint:** `npm run test:unit` passes; `npm run build` passes.
+### M9 — Final visual verification and cleanup
 
-### Phase 5 — Verify and ship
+- Run full test suite: `npm run test:unit`, `npm run lint`, `npm run typecheck`.
+- Browser MCP verify desktop Dialog + mobile BottomSheet against mockup.
+- Update `docs/2-architechture-system.md` if new files added.
+- Update `docs/0-wiki.md` if new docs created.
+- **Verify:** all success criteria in spec pass.
 
-- Manual browser check on YouTube (load unpacked extension, open Card Creator).
-- Run `npm run test:unit` and `npm run build`.
-- Review diff, commit, and update PR.
+## Dependency graph
 
-**Checkpoint:** Visual review passes, no regressions, and the feature is in `master`.
+```
+M1 Preview block
+  |
+M2 Field selector
+  |
+M3 Section layout
+  |
+M4 Image gallery ---- M6 D&D add
+  |                    |
+M5 Audio list      M7 Reorder
+  |                    |
+  +--------------------+--> M8 Mobile integration
+                              |
+                            M9 Final verify
+```
 
-## 4. Risks and mitigations
+## Risks and mitigation
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| The new mockup is still perceived as cluttered | Medium | Review with the designer/user after the first mockup checkpoint before touching code. |
-| `rem` vs `px` leaks into content-script CSS | Low | Verify all lengths in touched `.module.css` files are `px` or `var(--space-*)` that resolve to `px` in the content script. |
-| Button/Select shared components need changes | Low | Try to express the design with existing `Button`/`Select` variants. Ask before modifying shared components. |
-| Tests rely on CSS class names or test ids | Low | Keep existing `data-testid` attributes; only change class names if tests break, then update tests. |
-| Mobile bottom sheet not updated consistently | Medium | Include mobile layout in the mockup and test the `BottomSheet` render after CSS changes. |
+| Risk | Mitigation |
+|------|------------|
+| Native HTML5 drag-and-drop not reliable inside content-script overlay | Use `draggable` on elements inside `Dialog`/`BottomSheet` which have `pointer-events: auto`; test in real Chrome. |
+| Mobile long-press interferes with scroll | Require 400ms press before drag; cancel if `touchmove` exceeds 10px. |
+| Image preview aspect ratio breaks layout | `object-fit: contain` + `height: 120px` + `width: auto` + `max-width: 200px`. |
+| Yomitan still cannot scan preview block | Preview block is plain text in `color-surface` container with `pointer-events: auto`; no `user-select: none` or `pointer-events: none`. Verify with Yomitan installed. |
+| `Select` custom dropdown overflows in small mobile bottom sheet | Use `menuMaxHeight` and ensure `BottomSheet` body scrolls. |
 
-## 5. Open questions
+## Parallel work
 
-(See `docs/specs/spec-card-creator-ui-redesign.md` §9.)
+- M1, M2, M3 can be done in parallel (different components, no conflicts).
+- M4 and M5 can be done in parallel after M3.
+- M6 and M7 depend on M4/M5 but can be split between image and audio.
+
+## Verification checkpoints
+
+- After M3: UI structure matches mockup layout.
+- After M5: image + audio media layouts match mockup.
+- After M7: D&D and reorder work on desktop and mobile.
+- After M9: all spec success criteria met.

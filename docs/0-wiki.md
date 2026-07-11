@@ -51,7 +51,8 @@ docs/           # Tài liệu dự án
 │   └── intent-translate-subtitle-target-to-native.md # Translate subtitle target→native (Google unofficial, background prefill, real-time)
 │   └── intent-port-theocean-dict-and-theme.md # Port theocean-dict reference: theme system (runtime configurable, thay DSDS) + import dict/freq 5 format → IndexedDB. Theme trước, dict sau.
 │   └── intent-subtitle-block-unified.md # Gộp target + native + nav cluster thành 1 block, pill kéo trục Y, auto-scale theo video
-│   └── intent-card-creator.md # Card Creator — tạo + update Anki flashcard từ subtitle block (desktop + mobile)
+│   ├── intent-card-creator.md # Card Creator — tạo + update Anki flashcard từ subtitle block (desktop + mobile)
+│   └── intent-card-creator-ui-redesign.md # Card Creator UI redesign (preview block + Yomitan scan + media D&D/reorder)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
@@ -69,7 +70,8 @@ docs/           # Tài liệu dự án
 │   └── spec-translate-subtitle-target-to-native.md # Translate subtitle target→native PRD (background prefill, Google unofficial, ShortcutInput combo, general mọi site)
 │   └── spec-port-theocean-dict-and-theme.md # Port theocean-dict reference: theme system (runtime configurable, 9 core tokens, WCAG, import/export, system mode) + dict import 5 format → IndexedDB. Options page mới. Theme trước, dict sau.
 │   └── spec-subtitle-block-unified.md # Unified subtitle block PRD: gộp target + native + nav cluster, auto-scale, settings rearrange
-│   └── spec-card-creator.md # Card Creator PRD: AnkiConnect integration, field mapping, media extraction, draft autosave, desktop Dialog + mobile BottomSheet
+│   ├── spec-card-creator.md # Card Creator PRD: AnkiConnect integration, field mapping, media extraction, draft autosave, desktop Dialog + mobile BottomSheet
+│   └── spec-card-creator-ui-redesign.md # Card Creator UI redesign PRD: preview block + Yomitan scan + media D&D/reorder
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 │   └── spec-shared-ui-components.md # Shared UI component library (Button/Card/Dialog/Input + atoms/molecules + migration of existing feature UI)
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
@@ -89,7 +91,8 @@ docs/           # Tài liệu dự án
 │   └── plan-settings-dialog-rearrange.md # Settings dialog rearrange plan (5 milestones M1-M5, CSS-first) # Settings controls restyle — implementation plan (G2, 10 milestones M1-M10, bottom-up atoms→integrate, cite spec-settings-controls-restyle)
 │   └── plan-subtitle-time-offset.md # Subtitle time offset — implementation plan (G2, 6 AD, 7 milestones M1-M7, lazy/committed offset)
 │   └── plan-youtube-subtitle-detection.md # YouTube subtitle detection — implementation plan (G2, 6 AD, 7 milestones M1-M7, Two Detection Paths, cite spec-youtube-subtitle-detection)
-│   └── plan-translate-subtitle-target-to-native.md # Translate subtitle target→native plan (G2, 6 milestones M1-M6, background prefill, cite spec)
+│   ├── plan-translate-subtitle-target-to-native.md # Translate subtitle target→native plan (G2, 6 milestones M1-M6, background prefill, cite spec)
+│   └── plan-card-creator-ui-redesign.md # Card Creator UI redesign plan (M1-M9, preview → media → D&D → mobile)
 │   └── plan-port-theocean-dict-and-theme.md # Port theocean-dict + theme plan (G2, 12 milestones M1-M12, theme trước F1-F6 → dict sau F7-F12, options page mới, cite spec)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
@@ -99,7 +102,8 @@ docs/           # Tài liệu dự án
 │   └── task-refactor-system-architecture.md # Refactor system architecture — task breakdown (G4, M0-M13, 25 task, codebase reality check)
 │   └── task-subtitle-navigation-control.md # Subtitle navigation control cluster — task breakdown (G4, 11 tasks M1-M6, TDD, vertical slices)
 │   └── task-port-theocean-dict-and-theme.md # Port theocean-dict + theme — task breakdown (G4, 30 tasks M1-M12, theme trước F1-F6 → dict sau F7-F12, TDD + browser MCP stop-the-line)
-│   └── task-shared-ui-components.md # Shared UI component library — task breakdown (Phase 1-5: atoms, molecules, organisms, migration, audit)
+│   ├── task-shared-ui-components.md # Shared UI component library — task breakdown (Phase 1-5: atoms, molecules, organisms, migration, audit)
+│   └── task-card-creator-ui-redesign.md # Card Creator UI redesign task list (M1-M9, T1.1-T9.3)
 │   ├── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
 │   └── 2026-06-29-subtitle-appearance-manager-mcp.md # ADR-013 browser MCP verify report (A1-A16)
 ├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
@@ -161,7 +165,7 @@ docs/           # Tài liệu dự án
 │   ├── mockup-settings-searchable-and-hint.html # Settings SearchableSelect + HintIcon atoms mockup
 │   ├── mockup-settings-rearrange.html # Settings dialog rearrange v2 (pair/indent/divider, fix Nav Cluster position)
 │   ├── mockup-subtitle-block-unified.html # Unified subtitle block mockup: target + native + nav cluster gộp thành 1 block, pill kéo trục Y
-│   └── anki-card-mockup.html          # Card Creator mockup (approved): bottom sheet mobile + modal desktop + settings
+│   └── anki-card-mockup.html          # Card Creator mockup v2 (preview block + Yomitan scan + media D&D/reorder)
 ├── intent/
 │   └── intent-card-creator.md         # Card Creator intent (interview-me output, confirmed)
 ├── specs/

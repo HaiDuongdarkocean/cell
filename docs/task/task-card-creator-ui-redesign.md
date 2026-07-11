@@ -1,197 +1,132 @@
-# Task Breakdown — Card Creator UI Redesign
+# Task list — Card Creator UI redesign
 
-> Discrete, implementable tasks for `docs/plan/plan-card-creator-ui-redesign.md`. Each task fits in one focused session.
+> Derived from `docs/plan/plan-card-creator-ui-redesign.md` and `docs/specs/spec-card-creator-ui-redesign.md`.
 
-## Task 1: Create the new mockup HTML
+## M1 — Preview block
 
-**Description:**
-Rewrite `docs/mockups/anki-card-mockup.html` using the design direction in `docs/specs/spec-card-creator-ui-redesign.md`. The mockup must be the single source of truth for the implementation.
+- [ ] T1.1 Create `PreviewBlock.tsx` + `PreviewBlock.module.css`
+  - Acceptance: `PreviewBlock` accepts `targetWord` and `sentence` props and renders both lines centered.
+  - Verify: `npm run test:unit` passes `PreviewBlock.test.tsx`.
+  - Files: `src/features/cardCreator/ui/PreviewBlock.tsx`, `.module.css`
 
-**Acceptance criteria:**
-- [ ] Desktop workspace (video player + subtitle block + Card Creator panel) renders cleanly.
-- [ ] All 10 fields are shown with the new label-row + mapping-select style.
-- [ ] Media lists (image, sentence audio, word audio) show compact rows with thumbnail, filename, and remove.
-- [ ] Alert uses the `Notice` style (left border, icon, subtle background).
-- [ ] Footer has update mode on the left and Cancel/Add/Update buttons on the right.
-- [ ] Settings connection card is updated with the clean status indicator.
-- [ ] Dark/light theme toggle works.
-- [ ] File uses only design-system tokens (or `px` for content-script lengths).
+- [ ] T1.2 Implement `highlightOccurrences` helper
+  - Acceptance: All non-overlapping occurrences of `targetWord` in `sentence` are wrapped in `<strong>`; case-sensitive.
+  - Verify: Unit test in `PreviewBlock.test.tsx`.
+  - Files: `src/features/cardCreator/ui/PreviewBlock.tsx`
 
-**Verification:**
-- [ ] Open `docs/mockups/anki-card-mockup.html` in Chrome and do a 10-second visual scan.
-- [ ] Confirm no horizontal scroll, no broken alignment, no clipped text.
+- [ ] T1.3 Wire `PreviewBlock` into `CardCreatorDialogContent`
+  - Acceptance: Preview block renders between Card destination and Fields sections, with live values from `draft.fields.targetWord` and `draft.fields.sentence`.
+  - Verify: Browser check and `CardCreatorDialogContent.test.tsx` update.
+  - Files: `src/features/cardCreator/ui/CardCreatorDialogContent.tsx`
 
-**Dependencies:** None
+## M2 — Field mapping selector redesign
 
-**Files touched:**
-- `docs/mockups/anki-card-mockup.html`
+- [ ] T2.1 Update `FieldRow` to render label-style selector
+  - Acceptance: Selector has no background, no border, only small chevron, fit-to-content width, focus changes text color.
+  - Verify: `FieldRow.test.tsx` + visual QA.
+  - Files: `src/features/cardCreator/ui/FieldRow.tsx`, `FieldRow.module.css`
 
-**Estimated scope:** Medium (3–5 files conceptually, one HTML file physically)
+- [ ] T2.2 Add `FieldRow` tests for selector callbacks
+  - Acceptance: Changing the select fires `onMapChange` with the selected Anki field.
+  - Verify: `npm run test:unit`.
+  - Files: `src/features/cardCreator/ui/FieldRow.test.tsx`
 
----
+## M3 — Section/card layout cleanup
 
-## Task 2: Align spec and wiki
+- [ ] T3.1 Update `CardCreatorDialog.module.css` to remove bordered section boxes
+  - Acceptance: Sections use title + gap only, no card border/background.
+  - Verify: Visual QA against mockup.
+  - Files: `src/features/cardCreator/ui/CardCreatorDialog.module.css`
 
-**Description:**
-Update the relevant docs so the new design is discoverable and the old spec does not contradict it.
+- [ ] T3.2 Update alert style to left-bordered notice
+  - Acceptance: Alert has warning/error left border and subtle background, no full border.
+  - Verify: `CardCreatorDialogContent.test.tsx` + visual QA.
+  - Files: `src/features/cardCreator/ui/CardCreatorDialog.module.css`, `CardCreatorDialogContent.tsx`
 
-**Acceptance criteria:**
-- [ ] `docs/specs/spec-card-creator.md` UI section references the new mockup and updated styles.
-- [ ] `docs/0-wiki.md` lists the new `spec-card-creator-ui-redesign.md`, `plan-card-creator-ui-redesign.md`, and `task-card-creator-ui-redesign.md` in the index.
-- [ ] Any new tokens are documented in `docs/design-system/design-system.md` (component layer only).
+## M4 — Image media gallery
 
-**Verification:**
-- [ ] `grep` confirms the new spec and plan filenames appear in `docs/0-wiki.md`.
-- [ ] `docs/specs/spec-card-creator.md` no longer says the old mockup must be matched exactly (or it points to the new mockup).
+- [ ] T4.1 Refactor `MediaList` to render image gallery when `kind='image'`
+  - Acceptance: Horizontal scrollable gallery, thumbnail 120px height, actual image preview, remove button top-right, add button at end.
+  - Verify: `MediaList.test.tsx` + visual QA.
+  - Files: `src/features/cardCreator/ui/MediaList.tsx`, `MediaList.module.css`
 
-**Dependencies:** Task 1
+- [ ] T4.2 Add image preview click behavior in gallery
+  - Acceptance: Clicking image thumbnail opens full-size preview overlay (reuse existing overlay).
+  - Verify: Browser QA.
+  - Files: `src/features/cardCreator/ui/MediaList.tsx`
 
-**Files touched:**
-- `docs/specs/spec-card-creator.md`
-- `docs/0-wiki.md`
-- `docs/design-system/design-system.md` (optional)
+## M5 — Audio media list redesign
 
-**Estimated scope:** Small (1–2 files)
+- [ ] T5.1 Update audio row style in `MediaList`
+  - Acceptance: Vertical list, waveform icon, filename, remove button, `+ Add ...` text button.
+  - Verify: `MediaList.test.tsx` + visual QA.
+  - Files: `src/features/cardCreator/ui/MediaList.tsx`, `MediaList.module.css`
 
----
+- [ ] T5.2 Add audio play behavior
+  - Acceptance: Clicking waveform icon plays the audio file.
+  - Verify: `MediaList.test.tsx` with mocked audio element.
+  - Files: `src/features/cardCreator/ui/MediaList.tsx`
 
-## Task 3: Update CardCreatorDialog CSS
+## M6 — Drag-and-drop file add
 
-**Description:**
-Update `src/features/cardCreator/ui/CardCreatorDialog.module.css` to match the mockup layout: alert, sections, pair-row, footer, and mobile stacking.
+- [ ] T6.1 Add `onFilesDrop` callback to `MediaList`
+  - Acceptance: Dropping valid files onto media zone appends them to the list; wrong type is ignored.
+  - Verify: Unit test with `fireEvent.drop`.
+  - Files: `src/features/cardCreator/ui/MediaList.tsx`, `CardCreatorDialogContent.tsx`
 
-**Acceptance criteria:**
-- [ ] Alert uses `Notice` style with `var(--color-warning-subtle)` and left border.
-- [ ] Sections are separated by whitespace, not boxed borders.
-- [ ] Section titles are `font-size-sm` semibold, not uppercase.
-- [ ] `pair-row` has two columns on desktop, one on mobile.
-- [ ] Footer has update mode on the left and action buttons on the right.
-- [ ] Mobile `.mobile` overrides still stack the footer and pair-row.
+- [ ] T6.2 Implement `addDroppedFiles` state update in `CardCreatorDialogContent`
+  - Acceptance: `draft.fields.images`/`sentenceAudios`/`wordAudios` updated with dropped files.
+  - Verify: `CardCreatorDialogContent.test.tsx` or `useCardCreatorState.test.ts`.
+  - Files: `src/features/cardCreator/ui/CardCreatorDialogContent.tsx`, `useCardCreatorState.ts` (if needed)
 
-**Verification:**
-- [ ] `npm run test:unit` passes.
-- [ ] `npm run build` passes.
-- [ ] Manual: open the Card Creator dialog in the test page and compare to the mockup.
+## M7 — Drag-to-reorder
 
-**Dependencies:** Task 1, Task 2
+- [ ] T7.1 Implement desktop drag-to-reorder using HTML5 DnD
+  - Acceptance: Dragging an image/audio item to another position updates the order.
+  - Verify: Unit test with `fireEvent.dragStart`/`drop`.
+  - Files: `src/features/cardCreator/ui/SortableMediaList.tsx` or `MediaList.tsx`
 
-**Files touched:**
-- `src/features/cardCreator/ui/CardCreatorDialog.module.css`
+- [ ] T7.2 Implement mobile long-press drag-to-reorder
+  - Acceptance: Long-pressing an item for ~400ms starts drag; releasing on another position reorders.
+  - Verify: Browser QA on mobile viewport or touch event unit test.
+  - Files: `src/features/cardCreator/ui/SortableMediaList.tsx` or `MediaList.tsx`
 
-**Estimated scope:** Small (1–2 files)
+- [ ] T7.3 Add `onReorder` state update in `CardCreatorDialogContent`
+  - Acceptance: `draft.fields[kind]` array is reordered in-place.
+  - Verify: Unit test.
+  - Files: `src/features/cardCreator/ui/CardCreatorDialogContent.tsx`
 
----
+## M8 — Mobile bottom sheet integration
 
-## Task 4: Update FieldRow CSS
+- [ ] T8.1 Verify `CardCreatorDialogContent` with `variant='mobile'`
+  - Acceptance: Layout stacks pair rows, footer stacks vertically, preview block centered, media lists usable.
+  - Verify: `CardCreatorBottomSheet.test.tsx` + browser QA.
+  - Files: `src/features/cardCreator/ui/CardCreatorBottomSheet.tsx`, `CardCreatorDialogContent.tsx`
 
-**Description:**
-Update `src/features/cardCreator/ui/FieldRow.module.css` to match the new label row, mapping select, input, and textarea styles.
+- [ ] T8.2 Update `BottomSheet` CSS if overflow issues appear
+  - Acceptance: Bottom sheet body scrolls, selects dropdowns visible.
+  - Verify: Browser QA.
+  - Files: `src/shared/ui/BottomSheet.module.css` (if needed)
 
-**Acceptance criteria:**
-- [ ] Label row is `justify-content: space-between` with the mapping select on the right.
-- [ ] Mapping select is small (20px height, subtle border, muted text).
-- [ ] Inputs and textareas have the correct border, background, and focus ring.
-- [ ] Spacing between fields is consistent (`--space-4`).
-- [ ] `Textarea` resize is vertical only and min-height is correct.
+## M9 — Final verification and cleanup
 
-**Verification:**
-- [ ] `npm run test:unit` passes.
-- [ ] `npm run build` passes.
-- [ ] Manual: each field row in the test dialog looks like the mockup.
+- [ ] T9.1 Run full verification
+  - Acceptance: `npm run test:unit`, `npm run lint`, `npm run typecheck` all pass.
+  - Verify: Run commands.
+  - Files: none (or fix failures).
 
-**Dependencies:** Task 3
+- [ ] T9.2 Browser MCP verify desktop + mobile
+  - Acceptance: UI matches mockup; D&D and reorder work; preview block visible.
+  - Verify: Browser MCP test.
+  - Files: test report in `docs/test-reports/`.
 
-**Files touched:**
-- `src/features/cardCreator/ui/FieldRow.module.css`
+- [ ] T9.3 Update architecture docs
+  - Acceptance: `docs/2-architechture-system.md` updated with new files if any; `docs/0-wiki.md` already updated.
+  - Verify: `git diff` review.
+  - Files: `docs/2-architechture-system.md`.
 
-**Estimated scope:** Small (1–2 files)
+## Notes
 
----
-
-## Task 5: Update MediaList CSS and component
-
-**Description:**
-Update `src/features/cardCreator/ui/MediaList.module.css` and `MediaList.tsx` to match the new compact media row design.
-
-**Acceptance criteria:**
-- [ ] Media row is a horizontal flex row with thumbnail, filename, and remove.
-- [ ] Image thumbnail shows a small image icon or a real preview; audio thumbnail shows a play/waveform icon.
-- [ ] Remove button is a small ghost icon (16px `×`).
-- [ ] Add button is a small ghost/link `+ Add {kind}`.
-- [ ] Empty state is a muted text line, not a dashed box.
-
-**Verification:**
-- [ ] `npm run test:unit` passes.
-- [ ] `npm run build` passes.
-- [ ] Manual: image and audio media lists look like the mockup.
-
-**Dependencies:** Task 4
-
-**Files touched:**
-- `src/features/cardCreator/ui/MediaList.module.css`
-- `src/features/cardCreator/ui/MediaList.tsx`
-
-**Estimated scope:** Small (2 files)
-
----
-
-## Task 6: Update CardCreatorDialogContent structure
-
-**Description:**
-Adjust `CardCreatorDialogContent.tsx` markup if the new CSS needs different DOM structure (e.g. the alert icon, section wrappers, or footer order).
-
-**Acceptance criteria:**
-- [ ] Alert renders as a `Notice` with icon and text.
-- [ ] Section titles are `h3` with the correct class.
-- [ ] Footer uses the same button order as the mockup.
-- [ ] No `data-testid` attributes are removed.
-- [ ] Mobile `variant="mobile"` still applies the `mobile` class.
-
-**Verification:**
-- [ ] `npm run test:unit` passes.
-- [ ] `npm run build` passes.
-- [ ] Manual: dialog content matches the mockup DOM structure.
-
-**Dependencies:** Task 5
-
-**Files touched:**
-- `src/features/cardCreator/ui/CardCreatorDialogContent.tsx`
-
-**Estimated scope:** Small (1–2 files)
-
----
-
-## Task 7: Verify desktop and mobile in the browser
-
-**Description:**
-Run the extension on a real page and verify the redesign does not break layout, spacing, or interaction.
-
-**Acceptance criteria:**
-- [ ] Card Creator opens from the subtitle block buttons.
-- [ ] All fields are visible and editable.
-- [ ] Media add/remove works.
-- [ ] Footer buttons are clickable and correctly aligned.
-- [ ] Mobile bottom sheet stacks fields and footer correctly.
-- [ ] No `rem` scaling issues on YouTube (dialog width is stable).
-
-**Verification:**
-- [ ] Manual test on YouTube at default and 10px `html` font-size.
-- [ ] `npm run test:unit` and `npm run build` pass.
-
-**Dependencies:** Task 6
-
-**Files touched:**
-- None (verification only; may surface new files to touch).
-
-**Estimated scope:** Small (verification only)
-
----
-
-## Checkpoint: Complete
-
-- [ ] Mockup approved and matches the spec.
-- [ ] All unit tests pass.
-- [ ] `npm run build` passes.
-- [ ] Manual browser check passes.
-- [ ] `docs/0-wiki.md` is updated.
-- [ ] PR committed and ready for review.
+- Use `git status` and `git diff` after each task to keep commits atomic.
+- Each task should touch ≤5 files. If a task grows, split it.
+- Do not start code before `todo_write` is created for BUILD phase.

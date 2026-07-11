@@ -1,202 +1,343 @@
-# Spec — Card Creator UI Redesign
+# Spec — Card Creator UI redesign
 
-> Redesign the Card Creator dialog to be cleaner, more minimalist, and easier to scan while preserving all existing functionality and the design-system tokens.
-> Supersedes the UI section of `spec-card-creator.md` once implemented. Architecture and data flow remain unchanged — see `spec-card-creator.md` and `ADR-026` for those.
-> Target mockup: `docs/mockups/anki-card-mockup.html`
+> Source of truth for redesigning the Card Creator dialog/bottom sheet UI.
+> Parent spec: `docs/specs/spec-card-creator.md`
+> Intent: `docs/intent/intent-card-creator-ui-redesign.md`
+> Mockup (approved, must match): `docs/mockups/anki-card-mockup.html`
 
 ## 1. Objective
 
-The current Card Creator mockup is perceived as cluttered, visually noisy, and not "tidy" (`rối mắt`, không tối giản, không gọn gàng). This spec defines a visual redesign that:
+Redesign the Card Creator UI so it is cleaner, more minimalist, and supports a Yomitan-scanable preview block plus improved drag-and-drop media management.
 
-- Reduces cognitive load by strengthening visual hierarchy.
-- Keeps the same fields and data flow — no feature changes.
-- Uses the existing Cell design-system tokens, no new color palette.
-- Produces a new `docs/mockups/anki-card-mockup.html` that becomes the implementation source of truth.
-- Updates the matching React/CSS implementation in `src/features/cardCreator/ui` and `src/shared/ui`.
+### User stories
 
-## 2. Design principles
+- As a language learner, I want a large read-only preview of my target word and sentence so Yomitan can scan them while I edit the card.
+- As a user, I want image media shown as a horizontal carousel with real previews and easy remove/reorder/add.
+- As a user, I want audio media shown as a vertical list with waveform icons, filenames, and easy remove/reorder/add.
+- As a user, I want to drag and drop files into the media area to add them, and drag existing items to reorder them.
+- As a mobile user, I want the same UI in the bottom sheet with touch-friendly long-press drag reorder.
 
-Derived from current UI trends (Linear, Notion, Figma, Arc) and material-density research:
+### Acceptance criteria
 
-1. **Minimalism is organization, not emptiness.** A dense form can be clean if relationships are visually encoded through grouping, spacing, and hierarchy.
-2. **One accent per screen.** The primary color is reserved for the main CTA and focus states. Secondary actions are muted.
-3. **Surface over shadow.** Use subtle background differences (`--color-card`, `--color-background`, `--color-surface`) instead of heavy borders and bright shadows.
-4. **Type hierarchy over decoration.** Section titles should be readable, not uppercase badges.
-5. **Spacing carries structure.** More space between sections than between fields; more space between groups than within a group.
-6. **Color with purpose.** Warning yellow is a scarce signal; do not use it for full-width alert backgrounds.
+- The UI matches `docs/mockups/anki-card-mockup.html` pixel-wise in spacing, colors, typography, icons, and layout.
+- The preview block displays target word and sentence, centered, with the target word bold and all occurrences in the sentence bolded.
+- Images render as a horizontal scrollable gallery with ~120px fixed height, actual image previews, and a top-right remove button.
+- Audios render as a vertical list with waveform icon, filename, and remove button.
+- Field mapping selectors are label-style (no `→`, no background/border, only a small chevron).
+- Media areas support drag-and-drop file addition and drag-to-reorder (desktop click-drag, mobile long-press-drag).
+- Existing state logic (`useCardCreatorState`, `cardDraft`, `fieldMapping`) is reused without behavioral changes.
 
-## 3. Scope
+## 2. Tech Stack
 
-### In scope
+- React 18 function components + hooks
+- TypeScript 5.x strict
+- CSS Modules with design-system tokens (`--space-*`, `--color-*`, `--radius-*`, `--font-size-*`)
+- Shared UI components: `Dialog`, `BottomSheet`, `Button`, `Select`, `Input`, `Textarea`
+- Native HTML5 Drag and Drop API for desktop reorder and file drop
+- Touch events (`touchstart`, `touchmove`, `touchend`) for mobile long-press-drag
+- No new dependencies (bundle-size guard).
 
-- `docs/mockups/anki-card-mockup.html` — full rewrite with the new design.
-- `src/features/cardCreator/ui/CardCreatorDialog.module.css`
-- `src/features/cardCreator/ui/FieldRow.module.css`
-- `src/features/cardCreator/ui/MediaList.module.css`
-- `src/features/cardCreator/ui/CardCreatorDialogContent.tsx` (minor structural changes if needed)
-- `src/features/cardCreator/ui/FieldRow.tsx` and `MediaList.tsx` (minor structural changes if needed)
-- `src/shared/ui/Dialog.module.css` and `Button.module.css` only if the mockup exposes a token gap.
+## 3. Commands
 
-### Out of scope
+```bash
+# Type check
+npm run typecheck
 
-- New features (deck defaults, batch create, SRS, etc.).
-- Changes to the AnkiConnect flow or media extraction.
-- Changes to the subtitle-block entry buttons (icon size bug was already fixed).
+# Lint
+npm run lint
 
-## 4. Detailed UI changes
+# Unit tests
+npm run test:unit
 
-### 4.1 Container / Dialog shell
+# Build extension
+npm run build
 
-- Width: keep `max-width: 512px` (design-system `--dialog-max-width`), `min-width: 360px`.
-- Padding: `--space-6` (24px) overall.
-- Border: `1px solid var(--color-border)`.
-- Radius: `--radius-lg` (12px).
-- Shadow: `var(--shadow-lg)` only; no double borders or inset shadows.
-- Background: `var(--color-background)`; do not use a translucent/blurred background for the panel itself.
-
-### 4.2 Header
-
-- Title: "Card Creator", `font-size-xl` (20px), `font-weight-semibold`, left-aligned.
-- No icon before the title unless it is a small, 16px, muted monoline icon.
-- Close button: `Button` with `variant="ghost"` `size="sm"`, right-aligned. Use an `×` or close SVG, not a solid `cluster-btn`.
-- No separator line under the header; rely on body padding.
-
-### 4.3 Alert
-
-Replace the current bright warning block with a `Notice` style:
-
-- Layout: flex row, 12px gap, icon + text.
-- Icon: 16px `info` or `alert-triangle` in `var(--color-warning)`.
-- Background: `var(--color-warning-subtle)` (very low opacity).
-- Left border: `3px solid var(--color-warning)`.
-- Border radius: `--radius-md` (8px).
-- Padding: `--space-3` (12px) vertical, `--space-3` (12px) left (including border offset), `--space-3` right.
-- Text: `font-size-sm` (13px), `color-text` (not inverse).
-- Error variant: swap warning for `var(--color-error)` and `var(--color-error-subtle)`.
-
-### 4.4 Card destination
-
-- Two selects side by side on desktop, stacked on mobile.
-- Label above each select, `font-size-xs` (12px), `font-weight-medium`, `color-text-secondary`.
-- No boxed section wrapper; use a `section` title "Destination" and a `pair-row` with `gap: --space-4` (16px).
-
-### 4.5 Section titles
-
-- No uppercase, no letter-spacing, no background box.
-- Style: `font-size-sm` (13px), `font-weight-semibold`, `color-text`, `margin-bottom: --space-3` (12px).
-- Sections separated by `margin-top: --space-5` (20px) or `space-6` (24px).
-
-### 4.6 Field rows
-
-Each field row:
-
-```
-┌─────────────────────────────────────────────┐
-│ Target word              → TargetWord  ▼   │  ← label row
-├─────────────────────────────────────────────┤
-│ [input/textarea]                            │  ← value
-└─────────────────────────────────────────────┘
+# Dev build
+npm run dev
 ```
 
-- Label row:
-  - `display: flex; justify-content: space-between; align-items: baseline;`
-  - `margin-bottom: --space-1` (4px).
-  - Label: `font-size-xs` (12px), `font-weight-medium`, `color-text-secondary`.
-  - Field mapping: rendered as a small inline select/badge on the right.
-    - Height: 20px, padding 2px 6px, border-radius `--radius-sm` (6px).
-    - Background: transparent; border: `1px solid var(--color-border-subtle)`.
-    - Text: `font-size-xs` (12px), `color-text-muted`.
-    - Hover: background `var(--color-surface-hover)`, border `var(--color-border-focus)`.
-    - Chevron: 12px, muted.
-    - The select text should be short: e.g. `→ TargetWord` or just `TargetWord` with a small `arrow-right` icon.
+## 4. Project Structure
 
-- Input / Textarea:
-  - Border: `1px solid var(--color-border)`.
-  - Background: `var(--color-background)`.
-  - Focus: `border-color: var(--color-border-focus)`, `box-shadow: 0 0 0 3px var(--color-primary-subtle)`.
-  - Textarea min-height: 56px (for single-line), 80px for sentence/translation.
+```
+src/features/cardCreator/ui/
+  CardCreatorDialog.tsx                 # desktop modal wrapper (already exists)
+  CardCreatorDialog.module.css          # shared content styles (UPDATE)
+  CardCreatorDialogContent.tsx          # main body (UPDATE)
+  CardCreatorBottomSheet.tsx            # mobile wrapper (already exists)
+  CardCreatorBottomSheet.module.css     # if needed
+  FieldRow.tsx                          # field label + mapping + input (UPDATE)
+  FieldRow.module.css                   # (UPDATE)
+  MediaList.tsx                         # image/audio list (UPDATE)
+  MediaList.module.css                  # (UPDATE)
+  PreviewBlock.tsx                      # NEW: read-only preview (Yomitan scan zone)
+  PreviewBlock.module.css               # NEW
+  SortableMediaList.tsx                 # NEW: drag-drop + reorder logic
+  SortableMediaList.module.css          # NEW
+  useCardCreatorState.ts                # state hook (already exists, no changes)
 
-- Spacing between fields: `--space-4` (16px).
+src/shared/ui/
+  Select.tsx / Select.module.css        # mapping selector (reuse, style override)
 
-### 4.7 Media list
+src/features/cardCreator/media/mediaFile.ts  # MediaFile type (no changes)
+src/features/cardCreator/state/cardDraft.ts  # draft type (no changes)
 
-Replace the current vertical list of repeated icons with a compact row/chip style:
+docs/mockups/anki-card-mockup.html      # approved mockup
+docs/specs/spec-card-creator-ui-redesign.md  # this file
+```
 
-- Each media item is a horizontal row:
-  - Left: thumbnail (for images) or play icon (for audio), 28px × 28px, rounded `--radius-sm`.
-  - Middle: filename, `font-size-sm`, `color-text`, truncate with ellipsis.
-  - Right: remove button (small ghost icon, 16px `×`).
-- Row padding: `--space-1` (4px) vertical, `--space-2` (8px) horizontal.
-- Row background: `var(--color-surface)` in dark, `var(--color-muted)` in light, or transparent with a subtle border.
-- Add button: `+ Add {kind}` as a small ghost/link style, not a dashed box.
-- Empty state: small muted text "No {kind} attached" instead of a full row.
+## 5. Code Style
 
-### 4.8 Footer
+- Named exports, no default exports.
+- CSS modules with kebab-case class names.
+- Use design-system tokens only; no hardcoded colors/spacing.
+- One component per file; logic functions co-located in `*.utils.ts` if needed.
+- React hooks with explicit dependency arrays.
+- Accessible: `aria-label`, `role`, `tabIndex`, focus-visible rings.
 
-- Layout: `display: flex; justify-content: space-between; align-items: center;` on desktop.
-- Left: "Update mode" label + `Select` (small, width 140px).
-- Right: actions in order:
-  - `Cancel` — ghost
-  - `Add` — secondary
-  - `Update` — primary
-- On mobile: stack vertically (mode on top, buttons in a row below, each `flex: 1`).
-- No border-top unless it is `1px solid var(--color-border-subtle)` and very faint.
+### Example snippet
 
-### 4.9 Settings connection card
+```tsx
+// PreviewBlock.tsx
+import type { ReactElement } from 'react';
+import styles from './PreviewBlock.module.css';
 
-- Keep the same fields, but clean up the status indicator:
-  - Card: `var(--color-card)`, border `var(--color-border)`, radius `--radius-md`, padding `--space-3`.
-  - Status row: dot (8px) + label + detail + "Test again" button on the right.
-  - Dot glow: `box-shadow: 0 0 0 3px rgba(<color>, 0.15)`.
-  - Online: green; offline: red; testing: yellow pulse.
+interface PreviewBlockProps {
+  targetWord: string;
+  sentence: string;
+}
 
-## 5. Design-system tokens
+export function PreviewBlock({ targetWord, sentence }: PreviewBlockProps): ReactElement {
+  const highlightedSentence = highlightOccurrences(sentence, targetWord);
+  return (
+    <div className={styles.previewBlock} aria-label="Preview">
+      <div className={styles.previewTarget}>{targetWord}</div>
+      <div className={styles.previewSentence}>{highlightedSentence}</div>
+    </div>
+  );
+}
 
-Reuse existing tokens only. No new primitive colors. Allowed new component tokens if needed:
+function highlightOccurrences(sentence: string, target: string): ReactElement {
+  if (!target.trim()) return <>{sentence}</>;
+  // naive case-sensitive split; i18n-safe per AC
+  const parts = sentence.split(target);
+  return (
+    <>
+      {parts.map((part, index) => (
+        <span key={index}>
+          {part}
+          {index < parts.length - 1 && <strong>{target}</strong>}
+        </span>
+      ))}
+    </>
+  );
+}
+```
 
-- `--notice-warning-bg: var(--color-warning-subtle)`
-- `--notice-warning-border: var(--color-warning)`
-- `--notice-error-bg: var(--color-error-subtle)`
-- `--notice-error-border: var(--color-error)`
+## 6. Testing Strategy
 
-If these are not in `themeTokens.ts`, add them as semantic aliases, not new primitives.
+- Unit tests with Jest + React Testing Library (`npm run test:unit`).
+- Colocate tests: `PreviewBlock.test.tsx` next to `PreviewBlock.tsx`.
+- Test coverage:
+  - `PreviewBlock` renders target word and sentence, highlights all occurrences.
+  - `FieldRow` renders label + mapping select + input; select change calls `onMapChange`.
+  - `MediaList` renders image gallery vs audio list; remove/add triggers callbacks.
+  - `SortableMediaList` reorder callback fires after drag reorder.
+  - `CardCreatorDialogContent` renders preview block and all fields.
+- Visual QA: open `docs/mockups/anki-card-mockup.html` and compare implemented UI.
+- Browser MCP verification for desktop + mobile bottom sheet.
 
-## 6. Mockup output
+## 7. Boundaries
 
-The deliverable `docs/mockups/anki-card-mockup.html` must:
-
-1. Render the desktop workspace (video player + Card Creator panel) and the settings page.
-2. Include a dark/light theme toggle.
-3. Use only design-system tokens (or `px` lengths for content-script safety as documented in `design-system.md` §6).
-4. Show the no-recent-card alert, all 10 fields, populated media lists, and the footer.
-5. Be self-contained (single HTML file, inline styles, no external assets except optional Google Fonts).
-
-## 7. Success criteria
-
-- [ ] `anki-card-mockup.html` renders in Chrome and matches the design described in §4.
-- [ ] All 10 fields, media lists, alert, destination selects, and footer are visible and aligned.
-- [ ] Dark and light themes both look clean and pass a 10-second visual scan.
-- [ ] Implementation CSS (`CardCreatorDialog.module.css`, `FieldRow.module.css`, `MediaList.module.css`) matches the mockup.
-- [ ] `npm run test:unit` passes.
-- [ ] `npm run build` passes.
-- [ ] Manual check: open Card Creator on a YouTube page and confirm the dialog is not visually overwhelming.
-
-## 8. Boundaries
-
-- **Always do:**
+- **Always:**
   - Use design-system tokens.
-  - Keep `px` for content-script sizes per `design-system.md` §6.
-  - Preserve keyboard shortcuts (`q`, `e`, `Esc`) and ARIA attributes.
+  - Run `npm run test:unit` and `npm run lint` before commit.
+  - Keep existing Card Creator state logic untouched.
+  - Add `aria-label` to all icon buttons.
+  - Preserve `data-testid` for testability.
+
 - **Ask first:**
-  - Changing `Dialog`, `Button`, or `Select` shared components.
-  - Adding new dependencies.
-- **Never do:**
-  - Change the Card Creator data flow or AnkiConnect behavior.
-  - Remove fields from the form.
-  - Commit secrets or hardcode URLs.
+  - Adding a new dependency.
+  - Changing `MediaFile` or `CardDraft` types.
+  - Modifying `useCardCreatorState` behavior.
+  - Changing `manifest.json`.
 
-## 9. Open questions
+- **Never:**
+  - Commit secrets or debug `console.log`.
+  - Remove existing `spec-card-creator.md` or `intent-card-creator.md`.
+  - Break existing quick-update / edit-card flows.
+  - Use `any` without explicit reason.
 
-- Should we keep the `10 minutes` alert copy, or change it to the simpler "No existing card found in this deck" wording already used in `CardCreatorDialogContent.tsx`?
-- Should media thumbnails show actual image previews (for screenshots) or keep icon-only for the mockup?
-- Should the `Add` and `Update` buttons be reordered? Quick-update users may want `Update` as the rightmost primary action.
+## 8. Data Contract
+
+### Types (compile-time)
+
+```typescript
+// src/features/cardCreator/ui/PreviewBlock.tsx
+export interface PreviewBlockProps {
+  readonly targetWord: string;
+  readonly sentence: string;
+}
+
+// src/features/cardCreator/ui/SortableMediaList.tsx
+export interface SortableMediaListProps {
+  readonly files: readonly MediaFile[];
+  readonly kind: 'image' | 'audio';
+  readonly addLabel: string;
+  readonly onAdd: () => void;
+  readonly onRemove: (index: number) => void;
+  readonly onReorder: (fromIndex: number, toIndex: number) => void;
+  readonly onFilesDrop: (files: MediaFile[]) => void;
+  readonly addDisabled?: boolean;
+  readonly testId?: string;
+}
+```
+
+### Zod schema (runtime)
+
+Not needed for UI-only feature; `MediaFile` shape is enforced by TypeScript in `mediaFile.ts`.
+
+## 9. UI Specification (must match mockup)
+
+### 9.1 Dialog shell
+
+- Desktop: `Dialog` component, title "Card Creator", showCloseButton.
+- Mobile: `BottomSheet` component, title "Card Creator", drag handle.
+- Body padding: `var(--space-6)` horizontal, `var(--space-4)` vertical top, `var(--space-6)` vertical bottom.
+- Background: `var(--color-background)`.
+
+### 9.2 Alert
+
+- Top of body.
+- Style: warning subtle background, left border 3px `var(--color-warning)`, no full border.
+- Icon: warning circle exclamation, 16px.
+- Text: `No existing card found in this deck. Fill in the fields below to create a new card.`
+- Error variant: left border `var(--color-error)`, background `var(--color-error-subtle)`.
+
+### 9.3 Section: Card destination
+
+- Section title: `Card destination`, `var(--font-size-sm)`, `var(--font-weight-semibold)`, uppercase `var(--tracking-wide)`, `var(--color-text)`.
+- Pair row: Note type (Select) | Deck (Select), grid 1fr 1fr, gap `var(--space-4)`.
+- Mobile: stack vertically.
+
+### 9.4 Preview block (NEW)
+
+- Location: between Card destination and Fields section.
+- Container: `var(--color-surface)` background, `var(--radius-md)` border-radius, `var(--space-4)` padding, no border.
+- Content:
+  - `#1` Target word: first line, centered, `var(--font-size-base)`, `var(--font-weight-semibold)`, `var(--color-text)`.
+  - `#2` Sentence: second line, centered, `var(--font-size-base)`, `var(--font-weight-regular)`, `var(--color-text-secondary)`.
+  - All occurrences of target word in sentence wrapped in `<strong>` with `var(--color-text)` and `var(--font-weight-semibold)`.
+- Realtime sync: update immediately on `targetWord` / `sentence` state change.
+- Accessible: `aria-label="Preview"`, `role="region"`.
+
+### 9.5 Section: Fields
+
+- Section title: `Fields`, same style as Card destination.
+- Fields in order: Target word, Sentence, Sentence translation, Definitions, Image, Sentence audio, Word audio, Note, More example, Tags.
+- Each field:
+  - `field-header`: label left, mapping selector right.
+  - Label: `var(--font-size-xs)`, `var(--font-weight-medium)`, `var(--color-text-secondary)`.
+  - Input/Textarea: design-system Input style, full width, min-height 56px for textarea.
+
+### 9.6 Field mapping selector (redesigned)
+
+- Inline in field header, aligned right.
+- Container: `inline-flex`, `align-items: center`, no background, no border.
+- Select trigger:
+  - Text: `var(--font-size-xs)`, `var(--font-weight-medium)`, `var(--color-text-muted)`.
+  - Padding: `2px 14px 2px 4px`.
+  - Border: none; background: transparent.
+  - `appearance: none`.
+  - Focus: `var(--color-primary)` text only.
+- Chevron: 10px SVG `polyline points="6 9 12 15 18 9"`, color `var(--color-text-muted)`, absolute right.
+- Options: include `None` (value `''`) plus available Anki fields. Native `<select>` fallback for a11y/menu styling in custom Select.
+- Width: fit-content.
+
+### 9.7 Media zone (Image)
+
+- Container: `var(--color-surface)` background, `var(--radius-md)`, `var(--space-2)` padding, no border.
+- Empty state:
+  - Dashed border `var(--color-border)`.
+  - Centered icon + text.
+  - Text: `Drop image here or click to add`.
+  - Cursor pointer.
+  - Hover: border `var(--color-border-focus)`, text `var(--color-text-secondary)`.
+- Filled state:
+  - Horizontal scrollable gallery (`image-gallery`).
+  - Thumbnail height 120px fixed; width auto respecting aspect ratio; `object-fit: contain`.
+  - Gap `var(--space-2)`.
+  - Remove button top-right (4px from edges), 20x20, `var(--color-surface-hover)` bg, `×` icon.
+  - Add button at end: dashed border 80x120, `+` icon.
+  - Desktop: drag thumbnail to reorder.
+  - Mobile: long-press thumbnail to start drag reorder.
+  - Click thumbnail to open image preview overlay (existing `ImagePreview` behavior).
+  - Drop image files onto zone to append.
+
+### 9.8 Media zone (Audio)
+
+- Container: same surface background, radius, padding.
+- Empty state: same dashed icon + text pattern.
+- Filled state:
+  - Vertical list (`media-list`), gap `var(--space-1)`.
+  - Row: waveform icon button (28x28, surface-hover bg) + filename + remove `×`.
+  - Row background: `var(--color-background)`.
+  - Row border-radius: `var(--radius-sm)`.
+  - Click waveform icon to play audio.
+  - Add button: `+ Add sentence audio` / `+ Add word audio` text style, no dashed border.
+  - Drag row to reorder (desktop drag / mobile long-press).
+  - Drop audio files onto zone to append.
+
+### 9.9 Footer
+
+- Desktop: `display: flex`, `justify-content: space-between`, `align-items: center`, border-top `var(--color-border-subtle)`, padding-top `var(--space-3)`.
+- Left: "Update mode" label + Select (Overwrite/Append/Skip).
+- Right: Cancel (ghost) | Add (secondary) | Update (primary).
+- Mobile: stack vertically, Update mode full width, buttons row `flex: 1` each.
+
+### 9.10 Mobile bottom sheet
+
+- Same sections, pair rows stacked, preview block centered, footer stacked.
+- 75vh max height, drag handle, overlay tap/drag-down to close.
+
+## 10. Media D&D and Reorder Behavior
+
+### 10.1 Add by file drop
+
+- `onDragOver` on media zone: set `dragover` class (dashed border focus color).
+- `onDrop`: read `DataTransfer.files`, filter by `kind` (image accept `image/*`, audio accept `audio/*`), convert to `MediaFile[]`, call `onFilesDrop(files)`.
+- Ignore files of wrong type with a non-blocking toast warning.
+
+### 10.2 Reorder
+
+- **Desktop:** each media item is `draggable`. On `dragstart`, store `dataTransfer.setData('text/plain', fromIndex)`. On `dragover` another item, prevent default. On `drop` on another item, call `onReorder(fromIndex, toIndex)`. On `drop` on zone end, append to end.
+- **Mobile:** on `touchstart`, start a long-press timer (400ms). On `touchmove` before timer fires, cancel. If timer fires, enter drag mode: create a visual clone under finger, on `touchmove` update clone position, on `touchend` determine drop target index and call `onReorder`. This is a minimal custom implementation; no external library.
+- Visual feedback during drag: `opacity: 0.4` on dragged item; placeholder gap where it would land.
+
+### 10.3 State updates
+
+- `onReorder` in `CardCreatorDialogContent` updates `draft.fields[kind]` by moving the item from `fromIndex` to `toIndex`.
+- `onFilesDrop` appends new `MediaFile[]` to the corresponding array.
+
+## 11. Success Criteria
+
+- [ ] UI matches `docs/mockups/anki-card-mockup.html` visually (dark + light theme toggle).
+- [ ] Preview block renders target word and sentence, centered, with all target-word occurrences bolded.
+- [ ] Preview text updates in realtime when `targetWord` or `sentence` inputs change.
+- [ ] Field mapping selectors are label-style (no background/border, no `→`).
+- [ ] Image media renders as horizontal gallery with 120px height and actual previews.
+- [ ] Audio media renders as vertical list with waveform icon and filename.
+- [ ] Media empty state shows icon + "Drop ... here or click to add" text.
+- [ ] Dropping files onto image/audio zones appends them.
+- [ ] Drag-to-reorder works on desktop (mouse drag) and mobile (long-press drag).
+- [ ] Removing image/audio triggers `onRemove` and removes the correct item.
+- [ ] Add buttons open file picker and append selected files.
+- [ ] Mobile bottom sheet uses same redesigned content.
+- [ ] `npm run test:unit` passes.
+- [ ] `npm run lint` passes.
+- [ ] `npm run typecheck` passes.
+- [ ] Browser MCP verifies desktop dialog and mobile bottom sheet.
+
+## 12. Open Questions
+
+- Should the `10 minutes` alert copy be simplified to "No existing card found in this deck" (already used in `CardCreatorDialogContent.tsx`) or keep the spec text? (This is a wording-only decision; no code impact.)
+- For the `Add` / `Update` footer order in the final mockup: `Add` is secondary, `Update` is primary rightmost. Confirm this matches quick-update workflow (Update is primary action when recent card exists).
