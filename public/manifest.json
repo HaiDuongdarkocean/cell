@@ -5,6 +5,7 @@
   "description": "Detect and download video + subtitle from free streaming sites for language learners",
   "permissions": [
     "webRequest",
+    "declarativeNetRequest",
     "downloads",
     "storage",
     "offscreen",

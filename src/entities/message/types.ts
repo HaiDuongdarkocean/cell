@@ -130,6 +130,12 @@ export interface SubtitleForOverlayResult {
   readonly format: string;
   readonly isAsr?: boolean; // ADR-020: YouTube auto-generated captions
   readonly displayName?: string; // ADR-020: YouTube "English (auto-generated)"
+  /**
+   * The request initiator (iframe player origin) — used as `Referer` when
+   * fetching the subtitle to pass CDN hotlink protection. See
+   * `DetectedSubtitle.initiator` for details.
+   */
+  readonly initiator?: string;
 }
 
 /**
@@ -288,10 +294,13 @@ export interface RequestAutoLoadSubtitlesPayload {
 }
 
 /** Content-script → background: fetch subtitle content (CORS fallback).
- * Background resolves relative URLs from `tabUrl` before fetching. */
+ * Background resolves relative URLs from `tabUrl` before fetching.
+ * `initiator` (iframe player origin) is used as the `Referer` source to pass
+ * CDN hotlink protection — many subtitle CDNs reject the top-level tab URL. */
 export interface FetchSubtitleContentPayload {
   readonly url: string;
   readonly tabUrl?: string;
+  readonly initiator?: string;
 }
 
 /** Background → content-script: fetched subtitle text (or error). */

@@ -89,6 +89,18 @@ function extractLanguage(url: string): string {
     }
   }
 
+  // Language-index pattern: `<lang>-<index>.vtt` (e.g. `eng-2.vtt`,
+  // `spa-5.vtt`, `por-4.vtt`). Used by aniwatch/megaplay subtitle CDNs
+  // (lostproject.club) where the numeric suffix disambiguates multiple
+  // tracks of the same language. The kebab path above fails because the
+  // last segment is the index (`2`), not a BCP47 tag. Match the full
+  // filename base against `^[a-z]{2,3}-\d+$` and take the primary subtag.
+  const langIndexMatch = /^([a-z]{2,3})-\d+$/i.exec(filenameWithoutExt);
+  if (langIndexMatch) {
+    const primary = langIndexMatch[1].toLowerCase();
+    if (isValidIsoCode(primary)) return primary;
+  }
+
   const segments = pathname.split('/').filter((s) => s.length > 0);
   if (segments.length >= 2) {
     const candidate = segments[segments.length - 2] ?? '';
@@ -121,5 +133,6 @@ export function detectSubtitle(request: NetworkRequest): DetectedSubtitle | null
     language,
     tabId: request.tabId,
     detectedAt: request.timeStamp,
+    initiator: request.initiator,
   };
 }

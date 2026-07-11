@@ -23,6 +23,7 @@ import { findSubtitlesForOverlay, type SubtitlePreference } from '@/features/sub
 import { detectLanguage, labelToIsoCode } from '@/features/detection';
 import { parseM3u8 } from '@/shared/lib/parsers/m3u8Parser';
 import { offscreenFetch, type OffscreenFetchOptions } from './offscreenFetch';
+import { setRefererRule, removeRefererRule } from '@/shared/lib/chrome-apis/declarativeNetRequest';
 import type { BackgroundContext } from './context';
 import type {
   DetectedVideo,
@@ -521,8 +522,29 @@ export async function resolveUnknownSubtitleLanguages(
   const results = await Promise.all(
     unknowns.map(async (sub) => {
       try {
-        // M15: fetch via offscreen so SW idle eviction doesn't abort the language-detection fetch.
-        const result = await offscreenFetch(ctx.offscreenManager, sub.url);
+        // Register a DNR rule so the browser rewrites `Referer` to the
+        // subtitle's initiator (iframe player origin). Many subtitle CDNs
+        // (e.g. lostproject.club behind megaplay.buzz) return 403 without
+        // the correct Referer — and `fetch()` from the offscreen document
+        // cannot set `Referer` (forbidden header). The rule is scoped to
+        // this exact URL + extension origin and removed after the fetch.
+        let ruleId: number | undefined;
+        if (sub.initiator) {
+          try {
+            ruleId = await setRefererRule(sub.url, sub.initiator);
+          } catch (err) {
+            console.warn(`[bg resolveUnknownSubtitleLanguages] setRefererRule failed for sub ${sub.id}:`, err);
+          }
+        }
+        let result: { ok: boolean; status: number; content: string; finalUrl: string };
+        try {
+          // M15: fetch via offscreen so SW idle eviction doesn't abort the language-detection fetch.
+          result = await offscreenFetch(ctx.offscreenManager, sub.url);
+        } finally {
+          if (ruleId !== undefined) {
+            void removeRefererRule(ruleId).catch(() => {});
+          }
+        }
         if (!result.ok) return null;
         const content = result.content;
         const label = detectLanguage(content, sub.format);

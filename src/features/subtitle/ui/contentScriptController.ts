@@ -27,6 +27,7 @@ import { BackgroundPrefillController } from '@/features/translate/logic/translat
 import { mountCardCreatorDialog, buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
+import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { TranslateResult } from '@/entities/message';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
@@ -202,6 +203,15 @@ export function init(video: HTMLVideoElement): () => void {
     }
     cardCreatorSettings = settings.cardCreator;
 
+    // ADR-026: prefetch AnkiConnect decks + models NOW (on click) so the
+    // network round-trip overlaps with media capture (screenshot + sentence
+    // audio, 2-5s). When the dialog mounts and loadData runs, it reuses the
+    // cached promise — resolving instantly if capture finished first.
+    void prefetchAnkiConnectData(cardCreatorSettings.ankiConnectUrl).catch(() => {
+      // Prefetch failure is non-fatal — loadData will retry with a fresh
+      // promise and surface the error via toast.
+    });
+
     // Lazy-init the dialog mount on first action.
     if (!cardCreatorMount) {
       cardCreatorMount = mountCardCreatorDialog(cardCreatorSettings, container);
@@ -337,6 +347,11 @@ export function init(video: HTMLVideoElement): () => void {
         ...(Object.keys(clusterPartial).length > 0 && { clusterSettings: clusterPartial }),
       };
       if (Object.keys(update).length > 0) blockController.updateSettings(update);
+      // Reload keyboard shortcuts so remaps (e.g. 't' → 'y') take effect
+      // without a page reload. loadShortcuts reads from the new settings.
+      if (newSettings.keyboardShortcuts) {
+        loadShortcuts().then((s) => { shortcuts = s; });
+      }
     });
   });
 
@@ -419,9 +434,10 @@ export function init(video: HTMLVideoElement): () => void {
   // Create toggle button (overlay) — click → open Side Panel
   toggleBtn = createToggleButton(container);
 
-  // Wire toggle button → toggle Side Panel open/close (ADR-008 D1).
-  // sidePanelOpen tracks best-effort state (see ceiling note above).
-  toggleBtn.addEventListener('click', () => {
+  // Toggle Side Panel open/close (ADR-008 D1). Shared by button click + 't'
+  // keyboard shortcut. sidePanelOpen tracks best-effort state (see ceiling
+  // note above).
+  function toggleSidePanel(): void {
     if (sidePanelOpen) {
       sidePanelOpen = false;
       void sendMessage({
@@ -435,13 +451,31 @@ export function init(video: HTMLVideoElement): () => void {
         payload: { tabId: undefined }, // background resolves from sender.tab.id
       });
     }
-  });
+  }
+
+  toggleBtn.addEventListener('click', toggleSidePanel);
 
   // Manager panel is created asynchronously inside loadOverlayStyles().then()
   // so it can reuse the import button created by SubtitleOverlayController.
 
-  // Wire keyboard shortcuts
+  // Wire keyboard shortcuts. Capture phase (3rd arg = true) so we fire BEFORE
+  // YouTube's own keydown listeners (e.g. 't' = theater mode) and can block
+  // them via stopImmediatePropagation when the key matches a configured action.
   document.addEventListener('keydown', (e) => {
+    // Chrome hides the side panel when a tab enters fullscreen (Chromium
+    // commit 6c6eb90, bug 1249462). sidePanel.open() in fullscreenchange
+    // fails (no user gesture). But the 'f' keydown that triggers fullscreen
+    // IS a user gesture — so re-open the panel synchronously here, before
+    // YouTube's fullscreen handler runs. Chrome will hide the panel when
+    // fullscreen completes, but the re-open keeps it visible.
+    // ponytail ceiling: only covers 'f' key, not UI fullscreen button click.
+    // Upgrade: if Chrome exposes a "keep visible in fullscreen" flag, drop this.
+    if (!isEditableTarget(e.target) && e.key.toLowerCase() === 'f' && sidePanelOpen) {
+      void sendMessage({
+        type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
+        payload: { tabId: undefined },
+      });
+    }
     // ADR-019: fixed parallel offset shortcuts `[` `]` `{` `}` `\` (ponytail: not in
     // ShortcutAction union — avoid config UI bloat, like NavCluster fixed shortcuts).
     // Guard: skip when focus in editable (input/textarea/contenteditable) — avoid YouTube search conflict.
@@ -477,7 +511,10 @@ export function init(video: HTMLVideoElement): () => void {
       alt: e.altKey,
     });
     if (!action) return;
+    // Block YouTube's own shortcuts (e.g. 't' = theater mode) + other
+    // same-target listeners so only our action runs.
     e.preventDefault();
+    e.stopImmediatePropagation();
 
     switch (action) {
       case 'prev-cue': {
@@ -513,12 +550,11 @@ export function init(video: HTMLVideoElement): () => void {
         break;
       }
       case 'toggle-panel': {
-        // ADR-008 D1: toggle-panel now opens the Side Panel instead of
-        // show/hide inject-DOM panel.
-        void sendMessage({
-          type: MESSAGE_TYPES.OPEN_SIDE_PANEL,
-          payload: { tabId: undefined },
-        });
+        // Call toggleSidePanel directly. Per Chrome sidePanel docs, a keyboard
+        // shortcut is a valid user gesture for sidePanel.open() — no need to
+        // route through a synthetic button click. toggleSidePanel sends
+        // OPEN/CLOSE_SIDE_PANEL to background, which calls chrome.sidePanel.
+        toggleSidePanel();
         break;
       }
       case 'toggle-translate': {
@@ -570,6 +606,15 @@ export function init(video: HTMLVideoElement): () => void {
         }
         break;
       }
+      // ADR-026: Card Creator entry shortcuts (q quick-update, e edit-card).
+      // Guard: dialog open → let dialog handle keys. auto-repeat → no action.
+      case 'quick-update':
+      case 'edit-card': {
+        if (e.repeat) return;
+        if (cardCreatorMount?.isOpen()) return;
+        void handleCardCreatorAction(action);
+        break;
+      }
     }
   });
 
@@ -613,6 +658,13 @@ export function init(video: HTMLVideoElement): () => void {
   // for property access. Safe because chrome.runtime messages are plain objects.
   onMessage((msg: unknown, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
     const m = msg as { type?: string; payload?: unknown };
+    // Background relays CLOSE_SIDE_PANEL back to this content script via
+    // tabs.sendMessage after closing the panel. Reset our toggle state so the
+    // next 'p' on the page opens instead of sending a stale CLOSE no-op.
+    // (X-button close remains a known ceiling — background doesn't see it.)
+    if (m?.type === MESSAGE_TYPES.CLOSE_SIDE_PANEL) {
+      sidePanelOpen = false;
+    }
     if (m?.type === MESSAGE_TYPES.SEEK_TO) {
       const timeMs = (m.payload as { timeMs: number })?.timeMs;
       if (timeMs !== undefined) {
@@ -1106,7 +1158,7 @@ export function init(video: HTMLVideoElement): () => void {
     refreshPanel(role);
 
     try {
-      const result = await fetchAndParseSubtitle(sub.url, formatFromUrl(sub.url), window.location.href);
+      const result = await fetchAndParseSubtitle(sub.url, formatFromUrl(sub.url), window.location.href, sub.initiator);
       if (!result.success || result.cues.length === 0) {
         console.error('[onSubtitleSelect] failed', result.error);
         showToast(`Could not load subtitle track ${index + 1}`, container, { variant: 'error' });
@@ -1170,6 +1222,31 @@ export function init(video: HTMLVideoElement): () => void {
   };
   document.addEventListener('visibilitychange', onVisibilityChange);
 
+  // ponytail: proactive SPA-nav clear. YouTube keep <video> on SPA nav →
+  // overlay not re-init → stale cues from previous video persist when the
+  // background round-trip (MAIN-world detect → DETECTED_SUBTITLES →
+  // AUTO_LOAD_SUBTITLES null) is delayed/lost (poll timeout 2s, InnerTube
+  // error, SW restart). Native yt-navigate-finish + popstate fire reliably
+  // on YouTube SPA nav → clear ngay, không đợi background.
+  // Ceiling: nav without URL change (rare on YouTube) → not caught. Upgrade:
+  // MutationObserver on <video> src.
+  const onSpaNav = (): void => {
+    if (lastAutoLoadUrl === undefined || lastAutoLoadUrl === location.href) return;
+    console.log('[content-script] SPA nav detected, clearing overlay', {
+      from: lastAutoLoadUrl,
+      to: location.href,
+    });
+    blockController?.clearCues();
+    offsetController?.loadCues(false);
+    latestTargetCues = [];
+    translatePrefill?.clear();
+    translatePrefill = null;
+    lastAutoLoadKey = undefined;
+    lastAutoLoadUrl = undefined;
+  };
+  window.addEventListener('yt-navigate-finish', onSpaNav);
+  window.addEventListener('popstate', onSpaNav);
+
   // Return cleanup so the caller can tear down before re-init on SPA episode
   // switch (Angular replaces <video> → old overlay UI removed by framework
   // re-render, but document/onMessage listeners would otherwise leak).
@@ -1177,6 +1254,8 @@ export function init(video: HTMLVideoElement): () => void {
   // leak after many episode switches. Upgrade path: track + remove all listeners.
   return () => {
     document.removeEventListener('visibilitychange', onVisibilityChange);
+    window.removeEventListener('yt-navigate-finish', onSpaNav);
+    window.removeEventListener('popstate', onSpaNav);
     toggleBtn?.remove();
     managerPanel?.destroy();
     cardCreatorMount?.unmount();

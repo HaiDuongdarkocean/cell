@@ -110,12 +110,18 @@ export function formatFromUrl(url: string): SubtitleFormat {
  * `FETCH_SUBTITLE_CONTENT` (SW fetch is cross-origin allowed with host
  * permission). `tabUrl` is passed so background can resolve relative URLs.
  *
+ * `initiator` (iframe player origin) is sent to the background fallback as
+ * the `Referer` source — many subtitle CDNs reject the top-level tab URL and
+ * return 403. The content-script fetch itself cannot set `Referer` (browser
+ * controls it), so the background fallback is the only path that benefits.
+ *
  * Returns ParseResult (success: false on fetch/parse failure, never throws).
  */
 export async function fetchAndParseSubtitle(
   url: string,
   format: SubtitleFormat,
   tabUrl?: string,
+  initiator?: string,
 ): Promise<ParseResult> {
   const cached = subtitleCache.get(url);
   if (cached) {
@@ -127,14 +133,14 @@ export async function fetchAndParseSubtitle(
     const response = await fetch(url);
     if (!response.ok) {
       // Non-ok (403/404) → try background fallback before giving up.
-      content = await fetchViaBackground(url, tabUrl);
+      content = await fetchViaBackground(url, tabUrl, initiator);
     } else {
       content = await response.text();
     }
   } catch {
     // TypeError (CORS blocked) → background fallback.
     try {
-      content = await fetchViaBackground(url, tabUrl);
+      content = await fetchViaBackground(url, tabUrl, initiator);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       return { success: false, cues: [], format, error: `Fetch failed: ${msg}` };
@@ -161,10 +167,10 @@ export async function fetchAndParseSubtitle(
  * Fallback: ask background to fetch the subtitle (CORS bypass via SW).
  * Throws on failure (caller catches + reports).
  */
-async function fetchViaBackground(url: string, tabUrl?: string): Promise<string> {
+async function fetchViaBackground(url: string, tabUrl?: string, initiator?: string): Promise<string> {
   const response = await sendMessage<{ content?: string; error?: string }>({
     type: MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT,
-    payload: { url, tabUrl },
+    payload: { url, tabUrl, initiator },
   }) as { success?: boolean; data?: FetchSubtitleContentResult; error?: string } | undefined;
   if (!response?.success || !response.data?.content) {
     throw new Error(response?.error ?? 'background fetch returned no content');
@@ -222,8 +228,8 @@ export async function handleAutoLoadSubtitles(
   }
 
   const [targetResult, nativeResult] = await Promise.all([
-    target ? fetchAndParseSubtitle(target.url, formatFromUrl(target.url), deps.tabUrl) : Promise.resolve(null),
-    native ? fetchAndParseSubtitle(native.url, formatFromUrl(native.url), deps.tabUrl) : Promise.resolve(null),
+    target ? fetchAndParseSubtitle(target.url, formatFromUrl(target.url), deps.tabUrl, target.initiator) : Promise.resolve(null),
+    native ? fetchAndParseSubtitle(native.url, formatFromUrl(native.url), deps.tabUrl, native.initiator) : Promise.resolve(null),
   ]);
   console.log('[handleAutoLoadSubtitles] parse results', {
     targetSuccess: targetResult?.success,

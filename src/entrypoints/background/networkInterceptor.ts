@@ -103,6 +103,7 @@ export class NetworkInterceptor {
       tabId: details.tabId,
       type: details.type,
       timeStamp: details.timeStamp,
+      initiator: details.initiator,
     };
 
     const video = detectVideo(request);

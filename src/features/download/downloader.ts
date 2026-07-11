@@ -34,6 +34,7 @@ import {
   writeJsonFile,
 } from '@/shared/lib/storage/opfsStorage';
 import { download as chromeDownload, searchDownloads } from '@/shared/lib/chrome-apis/downloads';
+import { setRefererRule, removeRefererRule } from '@/shared/lib/chrome-apis/declarativeNetRequest';
 
 /**
  * Callback invoked with progress updates during a download.
@@ -313,7 +314,33 @@ export class Downloader {
     this.throwIfCancelled(downloadId);
     this.reportProgress(downloadId, 'downloading', 0);
 
-    const response = await fetch(subtitle.url, { credentials: 'same-origin' });
+    // Prefer the request `initiator` (iframe player origin) as the Referer —
+    // many subtitle CDNs (e.g. lostproject.club behind megaplay.buzz) reject
+    // the top-level tab URL and return 403. Fall back to the linked video's
+    // tabUrl (top-level page) when initiator is unavailable.
+    //
+    // `fetch()` from the extension SW cannot set `Referer` (forbidden header —
+    // browser strips it). We register a `declarativeNetRequest` dynamic rule
+    // scoped to this exact URL + extension origin so the browser rewrites
+    // `Referer` before the request leaves the network stack. The rule is
+    // removed after the fetch completes (success or failure).
+    const refererSource = subtitle.initiator ?? videoContext?.videoTabUrl;
+    let ruleId: number | undefined;
+    if (refererSource) {
+      try {
+        ruleId = await setRefererRule(subtitle.url, refererSource);
+      } catch (err) {
+        console.warn('[downloadSubtitle] setRefererRule failed, proceeding without DNR rule:', err);
+      }
+    }
+    let response: Response;
+    try {
+      response = await fetch(subtitle.url, { credentials: 'same-origin' });
+    } finally {
+      if (ruleId !== undefined) {
+        void removeRefererRule(ruleId).catch(() => {});
+      }
+    }
     if (!response.ok) {
       throw new Error(`Failed to fetch subtitle: ${response.status}`);
     }

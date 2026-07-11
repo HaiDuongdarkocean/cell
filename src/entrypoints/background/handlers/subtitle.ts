@@ -14,6 +14,7 @@ import {
   pushAutoLoadSubtitles,
 } from '../helpers';
 import { offscreenFetch } from '../offscreenFetch';
+import { setRefererRule, removeRefererRule } from '@/shared/lib/chrome-apis/declarativeNetRequest';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -110,6 +111,25 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
       }
     }
 
+    // Prefer the request `initiator` (iframe player origin) as the Referer —
+    // many subtitle CDNs (e.g. lostproject.club behind megaplay.buzz) reject
+    // the top-level tab URL and return 403. Fall back to tabUrl when
+    // initiator is unavailable.
+    //
+    // `fetch()` from the offscreen document cannot set `Referer` (forbidden
+    // header — browser strips it). We register a `declarativeNetRequest`
+    // dynamic rule scoped to this exact URL + extension origin so the browser
+    // rewrites `Referer` before the request leaves the network stack.
+    const refererSource = payload.initiator ?? tabUrl;
+    let ruleId: number | undefined;
+    if (refererSource) {
+      try {
+        ruleId = await setRefererRule(finalUrl, refererSource);
+      } catch (err) {
+        console.warn('[FETCH_SUBTITLE_CONTENT] setRefererRule failed:', err);
+      }
+    }
+
     try {
       // M15: fetch via offscreen so SW idle eviction doesn't abort the subtitle fetch.
       const result = await offscreenFetch(ctx.offscreenManager, finalUrl);
@@ -120,6 +140,10 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return { success: false, error: `Background fetch failed: ${msg}` };
+    } finally {
+      if (ruleId !== undefined) {
+        void removeRefererRule(ruleId).catch(() => {});
+      }
     }
   });
 

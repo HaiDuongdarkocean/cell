@@ -411,6 +411,7 @@ Khi extract structured data (language code, version, episode number) từ URL/fi
 
 ### Cases đã gặp
 - [url-lang-multi-separator-extraction.md](url-lang-multi-separator-extraction.md) — kisskh.buzz URL `a-hundred-memories-episode-1-en.srt` dùng kebab-case (`-en`) thay vì dot-separated (`episode-1.en.srt`). `extractLanguage` cũ chỉ split theo `.` → `parts.length=1` → `'unknown'` → `findSubtitlesForOverlay` không match target lang `'en'` → auto-load không trigger. Fix: thêm kebab-case fallback (split theo `-`, check last segment là BCP47 + `isValidIsoCode`) giữa dot-split và folder segment fallback.
+- [url-lang-index-pattern.md](url-lang-index-pattern.md) — aniwatch/lostproject URL `eng-2.vtt` dùng `<lang>-<index>` pattern. Kebab-split path miss vì last segment = index (`2`), không phải language code. Fix: thêm regex `^([a-z]{2,3})-\d+$` match toàn bộ filename base, extract primary subtag, validate bằng `isValidIsoCode`.
 
 ### Apply cho
 - URL/filename language extraction (subtitle, media, document)
@@ -548,3 +549,83 @@ Format detection bằng file extension alone fails cho URLs không có extension
 - Multi-layer pipelines where each layer guards on empty — verify the empty case reaches the final consumer
 - "Don't store empty" / "don't push empty" guards — compose into dead paths; replace with "store empty + clear downstream"
 - Detection pipelines (0 results is a result — surface it, don't swallow it)
+
+---
+
+## Conditional stopPropagation — only swallow when inner actually handled
+
+### Nguyên lý
+`stopPropagation` là "swallow event" — chỉ gọi khi handler thực sự tiêu thụ event. Khi inner handler return early vì không match case của nó (external drop khi inner chỉ xử lý internal reorder, click ngoài khi inner chỉ xử lý click-in), event phải được phép bubble lên outer handler. Unconditional `stopPropagation` ở đầu hàm = silent dead path cho mọi case inner không handle — outer handler không bao giờ chạy cho những case đó. Pattern: check điều kiện handle trước, `stopPropagation` sau (và chỉ khi match).
+
+### Cases đã gặp
+- [drag-drop-stop-propagation-blocks-outer.md](drag-drop-stop-propagation-blocks-outer.md) — Card Creator `MediaList` inner `handleDrop` gọi `e.stopPropagation()` unconditionally → external file drop trên non-empty area bị swallow, `onFilesDrop` không gọi. Fix: chỉ `stopPropagation` khi `draggingIndex !== null` (internal reorder), để bubble khi external drop.
+
+### Apply cho
+- Nested drop handlers (internal reorder + external file add) — stopPropagation chỉ khi internal drag active
+- Nested click handlers (popover inside dialog — stopPropagation chỉ khi click inside popover, let outside-click close dialog)
+- Event delegation layers (inner listener + outer listener cùng event type) — inner chỉ swallow khi nó handle, không swallow khi return early
+- React synthetic event bubbling nơi outer container cần nhận event cho một số case
+
+---
+
+## Dropdown width follows content, alignment configurable by trigger position
+
+### Nguyên lý
+Dropdown menu width phải theo content (`width: max-content` + `min-width: 100%` + `max-width` guard), không theo trigger — trigger width là UI constraint, content width là readability constraint. Alignment phải configurable theo vị trí trigger trong container: trigger bên trái → menu mở phải (`left: 0`), trigger bên phải → menu mở trái (`right: 0; left: auto`) để không tràn container. Hardcode `left: 0; right: 0` assume trigger luôn bên trái + content luôn ngắn hơn trigger — sai cho cả 2 assumption. `min-width: 100%` đảm bảo menu không ngắn hơn trigger (không bị "bé hơn select"), `max-width` guard item quá dài không blow out layout.
+
+### Cases đã gặp
+- [dropdown-menu-width-follows-content.md](dropdown-menu-width-follows-content.md) — Card Creator field-map `Select` (bên phải row) dùng `left: 0; right: 0` → menu width = trigger width (~40-80px) → options dài ("SentenceTranslation") bị clip. Menu mở phải tràn card. Fix: `width: max-content; min-width: 100%; max-width: 320px` + prop `menuAlign: 'left' | 'right'`, FieldRow truyền `menuAlign="right"`.
+
+### Apply cho
+- Custom dropdown/select components (Radix, custom listbox) nơi trigger hẹp + options dài
+- Popover/tooltip positioning theo trigger position trong container (right-aligned trigger → popover mở trái)
+- Menus trong constrained containers (dialog, sidebar, card) — menu không được tràn container boundary
+- Any floating UI element cần width theo content + alignment theo anchor position
+
+---
+
+## Persist selections, clear content — scope autosave to intent
+
+### Nguyên lý
+Autosave scope phải match intent, không match shape. "Chống mất work" (crash recovery) ≠ "giữ content qua session" (persistence). Selections (config, preferences, tags, last-used values) là **stable + retry-friendly** — persist. Content (text input, media, work product gắn với entity cụ thể) là **ephemeral + confusion-causing** — clear khi đóng entity. Persist selections + clear content = giữ cái ổn định, xóa cái nhầm-lẫn-gây-rối. Persist toàn bộ confuse 2 intent — cố cứu content nhưng content cũ lại là noise khi tạo entity mới. Phân biệt: cái gì user **chọn** (selection, ổn định) vs cái gì user **nhập/làm** (content, gắn entity).
+
+### Cases đã gặp
+- [persist-config-clear-content.md](persist-config-clear-content.md) — Card Creator autosave persist toàn bộ text fields → reopen restore content cũ gây nhầm lẫn. Fix: `SerializedDraft` bỏ `fields`, chỉ persist `noteType`/`deck`/`fieldMapping`/`tags`/`mediaUpdateMode`. `deserializeDraft` trả text fields = `''`. Đóng dialog = clear content, giữ tags + config.
+
+### Apply cho
+- Form/dialog autosave (draft restore) — persist selections (dropdowns, checkboxes, tags), clear free-text content
+- Multi-step wizards (persist step selections, clear step input khi wizard close)
+- Editor drafts (persist settings/mode, clear document content khi close — hoặc ngược lại tùy intent, nhưng phải conscious choice)
+- Any "remember user's work" feature — tách selections (remember) vs content (don't remember unless explicit "save draft")
+
+## Proactive clear on native event > cross-context round-trip
+
+### Nguyên lý
+A cross-context round-trip (content → MAIN → content → SW → content) is a request, not a guarantee. Each hop has its own failure mode (poll timeout, fetch error, SW eviction, message drop) and every failure is a silent skip — no error, no retry, no log on the consumer side. When the consequence of a missed signal is stale state visible to the user, the consumer MUST also listen for the native event that triggered the round-trip (`yt-navigate-finish`, `popstate`, `visibilitychange`, `fullscreenchange`) and clear its own state locally. The round-trip becomes the refill path (load new data), not the clear path. Clear is cheap, local, synchronous on the native event; refill is expensive, async, cross-context — they should not share a dependency chain. This is the dual of "signal absence is not absence of signal" (which fixed the content of the round-trip — send 0, not nothing); this fixes the transport — even when the content is correct, the transport can drop it.
+
+### Cases đã gặp
+- [proactive-native-event-clear-vs-round-trip.md](proactive-native-event-clear-vs-round-trip.md) — YouTube SPA nav subtitle overlay persisted with video #1's cues on video #2 (no subtitles). Previous fix routed 0-track signal through MAIN→content→SW→content round-trip, but the round-trip is fragile (poll timeout 2s, InnerTube fetch error, SW restart, message drop). Fix: content-script registers `yt-navigate-finish` + `popstate` listeners and clears overlay locally on URL change — does not wait for background. Round-trip becomes refill path, not clear path.
+
+### Apply cho
+- Cross-context state sync where the consumer shows stale state (overlay, panel, badge) — consumer needs local clear on the native event, not just a message from the producer
+- MV3 service-worker message chains (SW eviction mid-round-trip drops messages silently) — consumer-side native event listener as fallback
+- SPA frameworks with native nav events (`yt-navigate-finish`, `popstate`, framework-specific route-change events) — listen directly, don't rely on a re-broadcast through background
+- Any "clear on X" path that currently only runs inside a message handler — verify the message always arrives; if not, add a local listener for X
+
+---
+
+## Forbidden headers in extension fetch → DNR modify at network stack
+
+### Nguyên lý
+`fetch()` từ extension context (service worker, offscreen document) không thể set **forbidden headers** (`Referer`, `Cookie`, `User-Agent`...) — browser strip hoặc override trước khi gửi (Chrome 72+). Khi server yêu cầu forbidden header (e.g. CDN hotlink protection kiểm tra `Referer`), `fetch()` trả 403 dù code set header đúng. `declarativeNetRequest` (DNR) chạy ở **network stack layer**, sau khi browser chuẩn bị headers, nên CAN rewrite forbidden headers. Rule scoped bằng `initiatorDomains: [chrome.runtime.id]` + exact URL → chỉ affect extension's own fetch, không break page requests. Rule phải remove sau fetch (try/finally) để tránh accumulation (DNR cap 30,000 dynamic rules).
+
+Khác với principle "Extension SW lacks page context → MAIN world fetch": đó là thiếu cookies/origin (page context không có), fix bằng MAIN world content script. Principle này là: có đủ context nhưng browser cấm set header qua API → fix bằng DNR (network stack level, không cần page context).
+
+### Cases đã gặp
+- [forbidden-header-referer-dnr.md](forbidden-header-referer-dnr.md) — aniwatch/megaplay subtitle CDN (`1oe.lostproject.club`) yêu cầu `Referer` từ `megaplay.buzz` (iframe player origin). `fetch()` từ extension SW set `Referer` qua `headers` option nhưng browser strip → 403. Fix: `declarativeNetRequest` dynamic rule scoped to exact URL + extension origin, set `Referer` = `subtitle.initiator` (iframe player origin). 3 fetch paths (download, auto-load overlay, resolve unknown language) đều cần DNR rule. `initiator` field thêm vào `DetectedSubtitle` + `NetworkRequest` + `SubtitleForOverlayResult` + `FetchSubtitleContentPayload`, pass qua toàn bộ detection chain.
+
+### Apply cho
+- CDN hotlink protection yêu cầu `Referer` từ specific domain (subtitle CDN, image CDN, video CDN)
+- Any extension fetch bị 403 dù set headers đúng — kiểm tra xem header có phải forbidden
+- `fetch()` từ service worker hoặc offscreen document cần set `Referer`/`Cookie`/`User-Agent`
+- Alternative: route fetch qua content script trong iframe (browser set Referer tự) — phức tạp hơn, cần frame routing

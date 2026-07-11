@@ -20,6 +20,21 @@ export interface DetectedSubtitle {
   readonly size?: number; // File size in bytes
   readonly isAsr?: boolean; // YouTube auto-generated captions (kind === "asr") — ADR-020
   readonly displayName?: string; // YouTube "English (auto-generated)" — ADR-020
+  /**
+   * The origin/URL that initiated the network request (chrome.webRequest
+   * `initiator`). For iframe-embedded players (e.g. megaplay.buzz inside
+   * aniwatch.co.at), this is the iframe's origin — which CDNs require as the
+   * `Referer` header to pass hotlink protection. The top-level tab URL is
+   * NOT accepted by such CDNs and returns 403.
+   */
+  readonly initiator?: string;
+  /**
+   * The frame id that initiated the request (chrome.webRequest `frameId`).
+   * Used to route fetches through the content script in that frame so the
+   * browser sets the correct `Referer` (page context) — `fetch()` from the
+   * extension SW cannot override `Referer` (forbidden header).
+   */
+  readonly frameId?: number;
 }
 
 // Parsed subtitle structures
@@ -188,4 +203,11 @@ export interface NetworkRequest {
   readonly tabId: number;
   readonly type: string; // resource type
   readonly timeStamp: number;
+  /**
+   * The origin that initiated the request (chrome.webRequest
+   * `OnBeforeRequestDetails.initiator`). For iframe-embedded players this is
+   * the iframe's origin, which CDNs require as `Referer` for hotlink
+   * protection. The top-level tab URL is NOT accepted by such CDNs.
+   */
+  readonly initiator?: string;
 }

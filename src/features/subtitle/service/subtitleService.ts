@@ -62,6 +62,7 @@ export function findSubtitlesForOverlay(
             format: s.format,
             isAsr: s.isAsr,
             displayName: s.displayName,
+            initiator: s.initiator,
           }))
       : [];
   const nativeMatches =
@@ -74,6 +75,7 @@ export function findSubtitlesForOverlay(
             format: s.format,
             isAsr: s.isAsr,
             displayName: s.displayName,
+            initiator: s.initiator,
           }))
       : [];
 
@@ -112,5 +114,6 @@ export function findPreferredMatch(
     format: match.format,
     isAsr: match.isAsr,
     displayName: match.displayName,
+    initiator: match.initiator,
   };
 }
