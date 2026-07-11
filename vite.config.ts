@@ -16,6 +16,7 @@ export default defineConfig({
         offscreen: resolve(__dirname, 'src/entrypoints/offscreen/ffmpeg.html'),
         sidepanel: resolve(__dirname, 'src/entrypoints/sidepanel/index.html'),
         options: resolve(__dirname, 'src/entrypoints/options/index.html'),
+        cardCreatorTest: resolve(__dirname, 'src/entrypoints/test/cardCreatorTest.html'),
       },
     },
   },

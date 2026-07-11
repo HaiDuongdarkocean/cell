@@ -1,6 +1,6 @@
 // SidebarItem — atom cho OptionsApp sidebar nav (UI-UX-Contract section 6, 11).
-// Active: 2px terminal-green left border + --color-snow text.
-// Inactive: --color-pearl text, no border.
+// Active: 2px primary left border + text color.
+// Inactive: text-secondary color, no border.
 
 import { type ReactElement } from 'react';
 import type { Tab } from './types';

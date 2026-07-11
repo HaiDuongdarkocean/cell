@@ -52,8 +52,8 @@ describe('createOverlayLayer', () => {
     expect(targetOverlay.getAttribute('aria-orientation')).toBe('vertical');
     expect(targetOverlay.getAttribute('aria-valuemin')).toBe('0');
     expect(targetOverlay.getAttribute('aria-valuemax')).toBe('95');
-    expect(targetOverlay.getAttribute('aria-label')).toBe('Drag to move target subtitle');
-    expect(nativeOverlay.getAttribute('aria-label')).toBe('Drag to move native subtitle');
+    expect(targetOverlay.getAttribute('aria-label')).toBe('Subtitle target');
+    expect(nativeOverlay.getAttribute('aria-label')).toBe('Subtitle native');
   });
 
   it('sets z-index target=999999 > native=999998', () => {
@@ -142,13 +142,6 @@ describe('applyStyle', () => {
     expect(overlay.style.fontFamily).toBe('Noto Sans JP, sans-serif');
   });
 
-  it('sets bottom to yOffsetPercent%', () => {
-    const container = document.createElement('div');
-    const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
-    applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, yOffsetPercent: 25 }, overlay);
-    expect(overlay.style.bottom).toBe('25%');
-  });
-
   it('sets textAlign', () => {
     const container = document.createElement('div');
     const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
@@ -170,13 +163,6 @@ describe('applyStyle', () => {
     // must NOT override to block — display stays managed by cue sync.
     applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, visible: true }, overlay);
     expect(overlay.style.display).toBe('none');
-  });
-
-  it('ADR-015 D2: applyStyle updates aria-valuenow directly on overlay (no querySelector handle)', () => {
-    const container = document.createElement('div');
-    const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
-    applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, yOffsetPercent: 42 }, overlay);
-    expect(overlay.getAttribute('aria-valuenow')).toBe('42');
   });
 
   it('G7: applyStyle re-applies line-height with !important even after host override', () => {

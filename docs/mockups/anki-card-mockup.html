@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mockup — Card Creator</title>
+  <style>
+    /* ============================================================
+       Theme tokens — dark default (matches themeTokens.ts DEFAULT)
+       ============================================================ */
+    :root {
+      --color-primary: #60a5fa;
+      --color-primary-hover: #3b82f6;
+      --color-primary-subtle: rgba(96, 165, 250, 0.15);
+
+      --color-background: #0f172a;
+      --color-surface: #1e293b;
+      --color-surface-hover: #334155;
+
+      --color-text: #f1f5f9;
+      --color-text-secondary: #cbd5e1;
+      --color-text-muted: #64748b;
+      --color-text-inverse: #0f172a;
+
+      --color-border: #334155;
+      --color-border-subtle: #1e293b;
+      --color-border-focus: #60a5fa;
+
+      --color-success: #10b981;
+      --color-warning: #f59e0b;
+      --color-error: #ef4444;
+
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+      --font-size-xs: 12px;
+      --font-size-sm: 13px;
+      --font-size-base: 14px;
+      --font-size-lg: 16px;
+      --font-size-xl: 18px;
+
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 12px;
+      --spacing-lg: 16px;
+      --spacing-xl: 24px;
+
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.5);
+
+      --transition: 150ms ease;
+    }
+
+    [data-theme="light"] {
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-subtle: rgba(37, 99, 235, 0.1);
+      --color-background: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-hover: #f1f5f9;
+      --color-text: #0f172a;
+      --color-text-secondary: #475569;
+      --color-text-muted: #94a3b8;
+      --color-text-inverse: #ffffff;
+      --color-border: #e2e8f0;
+      --color-border-subtle: #f1f5f9;
+      --color-border-focus: #2563eb;
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: var(--spacing-xl);
+      font-family: var(--font-family);
+      background: var(--color-background);
+      color: var(--color-text);
+      min-height: 100vh;
+    }
+
+    .page-title {
+      margin: 0 0 var(--spacing-xl);
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text);
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: var(--spacing-md);
+      right: var(--spacing-md);
+      padding: 6px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      cursor: pointer;
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .workspace {
+      display: flex;
+      gap: var(--spacing-xl);
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    /* ============================================================
+       Left column: fake video + subtitle block overlay
+       ============================================================ */
+    .video-stage {
+      flex: 0 0 640px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
+    .video-player {
+      position: relative;
+      width: 640px;
+      height: 360px;
+      background:
+        radial-gradient(circle at 50% 40%, #334155 0%, #0f172a 70%);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+    }
+
+    [data-theme="light"] .video-player {
+      background:
+        radial-gradient(circle at 50% 40%, #cbd5e1 0%, #f1f5f9 70%);
+    }
+
+    .video-player::after {
+      content: '▶';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      color: rgba(255, 255, 255, 0.12);
+      pointer-events: none;
+    }
+
+    [data-theme="light"] .video-player::after {
+      color: rgba(0, 0, 0, 0.08);
+    }
+
+    /* === Unified subtitle block (ADR-025) === */
+    .subtitle-block {
+      position: absolute;
+      left: 0;
+      top: 60px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      background: transparent;
+      overflow: hidden;
+      z-index: 1000001;
+      pointer-events: auto;
+      user-select: none;
+      transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .subtitle-block:hover {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(8px);
+    }
+
+    [data-theme="light"] .subtitle-block:hover {
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .block-body {
+      display: grid;
+      grid-template-columns: var(--cluster-width, 84px) 1fr var(--cluster-width, 84px);
+      gap: var(--spacing-xs);
+      align-items: center;
+    }
+
+    /* === Cluster columns (left grid cell) === */
+    .cluster-columns {
+      grid-column: 1;
+      justify-self: start;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-xs);
+    }
+
+    .cluster-column {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      align-items: center;
+    }
+
+    .cluster-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--color-text);
+      cursor: pointer;
+      padding: 0;
+      opacity: 0.9;
+      transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                  border-color var(--transition),
+                  background var(--transition);
+    }
+
+    .cluster-btn:hover {
+      background: var(--color-surface-hover);
+      border-color: var(--color-border-focus);
+    }
+
+    .cluster-btn:active {
+      transform: scale(0.88);
+    }
+
+    .cluster-icon {
+      width: 20px;
+      height: 20px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+    }
+
+    .cluster-icon *:not(text) {
+      fill: none !important;
+      stroke: currentColor;
+    }
+
+    /* === Subtitle column (center) === */
+    .subtitle-column {
+      grid-column: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: var(--spacing-xs);
+      gap: 2px;
+      text-align: center;
+    }
+
+    .subtitle-line {
+      padding: 2px 8px;
+      border-radius: 4px;
+      line-height: 1.4;
+      text-align: center;
+      white-space: normal;
+      max-width: 100%;
+      overflow-wrap: break-word;
+    }
+
+    .subtitle-line.target {
+      font-size: 18px;
+      color: #ffffff;
+      background: rgba(0, 0, 0, 0.55);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+    }
+
+    .subtitle-line.native {
+      font-size: 14px;
+      color: #e2e8f0;
+      background: rgba(0, 0, 0, 0.45);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    [data-theme="light"] .subtitle-line.target {
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.7);
+      text-shadow: none;
+    }
+
+    [data-theme="light"] .subtitle-line.native {
+      color: #334155;
+      background: rgba(255, 255, 255, 0.55);
+      text-shadow: none;
+    }
+
+    /* === Anki right column (right grid cell) === */
+    .anki-column {
+      grid-column: 3;
+      justify-self: end;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: var(--spacing-xs);
+    }
+
+    /* ============================================================
+       Right column: Anki card dialog (desktop modal / panel)
+       ============================================================ */
+    .anki-panel {
+      flex: 1 1 420px;
+      min-width: 360px;
+      max-width: 520px;
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    .panel-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      margin: 0;
+    }
+
+    .panel-body {
+      padding: var(--spacing-md) var(--spacing-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-lg);
+      overflow-y: auto;
+    }
+
+    .section {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      background: var(--color-surface);
+    }
+
+    .section-title {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text);
+      margin: 0 0 var(--spacing-md);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    .field-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-sm);
+    }
+
+    .field-label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-secondary);
+      letter-spacing: 0.01em;
+    }
+
+    /* === Select inline variant — same .select style, compact size === */
+    .field-map {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      width: auto;
+      min-width: 90px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-background);
+      color: var(--color-text);
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .field-map:hover {
+      border-color: var(--color-border-focus);
+    }
+
+    .field-map:focus-within {
+      outline: none;
+      border-color: var(--color-border-focus);
+      box-shadow: 0 0 0 3px var(--color-primary-subtle);
+    }
+
+    .field-map .select {
+      width: 100%;
+      height: 24px;
+      padding: 2px 24px 2px 8px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background-color: var(--color-background);
+      color: var(--color-text);
+      font-family: var(--font-family);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .field-map .select option {
+      background: var(--color-background);
+      color: var(--color-text);
+    }
+
+    .field-map .chevron {
+      position: absolute;
+      top: 50%;
+      right: 6px;
+      width: 14px;
+      height: 14px;
+      transform: translateY(-50%);
+      color: var(--color-text-muted);
+      pointer-events: none;
+    }
+
+    .field-value {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-background);
+      color: var(--color-text);
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      line-height: 1.5;
+    }
+
+    .textarea {
+      min-height: 56px;
+      resize: vertical;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      outline: none;
+      border-color: var(--color-border-focus);
+      box-shadow: 0 0 0 3px var(--color-primary-subtle);
+    }
+
+    .pair-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-md);
+    }
+
+    .hint {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      margin: 0;
+    }
+
+    .alert {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--radius-sm);
+      background: var(--color-warning);
+      color: var(--color-text-inverse);
+      font-size: var(--font-size-sm);
+      line-height: 1.5;
+    }
+
+    .media-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .media-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-xs) var(--spacing-sm);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-background);
+    }
+
+    .media-thumb {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--color-surface-hover);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .media-thumb svg {
+      width: 18px;
+      height: 18px;
+      color: var(--color-text-muted);
+    }
+
+    .media-name {
+      flex: 1;
+      font-size: var(--font-size-sm);
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .media-row button.remove {
+      border: none;
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .media-row button.remove:hover {
+      background: var(--color-surface-hover);
+      color: var(--color-error);
+    }
+
+    .media-add {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-xs);
+      padding: var(--spacing-xs) var(--spacing-sm);
+      border: 1px dashed var(--color-border);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+      cursor: pointer;
+      align-self: flex-start;
+    }
+
+    .media-add:hover {
+      border-color: var(--color-border-focus);
+      color: var(--color-primary);
+    }
+
+    .panel-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-top: 1px solid var(--color-border-subtle);
+    }
+
+    .footer-mode {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .footer-mode .select {
+      width: auto;
+      min-width: 110px;
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: var(--spacing-md);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      border: none;
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+    }
+
+    .btn-primary:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-surface-hover);
+    }
+
+    /* ============================================================
+       Mobile section
+       ============================================================ */
+    .mobile-stage {
+      width: 100%;
+      margin-top: var(--spacing-xl);
+    }
+
+    .mobile-frame {
+      position: relative;
+      width: 375px;
+      height: 667px;
+      border: 8px solid var(--color-border);
+      border-radius: 32px;
+      overflow: hidden;
+      background: var(--color-background);
+    }
+
+    .mobile-frame .video-player {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      border: none;
+    }
+
+    .mobile-frame .subtitle-block {
+      top: auto;
+      bottom: 120px;
+    }
+
+    .mobile-frame .anki-column {
+      position: absolute;
+      right: 8px;
+      bottom: 120px;
+      grid-column: auto;
+    }
+
+    /* Bottom sheet overlay */
+    .bottom-sheet-overlay {
+      position: absolute;
+      inset: 0;
+      top: auto;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1200;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .bottom-sheet {
+      width: 100%;
+      max-height: 75vh;
+      background: var(--color-background);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+      box-shadow: var(--shadow-lg);
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+
+    .drag-handle {
+      width: 40px;
+      height: 4px;
+      border-radius: var(--radius-full);
+      background: var(--color-border);
+      align-self: center;
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .bottom-sheet .section {
+      border: none;
+      padding: 0;
+      background: transparent;
+    }
+
+    /* ============================================================
+       Settings page
+       ============================================================ */
+    .settings-page {
+      width: 100%;
+      max-width: 640px;
+      margin-top: var(--spacing-xl);
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-size: var(--font-size-sm);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-success);
+      flex-shrink: 0;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      background: var(--color-background);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      font-size: var(--font-size-sm);
+    }
+
+    .status-indicator.online .status-dot {
+      background: var(--color-success);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+
+    .status-indicator.offline .status-dot {
+      background: var(--color-error);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+    }
+
+    .status-indicator.testing .status-dot {
+      background: var(--color-warning);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .status-label {
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text);
+    }
+
+    .status-detail {
+      color: var(--color-text-muted);
+      font-size: var(--font-size-xs);
+    }
+
+    .field-mapping {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-sm);
+    }
+
+    .field-mapping .input:disabled {
+      opacity: 0.6;
+      background: var(--color-surface);
+    }
+
+    .mapping-header {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+    }
+
+    @media (max-width: 1100px) {
+      .workspace {
+        flex-direction: column;
+      }
+      .video-stage {
+        flex: 0 0 auto;
+      }
+      .anki-panel {
+        max-width: 640px;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle dark/light</button>
+
+  <h1 class="page-title">Card Creator — Mockup</h1>
+
+  <!-- ==================== DESKTOP ==================== -->
+  <div class="workspace">
+    <div class="video-stage">
+      <div class="video-player">
+        <div class="subtitle-block">
+          <div class="block-body">
+            <div class="cluster-columns">
+              <div class="cluster-column">
+                <button class="cluster-btn" aria-label="Previous sentence">
+                  <svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 9L10.5 12L13.5 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="cluster-btn" aria-label="Repeat current sentence">
+                  <svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="cluster-btn" aria-label="Next sentence">
+                  <svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 9L13.5 12L10.5 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+              <div class="cluster-column">
+                <button class="cluster-btn" aria-label="Rewind 5 seconds">
+                  <svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8.5H11.3604C11.1452 8.5 10.9541 8.63772 10.886 8.84189L10.2194 10.8419C10.1114 11.1657 10.3524 11.5 10.6937 11.5H12C13.1046 11.5 14 12.3954 14 13.5C14 14.6046 13.1046 15.5 12 15.5H10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </button>
+                <button class="cluster-btn" aria-label="Forward 10 seconds">
+                  <svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><path d="M10 4.5L12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 7.89936 19.5318 4.3752 16 2.83209" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 10.5L10 8.5V15.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.5 13.75V10.25C12.5 9.2835 13.2835 8.5 14.25 8.5C15.2165 8.5 16 9.2835 16 10.25V13.75C16 14.7165 15.2165 15.5 14.25 15.5C13.2835 15.5 12.5 14.7165 12.5 13.75Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="subtitle-column">
+              <div class="subtitle-line target">This is the target sentence.</div>
+              <div class="subtitle-line native">Đây là câu mục tiêu.</div>
+            </div>
+
+            <div class="anki-column">
+              <button class="cluster-btn" aria-label="Quick update (q)">
+                <svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <button class="cluster-btn" aria-label="Edit card (e)">
+                <svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><path d="M12 20h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls" style="display:flex; gap:var(--spacing-sm); flex-wrap:wrap;">
+        <span class="hint" style="align-self:center;">Desktop: press <strong>Q</strong> to quick update, <strong>E</strong> to edit card</span>
+      </div>
+    </div>
+
+    <!-- Card Creator dialog (desktop panel) -->
+    <div class="anki-panel">
+      <div class="panel-header">
+        <h2 class="panel-title">Card Creator</h2>
+        <button class="cluster-btn" aria-label="Close" style="color:var(--color-text); background:var(--color-surface);">
+          <svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><path d="M18 6L6 18M6 6L18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="panel-body">
+        <div class="alert">No recent card found in the last 10 minutes. Fill in the fields below to create a new card.</div>
+
+        <div class="section">
+          <h3 class="section-title">Card destination</h3>
+          <div class="pair-row">
+            <div class="field">
+              <label class="field-label">Note type</label>
+              <select class="select"><option>Cell Video Card</option><option>Basic</option></select>
+            </div>
+            <div class="field">
+              <label class="field-label">Deck</label>
+              <select class="select"><option>Default</option><option>Learning</option></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3 class="section-title">Fields</h3>
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">Target word</label>
+              <span class="field-map"><select class="select"><option>TargetWord</option><option>Word</option><option>Front</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </div>
+            <input class="input" placeholder="Enter the word or phrase to learn" />
+          </div>
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">Sentence</label>
+              <span class="field-map"><select class="select"><option>Sentence</option><option>Context</option><option>Example</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </div>
+            <textarea class="textarea">This is the target sentence.</textarea>
+          </div>
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">Sentence translation</label>
+              <span class="field-map"><select class="select"><option>SentenceTranslation</option><option>Translation</option><option>Native</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </div>
+            <textarea class="textarea">Đây là câu mục tiêu.</textarea>
+          </div>
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">Definitions</label>
+              <span class="field-map"><select class="select"><option>Definitions</option><option>Definition</option><option>Glossary</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </div>
+            <textarea class="textarea" placeholder="Definitions will be imported from your dictionary tool"></textarea>
+          </div>
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">Image</label>
+              <span class="field-map"><select class="select"><option>Image</option><option>Picture</option><option>Screenshot</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </div>
+            <div class="media-list">
+              <div class="media-row">
+                <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                <span class="media-name">screenshot-01.png</span>
+                <button class="remove" aria-label="Remove">×</button>
+              </div>
+              <div class="media-row">
+                <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                <span class="media-name">screenshot-02.png</span>
+                <button class="remove" aria-label="Remove">×</button>
+              </div>
+              <div class="media-row">
+                <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                <span class="media-name">screenshot-03.png</span>
+                <button class="remove" aria-label="Remove">×</button>
+              </div>
+              <button class="media-add">+ Add image</button>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">Sentence audio</label>
+              <span class="field-map"><select class="select"><option>SentenceAudio</option><option>Audio</option><option>Sound</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </div>
+            <div class="media-list">
+              <div class="media-row">
+                <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg></div>
+                <span class="media-name">sentence-01.mp3</span>
+                <button class="remove" aria-label="Remove">×</button>
+              </div>
+              <div class="media-row">
+                <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg></div>
+                <span class="media-name">sentence-02.mp3</span>
+                <button class="remove" aria-label="Remove">×</button>
+              </div>
+              <div class="media-row">
+                <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg></div>
+                <span class="media-name">sentence-03.mp3</span>
+                <button class="remove" aria-label="Remove">×</button>
+              </div>
+              <button class="media-add">+ Add sentence audio</button>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">Word audio</label>
+              <span class="field-map"><select class="select"><option>WordAudio</option><option>Pronunciation</option><option>Audio</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </div>
+            <div class="media-list">
+              <div class="media-row">
+                <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg></div>
+                <span class="media-name">word-01.mp3</span>
+                <button class="remove" aria-label="Remove">×</button>
+              </div>
+              <div class="media-row">
+                <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg></div>
+                <span class="media-name">word-02.mp3</span>
+                <button class="remove" aria-label="Remove">×</button>
+              </div>
+              <button class="media-add">+ Add word audio</button>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">Note</label>
+              <span class="field-map"><select class="select"><option>Note</option><option>Notes</option><option>Extra</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </div>
+            <textarea class="textarea" placeholder="Add a personal note or context for this card"></textarea>
+          </div>
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">More example</label>
+              <span class="field-map"><select class="select"><option>MoreExample</option><option>Examples</option><option>ExtraExamples</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </div>
+            <textarea class="textarea" placeholder="Additional example sentences for context"></textarea>
+          </div>
+          <div class="field">
+            <div class="field-header">
+              <label class="field-label">Tags</label>
+              <span class="field-map"><select class="select"><option>Tags</option><option>Tag</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+            </div>
+            <input class="input" value="cell::learning" />
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        <div class="footer-mode">
+          <label class="field-label">Update mode</label>
+          <select class="select"><option>Overwrite</option><option>Append</option><option>Skip</option></select>
+        </div>
+        <div class="footer-actions">
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-secondary">Add</button>
+          <button class="btn btn-primary">Update</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MOBILE ==================== -->
+  <div class="mobile-stage">
+    <h2 class="page-title" style="font-size:var(--font-size-lg); margin-bottom:var(--spacing-md);">Mobile — bottom sheet</h2>
+    <p class="hint" style="margin-bottom:var(--spacing-md);">Tap the lightning icon to quick update, the pencil icon to open Card Creator.</p>
+    <div class="mobile-frame">
+      <div class="video-player">
+        <div class="subtitle-block" style="bottom:120px; top:auto;">
+          <div class="block-body">
+            <div class="cluster-columns">
+              <div class="cluster-column">
+                <button class="cluster-btn" aria-label="Previous"><svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 9L10.5 12L13.5 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="cluster-btn" aria-label="Repeat"><svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="cluster-btn" aria-label="Next"><svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 9L13.5 12L10.5 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+              <div class="cluster-column">
+                <button class="cluster-btn" aria-label="Rewind 5s"><svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 8.5H11.3604C11.1452 8.5 10.9541 8.63772 10.886 8.84189L10.2194 10.8419C10.1114 11.1657 10.3524 11.5 10.6937 11.5H12C13.1046 11.5 14 12.3954 14 13.5C14 14.6046 13.1046 15.5 12 15.5H10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+                <button class="cluster-btn" aria-label="Forward 10s"><svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><path d="M10 4.5L12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 7.89936 19.5318 4.3752 16 2.83209" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 10.5L10 8.5V15.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.5 13.75V10.25C12.5 9.2835 13.2835 8.5 14.25 8.5C15.2165 8.5 16 9.2835 16 10.25V13.75C16 14.7165 15.2165 15.5 14.25 15.5C13.2835 15.5 12.5 14.7165 12.5 13.75Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+              </div>
+            </div>
+
+            <div class="subtitle-column">
+              <div class="subtitle-line target">This is the target sentence.</div>
+              <div class="subtitle-line native">Đây là câu mục tiêu.</div>
+            </div>
+
+            <div class="anki-column">
+              <button class="cluster-btn" aria-label="Quick update (q)"><svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <button class="cluster-btn" aria-label="Edit card (e)"><svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><path d="M12 20h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-sheet-overlay">
+        <div class="bottom-sheet">
+          <div class="drag-handle"></div>
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h2 style="font-size:var(--font-size-lg); font-weight:var(--font-weight-semibold); margin:0;">Card Creator</h2>
+            <button class="cluster-btn" aria-label="Close" style="color:var(--color-text); background:var(--color-surface);">
+              <svg viewBox="0 0 24 24" class="cluster-icon" aria-hidden="true"><path d="M18 6L6 18M6 6L18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+
+          <div class="alert">No recent card found in the last 10 minutes. Fill in the fields below to create a new card.</div>
+
+          <div class="section">
+            <h3 class="section-title">Card destination</h3>
+            <div class="pair-row">
+              <div class="field">
+                <label class="field-label">Note type</label>
+                <select class="select"><option>Cell Video Card</option><option>Basic</option></select>
+              </div>
+              <div class="field">
+                <label class="field-label">Deck</label>
+                <select class="select"><option>Default</option><option>Learning</option></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3 class="section-title">Fields</h3>
+            <div class="field">
+              <div class="field-header">
+                <label class="field-label">Target word</label>
+                <span class="field-map"><select class="select"><option>TargetWord</option><option>Word</option><option>Front</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <input class="input" placeholder="Enter the word or phrase to learn" />
+            </div>
+            <div class="field">
+              <div class="field-header">
+                <label class="field-label">Sentence</label>
+                <span class="field-map"><select class="select"><option>Sentence</option><option>Context</option><option>Example</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <textarea class="textarea">This is the target sentence.</textarea>
+            </div>
+            <div class="field">
+              <div class="field-header">
+                <label class="field-label">Sentence translation</label>
+                <span class="field-map"><select class="select"><option>SentenceTranslation</option><option>Translation</option><option>Native</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <textarea class="textarea">Đây là câu mục tiêu.</textarea>
+            </div>
+            <div class="field">
+              <div class="field-header">
+                <label class="field-label">Definitions</label>
+                <span class="field-map"><select class="select"><option>Definitions</option><option>Definition</option><option>Glossary</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <textarea class="textarea" placeholder="Definitions will be imported from your dictionary tool"></textarea>
+            </div>
+            <div class="field">
+              <div class="field-header">
+                <label class="field-label">Image</label>
+                <span class="field-map"><select class="select"><option>Image</option><option>Picture</option><option>Screenshot</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <div class="media-list">
+                <div class="media-row">
+                  <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                  <span class="media-name">screenshot-01.png</span>
+                  <button class="remove" aria-label="Remove">×</button>
+                </div>
+                <div class="media-row">
+                  <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                  <span class="media-name">screenshot-02.png</span>
+                  <button class="remove" aria-label="Remove">×</button>
+                </div>
+                <div class="media-row">
+                  <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                  <span class="media-name">screenshot-03.png</span>
+                  <button class="remove" aria-label="Remove">×</button>
+                </div>
+                <button class="media-add">+ Add image</button>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-header">
+                <label class="field-label">Sentence audio</label>
+                <span class="field-map"><select class="select"><option>SentenceAudio</option><option>Audio</option><option>Sound</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <div class="media-list">
+                <div class="media-row">
+                  <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg></div>
+                  <span class="media-name">sentence-01.mp3</span>
+                  <button class="remove" aria-label="Remove">×</button>
+                </div>
+                <div class="media-row">
+                  <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg></div>
+                  <span class="media-name">sentence-02.mp3</span>
+                  <button class="remove" aria-label="Remove">×</button>
+                </div>
+                <div class="media-row">
+                  <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg></div>
+                  <span class="media-name">sentence-03.mp3</span>
+                  <button class="remove" aria-label="Remove">×</button>
+                </div>
+                <button class="media-add">+ Add sentence audio</button>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-header">
+                <label class="field-label">Word audio</label>
+                <span class="field-map"><select class="select"><option>WordAudio</option><option>Pronunciation</option><option>Audio</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <div class="media-list">
+                <div class="media-row">
+                  <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg></div>
+                  <span class="media-name">word-01.mp3</span>
+                  <button class="remove" aria-label="Remove">×</button>
+                </div>
+                <div class="media-row">
+                  <div class="media-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg></div>
+                  <span class="media-name">word-02.mp3</span>
+                  <button class="remove" aria-label="Remove">×</button>
+                </div>
+                <button class="media-add">+ Add word audio</button>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-header">
+                <label class="field-label">Note</label>
+                <span class="field-map"><select class="select"><option>Note</option><option>Notes</option><option>Extra</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <textarea class="textarea" placeholder="Add a personal note or context for this card"></textarea>
+            </div>
+            <div class="field">
+              <div class="field-header">
+                <label class="field-label">More example</label>
+                <span class="field-map"><select class="select"><option>MoreExample</option><option>Examples</option><option>ExtraExamples</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <textarea class="textarea" placeholder="Additional example sentences for context"></textarea>
+            </div>
+            <div class="field">
+              <div class="field-header">
+                <label class="field-label">Tags</label>
+                <span class="field-map"><select class="select"><option>Tags</option><option>Tag</option></select><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+              </div>
+              <input class="input" value="cell::learning" />
+            </div>
+          </div>
+
+          <div class="panel-footer" style="border-top:none; padding:0; flex-direction:column; align-items:stretch; gap:var(--spacing-md);">
+            <div class="footer-mode" style="flex-direction:column; align-items:stretch; gap:var(--spacing-xs);">
+              <label class="field-label">Update mode</label>
+              <select class="select"><option>Overwrite</option><option>Append</option><option>Skip</option></select>
+            </div>
+            <div class="footer-actions">
+              <button class="btn btn-secondary" style="flex:1;">Cancel</button>
+              <button class="btn btn-secondary" style="flex:1;">Add</button>
+              <button class="btn btn-primary" style="flex:1;">Update</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SETTINGS ==================== -->
+  <div class="settings-page" style="margin-top:var(--spacing-xl);">
+    <div class="panel-header">
+      <h2 class="panel-title">Card Creator Settings</h2>
+    </div>
+    <div class="panel-body">
+      <div class="section">
+        <h3 class="section-title">Connection</h3>
+        <div class="field">
+          <label class="field-label">AnkiConnect URL</label>
+          <input class="input" value="http://localhost:8765" />
+          <p class="hint">Default: localhost:8765. Change to your PC's IP address when using Kiwi or Edge on mobile.</p>
+        </div>
+        <div class="connection-status">
+          <div class="status-indicator online">
+            <span class="status-dot"></span>
+            <span class="status-label">Connected</span>
+            <span class="status-detail">Anki v2.1.65 · localhost:8765</span>
+          </div>
+          <button class="btn btn-secondary" style="height:28px; padding:6px 12px; font-size:var(--font-size-xs);">Test again</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const current = document.body.getAttribute('data-theme');
+      document.body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    }
+  </script>
+</body>
+</html>

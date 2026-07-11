@@ -22,33 +22,84 @@ import { generateHoverColor, generateShade, hexToRgb } from '@/features/theme/lo
 import { NAV_CLUSTER_CSS } from '@/features/subtitle/ui/navClusterCss';
 import type { ThemeMode, ThemeConfig, ResolvedMode, CoreColorTokens } from '@/entities/theme';
 
-const STYLE_ID = 'subtitle-theme-tokens';
+/** ID of the injected `<style>` element holding theme tokens. Exported so
+ *  other modules (e.g. mountCardCreatorDialog) can clone it into fullscreen
+ *  contexts where `<head>` styles don't apply. */
+export const THEME_STYLE_ID = 'subtitle-theme-tokens';
+const STYLE_ID = THEME_STYLE_ID;
 
-/** Static (non-color) tokens — fonts, spacing, radius, shadows, nav-cluster. */
+/** Static (non-color) tokens — fonts, spacing, radius, shadows, nav-cluster.
+ *  ADR-026: includes design-system tokens (--space-*, --font-size-lg/xl/2xl,
+ *  --font-weight-bold, --leading-*, --tracking-*, --radius-xl/2xl, --duration-*,
+ *  --ease-*, --z-*) so shared/ui components (Dialog, Button, Alert, Input,
+ *  Select, Card) work in the content-script isolated world. */
 const STATIC_TOKENS = `
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-size-xs: 12px;
   --font-size-sm: 13px;
   --font-size-base: 14px;
   --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 30px;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --leading-none: 1;
   --leading-tight: 1.25;
+  --leading-snug: 1.375;
   --leading-normal: 1.5;
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  /* Legacy spacing aliases (subtitle block, nav cluster) */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 12px;
   --spacing-lg: 16px;
   --spacing-xl: 24px;
+  /* Design system --space-* scale (4px base) */
+  --space-0: 0;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
   --radius-full: 9999px;
   --transition: 150ms ease;
   --transition-fast: 150ms;
   --transition-normal: 200ms;
-  --ease-standard: ease;
+  --duration-75: 75ms;
+  --duration-150: 150ms;
+  --duration-200: 200ms;
+  --duration-300: 300ms;
+  --duration-fast: var(--duration-150);
+  --duration-normal: var(--duration-200);
+  --duration-slow: var(--duration-300);
+  --ease-standard: ease-in-out;
+  --ease-out: ease-out;
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-modal: 1200;
+  --z-popover: 1300;
+  --z-tooltip: 1400;
   --nav-cluster-size-sm: 32px;
   --nav-cluster-size-md: 32px;
   --nav-cluster-size-lg: 32px;
@@ -68,30 +119,165 @@ function buildColorTokens(colors: CoreColorTokens, mode: ResolvedMode): string {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
   const lines: string[] = [
+    // ADR-026: color-scheme tells the browser to render native controls (select
+    // <option> dropdown, scrollbar, date picker) in dark/light. Without this,
+    // <option> elements ignore CSS variables and render with default OS colors
+    // (white bg + black text) even inside a [data-theme="dark"] boundary.
+    `color-scheme: ${mode};`,
     `--color-primary: ${colors.primary};`,
     `--color-primary-hover: ${generateHoverColor(colors.primary)};`,
+    `--color-primary-active: ${generateShade(colors.primary, 10)};`,
     `--color-primary-subtle: ${rgba(colors.primary, 0.1)};`,
+    `--color-primary-foreground: ${colors.background};`,
     `--color-background: ${colors.background};`,
+    `--color-foreground: ${colors.text};`,
     `--color-surface: ${colors.surface};`,
     `--color-surface-hover: ${generateHoverColor(colors.surface)};`,
+    `--color-card: ${colors.surface};`,
+    `--color-card-foreground: ${colors.text};`,
+    `--color-popover: ${colors.surface};`,
+    `--color-popover-foreground: ${colors.text};`,
     `--color-text: ${colors.text};`,
     `--color-text-secondary: ${colors.textSecondary};`,
     `--color-text-muted: ${generateShade(colors.textSecondary, 20)};`,
     `--color-text-inverse: ${colors.background};`,
+    `--color-secondary: ${colors.surface};`,
+    `--color-secondary-hover: ${generateHoverColor(colors.surface)};`,
+    `--color-secondary-foreground: ${colors.text};`,
+    `--color-muted: ${colors.surface};`,
+    `--color-muted-foreground: ${colors.textSecondary};`,
+    `--color-accent: ${generateHoverColor(colors.surface)};`,
+    `--color-accent-foreground: ${colors.text};`,
+    `--color-destructive: ${colors.error};`,
+    `--color-destructive-hover: ${generateHoverColor(colors.error)};`,
+    `--color-destructive-foreground: ${colors.background};`,
     `--color-border: ${colors.border};`,
     `--color-border-subtle: ${generateShade(colors.surface, 5)};`,
     `--color-border-focus: ${colors.primary};`,
+    `--color-input: ${colors.border};`,
+    `--color-ring: ${colors.primary};`,
     `--color-success: ${colors.success};`,
+    `--color-success-subtle: ${rgba(colors.success, mode === 'dark' ? 0.15 : 0.08)};`,
     `--color-warning: ${colors.warning};`,
-    `--color-error: ${colors.error};`,
-    `--color-info: ${colors.primary};`,
-    `--color-error-subtle: ${rgba(colors.error, mode === 'dark' ? 0.15 : 0.08)};`,
     `--color-warning-subtle: ${rgba(colors.warning, mode === 'dark' ? 0.15 : 0.1)};`,
+    `--color-error: ${colors.error};`,
+    `--color-error-subtle: ${rgba(colors.error, mode === 'dark' ? 0.15 : 0.08)};`,
+    `--color-info: ${colors.primary};`,
+    `--color-info-subtle: ${rgba(colors.primary, 0.1)};`,
     `--color-scrollbar-thumb: ${mode === 'dark' ? '#475569' : '#cbd5e1'};`,
     `--color-scrollbar-thumb-hover: ${mode === 'dark' ? '#64748b' : '#94a3b8'};`,
     `--color-scrollbar-track: transparent;`,
     `--shadow-sm: 0 1px 2px rgba(0, 0, 0, ${mode === 'dark' ? 0.3 : 0.05});`,
     `--shadow-md: 0 4px 12px rgba(0, 0, 0, ${mode === 'dark' ? 0.4 : 0.08});`,
+    `--shadow-lg: 0 10px 24px rgba(0, 0, 0, ${mode === 'dark' ? 0.5 : 0.12});`,
+    // === Component tokens (ADR-026: design-system §2.3) ===
+    // Button
+    `--button-bg: var(--color-primary);`,
+    `--button-fg: var(--color-primary-foreground);`,
+    `--button-hover-bg: var(--color-primary-hover);`,
+    `--button-active-bg: var(--color-primary-active);`,
+    `--button-padding-x: var(--space-4);`,
+    `--button-padding-y: var(--space-2);`,
+    `--button-radius: var(--radius-md);`,
+    `--button-font-size: var(--font-size-sm);`,
+    `--button-font-weight: var(--font-weight-medium);`,
+    `--button-height: 32px;`,
+    `--button-height-sm: 28px;`,
+    `--button-height-lg: 40px;`,
+    `--button-secondary-bg: var(--color-secondary);`,
+    `--button-secondary-fg: var(--color-secondary-foreground);`,
+    `--button-secondary-hover-bg: var(--color-secondary-hover);`,
+    `--button-outline-border: var(--color-border);`,
+    `--button-outline-fg: var(--color-foreground);`,
+    `--button-outline-hover-bg: var(--color-accent);`,
+    `--button-ghost-fg: var(--color-foreground);`,
+    `--button-ghost-hover-bg: var(--color-accent);`,
+    `--button-destructive-bg: var(--color-destructive);`,
+    `--button-destructive-fg: var(--color-destructive-foreground);`,
+    `--button-destructive-hover-bg: var(--color-destructive-hover);`,
+    `--button-disabled-opacity: 0.5;`,
+    `--button-focus-ring: var(--color-ring);`,
+    // Input
+    `--input-bg: var(--color-background);`,
+    `--input-border: var(--color-input);`,
+    `--input-fg: var(--color-foreground);`,
+    `--input-placeholder: var(--color-muted-foreground);`,
+    `--input-focus-border: var(--color-ring);`,
+    `--input-focus-ring: 0 0 0 3px var(--color-primary-subtle);`,
+    `--input-error-border: var(--color-error);`,
+    `--input-error-fg: var(--color-error);`,
+    `--input-disabled-bg: var(--color-muted);`,
+    `--input-disabled-fg: var(--color-muted-foreground);`,
+    `--input-padding-x: var(--space-3);`,
+    `--input-padding-y: var(--space-2);`,
+    `--input-radius: var(--radius-md);`,
+    `--input-font-size: var(--font-size-sm);`,
+    `--input-height: 32px;`,
+    `--input-height-lg: 40px;`,
+    // Card
+    `--card-bg: var(--color-card);`,
+    `--card-fg: var(--color-card-foreground);`,
+    `--card-border: var(--color-border);`,
+    `--card-padding: var(--space-4);`,
+    `--card-padding-sm: var(--space-3);`,
+    `--card-gap: var(--space-3);`,
+    `--card-radius: var(--radius-lg);`,
+    `--card-shadow: var(--shadow-sm);`,
+    `--card-shadow-hover: var(--shadow-md);`,
+    // Alert
+    `--alert-bg: var(--color-background);`,
+    `--alert-fg: var(--color-foreground);`,
+    `--alert-border: var(--color-border);`,
+    `--alert-success-bg: var(--color-success);`,
+    `--alert-success-fg: var(--color-text-inverse);`,
+    `--alert-warning-bg: var(--color-warning);`,
+    `--alert-warning-fg: var(--color-foreground);`,
+    `--alert-error-bg: var(--color-error);`,
+    `--alert-error-fg: var(--color-text-inverse);`,
+    `--alert-padding: var(--space-4);`,
+    `--alert-radius: var(--radius-lg);`,
+    // Dialog
+    `--dialog-overlay-bg: rgb(0 0 0 / 0.5);`,
+    `--dialog-bg: var(--color-background);`,
+    `--dialog-fg: var(--color-foreground);`,
+    `--dialog-border: var(--color-border);`,
+    `--dialog-shadow: var(--shadow-lg);`,
+    `--dialog-padding: var(--space-6);`,
+    `--dialog-radius: var(--radius-lg);`,
+    // ADR-026: dialog/drawer widths use px, not rem. Host pages (e.g.
+    // YouTube) may set a small html font-size, which would shrink rem-based
+    // widths and break the dialog layout. Static spacing tokens are already
+    // in px, so using px here keeps widths consistent across sites.
+    `--dialog-max-width-sm: 384px;`,
+    `--dialog-max-width: 512px;`,
+    `--dialog-max-width-lg: 640px;`,
+    `--drawer-max-width: 384px;`,
+    // Badge
+    `--badge-bg: var(--color-primary);`,
+    `--badge-fg: var(--color-primary-foreground);`,
+    `--badge-secondary-bg: var(--color-secondary);`,
+    `--badge-secondary-fg: var(--color-secondary-foreground);`,
+    `--badge-outline-border: var(--color-border);`,
+    `--badge-outline-fg: var(--color-foreground);`,
+    `--badge-destructive-bg: var(--color-destructive);`,
+    `--badge-destructive-fg: var(--color-destructive-foreground);`,
+    `--badge-padding-x: var(--space-2);`,
+    `--badge-padding-y: var(--space-0-5);`,
+    `--badge-radius: var(--radius-full);`,
+    `--badge-font-size: var(--font-size-xs);`,
+    // IconButton
+    `--iconbutton-bg: transparent;`,
+    `--iconbutton-fg: var(--color-text-muted);`,
+    `--iconbutton-hover-bg: var(--color-surface-hover);`,
+    `--iconbutton-hover-fg: var(--color-text);`,
+    `--iconbutton-active-bg: var(--color-primary-subtle);`,
+    `--iconbutton-active-fg: var(--color-primary);`,
+    `--iconbutton-danger-hover-bg: var(--color-error-subtle);`,
+    `--iconbutton-danger-hover-fg: var(--color-error);`,
+    `--iconbutton-size-xs: 24px;`,
+    `--iconbutton-size-sm: 28px;`,
+    `--iconbutton-size-md: 32px;`,
+    `--iconbutton-radius: var(--radius-sm);`,
   ];
   return lines.join('\n  ');
 }

@@ -19,125 +19,131 @@ const chromeMock = {
 };
 (global as { chrome?: unknown }).chrome = chromeMock;
 
-describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
+describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', () => {
   beforeEach(() => {
     Object.keys(storage).forEach((k) => delete storage[k]);
     chromeMock.storage.local.get.mockClear();
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 8 (bumped for navCluster x unit: percent -> px)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(8);
+  it('CURRENT_SCHEMA_VERSION is 10 (bumped for Card Creator)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(10);
   });
 
-  it('migrates v1 settings to v2 with nav cluster defaults merged', async () => {
+  it('migrates v1 settings to v9 with nav cluster + block defaults merged', async () => {
     const v1Settings = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 1,
-      // Ensure nav fields absent (simulating real v1 storage)
     };
     delete (v1Settings as Record<string, unknown>).navClusterEnabled;
-    delete (v1Settings as Record<string, unknown>).navClusterPosition;
     delete (v1Settings as Record<string, unknown>).navClusterButtonSize;
-    delete (v1Settings as Record<string, unknown>).navClusterBgOpacity;
     delete (v1Settings as Record<string, unknown>).navClusterButtonOpacity;
-    delete (v1Settings as Record<string, unknown>).navClusterCollapsed;
+    delete (v1Settings as Record<string, unknown>).subtitleBlockSettings;
     storage[STORAGE_KEYS.SETTINGS] = v1Settings;
 
     const result = await loadSettings();
 
     expect(result.navClusterEnabled).toBe(true);
-    expect(result.navClusterPosition).toEqual({ x: 8, y: 75 });
     expect(result.navClusterButtonSize).toBe(34);
-    expect(result.navClusterBgOpacity).toBe(0.7);
     expect(result.navClusterButtonOpacity).toBe(0.9);
-    expect(result.navClusterCollapsed).toBe(false);
+    // v8→v9 migration: legacyY = (targetY=18 + nativeY=6) / 2 = 12
+    expect(result.subtitleBlockSettings).toEqual({
+      yOffsetPercent: 12,
+      globalScale: 1,
+      bgOpacity: 0.7,
+    });
   });
 
-  it('preserves existing v1 fields after migration to v2', async () => {
+  it('preserves existing v1 fields after migration to v9', async () => {
     const v1Settings = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 1,
       concurrentDownloads: 7,
     };
     delete (v1Settings as Record<string, unknown>).navClusterEnabled;
-    delete (v1Settings as Record<string, unknown>).navClusterPosition;
-    delete (v1Settings as Record<string, unknown>).navClusterButtonSize;
-    delete (v1Settings as Record<string, unknown>).navClusterBgOpacity;
-    delete (v1Settings as Record<string, unknown>).navClusterButtonOpacity;
-    delete (v1Settings as Record<string, unknown>).navClusterCollapsed;
     storage[STORAGE_KEYS.SETTINGS] = v1Settings;
 
     const result = await loadSettings();
 
     expect(result.concurrentDownloads).toBe(7);
-    expect(result.navClusterEnabled).toBe(true); // merged default
+    expect(result.navClusterEnabled).toBe(true);
   });
 
-  it('resets pre-v8 navClusterPosition to new default { x: 8, y: 75 }', async () => {
-    storage[STORAGE_KEYS.SETTINGS] = {
-      ...DEFAULT_SETTINGS,
-      schemaVersion: 7,
-      navClusterPosition: { x: 150, y: 75 },
-    };
-    const result = await loadSettings();
-    expect(result.navClusterPosition).toEqual({ x: 8, y: 75 });
-  });
-
-  it('clamps invalid v8 navClusterPosition.y < 0 to 0', async () => {
+  it('v8 → v9: creates subtitleBlockSettings from legacy yOffsetPercent in layer styles', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 8,
-      navClusterPosition: { x: 8, y: -10 },
+      subtitleOverlayTargetStyle: { ...DEFAULT_SETTINGS.subtitleOverlayTargetStyle, yOffsetPercent: 50 },
+      subtitleOverlayNativeStyle: { ...DEFAULT_SETTINGS.subtitleOverlayNativeStyle, yOffsetPercent: 30 },
+      navClusterBgOpacity: 0.4,
     };
     const result = await loadSettings();
-    expect(result.navClusterPosition.y).toBe(0);
+    // legacyY = (targetY + nativeY) / 2 = (50 + 30) / 2 = 40
+    expect(result.subtitleBlockSettings.yOffsetPercent).toBe(40);
+    expect(result.subtitleBlockSettings.bgOpacity).toBe(0.4);
+    expect(result.subtitleBlockSettings.globalScale).toBe(1);
   });
 
-  it('clamps invalid navClusterBgOpacity > 1 to 1', async () => {
+  it('v8 → v9: removes navClusterPosition, navClusterBgOpacity, navClusterCollapsed from storage', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 7,
-      navClusterBgOpacity: 1.5,
+      schemaVersion: 8,
+      navClusterPosition: { x: 20, y: 30 },
+      navClusterBgOpacity: 0.5,
+      navClusterCollapsed: true,
     };
     const result = await loadSettings();
-    expect(result.navClusterBgOpacity).toBe(1);
+    expect((result as unknown as Record<string, unknown>).navClusterPosition).toBeUndefined();
+    expect((result as unknown as Record<string, unknown>).navClusterBgOpacity).toBeUndefined();
+    expect((result as unknown as Record<string, unknown>).navClusterCollapsed).toBeUndefined();
+  });
+
+  it('v8 → v9: strips yOffsetPercent from layer styles', async () => {
+    storage[STORAGE_KEYS.SETTINGS] = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 8,
+      subtitleOverlayTargetStyle: { ...DEFAULT_SETTINGS.subtitleOverlayTargetStyle, yOffsetPercent: 50 },
+    };
+    const result = await loadSettings();
+    expect((result.subtitleOverlayTargetStyle as unknown as Record<string, unknown>).yOffsetPercent).toBeUndefined();
+  });
+
+  it('v8 → v9: falls back to targetY when nativeY is 0 (no native offset)', async () => {
+    storage[STORAGE_KEYS.SETTINGS] = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 8,
+      subtitleOverlayTargetStyle: { ...DEFAULT_SETTINGS.subtitleOverlayTargetStyle, yOffsetPercent: 60 },
+      subtitleOverlayNativeStyle: { ...DEFAULT_SETTINGS.subtitleOverlayNativeStyle, yOffsetPercent: 0 },
+    };
+    const result = await loadSettings();
+    // nativeY=0 → legacyY = targetY = 60
+    expect(result.subtitleBlockSettings.yOffsetPercent).toBe(60);
   });
 
   it('clamps invalid navClusterButtonOpacity < 0 to 0', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 7,
+      schemaVersion: 8,
       navClusterButtonOpacity: -0.3,
     };
     const result = await loadSettings();
     expect(result.navClusterButtonOpacity).toBe(0);
   });
 
-  it('accepts in-range navClusterButtonSize=33 (free range 10-100, ADR-018 D2-rev)', async () => {
+  it('accepts in-range navClusterButtonSize=33 (free range 10-100)', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 7,
+      schemaVersion: 8,
       navClusterButtonSize: 33,
     };
     const result = await loadSettings();
     expect(result.navClusterButtonSize).toBe(33);
   });
 
-  it('accepts in-range navClusterButtonSize=52 (free range 10-100)', async () => {
-    storage[STORAGE_KEYS.SETTINGS] = {
-      ...DEFAULT_SETTINGS,
-      schemaVersion: 7,
-      navClusterButtonSize: 52,
-    };
-    const result = await loadSettings();
-    expect(result.navClusterButtonSize).toBe(52);
-  });
-
   it('clamps below-range navClusterButtonSize=5 to min 10', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 7,
+      schemaVersion: 8,
       navClusterButtonSize: 5,
     };
     const result = await loadSettings();
@@ -147,7 +153,7 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('clamps above-range navClusterButtonSize=150 to max 100', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 7,
+      schemaVersion: 8,
       navClusterButtonSize: 150,
     };
     const result = await loadSettings();
@@ -157,64 +163,60 @@ describe('settingsStore schema v2 migration (ADR-018 D2)', () => {
   it('falls back to default 34 when navClusterButtonSize is non-numeric', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
-      schemaVersion: 7,
+      schemaVersion: 8,
       navClusterButtonSize: 'big' as unknown as number,
     };
     const result = await loadSettings();
     expect(result.navClusterButtonSize).toBe(34);
   });
 
-  it('saveSettings stamps schemaVersion 8', async () => {
+  it('saveSettings stamps schemaVersion 10', async () => {
     await saveSettings({ navClusterEnabled: false });
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(8);
+    expect(stored.schemaVersion).toBe(10);
   });
 
   it('saveSettings partial preserves existing stored fields (read-modify-write)', async () => {
     // Bug: saveSettings({position}) after drag wiped buttonSize/bgOpacity/buttonOpacity
     // to defaults because it merged with DEFAULT_SETTINGS, not current stored settings.
+    // ADR-025: position removed — test now uses subtitleBlockSettings partial.
     const existing = {
       ...DEFAULT_SETTINGS,
       schemaVersion: CURRENT_SCHEMA_VERSION,
       navClusterEnabled: true,
       navClusterButtonSize: 56,
-      navClusterBgOpacity: 0.3,
       navClusterButtonOpacity: 0.5,
-      navClusterPosition: { x: 20, y: 30 },
+      subtitleBlockSettings: { yOffsetPercent: 60, globalScale: 1.1, bgOpacity: 0.3 },
     };
     storage[STORAGE_KEYS.SETTINGS] = existing;
 
-    // Simulate nav cluster drag persist: only position in partial.
-    await saveSettings({ navClusterPosition: { x: 24, y: 34 } } as Partial<typeof DEFAULT_SETTINGS>);
+    // Simulate block drag persist: only subtitleBlockSettings in partial.
+    await saveSettings({ subtitleBlockSettings: { yOffsetPercent: 70, globalScale: 1.1, bgOpacity: 0.3 } } as Partial<typeof DEFAULT_SETTINGS>);
 
     const stored = storage[STORAGE_KEYS.SETTINGS] as typeof DEFAULT_SETTINGS;
-    expect(stored.navClusterPosition).toEqual({ x: 24, y: 34 });
+    expect(stored.subtitleBlockSettings.yOffsetPercent).toBe(70);
     // Other nav cluster fields MUST be preserved (not reset to defaults).
     expect(stored.navClusterButtonSize).toBe(56);
-    expect(stored.navClusterBgOpacity).toBe(0.3);
     expect(stored.navClusterButtonOpacity).toBe(0.5);
     expect(stored.navClusterEnabled).toBe(true);
   });
 
-  it('v2 settings migrate through v8 and reset pre-v8 navClusterPosition to default', async () => {
+  it('v2 settings migrate through v9 and produce subtitleBlockSettings', async () => {
     const v2Settings = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 2,
       navClusterEnabled: false,
-      navClusterPosition: { x: 50, y: 50 },
     };
     delete (v2Settings as Record<string, unknown>).subtitleOffset;
     storage[STORAGE_KEYS.SETTINGS] = v2Settings;
     const result = await loadSettings();
     expect(result.navClusterEnabled).toBe(false);
-    expect(result.navClusterPosition).toEqual({ x: 8, y: 75 });
+    // v8→v9 migration: legacyY = (targetY=18 + nativeY=6) / 2 = 12
+    expect(result.subtitleBlockSettings).toEqual({
+      yOffsetPercent: 12,
+      globalScale: 1,
+      bgOpacity: 0.7,
+    });
     expect(result.subtitleOffset).toEqual({});
   });
 });
-
-
-
-
-
-
-

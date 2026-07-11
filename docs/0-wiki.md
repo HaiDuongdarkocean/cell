@@ -70,7 +70,6 @@ docs/           # Tài liệu dự án
 │   └── spec-port-theocean-dict-and-theme.md # Port theocean-dict reference: theme system (runtime configurable, 9 core tokens, WCAG, import/export, system mode) + dict import 5 format → IndexedDB. Options page mới. Theme trước, dict sau.
 │   └── spec-subtitle-block-unified.md # Unified subtitle block PRD: gộp target + native + nav cluster, auto-scale, settings rearrange
 │   └── spec-card-creator.md # Card Creator PRD: AnkiConnect integration, field mapping, media extraction, draft autosave, desktop Dialog + mobile BottomSheet
-│   └── spec-card-creator-ui-redesign.md # Card Creator UI redesign PRD (cleaner, minimalist dialog + settings)
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 │   └── spec-shared-ui-components.md # Shared UI component library (Button/Card/Dialog/Input + atoms/molecules + migration of existing feature UI)
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
@@ -92,7 +91,6 @@ docs/           # Tài liệu dự án
 │   └── plan-youtube-subtitle-detection.md # YouTube subtitle detection — implementation plan (G2, 6 AD, 7 milestones M1-M7, Two Detection Paths, cite spec-youtube-subtitle-detection)
 │   └── plan-translate-subtitle-target-to-native.md # Translate subtitle target→native plan (G2, 6 milestones M1-M6, background prefill, cite spec)
 │   └── plan-port-theocean-dict-and-theme.md # Port theocean-dict + theme plan (G2, 12 milestones M1-M12, theme trước F1-F6 → dict sau F7-F12, options page mới, cite spec)
-│   └── plan-card-creator-ui-redesign.md # Card Creator UI redesign implementation plan (mockup → CSS → components → verify)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
@@ -102,7 +100,6 @@ docs/           # Tài liệu dự án
 │   └── task-subtitle-navigation-control.md # Subtitle navigation control cluster — task breakdown (G4, 11 tasks M1-M6, TDD, vertical slices)
 │   └── task-port-theocean-dict-and-theme.md # Port theocean-dict + theme — task breakdown (G4, 30 tasks M1-M12, theme trước F1-F6 → dict sau F7-F12, TDD + browser MCP stop-the-line)
 │   └── task-shared-ui-components.md # Shared UI component library — task breakdown (Phase 1-5: atoms, molecules, organisms, migration, audit)
-│   └── task-card-creator-ui-redesign.md # Card Creator UI redesign task breakdown (7 tasks, mockup-first)
 │   ├── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
 │   └── 2026-06-29-subtitle-appearance-manager-mcp.md # ADR-013 browser MCP verify report (A1-A16)
 ├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"

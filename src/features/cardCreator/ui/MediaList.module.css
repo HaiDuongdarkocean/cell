@@ -1,0 +1,173 @@
+/* === MediaList — list of media files + add button (Card Creator) ===
+   ADR-026: uses design-system tokens (--space-*, --color-*, --radius-*) per
+   docs/design-system/design-system.md §2.2.
+*/
+
+.mediaList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mediaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+}
+
+.mediaThumb {
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--iconbutton-fg);
+  flex-shrink: 0;
+  border-radius: var(--iconbutton-radius);
+  background: var(--iconbutton-bg);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--duration-fast) var(--ease-in-out),
+              color var(--duration-fast) var(--ease-in-out);
+}
+
+.mediaThumb:hover {
+  background: var(--iconbutton-active-bg);
+  color: var(--iconbutton-active-fg);
+}
+
+/* Image icon has more continuous strokes (rect frame + mountain + sun) than the
+ * audio waveform, so it visually pops more. Tone it down slightly so it sits at
+ * the same perceived brightness as the waveform icon. */
+.imageThumbIcon {
+  opacity: 0.85;
+}
+
+.mediaThumb:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+}
+
+/* === Image preview overlay (design-system §3.5 Dialog overlay pattern) === */
+.previewOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-popover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dialog-overlay-bg);
+  padding: var(--space-4);
+  cursor: zoom-out;
+}
+
+.previewImg {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  cursor: default;
+}
+
+.previewClose {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: var(--button-height-lg);
+  height: var(--button-height-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-2xl);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-in-out);
+}
+
+.previewClose:hover {
+  background: var(--color-secondary-hover);
+}
+
+.previewClose:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+}
+
+.mediaName {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeButton {
+  width: var(--iconbutton-size-xs);
+  height: var(--iconbutton-size-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--iconbutton-bg);
+  color: var(--iconbutton-fg);
+  cursor: pointer;
+  border-radius: var(--iconbutton-radius);
+  font-size: var(--font-size-base);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background var(--duration-fast) var(--ease-in-out),
+              color var(--duration-fast) var(--ease-in-out);
+}
+
+.removeButton:hover {
+  background: var(--iconbutton-danger-hover-bg);
+  color: var(--iconbutton-danger-hover-fg);
+}
+
+.removeButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+}
+
+.addButton {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-in-out),
+              color var(--duration-fast) var(--ease-in-out);
+}
+
+.addButton:hover {
+  border-color: var(--color-border-focus);
+  color: var(--color-primary);
+}
+
+.addButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.empty {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  padding: var(--space-1) 0;
+}

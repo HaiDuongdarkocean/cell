@@ -1,54 +1,54 @@
 import { describe, it, expect } from '@jest/globals';
-import { DEFAULT_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
-import type { Settings, NavClusterSettings, NavClusterPosition } from '@/entities/settings';
+import { DEFAULT_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SUBTITLE_BLOCK_SETTINGS } from '@/shared/config/config';
+import type { Settings, NavClusterSettings, SubtitleBlockSettings } from '@/entities/settings';
 
-describe('NavClusterSettings types + defaults', () => {
-  it('DEFAULT_NAV_CLUSTER_SETTINGS is exported with all 6 fields', () => {
+describe('NavClusterSettings + SubtitleBlockSettings types + defaults (ADR-025)', () => {
+  it('DEFAULT_NAV_CLUSTER_SETTINGS has 3 fields (enabled, buttonSize, buttonOpacity)', () => {
     expect(DEFAULT_NAV_CLUSTER_SETTINGS).toBeDefined();
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.enabled).toBe(true);
-    expect(DEFAULT_NAV_CLUSTER_SETTINGS.position).toEqual({ x: 8, y: 75 });
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.buttonSize).toBe(34);
-    expect(DEFAULT_NAV_CLUSTER_SETTINGS.bgOpacity).toBe(0.7);
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.buttonOpacity).toBe(0.9);
-    expect(DEFAULT_NAV_CLUSTER_SETTINGS.collapsed).toBe(false);
   });
 
-  it('DEFAULT_SETTINGS includes all 6 navCluster flat fields', () => {
+  it('DEFAULT_SUBTITLE_BLOCK_SETTINGS has 3 fields (yOffsetPercent, globalScale, bgOpacity)', () => {
+    expect(DEFAULT_SUBTITLE_BLOCK_SETTINGS).toBeDefined();
+    expect(DEFAULT_SUBTITLE_BLOCK_SETTINGS.yOffsetPercent).toBe(75);
+    expect(DEFAULT_SUBTITLE_BLOCK_SETTINGS.globalScale).toBe(1);
+    expect(DEFAULT_SUBTITLE_BLOCK_SETTINGS.bgOpacity).toBe(0.7);
+  });
+
+  it('DEFAULT_SETTINGS includes navCluster flat fields + subtitleBlockSettings', () => {
     expect(DEFAULT_SETTINGS.navClusterEnabled).toBe(true);
-    expect(DEFAULT_SETTINGS.navClusterPosition).toEqual({ x: 8, y: 75 });
     expect(DEFAULT_SETTINGS.navClusterButtonSize).toBe(34);
-    expect(DEFAULT_SETTINGS.navClusterBgOpacity).toBe(0.7);
     expect(DEFAULT_SETTINGS.navClusterButtonOpacity).toBe(0.9);
-    expect(DEFAULT_SETTINGS.navClusterCollapsed).toBe(false);
+    expect(DEFAULT_SETTINGS.subtitleBlockSettings).toEqual(DEFAULT_SUBTITLE_BLOCK_SETTINGS);
   });
 
-  it('NavClusterPosition interface shape', () => {
-    const pos: NavClusterPosition = { x: 50, y: 25 };
-    expect(pos.x).toBe(50);
-    expect(pos.y).toBe(25);
-  });
-
-  it('NavClusterSettings interface shape', () => {
+  it('NavClusterSettings interface shape (3 fields, no position/collapsed/bgOpacity)', () => {
     const s: NavClusterSettings = {
       enabled: true,
-      position: { x: 0, y: 75 },
       buttonSize: 48,
-      bgOpacity: 0.7,
       buttonOpacity: 0.9,
-      collapsed: false,
     };
     expect(s.enabled).toBe(true);
   });
 
-  it('Settings interface includes navCluster fields', () => {
+  it('SubtitleBlockSettings interface shape', () => {
+    const b: SubtitleBlockSettings = {
+      yOffsetPercent: 50,
+      globalScale: 1.2,
+      bgOpacity: 0.5,
+    };
+    expect(b.yOffsetPercent).toBe(50);
+  });
+
+  it('Settings interface includes navCluster + block fields', () => {
     const s: Settings = { ...DEFAULT_SETTINGS };
     expect(s.navClusterEnabled).toBe(true);
-    expect(s.navClusterPosition.x).toBe(8);
+    expect(s.subtitleBlockSettings.yOffsetPercent).toBe(75);
   });
 
   it('buttonSize is a number in free range 10-100 (ADR-018 D2-rev)', () => {
-    // Type is now `number` (was union 40|48|56). Validation lives in
-    // settingsStore.validateNavClusterFields (clamp 10-100, default 34).
     const valid: Array<NavClusterSettings['buttonSize']> = [10, 33, 34, 48, 56, 100];
     expect(valid).toHaveLength(6);
     expect(valid.every((v) => typeof v === 'number')).toBe(true);

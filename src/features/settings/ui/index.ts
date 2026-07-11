@@ -4,3 +4,4 @@ export { MultiSelect } from './MultiSelect';
 export { SubtitlePreview } from './SubtitlePreview';
 export { SubtitleStylePanel } from './SubtitleStylePanel';
 export { NavClusterSettingsPanel } from './NavClusterSettingsPanel';
+export { SubtitleBlockSettingsPanel } from './SubtitleBlockSettingsPanel';

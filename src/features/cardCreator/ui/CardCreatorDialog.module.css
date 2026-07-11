@@ -1,0 +1,134 @@
+/* === CardCreatorDialog — shared content styles (desktop + mobile) ===
+   ADR-026: uses design-system tokens (--space-*, --color-foreground, --color-card,
+   --color-border, etc.) per docs/design-system/design-system.md §2.2-2.3.
+*/
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* === Alert (mirrors design-system §3.6 Alert) === */
+.alert {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-subtle);
+  border: 1px solid var(--color-warning);
+  color: var(--color-foreground);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-normal);
+}
+
+.alertError {
+  background: var(--color-error-subtle);
+  border-color: var(--color-error);
+}
+
+.alertSuccess {
+  background: var(--color-success-subtle);
+  border-color: var(--color-success);
+}
+
+/* === Section (design-system Card variant: border + surface bg + padding) === */
+.section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--color-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-foreground);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* === Pair row (Note type + Deck) === */
+.pairRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.pairRow > div {
+  min-width: 0;
+}
+
+/* Mobile: stack pairRow vertically */
+.mobile .pairRow {
+  grid-template-columns: 1fr;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fieldLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.01em;
+}
+
+/* === Footer (design-system: border-top + space-between) === */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.footerMode {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.footerMode .fieldLabel {
+  white-space: nowrap;
+}
+
+.footerActions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.mobile .footer {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+.mobile .footerMode {
+  justify-content: space-between;
+}
+
+.mobile .footerActions {
+  display: flex;
+}
+
+.mobile .footerActions > * {
+  flex: 1;
+}
+
+/* === Loading overlay === */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}

@@ -5,6 +5,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import type { ResolvedMode, ThemeConfig, CoreColorTokenKey } from '@/entities/theme';
+import { Tabs } from '@/shared/ui';
 import styles from './ColorCustomization.module.css';
 
 interface ColorCustomizationProps {
@@ -59,20 +60,12 @@ export function ColorCustomization({ config, onColorChange }: ColorCustomization
 
   return (
     <div className={styles.wrapper} data-testid="color-customization">
-      <div className={styles.tabs} role="tablist">
-        {(['light', 'dark'] as const).map((m) => (
-          <button
-            key={m}
-            role="tab"
-            aria-selected={tab === m}
-            className={`${styles.tab} ${tab === m ? styles.active : ''}`}
-            onClick={() => setTab(m)}
-            data-testid={`color-tab-${m}`}
-          >
-            {m === 'light' ? '☀️ Light' : '🌙 Dark'}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as ResolvedMode)}>
+        <Tabs.List>
+          <Tabs.Trigger value="light" data-testid="color-tab-light">☀️ Light</Tabs.Trigger>
+          <Tabs.Trigger value="dark" data-testid="color-tab-dark">🌙 Dark</Tabs.Trigger>
+        </Tabs.List>
+      </Tabs>
       <div className={styles.grid}>
         {TOKENS.map(({ key, label }) => (
           <div key={key} className={styles.field}>

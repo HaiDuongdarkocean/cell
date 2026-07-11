@@ -7,6 +7,7 @@ import { useDownloadProgress } from '@/entrypoints/popup/hooks/useDownloadProgre
 import { useExtensionStatus } from '@/entrypoints/popup/hooks/useExtensionStatus';
 import { useMediaDisplayTitle } from '@/entrypoints/popup/hooks/useMediaDisplayTitle';
 import { useSubtitleLanguage } from '@/entrypoints/popup/hooks/useSubtitleLanguage';
+import { Button } from '@/shared/ui';
 import { Header } from './components/layout/Header';
 import { VideoCard } from './components/media/VideoCard';
 import { SubtitleCard } from './components/media/SubtitleCard';
@@ -312,22 +313,12 @@ export function AppRedesigned(): React.JSX.Element {
             <h2 className={styles.sectionTitle}>Media</h2>
             {hasMedia && (
               <div className={styles.sectionActions}>
-                <button
-                  type="button"
-                  className={styles.btnText}
-                  onClick={handleSelectAll}
-                  data-testid="select-all-btn"
-                >
+                <Button variant="link" size="sm" onClick={handleSelectAll} data-testid="select-all-btn">
                   {allSelected ? 'Deselect All' : 'Select All'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.btnText}
-                  onClick={handleDownload}
-                  data-testid="download-button"
-                >
+                </Button>
+                <Button variant="link" size="sm" onClick={handleDownload} data-testid="download-button">
                   {selectionCount > 0 ? `Download (${selectionCount})` : 'Download All'}
-                </button>
+                </Button>
               </div>
             )}
           </div>

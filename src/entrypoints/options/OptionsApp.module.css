@@ -1,10 +1,10 @@
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--spacing-24, 24px);
-  font-family: var(--font-mona-sans, 'Mona Sans', sans-serif);
-  color: var(--color-snow, #ffffff);
-  background: var(--color-deep-void, #0d1117);
+  padding: var(--space-6, 24px);
+  font-family: var(--font-family);
+  color: var(--color-text, #0f172a);
+  background: var(--color-background, #ffffff);
   min-height: 100dvh;
   box-sizing: border-box;
   position: relative;
@@ -14,12 +14,12 @@
   position: absolute;
   top: -40px;
   left: 0;
-  background: var(--color-terminal-green, #08872b);
-  color: var(--color-snow, #ffffff);
-  padding: var(--spacing-8, 8px) var(--spacing-16, 16px);
+  background: var(--color-primary, #2563eb);
+  color: var(--color-text, #0f172a);
+  padding: var(--space-2, 8px) var(--space-4, 16px);
   z-index: 100;
-  font-family: var(--font-mona-sans, 'Mona Sans', sans-serif);
-  font-size: var(--text-body-sm, 14px);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm, 14px);
   text-decoration: none;
   border-radius: 6px;
 }
@@ -29,11 +29,11 @@
 }
 
 .title {
-  font-size: var(--text-heading, 40px);
+  font-size: var(--font-size-4xl, 36px);
   font-weight: 425;
   letter-spacing: -0.02em;
-  margin: 0 0 var(--spacing-24, 24px) 0;
-  color: var(--color-snow, #ffffff);
+  margin: 0 0 var(--space-6, 24px) 0;
+  color: var(--color-text, #0f172a);
   line-height: 1.2;
   text-wrap: balance;
 }
@@ -42,8 +42,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-16, 16px);
-  margin: 0 0 var(--spacing-24, 24px) 0;
+  gap: var(--space-4, 16px);
+  margin: 0 0 var(--space-6, 24px) 0;
 }
 
 .hamburger {
@@ -51,9 +51,9 @@
   width: 44px;
   height: 44px;
   background: transparent;
-  border: 1px solid var(--color-slate-edge, #21262d);
+  border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 6px;
-  color: var(--color-snow, #ffffff);
+  color: var(--color-text, #0f172a);
   font-size: 20px;
   cursor: pointer;
   align-items: center;
@@ -62,13 +62,13 @@
 }
 
 .hamburger:focus-visible {
-  outline: 2px solid var(--color-terminal-green, #08872b);
+  outline: 2px solid var(--color-primary, #2563eb);
   outline-offset: -2px;
 }
 
 .layout {
   display: flex;
-  gap: var(--spacing-64, 64px);
+  gap: var(--space-16, 64px);
   align-items: flex-start;
 }
 
@@ -77,27 +77,27 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4, 4px);
-  padding: var(--spacing-16, 16px);
-  border-right: 1px solid var(--color-slate-edge, #21262d);
+  gap: var(--space-1, 4px);
+  padding: var(--space-4, 16px);
+  border-right: 1px solid var(--color-border, #e2e8f0);
   position: sticky;
-  top: var(--spacing-24, 24px);
+  top: var(--space-6, 24px);
 }
 
 .sidebarDivider {
   height: 1px;
-  background: var(--color-slate-edge, #21262d);
-  margin: var(--spacing-12, 12px) 0;
+  background: var(--color-border, #e2e8f0);
+  margin: var(--space-3, 12px) 0;
 }
 
 .sidebarRoom {
-  padding: var(--spacing-8, 8px) var(--spacing-16, 16px);
+  padding: var(--space-2, 8px) var(--space-4, 16px);
 }
 
 .roomLabel {
-  font-size: var(--text-caption, 12px);
-  color: var(--color-moss, #7c8980);
-  font-family: var(--font-mona-sans-mono, 'Mona Sans Mono', monospace);
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-muted, #94a3b8);
+  font-family: var(--font-family);
   letter-spacing: 0.015em;
 }
 
@@ -107,7 +107,7 @@
 }
 
 .content {
-  padding: var(--spacing-24, 24px) 0;
+  padding: var(--space-6, 24px) 0;
 }
 
 .content[hidden] {
@@ -115,11 +115,11 @@
 }
 
 .placeholder {
-  padding: var(--spacing-24, 24px);
-  color: var(--color-pearl, #a4aea6);
+  padding: var(--space-6, 24px);
+  color: var(--color-text-secondary, #475569);
   text-align: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--color-slate-edge, #21262d);
+  background: var(--color-surface, #f8fafc);
+  border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 24px;
 }
 
@@ -131,17 +131,17 @@
 @media (max-width: 1023px) and (min-width: 768px) {
   .sidebar {
     width: 56px;
-    padding: var(--spacing-12, 12px) var(--spacing-8, 8px);
+    padding: var(--space-3, 12px) var(--space-2, 8px);
   }
   .layout {
-    gap: var(--spacing-24, 24px);
+    gap: var(--space-6, 24px);
   }
 }
 
 /* Mobile <768px — hamburger + drawer overlay */
 @media (max-width: 767px) {
   .title {
-    font-size: var(--text-heading-sm, 24px);
+    font-size: var(--font-size-2xl, 24px);
   }
   .hamburger {
     display: inline-flex;
@@ -156,11 +156,11 @@
     left: 0;
     bottom: 0;
     width: 200px;
-    background: var(--color-obsidian, #151a22);
-    border-right: 1px solid var(--color-slate-edge, #21262d);
-    padding: var(--spacing-16, 16px);
+    background: var(--color-surface, #f8fafc);
+    border-right: 1px solid var(--color-border, #e2e8f0);
+    padding: var(--space-4, 16px);
     z-index: 1001;
-    gap: var(--spacing-4, 4px);
+    gap: var(--space-1, 4px);
   }
   .sidebarOpen {
     display: flex;

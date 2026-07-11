@@ -29,30 +29,40 @@ export interface KeyboardShortcut {
 
 // === Nav Cluster Types (ADR-018) ===
 
-/**
- * Cluster position.
- * - x: distance in pixels from the left edge of the container to the left edge
- *   of the cluster. This keeps the horizontal offset fixed regardless of screen
- *   width.
- * - y: percent of container height (0-100) where the *center* of the cluster sits.
- * Default { x: 8, y: 75 }.
- */
-export interface NavClusterPosition {
-  readonly x: number;
-  readonly y: number;
-}
-
 /** Nav cluster button size in px (free range 10-100, ADR-018 D2-rev). */
 export type NavClusterButtonSize = number;
 
-/** Settings slice for nav cluster (flat keys in Settings, ADR-018 D2). */
+/** Settings slice for nav cluster (flat keys in Settings, ADR-018 D2, ADR-025). */
 export interface NavClusterSettings {
   readonly enabled: boolean;
-  readonly position: NavClusterPosition;
   readonly buttonSize: NavClusterButtonSize;
-  readonly bgOpacity: number; // 0-1
   readonly buttonOpacity: number; // 0-1
-  readonly collapsed: boolean;
+}
+
+/** Unified subtitle block settings (ADR-025). */
+export interface SubtitleBlockSettings {
+  readonly yOffsetPercent: number; // 0-95, top edge of block
+  readonly globalScale: number; // 0.5-2
+  readonly bgOpacity: number; // 0-1
+}
+
+// === Card Creator (Anki integration) — schema v10 ===
+
+/** How media fields are merged when updating an existing note. */
+export type MediaUpdateMode = 'overwrite' | 'append' | 'skip';
+
+/** Settings slice for Card Creator (AnkiConnect integration). */
+export interface CardCreatorSettings {
+  /** AnkiConnect base URL. Default `http://localhost:8765`. Mobile may use LAN IP. */
+  readonly ankiConnectUrl: string;
+  /** Last-used deck name (preselected in dialog). Default 'Default'. */
+  readonly defaultDeck: string;
+  /** Last-used note type (preselected in dialog). Default 'Cell Video Card'. */
+  readonly defaultNoteType: string;
+  /** Default tags string (space-separated, Anki convention). Default '' (empty — user enters tags manually). */
+  readonly defaultTags: string;
+  /** How media fields merge when updating an existing note. Default 'overwrite'. */
+  readonly mediaUpdateMode: MediaUpdateMode;
 }
 
 // === Settings Types ===
@@ -156,9 +166,9 @@ export interface Settings {
    * clear on SPA nav.
    */
   readonly subtitleOverlayAutoTranslate: boolean;
-  /** Per-layer appearance config for target subtitle overlay (ADR-013). Independent from native. */
+  /** Per-layer appearance config for target subtitle overlay (ADR-013, ADR-025). Independent from native. */
   readonly subtitleOverlayTargetStyle?: OverlayStyleConfig;
-  /** Per-layer appearance config for native subtitle overlay (ADR-013). Independent from target. */
+  /** Per-layer appearance config for native subtitle overlay (ADR-013, ADR-025). Independent from target. */
   readonly subtitleOverlayNativeStyle?: OverlayStyleConfig;
   /**
    * Per-site subtitle preference (ADR-014 D5). Key = origin (e.g. 'themoviebox.org'),
@@ -174,17 +184,17 @@ export interface Settings {
   readonly subtitleOffset?: Record<string, number>;
   /** Keyboard shortcuts for subtitle floating panel. Default: a/d/s/w/t. */
   readonly keyboardShortcuts: KeyboardShortcut[];
-  // === Nav Cluster (ADR-018) — flat keys, schema v2 ===
+  // === Nav Cluster (ADR-018, ADR-025) — flat keys, schema v3 ===
   /** Nav cluster master toggle. Default: true. */
   readonly navClusterEnabled: boolean;
-  /** Nav cluster position. Default: { x: 8, y: 75 }. */
-  readonly navClusterPosition: NavClusterPosition;
   /** Nav cluster button size preset. Default: 48 (medium). */
   readonly navClusterButtonSize: NavClusterButtonSize;
-  /** Nav cluster background opacity (0-1). Default: 0.7. */
-  readonly navClusterBgOpacity: number;
   /** Nav cluster button opacity (0-1). Default: 0.9. */
   readonly navClusterButtonOpacity: number;
-  /** Nav cluster collapsed state (half-circle edge-stuck). Default: false. */
-  readonly navClusterCollapsed: boolean;
+  // === Subtitle Block (ADR-025) ===
+  /** Unified block settings (yOffset, globalScale, bgOpacity). Default: { yOffsetPercent: 75, globalScale: 1, bgOpacity: 0.7 }. */
+  readonly subtitleBlockSettings: SubtitleBlockSettings;
+  // === Card Creator (Anki integration) — schema v10 ===
+  /** Card Creator settings (AnkiConnect URL, defaults, media update mode). */
+  readonly cardCreator: CardCreatorSettings;
 }

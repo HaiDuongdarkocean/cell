@@ -50,24 +50,6 @@
   gap: var(--spacing-xs);
 }
 
-/* === Text button (Select All / Download All) === */
-.btnText {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-primary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px var(--spacing-sm);
-  border-radius: var(--radius-sm);
-  transition: background var(--transition);
-  font-family: var(--font-family);
-}
-
-.btnText:hover {
-  background: var(--color-primary-subtle);
-}
-
 /* === Lists === */
 .mediaList,
 .downloadsList {

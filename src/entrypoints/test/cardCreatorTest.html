@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Card Creator — UI Test Page</title>
+  <link rel="stylesheet" href="../../src/entrypoints/popup/styles/theme.css" />
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--color-background, #1a1a1a);
+      color: var(--color-text, #e0e0e0);
+      font-family: sans-serif;
+      min-height: 100vh;
+    }
+    .test-controls {
+      max-width: 800px;
+      margin: 0 auto 24px;
+      padding: 16px;
+      border: 1px solid var(--color-border, #333);
+      border-radius: 8px;
+      background: var(--color-surface, #222);
+    }
+    .test-controls h1 {
+      font-size: 18px;
+      margin: 0 0 12px;
+    }
+    .test-controls button {
+      padding: 6px 12px;
+      margin: 4px;
+      border: 1px solid var(--color-border, #333);
+      border-radius: 4px;
+      background: var(--color-surface, #222);
+      color: var(--color-text, #e0e0e0);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .test-controls button:hover {
+      background: var(--color-surface-hover, #2a2a2a);
+    }
+    .test-info {
+      font-size: 12px;
+      color: var(--color-text-muted, #888);
+      margin-top: 12px;
+    }
+    #root {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-controls">
+    <h1>Card Creator — UI Test Page</h1>
+    <div>
+      <button id="open-desktop">Open Desktop Dialog</button>
+      <button id="open-mobile">Open Mobile Bottom Sheet</button>
+      <button id="open-settings">Open Settings (Card Creator section)</button>
+      <button id="toggle-theme">Toggle Dark/Light</button>
+    </div>
+    <div class="test-info">
+      Mock context: AnkiConnect URL = http://localhost:8765 (offline — no Anki running).
+      Mock cue: "This is the target sentence." / "Đây là câu mục tiêu."
+      Use edge-devtools MCP to interact + verify.
+    </div>
+  </div>
+  <div id="root"></div>
+  <script type="module" src="./cardCreatorTestApp.tsx"></script>
+</body>
+</html>

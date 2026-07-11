@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 10;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -40,20 +40,8 @@ function coerceBoolean(value: unknown, fallback: boolean): boolean {
   return fallback;
 }
 
-/** Max plausible left-edge x in px (4K-ish video width minus cluster width). */
-const POS_X_MAX = 10000;
-
-/** Validate + clamp nav cluster fields after migration (ADR-018 D2 boundary validation). */
+/** Validate + clamp nav cluster and block fields after migration (ADR-018 D2, ADR-025). */
 function validateNavClusterFields(s: Record<string, unknown>): void {
-  const pos = s.navClusterPosition as { x?: number; y?: number } | undefined;
-  if (pos && typeof pos === 'object') {
-    s.navClusterPosition = {
-      // x is now a fixed left-edge offset in pixels, not a percent.
-      x: clampNumber(pos.x, 0, POS_X_MAX, 8),
-      y: clampNumber(pos.y, 0, 100, 75),
-    };
-  }
-  s.navClusterBgOpacity = clampNumber(s.navClusterBgOpacity, 0, 1, 0.7);
   s.navClusterButtonOpacity = clampNumber(s.navClusterButtonOpacity, 0, 1, 0.9);
   s.navClusterButtonSize = clampNumber(
     s.navClusterButtonSize,
@@ -62,7 +50,17 @@ function validateNavClusterFields(s: Record<string, unknown>): void {
     BUTTON_SIZE_DEFAULT,
   );
   s.navClusterEnabled = coerceBoolean(s.navClusterEnabled, true);
-  s.navClusterCollapsed = coerceBoolean(s.navClusterCollapsed, false);
+
+  const block = s.subtitleBlockSettings as { yOffsetPercent?: number; globalScale?: number; bgOpacity?: number } | undefined;
+  if (block && typeof block === 'object') {
+    s.subtitleBlockSettings = {
+      yOffsetPercent: clampNumber(block.yOffsetPercent, 0, 95, 75),
+      globalScale: clampNumber(block.globalScale, 0.5, 2, 1),
+      bgOpacity: clampNumber(block.bgOpacity, 0, 1, 0.7),
+    };
+  } else {
+    s.subtitleBlockSettings = DEFAULT_SETTINGS.subtitleBlockSettings;
+  }
 }
 
 /**
@@ -143,10 +141,55 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   // v7 → v8: navClusterPosition.x unit changed from percent to fixed left-edge
   // pixels. Old percent values cannot be reliably converted without the runtime
   // container width, so reset to the new default { x: 8, y: 75 }.
+  // ADR-025: navClusterPosition removed in v9 — this step now just bumps version;
+  // the v8→v9 migration handles cleanup of legacy position fields.
   7: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 8 } as Record<string, unknown>;
-    merged.navClusterPosition = DEFAULT_SETTINGS.navClusterPosition;
     validateNavClusterFields(merged);
+    return merged;
+  },
+  // v8 → v9: unified subtitle block (ADR-025). Remove navClusterPosition,
+  // navClusterBgOpacity, navClusterCollapsed, and yOffsetPercent from layer styles.
+  // Create subtitleBlockSettings from legacy positions.
+  8: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 9 } as Record<string, unknown>;
+
+    const targetStyle = (merged.subtitleOverlayTargetStyle as Record<string, unknown> | undefined) ?? {};
+    const nativeStyle = (merged.subtitleOverlayNativeStyle as Record<string, unknown> | undefined) ?? {};
+    const targetY = clampNumber(targetStyle.yOffsetPercent, 0, 95, 18);
+    const nativeY = clampNumber(nativeStyle.yOffsetPercent, 0, 95, 6);
+    const legacyY = nativeY ? (targetY + nativeY) / 2 : targetY;
+
+    const oldNavBg = clampNumber(merged.navClusterBgOpacity, 0, 1, 0.7);
+
+    merged.subtitleBlockSettings = {
+      yOffsetPercent: legacyY,
+      globalScale: 1,
+      bgOpacity: oldNavBg,
+    };
+
+    // Strip removed fields from layer styles.
+    const { yOffsetPercent: _targetY, ...restTarget } = targetStyle;
+    const { yOffsetPercent: _nativeY, ...restNative } = nativeStyle;
+    merged.subtitleOverlayTargetStyle = restTarget;
+    merged.subtitleOverlayNativeStyle = restNative;
+
+    // Remove old nav cluster fields.
+    delete merged.navClusterPosition;
+    delete merged.navClusterBgOpacity;
+    delete merged.navClusterCollapsed;
+
+    validateNavClusterFields(merged);
+    return merged;
+  },
+  // v9 → v10: add Card Creator settings (AnkiConnect integration). Additive —
+  // merge DEFAULT_CARD_CREATOR_SETTINGS. Existing users get the default URL
+  // (localhost:8765) + default deck/note type/tags + overwrite media mode.
+  9: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 10 } as Record<string, unknown>;
+    if (!merged.cardCreator || typeof merged.cardCreator !== 'object') {
+      merged.cardCreator = DEFAULT_SETTINGS.cardCreator;
+    }
     return merged;
   },
 };

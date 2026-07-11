@@ -167,11 +167,16 @@ export class BackgroundPrefillController {
       const chunk = this.queue[this.queueIdx];
       if (!chunk) break;
 
-      // ADR-021 D3: multi-cue per request. joinCueTexts encodes sentence-terminal
-      // punctuation (. ? ! ;) → Google sees no sentence boundaries → 1 segment per cue.
-      const texts = chunk.map((i) => this.targetCues[i]?.text ?? '');
-      const joined = joinCueTexts(texts);
+      // ADR-021 D3: multi-cue per request. joinCueTexts wraps each cue in markers
+      // and encodes sentence-terminal punctuation → Google cannot merge/split cues.
+      const cues = chunk
+        .map((i) => this.targetCues[i])
+        .filter((c): c is SrtCue => c !== undefined);
+      const joined = joinCueTexts(cues);
 
+      // Pipeline optimization: gap is measured from the start of the chunk request,
+      // not from the end of the response. This avoids double-counting network time.
+      const chunkStartTime = Date.now();
       let success = false;
       for (let attempt = 0; attempt < this.opts.maxRetries; attempt++) {
         if (this.cancelled) return;
@@ -201,9 +206,14 @@ export class BackgroundPrefillController {
       this.opts.onChunkTranslated(this.getTranslatedCues());
 
       this.queueIdx++;
-      // Gap between requests (except after last chunk)
+      // Gap between requests (except after last chunk). Pipeline: only sleep if
+      // requestGapMs has not already elapsed since chunkStartTime.
       if (this.queueIdx < this.queue.length && !this.cancelled) {
-        await sleep(this.opts.requestGapMs);
+        const elapsed = Date.now() - chunkStartTime;
+        const remaining = Math.max(0, this.opts.requestGapMs - elapsed);
+        if (remaining > 0) {
+          await sleep(remaining);
+        }
       }
     }
     this.running = false;

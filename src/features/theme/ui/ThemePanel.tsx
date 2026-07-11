@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useThemeStore } from '@/stores/themeStore';
 import { applyTheme, resolveMode } from '@/features/theme/logic/themeManager';
 import { validateTheme } from '@/features/theme/logic/contrastValidator';
+import { Button } from '@/shared/ui';
 import { ModeCards } from './ModeCards';
 import { ColorCustomization } from './ColorCustomization';
 import { ThemePreview } from './ThemePreview';
@@ -54,14 +55,14 @@ export function ThemePanel(): React.JSX.Element {
       <div className={styles.section}>
         <h2 className={styles.heading}>Reset</h2>
         {!confirmReset ? (
-          <button className={styles.resetBtn} onClick={() => setConfirmReset(true)} data-testid="theme-reset-btn">
+          <Button variant="destructive" onClick={() => setConfirmReset(true)} data-testid="theme-reset-btn">
             Reset to defaults
-          </button>
+          </Button>
         ) : (
           <div className={styles.confirmRow} data-testid="theme-reset-confirm">
             <span className={styles.confirmText}>Reset all colors to defaults?</span>
-            <button className={styles.resetBtn} onClick={() => { resetTheme(); setConfirmReset(false); }} data-testid="theme-reset-yes">Yes, reset</button>
-            <button className={styles.resetBtn} onClick={() => setConfirmReset(false)} data-testid="theme-reset-no" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}>Cancel</button>
+            <Button variant="destructive" onClick={() => { resetTheme(); setConfirmReset(false); }} data-testid="theme-reset-yes">Yes, reset</Button>
+            <Button variant="secondary" onClick={() => setConfirmReset(false)} data-testid="theme-reset-no">Cancel</Button>
           </div>
         )}
       </div>

@@ -1,0 +1,83 @@
+/* === FieldRow — label + field-map select + input/textarea (Card Creator) ===
+   ADR-026: uses design-system tokens (--space-*, --color-*, --input-*) per
+   docs/design-system/design-system.md §2.2-2.3 + §3.3 Input.
+*/
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fieldHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.fieldLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.01em;
+  user-select: none;
+}
+
+.fieldMap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.fieldMapSelect {
+  min-width: 120px;
+}
+
+/* Input — design-system §3.3 Input */
+.input {
+  width: auto;
+  padding: var(--input-padding-y) var(--input-padding-x);
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  background: var(--input-bg);
+  color: var(--input-fg);
+  font-size: var(--input-font-size);
+  font-family: inherit;
+  line-height: var(--leading-normal);
+}
+
+.input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
+}
+
+/* Textarea — same as Input but multiline + resize */
+.textarea {
+  width: auto;
+  min-height: 56px;
+  padding: var(--input-padding-y) var(--input-padding-x);
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  background: var(--input-bg);
+  color: var(--input-fg);
+  font-size: var(--input-font-size);
+  font-family: inherit;
+  line-height: var(--leading-normal);
+  resize: vertical;
+}
+
+.textarea::placeholder {
+  color: var(--input-placeholder);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-ring);
+}

@@ -26,8 +26,9 @@ src/
 │   ├── whitelist/      #   Auto-download whitelist
 │   ├── transmux/       #   TS→fMP4 transmuxing (planning/execution/merging)
 │   ├── subtitle/       #   Subtitle overlay/sync/merge/bilingual (logic/ui/service)
-│   │   └── ui/contentScriptController.ts  # M20: subtitle UI orchestration (init → returns cleanup for SPA episode-switch re-init) — ADR-018: wires NavClusterController; ADR-019: wires OffsetController + offset keyboard shortcuts
-│   │       └── ui/navCluster*.ts  # ADR-018: navClusterController + navClusterDom + navClusterActions + navClusterButton + navClusterKeyboard + navClusterIcons + navClusterCss (6-button floating cluster, inline SVG icons)
+│   │   └── ui/contentScriptController.ts  # M20: subtitle UI orchestration (init → returns cleanup for SPA episode-switch re-init) — ADR-025: wires SubtitleBlockController; ADR-019: wires OffsetController + offset keyboard shortcuts
+│   │       └── ui/subtitleBlock*.ts  # ADR-025: subtitleBlockController + subtitleBlockDom + subtitleBlockDrag + subtitleBlockScale + subtitleBlockCss (unified draggable block: target overlay + native overlay + nav cluster merged into single block)
+│   │       └── ui/navCluster*.ts  # ADR-018: navClusterActions + navClusterButton + navClusterKeyboard + navClusterIcons + navClusterCss (navClusterController + navClusterDom DELETED ADR-025 — merged into subtitleBlock*)
 │   │       └── ui/offsetController.ts  # ADR-019: OffsetController class — wires subtitleOffsetSection (nested trong manager panel) + subtitleOffsetBadge (floating) + lazy/committed state + wall-clock auto-commit (timeupdate + visibilitychange, no setTimeout) + persist per-URL
 │   │       └── ui/subtitleOffsetPanel.ts  # ADR-019: offset section DOM factory (collapsible section trong manager panel, 4 states: disabled/default/lazy-active/committed, 4 steppers ±0.5/±2s, input + apply + reset)
 │   │       └── ui/subtitleOffsetBadge.ts  # ADR-019: lazy badge DOM factory (pill top-right, "Xem thử · M:SS" + pulse dot, click=reset, keyboard accessible)
@@ -49,12 +50,43 @@ src/
 │   │   ├── chrome-apis/  # M17: 9 adapters (tabs/runtime/storage/downloads/webRequest/offscreen/sidePanel/action/windows)
 │   │   └── storage/      # M21: settingsStore.ts (schema versioning + migration)
 │   ├── ui/             #   Reusable UI atoms (design-system-ui-ux Step 3, Rule of Three)
-│   │   ├── IconButton.tsx + .module.css  # Icon-only transparent button (11 call sites: Header, SettingsDialog, VideoCard, SubtitleCard, SelectionBar, DownloadCard)
-│   │   ├── Toggle.tsx + .module.css      # Switch pill 32x18px (settings-controls-restyle F1) — replaces IconButton star-icon toggles
-│   │   ├── Slider.tsx + .module.css      # Styled range 4px track + 14px thumb (settings-controls-restyle F2)
+│   │   ├── index.ts                       # Barrel exports for shared UI
+│   │   ├── Button.tsx + .module.css        # Text button: primary/secondary/outline/ghost/destructive/link, sm/md/lg, loading, disabled
+│   │   ├── Badge.tsx + .module.css         # Small status label with variants/sizes
+│   │   ├── Alert.tsx + .module.css         # Inline message banner with variants
+│   │   ├── Badge.tsx + .module.css         # Small status label with variants/sizes
+│   │   ├── Button.tsx + .module.css        # Text button: primary/secondary/outline/ghost/destructive/link, sm/md/lg, loading, disabled
+│   │   ├── Card.tsx + .module.css          # Surface container: default/interactive/selected variants
+│   │   ├── Checkbox.tsx + .module.css      # Checkbox with label, indeterminate, error, disabled states
+│   │   ├── CheckboxGroup.tsx + .module.css # Managed list of checkboxes
+│   │   ├── Dialog.tsx + .module.css        # Accessible modal overlay + panel (DeleteConfirmModal now uses this)
+│   │   ├── Drawer.tsx + .module.css        # Slide-in panel with overlay
+│   │   ├── EmptyState.tsx + .module.css    # Empty list/panel placeholder
+│   │   ├── FormGroup.tsx + .module.css     # Label + children wrapper with consistent spacing
+│   │   ├── Header.tsx + .module.css        # Top chrome with title and actions
+│   │   ├── Input.tsx + .module.css         # Text input with error state and size variants
+│   │   ├── InputField.tsx + .module.css    # Label + Input + helper/error text
+│   │   ├── IconButton.tsx + .module.css    # Icon-only transparent button (Header, SettingsDialog, VideoCard, SubtitleCard, SelectionBar, DownloadCard)
+│   │   ├── Label.tsx + .module.css         # Form control label with required/disabled states
+│   │   ├── ListItem.tsx + .module.css      # Row with leading/trailing content and active state
+│   │   ├── NavItem.tsx + .module.css       # Navigation item (sidebar/horizontal)
+│   │   ├── Progress.tsx + .module.css      # Horizontal progress bar
+│   │   ├── Radio.tsx + .module.css         # Radio with label, error, disabled states
+│   │   ├── RadioGroup.tsx + .module.css    # Managed list of radios
+│   │   ├── SearchField.tsx + .module.css   # Input with leading search icon + clear button
+│   │   ├── Select.tsx + .module.css        # Plain HTML select wrapper with placeholder/error
+│   │   ├── Sidebar.tsx + .module.css       # Vertical nav container with optional collapse
+│   │   ├── Skeleton.tsx + .module.css      # Placeholder loading shape
+│   │   ├── Spinner.tsx + .module.css       # Animated loading indicator
+│   │   ├── Tabs.tsx + .module.css          # Compound tab list/trigger/content
+│   │   ├── Textarea.tsx + .module.css      # Multiline input with resize/error/disabled
+│   │   ├── Toggle.tsx + .module.css        # Switch pill 32x18px (settings-controls-restyle F1)
+│   │   ├── Tooltip.tsx + .module.css       # Accessible hover/focus tooltip
+│   │   ├── Accordion.tsx + .module.css     # Collapsible single/multiple sections
+│   │   ├── Slider.tsx + .module.css        # Styled range 4px track + 14px thumb (settings-controls-restyle F2)
 │   │   ├── ShortcutInput.tsx + .module.css # Uppercase + center single-char input (settings-controls-restyle F3)
 │   │   ├── SearchableSelect.tsx + .module.css # Single-select dropdown with embedded search (settings-controls-restyle F5)
-│   │   └── HintIcon.tsx + .module.css    # Info-circle button + floating popover with boundary detection (settings-controls-restyle F6)
+│   │   └── HintIcon.tsx + .module.css      # Info-circle button + floating popover with boundary detection (settings-controls-restyle F6)
 │   ├── utils/          #   fileUtils, timeUtils, urlUtils
 │   └── config/         #   config, messages, urls
 └── types/              # Ambient .d.ts (muxjs, vite-env) — M19: media/message/subtitle.ts deprecated
@@ -296,6 +328,7 @@ tests/
 | `background/handlers/sidePanelRelay.ts` | messages, helpers, types | `background/index.ts` (via registerSidePanelRelayHandlers) | 9 side panel relay handlers: OPEN_SIDE_PANEL, **CLOSE_SIDE_PANEL** (Chrome 141+ `chrome.sidePanel.close` via windowId resolved from tabId), VIDEO_TIME_UPDATE, VIDEO_PLAY_STATE, SEEK_TO, TOGGLE_PLAY, SHORTCUT_ACTION, VIDEO_EPISODE_CHANGED (ADR-008/009/010/011) |
 | `background/handlers/youtubeDetection.ts` | messages, detection (mapYouTubeCaptionTracks, fetchCaptionTracksViaInnerTube), helpers, types | `background/index.ts` (via registerYouTubeDetectionHandlers) | **ADR-020**: 2 YouTube handlers: DETECTED_SUBTITLES (map tracks → DetectedSubtitle[] → addDetectedSubtitles → broadcast + pushAutoLoadSubtitles), INNERTUBE_FALLBACK_REQUEST (background SW fetch InnerTube WEB client — content script cannot set User-Agent) |
 | `background/handlers/translate.ts` | messages, translateService, types | `background/index.ts` (via registerTranslateHandlers) | **ADR-021**: 1 translate handler: TRANSLATE (content-script → background SW fetch Google Translate unofficial endpoint, CORS bypass, return parsed string[]) |
+| `background/handlers/cardCreator.ts` | messages, ankiConnectClient, types | `background/index.ts` (via registerCardCreatorHandlers) | **ADR-026**: 1 Card Creator handler: CARD_CREATOR_REQUEST (content-script → background SW fetch AnkiConnect HTTP, CORS bypass, return `{ result }` or `{ error }`). Single generic action; action name + params in payload |
 | `background/networkInterceptor.ts` | videoDetector, subtitleDetector, types | `background/index.ts`, `background/wireEvents.ts` | Media detection, dedup, clearTab |
 | `background/downloader.ts` | m3u8Parser, assToSrt, vttToSrt, srtNormalizer, conversionTimer, parallelPlanner, **fileUtils**, opfsStorage, types, config | `background/index.ts` | Download + convert + filename, **pause/resume/retry** (cancel flag pattern), **two-phase progress** (downloadProgress + convertProgress), **AES-128 decrypt** (fetchKey, decryptSegment, WebCrypto AES-CBC), **fMP4 concat** (init segment + .m4s → .mp4, no transmux), **byte-range** (Range header, 206/200), **ad skip** (section-based, even=content/odd=ad), **nested master** (max depth 3) |
 | `background/downloadQueue.ts` | types | `background/index.ts` | Queue concurrency, pause/resume, **retry** (reset+requeue), **remove** (delete item) |
@@ -325,13 +358,16 @@ tests/
 | `content/subtitleBilingualParser.ts` | srtParser, types (BilingualCue) | content-script.ts | Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, fallback single-language) — **implemented Task 2** |
 | `content/subtitlePanel.ts` | — | content-script.ts | Toggle button + seek helper: createToggleButton (toggles Side Panel via OPEN/CLOSE_SIDE_PANEL message), seekToCue — **ADR-008: panel UI moved to Side Panel** |
 | `content/subtitleShortcuts.ts` | types (KeyboardShortcut) | content-script.ts | Keyboard handler: handleShortcutKey (pure, guard input/textarea) — **implemented Task 3** |
-| `content/navClusterController.ts` | navClusterDom, navClusterActions, navClusterButton, navClusterKeyboard, themeTokens (syncElementTheme), types (NavClusterSettings, SrtCue) | contentScriptController.ts | **ADR-018 + ADR-024**: NavClusterController class — floating 6-button subtitle navigation cluster. Lifecycle: init (idempotent) → updateCues (4↔6 nút CSS class toggle) → updateSettings (realtime) → setVisible → destroy. Wires drag (Pointer Events + setPointerCapture + clampPosition + edge collapse + dblclick reset), repeat (click <500ms = one-shot seek to current cue start; hold ≥500ms = timeupdate loop + blur/visibilitychange cancel), keyboard (ArrowLeft/Right, R hold, </, >/), persist debounced 300ms, fullscreen re-parent + own `data-theme` sync (syncElementTheme) so theme stays correct when re-parented |
-| `content/navClusterDom.ts` | types (NavClusterPosition), navClusterIcons | navClusterController.ts | **ADR-018**: Pure DOM helpers — buildClusterDOM (6 buttons 2 columns, role=toolbar, data-testid, inline SVG icons via navClusterIcons), clampPosition (percent bounds), findNearestEdge (collapse mirror) |
-| `content/navClusterActions.ts` | subtitleSync (findCurrentLine), types (SrtCue) | navClusterController.ts | **ADR-018**: Pure action helpers — findActiveCueIndex (target-primary native-fallback), prevSentence/nextSentence (gap fallback), seekBy ([0,duration] clamp + NaN/Infinity live-stream) |
-| `content/navClusterButton.ts` | navClusterIcons | navClusterController.ts, navClusterDom.ts | **ADR-018**: Atom — createNavClusterButton DOM factory (inline SVG icons via navClusterIcons, click/hold handlers + aria-pressed toggle), setButtonPressed helper |
-| `content/navClusterKeyboard.ts` | subtitleShortcuts (isEditableTarget) | navClusterController.ts | **ADR-018**: Pure keyboard state machine — handleClusterKeydown/up (ArrowLeft/Right, R hold with e.repeat ignore + repeatHolding guard, </, >/), cancelRepeatHold (blur/visibilitychange) |
-| `content/navClusterIcons.ts` | — | navClusterDom.ts, navClusterButton.ts | **ADR-018**: Pure SVG icon string map (NAV_CLUSTER_ICONS: prev/next/repeat/rewind/forward — currentColor stroke, aria-hidden, 24x24 viewBox). Source: docs/mockups/icon-svg/ (svgrepo, recolored to currentColor) |
-| `content/navClusterCss.ts` | — | themeTokens (injectThemeTokens) | **ADR-018**: Cluster CSS injected into content-script isolated world — no button background default (transparent), hover=color primary, repeat-active=color primary + spin animation, SVG 60% of button, drag on cluster background (ADR-015 pattern, no drag handle button) |
+| `content/subtitleBlockController.ts` | subtitleBlockDom, subtitleBlockDrag, subtitleBlockScale, navClusterActions, navClusterIcons, themeTokens (syncElementTheme), types (SrtCue, NavClusterSettings, SubtitleBlockSettings, OverlayStyleConfig) | contentScriptController.ts | **ADR-025**: SubtitleBlockController class — unified block merging target overlay + native overlay + nav cluster into single draggable block. Constructor: (video, container, blockSettings, targetStyle, nativeStyle, clusterSettings, offsetProvider?, onPersist?). Lifecycle: init/updateSettings/loadBilingualCues/updateCues/destroy. Wires drag (subtitleBlockDrag), auto-scale (subtitleBlockScale), fullscreen re-parent, theme sync (syncElementTheme) |
+| `content/subtitleBlockDom.ts` | navClusterIcons | subtitleBlockController.ts | **ADR-025**: createSubtitleBlockDOM() pure factory — builds block > body > (clusterColumns + subtitleColumn + rightColumn) |
+| `content/subtitleBlockDrag.ts` | types (SubtitleBlockSettings) | subtitleBlockController.ts | **ADR-025**: wireBlockDrag() pure function — Pointer Events drag for block Y position |
+| `content/subtitleBlockScale.ts` | — | subtitleBlockController.ts | **ADR-025**: createBlockScaleObserver() + computeScaleSnapshot() — auto-scale block to fit container width |
+| `content/subtitleBlockCss.ts` | — | subtitleBlockController.ts | **ADR-025**: Block CSS injection |
+| `content/navClusterActions.ts` | subtitleSync (findCurrentLine), types (SrtCue) | subtitleBlockController.ts | **ADR-018**: Pure action helpers — findActiveCueIndex (target-primary native-fallback), prevSentence/nextSentence (gap fallback), seekBy ([0,duration] clamp + NaN/Infinity live-stream) |
+| `content/navClusterButton.ts` | navClusterIcons | subtitleBlockController.ts | **ADR-018**: Atom — createNavClusterButton DOM factory (inline SVG icons via navClusterIcons, click/hold handlers + aria-pressed toggle), setButtonPressed helper |
+| `content/navClusterKeyboard.ts` | subtitleShortcuts (isEditableTarget) | subtitleBlockController.ts | **ADR-018**: Pure keyboard state machine — handleClusterKeydown/up (ArrowLeft/Right, R hold with e.repeat ignore + repeatHolding guard, </, >/), cancelRepeatHold (blur/visibilitychange) |
+| `content/navClusterIcons.ts` | — | subtitleBlockDom.ts, navClusterButton.ts, subtitleBlockController.ts | **ADR-018**: Pure SVG icon string map (NAV_CLUSTER_ICONS: prev/next/repeat/rewind/forward — currentColor stroke, aria-hidden, 24x24 viewBox). Source: docs/mockups/icon-svg/ (svgrepo, recolored to currentColor) |
+| `content/navClusterCss.ts` | — | themeTokens (injectThemeTokens) | **ADR-018**: Cluster CSS injected into content-script isolated world — no button background default (transparent), hover=color primary, repeat-active=color primary + spin animation, SVG 60% of button, drag on cluster background (ADR-015 pattern, no drag handle button), `transform: translate(-50%, -50%)` so `left/top` represent the cluster center |
 | `content/offsetController.ts` | subtitleOffsetPanel (createOffsetSection), subtitleOffsetBadge, subtitleOffset (logic), settingsStore (saveSettings/loadSettings), types (Settings) | contentScriptController.ts | **ADR-019**: OffsetController class — subtitle time offset orchestrator. Lifecycle: init (idempotent, builds section nested trong manager panel + floating badge) → loadCues (hasSubtitle bool, reset on unload) → destroy. State machine: committed (persisted, badge hidden) ↔ lazy (apply all ngay, badge visible, timer 2 phút). Wall-clock auto-commit via timeupdate + visibilitychange (no setTimeout — MV3 throttle safe). Persist per-URL vào settings.subtitleOffset (value=0 → remove key). Public stepBy/reset cho keyboard |
 | `content/subtitleOffsetPanel.ts` | subtitleOffset (logic: OffsetState, formatOffsetDisplay) | offsetController.ts | **ADR-019**: Offset section DOM factory — collapsible section nested trong Subtitle Manager Panel (mimic createSection pattern). Header (chevron + "OFFSET" + value display) + body (4 states: disabled/default/lazy-active/committed, 4 steppers ±0.5s/±2s, input + apply + reset full-width, flashSaved "✓ Đã lưu" 1.5s). Inversion of control: nhận handlers callback |
 | `content/subtitleOffsetBadge.ts` | subtitleOffset (logic: AUTO_COMMIT_MS) | offsetController.ts | **ADR-019**: Lazy badge DOM factory — pill top-right overlay, "Xem thử · M:SS" + pulse dot, click=reset, keyboard accessible (Enter/Space), tabIndex=0, role=status, aria-label dynamic. Idempotent keyframes injection |
@@ -388,6 +424,7 @@ tests/
 | `shared/ui/CheckboxGroup.tsx` | — | — | Managed list of checkboxes |
 | `shared/ui/Dialog.tsx` | — | DeleteConfirmModal | Accessible modal overlay + panel |
 | `shared/ui/Drawer.tsx` | — | — | Slide-in panel with overlay |
+| `shared/ui/BottomSheet.tsx` | — | CardCreatorBottomSheet | **ADR-026**: Mobile bottom-anchored sheet (slide-up, drag handle, 75vh max height). Mirrors Dialog API |
 | `shared/ui/FormGroup.tsx` | — | — | Label + children wrapper with consistent spacing |
 | `shared/ui/Header.tsx` | — | App.redesigned, OptionsApp | Top chrome with title and actions |
 | `shared/ui/IconButton.tsx` | — | Header, SettingsDialog, VideoCard, SubtitleCard, SelectionBar, DownloadCard | Icon-only transparent button (11 call sites) |
@@ -694,6 +731,22 @@ downloader.downloadM3u8Streaming(playlist)
 | `chunkCuesByCharBudget` | `features/translate/logic/translateChunker.ts` | (SrtCue[], number[], budget) → number[][] | translatePrefill.ts | **ADR-021 D3**: Chunk cue indices by char budget (default 1500) |
 | `buildSequentialIndices` | `features/translate/logic/translateChunker.ts` | (total, start) → number[] | translatePrefill.ts | Build [start..n-1] index range for prefill |
 | `BackgroundPrefillController` | `features/translate/logic/translatePrefill.ts` | PrefillOptions → controller | contentScriptController.ts | **ADR-021 D1**: Sequential prefill queue + cache + guards (play, tab hidden, SPA nav) + backoff |
+| `sendAction` | `features/cardCreator/service/ankiConnectClient.ts` | (FetchFn, url, action, params?, timeoutMs?) → Promise<Result<unknown>> | cardCreatorService.ts | **ADR-026**: Pure AnkiConnect HTTP client (transport-agnostic FetchFn injected for testability). Builds `{ version: 6, action, params }`, parses `{ result, error }` |
+| `testConnection` | `features/cardCreator/service/cardCreatorService.ts` | (url) → Promise<Result<number>> | CardCreatorSettingsPanel | **ADR-026**: AnkiConnect `version` action → connection test. Returns API version or error |
+| `listDecks` / `listModels` / `listModelFields` | `features/cardCreator/service/cardCreatorService.ts` | (url, ...) → Promise<Result<...>> | useCardCreatorState | **ADR-026**: AnkiConnect deckNames / modelNames / modelFieldNames → populate Card Creator selects |
+| `findRecentNote` | `features/cardCreator/service/cardCreatorService.ts` | (url, deck, model) → Promise<Result<number \| null>> | useCardCreatorState | **ADR-026**: AnkiConnect findNotes (NOT findCards — Android compat). Quote deck/model only when spaces. Sort by id desc → newest. 10-min window check in UI |
+| `getNoteInfo` | `features/cardCreator/service/cardCreatorService.ts` | (url, noteId) → Promise<Result<NoteInfo \| null>> | useCardCreatorState | **ADR-026**: AnkiConnect notesInfo → flattened fields + tags for update mode |
+| `storeMedia` | `features/cardCreator/service/cardCreatorService.ts` | (url, filename, base64) → Promise<Result<string>> | useCardCreatorState | **ADR-026**: AnkiConnect storeMediaFile. **Android appends random number to filename** → MUST use returned filename in field refs. Desktop may return null → fall back to input |
+| `addNote` / `updateNote` | `features/cardCreator/service/cardCreatorService.ts` | (url, ...) → Promise<Result<...>> | useCardCreatorState | **ADR-026**: AnkiConnect addNote / updateNoteFields. Update mode (overwrite/append/skip) applied in service |
+| `addNoteTags` | `features/cardCreator/service/cardCreatorService.ts` | (url, noteId, tags[]) → Promise<Result<void>> | useCardCreatorState | **ADR-026**: AnkiConnect addTags. **Android silent no-op detection**: desktop success → result null; Android default → result "AnkiConnect v.6" (string) → detect via `result !== null` |
+| `ensureDefaultModel` | `features/cardCreator/service/cardCreatorService.ts` | (url) → Promise<Result<void>> | useCardCreatorState | **ADR-026**: AnkiConnect createModel. **Android silent no-op detection**: re-check modelNames after call — if model still missing, hit default handler → helpful error |
+| `autoMapFields` | `features/cardCreator/service/fieldMapping.ts` | (string[]) → FieldMapping | useCardCreatorState | **ADR-026**: Auto-map Cell source fields → Anki fields by canonical name (exact case-insensitive → fuzzy Levenshtein ≤ 2 → substring). Each Anki field used at most once |
+| `captureScreenshot` | `features/cardCreator/media/screenshot.ts` | (HTMLVideoElement) → Promise<MediaFile> | useCardCreatorState | **ADR-026**: canvas.drawImage(video) → PNG ArrayBuffer. Throws ScreenshotError if video not ready / canvas tainted |
+| `captureSentenceAudio` | `features/cardCreator/media/sentenceAudio.ts` | (HTMLVideoElement, cue) → Promise<SentenceAudioResult> | useCardCreatorState | **ADR-026**: MediaRecorder on video.captureStream() audio tracks. Cap 15s (4GB mobile), skip if tab hidden, fall back gracefully if unsupported. Never throws |
+| `translateSentence` | `features/cardCreator/media/translation.ts` | (text, sl, tl) → Promise<string> | useCardCreatorState | **ADR-026**: Reuse ADR-021 TRANSLATE message + encode/decode punctuation. Returns '' on any failure (never throws) |
+| `DraftAutosaver` | `features/cardCreator/state/cardDraft.ts` | — → controller | useCardCreatorState | **ADR-026**: Debounced (500ms) autosave to chrome.storage.local `cardCreatorDraft`. Media ArrayBuffers NOT persisted. Cleared on successful Add/Update |
+| `useCardCreatorState` | `features/cardCreator/ui/useCardCreatorState.ts` | (settings, openContext) → CardCreatorState | CardCreatorDialog, CardCreatorBottomSheet | **ADR-026**: State management hook — load decks/models/fields, auto-map, find recent note, draft autosave, Add/Update actions, toasts |
+| `handleCardCreatorKeydown` | `features/subtitle/ui/cardCreatorKeyboard.ts` | (KeyboardEvent, dialogOpen) → { action } | subtitleUI.ts | **ADR-026 §9**: q → quick-update, e → edit-card. Guards: not typing, dialog not open, no auto-repeat |
 | `detectScript` | `lib/detectors/scriptDetector.ts` | string → Script \| null | languageDetector.ts | Detect Unicode script (26 scripts) |
 | `detectLanguage` | `lib/detectors/languageDetector.ts` | string → string (ISO 639-1) | subtitleDetector.ts | Hybrid: script + frequency → language |
 | `selectBestMedia` | `lib/selectors/selectBestMedia.ts` | DetectedMedia[] → AutoSelectResult \| null | autoDownload.ts | Pure: select best video + subtitles by prefs |
@@ -711,7 +764,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `resolveMode` | `features/theme/logic/themeManager.ts` | ThemeMode → ResolvedMode | ThemeProvider, ThemePanel, popup App | **ADR-022**: system → light/dark via prefers-color-scheme |
 | `useThemeStore` | `stores/themeStore.ts` | Zustand store | ThemeProvider, ThemePanel, popup App | **ADR-022**: mode + config + init/switchMode/updateColor/setConfig/resetTheme |
 | `injectThemeTokens` | `shared/lib/themeTokens.ts` | HTMLElement → cleanup | contentScriptController | **ADR-022 + ADR-024**: Content-script `<style>` injection from themeConfig + storage.onChanged. Static tokens on `:root`, color tokens on `[data-theme]` |
-| `syncElementTheme` | `shared/lib/themeTokens.ts` | (element: HTMLElement, container: HTMLElement) → cleanup | navClusterController.ts | **ADR-024**: Sync `data-theme` attribute from container to a portable element; uses MutationObserver to keep the element self-themed when re-parented |
+| `syncElementTheme` | `shared/lib/themeTokens.ts` | (element: HTMLElement, container: HTMLElement) → cleanup | subtitleBlockController.ts | **ADR-024**: Sync `data-theme` attribute from container to a portable element; uses MutationObserver to keep the element self-themed when re-parented |
 | `ThemeProvider` | `features/theme/ui/ThemeProvider.tsx` | children → JSX | popup/sidepanel/options main.tsx | **ADR-022**: Boot themeStore + applyTheme + system listener + storage.onChanged sync |
 | `importFile` | `features/dictionary/logic/importOrchestrator.ts` | (file, resourceType, options) → ImportResult | ResourcesPanel | **ADR-023**: validate → detect → signature → dedupe → create resource → strategy.execute() → finalize; error → rollbackImport |
 | `rollbackImport` | `features/dictionary/logic/importOrchestrator.ts` | (langCode, resourceId) → void | importOrchestrator | **ADR-023 D6**: Delete dictionary + frequency + resource (cascade); rollback-during-rollback → RollbackError |
@@ -783,20 +836,21 @@ downloader.downloadM3u8Streaming(playlist)
 | `seekToCue` | `content/subtitlePanel.ts` | (HTMLVideoElement, { start: number }) → void | content-script.ts | Seek video to cue start (ms → seconds) — **implemented Task 5** |
 | `handleShortcutKey` | `content/subtitleShortcuts.ts` | (string, KeyboardShortcut[], EventTarget) → ShortcutAction \| null | content-script.ts, **sidepanel/App.tsx** | Pure: map key → action, guard input/textarea focus — **implemented Task 3, reused ADR-009** |
 | `isEditableTarget` | `content/subtitleShortcuts.ts` | EventTarget \| null → boolean | subtitleShortcuts.ts | Check if target is input/textarea/select/contenteditable — **implemented Task 3** |
-| `NavClusterController` | `content/navClusterController.ts` | class (video, container, settings, cueSource, onPersist?) → controller | contentScriptController.ts | **ADR-018**: Floating 6-button subtitle navigation cluster. init/updateCues/updateSettings/setVisible/destroy. Wires drag + repeat (click=one-shot seek to cue start, hold≥500ms=loop) + keyboard + persist + fullscreen. Position values represent the cluster center and are clamped to the container |
-| `buildClusterDOM` | `content/navClusterDom.ts` | () → NavClusterDOM | navClusterController.ts | **ADR-018**: Build cluster DOM tree (6 buttons, 2 columns, role=toolbar, data-testid) |
-| `clampPosition` | `content/navClusterDom.ts` | (NavClusterPosition, DOMRect, DOMRect) → NavClusterPosition | navClusterController.ts | **ADR-018**: Clamp position percent so the *center* of the cluster stays within container bounds (uses cluster half-size as margin). Guards zero-size rects |
-| `findNearestEdge` | `content/navClusterDom.ts` | (NavClusterPosition, DOMRect) → 'left' \| 'right' | navClusterController.ts | **ADR-018**: Find nearest horizontal edge for collapse mirroring |
-| `findActiveCueIndex` | `content/navClusterActions.ts` | (SrtCue[], SrtCue[], number) → { cues, index } | navClusterController.ts | **ADR-018**: Find active cue (target-primary, native-fallback) via findCurrentLine |
-| `prevSentence` | `content/navClusterActions.ts` | (HTMLVideoElement, SrtCue[], SrtCue[]) → void | navClusterController.ts | **ADR-018**: Seek to previous subtitle sentence (gap fallback) |
-| `nextSentence` | `content/navClusterActions.ts` | (HTMLVideoElement, SrtCue[], SrtCue[]) → void | navClusterController.ts | **ADR-018**: Seek to next subtitle sentence (gap fallback) |
-| `seekBy` | `content/navClusterActions.ts` | (HTMLVideoElement, number) → void | navClusterController.ts | **ADR-018**: Seek by fixed seconds ([0,duration] clamp, NaN/Infinity live-stream) |
-| `createNavClusterButton` | `content/navClusterButton.ts` | (NavClusterButtonProps) → HTMLButtonElement | navClusterController.ts, navClusterDom.ts | **ADR-018**: Atom — DOM factory for cluster button (inline SVG icons, click/hold + aria-pressed) |
-| `NAV_CLUSTER_ICONS` | `content/navClusterIcons.ts` | Record<NavClusterIconName, string> | navClusterDom.ts, navClusterButton.ts | **ADR-018**: Pure SVG icon string map (prev/next/repeat/rewind/forward — currentColor stroke, aria-hidden, 24x24 viewBox) |
+| `SubtitleBlockController` | `content/subtitleBlockController.ts` | class (video, container, blockSettings, targetStyle, nativeStyle, clusterSettings, offsetProvider?, onPersist?) → controller | contentScriptController.ts | **ADR-025**: Unified block merging target overlay + native overlay + nav cluster into single draggable block. init/updateSettings/loadBilingualCues/updateCues/destroy. Wires drag (subtitleBlockDrag) + auto-scale (subtitleBlockScale) + fullscreen re-parent + theme sync (syncElementTheme) |
+| `createSubtitleBlockDOM` | `content/subtitleBlockDom.ts` | () → HTMLElement | subtitleBlockController.ts | **ADR-025**: Pure DOM factory — builds block > body > (clusterColumns + subtitleColumn + rightColumn) |
+| `wireBlockDrag` | `content/subtitleBlockDrag.ts` | (block, settings, onPersist?) → void | subtitleBlockController.ts | **ADR-025**: Pure function — Pointer Events drag for block Y position |
+| `createBlockScaleObserver` | `content/subtitleBlockScale.ts` | (block, container) → ResizeObserver | subtitleBlockController.ts | **ADR-025**: Auto-scale block to fit container width |
+| `computeScaleSnapshot` | `content/subtitleBlockScale.ts` | (block, container) → number | subtitleBlockController.ts | **ADR-025**: Compute scale factor snapshot for block auto-scale |
+| `findActiveCueIndex` | `content/navClusterActions.ts` | (SrtCue[], SrtCue[], number) → { cues, index } | subtitleBlockController.ts | **ADR-018**: Find active cue (target-primary, native-fallback) via findCurrentLine |
+| `prevSentence` | `content/navClusterActions.ts` | (HTMLVideoElement, SrtCue[], SrtCue[]) → void | subtitleBlockController.ts | **ADR-018**: Seek to previous subtitle sentence (gap fallback) |
+| `nextSentence` | `content/navClusterActions.ts` | (HTMLVideoElement, SrtCue[], SrtCue[]) → void | subtitleBlockController.ts | **ADR-018**: Seek to next subtitle sentence (gap fallback) |
+| `seekBy` | `content/navClusterActions.ts` | (HTMLVideoElement, number) → void | subtitleBlockController.ts | **ADR-018**: Seek by fixed seconds ([0,duration] clamp, NaN/Infinity live-stream) |
+| `createNavClusterButton` | `content/navClusterButton.ts` | (NavClusterButtonProps) → HTMLButtonElement | subtitleBlockController.ts | **ADR-018**: Atom — DOM factory for cluster button (inline SVG icons, click/hold + aria-pressed) |
+| `NAV_CLUSTER_ICONS` | `content/navClusterIcons.ts` | Record<NavClusterIconName, string> | subtitleBlockDom.ts, navClusterButton.ts, subtitleBlockController.ts | **ADR-018**: Pure SVG icon string map (prev/next/repeat/rewind/forward — currentColor stroke, aria-hidden, 24x24 viewBox) |
 | `NAV_CLUSTER_DRAG_GLYPH` | ~~`content/navClusterIcons.ts`~~ | — | — | **Removed (ADR-015 drag pattern)**: Drag handle button xóa — drag trực tiếp cluster background |
-| `handleClusterKeydown` | `content/navClusterKeyboard.ts` | (KeyboardEvent, NavClusterKeyboardState) → { action, state } | navClusterController.ts | **ADR-018**: Pure keydown state machine (ArrowLeft/Right, R hold, </, >/) |
-| `handleClusterKeyup` | `content/navClusterKeyboard.ts` | (KeyboardEvent, NavClusterKeyboardState) → { action, state } | navClusterController.ts | **ADR-018**: Pure keyup state machine (R keyup → repeat-stop) |
-| `cancelRepeatHold` | `content/navClusterKeyboard.ts` | (NavClusterKeyboardState) → { action, state } | navClusterController.ts | **ADR-018**: Cancel repeat hold (blur/visibilitychange — keyup may be lost) |
+| `handleClusterKeydown` | `content/navClusterKeyboard.ts` | (KeyboardEvent, NavClusterKeyboardState) → { action, state } | subtitleBlockController.ts | **ADR-018**: Pure keydown state machine (ArrowLeft/Right, R hold, </, >/) |
+| `handleClusterKeyup` | `content/navClusterKeyboard.ts` | (KeyboardEvent, NavClusterKeyboardState) → { action, state } | subtitleBlockController.ts | **ADR-018**: Pure keyup state machine (R keyup → repeat-stop) |
+| `cancelRepeatHold` | `content/navClusterKeyboard.ts` | (NavClusterKeyboardState) → { action, state } | subtitleBlockController.ts | **ADR-018**: Cancel repeat hold (blur/visibilitychange — keyup may be lost) |
 | `OffsetController` | `content/offsetController.ts` | class (video, container, url, snapshot?) → controller | contentScriptController.ts | **ADR-019**: Subtitle time offset orchestrator. init/loadCues/getOffsetMs/stepBy/reset/destroy. State machine committed↔lazy + wall-clock auto-commit (timeupdate + visibilitychange) + persist per-URL |
 | `createOffsetSection` | `content/subtitleOffsetPanel.ts` | (parentPanel, handlers) → OffsetSectionApi | offsetController.ts | **ADR-019**: Offset section DOM factory — collapsible section nested trong manager panel (header chevron + "OFFSET" + value, body 4 states, 4 steppers, input+apply+reset, flashSaved) |
 | `createOffsetBadge` | `content/subtitleOffsetBadge.ts` | (container, onReset) → OffsetBadgeApi | offsetController.ts | **ADR-019**: Lazy badge DOM factory (pill, "Xem thử · M:SS", pulse dot, click=reset, keyboard accessible) |

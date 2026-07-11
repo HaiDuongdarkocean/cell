@@ -45,6 +45,24 @@ export function applyTheme(mode: ResolvedMode, config: ThemeConfig): void {
   setVar('--color-error-subtle', rgba(colors.error, 0.1));
   setVar('--color-warning-subtle', rgba(colors.warning, 0.1));
 
+  // Design-system semantic tokens (Button/Card/Input/Dialog components)
+  setVar('--color-secondary', colors.surface);
+  setVar('--color-secondary-hover', generateHoverColor(colors.surface));
+  setVar('--color-secondary-foreground', colors.text);
+  setVar('--color-accent', colors.surface);
+  setVar('--color-accent-foreground', colors.text);
+  setVar('--color-destructive', colors.error);
+  setVar('--color-destructive-hover', generateHoverColor(colors.error));
+  setVar('--color-destructive-foreground', colors.background);
+  setVar('--color-muted', colors.surface);
+  setVar('--color-muted-foreground', generateShade(colors.textSecondary, 20));
+  setVar('--color-ring', colors.primary);
+  setVar('--color-input', colors.border);
+  setVar('--color-card', colors.surface);
+  setVar('--color-card-foreground', colors.text);
+  setVar('--color-popover', colors.background);
+  setVar('--color-popover-foreground', colors.text);
+
   // data-theme attr cho CSS [data-theme="light"]/[data-theme="dark"] selectors
   root.setAttribute('data-theme', mode);
 }

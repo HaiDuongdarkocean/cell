@@ -2,9 +2,8 @@ import { sendMessage, onMessage, onStorageChanged } from '@/shared/lib/chrome-ap
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
+import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
 import {
-  SubtitleOverlayController,
   parseAndDetectFiles,
   assignImportRole,
   createDragHint,
@@ -13,6 +12,7 @@ import {
   fetchAndParseSubtitle,
   formatFromUrl,
   mergeCuesForPanel,
+  createImportButton,
   createToggleButton,
   seekToCue,
   handleShortcutKey,
@@ -21,12 +21,17 @@ import {
   createDebouncedToast,
   formatSubtitleName,
 } from '@/features/subtitle';
-import { NavClusterController } from '@/features/subtitle/ui/navClusterController';
+import { SubtitleBlockController, type SubtitleBlockControllerUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleBlockController';
 import { OffsetController } from '@/features/subtitle/ui/offsetController';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
+import { mountCardCreatorDialog, buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
+import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
+import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
+import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { TranslateResult } from '@/entities/message';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
-import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, Settings } from '@/entities/media';
+import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
+import type { CardCreatorSettings } from '@/entities/settings';
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
 import type { SubtitlePanelItem, SubtitleManagerPanel, ParsedFile } from '@/features/subtitle';
 
@@ -42,17 +47,33 @@ const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
   showTimestamps: false,
 };
 
-/** Load overlay style settings from chrome.storage.local, fallback to defaults. ADR-013 D3. */
-async function loadOverlayStyles(): Promise<{ target: OverlayStyleConfig; native: OverlayStyleConfig }> {
+/** Load overlay style + block + cluster settings from chrome.storage.local, fallback to defaults. ADR-013, ADR-025. */
+async function loadOverlaySettings(): Promise<{
+  target: OverlayStyleConfig;
+  native: OverlayStyleConfig;
+  block: SubtitleBlockSettings;
+  cluster: NavClusterSettings;
+}> {
   try {
     const settings = await loadSettings();
     return {
       target: settings.subtitleOverlayTargetStyle ?? DEFAULT_OVERLAY_STYLE_TARGET,
       native: settings.subtitleOverlayNativeStyle ?? DEFAULT_OVERLAY_STYLE_NATIVE,
+      block: settings.subtitleBlockSettings ?? DEFAULT_SUBTITLE_BLOCK_SETTINGS,
+      cluster: {
+        enabled: settings.navClusterEnabled,
+        buttonSize: settings.navClusterButtonSize,
+        buttonOpacity: settings.navClusterButtonOpacity,
+      },
     };
   } catch {
     // ponytail: storage might not be available in test contexts — fallback
-    return { target: DEFAULT_OVERLAY_STYLE_TARGET, native: DEFAULT_OVERLAY_STYLE_NATIVE };
+    return {
+      target: DEFAULT_OVERLAY_STYLE_TARGET,
+      native: DEFAULT_OVERLAY_STYLE_NATIVE,
+      block: DEFAULT_SUBTITLE_BLOCK_SETTINGS,
+      cluster: DEFAULT_NAV_CLUSTER_SETTINGS,
+    };
   }
 }
 
@@ -101,82 +122,159 @@ export function init(video: HTMLVideoElement): () => void {
   // Content-script isolated world cannot access popup's theme.css.
   injectThemeTokens(container);
 
-  // ADR-013 D3: load overlay styles from storage (async), then init controller
-  let controller: SubtitleOverlayController | null = null;
-  // ADR-018: nav cluster controller (subtitle navigation control cluster)
-  let navCluster: NavClusterController | null = null;
+  // ADR-025: live style/overlay settings. The block controller is created
+  // synchronously so cue messages can be handled before storage finishes loading.
+  let targetStyle: OverlayStyleConfig = { ...DEFAULT_OVERLAY_STYLE_TARGET, visible: false };
+  let nativeStyle: OverlayStyleConfig = { ...DEFAULT_OVERLAY_STYLE_NATIVE, visible: false };
+  let blockSettings: SubtitleBlockSettings = DEFAULT_SUBTITLE_BLOCK_SETTINGS;
+  let clusterSettings: NavClusterSettings = DEFAULT_NAV_CLUSTER_SETTINGS;
+  let settingsLoaded = false;
   // ADR-019: offset controller (subtitle time offset)
   let offsetController: OffsetController | null = null;
-  // ADR-018: track latest target/native cues for nav cluster cue source
+  // ADR-026: Card Creator dialog mount controller (lazy-initialized on first open).
+  let cardCreatorMount: ReturnType<typeof mountCardCreatorDialog> | null = null;
+  let cardCreatorSettings: CardCreatorSettings | null = null;
+  // Track the latest target/native cues for the block controller and side panel.
   let latestTargetCues: SrtCue[] = [];
-  let latestNativeCues: SrtCue[] = [];
   // Track the URL the overlay currently shows cues for. On SPA navigation the
   // URL changes but `loadBilingualCues` uses ADR-014 D1 merge semantics (keep
   // old side when new side empty — designed for same-video incremental re-push).
   // Without a clear on URL change, a partial load on the new video (target
   // only, no native or vice versa) leaves the previous video's cues visible.
   let lastAutoLoadUrl: string | undefined;
+  // Track last auto-load subtitle URLs to avoid duplicate re-runs when the
+  // background re-pushes the same AUTO_LOAD_SUBTITLES payload (e.g. from
+  // repeated PAGE_SCAN_RESULT or network re-detection on seek).
+  let lastAutoLoadKey: string | undefined;
   // ADR-021: background prefill controller for target→native translation.
   // One instance per video session. Cleared on SPA nav. Paused on tab hidden.
   let translatePrefill: BackgroundPrefillController | null = null;
 
-  loadOverlayStyles().then(async ({ target, native }) => {
-    controller = new SubtitleOverlayController(video, DEFAULT_OVERLAY_CONFIG, target, native);
-    controller.init(container);
+  const blockController = new SubtitleBlockController(
+    video,
+    container,
+    blockSettings,
+    targetStyle,
+    nativeStyle,
+    clusterSettings,
+    () => offsetController?.getOffsetMs() ?? 0,
+    (partial) => {
+      if (!settingsLoaded) return;
+      blockSettings = { ...blockSettings, ...partial };
+      void saveSettings({ subtitleBlockSettings: blockSettings } as Partial<Settings>);
+    },
+    // ADR-026: Card Creator entry buttons (quick update + edit) + q/e keyboard.
+    (action) => { handleCardCreatorAction(action); },
+  );
 
-    // ADR-018: init nav cluster — load settings first, then instantiate.
-    // Cluster renders immediately (4-nút no-sub state) without waiting for subtitles.
-    let navClusterSettings: NavClusterSettings = {
-      enabled: DEFAULT_NAV_CLUSTER_SETTINGS.enabled,
-      position: DEFAULT_NAV_CLUSTER_SETTINGS.position,
-      buttonSize: DEFAULT_NAV_CLUSTER_SETTINGS.buttonSize,
-      bgOpacity: DEFAULT_NAV_CLUSTER_SETTINGS.bgOpacity,
-      buttonOpacity: DEFAULT_NAV_CLUSTER_SETTINGS.buttonOpacity,
-      collapsed: DEFAULT_NAV_CLUSTER_SETTINGS.collapsed,
-    };
-    try {
-      const settings = await loadSettings();
-      navClusterSettings = {
-        enabled: settings.navClusterEnabled,
-        position: settings.navClusterPosition,
-        buttonSize: settings.navClusterButtonSize,
-        bgOpacity: settings.navClusterBgOpacity,
-        buttonOpacity: settings.navClusterButtonOpacity,
-        collapsed: settings.navClusterCollapsed,
+  /** ADR-026: Handle Card Creator action (quick-update or edit-card). */
+  /** Wait for the video to reach readyState ≥ 2 (HAVE_CURRENT_DATA) with a
+   *  timeout. Used before screenshot capture — the user may have just seeked
+   *  or paused, leaving the video in a transient state where drawImage would
+   *  throw "Video not ready". */
+  async function waitForVideoReady(video: HTMLVideoElement, timeoutMs = 2000): Promise<void> {
+    if (video.readyState >= 2 && video.videoWidth > 0) return;
+    const start = Date.now();
+    await new Promise<void>((resolve) => {
+      const check = (): void => {
+        if (video.readyState >= 2 && video.videoWidth > 0) {
+          resolve();
+          return;
+        }
+        if (Date.now() - start >= timeoutMs) {
+          resolve(); // give up — captureScreenshot will throw a clear error
+          return;
+        }
+        setTimeout(check, 100);
       };
-    } catch {
-      // ponytail: storage might not be available in test contexts — fallback to defaults
-    }
-    navCluster = new NavClusterController(
-      video,
-      container,
-      navClusterSettings,
-      { targetCues: latestTargetCues, nativeCues: latestNativeCues },
-      // ADR-018 D2: map NavClusterSettings slice → flat settings keys for saveSettings
-      (partial) => {
-        const flat: Record<string, unknown> = {};
-        if (partial.enabled !== undefined) flat.navClusterEnabled = partial.enabled;
-        if (partial.position !== undefined) flat.navClusterPosition = partial.position;
-        if (partial.buttonSize !== undefined) flat.navClusterButtonSize = partial.buttonSize;
-        if (partial.bgOpacity !== undefined) flat.navClusterBgOpacity = partial.bgOpacity;
-        if (partial.buttonOpacity !== undefined) flat.navClusterButtonOpacity = partial.buttonOpacity;
-        if (partial.collapsed !== undefined) flat.navClusterCollapsed = partial.collapsed;
-        void saveSettings(flat as Partial<Settings>);
-      },
-    );
-    navCluster.init();
+      check();
+    });
+  }
 
-    // ADR-015 UI v4: create manager panel after controller init so we can reuse
-    // the import button created by the controller (single toolbar, no duplicate buttons).
+  async function handleCardCreatorAction(action: CardCreatorAction): Promise<void> {
+    // Load settings fresh (URL/deck/noteType/lang may have changed since init).
+    let settings: Settings;
+    try {
+      settings = await loadSettings();
+    } catch {
+      showToast('Cannot load settings — storage unavailable.', container, { variant: 'error' });
+      return;
+    }
+    cardCreatorSettings = settings.cardCreator;
+
+    // Lazy-init the dialog mount on first action.
+    if (!cardCreatorMount) {
+      cardCreatorMount = mountCardCreatorDialog(cardCreatorSettings, container);
+    } else {
+      cardCreatorMount.updateSettings(cardCreatorSettings);
+    }
+
+    // Build context from current subtitle state + actual subtitle languages.
+    const sourceLang = settings.subtitleOverlayTargetLanguage || 'en';
+    const targetLang = settings.subtitleOverlayNativeLanguage || 'vi';
+    const ctx = buildCardCreatorContext(
+      video,
+      blockController.getTargetCues(),
+      blockController.getNativeCues(),
+      offsetController?.getOffsetMs() ?? 0,
+      sourceLang,
+      targetLang,
+    );
+    if (!ctx) {
+      showToast('No active subtitle — play the video and wait for a subtitle line.', container, { variant: 'info' });
+      return;
+    }
+
+    // ADR-026 / spec §3 + §4: capture screenshot + sentence audio BEFORE
+    // opening the dialog. The screenshot must reflect the frame the user saw
+    // when they clicked (before any UI changes). Audio capture seeks the video
+    // to cue.start and plays until cue.end — doing this before the dialog opens
+    // avoids the overlay interfering with playback. Show a brief "capturing"
+    // toast so the user knows why there's a short delay.
+    showToast('Capturing media…', container, { variant: 'info' });
+    // Wait for the video to be ready (readyState ≥ 2) before capturing — the
+    // user may have just seeked/paused, leaving the video in a transient state.
+    await waitForVideoReady(video);
+    const initialMedia: MediaFile[] = [];
+    try {
+      const screenshot = await captureScreenshot(video);
+      initialMedia.push(screenshot);
+    } catch {
+      // Screenshot failure is non-fatal — the user can re-capture manually.
+    }
+    try {
+      const audioR = await captureSentenceAudio(video, { start: ctx.cue.start, end: ctx.cue.end });
+      if (audioR.ok) initialMedia.push(audioR.file);
+    } catch {
+      // Audio failure is non-fatal — screenshot + text fields still work.
+    }
+
+    cardCreatorMount.open({ ...ctx, initialMedia }, action);
+  }
+
+  loadOverlaySettings().then(async ({ target, native, block, cluster }) => {
+    blockSettings = block;
+    clusterSettings = cluster;
+    targetStyle = { ...target, visible: overlayVisible };
+    nativeStyle = { ...native, visible: overlayVisible };
+    settingsLoaded = true;
+    blockController.updateSettings({
+      blockSettings,
+      targetStyle,
+      nativeStyle,
+      clusterSettings,
+    });
+
+    // ADR-015 UI v4: create import button + manager panel.
     // Legacy target/native dropdowns are removed; the manager panel handles selection
     // for both auto-detected and imported subtitles via a unified onSelect handler.
-    managerPanel = createSubtitleManagerPanel(container, controller.importButton!, {
+    const importButton = createImportButton(container, DEFAULT_OVERLAY_CONFIG);
+    managerPanel = createSubtitleManagerPanel(container, importButton, {
       onSelect: (role, index) => { void onManagerSelect(role, index); },
     });
 
     // ADR-019: init offset controller — offset section nested trong manager panel.
     // Load settings snapshot (for persisted offset per-URL).
-    // Wire offset provider vào SubtitleOverlayController (lazy read).
     let offsetSnapshot: { subtitleOffset?: Record<string, number> } = {};
     try {
       const settings = await loadSettings();
@@ -192,13 +290,7 @@ export function init(video: HTMLVideoElement): () => void {
       managerPanel.panel,
     );
     offsetController.init();
-    // Wire offset provider vào overlay (so findCurrentLine nhận offsetMs)
-    controller.setOffsetProvider(() => offsetController?.getOffsetMs() ?? 0);
-    // ADR-019 sync: wire same provider vào navCluster so prev/next/repeat
-    // jump to the same cue the overlay is showing (was offset=0 → wrong cue).
-    if (navCluster) {
-      navCluster.setOffsetProvider(() => offsetController?.getOffsetMs() ?? 0);
-    }
+    // ADR-025: offset provider already wired in SubtitleBlockController constructor.
 
     // Wire file picker (import button) → processImportedFiles. Must run AFTER
     // managerPanel creation because the import button is created inside the
@@ -216,50 +308,51 @@ export function init(video: HTMLVideoElement): () => void {
       });
     }
 
-    // ADR-013 D3 + ADR-018: listen chrome.storage.onChanged → updateStyle + navCluster realtime
+    // ADR-013 D3 + ADR-025: listen chrome.storage.onChanged → update block controller realtime
     onStorageChanged((changes, area) => {
-      if (area !== 'local' || !controller) return;
-      const newSettings = changes.settings?.newValue as
-        | {
-            subtitleOverlayTargetStyle?: OverlayStyleConfig;
-            subtitleOverlayNativeStyle?: OverlayStyleConfig;
-            navClusterEnabled?: boolean;
-            navClusterPosition?: { x: number; y: number };
-            navClusterButtonSize?: number;
-            navClusterBgOpacity?: number;
-            navClusterButtonOpacity?: number;
-            navClusterCollapsed?: boolean;
-          }
-        | undefined;
+      if (area !== 'local') return;
+      const newSettings = changes.settings?.newValue as Settings | undefined;
       if (!newSettings) return;
-      controller.updateStyle(
-        newSettings.subtitleOverlayTargetStyle,
-        newSettings.subtitleOverlayNativeStyle,
-      );
-      // ADR-018: update nav cluster settings realtime
-      if (navCluster) {
-        const partial: {
-          enabled?: boolean;
-          position?: { x: number; y: number };
-          buttonSize?: NavClusterSettings['buttonSize'];
-          bgOpacity?: number;
-          buttonOpacity?: number;
-          collapsed?: boolean;
-        } = {};
-        if (newSettings.navClusterEnabled !== undefined) partial.enabled = newSettings.navClusterEnabled;
-        if (newSettings.navClusterPosition !== undefined) partial.position = newSettings.navClusterPosition;
-        if (newSettings.navClusterButtonSize !== undefined) partial.buttonSize = newSettings.navClusterButtonSize as NavClusterSettings['buttonSize'];
-        if (newSettings.navClusterBgOpacity !== undefined) partial.bgOpacity = newSettings.navClusterBgOpacity;
-        if (newSettings.navClusterButtonOpacity !== undefined) partial.buttonOpacity = newSettings.navClusterButtonOpacity;
-        if (newSettings.navClusterCollapsed !== undefined) partial.collapsed = newSettings.navClusterCollapsed;
-        if (Object.keys(partial).length > 0) navCluster.updateSettings(partial);
+      if (newSettings.subtitleOverlayTargetStyle) {
+        targetStyle = { ...newSettings.subtitleOverlayTargetStyle, visible: overlayVisible };
       }
+      if (newSettings.subtitleOverlayNativeStyle) {
+        nativeStyle = { ...newSettings.subtitleOverlayNativeStyle, visible: overlayVisible };
+      }
+      if (newSettings.subtitleBlockSettings) {
+        blockSettings = { ...newSettings.subtitleBlockSettings };
+      }
+      const clusterPartial: Partial<NavClusterSettings> = {
+        ...(newSettings.navClusterEnabled !== undefined && { enabled: newSettings.navClusterEnabled }),
+        ...(newSettings.navClusterButtonSize !== undefined && { buttonSize: newSettings.navClusterButtonSize as NavClusterSettings['buttonSize'] }),
+        ...(newSettings.navClusterButtonOpacity !== undefined && { buttonOpacity: newSettings.navClusterButtonOpacity }),
+      };
+      if (Object.keys(clusterPartial).length > 0) {
+        clusterSettings = { ...clusterSettings, ...clusterPartial };
+      }
+      const update: SubtitleBlockControllerUpdate = {
+        ...(newSettings.subtitleOverlayTargetStyle && { targetStyle }),
+        ...(newSettings.subtitleOverlayNativeStyle && { nativeStyle }),
+        ...(newSettings.subtitleBlockSettings && { blockSettings }),
+        ...(Object.keys(clusterPartial).length > 0 && { clusterSettings: clusterPartial }),
+      };
+      if (Object.keys(update).length > 0) blockController.updateSettings(update);
     });
   });
 
   // === State ===
   let toggleBtn: HTMLButtonElement | null = null;
   let overlayVisible = false; // ponytail: match overlay initial display:none
+
+  // ADR-025: auto-show overlay when cues load. Without this, block stays hidden
+  // (visible=false) even after auto-load/import — user had to press shortcut.
+  function showOverlay(): void {
+    if (overlayVisible) return;
+    overlayVisible = true;
+    targetStyle = { ...targetStyle, visible: true };
+    nativeStyle = { ...nativeStyle, visible: true };
+    blockController.updateSettings({ targetStyle, nativeStyle });
+  }
   let bilingualCues: BilingualCue[] = [];
   // Track side panel open state for toggle (☰ button).
   // ponytail ceiling: best-effort — if user closes panel via browser UI (X),
@@ -414,15 +507,9 @@ export function init(video: HTMLVideoElement): () => void {
       }
       case 'toggle-overlay': {
         overlayVisible = !overlayVisible;
-        // ADR-013: toggle both target + native overlay (2 div độc lập)
-        const targetOverlay = document.querySelector('[data-testid="subtitle-overlay-target"]') as HTMLElement | null;
-        const nativeOverlay = document.querySelector('[data-testid="subtitle-overlay-native"]') as HTMLElement | null;
-        if (targetOverlay) {
-          targetOverlay.style.display = overlayVisible ? 'block' : 'none';
-        }
-        if (nativeOverlay) {
-          nativeOverlay.style.display = overlayVisible ? 'block' : 'none';
-        }
+        targetStyle = { ...targetStyle, visible: overlayVisible };
+        nativeStyle = { ...nativeStyle, visible: overlayVisible };
+        blockController.updateSettings({ targetStyle, nativeStyle });
         break;
       }
       case 'toggle-panel': {
@@ -440,10 +527,10 @@ export function init(video: HTMLVideoElement): () => void {
         if (translatePrefill?.isRunning) {
           translatePrefill.clear();
           translatePrefill = null;
-          controller?.loadBilingualCues(latestTargetCues, []);
+          blockController?.loadBilingualCues(latestTargetCues, []);
           bilingualCues = mergeCuesForPanel(latestTargetCues, []);
-          latestNativeCues = [];
-          navCluster?.updateCues(latestTargetCues, []);
+          // latestNativeCues tracked by blockController — no longer needed here
+          // updateCues(latestTargetCues, []);
           showToast('Auto-translate off', container, { variant: 'info' });
         } else if (latestTargetCues.length > 0) {
           void (async () => {
@@ -464,10 +551,10 @@ export function init(video: HTMLVideoElement): () => void {
                 return res.data.translated;
               },
               onChunkTranslated: (translatedCues: SrtCue[]) => {
-                controller?.loadBilingualCues(latestTargetCues, translatedCues);
+                blockController?.loadBilingualCues(latestTargetCues, translatedCues);
+                showOverlay();
                 bilingualCues = mergeCuesForPanel(latestTargetCues, translatedCues);
-                latestNativeCues = translatedCues;
-                navCluster?.updateCues(latestTargetCues, translatedCues);
+                // updateCues(latestTargetCues, translatedCues);
                 void sendMessage({
                   type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
                   payload: { tabId: undefined, cues: bilingualCues },
@@ -578,10 +665,9 @@ export function init(video: HTMLVideoElement): () => void {
           }
           case 'toggle-overlay': {
           overlayVisible = !overlayVisible;
-          const overlay = document.querySelector('[data-testid="subtitle-overlay"]') as HTMLElement | null;
-          if (overlay) {
-            overlay.style.display = overlayVisible ? 'block' : 'none';
-          }
+          targetStyle = { ...targetStyle, visible: overlayVisible };
+          nativeStyle = { ...nativeStyle, visible: overlayVisible };
+          blockController.updateSettings({ targetStyle, nativeStyle });
           break;
         }
         case 'toggle-translate': {
@@ -591,10 +677,10 @@ export function init(video: HTMLVideoElement): () => void {
             translatePrefill.clear();
             translatePrefill = null;
             // Reload target-only (no native) to hide translated overlay
-            controller?.loadBilingualCues(latestTargetCues, []);
+            blockController?.loadBilingualCues(latestTargetCues, []);
             bilingualCues = mergeCuesForPanel(latestTargetCues, []);
-            latestNativeCues = [];
-            navCluster?.updateCues(latestTargetCues, []);
+            // latestNativeCues tracked by blockController — no longer needed here
+            // updateCues(latestTargetCues, []);
             showToast('Auto-translate off', container, { variant: 'info' });
           } else if (latestTargetCues.length > 0) {
             // Restart prefill — load settings for sl/tl
@@ -616,10 +702,9 @@ export function init(video: HTMLVideoElement): () => void {
                   return res.data.translated;
                 },
                 onChunkTranslated: (translatedCues: SrtCue[]) => {
-                  controller?.loadBilingualCues(latestTargetCues, translatedCues);
+                  blockController?.loadBilingualCues(latestTargetCues, translatedCues);
                   bilingualCues = mergeCuesForPanel(latestTargetCues, translatedCues);
-                  latestNativeCues = translatedCues;
-                  navCluster?.updateCues(latestTargetCues, translatedCues);
+                  // updateCues(latestTargetCues, translatedCues);
                   void sendMessage({
                     type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
                     payload: { tabId: undefined, cues: bilingualCues },
@@ -690,6 +775,17 @@ export function init(video: HTMLVideoElement): () => void {
         targetMatchesCount: payload?.targetMatches?.length,
         nativeMatchesCount: payload?.nativeMatches?.length,
       });
+
+      // Skip duplicate payloads to avoid re-loading the same subtitle and
+      // restarting translate prefill (e.g. when PAGE_SCAN_RESULT or network
+      // re-detection re-pushes the same target/native URLs on seek).
+      const autoLoadKey = `${payload?.target?.url ?? ''}|${payload?.native?.url ?? ''}`;
+      if (autoLoadKey === lastAutoLoadKey && autoLoadKey !== '|') {
+        console.log('[content-script] AUTO_LOAD_SUBTITLES duplicate, skipping');
+        return;
+      }
+      lastAutoLoadKey = autoLoadKey;
+
       // SPA navigation: URL changed → clear the previous video's cues before
       // loading the new one. `loadBilingualCues` uses ADR-014 D1 merge semantics
       // (keep old side when new side empty — for same-video incremental re-push),
@@ -698,20 +794,19 @@ export function init(video: HTMLVideoElement): () => void {
       // all cases: 0 tracks, partial, full — any URL change clears both sides.
       const currentUrl = location.href;
       if (lastAutoLoadUrl !== undefined && lastAutoLoadUrl !== currentUrl) {
-        controller?.clearCues();
+        blockController?.clearCues();
         offsetController?.loadCues(false);
-        navCluster?.updateCues([], []);
+        // updateCues([], []);
         latestTargetCues = [];
-        latestNativeCues = [];
       }
       lastAutoLoadUrl = currentUrl;
       if (!payload?.target && !payload?.native) {
         // New video has no subtitles (SPA nav from a video WITH subtitles to
         // one WITHOUT). Clear the previous video's overlay + nav cluster so
         // stale cues do not persist into the new video.
-        controller?.clearCues();
+        blockController?.clearCues();
         offsetController?.loadCues(false);
-        navCluster?.updateCues([], []);
+        // updateCues([], []);
         // ADR-021: clear translate prefill on SPA nav to video with no subtitles
         translatePrefill?.clear();
         translatePrefill = null;
@@ -726,10 +821,10 @@ export function init(video: HTMLVideoElement): () => void {
         const currentSettings = await loadSettings();
         await handleAutoLoadSubtitles(payload, {
         controller: {
-          loadBilingualCues: (t: SrtCue[], n: SrtCue[]) => controller?.loadBilingualCues(t, n),
-          loadCues: (c: SrtCue[]) => controller?.loadCues(c),
+          loadBilingualCues: (t: SrtCue[], n: SrtCue[]) => { blockController?.loadBilingualCues(t, n); showOverlay(); },
+          loadCues: (c: SrtCue[]) => { blockController?.loadCues(c); showOverlay(); },
           clearCues: () => {
-            controller?.clearCues();
+            blockController?.clearCues();
             // ADR-019: subtitles cleared → reset offset + cancel lazy
             offsetController?.loadCues(false);
           },
@@ -740,8 +835,7 @@ export function init(video: HTMLVideoElement): () => void {
           // ADR-018: keep nav cluster cue source in sync with auto-loaded subtitles
           // (4↔6 nút transition when subtitles become available).
           latestTargetCues = targetCues;
-          latestNativeCues = nativeCues;
-          navCluster?.updateCues(targetCues, nativeCues);
+          // updateCues(targetCues, nativeCues);
           // ADR-019: notify offset controller that subtitles loaded
           offsetController?.loadCues(true);
           console.log('[content-script] onPanelRender', {
@@ -778,12 +872,12 @@ export function init(video: HTMLVideoElement): () => void {
             },
             onChunkTranslated: (translatedCues: SrtCue[]) => {
               // Feed translated cues to overlay (reuse loadBilingualCues path ADR-013/014)
-              controller?.loadBilingualCues(targetCues, translatedCues);
+              blockController?.loadBilingualCues(targetCues, translatedCues);
+              showOverlay();
               // Update panel + nav cluster with bilingual cues
               bilingualCues = mergeCuesForPanel(targetCues, translatedCues);
               latestTargetCues = targetCues;
-              latestNativeCues = translatedCues;
-              navCluster?.updateCues(targetCues, translatedCues);
+              // updateCues(targetCues, translatedCues);
               void sendMessage({
                 type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
                 payload: { tabId: undefined, cues: bilingualCues },
@@ -892,11 +986,11 @@ export function init(video: HTMLVideoElement): () => void {
     const targetCues = assignment.target[0]?.cues ?? [];
     const nativeCues = assignment.native[0]?.cues ?? [];
     if (targetCues.length > 0 || nativeCues.length > 0) {
-      controller?.loadBilingualCues(targetCues, nativeCues);
+      blockController?.loadBilingualCues(targetCues, nativeCues);
+      showOverlay();
       // ADR-018: update nav cluster cue source (4↔6 nút transition)
       latestTargetCues = targetCues;
-      latestNativeCues = nativeCues;
-      navCluster?.updateCues(targetCues, nativeCues);
+      // updateCues(targetCues, nativeCues);
       // ADR-019: load sub mới → reset offset + cancel lazy (R5)
       offsetController?.loadCues(true);
       // ADR-015 T10: merge for Side Panel + keyboard shortcuts
@@ -906,11 +1000,11 @@ export function init(video: HTMLVideoElement): () => void {
         payload: { tabId: undefined, cues: bilingualCues },
       });
     } else if (assignment.target.length === 0 && assignment.native.length === 0) {
-      controller?.loadCues(parsed[0].cues); // fallback: single mode
+      blockController?.loadCues(parsed[0].cues); // fallback: single mode
+      showOverlay();
       // ADR-018: update nav cluster with single-mode cues
       latestTargetCues = parsed[0].cues;
-      latestNativeCues = [];
-      navCluster?.updateCues(parsed[0].cues, []);
+      // updateCues(parsed[0].cues, []);
       // ADR-019: load sub mới → reset offset + cancel lazy (R5)
       offsetController?.loadCues(true);
     }
@@ -967,10 +1061,11 @@ export function init(video: HTMLVideoElement): () => void {
     if (!parsed) return;
 
     if (role === 'target') {
-      controller?.loadBilingualCues(parsed.cues, []);
+      blockController?.loadBilingualCues(parsed.cues, []);
     } else {
-      controller?.loadBilingualCues([], parsed.cues);
+      blockController?.loadBilingualCues([], parsed.cues);
     }
+    showOverlay();
     debouncedToast(`Switched to ${parsed.file.name}`, container, { variant: 'success' });
   }
 
@@ -1020,16 +1115,16 @@ export function init(video: HTMLVideoElement): () => void {
       // D1 merge: loadBilingualCues keeps other side when this side is empty.
       // We only update the selected side by passing its cues + empty other side.
       if (role === 'target') {
-        controller?.loadBilingualCues(result.cues, []);
+        blockController?.loadBilingualCues(result.cues, []);
         // ADR-018: update nav cluster — keep native side, replace target
         latestTargetCues = result.cues;
-        navCluster?.updateCues(latestTargetCues, latestNativeCues);
+        // updateCues(latestTargetCues, latestNativeCues);
       } else {
-        controller?.loadBilingualCues([], result.cues);
+        blockController?.loadBilingualCues([], result.cues);
         // ADR-018: update nav cluster — keep target side, replace native
-        latestNativeCues = result.cues;
-        navCluster?.updateCues(latestTargetCues, latestNativeCues);
+        // updateCues(latestTargetCues, latestNativeCues);
       }
+      showOverlay();
       showToast(`Switched to subtitle track ${index + 1}`, container, { variant: 'success' });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1084,8 +1179,8 @@ export function init(video: HTMLVideoElement): () => void {
     document.removeEventListener('visibilitychange', onVisibilityChange);
     toggleBtn?.remove();
     managerPanel?.destroy();
-    navCluster?.destroy();
+    cardCreatorMount?.unmount();
     offsetController?.destroy();
-    controller?.destroy();
+    blockController?.destroy();
   };
 }

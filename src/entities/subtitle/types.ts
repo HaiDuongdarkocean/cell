@@ -64,7 +64,6 @@ export interface OverlayStyleConfig {
   readonly textOpacity: number; // 0-1, default 1
   readonly textShadow: TextShadowConfig;
   readonly fontFamily: string; // CSS font-family string, default 'sans-serif'
-  readonly yOffsetPercent: number; // 0-95, % video height, default 10 (target bottom) / 5 (native top)
   readonly horizontalAlign: 'left' | 'center' | 'right'; // default 'center'
   readonly visible: boolean; // on/off, default true (native toggle C1)
 }

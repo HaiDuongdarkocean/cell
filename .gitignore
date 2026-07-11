@@ -10,6 +10,7 @@ coverage/
 # Playwright
 playwright-report/
 test-results/
+.playwright-mcp/
 
 # Environment
 .env
@@ -18,6 +19,7 @@ test-results/
 # IDE
 .vscode/
 .idea/
+.windsurf/
 
 # IDE temp files (no extension, created when writing long-named files)
 docs/int
@@ -48,6 +50,11 @@ tests/data-test/translate-demo*
 # OS
 .DS_Store
 Thumbs.db
+
+# Temp screenshots / lint output / debug tests
+_tmp_test_screenshots/
+lint_full.txt
+tests/unit/debug-translate.test.ts
 
 # Logs
 *.log

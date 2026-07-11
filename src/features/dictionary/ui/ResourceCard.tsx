@@ -1,6 +1,7 @@
 // ResourceCard — list item with name, wordCount, format, delete button (spec F11).
 
 import { type ReactElement } from 'react';
+import { Button } from '@/shared/ui';
 import type { ResourceInfo } from '@/entities/dictionary';
 import styles from './ResourceCard.module.css';
 
@@ -19,15 +20,15 @@ export function ResourceCard({ resource, onDelete }: ResourceCardProps): ReactEl
           {!resource.installationFinished && ' · đang import...'}
         </span>
       </div>
-      <button
-        type="button"
-        className={styles.deleteButton}
+      <Button
+        variant="outline"
+        size="sm"
         onClick={onDelete}
         aria-label={`Xóa ${resource.name}`}
         data-testid={`delete-button-${resource.id}`}
       >
         Xóa
-      </button>
+      </Button>
     </div>
   );
 }

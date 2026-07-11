@@ -1,0 +1,92 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4, 16px);
+  background: var(--dialog-overlay-bg, rgb(0 0 0 / 0.5));
+  z-index: var(--z-modal, 1200);
+  box-sizing: border-box;
+}
+
+.panel {
+  width: 100%;
+  max-width: var(--dialog-max-width, 512px);
+  min-width: 0;
+  max-height: calc(100dvh - var(--space-8, 32px));
+  overflow: auto;
+  background: var(--dialog-bg, var(--color-background, #ffffff));
+  color: var(--dialog-fg, var(--color-foreground, #0f172a));
+  border: 1px solid var(--dialog-border, var(--color-border, #e2e8f0));
+  border-radius: var(--dialog-radius, var(--radius-lg, 12px));
+  padding: var(--dialog-padding, var(--space-6, 24px));
+  box-shadow: var(--dialog-shadow, var(--shadow-lg, 0 10px 24px rgb(0 0 0 / 0.12)));
+  animation: dialog-in 200ms ease-out;
+  box-sizing: border-box;
+  /* Design-system scrollbar (themeTokens §scrollbar) — replaces the browser
+   * default scrollbar with a thin themed one matching the dialog's surface. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb, #cbd5e1) transparent;
+}
+
+.panel::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb, #cbd5e1);
+  border-radius: var(--radius-full, 9999px);
+}
+
+.panel::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover, #94a3b8);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-3, 12px);
+}
+
+.headerText {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-xl, 18px);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text, #0f172a);
+  line-height: 1.25;
+}
+
+.description {
+  margin: var(--space-1, 4px) 0 0 0;
+  font-size: var(--font-size-sm, 13px);
+  color: var(--color-text-secondary, #475569);
+  line-height: 1.5;
+}
+
+.content {
+  font-size: var(--font-size-sm, 13px);
+  color: var(--color-text, #0f172a);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3, 12px);
+  margin-top: var(--space-6, 24px);
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: scale(0.97) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}

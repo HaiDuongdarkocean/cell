@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SubtitleStylePanel } from '@/features/settings/ui/SubtitleStylePanel';
-import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
+import { DEFAULT_OVERLAY_STYLE_TARGET } from '@/shared/config/config';
 
 describe('SubtitleStylePanel', () => {
   const defaultProps = {
@@ -75,26 +75,8 @@ describe('SubtitleStylePanel', () => {
     expect(defaultProps.onChange).toHaveBeenCalledWith({ horizontalAlign: 'left' });
   });
 
-  it('clamps yOffsetPercent to 0-95', () => {
-    render(<SubtitleStylePanel {...defaultProps} />);
-    const input = screen.getByLabelText(/^Vertical position \d+ percent$/) as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '150' } });
-    expect(defaultProps.onChange).toHaveBeenCalledWith({ yOffsetPercent: 95 });
-  });
-
-  it('shows visible toggle only for native role', () => {
-    const { rerender } = render(<SubtitleStylePanel {...defaultProps} role="target" />);
-    expect(screen.queryByLabelText('Show native overlay')).toBeNull();
-    rerender(
-      <SubtitleStylePanel
-        {...defaultProps}
-        role="native"
-        style={DEFAULT_OVERLAY_STYLE_NATIVE}
-        defaultStyle={DEFAULT_OVERLAY_STYLE_NATIVE}
-      />,
-    );
-    expect(screen.getByLabelText('Show native overlay')).toBeTruthy();
-  });
+  // ADR-025: yOffsetPercent moved to SubtitleBlockSettingsPanel (Block section).
+  // ADR-025: visible toggle moved to SettingsDialog section header (Block/Target/Native cards).
 
   it('calls onReset when reset confirmed', () => {
     render(<SubtitleStylePanel {...defaultProps} />);

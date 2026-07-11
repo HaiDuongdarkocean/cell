@@ -1,3 +1,4 @@
+import type { SrtCue } from '@/entities/media';
 import {
   buildTranslateUrl,
   parseGoogleResponse,
@@ -147,59 +148,70 @@ describe('translateService', () => {
     });
   });
 
+  function cue(text: string, index = 1): SrtCue {
+    return { index, start: 0, end: 0, text };
+  }
+
   describe('joinCueTexts', () => {
-    it('joins texts with newline and encodes punctuation', () => {
-      const joined = joinCueTexts(['Hello.', 'World?']);
+    it('wraps cues in markers and encodes punctuation', () => {
+      const joined = joinCueTexts([cue('Hello.'), cue('World?')]);
       expect(joined).not.toContain('.');
       expect(joined).not.toContain('?');
-      expect(joined).toContain('\n');
-      // Each text encoded, then joined with \n
-      const lines = joined.split('\n');
-      expect(lines).toHaveLength(2);
-      expect(lines[0]).toContain('DOT');
-      expect(lines[1]).toContain('Q');
+      expect(joined).toContain('⟦C0⟧');
+      expect(joined).toContain('⟦/C0⟧');
+      expect(joined).toContain('⟦C1⟧');
+      expect(joined).toContain('⟦/C1⟧');
+      expect(joined).toContain('DOT');
+      expect(joined).toContain('Q');
     });
 
     it('returns empty string for empty array', () => {
       expect(joinCueTexts([])).toBe('');
     });
 
-    it('encodes single text (no newline)', () => {
-      const joined = joinCueTexts(['Hello.']);
-      expect(joined).not.toContain('\n');
-      expect(joined).toContain('DOT');
+    it('wraps single cue in markers', () => {
+      const joined = joinCueTexts([cue('Hello.')]);
+      expect(joined).toBe('⟦C0⟧Hello ⦊⦋DOT⟦/C0⟧');
     });
 
     it('preserves comma and colon in joined text', () => {
-      const joined = joinCueTexts(['00:00:26,440', '00:00:32,740']);
-      const lines = joined.split('\n');
-      expect(lines[0]).toBe('00:00:26,440');
-      expect(lines[1]).toBe('00:00:32,740');
+      const joined = joinCueTexts([cue('00:00:26,440'), cue('00:00:32,740')]);
+      expect(joined).toContain('00:00:26,440');
+      expect(joined).toContain('00:00:32,740');
+    });
+
+    it('normalizes internal newlines to a single space before joining', () => {
+      const joined = joinCueTexts([cue('Hello\nworld.'), cue('Foo\nbar')]);
+      expect(joined).toContain('Hello world ⦊⦋DOT');
+      expect(joined).toContain('Foo bar');
     });
   });
 
   describe('alignTranslatedSegments', () => {
-    it('decodes placeholders when count matches', () => {
-      // Simulate Google response with encoded placeholders
-      const encoded = encodePunctuation('Xin chào.');
-      const segments = [encoded];
-      const aligned = alignTranslatedSegments(segments, 1);
+    it('decodes placeholders when markers match', () => {
+      const joined = joinCueTexts([cue('Xin chào.')]);
+      const aligned = alignTranslatedSegments([joined], 1);
       expect(aligned).toEqual(['Xin chào.']);
     });
 
-    it('decodes each segment when count matches expected', () => {
-      const seg1 = encodePunctuation('Xin chào.');
-      const seg2 = encodePunctuation('Tạm biệt.');
+    it('aligns multiple cues from one segment', () => {
+      const joined = joinCueTexts([cue('Xin chào.'), cue('Tạm biệt.')]);
+      const aligned = alignTranslatedSegments([joined], 2);
+      expect(aligned).toEqual(['Xin chào.', 'Tạm biệt.']);
+    });
+
+    it('aligns multiple cues from multiple segments', () => {
+      const joined = joinCueTexts([cue('Xin chào.'), cue('Tạm biệt.')]);
+      // Simulate Google splitting into 2 segments at each cue
+      const seg1 = joined.slice(0, joined.indexOf('⟦/C0⟧') + '⟦/C0⟧'.length);
+      const seg2 = joined.slice(seg1.length);
       const aligned = alignTranslatedSegments([seg1, seg2], 2);
       expect(aligned).toEqual(['Xin chào.', 'Tạm biệt.']);
     });
 
-    it('pads with empty strings when translated is shorter than expected', () => {
-      expect(alignTranslatedSegments(['a', 'b'], 4)).toEqual(['a', 'b', '', '']);
-    });
-
-    it('truncates when translated is longer than expected', () => {
-      expect(alignTranslatedSegments(['a', 'b', 'c', 'd'], 2)).toEqual(['a', 'b']);
+    it('pads with empty strings when markers are missing', () => {
+      const aligned = alignTranslatedSegments(['⟦C0⟧hello⟦/C0⟧'], 3);
+      expect(aligned).toEqual(['hello', '', '']);
     });
 
     it('returns array of empty strings when translated is empty', () => {
@@ -210,10 +222,11 @@ describe('translateService', () => {
       expect(alignTranslatedSegments([], 0)).toEqual([]);
     });
 
-    it('falls back to split by \\n when Google merges cues', () => {
-      // Google returned 1 segment containing \n for 2 cues
-      const merged = encodePunctuation('Xin chào.') + '\n' + encodePunctuation('Tạm biệt.');
-      const aligned = alignTranslatedSegments([merged], 2);
+    it('handles merged segment with spaces around marker content', () => {
+      const joined = joinCueTexts([cue('Xin chào.'), cue('Tạm biệt.')]);
+      // Google sometimes adds spaces around markers
+      const spaced = joined.replace(/⟦/g, ' ⟦').replace(/⟧/g, '⟧ ');
+      const aligned = alignTranslatedSegments([spaced], 2);
       expect(aligned).toEqual(['Xin chào.', 'Tạm biệt.']);
     });
   });

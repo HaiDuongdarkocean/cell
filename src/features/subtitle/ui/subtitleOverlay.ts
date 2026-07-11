@@ -6,11 +6,9 @@ import {
   removeOverlay,
 } from './subtitleUI';
 import { createImportButton } from '../logic/subtitleImport';
-import { createDragHandle } from './subtitleDragPosition';
 import { findCurrentLine } from '../logic/subtitleSync';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
 import type { SrtCue } from '@/entities/media';
-import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 
 /**
  * SubtitleOverlayController — orchestrator that connects sync logic to overlay UI.
@@ -78,18 +76,7 @@ export class SubtitleOverlayController {
     this.targetOverlay = target.overlay;
     this.nativeOverlay = native.overlay;
 
-    // ADR-015: drag wired directly on overlay background (no separate handle button).
-    // createDragHandle wires pointerdown/move/up on overlay; text span skipped via
-    // e.target check. Persist debounced inside createDragHandle.
-    const containerForDrag = container;
-    createDragHandle(this.targetOverlay, containerForDrag, this.targetStyle.yOffsetPercent, (newOffset) => {
-      this.targetStyle = { ...this.targetStyle, yOffsetPercent: newOffset };
-      this.persistStyle('target');
-    });
-    createDragHandle(this.nativeOverlay, containerForDrag, this.nativeStyle.yOffsetPercent, (newOffset) => {
-      this.nativeStyle = { ...this.nativeStyle, yOffsetPercent: newOffset };
-      this.persistStyle('native');
-    });
+    // ADR-025: drag is handled by the unified SubtitleBlockController.
 
     // Import button is created by content-script and passed to the manager panel
     // toolbar; kept here for backwards-compat callers that don't wire the panel.
@@ -209,26 +196,6 @@ export class SubtitleOverlayController {
       }
     }
   };
-
-  /**
-   * Persist style to chrome.storage (called by drag handle onDrag callback).
-   * ponytail: direct chrome.storage.set — popupStore.updateSettings also sets,
-   * but drag happens in content script (no popup open), so persist directly.
-   */
-  private persistStyle(role: 'target' | 'native'): void {
-    try {
-      void loadSettings().then((settings) => {
-        const updated = {
-          ...settings,
-          [role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle']:
-            role === 'target' ? this.targetStyle : this.nativeStyle,
-        };
-        void saveSettings(updated);
-      });
-    } catch {
-      // ponytail: storage might not be available in test contexts — ignore
-    }
-  }
 
   /**
    * Remove both overlays, button, and event listener. Clean up DOM.

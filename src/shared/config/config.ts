@@ -1,5 +1,6 @@
-import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings } from '@/entities/media';
+import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
+import type { CardCreatorSettings } from '@/entities/settings';
 
 // === Default Configuration ===
 
@@ -120,7 +121,10 @@ const DEFAULT_TEXT_SHADOW: TextShadowConfig = {
   offsetY: 1,
 };
 
-/** Default appearance for target subtitle overlay (prominent, bottom 18% — UI v4). */
+/** ADR-025: reference size for auto-scale (sqrt of a "standard" video area). */
+export const SUBTITLE_BLOCK_REFERENCE_SIZE = 1000;
+
+/** Default appearance for target subtitle overlay (prominent — UI v4, ADR-025). */
 export const DEFAULT_OVERLAY_STYLE_TARGET: OverlayStyleConfig = {
   fontSize: 24,
   textColor: '#ffffff',
@@ -129,12 +133,11 @@ export const DEFAULT_OVERLAY_STYLE_TARGET: OverlayStyleConfig = {
   textOpacity: 1,
   textShadow: DEFAULT_TEXT_SHADOW,
   fontFamily: 'sans-serif',
-  yOffsetPercent: 18,
   horizontalAlign: 'center',
   visible: true,
 };
 
-/** Default appearance for native subtitle overlay (muted, bottom 6% — UI v4). */
+/** Default appearance for native subtitle overlay (muted — UI v4, ADR-025). */
 export const DEFAULT_OVERLAY_STYLE_NATIVE: OverlayStyleConfig = {
   fontSize: 20,
   textColor: '#ffffff',
@@ -143,9 +146,27 @@ export const DEFAULT_OVERLAY_STYLE_NATIVE: OverlayStyleConfig = {
   textOpacity: 0.85,
   textShadow: DEFAULT_TEXT_SHADOW,
   fontFamily: 'sans-serif',
-  yOffsetPercent: 6,
   horizontalAlign: 'center',
   visible: true,
+};
+
+/** Default unified subtitle block settings (ADR-025).
+ *  yOffsetPercent now represents the CENTER of the subtitle block (not the top
+ *  edge), thanks to `transform: translateY(-50%)` in SUBTITLE_BLOCK_CSS. The
+ *  default 75% places the block center at 3/4 of the video height. */
+export const DEFAULT_SUBTITLE_BLOCK_SETTINGS: SubtitleBlockSettings = {
+  yOffsetPercent: 75,
+  globalScale: 1,
+  bgOpacity: 0.7,
+};
+
+/** Default Card Creator settings (Anki integration, schema v10). */
+export const DEFAULT_CARD_CREATOR_SETTINGS: CardCreatorSettings = {
+  ankiConnectUrl: 'http://localhost:8765',
+  defaultDeck: 'Default',
+  defaultNoteType: 'Cell Video Card',
+  defaultTags: '',
+  mediaUpdateMode: 'overwrite',
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -177,17 +198,16 @@ export const DEFAULT_SETTINGS: Settings = {
   subtitleOverlayNativeStyle: DEFAULT_OVERLAY_STYLE_NATIVE,
   subtitlePreference: {},
   keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS,
-  // === Nav Cluster (ADR-018) — schema v2 ===
+  // === Nav Cluster (ADR-018, ADR-025) — schema v3 ===
   navClusterEnabled: true,
-  // x is in px (left edge), y is % of container height (center). x=8 keeps the
-  // cluster aligned with the left edge of the subtitle toolbar / upload button.
-  navClusterPosition: { x: 8, y: 75 },
   navClusterButtonSize: 34,
-  navClusterBgOpacity: 0.7,
   navClusterButtonOpacity: 0.9,
-  navClusterCollapsed: false,
+  // === Subtitle Block (ADR-025) — schema v9 ===
+  subtitleBlockSettings: DEFAULT_SUBTITLE_BLOCK_SETTINGS,
   // === Subtitle Offset (ADR-019) — schema v3 ===
   subtitleOffset: {},
+  // === Card Creator (Anki integration) — schema v10 ===
+  cardCreator: DEFAULT_CARD_CREATOR_SETTINGS,
 };
 
 /**
@@ -196,14 +216,8 @@ export const DEFAULT_SETTINGS: Settings = {
  */
 export const DEFAULT_NAV_CLUSTER_SETTINGS: NavClusterSettings = {
   enabled: true,
-  // Position: x is the fixed left edge offset in px (matches the subtitle
-  // toolbar / upload button left edge). y is the vertical center as percent of
-  // the container height.
-  position: { x: 8, y: 75 },
   buttonSize: 34,
-  bgOpacity: 0.7,
   buttonOpacity: 0.9,
-  collapsed: false,
 };
 
 // === Storage Keys ===

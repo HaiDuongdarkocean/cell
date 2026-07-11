@@ -5,6 +5,7 @@
 
 import { useState, useRef } from 'react';
 import type { ThemeConfig } from '@/entities/theme';
+import { Button, Textarea, Alert } from '@/shared/ui';
 import styles from './ThemeImportExport.module.css';
 
 interface ThemeImportExportProps {
@@ -99,24 +100,24 @@ export function ThemeImportExport({ config, onApply }: ThemeImportExportProps): 
     <div className={styles.wrapper} data-testid="theme-import-export">
       <div className={styles.label}>Export / Import</div>
       <div className={styles.row}>
-        <button className={styles.btn} onClick={handleExport} data-testid="theme-export">⬇ Export JSON</button>
-        <button className={styles.btn} onClick={() => void handleCopy()} data-testid="theme-copy">📋 Copy</button>
-        <button className={styles.btn} onClick={() => fileInputRef.current?.click()} data-testid="theme-import-file">⬆ Import file</button>
+        <Button variant="secondary" size="sm" onClick={handleExport} data-testid="theme-export">⬇ Export JSON</Button>
+        <Button variant="secondary" size="sm" onClick={() => void handleCopy()} data-testid="theme-copy">📋 Copy</Button>
+        <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} data-testid="theme-import-file">⬆ Import file</Button>
         <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleFile} style={{ display: 'none' }} data-testid="theme-file-input" />
       </div>
       <div className={styles.label}>Or paste JSON:</div>
-      <textarea
-        className={styles.textarea}
+      <Textarea
         value={pasteText}
         onChange={(e) => { setPasteText(e.target.value); clearMsg(); }}
         placeholder='{"customColors":{"light":{...},"dark":{...}}}'
+        rows={4}
         data-testid="theme-paste-textarea"
       />
       <div className={styles.row} style={{ marginTop: 'var(--spacing-sm, 8px)' }}>
-        <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handlePasteApply} data-testid="theme-apply-paste">Apply</button>
+        <Button variant="primary" size="sm" onClick={handlePasteApply} data-testid="theme-apply-paste">Apply</Button>
       </div>
-      {error && <div className={styles.error} data-testid="theme-import-error">{error}</div>}
-      {success && <div className={styles.success} data-testid="theme-import-success">{success}</div>}
+      {error && <Alert variant="error" description={error} data-testid="theme-import-error" />}
+      {success && <Alert variant="success" description={success} data-testid="theme-import-success" />}
     </div>
   );
 }

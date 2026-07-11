@@ -1,0 +1,19 @@
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--label-color, var(--color-text));
+  line-height: var(--leading-normal);
+}
+
+.disabled {
+  color: var(--label-disabled-color, var(--color-muted-foreground));
+  cursor: not-allowed;
+}
+
+.required {
+  color: var(--color-error);
+}

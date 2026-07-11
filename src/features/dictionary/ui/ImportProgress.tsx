@@ -1,6 +1,7 @@
 // ImportProgress — progress bar + cancel (spec F11).
 
 import { type ReactElement } from 'react';
+import { Button } from '@/shared/ui';
 import styles from './ImportProgress.module.css';
 
 interface ImportProgressProps {
@@ -21,9 +22,9 @@ export function ImportProgress({ processed, total, onCancel, error }: ImportProg
         {processed}{total > 0 ? ` / ${total}` : ''} mục
       </span>
       {onCancel && (
-        <button type="button" className={styles.cancel} onClick={onCancel}>
+        <Button variant="outline" size="sm" onClick={onCancel}>
           Hủy
-        </button>
+        </Button>
       )}
       {error && <div className={styles.error} role="alert">{error}</div>}
     </div>

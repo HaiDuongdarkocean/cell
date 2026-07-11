@@ -3,6 +3,13 @@
 > Nguồn sự thật chung cho Windsurf / Devin / Claude. Đọc đầu mỗi phiên.
 > Workflow (LOOP, ponytail, quality gates): xem skill `software-production-workflow`.
 
+## mô tả yêu cầu cấu hình máy
+
+- extension hướng cấu hình đa nền tảng như các broswer nhân chrome trên desktop, tablet, android, ios.
+- cấu hình máy ram yếu 4GB cũng có thể chạy được.
+- giao diện thiết kế responsive, tối ưu cho mobile, tablet và desktop.
+- extension có thể chạy trên các trình duyệt khác nhau như chrome, firefox, edge, opera, brave, v.v.
+
 ## Lệnh hay dùng
 
 Lệnh đầy đủ trong `package.json` scripts. Hai thứ không hiển nhiên:

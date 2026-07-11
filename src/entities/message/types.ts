@@ -67,7 +67,8 @@ export type MessageType =
   | 'INNERTUBE_FALLBACK_REQUEST'
   | 'FETCH_REQUEST'
   | 'FETCH_RESPONSE'
-  | 'TRANSLATE';
+  | 'TRANSLATE'
+  | 'CARD_CREATOR_REQUEST';
 
 // === Message Request ===
 
@@ -455,6 +456,29 @@ export interface InnertubeFallbackPayload {
   readonly videoId: string;
   readonly apiKey: string;
   readonly visitorData?: string; // from ytcfg INNERTUBE_CONTEXT.client.visitorData
+}
+
+// === Card Creator (AnkiConnect) messages ===
+
+/** AnkiConnect action invoked by Card Creator. Sent content-script → background;
+ *  background performs the HTTP fetch to AnkiConnect (host_permissions <all_urls>)
+ *  and returns the raw result. */
+export interface CardCreatorRequestPayload {
+  /** AnkiConnect base URL, e.g. 'http://localhost:8765'. */
+  readonly url: string;
+  /** AnkiConnect action name, e.g. 'version', 'deckNames', 'addNote'. */
+  readonly action: string;
+  /** Action params (action-specific). */
+  readonly params?: Record<string, unknown>;
+  /** Request timeout in ms. Default 10000. */
+  readonly timeoutMs?: number;
+}
+
+/** Background → content-script: AnkiConnect raw response.
+ *  `result` is the raw `result` field from AnkiConnect JSON response (action-specific).
+ *  On error, `success` is false and `error` describes the failure. */
+export interface CardCreatorResponseData {
+  readonly result: unknown;
 }
 
 // === Typed Message Helpers ===

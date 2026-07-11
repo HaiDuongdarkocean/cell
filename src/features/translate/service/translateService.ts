@@ -1,3 +1,5 @@
+import type { SrtCue } from '@/entities/media';
+
 /**
  * Translate service — Google Translate unofficial endpoint helpers (ADR-021 D2).
  *
@@ -23,17 +25,17 @@ export const GOOGLE_TRANSLATE_ENDPOINT = 'https://translate.google.com/translate
 const PLACEHOLDER = '\u298A\u298B'; // ⟦⟧ — rare bracket pair, unlikely in subtitle text
 
 const ENCODE_MAP: ReadonlyArray<readonly [string, string]> = [
-  ['.', `${PLACEHOLDER}DOT`],
-  ['?', `${PLACEHOLDER}Q`],
-  ['!', `${PLACEHOLDER}EXCL`],
-  [';', `${PLACEHOLDER}SEMI`],
+  ['.', ` ${PLACEHOLDER}DOT`],
+  ['?', ` ${PLACEHOLDER}Q`],
+  ['!', ` ${PLACEHOLDER}EXCL`],
+  [';', ` ${PLACEHOLDER}SEMI`],
 ];
 
 const DECODE_MAP: ReadonlyArray<readonly [RegExp, string]> = [
-  [new RegExp(`${escapeRegex(PLACEHOLDER)}DOT`, 'g'), '.'],
-  [new RegExp(`${escapeRegex(PLACEHOLDER)}Q`, 'g'), '?'],
-  [new RegExp(`${escapeRegex(PLACEHOLDER)}EXCL`, 'g'), '!'],
-  [new RegExp(`${escapeRegex(PLACEHOLDER)}SEMI`, 'g'), ';'],
+  [new RegExp(`(\\s*)${escapeRegex(PLACEHOLDER)}DOT(\\s*)`, 'g'), '.$2'],
+  [new RegExp(`(\\s*)${escapeRegex(PLACEHOLDER)}Q(\\s*)`, 'g'), '?$2'],
+  [new RegExp(`(\\s*)${escapeRegex(PLACEHOLDER)}EXCL(\\s*)`, 'g'), '!$2'],
+  [new RegExp(`(\\s*)${escapeRegex(PLACEHOLDER)}SEMI(\\s*)`, 'g'), ';$2'],
 ];
 
 function escapeRegex(s: string): string {
@@ -113,26 +115,28 @@ export function parseGoogleResponse(response: unknown): string[] {
 }
 
 /**
- * Join cue texts into a single multi-line string for one Google request.
+ * Join cue texts into a single string for one Google request.
  *
- * Each cue text is encoded (sentence-terminal punctuation → placeholder) before
- * joining with `\n`. Google preserves `\n` boundaries when it cannot find
- * sentence boundaries → 1 output segment per input cue (ADR-021 D3).
+ * Each cue is wrapped in marker tags `⟦C{idx}⟧...⟦/C{idx}⟧` so Google cannot
+ * merge or split across cue boundaries. Internal `\n` is normalized to a single
+ * space to prevent Google from splitting a cue into multiple segments.
+ * Sentence-terminal punctuation is encoded before wrapping.
  *
- * @param texts - Cue texts to join (will be encoded).
- * @returns Multi-line encoded string (texts joined by `\n`).
+ * @param cues - Cues to join (will be encoded and wrapped).
+ * @returns Single encoded string with cue markers for parsing after translate.
  */
-export function joinCueTexts(texts: readonly string[]): string {
-  return texts.map(encodePunctuation).join('\n');
+export function joinCueTexts(cues: readonly SrtCue[]): string {
+  return cues
+    .map((c, i) => `⟦C${i}⟧${encodePunctuation(c.text.replace(/\n/g, ' '))}⟦/C${i}⟧`)
+    .join('');
 }
 
 /**
- * Align translated segments back to per-cue texts.
+ * Align translated segments back to per-cue texts using cue markers.
  *
- * With encoding, Google returns 1 segment per cue (no sentence splitting).
- * Each segment is decoded (placeholder → original punctuation). When segment
- * count matches cue count, map 1:1. On mismatch (rare edge case), join all
- * segments and split by `\n` as fallback.
+ * Cues were wrapped with `⟦C{idx}⟧...⟦/C{idx}⟧` before sending. After translate,
+ * Google may return one or many segments; we join them and extract each cue
+ * text by its marker. Missing cues are padded with empty strings.
  *
  * @param translated - Translated text segments from `parseGoogleResponse`.
  * @param expectedCount - Number of input cues.
@@ -142,23 +146,18 @@ export function alignTranslatedSegments(
   translated: readonly string[],
   expectedCount: number,
 ): string[] {
-  // Happy path: 1 segment per cue → decode each
-  if (translated.length === expectedCount) {
-    return translated.map((t) => decodePunctuation(t));
+  const joined = translated.join('');
+  const markerRegex = /⟦C(\d+)⟧(.*?)⟦\/C\1⟧/gs;
+  const map = new Map<number, string>();
+  for (const match of joined.matchAll(markerRegex)) {
+    const idx = Number(match[1]);
+    const text = match[2] ?? '';
+    map.set(idx, decodePunctuation(text.trim()));
   }
-  // Fallback: Google merged all cues into 1 segment → split by \n
-  if (translated.length === 1 && expectedCount > 1) {
-    const lines = decodePunctuation(translated[0]).split('\n');
-    const result: string[] = [];
-    for (let i = 0; i < expectedCount; i++) {
-      result.push((lines[i] ?? '').trim());
-    }
-    return result;
-  }
-  // Google split more/fewer than expected → pad/truncate best-effort
+
   const result: string[] = [];
   for (let i = 0; i < expectedCount; i++) {
-    result.push(decodePunctuation(translated[i] ?? ''));
+    result.push(map.get(i) ?? '');
   }
   return result;
 }

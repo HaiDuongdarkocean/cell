@@ -120,11 +120,10 @@ export function createOverlayLayer(
 
   // ARIA slider on overlay div (ADR-015 D2 — moved from handle button)
   overlay.setAttribute('role', 'slider');
-  overlay.setAttribute('aria-label', `Drag to move ${role} subtitle`);
+  overlay.setAttribute('aria-label', `Subtitle ${role}`);
   overlay.setAttribute('aria-orientation', 'vertical');
   overlay.setAttribute('aria-valuemin', '0');
   overlay.setAttribute('aria-valuemax', '95');
-  overlay.setAttribute('aria-valuenow', String(config.yOffsetPercent));
 
   // Text span: user-select text (copy word), pointer-events auto
   const textSpan = document.createElement('span');
@@ -160,7 +159,6 @@ export function applyStyle(config: OverlayStyleConfig, overlay: HTMLDivElement):
   overlay.style.opacity = String(config.textOpacity);
   overlay.style.textShadow = buildTextShadow(config.textShadow);
   overlay.style.fontFamily = sanitizeFontFamily(config.fontFamily);
-  overlay.style.bottom = `${config.yOffsetPercent}%`;
   overlay.style.textAlign = config.horizontalAlign;
   // G7: re-apply line-height guard whenever style is refreshed; host CSS may
   // have overridden it via !important or high-specificity selectors.
@@ -170,10 +168,7 @@ export function applyStyle(config: OverlayStyleConfig, overlay: HTMLDivElement):
   // current cue. Forcing block here shows drag handle with no subtitle (bug fix).
   if (!config.visible) overlay.style.display = 'none';
 
-  // ADR-015 D2: ARIA valuenow directly on overlay (role=slider moved from handle
-  // button to overlay div). querySelector('[role="slider"]') would return null
-  // because it doesn't match the element itself — set attribute directly.
-  overlay.setAttribute('aria-valuenow', String(config.yOffsetPercent));
+
 }
 
 /**

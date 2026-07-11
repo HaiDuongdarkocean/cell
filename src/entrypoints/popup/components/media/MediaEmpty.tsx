@@ -1,3 +1,4 @@
+import { EmptyState } from '@/shared/ui';
 import styles from './MediaEmpty.module.css';
 
 interface MediaEmptyProps {
@@ -64,15 +65,11 @@ export function MediaEmpty({ type, scanning = false }: MediaEmptyProps): React.J
       aria-live="polite"
       data-testid="empty-media"
     >
-      <div className={styles.icon}>
-        {isScanning ? config.scanningIcon : config.icon}
-      </div>
-      <div className={styles.title}>
-        {isScanning ? config.scanningTitle : config.title}
-      </div>
-      <div className={styles.hint}>
-        {isScanning ? config.scanningHint : config.hint}
-      </div>
+      <EmptyState
+        icon={isScanning ? config.scanningIcon : config.icon}
+        title={isScanning ? config.scanningTitle : config.title}
+        description={isScanning ? config.scanningHint : config.hint}
+      />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
 import { SubtitlePreview } from './SubtitlePreview';
-import { HintIcon } from '@/shared/ui/HintIcon';
 import styles from './SubtitleStylePanel.module.css';
 
 interface SubtitleStylePanelProps {
@@ -35,10 +34,10 @@ const FONT_FAMILY_OPTIONS = [
 ];
 
 /**
- * Subtitle appearance control panel (ADR-013).
- * 7 appearance controls + Y-offset + visible toggle (native only) + reset.
- * Each control calls onChange(partial) → parent persists → storage.onChanged
- * → content-script applyStyle (realtime).
+ * Subtitle appearance control panel (ADR-013, ADR-025).
+ * 6 appearance controls + reset. Position (Y) and visible toggle are handled by
+ * the parent section header. Each control calls onChange(partial) → parent
+ * persists → storage.onChanged → content-script applyStyle (realtime).
  *
  * Accessibility: label htmlFor, aria-label, keyboard-navigable.
  */
@@ -98,63 +97,39 @@ export function SubtitleStylePanel({
         />
       </div>
 
-      {/* PAIR: Position (Y-offset) + Font family — Position replaces Font size in pair row */}
-      <div className={styles.pairRow}>
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor={`style-${role}-y-offset`}>
-            <span className={styles.labelText}>
-              Position (Y)
-              <HintIcon
-                hint="0% = top, 95% = bottom. Drag handle on video also sets this."
-                ariaLabel="Show hint for Vertical position"
-              />
-            </span>
-          </label>
+      {/* Font family */}
+      <div className={styles.field}>
+        <label className={styles.label} htmlFor={`style-${role}-font-family`}>Font family</label>
+        <select
+          id={`style-${role}-font-family`}
+          value={isCustomFont ? '__custom__' : style.fontFamily}
+          onChange={(e) => {
+            if (e.target.value === '__custom__') {
+              setCustomFontOpen(true);
+            } else {
+              onChange({ fontFamily: e.target.value });
+              setCustomFontOpen(false);
+            }
+          }}
+          className={styles.select}
+          aria-label="Font family"
+        >
+          {FONT_FAMILY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+          <option value="__custom__">Custom…</option>
+        </select>
+        {(customFontOpen || isCustomFont) && (
           <input
-            id={`style-${role}-y-offset`}
-            type="number"
-            min={0}
-            max={95}
-            step={1}
-            value={style.yOffsetPercent}
-            onChange={(e) => onChange({ yOffsetPercent: Math.max(0, Math.min(95, Number(e.target.value))) })}
-            className={styles.numberInput}
-            aria-label={`Vertical position ${style.yOffsetPercent} percent`}
+            type="text"
+            value={isCustomFont ? style.fontFamily : ''}
+            placeholder="e.g. 'Noto Sans JP', sans-serif"
+            onChange={(e) => onChange({ fontFamily: e.target.value })}
+            className={styles.textInput}
+            aria-label="Custom font family CSS string"
+            data-testid={`style-${role}-font-family-custom`}
           />
-        </div>
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor={`style-${role}-font-family`}>Font family</label>
-          <select
-            id={`style-${role}-font-family`}
-            value={isCustomFont ? '__custom__' : style.fontFamily}
-            onChange={(e) => {
-              if (e.target.value === '__custom__') {
-                setCustomFontOpen(true);
-              } else {
-                onChange({ fontFamily: e.target.value });
-                setCustomFontOpen(false);
-              }
-            }}
-            className={styles.select}
-            aria-label="Font family"
-          >
-            {FONT_FAMILY_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-            <option value="__custom__">Custom…</option>
-          </select>
-          {(customFontOpen || isCustomFont) && (
-            <input
-              type="text"
-              value={isCustomFont ? style.fontFamily : ''}
-              placeholder="e.g. 'Noto Sans JP', sans-serif"
-              onChange={(e) => onChange({ fontFamily: e.target.value })}
-              className={styles.textInput}
-              aria-label="Custom font family CSS string"
-              data-testid={`style-${role}-font-family-custom`}
-            />
-          )}
-        </div>
+        )}
       </div>
 
       {/* PAIR: Text color + Background color */}
@@ -335,28 +310,7 @@ export function SubtitleStylePanel({
 
       {/* Font family — moved into pair row above (settings-dialog-rearrange) */}
 
-      {/* Position (Y-offset) — moved into pair row above */}
 
-      {/* Visible toggle (native only — target always visible) */}
-      {role === 'native' && (
-        <div className={styles.field}>
-          <label className={styles.toggleRow}>
-            <input
-              type="checkbox"
-              checked={style.visible}
-              onChange={(e) => onChange({ visible: e.target.checked })}
-              aria-label="Show native overlay"
-            />
-            <span className={styles.labelText}>
-              Show native overlay
-              <HintIcon
-                hint="When off, native overlay is fully hidden (not just transparent)."
-                ariaLabel="Show hint for Show native overlay"
-              />
-            </span>
-          </label>
-        </div>
-      )}
 
       {/* Reset button — in panel, justify-end (settings-dialog-rearrange) */}
       <div className={styles.resetRow}>

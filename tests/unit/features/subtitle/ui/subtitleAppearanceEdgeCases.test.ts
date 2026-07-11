@@ -95,21 +95,6 @@ describe('SubtitleOverlayController edge cases (ADR-013 Task 8)', () => {
     });
   });
 
-  describe('y-offset clamp', () => {
-    it('clamps yOffsetPercent to 95 when set above range', () => {
-      const controller = makeController();
-      controller.init();
-      const targetOverlay = document.querySelector('[data-testid="subtitle-overlay-target"]') as HTMLDivElement;
-
-      // SubtitleStylePanel clamps before calling updateStyle, but applyStyle
-      // should still render whatever it receives. Test the panel clamp separately.
-      controller.updateStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, yOffsetPercent: 50 }, undefined);
-      expect(targetOverlay.style.bottom).toBe('50%');
-      // ADR-015 D2: aria-valuenow updates directly on overlay (no handle button)
-      expect(targetOverlay.getAttribute('aria-valuenow')).toBe('50');
-    });
-  });
-
   describe('ADR-015: drag integrated (no handle button)', () => {
     it('controller.init creates overlays with no drag handle button (target + native)', () => {
       const controller = makeController();
@@ -127,8 +112,8 @@ describe('SubtitleOverlayController edge cases (ADR-013 Task 8)', () => {
       const targetOverlay = document.querySelector('[data-testid="subtitle-overlay-target"]') as HTMLDivElement;
       const nativeOverlay = document.querySelector('[data-testid="subtitle-overlay-native"]') as HTMLDivElement;
       expect(targetOverlay.getAttribute('role')).toBe('slider');
-      expect(targetOverlay.getAttribute('aria-label')).toBe('Drag to move target subtitle');
-      expect(nativeOverlay.getAttribute('aria-label')).toBe('Drag to move native subtitle');
+      expect(targetOverlay.getAttribute('aria-label')).toBe('Subtitle target');
+      expect(nativeOverlay.getAttribute('aria-label')).toBe('Subtitle native');
     });
   });
 
