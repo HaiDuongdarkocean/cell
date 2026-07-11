@@ -7,7 +7,7 @@ import globals from 'globals';
 export default tseslint.config(
   // Global ignores
   {
-    ignores: ['dist/', 'node_modules/', 'coverage/', 'bin/', 'tests/integration/.cache/', 'project-reference/', 'public/ffmpeg/'],
+    ignores: ['dist/', 'node_modules/', 'coverage/', 'bin/', 'tests/integration/.cache/', 'project-reference/', 'public/ffmpeg/', '.windsurf/'],
   },
 
   // Base JS recommended
@@ -48,7 +48,7 @@ export default tseslint.config(
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',
     },
   },
