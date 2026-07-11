@@ -33,6 +33,8 @@ docs/           # Tài liệu dự án
 │   └── 022-port-theocean-theme-system.md # ADR-022 port theocean theme: storage tách riêng (themeMode + themeConfig no mode), 9 core tokens runtime + derive secondary, system mode, content-script inject customColors, SettingsDialog giữ toggle shortcut, ThemeProvider init 3 entrypoint
 │   └── 023-port-theocean-dictionary-import.md # ADR-023 port theocean dict: IndexedDB 3 stores + dbHash random, migration v9 create-all only, strategy template method (5 + base), fflate gzip+zip, sql.js lazy-load (wasm-unsafe-eval CSP đã có), atomic rollback, SHA-256 dedupe 1MB sample, batch 5000 streaming
 │   └── 024-portable-theme-boundary.md # ADR-024: component-level data-theme boundary cho portable content-script UI (amends ADR-022 D4)
+│   └── 025-subtitle-block-unified.md # ADR-025: gộp target + native + nav cluster thành 1 block, pill kéo trục Y, auto-scale theo video
+│   └── 026-card-creator-anki-integration.md # ADR-026: Card Creator — Anki integration via AnkiConnect (desktop + Android, silent no-op detection, draft autosave)
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -48,6 +50,8 @@ docs/           # Tài liệu dự án
 │   └── intent-youtube-subtitle-detection.md # YouTube subtitle detection (proactive parse ytInitialPlayerResponse, include ASR, site adapter pattern, subtitle only)
 │   └── intent-translate-subtitle-target-to-native.md # Translate subtitle target→native (Google unofficial, background prefill, real-time)
 │   └── intent-port-theocean-dict-and-theme.md # Port theocean-dict reference: theme system (runtime configurable, thay DSDS) + import dict/freq 5 format → IndexedDB. Theme trước, dict sau.
+│   └── intent-subtitle-block-unified.md # Gộp target + native + nav cluster thành 1 block, pill kéo trục Y, auto-scale theo video
+│   └── intent-card-creator.md # Card Creator — tạo + update Anki flashcard từ subtitle block (desktop + mobile)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
@@ -64,7 +68,11 @@ docs/           # Tài liệu dự án
 │   └── spec-settings-dialog-rearrange.md # Settings dialog rearrange spec (pair/indent/divider, fix Nav Cluster position) # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
 │   └── spec-translate-subtitle-target-to-native.md # Translate subtitle target→native PRD (background prefill, Google unofficial, ShortcutInput combo, general mọi site)
 │   └── spec-port-theocean-dict-and-theme.md # Port theocean-dict reference: theme system (runtime configurable, 9 core tokens, WCAG, import/export, system mode) + dict import 5 format → IndexedDB. Options page mới. Theme trước, dict sau.
+│   └── spec-subtitle-block-unified.md # Unified subtitle block PRD: gộp target + native + nav cluster, auto-scale, settings rearrange
+│   └── spec-card-creator.md # Card Creator PRD: AnkiConnect integration, field mapping, media extraction, draft autosave, desktop Dialog + mobile BottomSheet
+│   └── spec-card-creator-ui-redesign.md # Card Creator UI redesign PRD (cleaner, minimalist dialog + settings)
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
+│   └── spec-shared-ui-components.md # Shared UI component library (Button/Card/Dialog/Input + atoms/molecules + migration of existing feature UI)
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md
@@ -84,6 +92,7 @@ docs/           # Tài liệu dự án
 │   └── plan-youtube-subtitle-detection.md # YouTube subtitle detection — implementation plan (G2, 6 AD, 7 milestones M1-M7, Two Detection Paths, cite spec-youtube-subtitle-detection)
 │   └── plan-translate-subtitle-target-to-native.md # Translate subtitle target→native plan (G2, 6 milestones M1-M6, background prefill, cite spec)
 │   └── plan-port-theocean-dict-and-theme.md # Port theocean-dict + theme plan (G2, 12 milestones M1-M12, theme trước F1-F6 → dict sau F7-F12, options page mới, cite spec)
+│   └── plan-card-creator-ui-redesign.md # Card Creator UI redesign implementation plan (mockup → CSS → components → verify)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
@@ -92,6 +101,8 @@ docs/           # Tài liệu dự án
 │   └── task-refactor-system-architecture.md # Refactor system architecture — task breakdown (G4, M0-M13, 25 task, codebase reality check)
 │   └── task-subtitle-navigation-control.md # Subtitle navigation control cluster — task breakdown (G4, 11 tasks M1-M6, TDD, vertical slices)
 │   └── task-port-theocean-dict-and-theme.md # Port theocean-dict + theme — task breakdown (G4, 30 tasks M1-M12, theme trước F1-F6 → dict sau F7-F12, TDD + browser MCP stop-the-line)
+│   └── task-shared-ui-components.md # Shared UI component library — task breakdown (Phase 1-5: atoms, molecules, organisms, migration, audit)
+│   └── task-card-creator-ui-redesign.md # Card Creator UI redesign task breakdown (7 tasks, mockup-first)
 │   ├── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
 │   └── 2026-06-29-subtitle-appearance-manager-mcp.md # ADR-013 browser MCP verify report (A1-A16)
 ├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
@@ -138,14 +149,26 @@ docs/           # Tài liệu dự án
 │   └── nav-cluster-frontend-design.md # Frontend UI engineering nav cluster (G3 build HOW: DOM tree, state machines, ARIA toolbar, responsive touch target, perf, anti-AI-aesthetic)
 │   └── review-youtube-subtitle-detection.md # Spec review: YouTube subtitle detection (APPROVED_WITH_CONDITIONS → revised → APPROVED, Opus 4.8, 3 CRITICAL + 4 HIGH resolved)
 ├── design-system/                     # Living design system documentation + mockups
-│   ├── README.md                      # Living Design System (DSDS-inspired, 7 layer folders: principles + tokens + components + patterns + guidelines + runtime + governance + references)
-│   ├── nav-cluster-frontend-design.md # (legacy) Frontend UI engineering nav cluster — kept as reference, not updated
-│   └── icon-svg/                      # SVG icons used in mockups
+│   ├── design-system.md               # Source-of-truth design system spec (tokens + component specs + usage rules)
+│   ├── design-dark-github.md          # Reference: GitHub dark theme extraction
+│   ├── design-dark-github.css         # Reference: GitHub dark theme CSS tokens
+│   ├── design-dark-github.json        # Reference: GitHub dark theme DTCG tokens
+│   ├── design-light-youtube.md        # Reference: YouTube light theme extraction
+│   ├── design-light-youtube.css       # Reference: YouTube light theme CSS tokens
+│   ├── design-light-youtube.json      # Reference: YouTube light theme DTCG tokens
+│   └── icon-svg/                      # SVG icons used in mockups (lives under docs/mockups/)
 ├── mockups/                           # HTML mockups (design-driven-development output, G0.5)
-│   └── subtitle-selector-mockup.html  # Subtitle selector mockup v4 (ADR-014 enhancement)
-│   └── mockup-settings-grouped.html   # Settings dialog grouped layout v1 (sidebar + cards)
-│   └── mockup-settings-searchable-and-hint.html # Settings SearchableSelect + HintIcon atoms mockup
-│   └── mockup-settings-rearrange.html # Settings dialog rearrange v2 (pair/indent/divider, fix Nav Cluster position)
+│   ├── icon-svg/                      # SVG icons used in mockups (anki-quick, anki-edit, nav cluster, etc.)
+│   ├── subtitle-selector-mockup.html  # Subtitle selector mockup v4 (ADR-014 enhancement)
+│   ├── mockup-settings-grouped.html   # Settings dialog grouped layout v1 (sidebar + cards)
+│   ├── mockup-settings-searchable-and-hint.html # Settings SearchableSelect + HintIcon atoms mockup
+│   ├── mockup-settings-rearrange.html # Settings dialog rearrange v2 (pair/indent/divider, fix Nav Cluster position)
+│   ├── mockup-subtitle-block-unified.html # Unified subtitle block mockup: target + native + nav cluster gộp thành 1 block, pill kéo trục Y
+│   └── anki-card-mockup.html          # Card Creator mockup (approved): bottom sheet mobile + modal desktop + settings
+├── intent/
+│   └── intent-card-creator.md         # Card Creator intent (interview-me output, confirmed)
+├── specs/
+│   └── spec-card-creator.md           # Card Creator spec (PRD) — AnkiConnect + dialog + media extraction
 ├── reference/                         # Hướng dẫn dùng tools + research synthesis — "how to use / background"
 │   ├── chrome-devtools-mcp.md
 │   ├── e2e-debugging.md
