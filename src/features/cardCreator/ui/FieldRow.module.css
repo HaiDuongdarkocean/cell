@@ -31,7 +31,56 @@
 }
 
 .fieldMapSelect {
-  min-width: 120px;
+  width: auto;
+}
+
+.fieldMapSelect button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: auto;
+  width: auto;
+  padding: 2px 14px 2px 4px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  outline: none;
+}
+
+.fieldMapSelect button:hover {
+  color: var(--color-text-secondary);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.fieldMapSelect button:focus-visible,
+.fieldMapSelect:focus-within button {
+  color: var(--color-primary);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.fieldMapSelect button span {
+  flex: 0 0 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fieldMapSelect button svg {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  color: inherit;
+  transform: translateY(-50%);
 }
 
 /* Input — design-system §3.3 Input */
