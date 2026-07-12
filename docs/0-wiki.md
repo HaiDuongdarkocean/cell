@@ -100,6 +100,7 @@ docs/           # Tài liệu dự án
 │   └── plan-port-theocean-dict-and-theme.md # Port theocean-dict + theme plan (G2, 12 milestones M1-M12, theme trước F1-F6 → dict sau F7-F12, options page mới, cite spec)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
+│   ├── task-netflix-subtitle-detection.md # Netflix subtitle detection — dependency-aware task list (G4, parallel branches + sequential gates)
 │   ├── task-side-panel-video-controls.md # Side Panel video controls — task list (G4)
 │   ├── task-subtitle-appearance-manager.md # Subtitle appearance manager — task list (G4)
 │   └── task-subtitle-selector-multi-match.md # Subtitle selector ≥2 matches — task list (G4, V2 ADR-007 D3)
@@ -140,6 +141,7 @@ docs/           # Tài liệu dự án
 │   ├── drag-drop-stop-propagation-blocks-outer.md # MediaList inner stopPropagation blocks outer file-drop handler
 │   ├── dropdown-menu-width-follows-content.md     # Select menu width locked to trigger clips long options + tràn card
 │   ├── persist-config-clear-content.md            # Card Creator autosave: persist selections + tags, clear field content on close
+│   ├── language-unique-signature-words.md         # Unique signature words cho 27 ngôn ngữ Latin (improve frequency detection accuracy)
 │   └── skill-output-routing.md                    # Skill output routing (filled artifacts → project docs/, not skill dir)
 ├── test-reports/                      # MCP browser test reports — "does it work in real browser"
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md

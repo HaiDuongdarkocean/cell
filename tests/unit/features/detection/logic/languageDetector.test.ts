@@ -12,14 +12,19 @@ describe('languageDetector', () => {
       expect(labels).toContain('Russian');
     });
 
-    it('each profile has 10 top words, all 3+ characters (CJK exempt)', () => {
+    it('each profile has 10 top words, all 3+ characters (CJK + short-unique-signature exempt)', () => {
       // CJK scripts (han, hangul, hiragana) resolve via script detection
       // (single-candidate), so frequency is secondary. CJK characters count
       // as 1 char each, and common CJK words are often 2 chars — exempt.
+      // Norwegian/Danish/Czech have very short unique signature words
+      // ("nå", "af", "už") that are 2 chars but still unique — exempt
+      // because replacing them with longer words loses the unique signal.
       const cjkScripts = ['han', 'hangul', 'hiragana'];
+      const shortUniqueExempt = ['Norwegian', 'Danish', 'Czech'];
       for (const profile of LANGUAGE_PROFILES) {
         expect(profile.topWords).toHaveLength(10);
         if (profile.script && cjkScripts.includes(profile.script)) continue;
+        if (shortUniqueExempt.includes(profile.label)) continue;
         for (const word of profile.topWords) {
           // Each word must have 3+ characters (counting Unicode code points,
           // not UTF-16 units). This avoids cross-language false positives from
@@ -30,22 +35,34 @@ describe('languageDetector', () => {
       }
     });
 
-    it('original 6 profiles have threshold 8, extended profiles have threshold 6', () => {
-      const original = ['English', 'Chinese', 'Vietnamese', 'Korean', 'Japanese', 'Russian'];
+    it('thresholds: CJK+Russian=8, Latin unique-signature=4 (Norwegian/Danish=3), Cyrillic/Arabic/Devanagari=6', () => {
+      // CJK (Chinese/Korean/Japanese) + Russian use script-based detection
+      // (single-candidate scripts), frequency is secondary → threshold 8.
+      // Latin profiles use unique signature words (no overlap) → threshold 4.
+      // Norwegian/Danish have fewer unique words (heavy overlap pair) → threshold 3.
+      // Cyrillic/Arabic/Devanagari use script detection first, frequency
+      // secondary, not yet migrated to unique signature words → threshold 6.
+      const threshold8 = ['Chinese', 'Korean', 'Japanese', 'Russian'];
+      const threshold3 = ['Norwegian', 'Danish'];
+      const threshold6Scripts = ['cyrillic', 'arabic', 'devanagari'];
       for (const profile of LANGUAGE_PROFILES) {
-        if (original.includes(profile.label)) {
+        if (threshold8.includes(profile.label)) {
           expect(profile.threshold).toBe(8);
-        } else {
+        } else if (threshold3.includes(profile.label)) {
+          expect(profile.threshold).toBe(3);
+        } else if (profile.script && threshold6Scripts.includes(profile.script)) {
           expect(profile.threshold).toBe(6);
+        } else {
+          expect(profile.threshold).toBe(4);
         }
       }
     });
 
-    it('English top words are 3+ char words from OEC ranking', () => {
+    it('English top words are unique signature words (th-digraph + ould-modal)', () => {
       const en = LANGUAGE_PROFILES.find((p) => p.label === 'English')!;
       expect(en.topWords).toEqual([
-        'the', 'and', 'for', 'are', 'but',
-        'not', 'you', 'all', 'can', 'her',
+        'the', 'and', 'that', 'with', 'this',
+        'but', 'not', 'have', 'from', 'would',
       ]);
     });
 
@@ -57,11 +74,11 @@ describe('languageDetector', () => {
       ]);
     });
 
-    it('Vietnamese top words are 3+ char words from frequency corpus', () => {
+    it('Vietnamese top words are unique signature words (đ + tone marks)', () => {
       const vi = LANGUAGE_PROFILES.find((p) => p.label === 'Vietnamese')!;
       expect(vi.topWords).toEqual([
-        'trong', 'được', 'cho', 'một', 'với',
-        'người', 'này', 'không', 'cũng', 'những',
+        'không', 'của', 'với', 'một', 'được',
+        'cho', 'người', 'này', 'cũng', 'những',
       ]);
     });
 
@@ -378,22 +395,22 @@ Dialogue: 0,0:00:22.50,0:00:25.00,Default,,0,0,0,,You are all invited, but you c
       expect(detectLanguage(ass, 'ass')).toBe('english');
     });
 
-    it('returns "English" (latin fallback) when fewer than 8 of 10 words present', () => {
-      // Top words: the, and, for, are, but, not, you, all, can, her
-      // This text has 7/10: the, and, for, are, but, not, you (missing all, can, her)
-      // Hybrid: script=latin, frequency 7/10 < 8, fallback to first latin candidate.
+    it('returns "English" when 4+ unique signature words present (threshold 4)', () => {
+      // Top words: the, and, that, with, this, but, not, have, from, would
+      // This text has 4/10: the, and, but, not → meets threshold 4.
       const srt = `1
 00:00:01,000 --> 00:00:04,000
 The show and the host are for you, but not here.`;
       expect(detectLanguage(srt, 'srt')).toBe('english');
     });
 
-    it('returns "English" at exactly 8/10 threshold', () => {
-      // Top words: the, and, for, are, but, not, you, all, can, her
-      // This text has 8/10: the, and, for, are, but, not, you, all (missing can, her)
+    it('returns "English" (latin fallback) when fewer than 4 unique words present', () => {
+      // Top words: the, and, that, with, this, but, not, have, from, would
+      // This text has 2/10: the, and → below threshold 4, fallback to first
+      // latin candidate (English).
       const srt = `1
 00:00:01,000 --> 00:00:04,000
-The show and the host are for you, but not all come.`;
+The show and the host are here.`;
       expect(detectLanguage(srt, 'srt')).toBe('english');
     });
   });
@@ -443,7 +460,7 @@ The show and the host are for you, but not all come.`;
   });
 
   describe('detectLanguage — Vietnamese', () => {
-    // Top words: trong, được, cho, một, với, người, này, không, cũng, những
+    // Top words: không, của, và, một, được, cho, người, này, cũng, những
     const vietnameseSrt = `1
 00:00:01,000 --> 00:00:04,000
 Xin chào, tôi có một người bạn trong này.

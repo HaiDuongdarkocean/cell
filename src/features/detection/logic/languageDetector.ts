@@ -4,6 +4,19 @@ import {
   scriptToCandidateLanguages,
   type ScriptId,
 } from './scriptDetector';
+// ADR-029: language maps + conversion/matching functions now live in the
+// single-source-of-truth registry. Re-export here so existing callers
+// (`@/features/detection`) keep working without changing their imports.
+export {
+  isoCodeToLabel,
+  labelToIsoCode,
+  toIso6391,
+  isValidIsoCode,
+  languageMatches,
+  ISO_LANGUAGE_MAP,
+  LABEL_TO_ISO_CODE,
+  ISO_639_2_TO_639_1,
+} from '@/shared/config/languageRegistry';
 
 /**
  * A language profile for frequency-based detection.
@@ -73,8 +86,10 @@ export const LANGUAGE_PROFILES: readonly LanguageProfile[] = [
   // possible; CJK characters are counted as 1 char each.
   {
     label: 'English',
-    topWords: ['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her'],
-    threshold: 8,
+    // Unique signature words (language-unique-signature-words.md):
+    // "th" digraph + "ould" modal — only English has these in Latin group.
+    topWords: ['the', 'and', 'that', 'with', 'this', 'but', 'not', 'have', 'from', 'would'],
+    threshold: 4,
     script: 'latin',
   },
   {
@@ -88,8 +103,9 @@ export const LANGUAGE_PROFILES: readonly LanguageProfile[] = [
   },
   {
     label: 'Vietnamese',
-    topWords: ['trong', 'được', 'cho', 'một', 'với', 'người', 'này', 'không', 'cũng', 'những'],
-    threshold: 8,
+    // Unique signature words: "đ" + 5 tone marks — only Vietnamese in Latin group.
+    topWords: ['không', 'của', 'với', 'một', 'được', 'cho', 'người', 'này', 'cũng', 'những'],
+    threshold: 4,
     script: 'latin',
   },
   {
@@ -120,174 +136,205 @@ export const LANGUAGE_PROFILES: readonly LanguageProfile[] = [
     tokenPattern: /[\u0400-\u052f]+/g,
   },
 
-  // === Latin-script languages (threshold 6 — corpus-derived, 3+ char words) ===
-  // Sources: Wikipedia frequency lists, Wiktionary, Leipzig Corpora.
+  // === Latin-script languages — unique signature words (threshold 4) ===
+  // Source: docs/knowledge/language-unique-signature-words.md
+  // Each word is unique to its language (no overlap with other Latin profiles).
+  // Threshold lowered from 6 to 4 because unique words don't cross-match.
+  // Norwegian/Danish use threshold 3 (heavily overlapping pair, fewer unique words).
   {
     label: 'Spanish',
-    topWords: ['los', 'las', 'por', 'con', 'una', 'sus', 'del', 'más', 'como', 'pero'],
-    threshold: 6,
+    // Unique: "ñ" — only Spanish in Latin group.
+    topWords: ['qué', 'después', 'también', 'entonces', 'señor', 'mañana', 'niño', 'pequeño', 'español', 'gracias'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'French',
-    topWords: ['les', 'des', 'une', 'que', 'est', 'pour', 'qui', 'dans', 'pas', 'sur'],
-    threshold: 6,
+    // Unique: accents (é/è/ê/ç), "être"/"même"/"très".
+    topWords: ['avec', 'dans', 'sont', 'être', 'avoir', 'fait', 'comme', 'même', 'très', 'toujours'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'German',
-    topWords: ['den', 'von', 'das', 'mit', 'sich', 'des', 'auf', 'für', 'ist', 'dem'],
-    threshold: 6,
+    // Unique: umlaut (ä/ö/ü), "sch", "ch".
+    topWords: ['und', 'nicht', 'auch', 'sich', 'schon', 'noch', 'immer', 'wieder', 'zwischen', 'während'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Portuguese',
-    topWords: ['que', 'dos', 'das', 'para', 'com', 'uma', 'por', 'mais', 'como', 'não'],
-    threshold: 6,
+    // Unique: "ão" nasal, "você".
+    topWords: ['não', 'você', 'também', 'então', 'ainda', 'depois', 'outro', 'muito', 'obrigado', 'vez'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Italian',
-    topWords: ['che', 'per', 'una', 'sono', 'come', 'mai', 'tra', 'gli', 'suo', 'poi'],
-    threshold: 6,
+    // Unique: double consonants, "gli". "sempre" removed (Portuguese overlap).
+    topWords: ['sono', 'come', 'anche', 'bene', 'male', 'questo', 'quello', 'invece', 'mentre', 'ancora'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Dutch',
-    topWords: ['het', 'dat', 'voor', 'met', 'die', 'niet', 'een', 'zijn', 'ook', 'naar'],
-    threshold: 6,
+    // Unique: "ij" digraph, "ui" diphthong.
+    topWords: ['het', 'dat', 'niet', 'een', 'zijn', 'naar', 'maar', 'nog', 'wel', 'alleen'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Swedish',
-    topWords: ['och', 'att', 'det', 'som', 'med', 'han', 'hon', 'inte', 'men', 'var'],
-    threshold: 6,
+    // Unique: "och"/"att"/"inte"/"hon"/"från" vs Danish/Norwegian.
+    topWords: ['och', 'att', 'inte', 'hon', 'från', 'mycket', 'aldrig', 'tack', 'också', 'hej'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Norwegian',
-    topWords: ['jeg', 'det', 'til', 'som', 'med', 'han', 'hun', 'inte', 'men', 'var'],
-    threshold: 6,
+    // Unique: "nå"/"nei"/"blitt" vs Danish/Swedish. Fewer uniques → threshold 3.
+    topWords: ['nå', 'nei', 'blitt', 'svært', 'gjerne', 'fortelle', 'fjord', 'knall', 'ønsker', 'måtte'],
+    threshold: 3,
     script: 'latin',
   },
   {
     label: 'Danish',
-    topWords: ['jeg', 'det', 'til', 'som', 'med', 'han', 'hun', 'ikke', 'men', 'var'],
-    threshold: 6,
+    // Unique: "af"/"hvad"/"undskyld" vs Norwegian/Swedish. Fewer uniques → threshold 3.
+    topWords: ['af', 'hvad', 'undskyld', 'blev', 'farvel', 'mange', 'godt', 'hvorfor', 'lille', 'store'],
+    threshold: 3,
     script: 'latin',
   },
   {
     label: 'Finnish',
-    topWords: ['että', 'joka', 'hän', 'myös', 'saada', 'mutta', 'tämä', 'voida', 'tulla', 'kun'],
-    threshold: 6,
+    // Unique: "ä"/"ö" (no "å"), agglutinative.
+    topWords: ['että', 'joka', 'hän', 'myös', 'mutta', 'tämä', 'voida', 'tulla', 'kun', 'olla'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Polish',
-    topWords: ['się', 'roku', 'jest', 'przez', 'nie', 'ale', 'jak', 'też', 'oraz', 'temu'],
-    threshold: 6,
+    // Unique: "ł"/"ż"/"ź"/"ś"/"ć"/"ą"/"ę".
+    topWords: ['się', 'jest', 'przez', 'także', 'jeszcze', 'ponieważ', 'zawsze', 'między', 'dzięki', 'trochę'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Czech',
-    topWords: ['který', 'mít', 'jsou', 'jen', 'tak', 'kde', 'při', 'aby', 'nebo', 'ještě'],
-    threshold: 6,
+    // Unique: "ř"/"ů", "ž"/"š" (vs Polish "sz"/"cz").
+    topWords: ['který', 'jsou', 'ještě', 'protože', 'když', 'aby', 'nebo', 'už', 'vůbec', 'moc'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Hungarian',
+    // Unique: "cs"/"gy"/"ty"/"sz"/"zs"/"ly", agglutinative.
     topWords: ['egy', 'van', 'meg', 'csak', 'még', 'mint', 'hogy', 'volt', 'nem', 'majd'],
-    threshold: 6,
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Romanian',
-    topWords: ['pentru', 'din', 'sunt', 'mai', 'sau', 'care', 'cei', 'ele', 'acest', 'aici'],
-    threshold: 6,
+    // Unique: "ă"/"â"/"î"/"ș"/"ț" (comma below).
+    topWords: ['pentru', 'sunt', 'din', 'mai', 'sau', 'care', 'acest', 'aici', 'ăsta', 'foarte'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Croatian',
-    topWords: ['biti', 'kako', 'samo', 'ili', 'jer', 'kod', 'preko', 'gdje', 'uvijek', 'dok'],
-    threshold: 6,
+    // Unique: "č"/"ć"/"đ"/"lj"/"nj". "bez" removed (Polish overlap).
+    topWords: ['biti', 'kako', 'samo', 'jer', 'kod', 'preko', 'gdje', 'uvijek', 'dok', 'već'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Estonian',
+    // Unique: "õ", double vowels.
     topWords: ['see', 'mis', 'kuid', 'tema', 'kui', 'aga', 'sest', 'nii', 'siis', 'veel'],
-    threshold: 6,
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Latvian',
+    // Unique: "ā"/"ē"/"ī"/"ū", "ņ"/"ķ"/"ģ"/"ļ".
     topWords: ['kas', 'bet', 'viņš', 'tad', 'kur', 'gan', 'nav', 'jau', 'lai', 'arī'],
-    threshold: 6,
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Turkish',
+    // Unique: "ğ"/"ı"/"ş"/"ç".
     topWords: ['için', 'ile', 'var', 'ben', 'sen', 'daha', 'hiç', 'ama', 'çok', 'bir'],
-    threshold: 6,
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Indonesian',
+    // Unique: "ng", "ny", prefix ber-/di-/ke-.
     topWords: ['tidak', 'yang', 'ini', 'itu', 'dan', 'akan', 'apa', 'dia', 'karena', 'bisa'],
-    threshold: 6,
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Tagalog',
-    topWords: ['ang', 'mga', 'siya', 'mula', 'para', 'nang', 'hindi', 'pag', 'ako', 'ito'],
-    threshold: 6,
+    // Unique: "mga", "siya", "ako". "para" removed (Spanish overlap).
+    topWords: ['ang', 'mga', 'siya', 'mula', 'nang', 'hindi', 'ako', 'ito', 'pag', 'niya'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Catalan',
-    topWords: ['que', 'per', 'una', 'els', 'les', 'del', 'com', 'més', 'son', 'són'],
-    threshold: 6,
+    // Unique: "cap", "aquest"/"aquell". "però"/"mentre" kept (Italian has "però" but rare).
+    topWords: ['també', 'després', 'cap', 'aquest', 'aquell', 'molts', 'però', 'mentre', 'són', 'més'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Galician',
-    topWords: ['que', 'para', 'por', 'sen', 'como', 'máis', 'ten', 'hai', 'seu', 'súa'],
-    threshold: 6,
+    // Unique: "sen"/"máis"/"hai" vs Portuguese.
+    topWords: ['sen', 'máis', 'hai', 'ten', 'seu', 'súa', 'galego', 'logo', 'sendo', 'poden'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Welsh',
+    // Unique: "ll"/"dd"/"ff", "w"/"y" as vowels.
     topWords: ['bod', 'ond', 'mae', 'oedd', 'gyda', 'hyn', 'yna', 'wedi', 'nid', 'dyw'],
-    threshold: 6,
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Icelandic',
+    // Unique: "þ"/"ð".
     topWords: ['sem', 'til', 'var', 'með', 'það', 'þar', 'hafi', 'hefur', 'hans', 'ekki'],
-    threshold: 6,
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Afrikaans',
-    topWords: ['het', 'dat', 'vir', 'was', 'ook', 'nog', 'sal', 'hulle', 'daar', 'toe'],
-    threshold: 6,
+    // Unique: "hulle"/"baie"/"vir" vs Dutch.
+    topWords: ['het', 'dat', 'vir', 'was', 'ook', 'nog', 'sal', 'hulle', 'daar', 'baie'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Swahili',
+    // Unique: Bantu prefixes.
     topWords: ['kwa', 'kutoka', 'kama', 'pia', 'mtu', 'mahali', 'baada', 'moja', 'watu', 'sana'],
-    threshold: 6,
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Slovenian',
-    topWords: ['kako', 'samo', 'ali', 'ker', 'pri', 'bil', 'brez', 'tudi', 'zato', 'vendar'],
-    threshold: 6,
+    // Unique: "ker"/"brez"/"tudi"/"vendar"/"ali" vs Croatian.
+    topWords: ['kako', 'samo', 'ali', 'ker', 'pri', 'bil', 'brez', 'tudi', 'vendar', 'zato'],
+    threshold: 4,
     script: 'latin',
   },
   {
     label: 'Albanian',
+    // Unique: "ë"/"nj".
     topWords: ['një', 'dhe', 'për', 'është', 'nga', 'nuk', 'por', 'jam', 'njeri', 'kjo'],
-    threshold: 6,
+    threshold: 4,
     script: 'latin',
   },
 
@@ -365,175 +412,11 @@ export const LANGUAGE_PROFILES: readonly LanguageProfile[] = [
   },
 ] as const;
 
-/**
- * ISO 639-1 (2-letter) and ISO 639-2 (3-letter) code → English label mapping.
- *
- * Source: https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
- * Only the bibliographic (B) variant is included for 639-2 where multiple exist.
- */
-const ISO_LANGUAGE_MAP: ReadonlyMap<string, string> = new Map<string, string>([
-  // === 2-letter (ISO 639-1) ===
-  ['aa', 'Afar'], ['ab', 'Abkhazian'], ['ae', 'Avestan'], ['af', 'Afrikaans'],
-  ['ak', 'Akan'], ['am', 'Amharic'], ['an', 'Aragonese'], ['ar', 'Arabic'],
-  ['as', 'Assamese'], ['av', 'Avaric'], ['ay', 'Aymara'], ['az', 'Azerbaijani'],
-  ['ba', 'Bashkir'], ['be', 'Belarusian'], ['bg', 'Bulgarian'], ['bh', 'Bihari'],
-  ['bi', 'Bislama'], ['bm', 'Bambara'], ['bn', 'Bengali'], ['bo', 'Tibetan'],
-  ['br', 'Breton'], ['bs', 'Bosnian'], ['ca', 'Catalan'], ['ce', 'Chechen'],
-  ['ch', 'Chamorro'], ['co', 'Corsican'], ['cr', 'Cree'], ['cs', 'Czech'],
-  ['cu', 'Church Slavic'], ['cv', 'Chuvash'], ['cy', 'Welsh'], ['da', 'Danish'],
-  ['de', 'German'], ['dv', 'Dhivehi'], ['dz', 'Dzongkha'], ['ee', 'Ewe'],
-  ['el', 'Greek'], ['en', 'English'], ['eo', 'Esperanto'], ['es', 'Spanish'],
-  ['et', 'Estonian'], ['eu', 'Basque'], ['fa', 'Persian'], ['ff', 'Fulah'],
-  ['fi', 'Finnish'], ['fj', 'Fijian'], ['fo', 'Faroese'], ['fr', 'French'],
-  ['fy', 'Western Frisian'], ['ga', 'Irish'], ['gd', 'Scottish Gaelic'],
-  ['gl', 'Galician'], ['gn', 'Guarani'], ['gu', 'Gujarati'], ['gv', 'Manx'],
-  ['ha', 'Hausa'], ['he', 'Hebrew'], ['hi', 'Hindi'], ['ho', 'Hiri Motu'],
-  ['hr', 'Croatian'], ['ht', 'Haitian Creole'], ['hu', 'Hungarian'],
-  ['hy', 'Armenian'], ['hz', 'Herero'], ['ia', 'Interlingua'], ['id', 'Indonesian'],
-  ['ie', 'Interlingue'], ['ig', 'Igbo'], ['ii', 'Sichuan Yi'], ['ik', 'Inupiaq'],
-  ['io', 'Ido'], ['is', 'Icelandic'], ['it', 'Italian'], ['iu', 'Inuktitut'],
-  ['ja', 'Japanese'], ['jv', 'Javanese'], ['ka', 'Georgian'], ['kg', 'Kongo'],
-  ['ki', 'Kikuyu'], ['kj', 'Kwanyama'], ['kk', 'Kazakh'], ['kl', 'Kalaallisut'],
-  ['km', 'Khmer'], ['kn', 'Kannada'], ['ko', 'Korean'], ['kr', 'Kanuri'],
-  ['ks', 'Kashmiri'], ['ku', 'Kurdish'], ['kv', 'Komi'], ['kw', 'Cornish'],
-  ['ky', 'Kyrgyz'], ['la', 'Latin'], ['lb', 'Luxembourgish'], ['lg', 'Ganda'],
-  ['li', 'Limburgan'], ['ln', 'Lingala'], ['lo', 'Lao'], ['lt', 'Lithuanian'],
-  ['lu', 'Luba-Katanga'], ['lv', 'Latvian'], ['mg', 'Malagasy'], ['mh', 'Marshallese'],
-  ['mi', 'Maori'], ['mk', 'Macedonian'], ['ml', 'Malayalam'], ['mn', 'Mongolian'],
-  ['mr', 'Marathi'], ['ms', 'Malay'], ['mt', 'Maltese'], ['my', 'Burmese'],
-  ['na', 'Nauru'], ['nb', 'Norwegian Bokmål'], ['nd', 'North Ndebele'],
-  ['ne', 'Nepali'], ['ng', 'Ndonga'], ['nl', 'Dutch'], ['nn', 'Norwegian Nynorsk'],
-  ['no', 'Norwegian'], ['nr', 'South Ndebele'], ['nv', 'Navajo'], ['ny', 'Chichewa'],
-  ['oc', 'Occitan'], ['oj', 'Ojibwa'], ['om', 'Oromo'], ['or', 'Oriya'],
-  ['os', 'Ossetian'], ['pa', 'Punjabi'], ['pi', 'Pali'], ['pl', 'Polish'],
-  ['ps', 'Pashto'], ['pt', 'Portuguese'], ['qu', 'Quechua'], ['rm', 'Romansh'],
-  ['rn', 'Kirundi'], ['ro', 'Romanian'], ['ru', 'Russian'], ['rw', 'Kinyarwanda'],
-  ['sa', 'Sanskrit'], ['sc', 'Sardinian'], ['sd', 'Sindhi'], ['se', 'Northern Sami'],
-  ['sg', 'Sango'], ['si', 'Sinhala'], ['sk', 'Slovak'], ['sl', 'Slovenian'],
-  ['sm', 'Samoan'], ['sn', 'Shona'], ['so', 'Somali'], ['sq', 'Albanian'],
-  ['sr', 'Serbian'], ['ss', 'Swati'], ['st', 'Southern Sotho'], ['su', 'Sundanese'],
-  ['sv', 'Swedish'], ['sw', 'Swahili'], ['ta', 'Tamil'], ['te', 'Telugu'],
-  ['tg', 'Tajik'], ['th', 'Thai'], ['ti', 'Tigrinya'], ['tk', 'Turkmen'],
-  ['tl', 'Tagalog'], ['tn', 'Tswana'], ['to', 'Tongan'], ['tr', 'Turkish'],
-  ['ts', 'Tsonga'], ['tt', 'Tatar'], ['ty', 'Tahitian'], ['ug', 'Uyghur'],
-  ['uk', 'Ukrainian'], ['ur', 'Urdu'], ['uz', 'Uzbek'], ['ve', 'Venda'],
-  ['vi', 'Vietnamese'], ['vo', 'Volapük'], ['wa', 'Walloon'], ['wo', 'Wolof'],
-  ['xh', 'Xhosa'], ['yi', 'Yiddish'], ['yo', 'Yoruba'], ['za', 'Zhuang'],
-  ['zh', 'Chinese'], ['zu', 'Zulu'],
-
-  // === 3-letter (ISO 639-2) — common ones ===
-  ['aar', 'Afar'], ['abk', 'Abkhazian'], ['ave', 'Avestan'], ['afr', 'Afrikaans'],
-  ['aka', 'Akan'], ['amh', 'Amharic'], ['arg', 'Aragonese'], ['ara', 'Arabic'],
-  ['asm', 'Assamese'], ['ava', 'Avaric'], ['aym', 'Aymara'], ['aze', 'Azerbaijani'],
-  ['bak', 'Bashkir'], ['bel', 'Belarusian'], ['bul', 'Bulgarian'], ['bis', 'Bislama'],
-  ['bam', 'Bambara'], ['ben', 'Bengali'], ['bod', 'Tibetan'], ['bre', 'Breton'],
-  ['bos', 'Bosnian'], ['cat', 'Catalan'], ['che', 'Chechen'], ['cha', 'Chamorro'],
-  ['cos', 'Corsican'], ['cre', 'Cree'], ['ces', 'Czech'], ['chu', 'Church Slavic'],
-  ['chv', 'Chuvash'], ['cym', 'Welsh'], ['dan', 'Danish'], ['deu', 'German'],
-  ['div', 'Dhivehi'], ['dzo', 'Dzongkha'], ['ewe', 'Ewe'], ['ell', 'Greek'],
-  ['eng', 'English'], ['epo', 'Esperanto'], ['spa', 'Spanish'], ['est', 'Estonian'],
-  ['eus', 'Basque'], ['fas', 'Persian'], ['ful', 'Fulah'], ['fin', 'Finnish'],
-  ['fij', 'Fijian'], ['fao', 'Faroese'], ['fra', 'French'], ['fry', 'Western Frisian'],
-  ['gle', 'Irish'], ['gla', 'Scottish Gaelic'], ['glg', 'Galician'], ['grn', 'Guarani'],
-  ['guj', 'Gujarati'], ['glv', 'Manx'], ['hau', 'Hausa'], ['heb', 'Hebrew'],
-  ['hin', 'Hindi'], ['hmo', 'Hiri Motu'], ['hrv', 'Croatian'], ['hat', 'Haitian Creole'],
-  ['hun', 'Hungarian'], ['hye', 'Armenian'], ['her', 'Herero'], ['ina', 'Interlingua'],
-  ['ind', 'Indonesian'], ['ile', 'Interlingue'], ['ibo', 'Igbo'], ['iii', 'Sichuan Yi'],
-  ['ipk', 'Inupiaq'], ['ido', 'Ido'], ['isl', 'Icelandic'], ['ita', 'Italian'],
-  ['iku', 'Inuktitut'], ['jpn', 'Japanese'], ['jav', 'Javanese'], ['kat', 'Georgian'],
-  ['kon', 'Kongo'], ['kik', 'Kikuyu'], ['kua', 'Kwanyama'], ['kaz', 'Kazakh'],
-  ['kal', 'Kalaallisut'], ['khm', 'Khmer'], ['kan', 'Kannada'], ['kor', 'Korean'],
-  ['kau', 'Kanuri'], ['kas', 'Kashmiri'], ['kur', 'Kurdish'], ['kom', 'Komi'],
-  ['cor', 'Cornish'], ['kir', 'Kyrgyz'], ['lat', 'Latin'], ['ltz', 'Luxembourgish'],
-  ['lug', 'Ganda'], ['lim', 'Limburgan'], ['lin', 'Lingala'], ['lao', 'Lao'],
-  ['lit', 'Lithuanian'], ['lub', 'Luba-Katanga'], ['lav', 'Latvian'], ['mlg', 'Malagasy'],
-  ['mah', 'Marshallese'], ['mri', 'Maori'], ['mkd', 'Macedonian'], ['mal', 'Malayalam'],
-  ['mon', 'Mongolian'], ['mar', 'Marathi'], ['msa', 'Malay'], ['mlt', 'Maltese'],
-  ['mya', 'Burmese'], ['nau', 'Nauru'], ['nob', 'Norwegian Bokmål'], ['nde', 'North Ndebele'],
-  ['nep', 'Nepali'], ['ndo', 'Ndonga'], ['nld', 'Dutch'], ['nno', 'Norwegian Nynorsk'],
-  ['nor', 'Norwegian'], ['nbl', 'South Ndebele'], ['nav', 'Navajo'], ['nya', 'Chichewa'],
-  ['oci', 'Occitan'], ['oji', 'Ojibwa'], ['orm', 'Oromo'], ['ori', 'Oriya'],
-  ['oss', 'Ossetian'], ['pan', 'Punjabi'], ['pli', 'Pali'], ['pol', 'Polish'],
-  ['pus', 'Pashto'], ['por', 'Portuguese'], ['que', 'Quechua'], ['roh', 'Romansh'],
-  ['run', 'Kirundi'], ['ron', 'Romanian'], ['rus', 'Russian'], ['kin', 'Kinyarwanda'],
-  ['san', 'Sanskrit'], ['srd', 'Sardinian'], ['snd', 'Sindhi'], ['sme', 'Northern Sami'],
-  ['sag', 'Sango'], ['sin', 'Sinhala'], ['slk', 'Slovak'], ['slv', 'Slovenian'],
-  ['smo', 'Samoan'], ['sna', 'Shona'], ['som', 'Somali'], ['sqi', 'Albanian'],
-  ['srp', 'Serbian'], ['ssw', 'Swati'], ['sot', 'Southern Sotho'], ['sun', 'Sundanese'],
-  ['swe', 'Swedish'], ['swa', 'Swahili'], ['tam', 'Tamil'], ['tel', 'Telugu'],
-  ['tgk', 'Tajik'], ['tha', 'Thai'], ['tir', 'Tigrinya'], ['tuk', 'Turkmen'],
-  ['tgl', 'Tagalog'], ['tsn', 'Tswana'], ['ton', 'Tongan'], ['tur', 'Turkish'],
-  ['tso', 'Tsonga'], ['tat', 'Tatar'], ['tah', 'Tahitian'], ['uig', 'Uyghur'],
-  ['ukr', 'Ukrainian'], ['urd', 'Urdu'], ['uzb', 'Uzbek'], ['ven', 'Venda'],
-  ['vie', 'Vietnamese'], ['vol', 'Volapük'], ['wln', 'Walloon'], ['wol', 'Wolof'],
-  ['xho', 'Xhosa'], ['yid', 'Yiddish'], ['yor', 'Yoruba'], ['zha', 'Zhuang'],
-  ['zho', 'Chinese'], ['zul', 'Zulu'],
-]);
-
-/**
- * Maps an ISO 639-1 (2-letter) or ISO 639-2 (3-letter) language code to a
- * display label (e.g. "en" → "English", "kor" → "Korean").
- *
- * @param code - Language code (2 or 3 letters, case-insensitive)
- * @returns Display label, or null if the code is not recognized
- */
-export function isoCodeToLabel(code: string): string | null {
-  if (!/^[a-z]{2,3}$/i.test(code)) return null;
-  const label = ISO_LANGUAGE_MAP.get(code.toLowerCase());
-  return label ? label.toLowerCase() : null;
-}
-
-/**
- * Validate whether a candidate string is a recognized ISO 639-1 (2-letter) or
- * ISO 639-2 (3-letter) language code. Used by `extractLanguage` in the subtitle
- * detector to reject URL path segments that match the BCP47 shape but are not
- * real language codes (e.g. kisskh.co's `/sub/<hash>.srt` path → "sub" is a
- * folder name, not a language; themoviebox's `/subtitle/<hash>.srt` →
- * "subtitle" already fails BCP47 length, but 3-letter folder names like "sub",
- * "vid", "api" would slip through without this check).
- *
- * @param code - Candidate language code (case-insensitive)
- * @returns true if the code is a recognized ISO 639-1/639-2 language code
- */
-export function isValidIsoCode(code: string): boolean {
-  if (!/^[a-z]{2,3}$/i.test(code)) return false;
-  return ISO_LANGUAGE_MAP.has(code.toLowerCase());
-}
-
-/**
- * Reverse map: language label (lowercase) → ISO 639-1 (2-letter) code.
- * Built once from {@link ISO_LANGUAGE_MAP} by inverting the entries and
- * preferring the 2-letter code when both 2-letter and 3-letter codes map to
- * the same label (e.g. "english" → "en", not "eng").
- *
- * Used to convert the output of {@link detectLanguage} (a label like "english")
- * back into an ISO 639-1 code so it can be stored on
- * `DetectedSubtitle.language` and matched against
- * `settings.selectedSubtitleLanguages` (which stores ISO 639-1 codes).
- */
-const LABEL_TO_ISO_CODE: ReadonlyMap<string, string> = (() => {
-  const map = new Map<string, string>();
-  for (const [code, label] of ISO_LANGUAGE_MAP) {
-    const key = label.toLowerCase();
-    // Prefer 2-letter codes over 3-letter codes for the same label.
-    if (!map.has(key) || code.length === 2) {
-      map.set(key, code);
-    }
-  }
-  return map;
-})();
-
-/**
- * Maps a language display label (e.g. "English", "english", "Vietnamese")
- * back to its ISO 639-1 (2-letter) code (e.g. "en", "vi").
- *
- * @param label - Language label (case-insensitive)
- * @returns ISO 639-1 code, or null if the label is not recognized
- */
-export function labelToIsoCode(label: string): string | null {
-  if (!label) return null;
-  return LABEL_TO_ISO_CODE.get(label.toLowerCase()) ?? null;
-}
+// ADR-029: ISO_LANGUAGE_MAP, LABEL_TO_ISO_CODE, ISO_639_2_TO_639_1 and the
+// conversion functions (isoCodeToLabel, isValidIsoCode, toIso6391,
+// labelToIsoCode, languageMatches) now live in @/shared/config/languageRegistry
+// and are re-exported at the top of this file. The duplicate definitions that
+// used to live here have been removed — the registry is the single source.
 
 /**
  * Default tokenizer: Latin letters including Vietnamese diacritics.
@@ -635,6 +518,21 @@ export function detectLanguage(
   const plainText = extractPlainText(content, format);
   if (plainText.trim().length === 0) return null;
 
+  return detectLanguageFromText(plainText);
+}
+
+/**
+ * Detect language from already-extracted plain text (no format parsing).
+ *
+ * Use this when the caller already has clean cue text (e.g. `parseAndDetectFiles`
+ * has `cues[].text` from the parser — `stripSubtitleTags` already ran, so
+ * `extractPlainText` would be double work). Callers with raw subtitle content
+ * (e.g. background `resolveUnknownSubtitleLanguages` with fetched bytes) should
+ * use `detectLanguage` instead.
+ */
+export function detectLanguageFromText(plainText: string): string | null {
+  if (!plainText || plainText.trim().length === 0) return null;
+
   // Stage 1: Script detection
   const script = detectScript(plainText);
 
@@ -667,13 +565,24 @@ export function detectLanguage(
 
 /**
  * Run frequency-based matching against a set of profiles.
- * Returns the first profile label that meets its threshold, or null.
+ *
+ * Scoring mode (replaces first-match-wins): counts matches for every profile,
+ * then picks the profile with the highest match count that meets its
+ * threshold. Ties break by profile order (earlier wins). This is more
+ * accurate than first-match-wins when profiles have overlapping words —
+ * unique signature words make scoring viable because cross-matches are rare.
+ *
+ * Returns the winning profile label (lowercase), or null if no profile
+ * meets its threshold.
  */
 function matchByFrequency(
   plainText: string,
   profiles: readonly LanguageProfile[],
 ): string | null {
   const lowerText = plainText.toLowerCase();
+
+  let bestLabel: string | null = null;
+  let bestCount = 0;
 
   for (const profile of profiles) {
     const pattern = profile.tokenPattern ?? DEFAULT_TOKEN_PATTERN;
@@ -698,10 +607,13 @@ function matchByFrequency(
       }
     }
 
-    if (matchCount >= profile.threshold) {
-      return profile.label.toLowerCase();
+    // Scoring: must meet threshold, then pick highest match count.
+    // Tie-break: earlier profile wins (preserves priority order for CJK).
+    if (matchCount >= profile.threshold && matchCount > bestCount) {
+      bestCount = matchCount;
+      bestLabel = profile.label.toLowerCase();
     }
   }
 
-  return null;
+  return bestLabel;
 }

@@ -104,32 +104,38 @@ describe('detectLanguage — full coverage', () => {
   // === Group 2: Multi-script with frequency profiles (3+ char words) ===
   describe('multi-script languages with frequency profiles', () => {
     it('detects Spanish (latin, frequency)', () => {
-      const text = 'los las por con una sus del más como pero los';
+      // Unique signature words: ñ + accent (language-unique-signature-words.md)
+      const text = 'qué después también entonces señor mañana niño pequeño español gracias';
       expect(detectLanguage(srt(text), 'srt')).toBe('spanish');
     });
 
     it('detects French (latin, frequency)', () => {
-      const text = 'les des une que est pour qui dans pas sur les';
+      // Unique signature words: accents (é/è/ê/ç), "être"/"même"/"très"
+      const text = 'avec dans sont être avoir fait comme même très toujours';
       expect(detectLanguage(srt(text), 'srt')).toBe('french');
     });
 
     it('detects German (latin, frequency)', () => {
-      const text = 'den von das mit sich des auf für ist dem den';
+      // Unique signature words: umlaut (ä/ö/ü), "sch", "ch"
+      const text = 'und nicht auch sich schon noch immer wieder zwischen während';
       expect(detectLanguage(srt(text), 'srt')).toBe('german');
     });
 
     it('detects Portuguese (latin, frequency)', () => {
-      const text = 'que dos das para com uma por mais como não que';
+      // Unique signature words: "ão" nasal, "você"
+      const text = 'não você também então ainda depois outro muito obrigado vez';
       expect(detectLanguage(srt(text), 'srt')).toBe('portuguese');
     });
 
     it('detects Italian (latin, frequency)', () => {
-      const text = 'che per una sono come mai tra gli suo poi che';
+      // Unique signature words: double consonants, "gli"
+      const text = 'sono come anche bene male questo quello invece mentre ancora';
       expect(detectLanguage(srt(text), 'srt')).toBe('italian');
     });
 
     it('detects Dutch (latin, frequency)', () => {
-      const text = 'het dat voor met die niet een zijn ook naar het';
+      // Unique signature words: "ij" digraph, "ui" diphthong
+      const text = 'het dat niet een zijn naar maar nog wel alleen het';
       expect(detectLanguage(srt(text), 'srt')).toBe('dutch');
     });
 
@@ -144,7 +150,8 @@ describe('detectLanguage — full coverage', () => {
     });
 
     it('detects Polish (latin, frequency)', () => {
-      const text = 'się roku jest przez nie ale jak też oraz temu';
+      // Unique signature words: ł/ż/ź/ś/ć/ą/ę
+      const text = 'się jest przez także jeszcze ponieważ zawsze między dzięki trochę';
       expect(detectLanguage(srt(text), 'srt')).toBe('polish');
     });
 
@@ -179,7 +186,8 @@ describe('detectLanguage — full coverage', () => {
     });
 
     it('detects Catalan (latin, frequency)', () => {
-      const text = 'que per una els les del com més son són que';
+      // Unique signature words: "cap", "aquest"/"aquell"
+      const text = 'també després cap aquest aquell molts però mentre són més';
       expect(detectLanguage(srt(text), 'srt')).toBe('catalan');
     });
 
