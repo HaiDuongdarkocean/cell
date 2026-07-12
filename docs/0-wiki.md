@@ -40,6 +40,8 @@ docs/           # Tài liệu dự án
 │   └── 029-netflix-subtitle-detection.md # ADR-029: Netflix subtitle detection — graph traversal cadmiumPlayerRepository, TTML format, MAIN-world IIFE
 │   └── 030-netflix-seek-d7375.md # ADR-030: Netflix M7375 fix — route seek/play/pause qua player API via CustomEvent, tránh video.currentTime trực tiếp
 │   └── 031-netflix-ui-z-index-fix.md # ADR-031: Netflix UI z-index fix — mount Cell UI vào .watch-video + z-index max, copy data-theme cho CSS vars
+│   └── 032-cue-seek-dedupe.md # ADR-032: dedupe cue-seek khi Side Panel + keydown cùng fire + cleanup listeners tránh stale instances
+│   └── 033-netflix-seek-async-rapid-nav.md # ADR-033: track lastSeekTarget cho rapid cue-nav — Netflix seek async, videoMs chưa tới target → tính sai
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
