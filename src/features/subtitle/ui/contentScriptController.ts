@@ -543,6 +543,27 @@ export function init(video: HTMLVideoElement): () => void {
   let sidePanelOpen = false;
   let shortcuts: KeyboardShortcut[] = DEFAULT_KEYBOARD_SHORTCUTS;
 
+  // ADR-033: track last seek target so rapid cue-nav (A/S/D pressed before
+  // Netflix player.seek() settles) computes next/prev from the INTENDED
+  // position, not stale video.currentTime. Without this, pressing D every
+  // 400ms re-seeks the same cue because video.currentTime hasn't reached
+  // the previous seek target yet (Netflix seek is async, ~600ms+).
+  let lastSeekTargetMs: number | null = null;
+  const SEEK_SETTLE_TOLERANCE_MS = 500; // video within 500ms of target = settled
+
+  /** Effective time for cue lookup: lastSeekTarget if video hasn't settled, else video.currentTime. */
+  const getEffectiveMs = (): number => {
+    const offsetMs = offsetController?.getOffsetMs() ?? 0;
+    const videoMs = video.currentTime * 1000;
+    if (lastSeekTargetMs !== null && Math.abs(videoMs - lastSeekTargetMs) > SEEK_SETTLE_TOLERANCE_MS) {
+      // Video hasn't reached last seek target → use intended target
+      return lastSeekTargetMs + offsetMs;
+    }
+    // Settled (or no pending seek) → use actual video time
+    lastSeekTargetMs = null;
+    return videoMs + offsetMs;
+  };
+
   // Track active sub indices + all matches for re-fetch on dropdown select
   let activeTargetIndex = 0;
   let activeNativeIndex = 0;
@@ -736,27 +757,28 @@ export function init(video: HTMLVideoElement): () => void {
     switch (action) {
       case 'prev-cue': {
         // ADR-019 sync: find cue via effective time, seek so overlay DISPLAYS it.
+        // ADR-033: use getEffectiveMs so rapid press computes from intended pos.
         const offsetMs = offsetController?.getOffsetMs() ?? 0;
-        const effectiveMs = video.currentTime * 1000 + offsetMs;
+        const effectiveMs = getEffectiveMs();
         const prevCue = [...bilingualCues].reverse().find((c) => c.end < effectiveMs);
-        if (prevCue) seekToCue(video, prevCue, offsetMs);
+        if (prevCue) { seekToCue(video, prevCue, offsetMs); lastSeekTargetMs = prevCue.start; }
         break;
       }
       case 'next-cue': {
         const offsetMs = offsetController?.getOffsetMs() ?? 0;
-        const effectiveMs = video.currentTime * 1000 + offsetMs;
+        const effectiveMs = getEffectiveMs();
         const nextCue = bilingualCues.find((c) => c.start > effectiveMs + 100);
-        if (nextCue) seekToCue(video, nextCue, offsetMs);
+        if (nextCue) { seekToCue(video, nextCue, offsetMs); lastSeekTargetMs = nextCue.start; }
         break;
       }
       case 'replay-cue': {
         const offsetMs = offsetController?.getOffsetMs() ?? 0;
-        const effectiveMs = video.currentTime * 1000 + offsetMs;
+        const effectiveMs = getEffectiveMs();
         // Half-open [start, end) — at boundary t = cue[i].end = cue[i+1].start,
         // match the NEXT cue, not the previous one (replay-cue "jump back" bug).
         const currentCue = bilingualCues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
           ?? [...bilingualCues].reverse().find((c) => c.start < effectiveMs);
-        if (currentCue) seekToCue(video, currentCue, offsetMs);
+        if (currentCue) { seekToCue(video, currentCue, offsetMs); lastSeekTargetMs = currentCue.start; }
         break;
       }
       case 'toggle-overlay': {
@@ -924,25 +946,27 @@ export function init(video: HTMLVideoElement): () => void {
       if (payload?.seekTime !== undefined && (action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue')) {
         // ADR-030: route through seekVideo to avoid Netflix M7375.
         seekVideo(video, (payload.seekTime - offsetMs) / 1000);
+        lastSeekTargetMs = payload.seekTime;
       } else {
         // Fallback: calculate from video.currentTime (in-page keydown path)
-        const effectiveMs = video.currentTime * 1000 + offsetMs;
+        // ADR-033: use getEffectiveMs so rapid press computes from intended pos.
+        const effectiveMs = getEffectiveMs();
         switch (action) {
           case 'prev-cue': {
             const prevCue = [...bilingualCues].reverse().find((c) => c.end < effectiveMs);
-            if (prevCue) seekToCue(video, prevCue, offsetMs);
+            if (prevCue) { seekToCue(video, prevCue, offsetMs); lastSeekTargetMs = prevCue.start; }
             break;
           }
           case 'next-cue': {
             const nextCue = bilingualCues.find((c) => c.start > effectiveMs + 100);
-            if (nextCue) seekToCue(video, nextCue, offsetMs);
+            if (nextCue) { seekToCue(video, nextCue, offsetMs); lastSeekTargetMs = nextCue.start; }
             break;
           }
           case 'replay-cue': {
             // Half-open [start, end) — see in-page keydown handler above.
             const currentCue = bilingualCues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
               ?? [...bilingualCues].reverse().find((c) => c.start < effectiveMs);
-            if (currentCue) seekToCue(video, currentCue, offsetMs);
+            if (currentCue) { seekToCue(video, currentCue, offsetMs); lastSeekTargetMs = currentCue.start; }
             break;
           }
           case 'toggle-overlay': {
