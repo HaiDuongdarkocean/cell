@@ -231,10 +231,99 @@
     ];
   }
 
+  // --- Run sequence tests (10× nhấn liên tiếp, verify sequence chính xác) ---
+  // Test ADR-033: rapid cue-nav không stuck, seek qua 10 cues khác nhau theo trình tự.
+  // Expected sequence hardcoded từ cues thật (50 cues rendered, rounded ms).
+  // Tolerance 5ms cho TTML float rounding (663329.3334 → 663329).
+  async function runSequenceTests() {
+    const SEQ_TOLERANCE_MS = 5;
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const v = () => document.querySelector('video');
+    let seekLog = [];
+    document.addEventListener('__NF_SEEK', (e) => seekLog.push({ seekMs: e.detail, time: Date.now() }), { once: false });
+
+    const seekTo = async (ms) => {
+      document.dispatchEvent(new CustomEvent('__NF_SEEK', { detail: ms }));
+      await sleep(800);
+      v()?.play();
+      await sleep(200);
+    };
+
+    const runRapid = async (key, startPos, count, intervalMs) => {
+      await seekTo(startPos);
+      await sleep(1200); // đợi lastSeekTarget clear (ADR-033 time guard 1s)
+      const actualStart = Math.round(v().currentTime * 1000);
+      seekLog = [];
+      for (let i = 0; i < count; i++) {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+        if (intervalMs > 0) await sleep(intervalMs);
+      }
+      await sleep(800);
+      return { startPos: actualStart, seekCount: seekLog.length, seeks: seekLog.map(s => Math.round(s.seekMs)) };
+    };
+
+    const verify = (name, actual, expected) => {
+      if (actual.length !== expected.length) {
+        return { name, pass: false, reason: `count mismatch: actual=${actual.length} expected=${expected.length}`, actual, expected };
+      }
+      const diffs = actual.map((a, i) => Math.abs(a - expected[i]));
+      const maxDiff = Math.max(...diffs);
+      const pass = maxDiff <= SEQ_TOLERANCE_MS;
+      return {
+        name, pass, maxDiff, tolerance: SEQ_TOLERANCE_MS, actual, expected, diffs,
+        reason: pass ? null : `max diff ${maxDiff}ms > tolerance ${SEQ_TOLERANCE_MS}ms at index ${diffs.indexOf(maxDiff)}`,
+      };
+    };
+
+    // Cues thật (50 rendered, rounded ms):
+    //   [0] 101893 OUTCAST STICK
+    //   [1] 190648 I AM A DUMBASS
+    //   [2] 660826 LIVE STUDENT BASHING
+    //   [3] 661994 THE GRIM REAPER APPEARS
+    //   [4] 663329 EXHILARATING! SPICY!
+    //   [5] 666540 SLAP, SLAP, SLAP, SLAP
+    //   [6] 668125 HUMAN RIGHTS BEING VIOLATED
+    //   [7] 670419 GRIM REAPER.MP4 SMILE
+    //   [8] 671629 GRACE SHOWN BY TEACHERS
+    //   [9] 702868 PUBLIC OFFICIAL ID CARD
+    const d10r = await runRapid('d', 50000, 10, 400);
+    const d10 = verify(
+      '10×D next-cue (OUTCAST→PUBLIC OFFICIAL, tăng dần)',
+      d10r.seeks,
+      [101893, 190648, 660826, 661994, 663329, 666540, 668125, 670419, 671629, 702868]
+    );
+    await sleep(500);
+
+    const a10r = await runRapid('a', 710000, 10, 400);
+    const a10 = verify(
+      '10×A prev-cue (PUBLIC OFFICIAL→OUTCAST, giảm dần)',
+      a10r.seeks,
+      [702868, 671629, 670419, 668125, 666540, 663329, 661994, 660826, 190648, 101893]
+    );
+    await sleep(500);
+
+    const s10r = await runRapid('s', 665000, 10, 400);
+    const s10 = verify(
+      '10×S replay-cue (EXHILARATING ×10, lặp cùng cue)',
+      s10r.seeks,
+      [663329, 663329, 663329, 663329, 663329, 663329, 663329, 663329, 663329, 663329]
+    );
+
+    const results = [d10, a10, s10];
+    const passed = results.filter(r => r.pass).length;
+    for (const r of results) {
+      if (r.pass) console.log(`%c[PASS] ${r.name}`, 'color:green;font-weight:bold', r);
+      else console.log(`%c[FAIL] ${r.name}`, 'color:red;font-weight:bold', r);
+    }
+    console.log(`%c[seek-test-sequence] DONE: ${passed}/${results.length} PASS on ${browser}`, passed === results.length ? 'color:green;font-weight:bold' : 'color:red;font-weight:bold');
+    return { browser, passed, failed: results.length - passed, total: results.length, results };
+  }
+
   // --- Expose API ---
   window.__seekTest = {
     setRealCues,
     runSeekTests,
+    runSequenceTests,
     predictSeek,
     getNearCues,
     extractRealCues,
@@ -246,5 +335,6 @@
   console.log(`%c[seek-test] loaded on ${browser}. Usage:`, 'color:blue;font-weight:bold');
   console.log('  1. On Side Panel page: __seekTest.extractRealCues() → copy cues');
   console.log('  2. On Netflix page: __seekTest.setRealCues([...])');
-  console.log('  3. await __seekTest.runSeekTests()');
+  console.log('  3. await __seekTest.runSeekTests()  — single press + dedupe');
+  console.log('  4. await __seekTest.runSequenceTests()  — 10× sequence (ADR-033)');
 })();
