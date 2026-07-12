@@ -1,6 +1,12 @@
 ﻿import { NAV_CLUSTER_ICONS } from './navClusterIcons';
 import { CARD_CREATOR_ICONS } from '@/features/cardCreator/ui/cardCreatorIcons';
 
+/**
+ * Generate native subtitle icon: A → 文 (language glyph) with arrow.
+ * Matches cluster icon style: currentColor stroke, 24x24 viewBox, 1.5 stroke.
+ */
+const GENERATE_NATIVE_ICON = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M9 12 L13 12 M11 10 L13 12 L11 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="5" y="13" text-anchor="middle" fill="currentColor" font-size="8" font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="600">A</text><text x="18" y="13" text-anchor="middle" fill="currentColor" font-size="8" font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="600">文</text></svg>`;
+
 export interface SubtitleBlockDOM {
   readonly block: HTMLDivElement;
   readonly body: HTMLDivElement;
@@ -19,6 +25,7 @@ export interface SubtitleBlockDOM {
   readonly rightColumn: HTMLDivElement;
   readonly quickUpdateBtn: HTMLButtonElement;
   readonly editCardBtn: HTMLButtonElement;
+  readonly generateNativeBtn: HTMLButtonElement;
 }
 
 function makeButton(testId: string, ariaLabel: string, iconHtml: string): HTMLButtonElement {
@@ -85,7 +92,10 @@ export function createSubtitleBlockDOM(): SubtitleBlockDOM {
   quickUpdateBtn.title = 'Quick update (Q)';
   const editCardBtn = makeButton('card-creator-edit', 'Edit card', CARD_CREATOR_ICONS.edit);
   editCardBtn.title = 'Edit card (E)';
-  rightColumn.append(quickUpdateBtn, editCardBtn);
+  // Generate native subtitle button — placed below card creator buttons.
+  const generateNativeBtn = makeButton('generate-native', 'Generate native subtitle', GENERATE_NATIVE_ICON);
+  generateNativeBtn.title = 'Generate native subtitle (G)';
+  rightColumn.append(quickUpdateBtn, editCardBtn, generateNativeBtn);
 
   body.append(clusterColumns, subtitleColumn, rightColumn);
   block.appendChild(body);
@@ -108,5 +118,6 @@ export function createSubtitleBlockDOM(): SubtitleBlockDOM {
     rightColumn,
     quickUpdateBtn,
     editCardBtn,
+    generateNativeBtn,
   };
 }

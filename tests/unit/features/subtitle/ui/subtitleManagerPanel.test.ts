@@ -182,6 +182,25 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     expect(item2.getAttribute('aria-selected')).toBe('true');
   });
 
+  it('renders translated source with TRANSLATED badge and no Imported badge', () => {
+    const { panel, updateNative } = createSubtitleManagerPanel(container, createImportButton());
+    const translatedItem = makeItem('native', 0, {
+      id: 'translated-native',
+      name: 'Vietnamese (translated)',
+      source: 'translated',
+      role: 'native',
+      index: 0,
+    });
+    updateNative([translatedItem], 0);
+
+    const row = panel.querySelector('[data-testid="manager-item-native-0"]') as HTMLElement;
+    expect(row).toBeTruthy();
+    expect(row.textContent).toContain('Vietnamese (translated)');
+    expect(row.textContent).toContain('TRANSLATED');
+    expect(row.textContent).not.toContain('Imported');
+    expect(row.textContent).not.toContain('AUTO');
+  });
+
   it('clicking an auto item in a merged list calls onSelect with the correct index', () => {
     const { panel, updateTarget, icon } = createSubtitleManagerPanel(container, createImportButton(), {
       onSelect: (r: 'target' | 'native', i: number) => { selected = { role: r, index: i }; },

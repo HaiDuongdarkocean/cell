@@ -1,13 +1,13 @@
 /**
  * Item displayed in the Subtitle Manager Panel (ADR-015).
- * Can be auto-detected or imported, target or native.
+ * Can be auto-detected, imported, or machine-translated, target or native.
  */
 export interface SubtitlePanelItem {
   readonly id: string;
   readonly name: string; // Display name (e.g. "English #2" or "my-subtitle")
   readonly format: string; // srt/vtt/ass
   readonly size?: number; // bytes
-  readonly source: 'auto' | 'imported';
+  readonly source: 'auto' | 'imported' | 'translated';
   readonly role: 'target' | 'native';
   readonly index: number; // position within role section
   readonly isAsr?: boolean; // ADR-020: YouTube auto-generated captions badge
@@ -277,8 +277,22 @@ export function createSubtitleManagerPanel(
         imported.style.cssText = 'color: var(--color-success); font-weight: 600;';
         meta.appendChild(imported);
       }
-      // Optional role indicator when item name doesn't obviously match section (imported fallback)
-      if (item.source === 'imported' && !item.name.toLowerCase().startsWith(role)) {
+      if (item.source === 'translated') {
+        const translatedBadge = document.createElement('span');
+        translatedBadge.textContent = 'TRANSLATED';
+        translatedBadge.style.cssText = `
+          padding: 1px 5px;
+          border-radius: var(--radius-sm, 6px);
+          background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
+          color: var(--color-warning, #f59e0b);
+          font-weight: 600;
+          font-size: 9px;
+          letter-spacing: 0.04em;
+        `;
+        meta.appendChild(translatedBadge);
+      }
+      // Optional role indicator when item name doesn't obviously match section (imported/translated fallback)
+      if ((item.source === 'imported' || item.source === 'translated') && !item.name.toLowerCase().startsWith(role)) {
         const roleInd = document.createElement('span');
         roleInd.textContent = `→ ${roleLabel(role)}`;
         roleInd.style.cssText = `font-weight: 600; color: ${roleColor(role)};`;

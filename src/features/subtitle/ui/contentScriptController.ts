@@ -1,8 +1,9 @@
 import { sendMessage, onMessage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS } from '@/shared/config/config';
+import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import {
   parseAndDetectFiles,
   assignImportRole,
@@ -54,6 +55,7 @@ async function loadOverlaySettings(): Promise<{
   native: OverlayStyleConfig;
   block: SubtitleBlockSettings;
   cluster: NavClusterSettings;
+  settings: Settings;
 }> {
   try {
     const settings = await loadSettings();
@@ -66,6 +68,7 @@ async function loadOverlaySettings(): Promise<{
         buttonSize: settings.navClusterButtonSize,
         buttonOpacity: settings.navClusterButtonOpacity,
       },
+      settings,
     };
   } catch {
     // ponytail: storage might not be available in test contexts — fallback
@@ -74,6 +77,7 @@ async function loadOverlaySettings(): Promise<{
       native: DEFAULT_OVERLAY_STYLE_NATIVE,
       block: DEFAULT_SUBTITLE_BLOCK_SETTINGS,
       cluster: DEFAULT_NAV_CLUSTER_SETTINGS,
+      settings: DEFAULT_SETTINGS,
     };
   }
 }
@@ -130,6 +134,7 @@ export function init(video: HTMLVideoElement): () => void {
   let blockSettings: SubtitleBlockSettings = DEFAULT_SUBTITLE_BLOCK_SETTINGS;
   let clusterSettings: NavClusterSettings = DEFAULT_NAV_CLUSTER_SETTINGS;
   let settingsLoaded = false;
+  let currentSettings: Settings | null = null;
   // ADR-019: offset controller (subtitle time offset)
   let offsetController: OffsetController | null = null;
   // ADR-026: Card Creator dialog mount controller (lazy-initialized on first open).
@@ -150,6 +155,26 @@ export function init(video: HTMLVideoElement): () => void {
   // ADR-021: background prefill controller for target→native translation.
   // One instance per video session. Cleared on SPA nav. Paused on tab hidden.
   let translatePrefill: BackgroundPrefillController | null = null;
+  // Generate-native run identity. Incremented per trigger; used to ignore stale
+  // callbacks from a run that has been superseded while loading settings.
+  let nextGenerateRunId = 0;
+  let activeGenerateRunId = -1;
+
+  /** Update generate-native button disabled state based on target cues + settings. */
+  function updateGenerateNativeEnabled(): void {
+    const settings = currentSettings;
+    const hasTarget = latestTargetCues.length > 0;
+    const sl = settings?.subtitleOverlayTargetLanguage ?? '';
+    const tl = settings?.subtitleOverlayNativeLanguage ?? '';
+    const validLang = sl.length > 0 && tl.length > 0 && sl !== tl;
+    blockController.setGenerateNativeEnabled(hasTarget && validLang && settingsLoaded);
+  }
+
+  /** Clear the in-memory translated native slot (used when target changes or SPA nav). */
+  function clearTranslatedNativeState(): void {
+    translatedNativeSlot = null;
+    activeGenerateRunId = -1;
+  }
 
   const blockController = new SubtitleBlockController(
     video,
@@ -166,6 +191,8 @@ export function init(video: HTMLVideoElement): () => void {
     },
     // ADR-026: Card Creator entry buttons (quick update + edit) + q/e keyboard.
     (action) => { handleCardCreatorAction(action); },
+    // Generate native subtitle button/shortcut.
+    () => { void handleGenerateNative(); },
   );
 
   /** ADR-026: Handle Card Creator action (quick-update or edit-card). */
@@ -262,7 +289,124 @@ export function init(video: HTMLVideoElement): () => void {
     cardCreatorMount.open({ ...ctx, initialMedia }, action);
   }
 
-  loadOverlaySettings().then(async ({ target, native, block, cluster }) => {
+  /** Generate native subtitle by translating the active target cues into the
+   *  configured native language. Reuses BackgroundPrefillController and creates
+   *  a single in-memory translated manager entry (virtual replacement). */
+  async function handleGenerateNative(): Promise<void> {
+    const runId = nextGenerateRunId++;
+    activeGenerateRunId = runId;
+
+    // Cancel any existing prefill (auto-translate or previous generate).
+    translatePrefill?.clear();
+    translatePrefill = null;
+
+    // Snapshot the active native slot before we create the new virtual slot.
+    const baseNativeItems = [...autoNativeItems, ...importedNativeItems];
+    let replacedSource: 'auto' | 'imported' | null;
+    let replacedIndex: number;
+    if (activeNativeSource === 'translated' && translatedNativeSlot) {
+      replacedSource = translatedNativeSlot.replacedSource;
+      replacedIndex = translatedNativeSlot.replacedIndex;
+    } else if (activeNativeSource === 'imported' && importedNativeItems.length > 0) {
+      replacedSource = 'imported';
+      replacedIndex = autoNativeItems.length + activeImportNativeIndex;
+    } else if (autoNativeItems.length > 0) {
+      replacedSource = 'auto';
+      replacedIndex = activeNativeIndex;
+    } else {
+      replacedSource = null;
+      replacedIndex = 0;
+    }
+    replacedIndex = Math.min(Math.max(0, replacedIndex), baseNativeItems.length);
+
+    // Snapshot the active target item for format propagation.
+    const targetInfo = mergedPanelItems('target');
+    const targetItem = targetInfo.items[targetInfo.activeIndex];
+
+    const settings = await loadSettings();
+    currentSettings = settings;
+    const sl = settings.subtitleOverlayTargetLanguage ?? '';
+    const tl = settings.subtitleOverlayNativeLanguage ?? '';
+
+    // Abort if a newer run has superseded this one while loading settings.
+    if (activeGenerateRunId !== runId) return;
+
+    if (!sl || !tl || sl === tl) {
+      showToast('Target and native languages must differ', container, { variant: 'info' });
+      updateGenerateNativeEnabled();
+      return;
+    }
+
+    if (latestTargetCues.length === 0) {
+      showToast('No target subtitle to translate', container, { variant: 'info' });
+      updateGenerateNativeEnabled();
+      return;
+    }
+
+    const targetCues = [...latestTargetCues];
+    const targetFormat = targetItem?.format ?? 'srt';
+    const targetSize = targetItem?.size;
+    const nativeLabel = isoCodeToLabel(tl) ?? tl;
+    const translatedItem: SubtitlePanelItem = {
+      id: 'translated-native',
+      name: `${nativeLabel} (translated)`,
+      format: targetFormat,
+      size: targetSize,
+      source: 'translated',
+      role: 'native',
+      index: 0,
+    };
+    translatedNativeSlot = {
+      replacedSource,
+      replacedIndex,
+      item: translatedItem,
+      cues: [],
+      runId,
+    };
+    activeNativeSource = 'translated';
+    refreshPanel('native');
+    showToast('Generating native subtitle…', container, { variant: 'info' });
+    blockController.setGenerateNativeEnabled(false);
+
+    translatePrefill = new BackgroundPrefillController({
+      translate: async (text: string): Promise<string[]> => {
+        const res = await sendMessage<{ success?: boolean; data?: TranslateResult; error?: string }>({
+          type: MESSAGE_TYPES.TRANSLATE,
+          payload: { text, sl, tl },
+        });
+        if (!res?.success || !res.data?.translated) {
+          throw new Error(res?.error ?? 'translate failed');
+        }
+        return res.data.translated;
+      },
+      onChunkTranslated: (translatedCues: SrtCue[]) => {
+        if (activeGenerateRunId !== runId || !translatedNativeSlot || translatedNativeSlot.runId !== runId) return;
+        translatedNativeSlot.cues = translatedCues;
+        blockController?.loadBilingualCues(targetCues, translatedCues);
+        showOverlay();
+        bilingualCues = mergeCuesForPanel(targetCues, translatedCues);
+        void sendMessage({
+          type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+          payload: { tabId: undefined, cues: bilingualCues },
+        });
+        refreshPanel('native');
+      },
+      onError: (msg: string) => {
+        if (activeGenerateRunId !== runId || !translatedNativeSlot || translatedNativeSlot.runId !== runId) return;
+        showToast(msg, container, { variant: 'error' });
+        updateGenerateNativeEnabled();
+      },
+      onComplete: () => {
+        if (activeGenerateRunId !== runId || !translatedNativeSlot || translatedNativeSlot.runId !== runId) return;
+        showToast('Native subtitle generated', container, { variant: 'success' });
+        updateGenerateNativeEnabled();
+      },
+    });
+    translatePrefill.start(targetCues, sl, tl);
+  }
+
+  loadOverlaySettings().then(async ({ target, native, block, cluster, settings }) => {
+    currentSettings = settings;
     blockSettings = block;
     clusterSettings = cluster;
     targetStyle = { ...target, visible: overlayVisible };
@@ -274,6 +418,7 @@ export function init(video: HTMLVideoElement): () => void {
       nativeStyle,
       clusterSettings,
     });
+    updateGenerateNativeEnabled();
 
     // ADR-015 UI v4: create import button + manager panel.
     // Legacy target/native dropdowns are removed; the manager panel handles selection
@@ -396,7 +541,18 @@ export function init(video: HTMLVideoElement): () => void {
   // Track which source is currently active per role (so merged panel highlights
   // the correct item when both auto + imported exist).
   let activeTargetSource: 'auto' | 'imported' = 'auto';
-  let activeNativeSource: 'auto' | 'imported' = 'auto';
+  let activeNativeSource: 'auto' | 'imported' | 'translated' = 'auto';
+  // Generate-native: virtual replacement slot in the native manager panel.
+  // Underlying auto/imported arrays are not mutated; this slot replaces the
+  // active native item in the merged panel display and provides translated cues.
+  interface TranslatedNativeSlot {
+    readonly replacedSource: 'auto' | 'imported' | null;
+    readonly replacedIndex: number;
+    readonly item: SubtitlePanelItem;
+    cues: SrtCue[];
+    readonly runId: number;
+  }
+  let translatedNativeSlot: TranslatedNativeSlot | null = null;
 
   /**
    * Build merged panel items for a role: auto items first, then imported items.
@@ -411,16 +567,51 @@ export function init(video: HTMLVideoElement): () => void {
     const autoActive = role === 'target' ? activeTargetIndex : activeNativeIndex;
     const importActive = role === 'target' ? activeImportTargetIndex : activeImportNativeIndex;
     const source = role === 'target' ? activeTargetSource : activeNativeSource;
-    if (source === 'imported' && importedItems.length > 0) {
-      return { items: [...autoItems, ...importedItems], activeIndex: autoItems.length + importActive };
+    const baseItems = [...autoItems, ...importedItems];
+
+    // Generate-native: always include the translated virtual entry in the panel
+    // so the user can switch back to it; highlight it when activeNativeSource
+    // is 'translated'.
+    if (role === 'native' && translatedNativeSlot) {
+      const idx = Math.min(Math.max(0, translatedNativeSlot.replacedIndex), baseItems.length);
+      const items = [...baseItems.slice(0, idx), translatedNativeSlot.item, ...baseItems.slice(idx + 1)];
+      if (source === 'translated') {
+        return { items, activeIndex: idx };
+      }
+      if (source === 'imported' && importedItems.length > 0) {
+        const baseIdx = autoItems.length + importActive;
+        return { items, activeIndex: baseIdx >= idx ? baseIdx + 1 : baseIdx };
+      }
+      const baseIdx = autoActive;
+      return { items, activeIndex: baseIdx >= idx ? baseIdx + 1 : baseIdx };
     }
-    return { items: [...autoItems, ...importedItems], activeIndex: autoActive };
+
+    if (source === 'imported' && importedItems.length > 0) {
+      return { items: baseItems, activeIndex: autoItems.length + importActive };
+    }
+    return { items: baseItems, activeIndex: autoActive };
   };
 
   const refreshPanel = (role: 'target' | 'native'): void => {
     const { items, activeIndex } = mergedPanelItems(role);
     if (role === 'target') managerPanel?.updateTarget(items, activeIndex);
     else managerPanel?.updateNative(items, activeIndex);
+  };
+
+  /** ADR-015: after a manager selection changes the overlay cues, recompute the
+   *  side-panel bilingual cues from the block controller's merged state and
+   *  broadcast SUBTITLE_CUES_LOADED so the Side Panel syncs to the selection.
+   *  loadBilingualCues uses D1 merge (keeps the other side when one is empty),
+   *  so reading getTargetCues/getNativeCues after it yields the correct pair. */
+  const syncSidePanelFromBlock = (): void => {
+    bilingualCues = mergeCuesForPanel(
+      blockController.getTargetCues() as SrtCue[],
+      blockController.getNativeCues() as SrtCue[],
+    );
+    void sendMessage({
+      type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
+      payload: { tabId: undefined, cues: bilingualCues },
+    });
   };
   // ADR-015 T10: parsed files side-map (panel items don't carry cues)
   let importedParsedTarget: ParsedFile[] = [];
@@ -613,6 +804,11 @@ export function init(video: HTMLVideoElement): () => void {
         if (e.repeat) return;
         if (cardCreatorMount?.isOpen()) return;
         void handleCardCreatorAction(action);
+        break;
+      }
+      // Generate native subtitle manually (button or shortcut).
+      case 'generate-native': {
+        void handleGenerateNative();
         break;
       }
     }
@@ -862,12 +1058,18 @@ export function init(video: HTMLVideoElement): () => void {
         // ADR-021: clear translate prefill on SPA nav to video with no subtitles
         translatePrefill?.clear();
         translatePrefill = null;
+        clearTranslatedNativeState();
+        activeNativeSource = 'auto';
+        updateGenerateNativeEnabled();
         showToast('No subtitles detected', container, { variant: 'warning' });
       }
       // ADR-021: clear translate prefill on SPA nav (URL changed)
       if (lastAutoLoadUrl !== undefined && lastAutoLoadUrl !== currentUrl) {
         translatePrefill?.clear();
         translatePrefill = null;
+        clearTranslatedNativeState();
+        activeNativeSource = 'auto';
+        updateGenerateNativeEnabled();
       }
       void (async () => {
         const currentSettings = await loadSettings();
@@ -879,6 +1081,9 @@ export function init(video: HTMLVideoElement): () => void {
             blockController?.clearCues();
             // ADR-019: subtitles cleared → reset offset + cancel lazy
             offsetController?.loadCues(false);
+            clearTranslatedNativeState();
+            activeNativeSource = 'auto';
+            updateGenerateNativeEnabled();
           },
         },
         tabUrl: window.location.href,
@@ -887,6 +1092,10 @@ export function init(video: HTMLVideoElement): () => void {
           // ADR-018: keep nav cluster cue source in sync with auto-loaded subtitles
           // (4↔6 nút transition when subtitles become available).
           latestTargetCues = targetCues;
+          // Auto-load resets the translated native slot; native active is auto.
+          clearTranslatedNativeState();
+          activeNativeSource = 'auto';
+          updateGenerateNativeEnabled();
           // updateCues(targetCues, nativeCues);
           // ADR-019: notify offset controller that subtitles loaded
           offsetController?.loadCues(true);
@@ -909,6 +1118,9 @@ export function init(video: HTMLVideoElement): () => void {
           const sl = currentSettings.subtitleOverlayTargetLanguage;
           const tl = currentSettings.subtitleOverlayNativeLanguage;
           if (!sl || !tl || sl === tl) return;
+          // If a manual generate-native is already active, don't overwrite it with
+          // auto-translate. Manual generate is the user's explicit choice.
+          if (translatedNativeSlot && activeNativeSource === 'translated') return;
           // Clear any previous prefill (SPA nav or re-trigger)
           translatePrefill?.clear();
           translatePrefill = new BackgroundPrefillController({
@@ -1031,6 +1243,8 @@ export function init(video: HTMLVideoElement): () => void {
     // Mark active source as imported for roles that got imported files.
     if (assignment.target.length > 0) activeTargetSource = 'imported';
     if (assignment.native.length > 0) activeNativeSource = 'imported';
+    // Import resets the translated native slot (new target/native sources).
+    clearTranslatedNativeState();
     refreshPanel('target');
     refreshPanel('native');
 
@@ -1060,6 +1274,7 @@ export function init(video: HTMLVideoElement): () => void {
       // ADR-019: load sub mới → reset offset + cancel lazy (R5)
       offsetController?.loadCues(true);
     }
+    updateGenerateNativeEnabled();
 
     // Active subtitle names are visible in the manager panel; chip removed.
     // Toast
@@ -1114,10 +1329,17 @@ export function init(video: HTMLVideoElement): () => void {
 
     if (role === 'target') {
       blockController?.loadBilingualCues(parsed.cues, []);
+      latestTargetCues = parsed.cues;
+      clearTranslatedNativeState();
+      activeNativeSource = 'auto';
+      activeNativeIndex = 0;
+      refreshPanel('native');
+      updateGenerateNativeEnabled();
     } else {
       blockController?.loadBilingualCues([], parsed.cues);
     }
     showOverlay();
+    syncSidePanelFromBlock();
     debouncedToast(`Switched to ${parsed.file.name}`, container, { variant: 'success' });
   }
 
@@ -1135,9 +1357,19 @@ export function init(video: HTMLVideoElement): () => void {
     if (!item) return;
     if (item.source === 'imported') {
       await onPanelSelect(role, item.index);
-    } else {
-      await onSubtitleSelect(role, item.index);
+      return;
     }
+    if (item.source === 'translated') {
+      if (role === 'native' && translatedNativeSlot) {
+        activeNativeSource = 'translated';
+        refreshPanel('native');
+        blockController?.loadBilingualCues([...blockController.getTargetCues()], translatedNativeSlot.cues);
+        showOverlay();
+        syncSidePanelFromBlock();
+      }
+      return;
+    }
+    await onSubtitleSelect(role, item.index);
   }
 
   /**
@@ -1170,6 +1402,11 @@ export function init(video: HTMLVideoElement): () => void {
         blockController?.loadBilingualCues(result.cues, []);
         // ADR-018: update nav cluster — keep native side, replace target
         latestTargetCues = result.cues;
+        clearTranslatedNativeState();
+        activeNativeSource = 'auto';
+        activeNativeIndex = 0;
+        refreshPanel('native');
+        updateGenerateNativeEnabled();
         // updateCues(latestTargetCues, latestNativeCues);
       } else {
         blockController?.loadBilingualCues([], result.cues);
@@ -1177,6 +1414,7 @@ export function init(video: HTMLVideoElement): () => void {
         // updateCues(latestTargetCues, latestNativeCues);
       }
       showOverlay();
+      syncSidePanelFromBlock();
       showToast(`Switched to subtitle track ${index + 1}`, container, { variant: 'success' });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1241,6 +1479,9 @@ export function init(video: HTMLVideoElement): () => void {
     latestTargetCues = [];
     translatePrefill?.clear();
     translatePrefill = null;
+    clearTranslatedNativeState();
+    activeNativeSource = 'auto';
+    updateGenerateNativeEnabled();
     lastAutoLoadKey = undefined;
     lastAutoLoadUrl = undefined;
   };

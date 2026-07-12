@@ -1,4 +1,5 @@
 import type { DetectedSubtitle } from '@/entities/media';
+import { languageMatches } from '@/shared/config/languageRegistry';
 import { formatSubtitleName } from '../logic/subtitleNaming';
 
 /**
@@ -32,7 +33,7 @@ export function createSubtitleDropdown(
   onSelect: (index: number) => void,
 ): { icon: HTMLButtonElement; destroy: () => void; update: (newSubtitles: DetectedSubtitle[], newActiveIndex: number) => void } {
   let matches = subtitles.filter(
-    (s) => s.language.toLowerCase() === language.toLowerCase(),
+    (s) => languageMatches(language, s.language),
   );
   let currentActiveIndex = activeIndex;
 
@@ -215,7 +216,7 @@ export function createSubtitleDropdown(
   // ADR-015 T3: update-in-place — no destroy/re-create, no flicker (bug #5 fix)
   const update = (newSubtitles: DetectedSubtitle[], newActiveIndex: number): void => {
     matches = newSubtitles.filter(
-      (s) => s.language.toLowerCase() === language.toLowerCase(),
+      (s) => languageMatches(language, s.language),
     );
     // Clamp activeIndex to valid range (matches may have shrunk/reordered)
     currentActiveIndex = newActiveIndex < matches.length

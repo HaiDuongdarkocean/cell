@@ -1,6 +1,6 @@
 import { handleShortcutKey, isEditableTarget } from '@/features/subtitle/ui/subtitleShortcuts';
 import { DEFAULT_KEYBOARD_SHORTCUTS } from '@/shared/config/config';
-import type { KeyboardShortcut } from '@/types/media';
+import type { KeyboardShortcut } from '@/entities/media';
 
 describe('handleShortcutKey', () => {
   const shortcuts = DEFAULT_KEYBOARD_SHORTCUTS;
@@ -28,6 +28,11 @@ describe('handleShortcutKey', () => {
   it('returns toggle-panel action when key is "t"', () => {
     const action = handleShortcutKey('t', shortcuts, createDivTarget());
     expect(action).toBe('toggle-panel');
+  });
+
+  it('returns generate-native action when key is "g"', () => {
+    const action = handleShortcutKey('g', shortcuts, createDivTarget());
+    expect(action).toBe('generate-native');
   });
 
   it('returns null when key does not match any shortcut', () => {

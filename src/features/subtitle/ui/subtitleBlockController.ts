@@ -26,6 +26,9 @@ export interface SubtitleBlockControllerUpdate {
 /** Card Creator action triggered by the quick-update / edit buttons or q/e keys. */
 export type CardCreatorAction = 'quick-update' | 'edit-card';
 
+/** Generate native subtitle action triggered by the generate-native button or shortcut. */
+export type GenerateNativeAction = 'generate-native';
+
 const BLOCK_STYLE_ID = 'subtitle-block-css';
 const PERSIST_DEBOUNCE_MS = 300;
 
@@ -51,6 +54,7 @@ export class SubtitleBlockController {
   private loopStart = 0;
   private loopEnd = 0;
   private readonly onCardCreatorAction: (action: CardCreatorAction) => void;
+  private readonly onGenerateNative: () => void;
 
   constructor(
     private readonly video: HTMLVideoElement,
@@ -62,6 +66,7 @@ export class SubtitleBlockController {
     offsetProvider?: () => number,
     onPersist: (settings: Partial<SubtitleBlockSettings>) => void = () => undefined,
     onCardCreatorAction: (action: CardCreatorAction) => void = () => undefined,
+    onGenerateNative: () => void = () => undefined,
   ) {
     this.blockSettings = this.clampBlockSettings(blockSettings);
     this.targetStyle = targetStyle;
@@ -70,6 +75,7 @@ export class SubtitleBlockController {
     this.getOffsetMs = offsetProvider ?? (() => 0);
     this.onPersist = onPersist;
     this.onCardCreatorAction = onCardCreatorAction;
+    this.onGenerateNative = onGenerateNative;
     this.init();
   }
 
@@ -268,6 +274,8 @@ export class SubtitleBlockController {
     // ADR-026: Card Creator entry buttons.
     this.dom.quickUpdateBtn.addEventListener('click', () => this.onCardCreatorAction('quick-update'));
     this.dom.editCardBtn.addEventListener('click', () => this.onCardCreatorAction('edit-card'));
+    // Generate native subtitle action.
+    this.dom.generateNativeBtn.addEventListener('click', () => this.onGenerateNative());
   }
 
   private handleRepeatClick(): void {
@@ -402,6 +410,13 @@ export class SubtitleBlockController {
   /** ADR-026: Get current native cues (for Card Creator context). */
   getNativeCues(): readonly SrtCue[] {
     return this.nativeCues;
+  }
+
+  /** Enable/disable the generate-native button. */
+  setGenerateNativeEnabled(enabled: boolean): void {
+    if (!this.dom) return;
+    this.dom.generateNativeBtn.disabled = !enabled;
+    this.dom.generateNativeBtn.setAttribute('aria-disabled', String(!enabled));
   }
 
   clearCues(): void {
