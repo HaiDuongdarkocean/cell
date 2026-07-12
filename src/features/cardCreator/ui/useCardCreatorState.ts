@@ -13,8 +13,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CardCreatorSettings } from '@/entities/settings';
 import type { BilingualCue } from '@/entities/media';
 import {
-  listDecks,
-  listModels,
   listModelFields,
   findRecentNote,
   getNoteInfo,
@@ -22,8 +20,8 @@ import {
   addNote,
   updateNote,
   addNoteTags,
-  ensureDefaultModel,
 } from '../service/cardCreatorService';
+import { prefetchAnkiConnectData } from '../service/cardCreatorPrefetch';
 import { autoMapFields } from '../service/fieldMapping';
 import {
   createEmptyDraft,
@@ -43,7 +41,7 @@ export interface Toast {
 }
 
 /** Connection + data loading state. */
-export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
+export type LoadStatus = 'idle' | 'loading' | 'destination-ready' | 'ready' | 'error';
 
 /** Result of opening the dialog. */
 export interface OpenContext {
@@ -166,9 +164,12 @@ export function useCardCreatorState(
    *  ADR-026: called on initial load AND on note type change — the recent note
    *  is scoped to the selected note type, so switching note types must
    *  re-query AnkiConnect. Updates recentNoteId + recentNoteInfo, which
-   *  drives the "No recent card" alert + the Update button's enabled state. */
+   *  drives the "No recent card" alert + the Update button's enabled state.
+   *  Returns the fresh { id, info } so callers (e.g. submit update) can use
+   *  the latest value without waiting for state to flush (avoids stale
+   *  closure — see persist-config-clear-content principle). */
   const refreshRecentNote = useCallback(
-    async (deck: string, noteType: string): Promise<void> => {
+    async (deck: string, noteType: string): Promise<{ id: number | null; info: { fields: Record<string, string>; tags: string[] } | null }> => {
       const url = settings.ankiConnectUrl;
       const recentR = await findRecentNote(url, deck, noteType);
       let recentId: number | null = null;
@@ -182,14 +183,26 @@ export function useCardCreatorState(
       }
       setRecentNoteId(recentId);
       setRecentNoteInfo(recentInfo);
+      return { id: recentId, info: recentInfo };
     },
     [settings.ankiConnectUrl],
   );
 
   /** Load AnkiConnect data (decks, models, fields, recent note).
    *  @param restoredDraft - Draft restored from autosave (if any). When present,
-   *    its noteType/deck/text fields/mapping/tags are preserved (ADR-026:
-   *    remember user's selections across dialog open/close + browser restarts).
+   *    its noteType/deck/mapping/tags are preserved (ADR-026: remember user's
+   *    selections across dialog open/close + browser restarts).
+   *
+   *  UX: the draft is populated with cue data + defaults IMMEDIATELY (before
+   *  the AnkiConnect awaits) so the form renders right away — no loading
+   *  screen blocking the dialog. Dropdowns (Note type, Deck) populate when
+   *  AnkiConnect data arrives; they are disabled while `loadStatus === 'loading'`.
+   *
+   *  Two-phase load: `destination-ready` (decks + models + chosen note type/
+   *  deck resolved → Note type/Deck dropdowns enable) → `ready` (fields +
+   *  recent note resolved → field rows + alerts + autosave enable). This
+   *  lets the user pick note type/deck while `listModelFields` +
+   *  `refreshRecentNote` are still loading.
    */
   const loadData = useCallback(async (restoredDraft: CardDraft | null) => {
     const ctx = openContextRef.current;
@@ -197,44 +210,72 @@ export function useCardCreatorState(
     setLoadStatus('loading');
     setLoadError('');
 
+    // Immediately set draft with cue data + restored config + defaults so
+    // the form renders right away (sentence text, media, tags visible while
+    // AnkiConnect data loads in the background).
+    const initialImages = ctx.initialMedia?.filter((f) => f.kind === 'image') ?? [];
+    const initialAudios = ctx.initialMedia?.filter((f) => f.kind === 'audio') ?? [];
+    setDraft({
+      noteType: restoredDraft?.noteType ?? settings.defaultNoteType,
+      deck: restoredDraft?.deck ?? settings.defaultDeck,
+      fields: {
+        targetWord: '',
+        sentence: ctx.cue.targetText,
+        sentenceTranslation: ctx.cue.nativeText,
+        definitions: '',
+        images: initialImages,
+        sentenceAudios: initialAudios,
+        wordAudios: [],
+        note: '',
+        moreExample: '',
+      },
+      fieldMapping: restoredDraft?.fieldMapping ?? {},
+      tags: restoredDraft?.tags ?? settings.defaultTags,
+      mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? settings.mediaUpdateMode,
+    });
+
     const url = settings.ankiConnectUrl;
     try {
-      // Ensure default model exists (desktop only; Android shows error).
-      const modelR = await ensureDefaultModel(url);
-      if (!modelR.ok) {
-        // Non-fatal: user may have a different model. Continue.
-        pushToast('warning', modelR.error);
-      }
-
-      const [decksR, modelsR] = await Promise.all([
-        listDecks(url),
-        listModels(url),
-      ]);
-      if (!decksR.ok) throw new Error(decksR.error);
-      if (!modelsR.ok) throw new Error(modelsR.error);
-
-      setDecks(decksR.value);
-      setNoteTypes(modelsR.value);
+      // Reuse the prefetched decks + models (started on Card Creator button
+      // click so the AnkiConnect round-trip overlaps with media capture).
+      // Falls back to a fresh prefetch if none in-flight (e.g. dialog opened
+      // programmatically without a click). ensureDefaultModel runs inside
+      // the prefetch.
+      const { decks: fetchedDecks, models: fetchedModels } = await prefetchAnkiConnectData(url);
+      setDecks(fetchedDecks);
+      setNoteTypes(fetchedModels);
 
       // Pick note type: restored draft's (if still valid in Anki), else default,
       // else first available. ADR-026: remember user's note type selection.
       const restoredNoteType = restoredDraft?.noteType ?? '';
       const chosenNoteType =
-        modelsR.value.includes(restoredNoteType)
+        fetchedModels.includes(restoredNoteType)
           ? restoredNoteType
-          : modelsR.value.includes(settings.defaultNoteType)
+          : fetchedModels.includes(settings.defaultNoteType)
             ? settings.defaultNoteType
-            : modelsR.value[0] ?? '';
+            : fetchedModels[0] ?? '';
       // Pick deck: same precedence — restored → default → first.
       const restoredDeck = restoredDraft?.deck ?? '';
       const chosenDeck =
-        decksR.value.includes(restoredDeck)
+        fetchedDecks.includes(restoredDeck)
           ? restoredDeck
-          : decksR.value.includes(settings.defaultDeck)
+          : fetchedDecks.includes(settings.defaultDeck)
             ? settings.defaultDeck
-            : decksR.value[0] ?? '';
+            : fetchedDecks[0] ?? '';
 
-      // Fetch fields for chosen note type.
+      // Update draft with AnkiConnect-resolved note type/deck + mark
+      // destination-ready so Note type/Deck dropdowns enable immediately.
+      // Field content (sentence, media) already set above is preserved.
+      setDraft((prev) => ({
+        ...prev,
+        noteType: chosenNoteType,
+        deck: chosenDeck,
+      }));
+      setLoadStatus('destination-ready');
+
+      // Phase 2: fetch fields + recent note (depend on chosen note type/deck).
+      // These run AFTER dropdowns are enabled so the user can interact while
+      // these load. Field rows + alerts wait for `ready`.
       let fields: readonly string[] = [];
       if (chosenNoteType) {
         const fieldsR = await listModelFields(url, chosenNoteType);
@@ -254,34 +295,16 @@ export function useCardCreatorState(
       // runs on initial load + on note type change).
       await refreshRecentNote(chosenDeck, chosenNoteType);
 
-      // Build initial draft: preserve restored text fields (targetWord,
-      // definitions, note, moreExample) + tags + mediaUpdateMode. Always
-      // refresh sentence + sentenceTranslation from the current cue (the user
-      // opened the dialog on a different subtitle line). Media: use
-      // initialMedia captured before the dialog opened (ADR-026); fall back to
-      // empty arrays if capture failed/skipped.
-      const rf = restoredDraft?.fields;
-      const initialImages = ctx.initialMedia?.filter((f) => f.kind === 'image') ?? [];
-      const initialAudios = ctx.initialMedia?.filter((f) => f.kind === 'audio') ?? [];
-      const initialDraft: CardDraft = {
-        noteType: chosenNoteType,
-        deck: chosenDeck,
-        fields: {
-          targetWord: rf?.targetWord ?? '',
-          sentence: ctx.cue.targetText,
-          sentenceTranslation: ctx.cue.nativeText,
-          definitions: rf?.definitions ?? '',
-          images: initialImages,
-          sentenceAudios: initialAudios,
-          wordAudios: [],
-          note: rf?.note ?? '',
-          moreExample: rf?.moreExample ?? '',
-        },
-        fieldMapping: mapping,
-        tags: restoredDraft?.tags ?? settings.defaultTags,
-        mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? settings.mediaUpdateMode,
-      };
-      setDraft(initialDraft);
+      // Update field mapping now that fields are known — but only if the user
+      // hasn't changed note type while we were fetching fields (race guard:
+      // changeNoteType sets its own mapping for the new note type; if we
+      // override here with the old note type's mapping, fields mismatch).
+      if (draftRef.current.noteType === chosenNoteType) {
+        setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
+      }
+      // Mark ready (enables alerts + autosave). If the user already changed
+      // note type/deck, changeNoteType/changeDeck will have set ready too —
+      // this is a no-op in that case.
       setLoadStatus('ready');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -354,6 +377,9 @@ export function useCardCreatorState(
       // is scoped to the note type, so switching types must re-query.
       const deck = draftRef.current.deck;
       await refreshRecentNote(deck, noteType);
+      // Mark ready so alerts + autosave are active (loadData phase 2 may have
+      // been interrupted by this change — ensure we end in a ready state).
+      setLoadStatus('ready');
     },
     [settings.ankiConnectUrl, draftRef, refreshRecentNote],
   );
@@ -364,6 +390,7 @@ export function useCardCreatorState(
       setDraft((prev) => ({ ...prev, deck }));
       const noteType = draftRef.current.noteType;
       await refreshRecentNote(deck, noteType);
+      setLoadStatus('ready');
     },
     [draftRef, refreshRecentNote],
   );
@@ -607,19 +634,26 @@ export function useCardCreatorState(
           });
           if (!r.ok) throw new Error(r.error);
           if (r.value === null) {
-            pushToast('warning', 'Note not added (may be a duplicate).');
+            pushToast('warning', 'Card not added — a duplicate may already exist in this deck.');
           } else {
-            pushToast('success', 'Card created');
+            pushToast('success', `Card added to “${draft.deck}” (#${r.value}).`);
             await autosaverRef.current.clear();
           }
         } else {
-          // Update existing note.
-          if (recentNoteId === null) {
-            pushToast('error', 'No recent card to update');
+          // Update existing note. Re-query the freshest recent note id +
+          // info right before updating — the cached recentNoteId may be
+          // stale if the user added a card earlier in this same dialog
+          // session (the new card is now the most recent). See
+          // persist-config-clear-content principle (refresh-then-use,
+          // don't trust cached identity).
+          const fresh = await refreshRecentNote(draft.deck, draft.noteType);
+          const updateNoteId = fresh.id;
+          if (updateNoteId === null) {
+            pushToast('error', `No card found in “${draft.deck}” to update. Add a new card first.`);
             return;
           }
           // For update, we need existing fields to apply append/skip modes.
-          const existing = recentNoteInfo?.fields ?? {};
+          const existing = fresh.info?.fields ?? {};
           const updateFields: Record<string, string> = {};
           for (const [ankiField, newValue] of Object.entries(fields)) {
             const existingValue = existing[ankiField] ?? '';
@@ -635,29 +669,30 @@ export function useCardCreatorState(
             }
           }
           if (Object.keys(updateFields).length === 0) {
-            pushToast('warning', 'Nothing to update (all fields already filled in skip mode).');
+            pushToast('warning', 'Nothing to update — every field is already filled (skip mode).');
             return;
           }
-          const r = await updateNote(url, recentNoteId, updateFields, 'overwrite', existing);
+          const r = await updateNote(url, updateNoteId, updateFields, 'overwrite', existing);
           if (!r.ok) throw new Error(r.error);
           // Sync tags (desktop only; Android shows warning).
           if (tags.length > 0) {
-            const tagsR = await addNoteTags(url, recentNoteId, tags);
+            const tagsR = await addNoteTags(url, updateNoteId, tags);
             if (!tagsR.ok) {
-              pushToast('warning', tagsR.error);
+              pushToast('warning', `Card updated, but tags could not be synced: ${tagsR.error}`);
             }
           }
-          pushToast('success', `Card updated (#${recentNoteId})`);
+          pushToast('success', `Card updated (#${updateNoteId}).`);
           await autosaverRef.current.clear();
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        pushToast('error', `AnkiConnect: ${msg}`);
+        const action = mode === 'add' ? 'add' : 'update';
+        pushToast('error', `Could not ${action} card — ${msg}. Check AnkiConnect and try again.`);
       } finally {
         setSubmitting(false);
       }
     },
-    [submitting, settings.ankiConnectUrl, draft, buildAnkiFields, recentNoteId, recentNoteInfo, pushToast],
+    [submitting, settings.ankiConnectUrl, draft, buildAnkiFields, refreshRecentNote, pushToast],
   );
 
   return {

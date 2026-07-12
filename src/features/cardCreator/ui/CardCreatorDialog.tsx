@@ -11,6 +11,7 @@ import type { BilingualCue } from '@/entities/media';
 import type { MediaFile } from '../media/mediaFile';
 import { CardCreatorDialogContent } from './CardCreatorDialogContent';
 import { useCardCreatorState, type OpenContext } from './useCardCreatorState';
+import { clearAnkiConnectPrefetch } from '../service/cardCreatorPrefetch';
 
 interface CardCreatorDialogProps {
   /** Whether the dialog is open. */
@@ -39,10 +40,15 @@ export function CardCreatorDialog({
 
   if (!open) return null;
 
+  const handleOpenChange = (next: boolean): void => {
+    if (!next) clearAnkiConnectPrefetch();
+    onOpenChange(next);
+  };
+
   return (
     <Dialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       title="Card Creator"
       showCloseButton
       data-testid="card-creator-dialog"
@@ -50,7 +56,7 @@ export function CardCreatorDialog({
       <CardCreatorDialogContent
         state={state}
         variant="desktop"
-        onCancel={() => onOpenChange(false)}
+        onCancel={() => handleOpenChange(false)}
       />
     </Dialog>
   );

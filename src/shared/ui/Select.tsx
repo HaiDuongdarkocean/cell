@@ -28,6 +28,12 @@ export interface SelectProps {
   className?: string;
   /** Max height of the dropdown menu in pixels. */
   menuMaxHeight?: number;
+  /** Horizontal alignment of the dropdown menu relative to the trigger.
+   *  - 'left'  (default): menu's left edge aligns with trigger's left edge (opens rightward).
+   *  - 'right': menu's right edge aligns with trigger's right edge (opens leftward).
+   *  Use 'right' when the select sits on the right side of a row so the
+   *  menu doesn't overflow the card/container. */
+  menuAlign?: 'left' | 'right';
 }
 
 /**
@@ -49,6 +55,7 @@ export function Select({
   onChange,
   className,
   menuMaxHeight = 220,
+  menuAlign = 'left',
 }: SelectProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -228,7 +235,7 @@ export function Select({
 
       {isOpen && (
         <div
-          className={styles.menu}
+          className={`${styles.menu} ${menuAlign === 'right' ? styles.menuAlignRight : styles.menuAlignLeft}`}
           role="listbox"
           aria-activedescendant={highlightedIndex >= 0 ? `select-option-${options[highlightedIndex]?.value}` : undefined}
           style={{ maxHeight: menuMaxHeight }}

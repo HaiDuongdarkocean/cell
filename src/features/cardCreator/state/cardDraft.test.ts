@@ -61,15 +61,18 @@ describe('cardDraft', () => {
   });
 
   describe('serialize/deserialize', () => {
-    it('round-trips text fields + mapping + tags + mode', () => {
+    it('round-trips config + tags but NOT field content (cleared on close)', () => {
       const draft = makeDraft();
       const serialized = serializeDraft(draft);
       const restored = deserializeDraft(serialized);
       expect(restored.noteType).toBe('Cell Video Card');
       expect(restored.deck).toBe('Default');
-      expect(restored.fields.targetWord).toBe('hello');
-      expect(restored.fields.sentence).toBe('Hello world.');
-      expect(restored.fields.note).toBe('my note');
+      // Field content is cleared on close — only tags + config persist.
+      expect(restored.fields.targetWord).toBe('');
+      expect(restored.fields.sentence).toBe('');
+      expect(restored.fields.note).toBe('');
+      expect(restored.fields.definitions).toBe('');
+      expect(restored.fields.moreExample).toBe('');
       expect(restored.fieldMapping).toEqual({ targetWord: 'TargetWord', sentence: 'Sentence' });
       expect(restored.tags).toBe('my-tag another');
       expect(restored.mediaUpdateMode).toBe('overwrite');
@@ -86,8 +89,8 @@ describe('cardDraft', () => {
         },
       };
       const serialized = serializeDraft(draft);
-      // Serialized fields have no images key.
-      expect((serialized.fields as Record<string, unknown>).images).toBeUndefined();
+      // Serialized has no fields key at all (content not persisted).
+      expect((serialized as unknown as Record<string, unknown>).fields).toBeUndefined();
       // On restore, images is empty array.
       const restored = deserializeDraft(serialized);
       expect(restored.fields.images).toEqual([]);
@@ -137,12 +140,12 @@ describe('cardDraft', () => {
       const autosaver = new DraftAutosaver();
       const draft = makeDraft();
       autosaver.schedule(draft);
-      autosaver.schedule({ ...draft, fields: { ...draft.fields, targetWord: 'world' } });
+      autosaver.schedule({ ...draft, tags: 'updated-tag' });
       // Wait 100ms — should NOT have saved yet (debounced).
       await new Promise((r) => setTimeout(r, 100));
       expect(chromeMock.storage.local.set).not.toHaveBeenCalled();
       await autosaver.flush();
-      expect((storage[DRAFT_STORAGE_KEY] as { fields: { targetWord: string } }).fields.targetWord).toBe('world');
+      expect((storage[DRAFT_STORAGE_KEY] as { tags: string }).tags).toBe('updated-tag');
     });
 
     it('cancel prevents pending save', async () => {
@@ -158,14 +161,16 @@ describe('cardDraft', () => {
       expect(await autosaver.load()).toBeNull();
     });
 
-    it('load restores a saved draft', async () => {
+    it('load restores config + tags but clears field content', async () => {
       const autosaver = new DraftAutosaver();
       const draft = makeDraft();
       autosaver.schedule(draft);
       await autosaver.flush();
       const restored = await autosaver.load();
       expect(restored?.noteType).toBe('Cell Video Card');
-      expect(restored?.fields.targetWord).toBe('hello');
+      expect(restored?.tags).toBe('my-tag another');
+      // Field content cleared on restore (closing dialog = clear content).
+      expect(restored?.fields.targetWord).toBe('');
     });
 
     it('load returns null for invalid stored value', async () => {

@@ -54,4 +54,23 @@ describe('Select', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
+
+  it('applies left-align class by default', () => {
+    render(<Select options={options} value="a" />);
+    fireEvent.click(screen.getByRole('button'));
+    const menu = screen.getByRole('listbox');
+    expect(menu.className).toMatch(/menuAlignLeft/);
+  });
+
+  it('applies right-align class when menuAlign="right"', () => {
+    render(<Select options={options} value="a" menuAlign="right" />);
+    fireEvent.click(screen.getByRole('button'));
+    const menu = screen.getByRole('listbox');
+    expect(menu.className).toMatch(/menuAlignRight/);
+  });
+
+  // Note: menu width behavior (width: max-content, min-width: 100%,
+  // max-width: 320px) is asserted via MCP browser verification because
+  // jsdom does not compute styles from external CSS modules. See
+  // Select.module.css `.menu` for the implementation.
 });

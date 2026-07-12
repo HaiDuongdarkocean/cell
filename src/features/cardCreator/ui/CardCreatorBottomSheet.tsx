@@ -11,6 +11,7 @@ import { BottomSheet } from '@/shared/ui/BottomSheet';
 import type { CardCreatorSettings } from '@/entities/settings';
 import { CardCreatorDialogContent } from './CardCreatorDialogContent';
 import { useCardCreatorState, type OpenContext } from './useCardCreatorState';
+import { clearAnkiConnectPrefetch } from '../service/cardCreatorPrefetch';
 
 interface CardCreatorBottomSheetProps {
   /** Whether the bottom sheet is open. */
@@ -37,17 +38,22 @@ export function CardCreatorBottomSheet({
 
   if (!open) return null;
 
+  const handleOpenChange = (next: boolean): void => {
+    if (!next) clearAnkiConnectPrefetch();
+    onOpenChange(next);
+  };
+
   return (
     <BottomSheet
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       title="Card Creator"
       data-testid="card-creator-bottom-sheet"
     >
       <CardCreatorDialogContent
         state={state}
         variant="mobile"
-        onCancel={() => onOpenChange(false)}
+        onCancel={() => handleOpenChange(false)}
       />
     </BottomSheet>
   );

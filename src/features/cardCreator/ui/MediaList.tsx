@@ -305,18 +305,24 @@ function ImageGallery({
 
   const handleDragOver = (index: number) => (e: React.DragEvent<HTMLDivElement>): void => {
     e.preventDefault();
-    e.stopPropagation();
-    setDragOverIndex(index);
+    if (draggingIndex !== null) {
+      e.stopPropagation();
+      setDragOverIndex(index);
+    }
+    // External file drag: let bubble to outer mediaZone so processDrop runs.
   };
 
   const handleDrop = (index: number) => (e: React.DragEvent<HTMLDivElement>): void => {
     e.preventDefault();
-    e.stopPropagation();
-    if (draggingIndex !== null && draggingIndex !== index) {
-      onReorder?.(draggingIndex, index);
+    if (draggingIndex !== null) {
+      e.stopPropagation();
+      if (draggingIndex !== index) {
+        onReorder?.(draggingIndex, index);
+      }
+      setDraggingIndex(null);
+      setDragOverIndex(null);
     }
-    setDraggingIndex(null);
-    setDragOverIndex(null);
+    // External file drop: let bubble to outer mediaZone so processDrop runs.
   };
 
   const handleDragEnd = (): void => {
@@ -325,10 +331,13 @@ function ImageGallery({
   };
 
   const handleGalleryDrop = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDraggingIndex(null);
-    setDragOverIndex(null);
+    if (draggingIndex !== null) {
+      e.preventDefault();
+      e.stopPropagation();
+      setDraggingIndex(null);
+      setDragOverIndex(null);
+    }
+    // External file drop: let bubble to outer mediaZone so processDrop runs.
   };
 
   const draggable = onReorder !== undefined;
@@ -397,18 +406,24 @@ function AudioList({
 
   const handleDragOver = (index: number) => (e: React.DragEvent<HTMLDivElement>): void => {
     e.preventDefault();
-    e.stopPropagation();
-    setDragOverIndex(index);
+    if (draggingIndex !== null) {
+      e.stopPropagation();
+      setDragOverIndex(index);
+    }
+    // External file drag: let bubble to outer mediaZone so processDrop runs.
   };
 
   const handleDrop = (index: number) => (e: React.DragEvent<HTMLDivElement>): void => {
     e.preventDefault();
-    e.stopPropagation();
-    if (draggingIndex !== null && draggingIndex !== index) {
-      onReorder?.(draggingIndex, index);
+    if (draggingIndex !== null) {
+      e.stopPropagation();
+      if (draggingIndex !== index) {
+        onReorder?.(draggingIndex, index);
+      }
+      setDraggingIndex(null);
+      setDragOverIndex(null);
     }
-    setDraggingIndex(null);
-    setDragOverIndex(null);
+    // External file drop: let bubble to outer mediaZone so processDrop runs.
   };
 
   const handleDragEnd = (): void => {
@@ -417,10 +432,13 @@ function AudioList({
   };
 
   const handleListDrop = (e: React.DragEvent<HTMLDivElement>): void => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDraggingIndex(null);
-    setDragOverIndex(null);
+    if (draggingIndex !== null) {
+      e.preventDefault();
+      e.stopPropagation();
+      setDraggingIndex(null);
+      setDragOverIndex(null);
+    }
+    // External file drop: let bubble to outer mediaZone so processDrop runs.
   };
 
   const draggable = onReorder !== undefined;

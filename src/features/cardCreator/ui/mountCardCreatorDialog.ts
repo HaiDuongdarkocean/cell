@@ -43,6 +43,8 @@ export interface CardCreatorMountController {
   open: (context: CardCreatorOpenContext, action?: CardCreatorAction) => void;
   /** Close the dialog. */
   close: () => void;
+  /** Whether the dialog is currently open (guard for keyboard shortcuts). */
+  isOpen: () => boolean;
   /** Update settings (e.g. when AnkiConnect URL changes). */
   updateSettings: (settings: CardCreatorSettings) => void;
   /** Unmount + remove host element. */
@@ -199,6 +201,7 @@ export function mountCardCreatorDialog(
       initialAction = undefined;
       render();
     },
+    isOpen: () => open,
     updateSettings: (next: CardCreatorSettings) => {
       settings = next;
       render();

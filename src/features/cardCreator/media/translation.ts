@@ -2,14 +2,12 @@
  * Sentence translation — translate a single cue's text via the background
  * TRANSLATE message (Google Translate unofficial endpoint, ADR-021 D2).
  *
- * Reuses the existing translate service's encode/decode punctuation logic
- * to prevent Google from splitting on sentence boundaries. Returns empty
- * string on any failure (translation is optional; never blocks card creation).
+ * Returns empty string on any failure (translation is optional; never blocks
+ * card creation).
  */
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse, TranslatePayload, TranslateResult } from '@/entities/message';
-import { encodePunctuation, decodePunctuation } from '@/features/translate/service/translateService';
 
 /**
  * Translate a single cue's text from source to target language.
@@ -27,8 +25,7 @@ export async function translateSentence(
   if (!text.trim()) return '';
   if (sourceLang === targetLang) return text;
 
-  const encoded = encodePunctuation(text.replace(/\n/g, ' '));
-  const payload: TranslatePayload = { text: encoded, sl: sourceLang, tl: targetLang };
+  const payload: TranslatePayload = { text: text.replace(/\n/g, ' '), sl: sourceLang, tl: targetLang };
 
   try {
     const response = (await sendMessage({
@@ -38,9 +35,8 @@ export async function translateSentence(
     if (!response?.success || !response.data) return '';
     const segments = response.data.translated;
     if (!segments || segments.length === 0) return '';
-    // Join all segments (Google may split) + decode punctuation.
-    const joined = segments.join('');
-    return decodePunctuation(joined).trim();
+    // Join all segments (Google may split on sentence boundaries) + trim.
+    return segments.join('').trim();
   } catch {
     return '';
   }

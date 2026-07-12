@@ -2,14 +2,18 @@
  * CardDraft — in-memory card draft state + autosave to chrome.storage.local.
  *
  * Per spec §5.2: the draft holds the user's work-in-progress card (note type,
- * deck, fields, field mapping, tags, update mode). It is autosaved to
+ * deck, fields, field mapping, tags, update mode). Config selections (note
+ * type, deck, field mapping, media update mode) + tags are autosaved to
  * `chrome.storage.local` under key `cardCreatorDraft` (debounced 500ms) so
- * that a tab crash / accidental close doesn't lose work. Cleared on
- * successful Add/Update or explicit Cancel confirm.
+ * that a tab crash / accidental close doesn't lose selections. Text field
+ * content (targetWord, sentence, definitions, note, moreExample) and media
+ * are NOT persisted — closing the dialog clears all field content except
+ * tags. Cleared on successful Add/Update.
  *
  * Note: MediaFile ArrayBuffer is NOT persisted (storage.local can't hold
  * ArrayBuffer reliably across sessions + would bloat storage). On restore,
- * media arrays are emptied — the user re-captures. Text fields are restored.
+ * media arrays are emptied — the user re-captures. Text fields are also
+ * emptied on restore (closing the dialog = clear content, keep tags + config).
  */
 import type { MediaFile } from '../media/mediaFile';
 import type { FieldMapping, SourceFieldKey } from '../service/fieldMapping';
@@ -46,18 +50,12 @@ export const DRAFT_STORAGE_KEY = 'cardCreatorDraft';
 /** Autosave debounce delay (ms). */
 const AUTOSAVE_DEBOUNCE_MS = 500;
 
-/** Serialized draft (ArrayBuffer media stripped — not persistable). */
+/** Serialized draft (only config + tags persisted; field content cleared on
+ *  close per UX requirement: closing the dialog clears all field content
+ *  except tags). */
 interface SerializedDraft {
   readonly noteType: string;
   readonly deck: string;
-  readonly fields: {
-    readonly targetWord: string;
-    readonly sentence: string;
-    readonly sentenceTranslation: string;
-    readonly definitions: string;
-    readonly note: string;
-    readonly moreExample: string;
-  };
   readonly fieldMapping: FieldMapping;
   readonly tags: string;
   readonly mediaUpdateMode: MediaUpdateMode;
@@ -65,19 +63,12 @@ interface SerializedDraft {
   readonly savedAt: number;
 }
 
-/** Serialize a draft for storage (strips media ArrayBuffers). */
+/** Serialize a draft for storage (strips field content + media — only config
+ *  + tags persisted). */
 export function serializeDraft(draft: CardDraft): SerializedDraft {
   return {
     noteType: draft.noteType,
     deck: draft.deck,
-    fields: {
-      targetWord: draft.fields.targetWord,
-      sentence: draft.fields.sentence,
-      sentenceTranslation: draft.fields.sentenceTranslation,
-      definitions: draft.fields.definitions,
-      note: draft.fields.note,
-      moreExample: draft.fields.moreExample,
-    },
     fieldMapping: draft.fieldMapping,
     tags: draft.tags,
     mediaUpdateMode: draft.mediaUpdateMode,
@@ -85,21 +76,22 @@ export function serializeDraft(draft: CardDraft): SerializedDraft {
   };
 }
 
-/** Deserialize a stored draft back to a CardDraft (media arrays empty). */
+/** Deserialize a stored draft back to a CardDraft (text fields + media empty
+ *  — closing the dialog clears all field content except tags). */
 export function deserializeDraft(serialized: SerializedDraft): CardDraft {
   return {
     noteType: serialized.noteType,
     deck: serialized.deck,
     fields: {
-      targetWord: serialized.fields.targetWord,
-      sentence: serialized.fields.sentence,
-      sentenceTranslation: serialized.fields.sentenceTranslation,
-      definitions: serialized.fields.definitions,
+      targetWord: '',
+      sentence: '',
+      sentenceTranslation: '',
+      definitions: '',
       images: [],
       sentenceAudios: [],
       wordAudios: [],
-      note: serialized.fields.note,
-      moreExample: serialized.fields.moreExample,
+      note: '',
+      moreExample: '',
     },
     fieldMapping: serialized.fieldMapping,
     tags: serialized.tags,
@@ -114,8 +106,6 @@ export function isValidSerializedDraft(value: unknown): value is SerializedDraft
   return (
     typeof v.noteType === 'string' &&
     typeof v.deck === 'string' &&
-    typeof v.fields === 'object' &&
-    v.fields !== null &&
     typeof v.tags === 'string' &&
     (v.mediaUpdateMode === 'overwrite' || v.mediaUpdateMode === 'append' || v.mediaUpdateMode === 'skip') &&
     typeof v.savedAt === 'number'

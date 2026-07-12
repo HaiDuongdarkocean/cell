@@ -61,6 +61,7 @@ export function FieldRow({
               onChange={onMapChange}
               aria-label={`Map ${label} to Anki field`}
               data-testid={testId ? `${testId}-map` : undefined}
+              menuAlign="right"
             />
           </span>
         )}

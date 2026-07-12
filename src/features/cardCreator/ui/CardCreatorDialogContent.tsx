@@ -55,10 +55,12 @@ export function CardCreatorDialogContent({
 
   const containerClass = variant === 'mobile' ? `${styles.body} ${styles.mobile}` : styles.body;
 
-  if (loadStatus === 'loading') {
-    return <div className={styles.loading}>Loading from AnkiConnect…</div>;
-  }
-
+  // Dropdowns (Note type, Deck) are always enabled — no disable/opacity
+  // flash. Options populate instantly when the prefetched AnkiConnect data
+  // resolves (typically before the dialog even opens, since media capture
+  // takes longer than the prefetch). If the user opens a dropdown before
+  // options arrive, the menu is empty until they arrive — no visual
+  // "loading" state on the trigger.
   const showNoRecentAlert = loadStatus === 'ready' && recentNoteId === null;
 
   return (

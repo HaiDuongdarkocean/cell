@@ -74,8 +74,12 @@
 .menu {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
-  right: 0;
+  /* Width follows content so a narrow trigger doesn't clip long options,
+     but never shrinks below the trigger and is capped to guard very long
+     items. */
+  width: max-content;
+  min-width: 100%;
+  max-width: 320px;
   background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -85,6 +89,19 @@
   /* Design-system scrollbar (same as Dialog and SearchableSelect). */
   scrollbar-width: thin;
   scrollbar-color: var(--color-scrollbar-thumb, #cbd5e1) transparent;
+}
+
+/* Default: menu's left edge aligns with trigger's left edge (opens rightward). */
+.menuAlignLeft {
+  left: 0;
+}
+
+/* Right-aligned: menu's right edge aligns with trigger's right edge (opens
+   leftward). Use when the select sits on the right side of a row so the
+   menu doesn't overflow the card/container. */
+.menuAlignRight {
+  right: 0;
+  left: auto;
 }
 
 .menu::-webkit-scrollbar {

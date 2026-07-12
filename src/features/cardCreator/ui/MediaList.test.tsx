@@ -195,6 +195,38 @@ describe('MediaList — image gallery', () => {
     expect(files).toHaveLength(0);
     expect(invalidCount).toBe(1);
   });
+
+  it('calls onFilesDrop when an image file is dropped on a non-empty image gallery', async () => {
+    const onFilesDrop = jest.fn();
+    const file = new File([new Uint8Array([9, 8, 7])], 'new.png', { type: 'image/png' });
+    render(
+      <MediaList
+        files={[image]}
+        kind="image"
+        addLabel="Add image"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onFilesDrop={onFilesDrop}
+        onReorder={jest.fn()}
+        testId="cc-images"
+      />
+    );
+
+    // Drop on an existing thumbnail — before the fix, the inner onDrop handler
+    // called stopPropagation unconditionally and blocked the outer mediaZone
+    // handler from running, so onFilesDrop was never called.
+    fireEvent.drop(screen.getByTestId('cc-images-thumb-0'), { dataTransfer: { files: [file] } });
+
+    await waitFor(() => {
+      expect(onFilesDrop).toHaveBeenCalled();
+    });
+
+    const [files, invalidCount] = onFilesDrop.mock.calls[0];
+    expect(files).toHaveLength(1);
+    expect(files[0].kind).toBe('image');
+    expect(files[0].filename).toBe('new.png');
+    expect(invalidCount).toBe(0);
+  });
 });
 
 describe('MediaList — audio list', () => {
@@ -298,5 +330,66 @@ describe('MediaList — audio list', () => {
     fireEvent.dragStart(screen.getByTestId('cc-audio-view-0'), { dataTransfer: {} });
     fireEvent.drop(screen.getByTestId('cc-audio-view-1'), { dataTransfer: {} });
     expect(onReorder).toHaveBeenCalledWith(0, 1);
+  });
+
+  it('calls onFilesDrop when an audio file is dropped on an empty audio area', async () => {
+    const onFilesDrop = jest.fn();
+    const file = new File([new Uint8Array([1, 2, 3])], 'dropped.webm', { type: 'audio/webm' });
+    render(
+      <MediaList
+        files={[]}
+        kind="audio"
+        addLabel="Add sentence audio"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onFilesDrop={onFilesDrop}
+        testId="cc-audio"
+      />
+    );
+
+    fireEvent.dragEnter(screen.getByTestId('cc-audio'));
+    fireEvent.drop(screen.getByTestId('cc-audio'), { dataTransfer: { files: [file] } });
+
+    await waitFor(() => {
+      expect(onFilesDrop).toHaveBeenCalled();
+    });
+
+    const [files, invalidCount] = onFilesDrop.mock.calls[0];
+    expect(files).toHaveLength(1);
+    expect(files[0].kind).toBe('audio');
+    expect(files[0].filename).toBe('dropped.webm');
+    expect(invalidCount).toBe(0);
+  });
+
+  it('calls onFilesDrop when an audio file is dropped on a non-empty audio area', async () => {
+    const onFilesDrop = jest.fn();
+    const file = new File([new Uint8Array([9, 8, 7])], 'new.mp3', { type: 'audio/mpeg' });
+    render(
+      <MediaList
+        files={[audio]}
+        kind="audio"
+        addLabel="Add sentence audio"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onFilesDrop={onFilesDrop}
+        onReorder={jest.fn()}
+        testId="cc-audio"
+      />
+    );
+
+    // Drop on an existing row — before the fix, the inner onDrop handler
+    // called stopPropagation unconditionally and blocked the outer mediaZone
+    // handler from running, so onFilesDrop was never called.
+    fireEvent.drop(screen.getByTestId('cc-audio-view-0'), { dataTransfer: { files: [file] } });
+
+    await waitFor(() => {
+      expect(onFilesDrop).toHaveBeenCalled();
+    });
+
+    const [files, invalidCount] = onFilesDrop.mock.calls[0];
+    expect(files).toHaveLength(1);
+    expect(files[0].kind).toBe('audio');
+    expect(files[0].filename).toBe('new.mp3');
+    expect(invalidCount).toBe(0);
   });
 });
