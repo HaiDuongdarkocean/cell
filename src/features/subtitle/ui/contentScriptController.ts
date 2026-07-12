@@ -545,27 +545,29 @@ export function init(video: HTMLVideoElement): () => void {
 
   // ADR-033: track last seek target so rapid cue-nav (A/S/D pressed before
   // Netflix player.seek() settles) computes next/prev from the INTENDED
-  // position, not stale video.currentTime. Netflix seek = fast-play
-  // (currentTime advances gradually toward target, not instant jump), so
-  // video.seeking is unreliable (only true ~2ms). Instead: if videoMs <
-  // lastSeekTargetMs, video hasn't reached target yet → use lastSeekTarget.
+  // position, not stale video.currentTime. Netflix seek behavior:
+  //   - Forward seek: currentTime advances gradually (fast-play) toward target
+  //   - Backward seek: currentTime sticks at old pos, then jumps to target
+  // video.seeking unreliable (only true ~2ms). Use |videoMs - lastSeekTarget|
+  // > 50ms to detect seek-in-progress (works both directions). 50ms tolerance
+  // is small enough to settle quickly, large enough for float jitter.
   // Listener catches ALL seeks (keydown, NavCluster, Side Panel, external).
   let lastSeekTargetMs: number | null = null;
+  const SEEK_SETTLE_TOLERANCE_MS = 50;
   const onNfSeek = (e: Event) => {
     lastSeekTargetMs = (e as CustomEvent).detail as number;
   };
   document.addEventListener('__NF_SEEK', onNfSeek);
 
-  /** Effective time for cue lookup: lastSeekTarget if video hasn't reached it, else video.currentTime. */
+  /** Effective time for cue lookup: lastSeekTarget if seek in progress, else video.currentTime. */
   const getEffectiveMs = (): number => {
     const offsetMs = offsetController?.getOffsetMs() ?? 0;
     const videoMs = video.currentTime * 1000;
-    // Netflix seek = fast-play: currentTime advances toward target.
-    // If videoMs < lastSeekTarget, seek still in progress → use intended target.
-    if (lastSeekTargetMs !== null && videoMs < lastSeekTargetMs) {
+    // Seek in progress if video hasn't reached target (either direction).
+    if (lastSeekTargetMs !== null && Math.abs(videoMs - lastSeekTargetMs) > SEEK_SETTLE_TOLERANCE_MS) {
       return lastSeekTargetMs + offsetMs;
     }
-    // Reached or passed target → settled → use actual video time
+    // Reached target → settled → use actual video time
     lastSeekTargetMs = null;
     return videoMs + offsetMs;
   };
