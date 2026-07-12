@@ -9,7 +9,7 @@ import {
 } from '@/shared/config/config';
 import { buildTextShadow, hexToRgba, sanitizeFontFamily } from './subtitleUI';
 import { NAV_CLUSTER_ICONS, type NavClusterIconName } from './navClusterIcons';
-import { prevSentence, nextSentence, seekBy, findActiveCueIndex, findNearestCueIndex } from './navClusterActions';
+import { prevSentence, nextSentence, seekBy, findActiveCueIndex } from './navClusterActions';
 import { seekVideo, isNetflixPage } from './netflixPlayback';
 import { createSubtitleBlockDOM, type SubtitleBlockDOM } from './subtitleBlockDom';
 import { SUBTITLE_BLOCK_CSS } from './subtitleBlockCss';
@@ -302,9 +302,16 @@ export class SubtitleBlockController {
       seekVideo(this.video, (cues[index].start - offsetMs) / 1000);
       return;
     }
-    const nearestIndex = findNearestCueIndex(cues, currentMs);
-    if (nearestIndex >= 0 && cues[nearestIndex]) {
-      seekVideo(this.video, (cues[nearestIndex].start - offsetMs) / 1000);
+    // In gap (index === -1): seek to the PREVIOUS cue (end <= effectiveMs,
+    // nearest), not the nearest cue overall. Otherwise repeat == next when
+    // the next cue's start is closer to currentMs than the previous cue's end.
+    const effectiveMs = currentMs + offsetMs;
+    let prevIndex = -1;
+    for (let i = cues.length - 1; i >= 0; i--) {
+      if (cues[i].end <= effectiveMs) { prevIndex = i; break; }
+    }
+    if (prevIndex >= 0 && cues[prevIndex]) {
+      seekVideo(this.video, (cues[prevIndex].start - offsetMs) / 1000);
     }
   }
 
