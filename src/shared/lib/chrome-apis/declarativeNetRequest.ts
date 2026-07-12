@@ -25,16 +25,23 @@
  * and can mask later bugs).
  */
 
-const RULE_ID_STORAGE_KEY = 'dnrRefererRuleIdCounter';
+// DNR rule ids must be unique integers >= 1 and persist across SW evictions
+// (rules live in the browser, not the SW). Using Date.now() as the base
+// guarantees uniqueness across SW restarts — time only moves forward, so a
+// restarted SW gets a higher base than any rule created before the restart.
+// The in-memory `++ruleIdBase` handles multiple calls within the same
+// millisecond (JS is single-threaded, so the increment is atomic).
+// Previous approaches (storage-backed counter with read-modify-write) raced
+// when the fire-and-forget persist didn't complete before SW eviction →
+// restarted SW read a stale base → created a duplicate id →
+// "Rule with id N does not have a unique ID" error.
+let ruleIdBase = 0;
 
-async function nextRuleId(): Promise<number> {
-  // DNR dynamic rule ids must be unique and >= 1. Use a session-storage
-  // counter so SW eviction does not reset it mid-flight.
-  const raw = await chrome.storage.session.get(RULE_ID_STORAGE_KEY);
-  const current = (raw[RULE_ID_STORAGE_KEY] as number | undefined) ?? 1;
-  const next = current + 1;
-  await chrome.storage.session.set({ [RULE_ID_STORAGE_KEY]: next });
-  return current;
+function nextRuleId(): number {
+  if (ruleIdBase === 0) {
+    ruleIdBase = Date.now();
+  }
+  return ++ruleIdBase;
 }
 
 /**
@@ -50,7 +57,7 @@ async function nextRuleId(): Promise<number> {
  * @returns The rule id (pass to `removeRefererRule` to clean up)
  */
 export async function setRefererRule(url: string, referer: string): Promise<number> {
-  const ruleId = await nextRuleId();
+  const ruleId = nextRuleId();
   let origin: string;
   try {
     origin = new URL(referer).origin;

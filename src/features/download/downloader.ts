@@ -1,6 +1,7 @@
 import { parseM3u8 } from '@/shared/lib/parsers/m3u8Parser';
 import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
 import { convertVttToSrt } from '@/shared/lib/parsers/vttToSrt';
+import { convertTtmlToSrt } from '@/shared/lib/parsers/ttmlToSrt';
 import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
 import { ConversionTimer } from '@/features/transmux/merging/conversionTimer';
 import { planParallelConversion } from '@/features/transmux/planning/parallelPlanner';
@@ -354,6 +355,10 @@ export class Downloader {
       srtContent = convertAssToSrt(content);
     } else if (subtitle.format === 'vtt') {
       srtContent = convertVttToSrt(content);
+    } else if (subtitle.format === 'ttml') {
+      // ADR-029: Netflix serves IMSC1.1 TTML. convertTtmlToSrt is regex-based
+      // (no DOMParser) so it works in the service worker where this runs.
+      srtContent = convertTtmlToSrt(content);
     } else if (subtitle.format === 'srt') {
       srtContent = content;
     } else {

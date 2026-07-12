@@ -5,6 +5,7 @@ import type {
   Settings,
   VideoQuality,
 } from '@/entities/media';
+import { languageMatches } from '@/shared/config/languageRegistry';
 
 /**
  * Numeric rank for each concrete video quality. Higher number = higher quality.
@@ -75,7 +76,9 @@ export function selectBestMedia(
   const wantAllSubs = settings.selectedSubtitleLanguages.includes('all');
   const matchedSubs = wantAllSubs
     ? subtitles
-    : subtitles.filter((s) => settings.selectedSubtitleLanguages.includes(s.language));
+    : subtitles.filter((s) =>
+        settings.selectedSubtitleLanguages.some((lang) => languageMatches(lang, s.language)),
+      );
   // Subtitle fallback only when subtitles exist but none match the selected
   // languages. When there are no subtitles at all, there is nothing to fall
   // back from — leave the reason untouched.
