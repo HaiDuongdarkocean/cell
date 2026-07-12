@@ -70,5 +70,11 @@ bin/
 # Integration test segment cache (downloaded by globalSetup)
 tests/integration/.cache/
 
-# Third-party reference projects (not part of this repo)
+# Third-party reference projects (kept for Netflix subtitle detection reference)
 project-reference/
+
+# Debug artifacts (screenshots, sample subtitles, PowerShell $null)
+/$null
+card-creator-desktop.png
+daemons-ep1.vtt
+player_state.png

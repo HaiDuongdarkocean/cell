@@ -1,13 +1,15 @@
 ---
 name: extension-browser-debugging
-description: Browser debugging + testing for Chrome/Edge MV3 extensions via DevTools MCP. Use when developing, debugging, or verifying any browser extension: install unpacked extension, inspect content-script injection, measure DOM, capture console errors, analyze network, profile performance, verify accessibility, simulate drag-drop file import, set chrome.storage preconditions, or verify acceptance criteria (C1-Cn) on a real page. Triggers on "extension bug", "content script not injecting", "install extension test", "inspect DOM", "measure element", "screenshot verify", "verify C1-C15", "browser performance", "a11y audit", "network request analysis".
+description: Browser debugging + testing for Chrome/Edge MV3 extensions via DevTools MCP. Install unpacked extension, inspect content-script injection, measure DOM, capture console errors, analyze network, verify acceptance criteria. Triggers on "extension bug", "install extension", "reload extension", "inspect DOM", "content script not injecting", "verify C1-Cn", "browser performance", "a11y audit".
 ---
 
 # Extension Browser Debugging
 
 ## Overview
 
-This is a **sub-skill** of `debugging-and-error-recovery`. It is auto-invoked by the parent skill's Step 3 (verify evidence) and Step 8 (verify fix) when the bug is browser-facing. Users do NOT need to call this skill directly — call `debugging-and-error-recovery` and it will invoke this skill automatically when needed.
+This skill is the MCP tooling layer for browser-extension debugging. It can be invoked two ways:
+1. **Directly by the user** — when the task is purely browser-side (install extension, inspect DOM, capture console, verify C1-Cn). Trigger via `/extension-browser-debugging` or phrases like "install extension", "reload extension", "inspect DOM".
+2. **Auto-invoked by `debugging-and-error-recovery`** — the parent skill's Step 3 (verify evidence) and Step 8 (verify fix) call this skill automatically when the bug is browser-facing. Users do NOT need to call the parent separately in that case.
 
 This skill provides the MCP tooling layer: `install_extension`, `evaluate_script` snippets, DataTransfer drop simulation, `chrome.storage` preconditions, theme token verification, C1-Cn acceptance-criteria verification, performance + a11y audits.
 
@@ -61,6 +63,29 @@ This skill provides the MCP tooling layer: `install_extension`, `evaluate_script
 
 **No `wait` tool.** Use `evaluate_script` with `async () => { await new Promise(r => setTimeout(r, 1500)); ... }` for in-page waits, or shell `Start-Sleep -Seconds N` between MCP calls for navigation/render waits.
 
+### Hang recovery — `install_extension` / `reload_extension` hanging >10s
+If `install_extension` or `reload_extension` produces no response within ~10s (silent hang, tool call eventually canceled by timeout), the MCP-managed browser profile is stuck. Recovery:
+1. Kill the MCP Edge/Chrome process for the profile (PowerShell):
+   ```powershell
+   # Edge profile C:\edge-devtools-mcp-2 — find by user-data-dir
+   Get-Process msedge -ErrorAction SilentlyContinue |
+     Where-Object { $_.CommandLine -match 'edge-devtools-mcp-2' } |
+     Stop-Process -Force
+   Start-Sleep -Seconds 2
+   ```
+2. The MCP server auto-relaunches the browser on the next tool call. Now decide which method to use:
+   - **Check if extension survived the kill** → call `list_extensions` (no args). Returns lines like `id=<id> "Video Downloader" v0.1.0 Enabled`.
+   - **Extension still listed + Enabled** → use `reload_extension({ id: "<id>" })`. Copy the `id` from the `list_extensions` output — do NOT guess or hardcode it (IDs change across installs/profiles).
+   - **Extension missing or disabled** → fall back to `install_extension({ path: "C:\\...\\cell-ext" })` (space-free path, see Phase 0 step 2).
+3. If it hangs again on retry → the `path` likely contains spaces (see Phase 0 step 2). Copy to a space-free temp path first.
+
+**ID lookup rule:** never assume the extension ID. Always `list_extensions` first, parse the `id=` prefix from the matching line (match by name, e.g. "Video Downloader"), then pass that exact ID to `reload_extension`. IDs are per-profile and change on reinstall.
+
+Common hang causes (in order of frequency):
+- **Path with spaces** → `install_extension` silent hang (most common).
+- **Profile lock stale** → previous Edge process did not release the profile lock. Kill + relaunch fixes.
+- **MCP server desync** → rare; restart the MCP server itself (Windsurf: toggle the server off/on in MCP panel).
+
 ## Security
 
 ### Profile Isolation
@@ -92,8 +117,14 @@ Everything read from the browser — DOM nodes, console logs, network responses,
 
 **Correct method — `install_extension` MCP tool:**
 1. Build the extension: `npm run build` → produces `dist/`.
-2. If the dist path contains spaces (e.g. `d:/Tool/learning apply skill/cell/dist`), copy to a space-free temp path first: `Copy-Item -Recurse dist "$env:TEMP\smp-ext"` (PowerShell). The MCP tool accepts paths with spaces, but copying avoids downstream quoting issues in `evaluate_script` file reads.
-3. Call `install_extension` with `{ "path": "C:\\Users\\...\\smp-ext" }` (absolute, backslash-escaped in JSON). Returns `{ "Extension installed. Id: <id>" }`.
+2. **CRITICAL — path must be space-free.** `install_extension` HANGS (no response, tool call canceled by timeout) when the `path` argument contains spaces. This was verified 2026-07-13: `D:\Tool\learning apply skill\cell\dist` → hang; `C:\Users\...\Temp\cell-ext` → success. Always copy to a space-free temp path first:
+   ```powershell
+   $dest = "$env:TEMP\cell-ext"
+   if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
+   Copy-Item -Recurse "D:\path with spaces\dist" $dest
+   ```
+   The hang is silent — no error, no timeout message, just a canceled tool call. If `install_extension` produces no response, the FIRST thing to check is spaces in the path.
+3. Call `install_extension` with `{ "path": "C:\\Users\\...\\cell-ext" }` (absolute, backslash-escaped in JSON, no spaces). Returns `{ "Extension installed. Id: <id>" }`.
 4. Verify via `list_pages` — the extension's service worker appears as `sw-N: chrome-extension://<id>/service-worker-loader.js`.
 5. Verify manifest via `evaluate_script` with `serviceWorkerId: "sw-N"`:
    ```javascript
@@ -160,11 +191,13 @@ Compare actual vs expected in a table: dimension, actual (from MCP), expected (f
 Fix in source code (follow `debugging-and-error-recovery` Steps 5-8). **Never** patch via `evaluate_script`.
 
 ### 5. Verify
-`npm run build` → reload extension at `edge://extensions/` or `chrome://extensions/` → reload page → verify re-injection:
+`npm run build` → reload extension via `reload_extension` MCP tool (preferred, no manual UI) or at `edge://extensions/` → reload page → verify re-injection:
 ```javascript
 () => ({ hasToggle: !!document.querySelector('[data-testid="panel-toggle"]') })
 ```
 Reproduce original scenario → measure same elements → `take_screenshot` → test all state transitions (fresh → open → close → open → fullscreen → exit) → check console.
+
+**Reload vs reinstall:** `reload_extension` takes an extension `id` (not a path), so it works regardless of the original install path — no space-free requirement. But if the extension was uninstalled or the MCP profile was reset, you must `install_extension` again, and then the space-free path rule from Phase 0 applies.
 
 ### 6. Acceptance-criteria verification (for feature QA)
 When verifying a feature against a criteria list (C1, C2, ...), batch related assertions into one `evaluate_script` call to reduce round-trips. Each call returns JSON — structure it as `{ C1_xxx: value, C2_xxx: value }` so the report maps directly to criteria. Save a screenshot per major state (light mode, dark mode, panel open, panel closed) to `docs/test-reports/<feature>-<state>.png`.

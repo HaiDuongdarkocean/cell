@@ -31,7 +31,8 @@ Task arrives
     │       (Chrome/Edge MV3 extension: install, inspect, measure, verify)
     ├── Something broke? ──────────────→ debugging-and-error-recovery
     │   (single entry point — auto-invokes extension-browser-debugging
-    │    when bug is browser-facing; do NOT call sub-skill separately)
+    │    when bug is browser-facing; sub-skill also callable directly
+    │    for pure browser tasks: install/reload extension, inspect DOM)
     ├── Reviewing code? ───────────────→ code-review-and-quality
     │   ├── Too complex? ─────────────→ code-simplification
     │   ├── Security concerns? ───────→ security-and-hardening
