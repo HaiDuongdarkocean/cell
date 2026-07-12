@@ -548,8 +548,14 @@ export function init(video: HTMLVideoElement): () => void {
   // position, not stale video.currentTime. Without this, pressing D every
   // 400ms re-seeks the same cue because video.currentTime hasn't reached
   // the previous seek target yet (Netflix seek is async, ~600ms+).
+  // Listener catches ALL seeks (keydown, NavCluster, Side Panel, external)
+  // so lastSeekTargetMs always reflects the latest intended video position.
   let lastSeekTargetMs: number | null = null;
   const SEEK_SETTLE_TOLERANCE_MS = 500; // video within 500ms of target = settled
+  const onNfSeek = (e: Event) => {
+    lastSeekTargetMs = (e as CustomEvent).detail as number;
+  };
+  document.addEventListener('__NF_SEEK', onNfSeek);
 
   /** Effective time for cue lookup: lastSeekTarget if video hasn't settled, else video.currentTime. */
   const getEffectiveMs = (): number => {
@@ -761,14 +767,14 @@ export function init(video: HTMLVideoElement): () => void {
         const offsetMs = offsetController?.getOffsetMs() ?? 0;
         const effectiveMs = getEffectiveMs();
         const prevCue = [...bilingualCues].reverse().find((c) => c.end < effectiveMs);
-        if (prevCue) { seekToCue(video, prevCue, offsetMs); lastSeekTargetMs = prevCue.start; }
+        if (prevCue) seekToCue(video, prevCue, offsetMs);
         break;
       }
       case 'next-cue': {
         const offsetMs = offsetController?.getOffsetMs() ?? 0;
         const effectiveMs = getEffectiveMs();
         const nextCue = bilingualCues.find((c) => c.start > effectiveMs + 100);
-        if (nextCue) { seekToCue(video, nextCue, offsetMs); lastSeekTargetMs = nextCue.start; }
+        if (nextCue) seekToCue(video, nextCue, offsetMs);
         break;
       }
       case 'replay-cue': {
@@ -778,7 +784,7 @@ export function init(video: HTMLVideoElement): () => void {
         // match the NEXT cue, not the previous one (replay-cue "jump back" bug).
         const currentCue = bilingualCues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
           ?? [...bilingualCues].reverse().find((c) => c.start < effectiveMs);
-        if (currentCue) { seekToCue(video, currentCue, offsetMs); lastSeekTargetMs = currentCue.start; }
+        if (currentCue) seekToCue(video, currentCue, offsetMs);
         break;
       }
       case 'toggle-overlay': {
@@ -946,7 +952,6 @@ export function init(video: HTMLVideoElement): () => void {
       if (payload?.seekTime !== undefined && (action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue')) {
         // ADR-030: route through seekVideo to avoid Netflix M7375.
         seekVideo(video, (payload.seekTime - offsetMs) / 1000);
-        lastSeekTargetMs = payload.seekTime;
       } else {
         // Fallback: calculate from video.currentTime (in-page keydown path)
         // ADR-033: use getEffectiveMs so rapid press computes from intended pos.
@@ -954,19 +959,19 @@ export function init(video: HTMLVideoElement): () => void {
         switch (action) {
           case 'prev-cue': {
             const prevCue = [...bilingualCues].reverse().find((c) => c.end < effectiveMs);
-            if (prevCue) { seekToCue(video, prevCue, offsetMs); lastSeekTargetMs = prevCue.start; }
+            if (prevCue) seekToCue(video, prevCue, offsetMs);
             break;
           }
           case 'next-cue': {
             const nextCue = bilingualCues.find((c) => c.start > effectiveMs + 100);
-            if (nextCue) { seekToCue(video, nextCue, offsetMs); lastSeekTargetMs = nextCue.start; }
+            if (nextCue) seekToCue(video, nextCue, offsetMs);
             break;
           }
           case 'replay-cue': {
             // Half-open [start, end) — see in-page keydown handler above.
             const currentCue = bilingualCues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
               ?? [...bilingualCues].reverse().find((c) => c.start < effectiveMs);
-            if (currentCue) { seekToCue(video, currentCue, offsetMs); lastSeekTargetMs = currentCue.start; }
+            if (currentCue) seekToCue(video, currentCue, offsetMs);
             break;
           }
           case 'toggle-overlay': {
@@ -1558,6 +1563,7 @@ export function init(video: HTMLVideoElement): () => void {
     window.removeEventListener('yt-navigate-finish', onSpaNav);
     window.removeEventListener('popstate', onSpaNav);
     document.removeEventListener('keydown', onKeydown, true);
+    document.removeEventListener('__NF_SEEK', onNfSeek);
     removeOnMessageListener(onRuntimeMessage);
     removeOnMessageListener(onRuntimeMessage2);
     toggleBtn?.remove();
