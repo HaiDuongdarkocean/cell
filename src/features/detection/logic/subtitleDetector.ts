@@ -1,5 +1,5 @@
 import { SUBTITLE_URL_PATTERNS } from '@/shared/config/urls';
-import { isValidIsoCode } from './languageDetector';
+import { isValidIsoCode, toIso6391 } from './languageDetector';
 import type {
   DetectedSubtitle,
   NetworkRequest,
@@ -71,7 +71,7 @@ function extractLanguage(url: string): string {
       // `/sub/<hash>.srt` URL extracts "sub" as the language, which is neither
       // a real language nor "unknown", so `resolveUnknownSubtitleLanguages`
       // never fires and auto-load fails (bug: kisskh autoload never triggered).
-      if (isValidIsoCode(primary)) return primary;
+      if (isValidIsoCode(primary)) return toIso6391(primary);
     }
   }
 
@@ -85,7 +85,7 @@ function extractLanguage(url: string): string {
     const candidate = kebabParts[kebabParts.length - 1] ?? '';
     if (BCP47_PATTERN.test(candidate)) {
       const primary = candidate.split('-')[0].toLowerCase();
-      if (isValidIsoCode(primary)) return primary;
+      if (isValidIsoCode(primary)) return toIso6391(primary);
     }
   }
 
@@ -98,7 +98,7 @@ function extractLanguage(url: string): string {
   const langIndexMatch = /^([a-z]{2,3})-\d+$/i.exec(filenameWithoutExt);
   if (langIndexMatch) {
     const primary = langIndexMatch[1].toLowerCase();
-    if (isValidIsoCode(primary)) return primary;
+    if (isValidIsoCode(primary)) return toIso6391(primary);
   }
 
   const segments = pathname.split('/').filter((s) => s.length > 0);
@@ -106,7 +106,7 @@ function extractLanguage(url: string): string {
     const candidate = segments[segments.length - 2] ?? '';
     if (BCP47_PATTERN.test(candidate)) {
       const primary = candidate.split('-')[0].toLowerCase();
-      if (isValidIsoCode(primary)) return primary;
+      if (isValidIsoCode(primary)) return toIso6391(primary);
     }
   }
 

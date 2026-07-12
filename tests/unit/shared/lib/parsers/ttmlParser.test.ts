@@ -153,6 +153,38 @@ describe('convertTtmlToSrt', () => {
   });
 
   it('handles empty input gracefully', () => {
-    expect(() => convertTtmlToSrt('')).toThrow('Cannot parse empty TTML content');
+    expect(() => convertTtmlToSrt('')).toThrow('Cannot convert empty TTML content');
+  });
+
+  it('throws when no cues found', () => {
+    const noCues = `<?xml version="1.0"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" ttp:tickRate="10" ttp:timeBase="media">
+<body><div></div></body>
+</tt>`;
+    expect(() => convertTtmlToSrt(noCues)).toThrow('No cues found in TTML content');
+  });
+
+  it('decodes XML entities in cue text', () => {
+    const entityTtml = `<?xml version="1.0"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" ttp:tickRate="10" ttp:timeBase="media">
+<body><div>
+<p begin="0t" end="100t">A &amp; B &lt;tag&gt; &#39;quote&#39;</p>
+</div></body>
+</tt>`;
+    const srt = convertTtmlToSrt(entityTtml);
+    expect(srt).toContain("A & B <tag> 'quote'");
+  });
+
+  it('works without DOMParser (service worker environment)', () => {
+    // Simulate SW environment by temporarily removing DOMParser.
+    const original = (globalThis as { DOMParser?: typeof DOMParser }).DOMParser;
+    delete (globalThis as { DOMParser?: typeof DOMParser }).DOMParser;
+    try {
+      const srt = convertTtmlToSrt(NETFLIX_TTML);
+      expect(srt.split(/\n\s*\n/).filter(Boolean)).toHaveLength(3);
+      expect(srt).toContain('（闹钟 六点）');
+    } finally {
+      if (original) (globalThis as { DOMParser?: typeof DOMParser }).DOMParser = original;
+    }
   });
 });
