@@ -7,6 +7,7 @@
  * `DETECTED_SUBTITLES`; it dispatches to the YouTube or iQIYI mapper based on
  * `payload.source`:
  * - `source === 'iqiyi'` → `mapIqiyiSubtitleTracks` (ADR-028)
+ * - `source === 'netflix'` → `mapNetflixSubtitleTracks` (ADR-029)
  * - `source === 'youtube'` or `undefined` (backward compat ADR-020) →
  *   `mapYouTubeCaptionTracks`
  *
@@ -20,8 +21,10 @@ import { sendTabMessage } from '@/shared/lib/chrome-apis';
 import {
   mapYouTubeCaptionTracks,
   mapIqiyiSubtitleTracks,
+  mapNetflixSubtitleTracks,
   type YouTubeCaptionTrack,
   type IqiyiSubtitleTrack,
+  type NetflixSubtitleTrack,
 } from '@/features/detection';
 import type { BackgroundContext } from '../context';
 import {
@@ -60,6 +63,12 @@ export function registerDetectionDispatchHandlers(
           tabId,
           payload.origin ?? 'https://meta.video.iqiyi.com',
         );
+      } else if (source === 'netflix') {
+        // Netflix (ADR-029): BCP 47 language directly, WebVTT-only, Netflix initiator.
+        subtitles = mapNetflixSubtitleTracks(
+          payload.tracks as NetflixSubtitleTrack[],
+          tabId,
+        );
       } else {
         // YouTube (source === 'youtube' or undefined — backward compat ADR-020).
         subtitles = mapYouTubeCaptionTracks(
@@ -76,7 +85,7 @@ export function registerDetectionDispatchHandlers(
         // the content-script overlay clears its cues. (Clone ADR-020 logic.)
         console.log(
           '[bg DETECTED_SUBTITLES] no tracks — clearing previous subtitles',
-          { tabId, source, videoId: payload.videoId, tvid: payload.tvid },
+          { tabId, source, videoId: payload.videoId, tvid: payload.tvid, movieId: payload.movieId },
         );
         ctx.networkInterceptor.clearTab(tabId);
         ctx.autoDownloadedTabs.delete(tabId);
@@ -109,6 +118,7 @@ export function registerDetectionDispatchHandlers(
         source,
         videoId: payload.videoId,
         tvid: payload.tvid,
+        movieId: payload.movieId,
         added,
         total: subtitles.length,
         languages: subtitles.map((s) => s.language),

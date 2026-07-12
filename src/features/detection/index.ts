@@ -27,6 +27,10 @@ export {
   type IqiyiSubtitleTrack,
 } from './logic/iqiyiSubtitleDetector';
 export {
+  mapNetflixSubtitleTracks,
+  type NetflixSubtitleTrack,
+} from './logic/netflixSubtitleDetector';
+export {
   fetchCaptionTracksViaInnerTube,
   extractInnertubeApiKey,
   extractClientVersion,
@@ -40,9 +44,11 @@ export {
 } from './logic/scriptDetector';
 export {
   detectLanguage,
+  detectLanguageFromText,
   isoCodeToLabel,
   labelToIsoCode,
   toIso6391,
+  languageMatches,
   extractPlainText,
   LANGUAGE_PROFILES,
   type LanguageProfile,

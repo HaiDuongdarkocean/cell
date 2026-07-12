@@ -18,6 +18,8 @@ console.log('[content-script] injected at', document.readyState, 'time:', csInje
 window.postMessage({ type: '__YT_CS_READY', time: csInjectTime }, '*');
 // ADR-028: same handshake for the iQIYI MAIN-world script.
 window.postMessage({ type: '__IQ_CS_READY', time: csInjectTime }, '*');
+// ADR-029: same handshake for the Netflix MAIN-world script.
+window.postMessage({ type: '__NF_CS_READY', time: csInjectTime }, '*');
 
 // Debug: respond to PING from SW/DevTools so we can verify injection.
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -37,20 +39,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return false;
 });
 
-// ponytail: content script không có chrome.tabs API — gửi message không tabId,
-// background tự lấy từ sender.tab.id (xem messageBus.handleMessage)
-// Clear auto-load cache on every (re)inject — tab navigate re-injects the
-// content-script, so the per-URL cache must not survive across navigations.
-clearAutoLoadCache();
-const scanner = new PageScanner();
-
-// === Main-world fetch interceptor bridge (ADR-011) ===
-// The main-world fetchInterceptor.iife.ts patches `window.fetch` and posts
-// detected subtitle URLs via `window.postMessage`. This isolated-world
-// listener receives them and relays to the background, which adds them to
-// the network interceptor's subtitle store. This catches subtitle fetches
-// that page Service Workers serve from cache (webRequest does not fire for
-// cached responses).
+// === Main-world message bridge (ADR-011/020/028/029) ===
+// Register the MAIN→ISOLATED postMessage listener BEFORE any potentially-
+// throwing initialization (clearAutoLoadCache, PageScanner, overlay init).
+// The listener only depends on `sendMessage` + `MESSAGE_TYPES` (imported at
+// top). If later code throws, this listener still catches MAIN-world posts.
 window.addEventListener('message', (event) => {
   if (event.source !== window) return;
   const data = event.data as { type?: string; url?: string; postTime?: number } | null;
@@ -133,7 +126,44 @@ window.addEventListener('message', (event) => {
       (e) => console.error('[content-script] IQ DETECTED_SUBTITLES bg error', e),
     );
   }
+  // === Netflix MAIN-world bridge (ADR-029) ===
+  // netflix-main-world.iife.ts hooks JSON.parse and posts raw timedtexttracks.
+  // Relay to background as DETECTED_SUBTITLES with source:'netflix' so
+  // detectionDispatch.ts routes to mapNetflixSubtitleTracks.
+  if (data?.type === '__NF_DETECTED_SUBTITLES') {
+    const movieId = String((data as { movieId?: number | string }).movieId ?? '');
+    // Dedup by movieId (per-video ID): MAIN world re-posts on __NF_CS_READY handshake,
+    // so the same movieId may arrive twice. Use string-based dedup (clone YouTube/iQIYI `?? ''`
+    // pattern — NOT `?? 0` which is falsy and would re-post for movieId 0).
+    const lastRelayedMovieId = (window as unknown as Record<string, unknown>).__NF_LAST_RELAYED_MOVIE_ID as string | undefined;
+    if (movieId !== '' && lastRelayedMovieId === movieId) return;
+    (window as unknown as Record<string, unknown>).__NF_LAST_RELAYED_MOVIE_ID = movieId;
+    console.log('[content-script] __NF_DETECTED_SUBTITLES received', {
+      trackCount: (data as { tracks?: unknown[] }).tracks?.length,
+      movieId,
+      postTime: (data as { postTime?: number }).postTime,
+    });
+    void sendMessage({
+      type: MESSAGE_TYPES.DETECTED_SUBTITLES,
+      payload: {
+        tabId: undefined,
+        tracks: (data as { tracks?: unknown[] }).tracks ?? [],
+        movieId,
+        source: 'netflix',
+      },
+    }).then(
+      (r) => console.log('[content-script] NF DETECTED_SUBTITLES bg response', r),
+      (e) => console.error('[content-script] NF DETECTED_SUBTITLES bg error', e),
+    );
+  }
 });
+
+// ponytail: content script không có chrome.tabs API — gửi message không tabId,
+// background tự lấy từ sender.tab.id (xem messageBus.handleMessage)
+// Clear auto-load cache on every (re)inject — tab navigate re-injects the
+// content-script, so the per-URL cache must not survive across navigations.
+clearAutoLoadCache();
+const scanner = new PageScanner();
 
 // Scan on page load — defer to DOMContentLoaded because content-script now
 // runs at document_start (ADR-020: listener must register before MAIN world

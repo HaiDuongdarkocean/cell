@@ -102,6 +102,19 @@ export function formatFromUrl(url: string): SubtitleFormat {
 }
 
 /**
+ * Resolve subtitle format: prefer the detected format from the subtitle entity
+ * (set by the detection mapper — e.g. Netflix sets 'ttml'), fall back to URL
+ * extension detection. Netflix CDN URLs have no file extension, so URL-based
+ * detection defaults to 'srt' and fails to parse IMSC1.1 TTML content.
+ */
+function resolveFormat(detectedFormat: string | undefined, url: string): SubtitleFormat {
+  if (detectedFormat === 'ttml' || detectedFormat === 'vtt' || detectedFormat === 'ass' || detectedFormat === 'srt') {
+    return detectedFormat;
+  }
+  return formatFromUrl(url);
+}
+
+/**
  * Fetch + parse a subtitle by URL. Caches by URL — second call is a cache hit.
  * ASS/SSA → convert to SRT first (reuse `convertAssToSrt`).
  *
@@ -228,8 +241,8 @@ export async function handleAutoLoadSubtitles(
   }
 
   const [targetResult, nativeResult] = await Promise.all([
-    target ? fetchAndParseSubtitle(target.url, formatFromUrl(target.url), deps.tabUrl, target.initiator) : Promise.resolve(null),
-    native ? fetchAndParseSubtitle(native.url, formatFromUrl(native.url), deps.tabUrl, native.initiator) : Promise.resolve(null),
+    target ? fetchAndParseSubtitle(target.url, resolveFormat(target.format, target.url), deps.tabUrl, target.initiator) : Promise.resolve(null),
+    native ? fetchAndParseSubtitle(native.url, resolveFormat(native.format, native.url), deps.tabUrl, native.initiator) : Promise.resolve(null),
   ]);
   console.log('[handleAutoLoadSubtitles] parse results', {
     targetSuccess: targetResult?.success,

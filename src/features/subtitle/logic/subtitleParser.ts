@@ -1,17 +1,19 @@
-// Subtitle parser adapter — reuses existing parseSrt/parseVtt from lib/parsers.
+// Subtitle parser adapter — reuses existing parseSrt/parseVtt/parseTtml from lib/parsers.
 // ponytail: no need to rewrite parsers, just thin adapter to ParseResult shape.
 
 import { parseSrt } from '@/shared/lib/parsers/srtParser';
 import { parseVtt } from '@/shared/lib/parsers/vttParser';
+import { parseTtml } from '@/shared/lib/parsers/ttmlParser';
 import type { SrtCue } from '@/entities/media';
 import type { ParseResult, SubtitleFormat } from '@/entities/subtitle';
 
 /**
  * Parse subtitle content into SrtCue[] wrapped in ParseResult.
- * Reuses existing parseSrt/parseVtt — only adapts the result shape.
+ * Reuses existing parseSrt/parseVtt/parseTtml — only adapts the result shape.
  *
  * Auto-detects format when `format` is 'unknown':
  * - Starts with "WEBVTT" → vtt
+ * - Starts with "<?xml" or "<tt" → ttml
  * - Otherwise → srt
  */
 export function parseSubtitle(
@@ -35,6 +37,14 @@ export function parseSubtitle(
       return { success: true, cues, format: 'vtt' };
     }
 
+    if (detected === 'ttml') {
+      const ttml = parseTtml(content);
+      if (ttml.cues.length === 0) {
+        return { success: false, cues: [], format: 'ttml', error: 'No cues found in TTML content' };
+      }
+      return { success: true, cues: ttml.cues, format: 'ttml' };
+    }
+
     // srt (also fallback for ass/ssa until converter is added in Task 13)
     const srt = parseSrt(content);
     if (srt.cues.length === 0) {
@@ -54,5 +64,6 @@ export function parseSubtitle(
 function detectFormat(content: string): SubtitleFormat {
   const stripped = content.replace(/^\uFEFF/, '').trimStart();
   if (stripped.startsWith('WEBVTT')) return 'vtt';
+  if (stripped.startsWith('<?xml') || stripped.startsWith('<tt')) return 'ttml';
   return 'srt';
 }

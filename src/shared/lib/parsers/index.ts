@@ -9,6 +9,8 @@ export { parseAss } from './assParser';
 export { parseM3u8 } from './m3u8Parser';
 export { parseSrt } from './srtParser';
 export { parseVtt } from './vttParser';
+export { parseTtml } from './ttmlParser';
 export { convertAssToSrt } from './assToSrt';
 export { convertVttToSrt, stripVttInlineTags } from './vttToSrt';
+export { convertTtmlToSrt } from './ttmlToSrt';
 export { normalizeSrt, stripSubtitleTags } from './srtNormalizer';

@@ -458,13 +458,15 @@ export interface DetectedSubtitleUrlPayload {
  */
 export interface DetectedSubtitlesPayload {
   readonly tabId?: number; // background resolves from sender.tab.id
-  readonly tracks: readonly unknown[]; // YouTubeCaptionTrack[] | IqiyiSubtitleTrack[] (untyped at boundary)
-  readonly source?: 'youtube' | 'iqiyi'; // adapter discriminator (ADR-028)
+  readonly tracks: readonly unknown[]; // YouTubeCaptionTrack[] | IqiyiSubtitleTrack[] | NetflixSubtitleTrack[] (untyped at boundary)
+  readonly source?: 'youtube' | 'iqiyi' | 'netflix'; // adapter discriminator (ADR-028 + ADR-029)
   // YouTube (ADR-020)
   readonly videoId?: string;
   // iQIYI (ADR-028)
   readonly tvid?: string;     // dedup key (clone YouTube videoId)
   readonly origin?: string;   // data.dstl — base URL for relative srt path
+  // Netflix (ADR-029)
+  readonly movieId?: number | string; // dedup key (clone YouTube videoId / iQIYI tvid)
 }
 
 /**

@@ -5,7 +5,7 @@ import type { SrtCue, BilingualCue } from '@/entities/media/types';
 
 // === Subtitle Format Types ===
 
-export type SubtitleFormat = 'srt' | 'vtt' | 'ass' | 'ssa' | 'unknown';
+export type SubtitleFormat = 'srt' | 'vtt' | 'ass' | 'ssa' | 'ttml' | 'unknown';
 
 // === Subtitle State Types ===
 
