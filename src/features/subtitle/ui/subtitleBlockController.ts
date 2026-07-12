@@ -10,7 +10,7 @@ import {
 import { buildTextShadow, hexToRgba, sanitizeFontFamily } from './subtitleUI';
 import { NAV_CLUSTER_ICONS, type NavClusterIconName } from './navClusterIcons';
 import { prevSentence, nextSentence, seekBy, findActiveCueIndex, findNearestCueIndex } from './navClusterActions';
-import { seekVideo } from './netflixPlayback';
+import { seekVideo, isNetflixPage } from './netflixPlayback';
 import { createSubtitleBlockDOM, type SubtitleBlockDOM } from './subtitleBlockDom';
 import { SUBTITLE_BLOCK_CSS } from './subtitleBlockCss';
 import { wireBlockDrag } from './subtitleBlockDrag';
@@ -340,6 +340,17 @@ export class SubtitleBlockController {
     this.onFullscreenChange = () => {
       if (!this.dom) return;
       const fsElement = document.fullscreenElement as HTMLElement | null;
+      // ADR-031: Netflix — block already mounted to .watch-video by
+      // mountToWatchVideo. Do NOT re-parent into fsElement (which may be
+      // <video> on Netflix — a replaced element that does not render DOM
+      // children, making the block invisible). .watch-video is the common
+      // parent of Netflix's active/inactive wrappers and works in both
+      // non-fullscreen and fullscreen (Netflix uses DIV.watch-video for
+      // its own fullscreen, not <video>).
+      if (isNetflixPage()) {
+        this.applyScale();
+        return;
+      }
       const targetParent = fsElement ?? this.container;
       if (this.dom.block.parentElement !== targetParent) {
         targetParent.appendChild(this.dom.block);
