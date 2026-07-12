@@ -47,10 +47,19 @@ export class PageScanner {
    * Looks at `<video>`, `<source>`, `<track>`, and `<a>` elements, filters the
    * discovered URLs against the known video/subtitle patterns, and returns the
    * deduplicated lists.
+   *
+   * `<track>` element URLs bypass the subtitle URL-pattern filter: the element
+   * itself is the semantic classifier (HTML spec — `<track kind="subtitles">`
+   * IS a subtitle track). Sites like anikage.cc serve subtitles from
+   * `prox.anicore.tv/stream/<base64-hash>` with no extension and no subtitle
+   * path segment, so SUBTITLE_URL_PATTERNS never matches. Pattern-filtering
+   * `<track>` URLs would discard the strongest available signal.
    */
   extractUrlsFromDOM(doc: Document): ScannedUrls {
     const videoUrls: string[] = [];
-    const subtitleUrls: string[] = [];
+    const patternSubtitleUrls: string[] = [];
+    // <track>-origin URLs: trusted as subtitles regardless of URL shape.
+    const trackSubtitleUrls: string[] = [];
 
     // <video> elements: collect the element's own src plus child <source> srcs.
     const videos = Array.from(doc.querySelectorAll('video'));
@@ -77,12 +86,12 @@ export class PageScanner {
       }
     }
 
-    // <track> elements are subtitles.
+    // <track> elements are subtitles — trust the element, skip pattern filter.
     const tracks = Array.from(doc.querySelectorAll('track'));
     for (const track of tracks) {
       const src = track.getAttribute('src');
       if (src) {
-        subtitleUrls.push(src);
+        trackSubtitleUrls.push(src);
       }
     }
 
@@ -96,15 +105,20 @@ export class PageScanner {
       if (isVideoUrl(href)) {
         videoUrls.push(href);
       } else if (isSubtitleUrl(href)) {
-        subtitleUrls.push(href);
+        patternSubtitleUrls.push(href);
       }
     }
 
-    // Filter and deduplicate.
+    // Filter and deduplicate. <track> URLs are already classified by the
+    // element — only dedupe, do not pattern-filter.
     const filteredVideo = dedupe(videoUrls.filter(isVideoUrl));
-    const filteredSubtitle = dedupe(subtitleUrls.filter(isSubtitleUrl));
+    const filteredPatternSubtitle = dedupe(patternSubtitleUrls);
+    const filteredTrackSubtitle = dedupe(trackSubtitleUrls);
 
-    return { videoUrls: filteredVideo, subtitleUrls: filteredSubtitle };
+    return {
+      videoUrls: filteredVideo,
+      subtitleUrls: dedupe([...filteredPatternSubtitle, ...filteredTrackSubtitle]),
+    };
   }
 
   /**

@@ -48,6 +48,34 @@ describe('PageScanner', () => {
       expect(result.subtitleUrls).toContain('https://example.com/sub.vtt');
     });
 
+    // Regression: anikage.cc serves subtitles from
+    // `prox.anicore.tv/stream/<base64-hash>` — no file extension, no subtitle
+    // path segment. The `<track kind="subtitles">` element is the only signal.
+    // Pattern-filtering `<track>` URLs would discard this signal → subtitle
+    // never detected. The scanner must trust the element and bypass the
+    // SUBTITLE_URL_PATTERNS filter for `<track>`-origin URLs.
+    it('extracts <track> src even when the URL matches no subtitle pattern (anikage.cc regression)', () => {
+      document.body.innerHTML =
+        '<video src="blob:https://anikage.cc/abc"><track kind="subtitles" label="English" srclang="English" src="https://prox.anicore.tv/stream/CQQGHwtDHR9RUg9eEwERA1NCUxgSBB0dHVZBRVBCCAQeCgtW"></track></video>';
+
+      const result = scanner.extractUrlsFromDOM(document);
+
+      expect(result.subtitleUrls).toContain(
+        'https://prox.anicore.tv/stream/CQQGHwtDHR9RUg9eEwERA1NCUxgSBB0dHVZBRVBCCAQeCgtW',
+      );
+    });
+
+    it('still pattern-filters <a> subtitle hrefs (only <track> bypasses the filter)', () => {
+      // An <a> href without a subtitle extension/path must NOT be classified as
+      // a subtitle — only the `<track>` element carries semantic subtitle intent.
+      document.body.innerHTML =
+        '<a href="https://prox.anicore.tv/stream/somehash">download</a>';
+
+      const result = scanner.extractUrlsFromDOM(document);
+
+      expect(result.subtitleUrls).toEqual([]);
+    });
+
     it('extracts video URL from an <a> tag matching video patterns', () => {
       document.body.innerHTML = '<a href="https://example.com/download/video.mp4">Download</a>';
 

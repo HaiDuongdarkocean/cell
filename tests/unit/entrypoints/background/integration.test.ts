@@ -843,6 +843,39 @@ describe('Background integration', () => {
     );
   });
 
+  // Regression: anikage.cc serves subtitles from
+  // `prox.anicore.tv/stream/<base64-hash>` — no file extension, no subtitle
+  // path segment. The page scanner reads the `<track kind="subtitles">` element
+  // and sends the URL via PAGE_SCAN_RESULT. The background must trust the
+  // scanner's classification (trustAsSubtitle) and store the subtitle even
+  // though SUBTITLE_URL_PATTERNS does not match the URL shape.
+  it('PAGE_SCAN_RESULT stores <track>-origin subtitle URL that matches no subtitle pattern (anikage.cc regression)', async () => {
+    const trackUrl =
+      'https://prox.anicore.tv/stream/CQQGHwtDHR9RUg9eEwERA1NCUxgSBB0dHVZBRVBCCAQeCgtWAVQdVQNfQQsbGw';
+
+    const request: MessageRequest = {
+      type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
+      payload: {
+        tabId: 123,
+        videoUrls: [],
+        subtitleUrls: [trackUrl],
+      },
+    };
+    const response = await messageBus.handleMessage(request, {
+      id: 'content',
+    });
+
+    expect(response.success).toBe(true);
+    const subtitles = interceptor.getSubtitles(123);
+    expect(subtitles).toHaveLength(1);
+    expect(subtitles[0]?.url).toBe(trackUrl);
+    // detectFormat falls back to 'vtt' when no extension/query format is found.
+    expect(subtitles[0]?.format).toBe('vtt');
+    // Language is 'unknown' — resolveUnknownSubtitleLanguages resolves it later
+    // by fetching the content (body is WebVTT) and running language detection.
+    expect(subtitles[0]?.language).toBe('unknown');
+  });
+
   it('PAGE_SCAN_RESULT deduplicates URLs already detected by network', async () => {
     interceptor.handleRequest(
       makeWebRequestDetails('https://example.com/dup.mp4', 123),

@@ -83,7 +83,10 @@ export class NetworkInterceptor {
    * Extracted as a public method so it can be exercised directly in tests
    * without needing a real `chrome.webRequest` implementation.
    */
-  handleRequest(details: chrome.webRequest.OnBeforeRequestDetails): void {
+  handleRequest(
+    details: chrome.webRequest.OnBeforeRequestDetails,
+    opts?: { trustAsSubtitle?: boolean },
+  ): void {
     // Ignore requests initiated by the extension itself (background service
     // worker, offscreen documents, etc.). Without this filter, a `fetch()` call
     // made by the downloader to retrieve a subtitle would be re-detected as a new
@@ -107,7 +110,7 @@ export class NetworkInterceptor {
     };
 
     const video = detectVideo(request);
-    const subtitle = detectSubtitle(request);
+    const subtitle = detectSubtitle(request, opts);
 
     // Debug logging for media detection
     if (video || subtitle) {
@@ -139,8 +142,19 @@ export class NetworkInterceptor {
       const existingSub = this.getSubtitles(details.tabId).find(
         (s) => s.url === subtitle.url,
       );
+      console.log('[NetworkInterceptor DEBUG] subtitle store check', {
+        tabId: details.tabId,
+        subtitleId: subtitle.id,
+        url: subtitle.url,
+        existingFound: existingSub !== undefined,
+        mapSizeBefore: this.subtitles.size,
+      });
       if (existingSub === undefined) {
         this.subtitles.set(subtitle.id, subtitle);
+        console.log('[NetworkInterceptor DEBUG] subtitle STORED', {
+          mapSizeAfter: this.subtitles.size,
+          storedTabId: subtitle.tabId,
+        });
         detectedNewMedia = true;
       }
     }
