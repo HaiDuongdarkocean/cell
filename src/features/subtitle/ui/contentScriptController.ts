@@ -517,6 +517,23 @@ export function init(video: HTMLVideoElement): () => void {
     blockController.updateSettings({ targetStyle, nativeStyle });
   }
   let bilingualCues: BilingualCue[] = [];
+  // ADR-032 cue-seek dedupe: when Side Panel is open, pressing A/S/D fires
+  // BOTH the in-page keydown handler AND the Side Panel keydown handler
+  // (which relays SHORTCUT_ACTION back to content script). Without dedupe
+  // the same keypress seeks twice → net effect near-zero → "khó sang cue".
+  // Gate: skip if same cue-nav action fired within 300ms.
+  let lastCueSeekAction: string | null = null;
+  let lastCueSeekTs = 0;
+  const CUE_SEEK_DEDUPE_MS = 300;
+  const shouldDedupeCueSeek = (action: string): boolean => {
+    const now = Date.now();
+    if (action === lastCueSeekAction && now - lastCueSeekTs < CUE_SEEK_DEDUPE_MS) {
+      return true;
+    }
+    lastCueSeekAction = action;
+    lastCueSeekTs = now;
+    return false;
+  };
   // Track side panel open state for toggle (☰ button).
   // ponytail ceiling: best-effort — if user closes panel via browser UI (X),
   // this stays true and next click sends CLOSE (no-op, panel already closed),
@@ -710,6 +727,11 @@ export function init(video: HTMLVideoElement): () => void {
     e.preventDefault();
     e.stopImmediatePropagation();
 
+    // ADR-032: dedupe cue-nav when Side Panel also fires SHORTCUT_ACTION.
+    if ((action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue') && shouldDedupeCueSeek(action)) {
+      return;
+    }
+
     switch (action) {
       case 'prev-cue': {
         // ADR-019 sync: find cue via effective time, seek so overlay DISPLAYS it.
@@ -890,6 +912,10 @@ export function init(video: HTMLVideoElement): () => void {
     if (m?.type === MESSAGE_TYPES.SHORTCUT_ACTION) {
       const payload = m.payload as { action: string; seekTime?: number };
       const action = payload?.action;
+      // ADR-032: dedupe cue-nav — in-page keydown handler already seeked.
+      if ((action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue') && shouldDedupeCueSeek(action)) {
+        return;
+      }
       const offsetMs = offsetController?.getOffsetMs() ?? 0;
       // ADR-021 D8: sidepanel sends seekTime (calculated at keypress time).
       // Seek directly — no need to find cue from stale video.currentTime.
