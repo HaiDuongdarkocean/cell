@@ -545,27 +545,29 @@ export function init(video: HTMLVideoElement): () => void {
 
   // ADR-033: track last seek target so rapid cue-nav (A/S/D pressed before
   // Netflix player.seek() settles) computes next/prev from the INTENDED
-  // position, not stale video.currentTime. Without this, pressing D every
-  // 400ms re-seeks the same cue because video.currentTime hasn't reached
-  // the previous seek target yet (Netflix seek is async, ~600ms+).
-  // Listener catches ALL seeks (keydown, NavCluster, Side Panel, external)
-  // so lastSeekTargetMs always reflects the latest intended video position.
+  // position, not stale video.currentTime. Netflix seek = fast-play
+  // (currentTime advances gradually toward target, not instant jump), so
+  // video.seeking is unreliable (only true ~2ms). Instead: if videoMs <
+  // lastSeekTargetMs, video hasn't reached target yet → use lastSeekTarget.
+  // Listener catches ALL seeks (keydown, NavCluster, Side Panel, external).
   let lastSeekTargetMs: number | null = null;
   const onNfSeek = (e: Event) => {
     lastSeekTargetMs = (e as CustomEvent).detail as number;
   };
   document.addEventListener('__NF_SEEK', onNfSeek);
 
-  /** Effective time for cue lookup: lastSeekTarget while video.seeking, else video.currentTime. */
+  /** Effective time for cue lookup: lastSeekTarget if video hasn't reached it, else video.currentTime. */
   const getEffectiveMs = (): number => {
     const offsetMs = offsetController?.getOffsetMs() ?? 0;
-    // video.seeking = true while Netflix player.seek() in progress (async).
-    // Use lastSeekTarget to avoid computing next/prev from stale currentTime.
-    if (video.seeking && lastSeekTargetMs !== null) {
+    const videoMs = video.currentTime * 1000;
+    // Netflix seek = fast-play: currentTime advances toward target.
+    // If videoMs < lastSeekTarget, seek still in progress → use intended target.
+    if (lastSeekTargetMs !== null && videoMs < lastSeekTargetMs) {
       return lastSeekTargetMs + offsetMs;
     }
+    // Reached or passed target → settled → use actual video time
     lastSeekTargetMs = null;
-    return video.currentTime * 1000 + offsetMs;
+    return videoMs + offsetMs;
   };
 
   // Track active sub indices + all matches for re-fetch on dropdown select
