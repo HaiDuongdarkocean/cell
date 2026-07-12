@@ -11,7 +11,7 @@ import {
   showToast,
   handleAutoLoadSubtitles,
   fetchAndParseSubtitle,
-  formatFromUrl,
+  resolveFormat,
   mergeCuesForPanel,
   createImportButton,
   createToggleButton,
@@ -1396,7 +1396,7 @@ export function init(video: HTMLVideoElement): () => void {
     refreshPanel(role);
 
     try {
-      const result = await fetchAndParseSubtitle(sub.url, formatFromUrl(sub.url), window.location.href, sub.initiator);
+      const result = await fetchAndParseSubtitle(sub.url, resolveFormat(sub.format, sub.url), window.location.href, sub.initiator);
       if (!result.success || result.cues.length === 0) {
         console.error('[onSubtitleSelect] failed', result.error);
         showToast(`Could not load subtitle track ${index + 1}`, container, { variant: 'error' });

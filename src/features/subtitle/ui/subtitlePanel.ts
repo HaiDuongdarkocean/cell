@@ -9,7 +9,7 @@
 //   focus: outline 2px --color-border-focus, offset 2px
 // Reference: subtitleImport.ts createImportButton.
 
-import { seekVideo } from './netflixPlayback';
+import { seekVideo, mountToWatchVideo } from './netflixPlayback';
 
 /**
  * Create toggle button to show/hide panel (now opens Side Panel).
@@ -63,6 +63,8 @@ export function createToggleButton(container: HTMLElement): HTMLButtonElement {
   });
 
   container.appendChild(btn);
+  // ADR-031: Netflix z-index fix — toggle button must sit above Netflix overlays.
+  mountToWatchVideo(btn, container);
   return btn;
 }
 

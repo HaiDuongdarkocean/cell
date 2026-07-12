@@ -2,6 +2,8 @@
  * Item displayed in the Subtitle Manager Panel (ADR-015).
  * Can be auto-detected, imported, or machine-translated, target or native.
  */
+import { mountToWatchVideo } from './netflixPlayback';
+
 export interface SubtitlePanelItem {
   readonly id: string;
   readonly name: string; // Display name (e.g. "English #2" or "my-subtitle")
@@ -73,6 +75,8 @@ export function createSubtitleManagerPanel(
     pointer-events: none;
   `;
   container.appendChild(toolbar);
+  // ADR-031: Netflix z-index fix — toolbar + panel both move to .watch-video.
+  mountToWatchVideo(toolbar, container);
 
   // Move import button into toolbar (it was created elsewhere for lifecycle reasons).
   // Keep its relative positioning + overflow: hidden so the hidden file input stays
@@ -133,6 +137,8 @@ export function createSubtitleManagerPanel(
     text-shadow: none;
   `;
   container.appendChild(panel);
+  // ADR-031: Netflix z-index fix — manager panel must sit above Netflix overlays.
+  mountToWatchVideo(panel, container);
 
   // Panel header
   const header = document.createElement('div');

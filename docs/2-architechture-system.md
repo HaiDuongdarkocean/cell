@@ -139,7 +139,7 @@ src/
 │   ├── subtitleSelector.ts        # NEW (planned ADR-014): createSubtitleDropdown (overlay dropdown góc phải container, icon chevron-down, popover list sub cùng lang + cue count + format, click outside/Esc/chọn đóng) — V2 ADR-007 D3
 │   ├── subtitleBilingualParser.ts # Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, reuse parseSrt)
 │   ├── subtitlePanel.ts           # Toggle button + seek helper: createToggleButton (opens Side Panel), seekToCue — ADR-008. **ADR-030**: seekToCue routes qua seekVideo (Netflix M7375 fix)
-│   ├── netflixPlayback.ts         # ADR-030: seekVideo/playVideo/pauseVideo — isNetflixPage() → dispatch __NF_SEEK|PLAY|PAUSE CustomEvent → MAIN-world player API; fallback video.currentTime/play/pause cho site thường
+│   ├── netflixPlayback.ts         # ADR-030: seekVideo/playVideo/pauseVideo — isNetflixPage() → dispatch __NF_SEEK|PLAY|PAUSE CustomEvent → MAIN-world player API; fallback video.currentTime/play/pause cho site thường. **ADR-031**: mountToWatchVideo(el, container) — move Cell UI vào .watch-video + z-index max + copy data-theme, fix Netflix overlay che nút
 │   └── subtitleShortcuts.ts       # Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
 │
 ├── offscreen/                     # Offscreen document (OPFS, Blob URL, Web Workers)
@@ -830,7 +830,8 @@ downloader.downloadM3u8Streaming(playlist)
 | `seekVideo` | `features/subtitle/ui/netflixPlayback.ts` | (HTMLVideoElement, seconds) → void | seekToCue, navClusterActions, contentScriptController | **ADR-030**: isNetflixPage() → dispatch `__NF_SEEK` CustomEvent → MAIN-world `player.seek(ms)`; fallback `video.currentTime` cho site thường |
 | `playVideo` | `features/subtitle/ui/netflixPlayback.ts` | (HTMLVideoElement) → Promise<void> | contentScriptController (TOGGLE_PLAY) | **ADR-030**: isNetflixPage() → dispatch `__NF_PLAY` → MAIN-world `player.play()`; fallback `video.play()` |
 | `pauseVideo` | `features/subtitle/ui/netflixPlayback.ts` | (HTMLVideoElement) → void | contentScriptController (TOGGLE_PLAY) | **ADR-030**: isNetflixPage() → dispatch `__NF_PAUSE` → MAIN-world `player.pause()`; fallback `video.pause()` |
-| `isNetflixPage` | `features/subtitle/ui/netflixPlayback.ts` | () → boolean | seekVideo, playVideo, pauseVideo | **ADR-030**: `location.hostname.includes('netflix.com')` — true trên www.netflix.com (where netflix-main-world.iife.ts injects) |
+| `isNetflixPage` | `features/subtitle/ui/netflixPlayback.ts` | () → boolean | seekVideo, playVideo, pauseVideo, mountToWatchVideo | **ADR-030**: `location.hostname.includes('netflix.com')` — true trên www.netflix.com (where netflix-main-world.iife.ts injects) |
+| `mountToWatchVideo` | `features/subtitle/ui/netflixPlayback.ts` | (HTMLElement, HTMLElement) → void | subtitleBlockController, subtitleManagerPanel (×2), subtitlePanel, subtitleUI | **ADR-031**: isNetflixPage() → move el vào `.watch-video` + z-index 2147483647 + copy `data-theme` từ container; no-op off-Netflix. Fix Netflix `active`/`inactive` wrappers che Cell UI |
 | `SubtitleOverlayController.init` | `content/subtitleOverlay.ts` | (videoWrapper?: HTMLElement) → void | content-script.ts | Create overlay + import button inside video parent; attach timeupdate listener — **Task 6** |
 | `createBilingualSubtitleController` | `content/subtitleOverlay.ts` | (deps) → BilingualSubtitleController | subtitleAutoLoad.ts | Factory: create overlay with 2 spans (target + native), loadBilingualCues, updateBilingual, destroy — **implemented Task 6** |
 | `shouldAutoLoad` | `content/subtitleAutoLoad.ts` | AutoLoadConfig → boolean | content-script.ts | Auto-load decision: autoLoad enabled + target language set — **wired Task 7** |

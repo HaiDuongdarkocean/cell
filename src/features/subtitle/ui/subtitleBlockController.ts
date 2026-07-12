@@ -16,6 +16,7 @@ import { SUBTITLE_BLOCK_CSS } from './subtitleBlockCss';
 import { wireBlockDrag } from './subtitleBlockDrag';
 import { createBlockScaleObserver, computeScaleSnapshot } from './subtitleBlockScale';
 import { syncElementTheme } from '@/shared/lib/themeTokens';
+import { mountToWatchVideo } from './netflixPlayback';
 
 export interface SubtitleBlockControllerUpdate {
   readonly blockSettings?: Partial<SubtitleBlockSettings>;
@@ -87,6 +88,10 @@ export class SubtitleBlockController {
     this.dom = dom;
     this.container.appendChild(dom.block);
     this.themeSyncCleanup = syncElementTheme(dom.block, this.container);
+    // ADR-031: Netflix z-index fix — move block to .watch-video so it sits
+    // above Netflix's active/inactive wrappers. syncElementTheme already set
+    // data-theme on the block, so CSS vars resolve after re-parenting.
+    mountToWatchVideo(dom.block, this.container);
     this.applyBlockPosition();
     this.applyLineStyles();
     this.applyClusterLayout();

@@ -107,7 +107,7 @@ export function formatFromUrl(url: string): SubtitleFormat {
  * extension detection. Netflix CDN URLs have no file extension, so URL-based
  * detection defaults to 'srt' and fails to parse IMSC1.1 TTML content.
  */
-function resolveFormat(detectedFormat: string | undefined, url: string): SubtitleFormat {
+export function resolveFormat(detectedFormat: string | undefined, url: string): SubtitleFormat {
   if (detectedFormat === 'ttml' || detectedFormat === 'vtt' || detectedFormat === 'ass' || detectedFormat === 'srt') {
     return detectedFormat;
   }

@@ -39,6 +39,7 @@ docs/           # Tài liệu dự án
 │   └── 028-iqiyi-subtitle-detection.md # ADR-028: iQIYI subtitle detection — MAIN-world playerObject.stl extraction, clone ADR-020 pattern, SRT format, lid→ISO map, source dispatch trên DETECTED_SUBTITLES
 │   └── 029-netflix-subtitle-detection.md # ADR-029: Netflix subtitle detection — graph traversal cadmiumPlayerRepository, TTML format, MAIN-world IIFE
 │   └── 030-netflix-seek-d7375.md # ADR-030: Netflix M7375 fix — route seek/play/pause qua player API via CustomEvent, tránh video.currentTime trực tiếp
+│   └── 031-netflix-ui-z-index-fix.md # ADR-031: Netflix UI z-index fix — mount Cell UI vào .watch-video + z-index max, copy data-theme cho CSS vars
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)

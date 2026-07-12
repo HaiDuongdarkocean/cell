@@ -1,4 +1,5 @@
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
+import { mountToWatchVideo } from './netflixPlayback';
 
 // === Pure style helpers (ADR-013 D6) ===
 // Logic ở pure function — testable 100%, no DOM side effect.
@@ -236,6 +237,8 @@ export function createDragHint(container: HTMLElement): HTMLDivElement {
   hint.style.display = 'none';
 
   container.appendChild(hint);
+  // ADR-031: Netflix z-index fix — drag hint must sit above Netflix overlays.
+  mountToWatchVideo(hint, container);
   return hint;
 }
 
