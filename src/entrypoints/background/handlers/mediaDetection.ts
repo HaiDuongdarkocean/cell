@@ -87,15 +87,12 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
         type: 'media',
         timeStamp: now,
       };
-      // DEBUG (temporary): trace detectSubtitle for anikage-style URLs.
-      const __det = detectSubtitle(networkRequest, { trustAsSubtitle: true });
-      console.log('[bg PAGE_SCAN_RESULT DEBUG] subtitle url', { url, tabId, detected: __det });
       // trustAsSubtitle: the page scanner already classified these URLs as
-      // subtitles — either by URL pattern (`<a>` hrefs) or by `<track>` element
+      // subtitles — either by URL pattern (<a> hrefs) or by <track> element
       // semantics (anikage.cc-style extension-less URLs). Re-checking the URL
-      // pattern here would discard the `<track>` signal. The NON_SUBTITLE_KEYWORDS
+      // pattern here would discard the <track> signal. The NON_SUBTITLE_KEYWORDS
       // guard still runs inside detectSubtitle to reject thumbnail/chapter VTT.
-      if (__det) {
+      if (detectSubtitle(networkRequest, { trustAsSubtitle: true })) {
         ctx.networkInterceptor.handleRequest(
           buildDetails(url, tabId, now),
           { trustAsSubtitle: true },

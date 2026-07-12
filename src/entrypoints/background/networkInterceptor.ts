@@ -142,19 +142,8 @@ export class NetworkInterceptor {
       const existingSub = this.getSubtitles(details.tabId).find(
         (s) => s.url === subtitle.url,
       );
-      console.log('[NetworkInterceptor DEBUG] subtitle store check', {
-        tabId: details.tabId,
-        subtitleId: subtitle.id,
-        url: subtitle.url,
-        existingFound: existingSub !== undefined,
-        mapSizeBefore: this.subtitles.size,
-      });
       if (existingSub === undefined) {
         this.subtitles.set(subtitle.id, subtitle);
-        console.log('[NetworkInterceptor DEBUG] subtitle STORED', {
-          mapSizeAfter: this.subtitles.size,
-          storedTabId: subtitle.tabId,
-        });
         detectedNewMedia = true;
       }
     }
