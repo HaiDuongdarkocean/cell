@@ -35,15 +35,17 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.OPEN_SIDE_PANEL, async (request): Promise<MessageResponse> => {
     const payload = request.payload as OpenSidePanelPayload;
     const tabId = payload?.tabId;
+    console.log('[bg OPEN_SIDE_PANEL] received', { tabId });
     if (tabId === undefined) {
       return { success: false, error: 'Missing tabId in OPEN_SIDE_PANEL' };
     }
     try {
       await openSidePanel({ tabId });
+      console.log('[bg OPEN_SIDE_PANEL] success', { tabId });
       return { success: true };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.warn(`OPEN_SIDE_PANEL failed for tab ${tabId}: ${msg}`);
+      console.warn(`[bg OPEN_SIDE_PANEL] failed for tab ${tabId}: ${msg}`);
       return { success: false, error: msg };
     }
   });
@@ -60,6 +62,17 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     try {
       const tab = await chrome.tabs.get(tabId);
       await closeSidePanel({ windowId: tab.windowId });
+      // Relay close back to the content script so it resets its sidePanelOpen
+      // flag. runtime.sendMessage from the side panel does NOT reach content
+      // scripts (Chrome docs: "extensions cannot send messages to content
+      // scripts using this method") — only tabs.sendMessage does. Without this
+      // relay, the next 'p' on the page sends a stale CLOSE no-op + focuses the
+      // toggle button instead of opening (state desync by one press).
+      try {
+        await sendTabMessage(tabId, { type: MESSAGE_TYPES.CLOSE_SIDE_PANEL });
+      } catch {
+        // Content script may not be injected (non-content page) — silently ignore.
+      }
       return { success: true };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -212,12 +225,13 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     if (tabId === undefined) {
       return { success: false, error: 'Missing tabId in VIDEO_EPISODE_CHANGED payload' };
     }
+    const beforeSubs = ctx.networkInterceptor.getSubtitles(tabId).length;
     ctx.networkInterceptor.clearTab(tabId);
     clearSessionMedia(ctx, tabId);
     ctx.lastCuesByTab.delete(tabId);
     ctx.autoDownloadedTabs.delete(tabId);
     updateBadgeForTab(ctx, tabId);
-    console.log('[bg VIDEO_EPISODE_CHANGED] cleared media for tab', tabId);
+    console.log('[bg VIDEO_EPISODE_CHANGED] cleared', { tabId, beforeSubs, afterSubs: ctx.networkInterceptor.getSubtitles(tabId).length });
     return { success: true };
   });
 }

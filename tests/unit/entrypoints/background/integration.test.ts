@@ -42,6 +42,7 @@ interface MockChrome {
     sendMessage: jest.Mock;
     onMessage: MockListener;
     getURL: jest.Mock;
+    id: string;
   };
   action: {
     setBadgeText: jest.Mock;
@@ -82,6 +83,13 @@ interface MockChrome {
     onDeterminingFilename: MockListener;
     search: jest.Mock;
   };
+  webNavigation: {
+    onHistoryStateUpdated: MockListener;
+  };
+  declarativeNetRequest: {
+    updateDynamicRules: jest.Mock;
+    getDynamicRules: jest.Mock;
+  };
 }
 
 function createMockListener(): MockListener {
@@ -98,6 +106,7 @@ function createMockChrome(): MockChrome {
       sendMessage: jest.fn().mockResolvedValue({ success: true }),
       onMessage: createMockListener(),
       getURL: jest.fn((path: string) => `chrome-extension://fake-id/${path}`),
+      id: 'fake-extension-id',
     },
     action: {
       setBadgeText: jest.fn().mockResolvedValue(undefined),
@@ -142,6 +151,13 @@ function createMockChrome(): MockChrome {
       onChanged: createMockListener(),
       onDeterminingFilename: createMockListener(),
       search: jest.fn().mockResolvedValue([]),
+    },
+    webNavigation: {
+      onHistoryStateUpdated: createMockListener(),
+    },
+    declarativeNetRequest: {
+      updateDynamicRules: jest.fn().mockResolvedValue(undefined),
+      getDynamicRules: jest.fn().mockResolvedValue([]),
     },
   };
 }
@@ -630,12 +646,12 @@ describe('Background integration', () => {
     })) as MessageResponse<Settings>;
 
     expect(response.success).toBe(true);
-    // loadSettings() runs migration v0→v1→v2→v3→v4→v5→v6→v7→v8→v9→v10 which stamps schemaVersion: 10
-    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px, V9 unified subtitle block, V10 Card Creator).
+    // loadSettings() runs migration v0→v1→v2→v3→v4→v5→v6→v7→v8→v9→v10→v11→v12 which stamps schemaVersion: 12
+    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px, V9 unified subtitle block, V10 Card Creator, V11 Card Creator shortcuts, V12 generate-native shortcut).
     // V9 migration rebuilds subtitleBlockSettings from legacy layer yOffsetPercent (defaults 18/6 → 12).
     expect(response.data).toEqual({
       ...storedSettings,
-      schemaVersion: 10,
+      schemaVersion: 12,
       subtitleBlockSettings: { yOffsetPercent: 12, globalScale: 1, bgOpacity: 0.7 },
     });
   });
@@ -1876,15 +1892,23 @@ https://cdn.example.com/low.m3u8`;
     };
 
     await messageBus.handleMessage(request, { id: 'tab' });
-    // Wait for: pushAutoLoadSubtitles → fetch + detectLanguage + update + re-run.
-    await new Promise((r) => setTimeout(r, 200));
+    // Wait for: onMediaDetected → resolveUnknownSubtitleLanguages (fetch +
+    // detectLanguage + batch update + notify) → onMediaDetected re-trigger →
+    // pushAutoLoadSubtitles with resolved languages. Two async rounds.
+    await new Promise((r) => setTimeout(r, 2000));
 
     const autoLoadCalls = mockChrome.tabs.sendMessage.mock.calls.filter(
       ([, msg]) => (msg as MessageRequest).type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
     );
     expect(autoLoadCalls.length).toBeGreaterThanOrEqual(1);
     expect(autoLoadCalls[0][0]).toBe(123);
-    const payload = (autoLoadCalls[0][1] as MessageRequest).payload as { target: { language: string }; native: { language: string } };
+    // Subtitles are added one-by-one via handleRequest → each triggers
+    // onMediaDetected → resolveUnknownSubtitleLanguages. The first
+    // AUTO_LOAD_SUBTITLES may fire after only one unknown is resolved
+    // (partial: target only). The final call has both target + native
+    // resolved. Assert on the last call to verify full resolution.
+    const lastCall = autoLoadCalls[autoLoadCalls.length - 1];
+    const payload = (lastCall[1] as MessageRequest).payload as { target: { language: string }; native: { language: string } };
     expect(payload.target.language).toBe('en');
     expect(payload.native.language).toBe('vi');
 

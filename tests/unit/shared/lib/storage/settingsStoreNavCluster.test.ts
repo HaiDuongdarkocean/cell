@@ -26,8 +26,8 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 10 (bumped for Card Creator)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(10);
+  it('CURRENT_SCHEMA_VERSION is 12 (bumped for generate-native shortcut)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(12);
   });
 
   it('migrates v1 settings to v9 with nav cluster + block defaults merged', async () => {
@@ -170,10 +170,10 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     expect(result.navClusterButtonSize).toBe(34);
   });
 
-  it('saveSettings stamps schemaVersion 10', async () => {
+  it('saveSettings stamps schemaVersion 12', async () => {
     await saveSettings({ navClusterEnabled: false });
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(10);
+    expect(stored.schemaVersion).toBe(12);
   });
 
   it('saveSettings partial preserves existing stored fields (read-modify-write)', async () => {

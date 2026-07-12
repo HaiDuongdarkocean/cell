@@ -220,7 +220,12 @@ export function App() {
           void sendMessage({ type: 'SHORTCUT_ACTION', payload: { action: 'toggle-overlay' } });
           break;
         case 'toggle-panel':
-          // Already in the panel — no-op (or could focus the panel)
+          // Side panel has focus → close it so focus returns to the YouTube
+          // page, where the content-script 't' handler reopens on next press.
+          // Without this, 't' is a no-op when the panel is focused.
+          if (activeTabIdRef.current !== undefined) {
+            void sendMessage({ type: 'CLOSE_SIDE_PANEL', payload: { tabId: activeTabIdRef.current } });
+          }
           break;
       }
     };
