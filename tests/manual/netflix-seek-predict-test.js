@@ -4,30 +4,31 @@
  * Cách dùng:
  *   1. Mở Netflix watch page (https://www.netflix.com/watch/XXX)
  *   2. Mở Side Panel extension (để cues load)
- *   3. Mở DevTools console (F12)
+ *   3. Mở DevTools console (F12) trên Netflix page
  *   4. Paste toàn bộ file này + Enter
  *   5. Gọi: await runSeekTests()
  *
  * Test sẽ:
- *   - Lấy cues thật từ Side Panel DOM (qua chrome.runtime message)
  *   - Seek video tới mốc cụ thể (qua __NF_SEEK → Netflix player API, không M7375)
- *   - Predict A/S/D seek target theo logic content script
+ *   - Predict A/S/D seek target theo logic content script (dùng cues thật)
  *   - Dispatch keydown (content script handler → seekVideo)
- *   - Verify actual seek match predict (trong tolerance 250ms)
+ *   - Verify actual seek match predict (trong tolerance 50ms)
  *   - Log PASS/FAIL + chi tiết nếu fail (pos, expected, actual, diff, cue context, browser)
+ *
+ * Quan trọng: cues phải khớp với bilingualCues của content script (từ TTML parse).
+ * Lấy cues thật từ Side Panel React fiber (xem extractRealCues() bên dưới).
  *
  * Ponytail: snippet manual, không vào build. Ceiling: synthetic keydown không
  * trigger React handler trong Side Panel — chỉ test content script path.
- * Test Side Panel relay cần nhấn phím thật.
  */
 
 (() => {
   'use strict';
 
   // --- Config ---
-  const TOLERANCE_MS = 250; // Netflix seek có latency ~200ms
+  const TOLERANCE_MS = 50; // __NF_SEEK detail = requested target, nên tolerance rất nhỏ
   const SEEK_SETTLE_MS = 800; // đợi seek xong + video ổn định
-  const PLAY_AFTER_SEEK = true; // play video để seek chính xác hơn
+  const PLAY_AFTER_SEEK = true;
 
   // --- State ---
   let realCues = [];
@@ -37,6 +38,7 @@
   const ua = navigator.userAgent;
   const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : 'Unknown';
   const video = () => document.querySelector('video');
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
   function logPass(tc) {
     console.log(`%c[PASS] ${tc.name}`, 'color:green;font-weight:bold', {
@@ -51,36 +53,53 @@
     });
   }
 
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
   // --- Setup: hook __NF_SEEK để log actual seek ---
   function hookSeekLog() {
     seekLog = [];
     document.addEventListener('__NF_SEEK', (e) => {
-      seekLog.push({ seekMs: e.detail, time: Date.now(), stack: new Error().stack });
+      seekLog.push({ seekMs: e.detail, time: Date.now() });
     }, { once: false });
     console.log('[seek-test] hooked __NF_SEEK listener');
   }
 
-  // --- Setup: lấy cues thật từ Side Panel ---
-  // Side Panel là page riêng (chrome-extension://), không truy cập DOM trực tiếp.
-  // Cách 1: query Side Panel store qua chrome.runtime message (cần content script expose).
-  // Cách 2: scan Netflix page subtitle list (nếu có).
-  // Cách 3: Anh yêu paste cues từ Side Panel DevTools console.
-  // Default: dùng cues hardcoded (cập nhật từ Side Panel trước khi test).
-  async function fetchCuesFromSidePanel() {
-    // Thử query content script (ISOLATED world) — không work từ MAIN world.
-    // Trả về null → fallback hardcoded.
+  // --- Extract real cues từ Side Panel React fiber ---
+  // Chạy trên Side Panel page (chrome-extension://), KHÔNG chạy trên Netflix page.
+  // Lấy cues từ CueList component props (fiber.memoizedProps.cues).
+  // Trả về 934 cues từ TTML parse — khớp với bilingualCues của content script.
+  function extractRealCues() {
+    const all = document.querySelectorAll('[data-testid="cue-item"]');
+    if (all.length === 0) {
+      console.error('[seek-test] no cue items in DOM. Are you on the Side Panel page?');
+      return null;
+    }
+    const el = all[0];
+    const fiberKey = Object.keys(el).find(k => k.startsWith('__reactFiber$'));
+    if (!fiberKey) {
+      console.error('[seek-test] no React fiber on cue item');
+      return null;
+    }
+    let fiber = el[fiberKey];
+    for (let i = 0; i < 30 && fiber; i++) {
+      const props = fiber.memoizedProps;
+      if (props && props.cues && Array.isArray(props.cues) && props.cues.length > 100) {
+        const cues = props.cues.map(c => ({ start: c.start, end: c.end }));
+        console.log(`[seek-test] extracted ${cues.length} cues from React fiber, range [${cues[0].start} - ${cues[cues.length-1].end}]ms`);
+        return cues;
+      }
+      fiber = fiber.return;
+    }
+    console.error('[seek-test] could not find cues in fiber props');
     return null;
   }
 
   function setRealCues(cues) {
-    // cues: [{start, end, text}, ...] — end = start của cue tiếp theo
     realCues = cues;
     console.log(`[seek-test] set ${cues.length} cues, range [${cues[0].start} - ${cues[cues.length-1].end}]ms`);
   }
 
   // --- Predict logic (mirror contentScriptController.ts keyboard handler) ---
+  // offsetMs = 0 (default). seekToCue seeks to (cue.start - offsetMs) / 1000.
+  // __NF_SEEK detail = cue.start (when offsetMs=0).
   function predictSeek(action, currentMs, offsetMs = 0) {
     const effectiveMs = currentMs + offsetMs;
     if (action === 'prev-cue') {
@@ -109,17 +128,11 @@
     }
   }
 
-  // --- Dispatch keydown (trigger content script handler) ---
-  function dispatchKey(key) {
-    seekLog = [];
-    document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
-  }
-
   // --- Lấy nearCues để debug khi fail ---
   function getNearCues(ms, radius = 5000) {
     return realCues
       .filter(c => c.start > ms - radius && c.start < ms + radius)
-      .map(c => ({ start: c.start, end: c.end, text: c.text?.slice(0, 30) || '' }));
+      .map(c => ({ start: c.start, end: c.end }));
   }
 
   // --- Run 1 test case ---
@@ -131,39 +144,49 @@
     // 2. Predict
     const expected = predictSeek(tc.action, actualPos, tc.offsetMs ?? 0);
     if (expected === null) {
-      logFail({ ...tc, pos: actualPos, expected: null, actual: null, diff: null, count: 0, nearCues: getNearCues(actualPos) }, 'predict returned null (no matching cue)');
-      return { ...tc, pos: actualPos, expected, actual: null, pass: false, reason: 'predict null' };
+      const r = { ...tc, pos: actualPos, expected: null, actual: null, pass: false, reason: 'predict null (no matching cue)', nearCues: getNearCues(actualPos) };
+      logFail(r, r.reason);
+      return r;
     }
 
-    // 3. Dispatch keydown
-    dispatchKey(tc.key);
+    // 3. Dispatch keydown (rapid hoặc single)
+    seekLog = [];
+    if (tc.rapid) {
+      for (let i = 0; i < tc.rapid; i++) {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: tc.key, bubbles: true, cancelable: true }));
+      }
+    } else {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: tc.key, bubbles: true, cancelable: true }));
+    }
     await sleep(SEEK_SETTLE_MS);
 
     // 4. Verify
     const actualSeek = seekLog[0]?.seekMs ?? null;
     const count = seekLog.length;
     const diff = actualSeek !== null ? Math.round(actualSeek - expected) : null;
+
+    // Pass conditions:
+    // - count === 1 (dedupe works: single seek for single/rapid press)
+    // - |diff| <= TOLERANCE_MS (seek target matches predict)
     const pass = actualSeek !== null && Math.abs(diff) <= TOLERANCE_MS && count === 1;
 
-    const result = { ...tc, pos: actualPos, expected, actual: actualSeek, diff, count, pass, nearCues: getNearCues(actualPos) };
-
-    if (pass) {
-      logPass(result);
-    } else {
-      let reason;
-      if (count === 0) reason = 'no seek fired (keydown handler not triggered or dedupe skipped all)';
-      else if (count > 1) reason = `dedupe failed: ${count} seeks fired (expected 1)`;
+    let reason = null;
+    if (!pass) {
+      if (count === 0) reason = 'no seek fired (handler not triggered or bilingualCues empty)';
+      else if (count > 1) reason = `dedupe failed: ${count} seeks (expected 1)`;
       else if (actualSeek === null) reason = 'seekLog empty';
       else reason = `seek mismatch: diff=${diff}ms > tolerance=${TOLERANCE_MS}ms`;
-      logFail(result, reason);
     }
+
+    const result = { ...tc, pos: actualPos, expected, actual: actualSeek, diff, count, pass, reason, nearCues: getNearCues(actualPos) };
+    if (pass) logPass(result); else logFail(result, reason);
     return result;
   }
 
   // --- Run all test cases ---
   async function runSeekTests(cases) {
     if (realCues.length === 0) {
-      console.error('[seek-test] NO CUES SET. Call setRealCues([...]) first. See file header for how to get cues.');
+      console.error('[seek-test] NO CUES SET. Call setRealCues([...]) first. See extractRealCues() for how to get cues from Side Panel.');
       return { error: 'no cues' };
     }
     hookSeekLog();
@@ -181,70 +204,47 @@
     return { browser, passed, failed, total: results.length, results };
   }
 
-  // --- Default test cases (dựa trên cues thật từ Side Panel) ---
-  // Cập nhật pos theo cues thật. pos = mốc trong phim để test.
+  // --- Default test cases (dựa trên cues thật từ Side Panel, range 2235-2265s) ---
+  // Cues thật (934 cues từ TTML parse, khớp bilingualCues của content script):
+  //   [0] 2237026.46 - 2238653.08
+  //   [1] 2241614.38 - 2242990.75
+  //   [2] 2243491.25 - 2246202.29
+  //   [3] 2246786.21 - 2250539.96
+  //   [4] 2250623.38 - 2254669.08
+  //   [5] 2254752.50 - 2256963.04
+  //   [6] 2257046.46 - 2259799.21
+  //   [7] 2259882.63 - 2262426.83
+  //   [8] 2262510.25 - 2264220.29
+  //   [9] 2264303.71 - 2268349.42
   function defaultCases() {
     return [
-      { name: 'TC1: D from cue middle → next cue', pos: 2178500, key: 'd', action: 'next-cue' },
-      { name: 'TC2: A from cue start → prev cue', pos: 2179927, key: 'a', action: 'prev-cue' },
-      { name: 'TC3: A from gap → prev cue (gap-fill)', pos: 2185000, key: 'a', action: 'prev-cue' },
-      { name: 'TC4: S from cue middle → replay current cue', pos: 2189000, key: 's', action: 'replay-cue' },
-      { name: 'TC5: S from gap → replay nearest cue before', pos: 2195000, key: 's', action: 'replay-cue' },
-      { name: 'TC6: D from cue start → next cue', pos: 2207205, key: 'd', action: 'next-cue' },
-      { name: 'TC7: A from cue middle (has music cue after) → prev cue', pos: 2215000, key: 'a', action: 'prev-cue' },
-      { name: 'TC8: rapid D×3 sync → 1 seek (dedupe)', pos: 2210000, key: 'd', action: 'next-cue', rapid: 3 },
-      { name: 'TC9: rapid A×3 sync → 1 seek (dedupe)', pos: 2210000, key: 'a', action: 'prev-cue', rapid: 3 },
-      { name: 'TC10: rapid S×3 sync → 1 seek (dedupe)', pos: 2210000, key: 's', action: 'replay-cue', rapid: 3 },
+      { name: 'TC1: D from cue[3] middle (2248000) → next cue[4] 2250623', pos: 2248000, key: 'd', action: 'next-cue' },
+      { name: 'TC2: A from cue[4] start (2250623) → prev cue[3] 2246786', pos: 2250623, key: 'a', action: 'prev-cue' },
+      { name: 'TC3: A from gap (2255000) → prev cue[4] 2250623', pos: 2255000, key: 'a', action: 'prev-cue' },
+      { name: 'TC4: S from cue[4] middle (2252000) → replay cue[4] 2250623', pos: 2252000, key: 's', action: 'replay-cue' },
+      { name: 'TC5: S from gap (2254800) → replay cue[4] 2250623', pos: 2254800, key: 's', action: 'replay-cue' },
+      { name: 'TC6: D from cue[6] middle (2258000) → next cue[7] 2259882', pos: 2258000, key: 'd', action: 'next-cue' },
+      { name: 'TC7: A from cue[7] middle (2261000) → prev cue[6] 2257046', pos: 2261000, key: 'a', action: 'prev-cue' },
+      { name: 'TC8: rapid D×3 sync → 1 seek (dedupe)', pos: 2250000, key: 'd', action: 'next-cue', rapid: 3 },
+      { name: 'TC9: rapid A×3 sync → 1 seek (dedupe)', pos: 2250000, key: 'a', action: 'prev-cue', rapid: 3 },
+      { name: 'TC10: rapid S×3 sync → 1 seek (dedupe)', pos: 2250000, key: 's', action: 'replay-cue', rapid: 3 },
     ];
-  }
-
-  // --- Rapid press test (dedupe) ---
-  async function runRapidTest(key, action, pos, count = 3) {
-    await seekTo(pos);
-    const actualPos = Math.round(video().currentTime * 1000);
-    const expected = predictSeek(action, actualPos);
-    seekLog = [];
-    for (let i = 0; i < count; i++) {
-      document.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
-    }
-    await sleep(SEEK_SETTLE_MS);
-    const seekCount = seekLog.length;
-    const pass = seekCount === 1;
-    const result = { name: `Rapid ${key}×${count} sync`, key, pos: actualPos, expected, actual: seekLog[0]?.seekMs, count: seekCount, pass, browser };
-    if (pass) {
-      console.log(`%c[PASS] ${result.name}`, 'color:green;font-weight:bold', result);
-    } else {
-      console.log(`%c[FAIL] ${result.name}`, 'color:red;font-weight:bold', { ...result, reason: seekCount === 0 ? 'no seek' : `dedupe failed: ${seekCount} seeks (expected 1)` });
-    }
-    return result;
   }
 
   // --- Expose API ---
   window.__seekTest = {
     setRealCues,
     runSeekTests,
-    runRapidTest,
     predictSeek,
     getNearCues,
-    fetchCuesFromSidePanel,
+    extractRealCues,
     browser,
     TOLERANCE_MS,
   };
 
-  // --- Helper: parse cues từ Side Panel DevTools console ---
-  // Chạy trong Side Panel DevTools console:
-  //   copy(JSON.stringify([...document.querySelectorAll('[data-testid="cue-item"]')].map((item, i) => {
-  //     const ts = item.querySelector('[data-testid="cue-timestamp"]')?.textContent || '';
-  //     const target = item.querySelector('[data-testid="cue-target-text"]')?.textContent?.slice(0, 40) || '';
-  //     const m = ts.match(/(\d+):(\d+):(\d+)\.(\d+)/);
-  //     const start = m ? (+m[1]*3600 + +m[2]*60 + +m[3]) * 1000 + +m[4] : 0;
-  //     return { start, text: target };
-  //   })))
-  // Paste kết quả vào setRealCues() + thêm end = start của cue tiếp theo.
-
+  // --- Hướng dẫn dùng ---
   console.log(`%c[seek-test] loaded on ${browser}. Usage:`, 'color:blue;font-weight:bold');
-  console.log('  1. Get cues from Side Panel DevTools console (see file header)');
-  console.log('  2. __seekTest.setRealCues([...])');
+  console.log('  1. On Side Panel page: __seekTest.extractRealCues() → copy cues');
+  console.log('  2. On Netflix page: __seekTest.setRealCues([...])');
   console.log('  3. await __seekTest.runSeekTests()');
-  console.log('  Or rapid: await __seekTest.runRapidTest("d", "next-cue", 2210000, 3)');
 })();
