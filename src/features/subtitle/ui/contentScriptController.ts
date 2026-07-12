@@ -1,4 +1,4 @@
-import { sendMessage, onMessage, onStorageChanged } from '@/shared/lib/chrome-apis';
+import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener } from '@/shared/lib/chrome-apis';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
@@ -672,7 +672,7 @@ export function init(video: HTMLVideoElement): () => void {
   // Wire keyboard shortcuts. Capture phase (3rd arg = true) so we fire BEFORE
   // YouTube's own keydown listeners (e.g. 't' = theater mode) and can block
   // them via stopImmediatePropagation when the key matches a configured action.
-  document.addEventListener('keydown', (e) => {
+  const onKeydown = (e: KeyboardEvent) => {
     // Chrome hides the side panel when a tab enters fullscreen (Chromium
     // commit 6c6eb90, bug 1249462). sidePanel.open() in fullscreenchange
     // fails (no user gesture). But the 'f' keydown that triggers fullscreen
@@ -721,6 +721,7 @@ export function init(video: HTMLVideoElement): () => void {
       shift: e.shiftKey,
       alt: e.altKey,
     });
+    console.log('[DEBUG keydown]', { key: e.key, action, cueCount: bilingualCues.length, currentMs: Math.round(video.currentTime * 1000), shortcutsLen: shortcuts.length });
     if (!action) return;
     // Block YouTube's own shortcuts (e.g. 't' = theater mode) + other
     // same-target listeners so only our action runs.
@@ -837,7 +838,8 @@ export function init(video: HTMLVideoElement): () => void {
         break;
       }
     }
-  });
+  };
+  document.addEventListener('keydown', onKeydown, true);
 
   // Wire timeupdate → send VIDEO_TIME_UPDATE to Side Panel (via background)
   // ponytail: throttle to ~4fps to avoid message flooding (timeupdate fires ~60fps)
@@ -877,7 +879,7 @@ export function init(video: HTMLVideoElement): () => void {
   // Receive SEEK_TO from Side Panel (via background relay) → seek video
   // msg is `unknown` per onMessage signature; narrow to { type?, payload? }
   // for property access. Safe because chrome.runtime messages are plain objects.
-  onMessage((msg: unknown, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
+  const onRuntimeMessage = (msg: unknown, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
     const m = msg as { type?: string; payload?: unknown };
     // Background relays CLOSE_SIDE_PANEL back to this content script via
     // tabs.sendMessage after closing the panel. Reset our toggle state so the
@@ -1004,7 +1006,8 @@ export function init(video: HTMLVideoElement): () => void {
       }
     }
     return false; // synchronous listener
-  });
+  };
+  onMessage(onRuntimeMessage);
 
   // === File import wiring ===
   // File picker (import button) is wired inside loadOverlayStyles().then()
@@ -1043,7 +1046,7 @@ export function init(video: HTMLVideoElement): () => void {
   // === Bilingual auto-load wiring (ADR-007 D1, spec F3/F4/F7) ===
   // msg is `unknown` per onMessage signature; narrow to { type?, payload? }
   // for property access. Safe because chrome.runtime messages are plain objects.
-  onMessage((msg: unknown, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
+  const onRuntimeMessage2 = (msg: unknown, _sender: chrome.runtime.MessageSender, _sendResponse: (response?: unknown) => void) => {
     const m = msg as { type?: string; payload?: unknown };
     if (m?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
       const payload = m.payload as AutoLoadSubtitlesPayload;
@@ -1223,7 +1226,8 @@ export function init(video: HTMLVideoElement): () => void {
       })();
     }
     return false; // synchronous listener, no async response
-  });
+  };
+  onMessage(onRuntimeMessage2);
 
   // Request a re-push of AUTO_LOAD_SUBTITLES in case background pushed before
   // this content-script was ready (race: SW restart, late injection). Background
@@ -1529,6 +1533,9 @@ export function init(video: HTMLVideoElement): () => void {
     document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('yt-navigate-finish', onSpaNav);
     window.removeEventListener('popstate', onSpaNav);
+    document.removeEventListener('keydown', onKeydown, true);
+    removeOnMessageListener(onRuntimeMessage);
+    removeOnMessageListener(onRuntimeMessage2);
     toggleBtn?.remove();
     managerPanel?.destroy();
     cardCreatorMount?.unmount();
