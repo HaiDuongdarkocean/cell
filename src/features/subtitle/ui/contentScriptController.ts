@@ -549,13 +549,16 @@ export function init(video: HTMLVideoElement): () => void {
   //   - Forward seek: currentTime advances gradually (fast-play) toward target
   //   - Backward seek: currentTime sticks at old pos, then jumps to target
   // video.seeking unreliable (only true ~2ms). Use |videoMs - lastSeekTarget|
-  // > 50ms to detect seek-in-progress (works both directions). 50ms tolerance
-  // is small enough to settle quickly, large enough for float jitter.
+  // > 50ms AND seek < 1s ago to detect in-progress. Time guard clears stale
+  // lastSeekTarget after video has advanced past target via normal playback.
   // Listener catches ALL seeks (keydown, NavCluster, Side Panel, external).
   let lastSeekTargetMs: number | null = null;
+  let lastSeekTime = 0;
   const SEEK_SETTLE_TOLERANCE_MS = 50;
+  const SEEK_STALE_MS = 1000;
   const onNfSeek = (e: Event) => {
     lastSeekTargetMs = (e as CustomEvent).detail as number;
+    lastSeekTime = Date.now();
   };
   document.addEventListener('__NF_SEEK', onNfSeek);
 
@@ -563,11 +566,15 @@ export function init(video: HTMLVideoElement): () => void {
   const getEffectiveMs = (): number => {
     const offsetMs = offsetController?.getOffsetMs() ?? 0;
     const videoMs = video.currentTime * 1000;
-    // Seek in progress if video hasn't reached target (either direction).
-    if (lastSeekTargetMs !== null && Math.abs(videoMs - lastSeekTargetMs) > SEEK_SETTLE_TOLERANCE_MS) {
+    // Seek in progress: video hasn't reached target AND seek was recent.
+    if (
+      lastSeekTargetMs !== null &&
+      Math.abs(videoMs - lastSeekTargetMs) > SEEK_SETTLE_TOLERANCE_MS &&
+      Date.now() - lastSeekTime < SEEK_STALE_MS
+    ) {
       return lastSeekTargetMs + offsetMs;
     }
-    // Reached target → settled → use actual video time
+    // Settled or stale → use actual video time
     lastSeekTargetMs = null;
     return videoMs + offsetMs;
   };
