@@ -295,9 +295,11 @@ export async function handleAutoLoadSubtitles(
   // ADR-014 D3 + ADR-015: notify content-script of all matches for panel + dropdown render.
   // Show panel/chip when at least 1 subtitle (target or native) is auto-detected —
   // not only when 2+ matches (user needs to see active subtitle state even with 1 sub).
-  // targetMatches/nativeMatches are only populated when ≥2 matches (ADR-014 D3, for
-  // legacy dropdown). When 1 match, fall back to the single preferred target/native
-  // so the manager panel + chip still render.
+  // targetMatches/nativeMatches are always populated when ≥1 match (so the manager
+  // panel shows every available subtitle of the target/native language). The
+  // payload.target/native fallback below is now defensive only — targetMatches
+  // already covers the 1-match case — but kept for callers that send target
+  // without targetMatches.
   if (deps.onSubtitleMatches) {
     const targetM = payload.targetMatches?.length
       ? payload.targetMatches

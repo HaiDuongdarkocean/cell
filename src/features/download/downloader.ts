@@ -334,6 +334,7 @@ export class Downloader {
         console.warn('[downloadSubtitle] setRefererRule failed, proceeding without DNR rule:', err);
       }
     }
+
     let response: Response;
     try {
       response = await fetch(subtitle.url, { credentials: 'same-origin' });

@@ -107,4 +107,25 @@ Line two`;
     expect(result.cues[0].text).not.toMatch(/[<>]/);
     expect(result.cues[0].text).not.toMatch(/\{[^}]*\}/);
   });
+
+  // WebVTT spec allows omitting the hours component when it is zero
+  // (MM:SS.mmm instead of HH:MM:SS.mmm). Many real-world VTT files
+  // (e.g. animekai.to / lostproject.club subtitles) use this compact form.
+  it('parses MM:SS.mmm timestamps (hours omitted)', () => {
+    const content = `WEBVTT
+
+00:25.250 --> 00:32.210
+<b>Beyond Journey's End</b>
+
+01:05.000 --> 01:10.500
+Second cue`;
+    const result = parseVtt(content);
+    expect(result.cues).toHaveLength(2);
+    expect(result.cues[0].start).toBe(25250);
+    expect(result.cues[0].end).toBe(32210);
+    expect(result.cues[0].text).toBe("Beyond Journey's End");
+    expect(result.cues[1].start).toBe(65000);
+    expect(result.cues[1].end).toBe(70500);
+    expect(result.cues[1].text).toBe('Second cue');
+  });
 });

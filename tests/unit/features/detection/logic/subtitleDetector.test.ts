@@ -48,6 +48,44 @@ describe('detectSubtitle', () => {
     expect(result).toBeNull();
   });
 
+  // Regression: anime.nexus serves `.../stream/thumbnails.vtt` (seek preview,
+  // cues = image URLs) and `.../stream/cues.vtt` (chapter marker, 1 cue
+  // "Episode" spanning the full duration) — neither is a subtitle. Without
+  // the guard, both are detected as subtitles, language-detected as English
+  // (URLs/words contain English), and selected over the real ASS track by
+  // findSubtitlesForOverlay → ASS never auto-loads.
+  it('returns null for thumbnail preview VTT (thumbnails.vtt)', () => {
+    const request = makeRequest(
+      'https://api.anime.nexus/api/anime/video/019f573c-c039-739b-ae4c-ddaea828b4b3/stream/thumbnails.vtt',
+    );
+    const result = detectSubtitle(request);
+    expect(result).toBeNull();
+  });
+
+  it('returns null for chapter/episode marker VTT (cues.vtt)', () => {
+    const request = makeRequest(
+      'https://api.anime.nexus/api/anime/video/019f41fb-a078-7052-aba7-169fbe679565/stream/cues.vtt',
+    );
+    const result = detectSubtitle(request);
+    expect(result).toBeNull();
+  });
+
+  it('returns null for storyboard/chapter/preview VTT previews', () => {
+    expect(detectSubtitle(makeRequest('https://example.com/stream/storyboard.vtt'))).toBeNull();
+    expect(detectSubtitle(makeRequest('https://example.com/stream/chapters.vtt'))).toBeNull();
+    expect(detectSubtitle(makeRequest('https://example.com/stream/preview.vtt'))).toBeNull();
+  });
+
+  it('still detects a real subtitle.vtt that contains "subtitle" in the path', () => {
+    // "subtitle" contains "subtitle" not "thumbnail/storyboard/chapter/preview/cues"
+    // — guard must not over-match. Real subtitle URLs with /subtitles/ path
+    // are still detected.
+    const request = makeRequest('https://example.com/subtitles/movie.vtt');
+    const result = detectSubtitle(request);
+    expect(result).not.toBeNull();
+    expect(result?.format).toBe('vtt');
+  });
+
   it('extracts language from filename pattern "movie.en.srt"', () => {
     const request = makeRequest('https://example.com/subtitles/movie.en.srt');
     const result = detectSubtitle(request);
@@ -217,6 +255,55 @@ describe('detectSubtitle', () => {
           configurable: true,
         });
       }
+    });
+  });
+
+  describe('trustAsSubtitle option', () => {
+    // Regression: anikage.cc serves subtitles from
+    // `prox.anicore.tv/stream/<base64-hash>` — no file extension, no
+    // `/subtitles|subs|caption|cc/` path segment, no format query param. The
+    // URL is indistinguishable from a video segment URL by shape. The page
+    // scanner reads the `<track kind="subtitles">` element and trusts its
+    // semantics, passing `trustAsSubtitle: true` to bypass the URL-pattern
+    // check. The NON_SUBTITLE_KEYWORDS guard still runs.
+    it('detects an extension-less <track>-origin URL when trustAsSubtitle=true (anikage.cc regression)', () => {
+      const url =
+        'https://prox.anicore.tv/stream/CQQGHwtDHR9RUg9eEwERA1NCUxgSBB0dHVZBRVBCCAQeCgtWAVQdVQNfQQsbGw';
+      const request = makeRequest(url);
+      // Without the flag: URL pattern check fails → null.
+      expect(detectSubtitle(request)).toBeNull();
+      // With the flag: pattern check bypassed → detected, format defaults to vtt.
+      const result = detectSubtitle(request, { trustAsSubtitle: true });
+      expect(result).not.toBeNull();
+      expect(result?.url).toBe(url);
+      expect(result?.format).toBe('vtt');
+      expect(result?.language).toBe('unknown');
+    });
+
+    it('still rejects thumbnail/chapter VTT previews even with trustAsSubtitle=true', () => {
+      // NON_SUBTITLE_KEYWORDS guard runs regardless of trustAsSubtitle — a
+      // `<track>` named "thumbnails" is a seek-preview, not a subtitle.
+      expect(
+        detectSubtitle(makeRequest('https://example.com/stream/thumbnails.vtt'), {
+          trustAsSubtitle: true,
+        }),
+      ).toBeNull();
+      expect(
+        detectSubtitle(makeRequest('https://example.com/stream/cues.vtt'), {
+          trustAsSubtitle: true,
+        }),
+      ).toBeNull();
+    });
+
+    it('trustAsSubtitle does not change behavior for URLs that already match patterns', () => {
+      const url = 'https://example.com/subs/en.vtt';
+      const withoutFlag = detectSubtitle(makeRequest(url));
+      const withFlag = detectSubtitle(makeRequest(url), { trustAsSubtitle: true });
+      expect(withoutFlag).not.toBeNull();
+      expect(withFlag).not.toBeNull();
+      expect(withFlag?.url).toBe(withoutFlag?.url);
+      expect(withFlag?.format).toBe(withoutFlag?.format);
+      expect(withFlag?.language).toBe(withoutFlag?.language);
     });
   });
 });

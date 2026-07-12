@@ -26,20 +26,25 @@
  */
 
 // DNR rule ids must be unique integers >= 1 and persist across SW evictions
-// (rules live in the browser, not the SW). Using Date.now() as the base
+// (rules live in the browser, not the SW). Using Unix seconds as the base
 // guarantees uniqueness across SW restarts — time only moves forward, so a
 // restarted SW gets a higher base than any rule created before the restart.
 // The in-memory `++ruleIdBase` handles multiple calls within the same
-// millisecond (JS is single-threaded, so the increment is atomic).
+// second (JS is single-threaded, so the increment is atomic).
 // Previous approaches (storage-backed counter with read-modify-write) raced
 // when the fire-and-forget persist didn't complete before SW eviction →
 // restarted SW read a stale base → created a duplicate id →
 // "Rule with id N does not have a unique ID" error.
+//
+// ponytail: Date.now() (ms) overflows DNR int32 id (>2.1e9) → Chrome rejects
+// with "Invalid type: expected integer, found number". Unix seconds fits
+// int32 until Y2K38 (2038-01-19). Ceiling: after 2038, switch to
+// (Date.now() - SOME_EPOCH_OFFSET) / 1000 or a storage-backed counter.
 let ruleIdBase = 0;
 
 function nextRuleId(): number {
   if (ruleIdBase === 0) {
-    ruleIdBase = Date.now();
+    ruleIdBase = Math.floor(Date.now() / 1000);
   }
   return ++ruleIdBase;
 }

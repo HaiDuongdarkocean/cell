@@ -82,7 +82,9 @@ describe('findSubtitlesForOverlay', () => {
     const result = findSubtitlesForOverlay(subtitles, settings);
     expect(result).not.toBeNull();
     expect(result?.target?.language).toBe('zh-hans');
-    expect(result?.targetMatches?.length).toBe(0); // only 1 match → no dropdown list
+    // targetMatches always populates when ≥1 match (panel shows all matches).
+    expect(result?.targetMatches?.length).toBe(1);
+    expect(result?.targetMatches?.[0].language).toBe('zh-hans');
   });
 
   it('matches zh-hant target only to zh-hant (not zh-hans)', () => {
@@ -91,7 +93,8 @@ describe('findSubtitlesForOverlay', () => {
     const result = findSubtitlesForOverlay(subtitles, settings);
     expect(result).not.toBeNull();
     expect(result?.target?.language).toBe('zh-hant');
-    expect(result?.targetMatches?.length).toBe(0); // only 1 match → no dropdown list
+    expect(result?.targetMatches?.length).toBe(1);
+    expect(result?.targetMatches?.[0].language).toBe('zh-hant');
   });
 
   it('returns null when subtitles array is empty', () => {

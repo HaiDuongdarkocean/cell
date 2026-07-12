@@ -113,9 +113,45 @@ function extractLanguage(url: string): string {
   return 'unknown';
 }
 
-export function detectSubtitle(request: NetworkRequest): DetectedSubtitle | null {
-  const matches = SUBTITLE_URL_PATTERNS.some((pattern) => pattern.test(request.url));
-  if (!matches) {
+/**
+ * WebVTT files used as video metadata (not subtitles). These match `\.vtt`
+ * but each cue is either an image URL (thumbnail/storyboard previews) or a
+ * single chapter/episode marker spanning the whole video. Sites like
+ * anime.nexus serve `.../stream/thumbnails.vtt` (seek preview, cues = image
+ * URLs) and `.../stream/cues.vtt` (chapter marker, 1 cue "Episode" spanning
+ * the full duration). Without this guard, both are detected as subtitles,
+ * language-detected as English (URLs/words contain English), and selected
+ * over the real ASS track by `findSubtitlesForOverlay` → ASS never auto-loads.
+ *
+ * ponytail: keyword-based exclusion. Ceiling: other metadata file names
+ * would still false-positive. Upgrade: parse a small sample of the content
+ * and reject when every cue line is a URL, or when there is only 1 cue
+ * spanning the full video duration (chapter marker, not caption).
+ */
+const NON_SUBTITLE_KEYWORDS = /thumbnail|storyboard|chapter|preview|cues/i;
+
+export function detectSubtitle(
+  request: NetworkRequest,
+  opts?: { trustAsSubtitle?: boolean },
+): DetectedSubtitle | null {
+  // `trustAsSubtitle`: the caller already classified this URL as a subtitle
+  // via a stronger signal than URL shape — e.g. a `<track kind="subtitles">`
+  // element in the DOM (HTML spec: the element IS the classifier). Sites like
+  // anikage.cc serve subtitles from `prox.anicore.tv/stream/<base64-hash>` with
+  // no file extension and no `/subtitles|subs|caption|cc/` path segment, so
+  // SUBTITLE_URL_PATTERNS never matches. The page scanner reads the `<track>`
+  // element and trusts its semantics, bypassing the pattern check here.
+  // The NON_SUBTITLE_KEYWORDS guard still runs (a `<track>` named "thumbnail"
+  // is a seek-preview, not a subtitle).
+  if (!opts?.trustAsSubtitle) {
+    const matches = SUBTITLE_URL_PATTERNS.some((pattern) => pattern.test(request.url));
+    if (!matches) {
+      return null;
+    }
+  }
+
+  // Reject thumbnail/storyboard/chapter VTT previews — not subtitles.
+  if (NON_SUBTITLE_KEYWORDS.test(request.url)) {
     return null;
   }
 

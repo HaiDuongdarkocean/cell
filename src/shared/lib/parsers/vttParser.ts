@@ -46,8 +46,12 @@ export function parseVtt(content: string): VttSubtitle {
   lineIndex++;
 
   const cues: VttCue[] = [];
+  // WebVTT spec allows two timestamp forms: `HH:MM:SS.mmm` and `MM:SS.mmm`
+  // (hours omitted when zero). The hours group is optional on both sides.
+  // `\d{2,}` for hours allows >99h (matches prior behavior); minutes/seconds
+  // are exactly 2 digits per spec.
   const timingRegex =
-    /^(\d{2,}):(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(\d{2,}):(\d{2}):(\d{2})[.,](\d{3})/;
+    /^(?:(\d{2,}):)?(\d{2}):(\d{2})[.,](\d{3})\s*-->\s*(?:(\d{2,}):)?(\d{2}):(\d{2})[.,](\d{3})/;
 
   while (lineIndex < lines.length) {
     const line = lines[lineIndex];
@@ -92,6 +96,7 @@ export function parseVtt(content: string): VttSubtitle {
 
     const start = toMs(match[1], match[2], match[3], match[4]);
     const end = toMs(match[5], match[6], match[7], match[8]);
+    // match[1]/match[5] are undefined when hours are omitted (MM:SS.mmm).
 
     if (Number.isNaN(start) || Number.isNaN(end)) {
       lineIndex++;
@@ -121,12 +126,13 @@ export function parseVtt(content: string): VttSubtitle {
 }
 
 function toMs(
-  hh: string,
+  hh: string | undefined,
   mm: string,
   ss: string,
   mmm: string,
 ): number {
-  const hours = Number.parseInt(hh, 10);
+  // hh is undefined when the hours component was omitted (MM:SS.mmm form).
+  const hours = hh === undefined ? 0 : Number.parseInt(hh, 10);
   const minutes = Number.parseInt(mm, 10);
   const seconds = Number.parseInt(ss, 10);
   const millis = Number.parseInt(mmm, 10);

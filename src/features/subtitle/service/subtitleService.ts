@@ -55,34 +55,38 @@ export function findSubtitlesForOverlay(
 
   if (!target && !native) return null;
 
-  // ADR-014 D3: include all matches for dropdown (V2 subtitle selector).
-  // Only populated when ≥2 matches (V1 behavior when 1 match).
-  const targetMatches =
-    targetLang && eligible.filter((s) => languageMatches(targetLang, s.language)).length >= 2
-      ? eligible
-          .filter((s) => languageMatches(targetLang, s.language))
-          .map((s) => ({
-            url: s.url,
-            language: s.language,
-            format: s.format,
-            isAsr: s.isAsr,
-            displayName: s.displayName,
-            initiator: s.initiator,
-          }))
-      : [];
-  const nativeMatches =
-    nativeLang && eligible.filter((s) => languageMatches(nativeLang, s.language)).length >= 2
-      ? eligible
-          .filter((s) => languageMatches(nativeLang, s.language))
-          .map((s) => ({
-            url: s.url,
-            language: s.language,
-            format: s.format,
-            isAsr: s.isAsr,
-            displayName: s.displayName,
-            initiator: s.initiator,
-          }))
-      : [];
+  // ADR-014 D3: include ALL matches for the manager panel + dropdown (V2
+  // subtitle selector). Always populate when ≥1 match so the panel shows
+  // every subtitle of the target/native language — even a single track —
+  // so the user can always see and switch between all available subtitles.
+  // Previously this only populated when ≥2 matches, so when a false-positive
+  // VTT (e.g. anime.nexus cues.vtt chapter marker) resolved to English before
+  // the real ASS track was language-resolved, the panel showed only the
+  // false positive and the ASS never appeared until a second push.
+  const targetMatches = targetLang
+    ? eligible
+        .filter((s) => languageMatches(targetLang, s.language))
+        .map((s) => ({
+          url: s.url,
+          language: s.language,
+          format: s.format,
+          isAsr: s.isAsr,
+          displayName: s.displayName,
+          initiator: s.initiator,
+        }))
+    : [];
+  const nativeMatches = nativeLang
+    ? eligible
+        .filter((s) => languageMatches(nativeLang, s.language))
+        .map((s) => ({
+          url: s.url,
+          language: s.language,
+          format: s.format,
+          isAsr: s.isAsr,
+          displayName: s.displayName,
+          initiator: s.initiator,
+        }))
+    : [];
 
   return { target, native, targetMatches, nativeMatches };
 }
