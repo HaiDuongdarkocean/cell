@@ -65,10 +65,14 @@ const SHORTCUT_ACTION_LABELS: Record<ShortcutAction, string> = {
   'toggle-overlay': 'Toggle overlay',
   'toggle-panel': 'Toggle panel',
   'toggle-translate': 'Toggle auto-translate',
+  'generate-native': 'Generate native subtitle',
+  'quick-update': 'Card Creator: Quick update',
+  'edit-card': 'Card Creator: Edit card',
 };
 
 const SHORTCUT_ACTION_ORDER: readonly ShortcutAction[] = [
   'prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay', 'toggle-panel', 'toggle-translate',
+  'generate-native', 'quick-update', 'edit-card',
 ];
 
 /**
@@ -260,17 +264,23 @@ const SUBTITLE_LANGUAGES: { value: string; label: string }[] = [
   { value: 'yo', label: 'Yorùbá' },
   { value: 'za', label: 'Vahcuengh (Zhuang)' },
   { value: 'zh', label: '中文 (Chinese)' },
+  { value: 'zh-hans', label: '中文（简体）(Simplified Chinese)' },
+  { value: 'zh-hant', label: '中文（繁體）(Traditional Chinese)' },
   { value: 'zu', label: 'isiZulu (Zulu)' },
 ];
 
 /**
  * Language options for the overlay target/native dropdowns.
- * Same list as SUBTITLE_LANGUAGES but without the "all" option, with a
- * leading "None" option (value '') so users can clear the selection.
+ * Same list as SUBTITLE_LANGUAGES but without the "all" option, plus
+ * Chinese script variants (zh-hans / zh-hant) so users can choose Simplified
+ * or Traditional Chinese independently. A leading "None" option (value '')
+ * lets users clear the selection.
  */
 const OVERLAY_LANGUAGE_OPTIONS: DropdownOption[] = [
   { value: '', label: 'None' },
   ...SUBTITLE_LANGUAGES.filter((o) => o.value !== 'all'),
+  { value: 'zh-hans', label: '中文（简体）(Simplified Chinese)' },
+  { value: 'zh-hant', label: '中文（繁體）(Traditional Chinese)' },
 ];
 
 export function SettingsDialog({ isOpen, settings, onChange, onClose }: SettingsDialogProps): React.JSX.Element {

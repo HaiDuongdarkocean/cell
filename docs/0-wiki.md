@@ -35,6 +35,8 @@ docs/           # Tài liệu dự án
 │   └── 024-portable-theme-boundary.md # ADR-024: component-level data-theme boundary cho portable content-script UI (amends ADR-022 D4)
 │   └── 025-subtitle-block-unified.md # ADR-025: gộp target + native + nav cluster thành 1 block, pill kéo trục Y, auto-scale theo video
 │   └── 026-card-creator-anki-integration.md # ADR-026: Card Creator — Anki integration via AnkiConnect (desktop + Android, silent no-op detection, draft autosave)
+│   └── 027-generate-native-subtitle.md # ADR-027: manual generate native subtitle via button/shortcut, reuse ADR-021 prefill, virtual panel slot
+│   └── 028-iqiyi-subtitle-detection.md # ADR-028: iQIYI subtitle detection — MAIN-world playerObject.stl extraction, clone ADR-020 pattern, SRT format, lid→ISO map, source dispatch trên DETECTED_SUBTITLES
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -68,10 +70,12 @@ docs/           # Tài liệu dự án
 │   └── spec-settings-controls-restyle.md
 │   └── spec-settings-dialog-rearrange.md # Settings dialog rearrange spec (pair/indent/divider, fix Nav Cluster position) # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
 │   └── spec-translate-subtitle-target-to-native.md # Translate subtitle target→native PRD (background prefill, Google unofficial, ShortcutInput combo, general mọi site)
+│   └── spec-generate-native-subtitle.md # Generate native bằng button/shortcut, feed overlay + overwrite active manager entry, in-memory đến SPA nav
 │   └── spec-port-theocean-dict-and-theme.md # Port theocean-dict reference: theme system (runtime configurable, 9 core tokens, WCAG, import/export, system mode) + dict import 5 format → IndexedDB. Options page mới. Theme trước, dict sau.
 │   └── spec-subtitle-block-unified.md # Unified subtitle block PRD: gộp target + native + nav cluster, auto-scale, settings rearrange
 │   ├── spec-card-creator.md # Card Creator PRD: AnkiConnect integration, field mapping, media extraction, draft autosave, desktop Dialog + mobile BottomSheet
 │   └── spec-card-creator-ui-redesign.md # Card Creator UI redesign PRD: preview block + Yomitan scan + media D&D/reorder
+│   └── spec-iqiyi-subtitle-detection.md # iQIYI subtitle detection PRD: MAIN-world playerObject.stl extraction, SRT format, lid→ISO map, clone ADR-020 pattern, source dispatch trên DETECTED_SUBTITLES
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 │   └── spec-shared-ui-components.md # Shared UI component library (Button/Card/Dialog/Input + atoms/molecules + migration of existing feature UI)
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
@@ -132,6 +136,10 @@ docs/           # Tài liệu dự án
 │   ├── url-lang-multi-separator-extraction.md     # kisskh kebab-case URL lang → multi-separator + domain guard
 │   ├── url-first-spa-nav-stale-player-response.md # URL-first videoId — ytInitialPlayerResponse stale on SPA nav radio mix
 │   ├── clear-subtitle-on-no-subtitle-video.md     # Clear previous video subtitles when new video has none (3-layer dead path)
+│   ├── proactive-native-event-clear-vs-round-trip.md # Content-script proactive clear on yt-navigate-finish vs background round-trip
+│   ├── drag-drop-stop-propagation-blocks-outer.md # MediaList inner stopPropagation blocks outer file-drop handler
+│   ├── dropdown-menu-width-follows-content.md     # Select menu width locked to trigger clips long options + tràn card
+│   ├── persist-config-clear-content.md            # Card Creator autosave: persist selections + tags, clear field content on close
 │   └── skill-output-routing.md                    # Skill output routing (filled artifacts → project docs/, not skill dir)
 ├── test-reports/                      # MCP browser test reports — "does it work in real browser"
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md

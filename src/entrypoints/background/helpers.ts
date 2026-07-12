@@ -455,37 +455,16 @@ export async function pushAutoLoadSubtitles(
         };
       }
     }
-    console.log('[bg pushAutoLoadSubtitles]', {
-      tabId,
-      autoLoad: settings.subtitleOverlayAutoLoad,
-      targetLang: settings.subtitleOverlayTargetLanguage,
-      nativeLang: settings.subtitleOverlayNativeLanguage,
-      subtitleCount: subtitles.length,
-      subtitleLanguages: subtitles.map((s) => s.language),
-      preferences,
-    });
-    let result = findSubtitlesForOverlay(subtitles, settings, preferences);
-    console.log('[bg pushAutoLoadSubtitles] result', result);
+    const result = findSubtitlesForOverlay(subtitles, settings, preferences);
 
     if (!result && subtitles.some((s) => s.language === 'unknown')) {
-      console.log('[bg pushAutoLoadSubtitles] resolving unknown languages via content detection');
-      const resolved = await resolveUnknownSubtitleLanguages(ctx, tabId, subtitles);
-      if (resolved.length > 0) {
-        const refreshed = ctx.networkInterceptor.getSubtitles(tabId);
-        result = findSubtitlesForOverlay(refreshed, settings, preferences);
-        console.log('[bg pushAutoLoadSubtitles] result after resolve', {
-          resolvedCount: resolved.length,
-          result,
-        });
-      }
+      // Unknown resolution now runs independently in onMediaDetected
+      // (wireEvents.ts) so it fires regardless of auto-load match result.
+      // After resolve, notifyListeners re-triggers this pushAutoLoadSubtitles
+      // with the resolved languages — no need to re-run here.
     }
 
     if (!result) {
-      console.log('[bg pushAutoLoadSubtitles] no match — subtitles detected but none match target/native lang', {
-        targetLang: settings.subtitleOverlayTargetLanguage,
-        nativeLang: settings.subtitleOverlayNativeLanguage,
-        detectedLanguages: subtitles.map((s) => s.language),
-      });
       return;
     }
     const payload: AutoLoadSubtitlesPayload = {
@@ -499,7 +478,6 @@ export async function pushAutoLoadSubtitles(
       type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
       payload,
     });
-    console.log('[bg pushAutoLoadSubtitles] sent AUTO_LOAD_SUBTITLES');
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.warn(`AUTO_LOAD_SUBTITLES push failed for tab ${tabId}: ${msg}`);
@@ -551,7 +529,9 @@ export async function resolveUnknownSubtitleLanguages(
         if (!label) return null;
         const isoCode = labelToIsoCode(label);
         if (!isoCode) return null;
-        ctx.networkInterceptor.updateSubtitle(sub.id, { ...sub, language: isoCode });
+        // Return the update; apply batch after all unknowns resolved so
+        // notifyListeners fires once (not per-sub), avoiding premature
+        // pushAutoLoadSubtitles runs that see only partially-resolved state.
         return { ...sub, language: isoCode };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -566,7 +546,13 @@ export async function resolveUnknownSubtitleLanguages(
   }
 
   if (resolved.length > 0) {
+    for (const r of resolved) {
+      ctx.networkInterceptor.updateSubtitle(r.id, r);
+    }
     saveSessionMedia(ctx, tabId, ctx.networkInterceptor.getVideos(tabId), ctx.networkInterceptor.getSubtitles(tabId));
+    // Fire a single notification after all updates land so onMediaDetected
+    // → pushAutoLoadSubtitles sees the fully-resolved subtitle set.
+    ctx.networkInterceptor.notifyMediaListeners(tabId);
   }
 
   return resolved;

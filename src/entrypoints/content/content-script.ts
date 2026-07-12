@@ -16,6 +16,8 @@ console.log('[content-script] injected at', document.readyState, 'time:', csInje
 // content-script injection past the MAIN-world `__YT_DETECTED_SUBTITLES` post
 // on SPA navigation → the MAIN world re-posts last tracks on this handshake.
 window.postMessage({ type: '__YT_CS_READY', time: csInjectTime }, '*');
+// ADR-028: same handshake for the iQIYI MAIN-world script.
+window.postMessage({ type: '__IQ_CS_READY', time: csInjectTime }, '*');
 
 // Debug: respond to PING from SW/DevTools so we can verify injection.
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -98,6 +100,38 @@ window.addEventListener('message', (event) => {
         visitorData: (data as { visitorData?: string }).visitorData,
       },
     });
+  }
+  // === iQIYI MAIN-world bridge (ADR-028) ===
+  // iqiyi-main-world.iife.ts reads `window.playerObject.stl` (MAIN world only)
+  // and posts subtitle tracks. Relay to background as DETECTED_SUBTITLES with
+  // source:'iqiyi' so detectionDispatch.ts routes to mapIqiyiSubtitleTracks.
+  if (data?.type === '__IQ_DETECTED_SUBTITLES') {
+    const tvid = (data as { tvid?: string }).tvid ?? '';
+    // Dedup by tvid (per-video ID): MAIN world re-posts on __IQ_CS_READY handshake,
+    // so the same tvid may arrive twice. Only relay once per tvid to avoid duplicate
+    // auto-load (ADR-028 race fix, clone ADR-020). iQIYI's `tvid` is the unique
+    // video identifier; `vid` is a streaming session ID reused across videos.
+    const lastRelayedTvid = (window as unknown as Record<string, unknown>).__IQ_LAST_RELAYED_TVID as string | undefined;
+    if (tvid && lastRelayedTvid === tvid) return;
+    (window as unknown as Record<string, unknown>).__IQ_LAST_RELAYED_TVID = tvid;
+    console.log('[content-script] __IQ_DETECTED_SUBTITLES received', {
+      trackCount: (data as { tracks?: unknown[] }).tracks?.length,
+      tvid,
+      postTime: (data as { postTime?: number }).postTime,
+    });
+    void sendMessage({
+      type: MESSAGE_TYPES.DETECTED_SUBTITLES,
+      payload: {
+        tabId: undefined,
+        tracks: (data as { tracks?: unknown[] }).tracks ?? [],
+        tvid,
+        source: 'iqiyi',
+        origin: (data as { origin?: string }).origin,
+      },
+    }).then(
+      (r) => console.log('[content-script] IQ DETECTED_SUBTITLES bg response', r),
+      (e) => console.error('[content-script] IQ DETECTED_SUBTITLES bg error', e),
+    );
   }
 });
 
@@ -231,51 +265,98 @@ let hasSeenFirstVideo = false;
 // changes. Angular may mount/unmount the same element multiple times during
 // phase render — without this guard, the clear + re-init would fire spuriously.
 let lastSeenVideo: HTMLVideoElement | null = null;
+// Track the last video src URL. Sites like aniwatch.co.at switch sub→dub by
+// changing `video.src` on the SAME <video> element (no element replacement,
+// no URL change, no pushState) → element-replacement watcher misses it.
+// Comparing src catches this case. ponytail: blob: URLs change on every
+// quality switch too — we only fire when the URL path differs (ignore query
+// params + blob: revocation noise by comparing pathname, not full href).
+let lastVideoSrc: string | null = null;
+
+function reportEpisodeChanged(reason: 'replacement' | 'src-change'): void {
+  if (!hasSeenFirstVideo) return; // first video — baseline, not a switch
+  // Tell the background to clear the previous episode's media before the new
+  // episode's media is detected.
+  const payload: VideoEpisodeChangedPayload = {
+    tabId: undefined, // background resolves from sender.tab.id
+  };
+  // Await the clear before re-scanning. The PageScanner's MutationObserver
+  // (registered before this watcher) already fired on the same mutation batch
+  // and sent PAGE_SCAN_RESULT with the new episode's track URLs. But that
+  // PAGE_SCAN_RESULT arrives at the background BEFORE VIDEO_EPISODE_CHANGED
+  // (observer registration order), so the clear wipes the newly-added
+  // subtitles. By awaiting VIDEO_EPISODE_CHANGED's response and then
+  // re-scanning, we guarantee the clear is processed first and the re-scan
+  // re-adds the new episode's media after the wipe.
+  // Bug: lordflix.org (SvelteKit SPA) replaces <video> + <track> on episode
+  // switch → 27 new tracks detected by PageScanner → wiped by clear → 0
+  // subtitles. This re-scan restores them.
+  void sendMessage({
+    type: MESSAGE_TYPES.VIDEO_EPISODE_CHANGED,
+    payload,
+  }).then(() => {
+    const urls = scanner.scan();
+    if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
+      void sendMessage({
+        type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
+        payload: {
+          tabId: undefined,
+          videoUrls: urls.videoUrls,
+          subtitleUrls: urls.subtitleUrls,
+        },
+      });
+    }
+  });
+  // Re-init overlay for the new <video> element. Angular replaces the entire
+  // <video> on episode switch → old overlay UI (toggle button, manager panel)
+  // is removed by the framework's re-render. findAndInitOverlay waits for the
+  // new video to be ready (blob: src, Angular phase-2 render) then re-injects.
+  void reason; // currently unused — reserved for future telemetry
+  findAndInitOverlay();
+}
 
 function reportEpisodeChangedIfReplacement(video: HTMLVideoElement): void {
   if (video === lastSeenVideo) return; // same element, not a replacement
-  if (hasSeenFirstVideo) {
-    // A previous <video> was already seen → this new one is a replacement
-    // (episode switch). Tell the background to clear the previous episode's
-    // media before the new episode's media is detected.
-    const payload: VideoEpisodeChangedPayload = {
-      tabId: undefined, // background resolves from sender.tab.id
-    };
-    // Await the clear before re-scanning. The PageScanner's MutationObserver
-    // (registered before this watcher) already fired on the same mutation batch
-    // and sent PAGE_SCAN_RESULT with the new episode's track URLs. But that
-    // PAGE_SCAN_RESULT arrives at the background BEFORE VIDEO_EPISODE_CHANGED
-    // (observer registration order), so the clear wipes the newly-added
-    // subtitles. By awaiting VIDEO_EPISODE_CHANGED's response and then
-    // re-scanning, we guarantee the clear is processed first and the re-scan
-    // re-adds the new episode's media after the wipe.
-    // Bug: lordflix.org (SvelteKit SPA) replaces <video> + <track> on episode
-    // switch → 27 new tracks detected by PageScanner → wiped by clear → 0
-    // subtitles. This re-scan restores them.
-    void sendMessage({
-      type: MESSAGE_TYPES.VIDEO_EPISODE_CHANGED,
-      payload,
-    }).then(() => {
-      const urls = scanner.scan();
-      if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
-        void sendMessage({
-          type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
-          payload: {
-            tabId: undefined,
-            videoUrls: urls.videoUrls,
-            subtitleUrls: urls.subtitleUrls,
-          },
-        });
-      }
-    });
-    // Re-init overlay for the new <video> element. Angular replaces the entire
-    // <video> on episode switch → old overlay UI (toggle button, manager panel)
-    // is removed by the framework's re-render. findAndInitOverlay waits for the
-    // new video to be ready (blob: src, Angular phase-2 render) then re-injects.
-    findAndInitOverlay();
-  }
+  reportEpisodeChanged('replacement');
   lastSeenVideo = video;
+  lastVideoSrc = video.src || video.currentSrc || null;
   hasSeenFirstVideo = true;
+}
+
+/**
+ * Watch `video.src` (or `currentSrc`) for changes on the SAME <video> element.
+ * Aniwatch and similar SPAs switch sub→dub by mutating `src` in-place — the
+ * element-replacement MutationObserver above does NOT fire (element identity
+ * preserved). We poll `src`/`currentSrc` on a short interval because there is
+ * no reliable cross-browser event for programmatic `src` assignment (the
+ * `loadstart` event fires but also fires on initial load + quality switches,
+ * making it noisy). Ponytail: 500ms polling is a naive heuristic — ceiling is
+ * a 500ms delay before clearing old subs. Upgrade path: listen to `loadstart`
+ * + debounce, or hook the site's episode-switch button click.
+ */
+function initVideoSrcWatcher(): void {
+  setInterval(() => {
+    const video = document.querySelector('video');
+    if (!video) return;
+    const currentSrc = video.src || video.currentSrc || null;
+    if (!currentSrc) return;
+    // First sighting — baseline without firing.
+    if (lastVideoSrc === null) {
+      lastVideoSrc = currentSrc;
+      lastSeenVideo = video;
+      hasSeenFirstVideo = true;
+      return;
+    }
+    // Src changed → episode switch (sub→dub, dub→sub, or episode-to-episode
+    // on sites that reuse the element). We don't check element identity here
+    // — the replacement watcher handles element-swap cases, and a src change
+    // on a different element is still an episode switch worth reporting.
+    if (currentSrc !== lastVideoSrc) {
+      lastVideoSrc = currentSrc;
+      lastSeenVideo = video;
+      reportEpisodeChanged('src-change');
+    }
+  }, 500);
 }
 
 function initEpisodeChangeWatcher(): void {
@@ -285,6 +366,7 @@ function initEpisodeChangeWatcher(): void {
   if (existing) {
     hasSeenFirstVideo = true;
     lastSeenVideo = existing;
+    lastVideoSrc = existing.src || existing.currentSrc || null;
   }
   // Persistently observe for new <video> elements. A NEW element appearing
   // after the first one was seen = episode switch (element replacement).
@@ -301,6 +383,8 @@ function initEpisodeChangeWatcher(): void {
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
+  // Also watch for src changes on the same element (aniwatch sub→dub case).
+  initVideoSrcWatcher();
 }
 
 if (document.readyState === 'loading') {

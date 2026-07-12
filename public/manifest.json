@@ -11,7 +11,8 @@
     "offscreen",
     "activeTab",
     "tabs",
-    "sidePanel"
+    "sidePanel",
+    "webNavigation"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -37,6 +38,13 @@
     {
       "matches": ["*://*.youtube.com/*"],
       "js": ["src/entrypoints/content/youtube-main-world.iife.ts"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": false
+    },
+    {
+      "matches": ["*://*.iq.com/*", "*://*.iqiyi.com/*"],
+      "js": ["src/entrypoints/content/iqiyi-main-world.iife.ts"],
       "run_at": "document_start",
       "world": "MAIN",
       "all_frames": false

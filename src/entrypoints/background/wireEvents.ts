@@ -31,6 +31,7 @@ import {
   loadSettings,
   maybeAutoDownload,
   pushAutoLoadSubtitles,
+  resolveUnknownSubtitleLanguages,
 } from './helpers';
 import type {
   DetectedVideo,
@@ -105,6 +106,15 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       }
 
       if (tabId !== 0 && subtitles.length > 0) {
+        // Resolve unknown languages FIRST (independent of auto-load match
+        // result). Previously this only ran when findSubtitlesForOverlay
+        // returned null — so if target matched, unknown subs were never
+        // resolved and stayed 'unknown' in the popup/manager. Running it
+        // unconditionally here means every newly-detected unknown subtitle
+        // gets its language resolved via content detection. After resolve,
+        // updateSubtitle → notifyListeners → this callback fires again →
+        // pushAutoLoadSubtitles sees the resolved language.
+        void resolveUnknownSubtitleLanguages(ctx, tabId, subtitles);
         void pushAutoLoadSubtitles(ctx, tabId, subtitles);
       }
     },
@@ -292,6 +302,9 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     changeInfo: chrome.tabs.OnUpdatedInfo,
     _tab: chrome.tabs.Tab,
   ): void => {
+    // Clear on full page load (status: 'loading'). SPA navigations
+    // (history.pushState/replaceState) do NOT trigger status: 'loading' —
+    // they are caught by webNavigation.onHistoryStateUpdated below.
     if (changeInfo.status === 'loading') {
       ctx.autoDownloadedTabs.delete(tabId);
       ctx.networkInterceptor.clearTab(tabId);
@@ -300,6 +313,25 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
       updateBadgeForTab(ctx, tabId);
     }
   };
+
+  // SPA navigation clear: sites like aniwatch.co.at use history.pushState
+  // when switching between sub/dub episodes (no full page reload).
+  // chrome.tabs.onUpdated with status:'loading' does NOT fire for these —
+  // only webNavigation.onHistoryStateUpdated catches them. Without this,
+  // old subtitles from the previous episode persist into the new one.
+  const onHistoryStateUpdated = (
+    details: chrome.webNavigation.WebNavigationFramedCallbackDetails,
+  ): void => {
+    // Only handle top-frame navigations (frameId === 0).
+    if (details.frameId !== 0) return;
+    ctx.autoDownloadedTabs.delete(details.tabId);
+    ctx.networkInterceptor.clearTab(details.tabId);
+    clearSessionMedia(ctx, details.tabId);
+    ctx.lastCuesByTab.delete(details.tabId);
+    updateBadgeForTab(ctx, details.tabId);
+  };
+  chrome.webNavigation.onHistoryStateUpdated.addListener(onHistoryStateUpdated);
+  unsubscribers.push(() => chrome.webNavigation.onHistoryStateUpdated.removeListener(onHistoryStateUpdated));
 
   // 9. Tab removal clear
   const onTabRemoved = (tabId: number): void => {

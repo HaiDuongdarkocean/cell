@@ -12,12 +12,32 @@ export interface SubtitlePreference {
 }
 
 /**
+ * Check whether a subtitle language tag matches a target language.
+ * Supports BCP 47 subtag matching so that:
+ * - `zh` matches `zh-hans`, `zh-hant`, and `zh`
+ * - `zh-hans` matches `zh-hans` and falls back to generic `zh`
+ * - `en` matches `en`, `en-US`, etc.
+ *
+ * This fixes auto-load for Chinese where iQIYI serves `zh-hans`/`zh-hant`
+ * while the user setting is `zh` ("中文 (Chinese)").
+ */
+export function languageMatches(target: string, candidate: string): boolean {
+  const t = target.toLowerCase().trim();
+  const c = candidate.toLowerCase().trim();
+  if (t === c) return true;
+  if (c.startsWith(t + '-')) return true; // candidate is a subtag of target (target is broader)
+  if (t.startsWith(c + '-')) return true; // target is a subtag of candidate (candidate is broader)
+  return false;
+}
+
+/**
  * Find matching subtitles for bilingual overlay based on target + native language.
  *
  * Validation rules:
  * - autoLoad off → null (skip)
  * - both languages empty → null (nothing to load)
- * - otherwise: find subtitle matching each language (case-insensitive, trimmed)
+ * - otherwise: find subtitle matching each language (case-insensitive, trimmed,
+ *   BCP 47 subtag-aware via `languageMatches`)
  *   using `findPreferredMatch` (preference-aware, ADR-014 D2)
  * - if neither language matches any subtitle → null
  * - if only one matches → partial load ({ target, native } with one side null)
@@ -53,9 +73,9 @@ export function findSubtitlesForOverlay(
   // ADR-014 D3: include all matches for dropdown (V2 subtitle selector).
   // Only populated when ≥2 matches (V1 behavior when 1 match).
   const targetMatches =
-    targetLang && eligible.filter((s) => s.language.toLowerCase() === targetLang).length >= 2
+    targetLang && eligible.filter((s) => languageMatches(targetLang, s.language)).length >= 2
       ? eligible
-          .filter((s) => s.language.toLowerCase() === targetLang)
+          .filter((s) => languageMatches(targetLang, s.language))
           .map((s) => ({
             url: s.url,
             language: s.language,
@@ -66,9 +86,9 @@ export function findSubtitlesForOverlay(
           }))
       : [];
   const nativeMatches =
-    nativeLang && eligible.filter((s) => s.language.toLowerCase() === nativeLang).length >= 2
+    nativeLang && eligible.filter((s) => languageMatches(nativeLang, s.language)).length >= 2
       ? eligible
-          .filter((s) => s.language.toLowerCase() === nativeLang)
+          .filter((s) => languageMatches(nativeLang, s.language))
           .map((s) => ({
             url: s.url,
             language: s.language,
@@ -88,6 +108,9 @@ export function findSubtitlesForOverlay(
  * falls back to first-match (index 0) when `preferredIndex` undefined or out of
  * range (site changed sub list, B8 graceful degradation).
  *
+ * Matching is BCP 47 subtag-aware (e.g. target `zh` matches `zh-hans`)
+ * so that iQIYI's Chinese variants auto-select when the user setting is `zh`.
+ *
  * @param subtitles - Detected subtitles on the tab
  * @param language - ISO 639-1 language code (case-insensitive, trimmed)
  * @param preferredIndex - 0-based index into filtered matches (undefined = first)
@@ -99,9 +122,7 @@ export function findPreferredMatch(
   preferredIndex?: number,
 ): SubtitleForOverlayResult | null {
   if (!language) return null;
-  const matches = subtitles.filter(
-    (s) => s.language.toLowerCase() === language.toLowerCase(),
-  );
+  const matches = subtitles.filter((s) => languageMatches(language, s.language));
   if (matches.length === 0) return null;
   const index =
     preferredIndex !== undefined && preferredIndex < matches.length

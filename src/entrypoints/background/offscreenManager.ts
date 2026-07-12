@@ -35,6 +35,17 @@ const PING_RETRY_DELAY_MS = 100;
 export class OffscreenManager {
   private documentExists = false;
   private listenerReady = false;
+  // In-flight promise for `ensureOffscreenDocument` — when multiple callers
+  // request the document concurrently (e.g. several
+  // `resolveUnknownSubtitleLanguages` fetches running in parallel), they all
+  // share the same creation promise. Without this, each caller sees
+  // `documentExists=false` and calls `createOffscreenDocument` independently
+  // → "Only a single offscreen document may be created" error.
+  private documentPromise: Promise<void> | null = null;
+  // In-flight promise for `ensureOffscreenReady` — same race, but for the
+  // ping handshake. Multiple callers sharing one handshake avoids duplicate
+  // ping storms.
+  private readyPromise: Promise<void> | null = null;
 
   /**
    * Ensure the offscreen document exists, creating it if necessary.
@@ -47,7 +58,18 @@ export class OffscreenManager {
     if (this.documentExists) {
       return;
     }
+    if (this.documentPromise) {
+      return this.documentPromise;
+    }
+    this.documentPromise = this.doEnsureOffscreenDocument();
+    try {
+      await this.documentPromise;
+    } finally {
+      this.documentPromise = null;
+    }
+  }
 
+  private async doEnsureOffscreenDocument(): Promise<void> {
     // `hasDocument` may not exist in older Chrome versions; guard accordingly.
     const offscreen = chrome.offscreen;
     if (typeof offscreen?.hasDocument === 'function') {
@@ -86,7 +108,18 @@ export class OffscreenManager {
     if (this.listenerReady) {
       return;
     }
+    if (this.readyPromise) {
+      return this.readyPromise;
+    }
+    this.readyPromise = this.doEnsureOffscreenReady();
+    try {
+      await this.readyPromise;
+    } finally {
+      this.readyPromise = null;
+    }
+  }
 
+  private async doEnsureOffscreenReady(): Promise<void> {
     await this.ensureOffscreenDocument();
 
     for (let attempt = 0; attempt < PING_MAX_RETRIES; attempt++) {

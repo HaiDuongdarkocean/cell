@@ -177,6 +177,17 @@ export class NetworkInterceptor {
   }
 
   /**
+   * Notify media listeners for a tab (fires onMediaDetected callbacks).
+   * Used by callers that batch-update subtitles (e.g.
+   * resolveUnknownSubtitleLanguages) so they can update silently via
+   * updateSubtitle then fire a single notification after all updates land —
+   * avoiding premature pushAutoLoadSubtitles runs that see partial state.
+   */
+  notifyMediaListeners(tabId: number): void {
+    this.notifyListeners(tabId);
+  }
+
+  /**
    * Get all detected subtitles for a tab.
    */
   getSubtitles(tabId: number): DetectedSubtitle[] {

@@ -62,7 +62,8 @@ import { registerMediaDetectionHandlers } from './handlers/mediaDetection';
 import { registerSubtitleHandlers } from './handlers/subtitle';
 import { registerSettingsHandlers } from './handlers/settings';
 import { registerSidePanelRelayHandlers } from './handlers/sidePanelRelay';
-import { registerYouTubeDetectionHandlers } from './handlers/youtubeDetection';
+import { registerYouTubeFallbackHandlers } from './handlers/youtubeDetection';
+import { registerDetectionDispatchHandlers } from './handlers/detectionDispatch';
 import { registerTranslateHandlers } from './handlers/translate';
 import { registerCardCreatorHandlers } from './handlers/cardCreator';
 import type { MessageHandler } from '@/entities/message';
@@ -215,7 +216,8 @@ export class BackgroundService implements BackgroundContext {
     registerSubtitleHandlers(this);
     registerSettingsHandlers(this);
     registerSidePanelRelayHandlers(this);
-    registerYouTubeDetectionHandlers(this);
+    registerDetectionDispatchHandlers(this);
+    registerYouTubeFallbackHandlers(this);
     registerTranslateHandlers(this);
     registerCardCreatorHandlers(this);
   }

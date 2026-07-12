@@ -445,14 +445,26 @@ export interface DetectedSubtitleUrlPayload {
 }
 
 /**
- * YouTube caption tracks detected by the MAIN-world script (ADR-020).
+ * Caption tracks detected by the MAIN-world script (ADR-020 YouTube, ADR-028 iQIYI).
  * The isolated content-script relays this to the background, which maps
  * the raw tracks to `DetectedSubtitle[]` and triggers auto-load.
+ *
+ * `source` discriminates the adapter for the unified `detectionDispatch.ts`
+ * handler (ADR-028 — `messageBus.on()` overwrites, so only one handler may
+ * register `DETECTED_SUBTITLES`). `source === undefined` is backward-compatible
+ * with ADR-020 YouTube posts (treated as 'youtube').
+ *
+ * `videoId` is YouTube-specific; iQIYI uses `tvid` + `origin` instead.
  */
 export interface DetectedSubtitlesPayload {
   readonly tabId?: number; // background resolves from sender.tab.id
-  readonly tracks: readonly unknown[]; // YouTubeCaptionTrack[] (untyped at boundary)
-  readonly videoId: string;
+  readonly tracks: readonly unknown[]; // YouTubeCaptionTrack[] | IqiyiSubtitleTrack[] (untyped at boundary)
+  readonly source?: 'youtube' | 'iqiyi'; // adapter discriminator (ADR-028)
+  // YouTube (ADR-020)
+  readonly videoId?: string;
+  // iQIYI (ADR-028)
+  readonly tvid?: string;     // dedup key (clone YouTube videoId)
+  readonly origin?: string;   // data.dstl — base URL for relative srt path
 }
 
 /**

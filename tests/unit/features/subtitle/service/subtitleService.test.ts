@@ -67,6 +67,33 @@ describe('findSubtitlesForOverlay', () => {
     expect(findSubtitlesForOverlay(subtitles, baseSettings)).toBeNull();
   });
 
+  it('matches Chinese macrolanguage zh to zh-hans/zh-hant for auto-load', () => {
+    const subtitles = [makeSubtitle('zh-hans'), makeSubtitle('zh-hant'), makeSubtitle('en')];
+    const settings = { ...baseSettings, subtitleOverlayTargetLanguage: 'zh' };
+    const result = findSubtitlesForOverlay(subtitles, settings);
+    expect(result).not.toBeNull();
+    expect(result?.target?.language).toBe('zh-hans');
+    expect(result?.targetMatches?.length).toBe(2);
+  });
+
+  it('matches zh-hans target only to zh-hans (not zh-hant)', () => {
+    const subtitles = [makeSubtitle('zh-hans'), makeSubtitle('zh-hant'), makeSubtitle('en')];
+    const settings = { ...baseSettings, subtitleOverlayTargetLanguage: 'zh-hans' };
+    const result = findSubtitlesForOverlay(subtitles, settings);
+    expect(result).not.toBeNull();
+    expect(result?.target?.language).toBe('zh-hans');
+    expect(result?.targetMatches?.length).toBe(0); // only 1 match → no dropdown list
+  });
+
+  it('matches zh-hant target only to zh-hant (not zh-hans)', () => {
+    const subtitles = [makeSubtitle('zh-hans'), makeSubtitle('zh-hant'), makeSubtitle('en')];
+    const settings = { ...baseSettings, subtitleOverlayTargetLanguage: 'zh-hant' };
+    const result = findSubtitlesForOverlay(subtitles, settings);
+    expect(result).not.toBeNull();
+    expect(result?.target?.language).toBe('zh-hant');
+    expect(result?.targetMatches?.length).toBe(0); // only 1 match → no dropdown list
+  });
+
   it('returns null when subtitles array is empty', () => {
     expect(findSubtitlesForOverlay([], baseSettings)).toBeNull();
   });
@@ -170,6 +197,24 @@ describe('findPreferredMatch (ADR-014 D2 — preference-aware, V2 ADR-007 D3)', 
   it('returns null when no subtitle matches language', () => {
     const subs = [makeSubtitle('en'), makeSubtitle('vi')];
     expect(findPreferredMatch(subs, 'zh', 0)).toBeNull();
+  });
+
+  it('matches BCP 47 subtags: zh-hans and zh-hant both match target zh', () => {
+    const hans = makeSubtitle('zh-hans', 'https://x/hans.srt');
+    const hant = makeSubtitle('zh-hant', 'https://x/hant.srt');
+    const result = findPreferredMatch([hans, hant], 'zh');
+    expect(result?.url).toBe('https://x/hans.srt');
+  });
+
+  it('falls back from specific target zh-hans to generic zh subtitle', () => {
+    const zh = makeSubtitle('zh', 'https://x/zh.srt');
+    const result = findPreferredMatch([zh], 'zh-hans');
+    expect(result?.url).toBe('https://x/zh.srt');
+  });
+
+  it('does not match zh-hant when target is zh-hans', () => {
+    const hant = makeSubtitle('zh-hant', 'https://x/hant.srt');
+    expect(findPreferredMatch([hant], 'zh-hans')).toBeNull();
   });
 
   it('returns null when language is empty', () => {

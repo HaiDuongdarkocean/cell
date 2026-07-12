@@ -21,6 +21,12 @@ export {
   type YouTubeCaptionTrack,
 } from './logic/youtubeSubtitleDetector';
 export {
+  mapIqiyiSubtitleTracks,
+  extractIqiyiStl,
+  buildSrtUrl,
+  type IqiyiSubtitleTrack,
+} from './logic/iqiyiSubtitleDetector';
+export {
   fetchCaptionTracksViaInnerTube,
   extractInnertubeApiKey,
   extractClientVersion,
@@ -36,6 +42,7 @@ export {
   detectLanguage,
   isoCodeToLabel,
   labelToIsoCode,
+  toIso6391,
   extractPlainText,
   LANGUAGE_PROFILES,
   type LanguageProfile,
