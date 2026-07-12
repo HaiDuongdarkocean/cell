@@ -39,6 +39,7 @@ export interface PrefillOptions {
   readonly translate: TranslateFn;
   readonly onChunkTranslated: OnChunkTranslated;
   readonly onError?: OnError;
+  readonly onComplete?: () => void;
   readonly charBudget?: number;
   readonly requestGapMs?: number;
   readonly maxRetries?: number;
@@ -68,6 +69,7 @@ export class BackgroundPrefillController {
       translate: opts.translate,
       onChunkTranslated: opts.onChunkTranslated,
       onError: opts.onError ?? (() => {}),
+      onComplete: opts.onComplete ?? (() => {}),
       charBudget: opts.charBudget ?? CHAR_BUDGET,
       requestGapMs: opts.requestGapMs ?? MIN_REQUEST_GAP_MS,
       maxRetries: opts.maxRetries ?? MAX_RETRIES,
@@ -84,7 +86,7 @@ export class BackgroundPrefillController {
     this.cancelled = false;
     this.paused = false;
     // ADR-021 D3: chunk cues by 1500 chars (multi-cue per request).
-    // encodePunctuation in joinCueTexts prevents Google sentence-splitting → 1:1 alignment.
+    // Cue markers in joinCueTexts prevent Google from merging/splitting cues → 1:1 alignment.
     this.queue = chunkCuesByCharBudget(
       targetCues,
       buildSequentialIndices(targetCues.length, seekIdx),
@@ -182,7 +184,7 @@ export class BackgroundPrefillController {
         if (this.cancelled) return;
         try {
           const translated = await this.opts.translate(joined, this.sl, this.tl);
-          // alignTranslatedSegments decodes placeholders → original punctuation
+          // alignTranslatedSegments rejoins any segments Google split → 1:1 per cue
           const aligned = alignTranslatedSegments(translated, chunk.length);
           chunk.forEach((cueIdx, j) => {
             this.cache.set(cueIdx, aligned[j] ?? '');
@@ -217,6 +219,9 @@ export class BackgroundPrefillController {
       }
     }
     this.running = false;
+    if (!this.cancelled) {
+      this.opts.onComplete();
+    }
   }
 }
 

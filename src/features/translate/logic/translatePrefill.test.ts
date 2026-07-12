@@ -121,6 +121,42 @@ describe('BackgroundPrefillController', () => {
     });
   });
 
+  describe('onComplete callback', () => {
+    it('calls onComplete when all chunks are translated', async () => {
+      const cues = makeCues(['hello', 'world']);
+      let completed = false;
+      const ctrl = new BackgroundPrefillController({
+        translate: mockTranslate,
+        onChunkTranslated: () => {},
+        onComplete: () => { completed = true; },
+        requestGapMs: 10,
+      });
+      ctrl.start(cues, 'en', 'vi');
+      await waitFor(() => !ctrl.isRunning);
+      expect(completed).toBe(true);
+    });
+
+    it('does not call onComplete when cancelled before completion', async () => {
+      const cues = makeCues(['hello', 'world', 'foo', 'bar', 'baz', 'qux']);
+      const slowTranslate: TranslateFn = async (text) => {
+        await sleep(30);
+        return text.split('\n').map((l) => l.toUpperCase());
+      };
+      let completed = false;
+      const ctrl = new BackgroundPrefillController({
+        translate: slowTranslate,
+        onChunkTranslated: () => {},
+        onComplete: () => { completed = true; },
+        requestGapMs: 10,
+      });
+      ctrl.start(cues, 'en', 'vi');
+      await sleep(20);
+      ctrl.clear();
+      await sleep(200);
+      expect(completed).toBe(false);
+    });
+  });
+
   describe('error handling + backoff', () => {
     it('calls onError after MAX_RETRIES and stops', async () => {
       const cues = makeCues(['hello']);

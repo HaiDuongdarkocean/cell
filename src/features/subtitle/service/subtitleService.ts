@@ -1,5 +1,9 @@
 import type { DetectedSubtitle, Settings } from '@/entities/media';
 import type { SubtitleForOverlayResult, SubtitlesForOverlayResult } from '@/entities/message';
+// ADR-029: languageMatches now lives in the single-source-of-truth registry.
+// Re-export so existing callers (`@/features/subtitle`) keep working.
+export { languageMatches } from '@/shared/config/languageRegistry';
+import { languageMatches } from '@/shared/config/languageRegistry';
 
 /**
  * Per-language preference indices for `findSubtitlesForOverlay` (ADR-014 D2).
@@ -9,25 +13,6 @@ import type { SubtitleForOverlayResult, SubtitlesForOverlayResult } from '@/enti
 export interface SubtitlePreference {
   readonly target?: number;
   readonly native?: number;
-}
-
-/**
- * Check whether a subtitle language tag matches a target language.
- * Supports BCP 47 subtag matching so that:
- * - `zh` matches `zh-hans`, `zh-hant`, and `zh`
- * - `zh-hans` matches `zh-hans` and falls back to generic `zh`
- * - `en` matches `en`, `en-US`, etc.
- *
- * This fixes auto-load for Chinese where iQIYI serves `zh-hans`/`zh-hant`
- * while the user setting is `zh` ("中文 (Chinese)").
- */
-export function languageMatches(target: string, candidate: string): boolean {
-  const t = target.toLowerCase().trim();
-  const c = candidate.toLowerCase().trim();
-  if (t === c) return true;
-  if (c.startsWith(t + '-')) return true; // candidate is a subtag of target (target is broader)
-  if (t.startsWith(c + '-')) return true; // target is a subtag of candidate (candidate is broader)
-  return false;
 }
 
 /**

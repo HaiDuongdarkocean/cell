@@ -4,8 +4,6 @@ import {
   parseGoogleResponse,
   joinCueTexts,
   alignTranslatedSegments,
-  encodePunctuation,
-  decodePunctuation,
 } from '@/features/translate/service/translateService';
 
 describe('translateService', () => {
@@ -76,93 +74,22 @@ describe('translateService', () => {
     });
   });
 
-  describe('encodePunctuation', () => {
-    it('replaces . ? ! ; with placeholders', () => {
-      const encoded = encodePunctuation('Hello. World? Yes! No; Maybe');
-      expect(encoded).not.toContain('.');
-      expect(encoded).not.toContain('?');
-      expect(encoded).not.toContain('!');
-      expect(encoded).not.toContain(';');
-      expect(encoded).toContain('DOT');
-      expect(encoded).toContain('Q');
-      expect(encoded).toContain('EXCL');
-      expect(encoded).toContain('SEMI');
-    });
-
-    it('preserves comma and colon (Google does not split on them)', () => {
-      const encoded = encodePunctuation('00:00:26,440 --> 00:00:32,740');
-      expect(encoded).toBe('00:00:26,440 --> 00:00:32,740');
-    });
-
-    it('preserves CJK/Arabic/Hindi punctuation (Google does not split on them)', () => {
-      expect(encodePunctuation('こんにちは。')).toBe('こんにちは。');
-      expect(encodePunctuation('你好？')).toBe('你好？');
-      expect(encodePunctuation('مرحبا؟')).toBe('مرحبا؟');
-      expect(encodePunctuation('नमस्ते।')).toBe('नमस्ते।');
-    });
-
-    it('handles text without punctuation', () => {
-      expect(encodePunctuation('hello world')).toBe('hello world');
-    });
-
-    it('handles empty string', () => {
-      expect(encodePunctuation('')).toBe('');
-    });
-
-    it('encodes multiple occurrences of same punctuation', () => {
-      const encoded = encodePunctuation('A. B. C.');
-      expect(encoded.match(/DOT/g)?.length).toBe(3);
-    });
-  });
-
-  describe('decodePunctuation', () => {
-    it('restores . ? ! ; from placeholders', () => {
-      const encoded = encodePunctuation('Hello. World? Yes! No; Maybe');
-      const decoded = decodePunctuation(encoded);
-      expect(decoded).toBe('Hello. World? Yes! No; Maybe');
-    });
-
-    it('round-trip: encode → decode preserves original text', () => {
-      const originals = [
-        'Hello world. Goodbye world.',
-        'Are you ready? Let\'s go!',
-        'No; yes; maybe.',
-        '00:00:26,440 --> 00:00:32,740',
-        'こんにちは。さようなら。',
-        'مرحبا. كيف حالك؟',
-        'नमस्ते। फिर मिलेंगे।',
-        'No punctuation at all',
-        '',
-      ];
-      for (const original of originals) {
-        expect(decodePunctuation(encodePunctuation(original))).toBe(original);
-      }
-    });
-
-    it('handles text without placeholders', () => {
-      expect(decodePunctuation('hello world')).toBe('hello world');
-    });
-
-    it('handles empty string', () => {
-      expect(decodePunctuation('')).toBe('');
-    });
-  });
-
   function cue(text: string, index = 1): SrtCue {
     return { index, start: 0, end: 0, text };
   }
 
   describe('joinCueTexts', () => {
-    it('wraps cues in markers and encodes punctuation', () => {
+    it('wraps cues in markers and preserves punctuation verbatim', () => {
       const joined = joinCueTexts([cue('Hello.'), cue('World?')]);
-      expect(joined).not.toContain('.');
-      expect(joined).not.toContain('?');
       expect(joined).toContain('⟦C0⟧');
       expect(joined).toContain('⟦/C0⟧');
       expect(joined).toContain('⟦C1⟧');
       expect(joined).toContain('⟦/C1⟧');
-      expect(joined).toContain('DOT');
-      expect(joined).toContain('Q');
+      // Punctuation sent verbatim (no placeholder encoding).
+      expect(joined).toContain('Hello.');
+      expect(joined).toContain('World?');
+      expect(joined).not.toContain('DOT');
+      expect(joined).not.toContain('\u298A');
     });
 
     it('returns empty string for empty array', () => {
@@ -171,7 +98,7 @@ describe('translateService', () => {
 
     it('wraps single cue in markers', () => {
       const joined = joinCueTexts([cue('Hello.')]);
-      expect(joined).toBe('⟦C0⟧Hello ⦊⦋DOT⟦/C0⟧');
+      expect(joined).toBe('⟦C0⟧Hello.⟦/C0⟧');
     });
 
     it('preserves comma and colon in joined text', () => {
@@ -182,13 +109,13 @@ describe('translateService', () => {
 
     it('normalizes internal newlines to a single space before joining', () => {
       const joined = joinCueTexts([cue('Hello\nworld.'), cue('Foo\nbar')]);
-      expect(joined).toContain('Hello world ⦊⦋DOT');
+      expect(joined).toContain('Hello world.');
       expect(joined).toContain('Foo bar');
     });
   });
 
   describe('alignTranslatedSegments', () => {
-    it('decodes placeholders when markers match', () => {
+    it('extracts per-cue text when markers match', () => {
       const joined = joinCueTexts([cue('Xin chào.')]);
       const aligned = alignTranslatedSegments([joined], 1);
       expect(aligned).toEqual(['Xin chào.']);

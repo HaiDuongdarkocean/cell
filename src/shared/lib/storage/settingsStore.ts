@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 10;
+export const CURRENT_SCHEMA_VERSION = 12;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -189,6 +189,32 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 10 } as Record<string, unknown>;
     if (!merged.cardCreator || typeof merged.cardCreator !== 'object') {
       merged.cardCreator = DEFAULT_SETTINGS.cardCreator;
+    }
+    return merged;
+  },
+  // v10 → v11: add Card Creator keyboard shortcuts (q quick-update, e edit-card).
+  // Additive — existing users get default q/e bindings. Users who customized
+  // keyboardShortcuts keep their bindings + get q/e appended.
+  10: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 11 } as Record<string, unknown>;
+    const shortcuts = Array.isArray(merged.keyboardShortcuts) ? merged.keyboardShortcuts : [];
+    const hasQuick = shortcuts.some((sc: { action: string }) => sc.action === 'quick-update');
+    const hasEdit = shortcuts.some((sc: { action: string }) => sc.action === 'edit-card');
+    const additions: { action: string; key: string }[] = [];
+    if (!hasQuick) additions.push({ action: 'quick-update', key: 'q' });
+    if (!hasEdit) additions.push({ action: 'edit-card', key: 'e' });
+    if (additions.length > 0) {
+      merged.keyboardShortcuts = [...shortcuts, ...additions];
+    }
+    return merged;
+  },
+  // v11 → v12: add generate-native shortcut (g). Additive — existing users get
+  // default binding; customized keyboardShortcuts keep their bindings.
+  11: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 12 } as Record<string, unknown>;
+    const shortcuts = Array.isArray(merged.keyboardShortcuts) ? merged.keyboardShortcuts : [];
+    if (!shortcuts.some((sc: { action: string }) => sc.action === 'generate-native')) {
+      merged.keyboardShortcuts = [...shortcuts, { action: 'generate-native', key: 'g' }];
     }
     return merged;
   },

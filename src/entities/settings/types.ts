@@ -12,7 +12,10 @@ export type ShortcutAction =
   | 'replay-cue'
   | 'toggle-overlay'
   | 'toggle-panel'
-  | 'toggle-translate';
+  | 'toggle-translate'
+  | 'generate-native'
+  | 'quick-update'
+  | 'edit-card';
 
 /** A single keyboard shortcut binding: action ↔ key (with optional modifiers for combos). */
 export interface KeyboardShortcut {

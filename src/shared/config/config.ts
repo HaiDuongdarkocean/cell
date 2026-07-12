@@ -100,7 +100,7 @@ export const PARALLEL_LARGE_FILE_BYTES = 300 * 1024 * 1024; // 300 MB
 
 // === Default Settings ===
 
-/** Default keyboard shortcuts for subtitle floating panel (a/d/s/w/t + Ctrl+Shift+T). */
+/** Default keyboard shortcuts for subtitle floating panel (a/d/s/w/t + Ctrl+Shift+T + q/e Card Creator). */
 export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   { action: 'prev-cue', key: 'a' },
   { action: 'next-cue', key: 'd' },
@@ -109,6 +109,11 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   { action: 'toggle-panel', key: 't' },
   // ADR-021 D7: combo Ctrl+Shift+T toggle auto-translate (no conflict with single 't' toggle-panel).
   { action: 'toggle-translate', key: 't', ctrl: true, shift: true },
+  // ADR-021 D7: generate native subtitle manually from active target.
+  { action: 'generate-native', key: 'g' },
+  // ADR-026: Card Creator entry shortcuts — q quick-update, e edit-card.
+  { action: 'quick-update', key: 'q' },
+  { action: 'edit-card', key: 'e' },
 ];
 
 // === Default Overlay Style (ADR-013) ===

@@ -50,6 +50,8 @@ const MAX_RETRIES = 3;           // backoff 1s → 2s → 4s → give up
 
 **Rejected: Chunk size configurable** — over-engineer, user không nên quan tâm.
 
+> **Revision (2026-07-12)**: D3 gốc còn quy định encode dấu câu Latin (`. ? ! ;` → placeholder `⦊⦋DOT/Q/EXCL/SEMI`) trước khi gửi Google, rồi decode sau. Bị revert vì Google **non-deterministic** giữ placeholder: đôi khi tách `⦊⦋` ra khỏi `DOT` → `decodePunctuation` regex không match → token `⦊⦋` + `DOT` leak ra subtitle user (xác nhận bằng live test Google Translate). Cue markers `⟦C{idx}⟧...⟦/C{idx}⟧` trong `joinCueTexts`/`alignTranslatedSegments` đã đủ giữ 1:1 alignment (regex dotall gom lại mọi segment Google split) → encode là dead code + nguồn bug. Đã xóa `encodePunctuation`/`decodePunctuation`.
+
 ### D4: Sequential queue + exponential backoff
 
 - Sequential (không parallel) — Google block parallel requests

@@ -1,7 +1,8 @@
 import { handleFileDrop } from './subtitleDragDrop';
-import { detectLanguage, labelToIsoCode } from '@/features/detection/logic/languageDetector';
+import { detectLanguageFromText, labelToIsoCode } from '@/features/detection/logic/languageDetector';
+import { languageMatches } from '@/shared/config/languageRegistry';
 import type { OverlayConfig, ParseResult, SubtitleFormat } from '@/entities/subtitle';
-import type { SrtCue, SubtitleFormat as MediaSubtitleFormat } from '@/entities/media';
+import type { SrtCue } from '@/entities/media';
 
 /**
  * Parsed subtitle file with detected language (ADR-015 — multi-file import).
@@ -57,9 +58,9 @@ export function assignImportRole(
 
   for (const f of files) {
     const iso = f.detectedLang ? labelToIsoCode(f.detectedLang) : null;
-    if (iso && iso.toLowerCase() === targetIso) {
+    if (iso && languageMatches(targetIso, iso)) {
       target.push(f);
-    } else if (iso && iso.toLowerCase() === nativeIso) {
+    } else if (iso && languageMatches(nativeIso, iso)) {
       native.push(f);
     } else {
       ignored.push(f);
@@ -162,22 +163,31 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
  * @returns Array of parsed files with detected language labels
  */
 export async function parseAndDetectFiles(files: readonly File[]): Promise<ParsedFile[]> {
-  const results: ParsedFile[] = [];
-  for (const file of files) {
-    const parseResult = await handleFileDrop(file);
-    if (!parseResult.success || parseResult.cues.length === 0) continue;
-    const detectedLang = detectLanguage(
-      parseResult.cues.map((c) => c.text).join('\n'),
-      parseResult.format as MediaSubtitleFormat,
-    );
-    results.push({
-      file,
-      detectedLang: detectedLang?.toLowerCase() ?? '',
-      cues: parseResult.cues,
-      format: parseResult.format,
-    });
-  }
-  return results;
+  // ponytail: parallel parse + detect via Promise.all. Each file's parse
+  // (FileReader I/O + sync parser) and detect (sync regex) are independent —
+  // no shared state. Order preserved by Promise.all (map by index).
+  // Ceiling: 50 files on a 4GB machine — FileReader + parser are I/O-bound,
+  // not CPU-bound, so concurrent reads saturate disk throughput without
+  // starving the main thread. detectLanguageFromText bypasses extractPlainText
+  // (cues.text already stripSubtitleTags'd by parser → no double parse).
+  const parsed = await Promise.all(
+    files.map(async (file) => {
+      const parseResult = await handleFileDrop(file);
+      if (!parseResult.success || parseResult.cues.length === 0) return null;
+      // cues.text is already clean (stripSubtitleTags ran in parser) — join
+      // and detect directly, skipping extractPlainText's line-split + regex.
+      const detectedLang = detectLanguageFromText(
+        parseResult.cues.map((c) => c.text).join('\n'),
+      );
+      return {
+        file,
+        detectedLang: detectedLang?.toLowerCase() ?? '',
+        cues: parseResult.cues,
+        format: parseResult.format,
+      } as ParsedFile;
+    }),
+  );
+  return parsed.filter((p): p is ParsedFile => p !== null);
 }
 
 /**
