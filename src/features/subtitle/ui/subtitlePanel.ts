@@ -9,6 +9,8 @@
 //   focus: outline 2px --color-border-focus, offset 2px
 // Reference: subtitleImport.ts createImportButton.
 
+import { seekVideo } from './netflixPlayback';
+
 /**
  * Create toggle button to show/hide panel (now opens Side Panel).
  * Appended to container, positioned at top-right corner.
@@ -74,5 +76,6 @@ export function createToggleButton(container: HTMLElement): HTMLButtonElement {
  * @param offsetMs - Subtitle offset in ms (default 0). Seek target shifts by -offsetMs.
  */
 export function seekToCue(video: HTMLVideoElement, cue: { start: number }, offsetMs: number = 0): void {
-  video.currentTime = (cue.start - offsetMs) / 1000;
+  // ADR-030: route through seekVideo to avoid Netflix M7375.
+  seekVideo(video, (cue.start - offsetMs) / 1000);
 }

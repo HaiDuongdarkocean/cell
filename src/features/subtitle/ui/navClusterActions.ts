@@ -1,8 +1,10 @@
 // Nav cluster pure action helpers (ADR-018 D3, spec §F5-F8).
-// ponytail: pure functions — no side effects beyond video.currentTime assignment
-// (the intended side effect of seek). Cue source = target primary, native fallback.
+// ponytail: pure functions — no side effects beyond seek (the intended side
+// effect). Cue source = target primary, native fallback.
+// ADR-030: seek routes through seekVideo to avoid Netflix M7375.
 
 import { findCurrentLine } from '../logic/subtitleSync';
+import { seekVideo } from './netflixPlayback';
 import type { SrtCue } from '@/entities/media';
 
 /** Result of looking up the active cue for the current playback time. */
@@ -86,13 +88,13 @@ export function prevSentence(
   if (cues.length === 0) return;
   if (index > 0) {
     // ADR-019 sync: seek so overlay DISPLAYS cues[index-1] → shift by -offsetMs.
-    video.currentTime = (cues[index - 1].start - offsetMs) / 1000;
+    seekVideo(video, (cues[index - 1].start - offsetMs) / 1000);
     return;
   }
   if (index === -1) {
     // In gap — find nearest previous cue (end < effectiveMs)
     const prevCue = [...cues].reverse().find((c) => c.end < effectiveMs);
-    if (prevCue) video.currentTime = (prevCue.start - offsetMs) / 1000;
+    if (prevCue) seekVideo(video, (prevCue.start - offsetMs) / 1000);
     return;
   }
   // index === 0 → no-op (first cue)
@@ -119,12 +121,12 @@ export function nextSentence(
   if (index === -1) {
     // In gap — find nearest next cue (start > effectiveMs)
     const nextCue = cues.find((c) => c.start > effectiveMs);
-    if (nextCue) video.currentTime = (nextCue.start - offsetMs) / 1000;
+    if (nextCue) seekVideo(video, (nextCue.start - offsetMs) / 1000);
     return;
   }
   if (index < cues.length - 1) {
     // ADR-019 sync: seek so overlay DISPLAYS cues[index+1] → shift by -offsetMs.
-    video.currentTime = (cues[index + 1].start - offsetMs) / 1000;
+    seekVideo(video, (cues[index + 1].start - offsetMs) / 1000);
   }
   // index === length-1 → no-op (last cue)
 }
@@ -138,8 +140,8 @@ export function seekBy(video: HTMLVideoElement, seconds: number): void {
   const target = video.currentTime + seconds;
   const lower = Math.max(0, target);
   if (!Number.isFinite(video.duration)) {
-    video.currentTime = lower;
+    seekVideo(video, lower);
     return;
   }
-  video.currentTime = Math.min(lower, video.duration);
+  seekVideo(video, Math.min(lower, video.duration));
 }

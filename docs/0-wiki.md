@@ -37,6 +37,8 @@ docs/           # Tài liệu dự án
 │   └── 026-card-creator-anki-integration.md # ADR-026: Card Creator — Anki integration via AnkiConnect (desktop + Android, silent no-op detection, draft autosave)
 │   └── 027-generate-native-subtitle.md # ADR-027: manual generate native subtitle via button/shortcut, reuse ADR-021 prefill, virtual panel slot
 │   └── 028-iqiyi-subtitle-detection.md # ADR-028: iQIYI subtitle detection — MAIN-world playerObject.stl extraction, clone ADR-020 pattern, SRT format, lid→ISO map, source dispatch trên DETECTED_SUBTITLES
+│   └── 029-netflix-subtitle-detection.md # ADR-029: Netflix subtitle detection — graph traversal cadmiumPlayerRepository, TTML format, MAIN-world IIFE
+│   └── 030-netflix-seek-d7375.md # ADR-030: Netflix M7375 fix — route seek/play/pause qua player API via CustomEvent, tránh video.currentTime trực tiếp
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)

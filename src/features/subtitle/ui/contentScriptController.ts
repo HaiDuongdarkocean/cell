@@ -21,6 +21,9 @@ import {
   createSubtitleManagerPanel,
   createDebouncedToast,
   formatSubtitleName,
+  seekVideo,
+  playVideo,
+  pauseVideo,
 } from '@/features/subtitle';
 import { SubtitleBlockController, type SubtitleBlockControllerUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleBlockController';
 import { OffsetController } from '@/features/subtitle/ui/offsetController';
@@ -866,16 +869,18 @@ export function init(video: HTMLVideoElement): () => void {
       if (timeMs !== undefined) {
         // ADR-019 sync: side panel clicks cue.start (raw) → seek so overlay
         // DISPLAYS that cue → shift by -offsetMs (mirror seekToCue logic).
+        // ADR-030: route through seekVideo to avoid Netflix M7375.
         const offsetMs = offsetController?.getOffsetMs() ?? 0;
-        video.currentTime = (timeMs - offsetMs) / 1000;
+        seekVideo(video, (timeMs - offsetMs) / 1000);
       }
     }
     // Receive TOGGLE_PLAY from Side Panel (via background relay) → toggle play/pause
     if (m?.type === MESSAGE_TYPES.TOGGLE_PLAY) {
+      // ADR-030: route through playVideo/pauseVideo to avoid Netflix M7375.
       if (video.paused) {
-        video.play().catch(() => { /* autoplay may be blocked */ });
+        playVideo(video).catch(() => { /* autoplay may be blocked */ });
       } else {
-        video.pause();
+        pauseVideo(video);
       }
     }
     // Receive SHORTCUT_ACTION from Side Panel (via background relay) →
@@ -889,7 +894,8 @@ export function init(video: HTMLVideoElement): () => void {
       // ADR-021 D8: sidepanel sends seekTime (calculated at keypress time).
       // Seek directly — no need to find cue from stale video.currentTime.
       if (payload?.seekTime !== undefined && (action === 'prev-cue' || action === 'next-cue' || action === 'replay-cue')) {
-        video.currentTime = (payload.seekTime - offsetMs) / 1000;
+        // ADR-030: route through seekVideo to avoid Netflix M7375.
+        seekVideo(video, (payload.seekTime - offsetMs) / 1000);
       } else {
         // Fallback: calculate from video.currentTime (in-page keydown path)
         const effectiveMs = video.currentTime * 1000 + offsetMs;

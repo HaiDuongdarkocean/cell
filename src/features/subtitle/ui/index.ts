@@ -13,4 +13,5 @@ export * from './subtitleBlockDom';
 export * from './subtitleBlockCss';
 export * from './subtitleBlockDrag';
 export * from './subtitleBlockScale';
+export * from './netflixPlayback';
 export { init as initContentScriptController } from './contentScriptController';

@@ -48,6 +48,7 @@
     lastError: null as string | null,
     hookMiss: false,
     playerFound: false,
+    lastSeekMs: null as number | null,
   };
 
   const globalWindow = window as unknown as Record<string, unknown>;
@@ -339,6 +340,38 @@
       startDetectionCycle();
     });
   }
+
+  // === Playback control bridge (ADR-030: Netflix M7375 fix) ===
+  // Netflix anti-tampering throws M7375 when scripts set `video.currentTime`
+  // directly. Route seek/play/pause through the Netflix player API instead,
+  // which goes through Netflix's internal state machine (treated as a valid
+  // user action, like dragging the progress bar).
+  //
+  // ISOLATED content-script dispatches CustomEvents → MAIN world listeners
+  // call `player().seek(ms) / play() / pause()`. Verified on Netflix 2026-07-13:
+  // `video.currentTime = 60` → M7375; `player.seek(120000)` → OK.
+  // ponytail: reuses getPlayer() helper (ADR-029). Ceiling: if player is
+  // undefined (not ready yet), the call no-ops — caller falls back to
+  // video.currentTime in ISOLATED world (still triggers M7375 but no crash).
+  document.addEventListener('__NF_SEEK', (e: Event) => {
+    const detail = (e as CustomEvent).detail as number | undefined;
+    if (typeof detail !== 'number') return;
+    const np = getPlayer();
+    const seek = np?.seek;
+    if (typeof seek !== 'function') return;
+    __NF_DEBUG.lastSeekMs = detail;
+    (seek as (ms: number) => void)(detail);
+  });
+  document.addEventListener('__NF_PLAY', () => {
+    const np = getPlayer();
+    const play = np?.play;
+    if (typeof play === 'function') (play as () => void)();
+  });
+  document.addEventListener('__NF_PAUSE', () => {
+    const np = getPlayer();
+    const pause = np?.pause;
+    if (typeof pause === 'function') (pause as () => void)();
+  });
 
   // === Initialization ===
   hookNavigation();
