@@ -551,23 +551,21 @@ export function init(video: HTMLVideoElement): () => void {
   // Listener catches ALL seeks (keydown, NavCluster, Side Panel, external)
   // so lastSeekTargetMs always reflects the latest intended video position.
   let lastSeekTargetMs: number | null = null;
-  const SEEK_SETTLE_TOLERANCE_MS = 500; // video within 500ms of target = settled
   const onNfSeek = (e: Event) => {
     lastSeekTargetMs = (e as CustomEvent).detail as number;
   };
   document.addEventListener('__NF_SEEK', onNfSeek);
 
-  /** Effective time for cue lookup: lastSeekTarget if video hasn't settled, else video.currentTime. */
+  /** Effective time for cue lookup: lastSeekTarget while video.seeking, else video.currentTime. */
   const getEffectiveMs = (): number => {
     const offsetMs = offsetController?.getOffsetMs() ?? 0;
-    const videoMs = video.currentTime * 1000;
-    if (lastSeekTargetMs !== null && Math.abs(videoMs - lastSeekTargetMs) > SEEK_SETTLE_TOLERANCE_MS) {
-      // Video hasn't reached last seek target → use intended target
+    // video.seeking = true while Netflix player.seek() in progress (async).
+    // Use lastSeekTarget to avoid computing next/prev from stale currentTime.
+    if (video.seeking && lastSeekTargetMs !== null) {
       return lastSeekTargetMs + offsetMs;
     }
-    // Settled (or no pending seek) → use actual video time
     lastSeekTargetMs = null;
-    return videoMs + offsetMs;
+    return video.currentTime * 1000 + offsetMs;
   };
 
   // Track active sub indices + all matches for re-fetch on dropdown select
