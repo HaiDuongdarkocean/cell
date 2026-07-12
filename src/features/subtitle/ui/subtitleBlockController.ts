@@ -10,6 +10,7 @@ import {
 import { buildTextShadow, hexToRgba, sanitizeFontFamily } from './subtitleUI';
 import { NAV_CLUSTER_ICONS, type NavClusterIconName } from './navClusterIcons';
 import { prevSentence, nextSentence, seekBy, findActiveCueIndex, findNearestCueIndex } from './navClusterActions';
+import { seekVideo } from './netflixPlayback';
 import { createSubtitleBlockDOM, type SubtitleBlockDOM } from './subtitleBlockDom';
 import { SUBTITLE_BLOCK_CSS } from './subtitleBlockCss';
 import { wireBlockDrag } from './subtitleBlockDrag';
@@ -211,7 +212,8 @@ export class SubtitleBlockController {
 
   private onTimeUpdate = (): void => {
     if (this.loopState === 'looping' && this.video.currentTime >= this.loopEnd) {
-      this.video.currentTime = this.loopStart;
+      // ADR-030: route through seekVideo to avoid Netflix M7375.
+      seekVideo(this.video, this.loopStart);
     }
     if (!this.dom) return;
     if (this.targetCues.length === 0 && this.nativeCues.length === 0) return;
@@ -291,12 +293,13 @@ export class SubtitleBlockController {
     const offsetMs = this.getOffsetMs();
     const { cues, index } = findActiveCueIndex(this.targetCues, this.nativeCues, currentMs, offsetMs);
     if (index >= 0 && cues[index]) {
-      this.video.currentTime = (cues[index].start - offsetMs) / 1000;
+      // ADR-030: route through seekVideo to avoid Netflix M7375.
+      seekVideo(this.video, (cues[index].start - offsetMs) / 1000);
       return;
     }
     const nearestIndex = findNearestCueIndex(cues, currentMs);
     if (nearestIndex >= 0 && cues[nearestIndex]) {
-      this.video.currentTime = (cues[nearestIndex].start - offsetMs) / 1000;
+      seekVideo(this.video, (cues[nearestIndex].start - offsetMs) / 1000);
     }
   }
 

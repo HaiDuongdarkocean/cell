@@ -18,6 +18,7 @@
  */
 import type { MediaFile } from './mediaFile';
 import { generateMediaFilename } from './mediaFile';
+import { seekVideo, playVideo, pauseVideo } from '@/features/subtitle/ui/netflixPlayback';
 
 /** Max audio capture duration (4GB mobile constraint). */
 const MAX_AUDIO_DURATION_MS = 15_000;
@@ -122,7 +123,9 @@ function seekTo(video: HTMLVideoElement, timeSec: number): Promise<void> {
       resolve();
     };
     video.addEventListener('seeked', onSeeked);
-    video.currentTime = timeSec;
+    // ADR-030: route through seekVideo to avoid Netflix M7375.
+    // Netflix player.seek() sets video.currentTime internally → fires 'seeked'.
+    seekVideo(video, timeSec);
   });
 }
 
@@ -134,7 +137,8 @@ function playForDuration(video: HTMLVideoElement, durationSec: number): Promise<
     const finish = () => {
       if (settled) return;
       settled = true;
-      video.pause();
+      // ADR-030: route through pauseVideo to avoid Netflix M7375.
+      pauseVideo(video);
       resolve();
     };
     // Timeout fallback in case 'timeupdate' doesn't fire fast enough.
@@ -150,7 +154,8 @@ function playForDuration(video: HTMLVideoElement, durationSec: number): Promise<
       }
     };
     video.addEventListener('timeupdate', onTimeUpdate);
-    void video.play().then(() => {
+    // ADR-030: route through playVideo to avoid Netflix M7375.
+    void playVideo(video).then(() => {
       // Record the actual start time once playback begins — this is when the
       // MediaRecorder starts capturing audio.
       startTime = video.currentTime;
