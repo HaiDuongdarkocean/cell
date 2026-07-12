@@ -120,6 +120,23 @@ function findVideoContainer(video: HTMLVideoElement): HTMLElement {
   return video.parentElement ?? document.body;
 }
 
+// ADR-032 cue-seek dedupe — module-level so multiple init() instances
+// (Netflix SPA re-init leaks onMessage listeners, see cleanup ponytail)
+// share the same dedupe state. Without this, each instance has its own
+// closure state → both seek → "khó sang cue" + "khựng".
+let lastCueSeekAction: string | null = null;
+let lastCueSeekTs = 0;
+const CUE_SEEK_DEDUPE_MS = 300;
+const shouldDedupeCueSeek = (action: string): boolean => {
+  const now = Date.now();
+  if (action === lastCueSeekAction && now - lastCueSeekTs < CUE_SEEK_DEDUPE_MS) {
+    return true;
+  }
+  lastCueSeekAction = action;
+  lastCueSeekTs = now;
+  return false;
+};
+
 export function init(video: HTMLVideoElement): () => void {
   // ADR-008 D2: overlay UI neo vào video container — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
@@ -517,23 +534,6 @@ export function init(video: HTMLVideoElement): () => void {
     blockController.updateSettings({ targetStyle, nativeStyle });
   }
   let bilingualCues: BilingualCue[] = [];
-  // ADR-032 cue-seek dedupe: when Side Panel is open, pressing A/S/D fires
-  // BOTH the in-page keydown handler AND the Side Panel keydown handler
-  // (which relays SHORTCUT_ACTION back to content script). Without dedupe
-  // the same keypress seeks twice → net effect near-zero → "khó sang cue".
-  // Gate: skip if same cue-nav action fired within 300ms.
-  let lastCueSeekAction: string | null = null;
-  let lastCueSeekTs = 0;
-  const CUE_SEEK_DEDUPE_MS = 300;
-  const shouldDedupeCueSeek = (action: string): boolean => {
-    const now = Date.now();
-    if (action === lastCueSeekAction && now - lastCueSeekTs < CUE_SEEK_DEDUPE_MS) {
-      return true;
-    }
-    lastCueSeekAction = action;
-    lastCueSeekTs = now;
-    return false;
-  };
   // Track side panel open state for toggle (☰ button).
   // ponytail ceiling: best-effort — if user closes panel via browser UI (X),
   // this stays true and next click sends CLOSE (no-op, panel already closed),
