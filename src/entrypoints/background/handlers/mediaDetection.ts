@@ -57,6 +57,15 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
     const now = Date.now();
     let addedNew = false;
 
+    // `pageUrl` is the frame origin that owns the scanned `<track>`/`<source>`
+    // elements. Pass it as the request `initiator` so it flows into
+    // `DetectedSubtitle.initiator` and becomes the DNR Referer/Origin source.
+    // Without it, origin-checking CDNs (prox.anicore.tv behind anikage.cc)
+    // return 403 "forbidden origin" when the extension fetches the subtitle —
+    // a scanned URL never went through webRequest, so it has no real
+    // `details.initiator` and the DNR rule is never registered.
+    const initiator = payload.pageUrl;
+
     for (const url of payload.videoUrls) {
       if (existingVideoUrls.has(url)) {
         continue;
@@ -67,10 +76,11 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
         tabId,
         type: 'media',
         timeStamp: now,
+        initiator,
       };
       if (detectVideo(networkRequest)) {
         ctx.networkInterceptor.handleRequest(
-          buildDetails(url, tabId, now),
+          buildDetails(url, tabId, now, initiator),
         );
         addedNew = true;
       }
@@ -86,6 +96,7 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
         tabId,
         type: 'media',
         timeStamp: now,
+        initiator,
       };
       // trustAsSubtitle: the page scanner already classified these URLs as
       // subtitles — either by URL pattern (<a> hrefs) or by <track> element
@@ -94,7 +105,7 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
       // guard still runs inside detectSubtitle to reject thumbnail/chapter VTT.
       if (detectSubtitle(networkRequest, { trustAsSubtitle: true })) {
         ctx.networkInterceptor.handleRequest(
-          buildDetails(url, tabId, now),
+          buildDetails(url, tabId, now, initiator),
           { trustAsSubtitle: true },
         );
         addedNew = true;

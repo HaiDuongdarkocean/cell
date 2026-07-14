@@ -821,6 +821,7 @@ describe('Background integration', () => {
         tabId: 123,
         videoUrls: ['https://example.com/scanned.m3u8'],
         subtitleUrls: ['https://example.com/sub.srt'],
+        pageUrl: 'https://example.com/watch',
       },
     };
     const response = await messageBus.handleMessage(request, {
@@ -859,6 +860,12 @@ describe('Background integration', () => {
         tabId: 123,
         videoUrls: [],
         subtitleUrls: [trackUrl],
+        // The content-script sends its own frame URL as pageUrl. anikage.cc is
+        // the origin prox.anicore.tv requires (Origin: https://anikage.cc → 200,
+        // anything else → 403 "forbidden origin"). Without pageUrl flowing into
+        // DetectedSubtitle.initiator, the DNR Referer/Origin rule is never
+        // registered and the subtitle fetch fails with 403.
+        pageUrl: 'https://anikage.cc/watch/episode-1',
       },
     };
     const response = await messageBus.handleMessage(request, {
@@ -874,6 +881,9 @@ describe('Background integration', () => {
     // Language is 'unknown' — resolveUnknownSubtitleLanguages resolves it later
     // by fetching the content (body is WebVTT) and running language detection.
     expect(subtitles[0]?.language).toBe('unknown');
+    // Regression (ADR-035): the frame URL must flow into initiator so the
+    // DNR rule sets Origin: https://anikage.cc — otherwise the fetch 403s.
+    expect(subtitles[0]?.initiator).toBe('https://anikage.cc/watch/episode-1');
   });
 
   it('PAGE_SCAN_RESULT deduplicates URLs already detected by network', async () => {
@@ -888,12 +898,93 @@ describe('Background integration', () => {
         tabId: 123,
         videoUrls: ['https://example.com/dup.mp4'],
         subtitleUrls: [],
+        pageUrl: 'https://example.com/watch',
       },
     };
     await messageBus.handleMessage(request, { id: 'content' });
 
     // No new video should be added
     expect(interceptor.getVideos(123).length).toBe(initialCount);
+  });
+
+  // Regression (ADR-036): torrentio (Stremio addon) serves a JSON listing of
+  // subtitle URLs at `/api/v1/<type>/subtitles/<id>` — NOT a subtitle file.
+  // The extension must NOT classify the listing URL as a subtitle (would fail
+  // parseVtt → "missing WEBVTT header" at 50%). Instead, it fetches the JSON,
+  // extracts `subtitles[].url`, and re-injects the real subtitle URLs.
+  it('Stremio addon listing URL → fetch JSON → re-inject real subtitle URLs (ADR-036)', async () => {
+    const listingUrl = 'https://stream.torrentio.to/api/v1/tmdb/subtitles/tt37287335';
+    const realSub1 = 'https://opensubtitles.org/download/sub-en-12345.srt';
+    const realSub2 = 'https://opensubtitles.org/download/sub-vi-67890.srt';
+    const listingJson = JSON.stringify({
+      subtitles: [
+        { url: realSub1, lang: 'en' },
+        { url: realSub2, lang: 'vi' },
+      ],
+    });
+
+    mockChrome.runtime.sendMessage.mockClear();
+    mockChrome.runtime.sendMessage.mockImplementation((msg: MessageRequest) => {
+      if (msg.type === MESSAGE_TYPES.FETCH_REQUEST) {
+        const url = (msg.payload as { url: string }).url;
+        if (url === listingUrl) {
+          return Promise.resolve({
+            success: true,
+            data: { ok: true, status: 200, content: listingJson, finalUrl: url },
+          });
+        }
+        return Promise.resolve({
+          success: true,
+          data: { ok: true, status: 200, content: '', finalUrl: url },
+        });
+      }
+      return Promise.resolve({ success: true });
+    });
+
+    // Simulate the Stremio page fetching the listing URL.
+    interceptor.handleRequest(makeWebRequestDetails(listingUrl, 123));
+
+    // Wait for async fetch + parse + re-inject.
+    await new Promise((r) => setTimeout(r, 100));
+
+    // The listing URL itself must NOT be stored as a subtitle.
+    const subtitles = interceptor.getSubtitles(123);
+    const listingSub = subtitles.find((s) => s.url === listingUrl);
+    expect(listingSub).toBeUndefined();
+
+    // The real subtitle URLs from the JSON must be stored.
+    const sub1 = subtitles.find((s) => s.url === realSub1);
+    const sub2 = subtitles.find((s) => s.url === realSub2);
+    expect(sub1).toBeDefined();
+    expect(sub2).toBeDefined();
+
+    mockChrome.runtime.sendMessage.mockReset();
+  });
+
+  it('Stremio addon listing with null subtitles → no subtitles stored (ADR-036)', async () => {
+    const listingUrl = 'https://stream.torrentio.to/api/v1/tmdb/subtitles/tt0000000';
+    const listingJson = JSON.stringify({ files: null, subtitles: null });
+
+    mockChrome.runtime.sendMessage.mockClear();
+    mockChrome.runtime.sendMessage.mockImplementation((msg: MessageRequest) => {
+      if (msg.type === MESSAGE_TYPES.FETCH_REQUEST) {
+        return Promise.resolve({
+          success: true,
+          data: { ok: true, status: 200, content: listingJson, finalUrl: listingUrl },
+        });
+      }
+      return Promise.resolve({ success: true });
+    });
+
+    interceptor.handleRequest(makeWebRequestDetails(listingUrl, 456));
+    await new Promise((r) => setTimeout(r, 100));
+
+    // No subtitles stored — listing URL is not a subtitle, and JSON had no
+    // subtitle entries.
+    const subtitles = interceptor.getSubtitles(456);
+    expect(subtitles).toHaveLength(0);
+
+    mockChrome.runtime.sendMessage.mockReset();
   });
 
   // 12. Progress updates broadcast to popup
@@ -1735,6 +1826,7 @@ https://cdn.example.com/low.m3u8`;
           'https://example.com/sub.en.srt',
           'https://example.com/sub.vi.srt',
         ],
+        pageUrl: 'https://example.com/watch',
       },
     };
 
@@ -1784,6 +1876,7 @@ https://cdn.example.com/low.m3u8`;
         tabId: 123,
         videoUrls: [],
         subtitleUrls: ['https://example.com/sub.en.srt'],
+        pageUrl: 'https://example.com/watch',
       },
     };
 
@@ -1921,6 +2014,7 @@ https://cdn.example.com/low.m3u8`;
           'https://example.com/subtitle/aabbccdd.srt',
           'https://example.com/subtitle/eeffgghh.srt',
         ],
+        pageUrl: 'https://example.com/watch',
       },
     };
 

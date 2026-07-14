@@ -178,7 +178,8 @@ function runPageScan(): void {
       payload: {
         tabId: undefined,
         videoUrls: urls.videoUrls,
-        subtitleUrls: urls.subtitleUrls
+        subtitleUrls: urls.subtitleUrls,
+        pageUrl: window.location.href,
       },
     });
   }
@@ -190,7 +191,8 @@ function runPageScan(): void {
       payload: {
         tabId: undefined,
         videoUrls: newUrls.videoUrls,
-        subtitleUrls: newUrls.subtitleUrls
+        subtitleUrls: newUrls.subtitleUrls,
+        pageUrl: window.location.href,
       },
     });
   });
@@ -333,6 +335,7 @@ function reportEpisodeChanged(reason: 'replacement' | 'src-change'): void {
           tabId: undefined,
           videoUrls: urls.videoUrls,
           subtitleUrls: urls.subtitleUrls,
+          pageUrl: window.location.href,
         },
       });
     }

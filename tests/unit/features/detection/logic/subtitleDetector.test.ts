@@ -306,4 +306,36 @@ describe('detectSubtitle', () => {
       expect(withFlag?.language).toBe(withoutFlag?.language);
     });
   });
+
+  describe('Stremio addon listing rejection (ADR-036)', () => {
+    // torrentio (Stremio addon) serves a JSON listing of subtitle URLs at
+    // `/api/v1/<type>/subtitles/<id>` — NOT a subtitle file. Without the
+    // guard, `/subtitles/` in the path matches SUBTITLE_URL_PATTERNS → the
+    // extension fetches JSON, tries parseVtt → "missing WEBVTT header" →
+    // download fails at 50%.
+    it('returns null for torrentio Stremio addon listing URL', () => {
+      const url = 'https://stream.torrentio.to/api/v1/tmdb/subtitles/tt37287335';
+      expect(detectSubtitle(makeRequest(url))).toBeNull();
+    });
+
+    it('returns null for Stremio listing URL even with trustAsSubtitle=true', () => {
+      // Even when the caller trusts the URL as a subtitle (e.g. from a
+      // <track> element), a Stremio listing URL is JSON, not a subtitle file.
+      const url = 'https://stream.torrentio.to/api/v1/tmdb/subtitles/tt37287335';
+      expect(detectSubtitle(makeRequest(url), { trustAsSubtitle: true })).toBeNull();
+    });
+
+    it('returns null for Stremio listing URL with query params', () => {
+      const url =
+        'https://stream.torrentio.to/api/v1/tmdb/subtitles/tt37287335?videoHash=abc&videoSize=1000000';
+      expect(detectSubtitle(makeRequest(url))).toBeNull();
+    });
+
+    it('does NOT reject regular subtitle URLs with /subtitles/ path segment', () => {
+      // Regular subtitle CDNs use /subtitles/ as a path segment but serve
+      // actual subtitle files — these must still be detected.
+      const url = 'https://example.com/subtitles/movie.en.srt';
+      expect(detectSubtitle(makeRequest(url))).not.toBeNull();
+    });
+  });
 });

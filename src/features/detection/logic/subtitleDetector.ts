@@ -130,10 +130,43 @@ function extractLanguage(url: string): string {
  */
 const NON_SUBTITLE_KEYWORDS = /thumbnail|storyboard|chapter|preview|cues/i;
 
+/**
+ * Stremio addon subtitle listing API pattern. Stremio addons serve a JSON
+ * listing of available subtitles at `/<api-prefix>/<type>/subtitles/<id>` —
+ * e.g. torrentio: `https://stream.torrentio.to/api/v1/tmdb/subtitles/tt37287335`.
+ * The response is JSON `{"subtitles": [{"url": "<real-subtitle-file>", "lang": "en"}, ...]}`,
+ * NOT a subtitle file. Without this guard, `SUBTITLE_URL_PATTERNS`'s
+ * `/subtitles/` segment matches the listing URL → the extension fetches JSON,
+ * tries `parseVtt` → "missing WEBVTT header" → download fails at 50%.
+ *
+ * The real subtitle files are inside the JSON `subtitles[].url` field —
+ * `resolveStremioSubtitleListing` (helpers.ts) fetches the listing, extracts
+ * those URLs, and re-injects them through `handleRequest`.
+ *
+ * ponytail: pattern matches `/api/v<N>/<type>/subtitles/` — specific to
+ * API-style Stremio addons (torrentio). Ceiling: a Stremio addon using the
+ * bare protocol path `/<type>/subtitles/<id>` without `/api/v<N>/` would not
+ * match. Upgrade: check response Content-Type (application/json) at fetch
+ * time instead of URL-shape at detection time.
+ */
+const STREMIO_LISTING_PATTERN = /\/api\/v\d+\/[a-z]+\/subtitles\//i;
+
+/** Is this URL a Stremio addon subtitle listing API (JSON), not a subtitle file? */
+export function isStremioSubtitleListing(url: string): boolean {
+  return STREMIO_LISTING_PATTERN.test(url);
+}
+
 export function detectSubtitle(
   request: NetworkRequest,
   opts?: { trustAsSubtitle?: boolean },
 ): DetectedSubtitle | null {
+  // Reject Stremio addon listing URLs — they return JSON, not a subtitle file.
+  // The real subtitle URLs are extracted from the JSON by
+  // `resolveStremioSubtitleListing` and re-injected via `handleRequest`.
+  if (isStremioSubtitleListing(request.url)) {
+    return null;
+  }
+
   // `trustAsSubtitle`: the caller already classified this URL as a subtitle
   // via a stronger signal than URL shape — e.g. a `<track kind="subtitles">`
   // element in the DOM (HTML spec: the element IS the classifier). Sites like

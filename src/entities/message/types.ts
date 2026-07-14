@@ -263,6 +263,15 @@ export interface PageScanResultPayload {
   readonly tabId: number;
   readonly videoUrls: string[];
   readonly subtitleUrls: string[];
+  /**
+   * The URL of the frame the content-script is running in
+   * (`window.location.href`). Used as the request `initiator` for scanned media
+   * so the DNR Referer/Origin rewrite targets the frame origin that owns the
+   * `<track>`/`<source>` element — not the extension origin. Origin-checking
+   * subtitle CDNs (e.g. `prox.anicore.tv` behind `anikage.cc`) return 403
+   * "forbidden origin" without this.
+   */
+  readonly pageUrl: string;
 }
 
 /**

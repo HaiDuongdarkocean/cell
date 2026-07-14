@@ -12,6 +12,7 @@ export {
 } from './logic/videoDetector';
 export {
   detectSubtitle,
+  isStremioSubtitleListing,
 } from './logic/subtitleDetector';
 export {
   mapYouTubeCaptionTracks,

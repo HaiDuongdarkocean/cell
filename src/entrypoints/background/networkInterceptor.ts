@@ -1,5 +1,5 @@
 import { detectVideo } from '@/features/detection';
-import { detectSubtitle } from '@/features/detection';
+import { detectSubtitle, isStremioSubtitleListing } from '@/features/detection';
 import {
   addOnBeforeRequestListener,
   type WebRequestListener,
@@ -17,6 +17,18 @@ export type MediaDetectedCallback = (
 ) => void;
 
 /**
+ * Callback invoked when a Stremio addon subtitle listing URL is captured
+ * (e.g. `stream.torrentio.to/api/v1/tmdb/subtitles/<id>`). The listing returns
+ * JSON with real subtitle URLs in `subtitles[].url` — the callback fetches the
+ * JSON, extracts those URLs, and re-injects them through `handleRequest`.
+ */
+export type ListingDetectedCallback = (
+  url: string,
+  tabId: number,
+  initiator: string | undefined,
+) => void;
+
+/**
  * Wraps `chrome.webRequest.onBeforeRequest` to detect downloadable video and
  * subtitle URLs. Detected media is stored per-tab in memory and interested
  * subscribers are notified whenever a new detection occurs.
@@ -28,6 +40,7 @@ export class NetworkInterceptor {
   private readonly videos: Map<string, DetectedVideo> = new Map();
   private readonly subtitles: Map<string, DetectedSubtitle> = new Map();
   private readonly listeners: Set<MediaDetectedCallback> = new Set();
+  private listingListener: ListingDetectedCallback | null = null;
 
   /** Bound listener reference so it can be removed cleanly in `stop()`. */
   private boundListener:
@@ -98,6 +111,15 @@ export class NetworkInterceptor {
 
     if (isExtensionRequest) {
       return;
+    }
+
+    // Stremio addon subtitle listing: the URL returns a JSON listing of
+    // subtitle URLs, not a subtitle file. Fire the listing callback (async,
+    // not awaited) so the caller can fetch the JSON, extract `subtitles[].url`,
+    // and re-inject the real subtitle URLs. `detectSubtitle` also rejects
+    // listing URLs (returns null), so no false-positive subtitle is stored.
+    if (isStremioSubtitleListing(details.url) && this.listingListener) {
+      this.listingListener(details.url, details.tabId, details.initiator);
     }
 
     const request: NetworkRequest = {
@@ -299,6 +321,22 @@ export class NetworkInterceptor {
     this.listeners.add(callback);
     return () => {
       this.listeners.delete(callback);
+    };
+  }
+
+  /**
+   * Register a callback for Stremio addon subtitle listing URLs. When
+   * `handleRequest` captures a URL matching `isStremioSubtitleListing`, this
+   * callback is fired with the URL, tabId, and initiator — the caller fetches
+   * the JSON listing, extracts `subtitles[].url`, and re-injects the real
+   * subtitle URLs through `handleRequest`.
+   */
+  onListingDetected(callback: ListingDetectedCallback): () => void {
+    this.listingListener = callback;
+    return () => {
+      if (this.listingListener === callback) {
+        this.listingListener = null;
+      }
     };
   }
 

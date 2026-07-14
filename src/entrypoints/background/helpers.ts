@@ -63,11 +63,20 @@ export function extractBaseName(url: string): string {
 /**
  * Build a `chrome.webRequest.OnBeforeRequestDetails`-like object so a scanned
  * URL can be replayed through `NetworkInterceptor.handleRequest`.
+ *
+ * `initiator` (optional) is the frame origin that owns the scanned element
+ * (`<track>`/`<source>`), taken from the content-script's
+ * `window.location.href`. It flows into `NetworkRequest.initiator` →
+ * `DetectedSubtitle.initiator` and becomes the DNR Referer/Origin source for
+ * the subtitle fetch. Origin-checking CDNs (e.g. `prox.anicore.tv` behind
+ * `anikage.cc`) return 403 "forbidden origin" without it, because a scanned
+ * URL never went through `webRequest` (no real `details.initiator`).
  */
 export function buildDetails(
   url: string,
   tabId: number,
   timeStamp: number,
+  initiator?: string,
 ): chrome.webRequest.OnBeforeRequestDetails {
   return {
     url,
@@ -80,6 +89,7 @@ export function buildDetails(
     frameType: 'outermost_frame',
     parentFrameId: -1,
     requestId: `scan-${tabId}-${url}`,
+    initiator,
   } as chrome.webRequest.OnBeforeRequestDetails;
 }
 
@@ -556,6 +566,70 @@ export async function resolveUnknownSubtitleLanguages(
   }
 
   return resolved;
+}
+
+/**
+ * Dedup set for Stremio listing URLs already resolved. Stremio pages may fetch
+ * the same listing URL multiple times (SPA navigation, re-renders) — without
+ * dedup, each fetch would re-inject the same subtitle URLs (caught by
+ * `handleRequest`'s URL dedup, but the redundant fetch + JSON parse is wasted).
+ * Cleared on tab navigation via `clearTab` (the set is per-URL, not per-tab,
+ * but stale entries are harmless — a re-listing after navigation just re-adds
+ * the same subtitles which are already deduped by URL).
+ */
+const resolvedStremioListings = new Set<string>();
+
+/**
+ * Fetch a Stremio addon subtitle listing URL, parse the JSON response, and
+ * re-inject each `subtitles[].url` through `handleRequest` so the real
+ * subtitle files appear in the popup for download.
+ *
+ * Stremio addons (e.g. torrentio) serve a JSON listing at
+ * `/<api-prefix>/<type>/subtitles/<id>` — NOT a subtitle file. The response:
+ * ```json
+ * {"subtitles": [{"url": "https://.../sub.en.srt", "lang": "en"}, ...]}
+ * ```
+ * The real subtitle files are in `subtitles[].url`. This function fetches the
+ * listing, extracts those URLs, and feeds them back through the normal
+ * detection pipeline with `trustAsSubtitle: true` (we know they're subtitles
+ * from the JSON listing).
+ */
+export async function resolveStremioSubtitleListing(
+  ctx: BackgroundContext,
+  url: string,
+  tabId: number,
+  initiator: string | undefined,
+): Promise<void> {
+  if (resolvedStremioListings.has(url)) return;
+  resolvedStremioListings.add(url);
+
+  try {
+    const result = await offscreenFetch(ctx.offscreenManager, url);
+    if (!result.ok || !result.content) return;
+
+    let parsed: { subtitles?: Array<{ url?: string; lang?: string }> | null };
+    try {
+      parsed = JSON.parse(result.content) as { subtitles?: Array<{ url?: string; lang?: string }> | null };
+    } catch {
+      console.warn(`[bg resolveStremioSubtitleListing] JSON parse failed for ${url}`);
+      return;
+    }
+
+    const subs = parsed.subtitles;
+    if (!subs || !Array.isArray(subs) || subs.length === 0) return;
+
+    const now = Date.now();
+    for (const sub of subs) {
+      if (!sub.url) continue;
+      ctx.networkInterceptor.handleRequest(
+        buildDetails(sub.url, tabId, now, initiator),
+        { trustAsSubtitle: true },
+      );
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[bg resolveStremioSubtitleListing] fetch failed for ${url}: ${msg}`);
+  }
 }
 
 // --- auto-download helper ---

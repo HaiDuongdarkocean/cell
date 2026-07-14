@@ -32,6 +32,7 @@ import {
   maybeAutoDownload,
   pushAutoLoadSubtitles,
   resolveUnknownSubtitleLanguages,
+  resolveStremioSubtitleListing,
 } from './helpers';
 import type {
   DetectedVideo,
@@ -117,6 +118,13 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
         void resolveUnknownSubtitleLanguages(ctx, tabId, subtitles);
         void pushAutoLoadSubtitles(ctx, tabId, subtitles);
       }
+    },
+  );
+
+  // 1b. Stremio addon subtitle listing → fetch JSON → re-inject real subtitle URLs
+  const unsubListing = ctx.networkInterceptor.onListingDetected(
+    (url, tabId, initiator) => {
+      void resolveStremioSubtitleListing(ctx, url, tabId, initiator);
     },
   );
 
@@ -294,7 +302,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     }
   });
 
-  unsubscribers.push(unsubMedia, unsubProgress);
+  unsubscribers.push(unsubMedia, unsubListing, unsubProgress);
 
   // 8. Tab navigation clear (loading)
   const onTabUpdated = (
