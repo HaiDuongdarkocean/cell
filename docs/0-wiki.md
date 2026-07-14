@@ -43,6 +43,8 @@ docs/           # Tài liệu dự án
 │   └── 032-cue-seek-dedupe.md # ADR-032: dedupe cue-seek khi Side Panel + keydown cùng fire + cleanup listeners tránh stale instances
 │   └── 033-netflix-seek-async-rapid-nav.md # ADR-033: track lastSeekTarget cho rapid cue-nav — Netflix seek async, videoMs chưa tới target → tính sai
 │   └── 034-track-element-subtitle-detection.md # ADR-034: trust `<track>` element semantics, bypass URL pattern cho extension-less subtitle URL (anikage.cc)
+│   └── 035-scanned-subtitle-initiator-dnr-origin.md # ADR-035: pass frame URL as `initiator` cho scanned subtitle → DNR Origin → fix 403 "forbidden origin" trên prox.anicore.tv (anikage.cc)
+│   └── 036-stremio-addon-subtitle-listing-parser.md # ADR-036: parse Stremio addon listing JSON (torrentio) → extract subtitles[].url thật, không misclassify listing URL thành subtitle file
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -84,6 +86,7 @@ docs/           # Tài liệu dự án
 │   └── spec-iqiyi-subtitle-detection.md # iQIYI subtitle detection PRD: MAIN-world playerObject.stl extraction, SRT format, lid→ISO map, clone ADR-020 pattern, source dispatch trên DETECTED_SUBTITLES
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 │   └── spec-shared-ui-components.md # Shared UI component library (Button/Card/Dialog/Input + atoms/molecules + migration of existing feature UI)
+│   └── design/dictionary-popup-prototype-handoff.md # Interactive dictionary popup prototype handoff (English/Chinese, tabs, media, card creator, design-system constraints)
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md
@@ -181,7 +184,8 @@ docs/           # Tài liệu dự án
 │   ├── mockup-settings-searchable-and-hint.html # Settings SearchableSelect + HintIcon atoms mockup
 │   ├── mockup-settings-rearrange.html # Settings dialog rearrange v2 (pair/indent/divider, fix Nav Cluster position)
 │   ├── mockup-subtitle-block-unified.html # Unified subtitle block mockup: target + native + nav cluster gộp thành 1 block, pill kéo trục Y
-│   └── anki-card-mockup.html          # Card Creator mockup v2 (preview block + Yomitan scan + media D&D/reorder)
+│   ├── anki-card-mockup.html          # Card Creator mockup v2 (preview block + Yomitan scan + media D&D/reorder)
+│   └── dictionary-popup-prototype/    # Modular interactive prototype (index.html + css + fixtures + popup + creator + settings + icons + app; Migaku-style; verified edge-devtools)
 ├── intent/
 │   └── intent-card-creator.md         # Card Creator intent (interview-me output, confirmed)
 ├── specs/
@@ -198,6 +202,9 @@ docs/           # Tài liệu dự án
 src/            # Source code (chi tiết trong 2-architechture-system.md)
 tests/          # Test files (chi tiết trong 2-architechture-system.md)
 .agents/        # Agent skills
+  skills/         # 24 skill addyosmani/agent-skills (Define→Plan→Build→Verify→Review→Ship)
+  skills-deprecated/  # 4 skill cũ đã deprecate (chrome-extension-mv3-architecture-review, conceptualization, mockup-first, skill-creator)
+.devin/        # Devin config (hooks.v1.json; agents/ đã xóa — thay bằng .agents/skills/)
 .windsurf/      # Windsurf config (rules consolidated vào AGENTS.md — cross-tool source of truth)
 ```
 

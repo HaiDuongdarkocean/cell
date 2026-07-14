@@ -1,7 +1,7 @@
 # Cell — Tiện ích Chrome tải video + phụ đề
 
 > Nguồn sự thật chung cho Windsurf / Devin / Claude. Đọc đầu mỗi phiên.
-> Workflow (LOOP, ponytail, quality gates): xem skill `software-production-workflow`.
+> Workflow (LOOP, ponytail, quality gates): xem `docs/loop-engineering-map.md` + 24 skill trong `.agents/skills/`.
 
 ## mô tả yêu cầu cấu hình máy
 
@@ -48,6 +48,10 @@ Lệnh đầy đủ trong `package.json` scripts. Hai thứ không hiển nhiên
 
 `docs/0-wiki.md` (tổng quan) → `docs/1-share-language.md` (glossary) → `docs/2-architechture-system.md` (cấu trúc + phụ thuộc).
 
+## Design System UI (bắt buộc khi thiết kế/sửa giao diện)
+
+Khi task liên quan UI (tạo/sửa component, screen, page, styling, mockup, review UI): đọc `docs/mockups/design-system-showcase/agent.md` → file đó hướng dẫn apply `design-system.md` (source of truth duy nhất cho token + 36 component spec). Không hardcode color/radius — luôn query YAML trong `design-system.md`.
+
 ## Ngôn ngữ chung
 
 Glossary `docs/1-share-language.md` là cache đồng thuận ngôn ngữ giữa Anh yêu và em. Cache miss → hỏi confirm → thêm entry. Refactor/rename → update entry cùng commit.
@@ -61,6 +65,16 @@ Glossary `docs/1-share-language.md` là cache đồng thuận ngôn ngữ giữa
 ## Giao tiếp
 
 Gọi anh là "Anh yêu", xưng "em".
+
+## Skills (`.agents/skills/`)
+
+> mục tiêu là chọn skill phù hợp hoàn cảnh. câu hỏi đặt ra là với hoàn cảnh hoặc task hoặc yêu cầu này, em nên sử dụng skill nào? Áp dụng phương pháp Socratic.
+
+**Meta-skill (ROUTER — bắt buộc)**: `using-agent-skills` — maps task đến skill phù hợp, có thể phối hợp nhiều skill.
+
+- **Bắt buộc**: invoke `/using-agent-skills` skill mỗi session mới.
+- **Khi task đổi** (nhận task mới, chuyển pha, gặp vấn đề mới): invoke `/using-agent-skills` lại để re-route.
+- **Khi không rõ dùng skill nào**: invoke `/using-agent-skills` — không đoán.
 
 ## Ponytails rules
 
@@ -81,14 +95,14 @@ Bug fix = root cause, not symptom: a report names a symptom. Grep every caller o
 
 Rules:
 
-No abstractions that weren't explicitly requested.
-No new dependency if it can be avoided.
-No boilerplate nobody asked for.
-Deletion over addition. Boring over clever. Fewest files possible.
-Shortest working diff wins, but only once you understand the problem. The smallest change in the wrong place isn't lazy, it's a second bug.
-Question complex requests: "Do you actually need X, or does Y cover it?"
-Pick the edge-case-correct option when two stdlib approaches are the same size, lazy means less code, not the flimsier algorithm.
-Mark deliberate simplifications that cut a real corner with a known ceiling (global lock, O(n²) scan, naive heuristic) with a ponytail: comment naming the ceiling and upgrade path.
-Not lazy about: understanding the problem (read it fully and trace the real flow before picking a rung, a small diff you don't understand is just laziness dressed up as efficiency), input validation at trust boundaries, error handling that prevents data loss, security, accessibility, the calibration real hardware needs (the platform is never the spec ideal, a clock drifts, a sensor reads off), anything explicitly requested. Lazy code without its check is unfinished: non-trivial logic leaves ONE runnable check behind, the smallest thing that fails if the logic breaks (an assert-based demo/self-check or one small test file; no frameworks, no fixtures). Trivial one-liners need no test.
+- No abstractions that weren't explicitly requested.
+- No new dependency if it can be avoided.
+- No boilerplate nobody asked for.
+- Deletion over addition. Boring over clever. Fewest files possible.
+- Shortest working diff wins, but only once you understand the problem. The smallest change in the wrong place isn't lazy, it's a second bug.
+- Question complex requests: "Do you actually need X, or does Y cover it?"
+- Pick the edge-case-correct option when two stdlib approaches are the same size, lazy means less code, not the flimsier algorithm.
+- Mark deliberate simplifications that cut a real corner with a known ceiling (global lock, O(n²) scan, naive heuristic) with a ponytail: comment naming the ceiling and upgrade path.
+- Not lazy about: understanding the problem (read it fully and trace the real flow before picking a rung, a small diff you don't understand is just laziness dressed up as efficiency), input validation at trust boundaries, error handling that prevents data loss, security, accessibility, the calibration real hardware needs (the platform is never the spec ideal, a clock drifts, a sensor reads off), anything explicitly requested. Lazy code without its check is unfinished: non-trivial logic leaves ONE runnable check behind, the smallest thing that fails if the logic breaks (an assert-based demo/self-check or one small test file; no frameworks, no fixtures).
 
 (Yes, this file also applies to agents working on the ponytail repo itself. Especially to them.)
