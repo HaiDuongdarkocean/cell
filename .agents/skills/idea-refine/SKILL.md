@@ -19,7 +19,7 @@ This skill is primarily an interactive dialogue. Invoke it with an idea, and the
 
 ```bash
 # Optional: Initialize the ideas directory
-bash /mnt/skills/user/idea-refine/scripts/idea-refine.sh
+bash skills/idea-refine/scripts/idea-refine.sh
 ```
 
 **Trigger Phrases:**
@@ -29,7 +29,7 @@ bash /mnt/skills/user/idea-refine/scripts/idea-refine.sh
 
 ## Output
 
-The final output is a markdown one-pager saved to `docs/intent/idea-[idea-name].md` (naming convention: `idea-<name>.md`, after user confirmation), containing:
+The final output is a markdown one-pager saved to `docs/ideas/[idea-name].md` (after user confirmation), containing:
 - Problem Statement
 - Recommended Direction
 - Key Assumptions
@@ -137,7 +137,7 @@ Produce a concrete artifact — a markdown one-pager that moves work forward:
 
 **The "Not Doing" list is arguably the most valuable part.** Focus is about saying no to good ideas. Make the trade-offs explicit.
 
-Ask the user if they'd like to save this to `docs/intent/idea-[idea-name].md` (or a location of their choosing). Only save if they confirm.
+Ask the user if they'd like to save this to `docs/ideas/[idea-name].md` (or a location of their choosing). Only save if they confirm.
 
 ### Anti-patterns to Avoid
 
@@ -176,3 +176,11 @@ After completing an ideation session:
 - [ ] A "Not Doing" list makes trade-offs explicit
 - [ ] The output is a concrete artifact (markdown one-pager), not just conversation
 - [ ] The user confirmed the final direction before any implementation work
+
+
+---
+
+## Router boomerang
+
+Task đổi hoặc không rõ skill nào phù hợp? Invoke /using-agent-skills để re-route. Router protocol trong AGENTS.md (always-on).
+

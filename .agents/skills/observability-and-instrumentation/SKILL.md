@@ -201,3 +201,11 @@ After instrumenting a feature, confirm:
 - [ ] An induced failure in staging was located via telemetry alone, without reading the source
 
 For the at-a-glance version of this list, including the pre-launch instrumentation gate, see `references/observability-checklist.md`.
+
+
+---
+
+## Router boomerang
+
+Task đổi hoặc không rõ skill nào phù hợp? Invoke /using-agent-skills để re-route. Router protocol trong AGENTS.md (always-on).
+

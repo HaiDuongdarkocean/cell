@@ -9,6 +9,13 @@ description: Discovers and invokes agent skills. Use when starting a session or 
 
 Agent Skills is a collection of engineering workflow skills organized by development phase. Each skill encodes a specific process that senior engineers follow. This meta-skill helps you discover and apply the right skill for your current task.
 
+## Router Protocol (Cell-specific)
+
+Skill này là **router** — entry point duy nhất để chọn skill:
+
+- **Khi task đổi** (nhận task mới, chuyển pha SDLC, gặp vấn đề mới): invoke lại `/using-agent-skills` để re-route.
+- **Khi không rõ skill nào**: invoke `/using-agent-skills` — không đoán.
+
 ## Skill Discovery
 
 When a task arrives, identify the development phase and apply the corresponding skill:
@@ -27,12 +34,8 @@ Task arrives
     │   ├── Need doc-verified code? ───→ source-driven-development
     │   └── Stakes high / unfamiliar code? ──→ doubt-driven-development
     ├── Writing/running tests? ────────→ test-driven-development
-    │   └── Browser-facing? ──────────→ extension-browser-debugging
-    │       (Chrome/Edge MV3 extension: install, inspect, measure, verify)
+    │   └── Browser-based? ───────────→ browser-testing-with-devtools
     ├── Something broke? ──────────────→ debugging-and-error-recovery
-    │   (single entry point — auto-invokes extension-browser-debugging
-    │    when bug is browser-facing; sub-skill also callable directly
-    │    for pure browser tasks: install/reload extension, inspect DOM)
     ├── Reviewing code? ───────────────→ code-review-and-quality
     │   ├── Too complex? ─────────────→ code-simplification
     │   ├── Security concerns? ───────→ security-and-hardening
@@ -114,6 +117,8 @@ Your job is surgical precision, not unsolicited renovation.
 
 Every skill includes a verification step. A task is not complete until verification passes. "Seems right" is never sufficient — there must be evidence (passing tests, build output, runtime data).
 
+Per-skill verification is the local check. The project-wide bar that applies to *every* change, regardless of which skill is active, is the Definition of Done: tests pass, no regressions, behavior verified at runtime, docs updated. See `references/definition-of-done.md`. It complements each task's acceptance criteria rather than replacing them.
+
 ## Failure Modes to Avoid
 
 These are the subtle errors that look like productivity but create problems:
@@ -179,7 +184,7 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Build | frontend-ui-engineering | Production-quality UI with accessibility |
 | Build | api-and-interface-design | Stable interfaces with clear contracts |
 | Verify | test-driven-development | Failing test first, then make it pass |
-| Verify | extension-browser-debugging | Chrome/Edge MV3 extension debugging + testing via DevTools MCP |
+| Verify | browser-testing-with-devtools | Chrome DevTools MCP for runtime verification |
 | Verify | debugging-and-error-recovery | Reproduce → localize → fix → guard |
 | Review | code-review-and-quality | Five-axis review with quality gates |
 | Review | code-simplification | Preserve behavior while reducing unnecessary complexity |

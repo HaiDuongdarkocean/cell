@@ -110,32 +110,6 @@ Yes / no / refine?
 
 Including "Out of scope" is non-negotiable. Half of misalignment is silent disagreement about what is *not* being built.
 
-**UI surface check — append mockup offer to the restate.** Before sending the restate, scan the confirmed intent for ANY UI surface. If the intent touches UI, the next step is `design-driven-development` (mockup before spec), not `spec-driven-development` directly.
-
-**UI surface = any of:** popup, sidepanel, content-script overlay/DOM injection, settings panel, options page, modal, toast, badge, context menu item with visible text, or any visual element the user sees.
-
-**Pure background logic** (service worker handlers, storage migration, message bus, transmuxing pipeline, offline cache) = NO UI surface → do not append the mockup line, go straight to `spec-driven-development` after confirmation.
-
-If UI surface is present, append one line to the restate so the mockup decision is made *together with* the intent confirmation, not as a separate gate:
-
-```
-Here's what I now think you want:
-
-- Outcome:      <one line>
-- User:         <one line — who benefits>
-- Why now:      <one line — what changed>
-- Success:      <one line — how we know it worked>
-- Constraint:   <one line — the binding limit>
-- Out of scope: <one line — what we're explicitly not doing>
-- Mockup:       <"yes — tạo mockup trước spec" | "no — thẳng spec, UI dùng component có sẵn">
-
-Yes / no / refine ?
-```
-
-The `Mockup:` line carries your best guess (the option you expect the user to pick, with reasoning from the interview). The user confirms or flips it in the same pass as the rest of the restate — no separate round-trip.
-
-Do not skip the `Mockup:` line even if you're confident the user will say no. The point is the user makes the call, not the agent. A skipped offer is an unrecorded decision.
-
 ### Step 5: Confirm — explicit yes, not "whatever you think"
 
 The gate is an explicit "yes." The following are **not** yes:
@@ -145,7 +119,7 @@ The gate is an explicit "yes." The following are **not** yes:
 - "Sure, let's go." → Often a polite exit, not an endorsement. Same follow-up.
 - Silence followed by "okay let's start." → The user has given up on the interview, not converged. Stop and ask whether you've missed something.
 
-If they correct you, fold the correction in and restate. Loop until you get an explicit yes — including the `Mockup:` line if present. The mockup decision is part of the confirmation, not a separate yes.
+If they correct you, fold the correction in and restate. Loop until you get an explicit yes.
 
 ### The 95% Confidence Stop
 
@@ -161,9 +135,7 @@ This is a checkable test, not a vibe. It also has a floor: if you've gone severa
 
 The output of this skill is a **confirmed statement of intent**: the restate from Step 4, with an explicit yes from Step 5. That's the deliverable. Specs, plans, and task lists are downstream; they consume the intent this skill produces.
 
-If the user wants the intent to persist (a multi-session project, a handoff to another collaborator), offer to save it to `docs/intent/intent-[topic].md` (naming convention: `intent-<name>.md`). Only save if they confirm.
-
-If the restate included a `Mockup:` line, record the user's decision in the intent doc (e.g. "Next: mockup via design-driven-development" if yes, or "Mockup offered, declined — straight to spec" if no) so the handoff is explicit, not implicit.
+If the user wants the intent to persist (a multi-session project, a handoff to another collaborator), offer to save it to `docs/intent/[topic].md`. Only save if they confirm.
 
 ## Example
 
@@ -208,8 +180,7 @@ Two questions in, the agent has discovered the actual ask isn't "a dashboard." I
 ## Interaction with Other Skills
 
 - **`idea-refine`**: downstream. If the confirmed intent is "I want X but I don't know how to scope it," hand off to `idea-refine` to generate variations against the now-explicit intent.
-- **`design-driven-development`**: downstream of the Step 4 mockup decision. When the confirmed intent has a UI surface AND the user picked "yes" on the `Mockup:` line, hand off to `design-driven-development` to produce a mockup before the spec. The mockup is then cited by the spec.
-- **`spec-driven-development`**: downstream. If the confirmed intent is concrete ("I want X for Y users with Z success criteria"), hand off to `spec-driven-development` to write it down. If a mockup was produced, the spec cites it.
+- **`spec-driven-development`**: downstream. If the confirmed intent is concrete ("I want X for Y users with Z success criteria"), hand off to `spec-driven-development` to write it down.
 - **`planning-and-task-breakdown`**: two hops downstream of this skill (after the spec).
 - **`doubt-driven-development`**: opposite end of the timeline. Interview-me is pre-decision intent extraction; doubt-driven is post-decision artifact review. Both catch divergence, but at different moments.
 - **`source-driven-development`**: orthogonal. Interview-me clarifies what the user wants; SDD verifies framework facts. They don't compete.
@@ -251,5 +222,12 @@ After applying interview-me:
 - [ ] A concrete restate (Outcome / User / Why now / Success / Constraint / Out of scope) was written back to the user
 - [ ] The user confirmed the restate with an explicit yes (not "whatever you think," not "sounds good," not silence)
 - [ ] At the stop point, the agent could predict reactions to the next three questions it would ask
-- [ ] If the confirmed intent has any UI surface, the restate included a `Mockup:` line and the user's yes/no decision was recorded — not silently skipped
 - [ ] Any handoff to a downstream skill (`idea-refine`, `spec-driven-development`) was framed in terms of the confirmed intent, not the original underspecified ask
+
+
+---
+
+## Router boomerang
+
+Task đổi hoặc không rõ skill nào phù hợp? Invoke /using-agent-skills để re-route. Router protocol trong AGENTS.md (always-on).
+

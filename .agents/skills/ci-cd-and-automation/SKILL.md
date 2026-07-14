@@ -388,3 +388,11 @@ After setting up or modifying CI:
 - [ ] Secrets are stored in the secrets manager, not in code
 - [ ] Deployment has a rollback mechanism
 - [ ] Pipeline runs in under 10 minutes for the test suite
+
+
+---
+
+## Router boomerang
+
+Task đổi hoặc không rõ skill nào phù hợp? Invoke /using-agent-skills để re-route. Router protocol trong AGENTS.md (always-on).
+
