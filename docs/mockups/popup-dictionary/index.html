@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Popup Dictionary + Card Creator — Mockup</title>
+  <link rel="stylesheet" href="tokens.css" />
+  <link rel="stylesheet" href="base.css" />
+  <link rel="stylesheet" href="popup.css" />
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="creator.css" /></head>
+<body>
+  <!-- === Dev bar (prototype only) === -->
+  <div class="dev-bar">
+    <div class="dev-bar__group">
+      <span class="dev-bar__label">View</span>
+      <button class="dev-bar__btn js-view is-active" data-view="popup">Popup</button>
+      <button class="dev-bar__btn js-view" data-view="creator">Card Creator</button>
+    </div>
+    <div class="dev-bar__group">
+      <span class="dev-bar__label">Fixture</span>
+      <button class="dev-bar__btn js-fixture is-active" data-fixture="hello">hello (EN)</button>
+      <button class="dev-bar__btn js-fixture" data-fixture="xihuan">喜欢 (ZH)</button>
+      <button class="dev-bar__btn js-fixture" data-fixture="notFound">xyzabc (not found)</button>
+    </div>
+    <div class="dev-bar__group">
+      <span class="dev-bar__label">Theme</span>
+      <button class="dev-bar__btn js-theme is-active" data-theme="dark">Dark</button>
+      <button class="dev-bar__btn js-theme" data-theme="light">Light</button>
+    </div>
+    <div class="dev-bar__group">
+      <span class="dev-bar__label">Preview</span>
+      <button class="dev-bar__btn js-preview is-active" data-preview="desktop">Desktop</button>
+      <button class="dev-bar__btn js-preview" data-preview="tablet">Tablet</button>
+      <button class="dev-bar__btn js-preview" data-preview="mobile">Mobile</button>
+    </div>
+  </div>
+
+  <!-- === Context area (fake subtitle/web text) === -->
+  <div class="context">
+    <div class="context__scene">
+      <div class="context__subtitle">
+        <span class="context__line">
+          I heard someone say <span class="token is-active" data-fixture="hello">hello</span> from the other room.
+        </span>
+        <span class="context__line context__line--native">
+          Tôi nghe thấy ai đó nói xin chào từ phòng bên.
+        </span>
+      </div>
+    </div>
+    <div class="context__scene">
+      <div class="context__subtitle">
+        <span class="context__line">
+          我很<span class="token" data-fixture="xihuan">喜欢</span>你
+        </span>
+        <span class="context__line context__line--native">
+          Tôi rất thích bạn
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- === Mount point (popup or creator workspace) === -->
+  <div id="frame" class="preview-frame preview-frame--desktop">
+    <div id="mount"></div>
+  </div>
+
+  <!-- === Toast === -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- === Scripts (ES modules) === -->
+  <script type="module" src="app.js?v=13"></script>
+</body>
+</html>
