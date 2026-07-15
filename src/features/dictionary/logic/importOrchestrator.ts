@@ -13,6 +13,8 @@ import { resolveFormat, createStrategy } from '../strategies/strategyFactory';
 import {
   DuplicateFileError,
   RollbackError,
+  QuotaExceededError,
+  isImportError,
 } from '../logic/importErrors';
 import {
   addResource,
@@ -104,6 +106,10 @@ export async function importFile(
   } catch (error) {
     // 11. Rollback on any error
     await rollbackImport(langCode, resourceId);
+    // Wrap IDB quota errors (spec §10 failure path: "Bộ nhớ đầy — xóa resource cũ")
+    if (!isImportError(error) && isQuotaExceeded(error)) {
+      throw new QuotaExceededError(error);
+    }
     throw error;
   }
 }
@@ -118,6 +124,16 @@ export async function rollbackImport(langCode: string, resourceId: number): Prom
   } catch (rollbackErr) {
     throw new RollbackError(resourceId, rollbackErr);
   }
+}
+
+/** Check if an error is an IDB/DOM QuotaExceededError (spec §10 failure path). */
+function isQuotaExceeded(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'QuotaExceededError') return true;
+  if (err instanceof Error) {
+    const lower = err.message.toLowerCase();
+    return lower.includes('quota') || lower.includes('storage') || lower.includes('full');
+  }
+  return false;
 }
 
 /** Delete a resource + cascade entries (user-initiated delete, not rollback). */

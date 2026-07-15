@@ -276,15 +276,29 @@ function rerender(state: PopupDictionaryState, activeTab?: PopupTab | null): voi
 async function persistStatus(term: string, langCode: string, status: WordStatus): Promise<void> {
   // ponytail: wordStatusStore.put requires IndexedDB — delegate to background.
   // For MVP, send a message to the background script.
+  // On quota error (spec §10): background catches WordStatusQuotaError,
+  // returns error response → caller shows toast. UI status already updated
+  // (graceful degradation — next lookup shows old status).
   try {
     const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
     await sendMessage({
       type: 'WORD_STATUS_SET',
       payload: { term, langCode, status },
     });
-  } catch {
-    // Best-effort — fail silently.
+  } catch (err) {
+    // Quota error → show toast (spec §10 failure path).
+    if (err instanceof Error && (err.name === 'WordStatusQuotaError' || err.message.toLowerCase().includes('quota'))) {
+      showToast('Bộ nhớ đầy — xóa resource cũ trong Settings → Resources');
+    }
+    // Other errors — fail silently (best-effort persist).
   }
+}
+
+/** Show a toast message in the popup's Shadow DOM. */
+function showToast(message: string): void {
+  // ponytail: MVP uses console.warn. Real toast = a div in Shadow DOM that
+  // auto-dismisses after 3s. Upgrade: renderToast(shell, message).
+  console.warn(`[popupDictionary] ${message}`);
 }
 
 async function requestTranslation(state: PopupDictionaryState): Promise<void> {

@@ -4,6 +4,8 @@
 // Keyed by term (unique). The popup footer cycles status on click.
 //
 // Storage: langWordStatus store, keyPath 'term', index by_status.
+// Quota exceeded (spec §10 failure path): graceful — status not saved,
+// caller shows toast, lookup still works with existing data.
 
 import { getDB, getStore, awaitTx, STORES } from '@/features/dictionary/repositories/baseRepository';
 import type { WordStatus } from '../types';
@@ -16,6 +18,24 @@ export interface WordStatusEntry {
   readonly status: WordStatus;
   /** Last updated timestamp (ms). */
   readonly updatedAt: number;
+}
+
+/** Error thrown when IndexedDB quota is exceeded. */
+export class WordStatusQuotaError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WordStatusQuotaError';
+  }
+}
+
+/** Check if an error is a QuotaExceededError (IDB or DOM). */
+function isQuotaError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'QuotaExceededError') return true;
+  if (err instanceof Error) {
+    const lower = err.message.toLowerCase();
+    return lower.includes('quota') || lower.includes('storage') || lower.includes('full');
+  }
+  return false;
 }
 
 /** The 4-status cycle order (spec §D1). */
@@ -71,16 +91,33 @@ export async function getWordStatuses(
   return result;
 }
 
-/** Set the status for a term (upsert). */
+/**
+ * Set the status for a term (upsert).
+ * Throws WordStatusQuotaError on IDB quota exceeded (spec §10 failure path).
+ * Caller should catch + show toast "Bộ nhớ đầy — xóa resource cũ".
+ * Lookup still works with existing data — graceful degradation.
+ */
 export async function setWordStatus(langCode: string, term: string, status: WordStatus): Promise<void> {
-  const db = await getDB(langCode);
-  const store = getStore(db, STORES.WORD_STATUS);
-  const entry: WordStatusEntry = { term, status, updatedAt: Date.now() };
-  store.put(entry);
-  await awaitTx(store.transaction!);
+  try {
+    const db = await getDB(langCode);
+    const store = getStore(db, STORES.WORD_STATUS);
+    const entry: WordStatusEntry = { term, status, updatedAt: Date.now() };
+    store.put(entry);
+    await awaitTx(store.transaction!);
+  } catch (err) {
+    if (isQuotaError(err)) {
+      throw new WordStatusQuotaError('Bộ nhớ đầy — xóa resource cũ trong Settings → Resources');
+    }
+    throw err;
+  }
 }
 
-/** Cycle the status for a term: get current → next → set. */
+/**
+ * Cycle the status for a term: get current → next → set.
+ * On quota error: returns the next status (UI updates) but throws
+ * WordStatusQuotaError so caller can show toast. The status is not
+ * persisted — next lookup will show the old status. Graceful degradation.
+ */
 export async function cycleWordStatus(langCode: string, term: string): Promise<WordStatus> {
   const current = await getWordStatus(langCode, term);
   const next = nextStatus(current);

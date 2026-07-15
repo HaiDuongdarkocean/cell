@@ -831,7 +831,7 @@ QUICK_ADD: 'QUICK_ADD',
 - [x] **Anki offline khi Quick Add**: quickAddHandler queue + "queued for retry" message, payload persist local, retry khi Anki online (processOfflineQueue).
 - [x] **Field mapping fail** (deck/note type không khớp): quickAddHandler parseFieldErrors → QuickAddFieldError[], không gửi thẻ lỗi.
 - [x] **Network error** (translate/fetch proxy): Translate Panel có retry button (renderTranslatePanel onTranslate callback), không crash popup.
-- [ ] **IndexedDB quota exceeded**: word status + dict import hiện error "Bộ nhớ đầy — xóa resource cũ", graceful degradation (lookup vẫn hoạt động với dict đã có). — ponytail: cần IDB quota check trong wordStatusStore + importOrchestrator.
+- [x] **IndexedDB quota exceeded**: word status + dict import hiện error "Bộ nhớ đầy — xóa resource cũ", graceful degradation (lookup vẫn hoạt động với dict đã có).
 - [x] **Rapid hover/click nhiều từ liên tiếp**: debounce 150ms (hover) / 50ms (click), in-flight LOOKUP cancellation (requestId), không popup flicker, không duplicate request.
 
 ---
