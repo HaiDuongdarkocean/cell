@@ -100,6 +100,8 @@ src/features/dictionaryPopup/         ← MỚI (core feature)
     phraseTemplateParser.fixture.test.ts ← compile all normalized Cambridge multiword terms
     phraseIndexCompiler.ts             ← ADR-037 §7: anchor inverted index + compact binary blob
     phraseIndexCompiler.test.ts        ← anchor selection + serialize/deserialize round-trip + fixture budget
+    phraseMatcher.ts                   ← ADR-037 §8-9: bounded DP matcher + deterministic ranking
+    phraseMatcher.test.ts              ← P01-P33 positive + N01-N12 negative + ranking tests
     priorityResolver.ts                ← "Top item" priority per-language (audio accent, image, translate, definition order)
     priorityResolver.test.ts
   plugins/

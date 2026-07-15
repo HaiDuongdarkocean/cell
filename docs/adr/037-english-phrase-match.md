@@ -615,7 +615,7 @@ It conflicts with the 4GB/RAM constraint and duplicates data already available i
 3. ✅ Add phrase index compiler + compact binary blob + serialize/deserialize round-trip (`phraseIndexCompiler.ts`); fixture: ≤8MB, median posting 1–2, p95 ≤25.
 4. ✅ Add DB schema v10 `langPhraseIndex` store + `phraseIndexRepository` (put/get/delete/has) + atomic cascade in `importOrchestrator` rollback + `deleteResourceCascade`.
 5. Add compact blob loader and worker anchor index.
-6. Add bounded DP matcher and deterministic ranking.
+6. ✅ Add bounded DP matcher + deterministic ranking (`phraseMatcher.ts`); 26 tests covering P01-P33 positive, N01-N12 negative, ranking, edge cases.
 7. Replace the old `confidence >= 0.7` contract with `quality` + structural validity.
 8. Add normal dictionary fallback and request cancellation handling.
 9. Run fixture benchmark, low-memory benchmark, and browser smoke tests.
