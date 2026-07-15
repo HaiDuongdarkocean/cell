@@ -23,7 +23,7 @@
 ## Tổng quan folder
 
 ```
-docs/mockups/design-system-showcase/
+docs/design-system/design-system-showcase/
 ├── showcase.html       # Visual reference — human xem (dark/light, interactive, 36 component + đủ states)
 ├── showcase.css        # CSS cho showcase (link cùng folder, file:// chạy được)
 ├── design-system.md    # AI source of truth — YAML frontmatter (tokens + component registry) + Markdown (usage rules)

@@ -34,7 +34,7 @@ After `/interview-me` has reached ≥95% confidence on **what** to build and **w
 
 Before building, the AI must have:
 1. **Intent** — from `/interview-me` output (what features, for whom, why)
-2. **Design system** — `docs/mockups/design-system-showcase/design-system.md` (tokens + components)
+2. **Design system** — `docs/design-system/design-system-showcase/design-system.md` (tokens + components)
 3. **Reference** (optional) — image, sketch, or existing screen to match
 
 ## The Process — 2 Steps

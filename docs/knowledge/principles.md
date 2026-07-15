@@ -629,3 +629,33 @@ Khác với principle "Extension SW lacks page context → MAIN world fetch": đ
 - Any extension fetch bị 403 dù set headers đúng — kiểm tra xem header có phải forbidden
 - `fetch()` từ service worker hoặc offscreen document cần set `Referer`/`Cookie`/`User-Agent`
 - Alternative: route fetch qua content script trong iframe (browser set Referer tự) — phức tạp hơn, cần frame routing
+
+## Host page CSS overrides unstyled properties on injected elements
+
+### Nguyên lý
+
+Content-script injected elements live in host page DOM — host CSS cascade applies to ANY property not explicitly set in inline style. Generic host rules like `button { padding: 1px 6px }` hoặc `svg { fill: white }` silently override defaults. Two defenses: (1) explicit reset on every property affecting sizing/visibility (`padding: 0`, `box-sizing: border-box`, `margin: 0`), (2) `!important` on critical visual properties (`fill: none`, `width/height` percentage). Bug invisible trên site A (YouTube) vì CSS không có generic rule, visible trên site B (themoviebox) vì có — testing trên multiple hosts là bắt buộc để catch host-CSS collisions.
+
+### Cases đã gặp
+- [host-css-overrides-injected-buttons.md](host-css-overrides-injected-buttons.md) — 3 overlay icon buttons (panel toggle, manager, upload) rendered at ~50% size trên themoviebox vì `button { padding: 1px 6px }` shrank content-box. SVG `fill="none"` bị override thành white fill → invisible on light backgrounds. Fix: `padding: 0; box-sizing: border-box` + `fill:none !important` inline.
+
+### Apply cho
+- Content-script injects `<button>`, `<svg>`, `<div>` vào host page DOM
+- Overlay UI trên video player (Netflix, YouTube, themoviebox, aniwatch)
+- Any extension injects elements vào third-party site — luôn explicit reset + `!important` trên critical properties
+- Shadow DOM alternative: Shadow DOM isolates host CSS, nhưng không phải lúc nào cũng feasible (z-index, fullscreen)
+
+## Percentage sizing calculates against content-box, not border-box
+
+### Nguyên lý
+
+Percentage `width`/`height` trên child resolves against parent's **content-box**, không phải border-box. Nếu parent có padding (đặc biệt horizontal padding như `1px 6px`), percentage children shrink unexpectedly — 12px padding trên 25px button cắt SVG gần một nửa (65% của 10.94px = 7.11px thay vì 65% của 25px = 16.25px). Invisible khi parent `padding: 0` (cluster buttons CSS class), visible khi parent không set padding (overlay buttons inline style). Always set `padding: 0` explicitly trên percentage-sized containers, hoặc dùng absolute units cho child.
+
+### Cases đã gặp
+- [percentage-sizing-content-box-vs-border-box.md](percentage-sizing-content-box-vs-border-box.md) — SVG `width: 65%` inside 25px button rendered at 7.66px thay vì 16.25px. Root cause: button `padding: 1px 6px` (host CSS) + `box-sizing: border-box` → content-box = 10.94px → 65% = 7.11px. Fix: `padding: 0; box-sizing: border-box` → content-box = 22.94px → 65% = 14.9px (matches cluster).
+
+### Apply cho
+- Percentage-sized children inside padded containers (SVG icons, flex items, grid items)
+- Flex layout với `box-sizing: border-box` + padding — percentage children resolve against content-box
+- Any `width: X%` / `height: X%` element inside a container có non-zero padding
+- Alternative: dùng `calc(var(--btn-size) * 0.65)` (absolute) thay vì `65%` (relative) để tránh content-box dependency

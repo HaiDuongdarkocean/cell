@@ -2,7 +2,7 @@
    app.js — state wiring, token clicks, dev controls, shortcuts
    ============================================================ */
 
-import { createPopupState, rerenderPopup } from './popup.js?v=12';
+import { createPopupState, rerenderPopup } from './popup.js?v=15';
 import { createCreatorState, renderWorkspace, renderSettingsDialog } from './creator.js?v=12';
 import { FIXTURES } from './fixtures.js?v=12';
 

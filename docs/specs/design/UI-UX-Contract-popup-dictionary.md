@@ -31,7 +31,7 @@ design_system:
   deviations: []   # full compliance, no new tokens
 
 # 4b. Component mapping to design-system.md (AI MUST use this)
-# Every UI piece below maps to a component in docs/mockups/design-system-showcase/design-system.md.
+# Every UI piece below maps to a component in docs/design-system/design-system-showcase/design-system.md.
 # Do NOT invent class names or tokens; query the YAML/Markdown for the mapped component.
 component_map:
   - { contract_section: "Header target + reading",     ds_component_id: "input",        ds_section: "## 3. Input / Textarea / Search", css_class: "popup__word / popup__reading", notes: "Text blocks styled with design tokens, not interactive input" }
@@ -263,7 +263,7 @@ a11y:
   reduced_motion: "respect prefers-reduced-motion — tắt panel toggle animation, chỉ opacity"
 
 # 14. mockup
-mockup: { file: mockups/popup-dictionary.html, status: pending }
+mockup: { file: mockups/popup-dictionary/index.html, status: built }
 
 # 15. definition of done
 dod:

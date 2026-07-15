@@ -13,7 +13,7 @@ Tài liệu này giao việc cho agent UI/design tạo **prototype tương tác 
 
 ### Prototype đã build
 
-Folder prototype tương tác: `docs/mockups/dictionary-popup-prototype/` (mở `index.html` trong browser, không cần build). Đã tách module để reuse và dễ bảo trì:
+Folder prototype tương tác: `docs/mockups/popup-dictionary/` (mở `index.html` trong browser, không cần build). Đã tách module để reuse và dễ bảo trì:
 
 - `index.html` — shell + SVG icon sprite + context area + popup + creator + settings dialog.
 - `styles.css` — theme tokens (dark/light), layout, components, responsive.
@@ -624,7 +624,7 @@ Required fixtures:
 
 The design agent should return:
 
-1. Interactive prototype implemented as modular HTML/CSS/JS files in `docs/mockups/dictionary-popup-prototype/` so components can be reused across future prototypes.
+1. Interactive prototype implemented as modular HTML/CSS/JS files in `docs/mockups/popup-dictionary/` so components can be reused across future prototypes.
 2. A short screen/state map: each state, entry action, exit action.
 3. A list of unresolved UX decisions discovered while prototyping.
 4. A list of missing production dependencies/logic, separated from UI gaps.

@@ -3,8 +3,8 @@
 > **AI Agent Task Contract**. Implementer MUST follow this contract verbatim for Card Creator layout.
 > **Reference image**: `docs/mockups/popup-dictionary/reference-card-creator.png` (the right panel of the two-pane workspace).
 > **Parent spec**: `docs/specs/design/UI-UX-Contract-popup-dictionary.md` (read for popup-dictionary behavior + intent).
-> **Design system**: `docs/mockups/design-system-showcase/design-system.md` (token + component source of truth).
-> **Agent guide**: `docs/mockups/design-system-showcase/agent.md` (how to query design-system.md).
+> **Design system**: `docs/design-system/design-system-showcase/design-system.md` (token + component source of truth).
+> **Agent guide**: `docs/design-system/design-system-showcase/agent.md` (how to query design-system.md).
 
 ---
 
@@ -347,7 +347,7 @@ AT20:
 ## 10. AI implementation order
 
 1. Read this contract.
-2. Read `docs/mockups/design-system-showcase/design-system.md` for token/component rules.
+2. Read `docs/design-system/design-system-showcase/design-system.md` for token/component rules.
 3. Read `docs/mockups/popup-dictionary/creator.js` and `creator.css` to see current state.
 4. Rewrite `creator.js` top-down: header → subheader → preview → field cards → footer.
 5. Rewrite `creator.css` to match Section 4 mapping.

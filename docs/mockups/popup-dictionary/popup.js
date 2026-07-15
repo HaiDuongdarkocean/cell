@@ -54,41 +54,23 @@ function renderHeader(fixture, state, callbacks) {
   const header = document.createElement('div');
   header.className = 'popup__header';
 
+  // Contract html_skeleton: header-meta (target + reading + badges) + actions
+  const meta = document.createElement('div');
+  meta.className = 'popup__header-meta';
+
   const target = document.createElement('div');
   target.className = 'popup__target';
-
   const word = document.createElement('h2');
   word.className = 'popup__word';
   word.textContent = fixture.target;
   target.appendChild(word);
-
-  const actions = document.createElement('div');
-  actions.className = 'popup__actions';
-  const settingsBtn = iconBtn('settings', 'Settings (edit mode)');
-  settingsBtn.setAttribute('data-action', 'settings');
-  if (state.editMode) settingsBtn.classList.add('is-active');
-  settingsBtn.addEventListener('click', () => callbacks.onToggleEdit?.());
-  actions.appendChild(settingsBtn);
-
-  const cardBtn = iconBtn('sendToCreator', 'Send to Card Creator');
-  cardBtn.setAttribute('data-action', 'send-to-creator');
-  cardBtn.addEventListener('click', () => callbacks.onSendToCreator?.());
-  actions.appendChild(cardBtn);
-
-  const addBtn = iconBtn('quickAdd', 'Quick Add');
-  addBtn.setAttribute('data-action', 'quick-add');
-  addBtn.classList.add('popup__quick-add');
-  addBtn.addEventListener('click', () => callbacks.onQuickAdd?.());
-  actions.appendChild(addBtn);
-
-  target.appendChild(actions);
-  header.appendChild(target);
+  meta.appendChild(target);
 
   if (fixture.reading) {
     const reading = document.createElement('p');
     reading.className = 'popup__reading';
     reading.textContent = fixture.reading;
-    header.appendChild(reading);
+    meta.appendChild(reading);
   }
 
   const badges = document.createElement('div');
@@ -110,7 +92,29 @@ function renderHeader(fixture, state, callbacks) {
     badges.appendChild(freq);
   }
 
-  header.appendChild(badges);
+  meta.appendChild(badges);
+  header.appendChild(meta);
+
+  const actions = document.createElement('div');
+  actions.className = 'popup__actions';
+  const settingsBtn = iconBtn('settings', 'Settings (edit mode)');
+  settingsBtn.setAttribute('data-action', 'settings');
+  if (state.editMode) settingsBtn.classList.add('is-active');
+  settingsBtn.addEventListener('click', () => callbacks.onToggleEdit?.());
+  actions.appendChild(settingsBtn);
+
+  const cardBtn = iconBtn('sendToCreator', 'Send to Card Creator');
+  cardBtn.setAttribute('data-action', 'send-to-creator');
+  cardBtn.addEventListener('click', () => callbacks.onSendToCreator?.());
+  actions.appendChild(cardBtn);
+
+  const addBtn = iconBtn('quickAdd', 'Quick Add');
+  addBtn.setAttribute('data-action', 'quick-add');
+  addBtn.classList.add('popup__quick-add');
+  addBtn.addEventListener('click', () => callbacks.onQuickAdd?.());
+  actions.appendChild(addBtn);
+
+  header.appendChild(actions);
   return header;
 }
 
@@ -154,11 +158,6 @@ function renderBody(fixture, state, callbacks) {
 function renderPanel(fixture, state, callbacks) {
   const panel = document.createElement('div');
   panel.className = 'panel';
-
-  const header = document.createElement('div');
-  header.className = 'panel__header';
-  header.textContent = PANEL_LABELS[state.activePanel];
-  panel.appendChild(header);
 
   const body = document.createElement('div');
   body.className = 'panel__body';
@@ -423,15 +422,26 @@ function renderDefinitions(fixture, state, callbacks) {
   fixture.definitions.forEach((d) => {
     const item = document.createElement('div');
     item.className = 'def-item';
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.className = 'checkbox def-item__checkbox';
-    cb.checked = state.selectedDefs.has(d.id);
-    cb.addEventListener('change', () => {
+    item.setAttribute('role', 'checkbox');
+    item.setAttribute('aria-checked', String(state.selectedDefs.has(d.id)));
+    item.setAttribute('tabindex', '0');
+    if (state.selectedDefs.has(d.id)) item.classList.add('is-selected');
+
+    // Tap-to-select: toggle on click (skip if user is selecting text)
+    item.addEventListener('click', () => {
+      if (!window.getSelection().isCollapsed) return;
       if (state.selectedDefs.has(d.id)) state.selectedDefs.delete(d.id);
       else state.selectedDefs.add(d.id);
+      item.classList.toggle('is-selected');
+      item.setAttribute('aria-checked', String(state.selectedDefs.has(d.id)));
     });
-    item.appendChild(cb);
+    // Keyboard a11y: Space/Enter toggle
+    item.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        item.click();
+      }
+    });
 
     const body = document.createElement('div');
     body.className = 'def-item__body';
@@ -494,20 +504,6 @@ function renderEmpty(title, desc, actionText, onAction) {
 function renderFooter(fixture, state, callbacks) {
   const footer = document.createElement('div');
   footer.className = 'popup__footer';
-
-  const statusDropdown = createDropdown({
-    ariaLabel: 'Word status',
-    options: STATUS_CYCLE.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
-    value: state.status,
-    onChange: (v) => { state.status = v; callbacks.onStatusChange?.(v); },
-    width: '140px',
-  });
-  footer.appendChild(statusDropdown);
-
-  const resize = iconBtn('resize', 'Resize popup');
-  resize.className = 'icon-btn popup__resize';
-  footer.appendChild(resize);
-
   return footer;
 }
 

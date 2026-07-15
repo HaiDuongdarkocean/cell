@@ -28,7 +28,7 @@ src/
 │   ├── subtitle/       #   Subtitle overlay/sync/merge/bilingual (logic/ui/service)
 │   │   └── ui/contentScriptController.ts  # M20: subtitle UI orchestration (init → returns cleanup for SPA episode-switch re-init) — ADR-025: wires SubtitleBlockController; ADR-019: wires OffsetController + offset keyboard shortcuts; ADR-027: generate-native subtitle (manual translate active target → native, virtual panel slot)
 │   │       └── ui/subtitleBlock*.ts  # ADR-025: subtitleBlockController + subtitleBlockDom + subtitleBlockDrag + subtitleBlockScale + subtitleBlockCss (unified draggable block: target overlay + native overlay + nav cluster merged into single block); ADR-027: subtitleBlockDom adds generate-native button, subtitleBlockController exposes setGenerateNativeEnabled / onGenerateNative callback
-│   │       └── ui/subtitleManagerPanel.ts  # ADR-015: unified subtitle manager panel (auto + imported + translated virtual entry) — createSubtitleManagerPanel, updateTarget, updateNative, destroy
+│   │       └── ui/subtitleManagerPanel.ts  # ADR-015: unified subtitle manager panel (auto + imported + translated virtual entry) — createSubtitleManagerPanel, updateTarget, updateNative, destroy; overlay icon is host-CSS-resistant and active state changes SVG color only
 │   │       └── ui/navCluster*.ts  # ADR-018: navClusterActions + navClusterButton + navClusterKeyboard + navClusterIcons + navClusterCss (navClusterController + navClusterDom DELETED ADR-025 — merged into subtitleBlock*)
 │   │       └── ui/offsetController.ts  # ADR-019: OffsetController class — wires subtitleOffsetSection (nested trong manager panel) + subtitleOffsetBadge (floating) + lazy/committed state + wall-clock auto-commit (timeupdate + visibilitychange, no setTimeout) + persist per-URL
 │   │       └── ui/subtitleOffsetPanel.ts  # ADR-019: offset section DOM factory (collapsible section trong manager panel, 4 states: disabled/default/lazy-active/committed, 4 steppers ±0.5/±2s, input + apply + reset)
@@ -130,7 +130,7 @@ src/
 │   ├── subtitleSync.ts            # Binary search O(log n): findCurrentLine(cues, currentTime) → index
 │   ├── subtitleUI.ts              # Overlay UI: createOverlay (appended to video-wrapper), createDragHint (appended to video-wrapper), showToast (appended to video-wrapper), updateOverlayText, updateOverlayBilingual, hideOverlay, removeOverlay — **planned ADR-013**: refactor createOverlay → createOverlayLayer(role, config) 2 div độc lập + applyStyle + buildTextShadow + sanitizeFontFamily + hexToRgba
 │   ├── subtitleDragDrop.ts        # File read + parse: readFileAsText, handleFileDrop (drag-drop handler)
-│   ├── subtitleImport.ts          # Import button: createImportButton (appended to video parent, top-left, avoids toggle overlap), handleFileSelect (file picker)
+│   ├── subtitleImport.ts          # Import button: createImportButton (appended to video parent, top-left, host-CSS-resistant crisp SVG), handleFileSelect (file picker)
 │   ├── subtitleOverlay.ts         # Orchestrator: SubtitleOverlayController (sync → overlay wiring; init receives video parent; loadBilingualCues: 2 binary searches runtime align) — **ADR-013**: 2 ref targetOverlay + nativeOverlay, onTimeUpdate 2 updateOverlayText — **planned ADR-014**: loadBilingualCues merge (bug A fix, giữ cues cũ khi side mới rỗng)
 │   ├── subtitleDragPosition.ts    # calcYOffsetPercent (pure, clamp 0-95) + createDragHandle (pointer events, icon move-vertical, role=slider aria). Bug fix: second drag uses currentOffset, not initialOffset
 │   ├── subtitleAutoLoad.ts        # Auto-load: shouldAutoLoad, validateOverride, fetchAndParseSubtitle (cache by URL, CORS fallback), handleAutoLoadSubtitles (fetch+parse+load bilingual), formatFromUrl, clearAutoLoadCache
@@ -138,7 +138,7 @@ src/
 │   ├── subtitleTrackDropdown.ts   # Multiple tracks dropdown: createTrackDropdown, updateTrackOptions
 │   ├── subtitleSelector.ts        # NEW (planned ADR-014): createSubtitleDropdown (overlay dropdown góc phải container, icon chevron-down, popover list sub cùng lang + cue count + format, click outside/Esc/chọn đóng) — V2 ADR-007 D3
 │   ├── subtitleBilingualParser.ts # Bilingual SRT parser: parseBilingualSrt (target lẻ/native chẵn, reuse parseSrt)
-│   ├── subtitlePanel.ts           # Toggle button + seek helper: createToggleButton (opens Side Panel), seekToCue — ADR-008. **ADR-030**: seekToCue routes qua seekVideo (Netflix M7375 fix)
+│   ├── subtitlePanel.ts           # Toggle button + seek helper: createToggleButton (opens Side Panel; host CSS cannot restore its border), seekToCue — ADR-008. **ADR-030**: seekToCue routes qua seekVideo (Netflix M7375 fix)
 │   ├── netflixPlayback.ts         # ADR-030: seekVideo/playVideo/pauseVideo — isNetflixPage() → dispatch __NF_SEEK|PLAY|PAUSE CustomEvent → MAIN-world player API; fallback video.currentTime/play/pause cho site thường. **ADR-031**: mountToWatchVideo(el, container) — move Cell UI vào .watch-video + z-index max + copy data-theme, fix Netflix overlay che nút
 │   └── subtitleShortcuts.ts       # Keyboard shortcuts: handleShortcutKey (pure, guard input/textarea)
 │

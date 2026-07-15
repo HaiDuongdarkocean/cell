@@ -166,7 +166,7 @@ Khi cần component chưa có trong 36 component hiện tại:
 ```
 AI mở phiên mới
   → đọc AGENTS.md (root, entry point)
-    → thấy section "Design System UI" chỉ đến docs/mockups/design-system-showcase/agent.md
+    → thấy section "Design System UI" chỉ đến docs/design-system/design-system-showcase/agent.md
       → đọc agent.md (file này)
         → sau 
           → verify bằng accepđó đọc design-system.md YAML + Markdown

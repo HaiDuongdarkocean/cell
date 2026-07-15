@@ -50,7 +50,7 @@ Lệnh đầy đủ trong `package.json` scripts. Hai thứ không hiển nhiên
 
 ## Design System UI (bắt buộc khi thiết kế/sửa giao diện)
 
-Khi task liên quan UI (tạo/sửa component, screen, page, styling, mockup, review UI): đọc `docs/mockups/design-system-showcase/agent.md` → file đó hướng dẫn apply `design-system.md` (source of truth duy nhất cho token + 36 component spec). Không hardcode color/radius — luôn query YAML trong `design-system.md`.
+Khi task liên quan UI (tạo/sửa component, screen, page, styling, mockup, review UI): đọc `docs/design-system/design-system-showcase/agent.md` → file đó hướng dẫn apply `design-system.md` (source of truth duy nhất cho token + 36 component spec). Không hardcode color/radius — luôn query YAML trong `design-system.md`.
 
 ## Ngôn ngữ chung
 
@@ -68,11 +68,10 @@ Gọi anh là "Anh yêu", xưng "em".
 
 ## Skills (`.agents/skills/`)
 
-> mục tiêu là chọn skill phù hợp hoàn cảnh. câu hỏi đặt ra là với hoàn cảnh hoặc task hoặc yêu cầu này, em nên sử dụng skill nào? Áp dụng phương pháp Socratic.
+> mục tiêu là chọn skill phù hợp hoàn cảnh trong `/using-agent-skills`. câu hỏi đặt ra là với hoàn cảnh hoặc task hoặc yêu cầu này, em nên sử dụng skill nào? Áp dụng phương pháp Socratic.
 
 **Meta-skill (ROUTER — bắt buộc)**: `using-agent-skills` — maps task đến skill phù hợp, có thể phối hợp nhiều skill.
 
-- **Bắt buộc**: invoke `/using-agent-skills` skill mỗi session mới.
 - **Khi task đổi** (nhận task mới, chuyển pha, gặp vấn đề mới): invoke `/using-agent-skills` lại để re-route.
 - **Khi không rõ dùng skill nào**: invoke `/using-agent-skills` — không đoán.
 

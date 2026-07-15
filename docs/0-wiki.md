@@ -8,7 +8,7 @@
 docs/           # Tài liệu dự án
 ├── 0-wiki.md                          # File này — mục lục tổng quan
 ├── 1-share-language.md                # Glossary human ↔ system language
-├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows)
+├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows; overlay button appearance/host-CSS defenses)
 ├── adr/                               # Architecture Decision Records (mỗi quyết định 1 file)
 │   ├── 001-zustand-not-redux.md
 │   ├── 002-muxjs-not-ffmpeg-wasm.md
@@ -107,6 +107,7 @@ docs/           # Tài liệu dự án
 │   ├── plan-translate-subtitle-target-to-native.md # Translate subtitle target→native plan (G2, 6 milestones M1-M6, background prefill, cite spec)
 │   └── plan-card-creator-ui-redesign.md # Card Creator UI redesign plan (M1-M9, preview → media → D&D → mobile)
 │   └── plan-port-theocean-dict-and-theme.md # Port theocean-dict + theme plan (G2, 12 milestones M1-M12, theme trước F1-F6 → dict sau F7-F12, options page mới, cite spec)
+│   └── plan-align-src-to-ds.md # Align src components to DS showcase — implementation plan (6 phase, 21 task, token+component song song)
 ├── task/                              # Task list (G4 đầu) — "how to build, step by step"
 │   ├── task-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load — task list (G4)
 │   ├── task-netflix-subtitle-detection.md # Netflix subtitle detection — dependency-aware task list (G4, parallel branches + sequential gates)
@@ -120,6 +121,7 @@ docs/           # Tài liệu dự án
 │   └── task-card-creator-ui-redesign.md # Card Creator UI redesign task list (M1-M9, T1.1-T9.3)
 │   ├── task9-browser-verify-report.md # Task 9 browser MCP verify report (Tasks 2,6,7,8)
 │   └── 2026-06-29-subtitle-appearance-manager-mcp.md # ADR-013 browser MCP verify report (A1-A16)
+│   └── task-align-src-to-ds.md # Align src components to DS showcase — task list (6 phase, 21 task)
 ├── knowledge/                         # Nguyên lý khái niệm hóa + chi tiết kỹ thuật bug fix — "lessons learned"
 │   ├── principles.md                              # Principle index (abstract, layer 1)
 │   ├── architecture-auto-select.md              # Auto-Select & Auto-Download architecture
@@ -185,7 +187,7 @@ docs/           # Tài liệu dự án
 │   ├── mockup-settings-rearrange.html # Settings dialog rearrange v2 (pair/indent/divider, fix Nav Cluster position)
 │   ├── mockup-subtitle-block-unified.html # Unified subtitle block mockup: target + native + nav cluster gộp thành 1 block, pill kéo trục Y
 │   ├── anki-card-mockup.html          # Card Creator mockup v2 (preview block + Yomitan scan + media D&D/reorder)
-│   └── dictionary-popup-prototype/    # Modular interactive prototype (index.html + css + fixtures + popup + creator + settings + icons + app; Migaku-style; verified edge-devtools)
+│   └── popup-dictionary/              # Modular interactive prototype (index.html + tokens/base/popup/creator.css + fixtures/icons/dropdown/popup/creator/app.js; Gate 2 contract: docs/specs/design/UI-UX-Contract-popup-dictionary.md; 4-icon toolbar single-select + 5-status + edit-mode config; verified edge-devtools)
 ├── intent/
 │   └── intent-card-creator.md         # Card Creator intent (interview-me output, confirmed)
 ├── specs/

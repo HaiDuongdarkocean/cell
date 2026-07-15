@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generate-Native Icon — 3 phiên bản mockup</title>
+<style>
+  :root {
+    --color-primary: #60a5fa;
+    --color-text: #f1f5f9;
+    --color-surface: #1e293b;
+    --color-surface-hover: #334155;
+    --radius-full: 9999px;
+    --sb-btn-size: 40px;
+    --sb-text-opacity: 1;
+    --sb-bg-opacity: 0.2;
+  }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #0f172a;
+    color: var(--color-text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    gap: 40px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 8px; color: var(--color-text); }
+  .subtitle { font-size: 13px; color: #94a3b8; margin: 0 0 24px; max-width: 600px; text-align: center; line-height: 1.6; }
+
+  .variant-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    max-width: 900px;
+    width: 100%;
+  }
+  @media (max-width: 768px) {
+    .variant-grid { grid-template-columns: 1fr; }
+  }
+
+  .variant-card {
+    background: var(--color-surface);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .variant-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+  .variant-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0;
+  }
+  .variant-desc {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.5;
+    text-align: center;
+    margin: 0;
+  }
+
+  /* === Button preview — match cluster-btn style === */
+  .preview-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-radius: 8px;
+    width: 100%;
+  }
+  .cluster-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--sb-btn-size);
+    height: var(--sb-btn-size);
+    border: none;
+    border-radius: var(--radius-full);
+    background: rgba(30, 41, 59, var(--sb-bg-opacity));
+    color: rgba(241, 245, 249, var(--sb-text-opacity));
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    isolation: isolate;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                background 150ms ease, color 150ms ease;
+  }
+  .cluster-btn::before {
+    content: '';
+    position: absolute;
+    inset: -1.5px;
+    border-radius: var(--radius-full);
+    backdrop-filter: blur(1px);
+    background: rgba(15, 23, 42, 0.1);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+    mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+    z-index: -1;
+    transition: background 150ms ease;
+  }
+  .cluster-btn:hover { color: var(--color-primary); }
+  .cluster-btn:hover::before { background: rgba(15, 23, 42, 0.25); }
+  .cluster-btn:active { transform: scale(0.88); }
+  .cluster-btn svg {
+    width: 65%;
+    height: 65%;
+    display: block;
+    fill: none !important;
+  }
+
+  /* === SVG code block === */
+  .svg-code {
+    width: 100%;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 10px;
+    line-height: 1.5;
+    color: #94a3b8;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* Reference row — existing icons for comparison */
+  .reference-section {
+    max-width: 900px;
+    width: 100%;
+  }
+  .reference-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin: 0 0 16px;
+    text-align: center;
+  }
+  .reference-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: var(--color-surface);
+    border: 1px solid #334155;
+    border-radius: 12px;
+  }
+  .reference-label {
+    font-size: 10px;
+    color: #64748b;
+    text-align: center;
+    margin-top: 4px;
+  }
+  .reference-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Generate-Native Icon — 3 phiên bản</h1>
+<p class="subtitle">
+  Nút "generate-native" hiện dùng icon <code>A → 文</code> (text + arrow + text).<br>
+  3 phiên bản dưới đây giữ phong cách cluster: viewBox 24×24, stroke 1.5, currentColor, round caps.
+</p>
+
+<!-- Reference: existing cluster icons for visual consistency -->
+<div class="reference-section">
+  <p class="reference-title">Cluster icons hiện tại (tham chiếu phong cách)</p>
+  <div class="reference-row">
+    <div class="reference-item">
+      <button class="cluster-btn"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13.5 9L10.5 12L13.5 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span class="reference-label">prev</span>
+    </div>
+    <div class="reference-item">
+      <button class="cluster-btn"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 9L13.5 12L10.5 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span class="reference-label">next</span>
+    </div>
+    <div class="reference-item">
+      <button class="cluster-btn"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important"><path d="M14 4.5L12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 7.89936 4.46819 4.3752 8 2.83209" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span class="reference-label">repeat</span>
+    </div>
+    <div class="reference-item">
+      <button class="cluster-btn"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span class="reference-label">quick</span>
+    </div>
+    <div class="reference-item">
+      <button class="cluster-btn"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important"><path d="M12 20h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span class="reference-label">edit</span>
+    </div>
+    <div class="reference-item">
+      <button class="cluster-btn"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important"><path d="M9 12 L13 12 M11 10 L13 12 L11 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="5" y="13" text-anchor="middle" fill="currentColor" font-size="8" font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="600">A</text><text x="18" y="13" text-anchor="middle" fill="currentColor" font-size="8" font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="600">文</text></svg></button>
+      <span class="reference-label">current</span>
+    </div>
+  </div>
+</div>
+
+<!-- 3 variants -->
+<div class="variant-grid">
+
+  <!-- V1: A → 文 (path-based A, cleaner arrow) -->
+  <div class="variant-card">
+    <span class="variant-label">Phiên bản 1</span>
+    <h3 class="variant-name">A → 文 (path A, clean arrow)</h3>
+    <div class="preview-row">
+      <button class="cluster-btn" title="Generate native subtitle">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important">
+          <!-- Chữ A vẽ bằng path (crisp, không phụ thuộc font) -->
+          <path d="M3 17 L5.5 7 L8 17 M3.8 14 L7.2 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Arrow → -->
+          <path d="M10 12 L15 12 M13 10 L15 12 L13 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- 文 (CJK glyph, giữ text) -->
+          <text x="19" y="14" text-anchor="middle" fill="currentColor" font-size="9" font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="600">文</text>
+        </svg>
+      </button>
+    </div>
+    <p class="variant-desc">
+      Giữ concept "A → 文" nhưng chữ A vẽ bằng path (crisp trên mọi host, không bị host CSS override font). Arrow rõ ràng hơn (→ dài hơn). 文 giữ text vì CJK không thể path đơn giản.
+    </p>
+    <div class="svg-code">&lt;svg viewBox="0 0 24 24" fill="none" ...&gt;
+  &lt;path d="M3 17 L5.5 7 L8 17
+    M3.8 14 L7.2 14" stroke="1.5"/&gt;
+  &lt;path d="M10 12 L15 12
+    M13 10 L15 12 L13 14" stroke="1.5"/&gt;
+  &lt;text x="19" y="14" font-size="9"&gt;文&lt;/text&gt;
+&lt;/svg&gt;</div>
+  </div>
+
+  <!-- V2: Sparkles + A (AI generate feel) -->
+  <div class="variant-card">
+    <span class="variant-label">Phiên bản 2</span>
+    <h3 class="variant-name">Sparkles + A (AI generate)</h3>
+    <div class="preview-row">
+      <button class="cluster-btn" title="Generate native subtitle">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important">
+          <!-- Sparkles (4-point star) — AI/magic feel -->
+          <path d="M5 3 L6 6 L9 7 L6 8 L5 11 L4 8 L1 7 L4 6 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Small sparkle -->
+          <path d="M10 11 L10.6 12.8 L12.5 13.4 L10.6 14 L10 15.8 L9.4 14 L7.5 13.4 L9.4 12.8 Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Chữ A vẽ bằng path -->
+          <path d="M14 20 L17 8 L20 20 M15 17 L19 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <p class="variant-desc">
+      Sparkles (✨) + chữ A. Gợi ý "AI generate subtitle" — phù hợp action "generate native". Không cần chữ CJK, ý nghĩa rõ qua sparkles (magic/generate) + A (subtitle). Đơn giản nhất, không phụ thuộc font CJK.
+    </p>
+    <div class="svg-code">&lt;svg viewBox="0 0 24 24" fill="none" ...&gt;
+  &lt;path d="M5 3 L6 6 L9 7 L6 8
+    L5 11 L4 8 L1 7 L4 6 Z" stroke="1.5"/&gt;
+  &lt;path d="M10 11 L10.6 12.8 L12.5 13.4
+    L10.6 14 L10 15.8 L9.4 14
+    L7.5 13.4 L9.4 12.8 Z" stroke="1.2"/&gt;
+  &lt;path d="M14 20 L17 8 L20 20
+    M15 17 L19 17" stroke="1.5"/&gt;
+&lt;/svg&gt;</div>
+  </div>
+
+  <!-- V3: Arrows-exchange (translate, no text) -->
+  <div class="variant-card">
+    <span class="variant-label">Phiên bản 3</span>
+    <h3 class="variant-name">Arrows-exchange (translate, no text)</h3>
+    <div class="preview-row">
+      <button class="cluster-btn" title="Generate native subtitle">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important">
+          <!-- Top arrow → (target → native) -->
+          <path d="M4 9 L18 9 M15 6 L18 9 L15 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Bottom arrow ← (native ← target, generate) -->
+          <path d="M20 15 L6 15 M9 12 L6 15 L9 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <p class="variant-desc">
+      2 mũi tên ngược chiều (→ trên, ← dưới). Gợi ý "translate/exchange" — target ↔ native. Hoàn toàn path-based, không text, không phụ thuộc font. Tối giản nhất, phù hợp mọi host. Giống icon "languages" của Lucide.
+    </p>
+    <div class="svg-code">&lt;svg viewBox="0 0 24 24" fill="none" ...&gt;
+  &lt;path d="M4 9 L18 9
+    M15 6 L18 9 L15 12" stroke="1.5"/&gt;
+  &lt;path d="M20 15 L6 15
+    M9 12 L6 15 L9 18" stroke="1.5"/&gt;
+&lt;/svg&gt;</div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top: 32px;">
+  Hover nút để xem color change → primary. Click để xem scale animation (bouncy).<br>
+  Tất cả 3 phiên bản dùng cùng cluster-btn CSS — không cần CSS mới.
+</p>
+
+</body>
+</html>
