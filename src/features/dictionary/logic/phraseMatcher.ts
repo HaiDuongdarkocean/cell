@@ -21,7 +21,7 @@ import type { CompiledTemplate, PhraseIndex } from './phraseIndexCompiler';
 
 const MAX_SLOT_TOKENS = 6;
 const MAX_SURFACE_SPAN = 32;
-const MAX_CANDIDATES = 256;
+const MAX_CANDIDATES = 4096;
 
 // --- Types (ADR §8.1) ---
 
@@ -383,10 +383,34 @@ export function matchPhrase(
 
   if (candidateIds.size === 0) return null;
 
-  // 5. Cap candidates (ADR §8.3 step 7).
+  // 5. Cap candidates (ADR §8.3 step 7): if too many, keep the top
+  //    MAX_CANDIDATES by anchor-overlap count (how many of the template's
+  //    anchors appear in the window). This prioritizes templates with the
+  //    most evidence in the sentence — a template whose only window anchor
+  //    is 'the' (1137 postings) is deprioritized vs one whose anchors 'take'
+  //    + 'off' both appear. O(candidates × anchors) but anchors are ≤8 per
+  //    template, so this is cheap.
   if (candidateIds.size > MAX_CANDIDATES) {
-    // Intersect with rarest secondary anchor — for now, abort (ponytail: simple cap).
-    return null;
+    const windowTokenSet = new Set<string>();
+    for (const wt of windowTokens) {
+      windowTokenSet.add(wt.text);
+      const lk = lemma(wt.text);
+      if (lk !== wt.text) windowTokenSet.add(lk);
+    }
+    const scored = [...candidateIds].map((id) => {
+      const template = index.templates[id];
+      if (!template) return { id, score: 0 };
+      let score = 0;
+      for (const a of template.anchors) {
+        if (windowTokenSet.has(a)) score++;
+      }
+      return { id, score };
+    });
+    scored.sort((a, b) => b.score - a.score || a.id - b.id);
+    candidateIds.clear();
+    for (let i = 0; i < Math.min(MAX_CANDIDATES, scored.length); i++) {
+      candidateIds.add(scored[i]!.id);
+    }
   }
 
   // 6. Match each candidate.

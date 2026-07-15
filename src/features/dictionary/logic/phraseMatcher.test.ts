@@ -199,9 +199,87 @@ describe('phraseMatcher', () => {
       expect(m!.dictionaryTerm).toBe('be (right) under your nose');
       expect(m!.surface).toBe('was under my nose');
     });
+
+    // --- Additional P cases to close P01-P33 coverage ---
+
+    it('P02: repeated-token offset honored on second occurrence', () => {
+      const index = buildIndex(['be (right) under your nose']);
+      const sentence = 'The answer was right under my nose, and it was right under my nose.';
+      const lower = sentence.toLowerCase();
+      const secondNose = lower.indexOf('nose', lower.indexOf('nose') + 1);
+      const m = matchPhrase({ sentence, cursorOffset: secondNose }, index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('be (right) under your nose');
+      // Span must be within the second occurrence, not the first.
+      expect(m!.span.start).toBeGreaterThan(lower.indexOf('nose'));
+    });
+
+    it('P07: hit the nail on the head — middle-token hover', () => {
+      const index = buildIndex(['hit the nail on the head']);
+      const m = matchPhrase(req('He hit the nail on the head.', 'nail'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('hit the nail on the head');
+      expect(m!.surface).toBe('hit the nail on the head');
+    });
+
+    it('P14: a bolt from/out of the blue — out of branch', () => {
+      const index = buildIndex(['a bolt from/out of the blue']);
+      const m = matchPhrase(req('It was a bolt out of the blue.', 'bolt'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('a bolt from/out of the blue');
+      expect(m!.surface).toBe('a bolt out of the blue');
+    });
+
+    it('P19: give up on sb/sth — inflection + pronoun slot', () => {
+      const index = buildIndex(['give up on sb/sth']);
+      const m = matchPhrase(req('They gave up on him.', 'gave'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('give up on sb/sth');
+      expect(m!.surface).toBe('gave up on him');
+    });
+
+    it('P21: run out of steam — irregular verb', () => {
+      const index = buildIndex(['run out of steam']);
+      const m = matchPhrase(req('The project ran out of steam.', 'ran'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('run out of steam');
+      expect(m!.surface).toBe('ran out of steam');
+      expect(m!.quality).toBe('inflected');
+    });
+
+    it('P22: pick up the pieces — inflection and longest phrase', () => {
+      const index = buildIndex(['pick up the pieces']);
+      const m = matchPhrase(req('They picked up the pieces.', 'picked'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('pick up the pieces');
+      expect(m!.surface).toBe('picked up the pieces');
+    });
+
+    it('P29b: cash flow — case-insensitive surface preserved', () => {
+      const index = buildIndex(['cash flow']);
+      const m = matchPhrase(req('Cash flow improved this quarter.', 'cash'), index);
+      expect(m).not.toBeNull();
+      expect(m!.surface).toBe('Cash flow');
+    });
+
+    it('P30: take off something — inflection + object', () => {
+      const index = buildIndex(['take off something']);
+      const m = matchPhrase(req('She took off her coat.', 'took'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('take off something');
+      expect(m!.surface).toBe('took off her coat');
+    });
+
+    it('P31: take off — intransitive, no object required', () => {
+      const index = buildIndex(['take off']);
+      const m = matchPhrase(req('The plane took off.', 'took'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('take off');
+      expect(m!.surface).toBe('took off');
+    });
   });
 
-  describe('matchPhrase — negative cases (ADR N01-N12)', () => {
+  describe('matchPhrase — negative cases (ADR N01-N20)', () => {
     it('N01: no match when preposition differs', () => {
       const index = buildIndex(['be (right) under your nose']);
       const m = matchPhrase(req('The answer was right beside my nose.', 'beside'), index);
@@ -220,10 +298,48 @@ describe('phraseMatcher', () => {
       expect(m).toBeNull();
     });
 
+    it('N04: no match when required object slot is empty', () => {
+      const index = buildIndex(['carry out something']);
+      const m = matchPhrase(req('She carried out.', 'carried'), index);
+      expect(m).toBeNull();
+    });
+
+    it('N05: no match when required particle is missing', () => {
+      const index = buildIndex(['put up with sth/sb']);
+      const m = matchPhrase(req('She put up the sign.', 'put'), index);
+      expect(m).toBeNull();
+    });
+
     it('N07: alternatives are mutually exclusive', () => {
       const index = buildIndex(['a close/near thing']);
       const m = matchPhrase(req('It was a close near thing.', 'close'), index);
       expect(m).toBeNull();
+    });
+
+    it('N12: no match when required slot missing (look after sb/sth)', () => {
+      const index = buildIndex(['look after sb/sth']);
+      const m = matchPhrase(req('She looked after.', 'looked'), index);
+      expect(m).toBeNull();
+    });
+
+    it('N14: no phrase may cross the sentence boundary', () => {
+      const index = buildIndex(['be (right) under your nose']);
+      const m = matchPhrase(
+        req('The answer was right under my nose. The cat ran away.', 'cat'),
+        index,
+      );
+      expect(m).toBeNull();
+    });
+
+    it('N20: malformed template is unsupported at compile time, never crashes lookup', () => {
+      // An unbalanced-paren template is rejected by the parser — it never
+      // enters the index. The matcher must not crash on a well-formed index.
+      const parsed = parsePhraseTemplate('carry (sth out', { inflectableLiterals: TEST_VERBS });
+      expect(parsed.status).not.toBe('supported');
+      // A well-formed index still works.
+      const index = buildIndex(['carry sth out']);
+      const m = matchPhrase(req('He carried the plan out.', 'carried'), index);
+      expect(m).not.toBeNull();
     });
   });
 
