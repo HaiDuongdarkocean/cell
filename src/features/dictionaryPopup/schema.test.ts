@@ -19,6 +19,13 @@ import {
   WorkerLookupResultMessageSchema,
   WorkerPushDefinitionMessageSchema,
   WorkerReadyMessageSchema,
+  FetchCommunityAudioPayloadSchema,
+  FetchCommunityAudioResponseSchema,
+  FetchImagesPayloadSchema,
+  FetchImagesResponseSchema,
+  TtsSpeakPayloadSchema,
+  QuickAddPayloadMessageSchema,
+  QuickAddResponseSchema,
 } from './schema';
 
 describe('LookupRequestSchema', () => {
@@ -422,5 +429,220 @@ describe('WordStatus payloads', () => {
         status: 'maybe',
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('FetchCommunityAudio payloads', () => {
+  it('accepts a valid fetch payload', () => {
+    expect(
+      FetchCommunityAudioPayloadSchema.safeParse({
+        tabId: 1,
+        term: 'hello',
+        langCode: 'en',
+        kind: 'word',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('accepts sentence kind', () => {
+    expect(
+      FetchCommunityAudioPayloadSchema.safeParse({
+        tabId: 1,
+        term: 'Hello world',
+        langCode: 'en',
+        kind: 'sentence',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects missing tabId', () => {
+    expect(
+      FetchCommunityAudioPayloadSchema.safeParse({
+        term: 'hello',
+        langCode: 'en',
+        kind: 'word',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects invalid kind', () => {
+    expect(
+      FetchCommunityAudioPayloadSchema.safeParse({
+        tabId: 1,
+        term: 'hello',
+        langCode: 'en',
+        kind: 'phrase',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepts a valid response', () => {
+    expect(
+      FetchCommunityAudioResponseSchema.safeParse({
+        items: [
+          {
+            id: 'a1',
+            kind: 'word',
+            source: 'community',
+            label: 'Forvo · US',
+            state: 'idle',
+            defaultSelected: true,
+          },
+        ],
+      }).success,
+    ).toBe(true);
+  });
+});
+
+describe('FetchImages payloads', () => {
+  it('accepts a valid fetch payload', () => {
+    expect(
+      FetchImagesPayloadSchema.safeParse({
+        tabId: 1,
+        term: 'cat',
+        langCode: 'en',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('accepts maxResults', () => {
+    expect(
+      FetchImagesPayloadSchema.safeParse({
+        tabId: 1,
+        term: 'cat',
+        langCode: 'en',
+        maxResults: 5,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects maxResults > 20', () => {
+    expect(
+      FetchImagesPayloadSchema.safeParse({
+        tabId: 1,
+        term: 'cat',
+        langCode: 'en',
+        maxResults: 50,
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepts a valid response', () => {
+    expect(
+      FetchImagesResponseSchema.safeParse({
+        items: [
+          { id: 'img1', alt: 'a cat', src: 'https://example.com/cat.jpg', defaultSelected: true },
+        ],
+      }).success,
+    ).toBe(true);
+  });
+});
+
+describe('TtsSpeakPayload', () => {
+  it('accepts a valid payload', () => {
+    expect(
+      TtsSpeakPayloadSchema.safeParse({
+        tabId: 1,
+        text: 'Hello world',
+        langCode: 'en',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('accepts optional rate/pitch/voiceName', () => {
+    expect(
+      TtsSpeakPayloadSchema.safeParse({
+        tabId: 1,
+        text: '你好',
+        langCode: 'zh',
+        rate: 0.9,
+        pitch: 1.0,
+        voiceName: 'Google Mandarin',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects rate > 10', () => {
+    expect(
+      TtsSpeakPayloadSchema.safeParse({
+        tabId: 1,
+        text: 'Hello',
+        langCode: 'en',
+        rate: 15,
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects empty text', () => {
+    expect(
+      TtsSpeakPayloadSchema.safeParse({
+        tabId: 1,
+        text: '',
+        langCode: 'en',
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('QuickAddPayloadMessage + Response', () => {
+  it('accepts a valid QuickAdd message with tabId', () => {
+    expect(
+      QuickAddPayloadMessageSchema.safeParse({
+        tabId: 1,
+        term: 'take off',
+        langCode: 'en',
+        definitions: [],
+        audios: [],
+        images: [],
+        translation: '',
+        sentence: 'Please take off your shoes.',
+        status: 'tracking',
+        destination: 'anki',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects QuickAdd without tabId', () => {
+    expect(
+      QuickAddPayloadMessageSchema.safeParse({
+        term: 'take off',
+        langCode: 'en',
+        definitions: [],
+        audios: [],
+        images: [],
+        translation: '',
+        sentence: 'Please take off your shoes.',
+        status: 'tracking',
+        destination: 'anki',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepts a successful QuickAdd response', () => {
+    expect(
+      QuickAddResponseSchema.safeParse({
+        ok: true,
+        noteId: 12345,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('accepts an error response with fieldErrors', () => {
+    expect(
+      QuickAddResponseSchema.safeParse({
+        ok: false,
+        error: 'AnkiConnect connection refused',
+        fieldErrors: [{ field: 'deck', message: 'Deck not found' }],
+      }).success,
+    ).toBe(true);
+  });
+
+  it('accepts an error response without fieldErrors', () => {
+    expect(
+      QuickAddResponseSchema.safeParse({
+        ok: false,
+        error: 'Network error',
+      }).success,
+    ).toBe(true);
   });
 });

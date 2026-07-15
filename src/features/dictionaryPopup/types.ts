@@ -176,3 +176,63 @@ export interface WorkerLookupResultMessage {
 }
 
 export type WorkerResponseMessage = WorkerLookupResultMessage | WorkerReadyMessage;
+
+// === MV3 message payloads (spec §9.4 B — content/background fan-out) ===
+// Payload luôn có tabId khi response fan-out (AGENTS.md MV3 rule).
+
+export interface WordStatusGetPayload {
+  readonly tabId: number;
+  readonly term: string;
+  readonly langCode: string;
+}
+
+export interface WordStatusSetPayload extends WordStatusGetPayload {
+  readonly status: WordStatus;
+}
+
+export interface FetchCommunityAudioPayload {
+  readonly tabId: number;
+  readonly term: string;
+  readonly langCode: string;
+  readonly kind: AudioKind;
+}
+
+export interface FetchCommunityAudioResponse {
+  readonly items: readonly AudioItem[];
+}
+
+export interface FetchImagesPayload {
+  readonly tabId: number;
+  readonly term: string;
+  readonly langCode: string;
+  readonly maxResults?: number;
+}
+
+export interface FetchImagesResponse {
+  readonly items: readonly ImageItem[];
+}
+
+export interface TtsSpeakPayload {
+  readonly tabId: number;
+  readonly text: string;
+  readonly langCode: string;
+  readonly rate?: number;
+  readonly pitch?: number;
+  readonly voiceName?: string;
+}
+
+export interface QuickAddPayloadMessage extends QuickAddPayload {
+  readonly tabId: number;
+}
+
+export interface QuickAddFieldError {
+  readonly field: string;
+  readonly message: string;
+}
+
+export interface QuickAddResponse {
+  readonly ok: boolean;
+  readonly noteId?: number;
+  readonly error?: string;
+  readonly fieldErrors?: readonly QuickAddFieldError[];
+}

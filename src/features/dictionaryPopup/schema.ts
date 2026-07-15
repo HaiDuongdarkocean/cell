@@ -167,3 +167,60 @@ export const WordStatusGetPayloadSchema = z.object({
 export const WordStatusSetPayloadSchema = WordStatusGetPayloadSchema.extend({
   status: WordStatusSchema,
 });
+
+// === Audio fetch (spec §9.4 B — FETCH_COMMUNITY_AUDIO) ===
+
+export const FetchCommunityAudioPayloadSchema = z.object({
+  tabId: z.number().int(),
+  term: z.string().min(1).max(200),
+  langCode: z.string().length(2),
+  kind: AudioKindSchema,
+});
+
+export const FetchCommunityAudioResponseSchema = z.object({
+  items: z.array(AudioItemSchema),
+});
+
+// === Image fetch (spec §9.4 B — FETCH_IMAGES) ===
+
+export const FetchImagesPayloadSchema = z.object({
+  tabId: z.number().int(),
+  term: z.string().min(1).max(200),
+  langCode: z.string().length(2),
+  maxResults: z.number().int().min(1).max(20).optional(),
+});
+
+export const FetchImagesResponseSchema = z.object({
+  items: z.array(ImageItemSchema),
+});
+
+// === TTS speak (spec §9.4 B — TTS_SPEAK) ===
+
+export const TtsSpeakPayloadSchema = z.object({
+  tabId: z.number().int(),
+  text: z.string().min(1).max(2000),
+  langCode: z.string().length(2),
+  rate: z.number().min(0.1).max(10).optional(),
+  pitch: z.number().min(0).max(2).optional(),
+  voiceName: z.string().optional(),
+});
+
+// === Quick Add (spec §9.4 B — QUICK_ADD) ===
+
+export const QuickAddPayloadMessageSchema = QuickAddPayloadSchema.extend({
+  tabId: z.number().int(),
+});
+
+export const QuickAddResponseSchema = z.object({
+  ok: z.boolean(),
+  noteId: z.number().int().optional(),
+  error: z.string().optional(),
+  fieldErrors: z
+    .array(
+      z.object({
+        field: z.string(),
+        message: z.string(),
+      }),
+    )
+    .optional(),
+});
