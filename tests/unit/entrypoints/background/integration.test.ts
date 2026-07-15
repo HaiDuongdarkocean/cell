@@ -646,12 +646,12 @@ describe('Background integration', () => {
     })) as MessageResponse<Settings>;
 
     expect(response.success).toBe(true);
-    // loadSettings() runs migration v0→v1→v2→v3→v4→v5→v6→v7→v8→v9→v10→v11→v12 which stamps schemaVersion: 13
-    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px, V9 unified subtitle block, V10 Card Creator, V11 Card Creator shortcuts, V12 generate-native shortcut).
+    // loadSettings() runs migration v0→v1→...→v13→v14 which stamps schemaVersion: 14
+    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px, V9 unified subtitle block, V10 Card Creator, V11 Card Creator shortcuts, V12 generate-native shortcut, V13 overlay appearance refactor, V14 Dictionary Popup settings).
     // V9 migration rebuilds subtitleBlockSettings from legacy layer yOffsetPercent (defaults 18/6 → 12).
     expect(response.data).toEqual({
       ...storedSettings,
-      schemaVersion: 13,
+      schemaVersion: 14,
       subtitleBlockSettings: { yOffsetPercent: 12, globalScale: 1, bgOpacity: 0.7 },
     });
   });

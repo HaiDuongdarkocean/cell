@@ -1,6 +1,6 @@
 import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
-import type { CardCreatorSettings } from '@/entities/settings';
+import type { CardCreatorSettings, DictionaryPopupSettings } from '@/entities/settings';
 
 // === Default Configuration ===
 
@@ -172,6 +172,35 @@ export const DEFAULT_CARD_CREATOR_SETTINGS: CardCreatorSettings = {
   defaultNoteType: 'Cell Video Card',
   defaultTags: '',
   mediaUpdateMode: 'overwrite',
+  // schema v14: auto-complete toggles (spec §9.3.1, D7) — default all true.
+  autoCompleteToggles: {
+    definitions: true,
+    wordAudios: true,
+    sentenceAudios: true,
+    images: true,
+    sentenceTranslation: true,
+    sentence: true,
+  },
+  audioFallback: 'community-then-tts',
+};
+
+/** Default Dictionary Popup settings (spec §9.3 — schema v14). */
+export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
+  enabled: false,
+  triggerMode: 'click',
+  defaultActiveTab: null,
+  srsDestination: 'anki',
+  popupWidthPx: 560,
+  popupMaxHeightPx: 480,
+  translateTargetLang:
+    typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('zh')
+      ? 'en'
+      : 'vi',
+  externalDictLinks: [
+    { id: 'cambridge', name: 'Cambridge Dictionary', urlTemplate: 'https://dictionary.cambridge.org/dictionary/english/{term}', langCodes: ['en'] },
+    { id: 'wiktionary', name: 'Wiktionary', urlTemplate: 'https://en.wiktionary.org/wiki/{term}', langCodes: ['en'] },
+    { id: 'gtranslate', name: 'Google Translate', urlTemplate: 'https://translate.google.com/?sl=auto&tl={lang}&text={term}', langCodes: [] },
+  ],
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -214,6 +243,8 @@ export const DEFAULT_SETTINGS: Settings = {
   subtitleOffset: {},
   // === Card Creator (Anki integration) — schema v10 ===
   cardCreator: DEFAULT_CARD_CREATOR_SETTINGS,
+  // === Dictionary Popup (spec §9.3) — schema v14 ===
+  dictionaryPopup: DEFAULT_DICTIONARY_POPUP_SETTINGS,
 };
 
 /**

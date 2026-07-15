@@ -67,6 +67,54 @@ export interface CardCreatorSettings {
   readonly defaultTags: string;
   /** How media fields merge when updating an existing note. Default 'overwrite'. */
   readonly mediaUpdateMode: MediaUpdateMode;
+  /** Per-field auto-complete toggle (spec §9.3.1, D7). Default all true. */
+  readonly autoCompleteToggles?: Record<AutoCompletableField, boolean>;
+  /** Audio fallback when community = 0/fail (spec §9.3.1). Default 'community-then-tts'. */
+  readonly audioFallback?: AudioFallbackStrategy;
+}
+
+/** Field có thể auto-complete trong Quick Add (spec §9.3.1 — trục content, khác field-map routing). */
+export type AutoCompletableField =
+  | 'definitions'
+  | 'wordAudios'
+  | 'sentenceAudios'
+  | 'images'
+  | 'sentenceTranslation'
+  | 'sentence';
+
+/** Audio fallback strategy khi community audio = 0 hoặc fetch fail (spec §9.3.1). */
+export type AudioFallbackStrategy = 'community-then-tts' | 'community-only' | 'tts-only';
+
+/** External dictionary link template (spec §9.3). */
+export interface ExternalDictLinkTemplate {
+  readonly id: string;
+  readonly name: string;
+  /** Placeholders {term} {lang}; fill bằng encodeURIComponent(term). */
+  readonly urlTemplate: string;
+  /** Languages this link applies to (empty = all). */
+  readonly langCodes: readonly string[];
+}
+
+/** Dictionary Popup settings slice (spec §9.3 — schema v14). */
+export interface DictionaryPopupSettings {
+  /** Feature flag. Default false. */
+  readonly enabled: boolean;
+  /** Trigger mode. Default 'click'. */
+  readonly triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
+  /** Default active tab (null = chỉ dictionary). Default null. */
+  readonly defaultActiveTab: 'audio' | 'image' | 'translate' | 'links' | null;
+  /** Per-language override for default active tab. */
+  readonly defaultActiveTabPerLang?: Record<string, 'audio' | 'image' | 'translate' | 'links' | null>;
+  /** SRS destination. Default 'anki'. */
+  readonly srsDestination: 'anki';
+  /** Popup width in px. Default 560. */
+  readonly popupWidthPx: number;
+  /** Popup max height in px. Default 480. */
+  readonly popupMaxHeightPx: number;
+  /** Translate target language (ISO 639-1). Default based on navigator.language. */
+  readonly translateTargetLang: string;
+  /** External dictionary link templates. */
+  readonly externalDictLinks: readonly ExternalDictLinkTemplate[];
 }
 
 // === Settings Types ===
@@ -203,5 +251,8 @@ export interface Settings {
   // === Card Creator (Anki integration) — schema v10 ===
   /** Card Creator settings (AnkiConnect URL, defaults, media update mode). */
   readonly cardCreator: CardCreatorSettings;
+  // === Dictionary Popup (spec §9.3) — schema v14 ===
+  /** Dictionary Popup settings (trigger mode, tabs, size, translate, external links). */
+  readonly dictionaryPopup?: DictionaryPopupSettings;
 }
 

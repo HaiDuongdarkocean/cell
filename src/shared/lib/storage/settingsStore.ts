@@ -12,11 +12,11 @@
  * V1 reads on every call (settings are small + infrequent — no perf concern).
  */
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
-import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
+import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 13;
+export const CURRENT_SCHEMA_VERSION = 14;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -237,6 +237,33 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
       merged.navClusterButtonBgOpacity = 0.2;
     }
     delete merged.navClusterButtonOpacity;
+    return merged;
+  },
+  // v13 → v14: add DictionaryPopupSettings slice + CardCreatorSettings
+  // auto-complete toggles + audio fallback (spec §9.3, §9.3.1, D7).
+  13: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 14 } as Record<string, unknown>;
+    // Add dictionaryPopup defaults if not present.
+    if (!merged.dictionaryPopup) {
+      merged.dictionaryPopup = DEFAULT_DICTIONARY_POPUP_SETTINGS;
+    }
+    // Extend cardCreator with auto-complete toggles + audio fallback.
+    const cc = merged.cardCreator as Record<string, unknown> | undefined;
+    if (cc) {
+      if (!cc.autoCompleteToggles) {
+        cc.autoCompleteToggles = {
+          definitions: true,
+          wordAudios: true,
+          sentenceAudios: true,
+          images: true,
+          sentenceTranslation: true,
+          sentence: true,
+        };
+      }
+      if (!cc.audioFallback) {
+        cc.audioFallback = 'community-then-tts';
+      }
+    }
     return merged;
   },
 };
