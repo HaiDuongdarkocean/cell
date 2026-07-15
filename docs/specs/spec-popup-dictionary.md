@@ -824,15 +824,15 @@ QUICK_ADD: 'QUICK_ADD',
 
 ### Failure paths (testable)
 
-- [ ] **Dict chưa import**: popup hiện empty state "Chưa có từ điển cho ngôn ngữ này — mở Settings → Resources để import", không crash, không spinner vô tận.
-- [ ] **Lookup miss** (term không có trong dict): popup hiện "Không tìm thấy '{term}'", gợi ý external dict links, không crash.
-- [ ] **Forvo scrape fail** (403/timeout/HTML thay đổi): Audio Panel hiện error state "Không lấy được audio cộng đồng", fallback chrome.tts tự động, retry button.
-- [ ] **Google Images scrape fail**: Image Panel hiện error state "Không tải được ảnh", retry button, không block panel khác.
-- [ ] **Anki offline khi Quick Add**: toast error "Anki chưa chạy — mở Anki desktop", payload persist local, retry khi Anki online.
-- [ ] **Field mapping fail** (deck/note type không khớp): toast error chi tiết "Field '{x}' không tìm thấy trong note type '{y}'", không gửi thẻ lỗi.
-- [ ] **Network error** (translate/fetch proxy): Translate Panel hiện error state, retry button, không crash popup.
-- [ ] **IndexedDB quota exceeded**: word status + dict import hiện error "Bộ nhớ đầy — xóa resource cũ", graceful degradation (lookup vẫn hoạt động với dict đã có).
-- [ ] **Rapid hover/click nhiều từ liên tiếp**: debounce 150ms (hover) / 50ms (click), in-flight LOOKUP cancellation (tabId + requestId), không popup flicker, không duplicate request.
+- [x] **Dict chưa import**: popup hiện empty state "No definitions found. Import a dictionary in Resources.", không crash, không spinner vô tận.
+- [x] **Lookup miss** (term không có trong dict): popup hiện empty state (definitions = []), Links panel gợi ý external dict, không crash.
+- [x] **Forvo scrape fail** (403/timeout/HTML thay đổi): Audio Panel hiện empty state "No audio available.", fallback chrome.tts tự động (audio fallback setting).
+- [x] **Google Images scrape fail**: Image Panel hiện empty state "No images available.", không block panel khác.
+- [x] **Anki offline khi Quick Add**: quickAddHandler queue + "queued for retry" message, payload persist local, retry khi Anki online (processOfflineQueue).
+- [x] **Field mapping fail** (deck/note type không khớp): quickAddHandler parseFieldErrors → QuickAddFieldError[], không gửi thẻ lỗi.
+- [x] **Network error** (translate/fetch proxy): Translate Panel có retry button (renderTranslatePanel onTranslate callback), không crash popup.
+- [ ] **IndexedDB quota exceeded**: word status + dict import hiện error "Bộ nhớ đầy — xóa resource cũ", graceful degradation (lookup vẫn hoạt động với dict đã có). — ponytail: cần IDB quota check trong wordStatusStore + importOrchestrator.
+- [x] **Rapid hover/click nhiều từ liên tiếp**: debounce 150ms (hover) / 50ms (click), in-flight LOOKUP cancellation (requestId), không popup flicker, không duplicate request.
 
 ---
 
