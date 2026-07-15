@@ -39,7 +39,8 @@ export type NavClusterButtonSize = number;
 export interface NavClusterSettings {
   readonly enabled: boolean;
   readonly buttonSize: NavClusterButtonSize;
-  readonly buttonOpacity: number; // 0-1
+  readonly textOpacity: number; // 0-1, icon/text clarity inside buttons
+  readonly bgOpacity: number; // 0-1, button background opacity (0=transparent, 1=solid)
 }
 
 /** Unified subtitle block settings (ADR-025). */
@@ -192,8 +193,10 @@ export interface Settings {
   readonly navClusterEnabled: boolean;
   /** Nav cluster button size preset. Default: 48 (medium). */
   readonly navClusterButtonSize: NavClusterButtonSize;
-  /** Nav cluster button opacity (0-1). Default: 0.9. */
-  readonly navClusterButtonOpacity: number;
+  /** Nav cluster text opacity (0-1). Default: 1. */
+  readonly navClusterTextOpacity: number;
+  /** Nav cluster background opacity (0-1). Default: 0.2. */
+  readonly navClusterButtonBgOpacity: number;
   // === Subtitle Block (ADR-025) ===
   /** Unified block settings (yOffset, globalScale, bgOpacity). Default: { yOffsetPercent: 75, globalScale: 1, bgOpacity: 0.7 }. */
   readonly subtitleBlockSettings: SubtitleBlockSettings;
@@ -201,3 +204,4 @@ export interface Settings {
   /** Card Creator settings (AnkiConnect URL, defaults, media update mode). */
   readonly cardCreator: CardCreatorSettings;
 }
+

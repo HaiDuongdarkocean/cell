@@ -69,7 +69,8 @@ async function loadOverlaySettings(): Promise<{
       cluster: {
         enabled: settings.navClusterEnabled,
         buttonSize: settings.navClusterButtonSize,
-        buttonOpacity: settings.navClusterButtonOpacity,
+        textOpacity: settings.navClusterTextOpacity,
+        bgOpacity: settings.navClusterButtonBgOpacity,
       },
       settings,
     };
@@ -500,7 +501,8 @@ export function init(video: HTMLVideoElement): () => void {
       const clusterPartial: Partial<NavClusterSettings> = {
         ...(newSettings.navClusterEnabled !== undefined && { enabled: newSettings.navClusterEnabled }),
         ...(newSettings.navClusterButtonSize !== undefined && { buttonSize: newSettings.navClusterButtonSize as NavClusterSettings['buttonSize'] }),
-        ...(newSettings.navClusterButtonOpacity !== undefined && { buttonOpacity: newSettings.navClusterButtonOpacity }),
+        ...(newSettings.navClusterTextOpacity !== undefined && { textOpacity: newSettings.navClusterTextOpacity }),
+        ...(newSettings.navClusterButtonBgOpacity !== undefined && { bgOpacity: newSettings.navClusterButtonBgOpacity }),
       };
       if (Object.keys(clusterPartial).length > 0) {
         clusterSettings = { ...clusterSettings, ...clusterPartial };
@@ -1582,3 +1584,4 @@ export function init(video: HTMLVideoElement): () => void {
     blockController?.destroy();
   };
 }
+

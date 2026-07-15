@@ -206,7 +206,8 @@ export const DEFAULT_SETTINGS: Settings = {
   // === Nav Cluster (ADR-018, ADR-025) — schema v3 ===
   navClusterEnabled: true,
   navClusterButtonSize: 34,
-  navClusterButtonOpacity: 0.9,
+  navClusterTextOpacity: 1,
+  navClusterButtonBgOpacity: 0.2,
   // === Subtitle Block (ADR-025) — schema v9 ===
   subtitleBlockSettings: DEFAULT_SUBTITLE_BLOCK_SETTINGS,
   // === Subtitle Offset (ADR-019) — schema v3 ===
@@ -222,8 +223,9 @@ export const DEFAULT_SETTINGS: Settings = {
 export const DEFAULT_NAV_CLUSTER_SETTINGS: NavClusterSettings = {
   enabled: true,
   buttonSize: 34,
-  buttonOpacity: 0.9,
-};
+  textOpacity: 1,
+  bgOpacity: 0.2,
+} as const;
 
 // === Storage Keys ===
 
@@ -248,3 +250,4 @@ export const STORAGE_KEYS = {
 
 export const POPUP_WIDTH = 400;
 export const POPUP_HEIGHT = 600;
+

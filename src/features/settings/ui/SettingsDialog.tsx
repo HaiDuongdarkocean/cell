@@ -150,7 +150,8 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
     const flat: Record<string, unknown> = {};
     if (partial.enabled !== undefined) flat.navClusterEnabled = partial.enabled;
     if (partial.buttonSize !== undefined) flat.navClusterButtonSize = partial.buttonSize;
-    if (partial.buttonOpacity !== undefined) flat.navClusterButtonOpacity = partial.buttonOpacity;
+    if (partial.textOpacity !== undefined) flat.navClusterTextOpacity = partial.textOpacity;
+    if (partial.bgOpacity !== undefined) flat.navClusterButtonBgOpacity = partial.bgOpacity;
     onChange({ ...settings, ...flat } as Settings);
   };
 
@@ -508,7 +509,8 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                   settings={{
                     enabled: settings.navClusterEnabled,
                     buttonSize: settings.navClusterButtonSize,
-                    buttonOpacity: settings.navClusterButtonOpacity,
+                    textOpacity: settings.navClusterTextOpacity,
+                    bgOpacity: settings.navClusterButtonBgOpacity,
                   }}
                   onChange={updateNavCluster}
                 />
@@ -710,3 +712,4 @@ function CustomSelect({ testId, value, options, onSelect }: CustomSelectProps): 
     </div>
   );
 }
+

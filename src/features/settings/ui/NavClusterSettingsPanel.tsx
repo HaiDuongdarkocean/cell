@@ -14,9 +14,18 @@ interface NavClusterSettingsPanelProps {
 const BUTTON_SIZE_MIN = 10;
 const BUTTON_SIZE_MAX = 100;
 
+/** Overlay appearance presets (feather blur 1px hardcoded). */
+const PRESETS: ReadonlyArray<{ label: string; textOpacity: number; bgOpacity: number }> = [
+  { label: 'Frosted', textOpacity: 1, bgOpacity: 0.2 },
+  { label: 'Glass', textOpacity: 1, bgOpacity: 0 },
+  { label: 'Muted', textOpacity: 0.8, bgOpacity: 0.4 },
+  { label: 'Solid', textOpacity: 0.6, bgOpacity: 0.8 },
+];
+
 /**
  * Nav cluster settings panel (ADR-018 D2, ADR-025).
- * Button size + button opacity (bg opacity moved to Subtitle Block).
+ * Button size + text opacity + bg opacity (overlay appearance refactor).
+ * 4 presets: Frosted / Glass / Muted / Solid.
  * Each control calls onChange(partial) → parent persists → storage.onChanged
  * → content-script updateSettings (realtime).
  *
@@ -30,8 +39,16 @@ export function NavClusterSettingsPanel({
     onChange({ buttonSize: raw });
   };
 
-  const handleButtonOpacityChange = (v: number): void => {
-    onChange({ buttonOpacity: v });
+  const handleTextOpacityChange = (v: number): void => {
+    onChange({ textOpacity: v });
+  };
+
+  const handleBgOpacityChange = (v: number): void => {
+    onChange({ bgOpacity: v });
+  };
+
+  const handlePreset = (preset: { textOpacity: number; bgOpacity: number }): void => {
+    onChange({ textOpacity: preset.textOpacity, bgOpacity: preset.bgOpacity });
   };
 
   return (
@@ -54,22 +71,64 @@ export function NavClusterSettingsPanel({
         />
       </div>
 
-      {/* Button opacity */}
+      {/* Text opacity */}
       <div className={styles.field}>
         <div className={styles.sliderHeader}>
-          <label className={styles.label} htmlFor="nav-cluster-button-opacity">Button opacity</label>
-          <span className={styles.value}>{Math.round(settings.buttonOpacity * 100)}%</span>
+          <label className={styles.label} htmlFor="nav-cluster-text-opacity">Text opacity</label>
+          <span className={styles.value}>{Math.round(settings.textOpacity * 100)}%</span>
         </div>
         <Slider
-          id="nav-cluster-button-opacity"
-          value={settings.buttonOpacity}
+          id="nav-cluster-text-opacity"
+          value={settings.textOpacity}
           min={0}
           max={1}
-          step={0.1}
-          onChange={handleButtonOpacityChange}
-          aria-label="Nav cluster button opacity"
-          data-testid="nav-cluster-button-opacity"
+          step={0.05}
+          onChange={handleTextOpacityChange}
+          aria-label="Nav cluster text opacity"
+          data-testid="nav-cluster-text-opacity"
         />
+      </div>
+
+      {/* Background opacity */}
+      <div className={styles.field}>
+        <div className={styles.sliderHeader}>
+          <label className={styles.label} htmlFor="nav-cluster-bg-opacity">Background opacity</label>
+          <span className={styles.value}>{Math.round(settings.bgOpacity * 100)}%</span>
+        </div>
+        <Slider
+          id="nav-cluster-bg-opacity"
+          value={settings.bgOpacity}
+          min={0}
+          max={1}
+          step={0.05}
+          onChange={handleBgOpacityChange}
+          aria-label="Nav cluster background opacity"
+          data-testid="nav-cluster-bg-opacity"
+        />
+      </div>
+
+      {/* Presets */}
+      <div className={styles.field}>
+        <span className={styles.label}>Presets</span>
+        <div className={styles.presetRow} role="group" aria-label="Overlay appearance presets">
+          {PRESETS.map((preset) => {
+            const isActive =
+              settings.textOpacity === preset.textOpacity &&
+              settings.bgOpacity === preset.bgOpacity;
+            return (
+              <button
+                key={preset.label}
+                type="button"
+                className={`${styles.presetBtn} ${isActive ? styles.presetBtnActive : ''}`}
+                onClick={() => handlePreset(preset)}
+                aria-pressed={isActive}
+                data-testid={`nav-cluster-preset-${preset.label.toLowerCase()}`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

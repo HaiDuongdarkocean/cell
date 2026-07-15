@@ -40,7 +40,7 @@ describe('settingsStore schema v12 migration (generate-native shortcut)', () => 
       expect.arrayContaining([{ action: 'generate-native', key: 'g' }]),
     );
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; keyboardShortcuts: { action: string; key: string }[] };
-    expect(stored.schemaVersion).toBe(12);
+    expect(stored.schemaVersion).toBe(13);
     expect(stored.keyboardShortcuts).toEqual(
       expect.arrayContaining([{ action: 'generate-native', key: 'g' }]),
     );
@@ -70,3 +70,4 @@ describe('settingsStore schema v12 migration (generate-native shortcut)', () => 
     expect(generateNative).toEqual({ action: 'generate-native', key: 'g' });
   });
 });
+

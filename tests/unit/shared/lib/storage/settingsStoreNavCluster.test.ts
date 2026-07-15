@@ -26,18 +26,19 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 12 (bumped for generate-native shortcut)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(12);
+  it('CURRENT_SCHEMA_VERSION is 13 (bumped for overlay appearance refactor)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(13);
   });
 
-  it('migrates v1 settings to v9 with nav cluster + block defaults merged', async () => {
+  it('migrates v1 settings to v13 with nav cluster + block defaults merged', async () => {
     const v1Settings = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 1,
     };
     delete (v1Settings as Record<string, unknown>).navClusterEnabled;
     delete (v1Settings as Record<string, unknown>).navClusterButtonSize;
-    delete (v1Settings as Record<string, unknown>).navClusterButtonOpacity;
+    delete (v1Settings as Record<string, unknown>).navClusterTextOpacity;
+    delete (v1Settings as Record<string, unknown>).navClusterButtonBgOpacity;
     delete (v1Settings as Record<string, unknown>).subtitleBlockSettings;
     storage[STORAGE_KEYS.SETTINGS] = v1Settings;
 
@@ -45,7 +46,8 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
 
     expect(result.navClusterEnabled).toBe(true);
     expect(result.navClusterButtonSize).toBe(34);
-    expect(result.navClusterButtonOpacity).toBe(0.9);
+    expect(result.navClusterTextOpacity).toBe(1);
+    expect(result.navClusterButtonBgOpacity).toBe(0.2);
     // v8→v9 migration: legacyY = (targetY=18 + nativeY=6) / 2 = 12
     expect(result.subtitleBlockSettings).toEqual({
       yOffsetPercent: 12,
@@ -84,7 +86,7 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     expect(result.subtitleBlockSettings.globalScale).toBe(1);
   });
 
-  it('v8 → v9: removes navClusterPosition, navClusterBgOpacity, navClusterCollapsed from storage', async () => {
+  it('v8 → v9: removes navClusterPosition, navClusterCollapsed; old navClusterBgOpacity → subtitleBlockSettings', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 8,
@@ -94,7 +96,10 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     };
     const result = await loadSettings();
     expect((result as unknown as Record<string, unknown>).navClusterPosition).toBeUndefined();
-    expect((result as unknown as Record<string, unknown>).navClusterBgOpacity).toBeUndefined();
+    // Old navClusterBgOpacity (0.5) → subtitleBlockSettings.bgOpacity
+    expect(result.subtitleBlockSettings.bgOpacity).toBe(0.5);
+    // New navClusterButtonBgOpacity (v13 field) = 0.2 default
+    expect(result.navClusterButtonBgOpacity).toBe(0.2);
     expect((result as unknown as Record<string, unknown>).navClusterCollapsed).toBeUndefined();
   });
 
@@ -120,14 +125,38 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     expect(result.subtitleBlockSettings.yOffsetPercent).toBe(60);
   });
 
-  it('clamps invalid navClusterButtonOpacity < 0 to 0', async () => {
+  it('clamps invalid navClusterTextOpacity < 0 to 0', async () => {
     storage[STORAGE_KEYS.SETTINGS] = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 8,
-      navClusterButtonOpacity: -0.3,
+      navClusterTextOpacity: -0.3,
     };
     const result = await loadSettings();
-    expect(result.navClusterButtonOpacity).toBe(0);
+    expect(result.navClusterTextOpacity).toBe(0);
+  });
+
+  it('clamps invalid navClusterButtonBgOpacity > 1 to 1', async () => {
+    storage[STORAGE_KEYS.SETTINGS] = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 8,
+      navClusterButtonBgOpacity: 1.5,
+    };
+    const result = await loadSettings();
+    expect(result.navClusterButtonBgOpacity).toBe(1);
+  });
+
+  it('v12→v13 migration: maps old navClusterButtonOpacity to navClusterTextOpacity', async () => {
+    storage[STORAGE_KEYS.SETTINGS] = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 12,
+      navClusterButtonOpacity: 0.85,
+    };
+    delete (storage[STORAGE_KEYS.SETTINGS] as Record<string, unknown>).navClusterTextOpacity;
+    delete (storage[STORAGE_KEYS.SETTINGS] as Record<string, unknown>).navClusterButtonBgOpacity;
+    const result = await loadSettings();
+    expect(result.navClusterTextOpacity).toBe(0.85);
+    expect(result.navClusterButtonBgOpacity).toBe(0.2);
+    expect((result as unknown as Record<string, unknown>).navClusterButtonOpacity).toBeUndefined();
   });
 
   it('accepts in-range navClusterButtonSize=33 (free range 10-100)', async () => {
@@ -170,14 +199,14 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     expect(result.navClusterButtonSize).toBe(34);
   });
 
-  it('saveSettings stamps schemaVersion 12', async () => {
+  it('saveSettings stamps schemaVersion 13', async () => {
     await saveSettings({ navClusterEnabled: false });
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(12);
+    expect(stored.schemaVersion).toBe(13);
   });
 
   it('saveSettings partial preserves existing stored fields (read-modify-write)', async () => {
-    // Bug: saveSettings({position}) after drag wiped buttonSize/bgOpacity/buttonOpacity
+    // Bug: saveSettings({position}) after drag wiped buttonSize/bgOpacity/textOpacity
     // to defaults because it merged with DEFAULT_SETTINGS, not current stored settings.
     // ADR-025: position removed — test now uses subtitleBlockSettings partial.
     const existing = {
@@ -185,7 +214,8 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
       schemaVersion: CURRENT_SCHEMA_VERSION,
       navClusterEnabled: true,
       navClusterButtonSize: 56,
-      navClusterButtonOpacity: 0.5,
+      navClusterTextOpacity: 0.5,
+      navClusterButtonBgOpacity: 0.3,
       subtitleBlockSettings: { yOffsetPercent: 60, globalScale: 1.1, bgOpacity: 0.3 },
     };
     storage[STORAGE_KEYS.SETTINGS] = existing;
@@ -197,7 +227,8 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     expect(stored.subtitleBlockSettings.yOffsetPercent).toBe(70);
     // Other nav cluster fields MUST be preserved (not reset to defaults).
     expect(stored.navClusterButtonSize).toBe(56);
-    expect(stored.navClusterButtonOpacity).toBe(0.5);
+    expect(stored.navClusterTextOpacity).toBe(0.5);
+    expect(stored.navClusterButtonBgOpacity).toBe(0.3);
     expect(stored.navClusterEnabled).toBe(true);
   });
 
@@ -208,6 +239,9 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
       navClusterEnabled: false,
     };
     delete (v2Settings as Record<string, unknown>).subtitleOffset;
+    // v2 didn't have navClusterBgOpacity (legacy field) — delete so v8→v9
+    // migration uses old default 0.7 for subtitleBlockSettings.bgOpacity
+    delete (v2Settings as Record<string, unknown>).navClusterBgOpacity;
     storage[STORAGE_KEYS.SETTINGS] = v2Settings;
     const result = await loadSettings();
     expect(result.navClusterEnabled).toBe(false);
@@ -220,3 +254,4 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     expect(result.subtitleOffset).toEqual({});
   });
 });
+

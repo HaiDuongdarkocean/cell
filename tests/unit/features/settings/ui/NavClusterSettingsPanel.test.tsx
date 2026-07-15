@@ -24,10 +24,16 @@ describe('NavClusterSettingsPanel (ADR-018 D2, spec §A9)', () => {
     expect(slider.value).toBe('48');
   });
 
-  it('renders button opacity slider with current value', () => {
-    render(<NavClusterSettingsPanel {...makeProps({ buttonOpacity: 0.9 })} />);
-    const slider = screen.getByTestId('nav-cluster-button-opacity') as HTMLInputElement;
-    expect(slider.value).toBe('0.9');
+  it('renders text opacity slider with current value', () => {
+    render(<NavClusterSettingsPanel {...makeProps({ textOpacity: 0.8 })} />);
+    const slider = screen.getByTestId('nav-cluster-text-opacity') as HTMLInputElement;
+    expect(slider.value).toBe('0.8');
+  });
+
+  it('renders bg opacity slider with current value', () => {
+    render(<NavClusterSettingsPanel {...makeProps({ bgOpacity: 0.3 })} />);
+    const slider = screen.getByTestId('nav-cluster-bg-opacity') as HTMLInputElement;
+    expect(slider.value).toBe('0.3');
   });
 
   it('button size slider change calls onChange with raw value (free range, no snap)', () => {
@@ -46,12 +52,28 @@ describe('NavClusterSettingsPanel (ADR-018 D2, spec §A9)', () => {
     expect(slider.step).toBe('1');
   });
 
-  it('button opacity slider change calls onChange with new buttonOpacity', () => {
+  it('text opacity slider change calls onChange with new textOpacity', () => {
     const props = makeProps();
     render(<NavClusterSettingsPanel {...props} />);
-    const slider = screen.getByTestId('nav-cluster-button-opacity') as HTMLInputElement;
+    const slider = screen.getByTestId('nav-cluster-text-opacity') as HTMLInputElement;
     fireEvent.change(slider, { target: { value: '0.8' } });
-    expect(props.onChange).toHaveBeenCalledWith({ buttonOpacity: 0.8 });
+    expect(props.onChange).toHaveBeenCalledWith({ textOpacity: 0.8 });
+  });
+
+  it('bg opacity slider change calls onChange with new bgOpacity', () => {
+    const props = makeProps();
+    render(<NavClusterSettingsPanel {...props} />);
+    const slider = screen.getByTestId('nav-cluster-bg-opacity') as HTMLInputElement;
+    fireEvent.change(slider, { target: { value: '0.5' } });
+    expect(props.onChange).toHaveBeenCalledWith({ bgOpacity: 0.5 });
+  });
+
+  it('preset button click calls onChange with preset values', () => {
+    const props = makeProps();
+    render(<NavClusterSettingsPanel {...props} />);
+    const frosted = screen.getByTestId('nav-cluster-preset-frosted');
+    fireEvent.click(frosted);
+    expect(props.onChange).toHaveBeenCalledWith({ textOpacity: 1, bgOpacity: 0.2 });
   });
 
   it('button size slider passes through non-preset value (free range, no snap)', () => {

@@ -3,11 +3,12 @@ import { DEFAULT_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SUBTITLE_BLOCK_
 import type { Settings, NavClusterSettings, SubtitleBlockSettings } from '@/entities/settings';
 
 describe('NavClusterSettings + SubtitleBlockSettings types + defaults (ADR-025)', () => {
-  it('DEFAULT_NAV_CLUSTER_SETTINGS has 3 fields (enabled, buttonSize, buttonOpacity)', () => {
+  it('DEFAULT_NAV_CLUSTER_SETTINGS has 4 fields (enabled, buttonSize, textOpacity, bgOpacity)', () => {
     expect(DEFAULT_NAV_CLUSTER_SETTINGS).toBeDefined();
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.enabled).toBe(true);
     expect(DEFAULT_NAV_CLUSTER_SETTINGS.buttonSize).toBe(34);
-    expect(DEFAULT_NAV_CLUSTER_SETTINGS.buttonOpacity).toBe(0.9);
+    expect(DEFAULT_NAV_CLUSTER_SETTINGS.textOpacity).toBe(1);
+    expect(DEFAULT_NAV_CLUSTER_SETTINGS.bgOpacity).toBe(0.2);
   });
 
   it('DEFAULT_SUBTITLE_BLOCK_SETTINGS has 3 fields (yOffsetPercent, globalScale, bgOpacity)', () => {
@@ -20,15 +21,17 @@ describe('NavClusterSettings + SubtitleBlockSettings types + defaults (ADR-025)'
   it('DEFAULT_SETTINGS includes navCluster flat fields + subtitleBlockSettings', () => {
     expect(DEFAULT_SETTINGS.navClusterEnabled).toBe(true);
     expect(DEFAULT_SETTINGS.navClusterButtonSize).toBe(34);
-    expect(DEFAULT_SETTINGS.navClusterButtonOpacity).toBe(0.9);
+    expect(DEFAULT_SETTINGS.navClusterTextOpacity).toBe(1);
+    expect(DEFAULT_SETTINGS.navClusterButtonBgOpacity).toBe(0.2);
     expect(DEFAULT_SETTINGS.subtitleBlockSettings).toEqual(DEFAULT_SUBTITLE_BLOCK_SETTINGS);
   });
 
-  it('NavClusterSettings interface shape (3 fields, no position/collapsed/bgOpacity)', () => {
+  it('NavClusterSettings interface shape (4 fields: enabled, buttonSize, textOpacity, bgOpacity)', () => {
     const s: NavClusterSettings = {
       enabled: true,
       buttonSize: 48,
-      buttonOpacity: 0.9,
+      textOpacity: 0.8,
+      bgOpacity: 0.3,
     };
     expect(s.enabled).toBe(true);
   });
@@ -54,3 +57,4 @@ describe('NavClusterSettings + SubtitleBlockSettings types + defaults (ADR-025)'
     expect(valid.every((v) => typeof v === 'number')).toBe(true);
   });
 });
+

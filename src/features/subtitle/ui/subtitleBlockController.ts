@@ -200,8 +200,21 @@ export class SubtitleBlockController {
     this.dom.block.style.setProperty('--sb-target-font', `${snap.targetFontSize}px`);
     this.dom.block.style.setProperty('--sb-native-font', `${snap.nativeFontSize}px`);
     this.dom.block.style.setProperty('--sb-btn-size', `${snap.buttonSize}px`);
-    this.dom.block.style.setProperty('--sb-btn-opacity', String(this.clusterSettings.buttonOpacity));
+    this.dom.block.style.setProperty('--sb-text-opacity', String(this.clusterSettings.textOpacity));
+    this.dom.block.style.setProperty('--sb-bg-opacity', String(this.clusterSettings.bgOpacity));
     this.dom.block.style.setProperty('--sb-cluster-width', `${clusterWidth}px`);
+    // Propagate button size + opacity to sibling overlay buttons (toggle,
+    // manager, import) so they resize + fade with the cluster setting.
+    // On non-Netflix they're under container; on Netflix they're under .watch-video.
+    this.container.style.setProperty('--sb-btn-size', `${snap.buttonSize}px`);
+    this.container.style.setProperty('--sb-text-opacity', String(this.clusterSettings.textOpacity));
+    this.container.style.setProperty('--sb-bg-opacity', String(this.clusterSettings.bgOpacity));
+    const watchVideo = document.querySelector('.watch-video');
+    if (watchVideo instanceof HTMLElement) {
+      watchVideo.style.setProperty('--sb-btn-size', `${snap.buttonSize}px`);
+      watchVideo.style.setProperty('--sb-text-opacity', String(this.clusterSettings.textOpacity));
+      watchVideo.style.setProperty('--sb-bg-opacity', String(this.clusterSettings.bgOpacity));
+    }
   }
 
   private render(): void {

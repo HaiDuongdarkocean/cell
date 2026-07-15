@@ -52,9 +52,9 @@
 }
 
 .numberInput:focus {
-  outline: none;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-subtle);
 }
 
 .rowLabel {
@@ -84,4 +84,34 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
+}
+
+/* === Preset buttons — overlay appearance quick-select === */
+.presetRow {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.presetBtn {
+  padding: 4px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.presetBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.presetBtnActive {
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }

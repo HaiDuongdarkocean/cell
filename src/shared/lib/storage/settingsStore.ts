@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 12;
+export const CURRENT_SCHEMA_VERSION = 13;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -42,7 +42,8 @@ function coerceBoolean(value: unknown, fallback: boolean): boolean {
 
 /** Validate + clamp nav cluster and block fields after migration (ADR-018 D2, ADR-025). */
 function validateNavClusterFields(s: Record<string, unknown>): void {
-  s.navClusterButtonOpacity = clampNumber(s.navClusterButtonOpacity, 0, 1, 0.9);
+  s.navClusterTextOpacity = clampNumber(s.navClusterTextOpacity, 0, 1, 1);
+  s.navClusterButtonBgOpacity = clampNumber(s.navClusterButtonBgOpacity, 0, 1, 0.2);
   s.navClusterButtonSize = clampNumber(
     s.navClusterButtonSize,
     BUTTON_SIZE_MIN,
@@ -149,7 +150,7 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     return merged;
   },
   // v8 → v9: unified subtitle block (ADR-025). Remove navClusterPosition,
-  // navClusterBgOpacity, navClusterCollapsed, and yOffsetPercent from layer styles.
+  // navClusterButtonBgOpacity, navClusterCollapsed, and yOffsetPercent from layer styles.
   // Create subtitleBlockSettings from legacy positions.
   8: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 9 } as Record<string, unknown>;
@@ -160,7 +161,10 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     const nativeY = clampNumber(nativeStyle.yOffsetPercent, 0, 95, 6);
     const legacyY = nativeY ? (targetY + nativeY) / 2 : targetY;
 
-    const oldNavBg = clampNumber(merged.navClusterBgOpacity, 0, 1, 0.7);
+    // Read OLD navClusterBgOpacity (legacy field removed in v9) from input s.
+    // Don't read from merged — merged has navClusterButtonBgOpacity (new v13 field)
+    // from DEFAULT_SETTINGS, which is a different field with a different default.
+    const oldNavBg = clampNumber((s as Record<string, unknown>).navClusterBgOpacity, 0, 1, 0.7);
 
     merged.subtitleBlockSettings = {
       yOffsetPercent: legacyY,
@@ -176,7 +180,7 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
 
     // Remove old nav cluster fields.
     delete merged.navClusterPosition;
-    delete merged.navClusterBgOpacity;
+    delete (merged as Record<string, unknown>).navClusterBgOpacity;
     delete merged.navClusterCollapsed;
 
     validateNavClusterFields(merged);
@@ -216,6 +220,23 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     if (!shortcuts.some((sc: { action: string }) => sc.action === 'generate-native')) {
       merged.keyboardShortcuts = [...shortcuts, { action: 'generate-native', key: 'g' }];
     }
+    return merged;
+  },
+  // v12 → v13: replace navClusterButtonOpacity with navClusterTextOpacity +
+  // navClusterButtonBgOpacity (overlay appearance refactor). Old buttonOpacity maps
+  // to textOpacity (keep visual continuity — old 0.9 → text 0.9). bgOpacity
+  // defaults to 0.2 (frosted preset). Check s (input) not merged — merged has
+  // DEFAULT_SETTINGS values for the new fields, so we can't use undefined check.
+  12: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 13 } as Record<string, unknown>;
+    if (s.navClusterTextOpacity === undefined) {
+      const oldOpacity = s.navClusterButtonOpacity;
+      merged.navClusterTextOpacity = typeof oldOpacity === 'number' ? oldOpacity : 1;
+    }
+    if (s.navClusterButtonBgOpacity === undefined) {
+      merged.navClusterButtonBgOpacity = 0.2;
+    }
+    delete merged.navClusterButtonOpacity;
     return merged;
   },
 };
@@ -284,3 +305,4 @@ export async function saveSettings(settings: Partial<Settings>): Promise<void> {
   } as StoredSettings;
   await setStorage({ [STORAGE_KEYS.SETTINGS]: toStore });
 }
+
