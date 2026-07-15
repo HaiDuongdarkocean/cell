@@ -111,6 +111,7 @@ export const WorkerMessageBaseSchema = z.object({
     'WORKER_READY',
     'HYDRATE_CHUNK',
     'HYDRATE_DONE',
+    'PUSH_DEFINITION',
     'LOOKUP',
     'LOOKUP_CANCEL',
     'LOOKUP_RESULT',
@@ -139,6 +140,12 @@ export const WorkerHydrateChunkMessageSchema = WorkerMessageBaseSchema.extend({
 
 export const WorkerHydrateDoneMessageSchema = WorkerMessageBaseSchema.extend({
   type: z.literal('HYDRATE_DONE'),
+});
+
+export const WorkerPushDefinitionMessageSchema = WorkerMessageBaseSchema.extend({
+  type: z.literal('PUSH_DEFINITION'),
+  term: z.string().min(1).max(200),
+  entries: z.array(z.object({}).passthrough()),
 });
 
 export const WorkerLookupResultMessageSchema = z.object({

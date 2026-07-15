@@ -112,6 +112,7 @@ export type WorkerMessageType =
   | 'WORKER_READY'
   | 'HYDRATE_CHUNK'
   | 'HYDRATE_DONE'
+  | 'PUSH_DEFINITION'
   | 'LOOKUP'
   | 'LOOKUP_CANCEL'
   | 'LOOKUP_RESULT';
@@ -146,11 +147,25 @@ export interface WorkerHydrateDoneMessage extends WorkerMessageBase {
   readonly type: 'HYDRATE_DONE';
 }
 
+/**
+ * Background → worker: push a dictionary entry for a term after an IDB miss
+ * (spec §9.5 step 4). The worker inserts it into the definitions LRU; if the
+ * LRU exceeds the 10k cap, the least-recently-used entry is evicted.
+ */
+export interface WorkerPushDefinitionMessage extends WorkerMessageBase {
+  readonly type: 'PUSH_DEFINITION';
+  /** The term this entry resolves. */
+  readonly term: string;
+  /** Serialized dictionary entries for the term (usually 1, can be many senses). */
+  readonly entries: readonly unknown[];
+}
+
 export type WorkerRequestMessage =
   | WorkerLookupMessage
   | WorkerCancelMessage
   | WorkerHydrateChunkMessage
-  | WorkerHydrateDoneMessage;
+  | WorkerHydrateDoneMessage
+  | WorkerPushDefinitionMessage;
 
 export interface WorkerLookupResultMessage {
   readonly type: 'LOOKUP_RESULT';

@@ -17,6 +17,7 @@ import {
   WorkerHydrateDoneMessageSchema,
   WorkerLookupMessageSchema,
   WorkerLookupResultMessageSchema,
+  WorkerPushDefinitionMessageSchema,
   WorkerReadyMessageSchema,
 } from './schema';
 
@@ -342,6 +343,28 @@ describe('Worker envelope schemas', () => {
 
   it('accepts a HYDRATE_DONE message', () => {
     expect(WorkerHydrateDoneMessageSchema.safeParse({ type: 'HYDRATE_DONE', requestId: 'r1' }).success).toBe(true);
+  });
+
+  it('accepts a PUSH_DEFINITION message with entries', () => {
+    expect(
+      WorkerPushDefinitionMessageSchema.safeParse({
+        type: 'PUSH_DEFINITION',
+        requestId: 'r1',
+        term: 'take',
+        entries: [{ id: 'd1', text: 'to remove', examples: [], source: 'Cambridge', defaultSelected: true }],
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects PUSH_DEFINITION with empty term', () => {
+    expect(
+      WorkerPushDefinitionMessageSchema.safeParse({
+        type: 'PUSH_DEFINITION',
+        requestId: 'r1',
+        term: '',
+        entries: [],
+      }).success,
+    ).toBe(false);
   });
 
   it('accepts a successful LOOKUP_RESULT', () => {

@@ -29,7 +29,9 @@ import type {
   WorkerHydrateChunkMessage,
   WorkerHydrateDoneMessage,
   WorkerLookupMessage,
+  WorkerPushDefinitionMessage,
 } from '../types';
+import type { DefinitionEntry } from '../types';
 
 const TEST_VERBS = new Set(['take', 'kick', 'give', 'put', 'look', 'carry']);
 
@@ -188,6 +190,59 @@ describe('lookupWorkerHandler — LOOKUP with real phrase match', () => {
     const responses = handleWorkerMessage(state, lookup('r1', 'Take off your shoes.', 0));
     expect(responses[0]!.ok).toBe(true);
     expect(responses[0]!.result?.detectedPhrase?.sourceResourceId).toBe(2);
+  });
+});
+
+describe('lookupWorkerHandler — definitions LRU + PUSH_DEFINITION (spec §9.5)', () => {
+  it('PUSH_DEFINITION inserts into the LRU and word-fallback returns it', () => {
+    const state = createLookupWorkerState();
+    handleWorkerMessage(state, hydrateChunk(1, buildBlob(['take off'])));
+    handleWorkerMessage(state, { type: 'HYDRATE_DONE', requestId: 'h-done' } as WorkerHydrateDoneMessage);
+
+    const defs: DefinitionEntry[] = [
+      { id: 'd1', pos: 'phrasal verb', text: 'to remove', examples: [], source: 'Cambridge', defaultSelected: true },
+    ];
+    const push: WorkerPushDefinitionMessage = {
+      type: 'PUSH_DEFINITION',
+      requestId: 'p1',
+      term: 'hello',
+      entries: defs,
+    };
+    handleWorkerMessage(state, push);
+    expect(state.definitionLru.has('hello')).toBe(true);
+    expect(state.definitionLru.size).toBe(1);
+
+    // Word fallback for 'hello' now returns the pushed definitions.
+    const responses = handleWorkerMessage(state, lookup('r1', 'hello world', 0));
+    expect(responses[0]!.ok).toBe(true);
+    expect(responses[0]!.result?.definitions).toEqual(defs);
+    expect(responses[0]!.result?.matchSource).toBe('dictionary');
+  });
+
+  it('LRU enforces the 10k cap on PUSH_DEFINITION', () => {
+    const state = createLookupWorkerState();
+    for (let i = 0; i < 12000; i++) {
+      handleWorkerMessage(state, {
+        type: 'PUSH_DEFINITION',
+        requestId: `p${i}`,
+        term: `t${i}`,
+        entries: [],
+      } as WorkerPushDefinitionMessage);
+    }
+    expect(state.definitionLru.size).toBe(10000);
+    // First 2000 evicted.
+    expect(state.definitionLru.has('t0')).toBe(false);
+    expect(state.definitionLru.has('t1999')).toBe(false);
+    expect(state.definitionLru.has('t2000')).toBe(true);
+  });
+
+  it('word fallback returns empty definitions on LRU miss', () => {
+    const state = createLookupWorkerState();
+    handleWorkerMessage(state, hydrateChunk(1, buildBlob(['take off'])));
+    handleWorkerMessage(state, { type: 'HYDRATE_DONE', requestId: 'h-done' } as WorkerHydrateDoneMessage);
+
+    const responses = handleWorkerMessage(state, lookup('r1', 'mystery word', 0));
+    expect(responses[0]!.result?.definitions).toEqual([]);
   });
 });
 

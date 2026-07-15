@@ -16,18 +16,24 @@ import type {
   WorkerReadyMessage,
   WorkerRequestMessage,
 } from '../types';
-import type { LookupResult } from '../types';
+import type { LookupResult, DefinitionEntry } from '../types';
 import { matchPhrase, tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
 import type { PhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
 import {
   loadPhraseIndexBlob,
   type ResidentPhraseIndex,
 } from './phraseIndexLoader';
+import { LruCache } from '../logic/lruCache';
+
+/** Hard cap for the definitions LRU (spec §9.5: exactly 10k live entries). */
+export const DEFINITION_LRU_CAP = 10000;
 
 /** Mutable worker state. Created once per worker instance. */
 export interface LookupWorkerState {
   /** Resident phrase indexes keyed by resourceId. */
   readonly residentIndexes: Map<number, ResidentPhraseIndex>;
+  /** Definitions LRU — top 10k by recency (spec §9.5). Key = term. */
+  readonly definitionLru: LruCache<string, readonly DefinitionEntry[]>;
   /** True after HYDRATE_DONE. Lookups before hydration return an error. */
   hydrated: boolean;
   /** Hydration errors per resourceId (for diagnostics; never crashes lookup). */
@@ -40,6 +46,7 @@ export interface LookupWorkerState {
 export function createLookupWorkerState(): LookupWorkerState {
   return {
     residentIndexes: new Map(),
+    definitionLru: new LruCache<string, readonly DefinitionEntry[]>(DEFINITION_LRU_CAP),
     hydrated: false,
     hydrationErrors: new Map(),
     cancelled: new Set(),
@@ -70,6 +77,13 @@ export function handleWorkerMessage(
     }
     case 'HYDRATE_DONE': {
       state.hydrated = true;
+      return [];
+    }
+    case 'PUSH_DEFINITION': {
+      // Background pushes a definition after an IDB miss (spec §9.5 step 4).
+      // The LRU enforces the 10k cap; set() evicts the least-recently-used.
+      const entries = msg.entries as readonly DefinitionEntry[];
+      state.definitionLru.set(msg.term, entries);
       return [];
     }
     case 'LOOKUP_CANCEL': {
@@ -153,20 +167,21 @@ function runLookup(state: LookupWorkerState, msg: WorkerLookupMessage): LookupRe
     }
   }
 
-  // No phrase match — word fallback. Definitions come from the LRU/miss path
-  // (Task 1.3). For now return an empty dictionary result with the hovered
-  // token as the term.
+  // No phrase match — word fallback. Definitions come from the LRU (hit) or
+  // the background miss path (push via PUSH_DEFINITION, then re-lookup).
   const tokens = tokenizeSentence(contextSentence);
   const target = tokens.find((t) => cursorOffset >= t.start && cursorOffset < t.end);
+  const wordTerm = target?.text ?? term;
+  const cached = state.definitionLru.get(wordTerm);
   return {
-    term: target?.text ?? term,
+    term: wordTerm,
     langCode,
     reading: '',
     readingKind: 'none',
     frequency: null,
     status: 'unknown',
     partsOfSpeech: [],
-    definitions: [],
+    definitions: cached ?? [],
     detectedPhrase: null,
     matchSource: 'dictionary',
   };
