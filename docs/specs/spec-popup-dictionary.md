@@ -807,7 +807,7 @@ QUICK_ADD: 'QUICK_ADD',
 - [x] `npm run test:unit` pass cho `dictionaryPopup` module (lookup, match, lemma, possessive, priority, status store, audio/image source parse).
 - [x] `npx tsc --noEmit` clean.
 - [x] `npm run lint` clean.
-- [ ] Benchmark `lookupOrchestrator` ≤1s với dict ~120k entries (CEDICT) + ~100k (Cambridge) trên RAM 4GB (runnable self-check file).
+- [x] Benchmark `lookupOrchestrator` ≤1s với dict ~120k entries (CEDICT) + ~100k (Cambridge) trên RAM 4GB (runnable self-check file). — lookupOrchestratorBenchmark.test.ts: 120k CEDICT + 500 Cambridge phrase templates, full lookup 26.6ms.
 - [x] EN phrase benchmark theo ADR-037: phrase candidate p95 <10ms, AST validation p95 <25ms, warm worker lookup p95 <100ms, phrase index blob + resident worker representation ≤8MB/resource, transient matcher state ≤512KB; no regex scan of all terms.
 - [x] Popup render trong Shadow DOM, không bị CSS trang web phá, auto-position tránh overflow, resize kéo góc, sticky size persist.
 - [x] EN lookup: hover token trong "The answer was right under my nose" → detect Cambridge template `be (right) under your nose` (optional group + possessive + verb lemma), return exact surface span; no opaque confidence threshold.
