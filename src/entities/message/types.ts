@@ -68,7 +68,13 @@ export type MessageType =
   | 'FETCH_REQUEST'
   | 'FETCH_RESPONSE'
   | 'TRANSLATE'
-  | 'CARD_CREATOR_REQUEST';
+  | 'CARD_CREATOR_REQUEST'
+  | 'FETCH_COMMUNITY_AUDIO'
+  | 'FETCH_IMAGES'
+  | 'TTS_SPEAK'
+  | 'WORD_STATUS_GET'
+  | 'WORD_STATUS_SET'
+  | 'QUICK_ADD';
 
 // === Message Request ===
 
@@ -511,6 +517,83 @@ export interface CardCreatorRequestPayload {
  *  On error, `success` is false and `error` describes the failure. */
 export interface CardCreatorResponseData {
   readonly result: unknown;
+}
+
+// === Popup Dictionary messages (spec §9.4 B) ===
+//
+// These ride the MV3 fan-out bus (payload always carries `tabId` on responses).
+// The worker dict-match path does NOT use these — it uses the dedicated
+// requestId bridge defined in `@/features/dictionaryPopup/types.ts`.
+
+/** Content → background: fetch community audio for a term. */
+export interface FetchCommunityAudioPayload {
+  readonly tabId?: number; // background resolves from sender.tab.id
+  readonly term: string;
+  readonly langCode: string;
+}
+
+/** Background → content: community audio items. */
+export interface FetchCommunityAudioResult {
+  readonly audios: readonly unknown[]; // AudioItem[] — typed at consumer via schema
+}
+
+/** Content → background: fetch images for a term. */
+export interface FetchImagesPayload {
+  readonly tabId?: number;
+  readonly term: string;
+  readonly langCode: string;
+}
+
+/** Background → content: image items. */
+export interface FetchImagesResult {
+  readonly images: readonly unknown[]; // ImageItem[] — typed at consumer via schema
+}
+
+/** Content → background: speak text via chrome.tts (system TTS). */
+export interface TtsSpeakPayload {
+  readonly tabId?: number;
+  readonly text: string;
+  readonly langCode: string;
+  readonly rate?: number;
+  readonly pitch?: number;
+  readonly voiceName?: string;
+}
+
+/** Content → background: get word status. */
+export interface WordStatusGetPayload {
+  readonly tabId?: number;
+  readonly term: string;
+  readonly langCode: string;
+}
+
+/** Background → content: word status result. */
+export interface WordStatusResult {
+  readonly term: string;
+  readonly langCode: string;
+  readonly status: 'unknown' | 'known' | 'tracking' | 'ignore';
+}
+
+/** Content → background: set word status. */
+export interface WordStatusSetPayload {
+  readonly tabId?: number;
+  readonly term: string;
+  readonly langCode: string;
+  readonly status: 'unknown' | 'known' | 'tracking' | 'ignore';
+}
+
+/** Content → background: Quick Add to Anki. */
+export interface QuickAddPayload {
+  readonly tabId?: number;
+  // Payload shape defined in @/features/dictionaryPopup/types.ts QuickAddPayload;
+  // kept as unknown at the MV3 boundary — consumer validates via QuickAddPayloadSchema.
+  readonly payload: unknown;
+}
+
+/** Background → content: Quick Add result. */
+export interface QuickAddResult {
+  readonly ok: boolean;
+  readonly noteId?: number;
+  readonly error?: string;
 }
 
 // === Typed Message Helpers ===

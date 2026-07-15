@@ -53,4 +53,12 @@ export const MESSAGE_TYPES = {
   FETCH_RESPONSE: 'FETCH_RESPONSE',
   TRANSLATE: 'TRANSLATE',
   CARD_CREATOR_REQUEST: 'CARD_CREATOR_REQUEST',
+  // === Popup Dictionary (spec §9.4 B) — scrape / status / Anki ===
+  // Worker dict match uses the dedicated requestId bridge, NOT this fan-out.
+  FETCH_COMMUNITY_AUDIO: 'FETCH_COMMUNITY_AUDIO',
+  FETCH_IMAGES: 'FETCH_IMAGES',
+  TTS_SPEAK: 'TTS_SPEAK',
+  WORD_STATUS_GET: 'WORD_STATUS_GET',
+  WORD_STATUS_SET: 'WORD_STATUS_SET',
+  QUICK_ADD: 'QUICK_ADD',
 } as const satisfies Record<string, MessageType>;
