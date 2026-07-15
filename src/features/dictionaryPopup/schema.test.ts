@@ -296,12 +296,13 @@ describe('Worker envelope schemas', () => {
     expect(WorkerCancelMessageSchema.safeParse({ type: 'LOOKUP_CANCEL', requestId: 'r1' }).success).toBe(true);
   });
 
-  it('accepts a HYDRATE_CHUNK message with ArrayBuffer payload', () => {
+  it('accepts a HYDRATE_CHUNK message with ArrayBuffer payload + resourceId', () => {
     const buf = new ArrayBuffer(8);
     expect(
       WorkerHydrateChunkMessageSchema.safeParse({
         type: 'HYDRATE_CHUNK',
         requestId: 'r1',
+        resourceId: 3,
         payload: buf,
       }).success,
     ).toBe(true);
@@ -312,7 +313,29 @@ describe('Worker envelope schemas', () => {
       WorkerHydrateChunkMessageSchema.safeParse({
         type: 'HYDRATE_CHUNK',
         requestId: 'r1',
+        resourceId: 3,
         payload: 'not-a-buffer',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects HYDRATE_CHUNK missing resourceId', () => {
+    expect(
+      WorkerHydrateChunkMessageSchema.safeParse({
+        type: 'HYDRATE_CHUNK',
+        requestId: 'r1',
+        payload: new ArrayBuffer(8),
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejects HYDRATE_CHUNK with negative resourceId', () => {
+    expect(
+      WorkerHydrateChunkMessageSchema.safeParse({
+        type: 'HYDRATE_CHUNK',
+        requestId: 'r1',
+        resourceId: -1,
+        payload: new ArrayBuffer(8),
       }).success,
     ).toBe(false);
   });

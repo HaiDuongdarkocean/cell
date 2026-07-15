@@ -1,13 +1,14 @@
 // Lookup worker message handler — pure, testable, no import.meta.url.
 //
 // The worker entry (lookupWorker.ts) wires `self.onmessage` to this handler
-// and posts each returned response. Tests call the handler directly to prove
-// topology: WORKER_READY, HYDRATE_CHUNK (transferable), HYDRATE_DONE, LOOKUP,
-// LOOKUP_CANCEL, and requestId routing.
+// and posts each returned response. Tests call the handler directly.
 //
-// This is the Task 0.3 topology proof. Phrase-index hydration, LRU, and real
-// matching land in Tasks 1.2/1.3. For now LOOKUP echoes a stub result so the
-// round trip and cancellation are provable without the full data plane.
+// Task 1.2: HYDRATE_CHUNK now carries { resourceId, blob } and the handler
+// validates + deserializes the blob via phraseIndexLoader, storing a
+// ResidentPhraseIndex per resource. LOOKUP runs matchPhrase against all
+// resident indexes (first match wins — multi-resource priority is Task 1.4)
+// and returns a LookupResult with detectedPhrase populated when a phrase
+// matches. Definitions stay empty until the LRU/miss path lands (Task 1.3).
 
 import type {
   WorkerLookupMessage,
@@ -16,13 +17,21 @@ import type {
   WorkerRequestMessage,
 } from '../types';
 import type { LookupResult } from '../types';
+import { matchPhrase, tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
+import type { PhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
+import {
+  loadPhraseIndexBlob,
+  type ResidentPhraseIndex,
+} from './phraseIndexLoader';
 
 /** Mutable worker state. Created once per worker instance. */
 export interface LookupWorkerState {
-  /** Chunks received via HYDRATE_CHUNK. ArrayBuffer is the transferred ref. */
-  readonly hydratedChunks: ArrayBuffer[];
+  /** Resident phrase indexes keyed by resourceId. */
+  readonly residentIndexes: Map<number, ResidentPhraseIndex>;
   /** True after HYDRATE_DONE. Lookups before hydration return an error. */
   hydrated: boolean;
+  /** Hydration errors per resourceId (for diagnostics; never crashes lookup). */
+  readonly hydrationErrors: Map<number, string>;
   /** Cancelled requestIds — LOOKUP results for these are dropped. */
   readonly cancelled: Set<string>;
 }
@@ -30,8 +39,9 @@ export interface LookupWorkerState {
 /** Create a fresh worker state. */
 export function createLookupWorkerState(): LookupWorkerState {
   return {
-    hydratedChunks: [],
+    residentIndexes: new Map(),
     hydrated: false,
+    hydrationErrors: new Map(),
     cancelled: new Set(),
   };
 }
@@ -47,10 +57,15 @@ export function handleWorkerMessage(
 ): WorkerLookupResultMessage[] {
   switch (msg.type) {
     case 'HYDRATE_CHUNK': {
-      // The ArrayBuffer was transferred — store the single reference. The
-      // host's copy is detached (byteLength 0) after transfer; we must not
-      // clone or copy it.
-      state.hydratedChunks.push(msg.payload);
+      const result = loadPhraseIndexBlob(msg.resourceId, msg.payload);
+      if (result.ok) {
+        state.residentIndexes.set(msg.resourceId, result.resident);
+        state.hydrationErrors.delete(msg.resourceId);
+      } else {
+        // Fail closed: record the error, do not crash. The resource is
+        // skipped for lookup; the host can re-hydrate or report.
+        state.hydrationErrors.set(msg.resourceId, result.error);
+      }
       return [];
     }
     case 'HYDRATE_DONE': {
@@ -65,7 +80,6 @@ export function handleWorkerMessage(
       return [handleLookup(state, msg)];
     }
     default: {
-      // Exhaustive — unknown types never reach here at the type level.
       return [];
     }
   }
@@ -80,7 +94,6 @@ function handleLookup(
   state: LookupWorkerState,
   msg: WorkerLookupMessage,
 ): WorkerLookupResultMessage {
-  // Cancelled before processing → drop result (no LOOKUP_RESULT emitted).
   if (state.cancelled.has(msg.requestId)) {
     return { type: 'LOOKUP_RESULT', requestId: msg.requestId, ok: false, error: 'cancelled' };
   }
@@ -94,12 +107,60 @@ function handleLookup(
     };
   }
 
-  // ponytail: stub result for topology proof. Real matching lands in Task 1.2.
-  // Ceiling: returns an empty LookupResult regardless of input. Upgrade path:
-  // wire matchPhrase + LRU lookup against hydratedChunks.
-  const stub: LookupResult = {
-    term: msg.payload.term,
-    langCode: msg.payload.langCode,
+  const result = runLookup(state, msg);
+
+  // Re-check cancellation before emitting.
+  if (state.cancelled.has(msg.requestId)) {
+    return { type: 'LOOKUP_RESULT', requestId: msg.requestId, ok: false, error: 'cancelled' };
+  }
+
+  return { type: 'LOOKUP_RESULT', requestId: msg.requestId, ok: true, result };
+}
+
+/**
+ * Run the phrase match against all resident indexes.
+ *
+ * ponytail: first-match-wins across resources. Ceiling: when the same phrase
+ * exists in two resources, the winner is whichever Map iteration order visits
+ * first — non-deterministic across V8 versions. Upgrade path: Task 1.4 adds
+ * explicit resource priority so the winner is deterministic.
+ */
+function runLookup(state: LookupWorkerState, msg: WorkerLookupMessage): LookupResult {
+  const { contextSentence, cursorOffset, term, langCode } = msg.payload;
+
+  for (const resident of state.residentIndexes.values()) {
+    const index: PhraseIndex = resident.index;
+    const match = matchPhrase({ sentence: contextSentence, cursorOffset }, index);
+    if (match) {
+      return {
+        term: match.dictionaryTerm,
+        langCode,
+        reading: '',
+        readingKind: 'none',
+        frequency: null,
+        status: 'unknown',
+        partsOfSpeech: [],
+        definitions: [],
+        detectedPhrase: {
+          dictionaryTerm: match.dictionaryTerm,
+          surface: match.surface,
+          span: match.span,
+          quality: match.quality,
+          sourceResourceId: resident.resourceId,
+        },
+        matchSource: 'plugin',
+      };
+    }
+  }
+
+  // No phrase match — word fallback. Definitions come from the LRU/miss path
+  // (Task 1.3). For now return an empty dictionary result with the hovered
+  // token as the term.
+  const tokens = tokenizeSentence(contextSentence);
+  const target = tokens.find((t) => cursorOffset >= t.start && cursorOffset < t.end);
+  return {
+    term: target?.text ?? term,
+    langCode,
     reading: '',
     readingKind: 'none',
     frequency: null,
@@ -109,12 +170,4 @@ function handleLookup(
     detectedPhrase: null,
     matchSource: 'dictionary',
   };
-
-  // Re-check cancellation before emitting (simulates the cancel-during-async
-  // check the worker entry performs between steps).
-  if (state.cancelled.has(msg.requestId)) {
-    return { type: 'LOOKUP_RESULT', requestId: msg.requestId, ok: false, error: 'cancelled' };
-  }
-
-  return { type: 'LOOKUP_RESULT', requestId: msg.requestId, ok: true, result: stub };
 }

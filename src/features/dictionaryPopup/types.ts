@@ -136,7 +136,9 @@ export interface WorkerReadyMessage extends WorkerMessageBase {
 
 export interface WorkerHydrateChunkMessage extends WorkerMessageBase {
   readonly type: 'HYDRATE_CHUNK';
-  /** Transferable ArrayBuffer chunk (phrase blob slice or top-k entries). */
+  /** Resource this blob belongs to. */
+  readonly resourceId: number;
+  /** Transferable ArrayBuffer — the compiled phrase blob for this resource. */
   readonly payload: ArrayBuffer;
 }
 

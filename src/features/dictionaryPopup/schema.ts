@@ -133,6 +133,7 @@ export const WorkerReadyMessageSchema = WorkerMessageBaseSchema.extend({
 
 export const WorkerHydrateChunkMessageSchema = WorkerMessageBaseSchema.extend({
   type: z.literal('HYDRATE_CHUNK'),
+  resourceId: z.number().int().nonnegative(),
   payload: z.instanceof(ArrayBuffer),
 });
 
