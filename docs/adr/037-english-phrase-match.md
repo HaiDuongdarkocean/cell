@@ -1,7 +1,7 @@
 # ADR-037: Deterministic English phrase matching from Cambridge templates
 
 > Date: 2026-07-15
-> Status: In progress — parser slice implemented; index, matcher, and device benchmark pending
+> Status: In progress — parser, index compiler, v10 store, bounded DP matcher, phrase match service, and fixture benchmark implemented (impl order 1-4, 6-9). Pending: compact blob loader + worker anchor index (impl order 5), and the broader Popup Dictionary P0 integration tracked in `tasks/plan.md`.
 > Related: `docs/specs/spec-popup-dictionary.md`, ADR-023
 > Scope: English idioms, phrasal verbs, and other multiword dictionary entries
 
