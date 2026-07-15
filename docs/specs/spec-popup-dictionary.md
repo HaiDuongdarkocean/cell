@@ -804,22 +804,22 @@ QUICK_ADD: 'QUICK_ADD',
 
 ## 10. Success Criteria (testable)
 
-- [ ] `npm run test:unit` pass cho `dictionaryPopup` module (lookup, match, lemma, possessive, priority, status store, audio/image source parse).
-- [ ] `npx tsc --noEmit` clean.
-- [ ] `npm run lint` clean.
+- [x] `npm run test:unit` pass cho `dictionaryPopup` module (lookup, match, lemma, possessive, priority, status store, audio/image source parse).
+- [x] `npx tsc --noEmit` clean.
+- [x] `npm run lint` clean.
 - [ ] Benchmark `lookupOrchestrator` ≤1s với dict ~120k entries (CEDICT) + ~100k (Cambridge) trên RAM 4GB (runnable self-check file).
-- [ ] EN phrase benchmark theo ADR-037: phrase candidate p95 <10ms, AST validation p95 <25ms, warm worker lookup p95 <100ms, phrase index blob + resident worker representation ≤8MB/resource, transient matcher state ≤512KB; no regex scan of all terms.
-- [ ] Popup render trong Shadow DOM, không bị CSS trang web phá, auto-position tránh overflow, resize kéo góc, sticky size persist.
-- [ ] EN lookup: hover token trong "The answer was right under my nose" → detect Cambridge template `be (right) under your nose` (optional group + possessive + verb lemma), return exact surface span; no opaque confidence threshold.
-- [ ] ZH lookup: click 喜 trong 我喜欢你 → highlight 喜欢 (dictionary-driven segmentation), tra "喜欢" không tra "喜".
-- [ ] Definitions luôn hiện, mỗi definition có checkbox, default all selected.
-- [ ] Audio/Image/Translate/Links panel toggle từ toolbar, lazy load (chỉ fetch khi mở), preserve state khi toggle lại.
-- [ ] Quick Add: 1 nút, user tick item → hệ thống tôn trọng Card Creator auto-complete settings (field mapping + per-field toggle + fallback). Nếu field auto-complete on thì fill (với fallback), nếu off thì chỉ fill item user đã tick. Audio/image fetch binary khi Quick Add, fetch fail → toast error, item bỏ qua.
-- [ ] Word status 4 giá trị ở footer (unknown → tracking → known → ignore, vòng tròn), persist IndexedDB.
-- [ ] Default popup tab global sticky, persist `chrome.storage.local`.
-- [ ] Trigger mode setting (click/hover/modifier), persist.
-- [ ] Card Creator setting có SRS dropdown (Anki only MVP), set default.
-- [ ] Không có string "OCEAN"/"Yomitan"/sản phẩm bên thứ ba trong `src/` + `docs/`.
+- [x] EN phrase benchmark theo ADR-037: phrase candidate p95 <10ms, AST validation p95 <25ms, warm worker lookup p95 <100ms, phrase index blob + resident worker representation ≤8MB/resource, transient matcher state ≤512KB; no regex scan of all terms.
+- [x] Popup render trong Shadow DOM, không bị CSS trang web phá, auto-position tránh overflow, resize kéo góc, sticky size persist.
+- [x] EN lookup: hover token trong "The answer was right under my nose" → detect Cambridge template `be (right) under your nose` (optional group + possessive + verb lemma), return exact surface span; no opaque confidence threshold.
+- [x] ZH lookup: click 喜 trong 我喜欢你 → highlight 喜欢 (dictionary-driven segmentation), tra "喜欢" không tra "喜".
+- [x] Definitions luôn hiện, mỗi definition có checkbox, default all selected.
+- [x] Audio/Image/Translate/Links panel toggle từ toolbar, lazy load (chỉ fetch khi mở), preserve state khi toggle lại.
+- [x] Quick Add: 1 nút, user tick item → hệ thống tôn trọng Card Creator auto-complete settings (field mapping + per-field toggle + fallback). Nếu field auto-complete on thì fill (với fallback), nếu off thì chỉ fill item user đã tick. Audio/image fetch binary khi Quick Add, fetch fail → toast error, item bỏ qua.
+- [x] Word status 4 giá trị ở footer (unknown → tracking → known → ignore, vòng tròn), persist IndexedDB.
+- [x] Default popup tab global sticky, persist `chrome.storage.local`.
+- [x] Trigger mode setting (click/hover/modifier), persist.
+- [x] Card Creator setting có SRS dropdown (Anki only MVP), set default.
+- [x] Không có string "OCEAN"/"Yomitan"/sản phẩm bên thứ ba trong `src/` + `docs/`.
 - [ ] Browser verify (Edge/Chrome thật qua MCP edge-devtools): popup render dark/light, EN+ZH lookup, panel toggle, Quick Add toast, mobile 375px không overflow.
 
 ### Failure paths (testable)

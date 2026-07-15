@@ -46,6 +46,7 @@ docs/           # Tài liệu dự án
 │   └── 035-scanned-subtitle-initiator-dnr-origin.md # ADR-035: pass frame URL as `initiator` cho scanned subtitle → DNR Origin → fix 403 "forbidden origin" trên prox.anicore.tv (anikage.cc)
 │   └── 036-stremio-addon-subtitle-listing-parser.md # ADR-036: parse Stremio addon listing JSON (torrentio) → extract subtitles[].url thật, không misclassify listing URL thành subtitle file
 │   └── 037-english-phrase-match.md          # ADR-037: Cambridge phrase templates → compact anchor index + bounded token-DP matcher, low-RAM deterministic matching
+│   └── 038-popup-dictionary-shadow-dom-vanilla-dom.md # ADR-038: Popup Dictionary Shadow DOM + vanilla DOM (CSS isolation, no React in content script)
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
