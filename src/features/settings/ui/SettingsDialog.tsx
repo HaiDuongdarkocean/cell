@@ -22,6 +22,7 @@ import { SubtitleStylePanel } from './SubtitleStylePanel';
 import { SubtitleBlockSettingsPanel } from './SubtitleBlockSettingsPanel';
 import { NavClusterSettingsPanel } from './NavClusterSettingsPanel';
 import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
+import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Toggle } from '@/shared/ui/Toggle';
 import { ShortcutInput } from '@/shared/ui/ShortcutInput';
@@ -191,6 +192,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
     { id: 'shortcuts', label: 'Shortcuts' },
     { id: 'download', label: 'Download' },
     { id: 'cardCreator', label: 'Card Creator' },
+    { id: 'dictionaryPopup', label: 'Dictionary Popup' },
   ];
 
   return (
@@ -632,6 +634,26 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                 <CardCreatorSettingsPanel
                   settings={settings.cardCreator}
                   onChange={updateCardCreator}
+                />
+              </div>
+            </section>
+
+            {/* Dictionary Popup — schema v14 */}
+            <section
+              ref={(el) => { sectionRefs.current.dictionaryPopup = el; }}
+              className={styles.section}
+              data-section="dictionaryPopup"
+            >
+              <div className={styles.sectionHeader}>
+                <h4 className={styles.sectionTitle}>Dictionary Popup</h4>
+              </div>
+              <p className={styles.sectionDescription}>
+                Hover or click words in subtitles to see definitions, audio, images, and Quick Add to Anki.
+              </p>
+              <div className={styles.sectionBody}>
+                <DictionaryPopupSettingsPanel
+                  settings={settings.dictionaryPopup ?? { enabled: false, triggerMode: 'click', defaultActiveTab: null, srsDestination: 'anki', popupWidthPx: 560, popupMaxHeightPx: 480, translateTargetLang: 'vi', externalDictLinks: [] }}
+                  onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
                 />
               </div>
             </section>

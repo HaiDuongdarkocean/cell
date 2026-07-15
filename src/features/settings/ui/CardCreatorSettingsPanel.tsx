@@ -14,7 +14,7 @@
  */
 import { useState, useCallback } from 'react';
 import type { ReactElement } from 'react';
-import type { CardCreatorSettings } from '@/entities/settings';
+import type { CardCreatorSettings, AutoCompletableField, AudioFallbackStrategy } from '@/entities/settings';
 import { testConnection } from '@/features/cardCreator/service/cardCreatorService';
 import styles from './CardCreatorSettingsPanel.module.css';
 
@@ -145,6 +145,50 @@ export function CardCreatorSettingsPanel({
         >
           {status === 'testing' ? 'Testing…' : 'Test again'}
         </button>
+      </div>
+
+      {/* Auto-complete toggles (spec §9.3.1, D7 — schema v14) */}
+      <div className={styles.field}>
+        <label className={styles.fieldLabel}>Quick Add auto-complete</label>
+        <p className={styles.hint}>
+          When ON, Quick Add auto-fills the field with best-match items. When OFF, only user-ticked items are filled.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+          {(['definitions', 'wordAudios', 'sentenceAudios', 'images', 'sentenceTranslation', 'sentence'] as const).map((field) => (
+            <label key={field} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+              <input
+                type="checkbox"
+                checked={settings.autoCompleteToggles?.[field] ?? true}
+                onChange={(e) => {
+                  const toggles = { ...(settings.autoCompleteToggles ?? {}), [field]: e.target.checked };
+                  onChange({ autoCompleteToggles: toggles as Record<AutoCompletableField, boolean> });
+                }}
+              />
+              {field.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Audio fallback strategy (spec §9.3.1) */}
+      <div className={styles.field}>
+        <label className={styles.fieldLabel} htmlFor="cc-audio-fallback">
+          Audio fallback
+        </label>
+        <select
+          id="cc-audio-fallback"
+          className={styles.urlInput}
+          value={settings.audioFallback ?? 'community-then-tts'}
+          onChange={(e) => onChange({ audioFallback: e.target.value as AudioFallbackStrategy })}
+          aria-label="Audio fallback strategy"
+        >
+          <option value="community-then-tts">Community → TTS (recommended)</option>
+          <option value="community-only">Community only</option>
+          <option value="tts-only">TTS only</option>
+        </select>
+        <p className={styles.hint}>
+          What to use when community audio is unavailable or fails to load.
+        </p>
       </div>
     </div>
   );
