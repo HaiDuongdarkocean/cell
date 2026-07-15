@@ -25,6 +25,7 @@ import {
 import { deleteFrequencyByResource } from '../repositories/frequencyRepository';
 import { deleteDictionaryByResource } from '../repositories/dictionaryRepository';
 import { deletePhraseIndex } from '../repositories/phraseIndexRepository';
+import { buildPhraseIndexForResource } from '../logic/phraseIndexBuilder';
 import type {
   ImportFormat,
   ImportOptions,
@@ -81,7 +82,15 @@ export async function importFile(
     const strategy = createStrategy(format, resourceType, { resourceId, langCode, onProgress: onProgress as ((processed: number) => void) | undefined }, { data, fileName: file.name });
     const result = await strategy.execute();
 
-    // 9. Finalize resource (wordCount + installationFinished=true)
+    // 9. Build phrase index for Cambridge dictionaries (ADR-037 §7.2).
+    //    Must succeed before installationFinished=true so a blob failure
+    //    rolls back the whole import. Non-Cambridge / non-dictionary resources
+    //    skip this step.
+    if (format === 'cambridge-json' && resourceType === 'DICTIONARY') {
+      await buildPhraseIndexForResource(langCode, resourceId);
+    }
+
+    // 10. Finalize resource (wordCount + installationFinished=true)
     const resource = await getResource(langCode, resourceId);
     if (resource) {
       await updateResource(langCode, {
@@ -93,7 +102,7 @@ export async function importFile(
 
     return { resourceId, wordCount: result.wordCount, format };
   } catch (error) {
-    // 10. Rollback on any error
+    // 11. Rollback on any error
     await rollbackImport(langCode, resourceId);
     throw error;
   }

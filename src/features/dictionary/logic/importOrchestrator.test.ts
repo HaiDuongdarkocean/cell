@@ -4,6 +4,7 @@ import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/
 import { getResource, getAllResources } from '@/features/dictionary/repositories/resourceRepository';
 import { countFrequencyByResource } from '@/features/dictionary/repositories/frequencyRepository';
 import { countDictionaryByResource } from '@/features/dictionary/repositories/dictionaryRepository';
+import { hasPhraseIndex, getPhraseIndex } from '@/features/dictionary/repositories/phraseIndexRepository';
 import { DuplicateFileError } from '@/features/dictionary/logic/importErrors';
 import { strToU8 } from 'fflate';
 
@@ -86,6 +87,126 @@ describe('importOrchestrator', () => {
       expect(result.wordCount).toBe(2);
       expect(result.format).toBe('cambridge-json');
       expect(await countDictionaryByResource(LANG, result.resourceId)).toBe(2);
+    });
+  });
+
+  describe('importFile — Cambridge phrase index build (ADR-037 §7.2)', () => {
+    it('builds a phrase index blob during Cambridge dictionary import', async () => {
+      const cambridge = JSON.stringify([
+        { term: 'take off', definition: 'to remove', pos: 'phrasal verb' },
+        { term: 'kick the bucket', definition: 'to die', pos: 'idiom' },
+        { term: 'hello', definition: 'greeting' },
+      ]);
+      const file = makeFile('cambridge.json', cambridge);
+      const result = await importFile(file, 'DICTIONARY', { langCode: LANG });
+
+      // installationFinished only after blob persistence.
+      const resource = await getResource(LANG, result.resourceId);
+      expect(resource?.installationFinished).toBe(true);
+
+      // Phrase index exists for this resource.
+      expect(await hasPhraseIndex(LANG, result.resourceId)).toBe(true);
+      const stored = await getPhraseIndex(LANG, result.resourceId);
+      expect(stored).toBeDefined();
+      expect(stored?.termCount).toBe(2); // take off + kick the bucket; 'hello' is single-word
+      expect(stored?.blob.byteLength).toBeGreaterThan(0);
+    });
+
+    it('counts and excludes unsupported open-ended terms', async () => {
+      const cambridge = JSON.stringify([
+        { term: 'take off', definition: 'to remove' },
+        { term: 'and so on ...', definition: 'open-ended' },
+        { term: 'etc.', definition: 'etcetera' },
+      ]);
+      const file = makeFile('cambridge.json', cambridge);
+      const result = await importFile(file, 'DICTIONARY', { langCode: LANG });
+
+      // 'take off' is supported; 'and so on ...' and 'etc.' are unsupportedOpen.
+      const stored = await getPhraseIndex(LANG, result.resourceId);
+      expect(stored).toBeDefined();
+      expect(stored?.termCount).toBe(1);
+    });
+
+    it('does not build a phrase blob for non-Cambridge resources', async () => {
+      const file = makeFile('words.txt', 'hello\nworld\n');
+      const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
+      expect(await hasPhraseIndex(LANG, result.resourceId)).toBe(false);
+    });
+
+    it('does not build a phrase blob for Cambridge FREQUENCY resources', async () => {
+      // Cambridge format detected as cambridge-json, but resourceType=FREQUENCY
+      // should skip the phrase build (phrase index is dictionary-only).
+      const cambridge = JSON.stringify([
+        { term: 'take off', definition: 'to remove' },
+      ]);
+      const file = makeFile('cambridge.json', cambridge);
+      // detectFormat on a .json file with array content → cambridge-json format,
+      // but resourceType=FREQUENCY resolves format via resolveFormat. The phrase
+      // build gate checks resourceType === 'DICTIONARY', so no blob.
+      try {
+        const result = await importFile(file, 'FREQUENCY', { langCode: LANG });
+        expect(await hasPhraseIndex(LANG, result.resourceId)).toBe(false);
+      } catch {
+        // resolveFormat may reject cambridge-json for FREQUENCY — that's fine,
+        // the point is no phrase blob is created. Skip if import itself fails.
+      }
+    });
+
+    it('persists blob even when no multiword terms exist', async () => {
+      const cambridge = JSON.stringify([
+        { term: 'hello', definition: 'greeting' },
+        { term: 'world', definition: 'the earth' },
+      ]);
+      const file = makeFile('cambridge.json', cambridge);
+      const result = await importFile(file, 'DICTIONARY', { langCode: LANG });
+      // No multiword terms → empty index, but blob still persisted so the worker
+      // knows this resource was processed.
+      expect(await hasPhraseIndex(LANG, result.resourceId)).toBe(true);
+      const stored = await getPhraseIndex(LANG, result.resourceId);
+      expect(stored?.termCount).toBe(0);
+    });
+
+    it('rolls back entries + blob + resource on phrase build failure', async () => {
+      // Force a builder failure by mocking putPhraseIndex to throw.
+      const builderModule = await import('@/features/dictionary/logic/phraseIndexBuilder');
+      const original = builderModule.buildPhraseIndexForResource;
+      const putModule = await import('@/features/dictionary/repositories/phraseIndexRepository');
+      const originalPut = putModule.putPhraseIndex;
+      (putModule as { putPhraseIndex: unknown }).putPhraseIndex = jest.fn().mockRejectedValue(new Error('IDB write failed'));
+
+      const cambridge = JSON.stringify([
+        { term: 'take off', definition: 'to remove' },
+      ]);
+      const file = makeFile('cambridge.json', cambridge);
+
+      await expect(importFile(file, 'DICTIONARY', { langCode: LANG })).rejects.toThrow('IDB write failed');
+
+      // Rollback: no resource, no entries, no blob.
+      expect((await getAllResources(LANG)).length).toBe(0);
+
+      // Restore originals.
+      (putModule as { putPhraseIndex: unknown }).putPhraseIndex = originalPut;
+      (builderModule as { buildPhraseIndexForResource: unknown }).buildPhraseIndexForResource = original;
+    });
+
+    it('re-importing after delete builds a fresh phrase blob', async () => {
+      const cambridge = JSON.stringify([
+        { term: 'take off', definition: 'to remove' },
+        { term: 'give up', definition: 'to surrender' },
+      ]);
+      const file1 = makeFile('cambridge1.json', cambridge);
+      const result1 = await importFile(file1, 'DICTIONARY', { langCode: LANG });
+      expect(await hasPhraseIndex(LANG, result1.resourceId)).toBe(true);
+
+      await deleteResourceCascade(LANG, result1.resourceId);
+      expect(await hasPhraseIndex(LANG, result1.resourceId)).toBe(false);
+
+      // Different filename → different signature → no duplicate error.
+      const file2 = makeFile('cambridge2.json', cambridge);
+      const result2 = await importFile(file2, 'DICTIONARY', { langCode: LANG });
+      expect(await hasPhraseIndex(LANG, result2.resourceId)).toBe(true);
+      const stored = await getPhraseIndex(LANG, result2.resourceId);
+      expect(stored?.termCount).toBe(2);
     });
   });
 

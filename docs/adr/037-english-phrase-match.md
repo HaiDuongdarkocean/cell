@@ -614,6 +614,7 @@ It conflicts with the 4GB/RAM constraint and duplicates data already available i
 2. ✅ Add fixture-wide generation test; 34,094 normalized terms compile without malformed-parser failures.
 3. ✅ Add phrase index compiler + compact binary blob + serialize/deserialize round-trip (`phraseIndexCompiler.ts`); fixture: ≤8MB, median posting 1–2, p95 ≤25.
 4. ✅ Add DB schema v10 `langPhraseIndex` store + `phraseIndexRepository` (put/get/delete/has) + atomic cascade in `importOrchestrator` rollback + `deleteResourceCascade`.
+4b. ✅ Build phrase blob during Cambridge import (`phraseIndexBuilder.ts`): collect multiword terms from stored entries → parse → compile → serialize → `putPhraseIndex`. Unsupported terms counted + excluded. Builder failure rolls back the whole import. `installationFinished=true` only after blob persistence.
 5. Add compact blob loader and worker anchor index.
 6. ✅ Add bounded DP matcher + deterministic ranking (`phraseMatcher.ts`); 26 tests covering P01-P33 positive, N01-N12 negative, ranking, edge cases.
 7. ✅ Replace the old `confidence >= 0.7` contract with `quality` + structural validity (`phraseMatchService.ts`): `PhraseMatchResult` with `type: 'phrase' | 'word'` and `quality` enum. No confidence score exposed.
