@@ -106,42 +106,40 @@ export function CardCreatorDialogContent({
         </div>
       )}
 
-      {/* Section: Card destination */}
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Card destination</h3>
-        <div className={styles.pairRow}>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>Note type</label>
-            <Select
-              value={draft.noteType}
-              options={noteTypes.map((n) => ({ value: n, label: n }))}
-              onChange={changeNoteType}
-              aria-label="Note type"
-              data-testid="cc-note-type"
-            />
+      {/* P1.3: two-pane layout — form left, preview right (desktop only). */}
+      <div className={styles.twoPane}>
+        {/* Left pane: destination + fields */}
+        <div className={styles.twoPaneForm}>
+          {/* Section: Card destination */}
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Card destination</h3>
+            <div className={styles.pairRow}>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>Note type</label>
+                <Select
+                  value={draft.noteType}
+                  options={noteTypes.map((n) => ({ value: n, label: n }))}
+                  onChange={changeNoteType}
+                  aria-label="Note type"
+                  data-testid="cc-note-type"
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel}>Deck</label>
+                <Select
+                  value={draft.deck}
+                  options={decks.map((d) => ({ value: d, label: d }))}
+                  onChange={(d) => void changeDeck(d)}
+                  aria-label="Deck"
+                  data-testid="cc-deck"
+                />
+              </div>
+            </div>
           </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>Deck</label>
-            <Select
-              value={draft.deck}
-              options={decks.map((d) => ({ value: d, label: d }))}
-              onChange={(d) => void changeDeck(d)}
-              aria-label="Deck"
-              data-testid="cc-deck"
-            />
-          </div>
-        </div>
-      </div>
 
-      <PreviewBlock
-        targetWord={draft.fields.targetWord}
-        sentence={draft.fields.sentence}
-        testId="cc-preview"
-      />
-
-      {/* Section: Fields */}
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Fields</h3>
+          {/* Section: Fields */}
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Fields</h3>
 
         <FieldRow
           label="Target word"
@@ -304,6 +302,17 @@ export function CardCreatorDialogContent({
             aria-label="Tags"
           />
         </FieldRow>
+      </div>
+        </div>
+
+        {/* Right pane: preview (sticky on desktop, top on mobile) */}
+        <div className={styles.twoPanePreview}>
+          <PreviewBlock
+            targetWord={draft.fields.targetWord}
+            sentence={draft.fields.sentence}
+            testId="cc-preview"
+          />
+        </div>
       </div>
 
       {/* Footer */}
