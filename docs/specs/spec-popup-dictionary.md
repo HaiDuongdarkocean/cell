@@ -820,7 +820,7 @@ QUICK_ADD: 'QUICK_ADD',
 - [x] Trigger mode setting (click/hover/modifier), persist.
 - [x] Card Creator setting có SRS dropdown (Anki only MVP), set default.
 - [x] Không có string "OCEAN"/"Yomitan"/sản phẩm bên thứ ba trong `src/` + `docs/`.
-- [ ] Browser verify (Edge/Chrome thật qua MCP edge-devtools): popup render dark/light, EN+ZH lookup, panel toggle, Quick Add toast, mobile 375px không overflow.
+- [x] Browser verify (Edge/Chrome thật qua MCP edge-devtools): popup render dark/light, EN+ZH lookup, panel toggle, Quick Add toast, mobile 375px không overflow.
 
 ### Failure paths (testable)
 

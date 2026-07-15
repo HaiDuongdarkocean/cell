@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Popup Dictionary Test</title>
+<style>
+  body { margin: 0; padding: 20px; font-family: system-ui, sans-serif; background: #f8fafc; color: #1e293b; }
+  .subtitle { font-size: 24px; line-height: 1.6; padding: 40px; background: #000; color: #fff; border-radius: 8px; }
+  .subtitle span { cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: background 0.15s; }
+  .subtitle span:hover { background: rgba(59,130,246,0.3); }
+  @media (prefers-color-scheme: dark) { body { background: #0f172a; color: #e2e8f0; } }
+</style>
+</head>
+<body>
+<h1>Popup Dictionary Browser Test</h1>
+<div class="subtitle" id="sub">
+  <span data-word="The">The</span>
+  <span data-word="answer">answer</span>
+  <span data-word="was">was</span>
+  <span data-word="right">right</span>
+  <span data-word="under">under</span>
+  <span data-word="my">my</span>
+  <span data-word="nose">nose</span>
+</div>
+<script>
+// Simulate popup shell with Shadow DOM
+function createPopup(anchorX, anchorY) {
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none;';
+  document.body.appendChild(host);
+  const shadow = host.attachShadow({ mode: 'open' });
+  // Inject CSS variables for dark/light mode (Shadow DOM doesn't inherit)
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    :host {
+      --dp-bg: #ffffff; --dp-text: #1e293b; --dp-border: #cbd5e1;
+      --dp-muted: #64748b; --dp-primary: #3b82f6;
+      --dp-primary-subtle: rgba(59,130,246,0.1); --dp-badge-bg: #f1f5f9;
+    }
+    @media (prefers-color-scheme: dark) {
+      :host {
+        --dp-bg: #1e293b; --dp-text: #e2e8f0; --dp-border: #334155;
+        --dp-muted: #94a3b8; --dp-primary: #60a5fa;
+        --dp-primary-subtle: rgba(96,165,250,0.15); --dp-badge-bg: #334155;
+      }
+    }
+  `;
+  shadow.appendChild(styleEl);
+  const container = document.createElement('div');
+  // Clamp width to viewport (spec §10: mobile 375px không overflow)
+  const MARGIN = 8;
+  const maxWidth = Math.min(560, window.innerWidth - MARGIN * 2);
+  const maxHeight = Math.min(480, Math.round(window.innerHeight * 0.7));
+  container.style.cssText = 'position:fixed;pointer-events:auto;width:' + maxWidth + 'px;max-height:' + maxHeight + 'px;overflow:hidden;display:flex;flex-direction:column;border-radius:10px;border:1px solid var(--dp-border,#cbd5e1);background:var(--dp-bg,#ffffff);box-shadow:0 4px 24px rgba(0,0,0,0.15);font-family:system-ui,sans-serif;font-size:14px;color:var(--dp-text,#1e293b);';
+  // Position
+  let left = anchorX, top = anchorY + 20;
+  if (left + maxWidth + MARGIN > window.innerWidth) left = window.innerWidth - maxWidth - MARGIN;
+  if (left < MARGIN) left = MARGIN;
+  if (top < MARGIN) top = MARGIN;
+  container.style.left = left + 'px';
+  container.style.top = top + 'px';
+  shadow.appendChild(container);
+
+  // Header
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:8px 12px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;';
+  header.innerHTML = '<span style="font-size:16px;font-weight:600;">take off</span><span style="font-size:13px;color:#64748b;">/teɪk ɒf/</span><span style="font-size:11px;padding:2px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;">#1234</span><button style="font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid #cbd5e1;background:transparent;cursor:pointer;text-transform:capitalize;">tracking</button>';
+  container.appendChild(header);
+
+  // Definitions
+  const defs = document.createElement('div');
+  defs.style.cssText = 'padding:8px 12px;overflow-y:auto;flex:1;';
+  defs.innerHTML = '<div style="padding:6px 0;border-bottom:1px solid #f1f5f9;"><div style="display:flex;align-items:flex-start;gap:6px;"><input type="checkbox" checked style="margin-top:3px;"><div style="flex:1;"><span style="font-style:italic;color:#64748b;">verb. </span><span>to remove something</span><div style="margin-top:4px;font-size:12px;color:#64748b;">• Take off your shoes.</div></div></div></div><div style="padding:6px 0;"><div style="display:flex;align-items:flex-start;gap:6px;"><input type="checkbox" checked style="margin-top:3px;"><div style="flex:1;"><span style="font-style:italic;color:#64748b;">phrasal verb. </span><span>to leave the ground</span></div></div></div>';
+  container.appendChild(defs);
+
+  // Footer
+  const footer = document.createElement('div');
+  footer.style.cssText = 'padding:8px 12px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;';
+  footer.innerHTML = '<button style="font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;cursor:pointer;text-transform:capitalize;">tracking</button><button style="font-size:13px;padding:4px 12px;border-radius:6px;border:none;background:#3b82f6;color:white;cursor:pointer;font-weight:500;">+ Quick Add</button>';
+  container.appendChild(footer);
+
+  return { host, shadow, container };
+}
+
+// Click handler
+document.querySelectorAll('#sub span').forEach(span => {
+  span.addEventListener('click', (e) => {
+    // Remove existing popup
+    document.querySelectorAll('[data-dp-popup-host]').forEach(h => h.remove());
+    const rect = span.getBoundingClientRect();
+    const popup = createPopup(rect.left, rect.top);
+    popup.host.setAttribute('data-dp-popup-host', '');
+    // Esc to dismiss
+    const onKey = (ev) => { if (ev.key === 'Escape') { popup.host.remove(); document.removeEventListener('keydown', onKey); } };
+    document.addEventListener('keydown', onKey);
+    // Click outside to dismiss
+    const onClick = (ev) => { if (!ev.composedPath().includes(popup.host)) { popup.host.remove(); document.removeEventListener('mousedown', onClick, true); } };
+    document.addEventListener('mousedown', onClick, true);
+  });
+});
+</script>
+</body>
+</html>

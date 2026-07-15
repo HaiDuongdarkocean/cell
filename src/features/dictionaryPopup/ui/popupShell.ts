@@ -132,6 +132,35 @@ export class PopupShell {
     // Shadow DOM — isolates CSS from page.
     this.shadow = this.host.attachShadow({ mode: 'open' });
 
+    // Inject CSS variables for dark/light mode (Shadow DOM doesn't inherit
+    // from host page). Uses prefers-color-scheme media query.
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
+      :host {
+        --dp-bg: #ffffff;
+        --dp-text: #1e293b;
+        --dp-border: #cbd5e1;
+        --dp-muted: #64748b;
+        --dp-primary: #3b82f6;
+        --dp-primary-subtle: rgba(59,130,246,0.1);
+        --dp-badge-bg: #f1f5f9;
+        --dp-surface-hover: rgba(0,0,0,0.04);
+      }
+      @media (prefers-color-scheme: dark) {
+        :host {
+          --dp-bg: #1e293b;
+          --dp-text: #e2e8f0;
+          --dp-border: #334155;
+          --dp-muted: #94a3b8;
+          --dp-primary: #60a5fa;
+          --dp-primary-subtle: rgba(96,165,250,0.15);
+          --dp-badge-bg: #334155;
+          --dp-surface-hover: rgba(255,255,255,0.06);
+        }
+      }
+    `;
+    this.shadow.appendChild(styleEl);
+
     // Container — the visible popup.
     this.container = document.createElement('div');
     this.container.setAttribute('data-dp-popup', '');
