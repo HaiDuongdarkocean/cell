@@ -221,4 +221,108 @@ describe('phraseMatchService', () => {
       expect(result!.dictionaryTerm).toBe('world');
     });
   });
+
+  describe('matchPhraseRequest — multi-resource priority (Task 1.4)', () => {
+    it('picks the newest resource (highest resourceId) when both match', async () => {
+      // Two resources both contain 'kick the bucket' with different definitions.
+      const r1 = await setupResourceWithPhraseIndex(
+        ['kick the bucket'],
+        [{ term: 'kick the bucket', definition: 'to die (old dict)' }],
+      );
+      // Use a distinct signature for the second resource.
+      const r2ResourceId = await addResource('en', {
+        name: 'new-dict.json',
+        langCode: 'en',
+        type: 'DICTIONARY',
+        format: 'cambridge-json',
+        signature: 'test-sig-new',
+        wordCount: 1,
+        installationFinished: true,
+        importedAt: Date.now(),
+      });
+      await addDictionaryEntry('en', {
+        resourceId: r2ResourceId,
+        term: 'kick the bucket',
+        reading: '',
+        altterm: '',
+        pronunciation: '',
+        definition: 'to die (new dict)',
+        pos: '',
+        examples: '',
+        audio: '',
+      });
+      const inputs: PhraseIndexInput[] = [];
+      const parsed = parsePhraseTemplate('kick the bucket', { inflectableLiterals: TEST_VERBS });
+      if (parsed.status === 'supported') {
+        inputs.push({
+          templateId: 0,
+          sourceTerm: parsed.sourceTerm,
+          normalizedTerm: parsed.normalizedTerm,
+          nodes: parsed.nodes,
+          fixedTokenCount: parsed.fixedTokenCount,
+          minSurfaceTokens: parsed.minSurfaceTokens,
+          maxSurfaceTokens: parsed.maxSurfaceTokens,
+          frequencyRank: 0,
+        });
+      }
+      const index = compilePhraseIndex(inputs);
+      await putPhraseIndex('en', r2ResourceId, serializePhraseIndex(index), {
+        compilerVersion: index.compilerVersion,
+        termCount: index.termCount,
+      });
+
+      expect(r2ResourceId).toBeGreaterThan(r1.resourceId);
+
+      const result = await matchPhraseRequest({
+        langCode: 'en',
+        sentence: 'He kicked the bucket.',
+        cursorOffset: 3,
+      });
+
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('phrase');
+      expect(result!.resourceId).toBe(r2ResourceId);
+    });
+
+    it('sourceResourceId is never a sentinel zero for a stored match', async () => {
+      await setupResourceWithPhraseIndex(
+        ['kick the bucket'],
+        [{ term: 'kick the bucket', definition: 'to die' }],
+      );
+
+      const result = await matchPhraseRequest({
+        langCode: 'en',
+        sentence: 'He kicked the bucket.',
+        cursorOffset: 3,
+      });
+
+      expect(result).not.toBeNull();
+      expect(result!.resourceId).not.toBe(0);
+      expect(result!.resourceId).toBeGreaterThan(0);
+    });
+
+    it('falls back to a lower-priority resource when the newest has no match', async () => {
+      // r_newest has 'give up'; r_older has 'kick the bucket'.
+      const rOlder = await setupResourceWithPhraseIndex(
+        ['kick the bucket'],
+        [{ term: 'kick the bucket', definition: 'to die' }],
+      );
+      const rNewest = await setupResourceWithPhraseIndex(
+        ['give up'],
+        [{ term: 'give up', definition: 'to surrender' }],
+      );
+      expect(rNewest.resourceId).toBeGreaterThan(rOlder.resourceId);
+
+      const result = await matchPhraseRequest({
+        langCode: 'en',
+        sentence: 'He kicked the bucket.',
+        cursorOffset: 3,
+      });
+
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('phrase');
+      expect(result!.dictionaryTerm).toBe('kick the bucket');
+      expect(result!.resourceId).toBe(rOlder.resourceId);
+    });
+  });
 });

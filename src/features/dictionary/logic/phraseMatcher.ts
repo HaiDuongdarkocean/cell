@@ -338,7 +338,14 @@ interface CandidateMatch {
 }
 
 /** Main entry: match a phrase at the cursor position. */
-export function matchPhrase(request: PhraseMatchRequest, index: PhraseIndex): PhraseMatch | null {
+export function matchPhrase(
+  request: PhraseMatchRequest,
+  index: PhraseIndex,
+  /** Real resourceId for the index — embedded in the returned PhraseMatch so
+   *  callers never see a sentinel zero. Defaults to 0 only for tests that
+   *  exercise matching logic without resource identity. */
+  sourceResourceId: number = 0,
+): PhraseMatch | null {
   const { sentence, cursorOffset } = request;
 
   // 1. Tokenize.
@@ -424,8 +431,36 @@ export function matchPhrase(request: PhraseMatchRequest, index: PhraseIndex): Ph
       end: tokens[best.endTokenIndex - 1]!.end,
     },
     quality: best.quality,
-    sourceResourceId: 0, // resolved by caller from index metadata
+    sourceResourceId,
   };
+}
+
+/**
+ * Compare two PhraseMatches by the deterministic ranking tuple (ADR §9),
+ * adapted for the cross-resource case. Used by the lookup orchestrator to
+ * pick the winner when the same phrase matches in multiple resources.
+ *
+ * Tuple: quality desc → span length desc → dictionaryTerm ascending (stable).
+ * Resource priority is applied BEFORE this comparison by the caller (the
+ * caller sorts resources by priority, then breaks ties with this function).
+ */
+export function comparePhraseMatches(a: PhraseMatch, b: PhraseMatch): number {
+  const QUALITY_ORDER: Record<PhraseMatch['quality'], number> = {
+    fixed: 4,
+    inflected: 3,
+    'possessive-template': 2,
+    'slot-template': 1,
+  };
+  const qDiff = QUALITY_ORDER[b.quality] - QUALITY_ORDER[a.quality];
+  if (qDiff !== 0) return qDiff;
+
+  const aLen = a.span.end - a.span.start;
+  const bLen = b.span.end - b.span.start;
+  const spanDiff = bLen - aLen;
+  if (spanDiff !== 0) return spanDiff;
+
+  // Stable: dictionaryTerm ascending (deterministic lexical tie-break).
+  return a.dictionaryTerm < b.dictionaryTerm ? -1 : a.dictionaryTerm > b.dictionaryTerm ? 1 : 0;
 }
 
 /** Deterministic ranking tuple (ADR §9). */

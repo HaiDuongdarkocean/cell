@@ -193,6 +193,57 @@ describe('lookupWorkerHandler — LOOKUP with real phrase match', () => {
   });
 });
 
+describe('lookupWorkerHandler — multi-resource priority (Task 1.4)', () => {
+  it('picks the newest resource (highest resourceId) when both match', () => {
+    const state = createLookupWorkerState();
+    // Both resources contain 'take off'. resourceId 5 is newer than 1.
+    handleWorkerMessage(state, hydrateChunk(1, buildBlob(['take off'])));
+    handleWorkerMessage(state, hydrateChunk(5, buildBlob(['take off'])));
+    handleWorkerMessage(state, { type: 'HYDRATE_DONE', requestId: 'h-done' } as WorkerHydrateDoneMessage);
+
+    const responses = handleWorkerMessage(state, lookup('r1', 'Take off your shoes.', 0));
+    expect(responses[0]!.ok).toBe(true);
+    expect(responses[0]!.result?.detectedPhrase?.sourceResourceId).toBe(5);
+  });
+
+  it('repeated runs produce the same winner (deterministic)', () => {
+    function run(): number {
+      const state = createLookupWorkerState();
+      handleWorkerMessage(state, hydrateChunk(2, buildBlob(['take off'])));
+      handleWorkerMessage(state, hydrateChunk(7, buildBlob(['take off'])));
+      handleWorkerMessage(state, hydrateChunk(4, buildBlob(['take off'])));
+      handleWorkerMessage(state, { type: 'HYDRATE_DONE', requestId: 'h-done' } as WorkerHydrateDoneMessage);
+      const responses = handleWorkerMessage(state, lookup('r1', 'Take off your shoes.', 0));
+      return responses[0]!.result!.detectedPhrase!.sourceResourceId;
+    }
+    expect(run()).toBe(run());
+    expect(run()).toBe(7); // highest resourceId
+  });
+
+  it('sourceResourceId is never a sentinel zero for a real match', () => {
+    const state = createLookupWorkerState();
+    handleWorkerMessage(state, hydrateChunk(3, buildBlob(['take off'])));
+    handleWorkerMessage(state, { type: 'HYDRATE_DONE', requestId: 'h-done' } as WorkerHydrateDoneMessage);
+
+    const responses = handleWorkerMessage(state, lookup('r1', 'Take off your shoes.', 0));
+    expect(responses[0]!.result?.detectedPhrase?.sourceResourceId).toBe(3);
+    expect(responses[0]!.result?.detectedPhrase?.sourceResourceId).not.toBe(0);
+  });
+
+  it('falls back to a lower-priority resource when the newest has no match', () => {
+    const state = createLookupWorkerState();
+    // resourceId 5 has 'give up'; resourceId 1 has 'take off'. Lookup for
+    // 'take off' → 5 has no match → 1 wins.
+    handleWorkerMessage(state, hydrateChunk(5, buildBlob(['give up'])));
+    handleWorkerMessage(state, hydrateChunk(1, buildBlob(['take off'])));
+    handleWorkerMessage(state, { type: 'HYDRATE_DONE', requestId: 'h-done' } as WorkerHydrateDoneMessage);
+
+    const responses = handleWorkerMessage(state, lookup('r1', 'Take off your shoes.', 0));
+    expect(responses[0]!.result?.detectedPhrase?.sourceResourceId).toBe(1);
+    expect(responses[0]!.result?.detectedPhrase?.dictionaryTerm).toBe('take off');
+  });
+});
+
 describe('lookupWorkerHandler — definitions LRU + PUSH_DEFINITION (spec §9.5)', () => {
   it('PUSH_DEFINITION inserts into the LRU and word-fallback returns it', () => {
     const state = createLookupWorkerState();

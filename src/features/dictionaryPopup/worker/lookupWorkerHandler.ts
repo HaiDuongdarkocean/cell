@@ -17,13 +17,15 @@ import type {
   WorkerRequestMessage,
 } from '../types';
 import type { LookupResult, DefinitionEntry } from '../types';
-import { matchPhrase, tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
+import { matchPhrase, tokenizeSentence, comparePhraseMatches } from '@/features/dictionary/logic/phraseMatcher';
+import type { PhraseMatch } from '@/features/dictionary/logic/phraseMatcher';
 import type { PhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
 import {
   loadPhraseIndexBlob,
   type ResidentPhraseIndex,
 } from './phraseIndexLoader';
 import { LruCache } from '../logic/lruCache';
+import { sortResidentIndexesByPriority } from './resourcePriority';
 
 /** Hard cap for the definitions LRU (spec §9.5: exactly 10k live entries). */
 export const DEFINITION_LRU_CAP = 10000;
@@ -132,39 +134,63 @@ function handleLookup(
 }
 
 /**
- * Run the phrase match against all resident indexes.
+ * Run the phrase match against all resident indexes in priority order.
  *
- * ponytail: first-match-wins across resources. Ceiling: when the same phrase
- * exists in two resources, the winner is whichever Map iteration order visits
- * first — non-deterministic across V8 versions. Upgrade path: Task 1.4 adds
- * explicit resource priority so the winner is deterministic.
+ * Collects the best match per resource, then picks the overall winner by:
+ * (1) resource priority (newest resourceId first, or explicit priorityMap),
+ * (2) the matcher's deterministic ranking tuple (comparePhraseMatches).
+ *
+ * The winning sourceResourceId is the real resourceId — never a sentinel.
  */
 function runLookup(state: LookupWorkerState, msg: WorkerLookupMessage): LookupResult {
   const { contextSentence, cursorOffset, term, langCode } = msg.payload;
 
-  for (const resident of state.residentIndexes.values()) {
+  const sorted = sortResidentIndexesByPriority(state.residentIndexes.values());
+  const candidates: { resident: ResidentPhraseIndex; match: PhraseMatch }[] = [];
+
+  for (const resident of sorted) {
     const index: PhraseIndex = resident.index;
-    const match = matchPhrase({ sentence: contextSentence, cursorOffset }, index);
+    const match = matchPhrase(
+      { sentence: contextSentence, cursorOffset },
+      index,
+      resident.resourceId,
+    );
     if (match) {
-      return {
-        term: match.dictionaryTerm,
-        langCode,
-        reading: '',
-        readingKind: 'none',
-        frequency: null,
-        status: 'unknown',
-        partsOfSpeech: [],
-        definitions: [],
-        detectedPhrase: {
-          dictionaryTerm: match.dictionaryTerm,
-          surface: match.surface,
-          span: match.span,
-          quality: match.quality,
-          sourceResourceId: resident.resourceId,
-        },
-        matchSource: 'plugin',
-      };
+      candidates.push({ resident, match });
     }
+  }
+
+  if (candidates.length > 0) {
+    // Pick the winner: priority order is already applied via sort. The first
+    // candidate is from the highest-priority resource. Ties (same priority)
+    // are broken by comparePhraseMatches.
+    candidates.sort((a, b) => {
+      // Priority is resourceId-descending (already the sort order); preserve
+      // that as the primary key, then comparePhraseMatches as tie-break.
+      const prioDiff = b.resident.resourceId - a.resident.resourceId;
+      if (prioDiff !== 0) return prioDiff;
+      return comparePhraseMatches(a.match, b.match);
+    });
+    const winner = candidates[0]!;
+    const match = winner.match;
+    return {
+      term: match.dictionaryTerm,
+      langCode,
+      reading: '',
+      readingKind: 'none',
+      frequency: null,
+      status: 'unknown',
+      partsOfSpeech: [],
+      definitions: [],
+      detectedPhrase: {
+        dictionaryTerm: match.dictionaryTerm,
+        surface: match.surface,
+        span: match.span,
+        quality: match.quality,
+        sourceResourceId: winner.resident.resourceId,
+      },
+      matchSource: 'plugin',
+    };
   }
 
   // No phrase match — word fallback. Definitions come from the LRU (hit) or

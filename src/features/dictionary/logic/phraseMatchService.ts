@@ -14,6 +14,7 @@ import {
 import {
   matchPhrase,
   tokenizeSentence,
+  comparePhraseMatches,
   type PhraseMatchRequest,
   type PhraseMatch,
 } from './phraseMatcher';
@@ -71,30 +72,43 @@ async function tryPhraseMatch(
 
   checkAbort(signal);
 
-  // Try each index; return the first match (ranking is per-index).
-  // ponytail: multi-resource merge is a later concern; most users have 1 dictionary.
-  for (const stored of allIndexes) {
+  // Sort by resourceId descending (newest import wins) for deterministic
+  // multi-resource priority. Collect the best match per resource, then pick
+  // the overall winner by (resource priority, comparePhraseMatches).
+  const sorted = [...allIndexes].sort((a, b) => b.resourceId - a.resourceId);
+  const candidates: { resourceId: number; match: PhraseMatch }[] = [];
+
+  for (const stored of sorted) {
     checkAbort(signal);
     const index: PhraseIndex = deserializePhraseIndex(stored.blob);
-    const match = matchPhrase({ sentence, cursorOffset }, index);
-    if (!match) continue;
-
-    // Resolve definition from dictionary store.
-    const entries = await findDictionaryByTerm(langCode, match.dictionaryTerm);
-    const definition = entries.length > 0 ? entries[0]!.definition : '';
-
-    return {
-      type: 'phrase',
-      dictionaryTerm: match.dictionaryTerm,
-      surface: match.surface,
-      definition,
-      quality: match.quality,
-      span: match.span,
-      resourceId: stored.resourceId,
-    };
+    const match = matchPhrase({ sentence, cursorOffset }, index, stored.resourceId);
+    if (match) candidates.push({ resourceId: stored.resourceId, match });
   }
 
-  return null;
+  if (candidates.length === 0) return null;
+
+  // Pick the winner: highest resourceId first, then comparePhraseMatches.
+  candidates.sort((a, b) => {
+    const prioDiff = b.resourceId - a.resourceId;
+    if (prioDiff !== 0) return prioDiff;
+    return comparePhraseMatches(a.match, b.match);
+  });
+  const winner = candidates[0]!;
+  const match = winner.match;
+
+  // Resolve definition from dictionary store using the winning resource.
+  const entries = await findDictionaryByTerm(langCode, match.dictionaryTerm);
+  const definition = entries.length > 0 ? entries[0]!.definition : '';
+
+  return {
+    type: 'phrase',
+    dictionaryTerm: match.dictionaryTerm,
+    surface: match.surface,
+    definition,
+    quality: match.quality,
+    span: match.span,
+    resourceId: winner.resourceId,
+  };
 }
 
 /** Fall back to single-word dictionary lookup. */
