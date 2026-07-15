@@ -102,6 +102,6 @@
 
 ## P1 after P0
 
-- [ ] P1.1 Generic web-text selection/hover lookup
-- [ ] P1.2 Send to Creator two-pane workspace
-- [ ] P1.3 Card Creator full restyle
+- [x] P1.1 Generic web-text selection/hover lookup
+- [x] P1.2 Send to Creator two-pane workspace
+- [x] P1.3 Card Creator full restyle
