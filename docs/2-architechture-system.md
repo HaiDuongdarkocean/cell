@@ -38,7 +38,7 @@ src/
 │   ├── download/       #   Download queue/selection
 │   ├── settings/       #   Settings UI + validation logic
 │   ├── theme/          #   Theme system (ADR-022) — logic/colorGenerator, contrastValidator, themeManager, themeStorage, themeConfig; ui/ThemePanel, ThemeProvider, ModeCards, ColorCustomization, ThemePreview, ContrastBadges, ThemeImportExport
-│   └── dictionary/     #   Dictionary import system (ADR-023) — logic/fileDetector, formatDetector, signatureGenerator, importErrors, batchProcessor, normalizationPipeline, importOrchestrator; repositories/baseRepository, resourceRepository, frequencyRepository, dictionaryRepository; strategies/baseImportStrategy, txtLineStrategy, jsonArrayStrategy, yomitanStrategy, cambridgeJsonStrategy, sqliteStrategy, strategyFactory; ui/ResourcesPanel, Dropzone, ResourceCard, ImportProgress, DeleteConfirmModal
+│   └── dictionary/     #   Dictionary import + phrase-template system (ADR-023, ADR-037) — logic/fileDetector, formatDetector, signatureGenerator, importErrors, batchProcessor, normalizationPipeline, phraseTemplateParser, phraseIndexCompiler, importOrchestrator; repositories/baseRepository (v10: +langPhraseIndex), resourceRepository, frequencyRepository, dictionaryRepository, phraseIndexRepository; strategies/baseImportStrategy, txtLineStrategy, jsonArrayStrategy, yomitanStrategy, cambridgeJsonStrategy, sqliteStrategy, strategyFactory; ui/ResourcesPanel, Dropzone, ResourceCard, ImportProgress, DeleteConfirmModal
 ├── entities/           # Domain entities (types/models) — M19: @/types/ fully migrated here
 │   ├── video/          #   DetectedVideo, M3u8*, TsSegment
 │   ├── subtitle/       #   Subtitle overlay types (canonical SubtitleFormat)
@@ -266,6 +266,65 @@ src/
 
 ```
 
+## Cây thư mục docs/design-system/icon (Lucide reference — chỉ tham khảo phong cách)
+
+```
+docs/design-system/icon/               # Lucide reference catalog (KHÔNG bundled, chỉ tham khảo style)
+├── README.md                          # Workflow: find icon → copy to src/ → import ?raw → use
+├── LICENSE                            # ISC license from Lucide (redistribution obligation)
+├── catalog.md                         # Auto-generated index of 1995 icons with tags (do not edit by hand)
+├── index.html                         # Visual overview page (search + click-to-copy, self-contained, open in browser)
+└── svg/                               # 1995 raw .svg files from lucide-static (stroke 2.0, 24x24, round caps, currentColor)
+```
+
+## Cây thư mục docs/design-system/icon-system (cell icon system — tự vẽ, 322 SVG)
+
+```
+docs/design-system/icon-system/        # Tự vẽ 322 icon (KHÔNG bundled, docs-only)
+├── README.md                          # Workflow: tìm icon → copy to src/ → import ?raw → use
+├── STYLE-GUIDE.md                     # Phong cách thiết kế (24x24, stroke 2, round caps, currentColor)
+├── catalog.md                         # Auto-generated index of 322 icons (do not edit by hand)
+├── index.html                         # Visual overview page (search + filter by category + click-to-copy, self-contained)
+├── icon-list.txt                      # Danh sách icon gốc (reference)
+└── svg/                               # 322 SVG files
+    ├── media/                         # 43 SVG (play/pause/skip/rewind/volume/...)
+    ├── subtitle/                      # 28 SVG (captions/translate/align/...)
+    ├── dictionary/                    # 30 SVG (book-open/search/mic/character/...)
+    ├── flashcard/                     # 26 SVG (layers/card/deck/graduation-cap/...)
+    ├── mediatype/                     # 25 SVG (film/music/book/newspaper/...)
+    ├── download/                      # 25 SVG (download/file/folder/save/...)
+    ├── nav/                           # 30 SVG (arrow/chevron/home/menu/...)
+    ├── edit/                          # 29 SVG (pencil/scissors/trash/bold/...)
+    ├── settings/                      # 29 SVG (gear/toggle/sun/moon/lock/...)
+    ├── time/                          # 20 SVG (clock/timer/calendar/history/...)
+    ├── status/                        # 26 SVG (check/x/alert/loader/star/...)
+    └── comm/                          # 11 SVG (message/share/send/bell/...)
+```
+
+## Cây thư mục docs/design-system/icon-system_v2 (cell icon system v2 — minimalism V1, 322 SVG)
+
+```
+docs/design-system/icon-system_v2/     # Tự vẽ 322 icon variant V1 minimalism (KHÔNG bundled, docs-only)
+├── README.md                          # Workflow: tìm icon v2 → copy to src/ → import ?raw → use
+├── STYLE-GUIDE.md                     # Phong cách thiết kế (24x24, stroke 2, round caps, currentColor)
+├── catalog.md                         # Auto-generated index of 322 icons (do not edit by hand)
+├── index.html                         # Visual overview page (search + filter by category + click-to-copy, self-contained)
+├── icon-list.txt                      # Danh sách icon gốc (reference)
+└── svg/                               # 322 SVG files (variant V1 minimalism, fallback V1 cho 42 synced)
+```
+
+## Cây thư mục scripts
+
+```
+scripts/
+├── sync-icons.mjs                     # Sync lucide-static SVG → docs/design-system/icon/ + generate catalog.md + copy LICENSE. Re-run after `npm update lucide-static`.
+└── icon-system/                       # Cell icon system generator (tự vẽ, không copy)
+    ├── gen.mjs                        # Generator: đọc categories/*.mjs → xuất 322 SVG V1 + catalog.md + index.html
+    ├── gen-v2.mjs                     # Generator: đọc categories/*.mjs → xuất 322 SVG V1 minimalism + catalog.md + index.html
+    ├── variants.mjs                   # SVG wrapper (24x24, stroke 2, round caps, currentColor, fill none)
+    └── categories/                    # 12 category files (media/subtitle/dictionary/flashcard/mediatype/download/nav/edit/settings/time/status/comm)
+```
+
 ---
 
 ## Cây thư mục tests
@@ -374,7 +433,7 @@ tests/
 | `content/navClusterActions.ts` | subtitleSync (findCurrentLine), types (SrtCue) | subtitleBlockController.ts | **ADR-018**: Pure action helpers — findActiveCueIndex (target-primary native-fallback), prevSentence/nextSentence (gap fallback), seekBy ([0,duration] clamp + NaN/Infinity live-stream) |
 | `content/navClusterButton.ts` | navClusterIcons | subtitleBlockController.ts | **ADR-018**: Atom — createNavClusterButton DOM factory (inline SVG icons via navClusterIcons, click/hold handlers + aria-pressed toggle), setButtonPressed helper |
 | `content/navClusterKeyboard.ts` | subtitleShortcuts (isEditableTarget) | subtitleBlockController.ts | **ADR-018**: Pure keyboard state machine — handleClusterKeydown/up (ArrowLeft/Right, R hold with e.repeat ignore + repeatHolding guard, </, >/), cancelRepeatHold (blur/visibilitychange) |
-| `content/navClusterIcons.ts` | — | subtitleBlockDom.ts, navClusterButton.ts, subtitleBlockController.ts | **ADR-018**: Pure SVG icon string map (NAV_CLUSTER_ICONS: prev/next/repeat/rewind/forward — currentColor stroke, aria-hidden, 24x24 viewBox). Source: docs/mockups/icon-svg/ (svgrepo, recolored to currentColor) |
+| `content/navClusterIcons.ts` | — | subtitleBlockDom.ts, navClusterButton.ts, subtitleBlockController.ts | **ADR-018**: Pure SVG icon string map (NAV_CLUSTER_ICONS: prev/next/repeat/rewind/forward — currentColor stroke, aria-hidden, 24x24 viewBox). Source: docs/mockups/icon-svg/ (svgrepo, recolored to currentColor) — **note: icon-svg/ đã xóa, thay bằng docs/design-system/icon/ (Lucide reference catalog)** |
 | `content/navClusterCss.ts` | — | themeTokens (injectThemeTokens) | **ADR-018**: Cluster CSS injected into content-script isolated world — no button background default (transparent), hover=color primary, repeat-active=color primary + spin animation, SVG 60% of button, drag on cluster background (ADR-015 pattern, no drag handle button), `transform: translate(-50%, -50%)` so `left/top` represent the cluster center |
 | `content/offsetController.ts` | subtitleOffsetPanel (createOffsetSection), subtitleOffsetBadge, subtitleOffset (logic), settingsStore (saveSettings/loadSettings), types (Settings) | contentScriptController.ts | **ADR-019**: OffsetController class — subtitle time offset orchestrator. Lifecycle: init (idempotent, builds section nested trong manager panel + floating badge) → loadCues (hasSubtitle bool, reset on unload) → destroy. State machine: committed (persisted, badge hidden) ↔ lazy (apply all ngay, badge visible, timer 2 phút). Wall-clock auto-commit via timeupdate + visibilitychange (no setTimeout — MV3 throttle safe). Persist per-URL vào settings.subtitleOffset (value=0 → remove key). Public stepBy/reset cho keyboard |
 | `content/subtitleOffsetPanel.ts` | subtitleOffset (logic: OffsetState, formatOffsetDisplay) | offsetController.ts | **ADR-019**: Offset section DOM factory — collapsible section nested trong Subtitle Manager Panel (mimic createSection pattern). Header (chevron + "OFFSET" + value display) + body (4 states: disabled/default/lazy-active/committed, 4 steppers ±0.5s/±2s, input + apply + reset full-width, flashSaved "✓ Đã lưu" 1.5s). Inversion of control: nhận handlers callback |
@@ -790,6 +849,8 @@ downloader.downloadM3u8Streaming(playlist)
 | `rollbackImport` | `features/dictionary/logic/importOrchestrator.ts` | (langCode, resourceId) → void | importOrchestrator | **ADR-023 D6**: Delete dictionary + frequency + resource (cascade); rollback-during-rollback → RollbackError |
 | `detectFormat` | `features/dictionary/logic/formatDetector.ts` | (name, head) → ImportFormat | importOrchestrator | **ADR-023 D4**: Hybrid magic+ext+zip sniff (gzip→sqlite, zip→yomitan/json-array/txt, sqlite magic, JSON content) |
 | `computeSignature` | `features/dictionary/logic/signatureGenerator.ts` | (file) → string | importOrchestrator | **ADR-023 D7**: SHA-256(first1MB)_size_nameWithoutExt — dedupe key |
+| `parsePhraseTemplate` | `features/dictionary/logic/phraseTemplateParser.ts` | (term, options?) → ParsedPhraseTemplate | phrase-index compiler | **ADR-037**: Cambridge optional/alternative/slot AST; rejects open/malformed/over-limit templates |
+| `compilePhraseIndex` | `features/dictionary/logic/phraseIndexCompiler.ts` | (PhraseIndexInput[]) → PhraseIndex | phrase matcher worker | **ADR-037 §7**: anchor inverted index + compact binary blob (≤8MB); serialize/deserialize round-trip for worker transfer |
 | `createStrategy` | `features/dictionary/strategies/strategyFactory.ts` | (format, resourceType, options, fileData) → Strategy | importOrchestrator | **ADR-023 D3**: Route format → strategy (txt/json-array/yomitan/sqlite/cambridge-json) |
 | `TxtLineStrategy` | `features/dictionary/strategies/txtLineStrategy.ts` | extends BaseFrequencyStrategy | strategyFactory | **ADR-023 D3**: TXT line-by-line, auto-unzip, order-based frequency |
 | `JsonArrayStrategy` | `features/dictionary/strategies/jsonArrayStrategy.ts` | extends BaseFrequencyStrategy | strategyFactory | **ADR-023 D3**: JSON array of strings, streaming regex + JSON.parse unescape |

@@ -24,6 +24,7 @@ import {
 } from '../repositories/resourceRepository';
 import { deleteFrequencyByResource } from '../repositories/frequencyRepository';
 import { deleteDictionaryByResource } from '../repositories/dictionaryRepository';
+import { deletePhraseIndex } from '../repositories/phraseIndexRepository';
 import type {
   ImportFormat,
   ImportOptions,
@@ -103,6 +104,7 @@ export async function rollbackImport(langCode: string, resourceId: number): Prom
   try {
     await deleteDictionaryByResource(langCode, resourceId);
     await deleteFrequencyByResource(langCode, resourceId);
+    await deletePhraseIndex(langCode, resourceId);
     await deleteResource(langCode, resourceId);
   } catch (rollbackErr) {
     throw new RollbackError(resourceId, rollbackErr);
@@ -113,6 +115,7 @@ export async function rollbackImport(langCode: string, resourceId: number): Prom
 export async function deleteResourceCascade(langCode: string, resourceId: number): Promise<void> {
   await deleteDictionaryByResource(langCode, resourceId);
   await deleteFrequencyByResource(langCode, resourceId);
+  await deletePhraseIndex(langCode, resourceId);
   await deleteResource(langCode, resourceId);
 }
 

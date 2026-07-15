@@ -45,6 +45,7 @@ docs/           # Tài liệu dự án
 │   └── 034-track-element-subtitle-detection.md # ADR-034: trust `<track>` element semantics, bypass URL pattern cho extension-less subtitle URL (anikage.cc)
 │   └── 035-scanned-subtitle-initiator-dnr-origin.md # ADR-035: pass frame URL as `initiator` cho scanned subtitle → DNR Origin → fix 403 "forbidden origin" trên prox.anicore.tv (anikage.cc)
 │   └── 036-stremio-addon-subtitle-listing-parser.md # ADR-036: parse Stremio addon listing JSON (torrentio) → extract subtitles[].url thật, không misclassify listing URL thành subtitle file
+│   └── 037-english-phrase-match.md          # ADR-037: Cambridge phrase templates → compact anchor index + bounded token-DP matcher, low-RAM deterministic matching
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -86,6 +87,7 @@ docs/           # Tài liệu dự án
 │   └── spec-iqiyi-subtitle-detection.md # iQIYI subtitle detection PRD: MAIN-world playerObject.stl extraction, SRT format, lid→ISO map, clone ADR-020 pattern, source dispatch trên DETECTED_SUBTITLES
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 │   └── spec-shared-ui-components.md # Shared UI component library (Button/Card/Dialog/Input + atoms/molecules + migration of existing feature UI)
+│   └── spec-icon-library.md # SVG icon library (Lucide reference catalog, 1995 icons, ISC license, docs-only not bundled)
 │   └── design/dictionary-popup-prototype-handoff.md # Interactive dictionary popup prototype handoff (English/Chinese, tabs, media, card creator, design-system constraints)
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
@@ -178,9 +180,27 @@ docs/           # Tài liệu dự án
 │   ├── design-light-youtube.md        # Reference: YouTube light theme extraction
 │   ├── design-light-youtube.css       # Reference: YouTube light theme CSS tokens
 │   ├── design-light-youtube.json      # Reference: YouTube light theme DTCG tokens
-│   └── icon-svg/                      # SVG icons used in mockups (lives under docs/mockups/)
+│   ├── icon/                          # Lucide reference catalog (1995 SVG, ISC license, NOT bundled, chỉ tham khảo phong cách)
+│   │   ├── README.md                  # Workflow: find icon → copy to src/ → import ?raw → use
+│   │   ├── LICENSE                    # ISC license from Lucide (redistribution obligation)
+│   │   ├── catalog.md                 # Auto-generated index of 1995 icons with tags (do not edit by hand)
+│   │   ├── index.html                 # Visual overview page (search + click-to-copy, self-contained, open in browser)
+│   │   └── svg/                       # 1995 raw .svg files from lucide-static (stroke 2.0, 24x24, round caps)
+│   ├── icon-system/                   # Cell icon system — tự vẽ 322 icon (KHÔNG bundled, docs-only)
+│   │   ├── README.md                  # Workflow: tìm icon → copy to src/ → import ?raw → use
+│   │   ├── STYLE-GUIDE.md             # Phong cách thiết kế (24x24, stroke 2, round caps, currentColor)
+│   │   ├── catalog.md                 # Auto-generated index of 322 icons (do not edit by hand)
+│   │   ├── index.html                 # Visual overview page (search + filter by category + click-to-copy, self-contained)
+│   │   ├── icon-list.txt              # Danh sách icon gốc (reference)
+│   │   └── svg/                       # 322 SVG files (12 categories: media/subtitle/dictionary/flashcard/mediatype/download/nav/edit/settings/time/status/comm)
+│   └── icon-system_v2/                # Cell icon system v2 — minimalism V1 (322 icons, 42 synced fallback V1)
+│       ├── README.md                  # Workflow: tìm icon v2 → copy to src/ → import ?raw → use
+│       ├── STYLE-GUIDE.md             # Phong cách thiết kế (24x24, stroke 2, round caps, currentColor)
+│       ├── catalog.md                 # Auto-generated index of 322 icons (do not edit by hand)
+│       ├── index.html                 # Visual overview page (search + filter by category + click-to-copy, self-contained)
+│       ├── icon-list.txt              # Danh sách icon gốc (reference)
+│       └── svg/                       # 322 SVG files (12 categories, variant V1 minimalism)
 ├── mockups/                           # HTML mockups (design-driven-development output, G0.5)
-│   ├── icon-svg/                      # SVG icons used in mockups (anki-quick, anki-edit, nav cluster, etc.)
 │   ├── subtitle-selector-mockup.html  # Subtitle selector mockup v4 (ADR-014 enhancement)
 │   ├── mockup-settings-grouped.html   # Settings dialog grouped layout v1 (sidebar + cards)
 │   ├── mockup-settings-searchable-and-hint.html # Settings SearchableSelect + HintIcon atoms mockup

@@ -55,7 +55,7 @@ describe('baseRepository', () => {
   });
 
   describe('getDB', () => {
-    it('opens a connection with schema version 9', async () => {
+    it('opens a connection with schema version 10', async () => {
       const db = await getDB('en');
       expect(db).toBeInstanceOf(IDBDatabase);
       expect(db.version).toBe(DB_SCHEMA_VERSION);
@@ -77,11 +77,12 @@ describe('baseRepository', () => {
   });
 
   describe('migration v9 create-all', () => {
-    it('creates 3 object stores', async () => {
+    it('creates 4 object stores', async () => {
       const db = await getDB('en');
       expect(db.objectStoreNames.contains(STORES.RESOURCE)).toBe(true);
       expect(db.objectStoreNames.contains(STORES.FREQUENCY)).toBe(true);
       expect(db.objectStoreNames.contains(STORES.DICTIONARY)).toBe(true);
+      expect(db.objectStoreNames.contains(STORES.PHRASE_INDEX)).toBe(true);
     });
 
     it('creates 3 indexes on langResourceInfo', async () => {

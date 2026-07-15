@@ -1,19 +1,20 @@
-// baseRepository — IndexedDB connection + migration v9 create-all (ADR-023 D1-D2).
+// baseRepository — IndexedDB connection + migration v10 create-all (ADR-023 D1-D2, ADR-037 §7.1).
 //
-// DB name: orca-dict-{hash8}-en. 3 object stores + 6 indexes.
+// DB name: orca-dict-{hash8}-en. 4 object stores + 7 indexes.
 // Singleton getDB() — 1 connection per lang. Migration create-all only (cell
 // fresh DB, no v1-v8 users — ponytail: skip full chain, dead code).
 
 import { getDbHash } from '@/shared/lib/storage/dbHash';
 
-/** IndexedDB schema version (ADR-023 D2 — create-all only). */
-export const DB_SCHEMA_VERSION = 9;
+/** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex). */
+export const DB_SCHEMA_VERSION = 10;
 
 /** Object store names. */
 export const STORES = {
   RESOURCE: 'langResourceInfo',
   FREQUENCY: 'langFrequencyEntry',
   DICTIONARY: 'langDictionaryEntry',
+  PHRASE_INDEX: 'langPhraseIndex',
 } as const;
 
 /** Index names. */
@@ -75,7 +76,7 @@ function openDB(dbName: string): Promise<IDBDatabase> {
   });
 }
 
-/** Create all 3 stores + 6 indexes (ADR-023 D2 — create-all only). */
+/** Create all 4 stores + 7 indexes (ADR-023 D2 + ADR-037 §7.1 — create-all only). */
 function createAllStores(db: IDBDatabase): void {
   // langResourceInfo — keyPath 'id' auto, indexes: by_signature, by_type, by_order
   if (!db.objectStoreNames.contains(STORES.RESOURCE)) {
@@ -97,6 +98,11 @@ function createAllStores(db: IDBDatabase): void {
     dict.createIndex(INDEXES.by_resource, 'resourceId', { unique: false });
     dict.createIndex(INDEXES.by_term, 'term', { unique: false });
     dict.createIndex(INDEXES.by_backwardTerm, 'backwardTerm', { unique: false });
+  }
+  // langPhraseIndex — keyPath 'resourceId', index: by_resource (ADR-037 §7.1)
+  if (!db.objectStoreNames.contains(STORES.PHRASE_INDEX)) {
+    const phrase = db.createObjectStore(STORES.PHRASE_INDEX, { keyPath: 'resourceId' });
+    phrase.createIndex(INDEXES.by_resource, 'resourceId', { unique: false });
   }
 }
 
@@ -135,14 +141,15 @@ export async function deleteDB(dbName: string): Promise<void> {
   });
 }
 
-/** Clear all 3 stores for a lang (test isolation — call in beforeEach). */
+/** Clear all 4 stores for a lang (test isolation — call in beforeEach). */
 export async function clearAllStores(langCode: string): Promise<void> {
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
-    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY], 'readwrite');
+    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY, STORES.PHRASE_INDEX], 'readwrite');
     tx.objectStore(STORES.RESOURCE).clear();
     tx.objectStore(STORES.FREQUENCY).clear();
     tx.objectStore(STORES.DICTIONARY).clear();
+    tx.objectStore(STORES.PHRASE_INDEX).clear();
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
