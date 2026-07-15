@@ -28,6 +28,7 @@ import { renderToolbar, renderAudioPanel, renderImagePanel, renderTranslatePanel
 import { nextStatus } from '../services/wordStatusStore';
 import { assembleQuickAddPayload } from '../services/quickAddAssembler';
 import { executeQuickAdd } from '../services/quickAddHandler';
+import { extractPrefill, sendToCreator } from '../services/sendToCreator';
 import { fillExternalDictLinks } from './popupToolbar';
 
 /** Controller state — holds all runtime state for the popup dictionary. */
@@ -299,6 +300,20 @@ function showToast(message: string): void {
   // ponytail: MVP uses console.warn. Real toast = a div in Shadow DOM that
   // auto-dismisses after 3s. Upgrade: renderToast(shell, message).
   console.warn(`[popupDictionary] ${message}`);
+}
+
+/** Send to Creator — open Card Creator pre-filled with lookup result (P1.2). */
+export async function sendToCreatorFromPopup(state: PopupDictionaryState): Promise<void> {
+  if (!state.currentResult) return;
+  const prefill = extractPrefill(
+    state.currentResult,
+    state.definitionSelection,
+    state.contextSentence,
+    state.translation ?? undefined,
+  );
+  await sendToCreator(prefill, state.cardCreatorSettings);
+  // Hide popup after sending to Creator.
+  hidePopup(state);
 }
 
 async function requestTranslation(state: PopupDictionaryState): Promise<void> {
