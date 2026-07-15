@@ -103,3 +103,31 @@ export async function deletePhraseIndex(langCode: string, resourceId: number): P
     tx.onerror = () => reject(tx.error);
   });
 }
+
+/** Get all phrase indexes for a lang (usually 1 per dictionary resource). */
+export async function getAllPhraseIndexes(langCode: string): Promise<StoredPhraseIndex[]> {
+  const db = await getDB(langCode);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORES.PHRASE_INDEX, 'readonly');
+    const store = tx.objectStore(STORES.PHRASE_INDEX);
+    const request = store.getAll();
+    request.onsuccess = () => {
+      const raw = request.result as InternalPhraseIndex[] | undefined;
+      if (!raw || raw.length === 0) { resolve([]); return; }
+      resolve(raw.map((r) => {
+        const blob = r.blob;
+        const ab = blob instanceof Uint8Array
+          ? blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength) as ArrayBuffer
+          : new Uint8Array(blob).buffer as ArrayBuffer;
+        return {
+          resourceId: r.resourceId,
+          compilerVersion: r.compilerVersion,
+          termCount: r.termCount,
+          blob: ab,
+        };
+      }));
+    };
+    request.onerror = () => reject(request.error);
+    tx.onerror = () => reject(tx.error);
+  });
+}

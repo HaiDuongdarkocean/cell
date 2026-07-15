@@ -102,6 +102,8 @@ src/features/dictionaryPopup/         ← MỚI (core feature)
     phraseIndexCompiler.test.ts        ← anchor selection + serialize/deserialize round-trip + fixture budget
     phraseMatcher.ts                   ← ADR-037 §8-9: bounded DP matcher + deterministic ranking
     phraseMatcher.test.ts              ← P01-P33 positive + N01-N12 negative + ranking tests
+    phraseMatchService.ts              ← ADR-037 §8.3 steps 10-11: phrase match + word fallback + AbortSignal
+    phraseMatchService.test.ts         ← service integration: phrase → definition, fallback, cancellation
     priorityResolver.ts                ← "Top item" priority per-language (audio accent, image, translate, definition order)
     priorityResolver.test.ts
   plugins/
