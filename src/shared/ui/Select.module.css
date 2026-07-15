@@ -26,8 +26,7 @@
   cursor: pointer;
   text-align: left;
   outline: none;
-  transition: border-color var(--duration-fast) var(--ease-in-out),
-              box-shadow var(--duration-fast) var(--ease-in-out);
+  transition: border-color var(--duration-fast) var(--ease-in-out);
 }
 
 .trigger:hover {
@@ -36,9 +35,8 @@
 
 .trigger:focus-visible,
 .root:focus-within .trigger {
-  outline: none;
-  border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .trigger:disabled {
@@ -82,8 +80,7 @@
   max-width: 320px;
   background: var(--color-background);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-xl);
   z-index: 10;
   overflow-y: auto;
   /* Design-system scrollbar (same as Dialog and SearchableSelect). */
@@ -168,7 +165,8 @@
 
 .error .trigger:focus-visible,
 .error:focus-within .trigger {
-  box-shadow: 0 0 0 3px var(--color-error-subtle);
+  outline: 2px solid var(--color-error);
+  outline-offset: 2px;
 }
 
 .disabled .trigger {

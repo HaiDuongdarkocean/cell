@@ -9,8 +9,7 @@
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   line-height: var(--leading-normal);
-  transition: border-color var(--duration-fast) var(--ease-in-out),
-              box-shadow var(--duration-fast) var(--ease-in-out);
+  transition: border-color var(--duration-fast) var(--ease-in-out);
   resize: vertical;
 }
 
@@ -23,9 +22,8 @@
 }
 
 .textarea:focus-visible {
-  outline: none;
-  border-color: var(--color-ring);
-  box-shadow: 0 0 0 3px var(--color-primary-subtle);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .textarea:disabled {
@@ -40,7 +38,8 @@
 }
 
 .error:focus-visible {
-  box-shadow: 0 0 0 3px var(--color-error-subtle);
+  outline: 2px solid var(--color-error);
+  outline-offset: 2px;
 }
 
 .none {

@@ -10,7 +10,7 @@
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   cursor: pointer;
   color: var(--color-text-muted);
   transition: background var(--transition), color var(--transition);
@@ -18,10 +18,10 @@
   flex-shrink: 0;
 }
 
-/* === Sizes === */
-.xs { width: 24px; height: 24px; }
-.sm { width: 28px; height: 28px; }
-.md { width: 32px; height: 32px; }
+/* === Sizes — DS spec §2 Icon Button: default 40×40 (md) === */
+.xs { width: 28px; height: 28px; }
+.sm { width: 32px; height: 32px; }
+.md { width: 40px; height: 40px; }
 
 /* === Hover variants === */
 .ghost:hover {

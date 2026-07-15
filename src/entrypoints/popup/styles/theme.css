@@ -7,6 +7,7 @@
   /* === Color Palette — Light === */
   --color-primary: #2563eb;
   --color-primary-hover: #1d4ed8;
+  --color-primary-active: #1e40af;
   --color-primary-subtle: rgba(37, 99, 235, 0.1);
 
   --color-background: #ffffff;
@@ -45,9 +46,10 @@
   --color-popover: var(--color-background);
   --color-popover-foreground: var(--color-text);
 
-  /* Subtle backgrounds — measured inconsist #3/#9 (5+ raw rgba usages each) */
-  --color-error-subtle: rgba(239, 68, 68, 0.08);
+  /* Subtle backgrounds — DS alpha scale: 0.1 light / 0.15 dark */
+  --color-error-subtle: rgba(239, 68, 68, 0.1);
   --color-warning-subtle: rgba(245, 158, 11, 0.1);
+  --color-success-subtle: rgba(5, 150, 105, 0.1);
 
   --color-scrollbar-thumb: #cbd5e1;
   --color-scrollbar-thumb-hover: #94a3b8;
@@ -70,6 +72,7 @@
   --font-weight-semibold: 600;
 
   --leading-tight: 1.25;
+  --leading-snug: 1.375;
   --leading-normal: 1.5;
 
   /* === Spacing — 4px scale === */
@@ -100,15 +103,18 @@
   --spacing-lg: 16px;
   --spacing-xl: 24px;
 
-  /* === Border Radius === */
+  /* === Border Radius — DS: pill 18px / card 10px / dialog 12px / full === */
   --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-md: 18px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 24px;
   --radius-full: 9999px;
 
-  /* === Shadows === */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  /* === Shadows — DS P1: flat, zero elevation === */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
 
   /* === Motion === */
   --duration-75: 75ms;
@@ -145,6 +151,7 @@
 [data-theme="dark"] {
   --color-primary: #60a5fa;
   --color-primary-hover: #3b82f6;
+  --color-primary-active: #2563eb;
   --color-primary-subtle: rgba(96, 165, 250, 0.15);
 
   --color-background: #0f172a;
@@ -183,14 +190,16 @@
   --color-popover: var(--color-background);
   --color-popover-foreground: var(--color-text);
 
-  /* Subtle backgrounds — dark mode (measured inconsist #3/#9) */
+  /* Subtle backgrounds — dark mode (DS alpha scale: 0.15 dark) */
   --color-error-subtle: rgba(239, 68, 68, 0.15);
   --color-warning-subtle: rgba(245, 158, 11, 0.15);
+  --color-success-subtle: rgba(16, 185, 129, 0.15);
 
   --color-scrollbar-thumb: #475569;
   --color-scrollbar-thumb-hover: #64748b;
   --color-scrollbar-track: transparent;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
 }

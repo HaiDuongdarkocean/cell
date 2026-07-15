@@ -33,8 +33,7 @@
   background: var(--radio-bg, var(--color-background));
   color: var(--radio-dot, var(--color-primary-foreground));
   transition: border-color var(--duration-fast) var(--ease-in-out),
-              background-color var(--duration-fast) var(--ease-in-out),
-              box-shadow var(--duration-fast) var(--ease-in-out);
+              background-color var(--duration-fast) var(--ease-in-out);
   display: inline-grid;
   place-content: center;
 }
@@ -59,8 +58,8 @@
 }
 
 .input:focus-visible + .box {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .input:disabled + .box {

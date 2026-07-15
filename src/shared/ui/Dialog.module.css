@@ -18,9 +18,9 @@
   background: var(--dialog-bg, var(--color-background, #ffffff));
   color: var(--dialog-fg, var(--color-foreground, #0f172a));
   border: 1px solid var(--dialog-border, var(--color-border, #e2e8f0));
-  border-radius: var(--dialog-radius, var(--radius-lg, 12px));
+  border-radius: var(--dialog-radius, var(--radius-xl, 12px));
   padding: var(--dialog-padding, var(--space-6, 24px));
-  box-shadow: var(--dialog-shadow, var(--shadow-lg, 0 10px 24px rgb(0 0 0 / 0.12)));
+  box-shadow: none;
   animation: dialog-in 200ms ease-out;
   box-sizing: border-box;
   /* Design-system scrollbar (themeTokens §scrollbar) — replaces the browser

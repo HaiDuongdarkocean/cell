@@ -18,6 +18,19 @@ export default defineConfig({
         options: resolve(__dirname, 'src/entrypoints/options/index.html'),
         cardCreatorTest: resolve(__dirname, 'src/entrypoints/test/cardCreatorTest.html'),
       },
+      output: {
+        manualChunks(id) {
+          const normalizedId = id.replaceAll('\\', '/');
+          if (
+            normalizedId.includes('/node_modules/react/') ||
+            normalizedId.includes('/node_modules/react-dom/') ||
+            normalizedId.includes('/node_modules/scheduler/')
+          ) {
+            return 'react-vendor';
+          }
+          return undefined;
+        },
+      },
     },
   },
 });

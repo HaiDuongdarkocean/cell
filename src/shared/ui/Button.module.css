@@ -4,7 +4,7 @@
   justify-content: center;
   gap: var(--space-1-5, 6px);
   border: none;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md, 18px);
   font-family: var(--font-family);
   font-weight: var(--font-weight-medium, 500);
   text-decoration: none;
@@ -14,13 +14,12 @@
   transition: color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
               background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
               border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              box-shadow var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
               transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
 }
 
 .button:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring, var(--color-primary));
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .button:disabled,

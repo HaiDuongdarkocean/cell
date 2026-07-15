@@ -101,9 +101,9 @@
 }
 
 .input:focus {
-  outline: none;
   border-color: var(--input-focus-border);
-  box-shadow: var(--input-focus-ring);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* Textarea — same as Input but multiline + resize */
@@ -126,7 +126,7 @@
 }
 
 .textarea:focus {
-  outline: none;
   border-color: var(--input-focus-border);
-  box-shadow: var(--input-focus-ring);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }

@@ -21,7 +21,7 @@
   font-family: var(--font-family);
   font-size: var(--font-size-sm, 14px);
   text-decoration: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .skipLink:focus {
@@ -52,7 +52,7 @@
   height: 44px;
   background: transparent;
   border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--color-text, #0f172a);
   font-size: 20px;
   cursor: pointer;
@@ -120,7 +120,7 @@
   text-align: center;
   background: var(--color-surface, #f8fafc);
   border: 1px solid var(--color-border, #e2e8f0);
-  border-radius: 24px;
+  border-radius: var(--radius-2xl);
 }
 
 .drawerOverlay {
@@ -169,7 +169,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--dialog-overlay-bg, rgba(0, 0, 0, 0.5));
     z-index: 1000;
   }
 }

@@ -19,19 +19,19 @@
 }
 
 .aa {
-  background: rgba(16, 185, 129, 0.15);
+  background: var(--color-success-subtle);
   color: var(--color-success);
   border-color: var(--color-success);
 }
 
 .aaa {
-  background: rgba(37, 99, 235, 0.15);
+  background: var(--color-primary-subtle);
   color: var(--color-primary);
   border-color: var(--color-primary);
 }
 
 .fail {
-  background: rgba(239, 68, 68, 0.15);
+  background: var(--color-error-subtle);
   color: var(--color-error);
   border-color: var(--color-error);
 }

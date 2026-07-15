@@ -111,8 +111,8 @@
 }
 
 .imageRemoveButton:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .imageAddButton {
@@ -142,8 +142,8 @@
 }
 
 .imageAddButton:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* Image icon has more continuous strokes (rect frame + mountain + sun) than the
@@ -170,7 +170,6 @@
   max-width: 90vw;
   max-height: 90vh;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
   cursor: default;
 }
 
@@ -198,8 +197,8 @@
 }
 
 .previewClose:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 /* === Audio list === */
@@ -249,8 +248,8 @@
 }
 
 .mediaThumb:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .mediaName {
@@ -286,8 +285,8 @@
 }
 
 .removeButton:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .addButton {

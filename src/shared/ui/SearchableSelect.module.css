@@ -24,7 +24,7 @@
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   text-align: left;
-  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  transition: border-color var(--transition), background var(--transition);
 }
 
 .trigger:hover {
@@ -34,10 +34,9 @@
 
 .trigger:focus-visible,
 .triggerOpen {
-  outline: none;
-  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   background: var(--color-background);
-  box-shadow: 0 0 0 3px var(--color-primary-subtle);
 }
 
 .value {
@@ -77,8 +76,7 @@
   flex-direction: column;
   background: var(--color-background);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-xl);
   z-index: 10;
   overflow: hidden;
 }

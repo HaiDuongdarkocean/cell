@@ -24,7 +24,6 @@
   background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition), transform var(--transition);
@@ -148,12 +147,12 @@
   background: var(--color-surface);
   overflow: hidden;
   scroll-margin-top: var(--spacing-md);
-  transition: box-shadow var(--transition);
   flex-shrink: 0; /* prevent flex-shrink when mainCol overflows — let mainCol scroll instead */
 }
 
 .section.highlight {
-  box-shadow: 0 0 0 2px var(--color-primary-subtle);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   border-color: var(--color-primary);
 }
 
@@ -283,7 +282,7 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+  transition: border-color var(--transition), background var(--transition);
   text-align: left;
 }
 
@@ -294,10 +293,10 @@
 
 .customSelectTrigger:focus,
 .customSelect.open .customSelectTrigger {
-  outline: none;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   border-color: var(--color-primary);
   background: var(--color-background);
-  box-shadow: 0 0 0 3px var(--color-primary-subtle);
 }
 
 .customSelectValue {
@@ -333,7 +332,6 @@
   background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
   opacity: 0;
   transform: translateY(-4px);
   pointer-events: none;
@@ -451,5 +449,4 @@
 .tabBtnActive {
   background: var(--color-background);
   color: var(--color-text);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }

@@ -5,7 +5,7 @@
 }
 
 .rect {
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
 }
 
 .rounded {

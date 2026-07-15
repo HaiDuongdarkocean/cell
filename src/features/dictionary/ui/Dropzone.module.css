@@ -16,8 +16,8 @@
 }
 
 .dropzone:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring, var(--color-primary));
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .dragging {

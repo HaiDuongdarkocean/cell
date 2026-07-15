@@ -33,9 +33,9 @@
 }
 
 .urlInput:focus {
-  outline: none;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary-subtle);
 }
 
 .hint {
@@ -68,24 +68,27 @@
 .statusDot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: var(--color-success);
   flex-shrink: 0;
 }
 
 .statusIndicator.online .statusDot {
   background: var(--color-success);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  outline: 2px solid var(--color-success);
+  outline-offset: 2px;
 }
 
 .statusIndicator.offline .statusDot {
   background: var(--color-error);
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+  outline: 2px solid var(--color-error);
+  outline-offset: 2px;
 }
 
 .statusIndicator.testing .statusDot {
   background: var(--color-warning);
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+  outline: 2px solid var(--color-warning);
+  outline-offset: 2px;
   animation: pulse 1s ease-in-out infinite;
 }
 

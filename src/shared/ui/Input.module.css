@@ -3,11 +3,10 @@
   color: var(--input-fg, var(--color-foreground, #0f172a));
   background: var(--input-bg, var(--color-background, #ffffff));
   border: 1px solid var(--input-border, var(--color-border, #e2e8f0));
-  border-radius: var(--input-radius, var(--radius-md, 8px));
+  border-radius: var(--input-radius, var(--radius-md, 18px));
   font-family: var(--font-family);
   font-size: var(--input-font-size, var(--font-size-sm, 13px));
-  transition: border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              box-shadow var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
 }
 
 .input::placeholder {
@@ -19,9 +18,8 @@
 }
 
 .input:focus-visible {
-  outline: none;
-  border-color: var(--input-focus-border, var(--color-ring, var(--color-primary)));
-  box-shadow: var(--input-focus-ring, 0 0 0 3px var(--color-primary-subtle, rgba(37, 99, 235, 0.1)));
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .input:disabled {
@@ -36,7 +34,8 @@
 }
 
 .input.error:focus-visible {
-  box-shadow: 0 0 0 3px var(--color-error-subtle, rgba(239, 68, 68, 0.08));
+  outline: 2px solid var(--color-error);
+  outline-offset: 2px;
 }
 
 /* === Sizes === */

@@ -15,7 +15,6 @@
   padding: var(--space-6, 24px);
   max-width: var(--dialog-max-width-sm, 384px);
   width: 90%;
-  box-shadow: var(--shadow-lg, 0 10px 24px rgb(0 0 0 / 0.12));
 }
 
 .title {
