@@ -79,22 +79,43 @@ export const SUBTITLE_BLOCK_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--sb-btn-size, 32px);
-  height: var(--sb-btn-size, 32px);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md, 8px);
-  background: transparent;
-  color: var(--color-text, #f1f5f9);
+  width: var(--sb-btn-size, 40px);
+  height: var(--sb-btn-size, 40px);
+  /* Overlay appearance: no border, feathered backdrop blur, bg opacity from setting. */
+  border: none;
+  border-radius: var(--radius-full, 9999px);
+  background: rgba(30, 41, 59, var(--sb-bg-opacity, 0.2));
+  color: rgba(241, 245, 249, var(--sb-text-opacity, 1));
   cursor: pointer;
   padding: 0;
-  opacity: var(--sb-btn-opacity, 0.9);
+  position: relative;
+  isolation: isolate;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color var(--transition, 150ms ease), background var(--transition, 150ms ease), color var(--transition, 150ms ease);
+  transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), background var(--transition, 150ms ease), color var(--transition, 150ms ease);
+}
+
+/* Feathered backdrop — ::before mở rộng + backdrop-filter blur 1px + mask radial fade.
+   Button hòa vào video không có ranh giới rõ (Josh W. Comeau technique). */
+.cluster-btn::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: var(--radius-full, 9999px);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  background: rgba(15, 23, 42, 0.1);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+  z-index: -1;
+  transition: background 150ms ease;
 }
 
 .cluster-btn:hover {
-  background: var(--color-surface-hover, #334155);
-  border-color: var(--color-border-focus, #60a5fa);
+  color: var(--color-primary, #60a5fa);
+}
+
+.cluster-btn:hover::before {
+  background: rgba(15, 23, 42, 0.25);
 }
 
 .cluster-btn:active {
@@ -102,7 +123,27 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .cluster-btn:focus-visible {
-  outline: 2px solid var(--color-border-focus, #60a5fa);
+  outline: 2px solid var(--color-primary, #60a5fa);
+  outline-offset: 2px;
+}
+
+/* Overlay icon buttons (panel-toggle, subtitle-manager-icon, subtitle-import-button)
+   share the cluster button's press animation — :active scale 0.88 with bouncy
+   easing. These buttons use inline style for color/bg/transition but NOT for
+   transform, so this CSS :active rule applies. The inline transition must
+   include "transform 200ms cubic-bezier(...)" for the bounce to animate. */
+[data-testid="panel-toggle"]:active,
+[data-testid="subtitle-manager-icon"]:active,
+[data-testid="subtitle-import-button"]:active {
+  transform: scale(0.88);
+}
+
+/* Focus ring — keyboard only (WCAG 2.4.7). Mouse click does not trigger
+   :focus-visible, so no outline appears on click — only the scale animation. */
+[data-testid="panel-toggle"]:focus-visible,
+[data-testid="subtitle-manager-icon"]:focus-visible,
+[data-testid="subtitle-import-button"]:focus-visible {
+  outline: 2px solid var(--color-primary, #60a5fa);
   outline-offset: 2px;
 }
 
@@ -166,10 +207,10 @@ export const SUBTITLE_BLOCK_CSS = `
 
 /* === Card Creator entry buttons (spec §4.1) ===
    ADR-026: Card Creator buttons are part of the cluster — they follow the
-   same enabled/buttonSize/buttonOpacity settings. They live in the right
-   column (grid-column 3) but inherit --sb-btn-size + --sb-btn-opacity from
-   the block (set in applyScale), so they scale + fade with the cluster.
-   When cluster is off, applyClusterLayout hides this column. */
+   same enabled/buttonSize/textOpacity/bgOpacity settings. They live in the right
+   column (grid-column 3) but inherit --sb-btn-size + --sb-text-opacity +
+   --sb-bg-opacity from the block (set in applyScale), so they scale + fade
+   with the cluster. When cluster is off, applyClusterLayout hides this column. */
 .block-right-column {
   display: flex;
   flex-direction: column;
@@ -181,7 +222,7 @@ export const SUBTITLE_BLOCK_CSS = `
 /* Card Creator buttons inherit the cluster button size + opacity — no
    separate --sb-cluster-btn-size override (ADR-026: "two buttons ARE the
    cluster"). The base .cluster-btn rule already uses --sb-btn-size +
-   --sb-btn-opacity, so no override is needed here. */
+   --sb-text-opacity + --sb-bg-opacity, so no override is needed here. */
 
 /* Hide Card Creator buttons on mobile width < 768px (mobile uses floating cluster) */
 @media (max-width: 767px) {

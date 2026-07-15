@@ -2,10 +2,12 @@
 import { CARD_CREATOR_ICONS } from '@/features/cardCreator/ui/cardCreatorIcons';
 
 /**
- * Generate native subtitle icon: A → 文 (language glyph) with arrow.
- * Matches cluster icon style: currentColor stroke, 24x24 viewBox, 1.5 stroke.
+ * Generate native subtitle icon: 2 arrows ngược chiều (→ trên, ← dưới).
+ * Gợi ý translate/exchange — target ↔ native. Path-based, không text, không
+ * phụ thuộc font. Giống Lucide "languages" icon. Phong cách cluster: 24x24,
+ * stroke 1.5, currentColor, round caps.
  */
-const GENERATE_NATIVE_ICON = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M9 12 L13 12 M11 10 L13 12 L11 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><text x="5" y="13" text-anchor="middle" fill="currentColor" font-size="8" font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="600">A</text><text x="18" y="13" text-anchor="middle" fill="currentColor" font-size="8" font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="600">文</text></svg>`;
+const GENERATE_NATIVE_ICON = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important"><path d="M4 9 L18 9 M15 6 L18 9 L15 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 15 L6 15 M9 12 L6 15 L9 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 export interface SubtitleBlockDOM {
   readonly block: HTMLDivElement;

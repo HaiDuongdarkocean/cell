@@ -50,12 +50,28 @@ describe('subtitleImport', () => {
       expect(button.getAttribute('data-testid')).toBe('subtitle-import-button');
     });
 
-    it('should be 32x32 icon button with relative overflow-hidden input container (UI v4 toolbar)', () => {
+    it('should be icon button with relative overflow-hidden input container (UI v4 toolbar)', () => {
       const button = createImportButton(video, defaultConfig);
-      expect(button.style.width).toBe('32px');
-      expect(button.style.height).toBe('32px');
+      expect(button.style.width).toBe('var(--sb-btn-size, 40px)');
+      expect(button.style.height).toBe('var(--sb-btn-size, 40px)');
       expect(button.style.position).toBe('relative');
       expect(button.style.overflow).toBe('hidden');
+    });
+
+    it('keeps the upload SVG crisp and immune to host opacity/filter rules', () => {
+      const button = createImportButton(video, defaultConfig);
+      const svg = button.querySelector('svg') as SVGElement;
+      expect(button.style.getPropertyPriority('border')).toBe('important');
+      expect(button.style.getPropertyPriority('opacity')).toBe('important');
+      expect(button.style.getPropertyPriority('filter')).toBe('important');
+      expect(svg.style.getPropertyPriority('opacity')).toBe('important');
+      expect(svg.style.getPropertyPriority('filter')).toBe('important');
+    });
+
+    it('has bouncy transform transition matching cluster buttons', () => {
+      const button = createImportButton(video, defaultConfig);
+      expect(button.style.transition).toContain('transform');
+      expect(button.style.transition).toContain('cubic-bezier(0.175, 0.885, 0.32, 1.275)');
     });
   });
 

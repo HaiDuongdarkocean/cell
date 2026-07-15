@@ -76,11 +76,12 @@ export function assignImportRole(
   return { target, native, ignored };
 }
 
-const UPLOAD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
+const UPLOAD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:65% !important;height:65% !important;display:block;fill:none !important;opacity:1 !important;filter:none !important"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="17" x2="12" y2="11"/><polyline points="9 14 12 11 15 14"/></svg>`;
 
 /**
  * Create icon-only import button for the top-left toolbar (ADR-015 UI v4).
- * 32x32 button with upload icon; hidden file input inside triggers native picker.
+ * DS §2 Icon Button: 40×40, --radius-full, no border at rest, no shadow.
+ * Hidden file input inside triggers native picker.
  *
  * @param container - Video wrapper (button appended here, then moved into toolbar by panel)
  * @param _config - Overlay configuration (unused, kept for API compat)
@@ -100,21 +101,44 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   label.style.cssText = `
     position: relative;
     overflow: hidden;
-    width: 32px;
-    height: 32px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 8px);
-    background: var(--color-surface);
-    color: var(--color-text);
+    width: var(--sb-btn-size, 40px);
+    height: var(--sb-btn-size, 40px);
+    /* Overlay appearance: no border, feathered backdrop, bg + text opacity from settings. */
+    border: none;
+    border-radius: var(--radius-full, 9999px);
+    background: rgba(30, 41, 59, var(--sb-bg-opacity, 0.2));
+    color: rgba(241, 245, 249, var(--sb-text-opacity, 1));
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
+    isolation: isolate;
     pointer-events: auto;
     user-select: none;
-    transition: border-color 150ms ease, background 150ms ease;
+    transition: background 150ms ease, color 150ms ease, transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
   `;
+  label.style.setProperty('border', 'none', 'important');
+  label.style.setProperty('opacity', '1', 'important');
+  label.style.setProperty('filter', 'none', 'important');
   label.innerHTML = UPLOAD_SVG;
+  // Feathered backdrop — span mở rộng + blur 1px + mask radial fade
+  const labelFeather = document.createElement('span');
+  labelFeather.style.cssText = `
+    position: absolute;
+    inset: -1.5px;
+    border-radius: var(--radius-full, 9999px);
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
+    background: rgba(15, 23, 42, 0.1);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+    mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+    z-index: -1;
+    transition: background 150ms ease;
+    pointer-events: none;
+  `;
+  label.appendChild(labelFeather);
 
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -131,22 +155,16 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   fileInput.style.cursor = 'pointer';
   label.appendChild(fileInput);
 
-  // Hover / active states
+  // Hover — icon đổi màu primary (no border feedback)
   label.addEventListener('mouseenter', () => {
-    label.style.borderColor = 'var(--color-border-focus)';
-    label.style.background = 'var(--color-surface-hover)';
+    label.style.color = 'var(--color-primary, #60a5fa)';
+    labelFeather.style.background = 'rgba(15, 23, 42, 0.25)';
   });
   label.addEventListener('mouseleave', () => {
-    label.style.borderColor = 'var(--color-border)';
-    label.style.background = 'var(--color-surface)';
+    label.style.color = 'rgba(241, 245, 249, var(--sb-text-opacity, 1))';
+    labelFeather.style.background = 'rgba(15, 23, 42, 0.1)';
   });
-  fileInput.addEventListener('focus', () => {
-    label.style.outline = '2px solid var(--color-border-focus)';
-    label.style.outlineOffset = '2px';
-  });
-  fileInput.addEventListener('blur', () => {
-    label.style.outline = 'none';
-  });
+  // Focus ring handled by CSS :focus-visible (WCAG 2.4.7) — no JS outline.
 
   container.appendChild(label);
   return label;

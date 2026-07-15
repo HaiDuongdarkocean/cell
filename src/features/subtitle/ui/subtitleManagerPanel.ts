@@ -30,9 +30,9 @@ export interface SubtitleManagerPanel {
   readonly destroy: () => void;
 }
 
-const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4"/><path d="M14 12h4"/><path d="M6 16h2"/><path d="M12 16h6"/></svg>`;
-const CLOSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>`;
-const CHEVRON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:65% !important;height:65% !important;display:block;fill:none !important"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="5" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="16" y2="16"/></svg>`;
+const CLOSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:12px !important;height:12px !important;display:block;fill:none !important"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>`;
+const CHEVRON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px !important;height:16px !important;display:block;fill:none !important"><path d="M6 9l6 6 6-6"/></svg>`;
 
 /**
  * Create the unified Subtitle Manager Panel (ADR-015 V2 / UI v4).
@@ -91,22 +91,43 @@ export function createSubtitleManagerPanel(
   icon.setAttribute('title', 'Open subtitle manager');
   icon.setAttribute('aria-expanded', 'false');
   icon.style.cssText = `
-    width: 32px;
-    height: 32px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 8px);
-    background: var(--color-surface);
-    color: var(--color-text);
+    width: var(--sb-btn-size, 40px);
+    height: var(--sb-btn-size, 40px);
+    /* Overlay appearance: no border, feathered backdrop, bg + text opacity from settings. */
+    border: none;
+    border-radius: var(--radius-full, 9999px);
+    background: rgba(30, 41, 59, var(--sb-bg-opacity, 0.2));
+    color: rgba(241, 245, 249, var(--sb-text-opacity, 1));
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
+    isolation: isolate;
     pointer-events: auto;
     user-select: none;
-    transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: background 150ms ease, color 150ms ease, transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
   `;
+  icon.style.position = 'relative';
+  icon.style.setProperty('border', 'none', 'important');
   icon.innerHTML = ICON_SVG;
+  // Feathered backdrop — span mở rộng + blur 1px + mask radial fade
+  const iconFeather = document.createElement('span');
+  iconFeather.style.cssText = `
+    position: absolute;
+    inset: -1.5px;
+    border-radius: var(--radius-full, 9999px);
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
+    background: rgba(15, 23, 42, 0.1);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+    mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+    z-index: -1;
+    transition: background 150ms ease;
+    pointer-events: none;
+  `;
+  icon.appendChild(iconFeather);
   toolbar.appendChild(icon);
 
   // === Panel ===
@@ -126,16 +147,54 @@ export function createSubtitleManagerPanel(
     background-color: var(--color-background);
     color: var(--color-text);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-md, 8px);
-    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
+    border-radius: var(--radius-xl, 12px);
+    box-shadow: var(--shadow-md, none);
     padding: var(--spacing-xs, 4px);
     font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
     font-size: var(--font-size-base, 14px);
-    /* Reset inherited text-shadow from host player (e.g. Artplayer sets
-       text-shadow on its container; our panel is injected inside it). Without
-       this reset, panel text looks slightly blurred/frosted. */
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: normal;
+    text-align: left;
     text-shadow: none;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) var(--color-surface-hover);
   `;
+  const panelStyle = document.createElement('style');
+  panelStyle.textContent = `
+    [data-testid="subtitle-manager-panel"] *,
+    [data-testid="subtitle-manager-panel"] *::before,
+    [data-testid="subtitle-manager-panel"] *::after {
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+    [data-testid="subtitle-manager-panel"] button {
+      margin: 0;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+    [data-testid="subtitle-manager-icon"]:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+    [data-testid="subtitle-manager-panel"]::-webkit-scrollbar {
+      width: var(--spacing-sm, 8px);
+    }
+    [data-testid="subtitle-manager-panel"]::-webkit-scrollbar-track {
+      background: var(--color-surface-hover);
+      border-radius: var(--radius-full, 9999px);
+    }
+    [data-testid="subtitle-manager-panel"]::-webkit-scrollbar-thumb {
+      background: var(--color-border);
+      border-radius: var(--radius-full, 9999px);
+      border: 2px solid var(--color-surface-hover);
+    }
+    [data-testid="subtitle-manager-panel"]::-webkit-scrollbar-thumb:hover {
+      background: var(--color-primary);
+    }
+  `;
+  panel.appendChild(panelStyle);
   container.appendChild(panel);
   // ADR-031: Netflix z-index fix — manager panel must sit above Netflix overlays.
   mountToWatchVideo(panel, container);
@@ -146,8 +205,11 @@ export function createSubtitleManagerPanel(
     display: flex;
     align-items: center;
     justify-content: space-between;
+    min-height: 40px;
+    margin: 0;
     padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
     border-bottom: 1px solid var(--color-border-subtle);
+    box-sizing: border-box;
   `;
   const title = document.createElement('span');
   title.textContent = 'Subtitle Manager';
@@ -167,8 +229,10 @@ export function createSubtitleManagerPanel(
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    box-sizing: border-box;
     border-radius: var(--radius-sm, 6px);
-    transition: background 150ms ease, color 150ms ease;
+    transition: background 150ms ease, color 150ms ease, transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
   `;
   closeBtn.innerHTML = CLOSE_SVG;
   header.appendChild(title);
@@ -335,12 +399,8 @@ export function createSubtitleManagerPanel(
   const open = (): void => {
     panel.style.display = 'block';
     icon.setAttribute('aria-expanded', 'true');
-    // Design-system sync (2026-07-02): active state uses the same neutral hover
-    // scale as panel-toggle + subtitle-import-button so all three toolbar buttons
-    // share one visual language. Previously primary color made it look mismatched.
-    icon.style.background = 'var(--color-surface-hover)';
-    icon.style.borderColor = 'var(--color-border-focus)';
-    icon.style.color = 'var(--color-text)';
+    // Active state: keep overlay surface and change only the SVG color.
+    icon.style.color = 'var(--color-primary)';
     renderSection('target');
     renderSection('native');
     bindOutsideClick();
@@ -349,9 +409,8 @@ export function createSubtitleManagerPanel(
   const close = (): void => {
     panel.style.display = 'none';
     icon.setAttribute('aria-expanded', 'false');
-    icon.style.background = 'var(--color-surface)';
-    icon.style.borderColor = 'var(--color-border)';
-    icon.style.color = 'var(--color-text)';
+    icon.style.color = 'rgba(241, 245, 249, var(--sb-text-opacity, 1))';
+    iconFeather.style.background = 'rgba(15, 23, 42, 0.1)';
     unbindOutsideClick();
   };
 
@@ -361,33 +420,20 @@ export function createSubtitleManagerPanel(
     if (panel.style.display === 'none') open();
     else close();
   });
-  // Hover feedback when panel is closed (open state has its own primary styling).
-  // Design-system sync (2026-07-02): border --color-border-focus aligns with
-  // subtitle-import-button + panel-toggle.
+  // Hover feedback when panel is closed.
   icon.addEventListener('mouseenter', () => {
     if (panel.style.display === 'none') {
-      icon.style.background = 'var(--color-surface-hover)';
-      icon.style.borderColor = 'var(--color-border-focus)';
-      icon.style.color = 'var(--color-text)';
+      icon.style.color = 'var(--color-primary)';
+      iconFeather.style.background = 'rgba(15, 23, 42, 0.25)';
     }
   });
   icon.addEventListener('mouseleave', () => {
     if (panel.style.display === 'none') {
-      icon.style.background = 'var(--color-surface)';
-      icon.style.borderColor = 'var(--color-border)';
-      icon.style.color = 'var(--color-text)';
+      icon.style.color = 'rgba(241, 245, 249, var(--sb-text-opacity, 1))';
+      iconFeather.style.background = 'rgba(15, 23, 42, 0.1)';
     }
   });
-  // Focus — align with subtitle-import-button + panel-toggle
-  icon.addEventListener('focus', () => {
-    if (panel.style.display === 'none') {
-      icon.style.outline = '2px solid var(--color-border-focus)';
-      icon.style.outlineOffset = '2px';
-    }
-  });
-  icon.addEventListener('blur', () => {
-    icon.style.outline = 'none';
-  });
+  // Focus ring handled by CSS :focus-visible (WCAG 2.4.7) — no JS outline.
 
   closeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -497,11 +543,15 @@ function createSection(
     border-radius: var(--radius-sm, 6px);
     user-select: none;
     width: 100%;
+    min-height: 40px;
+    margin: 0;
     border: none;
     background: transparent;
     color: var(--color-text);
     font: inherit;
+    line-height: 1.5;
     text-align: left;
+    box-sizing: border-box;
     transition: background 150ms ease;
   `;
 
@@ -510,6 +560,12 @@ function createSection(
   chevron.innerHTML = CHEVRON_SVG;
   chevron.style.cssText = `
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    margin: 0;
     color: var(--color-text-muted);
     transition: transform 150ms ease;
   `;

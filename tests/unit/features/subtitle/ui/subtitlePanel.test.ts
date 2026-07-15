@@ -35,6 +35,17 @@ describe('subtitlePanel', () => {
       const toggleBtn = createToggleButton(video);
       expect(toggleBtn.getAttribute('aria-label')).toBe('Toggle subtitle panel');
     });
+
+    it('keeps the border removed when host CSS targets buttons', () => {
+      const toggleBtn = createToggleButton(video);
+      expect(toggleBtn.style.getPropertyPriority('border')).toBe('important');
+    });
+
+    it('has bouncy transform transition matching cluster buttons', () => {
+      const toggleBtn = createToggleButton(video);
+      expect(toggleBtn.style.transition).toContain('transform');
+      expect(toggleBtn.style.transition).toContain('cubic-bezier(0.175, 0.885, 0.32, 1.275)');
+    });
   });
 
   describe('seekToCue', () => {

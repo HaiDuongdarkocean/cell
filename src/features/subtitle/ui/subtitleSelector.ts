@@ -74,7 +74,7 @@ export function createSubtitleDropdown(
   `;
 
   // chevron-down SVG (Lucide-style)
-  icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+  icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;fill:none !important"><path d="M6 9l6 6 6-6"/></svg>`;
 
   let popover: HTMLDivElement | null = null;
   let outsideClickHandler: ((e: MouseEvent) => void) | null = null;

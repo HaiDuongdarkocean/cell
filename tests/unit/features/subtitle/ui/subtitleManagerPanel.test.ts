@@ -61,6 +61,22 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     expect(panel.style.display).toBe('block');
   });
 
+  it('uses the overlay appearance and changes only SVG color while active', () => {
+    const { icon } = createSubtitleManagerPanel(container, createImportButton());
+    expect(icon.style.getPropertyPriority('border')).toBe('important');
+    expect(icon.style.background).toBe('rgba(30, 41, 59, var(--sb-bg-opacity, 0.2))');
+    icon.click();
+    expect(icon.style.getPropertyPriority('border')).toBe('important');
+    expect(icon.style.background).toBe('rgba(30, 41, 59, var(--sb-bg-opacity, 0.2))');
+    expect(icon.style.color).toBe('var(--color-primary)');
+  });
+
+  it('has bouncy transform transition matching cluster buttons', () => {
+    const { icon } = createSubtitleManagerPanel(container, createImportButton());
+    expect(icon.style.transition).toContain('transform');
+    expect(icon.style.transition).toContain('cubic-bezier(0.175, 0.885, 0.32, 1.275)');
+  });
+
   it('panel resets inherited text-shadow to avoid blurred/frosted text', () => {
     // Host players (e.g. Artplayer) often set text-shadow on their container.
     // Our panel is injected inside that container, so it inherits the shadow
