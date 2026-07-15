@@ -7,7 +7,7 @@
 import { getDbHash } from '@/shared/lib/storage/dbHash';
 
 /** IndexedDB schema version (ADR-023 D2 + ADR-037 §7.1 — v10 adds langPhraseIndex). */
-export const DB_SCHEMA_VERSION = 10;
+export const DB_SCHEMA_VERSION = 11;
 
 /** Object store names. */
 export const STORES = {
@@ -15,6 +15,7 @@ export const STORES = {
   FREQUENCY: 'langFrequencyEntry',
   DICTIONARY: 'langDictionaryEntry',
   PHRASE_INDEX: 'langPhraseIndex',
+  WORD_STATUS: 'langWordStatus',
 } as const;
 
 /** Index names. */
@@ -104,6 +105,11 @@ function createAllStores(db: IDBDatabase): void {
     const phrase = db.createObjectStore(STORES.PHRASE_INDEX, { keyPath: 'resourceId' });
     phrase.createIndex(INDEXES.by_resource, 'resourceId', { unique: false });
   }
+  // langWordStatus — keyPath 'term' (unique), index: by_status (spec §D1)
+  if (!db.objectStoreNames.contains(STORES.WORD_STATUS)) {
+    const ws = db.createObjectStore(STORES.WORD_STATUS, { keyPath: 'term' });
+    ws.createIndex('by_status', 'status', { unique: false });
+  }
 }
 
 /** Open a transaction for 1 store (readwrite default). */
@@ -145,11 +151,12 @@ export async function deleteDB(dbName: string): Promise<void> {
 export async function clearAllStores(langCode: string): Promise<void> {
   const db = await getDB(langCode);
   return new Promise((resolve, reject) => {
-    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY, STORES.PHRASE_INDEX], 'readwrite');
+    const tx = db.transaction([STORES.RESOURCE, STORES.FREQUENCY, STORES.DICTIONARY, STORES.PHRASE_INDEX, STORES.WORD_STATUS], 'readwrite');
     tx.objectStore(STORES.RESOURCE).clear();
     tx.objectStore(STORES.FREQUENCY).clear();
     tx.objectStore(STORES.DICTIONARY).clear();
     tx.objectStore(STORES.PHRASE_INDEX).clear();
+    tx.objectStore(STORES.WORD_STATUS).clear();
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
