@@ -56,9 +56,9 @@ export function renderHeader(
     header.appendChild(reading);
   }
 
-  // Row 3: status (left) + frequency (right)
+  // Row 3: status (left) + frequency (left)
   const row3 = document.createElement('div');
-  row3.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;';
+  row3.style.cssText = 'display:flex;align-items:center;gap:8px;';
 
   const statusBadge = document.createElement('button');
   statusBadge.setAttribute('data-dp-status', '');
