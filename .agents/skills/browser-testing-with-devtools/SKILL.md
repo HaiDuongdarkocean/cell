@@ -317,6 +317,123 @@ After any browser-facing change:
 - [ ] JavaScript execution was limited to read-only state inspection
 
 
+## Anti-Latency Patterns
+
+MCP calls chậm khi gọi nhiều lần tuần tự. Nguyên tắc: **gộp thao tác, giảm round-trips**.
+
+### 1. Dùng MCP tools trực tiếp, không qua shell
+
+```
+✗ exec → PowerShell → chrome-cli reload
+✓ mcp_call_tool → reload_extension
+```
+
+Shell parse chậm, encoding lỗi trên Windows. MCP tools trả về ngay.
+
+**Lệnh cụ thể (tên server / extensionId / URL chỉ là example — thay bằng giá trị thật):**
+
+```
+# Bước 1: List tools để biết tool names + schema (bắt buộc trước khi call)
+mcp_list_tools → server_name: "<server-name>"   # "edge-devtools" hoặc "chrome-devtools"
+
+# Bước 2: List extensions để lấy extensionId thật
+mcp_call_tool →
+  server_name: "<server-name>",
+  tool_name: "list_extensions",
+  arguments: {}
+  # → trả về: id=<extensionId>, name, version
+
+# Bước 3: Reload extension (dùng extensionId từ bước 2)
+mcp_call_tool →
+  server_name: "<server-name>",
+  tool_name: "reload_extension",
+  arguments: { "id": "<extensionId>" }
+
+# Navigate tới URL
+mcp_call_tool →
+  server_name: "<server-name>",
+  tool_name: "navigate_page",
+  arguments: { "url": "<target-url>" }
+
+# Liệt kê pages đang mở
+mcp_call_tool →
+  server_name: "<server-name>",
+  tool_name: "list_pages",
+  arguments: {}
+```
+
+**Bad vs Good:**
+
+```
+✗ Đoán extensionId: arguments: { "id": "abc123" }
+✓ Lấy từ list_extensions: arguments: { "id": "<extensionId-from-step-2>" }
+
+✗ Đoán tool name: tool_name: "reload"
+✓ Lấy từ mcp_list_tools: tool_name: "reload_extension"
+
+✗ Gọi mcp_call_tool mà chưa list_tools
+✓ mcp_list_tools trước, mcp_call_tool sau
+```
+
+### 2. Gộp nhiều bước vào 1 `evaluate_script` với async Promise
+
+Thay vì 3-4 calls tuần tự (play → chờ → click → chờ → check), gộp 1 call:
+
+```js
+() => {
+  v.play();
+  v.currentTime = 3900;
+  return new Promise(r => setTimeout(() => {
+    const tokens = document.querySelectorAll('[data-dp-term]');
+    tokens[0].click();
+    r({ tokenCount: tokens.length, clicked: true });
+  }, 2000));
+}
+```
+
+Một call, chờ nội bộ, trả kết quả sẵn. Không cần poll `get_output`.
+
+### 3. Chain fullscreen + play + seek trong 1 call
+
+```js
+() => {
+  container.requestFullscreen();
+  v.play();
+  return new Promise(r => setTimeout(() => {
+    v.currentTime = 3900;
+    r({ fullscreen: !!document.fullscreenElement });
+  }, 1500));
+}
+```
+
+4 calls → 1 call. Mỗi call tự chờ rồi trả.
+
+### 4. Click + verify trong cùng 1 call
+
+```js
+() => {
+  target.click();
+  return new Promise(r => setTimeout(() => {
+    const rect = container.getBoundingClientRect();
+    r({ overlap, overflowBottom, overflowTop, viewport });
+  }, 1500));
+}
+```
+
+Không cần tách click và verify thành 2 calls.
+
+### Checksum
+
+| Pattern | Trước | Sau |
+|---------|-------|-----|
+| Play + seek + click | 3 calls + poll | 1 call |
+| Fullscreen + play + seek | 4 calls | 1 call |
+| Click + verify rect | 2 calls | 1 call |
+| Reload extension | shell command | 1 MCP call |
+
+**Mục tiêu**: ≤4 MCP calls cho 1 test case đầy đủ (navigate + interact + verify).
+
+
 ---
 
 ## Router boomerang
