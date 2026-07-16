@@ -207,7 +207,7 @@ export function init(video: HTMLVideoElement): () => void {
     popupDictState = createPopupDictionaryState(dpSettings, ccSettings);
     blockController.enableDictionaryPopup(
       dpSettings.triggerMode,
-      (request: LookupRequest, requestId: string) => { void handleLookup(request, requestId); },
+      (request: LookupRequest, requestId: string, anchorRect: DOMRect) => { void handleLookup(request, requestId, anchorRect); },
       (requestId: string) => { cancelLookup(requestId); },
     );
   }
@@ -215,7 +215,7 @@ export function init(video: HTMLVideoElement): () => void {
   /** Handle a lookup request from subtitle trigger.
    *  Routes via sendMessage to background (IDB is origin-isolated — content
    *  scripts on web pages cannot access the extension's IDB databases). */
-  async function handleLookup(request: LookupRequest, requestId: string): Promise<void> {
+  async function handleLookup(request: LookupRequest, requestId: string, anchorRect: DOMRect): Promise<void> {
     if (!popupDictState) return;
     try {
       const response = await sendMessage({
@@ -225,10 +225,8 @@ export function init(video: HTMLVideoElement): () => void {
       if (response.success && response.data) {
         // Pause video so subtitle cue doesn't change while popup is open.
         if (!video.paused) { video.pause(); popupDictWasPlaying = true; }
-        // Position popup near the cursor (from request).
-        const anchorX = request.cursorOffset ?? window.innerWidth / 2;
-        const anchorY = window.innerHeight - 100; // above subtitle area
-        popupDictState = showPopup(popupDictState, response.data, anchorX, anchorY, request.contextSentence);
+        // Position popup anchored to the clicked token's bounding box.
+        popupDictState = showPopup(popupDictState, response.data, anchorRect.top, anchorRect.left, anchorRect.right, anchorRect.bottom + 4, request.contextSentence);
       } else {
         console.warn('[popup-dict] lookup failed', response.error);
       }

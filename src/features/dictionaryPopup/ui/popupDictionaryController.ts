@@ -23,6 +23,7 @@ import { PopupShell as PopupShellClass, clampPopupSize } from './popupShell';
 import {
   renderPopupContent,
   initDefinitionSelection,
+  getSelectedDefinitions,
 } from './popupContent';
 import { renderToolbar, renderAudioPanel, renderImagePanel, renderTranslatePanel, renderLinksPanel } from './popupToolbar';
 import { nextStatus } from '../services/wordStatusStore';
@@ -82,8 +83,10 @@ export function createPopupDictionaryState(
 export function showPopup(
   state: PopupDictionaryState,
   result: LookupResult,
-  anchorX: number,
-  anchorY: number,
+  anchorTop: number,
+  anchorLeft: number,
+  anchorRight: number,
+  anchorBottom: number,
   contextSentence: string,
 ): PopupDictionaryState {
   // Create shell if needed.
@@ -102,28 +105,35 @@ export function showPopup(
     shell.mount();
   }
 
-  // Position + show.
-  shell.setPosition(anchorX, anchorY);
-  shell.show();
-
   // Initialize state from result.
   const definitionSelection = initDefinitionSelection(result);
   const status = result.status;
 
-  // Render content.
+  // Render content FIRST so setPosition can use actual offsetHeight.
   const container = shell.getContainer();
   if (container) {
     renderPopupContent(container, result, status, definitionSelection, {
       onStatusCycle: () => cycleStatus(state),
       onDefinitionToggle: (id, selected) => toggleDefinition(state, id, selected),
       onQuickAdd: () => doQuickAdd(state),
+      onSendToCreator: () => void sendToCreatorFromPopup(state),
+      onSettings: () => openSettings(state),
     });
+
+    // Re-append resize handle after clearContainer wiped it.
+    shell.reAppendResizeHandle();
 
     // Render toolbar if there's an active tab.
     if (state.activeTab) {
       renderActiveTab(state, container);
     }
   }
+
+  // Show first so offsetHeight is correct (display:none → offsetHeight=0).
+  // Then position using actual rendered height. No visible flash because
+  // setPosition runs synchronously in the same frame.
+  shell.show();
+  shell.setPosition(anchorTop, anchorLeft, anchorRight, anchorBottom);
 
   return {
     ...state,
@@ -198,8 +208,14 @@ export async function doQuickAdd(state: PopupDictionaryState): Promise<QuickAddR
     return { ok: false, error: 'No lookup result to Quick Add' };
   }
 
+  // Build a result that only contains the selected senses/definitions.
+  const selectedResult: LookupResult = {
+    ...state.currentResult,
+    definitions: getSelectedDefinitions(state.currentResult, state.definitionSelection),
+  };
+
   const payload = assembleQuickAddPayload(
-    state.currentResult,
+    selectedResult,
     {
       definitions: state.definitionSelection,
       audios: state.audioSelection,
@@ -267,10 +283,28 @@ function rerender(state: PopupDictionaryState, activeTab?: PopupTab | null): voi
     onStatusCycle: () => cycleStatus(state),
     onDefinitionToggle: (id, selected) => toggleDefinition(state, id, selected),
     onQuickAdd: () => void doQuickAdd(state),
+    onSendToCreator: () => void sendToCreatorFromPopup(state),
+    onSettings: () => openSettings(state),
   });
+  // Re-append resize handle after clearContainer wiped it.
+  state.shell?.reAppendResizeHandle();
   if (tab) {
     renderToolbar(container, tab, (t) => toggleTab(state, t));
     renderActiveTab({ ...state, activeTab: tab }, container);
+  }
+  // Re-position after content change (height may have changed).
+  state.shell?.rePosition();
+}
+
+/** Open extension settings page (Dictionary Popup section). */
+function openSettings(_state: PopupDictionaryState): void {
+  // ponytail: open extension options page — chrome.runtime.openOptionsPage
+  // focuses the Dictionary Popup settings section.
+  try {
+    void chrome.runtime.openOptionsPage();
+  } catch {
+    // Fallback: open options URL directly.
+    void window.open(chrome.runtime.getURL('src/entrypoints/options/index.html'));
   }
 }
 

@@ -98,31 +98,31 @@ describe('showPopup', () => {
 
   it('sets currentResult', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 100, 200, 'Take off your shoes.');
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
     expect(newState.currentResult).toBe(result);
   });
 
   it('sets contextSentence', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 100, 200, 'Take off your shoes.');
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
     expect(newState.contextSentence).toBe('Take off your shoes.');
   });
 
   it('initializes definition selection from result', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 100, 200, 'sentence');
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
     expect(newState.definitionSelection.get('d1')).toBe(true);
   });
 
   it('sets currentStatus from result', () => {
     const result = makeResult({ status: 'tracking' as WordStatus });
-    const newState = showPopup(state, result, 100, 200, 'sentence');
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
     expect(newState.currentStatus).toBe('tracking');
   });
 
   it('creates shell on first show', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 100, 200, 'sentence');
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
     expect(newState.shell).not.toBeNull();
   });
 });
@@ -130,7 +130,7 @@ describe('showPopup', () => {
 describe('hidePopup', () => {
   it('clears currentResult', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const shown = showPopup(state, makeResult(), 100, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const hidden = hidePopup(shown);
     expect(hidden.currentResult).toBeNull();
   });
@@ -148,7 +148,7 @@ describe('hidePopup', () => {
 describe('destroyPopup', () => {
   it('clears shell', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const shown = showPopup(state, makeResult(), 100, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const destroyed = destroyPopup(shown);
     expect(destroyed.shell).toBeNull();
     expect(destroyed.currentResult).toBeNull();
@@ -158,14 +158,14 @@ describe('destroyPopup', () => {
 describe('cycleStatus', () => {
   it('cycles unknown → tracking', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const shown = showPopup(state, makeResult(), 100, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const cycled = cycleStatus(shown);
     expect(cycled.currentStatus).toBe('tracking');
   });
 
   it('cycles tracking → known', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const shown = showPopup(state, makeResult(), 100, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const cycled1 = cycleStatus(shown);
     const cycled2 = cycleStatus(cycled1);
     expect(cycled2.currentStatus).toBe('known');
@@ -173,7 +173,7 @@ describe('cycleStatus', () => {
 
   it('cycles ignore → unknown (wraps around)', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const shown = showPopup(state, makeResult({ status: 'ignore' as WordStatus }), 100, 200, 'sentence');
+    const shown = showPopup(state, makeResult({ status: 'ignore' as WordStatus }), 170, 100, 150, 200, 'sentence');
     const cycled = cycleStatus(shown);
     expect(cycled.currentStatus).toBe('unknown');
   });
@@ -188,7 +188,7 @@ describe('cycleStatus', () => {
 describe('toggleDefinition', () => {
   it('toggles definition selection', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const shown = showPopup(state, makeResult(), 100, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const toggled = toggleDefinition(shown, 'd1', false);
     expect(toggled.definitionSelection.get('d1')).toBe(false);
   });
@@ -197,14 +197,14 @@ describe('toggleDefinition', () => {
 describe('toggleTab', () => {
   it('opens tab when none active', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const shown = showPopup(state, makeResult(), 100, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const toggled = toggleTab(shown, 'audio');
     expect(toggled.activeTab).toBe('audio');
   });
 
   it('closes tab when clicking active tab', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const shown = showPopup(state, makeResult(), 100, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const opened = toggleTab(shown, 'audio');
     const closed = toggleTab(opened, 'audio');
     expect(closed.activeTab).toBeNull();
@@ -212,7 +212,7 @@ describe('toggleTab', () => {
 
   it('switches tab when clicking different tab', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const shown = showPopup(state, makeResult(), 100, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const opened = toggleTab(shown, 'audio');
     const switched = toggleTab(opened, 'image');
     expect(switched.activeTab).toBe('image');
