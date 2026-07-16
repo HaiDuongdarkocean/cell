@@ -49,7 +49,7 @@ describe('renderHeader', () => {
 
   it('renders term + reading', () => {
     const result = makeResult();
-    renderHeader(container, result, 'unknown', jest.fn());
+    renderHeader(container, result, 'unknown', jest.fn(), jest.fn());
     const term = container.querySelector('[data-dp-term]');
     expect(term?.textContent).toBe('take off');
     const reading = container.querySelector('[data-dp-reading]');
@@ -58,20 +58,20 @@ describe('renderHeader', () => {
 
   it('renders frequency badge when present', () => {
     const result = makeResult();
-    renderHeader(container, result, 'unknown', jest.fn());
+    renderHeader(container, result, 'unknown', jest.fn(), jest.fn());
     const freq = container.querySelector('[data-dp-frequency]');
     expect(freq?.textContent).toBe('#1234');
   });
 
   it('does not render frequency badge when null', () => {
     const result = makeResult({ frequency: null });
-    renderHeader(container, result, 'unknown', jest.fn());
+    renderHeader(container, result, 'unknown', jest.fn(), jest.fn());
     expect(container.querySelector('[data-dp-frequency]')).toBeNull();
   });
 
   it('renders status badge with current status', () => {
     const result = makeResult();
-    renderHeader(container, result, 'tracking', jest.fn());
+    renderHeader(container, result, 'tracking', jest.fn(), jest.fn());
     const status = container.querySelector('[data-dp-status]');
     expect(status?.textContent).toBe('tracking');
   });
@@ -79,7 +79,7 @@ describe('renderHeader', () => {
   it('status badge click triggers onStatusCycle', () => {
     const onCycle = jest.fn();
     const result = makeResult();
-    renderHeader(container, result, 'unknown', onCycle);
+    renderHeader(container, result, 'unknown', onCycle, jest.fn());
     const badge = container.querySelector('[data-dp-status]') as HTMLButtonElement;
     badge.click();
     expect(onCycle).toHaveBeenCalledTimes(1);
@@ -87,7 +87,7 @@ describe('renderHeader', () => {
 
   it('does not render reading when empty', () => {
     const result = makeResult({ reading: '' });
-    renderHeader(container, result, 'unknown', jest.fn());
+    renderHeader(container, result, 'unknown', jest.fn(), jest.fn());
     expect(container.querySelector('[data-dp-reading]')).toBeNull();
   });
 });
@@ -245,6 +245,8 @@ describe('renderPopupContent (full)', () => {
     });
     expect(container.querySelector('[data-dp-header]')).not.toBeNull();
     expect(container.querySelector('[data-dp-definitions]')).not.toBeNull();
-    expect(container.querySelector('[data-dp-footer]')).not.toBeNull();
+    // Quick Add moved into header (no separate footer).
+    expect(container.querySelector('[data-dp-quick-add]')).not.toBeNull();
   });
 });
+

@@ -12,55 +12,71 @@ import { STATUS_CYCLE } from '../services/wordStatusStore';
 /** Selection state for definitions (checkboxes). */
 export type DefinitionSelection = Map<string, boolean>;
 
-/** Render the popup header: term + reading + frequency + status badge. */
+/** Render the popup header: 3-row layout.
+ *  Row 1: term (left) + Quick Add button (right)
+ *  Row 2: reading / IPA
+ *  Row 3: status badge (left) + frequency (right)
+ */
 export function renderHeader(
   container: HTMLElement,
   result: LookupResult,
   currentStatus: WordStatus,
   onStatusCycle: () => void,
+  onQuickAdd: () => void,
 ): void {
   const header = document.createElement('div');
   header.setAttribute('data-dp-header', '');
-  header.style.cssText = 'padding:8px 12px;border-bottom:1px solid var(--dp-border,#e2e8f0);display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
+  header.style.cssText = 'padding:8px 12px;border-bottom:1px solid var(--dp-border,#e2e8f0);display:flex;flex-direction:column;gap:4px;';
 
-  // Term + reading
-  const termWrap = document.createElement('div');
-  termWrap.style.cssText = 'display:flex;align-items:baseline;gap:6px;flex:1;min-width:0;';
+  // Row 1: term (left) + Quick Add (right)
+  const row1 = document.createElement('div');
+  row1.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;';
 
   const term = document.createElement('span');
   term.setAttribute('data-dp-term', '');
   term.textContent = result.term;
   term.style.cssText = 'font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-  termWrap.appendChild(term);
+  row1.appendChild(term);
 
+  const quickAdd = document.createElement('button');
+  quickAdd.setAttribute('data-dp-quick-add', '');
+  quickAdd.textContent = '+ Quick Add';
+  quickAdd.style.cssText = 'font-size:12px;padding:3px 10px;border-radius:6px;border:none;background:var(--dp-primary,#3b82f6);color:white;cursor:pointer;font-weight:500;flex-shrink:0;';
+  quickAdd.addEventListener('click', onQuickAdd);
+  row1.appendChild(quickAdd);
+
+  header.appendChild(row1);
+
+  // Row 2: reading / IPA
   if (result.reading) {
-    const reading = document.createElement('span');
+    const reading = document.createElement('div');
     reading.setAttribute('data-dp-reading', '');
     reading.textContent = result.reading;
     reading.style.cssText = 'font-size:13px;color:var(--dp-muted,#64748b);';
-    termWrap.appendChild(reading);
+    header.appendChild(reading);
   }
 
-  header.appendChild(termWrap);
+  // Row 3: status (left) + frequency (right)
+  const row3 = document.createElement('div');
+  row3.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;';
 
-  // Frequency badge
-  if (result.frequency) {
-    const freq = document.createElement('span');
-    freq.setAttribute('data-dp-frequency', '');
-    freq.textContent = `#${result.frequency.rank}`;
-    freq.style.cssText = 'font-size:11px;padding:2px 6px;border-radius:4px;background:var(--dp-badge-bg,#f1f5f9);color:var(--dp-muted,#64748b);';
-    header.appendChild(freq);
-  }
-
-  // Status badge (clickable — cycles status)
   const statusBadge = document.createElement('button');
   statusBadge.setAttribute('data-dp-status', '');
   statusBadge.textContent = currentStatus;
   statusBadge.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--dp-border,#cbd5e1);background:transparent;cursor:pointer;text-transform:capitalize;';
   statusBadge.title = 'Click to cycle status';
   statusBadge.addEventListener('click', onStatusCycle);
-  header.appendChild(statusBadge);
+  row3.appendChild(statusBadge);
 
+  if (result.frequency) {
+    const freq = document.createElement('span');
+    freq.setAttribute('data-dp-frequency', '');
+    freq.textContent = `#${result.frequency.rank}`;
+    freq.style.cssText = 'font-size:11px;padding:2px 6px;border-radius:4px;background:var(--dp-badge-bg,#f1f5f9);color:var(--dp-muted,#64748b);';
+    row3.appendChild(freq);
+  }
+
+  header.appendChild(row3);
   container.appendChild(header);
 }
 
@@ -207,7 +223,6 @@ export function renderPopupContent(
   },
 ): void {
   clearContainer(container);
-  renderHeader(container, result, currentStatus, callbacks.onStatusCycle);
+  renderHeader(container, result, currentStatus, callbacks.onStatusCycle, callbacks.onQuickAdd);
   renderDefinitions(container, result, selection, callbacks.onDefinitionToggle);
-  renderFooter(container, currentStatus, callbacks.onStatusCycle, callbacks.onQuickAdd);
 }
