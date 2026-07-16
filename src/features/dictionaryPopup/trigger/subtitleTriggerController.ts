@@ -148,7 +148,7 @@ export function nextRequestId(): string {
  */
 export interface SubtitleTriggerDeps {
   readonly triggerMode: TriggerMode;
-  readonly onLookup: (request: LookupRequest, requestId: string) => void;
+  readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect) => void;
   readonly onCancel: (requestId: string) => void;
 }
 
@@ -273,7 +273,18 @@ export class SubtitleTriggerController {
     const request = buildLookupRequest(span, sentence, langCode);
     const requestId = nextRequestId();
     this.inFlightRequestId = requestId;
-    this.deps.onLookup(request, requestId);
+    // Anchor rect: vertical bounds from the subtitle line (parent element)
+    // so the popup avoids the entire line, not just the clicked token.
+    // Horizontal bounds from the token so the popup aligns to the word.
+    const tokenRect = span.getBoundingClientRect();
+    const lineRect = span.parentElement?.getBoundingClientRect() ?? tokenRect;
+    const anchorRect = new DOMRect(
+      tokenRect.left,
+      lineRect.top,
+      tokenRect.width,
+      lineRect.height,
+    );
+    this.deps.onLookup(request, requestId, anchorRect);
   }
 
   /** Check if a LOOKUP_RESULT's requestId matches the in-flight request. */

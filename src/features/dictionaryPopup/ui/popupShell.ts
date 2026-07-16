@@ -288,6 +288,11 @@ export class PopupShell {
     this.container.style.fontFamily = 'system-ui, -apple-system, sans-serif';
     this.container.style.fontSize = '14px';
     this.container.style.color = 'var(--dp-text, #1e293b)';
+    // user-select is inherited — fullscreen video containers often set
+    // user-select:none, which Shadow DOM inherits. Force text so definitions
+    // are selectable.
+    this.container.style.userSelect = 'text';
+    this.container.style.webkitUserSelect = 'text';
     this.shadow.appendChild(this.container);
 
     // Resize handle (bottom-right corner) — diagonal-lines icon, resize both width & height.
@@ -348,6 +353,11 @@ export class PopupShell {
     );
     this.container.style.left = `${pos.left}px`;
     this.container.style.top = `${pos.top}px`;
+    // Shrink popup height to fit the viewport so it never overflows.
+    // The user wants the popup to "thu nhỏ lại" when there isn't enough space.
+    const availableHeight = vh - pos.top - VIEWPORT_MARGIN;
+    const clampedHeight = Math.max(200, Math.min(this.size.maxHeight, availableHeight));
+    this.container.style.height = `${clampedHeight}px`;
   }
 
   /** Get the Shadow DOM root (for content rendering). */

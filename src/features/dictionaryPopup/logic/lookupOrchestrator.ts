@@ -240,7 +240,7 @@ export async function lookupOrchestrator(
         text: sense.text,
         examples,
         source: 'Cambridge',
-        defaultSelected: defIdx === 0,
+        defaultSelected: false,
       });
       defIdx++;
     }
@@ -250,8 +250,15 @@ export async function lookupOrchestrator(
   const partsOfSpeech = [...new Set(definitions.map((d) => d.pos).filter(Boolean))] as string[];
 
   // 7. Assemble reading (IPA) — prefer pronunciation field (Cambridge JSON
-  //    stores IPA here), fall back to reading field (Yomitan), then term.
-  const reading = dictEntries[0]?.pronunciation || dictEntries[0]?.reading || '';
+  //    stores IPA here), fall back to reading field (Yomitan). Never fall back
+  //    to term: a non-IPA reading is noise, not information.
+  //    Import strategies fall back reading→term when empty (baseImportStrategy,
+  //    normalizationPipeline), so a phrase with no IPA ends up with reading=term.
+  //    Strip that echo so the popup doesn't show the term as its own IPA.
+  const rawReading = dictEntries[0]?.pronunciation || dictEntries[0]?.reading || '';
+  const reading = rawReading && rawReading.toLowerCase() === lookupTerm.toLowerCase()
+    ? ''
+    : rawReading;
 
   // 8. Assemble frequency.
   const frequency =
@@ -296,10 +303,17 @@ async function tryEnglishPhraseMatch(
     const stored = await getAllPhraseIndexes(langCode).catch(() => []);
     if (stored.length === 0) return null;
     checkAbort(signal);
-    indexes = stored.map((s) => ({
-      resourceId: s.resourceId,
-      index: deserializePhraseIndex(s.blob),
-    }));
+    // Deserialize each blob — skip corrupted/version-mismatched blobs
+    // and fall back to word-level lookup for those resources.
+    indexes = [];
+    for (const s of stored) {
+      try {
+        indexes.push({ resourceId: s.resourceId, index: deserializePhraseIndex(s.blob) });
+      } catch {
+        // Version mismatch or corrupt blob — skip, word fallback handles it.
+      }
+    }
+    if (indexes.length === 0) return null;
   }
 
   // Sort by resourceId descending (newest import wins).

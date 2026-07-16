@@ -203,7 +203,7 @@ docs/adr/                              ← MỚI: ADR plugin interface + ADR dic
 | A1 | M2 | Mở video có phụ đề EN | Subtitle overlay token-wrap per-word | subtitle text | token spans click/hover |
 | A2 | M2 | Hover/click token trong "The answer **was** right under my nose" (mode click/hover theo M1) | Debounce 150ms hover / 50ms click; gửi LOOKUP | term=`was`, sentence full, offset | requestId in-flight |
 | A3 | Worker | — | EN plugin: tokenize by offset, match Cambridge template `be (right) under your nose` (lemma `was→be`, optional `right`, possessive slot); otherwise normal dictionary fallback | LOOKUP | LookupResult (definitions, reading IPA, frequency, detectedPhrase?, status) |
-| A4 | M3 | Thấy popup ≤1s, Shadow DOM, auto-position, sticky size | Render header + Definitions (không phải tab) | LookupResult | UI definitions checkbox all selected |
+| A4 | M3 | Thấy popup ≤1s, Shadow DOM, auto-position, sticky size | Render header + Definitions (không phải tab) | LookupResult | UI definitions checkbox none selected |
 | A5 | M3a | Mở tab Audio (hoặc defaultActiveTab=`audio`) | Lazy FETCH community audio + system/cloud TTS fallback | term + accents | AudioItem[] (top selected theo priorityResolver) |
 | A6 | M3b | (tuỳ chọn) mở Image | Lazy image scrape | term | ImageItem[] |
 | A7 | M3c | (tuỳ chọn) mở Translate | TRANSLATE target + sentence | term, sentence, translateTargetLang | translation string |
@@ -809,10 +809,10 @@ QUICK_ADD: 'QUICK_ADD',
 - [x] `npm run lint` clean.
 - [x] Benchmark `lookupOrchestrator` ≤1s với dict ~120k entries (CEDICT) + ~100k (Cambridge) trên RAM 4GB (runnable self-check file). — lookupOrchestratorBenchmark.test.ts: 120k CEDICT + 500 Cambridge phrase templates, full lookup 26.6ms.
 - [x] EN phrase benchmark theo ADR-037: phrase candidate p95 <10ms, AST validation p95 <25ms, warm worker lookup p95 <100ms, phrase index blob + resident worker representation ≤8MB/resource, transient matcher state ≤512KB; no regex scan of all terms.
-- [x] Popup render trong Shadow DOM, không bị CSS trang web phá, auto-position tránh overflow, resize kéo góc, sticky size persist.
+- [x] Popup render trong Shadow DOM, không bị CSS trang web phá, auto-position tránh overflow + không che dòng phụ đề, resize kéo góc, sticky size persist, height tự thu nhỏ vừa viewport.
 - [x] EN lookup: hover token trong "The answer was right under my nose" → detect Cambridge template `be (right) under your nose` (optional group + possessive + verb lemma), return exact surface span; no opaque confidence threshold.
 - [x] ZH lookup: click 喜 trong 我喜欢你 → highlight 喜欢 (dictionary-driven segmentation), tra "喜欢" không tra "喜".
-- [x] Definitions luôn hiện, mỗi definition có checkbox, default all selected.
+- [x] Definitions luôn hiện, mỗi definition có checkbox, default none selected.
 - [x] Audio/Image/Translate/Links panel toggle từ toolbar, lazy load (chỉ fetch khi mở), preserve state khi toggle lại.
 - [x] Quick Add: 1 nút, user tick item → hệ thống tôn trọng Card Creator auto-complete settings (field mapping + per-field toggle + fallback). Nếu field auto-complete on thì fill (với fallback), nếu off thì chỉ fill item user đã tick. Audio/image fetch binary khi Quick Add, fetch fail → toast error, item bỏ qua.
 - [x] Word status 4 giá trị ở footer (unknown → tracking → known → ignore, vòng tròn), persist IndexedDB.

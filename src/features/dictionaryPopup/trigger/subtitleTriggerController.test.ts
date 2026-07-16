@@ -118,7 +118,7 @@ describe('nextRequestId', () => {
 });
 
 describe('SubtitleTriggerController', () => {
-  let onLookup: jest.Mock<(req: LookupRequest, requestId: string) => void>;
+  let onLookup: jest.Mock<(req: LookupRequest, requestId: string, anchorRect: DOMRect) => void>;
   let onCancel: jest.Mock<(requestId: string) => void>;
   let parent: HTMLSpanElement;
   let spans: HTMLSpanElement[];
@@ -126,13 +126,13 @@ describe('SubtitleTriggerController', () => {
   function makeController(mode: TriggerMode): SubtitleTriggerController {
     return new SubtitleTriggerController({
       triggerMode: mode,
-      onLookup: onLookup as unknown as (req: LookupRequest, requestId: string) => void,
-      onCancel: onCancel as unknown as (requestId: string) => void,
+      onLookup,
+      onCancel,
     });
   }
 
   beforeEach(() => {
-    onLookup = jest.fn<(req: LookupRequest, requestId: string) => void>();
+    onLookup = jest.fn<(req: LookupRequest, requestId: string, anchorRect: DOMRect) => void>();
     onCancel = jest.fn<(requestId: string) => void>();
     parent = document.createElement('span');
     spans = wrapTokenSpans(parent, 'Hello world.', 'en');
@@ -315,6 +315,37 @@ describe('SubtitleTriggerController', () => {
       spans[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
       jest.advanceTimersByTime(HOVER_DEBOUNCE_MS);
       expect(onLookup).toHaveBeenCalledTimes(1);
+
+      ctrl.detach();
+    });
+  });
+
+  describe('anchor rect (subtitle line avoidance)', () => {
+    it('passes parent element vertical bounds, token horizontal bounds', () => {
+      jest.useFakeTimers();
+      // Mock getBoundingClientRect: token span is small, parent (subtitle
+      // line) is wider and taller. The anchor rect must use the parent's
+      // top/bottom so the popup avoids the entire subtitle line, not just
+      // the clicked token.
+      const tokenRect = { top: 50, bottom: 70, left: 100, right: 130, width: 30, height: 20, x: 100, y: 50, toJSON: () => ({}) };
+      const lineRect  = { top: 40, bottom: 80, left: 10, right: 500, width: 490, height: 40, x: 10, y: 40, toJSON: () => ({}) };
+      spans[0]!.getBoundingClientRect = () => tokenRect as DOMRect;
+      parent.getBoundingClientRect = () => lineRect as DOMRect;
+
+      const ctrl = makeController('click');
+      ctrl.attach(spans, 'Hello world.', 'en');
+
+      spans[0]!.click();
+      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
+
+      expect(onLookup).toHaveBeenCalledTimes(1);
+      const anchorRect = onLookup.mock.calls[0]![2];
+      // Vertical: from subtitle line (parent), not token.
+      expect(anchorRect.top).toBe(40);
+      expect(anchorRect.bottom).toBe(80);
+      // Horizontal: from token, not subtitle line.
+      expect(anchorRect.left).toBe(100);
+      expect(anchorRect.right).toBe(130);
 
       ctrl.detach();
     });

@@ -10,7 +10,7 @@ import {
   getSelectedDefinitions,
   clearContainer,
 } from './popupContent';
-import type { LookupResult, DefinitionEntry } from '../types';
+import type { LookupResult, DefinitionEntry, WordStatus } from '../types';
 
 function makeDefinition(overrides: Partial<DefinitionEntry> = {}): DefinitionEntry {
   return {
@@ -47,9 +47,14 @@ describe('renderHeader', () => {
     container = document.createElement('div');
   });
 
+  // Helper: renderHeader now takes 7 args (added onSendToCreator, onSettings).
+  function callHeader(result: LookupResult, status: string, onCycle = jest.fn(), onQuickAdd = jest.fn()) {
+    renderHeader(container, result, status as WordStatus, onCycle, onQuickAdd, jest.fn(), jest.fn());
+  }
+
   it('renders term + reading', () => {
     const result = makeResult();
-    renderHeader(container, result, 'unknown', jest.fn(), jest.fn());
+    callHeader(result, 'unknown');
     const term = container.querySelector('[data-dp-term]');
     expect(term?.textContent).toBe('take off');
     const reading = container.querySelector('[data-dp-reading]');
@@ -58,20 +63,20 @@ describe('renderHeader', () => {
 
   it('renders frequency badge when present', () => {
     const result = makeResult();
-    renderHeader(container, result, 'unknown', jest.fn(), jest.fn());
+    callHeader(result, 'unknown');
     const freq = container.querySelector('[data-dp-frequency]');
     expect(freq?.textContent).toBe('#1234');
   });
 
   it('does not render frequency badge when null', () => {
     const result = makeResult({ frequency: null });
-    renderHeader(container, result, 'unknown', jest.fn(), jest.fn());
+    callHeader(result, 'unknown');
     expect(container.querySelector('[data-dp-frequency]')).toBeNull();
   });
 
   it('renders status badge with current status', () => {
     const result = makeResult();
-    renderHeader(container, result, 'tracking', jest.fn(), jest.fn());
+    callHeader(result, 'tracking');
     const status = container.querySelector('[data-dp-status]');
     expect(status?.textContent).toBe('tracking');
   });
@@ -79,7 +84,7 @@ describe('renderHeader', () => {
   it('status badge click triggers onStatusCycle', () => {
     const onCycle = jest.fn();
     const result = makeResult();
-    renderHeader(container, result, 'unknown', onCycle, jest.fn());
+    callHeader(result, 'unknown', onCycle);
     const badge = container.querySelector('[data-dp-status]') as HTMLButtonElement;
     badge.click();
     expect(onCycle).toHaveBeenCalledTimes(1);
@@ -87,8 +92,32 @@ describe('renderHeader', () => {
 
   it('does not render reading when empty', () => {
     const result = makeResult({ reading: '' });
-    renderHeader(container, result, 'unknown', jest.fn(), jest.fn());
+    callHeader(result, 'unknown');
     expect(container.querySelector('[data-dp-reading]')).toBeNull();
+  });
+
+  it('renders Settings, Send to Card, and Quick Add buttons', () => {
+    const result = makeResult();
+    callHeader(result, 'unknown');
+    expect(container.querySelector('[data-dp-settings]')).not.toBeNull();
+    expect(container.querySelector('[data-dp-send-to-creator]')).not.toBeNull();
+    expect(container.querySelector('[data-dp-quick-add]')).not.toBeNull();
+  });
+
+  it('Settings button click triggers onSettings', () => {
+    const onSettings = jest.fn();
+    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), onSettings);
+    const btn = container.querySelector('[data-dp-settings]') as HTMLButtonElement;
+    btn.click();
+    expect(onSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('Send to Card button click triggers onSendToCreator', () => {
+    const onSend = jest.fn();
+    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), onSend, jest.fn());
+    const btn = container.querySelector('[data-dp-send-to-creator]') as HTMLButtonElement;
+    btn.click();
+    expect(onSend).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -242,11 +271,15 @@ describe('renderPopupContent (full)', () => {
       onStatusCycle: jest.fn(),
       onDefinitionToggle: jest.fn(),
       onQuickAdd: jest.fn(),
+      onSendToCreator: jest.fn(),
+      onSettings: jest.fn(),
     });
     expect(container.querySelector('[data-dp-header]')).not.toBeNull();
     expect(container.querySelector('[data-dp-definitions]')).not.toBeNull();
     // Quick Add moved into header (no separate footer).
     expect(container.querySelector('[data-dp-quick-add]')).not.toBeNull();
+    expect(container.querySelector('[data-dp-settings]')).not.toBeNull();
+    expect(container.querySelector('[data-dp-send-to-creator]')).not.toBeNull();
   });
 });
 
