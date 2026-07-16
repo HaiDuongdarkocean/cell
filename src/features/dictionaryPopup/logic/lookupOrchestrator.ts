@@ -229,8 +229,9 @@ export async function lookupOrchestrator(
   // 6. Assemble parts of speech.
   const partsOfSpeech = [...new Set(definitions.map((d) => d.pos).filter(Boolean))] as string[];
 
-  // 7. Assemble reading (from first dict entry's reading field, or '').
-  const reading = dictEntries[0]?.reading ?? '';
+  // 7. Assemble reading (IPA) — prefer pronunciation field (Cambridge JSON
+  //    stores IPA here), fall back to reading field (Yomitan), then term.
+  const reading = dictEntries[0]?.pronunciation || dictEntries[0]?.reading || '';
 
   // 8. Assemble frequency.
   const frequency =
