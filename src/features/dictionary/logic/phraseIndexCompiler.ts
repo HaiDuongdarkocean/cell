@@ -15,7 +15,7 @@
 import type { PhraseNode } from './phraseTemplateParser';
 
 const MAGIC = 0x4c584950; // "PIXL" little-endian
-const COMPILER_VERSION = 1;
+const COMPILER_VERSION = 2;
 const MAX_ANCHORS = 3;
 
 const NODE_LITERAL = 0;
@@ -201,6 +201,9 @@ export function deserializePhraseIndex(buffer: ArrayBuffer): PhraseIndex {
   const magic = readU32(view, offset); offset += 4;
   if (magic !== MAGIC) throw new Error('phraseIndex: bad magic');
   const version = readU32(view, offset); offset += 4;
+  if (version !== COMPILER_VERSION) {
+    throw new Error(`phraseIndex: version mismatch (expected ${COMPILER_VERSION}, got ${version}). Re-import the dictionary to rebuild the phrase index.`);
+  }
   const termCount = readU32(view, offset); offset += 4;
   const anchorCount = readU32(view, offset); offset += 4;
 
@@ -352,6 +355,7 @@ function serializeNode(node: PhraseNode, out: number[], intern: (s: string) => n
     case 'slot':
       out.push(NODE_SLOT);
       out.push(node.kind === 'object' ? SLOT_OBJECT : node.kind === 'person' ? SLOT_PERSON : SLOT_POSSESSIVE);
+      out.push(node.maxTokens & 0xff);
       break;
   }
 }
@@ -404,9 +408,11 @@ function deserializeNode(view: Uint8Array, offset: number, end: number, out: Phr
     }
     case NODE_SLOT: {
       const kind = view[offset]!; offset += 1;
+      const maxTokens = view[offset]! || 6; offset += 1;
       out.push({
         type: 'slot',
         kind: kind === SLOT_OBJECT ? 'object' : kind === SLOT_PERSON ? 'person' : 'possessive',
+        maxTokens,
       });
       return offset;
     }

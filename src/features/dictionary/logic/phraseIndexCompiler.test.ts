@@ -139,6 +139,19 @@ describe('phraseIndexCompiler', () => {
           .toEqual([...original.lookupByAnchor(anchor)].sort((a, b) => a - b));
       }
     });
+
+    it('throws clear version-mismatch error on old-format blob', () => {
+      // Simulate an old-format blob (version 1) by patching the version
+      // field in a serialized buffer. The deserializer must throw a clear
+      // error mentioning "version mismatch", not a cryptic "unknown node
+      // type" from a desynced offset.
+      const original = compilePhraseIndex([tmpl('be under your nose', 1)]);
+      const buffer = serializePhraseIndex(original);
+      const view = new Uint8Array(buffer);
+      // Overwrite version (bytes 4-7) to 1 (old version).
+      view[4] = 1; view[5] = 0; view[6] = 0; view[7] = 0;
+      expect(() => deserializePhraseIndex(buffer)).toThrow(/version mismatch/);
+    });
   });
 
   describe('Cambridge fixture budget', () => {

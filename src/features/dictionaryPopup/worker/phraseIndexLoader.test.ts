@@ -74,7 +74,7 @@ describe('phraseIndexLoader — loadPhraseIndexBlob', () => {
     const result = loadPhraseIndexBlob(1, blob);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.error).toMatch(/version-mismatch/);
+    expect(result.error).toMatch(/version mismatch/);
   });
 
   it('loads an empty index (0 terms) without error', () => {
