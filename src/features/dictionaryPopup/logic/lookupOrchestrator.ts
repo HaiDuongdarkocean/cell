@@ -59,26 +59,46 @@ function checkAbort(signal?: AbortSignal): void {
 function splitSenses(definition: string): { pos: string; text: string }[] {
   if (!definition) return [];
   // Strip <br> tags, normalize whitespace.
-  const clean = definition.replace(/<br\s*\/?>/gi, '\n').replace(/\r\n/g, '\n');
-  // Match numbered senses: "1.(verb) text" or "1. text" or "1\n(verb) text"
-  // Pattern: digit + dot + optional (pos) + text until next digit+dot or end.
-  const senseRegex = /(\d+)\.\s*(?:\(([^)]+)\)\s*)?([\s\S]*?)(?=\d+\.\s*(?:\(|$)|$)/g;
+  const clean = definition.replace(/<br\s*\/?>/gi, '\n').replace(/\r\n/g, '\n').trim();
+  if (!clean) return [];
+
+  // Match each sense boundary. Cambridge uses markers like:
+  //   1.(noun) ...        — POS in parentheses immediately after the number.
+  //   17.bring/call...    — idiom marker without parentheses, no whitespace.
+  //   19.in question      — idiom marker with whitespace after the dot.
+  // Boundaries are: start of string, or after a blank line (\n{2,}), and the
+  // character after the dot must be "(" or a non-digit, non-whitespace char
+  // to avoid false positives like "1.5 kg".
+  const senseRegex = /(?:^|\n{2,})\s*(\d+)\.\s*(?:\(([^)]+)\)\s*)?([\s\S]*?)(?=(?:\n{2,}\s*\d+\.\s*(?:\(|[^\d\s])|$))/g;
+
   const senses: { pos: string; text: string }[] = [];
   let match: RegExpExecArray | null;
-  let hasNumbered = false;
   while ((match = senseRegex.exec(clean)) !== null) {
-    const num = match[1];
-    const pos = match[2]?.trim() ?? '';
+    let pos = match[2]?.trim() ?? '';
     let text = match[3]?.trim() ?? '';
     if (!text) continue;
-    // Clean up: remove leading/trailing newlines, collapse multiple newlines.
+
+    // Cambridge idioms sometimes put the POS on the next line:
+    //   "bring/call sth into question\n(noun) to express doubt..."
+    // If we didn't find a leading POS, check for that pattern.
+    if (!pos) {
+      const linePos = text.match(/^([^\n]+)\n\s*\(([^)]+)\)\s*(.*)$/s);
+      if (linePos) {
+        pos = linePos[2]!.trim();
+        text = `${linePos[1]!.trim()}\n\n${linePos[3]!.trim()}`;
+      }
+    }
+
+    // Clean up: collapse runs of newlines and trim.
     text = text.replace(/\n{3,}/g, '\n\n').trim();
-    if (num && parseInt(num, 10) > 0) hasNumbered = true;
+    if (!text) continue;
+
     senses.push({ pos, text });
   }
-  // If no numbered senses found, return the original as a single entry.
-  if (!hasNumbered || senses.length === 0) {
-    return [{ pos: '', text: clean.trim() }];
+
+  // If the text contained no numeric markers, return the whole thing as one sense.
+  if (senses.length === 0) {
+    return [{ pos: '', text: clean }];
   }
   return senses;
 }
