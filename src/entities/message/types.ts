@@ -74,7 +74,10 @@ export type MessageType =
   | 'TTS_SPEAK'
   | 'WORD_STATUS_GET'
   | 'WORD_STATUS_SET'
-  | 'QUICK_ADD';
+  | 'QUICK_ADD'
+  | 'LOOKUP_REQUEST'
+  | 'LOOKUP_RESULT'
+  | 'LOOKUP_CANCEL';
 
 // === Message Request ===
 

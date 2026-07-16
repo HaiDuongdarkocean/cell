@@ -192,7 +192,7 @@ export class SubtitleTriggerController {
     }
   }
 
-  /** Remove all listeners and clear timers. */
+  /** Remove all listeners and clear timers (does NOT cancel in-flight lookup). */
   detach(): void {
     if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
     if (this.clickTimer) { clearTimeout(this.clickTimer); this.clickTimer = null; }
@@ -202,7 +202,10 @@ export class SubtitleTriggerController {
       span.removeEventListener('click', this.boundClick);
     }
     this.attached.length = 0;
-    this.cancelInFlight();
+    // NOTE: do NOT call cancelInFlight() here — detach is called on every cue
+    // change (render → wrapTargetLineTokens → detach). Cancelling would hide
+    // the popup every time the subtitle line changes. cancelInFlight is only
+    // called from dispatchLookup (before sending a new request) and destroy().
   }
 
   /** Cancel any in-flight request. */

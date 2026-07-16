@@ -286,7 +286,7 @@ describe('SubtitleTriggerController', () => {
       expect(onLookup).not.toHaveBeenCalled();
     });
 
-    it('cancels in-flight request on detach', () => {
+    it('does NOT cancel in-flight request on detach (cue change safety)', () => {
       jest.useFakeTimers();
       const ctrl = makeController('click');
       ctrl.attach(spans, 'Hello world.', 'en');
@@ -295,7 +295,10 @@ describe('SubtitleTriggerController', () => {
       jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
       const requestId = onLookup.mock.calls[0]![1];
       ctrl.detach();
-      expect(onCancel).toHaveBeenCalledWith(requestId);
+      // detach() removes listeners but does NOT cancel in-flight lookup —
+      // cue changes call detach() frequently and cancelling would hide the
+      // popup every time the subtitle line changes.
+      expect(onCancel).not.toHaveBeenCalledWith(requestId);
     });
   });
 

@@ -46,6 +46,43 @@ function checkAbort(signal?: AbortSignal): void {
   if (signal?.aborted) throw new Error('Lookup aborted');
 }
 
+/**
+ * Split a multi-sense definition string into individual senses.
+ *
+ * Cambridge JSON dictionaries often store all senses in a single `definition`
+ * field, separated by numbered markers like "1.(verb) ... 2.(verb) ...".
+ * This function splits them so each sense becomes a separate DefinitionEntry
+ * with its own checkbox in the popup.
+ *
+ * Returns the original text as a single entry if no numbered senses are found.
+ */
+function splitSenses(definition: string): { pos: string; text: string }[] {
+  if (!definition) return [];
+  // Strip <br> tags, normalize whitespace.
+  const clean = definition.replace(/<br\s*\/?>/gi, '\n').replace(/\r\n/g, '\n');
+  // Match numbered senses: "1.(verb) text" or "1. text" or "1\n(verb) text"
+  // Pattern: digit + dot + optional (pos) + text until next digit+dot or end.
+  const senseRegex = /(\d+)\.\s*(?:\(([^)]+)\)\s*)?([\s\S]*?)(?=\d+\.\s*(?:\(|$)|$)/g;
+  const senses: { pos: string; text: string }[] = [];
+  let match: RegExpExecArray | null;
+  let hasNumbered = false;
+  while ((match = senseRegex.exec(clean)) !== null) {
+    const num = match[1];
+    const pos = match[2]?.trim() ?? '';
+    let text = match[3]?.trim() ?? '';
+    if (!text) continue;
+    // Clean up: remove leading/trailing newlines, collapse multiple newlines.
+    text = text.replace(/\n{3,}/g, '\n\n').trim();
+    if (num && parseInt(num, 10) > 0) hasNumbered = true;
+    senses.push({ pos, text });
+  }
+  // If no numbered senses found, return the original as a single entry.
+  if (!hasNumbered || senses.length === 0) {
+    return [{ pos: '', text: clean.trim() }];
+  }
+  return senses;
+}
+
 /** Find the token at the cursor offset. */
 function findTokenAtOffset(tokens: readonly Token[], cursorOffset: number): Token | undefined {
   return tokens.find((t) => cursorOffset >= t.start && cursorOffset < t.end);
@@ -167,18 +204,30 @@ export async function lookupOrchestrator(
   const freqEntries = await findFrequencyByTerm(langCode, lookupTerm);
   checkAbort(signal);
 
-  // 5. Assemble definitions.
-  const definitions: DefinitionEntry[] = dictEntries.map((e, i) => ({
-    id: `def-${i}`,
-    pos: e.pos || undefined,
-    text: e.definition,
-    examples: e.examples ? e.examples.split('\n').filter(Boolean) : [],
-    source: 'Cambridge',
-    defaultSelected: i === 0,
-  }));
+  // 5. Assemble definitions — split multi-sense entries into individual senses.
+  //    Cambridge JSON often stores all senses in one `definition` field with
+  //    numbered markers ("1.(verb) ... 2.(verb) ..."). Split so each sense
+  //    gets its own checkbox in the popup (spec §4.6.3 A9).
+  const definitions: DefinitionEntry[] = [];
+  let defIdx = 0;
+  for (const e of dictEntries) {
+    const senses = splitSenses(e.definition);
+    const examples = e.examples ? e.examples.split('\n').filter(Boolean) : [];
+    for (const sense of senses) {
+      definitions.push({
+        id: `def-${defIdx}`,
+        pos: sense.pos || e.pos || undefined,
+        text: sense.text,
+        examples,
+        source: 'Cambridge',
+        defaultSelected: defIdx === 0,
+      });
+      defIdx++;
+    }
+  }
 
   // 6. Assemble parts of speech.
-  const partsOfSpeech = [...new Set(dictEntries.map((e) => e.pos).filter(Boolean))] as string[];
+  const partsOfSpeech = [...new Set(definitions.map((d) => d.pos).filter(Boolean))] as string[];
 
   // 7. Assemble reading (from first dict entry's reading field, or '').
   const reading = dictEntries[0]?.reading ?? '';

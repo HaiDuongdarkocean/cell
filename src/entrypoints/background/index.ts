@@ -66,6 +66,7 @@ import { registerYouTubeFallbackHandlers } from './handlers/youtubeDetection';
 import { registerDetectionDispatchHandlers } from './handlers/detectionDispatch';
 import { registerTranslateHandlers } from './handlers/translate';
 import { registerCardCreatorHandlers } from './handlers/cardCreator';
+import { registerLookupHandlers } from './handlers/lookup';
 import type { MessageHandler } from '@/entities/message';
 import type {
   DetectedVideo,
@@ -220,6 +221,7 @@ export class BackgroundService implements BackgroundContext {
     registerYouTubeFallbackHandlers(this);
     registerTranslateHandlers(this);
     registerCardCreatorHandlers(this);
+    registerLookupHandlers(this);
   }
 
   /** Type-safe wrapper around messageBus.on. */

@@ -17,6 +17,8 @@ import { wireBlockDrag } from './subtitleBlockDrag';
 import { createBlockScaleObserver, computeScaleSnapshot } from './subtitleBlockScale';
 import { syncElementTheme } from '@/shared/lib/themeTokens';
 import { mountToWatchVideo } from './netflixPlayback';
+import { wrapTokenSpans, detectLangCode, SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
+import type { LookupRequest } from '@/features/dictionaryPopup/types';
 
 export interface SubtitleBlockControllerUpdate {
   readonly blockSettings?: Partial<SubtitleBlockSettings>;
@@ -57,6 +59,9 @@ export class SubtitleBlockController {
   private loopEnd = 0;
   private readonly onCardCreatorAction: (action: CardCreatorAction) => void;
   private readonly onGenerateNative: () => void;
+  /** Popup dictionary state (spec §4.6 — P1.1 wire). */
+  private dpEnabled = false;
+  private dpTriggerController: SubtitleTriggerController | null = null;
 
   constructor(
     private readonly video: HTMLVideoElement,
@@ -226,6 +231,34 @@ export class SubtitleBlockController {
     this.dom.targetLine.style.display = this.targetStyle.visible && targetText ? 'block' : 'none';
     this.dom.nativeLine.textContent = this.nativeStyle.visible ? nativeText : '';
     this.dom.nativeLine.style.display = this.nativeStyle.visible && nativeText ? 'block' : 'none';
+
+    // Popup dictionary: wrap target line tokens + attach trigger (spec §4.6).
+    if (this.dpEnabled && this.targetStyle.visible && targetText) {
+      this.wrapTargetLineTokens(targetText);
+    }
+  }
+
+  /** Wrap target line text into per-token spans + attach trigger controller. */
+  private wrapTargetLineTokens(text: string): void {
+    if (!this.dom) return;
+    // targetLine is a div, but wrapTokenSpans expects a span with textContent.
+    // Create a temporary span, wrap it, then move children back.
+    const langCode = detectLangCode(text);
+    const tempSpan = document.createElement('span');
+    tempSpan.textContent = text;
+    const tokenSpans = wrapTokenSpans(tempSpan, text, langCode);
+    // Replace targetLine content with wrapped tokens.
+    this.dom.targetLine.textContent = '';
+    while (tempSpan.firstChild) {
+      this.dom.targetLine.appendChild(tempSpan.firstChild);
+    }
+    // Attach trigger controller if available.
+    if (this.dpTriggerController) {
+      this.dpTriggerController.detach();
+      if (tokenSpans.length > 0) {
+        this.dpTriggerController.attach(tokenSpans, text, langCode);
+      }
+    }
   }
 
   private onTimeUpdate = (): void => {
@@ -490,5 +523,52 @@ export class SubtitleBlockController {
       this.dom.block.remove();
       this.dom = null;
     }
+    // Cleanup popup dictionary trigger.
+    if (this.dpTriggerController) {
+      this.dpTriggerController.detach();
+      this.dpTriggerController = null;
+    }
+  }
+
+  // === Popup Dictionary integration (spec §4.6) ===
+
+  /** Enable popup dictionary on this subtitle block. */
+  enableDictionaryPopup(
+    triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt',
+    onLookup: (request: LookupRequest, requestId: string) => void,
+    onCancel: (requestId: string) => void,
+  ): void {
+    this.dpEnabled = true;
+    if (!this.dpTriggerController) {
+      this.dpTriggerController = new SubtitleTriggerController({
+        triggerMode,
+        onLookup,
+        onCancel,
+      });
+    }
+    // Re-render to wrap tokens on current cue.
+    this.render();
+  }
+
+  /** Disable popup dictionary. */
+  disableDictionaryPopup(): void {
+    this.dpEnabled = false;
+    if (this.dpTriggerController) {
+      this.dpTriggerController.detach();
+    }
+    // Re-render to restore plain text.
+    this.render();
+  }
+
+  /** Update trigger mode (re-attaches listeners). */
+  setDictionaryPopupTriggerMode(mode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt'): void {
+    if (this.dpTriggerController) {
+      this.dpTriggerController.setTriggerMode(mode);
+    }
+  }
+
+  /** Check if popup dictionary is enabled. */
+  isDictionaryPopupEnabled(): boolean {
+    return this.dpEnabled;
   }
 }

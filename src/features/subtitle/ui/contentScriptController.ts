@@ -32,11 +32,13 @@ import { mountCardCreatorDialog, buildCardCreatorContext } from '@/features/card
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
+import { createPopupDictionaryState, showPopup, hidePopup, type PopupDictionaryState } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { TranslateResult } from '@/entities/message';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
-import type { CardCreatorSettings } from '@/entities/settings';
+import type { CardCreatorSettings, DictionaryPopupSettings } from '@/entities/settings';
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
 import type { SubtitlePanelItem, SubtitleManagerPanel, ParsedFile } from '@/features/subtitle';
 
@@ -161,6 +163,9 @@ export function init(video: HTMLVideoElement): () => void {
   // ADR-026: Card Creator dialog mount controller (lazy-initialized on first open).
   let cardCreatorMount: ReturnType<typeof mountCardCreatorDialog> | null = null;
   let cardCreatorSettings: CardCreatorSettings | null = null;
+  // Popup dictionary state (spec §4.6).
+  let popupDictState: PopupDictionaryState | null = null;
+  let popupDictWasPlaying = false;
   // Track the latest target/native cues for the block controller and side panel.
   let latestTargetCues: SrtCue[] = [];
   // Track the URL the overlay currently shows cues for. On SPA navigation the
@@ -195,6 +200,51 @@ export function init(video: HTMLVideoElement): () => void {
   function clearTranslatedNativeState(): void {
     translatedNativeSlot = null;
     activeGenerateRunId = -1;
+  }
+
+  /** Wire popup dictionary: enable token wrap + trigger on subtitle block. */
+  function wireDictionaryPopup(dpSettings: DictionaryPopupSettings, ccSettings: CardCreatorSettings): void {
+    popupDictState = createPopupDictionaryState(dpSettings, ccSettings);
+    blockController.enableDictionaryPopup(
+      dpSettings.triggerMode,
+      (request: LookupRequest, requestId: string) => { void handleLookup(request, requestId); },
+      (requestId: string) => { cancelLookup(requestId); },
+    );
+  }
+
+  /** Handle a lookup request from subtitle trigger.
+   *  Routes via sendMessage to background (IDB is origin-isolated — content
+   *  scripts on web pages cannot access the extension's IDB databases). */
+  async function handleLookup(request: LookupRequest, requestId: string): Promise<void> {
+    if (!popupDictState) return;
+    try {
+      const response = await sendMessage({
+        type: MESSAGE_TYPES.LOOKUP_REQUEST,
+        payload: { requestId, request },
+      }) as { success: boolean; data?: LookupResult; error?: string };
+      if (response.success && response.data) {
+        // Pause video so subtitle cue doesn't change while popup is open.
+        if (!video.paused) { video.pause(); popupDictWasPlaying = true; }
+        // Position popup near the cursor (from request).
+        const anchorX = request.cursorOffset ?? window.innerWidth / 2;
+        const anchorY = window.innerHeight - 100; // above subtitle area
+        popupDictState = showPopup(popupDictState, response.data, anchorX, anchorY, request.contextSentence);
+      } else {
+        console.warn('[popup-dict] lookup failed', response.error);
+      }
+    } catch (err) {
+      console.warn('[popup-dict] lookup error', err);
+    }
+  }
+
+  /** Cancel an in-flight lookup (sends LOOKUP_CANCEL to background). */
+  function cancelLookup(requestId: string): void {
+    void sendMessage({ type: MESSAGE_TYPES.LOOKUP_CANCEL, payload: { requestId } });
+    if (popupDictState) {
+      popupDictState = hidePopup(popupDictState);
+      // Resume video if it was playing before popup opened.
+      if (popupDictWasPlaying) { void video.play(); popupDictWasPlaying = false; }
+    }
   }
 
   const blockController = new SubtitleBlockController(
@@ -440,6 +490,12 @@ export function init(video: HTMLVideoElement): () => void {
       clusterSettings,
     });
     updateGenerateNativeEnabled();
+
+    // Popup dictionary: wire trigger → lookup → popup (spec §4.6).
+    const dpSettings = settings.dictionaryPopup;
+    if (dpSettings?.enabled) {
+      wireDictionaryPopup(dpSettings, settings.cardCreator ?? { ankiDeck: '', ankiTags: [], enableAudio: true, enableImage: true, enableScreenshot: true, enableSentence: true });
+    }
 
     // ADR-015 UI v4: create import button + manager panel.
     // Legacy target/native dropdowns are removed; the manager panel handles selection
