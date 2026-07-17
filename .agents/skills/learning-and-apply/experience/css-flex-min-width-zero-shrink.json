@@ -1,0 +1,26 @@
+{
+  "id": "css-flex-min-width-zero-shrink",
+  "title": "Flex items need explicit min-width:0 / min-height:0 to shrink below content",
+  "category": ["css"],
+  "tags": ["flexbox", "min-width-auto", "flex-basis", "overflow", "percentage-layout", "box-sizing"],
+  "trigger": "Flex item flex:0 0 <percentage> không tuân flex-basis, overflow container vì content rộng hơn percentage",
+  "principle": "Flex item với flex: 0 0 <percentage> chỉ bắt đầu tại percentage đó. Default min-width:auto / min-height:auto của browser ngăn item shrink below content size. Để percentage flex item strictly obey flex-basis, explicit set min-width:0 (row) hoặc min-height:0 (column) và clip/wrap overflow content.",
+  "cases": [
+    {
+      "context": "Subtitle panel docked 30% width, nhưng cue text làm min-width:auto push panel + video past container (panel 39.5% thay vì 30%, overflow ~78px)",
+      "bad": "playerContainer.style.flex = '0 0 70%';\nplayerContainer.style.minWidth = '0';\npanel.style.flex = '0 0 30%';\n// no minWidth → min-width:auto → panel refuse shrink below cue text width → 324px not 246px → overflow",
+      "good": "panel.style.flex = '0 0 30%';\npanel.style.minWidth = '0';   // respect flex-basis 30%\npanel.style.minHeight = '0';  // mobile stacked layout\npanel.style.overflow = 'hidden'; // clip residual long words\n// + box-sizing: border-box on F0, playerContainer, panel → padding counted inside width budget\n// panel width: 246px = exactly 30% of 820px ✓"
+    },
+    {
+      "context": "Restore path không reset minWidth/overflow → floating panel giữ style docked",
+      "bad": "// hidePanelDocked: chỉ reset flex, quên minWidth/overflow\npanel.style.flex = ''; // nhưng minWidth:0, overflow:hidden còn → floating panel bị clip",
+      "good": "// Reset tất cả docked-specific props\npanel.style.minWidth = '';\npanel.style.minHeight = '';\npanel.style.overflow = '';\npanel.style.boxSizing = '';\npanel.style.flex = ''; // restore floating panel state"
+    }
+  ],
+  "applyFor": [
+    "CSS flex layouts với percentage-based flex items chứa text hoặc intrinsic-width content",
+    "Side panels, sidebars, split-panes, docked panels",
+    "Horizontal scroll containers phải shrink below content width",
+    "Mobile stacked flex columns where items should shrink below content height"
+  ]
+}

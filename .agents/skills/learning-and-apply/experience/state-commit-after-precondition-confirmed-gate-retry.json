@@ -1,0 +1,21 @@
+{
+  "id": "state-commit-after-precondition-confirmed-gate-retry",
+  "title": "Commit state only after precondition confirmed (gate retry)",
+  "category": ["state", "async"],
+  "tags": ["early-commit", "precondition", "retry", "polling", "cache", "gate", "videoId", "api-key", "anti-pattern", "idempotent"],
+  "trigger": "Function có precondition (API key, config, token) và retry mechanism key off cached state — commit state trước precondition check blocks retry vĩnh viễn.",
+  "principle": "Khi function có precondition (e.g., \"API key must be available\") và retry mechanism key off state (e.g., \"only re-run if videoId changed\"), commit state (cache lastVideoId) CHỈ SAU khi precondition confirmed. Commit trước precondition check blocks retry — retry condition (videoId !== lastVideoId) trở thành permanently false, precondition failure không bao giờ re-evaluate dù precondition trở thành true sau đó. Đây là \"early commit\" anti-pattern: function claim đã \"processed\" videoId (cache nó) khi thực tế fail, blocking future attempts. Gate cả trigger (poll) trên precondition nữa — không waste attempt khi precondition chưa ready.",
+  "cases": [
+    {
+      "context": "detect() cache lastVideoId trước check apiKey → fail \"no API key\" (HTML chưa render full) → lastVideoId committed → poll currentVideoId !== lastVideoId false → no retry dù API key available sau",
+      "bad": "const videoId = getVideoIdFromPlayerResponse(playerResponse) ?? getVideoIdFromUrl();\nif (!videoId || videoId === lastVideoId) return;\nlastVideoId = videoId;  // ← commit before precondition check — blocks retry\nconst apiKey = extractInnertubeApiKey(document.documentElement.innerHTML);\nif (!apiKey) { debug.lastError = 'no API key'; return; } // no retry: poll sees no videoId change",
+      "good": "const videoId = getVideoIdFromPlayerResponse(playerResponse) ?? getVideoIdFromUrl();\nif (!videoId || videoId === lastVideoId) return;\nconst apiKey = extractInnertubeApiKey(document.documentElement.innerHTML);\nif (!apiKey) { debug.lastError = 'no API key'; return; } // no commit → poll retries\nlastVideoId = videoId;  // commit only after precondition confirmed\n// Also gate the poll trigger on apiKey availability — don't waste attempts\n// pollForVideoIdChange triggers detect() only when videoId changed AND apiKey available"
+    }
+  ],
+  "applyFor": [
+    "Polling với retry condition key off cached state (videoId, requestId, sessionId)",
+    "Precondition chậm available (API key injected after paint, config loaded async, token refreshed)",
+    "Any \"detect once, cache, never retry\" pattern nơi precondition fail blocks future attempts",
+    "Idempotent operations với precondition gate (don't claim done before precondition met)"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "css-shadow-dom-token-injection",
+  "title": "Rendering boundary → explicit token injection",
+  "category": ["css", "rendering"],
+  "tags": ["shadow-dom", "tokens", "css-variables", "vite-raw-import", "design-system"],
+  "trigger": "Shadow DOM component cần shared design tokens với host page",
+  "principle": "Rendering boundary (Shadow DOM, iframe, Web Worker) cô lập CSS — stylesheets của parent không apply vào boundary bên trong. Shared design tokens phải được explicit inject dưới dạng CSS string vào boundary. Vite ?raw import biến file .css thành string — inject vào <style> trong Shadow DOM, remap :root → :host, và cả React + Vanilla DOM share cùng source file. Không duplication, không drift.",
+  "cases": [
+    {
+      "context": "Shadow DOM component định nghĩa --dp-* tokens riêng, duplicate shared tokens.css → drift khi token đổi",
+      "bad": "/* popup style block */ :host { --dp-bg: #ffffff; --dp-text: #1a1a1a; --dp-border: #e5e7eb; } /* duplicate tokens, drift from tokens.css */",
+      "good": "import tokensCss from '@/shared/styles/tokens.css?raw';\nstyleEl.textContent = tokensCss.replace(/:root/g, ':host') + componentsCss;\n/* single source — change tokens.css → both React + Shadow DOM update */"
+    }
+  ],
+  "applyFor": [
+    "Shadow DOM components (custom elements, popup dialogs, overlays)",
+    "iframe-embedded widgets (inject tokens vào iframe <head>)",
+    "Web Worker canvas rendering (pass token values as messages)",
+    "React Native + Web sharing design tokens (different runtime, same source file)",
+    "Bất kỳ rendering boundary nào cần shared design system — inject tokens explicitly"
+  ]
+}

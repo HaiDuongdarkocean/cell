@@ -1,0 +1,21 @@
+{
+  "id": "no-dynamic-import-shared-sw-chunk",
+  "title": "Static import modules shared with the service worker chunk — dynamic import injects a document polyfill that crashes the SW",
+  "category": ["build", "async"],
+  "tags": ["mv3", "service-worker", "vite", "dynamic-import", "modulepreload-polyfill", "code-splitting", "crxjs", "document-is-not-defined"],
+  "trigger": "An MV3 extension module is imported by both a DOM context (popup/content-script) and the service worker, and a caller uses dynamic import()",
+  "principle": "In an MV3 extension with multiple entry points (SW, content-script, popup, sidepanel, offscreen), a module can live in a shared chunk imported by both DOM and non-DOM contexts. Vite injects modulepreload-polyfill (which uses document) into any chunk containing a dynamic import(). If that chunk is reachable from the SW, the SW loads the polyfill, hits ReferenceError: document is not defined, and registration fails (status 15) — killing all content-script messaging. Rule: for any module shared with the SW bundle, always static import. Dynamic import is only safe for modules NOT reachable from the SW (UI-only modules used solely by popup/sidepanel).",
+  "cases": [
+    {
+      "context": "A controller adds a dynamic import for a settings store that is already statically imported elsewhere and also imported by the SW via helpers → Vite injects modulepreload-polyfill into the shared settingsStore chunk → SW crashes on document reference",
+      "bad": "// offsetController.ts — settingsStore already statically imported for saveSettings\nimport { saveSettings } from '@/shared/lib/storage/settingsStore';\n// ...\n// Dynamic import for loadSettings is pointless (module already in bundle)\nconst { loadSettings } = await import('@/shared/lib/storage/settingsStore');\n// → Vite injects modulepreload-polyfill (uses document) into shared settingsStore chunk\n// → SW imports same chunk → ReferenceError: document is not defined\n// → SW registration failed (status 15) → content-script PAGE_SCAN_RESULT fails\n// → \"Receiving end does not exist\" → popup detects no media",
+      "good": "// Static import — module already in bundle, no code-split benefit lost\nimport { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';\n// ...\nreturn loadSettings();\n// SW bundle no longer references modulepreload; settingsStore chunk clean of polyfill"
+    }
+  ],
+  "applyFor": [
+    "MV3 extensions bundled with Vite / @crxjs/vite-plugin (or any bundler that auto-injects polyfill based on dynamic import)",
+    "Modules shared between the SW and content-script/popup (settings store, message bus, chrome API wrappers)",
+    "Code-splitting decisions — when dynamic import is safe (UI-only) vs when static import is mandatory (SW-reachable)",
+    "Diagnosing \"Service worker registration failed. Status code: 15\" + \"Receiving end does not exist\" after adding a dynamic import"
+  ]
+}

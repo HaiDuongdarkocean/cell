@@ -1,0 +1,26 @@
+{
+  "id": "ux-dropdown-width-follows-content",
+  "title": "Dropdown width follows content, alignment configurable by trigger position",
+  "category": ["ux", "css"],
+  "tags": ["dropdown", "select", "max-content", "alignment", "floating-ui", "positioning", "container-boundary"],
+  "trigger": "Custom dropdown/select menu có trigger hẹp nhưng options dài, hoặc trigger nằm bên phải container",
+  "principle": "Dropdown menu width phải theo content (`width: max-content` + `min-width: 100%` + `max-width` guard), không theo trigger — trigger width là UI constraint, content width là readability constraint. Alignment phải configurable theo vị trí trigger trong container: trigger bên trái → menu mở phải (`left: 0`), trigger bên phải → menu mở trái (`right: 0; left: auto`) để không tràn container. Hardcode `left: 0; right: 0` assume trigger luôn bên trái + content luôn ngắn hơn trigger — sai cho cả 2 assumption.",
+  "cases": [
+    {
+      "context": "Select component dùng chung cho nhiều vị trí, trigger bên phải row có options dài bị clip vì menu width locked bằng trigger width",
+      "bad": "/* Select.module.css */\n.menu {\n  position: absolute;\n  top: calc(100% + 4px);\n  left: 0;\n  right: 0;  /* ← locks width to trigger width (~40-80px) → long options clipped */\n}",
+      "good": "/* Select.module.css */\n.menu { width: max-content; min-width: 100%; max-width: 320px; ... }\n.menuAlignLeft  { left: 0; }\n.menuAlignRight { right: 0; left: auto; }\n\n// Component prop: menuAlign?: 'left' | 'right' (default 'left')\n// Right-aligned trigger passes menuAlign=\"right\" → menu opens left, stays in container"
+    },
+    {
+      "context": "Menu mở sang phải từ trigger bên phải row tràn ra ngoài card boundary",
+      "bad": "// Hardcoded left:0 alignment regardless of trigger position\n<Select options={fields} />  // menu extends right, overflows card",
+      "good": "// Caller declares alignment based on its position in container\n<Select options={fields} menuAlign=\"right\" />  // menu opens left, right edge = trigger right edge"
+    }
+  ],
+  "applyFor": [
+    "Custom dropdown/select components (Radix, custom listbox) nơi trigger hẹp + options dài",
+    "Popover/tooltip positioning theo trigger position trong container (right-aligned trigger → popover mở trái)",
+    "Menus trong constrained containers (dialog, sidebar, card) — menu không được tràn container boundary",
+    "Any floating UI element cần width theo content + alignment theo anchor position"
+  ]
+}

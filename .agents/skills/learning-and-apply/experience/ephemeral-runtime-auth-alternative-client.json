@@ -1,0 +1,21 @@
+{
+  "id": "ephemeral-runtime-auth-alternative-client",
+  "title": "Ephemeral runtime auth token → alternative client without token",
+  "category": ["async", "data", "messaging"],
+  "tags": ["auth-token", "ephemeral", "po-token", "innertube", "alternative-client", "anti-bot", "scraping"],
+  "trigger": "A service requires an ephemeral, single-use auth token that can only be generated from its runtime context (browser player, native app), blocking out-of-context fetches",
+  "principle": "When a service requires an ephemeral auth token (single-use, short-lived, only generatable from the service's runtime context), you cannot fetch it out-of-context (extension SW, server, headless). Instead of trying to obtain the token (ephemeral = not reusable), use an alternative client/context that the service does not require that token for. Services often expose multiple client types (WEB, ANDROID, IOS, TV) with different auth requirements — the less-protected client (mobile/TV) usually skips the token requirement.",
+  "cases": [
+    {
+      "context": "YouTube WEB InnerTube client requires a PO Token (ephemeral, single-use, only available from the player runtime) for caption tracks; fetching from an extension returns empty bodies and all tracks get filtered out",
+      "bad": "// WEB client — every caption track baseUrl carries exp=xpe (PO Token required)\nconst innerTubeContext = {\n  client: { clientName: 'WEB', clientVersion: '2.x' }\n};\n// fetch caption track VTT without PO Token → 200 OK, 0 bytes (empty body)\n// mapYouTubeCaptionTracks skips all tracks (PO Token indicator) → 0 subtitles",
+      "good": "// ANDROID client — caption tracks have exp=null (NO PO Token required)\nconst innerTubeContext = {\n  client: { clientName: 'ANDROID', clientVersion: '20.10.38' }\n};\n// add visitorData for session continuity (from ytcfg INNERTUBE_CONTEXT.client.visitorData)\n// ANDROID client returns tracks with exp=null → VTT fetch succeeds with real bytes"
+    }
+  ],
+  "applyFor": [
+    "YouTube InnerTube API (WEB requires PO Token, ANDROID/IOS do not)",
+    "Google APIs with multiple client contexts (WEB vs MOBILE vs TV)",
+    "Any service with ephemeral runtime-only auth (anti-bot token, session token from player/app)",
+    "Scraping protected APIs — try an alternative client type before attempting to reverse-engineer token generation"
+  ]
+}

@@ -20,7 +20,7 @@ Skill này là **router** — entry point duy nhất để chọn skill:
 
 When a task arrives, identify the development phase and apply the corresponding skill:
 
-> **Knowledge hook (automatic):** Before routing to any Build/Verify/Review skill, if a `learning` skill exists in `.agents/skills/`, grep its `index.json` by the task's domain keywords (css, async, messaging, state, data, detection, ux, build, testing, rendering). Open every matching `knowledge/<id>.json` and check `cases[].bad` against the code you are about to write. If your code matches a bad pattern, apply `cases[].good` before proceeding. This is not optional — known patterns must be checked before new code is written, not after a bug surfaces.
+> **Knowledge hook (automatic):** Before routing to any Build/Verify/Review skill, if a `learning-and-apply` skill exists in `.agents/skills/`, grep its `index.json` by the task's domain keywords (css, async, messaging, state, data, detection, ux, build, testing, rendering). Open every matching `experience/<id>.json` or `knowledge/<topic>.json` and check `cases[].bad` against the code you are about to write. If your code matches a bad pattern, apply `cases[].good` before proceeding. This is not optional — known patterns must be checked before new code is written, not after a bug surfaces.
 
 ```
 Task arrives
@@ -29,7 +29,7 @@ Task arrives
     ├── Have a rough concept, need variants? → idea-refine
     ├── New project/feature/change? ──→ spec-driven-development
     ├── Have a spec, need tasks? ──────→ planning-and-task-breakdown
-    ├── Implementing code? ────────────→ learning (APPLY) ← grep knowledge first
+    ├── Implementing code? ────────────→ learning-and-apply (APPLY) ← grep knowledge first
     │   └── incremental-implementation
     │       ├── UI work? ─────────────────→ frontend-ui-engineering
     │       ├── API work? ────────────────→ api-and-interface-design
@@ -39,7 +39,7 @@ Task arrives
     ├── Writing/running tests? ────────→ test-driven-development
     │   └── Browser-based? ───────────→ browser-testing-with-devtools
     ├── Something broke? ──────────────→ debugging-and-error-recovery
-    │   └── Root cause found + fix verified? → learning (ACCUMULATE) ← extract principle
+    │   └── Root cause found + fix verified? → learning-and-apply (ACCUMULATE) ← extract principle
     ├── Reviewing code? ───────────────→ code-review-and-quality
     │   ├── Too complex? ─────────────→ code-simplification
     │   ├── Security concerns? ───────→ security-and-hardening
@@ -159,12 +159,12 @@ For a complete feature, the typical skill sequence is:
 4.  planning-and-task-breakdown → Break into verifiable chunks
 5.  context-engineering         → Load the right context
 6.  source-driven-development   → Verify against official docs
-7.  learning (APPLY)            → Grep knowledge index.json, check bad patterns before coding
+7.  learning-and-apply (APPLY)  → Grep knowledge index.json, check bad patterns before coding
 8.  incremental-implementation  → Build slice by slice
 9.  observability-and-instrumentation → Instrument as you build (runs parallel with 8-10, not after)
 10. doubt-driven-development    → Cross-examine non-trivial decisions in-flight
 11. test-driven-development     → Prove each slice works
-12. learning (ACCUMULATE)       → Extract reusable principle to atom JSON (after test pass + root cause understood)
+12. learning-and-apply (ACCUMULATE) → Extract reusable principle to atom JSON (after test pass + root cause understood)
 13. code-review-and-quality     → Review before merge
 14. code-simplification         → Reduce unnecessary complexity while preserving behavior
 15. git-workflow-and-versioning → Clean commit history
@@ -173,7 +173,7 @@ For a complete feature, the typical skill sequence is:
 18. shipping-and-launch         → Deploy safely
 ```
 
-Not every task needs every skill. A bug fix might only need: `debugging-and-error-recovery` → `test-driven-development` → `learning (ACCUMULATE)` → `code-review-and-quality`.
+Not every task needs every skill. A bug fix might only need: `debugging-and-error-recovery` → `test-driven-development` → `learning-and-apply (ACCUMULATE)` → `code-review-and-quality`.
 
 ## Quick Reference
 
@@ -183,7 +183,7 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Define | idea-refine | Refine ideas through structured divergent and convergent thinking |
 | Define | spec-driven-development | Requirements and acceptance criteria before code |
 | Plan | planning-and-task-breakdown | Decompose into small, verifiable tasks |
-| Build | learning (APPLY) | Grep knowledge index.json, check bad patterns before coding |
+| Build | learning-and-apply (APPLY) | Grep knowledge index.json, check bad patterns before coding |
 | Build | incremental-implementation | Thin vertical slices, test each before expanding |
 | Build | source-driven-development | Verify against official docs before implementing |
 | Build | doubt-driven-development | Adversarial fresh-context review of every non-trivial decision |
@@ -193,7 +193,7 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Verify | test-driven-development | Failing test first, then make it pass |
 | Verify | browser-testing-with-devtools | Chrome DevTools MCP for runtime verification |
 | Verify | debugging-and-error-recovery | Reproduce → localize → fix → guard |
-| Verify | learning (ACCUMULATE) | Extract reusable principle to atom JSON after test pass + root cause understood |
+| Verify | learning-and-apply (ACCUMULATE) | Extract reusable principle to atom JSON after test pass + root cause understood |
 | Review | code-review-and-quality | Five-axis review with quality gates |
 | Review | code-simplification | Preserve behavior while reducing unnecessary complexity |
 | Review | security-and-hardening | OWASP prevention, input validation, least privilege |

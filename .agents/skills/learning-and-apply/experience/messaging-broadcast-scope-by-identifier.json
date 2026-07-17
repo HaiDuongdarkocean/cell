@@ -1,0 +1,26 @@
+{
+  "id": "messaging-broadcast-scope-by-identifier",
+  "title": "Broadcasts fan out → scope by identifier",
+  "category": ["messaging", "state"],
+  "tags": ["broadcast", "fan-out", "tabid", "payload-scoping", "sendmessage"],
+  "trigger": "Broadcast message reaches every listener but only one should act",
+  "principle": "Broadcast primitives cannot target a specific listener — they fan out to all. Scope by embedding an identifier in the payload; each listener filters by matching that identifier against its own context.",
+  "cases": [
+    {
+      "context": "Popup for tab A renders media from tab B because update broadcasts reach every popup listener",
+      "bad": "// background broadcasts to all listeners, no tab scoping\nchrome.runtime.sendMessage({ type: 'DETECTED_MEDIA_UPDATE', media });\n// popup renders whatever arrives — leaks media from other tabs",
+      "good": "// payload carries tabId, popup filters\nchrome.runtime.sendMessage({ type: 'DETECTED_MEDIA_UPDATE', tabId, media });\n// popup: if (payload.tabId !== tabIdRef.current) return;"
+    },
+    {
+      "context": "Handler falls back to all-tab media when requested tab is empty, compounding the leak",
+      "bad": "// fallback returns media from ANY tab when active tab empty\nconst media = tabMedia[tabId] ?? allTabMedia;",
+      "good": "// no fallback — empty means empty\nconst media = tabMedia[tabId] ?? [];\nreturn { success: false, error: 'No media found for this tab' };"
+    }
+  ],
+  "applyFor": [
+    "chrome.runtime.sendMessage broadcasts (Chrome extension MV3)",
+    "WebSocket rooms where server broadcasts to all and client filters by roomId",
+    "Event emitters where emit reaches all listeners and filter by event type/payload",
+    "Any fan-out channel needing per-recipient scoping via payload identifier"
+  ]
+}

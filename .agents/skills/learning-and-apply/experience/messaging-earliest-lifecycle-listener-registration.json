@@ -1,0 +1,22 @@
+{
+  "id": "messaging-earliest-lifecycle-listener-registration",
+  "title": "Register listeners at earliest lifecycle before producers post",
+  "category": ["messaging"],
+  "tags": ["content-script", "run-at", "document-start", "postMessage", "fire-and-forget", "race", "listener", "dom-dependency", "lifecycle"],
+  "trigger": "Fire-and-forget message (window.postMessage, BroadcastChannel) bị lost vì consumer listener register sau khi producer đã post.",
+  "principle": "window.postMessage (và fire-and-forget events nói chung) không buffer — message posted khi không có listener = lost forever (no replay, no retry). Khi producer post async (sau document_start, ~3-4s) và consumer listen, consumer MUST register listener tại earliest lifecycle point (document_start), KHÔNG phải document_idle (fires sau DOM parse ~3-4s — producer có thể đã post trước đó). Tách logic theo DOM dependency: DOM-independent listeners (chỉ đọc event.data) register tại document_start; DOM-dependent logic (querySelector, body access) defer đến DOMContentLoaded. Không tách = hoặc listener trễ (miss message) hoặc logic sớm (crash trên null DOM). Khi document_start không đủ (bundler async loader delays listener), dùng handshake pattern: receiver posts ready signal, sender re-posts last message on receipt.",
+  "cases": [
+    {
+      "context": "MAIN world script (document_start) fetch async ~3-4s → postMessage, ISOLATED content-script (document_idle) register listener sau ~3-4s → message đã post trước khi listener register → lost",
+      "bad": "// manifest.json: content-script run_at: document_idle (default)\n// MAIN world posts __YT_DETECTED_SUBTITLES at ~3-4s\n// ISOLATED listener registers at document_idle (~3-4s) — race → message lost, no buffering",
+      "good": "// manifest.json: content-script run_at: document_start\n// Listener (no DOM dependency) registers immediately at document_start — before MAIN world posts\nwindow.addEventListener('message', (e) => { if (e.data?.type === '__YT_DETECTED_SUBTITLES') relay(e.data); });\n// DOM-dependent page scan defers to DOMContentLoaded\nif (document.readyState === 'loading') {\n  document.addEventListener('DOMContentLoaded', () => runPageScan());\n} else { runPageScan(); }"
+    }
+  ],
+  "applyFor": [
+    "window.postMessage giữa MAIN world và ISOLATED content script (Chrome extension)",
+    "BroadcastChannel (fire-and-forget, no buffering)",
+    "Any fire-and-forget event bus where producer posts async after lifecycle start",
+    "Content script run_at decision: document_start cho listeners, document_idle cho DOM logic — tách theo dependency, không dùng 1 timing cho cả 2",
+    "Bundler-wrapped content-scripts (CRXJS, WXT) nơi async loader delays listener registration — document_start là necessary but not sufficient, cần handshake"
+  ]
+}

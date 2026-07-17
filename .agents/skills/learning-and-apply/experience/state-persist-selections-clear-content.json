@@ -1,0 +1,26 @@
+{
+  "id": "state-persist-selections-clear-content",
+  "title": "Persist selections, clear content — scope autosave to intent",
+  "category": ["state", "ux"],
+  "tags": ["autosave", "draft", "persistence", "form-state", "intent", "crash-recovery", "selections-vs-content"],
+  "trigger": "Form/dialog autosave persist toàn bộ state nhưng reopen restore content cũ gây nhầm lẫn khi tạo entity mới",
+  "principle": "Autosave scope phải match intent, không match shape. \"Chống mất work\" (crash recovery) ≠ \"giữ content qua session\" (persistence). Selections (config, preferences, tags, last-used values) là stable + retry-friendly — persist. Content (text input, media, work product gắn với entity cụ thể) là ephemeral + confusion-causing — clear khi đóng entity. Phân biệt: cái gì user chọn (selection, ổn định) vs cái gì user nhập/làm (content, gắn entity).",
+  "cases": [
+    {
+      "context": "Card Creator autosave persist toàn bộ text fields → reopen restore content cũ của card trước gây nhầm lẫn khi tạo card mới",
+      "bad": "interface SerializedDraft {\n  fields: { targetWord, sentence, sentenceTranslation, definitions, note, moreExample };\n  noteType: string; deck: string; fieldMapping: unknown;\n  tags: string[]; mediaUpdateMode: string; savedAt: number;\n}\n// deserializeDraft restores text fields → loadData uses rf?.targetWord ?? '' → old content returns",
+      "good": "interface SerializedDraft {\n  noteType: string; deck: string; fieldMapping: unknown;\n  tags: string[]; mediaUpdateMode: string; savedAt: number;\n  // no `fields` — text content is work product tied to a specific card, cleared on close\n}\n// deserializeDraft returns text fields = '' and media = []\n// loadData: only restore tags + config (noteType/deck/mapping/mode); sentence always from current cue"
+    },
+    {
+      "context": "loadData restore text field content từ draft cũ thay vì bắt đầu blank",
+      "bad": "const loadData = (rf?: SerializedDraft) => ({\n  targetWord: rf?.fields?.targetWord ?? '',\n  definitions: rf?.fields?.definitions ?? '',\n  note: rf?.fields?.note ?? '',\n  moreExample: rf?.fields?.moreExample ?? '',\n  tags: rf?.tags ?? [],\n});",
+      "good": "const loadData = (rf?: SerializedDraft) => ({\n  targetWord: '',          // content — always fresh\n  definitions: '',\n  note: '',\n  moreExample: '',\n  tags: rf?.tags ?? [],    // selection — persisted, retry-friendly\n  noteType: rf?.noteType ?? defaultNoteType,\n  deck: rf?.deck ?? defaultDeck,\n});"
+    }
+  ],
+  "applyFor": [
+    "Form/dialog autosave (draft restore) — persist selections (dropdowns, checkboxes, tags), clear free-text content",
+    "Multi-step wizards (persist step selections, clear step input khi wizard close)",
+    "Editor drafts (persist settings/mode, clear document content khi close — hoặc ngược lại tùy intent, nhưng phải conscious choice)",
+    "Any \"remember user's work\" feature — tách selections (remember) vs content (don't remember unless explicit \"save draft\")"
+  ]
+}

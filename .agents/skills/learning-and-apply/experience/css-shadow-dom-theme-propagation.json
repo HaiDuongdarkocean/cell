@@ -1,0 +1,31 @@
+{
+  "id": "css-shadow-dom-theme-propagation",
+  "title": "Isolated DOM needs explicit theme propagation",
+  "category": ["css", "rendering"],
+  "tags": ["shadow-dom", "theme", "dark-mode", "data-theme", "chrome-storage", "matchmedia"],
+  "trigger": "Shadow DOM component cần dark/light mode theo user setting",
+  "principle": "Shadow DOM blocks attribute inheritance — data-theme trên <html> không propagate vào shadow boundary. data-theme là attribute selector match, KHÔNG phải inherited property (như color, font-family). Theme-aware Shadow DOM components phải detect theme từ source of truth (chrome.storage / media query) và set data-theme trên element BÊN TRONG shadow tree. CSS selector [data-theme=\"dark\"] match element inner đó → tokens cascade xuống shadow children.",
+  "cases": [
+    {
+      "context": "Shadow DOM popup luôn light mode dù user chọn dark — data-theme trên <html> không truyền vào shadow",
+      "bad": "/* tokens.css injected vào shadow */ [data-theme=\"dark\"] { --color-bg: #1a1a1a; }\n/* <html data-theme=\"dark\"> ở host page — nhưng không element nào trong shadow có data-theme → selector match nothing → luôn light */",
+      "good": "// Detect theme from storage, set on container INSIDE shadow\nconst data = await getStorage(STORAGE_KEYS.THEME_MODE);\nconst resolved = mode === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : (mode ?? 'dark');\nthis.container.setAttribute('data-theme', resolved);\n// [data-theme=\"dark\"] now matches container → dark tokens cascade"
+    },
+    {
+      "context": "User đổi theme trong settings nhưng popup không update — thiếu listener",
+      "bad": "// Only set theme once on mount, no listener → stale after user changes setting",
+      "good": "// Listen to storage.onChanged + matchMedia change for real-time switch\nonStorageChanged((changes) => { if (THEME_MODE in changes) refreshTheme(); });\nmql.addEventListener('change', () => refreshTheme());\n// cleanup in destroy(): removeOnStorageChangedListener + mql.removeEventListener"
+    },
+    {
+      "context": "refreshTheme() crash sau destroy() — async gap nullified container",
+      "bad": "private async refreshTheme() {\n  if (!this.container) return;\n  const data = await getStorage(...);\n  this.container.setAttribute('data-theme', resolved); // ← crash: container null sau await\n}",
+      "good": "private async refreshTheme() {\n  if (!this.container) return;\n  const data = await getStorage(...);\n  if (!this.container) return; // re-check after await — destroy() may have nulled it\n  this.container.setAttribute('data-theme', resolved);\n}"
+    }
+  ],
+  "applyFor": [
+    "Shadow DOM components cần dark/light mode (popups, dialogs, overlays, custom elements)",
+    "iframe widgets cần theme awareness (postMessage theme từ parent → set trên iframe root)",
+    "Web Components dùng data-theme attribute selectors (must set attribute inside shadow, not rely on host)",
+    "Bất kỳ isolated DOM boundary nào cần theme — detect from source + set attribute inside boundary + listen for changes"
+  ]
+}

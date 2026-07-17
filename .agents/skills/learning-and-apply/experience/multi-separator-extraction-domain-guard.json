@@ -1,0 +1,26 @@
+{
+  "id": "multi-separator-extraction-domain-guard",
+  "title": "Multi-separator extraction — try multiple separators, validate with domain guard",
+  "category": ["data", "detection"],
+  "tags": ["url-parsing", "language-code", "separator", "validation", "false-positive", "extraction", "bc47"],
+  "trigger": "Structured data (language code, version, episode number) must be extracted from a URL/filename, but different sites use different separator conventions",
+  "principle": "When extracting structured data from a URL/filename, try multiple separator conventions (., -, _) — different sites use different conventions. Validate each candidate with a domain guard (isValidIsoCode for language, regex for version pattern) to avoid false positives from word fragments. Order: most-specific convention first (dot-split for lang suffix), broader convention second (kebab-split), structural fallback last (folder segment). The domain guard is mandatory — without it, word fragments like 'memories' or 'episode' match the BCP47 2-3 letter shape but are not language codes.",
+  "cases": [
+    {
+      "context": "Subtitle URL uses kebab-case lang suffix ('episode-1-en.srt') instead of dot-separated ('episode-1.en.srt'); dot-split yields a single segment so the language is missed and auto-load never triggers",
+      "bad": "function extractLanguage(url: string): string {\n  const filename = pathname.split('/').pop() ?? '';\n  const filenameWithoutExt = filename.replace(/\\.[^.]+$/, '');\n  const parts = filenameWithoutExt.split('.'); // ['a-hundred-memories-episode-1-en'] → length 1\n  if (parts.length >= 2) { /* dot-split path — never reached */ }\n  return 'unknown'; // kebab convention missed entirely\n}",
+      "good": "// 1. dot-split (standard: episode-1.en.srt)\nconst parts = filenameWithoutExt.split('.');\nif (parts.length >= 2 && BCP47_PATTERN.test(parts.at(-1))) {\n  const primary = parts.at(-1).split('-')[0].toLowerCase();\n  if (isValidIsoCode(primary)) return primary;\n}\n// 2. kebab-split fallback (kisskh: episode-1-en.srt) — isValidIsoCode rejects 'memories','episode','1'\nconst kebabParts = filenameWithoutExt.split('-');\nif (kebabParts.length >= 2 && BCP47_PATTERN.test(kebabParts.at(-1))) {\n  const primary = kebabParts.at(-1).split('-')[0].toLowerCase();\n  if (isValidIsoCode(primary)) return primary;\n}\n// 3. folder segment fallback → 'unknown'"
+    },
+    {
+      "context": "Subtitle URL uses a lang-index pattern ('eng-2.vtt') where the last kebab segment is a numeric index, not a language code; both dot-split and kebab-split miss it",
+      "bad": "// kebab-split: ['eng','2'] → candidate = '2' → BCP47_PATTERN fails (needs 2-3 letters) → skip\n// dot-split: ['eng-2'] → length 1 → skip\n// folder segment: 'subtitles' → not BCP47 → skip\nreturn 'unknown'; // eng-2.vtt, spa-5.vtt, por-4.vtt all missed",
+      "good": "// lang-index pattern: match the WHOLE filename base, not just the last segment\nconst langIndexMatch = /^([a-z]{2,3})-\\d+$/i.exec(filenameWithoutExt);\nif (langIndexMatch) {\n  const primary = langIndexMatch[1].toLowerCase();\n  if (isValidIsoCode(primary)) return primary; // 'sub-2.vtt' → 'sub' rejected (not ISO)\n}"
+    }
+  ],
+  "applyFor": [
+    "URL/filename language extraction (subtitle, media, document)",
+    "Version parsing from filenames (file-1-2-3.txt vs file.1.2.3.txt vs file_1_2_3.txt)",
+    "Episode/season number extraction (show-s01-e02 vs show.s01e02 vs show_01_02)",
+    "Any structured data extraction from URL/filename where sites use different separator conventions"
+  ]
+}

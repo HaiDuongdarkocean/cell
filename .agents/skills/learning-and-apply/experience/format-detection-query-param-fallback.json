@@ -1,0 +1,21 @@
+{
+  "id": "format-detection-query-param-fallback",
+  "title": "Format detection — check query params, not just file extension",
+  "category": ["data", "detection"],
+  "tags": ["format-detection", "url", "query-params", "file-extension", "subtitle", "api"],
+  "trigger": "Detecting media/subtitle format from a URL where the file extension is absent or ambiguous",
+  "principle": "Format detection by file extension alone fails for URLs that have no file extension — common with API endpoints that encode format in query params (`?fmt=vtt`, `?format=srt`, `?output=ass`). The extension check is the fast path (no URL parsing, unambiguous for `.vtt`/`.ass` files), but a query-param fallback is required for extension-less URLs. Order: extension (fast, unambiguous) → query param (fallback for APIs) → default.",
+  "cases": [
+    {
+      "context": "API endpoint URL has no file extension — format encoded in query param; extension-only detection falls back to wrong default parser",
+      "bad": "const path = url.split('?')[0]?.split('#')[0] ?? url;\nconst ext = path.slice(path.lastIndexOf('.')).toLowerCase();\nif (ext === '.vtt') return 'vtt';\nif (ext === '.ass' || ext === '.ssa') return 'ass';\nreturn 'srt'; // ← extension-less API URL → lastIndexOf('.') finds domain dot or none → 'srt' → wrong parser on VTT content → 0 cues",
+      "good": "const path = url.split('?')[0]?.split('#')[0] ?? url;\nconst ext = path.slice(path.lastIndexOf('.')).toLowerCase();\nif (ext === '.vtt') return 'vtt';\nif (ext === '.ass' || ext === '.ssa') return 'ass';\n// Fallback for extension-less API URLs that encode format in query params\ntry {\n  const fmt = new URL(url).searchParams.get('fmt');\n  if (fmt === 'vtt') return 'vtt';\n} catch { /* not a valid URL — fall through */ }\nreturn 'srt';"
+    }
+  ],
+  "applyFor": [
+    "Subtitle format detection (YouTube `fmt=`, other APIs `format=`/`output=`)",
+    "Media type detection from API URLs (no extension, format in query)",
+    "Any format/type inference from URL where extension-only check fails",
+    "API endpoints that encode output format in query params instead of file extension"
+  ]
+}

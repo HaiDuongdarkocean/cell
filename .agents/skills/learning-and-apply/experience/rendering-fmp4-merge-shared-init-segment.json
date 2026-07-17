@@ -1,0 +1,26 @@
+{
+  "id": "rendering-fmp4-merge-shared-init-segment",
+  "title": "Same codec config → share init segment, patch timeline offsets",
+  "category": ["rendering", "data"],
+  "tags": ["fmp4", "init-segment", "tfdt-offset", "transmux", "media-merge"],
+  "trigger": "Merging fMP4 fragments from the same source stream that each emit their own init segment and rebased timeline.",
+  "principle": "When merging fMP4 fragments sharing codec configuration, strip duplicate init segments (keep only the first), patch tfdt offsets cumulatively per track, and update mvhd duration to the total. All fragments from the same stream are compatible with the first init segment.",
+  "cases": [
+    {
+      "context": "Parallel transmux splits TS into N groups, each emits own ftyp+moov + rebased tfdt → naive concat produces invalid fMP4",
+      "bad": "// Naive concatenation of all parts\nconst merged = parts.reduce((acc, p) => acc.concat(p.output), new Uint8Array(0));\n// N ftyp+moov pairs → player reads only first → only part 0 plays → duration ~1/N",
+      "good": "// Strip ftyp+moov from parts 1+, patch tfdt with cumulative offset, update mvhd duration\nconst moofOffset = findFirstMoofOffset(part); // skip ftyp+moov\nconst stripped = part.slice(moofOffset);\noffsetTfdtInPlace(stripped, cumulativeOffsetPerTrack);\nupdateMvhdDuration(part0Moov, totalDuration);"
+    },
+    {
+      "context": "tfdt overlap — each transmuxer instance rebases PTS to 0, so parts 1+ start from ~0 instead of absolute position",
+      "bad": "// Assume tfdt values are already absolute\n// Part 1 tfdt=0 overlaps with Part 0 tfdt=0 → fragments collide → player plays only part 0",
+      "good": "// Compute cumulative offset from trun sample durations of all previous parts\nconst offset = prevParts.reduce((sum, p) => sum + p.trunDuration, 0);\n// Patch: tfdt(partN) = tfdt(partN) + offset → continuous timeline"
+    }
+  ],
+  "applyFor": [
+    "fMP4 concatenation (mux.js, ffmpeg wasm)",
+    "HLS segment merging (same codec → share init segment)",
+    "Any fragmented media merge where fragments share codec config but have independent timeline baselines",
+    "Parallel transmux pipelines producing multiple init segments for one stream"
+  ]
+}

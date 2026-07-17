@@ -1,0 +1,21 @@
+{
+  "id": "parser-tolerance-skip-noise-lines",
+  "title": "Parser tolerance — skip noise lines, don't reject whole block",
+  "category": ["data", "detection"],
+  "tags": ["parser", "srt", "subtitle", "tolerance", "noise", "structural-anchor", "real-world-data"],
+  "trigger": "A line-based parser rejects an entire record/block because one line doesn't match the expected format, losing all valid data in that block",
+  "principle": "Parsers must tolerate non-standard formats — skip noise lines instead of rejecting the whole block when a single line doesn't match. Real-world data (subtitle sources, logs, CSV exports) has format variants: literal placeholders instead of numeric indices, missing fields, extra metadata lines. Rejecting the block loses the entire record; skipping the noise line preserves it. The structural anchor (regex matching timing/format) is the anchor — advance the line index until the anchor is found, and only reject the block when lines run out without an anchor.",
+  "cases": [
+    {
+      "context": "SRT source uses literal 'None' instead of a numeric cue index on the first line of each block; the parser treats it as the timing line, fails to parse timing, and skips every cue → 0 cues total",
+      "bad": "const lines = block.split('\\n');\nlet lineIndex = 0;\nif (/^\\d+$/.test(lines[0].trim())) { cueIndex = +lines[0].trim(); lineIndex = 1; }\n// lines[0] = 'None' → not numeric → lineIndex stays 0\nconst timing = parseTimingLine(lines[lineIndex].trim()); // parseTimingLine('None') → null\nif (timing === null) continue; // SKIP entire cue → every cue skipped → 0 cues",
+      "good": "let lineIndex = 0;\nif (/^\\d+$/.test(lines[0].trim())) { cueIndex = +lines[0].trim(); lineIndex = 1; }\nlet timingLine = lines[lineIndex].trim();\nlet timing = parseTimingLine(timingLine);\n// skip non-timing noise lines until the structural anchor (timing) is found\nwhile (timing === null && lineIndex + 1 < lines.length) {\n  lineIndex += 1;\n  timing = parseTimingLine(lines[lineIndex].trim());\n}\nif (timing === null) continue; // only reject when no anchor in the whole block\nlineIndex += 1; // text lines follow the timing anchor"
+    }
+  ],
+  "applyFor": [
+    "Subtitle parsers (SRT, VTT, ASS — fansub sites with format variants)",
+    "Log parsers (log lines with extra metadata, missing fields)",
+    "CSV/TSV parsers (rows with extra columns, missing delimiters)",
+    "Any line-based parser with a structural anchor (regex match) — advance past noise lines, don't reject the block on the first non-match"
+  ]
+}

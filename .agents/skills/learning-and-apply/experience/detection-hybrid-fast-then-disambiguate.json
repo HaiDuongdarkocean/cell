@@ -1,0 +1,26 @@
+{
+  "id": "detection-hybrid-fast-then-disambiguate",
+  "title": "Hybrid detection: fast single-candidate first, disambiguation second",
+  "category": ["detection", "data"],
+  "tags": ["hybrid", "two-stage", "script-detection", "frequency", "disambiguation"],
+  "trigger": "Detecting a label from noisy input where a cheap deterministic stage resolves most cases and an expensive stage handles the rest",
+  "principle": "Use a fast deterministic stage first — when it yields a single candidate, resolve immediately. Run the expensive probabilistic disambiguation stage only for ambiguous multi-candidate cases.",
+  "cases": [
+    {
+      "context": "Language detection from subtitle text — most scripts map to one language, but Latin/Cyrillic/Arabic need disambiguation",
+      "bad": "// always run frequency profiles — slow + false positives on unambiguous scripts\nconst lang = frequencyDetector.detect(text); // 38 profiles for every input",
+      "good": "// stage 1: script detection (fast, deterministic)\nconst scripts = scriptDetector.detect(text);\nif (scripts.length === 1) return scriptToLanguage(scripts[0]); // Hangul→Korean, done\n// stage 2: frequency disambiguation only for multi-candidate scripts\nreturn frequencyDetector.detect(text, scripts);"
+    },
+    {
+      "context": "Fallback when no frequency profile meets threshold — must still return a sensible answer",
+      "bad": "// no fallback — returns null/unknown for languages without profiles\nconst lang = frequencyDetector.detect(text);\nreturn lang ?? 'unknown';",
+      "good": "// fallback to first candidate of detected script\nconst lang = frequencyDetector.detect(text, scripts);\nreturn lang ?? firstCandidateOfScript(scripts[0]); // Marathi→Hindi via Devanagari"
+    }
+  ],
+  "applyFor": [
+    "Language detection (script → frequency, charset → n-gram)",
+    "Spam filtering (rule-based first, ML model second only for ambiguous)",
+    "Type inference (literal type first, flow analysis second)",
+    "Any detection pipeline with cheap-then-expensive stages where most inputs resolve at stage 1"
+  ]
+}

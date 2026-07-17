@@ -1,0 +1,21 @@
+{
+  "id": "percentage-sizing-content-box",
+  "title": "Percentage sizing calculates against content-box, not border-box",
+  "category": ["css"],
+  "tags": ["percentage", "content-box", "border-box", "padding", "box-sizing", "flex"],
+  "trigger": "Percentage width/height child render nhỏ hơn expected bên trong container có padding + box-sizing: border-box.",
+  "principle": "Percentage width/height trên child resolves against parent's content-box, không phải border-box. Nếu parent có padding (đặc biệt horizontal padding như 1px 6px), percentage children shrink unexpectedly — 12px padding trên 25px button cắt SVG gần một nửa (65% của 10.94px = 7.11px thay vì 65% của 25px = 16.25px). Invisible khi parent padding: 0, visible khi parent không set padding. Always set padding: 0 explicitly trên percentage-sized containers, hoặc dùng absolute units cho child.",
+  "cases": [
+    {
+      "context": "SVG width:65% inside 25px button render 7.66px thay vì 16.25px. Button có padding:1px 6px (host CSS) + box-sizing:border-box → content-box = 10.94px → 65% = 7.11px. Cluster buttons (padding:0) unaffected, overlay buttons (no padding set) affected.",
+      "bad": "/* button */ padding: 1px 6px; box-sizing: border-box; width: 25px;\n/* svg child */ width: 65%; /* resolves against content-box 10.94px → 7.11px */",
+      "good": "/* button */ padding: 0; box-sizing: border-box; width: 25px; /* content-box = 22.94px */\n/* svg child */ width: 65%; /* 65% of 22.94px = 14.9px — matches cluster */\n// Alternative: width: calc(var(--btn-size) * 0.65); /* absolute, no content-box dependency */"
+    }
+  ],
+  "applyFor": [
+    "Percentage-sized children inside padded containers (SVG icons, flex items, grid items)",
+    "Flex layout với box-sizing: border-box + padding — percentage children resolve against content-box",
+    "Any width:X% / height:X% element inside a container có non-zero padding",
+    "Alternative: dùng calc(var(--btn-size) * 0.65) (absolute) thay vì 65% (relative) để tránh content-box dependency"
+  ]
+}
