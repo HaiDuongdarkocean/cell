@@ -20,6 +20,8 @@ Skill này là **router** — entry point duy nhất để chọn skill:
 
 When a task arrives, identify the development phase and apply the corresponding skill:
 
+> **Knowledge hook (automatic):** Before routing to any Build/Verify/Review skill, if a `conceptualization` skill exists in `.agents/skills/`, grep its `index.json` by the task's domain keywords (css, async, messaging, state, data, detection, ux, build, testing, rendering). Open every matching `knowledge/<id>.json` and check `cases[].bad` against the code you are about to write. If your code matches a bad pattern, apply `cases[].good` before proceeding. This is not optional — known patterns must be checked before new code is written, not after a bug surfaces.
+
 ```
 Task arrives
     │
