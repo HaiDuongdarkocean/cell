@@ -206,14 +206,15 @@ export function createSubtitleDropdown(
     activeDropdown = closePopover;
   };
 
-  icon.addEventListener('click', (e) => {
+  const iconClickHandler = (e: MouseEvent): void => {
     e.stopPropagation();
     if (popover) {
       closePopover();
     } else {
       openPopover();
     }
-  });
+  };
+  icon.addEventListener('click', iconClickHandler);
 
   container.appendChild(icon);
 
@@ -236,6 +237,7 @@ export function createSubtitleDropdown(
     icon,
     destroy: () => {
       closePopover();
+      icon.removeEventListener('click', iconClickHandler);
       icon.remove();
     },
     update,
