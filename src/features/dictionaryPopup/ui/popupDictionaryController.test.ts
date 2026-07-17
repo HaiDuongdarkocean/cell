@@ -220,6 +220,41 @@ describe('showPopup', () => {
     const translateCalls = mockSendMessage.mock.calls.filter((c: unknown[]) => (c[0] as { type?: string })?.type === 'TRANSLATE');
     expect(translateCalls.length).toBe(0);
   });
+
+  it('reuses cached translation when reopening same term+sentence', async () => {
+    const result = makeResult();
+    let shown = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
+    let container = shown.shell?.getContainer()!;
+    const translate = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    translate.click();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Close popup, then reopen same term + sentence.
+    let hidden = hidePopup(shown);
+    shown = showPopup(hidden, result, 170, 100, 150, 200, 'Take off your shoes.');
+    container = shown.shell?.getContainer()!;
+
+    // Translate tab should already show cached block; clicking tab does NOT re-fetch.
+    mockSendMessage.mockClear();
+    const translate2 = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    translate2.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const translateCalls = mockSendMessage.mock.calls.filter((c: unknown[]) => (c[0] as { type?: string })?.type === 'TRANSLATE');
+    expect(translateCalls.length).toBe(0);
+    expect(container.querySelector('.cell-translate__block')).not.toBeNull();
+  });
+
+  it('resets cached data when term changes', () => {
+    const result1 = makeResult({ term: 'take off' });
+    const result2 = makeResult({ term: 'get out' });
+    let shown = showPopup(state, result1, 170, 100, 150, 200, 'Take off your shoes.');
+    const hidden = hidePopup(shown);
+    shown = showPopup(hidden, result2, 170, 100, 150, 200, 'Take off your shoes.');
+    expect(shown.cachedResultTerm).toBe('get out');
+    expect(shown.audioItems).toEqual([]);
+    expect(shown.imageItems).toEqual([]);
+    expect(shown.translation).toBe('');
+  });
 });
 
 describe('appendCandidate', () => {
@@ -285,6 +320,15 @@ describe('hidePopup', () => {
     );
     const hidden = hidePopup(state);
     expect(hidden.activeTab).toBeNull();
+  });
+
+  it('keeps tab panel cache data', () => {
+    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'Take off your shoes.');
+    const hidden = hidePopup(shown);
+    expect(hidden.translation).toBe(shown.translation);
+    expect(hidden.cachedResultTerm).toBe('take off');
+    expect(hidden.cachedContextSentence).toBe('Take off your shoes.');
   });
 });
 

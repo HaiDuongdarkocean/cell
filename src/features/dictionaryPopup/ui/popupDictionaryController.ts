@@ -62,12 +62,18 @@ export interface PopupDictionaryState {
   translation: string;
   /** Whether translation is selected for Quick Add. */
   translationSelected: boolean;
+  /** Whether translation is currently loading. */
+  translationLoading: boolean;
   /** Current context sentence. */
   contextSentence: string;
   /** Popup shell instance. */
   shell: PopupShell | null;
   /** Token wrap state (for trigger integration). */
   tokenWrapState: TokenWrapState | null;
+  /** Last cached result term — used to decide whether tab panel data can be reused. */
+  cachedResultTerm: string;
+  /** Last cached context sentence — used together with cachedResultTerm. */
+  cachedContextSentence: string;
 }
 
 /** Create initial controller state. */
@@ -89,9 +95,12 @@ export function createPopupDictionaryState(
     activeTab: settings.defaultActiveTab ?? null,
     translation: '',
     translationSelected: false,
+    translationLoading: false,
     contextSentence: '',
     shell: null,
     tokenWrapState: null,
+    cachedResultTerm: '',
+    cachedContextSentence: '',
   };
 }
 
@@ -134,14 +143,31 @@ export function showPopup(
   // Apply default active tab (spec §9.3 D2): per-lang override → global default.
   const perLang = state.settings.defaultActiveTabPerLang?.[result.langCode];
   const defaultTab = perLang !== undefined ? perLang : state.settings.defaultActiveTab;
-  // Set contextSentence BEFORE rendering so toolbar/panel closures capture
-  // the real sentence (needed by translate auto-trigger + TTS sentence audio).
-  state = { ...state, activeTab: defaultTab ?? null, contextSentence };
+  // Cache tab-panel data (audio/image/translation) when reopening the same
+  // term + context sentence. Reset when either changes.
+  const cacheHit = state.cachedResultTerm === result.term && state.cachedContextSentence === contextSentence;
+  state = {
+    ...state,
+    activeTab: defaultTab ?? null,
+    contextSentence,
+    cachedResultTerm: result.term,
+    cachedContextSentence: contextSentence,
+    currentResult: result,
+    additionalResults: [],
+    currentStatus: status,
+    definitionSelection,
+    audioItems: cacheHit ? state.audioItems : [],
+    audioSelection: cacheHit ? state.audioSelection : new Map(),
+    imageItems: cacheHit ? state.imageItems : [],
+    imageSelection: cacheHit ? state.imageSelection : new Map(),
+    translation: cacheHit ? state.translation : '',
+    translationSelected: cacheHit ? state.translationSelected : false,
+  };
 
   // Render content FIRST so setPosition can use actual offsetHeight.
   const container = shell.getContainer();
   if (container) {
-    renderPopupContent(container, result, status, definitionSelection, {
+    renderPopupContent(container, state.currentResult, state.currentStatus, state.definitionSelection, {
       onStatusCycle: () => cycleStatus(state),
       onDefinitionToggle: (id, selected) => toggleDefinition(state, id, selected),
       onQuickAdd: () => doQuickAdd(state),
@@ -156,7 +182,7 @@ export function showPopup(
     // rerenderCandidateTab) — toolbar icons always visible, panel only
     // when activeTab is set. Without this the winner lacks .js-cell-toolbar
     // while appended candidates have one (inconsistent UI).
-    renderWinnerToolbar({ ...state, currentResult: result }, container);
+    renderWinnerToolbar(state, container);
   }
 
   // Show first so offsetHeight is correct (display:none → offsetHeight=0).
@@ -165,15 +191,7 @@ export function showPopup(
   shell.show();
   shell.setPosition(anchorTop, anchorLeft, anchorRight, anchorBottom);
 
-  return {
-    ...state,
-    currentResult: result,
-    additionalResults: [],
-    currentStatus: status,
-    definitionSelection,
-    contextSentence,
-    shell,
-  };
+  return state;
 }
 
 /**
@@ -201,6 +219,7 @@ export function appendCandidate(
   const candidateImageSelection = new Map<string, boolean>();
   const candidateAudioItems: AudioItem[] = [];
   const candidateImageItems: ImageItem[] = [];
+  let candidateTranslationLoading = false;
 
   const candidateEl = appendCandidateContent(container, result, candidateStatus, candidateSelection, {
     onStatusCycle: () => {
@@ -239,9 +258,12 @@ export function appendCandidate(
       rerenderCandidateTab();
       state.shell?.rePosition();
     }, countMapTrue(candidateAudioSelection) > 0 ? { audio: countMapTrue(candidateAudioSelection) } : undefined, (tab) => {
-      if (tab === 'translate' && !candidateTranslation) {
+      if (tab === 'translate' && !candidateTranslation && !candidateTranslationLoading) {
+        candidateTranslationLoading = true;
+        rerenderCandidateTab();
         translateSentence(result, state.contextSentence, state.settings.translateTargetLang, (text) => {
           candidateTranslation = text;
+          candidateTranslationLoading = false;
           rerenderCandidateTab();
         });
       }
@@ -253,6 +275,7 @@ export function appendCandidate(
       settings: state.settings,
       translation: candidateTranslation,
       translateSelected: false,
+      translationLoading: candidateTranslationLoading,
       audioSelection: candidateAudioSelection,
       audioItems: candidateAudioItems,
       imageSelection: candidateImageSelection,
@@ -260,6 +283,10 @@ export function appendCandidate(
     }, {
       onTranslationDone: (text) => {
         candidateTranslation = text;
+        rerenderCandidateTab();
+      },
+      onTranslationLoading: (loading) => {
+        candidateTranslationLoading = loading;
         rerenderCandidateTab();
       },
       onPlayTts: (item, term, sentence, langCode) => playTts(item, term, sentence, langCode),
@@ -316,7 +343,8 @@ async function sendToCreatorForCandidate(
   await sendToCreator(prefill, cardCreatorSettings);
 }
 
-/** Hide popup (dismiss). */
+/** Hide popup (dismiss). Keeps tab-panel cache data (audioItems, imageItems,
+ *  translation, selections) so reopening the same term+sentence reuses it. */
 export function hidePopup(state: PopupDictionaryState): PopupDictionaryState {
   if (state.shell) {
     state.shell.hide();
@@ -326,8 +354,7 @@ export function hidePopup(state: PopupDictionaryState): PopupDictionaryState {
     currentResult: null,
     additionalResults: [],
     activeTab: null,
-    translation: '',
-    translationSelected: false,
+    translationLoading: false,
   };
 }
 
@@ -341,6 +368,7 @@ export function destroyPopup(state: PopupDictionaryState): PopupDictionaryState 
     shell: null,
     currentResult: null,
     activeTab: null,
+    translationLoading: false,
   };
 }
 
@@ -479,9 +507,12 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
     state.activeTab = null;
     rerender(state, null);
   }, countSelections(state), (tab) => {
-    if (tab === 'translate' && !state.translation && state.currentResult) {
+    if (tab === 'translate' && !state.translation && !state.translationLoading && state.currentResult) {
+      state.translationLoading = true;
+      rerender(state, 'translate');
       translateSentence(state.currentResult, state.contextSentence, state.settings.translateTargetLang, (text) => {
         state.translation = text;
+        state.translationLoading = false;
         // Force translate tab to stay open: the onTabOpen closure may capture
         // a stale state object with activeTab=null, so pass 'translate' explicitly.
         rerender(state, 'translate');
@@ -494,6 +525,7 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
     settings: state.settings,
     translation: state.translation,
     translateSelected: state.translationSelected,
+    translationLoading: state.translationLoading,
     audioSelection: state.audioSelection,
     audioItems: state.audioItems,
     imageSelection: state.imageSelection,
@@ -501,6 +533,10 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
   }, {
     onTranslationDone: (text: string) => {
       state.translation = text;
+      rerender(state);
+    },
+    onTranslationLoading: (loading: boolean) => {
+      state.translationLoading = loading;
       rerender(state);
     },
     onToggleTranslate: () => {
@@ -521,6 +557,7 @@ function renderTabPanel(
     settings: DictionaryPopupSettings;
     translation: string;
     translateSelected: boolean;
+    translationLoading?: boolean;
     audioSelection: Map<string, boolean>;
     audioItems: AudioItem[];
     imageSelection: Map<string, boolean>;
@@ -528,6 +565,7 @@ function renderTabPanel(
   },
   callbacks?: {
     onTranslationDone?: (text: string) => void;
+    onTranslationLoading?: (loading: boolean) => void;
     onToggleTranslate?: () => void;
     onPlayTts?: (item: AudioItem, term: string, sentence: string, langCode: string) => void;
   },
@@ -545,6 +583,13 @@ function renderTabPanel(
         }
         if (callbacks?.onPlayTts) callbacks.onPlayTts(item, result.term, ctx.contextSentence, result.langCode);
       };
+      // Cache hit: audio panel data already exists for this term+sentence.
+      if (ctx.audioItems.length > 0) {
+        const wordAudios = ctx.audioItems.filter((a) => a.kind === 'word');
+        const sentenceAudios = ctx.audioItems.filter((a) => a.kind === 'sentence');
+        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay);
+        break;
+      }
       // Loading state while fetching Forvo + TTS voices.
       renderAudioPanel(container, [], [], ctx.audioSelection, onToggle, onPlay, true);
       void (async () => {
@@ -604,6 +649,11 @@ function renderTabPanel(
     }
     case 'image': {
       const onToggle = (id: string, selected: boolean): void => { ctx.imageSelection.set(id, selected); };
+      // Cache hit: image panel data already exists for this term.
+      if (ctx.imageItems.length > 0) {
+        renderImagePanel(container, ctx.imageItems, ctx.imageSelection, onToggle, result.term);
+        break;
+      }
       // Loading state while fetching images.
       renderImagePanel(container, [], ctx.imageSelection, onToggle, result.term, true);
       void (async () => {
@@ -642,7 +692,9 @@ function renderTabPanel(
         () => {
           // Translate sentence only — never fall back to term.
           if (!ctx.contextSentence) return;
+          callbacks?.onTranslationLoading?.(true);
           translateSentence(result, ctx.contextSentence, ctx.settings.translateTargetLang, (text) => {
+            callbacks?.onTranslationLoading?.(false);
             callbacks?.onTranslationDone?.(text);
           });
         },
@@ -658,6 +710,7 @@ function renderTabPanel(
             callbacks?.onTranslationDone?.(ctx.translation);
           }
         },
+        ctx.translationLoading ?? false,
       );
       break;
     case 'links': {
