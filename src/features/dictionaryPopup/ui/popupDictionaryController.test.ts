@@ -1,6 +1,6 @@
 // popupDictionaryController tests — spec §4.6.3 P0: full flow wiring.
 
-import { describe, expect, it, beforeEach } from '@jest/globals';
+import { describe, expect, it, beforeEach, beforeAll, jest } from '@jest/globals';
 import {
   createPopupDictionaryState,
   showPopup,
@@ -10,9 +10,36 @@ import {
   toggleDefinition,
   toggleTab,
   getInitialPopupSize,
+  appendCandidate,
 } from './popupDictionaryController';
 import type { LookupResult, WordStatus } from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
+
+// Mock chrome.storage.local + matchMedia (needed by PopupShell theme detection)
+beforeAll(() => {
+  const g = global as unknown as { chrome?: unknown };
+  g.chrome = g.chrome ?? {};
+  const c = g.chrome as { storage: Record<string, unknown> };
+  c.storage = c.storage ?? {};
+  c.storage.local = {
+    get: jest.fn(() => Promise.resolve({})),
+    set: jest.fn(() => Promise.resolve()),
+  };
+  c.storage.onChanged = {
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+  };
+  window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+});
 
 function makeResult(overrides: Partial<LookupResult> = {}): LookupResult {
   return {
@@ -124,6 +151,81 @@ describe('showPopup', () => {
     const result = makeResult();
     const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
     expect(newState.shell).not.toBeNull();
+  });
+
+  it('initializes additionalResults as empty', () => {
+    const result = makeResult();
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    expect(newState.additionalResults).toEqual([]);
+  });
+
+  it('invokes onDismiss callback with hidden state when shell dismisses', () => {
+    const result = makeResult();
+    const onDismiss = jest.fn();
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence', onDismiss);
+    // Simulate shell dismiss (Esc / click outside).
+    newState.shell?.['onDismiss']();
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    const dismissedState = onDismiss.mock.calls[0]![0];
+    expect(dismissedState.currentResult).toBeNull();
+  });
+
+  it('renders data-dp-toolbar inside the winner candidate slot', () => {
+    const result = makeResult();
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    const container = newState.shell?.getContainer();
+    const candidates = container!.querySelectorAll('[data-dp-popup-candidate]');
+    expect(candidates).toHaveLength(1);
+    const toolbars = candidates[0]!.querySelectorAll('[data-dp-toolbar]');
+    expect(toolbars).toHaveLength(1);
+  });
+});
+
+describe('appendCandidate', () => {
+  let state: ReturnType<typeof createPopupDictionaryState>;
+
+  beforeEach(() => {
+    state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+  });
+
+  it('appends a candidate to additionalResults', () => {
+    const winner = makeResult({ term: 'get out' });
+    const candidate = makeResult({ term: 'get over' });
+    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    s = appendCandidate(s, candidate, 'sentence');
+    expect(s.additionalResults).toHaveLength(1);
+    expect(s.additionalResults[0]!.term).toBe('get over');
+  });
+
+  it('renders a second data-dp-popup-candidate element in the shell', () => {
+    const winner = makeResult({ term: 'get out' });
+    const candidate = makeResult({ term: 'get over' });
+    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    s = appendCandidate(s, candidate, 'sentence');
+    const container = s.shell?.getContainer();
+    expect(container).not.toBeNull();
+    const candidates = container!.querySelectorAll('[data-dp-popup-candidate]');
+    expect(candidates).toHaveLength(2);
+  });
+
+  it('no-ops when shell is null', () => {
+    const candidate = makeResult({ term: 'get over' });
+    const s = appendCandidate(state, candidate, 'sentence');
+    expect(s.additionalResults).toEqual([]);
+  });
+
+  it('every candidate (winner + appended) has a data-dp-toolbar', () => {
+    const winner = makeResult({ term: 'get out' });
+    const candidate = makeResult({ term: 'get over' });
+    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    s = appendCandidate(s, candidate, 'sentence');
+    const container = s.shell?.getContainer();
+    const candidates = container!.querySelectorAll('[data-dp-popup-candidate]');
+    expect(candidates).toHaveLength(2);
+    for (const cand of candidates) {
+      const toolbars = cand.querySelectorAll('[data-dp-toolbar]');
+      expect(toolbars).toHaveLength(1);
+    }
   });
 });
 

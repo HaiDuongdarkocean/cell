@@ -33,31 +33,53 @@ describe('renderToolbar', () => {
     container = document.createElement('div');
   });
 
-  it('renders 4 tab buttons', () => {
-    renderToolbar(container, null, jest.fn());
+  it('renders 4 tab buttons + None button', () => {
+    renderToolbar(container, null, jest.fn(), jest.fn());
     const tabs = container.querySelectorAll('[data-dp-tab]');
-    expect(tabs.length).toBe(4);
+    expect(tabs.length).toBe(5); // 4 tabs + None
   });
 
-  it('marks active tab', () => {
-    renderToolbar(container, 'audio', jest.fn());
+  it('marks active tab with icon-btn--active class', () => {
+    renderToolbar(container, 'audio', jest.fn(), jest.fn());
     const audioTab = container.querySelector('[data-dp-tab="audio"]') as HTMLButtonElement;
-    expect(audioTab.style.border).toContain('var(--dp-primary');
+    expect(audioTab.className).toContain('icon-btn--active');
+  });
+
+  it('inactive tab does not have icon-btn--active class', () => {
+    renderToolbar(container, 'image', jest.fn(), jest.fn());
+    const audioTab = container.querySelector('[data-dp-tab="audio"]') as HTMLButtonElement;
+    expect(audioTab.className).not.toContain('icon-btn--active');
   });
 
   it('tab click triggers onTabToggle', () => {
     const onToggle = jest.fn();
-    renderToolbar(container, null, onToggle);
+    renderToolbar(container, null, onToggle, jest.fn());
     const audioTab = container.querySelector('[data-dp-tab="audio"]') as HTMLButtonElement;
     audioTab.click();
     expect(onToggle).toHaveBeenCalledWith('audio');
   });
 
   it('has aria-label on each tab', () => {
-    renderToolbar(container, null, jest.fn());
+    renderToolbar(container, null, jest.fn(), jest.fn());
     const tabs = container.querySelectorAll('[data-dp-tab]');
     tabs.forEach((t) => {
       expect(t.getAttribute('aria-label')).toBeTruthy();
+    });
+  });
+
+  it('None button click triggers onClose', () => {
+    const onClose = jest.fn();
+    renderToolbar(container, 'audio', jest.fn(), onClose);
+    const noneBtn = container.querySelector('[data-dp-tab="none"]') as HTMLButtonElement;
+    noneBtn.click();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders SVG icon inside each tab button', () => {
+    renderToolbar(container, null, jest.fn(), jest.fn());
+    const tabs = container.querySelectorAll('[data-dp-tab]');
+    tabs.forEach((t) => {
+      expect(t.querySelector('svg')).not.toBeNull();
     });
   });
 });
@@ -69,12 +91,14 @@ describe('renderAudioPanel', () => {
     container = document.createElement('div');
   });
 
-  it('renders word + sentence groups', () => {
+  it('renders word + sentence groups with renamed headers', () => {
     const wordAudios = [makeAudio({ id: 'w1', label: 'Forvo · US' })];
     const sentenceAudios = [makeAudio({ id: 's1', kind: 'sentence', label: 'System TTS' })];
     renderAudioPanel(container, wordAudios, sentenceAudios, new Map(), jest.fn(), jest.fn());
-    const labels = container.querySelectorAll('div[style*="uppercase"]');
-    expect(labels.length).toBe(2);
+    const groups = container.querySelectorAll('[data-dp-audio-group]');
+    expect(groups.length).toBe(2);
+    expect(groups[0]!.textContent).toBe('Word Audio');
+    expect(groups[1]!.textContent).toBe('Sentence Audio');
   });
 
   it('renders checkboxes for each audio item', () => {
@@ -86,18 +110,22 @@ describe('renderAudioPanel', () => {
     expect((checkboxes[1] as HTMLInputElement).checked).toBe(false);
   });
 
-  it('renders play buttons', () => {
+  it('renders play buttons with SVG icon (not text ▶)', () => {
     const wordAudios = [makeAudio({ id: 'w1' })];
     renderAudioPanel(container, wordAudios, [], new Map(), jest.fn(), jest.fn());
-    const playBtns = container.querySelectorAll('button[aria-label^="Play"]');
+    const playBtns = container.querySelectorAll('button[data-dp-audio-play]');
     expect(playBtns.length).toBe(1);
+    // Must contain SVG, not text ▶
+    const playBtn = playBtns[0] as HTMLButtonElement;
+    expect(playBtn.querySelector('svg')).not.toBeNull();
+    expect(playBtn.textContent).not.toContain('▶');
   });
 
   it('play button click triggers onPlay', () => {
     const onPlay = jest.fn();
     const wordAudios = [makeAudio({ id: 'w1' })];
     renderAudioPanel(container, wordAudios, [], new Map(), jest.fn(), onPlay);
-    const playBtn = container.querySelector('button[aria-label^="Play"]') as HTMLButtonElement;
+    const playBtn = container.querySelector('button[data-dp-audio-play]') as HTMLButtonElement;
     playBtn.click();
     expect(onPlay).toHaveBeenCalledWith(wordAudios[0]);
   });
@@ -115,6 +143,18 @@ describe('renderAudioPanel', () => {
   it('renders empty state when no audio', () => {
     renderAudioPanel(container, [], [], new Map(), jest.fn(), jest.fn());
     expect(container.textContent).toContain('No audio available');
+  });
+
+  it('audio item has layout: play button, label, selection indicator', () => {
+    const wordAudios = [makeAudio({ id: 'w1', label: 'Forvo · US' })];
+    renderAudioPanel(container, wordAudios, [], new Map(), jest.fn(), jest.fn());
+    const item = container.querySelector('[data-dp-audio-item]') as HTMLDivElement;
+    expect(item).not.toBeNull();
+    // First child = play button, second = label, third = selection label
+    const playBtn = item.querySelector('button[data-dp-audio-play]');
+    const checkbox = item.querySelector('input[type="checkbox"]');
+    expect(playBtn).not.toBeNull();
+    expect(checkbox).not.toBeNull();
   });
 });
 

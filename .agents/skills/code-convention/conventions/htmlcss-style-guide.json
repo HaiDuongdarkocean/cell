@@ -1,0 +1,959 @@
+{
+  "apiVersion": "1.0",
+  "context": "cell-convention-htmlcss",
+  "id": "htmlcss-rule-index-2026-07-17",
+  "data": {
+    "kind": "convention#htmlcssRuleIndex",
+    "description": "Machine-readable HTML/CSS code style rules extracted from Google HTML/CSS Style Guide. Each item is one rule with RFC 2119 severity, trigger, one-sentence rule, optional example, and source anchor.",
+    "totalItems": 60,
+    "sourceGuide": "https://google.github.io/styleguide/htmlcssguide.html + https://cssguidelin.es/#bem-like-naming",
+    "severityLegend": {
+      "MUST": "Absolute requirement (RFC 2119). Imperative/declarative statements also map to MUST.",
+      "MUST_NOT": "Absolute prohibition (RFC 2119).",
+      "SHOULD": "Strong recommendation; valid reasons may exist to ignore (RFC 2119). Maps to 'prefer'.",
+      "SHOULD_NOT": "Strong recommendation against; valid reasons may exist to ignore (RFC 2119). Maps to 'avoid'.",
+      "MAY": "Truly optional (RFC 2119)."
+    },
+    "categories": [
+      "css",
+      "general",
+      "html",
+      "naming"
+    ],
+    "items": [
+      {
+        "id": "general-001",
+        "category": "general",
+        "severity": "MUST",
+        "trigger": "embedded resource URL",
+        "rule": "Use HTTPS for embedded resources where possible.",
+        "example": {
+          "bad": [
+            "<script src=\"//ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js\"></script>",
+            "<script src=\"http://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js\"></script>"
+          ],
+          "good": [
+            "<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js\"></script>"
+          ]
+        },
+        "sourceAnchor": "protocol"
+      },
+      {
+        "id": "general-002",
+        "category": "general",
+        "severity": "MUST",
+        "trigger": "code indentation",
+        "rule": "Indent by 2 spaces at a time.",
+        "example": {
+          "good": [
+            "<ul>",
+            "  <li>Fantastic",
+            "  <li>Great",
+            "</ul>",
+            ".example {",
+            "  color: blue;",
+            "}"
+          ]
+        },
+        "sourceAnchor": "indentation"
+      },
+      {
+        "id": "general-003",
+        "category": "general",
+        "severity": "MUST_NOT",
+        "trigger": "indentation",
+        "rule": "Do not use tabs or mix tabs and spaces for indentation.",
+        "sourceAnchor": "indentation"
+      },
+      {
+        "id": "general-004",
+        "category": "general",
+        "severity": "MUST",
+        "trigger": "HTML/CSS code",
+        "rule": "Use only lowercase for element names, attributes, selectors, properties, and values.",
+        "example": {
+          "bad": [
+            "<A HREF=\"/\">Home</A>",
+            "color: #E5E5E5;"
+          ],
+          "good": [
+            "<img src=\"google.png\" alt=\"Google\">",
+            "color: #e5e5e5;"
+          ]
+        },
+        "sourceAnchor": "capitalization"
+      },
+      {
+        "id": "general-005",
+        "category": "general",
+        "severity": "MUST",
+        "trigger": "trailing whitespace",
+        "rule": "Remove trailing white spaces.",
+        "sourceAnchor": "trailing-whitespace"
+      },
+      {
+        "id": "general-006",
+        "category": "general",
+        "severity": "MUST",
+        "trigger": "file encoding",
+        "rule": "Use UTF-8 without byte order mark.",
+        "sourceAnchor": "encoding"
+      },
+      {
+        "id": "general-007",
+        "category": "general",
+        "severity": "MUST",
+        "trigger": "HTML encoding",
+        "rule": "Specify encoding in HTML via <meta charset=\"utf-8\">.",
+        "sourceAnchor": "encoding"
+      },
+      {
+        "id": "general-008",
+        "category": "general",
+        "severity": "MUST_NOT",
+        "trigger": "stylesheet encoding",
+        "rule": "Do not specify encoding of style sheets as they assume UTF-8.",
+        "sourceAnchor": "encoding"
+      },
+      {
+        "id": "general-009",
+        "category": "general",
+        "severity": "MAY",
+        "trigger": "code comments",
+        "rule": "Explain code as needed, where possible.",
+        "sourceAnchor": "comments"
+      },
+      {
+        "id": "general-010",
+        "category": "general",
+        "severity": "MUST",
+        "trigger": "action items",
+        "rule": "Mark todos and action items with TODO keyword only.",
+        "example": {
+          "good": [
+            "<!-- TODO: Remove optional tags. -->",
+            "{# TODO: Revisit centering. #}"
+          ]
+        },
+        "sourceAnchor": "action-items"
+      },
+      {
+        "id": "general-011",
+        "category": "general",
+        "severity": "MUST",
+        "trigger": "TODO format",
+        "rule": "Append action items after a colon as in TODO: action item.",
+        "example": {
+          "good": [
+            "<!-- TODO: Remove optional tags. -->"
+          ]
+        },
+        "sourceAnchor": "action-items"
+      },
+      {
+        "id": "html-001",
+        "category": "html",
+        "severity": "MUST",
+        "trigger": "HTML document",
+        "rule": "Use <!doctype html> at the beginning of the document.",
+        "example": {
+          "good": [
+            "<!doctype html>",
+            "<meta charset=\"utf-8\">",
+            "<title>Test</title>",
+            "<article>This is only a test.</article>"
+          ]
+        },
+        "sourceAnchor": "document-type"
+      },
+      {
+        "id": "html-002",
+        "category": "html",
+        "severity": "MUST",
+        "trigger": "HTML code",
+        "rule": "Use valid HTML where possible.",
+        "example": {
+          "bad": [
+            "<title>Test</title>",
+            "<article>This is only a test."
+          ],
+          "good": [
+            "<!doctype html>",
+            "<meta charset=\"utf-8\">",
+            "<title>Test</title>",
+            "<article>This is only a test.</article>"
+          ]
+        },
+        "sourceAnchor": "html-validity"
+      },
+      {
+        "id": "html-003",
+        "category": "html",
+        "severity": "MUST",
+        "trigger": "HTML elements",
+        "rule": "Use HTML elements according to their intended purpose.",
+        "example": {
+          "bad": [
+            "<div onclick=\"goToRecommendations();\">All recommendations</div>"
+          ],
+          "good": [
+            "<a href=\"recommendations/\">All recommendations</a>"
+          ]
+        },
+        "sourceAnchor": "semantics"
+      },
+      {
+        "id": "html-004",
+        "category": "html",
+        "severity": "MUST",
+        "trigger": "multimedia elements",
+        "rule": "Provide alternative contents for multimedia.",
+        "example": {
+          "bad": [
+            "<img src=\"spreadsheet.png\">"
+          ],
+          "good": [
+            "<img src=\"spreadsheet.png\" alt=\"Spreadsheet screenshot.\">"
+          ]
+        },
+        "sourceAnchor": "multimedia-fallback"
+      },
+      {
+        "id": "html-005",
+        "category": "html",
+        "severity": "MUST",
+        "trigger": "HTML/CSS/JS organization",
+        "rule": "Separate structure from presentation from behavior.",
+        "example": {
+          "bad": [
+            "<h1 style=\"font-size: 1em;\">HTML sucks</h1>",
+            "<center>I can't believe there's no way to control the styling</center>"
+          ],
+          "good": [
+            "<h1>My first CSS-only redesign</h1>",
+            "<link rel=\"stylesheet\" href=\"default.css\">"
+          ]
+        },
+        "sourceAnchor": "separation-of-concerns"
+      },
+      {
+        "id": "html-006",
+        "category": "html",
+        "severity": "MUST_NOT",
+        "trigger": "entity references",
+        "rule": "Do not use entity references like &mdash; or &rdquo;.",
+        "example": {
+          "bad": [
+            "The currency symbol for the Euro is &ldquo;&eur;&rdquo;."
+          ],
+          "good": [
+            "The currency symbol for the Euro is \"€\"."
+          ]
+        },
+        "sourceAnchor": "entity-references"
+      },
+      {
+        "id": "html-007",
+        "category": "html",
+        "severity": "MAY",
+        "trigger": "optional HTML tags",
+        "rule": "Omit optional tags for file size optimization.",
+        "example": {
+          "bad": [
+            "<!doctype html>",
+            "<html>",
+            "  <head>",
+            "    <title>Spending money, spending bytes</title>",
+            "  </head>",
+            "  <body>",
+            "    <p>Sic.</p>",
+            "  </body>",
+            "</html>"
+          ],
+          "good": [
+            "<!doctype html>",
+            "<title>Saving money, saving bytes</title>",
+            "<p>Qed.</p>"
+          ]
+        },
+        "sourceAnchor": "optional-tags"
+      },
+      {
+        "id": "html-008",
+        "category": "html",
+        "severity": "MUST",
+        "trigger": "type attributes",
+        "rule": "Omit type attributes for style sheets and scripts.",
+        "example": {
+          "bad": [
+            "<link rel=\"stylesheet\" href=\"https://www.google.com/css/maia.css\" type=\"text/css\">",
+            "<script src=\"https://www.google.com/js/gweb/analytics/autotrack.js\" type=\"text/javascript\"></script>"
+          ],
+          "good": [
+            "<link rel=\"stylesheet\" href=\"https://www.google.com/css/maia.css\">",
+            "<script src=\"https://www.google.com/js/gweb/analytics/autotrack.js\"></script>"
+          ]
+        },
+        "sourceAnchor": "type-attributes"
+      },
+      {
+        "id": "html-009",
+        "category": "html",
+        "severity": "SHOULD_NOT",
+        "trigger": "id attributes",
+        "rule": "Avoid unnecessary id attributes.",
+        "sourceAnchor": "id-attributes"
+      },
+      {
+        "id": "html-010",
+        "category": "html",
+        "severity": "SHOULD",
+        "trigger": "styling/scripting attributes",
+        "rule": "Prefer class attributes for styling and data attributes for scripting.",
+        "sourceAnchor": "id-attributes"
+      },
+      {
+        "id": "html-011",
+        "category": "html",
+        "severity": "MUST",
+        "trigger": "required id attributes",
+        "rule": "Include a hyphen in required id attribute values.",
+        "example": {
+          "bad": [
+            "<div id=\"userProfile\"></div>"
+          ],
+          "good": [
+            "<div id=\"user-profile\"></div>"
+          ]
+        },
+        "sourceAnchor": "id-attributes"
+      },
+      {
+        "id": "html-012",
+        "category": "html",
+        "severity": "MUST",
+        "trigger": "block/list/table elements",
+        "rule": "Use a new line for every block, list, or table element.",
+        "example": {
+          "good": [
+            "<blockquote>",
+            "  <p><em>Space</em>, the final frontier.</p>",
+            "</blockquote>",
+            "<ul>",
+            "  <li>Moe",
+            "  <li>Larry",
+            "  <li>Curly",
+            "</ul>"
+          ]
+        },
+        "sourceAnchor": "general-formatting"
+      },
+      {
+        "id": "html-013",
+        "category": "html",
+        "severity": "MAY",
+        "trigger": "long HTML lines",
+        "rule": "Break long lines if it significantly improves readability.",
+        "sourceAnchor": "html-line-wrapping"
+      },
+      {
+        "id": "html-014",
+        "category": "html",
+        "severity": "MAY",
+        "trigger": "line-wrapping indentation",
+        "rule": "Indent continuation lines to distinguish wrapped attributes from child elements.",
+        "sourceAnchor": "html-line-wrapping"
+      },
+      {
+        "id": "html-015",
+        "category": "html",
+        "severity": "MAY",
+        "trigger": "line-wrapping consistency",
+        "rule": "Wrap lines consistently within a project.",
+        "sourceAnchor": "html-line-wrapping"
+      },
+      {
+        "id": "html-016",
+        "category": "html",
+        "severity": "MUST",
+        "trigger": "HTML attribute values",
+        "rule": "Use double quotation marks for attribute values.",
+        "example": {
+          "bad": [
+            "<a class='maia-button maia-button-secondary'>Sign in</a>"
+          ],
+          "good": [
+            "<a class=\"maia-button maia-button-secondary\">Sign in</a>"
+          ]
+        },
+        "sourceAnchor": "html-quotation-marks"
+      },
+      {
+        "id": "css-001",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS code",
+        "rule": "Use valid CSS where possible.",
+        "sourceAnchor": "css-validity"
+      },
+      {
+        "id": "css-002",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS class names",
+        "rule": "Use meaningful or generic class names.",
+        "example": {
+          "bad": [
+            ".yee-1901 {}",
+            ".button-green {}",
+            ".clear {}"
+          ],
+          "good": [
+            ".gallery {}",
+            ".login {}",
+            ".video {}",
+            ".aux {}",
+            ".alt {}"
+          ]
+        },
+        "sourceAnchor": "class-naming"
+      },
+      {
+        "id": "css-003",
+        "category": "css",
+        "severity": "SHOULD",
+        "trigger": "CSS class names",
+        "rule": "Use class names that are as short as possible but as long as necessary.",
+        "example": {
+          "bad": [
+            ".navigation {}",
+            ".atr {}"
+          ],
+          "good": [
+            ".nav {}",
+            ".author {}"
+          ]
+        },
+        "sourceAnchor": "class-name-style"
+      },
+      {
+        "id": "css-004",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS class names",
+        "rule": "Separate words in class names by a hyphen.",
+        "example": {
+          "bad": [
+            ".demoimage {}",
+            ".error_status {}"
+          ],
+          "good": [
+            ".video-id {}",
+            ".ads-sample {}"
+          ]
+        },
+        "sourceAnchor": "class-name-delimiters"
+      },
+      {
+        "id": "css-005",
+        "category": "css",
+        "severity": "MAY",
+        "trigger": "CSS class names",
+        "rule": "Prefix selectors with an application-specific prefix in large projects.",
+        "example": {
+          "good": [
+            ".adw-help {}",
+            ".maia-note {}"
+          ]
+        },
+        "sourceAnchor": "prefixes"
+      },
+      {
+        "id": "css-006",
+        "category": "css",
+        "severity": "SHOULD_NOT",
+        "trigger": "CSS selectors",
+        "rule": "Avoid qualifying class names with type selectors.",
+        "example": {
+          "bad": [
+            "ul.example {}",
+            "div.error {}"
+          ],
+          "good": [
+            ".example {}",
+            ".error {}"
+          ]
+        },
+        "sourceAnchor": "type-selectors"
+      },
+      {
+        "id": "css-007",
+        "category": "css",
+        "severity": "SHOULD_NOT",
+        "trigger": "CSS selectors",
+        "rule": "Avoid ID selectors.",
+        "example": {
+          "bad": [
+            "#example {}"
+          ],
+          "good": [
+            ".example {}"
+          ]
+        },
+        "sourceAnchor": "id-selectors"
+      },
+      {
+        "id": "css-008",
+        "category": "css",
+        "severity": "SHOULD",
+        "trigger": "CSS properties",
+        "rule": "Use shorthand properties where possible.",
+        "example": {
+          "bad": [
+            "border-top-style: none;",
+            "font-family: palatino, georgia, serif;",
+            "font-size: 100%;",
+            "line-height: 1.6;",
+            "padding-bottom: 2em;",
+            "padding-left: 1em;",
+            "padding-right: 1em;",
+            "padding-top: 0;"
+          ],
+          "good": [
+            "border-top: 0;",
+            "font: 100%/1.6 palatino, georgia, serif;",
+            "padding: 0 1em 2em;"
+          ]
+        },
+        "sourceAnchor": "shorthand-properties"
+      },
+      {
+        "id": "css-009",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS 0 values",
+        "rule": "Omit unit specification after 0 values unless required.",
+        "example": {
+          "good": [
+            "flex: 0px;",
+            "flex: 1 1 0px;",
+            "margin: 0;",
+            "padding: 0;"
+          ]
+        },
+        "sourceAnchor": "0-and-units"
+      },
+      {
+        "id": "css-010",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS decimal values",
+        "rule": "Always include leading 0s in values between -1 and 1.",
+        "example": {
+          "good": [
+            "font-size: 0.8em;"
+          ]
+        },
+        "sourceAnchor": "leading-0s"
+      },
+      {
+        "id": "css-011",
+        "category": "css",
+        "severity": "SHOULD",
+        "trigger": "CSS color values",
+        "rule": "Use 3 character hexadecimal notation where possible.",
+        "example": {
+          "bad": [
+            "color: #eebbcc;"
+          ],
+          "good": [
+            "color: #ebc;"
+          ]
+        },
+        "sourceAnchor": "hexadecimal-notation"
+      },
+      {
+        "id": "css-012",
+        "category": "css",
+        "severity": "SHOULD_NOT",
+        "trigger": "CSS declarations",
+        "rule": "Avoid using !important declarations.",
+        "example": {
+          "bad": [
+            ".example {",
+            "  font-weight: bold !important;",
+            "}"
+          ],
+          "good": [
+            ".example {",
+            "  font-weight: bold;",
+            "}"
+          ]
+        },
+        "sourceAnchor": "important-declarations"
+      },
+      {
+        "id": "css-013",
+        "category": "css",
+        "severity": "SHOULD_NOT",
+        "trigger": "CSS hacks",
+        "rule": "Avoid user agent detection and CSS hacks.",
+        "sourceAnchor": "hacks"
+      },
+      {
+        "id": "css-014",
+        "category": "css",
+        "severity": "MAY",
+        "trigger": "CSS declarations",
+        "rule": "Alphabetize declarations within a rule set.",
+        "example": {
+          "good": [
+            "background: fuchsia;",
+            "border: 1px solid;",
+            "-moz-border-radius: 4px;",
+            "-webkit-border-radius: 4px;",
+            "border-radius: 4px;",
+            "color: black;",
+            "text-align: center;",
+            "text-indent: 2em;"
+          ]
+        },
+        "sourceAnchor": "declaration-order"
+      },
+      {
+        "id": "css-015",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS block content",
+        "rule": "Indent all block content to reflect hierarchy.",
+        "example": {
+          "good": [
+            "@media screen, projection {",
+            "",
+            "  html {",
+            "    background: #fff;",
+            "    color: #444;",
+            "  }",
+            "",
+            "}"
+          ]
+        },
+        "sourceAnchor": "block-content-indentation"
+      },
+      {
+        "id": "css-016",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS declarations",
+        "rule": "Use a semicolon after every declaration.",
+        "example": {
+          "bad": [
+            ".test {",
+            "  display: block;",
+            "  height: 100px",
+            "}"
+          ],
+          "good": [
+            ".test {",
+            "  display: block;",
+            "  height: 100px;",
+            "}"
+          ]
+        },
+        "sourceAnchor": "declaration-stops"
+      },
+      {
+        "id": "css-017",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS property colons",
+        "rule": "Use a space after a property name's colon.",
+        "example": {
+          "bad": [
+            "h3 {",
+            "  font-weight:bold;",
+            "}"
+          ],
+          "good": [
+            "h3 {",
+            "  font-weight: bold;",
+            "}"
+          ]
+        },
+        "sourceAnchor": "property-name-stops"
+      },
+      {
+        "id": "css-018",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS declaration blocks",
+        "rule": "Use a space between the last selector and the declaration block.",
+        "example": {
+          "bad": [
+            ".video{",
+            "  margin-top: 1em;",
+            "}",
+            ".video",
+            "{",
+            "  margin-top: 1em;",
+            "}"
+          ],
+          "good": [
+            ".video {",
+            "  margin-top: 1em;",
+            "}"
+          ]
+        },
+        "sourceAnchor": "declaration-block-separation"
+      },
+      {
+        "id": "css-019",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "opening brace",
+        "rule": "Place the opening brace on the same line as the last selector.",
+        "example": {
+          "bad": [
+            ".video",
+            "{",
+            "  margin-top: 1em;",
+            "}"
+          ],
+          "good": [
+            ".video {",
+            "  margin-top: 1em;",
+            "}"
+          ]
+        },
+        "sourceAnchor": "declaration-block-separation"
+      },
+      {
+        "id": "css-020",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS selectors and declarations",
+        "rule": "Separate selectors and declarations by new lines.",
+        "example": {
+          "bad": [
+            "a:focus, a:active {",
+            "  position: relative; top: 1px;",
+            "}"
+          ],
+          "good": [
+            "h1,",
+            "h2,",
+            "h3 {",
+            "  font-weight: normal;",
+            "  line-height: 1.2;",
+            "}"
+          ]
+        },
+        "sourceAnchor": "selector-and-declaration-separation"
+      },
+      {
+        "id": "css-021",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS rules",
+        "rule": "Separate rules by blank lines.",
+        "example": {
+          "good": [
+            "html {",
+            "  background: #fff;",
+            "}",
+            "",
+            "body {",
+            "  margin: auto;",
+            "  width: 50%;",
+            "}"
+          ]
+        },
+        "sourceAnchor": "rule-separation"
+      },
+      {
+        "id": "css-022",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "CSS attribute selectors and property values",
+        "rule": "Use single quotation marks for attribute selectors and property values.",
+        "example": {
+          "bad": [
+            "@import url(\"https://www.google.com/css/maia.css\");",
+            "html {",
+            "  font-family: \"open sans\", arial, sans-serif;",
+            "}"
+          ],
+          "good": [
+            "@import url(https://www.google.com/css/maia.css);",
+            "html {",
+            "  font-family: 'open sans', arial, sans-serif;",
+            "}"
+          ]
+        },
+        "sourceAnchor": "css-quotation-marks"
+      },
+      {
+        "id": "css-023",
+        "category": "css",
+        "severity": "MUST_NOT",
+        "trigger": "CSS URI values",
+        "rule": "Do not use quotation marks in URI values (url()).",
+        "example": {
+          "bad": [
+            "@import url(\"https://www.google.com/css/maia.css\");"
+          ],
+          "good": [
+            "@import url(https://www.google.com/css/maia.css);"
+          ]
+        },
+        "sourceAnchor": "css-quotation-marks"
+      },
+      {
+        "id": "css-024",
+        "category": "css",
+        "severity": "MUST",
+        "trigger": "@charset rule",
+        "rule": "Use double quotation marks for @charset rule.",
+        "sourceAnchor": "css-quotation-marks"
+      },
+      {
+        "id": "css-025",
+        "category": "css",
+        "severity": "MAY",
+        "trigger": "CSS sections",
+        "rule": "Group style sheet sections together by using comments.",
+        "example": {
+          "good": [
+            "/* Header */",
+            "",
+            ".adw-header {}",
+            "",
+            "/* Footer */",
+            "",
+            ".adw-footer {}"
+          ]
+        },
+        "sourceAnchor": "section-comments"
+      },
+      {
+        "id": "css-026",
+        "category": "naming",
+        "severity": "MUST",
+        "trigger": "CSS class naming",
+        "rule": "Use hyphen-delimited class names; never camelCase or underscores in regular classes.",
+        "example": {
+          "bad": [
+            ".pageHead { }",
+            ".sub_content { }"
+          ],
+          "good": [
+            ".page-head { }",
+            ".sub-content { }"
+          ]
+        },
+        "sourceAnchor": "https://cssguidelin.es/#hyphen-delimited"
+      },
+      {
+        "id": "css-027",
+        "category": "naming",
+        "severity": "MUST",
+        "trigger": "component class structure",
+        "rule": "Use BEM-like naming: Block (root), Element (child via __), Modifier (variant via --).",
+        "example": {
+          "good": [
+            ".person { }",
+            ".person__head { }",
+            ".person--tall { }"
+          ]
+        },
+        "sourceAnchor": "https://cssguidelin.es/#bem-like-naming"
+      },
+      {
+        "id": "css-028",
+        "category": "naming",
+        "severity": "MUST_NOT",
+        "trigger": "BEM element nesting",
+        "rule": "Do not reflect full DOM ancestry in element names; use .block__element, not .block__parent__child.",
+        "example": {
+          "bad": [
+            ".person__head__eye { }"
+          ],
+          "good": [
+            ".person__eye { }"
+          ]
+        },
+        "sourceAnchor": "https://cssguidelin.es/#more-layers"
+      },
+      {
+        "id": "css-029",
+        "category": "naming",
+        "severity": "MUST",
+        "trigger": "BEM block scope",
+        "rule": "Start BEM block context at the most logical self-contained discrete component, not a higher container.",
+        "example": {
+          "bad": [
+            ".page__content { }",
+            ".page__footer { }"
+          ],
+          "good": [
+            ".content { }",
+            ".footer { }",
+            ".footer__copyright { }"
+          ]
+        },
+        "sourceAnchor": "https://cssguidelin.es/#starting-context"
+      },
+      {
+        "id": "css-030",
+        "category": "naming",
+        "severity": "SHOULD",
+        "trigger": "element modifier",
+        "rule": "Modify elements directly with .block__element--modifier rather than nesting modifiers.",
+        "example": {
+          "good": [
+            ".person__eye--blue { }",
+            ".person__face--handsome { }"
+          ]
+        },
+        "sourceAnchor": "https://cssguidelin.es/#modifying-elements"
+      },
+      {
+        "id": "css-031",
+        "category": "naming",
+        "severity": "SHOULD",
+        "trigger": "block-level element modification",
+        "rule": "When a block modifier changes a child element, use .block--modifier .block__element, not a new element class.",
+        "example": {
+          "good": [
+            ".person--handsome .person__face { }"
+          ]
+        },
+        "sourceAnchor": "https://cssguidelin.es/#modifying-elements"
+      },
+      {
+        "id": "css-032",
+        "category": "naming",
+        "severity": "MUST",
+        "trigger": "JavaScript hooks",
+        "rule": "Separate JS hooks from CSS classes using a js- prefix; never bind JS and CSS to the same class.",
+        "example": {
+          "bad": [
+            "<input type=\"submit\" class=\"btn\" value=\"Follow\" />"
+          ],
+          "good": [
+            "<input type=\"submit\" class=\"btn  js-btn\" value=\"Follow\" />"
+          ]
+        },
+        "sourceAnchor": "https://cssguidelin.es/#javascript-hooks"
+      },
+      {
+        "id": "css-033",
+        "category": "naming",
+        "severity": "MUST_NOT",
+        "trigger": "data-* as JS hooks",
+        "rule": "Do not use data-* attributes as JavaScript hooks; they store data, not behavior bindings.",
+        "sourceAnchor": "https://cssguidelin.es/#data-attributes"
+      }
+    ]
+  }
+}

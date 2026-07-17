@@ -1,0 +1,109 @@
+/* ============================================================
+   Design System — Shared Component Classes (global, non-hashed)
+   React: @import trong global.css
+   Content script / Shadow DOM: import ... from '...?raw'
+   Token source: tokens.css (--color-*, --radius-*, --space-*)
+   ============================================================ */
+
+/* === Icon Button — design-system.md §2 ===
+   Base: 40×40, radius full, no border, no bg, surface-hover fill.
+   Variants: --outlined (hairline border), --filled (primary bg).
+   Sizes: --sm (32px), --xs (28px).
+   States: hover=surface-hover, active=scale(0.96), focus=2px ring, selected=primary-subtle. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+  padding: 0;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
+.icon-btn:hover { background: var(--color-surface-hover); color: var(--color-text); }
+.icon-btn:active { background: var(--color-surface-hover); transform: scale(0.96); }
+.icon-btn:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
+.icon-btn:disabled { opacity: 0.5; pointer-events: none; }
+.icon-btn svg { width: 24px; height: 24px; }
+
+/* Size modifiers */
+.icon-btn--xs { width: 28px; height: 28px; }
+.icon-btn--xs svg { width: 16px; height: 16px; }
+.icon-btn--sm { width: 32px; height: 32px; }
+.icon-btn--sm svg { width: 20px; height: 20px; }
+
+/* Outlined variant — hairline border, primary color */
+.icon-btn--outlined {
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+}
+.icon-btn--outlined:hover {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+.icon-btn--outlined:active {
+  background: var(--color-primary-active);
+  transform: scale(0.96);
+}
+
+/* Filled variant — primary bg, inverse text */
+.icon-btn--filled {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+.icon-btn--filled:hover { background: var(--color-primary-hover); }
+.icon-btn--filled:active { background: var(--color-primary-active); transform: scale(0.96); }
+
+/* Selected/active state — primary-subtle fill + primary text */
+.icon-btn--active,
+.icon-btn--active:hover {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+/* === Button (text) — design-system.md §1 ===
+   Base: pill 18px, medium weight. Variants: --primary, --secondary, --outline, --ghost, --destructive.
+   Sizes: --sm, --lg. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  height: 32px;
+  padding: 8px 16px;
+  font-size: var(--font-size-sm);
+  transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+}
+.btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.btn:disabled { opacity: 0.5; pointer-events: none; }
+.btn:active { transform: scale(0.98); }
+
+.btn--primary { background: var(--color-primary); color: var(--color-text-inverse); }
+.btn--primary:hover { background: var(--color-primary-hover); }
+
+.btn--secondary { background: var(--color-secondary); color: var(--color-secondary-foreground); }
+.btn--secondary:hover { background: var(--color-secondary-hover); }
+
+.btn--outline { background: transparent; color: var(--color-text); border: 1px solid var(--color-border); }
+.btn--outline:hover { background: var(--color-surface-hover); border-color: var(--color-border-focus); }
+
+.btn--ghost { background: transparent; color: var(--color-text); }
+.btn--ghost:hover { background: var(--color-surface-hover); }
+
+.btn--destructive { background: var(--color-destructive); color: var(--color-destructive-foreground); }
+.btn--destructive:hover { background: var(--color-destructive-hover); }
+
+.btn--sm { height: 28px; padding: 6px 12px; font-size: var(--font-size-xs); }
+.btn--lg { height: 40px; padding: 10px 20px; font-size: var(--font-size-base); }

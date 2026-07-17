@@ -1,7 +1,41 @@
 // popupShell tests — spec §4.6.3 A4: Shadow DOM, auto-position, resize, dismiss.
 
-import { describe, expect, it, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, expect, it, beforeEach, afterEach, beforeAll, jest } from '@jest/globals';
 import { PopupShell, clampPopupSize, computePopupPosition } from './popupShell';
+import { STORAGE_KEYS } from '@/shared/config/config';
+
+// Mock chrome.storage.local + storage.onChanged (needed for theme detection)
+const storageData: Record<string, unknown> = {};
+const storageListeners: Array<(changes: Record<string, chrome.storage.StorageChange>, area: string) => void> = [];
+
+beforeAll(() => {
+  const g = global as unknown as { chrome?: unknown };
+  g.chrome = g.chrome ?? {};
+  const c = g.chrome as { storage: Record<string, unknown> };
+  c.storage = c.storage ?? {};
+  c.storage.local = {
+    get: jest.fn((_key?: string) => Promise.resolve(storageData)),
+    set: jest.fn((obj: Record<string, unknown>) => { Object.assign(storageData, obj); return Promise.resolve(); }),
+  };
+  c.storage.onChanged = {
+    addListener: jest.fn((cb: (changes: Record<string, chrome.storage.StorageChange>, area: string) => void) => { storageListeners.push(cb); }),
+    removeListener: jest.fn((cb: (changes: Record<string, chrome.storage.StorageChange>, area: string) => void) => {
+      const idx = storageListeners.indexOf(cb);
+      if (idx >= 0) storageListeners.splice(idx, 1);
+    }),
+  };
+  // matchMedia mock (jsdom doesn't have it)
+  window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+});
 
 describe('clampPopupSize', () => {
   it('clamps width to viewport - margins', () => {
@@ -191,35 +225,37 @@ describe('PopupShell', () => {
     expect(host).not.toBeNull();
   });
 
-  it('getContainer returns the popup container', () => {
+  it('getContainer returns the inner content element', () => {
     shell.mount();
     const container = shell.getContainer();
     expect(container).not.toBeNull();
-    expect(container!.getAttribute('data-dp-popup')).toBe('');
+    expect(container!.getAttribute('data-dp-content')).toBe('');
   });
 
-  it('setPosition sets left/top on container', () => {
+  it('setPosition sets left/top on the popup shell', () => {
     shell.mount();
     shell.setPosition(170, 100, 150, 200);
-    const container = shell.getContainer()!;
-    expect(container.style.left).toMatch(/\d+px/);
-    expect(container.style.top).toMatch(/\d+px/);
+    const shellEl = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+    expect(shellEl).not.toBeNull();
+    expect(shellEl.style.left).toMatch(/\d+px/);
+    expect(shellEl.style.top).toMatch(/\d+px/);
   });
 
-  it('show/hide toggles display', () => {
+  it('show/hide toggles display on the popup shell', () => {
     shell.mount();
     shell.hide();
-    expect(shell.getContainer()!.style.display).toBe('none');
+    const shellEl = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+    expect(shellEl.style.display).toBe('none');
     shell.show();
-    expect(shell.getContainer()!.style.display).toBe('flex');
+    expect(shellEl.style.display).toBe('flex');
   });
 
-  it('setSize updates width + maxHeight', () => {
+  it('setSize updates width + maxHeight on the popup shell', () => {
     shell.mount();
     shell.setSize({ width: 400, maxHeight: 300 });
-    const container = shell.getContainer()!;
-    expect(container.style.width).toBe('400px');
-    expect(container.style.maxHeight).toBe('300px');
+    const shellEl = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+    expect(shellEl.style.width).toBe('400px');
+    expect(shellEl.style.maxHeight).toBe('300px');
   });
 
   it('Esc key triggers onDismiss', () => {
@@ -251,5 +287,239 @@ describe('PopupShell', () => {
     const a = shell.mount();
     const b = shell.mount();
     expect(a).toBe(b);
+  });
+
+  // --- Keyboard Lock API (Esc in fullscreen) ---
+  // Chromium browser process intercepts Esc before DOM when in fullscreen.
+  // Keyboard Lock API (navigator.keyboard.lock(['Escape'])) captures Esc
+  // at the renderer level so our keydown handler receives it.
+  describe('Keyboard Lock API — Esc in fullscreen', () => {
+    let keyboardLockSpy: ReturnType<typeof jest.spyOn>;
+    let keyboardUnlockSpy: ReturnType<typeof jest.spyOn>;
+
+    beforeEach(() => {
+      // jsdom doesn't have Keyboard Lock API — stub it.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const nav = navigator as any;
+      if (!nav.keyboard) {
+        Object.defineProperty(navigator, 'keyboard', {
+          configurable: true,
+          value: {
+            lock: jest.fn<() => Promise<void>>(),
+            unlock: jest.fn<() => void>(),
+          },
+        });
+      }
+      keyboardLockSpy = jest.spyOn(nav.keyboard, 'lock').mockResolvedValue(undefined as void);
+      keyboardUnlockSpy = jest.spyOn(nav.keyboard, 'unlock').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      keyboardLockSpy.mockRestore();
+      keyboardUnlockSpy.mockRestore();
+    });
+
+    it('locks Escape key when popup shows in fullscreen', () => {
+      // Simulate fullscreen active.
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        get: () => document.body,
+      });
+      try {
+        shell.mount();
+        shell.show();
+        expect(keyboardLockSpy).toHaveBeenCalledWith(['Escape']);
+      } finally {
+        Object.defineProperty(document, 'fullscreenElement', {
+          configurable: true,
+          get: () => null,
+        });
+      }
+    });
+
+    it('does NOT lock Escape when popup shows outside fullscreen', () => {
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        get: () => null,
+      });
+      shell.mount();
+      shell.show();
+      expect(keyboardLockSpy).not.toHaveBeenCalled();
+    });
+
+    it('unlocks Escape key when popup hides', () => {
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        get: () => document.body,
+      });
+      try {
+        shell.mount();
+        shell.show();
+        shell.hide();
+        expect(keyboardUnlockSpy).toHaveBeenCalled();
+      } finally {
+        Object.defineProperty(document, 'fullscreenElement', {
+          configurable: true,
+          get: () => null,
+        });
+      }
+    });
+  });
+
+  // --- Scroll container structure (sticky headers cross-browser) ---
+  // The popup uses a two-layer layout so sticky headers work in every browser:
+  //   outer shell [data-dp-popup]      — fixed, overflow:hidden, does NOT scroll
+  //   inner wrapper [data-dp-content]  — flex:1, overflow-y:auto, IS the scroll container
+  //   resize handle [data-dp-resize]   — sibling of contentEl, pinned to shell corner
+  // getContainer() returns the inner wrapper (contentEl), not the outer shell.
+  describe('scroll container structure', () => {
+    it('getContainer returns the element with data-dp-content (inner scroll wrapper)', () => {
+      shell.mount();
+      const container = shell.getContainer();
+      expect(container).not.toBeNull();
+      expect(container!.getAttribute('data-dp-content')).toBe('');
+    });
+
+    it('content element [data-dp-content] has overflowY auto (the scroll container)', () => {
+      shell.mount();
+      const content = shell.getShadowRoot()!.querySelector('[data-dp-content]') as HTMLDivElement;
+      expect(content).not.toBeNull();
+      expect(content.style.overflowY).toBe('auto');
+    });
+
+    it('content element [data-dp-content] has min-height 0 (flex child can shrink & scroll)', () => {
+      shell.mount();
+      const content = shell.getShadowRoot()!.querySelector('[data-dp-content]') as HTMLDivElement;
+      expect(content).not.toBeNull();
+      expect(content.style.minHeight).toBe('0');
+    });
+
+    it('resize handle [data-dp-resize] is a sibling of content, both children of [data-dp-popup]', () => {
+      shell.mount();
+      const root = shell.getShadowRoot()!;
+      const popup = root.querySelector('[data-dp-popup]') as HTMLDivElement;
+      const content = root.querySelector('[data-dp-content]') as HTMLDivElement;
+      const handle = root.querySelector('[data-dp-resize]') as HTMLDivElement;
+      expect(popup).not.toBeNull();
+      expect(content).not.toBeNull();
+      expect(handle).not.toBeNull();
+      // Both are direct children of the outer shell.
+      expect(content.parentElement).toBe(popup);
+      expect(handle.parentElement).toBe(popup);
+      // Handle is NOT inside the content element.
+      expect(handle.parentElement).not.toBe(content);
+    });
+
+    it('outer shell [data-dp-popup] has overflow hidden (only inner content scrolls)', () => {
+      shell.mount();
+      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      expect(popup).not.toBeNull();
+      expect(popup.style.overflow).toBe('hidden');
+    });
+
+    it('reAppendResizeHandle does NOT move the handle into the content element', () => {
+      shell.mount();
+      const root = shell.getShadowRoot()!;
+      const popup = root.querySelector('[data-dp-popup]') as HTMLDivElement;
+      const content = root.querySelector('[data-dp-content]') as HTMLDivElement;
+      const handle = root.querySelector('[data-dp-resize]') as HTMLDivElement;
+      // Sanity: handle starts as a sibling of content.
+      expect(handle.parentElement).toBe(popup);
+      shell.reAppendResizeHandle();
+      // After the no-op call, handle must still be a sibling of content
+      // (a direct child of the outer shell), not reparented into content.
+      expect(handle.parentElement).toBe(popup);
+      expect(handle.parentElement).not.toBe(content);
+    });
+  });
+
+  // --- Theme integration (dark/light mode via chrome.storage.local.themeMode) ---
+  describe('theme integration', () => {
+    beforeEach(() => {
+      // Reset storage + listeners between theme tests.
+      for (const k of Object.keys(storageData)) delete storageData[k];
+      storageListeners.length = 0;
+    });
+
+    it('sets data-theme on container synchronously (no FOUC)', () => {
+      shell.mount();
+      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      // Sync default is set immediately from prefers-color-scheme (mocked false → light).
+      expect(popup.getAttribute('data-theme')).toBe('light');
+    });
+
+    it('applies dark mode from chrome.storage.local.themeMode', async () => {
+      storageData[STORAGE_KEYS.THEME_MODE] = 'dark';
+      shell.mount();
+      // Wait for async refreshTheme to resolve.
+      await Promise.resolve();
+      await Promise.resolve();
+      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      expect(popup.getAttribute('data-theme')).toBe('dark');
+    });
+
+    it('applies light mode from chrome.storage.local.themeMode', async () => {
+      storageData[STORAGE_KEYS.THEME_MODE] = 'light';
+      shell.mount();
+      await Promise.resolve();
+      await Promise.resolve();
+      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      expect(popup.getAttribute('data-theme')).toBe('light');
+    });
+
+    it('defaults to dark when themeMode absent in storage', async () => {
+      // No themeMode key in storage.
+      shell.mount();
+      await Promise.resolve();
+      await Promise.resolve();
+      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      expect(popup.getAttribute('data-theme')).toBe('dark'); // DEFAULT_THEME_MODE
+    });
+
+    it('re-resolves when storage.onChanged fires for themeMode', async () => {
+      storageData[STORAGE_KEYS.THEME_MODE] = 'light';
+      shell.mount();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Simulate user changing theme to dark in settings.
+      storageData[STORAGE_KEYS.THEME_MODE] = 'dark';
+      const changes: Record<string, chrome.storage.StorageChange> = {
+        [STORAGE_KEYS.THEME_MODE]: { oldValue: 'light', newValue: 'dark' },
+      };
+      for (const listener of storageListeners) listener(changes, 'local');
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      expect(popup.getAttribute('data-theme')).toBe('dark');
+    });
+
+    it('ignores storage.onChanged for unrelated keys', async () => {
+      storageData[STORAGE_KEYS.THEME_MODE] = 'dark';
+      shell.mount();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      const beforeTheme = popup.getAttribute('data-theme');
+
+      // Fire change for an unrelated key.
+      const changes: Record<string, chrome.storage.StorageChange> = {
+        someOtherKey: { oldValue: 'a', newValue: 'b' },
+      };
+      for (const listener of storageListeners) listener(changes, 'local');
+      await Promise.resolve();
+
+      expect(popup.getAttribute('data-theme')).toBe(beforeTheme);
+    });
+
+    it('removes storage.onChanged listener on destroy', () => {
+      const beforeCount = storageListeners.length;
+      shell.mount();
+      expect(storageListeners.length).toBe(beforeCount + 1);
+      shell.destroy();
+      expect(storageListeners.length).toBe(beforeCount);
+    });
   });
 });

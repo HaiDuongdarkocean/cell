@@ -6,10 +6,13 @@ import type { Config } from 'jest';
  * so we factor them into a constant and spread it into each project.
  */
 const moduleNameMapper = {
-  '^@/(.*)$': '<rootDir>/src/$1',
-  '\\.module\\.css$': '<rootDir>/tests/styleMock.ts',
+  // Mock Vite ?raw imports — must be BEFORE @/ alias so ?raw suffixes don't
+  // get resolved as real files. Returns placeholder string for tests.
+  '\\?raw$': '<rootDir>/tests/rawMock.ts',
   // Mock Vite ?worker imports — returns a no-op Worker class for tests
   '\\?worker$': '<rootDir>/tests/workerMock.ts',
+  '^@/(.*)$': '<rootDir>/src/$1',
+  '\\.module\\.css$': '<rootDir>/tests/styleMock.ts',
   // Mock workerFactory (uses import.meta.url which is invalid in Jest's CJS)
   '@/features/transmux/merging/workerFactory': '<rootDir>/tests/workerMock.ts',
 };

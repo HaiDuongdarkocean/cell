@@ -1,0 +1,2192 @@
+{
+  "apiVersion": "1.0",
+  "context": "cell-convention-typescript",
+  "id": "typescript-rule-index-2026-07-17",
+  "data": {
+    "kind": "convention#typescriptRuleIndex",
+    "description": "Machine-readable TypeScript code style rules extracted from Google TypeScript Style Guide. Each item is one rule with RFC 2119 severity, trigger, one-sentence rule, optional example, and source anchor.",
+    "totalItems": 239,
+    "sourceGuide": "https://google.github.io/styleguide/tsguide.html",
+    "severityLegend": {
+      "MUST": "Absolute requirement (RFC 2119). Imperative/declarative statements also map to MUST.",
+      "MUST_NOT": "Absolute prohibition (RFC 2119).",
+      "SHOULD": "Strong recommendation; valid reasons may exist to ignore (RFC 2119). Maps to 'prefer'.",
+      "SHOULD_NOT": "Strong recommendation against; valid reasons may exist to ignore (RFC 2119). Maps to 'avoid'.",
+      "MAY": "Truly optional (RFC 2119)."
+    },
+    "categories": [
+      "classes",
+      "comments",
+      "controlFlow",
+      "errorHandling",
+      "exports",
+      "functions",
+      "imports",
+      "jsdoc",
+      "languageFeatures",
+      "misc",
+      "naming",
+      "sourceFile",
+      "typeAnnotations",
+      "types"
+    ],
+    "items": [
+      {
+        "id": "sourceFile-001",
+        "category": "sourceFile",
+        "severity": "MUST",
+        "trigger": "encoding source files",
+        "rule": "Source files are encoded in UTF-8.",
+        "sourceAnchor": "#file-encoding-utf-8"
+      },
+      {
+        "id": "sourceFile-002",
+        "category": "sourceFile",
+        "severity": "MUST",
+        "trigger": "using whitespace characters",
+        "rule": "Use only ASCII horizontal space character for whitespace in source files.",
+        "sourceAnchor": "#whitespace-characters"
+      },
+      {
+        "id": "sourceFile-003",
+        "category": "sourceFile",
+        "severity": "MUST",
+        "trigger": "using special escape sequences",
+        "rule": "Use special escape sequences for characters that have them.",
+        "sourceAnchor": "#special-escape-sequences"
+      },
+      {
+        "id": "sourceFile-004",
+        "category": "sourceFile",
+        "severity": "MUST_NOT",
+        "trigger": "using legacy octal escapes",
+        "rule": "Never use legacy octal escapes.",
+        "sourceAnchor": "#special-escape-sequences"
+      },
+      {
+        "id": "sourceFile-005",
+        "category": "sourceFile",
+        "severity": "MUST",
+        "trigger": "using non-ASCII characters",
+        "rule": "Use actual Unicode character for non-ASCII printable characters.",
+        "sourceAnchor": "#non-ascii-characters"
+      },
+      {
+        "id": "sourceFile-006",
+        "category": "sourceFile",
+        "severity": "MUST",
+        "trigger": "structuring source files",
+        "rule": "Files consist of copyright, @fileoverview, imports, implementation in order.",
+        "sourceAnchor": "#source-file-structure"
+      },
+      {
+        "id": "sourceFile-007",
+        "category": "sourceFile",
+        "severity": "MUST",
+        "trigger": "separating file sections",
+        "rule": "Separate each file section with exactly one blank line.",
+        "sourceAnchor": "#source-file-structure"
+      },
+      {
+        "id": "sourceFile-008",
+        "category": "sourceFile",
+        "severity": "MUST",
+        "trigger": "adding copyright information",
+        "rule": "Add license or copyright information in a JSDoc at the top of the file.",
+        "sourceAnchor": "#copyright-information"
+      },
+      {
+        "id": "sourceFile-009",
+        "category": "sourceFile",
+        "severity": "MUST",
+        "trigger": "writing @fileoverview JSDoc",
+        "rule": "Do not indent wrapped lines in @fileoverview JSDoc.",
+        "sourceAnchor": "#fileoverview-jsdoc"
+      },
+      {
+        "id": "imports-001",
+        "category": "imports",
+        "severity": "MUST",
+        "trigger": "importing TypeScript code",
+        "rule": "TypeScript code must use paths to import other TypeScript code.",
+        "sourceAnchor": "#import-paths"
+      },
+      {
+        "id": "imports-002",
+        "category": "imports",
+        "severity": "MAY",
+        "trigger": "choosing import path style",
+        "rule": "Import paths may be relative or rooted at base directory.",
+        "sourceAnchor": "#import-paths"
+      },
+      {
+        "id": "imports-003",
+        "category": "imports",
+        "severity": "SHOULD",
+        "trigger": "importing within same project",
+        "rule": "Use relative imports when referring to files within same project.",
+        "sourceAnchor": "#import-paths"
+      },
+      {
+        "id": "imports-004",
+        "category": "imports",
+        "severity": "SHOULD",
+        "trigger": "choosing import style",
+        "rule": "Prefer named imports for symbols used frequently or with clear names.",
+        "sourceAnchor": "#namespace-versus-named-imports"
+      },
+      {
+        "id": "imports-005",
+        "category": "imports",
+        "severity": "SHOULD",
+        "trigger": "importing from large APIs",
+        "rule": "Prefer namespace imports when using many symbols from large APIs.",
+        "sourceAnchor": "#namespace-versus-named-imports"
+      },
+      {
+        "id": "imports-006",
+        "category": "imports",
+        "severity": "SHOULD",
+        "trigger": "fixing import name collisions",
+        "rule": "Fix name collisions by using namespace import or renaming exports.",
+        "sourceAnchor": "#renaming-imports"
+      },
+      {
+        "id": "imports-007",
+        "category": "imports",
+        "severity": "MAY",
+        "trigger": "renaming imports",
+        "rule": "Rename imports if needed to avoid collisions or improve clarity.",
+        "sourceAnchor": "#renaming-imports"
+      },
+      {
+        "id": "imports-008",
+        "category": "imports",
+        "severity": "MAY",
+        "trigger": "importing type-only symbols",
+        "rule": "Use import type when imported symbol is only used as a type.",
+        "sourceAnchor": "#import-type"
+      },
+      {
+        "id": "imports-009",
+        "category": "imports",
+        "severity": "MUST",
+        "trigger": "organizing code with modules",
+        "rule": "Code must refer to code in other files using ES6 imports and exports.",
+        "sourceAnchor": "#use-modules-not-namespaces"
+      },
+      {
+        "id": "imports-010",
+        "category": "imports",
+        "severity": "MUST_NOT",
+        "trigger": "using TypeScript namespaces",
+        "rule": "Code must not use the namespace Foo construct.",
+        "sourceAnchor": "#use-modules-not-namespaces"
+      },
+      {
+        "id": "imports-011",
+        "category": "imports",
+        "severity": "MAY",
+        "trigger": "interfacing with third-party code",
+        "rule": "Namespaces may only be used when required by external third-party code.",
+        "sourceAnchor": "#use-modules-not-namespaces"
+      },
+      {
+        "id": "imports-012",
+        "category": "imports",
+        "severity": "MUST_NOT",
+        "trigger": "using require for imports",
+        "rule": "Code must not use require for imports.",
+        "sourceAnchor": "#use-modules-not-namespaces"
+      },
+      {
+        "id": "exports-001",
+        "category": "exports",
+        "severity": "MUST",
+        "trigger": "exporting from modules",
+        "rule": "Use named exports in all code.",
+        "sourceAnchor": "#exports"
+      },
+      {
+        "id": "exports-002",
+        "category": "exports",
+        "severity": "MUST_NOT",
+        "trigger": "using default exports",
+        "rule": "Do not use default exports.",
+        "sourceAnchor": "#exports"
+      },
+      {
+        "id": "exports-003",
+        "category": "exports",
+        "severity": "MUST",
+        "trigger": "choosing exports",
+        "rule": "Only export symbols that are used outside of the module.",
+        "sourceAnchor": "#export-visibility"
+      },
+      {
+        "id": "exports-004",
+        "category": "exports",
+        "severity": "MUST",
+        "trigger": "designing module APIs",
+        "rule": "Minimize the exported API surface of modules.",
+        "sourceAnchor": "#export-visibility"
+      },
+      {
+        "id": "exports-005",
+        "category": "exports",
+        "severity": "MUST_NOT",
+        "trigger": "using export let",
+        "rule": "Do not use export let for mutable exports.",
+        "sourceAnchor": "#mutable-exports"
+      },
+      {
+        "id": "exports-006",
+        "category": "exports",
+        "severity": "SHOULD",
+        "trigger": "supporting mutable bindings",
+        "rule": "Use explicit getter functions for externally accessible mutable bindings.",
+        "sourceAnchor": "#mutable-exports"
+      },
+      {
+        "id": "exports-007",
+        "category": "exports",
+        "severity": "MUST_NOT",
+        "trigger": "creating container classes",
+        "rule": "Do not create container classes with static methods for namespacing.",
+        "sourceAnchor": "#container-classes"
+      },
+      {
+        "id": "exports-008",
+        "category": "exports",
+        "severity": "MUST",
+        "trigger": "re-exporting types",
+        "rule": "Use export type when re-exporting a type.",
+        "sourceAnchor": "#export-type"
+      },
+      {
+        "id": "types-001",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "declaring variables",
+        "rule": "Use const for variables that never change and let for variables that do.",
+        "sourceAnchor": "#local-variable-declarations"
+      },
+      {
+        "id": "types-002",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "using var",
+        "rule": "Do not use var for variable declarations.",
+        "sourceAnchor": "#local-variable-declarations"
+      },
+      {
+        "id": "types-003",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "variable declaration order",
+        "rule": "Variables must not be used before their declaration.",
+        "sourceAnchor": "#local-variable-declarations"
+      },
+      {
+        "id": "types-004",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "declaring local variables",
+        "rule": "Every local variable declaration declares only one variable.",
+        "sourceAnchor": "#one-variable-per-declaration"
+      },
+      {
+        "id": "types-005",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "using Array constructor",
+        "rule": "Do not use the Array constructor with or without new.",
+        "sourceAnchor": "#do-not-use-the-array-constructor"
+      },
+      {
+        "id": "types-006",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "initializing arrays",
+        "rule": "Use bracket notation or Array.from to initialize arrays.",
+        "sourceAnchor": "#do-not-use-the-array-constructor"
+      },
+      {
+        "id": "types-007",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "defining array properties",
+        "rule": "Do not define or use non-numeric properties on arrays.",
+        "sourceAnchor": "#do-not-define-properties-on-arrays"
+      },
+      {
+        "id": "types-008",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "spreading into arrays",
+        "rule": "When creating an array only spread iterables.",
+        "sourceAnchor": "#using-spread-syntax"
+      },
+      {
+        "id": "types-009",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "spreading primitives into arrays",
+        "rule": "Primitives including null and undefined must not be spread into arrays.",
+        "sourceAnchor": "#using-spread-syntax"
+      },
+      {
+        "id": "types-010",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "destructuring array parameters",
+        "rule": "Specify [] as default value for optional destructured array parameters.",
+        "sourceAnchor": "#array-destructuring"
+      },
+      {
+        "id": "types-011",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "providing default values in destructuring",
+        "rule": "Provide default values on left hand side of destructured parameters.",
+        "sourceAnchor": "#array-destructuring"
+      },
+      {
+        "id": "types-012",
+        "category": "types",
+        "severity": "SHOULD",
+        "trigger": "packing multiple values",
+        "rule": "Prefer object destructuring to array destructuring when possible.",
+        "sourceAnchor": "#array-destructuring"
+      },
+      {
+        "id": "types-013",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "using Object constructor",
+        "rule": "The Object constructor is disallowed.",
+        "sourceAnchor": "#do-not-use-the-object-constructor"
+      },
+      {
+        "id": "types-014",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "creating objects",
+        "rule": "Use object literal instead of Object constructor.",
+        "sourceAnchor": "#do-not-use-the-object-constructor"
+      },
+      {
+        "id": "types-015",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "iterating objects with for-in",
+        "rule": "Do not use unfiltered for in statements.",
+        "sourceAnchor": "#iterating-objects"
+      },
+      {
+        "id": "types-016",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "iterating objects",
+        "rule": "Filter for-in loops explicitly or use for of with Object.keys.",
+        "sourceAnchor": "#iterating-objects"
+      },
+      {
+        "id": "types-017",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "spreading into objects",
+        "rule": "When creating an object only objects may be spread.",
+        "sourceAnchor": "#using-spread-syntax-1"
+      },
+      {
+        "id": "types-018",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "spreading into objects",
+        "rule": "Arrays and primitives must not be spread into objects.",
+        "sourceAnchor": "#using-spread-syntax-1"
+      },
+      {
+        "id": "types-019",
+        "category": "types",
+        "severity": "SHOULD_NOT",
+        "trigger": "spreading objects with prototypes",
+        "rule": "Avoid spreading objects with prototypes other than Object prototype.",
+        "sourceAnchor": "#using-spread-syntax-1"
+      },
+      {
+        "id": "types-020",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "mixing computed property keys",
+        "rule": "Computed non-symbol property names must not be mixed with non-quoted keys.",
+        "sourceAnchor": "#computed-property-names"
+      },
+      {
+        "id": "types-021",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "destructuring object parameters",
+        "rule": "Deeper levels of nesting may not be used in parameter destructuring.",
+        "sourceAnchor": "#object-destructuring"
+      },
+      {
+        "id": "types-022",
+        "category": "types",
+        "severity": "MUST_NOT",
+        "trigger": "destructuring object parameters",
+        "rule": "Computed properties may not be used in parameter destructuring.",
+        "sourceAnchor": "#object-destructuring"
+      },
+      {
+        "id": "types-023",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "destructuring object parameters",
+        "rule": "Specify default values in left-hand-side of destructured parameter.",
+        "sourceAnchor": "#object-destructuring"
+      },
+      {
+        "id": "types-024",
+        "category": "types",
+        "severity": "MUST",
+        "trigger": "optional destructured object parameter",
+        "rule": "Optional destructured object parameter must default to {}.",
+        "sourceAnchor": "#object-destructuring"
+      },
+      {
+        "id": "classes-001",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "declaring classes",
+        "rule": "Class declarations must not be terminated with semicolons.",
+        "sourceAnchor": "#class-declarations"
+      },
+      {
+        "id": "classes-002",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "using class expressions",
+        "rule": "Statements containing class expressions must be terminated with semicolon.",
+        "sourceAnchor": "#class-declarations"
+      },
+      {
+        "id": "classes-003",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "declaring class methods",
+        "rule": "Class method declarations must not use semicolons.",
+        "sourceAnchor": "#class-method-declarations"
+      },
+      {
+        "id": "classes-004",
+        "category": "classes",
+        "severity": "SHOULD",
+        "trigger": "separating method declarations",
+        "rule": "Method declarations should be separated by single blank line.",
+        "sourceAnchor": "#class-method-declarations"
+      },
+      {
+        "id": "classes-005",
+        "category": "classes",
+        "severity": "MAY",
+        "trigger": "overriding toString",
+        "rule": "The toString method may be overridden.",
+        "sourceAnchor": "#overriding-tostring"
+      },
+      {
+        "id": "classes-006",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "overriding toString",
+        "rule": "toString must always succeed and never have visible side effects.",
+        "sourceAnchor": "#overriding-tostring"
+      },
+      {
+        "id": "classes-007",
+        "category": "classes",
+        "severity": "SHOULD",
+        "trigger": "using private static methods",
+        "rule": "Prefer module-local functions over private static methods.",
+        "sourceAnchor": "#avoid-private-static-methods"
+      },
+      {
+        "id": "classes-008",
+        "category": "classes",
+        "severity": "SHOULD_NOT",
+        "trigger": "calling static methods",
+        "rule": "Code should not rely on dynamic dispatch of static methods.",
+        "sourceAnchor": "#do-not-rely-on-dynamic-dispatch"
+      },
+      {
+        "id": "classes-009",
+        "category": "classes",
+        "severity": "SHOULD",
+        "trigger": "calling static methods",
+        "rule": "Static methods should only be called on the base class itself.",
+        "sourceAnchor": "#do-not-rely-on-dynamic-dispatch"
+      },
+      {
+        "id": "classes-010",
+        "category": "classes",
+        "severity": "SHOULD_NOT",
+        "trigger": "calling static methods",
+        "rule": "Static methods should not be called on variables containing dynamic instance.",
+        "sourceAnchor": "#do-not-rely-on-dynamic-dispatch"
+      },
+      {
+        "id": "classes-011",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "calling static methods on subclass",
+        "rule": "Static methods must not be called on subclass that does not define method.",
+        "sourceAnchor": "#do-not-rely-on-dynamic-dispatch"
+      },
+      {
+        "id": "classes-012",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "using this in static context",
+        "rule": "Code must not use this in a static context.",
+        "sourceAnchor": "#avoid-static-this-references"
+      },
+      {
+        "id": "classes-013",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "calling constructors",
+        "rule": "Constructor calls must use parentheses even with no arguments.",
+        "sourceAnchor": "#constructors"
+      },
+      {
+        "id": "classes-014",
+        "category": "classes",
+        "severity": "SHOULD_NOT",
+        "trigger": "omitting constructors",
+        "rule": "Constructors with parameter properties should not be omitted.",
+        "sourceAnchor": "#constructors"
+      },
+      {
+        "id": "classes-015",
+        "category": "classes",
+        "severity": "SHOULD",
+        "trigger": "separating constructor",
+        "rule": "Constructor should be separated by single blank line above and below.",
+        "sourceAnchor": "#constructors"
+      },
+      {
+        "id": "classes-016",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "using private fields",
+        "rule": "Do not use private fields also known as private identifiers.",
+        "sourceAnchor": "#no-private-fields"
+      },
+      {
+        "id": "classes-017",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "declaring private members",
+        "rule": "Use TypeScript visibility annotations instead of private identifiers.",
+        "sourceAnchor": "#no-private-fields"
+      },
+      {
+        "id": "classes-018",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "marking immutable properties",
+        "rule": "Mark properties never reassigned outside constructor with readonly modifier.",
+        "sourceAnchor": "#use-readonly"
+      },
+      {
+        "id": "classes-019",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "using parameter properties",
+        "rule": "Use TypeScript parameter property for obvious initializers.",
+        "sourceAnchor": "#parameter-properties"
+      },
+      {
+        "id": "classes-020",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "initializing class members",
+        "rule": "Initialize class member where declared if not a parameter.",
+        "sourceAnchor": "#field-initializers"
+      },
+      {
+        "id": "classes-021",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "properties used outside class scope",
+        "rule": "Properties used outside class lexical scope must not use private visibility.",
+        "sourceAnchor": "#properties-used-outside-of-class-lexical-scope"
+      },
+      {
+        "id": "classes-022",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "bypassing property visibility",
+        "rule": "TypeScript code must not use obj[foo] to bypass property visibility.",
+        "sourceAnchor": "#properties-used-outside-of-class-lexical-scope"
+      },
+      {
+        "id": "classes-023",
+        "category": "classes",
+        "severity": "MAY",
+        "trigger": "using getters and setters",
+        "rule": "Getters and setters for class members may be used.",
+        "sourceAnchor": "#getters-and-setters"
+      },
+      {
+        "id": "classes-024",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "implementing getters",
+        "rule": "Getter method must be a pure function with no side effects.",
+        "sourceAnchor": "#getters-and-setters"
+      },
+      {
+        "id": "classes-025",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "implementing getters",
+        "rule": "Getters must not change observable state.",
+        "sourceAnchor": "#getters-and-setters"
+      },
+      {
+        "id": "classes-026",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "hiding class properties with accessors",
+        "rule": "At least one accessor for a property must be non-trivial.",
+        "sourceAnchor": "#getters-and-setters"
+      },
+      {
+        "id": "classes-027",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "defining getters and setters",
+        "rule": "Getters and setters must not be defined using Object.defineProperty.",
+        "sourceAnchor": "#getters-and-setters"
+      },
+      {
+        "id": "classes-028",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "using computed properties in classes",
+        "rule": "Computed properties may only be used in classes when property is symbol.",
+        "sourceAnchor": "#computed-properties"
+      },
+      {
+        "id": "classes-029",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "using dict-style properties in classes",
+        "rule": "Dict-style properties are not allowed in classes.",
+        "sourceAnchor": "#computed-properties"
+      },
+      {
+        "id": "classes-030",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "defining iterable classes",
+        "rule": "Define Symbol.iterator method for classes that are logically iterable.",
+        "sourceAnchor": "#computed-properties"
+      },
+      {
+        "id": "classes-031",
+        "category": "classes",
+        "severity": "MUST",
+        "trigger": "limiting symbol visibility",
+        "rule": "Limit symbol visibility as much as possible.",
+        "sourceAnchor": "#visibility"
+      },
+      {
+        "id": "classes-032",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "using public modifier",
+        "rule": "Never use public modifier except for non-readonly public parameter properties.",
+        "sourceAnchor": "#visibility"
+      },
+      {
+        "id": "classes-033",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "manipulating prototypes",
+        "rule": "Do not manipulate prototypes directly in ordinary implementation code.",
+        "sourceAnchor": "#do-not-manipulate-prototypes-directly"
+      },
+      {
+        "id": "classes-034",
+        "category": "classes",
+        "severity": "MUST_NOT",
+        "trigger": "modifying builtin prototypes",
+        "rule": "Modifying prototypes of builtin objects is explicitly forbidden.",
+        "sourceAnchor": "#do-not-manipulate-prototypes-directly"
+      },
+      {
+        "id": "functions-001",
+        "category": "functions",
+        "severity": "SHOULD",
+        "trigger": "defining named functions",
+        "rule": "Prefer function declarations over arrow functions or function expressions.",
+        "sourceAnchor": "#prefer-function-declarations-for-named-functions"
+      },
+      {
+        "id": "functions-002",
+        "category": "functions",
+        "severity": "MAY",
+        "trigger": "using arrow functions",
+        "rule": "Arrow functions may be used when explicit type annotation is required.",
+        "sourceAnchor": "#prefer-function-declarations-for-named-functions"
+      },
+      {
+        "id": "functions-003",
+        "category": "functions",
+        "severity": "MAY",
+        "trigger": "writing nested functions",
+        "rule": "Nested functions may use function declarations or arrow functions.",
+        "sourceAnchor": "#nested-functions"
+      },
+      {
+        "id": "functions-004",
+        "category": "functions",
+        "severity": "SHOULD",
+        "trigger": "nested functions in methods",
+        "rule": "Arrow functions are preferred in method bodies for outer this access.",
+        "sourceAnchor": "#nested-functions"
+      },
+      {
+        "id": "functions-005",
+        "category": "functions",
+        "severity": "MUST_NOT",
+        "trigger": "using function expressions",
+        "rule": "Do not use function expressions.",
+        "sourceAnchor": "#do-not-use-function-expressions"
+      },
+      {
+        "id": "functions-006",
+        "category": "functions",
+        "severity": "MUST",
+        "trigger": "replacing function expressions",
+        "rule": "Use arrow functions instead of function expressions.",
+        "sourceAnchor": "#do-not-use-function-expressions"
+      },
+      {
+        "id": "functions-007",
+        "category": "functions",
+        "severity": "MAY",
+        "trigger": "using function expressions",
+        "rule": "Function expressions may be used only for dynamic this rebinding.",
+        "sourceAnchor": "#do-not-use-function-expressions"
+      },
+      {
+        "id": "functions-008",
+        "category": "functions",
+        "severity": "MAY",
+        "trigger": "using function expressions",
+        "rule": "Function expressions may be used for generator functions.",
+        "sourceAnchor": "#do-not-use-function-expressions"
+      },
+      {
+        "id": "functions-009",
+        "category": "functions",
+        "severity": "MUST",
+        "trigger": "using arrow function concise body",
+        "rule": "Only use concise body if return value is actually used.",
+        "sourceAnchor": "#arrow-function-bodies"
+      },
+      {
+        "id": "functions-010",
+        "category": "functions",
+        "severity": "MUST",
+        "trigger": "arrow function return value unused",
+        "rule": "Use block body when return value of function is not used.",
+        "sourceAnchor": "#arrow-function-bodies"
+      },
+      {
+        "id": "functions-011",
+        "category": "functions",
+        "severity": "SHOULD_NOT",
+        "trigger": "passing built-in functions as callbacks",
+        "rule": "Do not pass built-in functions that take more than one argument as callbacks.",
+        "sourceAnchor": "#function-expressions-as-callbacks"
+      },
+      {
+        "id": "functions-012",
+        "category": "functions",
+        "severity": "SHOULD",
+        "trigger": "passing callbacks",
+        "rule": "Prefer passing arrow function that explicitly forwards parameters.",
+        "sourceAnchor": "#function-expressions-as-callbacks"
+      },
+      {
+        "id": "functions-013",
+        "category": "functions",
+        "severity": "SHOULD_NOT",
+        "trigger": "using arrow functions as properties",
+        "rule": "Classes usually should not contain properties initialized to arrow functions.",
+        "sourceAnchor": "#arrow-functions-as-properties"
+      },
+      {
+        "id": "functions-014",
+        "category": "functions",
+        "severity": "SHOULD",
+        "trigger": "calling instance methods",
+        "rule": "Always use arrow functions to call instance methods.",
+        "sourceAnchor": "#arrow-functions-as-properties"
+      },
+      {
+        "id": "functions-015",
+        "category": "functions",
+        "severity": "SHOULD_NOT",
+        "trigger": "passing instance method references",
+        "rule": "Do not obtain or pass references to instance methods.",
+        "sourceAnchor": "#arrow-functions-as-properties"
+      },
+      {
+        "id": "functions-016",
+        "category": "functions",
+        "severity": "MAY",
+        "trigger": "using event handlers",
+        "rule": "Event handlers may use arrow functions when no need to uninstall.",
+        "sourceAnchor": "#event-handlers"
+      },
+      {
+        "id": "functions-017",
+        "category": "functions",
+        "severity": "MAY",
+        "trigger": "using event handlers",
+        "rule": "Arrow function properties are right approach when uninstallation required.",
+        "sourceAnchor": "#event-handlers"
+      },
+      {
+        "id": "functions-018",
+        "category": "functions",
+        "severity": "MUST_NOT",
+        "trigger": "installing event handlers",
+        "rule": "Do not use bind in expression that installs event handler.",
+        "sourceAnchor": "#event-handlers"
+      },
+      {
+        "id": "functions-019",
+        "category": "functions",
+        "severity": "MAY",
+        "trigger": "using optional parameters",
+        "rule": "Optional function parameters may be given default initializer.",
+        "sourceAnchor": "#parameter-initializers"
+      },
+      {
+        "id": "functions-020",
+        "category": "functions",
+        "severity": "MUST_NOT",
+        "trigger": "using parameter initializers",
+        "rule": "Initializers must not have observable side effects.",
+        "sourceAnchor": "#parameter-initializers"
+      },
+      {
+        "id": "functions-021",
+        "category": "functions",
+        "severity": "SHOULD",
+        "trigger": "using parameter initializers",
+        "rule": "Initializers should be kept as simple as possible.",
+        "sourceAnchor": "#parameter-initializers"
+      },
+      {
+        "id": "functions-022",
+        "category": "functions",
+        "severity": "SHOULD",
+        "trigger": "many optional parameters",
+        "rule": "Prefer destructuring when many optional parameters without natural order.",
+        "sourceAnchor": "#parameter-initializers"
+      },
+      {
+        "id": "functions-023",
+        "category": "functions",
+        "severity": "MUST",
+        "trigger": "using variadic functions",
+        "rule": "Use rest parameter instead of accessing arguments.",
+        "sourceAnchor": "#prefer-rest-and-spread-when-appropriate"
+      },
+      {
+        "id": "functions-024",
+        "category": "functions",
+        "severity": "MUST_NOT",
+        "trigger": "naming variables",
+        "rule": "Never name local variable or parameter arguments.",
+        "sourceAnchor": "#prefer-rest-and-spread-when-appropriate"
+      },
+      {
+        "id": "functions-025",
+        "category": "functions",
+        "severity": "MUST",
+        "trigger": "spreading function arguments",
+        "rule": "Use function spread syntax instead of Function.prototype.apply.",
+        "sourceAnchor": "#prefer-rest-and-spread-when-appropriate"
+      },
+      {
+        "id": "functions-026",
+        "category": "functions",
+        "severity": "MUST_NOT",
+        "trigger": "formatting function bodies",
+        "rule": "Blank lines at start or end of function body are not allowed.",
+        "sourceAnchor": "#formatting-functions"
+      },
+      {
+        "id": "functions-027",
+        "category": "functions",
+        "severity": "MAY",
+        "trigger": "grouping statements in functions",
+        "rule": "Single blank line may be used within function bodies for logical groupings.",
+        "sourceAnchor": "#formatting-functions"
+      },
+      {
+        "id": "functions-028",
+        "category": "functions",
+        "severity": "MUST",
+        "trigger": "formatting generators",
+        "rule": "Attach * to function and yield keywords.",
+        "sourceAnchor": "#formatting-functions"
+      },
+      {
+        "id": "functions-029",
+        "category": "functions",
+        "severity": "MUST_NOT",
+        "trigger": "using rest or spread syntax",
+        "rule": "Do not put space after ... in rest or spread syntax.",
+        "sourceAnchor": "#formatting-functions"
+      },
+      {
+        "id": "functions-030",
+        "category": "functions",
+        "severity": "MUST",
+        "trigger": "using this",
+        "rule": "Only use this in class constructors and methods.",
+        "sourceAnchor": "#this"
+      },
+      {
+        "id": "functions-031",
+        "category": "functions",
+        "severity": "MUST",
+        "trigger": "using this",
+        "rule": "Only use this in functions with explicit this type declared.",
+        "sourceAnchor": "#this"
+      },
+      {
+        "id": "functions-032",
+        "category": "functions",
+        "severity": "MUST",
+        "trigger": "using this",
+        "rule": "Only use this in arrow functions defined in scope where this may be used.",
+        "sourceAnchor": "#this"
+      },
+      {
+        "id": "functions-033",
+        "category": "functions",
+        "severity": "MUST_NOT",
+        "trigger": "using this",
+        "rule": "Never use this to refer to global object.",
+        "sourceAnchor": "#this"
+      },
+      {
+        "id": "functions-034",
+        "category": "functions",
+        "severity": "MUST_NOT",
+        "trigger": "using this",
+        "rule": "Never use this to refer to context of eval.",
+        "sourceAnchor": "#this"
+      },
+      {
+        "id": "functions-035",
+        "category": "functions",
+        "severity": "MUST_NOT",
+        "trigger": "using this",
+        "rule": "Never use this to refer to target of event.",
+        "sourceAnchor": "#this"
+      },
+      {
+        "id": "functions-036",
+        "category": "functions",
+        "severity": "MUST_NOT",
+        "trigger": "using this",
+        "rule": "Never use this for unnecessarily called or applied functions.",
+        "sourceAnchor": "#this"
+      },
+      {
+        "id": "controlFlow-001",
+        "category": "controlFlow",
+        "severity": "MUST",
+        "trigger": "using control flow statements",
+        "rule": "Control flow statements always use braced blocks for containing code.",
+        "sourceAnchor": "#control-flow-statements-and-blocks"
+      },
+      {
+        "id": "controlFlow-002",
+        "category": "controlFlow",
+        "severity": "MUST",
+        "trigger": "writing non-empty blocks",
+        "rule": "First statement of non-empty block must begin on its own line.",
+        "sourceAnchor": "#control-flow-statements-and-blocks"
+      },
+      {
+        "id": "controlFlow-003",
+        "category": "controlFlow",
+        "severity": "MAY",
+        "trigger": "writing single-line if statements",
+        "rule": "If statements fitting on one line may elide the block.",
+        "sourceAnchor": "#control-flow-statements-and-blocks"
+      },
+      {
+        "id": "controlFlow-004",
+        "category": "controlFlow",
+        "severity": "SHOULD",
+        "trigger": "assignment in control statements",
+        "rule": "Prefer to avoid assignment of variables inside control statements.",
+        "sourceAnchor": "#assignment-in-control-statements"
+      },
+      {
+        "id": "controlFlow-005",
+        "category": "controlFlow",
+        "severity": "MUST",
+        "trigger": "assignment in control statements",
+        "rule": "Enclose assignment in additional parenthesis when preferred.",
+        "sourceAnchor": "#assignment-in-control-statements"
+      },
+      {
+        "id": "controlFlow-006",
+        "category": "controlFlow",
+        "severity": "SHOULD",
+        "trigger": "iterating arrays",
+        "rule": "Prefer for of someArr to iterate over arrays.",
+        "sourceAnchor": "#iterating-containers"
+      },
+      {
+        "id": "controlFlow-007",
+        "category": "controlFlow",
+        "severity": "MAY",
+        "trigger": "iterating arrays",
+        "rule": "Array.prototype.forEach and vanilla for loops are also allowed.",
+        "sourceAnchor": "#iterating-containers"
+      },
+      {
+        "id": "controlFlow-008",
+        "category": "controlFlow",
+        "severity": "MAY",
+        "trigger": "iterating dict-style objects",
+        "rule": "For-in loops may only be used on dict-style objects.",
+        "sourceAnchor": "#iterating-containers"
+      },
+      {
+        "id": "controlFlow-009",
+        "category": "controlFlow",
+        "severity": "MUST_NOT",
+        "trigger": "iterating arrays",
+        "rule": "Do not use for in to iterate over arrays.",
+        "sourceAnchor": "#iterating-containers"
+      },
+      {
+        "id": "controlFlow-010",
+        "category": "controlFlow",
+        "severity": "MUST",
+        "trigger": "using for-in loops",
+        "rule": "Use Object.prototype.hasOwnProperty in for-in loops.",
+        "sourceAnchor": "#iterating-containers"
+      },
+      {
+        "id": "controlFlow-011",
+        "category": "controlFlow",
+        "severity": "SHOULD",
+        "trigger": "iterating objects",
+        "rule": "Prefer for-of with Object keys values entries over for-in.",
+        "sourceAnchor": "#iterating-containers"
+      },
+      {
+        "id": "controlFlow-012",
+        "category": "controlFlow",
+        "severity": "MUST_NOT",
+        "trigger": "using unnecessary parentheses",
+        "rule": "Do not use unnecessary parentheses around expression following keywords.",
+        "sourceAnchor": "#grouping-parentheses"
+      },
+      {
+        "id": "errorHandling-001",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "instantiating exceptions",
+        "rule": "Always use new Error when instantiating exceptions.",
+        "sourceAnchor": "#instantiate-errors-using-new"
+      },
+      {
+        "id": "errorHandling-002",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "throwing errors",
+        "rule": "Only throw Error types or their subtypes.",
+        "sourceAnchor": "#only-throw-errors"
+      },
+      {
+        "id": "errorHandling-003",
+        "category": "errorHandling",
+        "severity": "SHOULD",
+        "trigger": "catching errors",
+        "rule": "When catching errors assume all thrown errors are instances of Error.",
+        "sourceAnchor": "#catching-and-rethrowing"
+      },
+      {
+        "id": "errorHandling-004",
+        "category": "errorHandling",
+        "severity": "MUST_NOT",
+        "trigger": "catching errors",
+        "rule": "Exception handlers must not defensively handle non-Error types.",
+        "sourceAnchor": "#catching-and-rethrowing"
+      },
+      {
+        "id": "errorHandling-005",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "empty catch blocks",
+        "rule": "Explain reason for empty catch block in comment.",
+        "sourceAnchor": "#empty-catch-blocks"
+      },
+      {
+        "id": "errorHandling-006",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "using switch statements",
+        "rule": "All switch statements must contain default statement group.",
+        "sourceAnchor": "#switch-statements"
+      },
+      {
+        "id": "errorHandling-007",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "using switch statements",
+        "rule": "Default statement group must be last.",
+        "sourceAnchor": "#switch-statements"
+      },
+      {
+        "id": "errorHandling-008",
+        "category": "errorHandling",
+        "severity": "MUST_NOT",
+        "trigger": "switch case fallthrough",
+        "rule": "Non-empty statement groups must not fall through.",
+        "sourceAnchor": "#switch-statements"
+      },
+      {
+        "id": "errorHandling-009",
+        "category": "errorHandling",
+        "severity": "MAY",
+        "trigger": "switch case fallthrough",
+        "rule": "Empty statement groups are allowed to fall through.",
+        "sourceAnchor": "#switch-statements"
+      },
+      {
+        "id": "errorHandling-010",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "equality checks",
+        "rule": "Always use triple equals and not equals.",
+        "sourceAnchor": "#equality-checks"
+      },
+      {
+        "id": "errorHandling-011",
+        "category": "errorHandling",
+        "severity": "MAY",
+        "trigger": "comparing to null",
+        "rule": "Comparisons to literal null may use == and != operators.",
+        "sourceAnchor": "#equality-checks"
+      },
+      {
+        "id": "errorHandling-012",
+        "category": "errorHandling",
+        "severity": "SHOULD_NOT",
+        "trigger": "using type assertions",
+        "rule": "Do not use type and non-nullability assertions without reason.",
+        "sourceAnchor": "#type-and-non-nullability-assertions"
+      },
+      {
+        "id": "errorHandling-013",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "asserting types",
+        "rule": "Explicitly write runtime check to assert type or non-nullability.",
+        "sourceAnchor": "#type-and-non-nullability-assertions"
+      },
+      {
+        "id": "errorHandling-014",
+        "category": "errorHandling",
+        "severity": "SHOULD",
+        "trigger": "using unsafe assertions",
+        "rule": "Add clarification to explain why unsafe assertion is OK.",
+        "sourceAnchor": "#type-and-non-nullability-assertions"
+      },
+      {
+        "id": "errorHandling-015",
+        "category": "errorHandling",
+        "severity": "MAY",
+        "trigger": "obvious type assertions",
+        "rule": "Comments may not be necessary if reasoning is obvious.",
+        "sourceAnchor": "#type-and-non-nullability-assertions"
+      },
+      {
+        "id": "errorHandling-016",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "type assertion syntax",
+        "rule": "Type assertions must use the as syntax.",
+        "sourceAnchor": "#type-assertion-syntax"
+      },
+      {
+        "id": "errorHandling-017",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "double assertions",
+        "rule": "Use unknown as intermediate type for double assertions.",
+        "sourceAnchor": "#double-assertions"
+      },
+      {
+        "id": "errorHandling-018",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "typing object literals",
+        "rule": "Use type annotations instead of type assertions for object literals.",
+        "sourceAnchor": "#type-assertions-and-object-literals"
+      },
+      {
+        "id": "errorHandling-019",
+        "category": "errorHandling",
+        "severity": "MUST",
+        "trigger": "limiting try blocks",
+        "rule": "Limit amount of code inside try block without hurting readability.",
+        "sourceAnchor": "#keep-try-blocks-focused"
+      },
+      {
+        "id": "errorHandling-020",
+        "category": "errorHandling",
+        "severity": "MAY",
+        "trigger": "try blocks in loops",
+        "rule": "Widening try blocks to cover whole loop is ok for performance.",
+        "sourceAnchor": "#keep-try-blocks-focused"
+      },
+      {
+        "id": "languageFeatures-001",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "defining decorators",
+        "rule": "Do not define new decorators.",
+        "sourceAnchor": "#decorators"
+      },
+      {
+        "id": "languageFeatures-002",
+        "category": "languageFeatures",
+        "severity": "MUST",
+        "trigger": "using decorators",
+        "rule": "Only use decorators defined by frameworks.",
+        "sourceAnchor": "#decorators"
+      },
+      {
+        "id": "languageFeatures-003",
+        "category": "languageFeatures",
+        "severity": "MUST",
+        "trigger": "placing decorators",
+        "rule": "Decorator must immediately precede symbol with no empty lines.",
+        "sourceAnchor": "#decorators"
+      },
+      {
+        "id": "languageFeatures-004",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "instantiating wrapper classes",
+        "rule": "TypeScript code must not instantiate wrapper classes for primitives.",
+        "sourceAnchor": "#wrapper-objects-for-primitive-types"
+      },
+      {
+        "id": "languageFeatures-005",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "relying on ASI",
+        "rule": "Do not rely on Automatic Semicolon Insertion.",
+        "sourceAnchor": "#automatic-semicolon-insertion"
+      },
+      {
+        "id": "languageFeatures-006",
+        "category": "languageFeatures",
+        "severity": "MUST",
+        "trigger": "ending statements",
+        "rule": "Explicitly end all statements using semicolon.",
+        "sourceAnchor": "#automatic-semicolon-insertion"
+      },
+      {
+        "id": "languageFeatures-007",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "using const enum",
+        "rule": "Code must not use const enum.",
+        "sourceAnchor": "#const-enum"
+      },
+      {
+        "id": "languageFeatures-008",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "using debugger statements",
+        "rule": "Debugger statements must not be included in production code.",
+        "sourceAnchor": "#debugger-statements"
+      },
+      {
+        "id": "languageFeatures-009",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "using with keyword",
+        "rule": "Do not use the with keyword.",
+        "sourceAnchor": "#with"
+      },
+      {
+        "id": "languageFeatures-010",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "using eval",
+        "rule": "Do not use eval or Function constructor except for code loaders.",
+        "sourceAnchor": "#dynamic-code-evaluation"
+      },
+      {
+        "id": "languageFeatures-011",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "using non-standard features",
+        "rule": "Do not use non-standard ECMAScript or Web Platform features.",
+        "sourceAnchor": "#non-standard-features"
+      },
+      {
+        "id": "languageFeatures-012",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "using deprecated features",
+        "rule": "Do not use features marked deprecated or removed from ECMAScript.",
+        "sourceAnchor": "#non-standard-features"
+      },
+      {
+        "id": "languageFeatures-013",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "using non-standardized features",
+        "rule": "Do not use ECMAScript features not yet standardized.",
+        "sourceAnchor": "#non-standard-features"
+      },
+      {
+        "id": "languageFeatures-014",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "using non-standardized web standards",
+        "rule": "Do not use proposed but not-yet-complete web standards.",
+        "sourceAnchor": "#non-standard-features"
+      },
+      {
+        "id": "languageFeatures-015",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "using language extensions",
+        "rule": "Do not use non-standard language extensions.",
+        "sourceAnchor": "#non-standard-features"
+      },
+      {
+        "id": "languageFeatures-016",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "modifying builtin types",
+        "rule": "Never modify builtin types by adding methods to constructors or prototypes.",
+        "sourceAnchor": "#modifying-builtin-objects"
+      },
+      {
+        "id": "languageFeatures-017",
+        "category": "languageFeatures",
+        "severity": "SHOULD_NOT",
+        "trigger": "depending on libraries",
+        "rule": "Avoid depending on libraries that modify builtin types.",
+        "sourceAnchor": "#modifying-builtin-objects"
+      },
+      {
+        "id": "languageFeatures-018",
+        "category": "languageFeatures",
+        "severity": "MUST_NOT",
+        "trigger": "adding symbols to global object",
+        "rule": "Do not add symbols to global object unless absolutely necessary.",
+        "sourceAnchor": "#modifying-builtin-objects"
+      },
+      {
+        "id": "naming-001",
+        "category": "naming",
+        "severity": "MUST",
+        "trigger": "naming identifiers",
+        "rule": "Identifiers must use only ASCII letters digits underscores and rarely $.",
+        "sourceAnchor": "#identifiers"
+      },
+      {
+        "id": "naming-002",
+        "category": "naming",
+        "severity": "SHOULD",
+        "trigger": "naming identifiers",
+        "rule": "Names should not be decorated with information included in type.",
+        "sourceAnchor": "#naming-style"
+      },
+      {
+        "id": "naming-003",
+        "category": "naming",
+        "severity": "MUST_NOT",
+        "trigger": "naming private properties",
+        "rule": "Do not use trailing or leading underscores for private properties.",
+        "sourceAnchor": "#naming-style"
+      },
+      {
+        "id": "naming-004",
+        "category": "naming",
+        "severity": "MUST_NOT",
+        "trigger": "naming optional parameters",
+        "rule": "Do not use opt_ prefix for optional parameters.",
+        "sourceAnchor": "#naming-style"
+      },
+      {
+        "id": "naming-005",
+        "category": "naming",
+        "severity": "SHOULD",
+        "trigger": "suffixing Observables",
+        "rule": "Suffixing Observables with $ should be consistent within projects.",
+        "sourceAnchor": "#naming-style"
+      },
+      {
+        "id": "naming-006",
+        "category": "naming",
+        "severity": "MUST",
+        "trigger": "naming identifiers",
+        "rule": "Names must be descriptive and clear to new reader.",
+        "sourceAnchor": "#descriptive-names"
+      },
+      {
+        "id": "naming-007",
+        "category": "naming",
+        "severity": "MUST_NOT",
+        "trigger": "using abbreviations",
+        "rule": "Do not use abbreviations ambiguous or unfamiliar to readers outside project.",
+        "sourceAnchor": "#descriptive-names"
+      },
+      {
+        "id": "naming-008",
+        "category": "naming",
+        "severity": "SHOULD",
+        "trigger": "Abbreviations in names",
+        "rule": "Treat abbreviations like acronyms as whole words, use loadHttpUrl not loadHTTPUrl.",
+        "example": {
+          "good": [
+            "loadHttpUrl"
+          ],
+          "bad": [
+            "loadHTTPUrl"
+          ]
+        },
+        "sourceAnchor": "#camel-case"
+      },
+      {
+        "id": "naming-009",
+        "category": "naming",
+        "severity": "SHOULD_NOT",
+        "trigger": "Using $ in identifiers",
+        "rule": "Identifiers should not generally use $ except when required by third-party frameworks.",
+        "sourceAnchor": "#dollar-sign"
+      },
+      {
+        "id": "naming-010",
+        "category": "naming",
+        "severity": "MAY",
+        "trigger": "Type parameter naming",
+        "rule": "Type parameters may use a single upper case character T or UpperCamelCase.",
+        "example": {
+          "good": [
+            "Array<T>",
+            "Array<MyType>"
+          ]
+        },
+        "sourceAnchor": "#type-parameters"
+      },
+      {
+        "id": "naming-011",
+        "category": "naming",
+        "severity": "MAY",
+        "trigger": "Test method names",
+        "rule": "Test method names in xUnit frameworks may use _ separators like testX_whenY_doesZ().",
+        "example": {
+          "good": [
+            "testX_whenY_doesZ()"
+          ]
+        },
+        "sourceAnchor": "#test-names"
+      },
+      {
+        "id": "naming-012",
+        "category": "naming",
+        "severity": "MUST_NOT",
+        "trigger": "Underscore prefix/suffix",
+        "rule": "Identifiers must not use _ as a prefix or suffix, including _ by itself.",
+        "example": {
+          "bad": [
+            "_private",
+            "unused_"
+          ]
+        },
+        "sourceAnchor": "#_-prefixsuffix"
+      },
+      {
+        "id": "naming-013",
+        "category": "naming",
+        "severity": "MUST",
+        "trigger": "Module namespace imports",
+        "rule": "Module namespace imports must use lowerCamelCase while files are snake_case.",
+        "example": {
+          "good": [
+            "import * as fooBar from './foo_bar';"
+          ]
+        },
+        "sourceAnchor": "#imports"
+      },
+      {
+        "id": "naming-014",
+        "category": "naming",
+        "severity": "MAY",
+        "trigger": "CONSTANT_CASE usage",
+        "rule": "CONSTANT_CASE indicates a value is intended not to be changed, may be used for technically mutable values.",
+        "example": {
+          "good": [
+            "const UNIT_SUFFIXES = {'milliseconds': 'ms', 'seconds': 's'};"
+          ]
+        },
+        "sourceAnchor": "#constants"
+      },
+      {
+        "id": "naming-015",
+        "category": "naming",
+        "severity": "MUST",
+        "trigger": "Local variable constants",
+        "rule": "Values that can be instantiated more than once must use lowerCamelCase, not CONSTANT_CASE.",
+        "sourceAnchor": "#constants"
+      },
+      {
+        "id": "naming-016",
+        "category": "naming",
+        "severity": "MUST",
+        "trigger": "Local-scope alias format",
+        "rule": "Local aliases must match the existing naming and format of the source identifier.",
+        "example": {
+          "good": [
+            "const {BrewStateEnum} = SomeType;",
+            "readonly BrewStateEnum = BrewStateEnum;"
+          ]
+        },
+        "sourceAnchor": "#aliases"
+      },
+      {
+        "id": "typeAnnotations-001",
+        "category": "typeAnnotations",
+        "severity": "MAY",
+        "trigger": "Type inference usage",
+        "rule": "Code may rely on type inference for all type expressions including variables, fields, return types.",
+        "example": {
+          "good": [
+            "const x = 15;"
+          ]
+        },
+        "sourceAnchor": "#type-inference"
+      },
+      {
+        "id": "typeAnnotations-002",
+        "category": "typeAnnotations",
+        "severity": "MUST_NOT",
+        "trigger": "Trivial type annotations",
+        "rule": "Leave out type annotations for trivially inferred types like string, number, boolean, RegExp literals.",
+        "example": {
+          "bad": [
+            "const x: boolean = true;",
+            "const x: Set<string> = new Set();"
+          ]
+        },
+        "sourceAnchor": "#type-inference"
+      },
+      {
+        "id": "typeAnnotations-003",
+        "category": "typeAnnotations",
+        "severity": "MUST",
+        "trigger": "Empty generic types",
+        "rule": "Explicitly specify types for empty generic types to prevent inference as unknown.",
+        "example": {
+          "good": [
+            "const x = new Set<string>();"
+          ]
+        },
+        "sourceAnchor": "#type-inference"
+      },
+      {
+        "id": "typeAnnotations-004",
+        "category": "typeAnnotations",
+        "severity": "MAY",
+        "trigger": "Return type annotations",
+        "rule": "Whether to include return type annotations is up to the code author, not a general requirement.",
+        "sourceAnchor": "#return-types"
+      },
+      {
+        "id": "typeAnnotations-005",
+        "category": "typeAnnotations",
+        "severity": "MUST_NOT",
+        "trigger": "Nullable type aliases",
+        "rule": "Type aliases must not include |null or |undefined, only add when the alias is actually used.",
+        "example": {
+          "bad": [
+            "type CoffeeResponse = Latte|Americano|undefined;"
+          ],
+          "good": [
+            "type CoffeeResponse = Latte|Americano;",
+            "getLatte(): CoffeeResponse|undefined"
+          ]
+        },
+        "sourceAnchor": "#nullableundefined-type-aliases"
+      },
+      {
+        "id": "typeAnnotations-006",
+        "category": "typeAnnotations",
+        "severity": "SHOULD",
+        "trigger": "Optional vs |undefined",
+        "rule": "Use optional fields and parameters with ? rather than a |undefined type.",
+        "example": {
+          "good": [
+            "interface CoffeeOrder { sugarCubes: number; milk?: Whole|LowFat|HalfHalf; }"
+          ]
+        },
+        "sourceAnchor": "#prefer-optional-over-undefined"
+      },
+      {
+        "id": "typeAnnotations-007",
+        "category": "typeAnnotations",
+        "severity": "MUST",
+        "trigger": "Structural type declarations",
+        "rule": "When providing a structural implementation, explicitly include the type at the declaration.",
+        "example": {
+          "good": [
+            "const foo: Foo = { a: 123, b: 'abc' }"
+          ],
+          "bad": [
+            "const badFoo = { a: 123, b: 'abc' }"
+          ]
+        },
+        "sourceAnchor": "#use-structural-types"
+      },
+      {
+        "id": "typeAnnotations-008",
+        "category": "typeAnnotations",
+        "severity": "SHOULD",
+        "trigger": "Object type declarations",
+        "rule": "Use interfaces to define structural types for objects, not classes or type aliases.",
+        "example": {
+          "good": [
+            "interface User { firstName: string; lastName: string; }"
+          ],
+          "bad": [
+            "type User = { firstName: string, lastName: string }"
+          ]
+        },
+        "sourceAnchor": "#use-structural-types"
+      },
+      {
+        "id": "typeAnnotations-009",
+        "category": "typeAnnotations",
+        "severity": "SHOULD",
+        "trigger": "Interface vs type alias",
+        "rule": "When declaring types for objects, use interfaces instead of type alias for object literal.",
+        "example": {
+          "good": [
+            "interface User { firstName: string; lastName: string; }"
+          ],
+          "bad": [
+            "type User = { firstName: string, lastName: string }"
+          ]
+        },
+        "sourceAnchor": "#prefer-interfaces-over-type-literal-aliases"
+      },
+      {
+        "id": "typeAnnotations-010",
+        "category": "typeAnnotations",
+        "severity": "SHOULD",
+        "trigger": "Array type syntax",
+        "rule": "For simple types use T[] or readonly T[] rather than Array<T> or ReadonlyArray<T>.",
+        "example": {
+          "good": [
+            "let a: string[];",
+            "let b: readonly string[];"
+          ],
+          "bad": [
+            "let a: Array<string>;",
+            "let b: ReadonlyArray<string>;"
+          ]
+        },
+        "sourceAnchor": "#arrayt-type"
+      },
+      {
+        "id": "typeAnnotations-011",
+        "category": "typeAnnotations",
+        "severity": "SHOULD",
+        "trigger": "Complex array types",
+        "rule": "For complex types use the longer form Array<T> instead of syntax sugar.",
+        "example": {
+          "good": [
+            "let e: Array<{n: number, s: string}>;"
+          ],
+          "bad": [
+            "let e: {n: number, s: string}[];"
+          ]
+        },
+        "sourceAnchor": "#arrayt-type"
+      },
+      {
+        "id": "typeAnnotations-012",
+        "category": "typeAnnotations",
+        "severity": "SHOULD",
+        "trigger": "Index signature key label",
+        "rule": "Provide a meaningful label for the key in index signatures, not just 'key'.",
+        "example": {
+          "good": [
+            "const users: {[userName: string]: number}"
+          ],
+          "bad": [
+            "const users: {[key: string]: number}"
+          ]
+        },
+        "sourceAnchor": "#indexable-types--index-signatures-key-string-t"
+      },
+      {
+        "id": "typeAnnotations-013",
+        "category": "typeAnnotations",
+        "severity": "SHOULD",
+        "trigger": "Mapped and conditional types",
+        "rule": "Always use the simplest type construct, a little repetition is cheaper than complex types.",
+        "sourceAnchor": "#mapped-and-conditional-types"
+      },
+      {
+        "id": "typeAnnotations-014",
+        "category": "typeAnnotations",
+        "severity": "SHOULD_NOT",
+        "trigger": "Using any type",
+        "rule": "Consider not using any, prefer providing a more specific type, using unknown, or documenting why.",
+        "sourceAnchor": "#any-type"
+      },
+      {
+        "id": "typeAnnotations-015",
+        "category": "typeAnnotations",
+        "severity": "SHOULD",
+        "trigger": "Unknown vs any",
+        "rule": "Use unknown instead of any when you need to express that a type is unknown for safety.",
+        "example": {
+          "good": [
+            "const val: unknown = value;"
+          ],
+          "bad": [
+            "const danger: any = value; danger.whoops();"
+          ]
+        },
+        "sourceAnchor": "#using-unknown-over-any"
+      },
+      {
+        "id": "typeAnnotations-016",
+        "category": "typeAnnotations",
+        "severity": "SHOULD_NOT",
+        "trigger": "Empty object type {}",
+        "rule": "Should not use {} for most use cases, prefer unknown, Record<string, T>, or object.",
+        "sourceAnchor": "#-type"
+      },
+      {
+        "id": "typeAnnotations-017",
+        "category": "typeAnnotations",
+        "severity": "SHOULD",
+        "trigger": "Pair types",
+        "rule": "If creating a Pair type, use a tuple type instead of an interface.",
+        "example": {
+          "good": [
+            "function splitInHalf(input: string): [string, string]"
+          ],
+          "bad": [
+            "interface Pair { first: string; second: string; }"
+          ]
+        },
+        "sourceAnchor": "#tuple-types"
+      },
+      {
+        "id": "typeAnnotations-018",
+        "category": "typeAnnotations",
+        "severity": "MUST_NOT",
+        "trigger": "Wrapper types",
+        "rule": "Never use String, Boolean, Number wrapper types, always use lowercase primitives.",
+        "example": {
+          "good": [
+            "string",
+            "boolean",
+            "number"
+          ],
+          "bad": [
+            "String",
+            "Boolean",
+            "Number"
+          ]
+        },
+        "sourceAnchor": "#wrapper-types"
+      },
+      {
+        "id": "typeAnnotations-019",
+        "category": "typeAnnotations",
+        "severity": "MUST_NOT",
+        "trigger": "Wrapper constructors",
+        "rule": "Never invoke wrapper types as constructors with new.",
+        "sourceAnchor": "#wrapper-types"
+      },
+      {
+        "id": "typeAnnotations-020",
+        "category": "typeAnnotations",
+        "severity": "SHOULD_NOT",
+        "trigger": "Return type only generics",
+        "rule": "Avoid creating APIs with return type only generics, always specify generics explicitly when using them.",
+        "sourceAnchor": "#return-type-only-generics"
+      },
+      {
+        "id": "typeAnnotations-021",
+        "category": "typeAnnotations",
+        "severity": "MUST_NOT",
+        "trigger": "Type suppress comments",
+        "rule": "Do not use @ts-ignore, @ts-expect-error, or @ts-nocheck comments.",
+        "sourceAnchor": "#ts-ignore"
+      },
+      {
+        "id": "comments-001",
+        "category": "comments",
+        "severity": "SHOULD",
+        "trigger": "Comment type selection",
+        "rule": "Use JSDoc for documentation comments users should read, use // for implementation comments.",
+        "sourceAnchor": "#jsdoc-versus-comments"
+      },
+      {
+        "id": "comments-002",
+        "category": "comments",
+        "severity": "MUST",
+        "trigger": "Multi-line comments",
+        "rule": "Multi-line comments must use multiple single-line comments // not block comment style /* */.",
+        "example": {
+          "good": [
+            "// This is",
+            "// fine"
+          ],
+          "bad": [
+            "/* This should",
+            " * use multiple",
+            " * single-line comments */"
+          ]
+        },
+        "sourceAnchor": "#multi-line-comments"
+      },
+      {
+        "id": "comments-003",
+        "category": "comments",
+        "severity": "MUST_NOT",
+        "trigger": "Comment boxes",
+        "rule": "Comments are not enclosed in boxes drawn with asterisks or other characters.",
+        "sourceAnchor": "#multi-line-comments"
+      },
+      {
+        "id": "jsdoc-001",
+        "category": "jsdoc",
+        "severity": "MUST",
+        "trigger": "JSDoc formatting",
+        "rule": "Single-line JSDoc overflowing to multiple lines must use multi-line style with /** and */ on own lines.",
+        "example": {
+          "good": [
+            "/**",
+            " * Multiple lines of JSDoc text are written here,",
+            " * wrapped normally.",
+            " */"
+          ]
+        },
+        "sourceAnchor": "#jsdoc-general-form"
+      },
+      {
+        "id": "jsdoc-002",
+        "category": "jsdoc",
+        "severity": "MUST",
+        "trigger": "JSDoc well-formedness",
+        "rule": "JSDoc comments must be well-formed as tools extract metadata for validation and optimization.",
+        "sourceAnchor": "#jsdoc-general-form"
+      },
+      {
+        "id": "jsdoc-003",
+        "category": "jsdoc",
+        "severity": "SHOULD",
+        "trigger": "JSDoc Markdown",
+        "rule": "JSDoc is written in Markdown, use Markdown lists instead of plain text indentation.",
+        "example": {
+          "good": [
+            "/**",
+            " * Computes weight based on three factors:",
+            " *",
+            " * - items sent",
+            " * - items received",
+            " */"
+          ],
+          "bad": [
+            "/**",
+            " * Computes weight based on three factors:",
+            " *   items sent",
+            " *   items received",
+            " */"
+          ]
+        },
+        "sourceAnchor": "#markdown"
+      },
+      {
+        "id": "jsdoc-004",
+        "category": "jsdoc",
+        "severity": "MUST",
+        "trigger": "JSDoc tag placement",
+        "rule": "Most JSDoc tags must occupy their own line with the tag at the beginning of the line.",
+        "example": {
+          "good": [
+            "@param left A description.",
+            "@param right A description."
+          ],
+          "bad": [
+            "@param left @param right"
+          ]
+        },
+        "sourceAnchor": "#jsdoc-tags"
+      },
+      {
+        "id": "jsdoc-005",
+        "category": "jsdoc",
+        "severity": "SHOULD",
+        "trigger": "JSDoc line wrapping",
+        "rule": "Line-wrapped block tags are indented four spaces, horizontal alignment of description is discouraged.",
+        "example": {
+          "good": [
+            "@param foo This is a param with a particularly long description that just",
+            "    doesn't fit on one line."
+          ]
+        },
+        "sourceAnchor": "#line-wrapping"
+      },
+      {
+        "id": "jsdoc-006",
+        "category": "jsdoc",
+        "severity": "MUST_NOT",
+        "trigger": "@desc/@fileoverview indentation",
+        "rule": "Do not indent when wrapping a @desc or @fileoverview description.",
+        "sourceAnchor": "#line-wrapping"
+      },
+      {
+        "id": "jsdoc-007",
+        "category": "jsdoc",
+        "severity": "SHOULD",
+        "trigger": "Top-level exports documentation",
+        "rule": "Document all top-level exports of modules with JSDoc comments, except tooling-only symbols.",
+        "sourceAnchor": "#document-all-top-level-exports-of-modules"
+      },
+      {
+        "id": "jsdoc-008",
+        "category": "jsdoc",
+        "severity": "SHOULD",
+        "trigger": "Class JSDoc",
+        "rule": "Class JSDoc should provide enough information to know how and when to use the class.",
+        "sourceAnchor": "#class-comments"
+      },
+      {
+        "id": "jsdoc-009",
+        "category": "jsdoc",
+        "severity": "MAY",
+        "trigger": "Method descriptions",
+        "rule": "Method, parameter, and return descriptions may be omitted if obvious from JSDoc or signature.",
+        "sourceAnchor": "#method-and-function-comments"
+      },
+      {
+        "id": "jsdoc-010",
+        "category": "jsdoc",
+        "severity": "SHOULD",
+        "trigger": "Method description style",
+        "rule": "Method descriptions begin with a verb phrase in third person, not imperative sentence.",
+        "sourceAnchor": "#method-and-function-comments"
+      },
+      {
+        "id": "jsdoc-011",
+        "category": "jsdoc",
+        "severity": "SHOULD",
+        "trigger": "Parameter property documentation",
+        "rule": "Document parameter properties using JSDoc @param annotation, not separate field comments.",
+        "example": {
+          "good": [
+            "/**",
+            " * @param percolator The percolator used for brewing.",
+            " * @param beans The beans to brew.",
+            " */",
+            "constructor(",
+            "  private readonly percolator: Percolator,",
+            "  private readonly beans: CoffeeBean[]) {}"
+          ]
+        },
+        "sourceAnchor": "#parameter-property-comments"
+      },
+      {
+        "id": "jsdoc-012",
+        "category": "jsdoc",
+        "severity": "MUST_NOT",
+        "trigger": "JSDoc type annotations",
+        "rule": "Do not declare types in @param or @return blocks or write @implements, @enum, @private in TypeScript.",
+        "sourceAnchor": "#jsdoc-type-annotations"
+      },
+      {
+        "id": "jsdoc-013",
+        "category": "jsdoc",
+        "severity": "MUST_NOT",
+        "trigger": "Restating parameter names",
+        "rule": "Avoid comments that just restate the parameter name and type without adding information.",
+        "example": {
+          "bad": [
+            "/** @param fooBarService The Bar service for the Foo application. */"
+          ]
+        },
+        "sourceAnchor": "#make-comments-that-actually-add-information"
+      },
+      {
+        "id": "jsdoc-014",
+        "category": "jsdoc",
+        "severity": "MAY",
+        "trigger": "Omitting @param/@return",
+        "rule": "@param and @return lines may be omitted when they don't add information beyond the name and type.",
+        "sourceAnchor": "#make-comments-that-actually-add-information"
+      },
+      {
+        "id": "jsdoc-015",
+        "category": "jsdoc",
+        "severity": "SHOULD",
+        "trigger": "Parameter name comments",
+        "rule": "Use parameter name comments when method name and value don't convey meaning, place before value with =.",
+        "example": {
+          "good": [
+            "someFunction(obviousParam, /* shouldRender= */ true, /* name= */ 'hello');"
+          ]
+        },
+        "sourceAnchor": "#comments-when-calling-a-function"
+      },
+      {
+        "id": "jsdoc-016",
+        "category": "jsdoc",
+        "severity": "MAY",
+        "trigger": "Legacy parameter comments",
+        "rule": "Existing code may use legacy parameter name comment style after the value without = for consistency.",
+        "example": {
+          "good": [
+            "someFunction(obviousParam, true /* shouldRender */, 'hello' /* name */);"
+          ]
+        },
+        "sourceAnchor": "#comments-when-calling-a-function"
+      },
+      {
+        "id": "jsdoc-017",
+        "category": "jsdoc",
+        "severity": "MUST",
+        "trigger": "JSDoc before decorators",
+        "rule": "Write JSDoc before decorators like @Component, not between decorator and decorated statement.",
+        "example": {
+          "good": [
+            "/** Component that prints \"bar\". */",
+            "@Component({",
+            "  selector: 'foo',",
+            "  template: 'bar',",
+            "})",
+            "export class FooComponent {}"
+          ],
+          "bad": [
+            "@Component({",
+            "  selector: 'foo',",
+            "  template: 'bar',",
+            "})",
+            "/** Component that prints \"bar\". */",
+            "export class FooComponent {}"
+          ]
+        },
+        "sourceAnchor": "#place-documentation-prior-to-decorators"
+      },
+      {
+        "id": "misc-001",
+        "category": "misc",
+        "severity": "MUST",
+        "trigger": "Brand new files",
+        "rule": "Brand new files must use Google Style regardless of style choices of other files in the package.",
+        "sourceAnchor": "#consistency"
+      },
+      {
+        "id": "misc-002",
+        "category": "misc",
+        "severity": "SHOULD",
+        "trigger": "Adding to non-style files",
+        "rule": "When adding new code to a file not in Google Style, reformatting existing code first is recommended.",
+        "sourceAnchor": "#consistency"
+      },
+      {
+        "id": "misc-003",
+        "category": "misc",
+        "severity": "MUST_NOT",
+        "trigger": "Style violations in new code",
+        "rule": "New code must not violate the style guide even when adding to non-style files.",
+        "sourceAnchor": "#consistency"
+      },
+      {
+        "id": "misc-004",
+        "category": "misc",
+        "severity": "MAY",
+        "trigger": "Reformatting existing code",
+        "rule": "It is not required to change all existing code to meet current style guidelines.",
+        "sourceAnchor": "#reformatting-existing-code"
+      },
+      {
+        "id": "misc-005",
+        "category": "misc",
+        "severity": "SHOULD",
+        "trigger": "Opportunistic style fixes",
+        "rule": "Be careful not to allow opportunistic style fixes to muddle the focus of a change list.",
+        "sourceAnchor": "#reformatting-existing-code"
+      },
+      {
+        "id": "misc-006",
+        "category": "misc",
+        "severity": "MUST",
+        "trigger": "Deprecation annotations",
+        "rule": "Mark deprecated methods, classes or interfaces with @deprecated JSDoc annotation including fix directions.",
+        "sourceAnchor": "#deprecation"
+      },
+      {
+        "id": "misc-007",
+        "category": "misc",
+        "severity": "MAY",
+        "trigger": "Generated code style",
+        "rule": "Source code generated by build process is not required to be in Google Style.",
+        "sourceAnchor": "#generated-code-mostly-exempt"
+      },
+      {
+        "id": "misc-008",
+        "category": "misc",
+        "severity": "MUST",
+        "trigger": "Generated identifier naming",
+        "rule": "Generated identifiers referenced from hand-written code must follow naming requirements.",
+        "sourceAnchor": "#generated-code-mostly-exempt"
+      },
+      {
+        "id": "misc-009",
+        "category": "misc",
+        "severity": "MAY",
+        "trigger": "Generated identifier underscores",
+        "rule": "Generated identifiers may contain underscores as a special exception to avoid conflicts.",
+        "sourceAnchor": "#generated-code-mostly-exempt"
+      }
+    ]
+  }
+}

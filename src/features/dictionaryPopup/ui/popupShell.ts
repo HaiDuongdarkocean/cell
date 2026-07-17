@@ -4,6 +4,14 @@
 // Content-script isolated world — vanilla DOM, no React (same as subtitleUI.ts).
 // Shadow DOM isolates popup CSS from page CSS.
 //
+// Single-source tokens + button classes: imported from shared/styles via ?raw,
+// same files React uses. No --dp-* duplicates — uses --color-* directly.
+
+import tokensCss from '@/shared/styles/tokens.css?raw';
+import componentsCss from '@/shared/styles/components.css?raw';
+import { getStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
+//
 // Layout:
 // ┌─────────────────────────────────┐
 // │ Header (term + reading + freq)  │  ← Task 4.3
@@ -182,6 +190,7 @@ export class PopupShell {
   private host: HTMLDivElement | null = null;
   private shadow: ShadowRoot | null = null;
   private container: HTMLDivElement | null = null;
+  private contentEl: HTMLDivElement | null = null;
   private resizeHandle: HTMLDivElement | null = null;
   private size: PopupSize;
   private isResizing = false;
@@ -190,6 +199,7 @@ export class PopupShell {
   private resizeStartWidth = 0;
   private resizeStartHeight = 0;
   private lastAnchor: { top: number; left: number; right: number; bottom: number } | null = null;
+  private themeCleanup: (() => void) | null = null;
   private readonly onDismiss: () => void;
   private readonly onResizeComplete: (size: PopupSize) => void;
   private readonly boundKeyDown: (e: KeyboardEvent) => void;
@@ -239,31 +249,62 @@ export class PopupShell {
     // Shadow DOM — isolates CSS from page.
     this.shadow = this.host.attachShadow({ mode: 'open' });
 
-    // Inject CSS variables for dark/light mode (Shadow DOM doesn't inherit
-    // from host page). Uses prefers-color-scheme media query.
+    // Inject shared design-system tokens + button classes (single source with
+    // React surfaces) + popup-specific CSS. Shadow DOM doesn't inherit from
+    // host page, so we inject tokens.css + components.css via ?raw import.
+    // tokens.css defines :root + [data-theme="dark"] — inside Shadow DOM we
+    // remap :root to :host so tokens apply within the shadow boundary.
     const styleEl = document.createElement('style');
-    styleEl.textContent = `
-      :host {
-        --dp-bg: #ffffff;
-        --dp-text: #1e293b;
-        --dp-border: #cbd5e1;
-        --dp-muted: #64748b;
-        --dp-primary: #3b82f6;
-        --dp-primary-subtle: rgba(59,130,246,0.1);
-        --dp-badge-bg: #f1f5f9;
-        --dp-surface-hover: rgba(0,0,0,0.04);
+    styleEl.textContent = tokensCss
+      .replace(/:root/g, ':host')
+      + componentsCss
+      + `
+      /* Popup-specific CSS — BEM: def-check block (checkbox dot pattern, Option A) */
+      .def-item { transition: background 0.15s ease; }
+      .def-check {
+        position: absolute; top: 0; left: 0; bottom: 0; width: 28px;
+        cursor: pointer; box-sizing: border-box;
+        display: flex; align-items: center; justify-content: center;
       }
-      @media (prefers-color-scheme: dark) {
-        :host {
-          --dp-bg: #1e293b;
-          --dp-text: #e2e8f0;
-          --dp-border: #334155;
-          --dp-muted: #94a3b8;
-          --dp-primary: #60a5fa;
-          --dp-primary-subtle: rgba(96,165,250,0.15);
-          --dp-badge-bg: #334155;
-          --dp-surface-hover: rgba(255,255,255,0.06);
-        }
+      .def-check__dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--color-border);
+        display: inline-block;
+        transition: opacity 0.15s ease;
+      }
+      .def-check__box {
+        width: 16px; height: 16px; border-radius: 4px;
+        border: 1.5px solid var(--color-primary);
+        background: transparent;
+        display: none; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .def-check__tick {
+        width: 10px; height: 10px;
+        display: none;
+      }
+      /* Show checkbox on hover — applies to both def-item and audio-item */
+      .def-item:hover .def-check__dot,
+      .audio-item:hover .def-check__dot { display: none; }
+      .def-item:hover .def-check__box,
+      .audio-item:hover .def-check__box { display: flex; }
+      .def-item:hover .def-check__tick,
+      .audio-item:hover .def-check__tick { display: inline-block; }
+      /* When checked, always show checkbox (Option A) */
+      .def-check--checked .def-check__dot { display: none; }
+      .def-check--checked .def-check__box {
+        display: flex;
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+      }
+      .def-check--checked .def-check__tick { display: inline-block; }
+      /* Visually hidden input — still accessible via label */
+      .def-check__input {
+        position: absolute; opacity: 0; width: 0; height: 0;
+        pointer-events: none;
+      }
+      .def-check__input:focus-visible + .def-check__box {
+        outline: 2px solid var(--color-primary); outline-offset: 2px;
       }
       /* Hide scrollbar but keep scrollable. */
       ::-webkit-scrollbar { display: none; }
@@ -271,7 +312,9 @@ export class PopupShell {
     `;
     this.shadow.appendChild(styleEl);
 
-    // Container — the visible popup.
+    // Container — the visible popup shell. Does NOT scroll itself; an inner
+    // contentEl handles scrolling so the resize handle (a sibling of contentEl)
+    // stays pinned at the bottom-right corner instead of scrolling with content.
     this.container = document.createElement('div');
     this.container.setAttribute('data-dp-popup', '');
     this.container.style.position = 'fixed';
@@ -281,13 +324,13 @@ export class PopupShell {
     this.container.style.overflow = 'hidden';
     this.container.style.display = 'flex';
     this.container.style.flexDirection = 'column';
-    this.container.style.borderRadius = '10px';
-    this.container.style.border = '1px solid var(--dp-border, #cbd5e1)';
-    this.container.style.background = 'var(--dp-bg, #ffffff)';
+    this.container.style.borderRadius = 'var(--radius-lg, 10px)';
+    this.container.style.border = '1px solid var(--color-border)';
+    this.container.style.background = 'var(--color-background)';
     this.container.style.boxShadow = '0 4px 24px rgba(0,0,0,0.15)';
-    this.container.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-    this.container.style.fontSize = '14px';
-    this.container.style.color = 'var(--dp-text, #1e293b)';
+    this.container.style.fontFamily = 'var(--font-family, system-ui, -apple-system, sans-serif)';
+    this.container.style.fontSize = 'var(--font-size-base, 14px)';
+    this.container.style.color = 'var(--color-text)';
     // user-select is inherited — fullscreen video containers often set
     // user-select:none, which Shadow DOM inherits. Force text so definitions
     // are selectable.
@@ -295,7 +338,23 @@ export class PopupShell {
     this.container.style.webkitUserSelect = 'text';
     this.shadow.appendChild(this.container);
 
-    // Resize handle (bottom-right corner) — diagonal-lines icon, resize both width & height.
+    // Theme: set data-theme on container so [data-theme="dark"] selectors in
+    // tokens.css apply inside Shadow DOM. Sync initial from prefers-color-scheme
+    // to avoid FOUC; async-correct from chrome.storage.local.themeMode.
+    // Listens to storage.onChanged + prefers-color-scheme for real-time switching.
+    this.initTheme();
+    // Inner scroll wrapper — content renders here, this is what scrolls.
+    this.contentEl = document.createElement('div');
+    this.contentEl.setAttribute('data-dp-content', '');
+    this.contentEl.style.flex = '1 1 auto';
+    this.contentEl.style.overflowY = 'auto';
+    this.contentEl.style.display = 'flex';
+    this.contentEl.style.flexDirection = 'column';
+    this.contentEl.style.minHeight = '0'; // allow flex child to shrink & scroll
+    this.container.appendChild(this.contentEl);
+
+    // Resize handle (bottom-right corner) — sibling of contentEl, NOT inside
+    // the scroll wrapper, so it stays pinned at the shell's bottom-right.
     this.resizeHandle = document.createElement('div');
     this.resizeHandle.setAttribute('data-dp-resize', '');
     this.resizeHandle.style.position = 'absolute';
@@ -309,15 +368,17 @@ export class PopupShell {
     this.resizeHandle.style.display = 'flex';
     this.resizeHandle.style.alignItems = 'center';
     this.resizeHandle.style.justifyContent = 'center';
-    this.resizeHandle.style.color = 'var(--dp-muted, #94a3b8)';
+    this.resizeHandle.style.color = 'var(--color-text-muted)';
     this.resizeHandle.style.borderBottomRightRadius = '10px';
     this.resizeHandle.innerHTML = RESIZE_ICON_SVG;
-    this.container.style.position = 'fixed';
     this.container.appendChild(this.resizeHandle);
     this.resizeHandle.addEventListener('mousedown', this.boundResizeStart);
 
     // Dismiss listeners.
-    document.addEventListener('keydown', this.boundKeyDown);
+    // keydown uses capture:true so we intercept Esc before the browser's
+    // fullscreen-exit handler (which also listens on capture). Without this,
+    // Esc exits fullscreen first and the popup only closes on the second Esc.
+    document.addEventListener('keydown', this.boundKeyDown, true);
     document.addEventListener('mousedown', this.boundClickOutside, true); // capture — check before target
     // Re-parent host when fullscreen changes (host must live inside fullscreen element).
     document.addEventListener('fullscreenchange', this.boundFullscreenChange);
@@ -365,16 +426,17 @@ export class PopupShell {
     return this.shadow;
   }
 
-  /** Get the container element (for content rendering). */
+  /** Get the content element (for content rendering). This is the inner
+   *  scroll wrapper, NOT the outer shell — the resize handle lives on the
+   *  shell as a sibling, so clearing this element leaves the handle intact. */
   getContainer(): HTMLDivElement | null {
-    return this.container;
+    return this.contentEl;
   }
 
-  /** Re-append resize handle after clearContainer wiped it. */
+  /** No-op kept for backward compat — the resize handle is now a sibling of
+   *  the scroll wrapper, so clearContainer on contentEl no longer wipes it. */
   reAppendResizeHandle(): void {
-    if (this.container && this.resizeHandle) {
-      this.container.appendChild(this.resizeHandle);
-    }
+    /* intentionally empty — handle is not a child of contentEl */
   }
 
   /** Update popup size. */
@@ -386,23 +448,79 @@ export class PopupShell {
     }
   }
 
-  /** Show the popup. */
+  /** Show the popup. Locks Escape key via Keyboard Lock API when in
+   *  fullscreen so Chromium's browser process doesn't intercept Esc
+   *  (which exits fullscreen before our keydown handler can close the popup). */
   show(): void {
     if (this.container) {
       this.container.style.display = 'flex';
     }
+    // ponytail: Keyboard Lock API requires fullscreen + user gesture.
+    // show() is called from a click handler (user gesture active).
+    // If lock fails (unsupported/non-fullscreen), Esc still works —
+    // it just exits fullscreen first, then closes popup on 2nd Esc.
+    const kb = (navigator as { keyboard?: { lock: (keys: string[]) => Promise<void>; unlock: () => void } }).keyboard;
+    if (document.fullscreenElement && kb) {
+      void kb.lock(['Escape']).catch(() => {});
+    }
   }
 
-  /** Hide the popup (without unmounting). */
+  /** Hide the popup. Unlocks Escape key so browser default Esc
+   *  (exit fullscreen) works again after popup closes. */
   hide(): void {
     if (this.container) {
       this.container.style.display = 'none';
     }
+    const kb = (navigator as { keyboard?: { lock: (keys: string[]) => Promise<void>; unlock: () => void } }).keyboard;
+    if (kb) {
+      try { kb.unlock(); } catch { /* not locked */ }
+    }
+  }
+
+  /** Initialize theme detection + listeners. Called once in mount(). */
+  private initTheme(): void {
+    if (!this.container) return;
+
+    // Sync initial — prefers-color-scheme avoids FOUC for 'system' mode users.
+    const syncDefault = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    this.container.setAttribute('data-theme', syncDefault);
+
+    // Async-correct from storage.
+    this.refreshTheme();
+
+    // Re-resolve when themeMode changes in storage (user toggled in settings).
+    const onThemeChange = (changes: Record<string, chrome.storage.StorageChange>, area: string): void => {
+      if (area !== 'local') return;
+      if (STORAGE_KEYS.THEME_MODE in changes) this.refreshTheme();
+    };
+    onStorageChanged(onThemeChange);
+
+    // Re-resolve when OS theme changes (matters when mode='system').
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const onSystemChange = (): void => this.refreshTheme();
+    mql.addEventListener('change', onSystemChange);
+
+    this.themeCleanup = (): void => {
+      removeOnStorageChangedListener(onThemeChange);
+      mql.removeEventListener('change', onSystemChange);
+    };
+  }
+
+  /** Read themeMode from storage, resolve system mode, set data-theme on container. */
+  private async refreshTheme(): Promise<void> {
+    if (!this.container) return;
+    const data = await getStorage<Record<string, unknown>>(STORAGE_KEYS.THEME_MODE);
+    if (!this.container) return; // re-check after await — destroy() may have nulled it
+    const mode = data[STORAGE_KEYS.THEME_MODE] as 'light' | 'dark' | 'system' | undefined;
+    const resolved = mode === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : (mode ?? 'dark'); // DEFAULT_THEME_MODE = 'dark'
+    this.container.setAttribute('data-theme', resolved);
   }
 
   /** Unmount the popup + remove all listeners. */
   destroy(): void {
-    document.removeEventListener('keydown', this.boundKeyDown);
+    document.removeEventListener('keydown', this.boundKeyDown, true);
     document.removeEventListener('mousedown', this.boundClickOutside, true);
     document.removeEventListener('fullscreenchange', this.boundFullscreenChange);
     if (this.resizeHandle) {
@@ -410,12 +528,15 @@ export class PopupShell {
     }
     document.removeEventListener('mousemove', this.boundResizeMove);
     document.removeEventListener('mouseup', this.boundResizeEnd);
+    this.themeCleanup?.();
+    this.themeCleanup = null;
     if (this.host && this.host.parentNode) {
       this.host.parentNode.removeChild(this.host);
     }
     this.host = null;
     this.shadow = null;
     this.container = null;
+    this.contentEl = null;
     this.resizeHandle = null;
   }
 
@@ -430,6 +551,7 @@ export class PopupShell {
 
   private onKeyDown(e: KeyboardEvent): void {
     if (e.key === 'Escape') {
+      e.preventDefault();
       e.stopPropagation();
       this.onDismiss();
     }
