@@ -13,6 +13,7 @@
 import { addNote, storeMediaFile, type AnkiNote, type FetchFn } from '@/features/cardCreator/service/ankiConnectClient';
 import type { QuickAddPayload, QuickAddResponse, QuickAddFieldError } from '../types';
 import type { CardCreatorSettings } from '@/entities/settings/types';
+import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { buildAnkiNoteFields } from './quickAddAssembler';
 
 /** Default fetch implementation — uses global fetch. */
@@ -159,7 +160,7 @@ async function fetchAndStoreMedia(
   // Media fetch uses the real fetch API (not FetchFn — which is a minimal
   // interface for AnkiConnect JSON only). ponytail: if media fetch needs
   // testing, inject a separate mediaFetchFn.
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
   if (!response.ok) {
     throw new Error(`Media fetch failed: ${response.status} ${url}`);
   }

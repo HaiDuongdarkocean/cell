@@ -6,6 +6,7 @@
  * reachable from a Chrome MV3 service worker.
  */
 import type { AudioItem } from '../types';
+import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import { scoreAudioByAccent } from './forvoAudioService';
 
 interface CommonsSearchResult {
@@ -106,7 +107,7 @@ export function isLinguaLibreAudioFilename(filename: string, term: string, iso63
 
 /** Fetch file info (direct URL + user) for a Commons search result. */
 async function fetchCommonsFileInfo(title: string): Promise<{ url: string; user: string; title: string } | null> {
-  const response = await fetch(buildCommonsFileInfoUrl(title), {
+  const response = await fetchWithTimeout(buildCommonsFileInfoUrl(title), {
     headers: { Accept: 'application/json' },
   });
   if (!response.ok) return null;
@@ -126,7 +127,7 @@ async function searchCommonsAudio(
   labelFn: (filename: string, user: string) => string,
   sourcePrefix: string,
 ): Promise<AudioItem[]> {
-  const response = await fetch(searchUrl, {
+  const response = await fetchWithTimeout(searchUrl, {
     headers: { Accept: 'application/json' },
   });
   if (!response.ok) return [];
