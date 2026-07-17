@@ -205,6 +205,9 @@ describe('showPopup', () => {
         payload: expect.objectContaining({ text: 'Take off your shoes.', sl: 'en', tl: 'vi' }),
       }),
     );
+    // Panel must stay open after async translation completes (bug: it used to close
+    // because the onTabOpen closure captured a stale state with activeTab=null).
+    expect(container!.querySelector('[data-cell-panel="translate"]')).not.toBeNull();
   });
 
   it('does not auto-translate when context sentence is empty', async () => {
