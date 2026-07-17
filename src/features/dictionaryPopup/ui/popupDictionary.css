@@ -838,7 +838,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
 }
 
 .cell-audio__skeleton-row {
@@ -873,18 +872,17 @@
   display: flex;
   gap: var(--space-2);
   overflow-x: auto;
-  padding: var(--space-2) var(--space-3);
 }
 
 .cell-image__skeleton-card {
-  width: 96px;
+  flex: 1;
+  min-width: 96px;
   height: 72px;
-  flex-shrink: 0;
 }
 
 /* Translate skeleton block */
 .cell-translate__skeleton {
-  padding: var(--space-2) var(--space-3);
+  /* inherits padding from parent .cell-translate so the block spans full width */
 }
 
 .cell-translate__skeleton-block {
@@ -906,11 +904,8 @@
 }
 
 .cell-translate__skeleton-line {
+  width: 100%;
   height: 16px;
-}
-
-.cell-translate__skeleton-line--short {
-  width: 60%;
 }
 
 .cell-translate__skeleton-check {
