@@ -112,10 +112,9 @@ Rules:
 
 ### Knowledge tra cứu
 
-Trước khi viết code liên quan css / async / messaging / state / data / detection / build / ux: grep `.agents/skills/learning/index.json` theo category/tags → mở matching `knowledge/<id>.json` → check `cases[].bad` — nếu code mình đang viết match bad pattern → sửa theo `cases[].good`. Không skip bước này.
+Trước khi viết code liên quan css / async / messaging / state / data / detection / build / ux: grep `.agents/skills/learning/index.json` theo category/tags → mở matching `experience/<id>.json` hoặc `knowledge/<topic>.json` → check `cases[].bad` — nếu code mình đang viết match bad pattern → sửa theo `cases[].good`. Không skip bước này.
 
 ## Code conventions
  
-- Khi task liên quan HTML/CSS/TS/TSX: invoke skill `code-convention` APPLY mode
-TRƯỚC khi viết code. Query theo category. Không đoán convention — query skill.
+- Khi task liên quan HTML/CSS/TS/TSX: grep `.agents/skills/learning/index.json` type=knowledge → mở `knowledge/htmlcss.json` hoặc `knowledge/typescript.json` → grep `rules[]` theo category/tags. Không đoán convention — query knowledge.
 - Using BEM — is a methodology that helps to create reusable components and share code in front-end development

@@ -1,13 +1,18 @@
 ---
 name: learning
-description: "Two modes. APPLY: grep index.json BEFORE writing code (css/async/messaging/state/data/detection/build/ux tasks) to avoid known bad patterns — read matching atom JSON, check bad/good. ACCUMULATE: after test pass + root cause understood, extract reusable principle to atom JSON with bad/good code."
+description: "Two modes. APPLY: grep index.json BEFORE writing code (css/async/messaging/state/data/detection/build/ux tasks) to avoid known bad patterns — read matching knowledge rules or experience atoms, check bad/good. ACCUMULATE: after test pass + root cause understood, extract reusable principle to experience/ atom JSON with bad/good code."
 ---
 
 # Learning
 
 ## Overview
 
-Bug fixes are specific to the case that triggered them. Without abstraction, the same pattern causes mistakes in other parts of the codebase. This skill accumulates reusable principles from past work and applies them before writing new code — preventing the same mistakes.
+Two knowledge stores, one skill:
+
+- **knowledge/** — rules from style guides, books, external sources (Google HTML/CSS, TypeScript, BEM). Organized by topic file (`htmlcss.json`, `typescript.json`), each containing a `rules[]` array.
+- **experience/** — principles extracted from real project bug fixes. One atom JSON per principle, with `cases[bad/good]` code snippets.
+
+Both stores share the same rule schema. Knowledge rules have a `source` field at the topic level; experience atoms are self-contained.
 
 ## When to Use
 
@@ -45,42 +50,83 @@ Apply this mode when **insight is reusable** — any of 5 triggers:
 ```
 learning/
 ├── SKILL.md                      # this file — workflow only
-├── index.json                    # metadata tất cả principles — grep entry point
-├── knowledge/                    # 1 principle = 1 JSON atom
+├── index.json                    # metadata tất cả entries — grep entry point
+├── knowledge/                    # từ sách báo, style guides (external)
+│   ├── htmlcss.json              # 60 rules from Google HTML/CSS + BEM
+│   └── typescript.json           # 239 rules from Google TypeScript
+├── experience/                   # từ project thực tế (real bug fixes)
 │   ├── css-shadow-dom-token-injection.json
 │   ├── css-shadow-dom-theme-propagation.json
-│   └── ...
+│   └── ... (41 atoms)
 └── scripts/
-    └── validate.cjs              # check index sync với knowledge/ folder
+    ├── validate.cjs              # check index sync + schema
+    └── convert-conventions.cjs   # convert style guide JSON → knowledge schema
 ```
 
 Self-contained trong skill folder → portable, mang đi project khác.
 
-## Atom JSON Schema
+## Schema
 
-Mỗi `knowledge/<id>.json`:
+### Knowledge topic file (`knowledge/<topic>.json`)
 
 ```json
 {
-  "id": "kebab-case-specific",
-  "title": "Short title — abstract principle",
+  "topic": "htmlcss",
+  "source": "https://google.github.io/styleguide/htmlcssguide.html",
+  "rules": [
+    {
+      "id": "htmlcss-general-001",
+      "title": "Use HTTPS for embedded resources",
+      "category": ["css"],
+      "tags": ["htmlcss", "general", "https"],
+      "trigger": "embedded resource URL",
+      "principle": "Use HTTPS for embedded resources where possible.",
+      "cases": [{"context": "...", "bad": "...", "good": "..."}],
+      "applyFor": ["HTML", "CSS", "SCSS"]
+    }
+  ]
+}
+```
+
+### Experience atom file (`experience/<id>.json`)
+
+```json
+{
+  "id": "css-shadow-dom-token-injection",
+  "title": "Rendering boundary → explicit token injection",
   "category": ["css", "rendering"],
   "tags": ["shadow-dom", "tokens", "vite-raw-import"],
-  "trigger": "1 câu — khi nào principle áp dụng",
-  "principle": "1-2 câu — nguyên lý cốt lõi, không cụ thể case",
-  "cases": [
-    {
-      "context": "Tình huống cụ thể, abstract (không gắn file path)",
-      "bad": "Code sai — pattern gây bug",
-      "good": "Code đúng — fix"
-    }
-  ],
-  "applyFor": ["Tình huống khác principle đúng", "Framework/library tương tự"]
+  "trigger": "Shadow DOM component cần shared design tokens",
+  "principle": "Rendering boundary cô lập CSS. Inject tokens via ?raw import string, remap :root→:host.",
+  "cases": [{"context": "...", "bad": "...", "good": "..."}],
+  "applyFor": ["Shadow DOM", "iframe widgets", "Web Worker canvas"]
+}
+```
+
+### Index entry (`index.json`)
+
+```json
+{
+  "type": "knowledge",
+  "topic": "htmlcss",
+  "source": "https://...",
+  "ruleCount": 60,
+  "categories": ["css"]
+}
+```
+```json
+{
+  "type": "experience",
+  "id": "css-shadow-dom-token-injection",
+  "title": "Rendering boundary → explicit token injection",
+  "category": ["css", "rendering"],
+  "tags": ["shadow-dom", "tokens"],
+  "trigger": "Shadow DOM component cần shared design tokens"
 }
 ```
 
 **Quy tắc:**
-- `id`: kebab-case, cụ thể, grep-able
+- `id` (experience) / `topic` (knowledge): kebab-case, cụ thể, grep-able
 - `category[]`: 1-2 category từ: css, rendering, async, state, messaging, data, detection, ux, build, testing
 - `tags[]`: 3-5 keyword grep-able (technology, pattern, symptom)
 - `trigger`: 1 câu — "khi nào áp dụng principle này"
@@ -88,6 +134,7 @@ Mỗi `knowledge/<id>.json`:
 - `cases[]`: ít nhất 1 case, mỗi case có `context` + `bad` + `good`
 - `applyFor[]`: 3-5 tình huống khác principle đúng (cross-project)
 - **KHÔNG có `files[]`** — không gắn file path (portability)
+- **Knowledge** thêm `source` ở topic level (không per-rule)
 
 ## ACCUMULATE Mode — Rút kinh nghiệm
 
@@ -95,51 +142,32 @@ Mỗi `knowledge/<id>.json`:
 
 Ask: "What is the underlying principle that caused this bug?"
 
-Example:
-- Bug: Tab-Scoping (popup showed media from wrong tab)
-- Pattern: Broadcasts fan out to every listener, cannot target specific listener
-- Principle: Scope by identifier in payload, listener filters by identifier
+### Step 2: Create experience atom
 
-### Step 2: Create atom JSON
-
-Create `knowledge/<id>.json` with full detail (15-25 dòng):
+Create `experience/<id>.json` (15-25 dòng):
 
 ```json
 {
-  "id": "messaging-broadcasts-fan-out-scope-by-id",
+  "id": "messaging-broadcast-scope-by-identifier",
   "title": "Broadcasts fan out → scope by identifier",
   "category": ["messaging"],
-  "tags": ["chrome-runtime", "sendmessage", "broadcast", "tabid", "filter"],
-  "trigger": "Broadcast message cần target specific listener, không fan out tất cả",
-  "principle": "Broadcasts fan out to every listener — cannot target specific listener. Scope by identifier in payload, listener filters by identifier.",
+  "tags": ["chrome-runtime", "sendmessage", "broadcast", "tabid"],
+  "trigger": "Broadcast message cần target specific listener",
+  "principle": "Broadcasts fan out to every listener. Scope by identifier in payload, listener filters by identifier.",
   "cases": [
     {
-      "context": "Popup mở cho tab A nhưng nhận media từ tab B — sendMessage broadcast tất cả tabs",
-      "bad": "chrome.runtime.sendMessage({ type: 'MEDIA_UPDATE', media: [...] }); // mọi popup nhận, không lọc theo tab",
-      "good": "chrome.runtime.sendMessage({ type: 'MEDIA_UPDATE', tabId: activeTabId, media: [...] });\n// popup filter: if (msg.tabId !== myTabId) return;"
+      "context": "Popup mở cho tab A nhưng nhận media từ tab B",
+      "bad": "chrome.runtime.sendMessage({ type: 'MEDIA_UPDATE', media: [...] });",
+      "good": "chrome.runtime.sendMessage({ type: 'MEDIA_UPDATE', tabId: activeTabId, media: [...] });"
     }
   ],
-  "applyFor": [
-    "chrome.runtime.sendMessage (Chrome extension)",
-    "WebSocket rooms (server broadcasts, client filters by roomId)",
-    "Event emitters (EventEmitter emits to all, filter by event type)"
-  ]
+  "applyFor": ["chrome.runtime.sendMessage", "WebSocket rooms", "Event emitters"]
 }
 ```
 
 ### Step 3: Update index.json
 
-Append entry vào `index.json` `principles[]`:
-
-```json
-{
-  "id": "messaging-broadcasts-fan-out-scope-by-id",
-  "title": "Broadcasts fan out → scope by identifier",
-  "category": ["messaging"],
-  "tags": ["chrome-runtime", "sendmessage", "broadcast", "tabid", "filter"],
-  "trigger": "Broadcast message cần target specific listener, không fan out tất cả"
-}
-```
+Append entry vào `index.json` `principles[]` with `type: "experience"`.
 
 ### Step 4: Validate
 
@@ -147,17 +175,11 @@ Append entry vào `index.json` `principles[]`:
 node scripts/validate.cjs
 ```
 
-Checks: valid JSON, no duplicate id, index sync với knowledge/ folder, required fields present, categories valid.
-
 ## APPLY Mode — Tra cứu kiến thức
 
 ### Step 1: Identify task constructs
 
 Ask: "Task này liên quan gì?" → map to tags/categories.
-
-Example:
-- Task: "Tích hợp dark mode vào popup dictionary"
-- Constructs: css, shadow-dom, theme
 
 ### Step 2: Grep index.json
 
@@ -168,36 +190,42 @@ grep '"shadow-dom"' index.json
 # By category
 grep '"category":.*css' index.json
 
-# By trigger keyword
-grep '"theme"' index.json
+# By type
+grep '"type": "knowledge"' index.json
 ```
 
-→ List matching principles.
+### Step 3: Open matching files
 
-### Step 3: Open matching atom files
-
-Read `knowledge/<id>.json` for each match:
-- Read `principle` — hiểu nguyên lý
-- Read `cases[].bad` — check code mình đang viết có match pattern bad không
-- Read `cases[].good` — áp dụng fix
+- `type: "knowledge"` → open `knowledge/<topic>.json`, grep `rules[]` by tags/trigger
+- `type: "experience"` → open `experience/<id>.json`, read principle + cases[bad/good]
 
 ### Step 4: Apply
 
-- Nếu code match bad pattern → sửa theo good pattern
-- Nếu không match → proceed
+- Read `cases[].bad` — check code mình đang viết có match bad pattern không
+- Read `cases[].good` — áp dụng fix
+- Nếu code match bad → sửa theo good. Nếu không match → proceed.
+
+## Adding Knowledge (from external sources)
+
+When adding rules from a new style guide or book:
+
+1. Create `knowledge/<topic>.json` with `topic`, `source`, `rules[]`
+2. Each rule follows the same schema as experience atoms
+3. Add entry to `index.json` with `type: "knowledge"`
+4. Run `node scripts/validate.cjs`
 
 ## Integration with Other Skills
 
 This skill is typically invoked as part of:
-- **code-review-and-quality** (axis 6: lessons learned) — after review, accumulate if pattern reusable (trigger 1, 2, 5)
-- **test-driven-development** (after GREEN phase) — after test pass, accumulate if pattern reusable (trigger 1, 2)
-- **debugging-and-error-recovery** (after debug pass) — after root cause fix, accumulate principle (trigger 1)
-- **system-architecture-design** (after ADR) — after architecture decision, accumulate principle (trigger 3)
-- **code-simplification** (after refactor) — after simplification, accumulate pattern (trigger 4)
+- **code-review-and-quality** (axis 6: lessons learned) — after review, accumulate if pattern reusable
+- **test-driven-development** (after GREEN phase) — after test pass, accumulate if pattern reusable
+- **debugging-and-error-recovery** (after debug pass) — after root cause fix, accumulate principle
+- **system-architecture-design** (after ADR) — after architecture decision, accumulate principle
+- **code-simplification** (after refactor) — after simplification, accumulate pattern
 
 ## Verification
 
-- [ ] ACCUMULATE: atom JSON có đủ required fields (id, title, category, tags, trigger, principle, cases, applyFor)
+- [ ] ACCUMULATE: atom JSON có đủ required fields
 - [ ] ACCUMULATE: mỗi case có context + bad + good
 - [ ] ACCUMULATE: index.json updated với entry mới
 - [ ] ACCUMULATE: `node scripts/validate.cjs` passes

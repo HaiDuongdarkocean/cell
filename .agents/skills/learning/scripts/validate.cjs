@@ -1,19 +1,16 @@
 #!/usr/bin/env node
 /**
- * validate.cjs — check knowledge store integrity.
- *
- * Run after ANY change to index.json or knowledge/*.json:
- *   node scripts/validate.cjs
+ * validate.cjs — check learning skill knowledge store integrity.
  *
  * Checks:
  *   1. index.json is valid JSON
- *   2. Every knowledge/*.json is valid JSON
- *   3. Every index entry has a matching knowledge/<id>.json file
- *   4. Every knowledge/<id>.json has an index entry
- *   5. No duplicate ids in index
- *   6. Required fields present in each atom (id, title, category, tags, trigger, principle, cases, applyFor)
- *   7. Each case has context + bad + good
- *   8. All categories in atoms exist in index.categories[]
+ *   2. knowledge/*.json (topic files) are valid JSON with rules[]
+ *   3. experience/*.json (atom files) are valid JSON with required fields
+ *   4. Index entries match files in both directories
+ *   5. No duplicate ids
+ *   6. Required fields present in each experience atom
+ *   7. Each experience case has context + bad + good
+ *   8. Knowledge rules have id + principle + cases
  */
 
 'use strict';
@@ -24,9 +21,11 @@ const path = require('path');
 const SKILL_DIR = path.resolve(__dirname, '..');
 const INDEX_PATH = path.join(SKILL_DIR, 'index.json');
 const KNOWLEDGE_DIR = path.join(SKILL_DIR, 'knowledge');
+const EXPERIENCE_DIR = path.join(SKILL_DIR, 'experience');
 
-const REQUIRED_ATOM_FIELDS = ['id', 'title', 'category', 'tags', 'trigger', 'principle', 'cases', 'applyFor'];
+const REQUIRED_EXP_FIELDS = ['id', 'title', 'category', 'tags', 'trigger', 'principle', 'cases', 'applyFor'];
 const REQUIRED_CASE_FIELDS = ['context', 'bad', 'good'];
+const REQUIRED_RULE_FIELDS = ['id', 'title', 'category', 'tags', 'trigger', 'principle', 'cases', 'applyFor'];
 
 let errors = 0;
 function fail(msg) { console.error(`FAIL: ${msg}`); errors++; }
@@ -46,25 +45,76 @@ if (!Array.isArray(index.principles)) {
 }
 
 const allowedCategories = new Set(index.categories || []);
-const indexIds = new Set();
+const indexKnowledgeTopics = new Set();
+const indexExperienceIds = new Set();
 const seenIds = new Set();
 
 for (const entry of index.principles) {
-  if (!entry.id) { fail(`index entry missing id: ${JSON.stringify(entry)}`); continue; }
-  if (seenIds.has(entry.id)) { fail(`index duplicate id: ${entry.id}`); continue; }
-  seenIds.add(entry.id);
-  indexIds.add(entry.id);
-  for (const field of ['id', 'title', 'category', 'tags', 'trigger']) {
-    if (!(field in entry)) fail(`index entry "${entry.id}" missing field: ${field}`);
+  if (entry.type === 'knowledge') {
+    if (!entry.topic) { fail(`index knowledge entry missing topic: ${JSON.stringify(entry)}`); continue; }
+    if (seenIds.has('k:' + entry.topic)) { fail(`index duplicate knowledge topic: ${entry.topic}`); continue; }
+    seenIds.add('k:' + entry.topic);
+    indexKnowledgeTopics.add(entry.topic);
+  } else if (entry.type === 'experience') {
+    if (!entry.id) { fail(`index experience entry missing id: ${JSON.stringify(entry)}`); continue; }
+    if (seenIds.has('e:' + entry.id)) { fail(`index duplicate experience id: ${entry.id}`); continue; }
+    seenIds.add('e:' + entry.id);
+    indexExperienceIds.add(entry.id);
+  } else {
+    fail(`index entry unknown type "${entry.type}": ${JSON.stringify(entry)}`);
   }
 }
 
-// 2-4. Load + validate knowledge/*.json, check sync with index
-const atomFiles = fs.readdirSync(KNOWLEDGE_DIR).filter(f => f.endsWith('.json'));
-const atomIds = new Set();
+// 2. Validate knowledge/*.json (topic files)
+const knowledgeFiles = fs.existsSync(KNOWLEDGE_DIR) ? fs.readdirSync(KNOWLEDGE_DIR).filter(f => f.endsWith('.json')) : [];
+const fileKnowledgeTopics = new Set();
+const allRuleIds = new Set();
 
-for (const file of atomFiles) {
+for (const file of knowledgeFiles) {
   const filePath = path.join(KNOWLEDGE_DIR, file);
+  let data;
+  try {
+    data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch (e) {
+    fail(`${file}: ${e.message}`);
+    continue;
+  }
+
+  if (!data.topic) { fail(`${file}: missing "topic"`); continue; }
+  if (fileKnowledgeTopics.has(data.topic)) { fail(`${file}: duplicate topic "${data.topic}"`); continue; }
+  fileKnowledgeTopics.add(data.topic);
+
+  if (!Array.isArray(data.rules)) { fail(`${file}: missing "rules" array`); continue; }
+
+  for (const rule of data.rules) {
+    if (!rule.id) { fail(`${file}: rule missing id`); continue; }
+    if (allRuleIds.has(rule.id)) { fail(`${file}: duplicate rule id "${rule.id}"`); continue; }
+    allRuleIds.add(rule.id);
+
+    for (const field of REQUIRED_RULE_FIELDS) {
+      if (!(field in rule)) fail(`${file}: rule "${rule.id}" missing field "${field}"`);
+    }
+
+    if (Array.isArray(rule.cases)) {
+      rule.cases.forEach((c, i) => {
+        for (const field of REQUIRED_CASE_FIELDS) {
+          if (!(field in c)) fail(`${file}: rule "${rule.id}" cases[${i}] missing "${field}"`);
+        }
+      });
+    }
+  }
+
+  if (!indexKnowledgeTopics.has(data.topic)) {
+    fail(`${file}: knowledge topic "${data.topic}" has no index entry`);
+  }
+}
+
+// 3. Validate experience/*.json (atom files)
+const expFiles = fs.existsSync(EXPERIENCE_DIR) ? fs.readdirSync(EXPERIENCE_DIR).filter(f => f.endsWith('.json')) : [];
+const expIds = new Set();
+
+for (const file of expFiles) {
+  const filePath = path.join(EXPERIENCE_DIR, file);
   let atom;
   try {
     atom = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -74,15 +124,13 @@ for (const file of atomFiles) {
   }
 
   if (!atom.id) { fail(`${file}: missing "id"`); continue; }
-  if (atomIds.has(atom.id)) { fail(`${file}: duplicate id "${atom.id}"`); continue; }
-  atomIds.add(atom.id);
+  if (expIds.has(atom.id)) { fail(`${file}: duplicate id "${atom.id}"`); continue; }
+  expIds.add(atom.id);
 
-  // 6. Required fields
-  for (const field of REQUIRED_ATOM_FIELDS) {
+  for (const field of REQUIRED_EXP_FIELDS) {
     if (!(field in atom)) fail(`${file}: missing field "${field}"`);
   }
 
-  // 7. Each case has context + bad + good
   if (Array.isArray(atom.cases)) {
     atom.cases.forEach((c, i) => {
       for (const field of REQUIRED_CASE_FIELDS) {
@@ -91,7 +139,6 @@ for (const file of atomFiles) {
     });
   }
 
-  // 8. Categories valid
   if (Array.isArray(atom.category)) {
     for (const cat of atom.category) {
       if (allowedCategories.size > 0 && !allowedCategories.has(cat)) {
@@ -100,25 +147,30 @@ for (const file of atomFiles) {
     }
   }
 
-  // 4. Atom has index entry?
-  if (!indexIds.has(atom.id)) {
-    fail(`${file}: atom "${atom.id}" has no index entry`);
+  if (!indexExperienceIds.has(atom.id)) {
+    fail(`${file}: experience atom "${atom.id}" has no index entry`);
   }
 }
 
-// 3. Index entry has atom file?
-for (const id of indexIds) {
-  if (!atomIds.has(id)) {
-    fail(`index entry "${id}" has no knowledge/${id}.json file`);
+// 4. Check index entries have files
+for (const topic of indexKnowledgeTopics) {
+  if (!fileKnowledgeTopics.has(topic)) {
+    fail(`index knowledge topic "${topic}" has no knowledge/${topic}.json file`);
+  }
+}
+for (const id of indexExperienceIds) {
+  if (!expIds.has(id)) {
+    fail(`index experience id "${id}" has no experience/${id}.json file`);
   }
 }
 
 // Summary
-const total = indexIds.size;
+const totalRules = allRuleIds.size;
+const totalAtoms = expIds.size;
 if (errors === 0) {
-  console.log(`OK: ${total} principles, ${atomFiles.length} atom files, ${allowedCategories.size} categories`);
+  console.log(`OK: ${knowledgeFiles.length} knowledge topics (${totalRules} rules), ${totalAtoms} experience atoms, ${allowedCategories.size} categories`);
   process.exit(0);
 } else {
-  console.error(`\n${errors} violation(s) across ${total} principles`);
+  console.error(`\n${errors} violation(s) across ${totalRules} rules + ${totalAtoms} atoms`);
   process.exit(1);
 }

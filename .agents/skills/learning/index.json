@@ -1,6 +1,6 @@
 {
-  "version": "1.0",
-  "description": "Index of all learning principles. Grep this file by category/tags/trigger to find relevant principles, then open knowledge/<id>.json for full detail + bad/good cases.",
+  "version": "2.0",
+  "description": "Index of learning principles. type=knowledge: from style guides (grep rules[] inside topic file). type=experience: from real project fixes (open atom file for bad/good).",
   "categories": [
     "async",
     "build",
@@ -15,6 +15,25 @@
   ],
   "principles": [
     {
+      "type": "knowledge",
+      "topic": "htmlcss",
+      "source": "https://google.github.io/styleguide/htmlcssguide.html + https://cssguidelin.es/#bem-like-naming",
+      "ruleCount": 60,
+      "categories": [
+        "css"
+      ]
+    },
+    {
+      "type": "knowledge",
+      "topic": "typescript",
+      "source": "https://google.github.io/styleguide/tsguide.html",
+      "ruleCount": 239,
+      "categories": [
+        "build"
+      ]
+    },
+    {
+      "type": "experience",
       "id": "async-order-dependent-side-effects-sequence",
       "title": "Order-dependent side effects → sequence explicitly",
       "category": [
@@ -35,6 +54,7 @@
       "trigger": "2+ observers/reactors react cùng event và effect xung đột trên shared state (A add, B clear) → clear wipe add"
     },
     {
+      "type": "experience",
       "id": "async-spa-render-foreign-element-injection",
       "title": "Wait for framework render completion before injecting foreign elements",
       "category": [
@@ -56,6 +76,7 @@
       "trigger": "Content-script hoặc extension inject foreign element vào SPA-managed DOM và element biến mất sau re-render"
     },
     {
+      "type": "experience",
       "id": "clear-per-navigation-state-lifecycle",
       "title": "Clear per-page state in the shared navigation lifecycle handler, not just on close",
       "category": [
@@ -75,6 +96,7 @@
       "trigger": "Per-page state (media, cache, badge, session storage) accumulates across navigations within the same tab because only the close handler clears it"
     },
     {
+      "type": "experience",
       "id": "conditional-stop-propagation",
       "title": "Conditional stopPropagation — only swallow when inner actually handled",
       "category": [
@@ -92,6 +114,7 @@
       "trigger": "Nested event handlers (inner + outer) where the inner handler only handles a subset of cases"
     },
     {
+      "type": "experience",
       "id": "css-aspect-ratio-cross-axis-preservation",
       "title": "Preserve cross-axis size when aspect-ratio conflicts with main-axis layout change",
       "category": [
@@ -109,6 +132,7 @@
       "trigger": "Đổi main-axis size của element có aspect-ratio → cross-axis tự shrink theo ratio, nhưng muốn giữ cross-axis nguyên"
     },
     {
+      "type": "experience",
       "id": "css-flex-min-width-zero-shrink",
       "title": "Flex items need explicit min-width:0 / min-height:0 to shrink below content",
       "category": [
@@ -125,6 +149,7 @@
       "trigger": "Flex item flex:0 0 <percentage> không tuân flex-basis, overflow container vì content rộng hơn percentage"
     },
     {
+      "type": "experience",
       "id": "css-measure-after-clearing-transition-styles",
       "title": "Measure natural size only after clearing previous-mode transition styles",
       "category": [
@@ -142,6 +167,7 @@
       "trigger": "Khi switch giữa layout modes mà set conflicting inline styles, cần capture natural size cho mode tiếp theo"
     },
     {
+      "type": "experience",
       "id": "css-out-of-flow-wrapper-explicit-containing-block",
       "title": "Out-of-flow element moved into wrapper needs explicit containing block + 100% fill",
       "category": [
@@ -160,6 +186,7 @@
       "trigger": "Khi di chuyển element position:absolute/fixed vào wrapper mới và wrapper collapse height 0"
     },
     {
+      "type": "experience",
       "id": "css-shadow-dom-theme-propagation",
       "title": "Isolated DOM needs explicit theme propagation",
       "category": [
@@ -177,6 +204,7 @@
       "trigger": "Shadow DOM component cần dark/light mode theo user setting"
     },
     {
+      "type": "experience",
       "id": "css-shadow-dom-token-injection",
       "title": "Rendering boundary → explicit token injection",
       "category": [
@@ -193,6 +221,7 @@
       "trigger": "Shadow DOM component cần shared design tokens với host page"
     },
     {
+      "type": "experience",
       "id": "data-dead-field-co-occurrence-linking",
       "title": "Dead field → link by co-occurrence, not by dead reference",
       "category": [
@@ -209,6 +238,7 @@
       "trigger": "A foreign key field exists but is never populated by the producer — don't fix the producer, link by shared scope instead."
     },
     {
+      "type": "experience",
       "id": "data-half-open-interval-time-matching",
       "title": "Half-open intervals [start, end) for time-based matching",
       "category": [
@@ -227,6 +257,7 @@
       "trigger": "Time-based matching với boundary liền nhau (cue end = cue next start) → findIndex trả index sai tại boundary"
     },
     {
+      "type": "experience",
       "id": "dedup-separate-from-catchup",
       "title": "Separate dedup from catch-up",
       "category": [
@@ -243,6 +274,7 @@
       "trigger": "Incremental processing where new items arrive after an initial batch and a coarse guard blocks the follow-up"
     },
     {
+      "type": "experience",
       "id": "detection-gather-candidates-filter-criteria",
       "title": "Gather candidates + filter by explicit criteria",
       "category": [
@@ -259,6 +291,7 @@
       "trigger": "A single query shape returns the wrong candidate because assumptions about the result set are fragile"
     },
     {
+      "type": "experience",
       "id": "detection-hybrid-fast-then-disambiguate",
       "title": "Hybrid detection: fast single-candidate first, disambiguation second",
       "category": [
@@ -275,6 +308,7 @@
       "trigger": "Detecting a label from noisy input where a cheap deterministic stage resolves most cases and an expensive stage handles the rest"
     },
     {
+      "type": "experience",
       "id": "dnr-forbidden-header-rewrite",
       "title": "Forbidden headers in extension fetch → DNR modify at network stack",
       "category": [
@@ -292,6 +326,7 @@
       "trigger": "Extension fetch() trả 403 dù set Referer/Cookie/User-Agent đúng — server yêu cầu forbidden header mà browser strip trước khi gửi."
     },
     {
+      "type": "experience",
       "id": "ephemeral-runtime-auth-alternative-client",
       "title": "Ephemeral runtime auth token → alternative client without token",
       "category": [
@@ -311,6 +346,7 @@
       "trigger": "A service requires an ephemeral, single-use auth token that can only be generated from its runtime context (browser player, native app), blocking out-of-context fetches"
     },
     {
+      "type": "experience",
       "id": "format-detection-query-param-fallback",
       "title": "Format detection — check query params, not just file extension",
       "category": [
@@ -328,6 +364,7 @@
       "trigger": "Detecting media/subtitle format from a URL where the file extension is absent or ambiguous"
     },
     {
+      "type": "experience",
       "id": "freshest-source-for-identity",
       "title": "Prefer freshest source for identity, not richest",
       "category": [
@@ -345,6 +382,7 @@
       "trigger": "Resolving an entity identity from two sources where one can be stale-but-non-null"
     },
     {
+      "type": "experience",
       "id": "host-css-overrides-injected-elements",
       "title": "Host page CSS overrides unstyled properties on injected elements",
       "category": [
@@ -361,6 +399,7 @@
       "trigger": "Content-script injects <button>/<svg>/<div> vào host page DOM — element render sai size/visibility trên site B nhưng đúng trên site A."
     },
     {
+      "type": "experience",
       "id": "inline-style-leak-state-transition",
       "title": "Every !important inline style set in a show path must have a matching remove in the hide path",
       "category": [
@@ -378,6 +417,7 @@
       "trigger": "Show/apply path sets inline styles with !important to override site CSS, and a hide/restore path must return the element to its prior state"
     },
     {
+      "type": "experience",
       "id": "jest-modnamemapper-ordering",
       "title": "Mock mapper ordering — specific suffix before generic alias",
       "category": [
@@ -394,6 +434,7 @@
       "trigger": "Jest config có generic alias + specific suffix mappers (?raw, ?worker)"
     },
     {
+      "type": "experience",
       "id": "messaging-broadcast-scope-by-identifier",
       "title": "Broadcasts fan out → scope by identifier",
       "category": [
@@ -410,6 +451,7 @@
       "trigger": "Broadcast message reaches every listener but only one should act"
     },
     {
+      "type": "experience",
       "id": "messaging-earliest-lifecycle-listener-registration",
       "title": "Register listeners at earliest lifecycle before producers post",
       "category": [
@@ -429,6 +471,7 @@
       "trigger": "Fire-and-forget message (window.postMessage, BroadcastChannel) bị lost vì consumer listener register sau khi producer đã post."
     },
     {
+      "type": "experience",
       "id": "messaging-proactive-native-event-clear",
       "title": "Proactive clear on native event > cross-context round-trip",
       "category": [
@@ -449,6 +492,7 @@
       "trigger": "Cross-context message chain (content → MAIN → SW → content) dùng để clear consumer state, nhưng bất kỳ hop nào fail silently để stale state visible"
     },
     {
+      "type": "experience",
       "id": "messaging-receiver-announces-readiness-handshake",
       "title": "Receiver-announces-readiness handshake for fire-and-forget messages",
       "category": [
@@ -469,6 +513,7 @@
       "trigger": "Persistent producer post fire-and-forget message trước khi re-injected consumer register listener (bundler async loader delays registration) — document_start không đủ."
     },
     {
+      "type": "experience",
       "id": "messaging-sw-no-page-context-main-world-fetch",
       "title": "Extension SW lacks page context → MAIN world fetch",
       "category": [
@@ -489,6 +534,7 @@
       "trigger": "MV3 service worker fetch tới cookie/origin-gated site trả 403/401 trong khi fetch từ page DevTools thành công."
     },
     {
+      "type": "experience",
       "id": "multi-separator-extraction-domain-guard",
       "title": "Multi-separator extraction — try multiple separators, validate with domain guard",
       "category": [
@@ -507,6 +553,7 @@
       "trigger": "Structured data (language code, version, episode number) must be extracted from a URL/filename, but different sites use different separator conventions"
     },
     {
+      "type": "experience",
       "id": "no-dynamic-import-shared-sw-chunk",
       "title": "Static import modules shared with the service worker chunk — dynamic import injects a document polyfill that crashes the SW",
       "category": [
@@ -526,6 +573,7 @@
       "trigger": "An MV3 extension module is imported by both a DOM context (popup/content-script) and the service worker, and a caller uses dynamic import()"
     },
     {
+      "type": "experience",
       "id": "parser-tolerance-skip-noise-lines",
       "title": "Parser tolerance — skip noise lines, don't reject whole block",
       "category": [
@@ -544,6 +592,7 @@
       "trigger": "A line-based parser rejects an entire record/block because one line doesn't match the expected format, losing all valid data in that block"
     },
     {
+      "type": "experience",
       "id": "partial-save-read-modify-write",
       "title": "Partial save API must read-modify-write against stored state, not merge with defaults",
       "category": [
@@ -562,6 +611,7 @@
       "trigger": "A save API accepts Partial<T> and implicitly promises to merge with current state, but the implementation merges with DEFAULT instead"
     },
     {
+      "type": "experience",
       "id": "percentage-sizing-content-box",
       "title": "Percentage sizing calculates against content-box, not border-box",
       "category": [
@@ -578,6 +628,7 @@
       "trigger": "Percentage width/height child render nhỏ hơn expected bên trong container có padding + box-sizing: border-box."
     },
     {
+      "type": "experience",
       "id": "rendering-fmp4-merge-shared-init-segment",
       "title": "Same codec config → share init segment, patch timeline offsets",
       "category": [
@@ -594,6 +645,7 @@
       "trigger": "Merging fMP4 fragments from the same source stream that each emit their own init segment and rebased timeline."
     },
     {
+      "type": "experience",
       "id": "set-active-identity-synchronously",
       "title": "Set active identity synchronously before filtering events",
       "category": [
@@ -612,6 +664,7 @@
       "trigger": "Event relay/filter reads a mutable active identity (active tab, focused window, selected item) that can change between the trigger and the filter check"
     },
     {
+      "type": "experience",
       "id": "signal-absence-is-not-absence-of-signal",
       "title": "Signal absence is not absence of signal",
       "category": [
@@ -630,6 +683,7 @@
       "trigger": "A multi-layer pipeline where each guard treats empty as a no-op, composing into a silent dead path for the empty case"
     },
     {
+      "type": "experience",
       "id": "state-commit-after-precondition-confirmed-gate-retry",
       "title": "Commit state only after precondition confirmed (gate retry)",
       "category": [
@@ -651,6 +705,7 @@
       "trigger": "Function có precondition (API key, config, token) và retry mechanism key off cached state — commit state trước precondition check blocks retry vĩnh viễn."
     },
     {
+      "type": "experience",
       "id": "state-init-must-match-dom-init",
       "title": "State init must match DOM init",
       "category": [
@@ -667,6 +722,7 @@
       "trigger": "Two sources of truth (a state variable and a DOM property) must be synchronized at init — otherwise the first toggle goes the wrong direction."
     },
     {
+      "type": "experience",
       "id": "state-persist-selections-clear-content",
       "title": "Persist selections, clear content — scope autosave to intent",
       "category": [
@@ -685,6 +741,7 @@
       "trigger": "Form/dialog autosave persist toàn bộ state nhưng reopen restore content cũ gây nhầm lẫn khi tạo entity mới"
     },
     {
+      "type": "experience",
       "id": "ux-dropdown-width-follows-content",
       "title": "Dropdown width follows content, alignment configurable by trigger position",
       "category": [
@@ -703,6 +760,7 @@
       "trigger": "Custom dropdown/select menu có trigger hẹp nhưng options dài, hoặc trigger nằm bên phải container"
     },
     {
+      "type": "experience",
       "id": "ux-fullscreen-target-shared-container",
       "title": "Fullscreen target shared container",
       "category": [
@@ -719,6 +777,7 @@
       "trigger": "Multiple UI pieces must remain visible together in fullscreen but the browser API fullscreens only one element."
     },
     {
+      "type": "experience",
       "id": "ux-instant-scroll-long-lists",
       "title": "Instant scroll for long lists, smooth only for short distances",
       "category": [
