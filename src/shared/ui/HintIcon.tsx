@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type ReactElement } from 'react';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './HintIcon.module.css';
 
 /** Props for the HintIcon component. */
@@ -125,19 +126,7 @@ export function HintIcon({
         aria-label={ariaLabel}
         onClick={toggle}
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <line x1="12" y1="16" x2="12" y2="12" />
-          <line x1="12" y1="8" x2="12.01" y2="8" />
-        </svg>
+        <Icon name="info" />
       </button>
       {isOpen && (
         <div

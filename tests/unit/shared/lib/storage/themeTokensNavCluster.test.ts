@@ -2,7 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const THEME_CSS_PATH = resolve(__dirname, '../../../../../src/entrypoints/popup/styles/theme.css');
+const THEME_CSS_PATH = resolve(__dirname, '../../../../../src/shared/styles/tokens.css');
 const THEME_TOKENS_TS_PATH = resolve(__dirname, '../../../../../src/shared/lib/themeTokens.ts');
 
 function extractTokenValues(cssContent: string, tokenNames: string[]): Record<string, string> {
@@ -95,3 +95,4 @@ describe('Nav cluster tokens — theme.css + themeTokens.ts mirror sync (ADR-018
     expect(values['--nav-cluster-no-sub-window-ms']).toBe('3000');
   });
 });
+

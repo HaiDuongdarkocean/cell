@@ -32,7 +32,7 @@ import { mountCardCreatorDialog, buildCardCreatorContext } from '@/features/card
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
-import { createPopupDictionaryState, showPopup, hidePopup, type PopupDictionaryState } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import { createPopupDictionaryState, showPopup, appendCandidate, type PopupDictionaryState } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { TranslateResult } from '@/entities/message';
@@ -221,12 +221,24 @@ export function init(video: HTMLVideoElement): () => void {
       const response = await sendMessage({
         type: MESSAGE_TYPES.LOOKUP_REQUEST,
         payload: { requestId, request },
-      }) as { success: boolean; data?: LookupResult; error?: string };
-      if (response.success && response.data) {
+      }) as { success: boolean; data?: LookupResult[]; error?: string };
+      if (response.success && response.data && response.data.length > 0) {
         // Pause video so subtitle cue doesn't change while popup is open.
         if (!video.paused) { video.pause(); popupDictWasPlaying = true; }
-        // Position popup anchored to the clicked token's bounding box.
-        popupDictState = showPopup(popupDictState, response.data, anchorRect.top, anchorRect.left, anchorRect.right, anchorRect.bottom + 4, request.contextSentence);
+        // Render winner first (immediate), then append remaining candidates progressively.
+        const [winner, ...rest] = response.data;
+        popupDictState = showPopup(
+          popupDictState, winner!, anchorRect.top, anchorRect.left, anchorRect.right, anchorRect.bottom + 4, request.contextSentence,
+          // onDismiss: resume video when popup is truly dismissed (Esc / click outside).
+          (dismissedState) => {
+            popupDictState = dismissedState;
+            if (popupDictWasPlaying) { void video.play(); popupDictWasPlaying = false; }
+          },
+        );
+        // Append remaining candidates in subsequent frames for progressive rendering.
+        for (const candidate of rest) {
+          popupDictState = appendCandidate(popupDictState, candidate, request.contextSentence);
+        }
       } else {
         console.warn('[popup-dict] lookup failed', response.error);
       }
@@ -235,14 +247,11 @@ export function init(video: HTMLVideoElement): () => void {
     }
   }
 
-  /** Cancel an in-flight lookup (sends LOOKUP_CANCEL to background). */
+  /** Cancel an in-flight lookup (sends LOOKUP_CANCEL to background only).
+   *  Does NOT hide popup or resume video — a new lookup is about to replace
+   *  the popup content. Video resume happens on true dismiss (onDismiss). */
   function cancelLookup(requestId: string): void {
     void sendMessage({ type: MESSAGE_TYPES.LOOKUP_CANCEL, payload: { requestId } });
-    if (popupDictState) {
-      popupDictState = hidePopup(popupDictState);
-      // Resume video if it was playing before popup opened.
-      if (popupDictWasPlaying) { void video.play(); popupDictWasPlaying = false; }
-    }
   }
 
   const blockController = new SubtitleBlockController(

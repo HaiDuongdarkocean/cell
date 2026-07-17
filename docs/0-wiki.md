@@ -48,6 +48,9 @@ docs/           # Tài liệu dự án
 │   └── 037-english-phrase-match.md          # ADR-037: Cambridge phrase templates → compact anchor index + bounded token-DP matcher, low-RAM deterministic matching
 │   └── 038-popup-dictionary-shadow-dom-vanilla-dom.md # ADR-038: Popup Dictionary Shadow DOM + vanilla DOM (CSS isolation, no React in content script)
 │   └── 039-cambridge-sense-splitting.md     # ADR-039: split Cambridge multi-sense definitions at every numeric marker, including idiom markers without POS
+│   └── 040-inflectional-morphology-lemma.md # ADR-040: inflectional morphology lemma — comparative/superlative (-er/-est/-ier/-iest) + irregular comparison; orchestrator lemma fallback + multi-candidate
+│   └── 041-unified-lemma-module.md          # ADR-041: unified multi-candidate lemma module — ALL 8 inflectional suffixes + irregulars; supersedes ADR-040 single-candidate; phraseMatcher delegates
+│   └── 042-sticky-candidate-header.md       # ADR-042: sticky candidate header cho popup dictionary (CSS position:sticky, 2-layer shell + candidate-list wrapper, iOS Safari bug workaround)
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -262,5 +265,5 @@ tests/          # Test files (chi tiết trong 2-architechture-system.md)
 - Thêm/xóa/sửa file src/ → update 2-architechture-system.md (cây thư mục + dependency + function index)
 - Thay đổi kiến trúc → thêm ADR vào docs/adr/
 - Đúc rút nguyên lý → thêm vào docs/knowledge/<principle>.md
-- Fix bug → ghi bug log + convention vào docs/knowledge/<principle>.md
+- Fix bug → ghi bug log + nguyên lý vào docs/knowledge/<principle>.md
 - Sinh/rename/xóa system term (tên file, toggle, message type, store key) → update 1-share-language.md (xem Update protocol cuối file đó)

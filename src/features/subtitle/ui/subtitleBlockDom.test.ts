@@ -46,8 +46,7 @@ describe('createSubtitleBlockDOM', () => {
     expect(svg?.getAttribute('aria-hidden')).toBe('true');
     expect(svg?.getAttribute('focusable')).toBe('false');
 
-    const svgElements = Array.from(svg?.querySelectorAll('*') ?? []);
-    const strokes = svgElements.filter((el) => el.getAttribute('stroke') === 'currentColor');
-    expect(strokes.length).toBeGreaterThan(0);
+    // stroke is on the <svg> root (ICON_CATALOG convention) — inherited by children
+    expect(svg?.getAttribute('stroke')).toBe('currentColor');
   });
 });

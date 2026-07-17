@@ -115,7 +115,8 @@ export type WorkerMessageType =
   | 'PUSH_DEFINITION'
   | 'LOOKUP'
   | 'LOOKUP_CANCEL'
-  | 'LOOKUP_RESULT';
+  | 'LOOKUP_RESULT'
+  | 'LOOKUP_RESULT_APPEND';
 
 export interface WorkerMessageBase {
   readonly type: WorkerMessageType;
@@ -175,7 +176,14 @@ export interface WorkerLookupResultMessage {
   readonly error?: string;
 }
 
-export type WorkerResponseMessage = WorkerLookupResultMessage | WorkerReadyMessage;
+/** Worker → host: append an additional candidate to an existing popup. */
+export interface WorkerLookupAppendMessage {
+  readonly type: 'LOOKUP_RESULT_APPEND';
+  readonly requestId: string;
+  readonly result: LookupResult;
+}
+
+export type WorkerResponseMessage = WorkerLookupResultMessage | WorkerLookupAppendMessage | WorkerReadyMessage;
 
 // === MV3 message payloads (spec §9.4 B — content/background fan-out) ===
 // Payload luôn có tabId khi response fan-out (AGENTS.md MV3 rule).

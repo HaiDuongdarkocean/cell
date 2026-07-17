@@ -33,7 +33,7 @@ import {
   type PhraseIndex,
 } from '@/features/dictionary/logic/phraseIndexCompiler';
 import {
-  matchPhrase,
+  matchPhraseAll,
   comparePhraseMatches,
   type PhraseMatch,
 } from '@/features/dictionary/logic/phraseMatcher';
@@ -155,6 +155,23 @@ export async function lookupOrchestrator(
   } = {},
   signal?: AbortSignal,
 ): Promise<LookupResult> {
+  const results = await lookupOrchestratorMulti(request, deps, signal);
+  return results[0]!;
+}
+
+/**
+ * Multi-candidate lookup: returns ALL phrase match candidates + winner.
+ * Winner is first element; remaining are additional candidates sorted by priority.
+ * Used by the popup to display multiple candidates progressively.
+ */
+export async function lookupOrchestratorMulti(
+  request: LookupRequest,
+  deps: {
+    readonly pluginRegistry?: typeof pluginRegistry;
+    readonly phraseIndexes?: ReadonlyMap<number, PhraseIndex>;
+  } = {},
+  signal?: AbortSignal,
+): Promise<LookupResult[]> {
   checkAbort(signal);
   const { langCode, contextSentence, cursorOffset, term, fallback } = request;
 
@@ -182,17 +199,19 @@ export async function lookupOrchestrator(
   let lookupTerm = term;
   let detectedPhrase: PhraseMatch | null = null;
   let matchSource: MatchSource = 'dictionary';
+  let additionalPhraseMatches: PhraseMatch[] = [];
 
   if (fallback) {
     // User selected text — use verbatim, no phrase match.
     matchSource = 'fallback';
   } else if (langCode === 'en') {
     // English: run phrase matcher with all phrase indexes (ADR-037).
-    const phraseMatch = await tryEnglishPhraseMatch(langCode, contextSentence, cursorOffset, deps, signal);
-    if (phraseMatch) {
-      detectedPhrase = phraseMatch;
-      lookupTerm = phraseMatch.dictionaryTerm;
+    const allMatches = await tryEnglishPhraseMatchAll(langCode, contextSentence, cursorOffset, deps, signal);
+    if (allMatches.length > 0) {
+      detectedPhrase = allMatches[0]!;
+      lookupTerm = detectedPhrase.dictionaryTerm;
       matchSource = 'plugin';
+      additionalPhraseMatches = allMatches.slice(1);
     } else {
       // Word fallback: find the hovered token.
       const tokens = plugin.tokenize(contextSentence);
@@ -216,18 +235,114 @@ export async function lookupOrchestrator(
 
   checkAbort(signal);
 
-  // 3. Query dictionary for definitions.
-  const dictEntries = await findDictionaryByTerm(langCode, lookupTerm);
+  // 3. Build winner result (phrase match or word fallback).
+  const winnerResult = await assembleLookupResult(
+    langCode, lookupTerm, detectedPhrase, matchSource, plugin, signal,
+  );
+
+  // 4. Build additional candidate results for remaining phrase matches.
+  const additionalResults: LookupResult[] = [];
+  for (const match of additionalPhraseMatches) {
+    checkAbort(signal);
+    const result = await assembleLookupResult(
+      langCode, match.dictionaryTerm, match, 'plugin', plugin, signal,
+    );
+    additionalResults.push(result);
+  }
+
+  // 5. Inflectional morphology (ADR-041): if winner is a word fallback (not
+  //    a phrase match) and has definitions, also add lemma candidates as
+  //    additional results. This lets the user see both "easiest" and "easy"
+  //    when the dictionary has entries for both. If the raw term wasn't in
+  //    the dictionary, assembleLookupResult already fell back to a lemma
+  //    internally — in that case winnerResult.term IS a lemma, so we skip
+  //    candidates that match it to avoid duplicates.
+  if (!detectedPhrase && winnerResult.definitions.length > 0 && plugin.lemmaCandidates) {
+    const candidates = plugin.lemmaCandidates(lookupTerm);
+    const seen = new Set([winnerResult.term.toLowerCase()]);
+    for (const candidate of candidates) {
+      if (seen.has(candidate.toLowerCase())) continue;
+      checkAbort(signal);
+      const lemmaResult = await assembleLookupResult(
+        langCode, candidate, null, 'dictionary', plugin, signal,
+      );
+      // Dedup by the EFFECTIVE term (after internal lemma fallback), not the
+      // candidate string — assembleLookupResult may resolve "easier" → "easy"
+      // internally, which would duplicate the winner.
+      if (lemmaResult.definitions.length > 0 && !seen.has(lemmaResult.term.toLowerCase())) {
+        seen.add(lemmaResult.term.toLowerCase());
+        additionalResults.push(lemmaResult);
+      }
+    }
+  } else if (!detectedPhrase && winnerResult.definitions.length > 0 && plugin.lemma) {
+    // Backward compat: single-lemma fallback for plugins without lemmaCandidates.
+    const lemma = plugin.lemma(lookupTerm);
+    if (lemma && lemma.toLowerCase() !== winnerResult.term.toLowerCase()) {
+      checkAbort(signal);
+      const lemmaResult = await assembleLookupResult(
+        langCode, lemma, null, 'dictionary', plugin, signal,
+      );
+      if (lemmaResult.definitions.length > 0 && lemmaResult.term.toLowerCase() !== winnerResult.term.toLowerCase()) {
+        additionalResults.push(lemmaResult);
+      }
+    }
+  }
+
+  return [winnerResult, ...additionalResults];
+}
+
+/**
+ * Assemble a single LookupResult for a term: query dictionary + frequency,
+ * split senses, build definitions, reading, parts of speech.
+ *
+ * If the raw term returns no dictionary entries and the plugin provides a
+ * lemma function, retries with the lemma form (inflectional morphology
+ * fallback: "easiest" → "easy", "better" → "good").
+ */
+async function assembleLookupResult(
+  langCode: string,
+  lookupTerm: string,
+  detectedPhrase: PhraseMatch | null,
+  matchSource: MatchSource,
+  plugin: LanguagePlugin,
+  signal?: AbortSignal,
+): Promise<LookupResult> {
   checkAbort(signal);
 
-  // 4. Query frequency.
-  const freqEntries = await findFrequencyByTerm(langCode, lookupTerm);
+  let dictEntries = await findDictionaryByTerm(langCode, lookupTerm);
   checkAbort(signal);
 
-  // 5. Assemble definitions — split multi-sense entries into individual senses.
-  //    Cambridge JSON often stores all senses in one `definition` field with
-  //    numbered markers ("1.(verb) ... 2.(verb) ..."). Split so each sense
-  //    gets its own checkbox in the popup (spec §4.6.3 A9).
+  // Inflectional morphology fallback (ADR-041): if raw term not in dictionary,
+  // try ALL lemma candidates from the shared multi-candidate lemma module.
+  // This handles CVC doubling (bigger→big), silent-e (nicest→nice), irregular
+  // plurals (children→child), possessive (cat's→cat), etc.
+  let effectiveTerm = lookupTerm;
+  if (dictEntries.length === 0 && plugin.lemmaCandidates) {
+    const candidates = plugin.lemmaCandidates(lookupTerm);
+    for (const candidate of candidates) {
+      if (candidate.toLowerCase() === lookupTerm.toLowerCase()) continue;
+      checkAbort(signal);
+      dictEntries = await findDictionaryByTerm(langCode, candidate);
+      if (dictEntries.length > 0) {
+        effectiveTerm = candidate;
+        break;
+      }
+    }
+  } else if (dictEntries.length === 0 && plugin.lemma) {
+    // Backward compat: single-lemma fallback for plugins without lemmaCandidates.
+    const lemma = plugin.lemma(lookupTerm);
+    if (lemma && lemma.toLowerCase() !== lookupTerm.toLowerCase()) {
+      dictEntries = await findDictionaryByTerm(langCode, lemma);
+      checkAbort(signal);
+      if (dictEntries.length > 0) {
+        effectiveTerm = lemma;
+      }
+    }
+  }
+
+  const freqEntries = await findFrequencyByTerm(langCode, effectiveTerm);
+  checkAbort(signal);
+
   const definitions: DefinitionEntry[] = [];
   let defIdx = 0;
   for (const e of dictEntries) {
@@ -246,31 +361,22 @@ export async function lookupOrchestrator(
     }
   }
 
-  // 6. Assemble parts of speech.
   const partsOfSpeech = [...new Set(definitions.map((d) => d.pos).filter(Boolean))] as string[];
 
-  // 7. Assemble reading (IPA) — prefer pronunciation field (Cambridge JSON
-  //    stores IPA here), fall back to reading field (Yomitan). Never fall back
-  //    to term: a non-IPA reading is noise, not information.
-  //    Import strategies fall back reading→term when empty (baseImportStrategy,
-  //    normalizationPipeline), so a phrase with no IPA ends up with reading=term.
-  //    Strip that echo so the popup doesn't show the term as its own IPA.
   const rawReading = dictEntries[0]?.pronunciation || dictEntries[0]?.reading || '';
-  const reading = rawReading && rawReading.toLowerCase() === lookupTerm.toLowerCase()
+  const reading = rawReading && rawReading.toLowerCase() === effectiveTerm.toLowerCase()
     ? ''
     : rawReading;
 
-  // 8. Assemble frequency.
   const frequency =
     freqEntries.length > 0
       ? { rank: freqEntries[0]!.frequency, source: 'frequency' }
       : null;
 
-  // 9. Word status — from word status store (Task 3.1). For now, 'unknown'.
   const status = 'unknown' as const;
 
   return {
-    term: lookupTerm,
+    term: effectiveTerm,
     langCode,
     reading,
     readingKind: plugin.readingKind,
@@ -285,15 +391,16 @@ export async function lookupOrchestrator(
 
 /**
  * Try English phrase match across all phrase indexes (multi-resource).
- * Returns the best match by (resourceId descending, comparePhraseMatches).
+ * Returns ALL matches sorted by (resourceId descending, comparePhraseMatches).
+ * The first element is the winner; remaining are additional candidates.
  */
-async function tryEnglishPhraseMatch(
+async function tryEnglishPhraseMatchAll(
   langCode: string,
   sentence: string,
   cursorOffset: number,
   deps: { readonly phraseIndexes?: ReadonlyMap<number, PhraseIndex> },
   signal?: AbortSignal,
-): Promise<PhraseMatch | null> {
+): Promise<PhraseMatch[]> {
   let indexes: { resourceId: number; index: PhraseIndex }[];
 
   if (deps.phraseIndexes && deps.phraseIndexes.size > 0) {
@@ -301,7 +408,7 @@ async function tryEnglishPhraseMatch(
   } else {
     // Load from IndexedDB.
     const stored = await getAllPhraseIndexes(langCode).catch(() => []);
-    if (stored.length === 0) return null;
+    if (stored.length === 0) return [];
     checkAbort(signal);
     // Deserialize each blob — skip corrupted/version-mismatched blobs
     // and fall back to word-level lookup for those resources.
@@ -313,7 +420,7 @@ async function tryEnglishPhraseMatch(
         // Version mismatch or corrupt blob — skip, word fallback handles it.
       }
     }
-    if (indexes.length === 0) return null;
+    if (indexes.length === 0) return [];
   }
 
   // Sort by resourceId descending (newest import wins).
@@ -322,18 +429,31 @@ async function tryEnglishPhraseMatch(
   const candidates: { resourceId: number; match: PhraseMatch }[] = [];
   for (const { resourceId, index } of indexes) {
     checkAbort(signal);
-    const match = matchPhrase({ sentence, cursorOffset }, index, resourceId);
-    if (match) candidates.push({ resourceId, match });
+    // matchPhraseAll returns ALL matches at cursor (not just winner).
+    const allMatches = matchPhraseAll({ sentence, cursorOffset }, index, resourceId);
+    for (const match of allMatches) {
+      candidates.push({ resourceId, match });
+    }
   }
 
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) return [];
 
-  // Pick winner: resourceId descending, then comparePhraseMatches.
+  // Sort: resourceId descending, then comparePhraseMatches.
   candidates.sort((a, b) => {
     const prioDiff = b.resourceId - a.resourceId;
     if (prioDiff !== 0) return prioDiff;
     return comparePhraseMatches(a.match, b.match);
   });
 
-  return candidates[0]!.match;
+  // Deduplicate by dictionaryTerm — same term from different resources
+  // is the same candidate, keep the highest-priority one.
+  const seen = new Set<string>();
+  const unique: PhraseMatch[] = [];
+  for (const { match } of candidates) {
+    if (seen.has(match.dictionaryTerm)) continue;
+    seen.add(match.dictionaryTerm);
+    unique.push(match);
+  }
+
+  return unique;
 }

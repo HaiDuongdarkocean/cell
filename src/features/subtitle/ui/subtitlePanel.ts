@@ -9,6 +9,7 @@
 //   focus: outline 2px --color-primary, offset 2px
 // Reference: design-system.md §2 Icon Button.
 
+import { ICON_CATALOG } from '@/shared/icons';
 import { seekVideo, mountToWatchVideo } from './netflixPlayback';
 
 /**
@@ -22,7 +23,10 @@ export function createToggleButton(container: HTMLElement): HTMLButtonElement {
   btn.setAttribute('aria-label', 'Toggle subtitle panel');
   btn.setAttribute('title', 'Toggle subtitle panel');
   // Side panel toggle icon — rounded rect 60/40 split (sync with navClusterIcons style)
-  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:65% !important;height:65% !important;display:block;fill:none !important"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="14.4" y1="2" x2="14.4" y2="22"/></svg>`;
+  btn.innerHTML = ICON_CATALOG.sidePanel.svg.replace(
+    '<svg ',
+    '<svg style="width:65% !important;height:65% !important;display:block;fill:none !important" ',
+  );
   btn.style.cssText = `
     position: absolute;
     right: 8px;

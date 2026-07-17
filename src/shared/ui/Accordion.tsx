@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './Accordion.module.css';
 
 type AccordionType = 'single' | 'multiple';
@@ -110,18 +111,7 @@ function AccordionTrigger({ children, className }: AccordionTriggerProps): React
       onClick={() => toggle(itemValue)}
     >
       <span className={styles.triggerText}>{children}</span>
-      <svg
-        className={styles.chevron}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <polyline points="6 9 12 15 18 9" />
-      </svg>
+      <Icon name="chevronDown" className={styles.chevron} />
     </button>
   );
 }

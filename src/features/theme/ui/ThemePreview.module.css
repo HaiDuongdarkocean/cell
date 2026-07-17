@@ -101,5 +101,6 @@
   font-size: var(--font-size-sm, 13px);
 }
 
-.toastSuccess { background: var(--color-success); color: #fff; }
-.toastError { background: var(--color-error); color: #fff; }
+.toastSuccess { background: var(--color-success); color: var(--color-text-inverse, #fff); }
+.toastError { background: var(--color-error); color: var(--color-text-inverse, #fff); }
+

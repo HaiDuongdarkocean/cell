@@ -21,6 +21,12 @@ import { putPhraseIndex } from '../repositories/phraseIndexRepository';
 /**
  * Conservative set of English verbs whose literals should be marked inflectable
  * (so the matcher accepts inflected forms: take/took/taken/taking, run/ran/…).
+ *
+ * This set is NO LONGER the sole source of inflectable verbs — the builder
+ * now auto-collects ALL first words from multiword terms and passes them as
+ * inflectableLiterals (see buildPhraseIndexForResource). This set is kept
+ * only for backward compatibility with tests that import it directly.
+ *
  * Sourced from the most common Cambridge phrasal-verb heads. A literal not in
  * this set is matched verbatim — safer to under-approximate than to mark a
  * non-verb as inflectable.
@@ -74,6 +80,23 @@ export async function buildPhraseIndexForResource(
   };
   let nextId = 0;
 
+  // Pass 1: auto-collect first words from all multiword terms.
+  // Data-driven inflectable set — any first word in a template is a potential
+  // verb head (burn, steal, fly, …). This replaces the curated ~100-verb list
+  // which missed thousands of Cambridge verbs. The lemmatizer only strips
+  // -ed/-ing/-s, so non-verb first words (the, a, in) are harmless — they have
+  // no suffix to strip and return [word] unchanged.
+  // ponytail: marking non-verbs inflectable is safe because candidateLemmas
+  // is over-generative by design — false candidates don't match any anchor.
+  const firstWords = new Set<string>();
+  for (const entry of entries) {
+    const term = entry.term.trim().normalize('NFC').toLowerCase();
+    if (!term || term.split(/\s+/).length < 2) continue;
+    const firstWord = term.split(/\s+/)[0]!;
+    firstWords.add(firstWord);
+  }
+
+  // Pass 2: parse each term with auto-collected inflectable set.
   for (const entry of entries) {
     const term = entry.term.trim().normalize('NFC').toLowerCase();
     // Only multiword terms (≥2 whitespace tokens) are phrase candidates.
@@ -81,7 +104,7 @@ export async function buildPhraseIndexForResource(
     if (seen.has(term)) continue;
     seen.add(term);
 
-    const parsed = parsePhraseTemplate(term, { inflectableLiterals: ENGLISH_INFLECTABLE_VERBS });
+    const parsed = parsePhraseTemplate(term, { inflectableLiterals: firstWords });
     if (parsed.status !== 'supported') {
       breakdown[parsed.status]++;
       continue;

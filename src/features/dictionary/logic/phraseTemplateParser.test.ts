@@ -15,8 +15,9 @@ function alternative(...branches: PhraseNode[][]): PhraseNode {
   return { type: 'alternative', branches };
 }
 
-function slot(kind: 'object' | 'person' | 'possessive'): PhraseNode {
-  return { type: 'slot', kind };
+function slot(kind: 'object' | 'person' | 'possessive', maxTokens = 3): PhraseNode {
+  if (kind === 'person' && maxTokens === 3) maxTokens = 2;
+  return { type: 'slot', kind, maxTokens };
 }
 
 describe('phraseTemplateParser', () => {
@@ -53,11 +54,11 @@ describe('phraseTemplateParser', () => {
       literal('be', true),
       optional(literal('right')),
       literal('under'),
-      slot('possessive'),
+      slot('possessive', 2),
       literal('nose'),
     ]);
     expect(result.minSurfaceTokens).toBe(4);
-    expect(result.maxSurfaceTokens).toBe(5);
+    expect(result.maxSurfaceTokens).toBe(6);
   });
 
   it('parses slash alternatives without keeping the slash literal', () => {
@@ -142,7 +143,7 @@ describe('phraseTemplateParser', () => {
       literal('carry'),
       alternative([slot('person')], [slot('object')]),
       literal('through'),
-      slot('object'),
+      slot('object', 2),
     ]);
   });
 

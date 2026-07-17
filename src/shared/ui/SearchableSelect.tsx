@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useEffect, type KeyboardEvent, type ReactElement } from 'react';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './SearchableSelect.module.css';
 
 /** A single selectable option. */
@@ -143,18 +144,7 @@ export function SearchableSelect({
         <span className={styles.value}>
           {selectedOption?.label || placeholder}
         </span>
-        <svg
-          className={styles.chevron}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        <Icon name="chevronDown" className={styles.chevron} />
       </button>
 
       {/* Menu */}
@@ -162,6 +152,7 @@ export function SearchableSelect({
         <div className={styles.menu} role="listbox" style={{ maxHeight }}>
           {/* Search input */}
           <div className={styles.searchWrap}>
+            {/* FIXME: extract to registry once stroke-width variant supported — search circle r=7 differs from ICON_CATALOG.search (r=8) */}
             <svg
               className={styles.searchIcon}
               viewBox="0 0 24 24"
@@ -205,18 +196,7 @@ export function SearchableSelect({
                 >
                   <span className={styles.optionLabel}>{opt.label}</span>
                   {opt.value === value && (
-                    <svg
-                      className={styles.checkMark}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                    <Icon name="check" className={styles.checkMark} />
                   )}
                 </li>
               ))

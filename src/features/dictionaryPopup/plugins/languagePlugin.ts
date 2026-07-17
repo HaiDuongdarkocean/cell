@@ -66,6 +66,8 @@ export interface LanguagePlugin {
   segment?(text: string, dict: TermProbe): readonly Token[];
   /** Lemmatize a word (was → be, handed → hand). */
   lemma?(word: string): string;
+  /** Multi-candidate lemmatization: returns all possible base forms (ADR-041). */
+  lemmaCandidates?(word: string): string[];
   /** Normalize possessive pronouns to a placeholder. */
   normalizePossessive?(text: string): string;
   /** Match a phrase from the full sentence at the cursor position. */

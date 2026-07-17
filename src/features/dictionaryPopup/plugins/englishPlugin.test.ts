@@ -67,33 +67,26 @@ describe('englishPlugin', () => {
     });
   });
 
-  describe('lemma', () => {
-    it('lemmatizes irregular verbs', () => {
+  describe('lemma — delegates to shared englishLemma module (ADR-041)', () => {
+    // Detailed lemma tests are in englishLemma.test.ts.
+    // These tests verify the plugin delegates correctly.
+
+    it('lemmatizes irregular verbs via shared module', () => {
       expect(englishLemma('was')).toBe('be');
-      expect(englishLemma('were')).toBe('be');
       expect(englishLemma('took')).toBe('take');
-      expect(englishLemma('gave')).toBe('give');
       expect(englishLemma('ran')).toBe('run');
-      expect(englishLemma('came')).toBe('come');
     });
 
-    it('lemmatizes regular past tense (-ed)', () => {
+    it('lemmatizes regular past tense (-ed) with CVC doubling', () => {
       expect(englishLemma('kicked')).toBe('kick');
-      expect(englishLemma('looked')).toBe('look');
-      expect(englishLemma('started')).toBe('start');
+      // CVC doubling now works: running → run (not runn)
+      expect(englishLemma('running')).toBe('run');
     });
 
-    it('lemmatizes -ied → -y (carried → carry)', () => {
-      expect(englishLemma('carried')).toBe('carry');
-    });
-
-    it('lemmatizes 3rd person singular (-s)', () => {
-      expect(englishLemma('looks')).toBe('look');
-      expect(englishLemma('kicks')).toBe('kick');
-    });
-
-    it('lemmatizes -ies → -y (carries → carry)', () => {
-      expect(englishLemma('carries')).toBe('carry');
+    it('lemmatizes comparative/superlative', () => {
+      expect(englishLemma('easier')).toBe('easy');
+      expect(englishLemma('easiest')).toBe('easy');
+      expect(englishLemma('better')).toBe('good');
     });
 
     it('does not split -ss words (class → class)', () => {
@@ -101,15 +94,24 @@ describe('englishPlugin', () => {
       expect(englishLemma('boss')).toBe('boss');
     });
 
-    it('lemmatizes gerund (-ing)', () => {
-      expect(englishLemma('running')).toBe('runn');
-      // ponytail: gerund stripping is naive (runn, not run) — the matcher
-      // also tries stem+e and stem+y. This is a known ceiling.
-    });
-
     it('returns lowercase for non-verb words', () => {
       expect(englishLemma('hello')).toBe('hello');
       expect(englishLemma('WORLD')).toBe('world');
+    });
+  });
+
+  describe('lemmaCandidates — multi-candidate (ADR-041)', () => {
+    it('returns multiple candidates for ambiguous inflections', () => {
+      const plugin = createEnglishPlugin(compilePhraseIndex([]));
+      const cands = plugin.lemmaCandidates!('bigger');
+      expect(cands).toContain('big');
+      expect(cands).toContain('bigger'); // original as fallback
+    });
+
+    it('returns single candidate for unambiguous irregulars', () => {
+      const plugin = createEnglishPlugin(compilePhraseIndex([]));
+      expect(plugin.lemmaCandidates!('was')).toEqual(['be']);
+      expect(plugin.lemmaCandidates!('better')).toEqual(['good']);
     });
   });
 

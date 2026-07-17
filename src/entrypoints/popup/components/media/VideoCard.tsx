@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DetectedVideo, VideoQuality } from '@/entities/media';
 import { IconButton } from '@/shared/ui/IconButton';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './VideoCard.module.css';
 
 interface VideoCardProps {
@@ -98,9 +99,7 @@ export function VideoCard({
       <div className={styles.mainRow} onClick={handleCardClick}>
         {/* Icon */}
         <div className={`${styles.icon} ${styles.videoIcon}`} aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 3l14 9-14 9V3z" />
-          </svg>
+          <Icon name="play" />
         </div>
 
         {/* Body */}
@@ -131,9 +130,7 @@ export function VideoCard({
                       aria-expanded={qualityOpen}
                     >
                       {selectedVariant?.quality ?? 'Quality'}
-                      <svg className={styles.chevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M6 9l6 6 6-6" />
-                      </svg>
+                      <Icon name="chevronDown" className={styles.chevron} />
                     </button>
 
                     {qualityOpen && (
@@ -170,19 +167,15 @@ export function VideoCard({
             aria-expanded={urlExpanded}
             data-testid="expand-url-btn"
           >
-            <svg
+            <Icon
+              name="chevronDown"
               className={`${styles.expandChevron} ${urlExpanded ? styles.expandChevronOpen : ''}`}
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
+            />
           </IconButton>
           <div className={styles.action} onClick={handleActionClick}>
             {downloading ? (
               <span className={styles.downloadingIndicator} aria-label="Downloading">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </svg>
+                <Icon name="loader" />
               </span>
             ) : (
               <IconButton
@@ -192,9 +185,7 @@ export function VideoCard({
                 aria-label="Download"
                 data-testid="download-button"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-                </svg>
+                <Icon name="download" size={16} />
               </IconButton>
             )}
           </div>
@@ -211,10 +202,7 @@ export function VideoCard({
             data-testid="video-url"
             title="Click to copy URL"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
+            <Icon name="copy" />
             <span className={styles.urlText}>{video.url}</span>
           </button>
           {copied && <span className={styles.copiedBadge} data-testid="copied-toast">Copied</span>}

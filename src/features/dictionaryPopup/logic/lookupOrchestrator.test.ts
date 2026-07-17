@@ -1,7 +1,7 @@
 // lookupOrchestrator tests — spec §4.6.3/§9.4.
 
 import 'fake-indexeddb/auto';
-import { lookupOrchestrator, createDictionaryProbeAsync } from './lookupOrchestrator';
+import { lookupOrchestrator, lookupOrchestratorMulti, createDictionaryProbeAsync } from './lookupOrchestrator';
 import { closeAllDBs, clearAllStores } from '@/features/dictionary/repositories/baseRepository';
 import { addResource } from '@/features/dictionary/repositories/resourceRepository';
 import { addDictionaryEntry } from '@/features/dictionary/repositories/dictionaryRepository';
@@ -260,6 +260,283 @@ describe('lookupOrchestrator — English', () => {
     expect(result.definitions[20]!.text).toContain('out of the question');
     expect(result.definitions[20]!.pos).toBe('noun');
     expect(result.definitions[22]!.text).toBe('to express doubts about something');
+  });
+
+  it('falls back to lemma when raw inflected term not in dictionary (easiest → easy)', async () => {
+    // Dictionary has "easy" but NOT "easiest".
+    await seedEnglishDictionary([
+      { term: 'easy', definition: 'not difficult', pos: 'adjective' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'easiest',
+      langCode: 'en',
+      contextSentence: 'He was the easiest guy to push around.',
+      cursorOffset: 12,
+    });
+
+    // Should fall back to lemma "easy" and find the definition.
+    expect(result.term).toBe('easy');
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]!.text).toBe('not difficult');
+  });
+
+  it('falls back to lemma for comparative (easier → easy)', async () => {
+    await seedEnglishDictionary([
+      { term: 'easy', definition: 'not difficult', pos: 'adjective' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'easier',
+      langCode: 'en',
+      contextSentence: 'It would have been easier for him.',
+      cursorOffset: 22,
+    });
+
+    expect(result.term).toBe('easy');
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]!.text).toBe('not difficult');
+  });
+
+  it('falls back to lemma for irregular comparison (better → good)', async () => {
+    await seedEnglishDictionary([
+      { term: 'good', definition: 'of high quality', pos: 'adjective' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'better',
+      langCode: 'en',
+      contextSentence: 'This is better than that.',
+      cursorOffset: 10,
+    });
+
+    expect(result.term).toBe('good');
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]!.text).toBe('of high quality');
+  });
+
+  it('falls back to lemma for CVC doubling (bigger → big)', async () => {
+    await seedEnglishDictionary([
+      { term: 'big', definition: 'of large size', pos: 'adjective' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'bigger',
+      langCode: 'en',
+      contextSentence: 'This is a bigger box.',
+      cursorOffset: 10,
+    });
+
+    expect(result.term).toBe('big');
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]!.text).toBe('of large size');
+  });
+
+  it('falls back to lemma for silent-e (nicest → nice)', async () => {
+    await seedEnglishDictionary([
+      { term: 'nice', definition: 'pleasant', pos: 'adjective' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'nicest',
+      langCode: 'en',
+      contextSentence: 'This is the nicest day.',
+      cursorOffset: 12,
+    });
+
+    expect(result.term).toBe('nice');
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]!.text).toBe('pleasant');
+  });
+
+  it('falls back to lemma for irregular plural (children → child)', async () => {
+    await seedEnglishDictionary([
+      { term: 'child', definition: 'a young human', pos: 'noun' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'children',
+      langCode: 'en',
+      contextSentence: 'The children are playing.',
+      cursorOffset: 4,
+    });
+
+    expect(result.term).toBe('child');
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]!.text).toBe('a young human');
+  });
+
+  it('falls back to lemma for -ves plural (knives → knife)', async () => {
+    await seedEnglishDictionary([
+      { term: 'knife', definition: 'a cutting tool', pos: 'noun' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'knives',
+      langCode: 'en',
+      contextSentence: 'These knives are sharp.',
+      cursorOffset: 6,
+    });
+
+    expect(result.term).toBe('knife');
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]!.text).toBe('a cutting tool');
+  });
+
+  it('falls back to lemma for sibilant plural (boxes → box)', async () => {
+    await seedEnglishDictionary([
+      { term: 'box', definition: 'a container', pos: 'noun' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: 'boxes',
+      langCode: 'en',
+      contextSentence: 'The boxes are heavy.',
+      cursorOffset: 4,
+    });
+
+    expect(result.term).toBe('box');
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]!.text).toBe('a container');
+  });
+
+  it('falls back to lemma for possessive (cat\'s → cat)', async () => {
+    await seedEnglishDictionary([
+      { term: 'cat', definition: 'a feline animal', pos: 'noun' },
+    ]);
+
+    const result = await lookupOrchestrator({
+      term: "cat's",
+      langCode: 'en',
+      contextSentence: "The cat's tail is long.",
+      cursorOffset: 4,
+    });
+
+    expect(result.term).toBe('cat');
+    expect(result.definitions).toHaveLength(1);
+    expect(result.definitions[0]!.text).toBe('a feline animal');
+  });
+});
+
+describe('lookupOrchestratorMulti — multi-candidate', () => {
+  it('returns all phrase matches as separate candidates', async () => {
+    // Seed two phrase templates that both match "get" in "I get out and get over it."
+    await seedEnglishDictionary(
+      [
+        { term: 'get out', definition: 'to leave', pos: 'phrasal verb' },
+        { term: 'get over', definition: 'to recover from', pos: 'phrasal verb' },
+        { term: 'get', definition: 'to obtain', pos: 'verb' },
+      ],
+      ['get out', 'get over'],
+    );
+
+    const results = await lookupOrchestratorMulti({
+      term: 'get',
+      langCode: 'en',
+      contextSentence: 'I get out and get over it.',
+      cursorOffset: 2, // cursor on "get" (first one)
+    });
+
+    // Winner = "get out" (matches at cursor). Additional = none for first "get"
+    // since "get over" matches the second "get" (different cursor position).
+    // But both templates anchor on "get" — matcher returns best match at cursor.
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    expect(results[0]!.term).toBe('get out');
+    expect(results[0]!.detectedPhrase).not.toBeNull();
+  });
+
+  it('returns single result when only one phrase matches', async () => {
+    await seedEnglishDictionary(
+      [
+        { term: 'take off', definition: 'to remove', pos: 'phrasal verb' },
+        { term: 'hello', definition: 'greeting', pos: 'noun' },
+      ],
+      ['take off'],
+    );
+
+    const results = await lookupOrchestratorMulti({
+      term: 'take',
+      langCode: 'en',
+      contextSentence: 'Take off your shoes.',
+      cursorOffset: 0,
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]!.term).toBe('take off');
+    expect(results[0]!.detectedPhrase).not.toBeNull();
+  });
+
+  it('returns word fallback as single result when no phrase matches', async () => {
+    await seedEnglishDictionary([{ term: 'hello', definition: 'greeting' }]);
+
+    const results = await lookupOrchestratorMulti({
+      term: 'hello',
+      langCode: 'en',
+      contextSentence: 'She said hello.',
+      cursorOffset: 9,
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]!.term).toBe('hello');
+    expect(results[0]!.detectedPhrase).toBeNull();
+    expect(results[0]!.matchSource).toBe('dictionary');
+  });
+
+  it('adds lemma as additional candidate when both raw and lemma are in dict', async () => {
+    // Dictionary has BOTH "easiest" (separate entry) AND "easy".
+    await seedEnglishDictionary([
+      { term: 'easiest', definition: 'most easy', pos: 'adjective' },
+      { term: 'easy', definition: 'not difficult', pos: 'adjective' },
+    ]);
+
+    const results = await lookupOrchestratorMulti({
+      term: 'easiest',
+      langCode: 'en',
+      contextSentence: 'He was the easiest guy.',
+      cursorOffset: 12,
+    });
+
+    // Winner = raw term "easiest", additional candidate = lemma "easy".
+    expect(results.length).toBe(2);
+    expect(results[0]!.term).toBe('easiest');
+    expect(results[0]!.definitions[0]!.text).toBe('most easy');
+    expect(results[1]!.term).toBe('easy');
+    expect(results[1]!.definitions[0]!.text).toBe('not difficult');
+  });
+
+  it('does not add lemma candidate when lemma equals raw term', async () => {
+    await seedEnglishDictionary([
+      { term: 'easy', definition: 'not difficult', pos: 'adjective' },
+    ]);
+
+    const results = await lookupOrchestratorMulti({
+      term: 'easy',
+      langCode: 'en',
+      contextSentence: 'This is easy.',
+      cursorOffset: 8,
+    });
+
+    // "easy" lemma is "easy" — no duplicate candidate.
+    expect(results).toHaveLength(1);
+    expect(results[0]!.term).toBe('easy');
+  });
+
+  it('returns only lemma result when raw term not in dict but lemma is', async () => {
+    await seedEnglishDictionary([
+      { term: 'easy', definition: 'not difficult', pos: 'adjective' },
+    ]);
+
+    const results = await lookupOrchestratorMulti({
+      term: 'easier',
+      langCode: 'en',
+      contextSentence: 'This is easier.',
+      cursorOffset: 8,
+    });
+
+    // Raw "easier" not in dict → lemma "easy" becomes winner. No duplicate.
+    expect(results).toHaveLength(1);
+    expect(results[0]!.term).toBe('easy');
+    expect(results[0]!.definitions[0]!.text).toBe('not difficult');
   });
 });
 

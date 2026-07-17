@@ -15,6 +15,7 @@ export function Spinner({ size = 'md', className, ...rest }: SpinnerProps): Reac
   const cls = [styles.spinner, styles[size], className ?? ''].filter(Boolean).join(' ');
 
   return (
+    // FIXME: extract to registry once stroke-width variant supported — Spinner is an SVG primitive with SVGAttributes passthrough and CSS animation; Icon span wrapper would break the API
     <svg
       className={cls}
       viewBox="0 0 24 24"

@@ -9,7 +9,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import { lookupOrchestrator } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
+import { lookupOrchestratorMulti } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
 import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
 
 /** In-flight lookup abort controllers (for cancellation). */
@@ -19,7 +19,7 @@ const abortControllers = new Map<string, AbortController>();
 export function registerLookupHandlers(ctx: BackgroundContext): void {
   ctx.on(
     MESSAGE_TYPES.LOOKUP_REQUEST,
-    async (request): Promise<MessageResponse<LookupResult>> => {
+    async (request): Promise<MessageResponse<LookupResult[]>> => {
       const payload = request.payload as { requestId: string; request: LookupRequest } | undefined;
       if (!payload?.requestId || !payload?.request) {
         return { success: false, error: 'Missing requestId or request in LOOKUP_REQUEST' };
@@ -30,8 +30,8 @@ export function registerLookupHandlers(ctx: BackgroundContext): void {
       abortControllers.set(requestId, ac);
 
       try {
-        const result = await lookupOrchestrator(lookupRequest, {}, ac.signal);
-        return { success: true, data: result };
+        const results = await lookupOrchestratorMulti(lookupRequest, {}, ac.signal);
+        return { success: true, data: results };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return { success: false, error: msg };

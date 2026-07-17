@@ -1,5 +1,6 @@
 import { useState, type HTMLAttributes, type ReactNode } from 'react';
 import { IconButton } from './IconButton';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './Alert.module.css';
 
 type AlertVariant = 'default' | 'success' | 'warning' | 'error';
@@ -54,18 +55,7 @@ export function Alert({
           size="xs"
           onClick={handleDismiss}
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <Icon name="x" />
         </IconButton>
       )}
     </div>

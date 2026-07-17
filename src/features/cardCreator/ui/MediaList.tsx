@@ -37,6 +37,7 @@ interface MediaListProps {
 /** Image icon for empty dropzone and audio waveform icon. */
 function ThumbIcon({ kind, size = 20 }: { kind: 'image' | 'audio'; size?: number }): ReactElement {
   if (kind === 'image') {
+    // FIXME: stroke 1.25 variant + different path — registry has stroke 2 (lucide image). Extract variant when needed.
     return (
       <svg
         viewBox="0 0 24 24"
@@ -56,6 +57,8 @@ function ThumbIcon({ kind, size = 20 }: { kind: 'image' | 'audio'; size?: number
       </svg>
     );
   }
+  // FIXME: stroke 1.5 variant — registry has stroke 2. Extract variant when needed.
+  // Path data matches ICON_CATALOG.audioWave exactly (source of the registry icon).
   return (
     <svg
       viewBox="0 0 24 24"
@@ -78,6 +81,7 @@ function ThumbIcon({ kind, size = 20 }: { kind: 'image' | 'audio'; size?: number
 }
 
 /** Plus icon used in the dashed image add button. */
+// Matches ICON_CATALOG.plus.svg (stroke 2, path identical). Kept inline as JSX for prop-based sizing.
 function PlusIcon(): ReactElement {
   return (
     <svg

@@ -1,5 +1,6 @@
 import { useState, useId, type ReactNode } from 'react';
 import { IconButton } from './IconButton';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './Sidebar.module.css';
 
 export interface SidebarProps {
@@ -54,19 +55,7 @@ export function Sidebar({
             size="xs"
             onClick={toggle}
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
+            <Icon name="menu" />
           </IconButton>
         </div>
       )}

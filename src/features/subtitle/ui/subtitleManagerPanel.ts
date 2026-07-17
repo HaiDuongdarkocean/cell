@@ -2,6 +2,7 @@
  * Item displayed in the Subtitle Manager Panel (ADR-015).
  * Can be auto-detected, imported, or machine-translated, target or native.
  */
+import { ICON_CATALOG } from '@/shared/icons';
 import { mountToWatchVideo } from './netflixPlayback';
 
 export interface SubtitlePanelItem {
@@ -30,9 +31,10 @@ export interface SubtitleManagerPanel {
   readonly destroy: () => void;
 }
 
-const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:65% !important;height:65% !important;display:block;fill:none !important"><rect x="1.5" y="2" width="21" height="20" rx="2.5"/><line x1="5" y1="8" x2="13" y2="8"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="16" x2="16" y2="16"/></svg>`;
-const CLOSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:12px !important;height:12px !important;display:block;fill:none !important"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>`;
-const CHEVRON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px !important;height:16px !important;display:block;fill:none !important"><path d="M6 9l6 6 6-6"/></svg>`;
+// SVG path data from ICON_CATALOG. Sizing style injected per-use (65% / 12px / 16px).
+const ICON_SVG = ICON_CATALOG.subtitleManager.svg.replace('<svg ', '<svg style="width:65% !important;height:65% !important;display:block;fill:none !important" ');
+const CLOSE_SVG = ICON_CATALOG.x.svg.replace('<svg ', '<svg style="width:12px !important;height:12px !important;display:block;fill:none !important" ');
+const CHEVRON_SVG = ICON_CATALOG.chevronDown.svg.replace('<svg ', '<svg style="width:16px !important;height:16px !important;display:block;fill:none !important" ');
 
 /**
  * Create the unified Subtitle Manager Panel (ADR-015 V2 / UI v4).

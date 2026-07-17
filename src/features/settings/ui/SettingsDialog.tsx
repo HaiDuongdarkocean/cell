@@ -215,6 +215,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
             onClick={onClose}
             aria-label="Close settings"
           >
+            {/* Matches ICON_CATALOG.x.svg (stroke 2, path equivalent). Kept inline as JSX. */}
             <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
@@ -711,6 +712,7 @@ function CustomSelect({ testId, value, options, onSelect }: CustomSelectProps): 
         aria-expanded={open}
       >
         <span className={styles.customSelectValue}>{selected?.label}</span>
+        {/* Matches ICON_CATALOG.chevronDown.svg (stroke 2, path equivalent). Kept inline as JSX. */}
         <svg className={styles.customSelectChevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M6 9l6 6 6-6" />
         </svg>

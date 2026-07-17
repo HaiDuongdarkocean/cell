@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Popup Toolbar — 5 Icon SVG Mockup v2 (3 variants)</title>
+<style>
+  :root {
+    --color-primary: #2563eb;
+    --color-primary-subtle: rgba(37,99,235,0.1);
+    --color-surface-hover: #f1f5f9;
+    --color-text: #0f172a;
+    --color-text-muted: #94a3b8;
+    --color-border: #e2e8f0;
+    --radius-full: 9999px;
+  }
+  [data-theme="dark"] {
+    --color-primary: #60a5fa;
+    --color-primary-subtle: rgba(96,165,250,0.15);
+    --color-surface-hover: #334155;
+    --color-text: #f1f5f9;
+    --color-text-muted: #64748b;
+    --color-border: #334155;
+  }
+  body {
+    font-family: Inter, -apple-system, sans-serif;
+    background: #ffffff;
+    color: var(--color-text);
+    padding: 24px;
+    margin: 0;
+  }
+  [data-theme="dark"] body { background: #0f172a; }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  h2 { font-size: 14px; font-weight: 600; margin: 32px 0 12px; }
+  h2:first-of-type { margin-top: 16px; }
+  p { font-size: 13px; color: var(--color-text-muted); margin-bottom: 24px; line-height: 1.6; }
+  code { background: var(--color-surface-hover); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  .toolbar {
+    display: flex;
+    gap: 4px;
+    padding: 4px 12px;
+    border-bottom: 1px solid var(--color-border);
+    align-items: center;
+    width: fit-content;
+  }
+  /* icon-btn — match popupShell .dp-icon-btn + design-system.md §2 Icon Button */
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.15s ease;
+  }
+  .icon-btn:hover { background: var(--color-surface-hover); }
+  .icon-btn:active { background: var(--color-surface-hover); transform: scale(0.96); }
+  .icon-btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .icon-btn.is-selected { background: var(--color-primary-subtle); color: var(--color-primary); }
+  .icon-btn svg { width: 24px; height: 24px; }
+  .icon-btn--none { margin-left: auto; }
+  .label { font-size: 11px; color: var(--color-text-muted); margin-top: 4px; text-align: center; }
+  .variant-row { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 8px; }
+  .variant-col { display: flex; flex-direction: column; align-items: center; }
+  .variant-title { font-size: 12px; font-weight: 600; color: var(--color-text-muted); margin-bottom: 8px; text-transform: uppercase; }
+  .toolbar-wrapper { display: flex; flex-direction: column; align-items: center; }
+  .theme-toggle {
+    position: fixed; top: 16px; right: 16px;
+    padding: 8px 16px; border-radius: 18px; border: 1px solid var(--color-border);
+    background: transparent; color: var(--color-text); cursor: pointer; font-size: 13px;
+  }
+  .icon-name { font-size: 10px; color: var(--color-text-muted); text-align: center; margin-top: 2px; }
+  .source-note { font-size: 11px; color: var(--color-text-muted); margin-top: 16px; padding: 12px; background: var(--color-surface-hover); border-radius: 8px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="document.documentElement.toggleAttribute('data-theme','dark')">Toggle Dark</button>
+
+<h1>Popup Toolbar — 5 Icon SVG v2 · 3 Variants</h1>
+<p>
+  Thay đổi từ v1:<br>
+  • <b>Audio</b> → waveform 5 vertical bars — match <code>cardCreator/MediaList.tsx</code> ThumbIcon<br>
+  • <b>Translate</b> → <code>languages</code> (Lucide) — A + 文 thay vì globe<br>
+  • <b>None</b> → 3 lựa chọn ngữ nghĩa "ẩn tab": eye-off / chevron-down / panel-bottom-close<br>
+  • Image + Links giữ nguyên (Lucide <code>image</code> + <code>link</code>)<br><br>
+  Style match codebase <code>src/</code>: Lucide stroke 2, viewBox 24, currentColor, round caps, <code>aria-hidden="true"</code>.<br>
+  Tham khảo: <code>Header.tsx</code>, <code>VideoCard.tsx</code>, <code>popupShell.ts</code> (dp-icon-btn).
+</p>
+
+<div class="source-note">
+<b>Style convention trong src/:</b><br>
+• <code>Header.tsx</code> line 26,42,60,91 — Lucide stroke 2, aria-hidden="true"<br>
+• <code>VideoCard.tsx</code> line 101,173 — Lucide stroke 2, aria-hidden="true"<br>
+• <code>popupShell.ts</code> line 272-290 — <code>.dp-icon-btn</code> 40×40, radius full, surface-hover<br>
+• <code>navClusterIcons.ts</code> — stroke 1.5 (nav cluster, không dùng cho toolbar)<br>
+• <code>shared/icons/svg/*.svg</code> — Lucide ISC license, stroke 2<br>
+• <code>cardCreator/MediaList.tsx</code> L60-76 — audio waveform 5 bars (stroke 1.5 @ 16-20px)<br>
+→ Popup toolbar dùng <b>stroke 2</b> (match dp-icon-btn + Header), audio waveform reuse từ cardCreator
+</div>
+
+<!-- ============ VARIANT 1: eye-off (hide) ============ -->
+<h2>Variant 1 — None = eye-off (Lucide "eye-off": ẩn/giấu)</h2>
+<div class="variant-row">
+  <div class="variant-col">
+    <div class="variant-title">Default (no tab active)</div>
+    <div class="toolbar-wrapper">
+      <div class="toolbar" id="v1-default"></div>
+      <div class="label">None active = "ẩn tab"</div>
+    </div>
+  </div>
+  <div class="variant-col">
+    <div class="variant-title">Audio active</div>
+    <div class="toolbar-wrapper">
+      <div class="toolbar" id="v1-audio"></div>
+      <div class="label">Audio selected</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VARIANT 2: chevron-down (collapse) ============ -->
+<h2>Variant 2 — None = chevron-down (Lucide "chevron-down": thu gọn)</h2>
+<div class="variant-row">
+  <div class="variant-col">
+    <div class="variant-title">Default (no tab active)</div>
+    <div class="toolbar-wrapper">
+      <div class="toolbar" id="v2-default"></div>
+      <div class="label">None active = "thu gọn"</div>
+    </div>
+  </div>
+  <div class="variant-col">
+    <div class="variant-title">Audio active</div>
+    <div class="toolbar-wrapper">
+      <div class="toolbar" id="v2-audio"></div>
+      <div class="label">Audio selected</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VARIANT 3: panel-bottom-close (panel hide) ============ -->
+<h2>Variant 3 — None = panel-bottom-close (Lucide "panel-bottom-close": ẩn panel)</h2>
+<div class="variant-row">
+  <div class="variant-col">
+    <div class="variant-title">Default (no tab active)</div>
+    <div class="toolbar-wrapper">
+      <div class="toolbar" id="v3-default"></div>
+      <div class="label">None active = "ẩn panel"</div>
+    </div>
+  </div>
+  <div class="variant-col">
+    <div class="variant-title">Audio active</div>
+    <div class="toolbar-wrapper">
+      <div class="toolbar" id="v3-audio"></div>
+      <div class="label">Audio selected</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ICON REFERENCE (labeled) ============ -->
+<h2>Icon Reference — 7 icons</h2>
+<div class="variant-row" id="icon-ref"></div>
+
+<script>
+// === SVG ICONS (Lucide convention: 24x24, stroke 2, currentColor, round caps) ===
+// Style match: src/ Header.tsx, VideoCard.tsx, popupShell.ts dp-icon-btn
+// License: ISC (https://lucide.dev)
+// All SVGs: aria-hidden="true" (decorative — button has aria-label)
+
+// --- Audio: waveform 5 vertical bars — match cardCreator MediaList.tsx ThumbIcon ---
+// Source: src/features/cardCreator/ui/MediaList.tsx L60-76 (stroke 1.5 at 16-20px)
+// Popup toolbar: stroke 2 (match dp-icon-btn 40×40, 24px icon)
+const audioWave = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10v4"/><path d="M7 6v12"/><path d="M11 3v18"/><path d="M15 8v8"/><path d="M19 11v2"/></svg>`;
+
+// --- Image: image (Lucide) — rectangle + mountain + sun ---
+// Source: lucide-static ISC
+const imageIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5a2 2 0 0 0-2.8 0L6 21"/></svg>`;
+
+// --- Translate: languages (Lucide) — A + 文 + arrow ---
+// Source: lucide-static ISC (PR #2741 — improved 文 glyph)
+const languagesIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>`;
+
+// --- Links: link (Lucide) — chain 2 mắt ---
+// Source: lucide-static ISC
+const linksIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+
+// --- None variant 1: eye-off (Lucide) — mắt + gạch chéo = ẩn ---
+// Source: lucide-static ISC
+const eyeOffIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`;
+
+// --- None variant 2: chevron-down (Lucide) — mũi tên xuống = thu gọn ---
+// Source: lucide-static ISC (match VideoCard.tsx line 177 expand chevron)
+const chevronDownIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+
+// --- None variant 3: panel-bottom-close (Lucide) — rectangle + chevron = ẩn panel ---
+// Source: lucide-static ISC
+const panelCloseIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 15h18"/><path d="m15 8-3 3-3-3"/></svg>`;
+
+// === Render toolbars ===
+function makeBtn(svg, label, isActive, isNone) {
+  const btn = document.createElement('button');
+  btn.className = 'icon-btn' + (isNone ? ' icon-btn--none' : '') + (isActive ? ' is-selected' : '');
+  btn.setAttribute('aria-label', label);
+  btn.title = label;
+  btn.innerHTML = svg;
+  return btn;
+}
+
+function renderToolbar(elId, icons, activeTab) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  const tabs = [
+    { tab: 'audio', label: 'Audio', svg: icons.audio },
+    { tab: 'image', label: 'Image', svg: icons.image },
+    { tab: 'translate', label: 'Translate', svg: icons.translate },
+    { tab: 'links', label: 'Links', svg: icons.links },
+  ];
+  for (const t of tabs) {
+    el.appendChild(makeBtn(t.svg, t.label, activeTab === t.tab, false));
+  }
+  el.appendChild(makeBtn(icons.none, 'Hide panel', activeTab === null, true));
+}
+
+// Variant 1: eye-off
+const v1 = { audio: audioWave, image: imageIcon, translate: languagesIcon, links: linksIcon, none: eyeOffIcon };
+renderToolbar('v1-default', v1, 'none');
+renderToolbar('v1-audio', v1, 'audio');
+
+// Variant 2: chevron-down
+const v2 = { audio: audioWave, image: imageIcon, translate: languagesIcon, links: linksIcon, none: chevronDownIcon };
+renderToolbar('v2-default', v2, 'none');
+renderToolbar('v2-audio', v2, 'audio');
+
+// Variant 3: panel-bottom-close
+const v3 = { audio: audioWave, image: imageIcon, translate: languagesIcon, links: linksIcon, none: panelCloseIcon };
+renderToolbar('v3-default', v3, 'none');
+renderToolbar('v3-audio', v3, 'audio');
+
+// Icon reference labels
+const refEl = document.getElementById('icon-ref');
+const refIcons = [
+  { name: 'waveform (cardCreator)', svg: audioWave, label: 'Audio' },
+  { name: 'image', svg: imageIcon, label: 'Image' },
+  { name: 'languages', svg: languagesIcon, label: 'Translate' },
+  { name: 'link', svg: linksIcon, label: 'Links' },
+  { name: 'eye-off', svg: eyeOffIcon, label: 'None V1' },
+  { name: 'chevron-down', svg: chevronDownIcon, label: 'None V2' },
+  { name: 'panel-bottom-close', svg: panelCloseIcon, label: 'None V3' },
+];
+for (const ic of refIcons) {
+  const col = document.createElement('div');
+  col.className = 'variant-col';
+  const btn = document.createElement('button');
+  btn.className = 'icon-btn';
+  btn.innerHTML = ic.svg;
+  col.appendChild(btn);
+  const name = document.createElement('div');
+  name.className = 'icon-name';
+  name.textContent = ic.label;
+  col.appendChild(name);
+  const lucide = document.createElement('div');
+  lucide.className = 'icon-name';
+  lucide.style.fontSize = '9px';
+  lucide.textContent = ic.name;
+  col.appendChild(lucide);
+  refEl.appendChild(col);
+}
+</script>
+</body>
+</html>

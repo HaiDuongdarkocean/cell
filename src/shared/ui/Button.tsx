@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './Button.module.css';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link';
@@ -57,9 +58,7 @@ export function Button({
     >
       {loading && (
         <span className={styles.spinner} aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-          </svg>
+          <Icon name="loader" />
         </span>
       )}
       {!loading && leadingIcon && <span className={styles.leadingIcon}>{leadingIcon}</span>}

@@ -16,6 +16,7 @@
 
 import type { PhraseNode } from './phraseTemplateParser';
 import type { CompiledTemplate, PhraseIndex } from './phraseIndexCompiler';
+import { englishLemmaCandidates } from '@/features/dictionaryPopup/logic/englishLemma';
 
 // --- Constants (ADR §8.2) ---
 
@@ -46,26 +47,56 @@ export interface SentenceToken {
   readonly raw: string;        // original surface
   readonly start: number;      // UTF-16 offset
   readonly end: number;        // UTF-16 offset (exclusive)
+  /** True if sentence-ending punctuation (., !, ?) appears before this token. */
+  readonly precededBySentencePunct: boolean;
+  /** True if a clause boundary (comma, semicolon, colon, dash) appears before this token. */
+  readonly precededByClausePunct: boolean;
 }
 
 const WORD_CHAR = /[\p{L}\p{N}'-]/u;
 const SENTENCE_PUNCT = /[.!?,;:]/;
+
+const SENTENCE_END_PUNCT = new Set(['.', '!', '?']);
+const CLAUSE_PUNCT = new Set([',', ';', ':', '-']);
 
 /** Tokenize a sentence into normalized word tokens with UTF-16 offsets. */
 export function tokenizeSentence(sentence: string): SentenceToken[] {
   const tokens: SentenceToken[] = [];
   const len = sentence.length;
   let i = 0;
+  let prevEnd = -1;
   while (i < len) {
     // Skip whitespace + non-word punctuation.
+    const gapStart = i;
     while (i < len && !isWordChar(sentence, i)) i++;
+    if (i >= len) break;
+    // Check if sentence-ending or clause punctuation appeared in the gap before this token.
+    let precededBySentencePunct = false;
+    let precededByClausePunct = false;
+    if (prevEnd >= 0) {
+      for (let j = gapStart; j < i; j++) {
+        const ch = sentence[j]!;
+        if (SENTENCE_END_PUNCT.has(ch)) {
+          precededBySentencePunct = true;
+          break;
+        }
+        if (CLAUSE_PUNCT.has(ch)) {
+          precededByClausePunct = true;
+        }
+      }
+    }
+    // Strip leading hyphens (SRT dialogue markers like "-Where'd").
+    // Intra-word hyphens ("scaredy-cat", "self-defense") are preserved
+    // because `-` is in WORD_CHAR — only LEADING hyphens are skipped here.
+    while (i < len && sentence[i] === '-') i++;
     if (i >= len) break;
     const start = i;
     // Consume word characters (including apostrophes in contractions).
     while (i < len && isWordChar(sentence, i)) i++;
     const raw = sentence.slice(start, i);
     const text = raw.toLowerCase().normalize('NFC');
-    tokens.push({ text, raw, start, end: i });
+    tokens.push({ text, raw, start, end: i, precededBySentencePunct, precededByClausePunct });
+    prevEnd = i;
   }
   return tokens;
 }
@@ -76,45 +107,26 @@ function isWordChar(s: string, offset: number): boolean {
   return WORD_CHAR.test(ch);
 }
 
-// --- Lemma (conservative — ADR §6) ---
-// Only applies to known irregular + regular -ed forms. This is a minimal
-// lemma function; the English plugin can supply a richer one later.
+// --- Lemma (ADR §6 / ADR-041) ---
+// Multi-candidate lemma: delegates to the shared `englishLemmaCandidates`
+// module (ADR-041) which covers ALL 8 English inflectional suffixes +
+// irregular forms. Returns multiple candidates so the matcher can try all —
+// false-positive candidates (e.g. "pul" from "pulling") are harmless because
+// no template anchor matches them.
+//
+// ponytail: the shared module is a pure function with no I/O. This is O(1)
+// per token and bounded to ≤6 candidates per rule.
 
-const IRREGULAR_LEMMAS: ReadonlyMap<string, string> = new Map([
-  ['was', 'be'], ['were', 'be'], ['been', 'be'], ['being', 'be'], ['is', 'be'], ['are', 'be'],
-  ['spilled', 'spill'], ['spilt', 'spill'],
-  ['broke', 'break'], ['broken', 'break'],
-  ['kicked', 'kick'],
-  ['carried', 'carry'],
-  ['took', 'take'], ['taken', 'take'],
-  ['gave', 'give'], ['given', 'give'],
-  ['ran', 'run'],
-  ['picked', 'pick'],
-  ['put', 'put'],
-  ['hit', 'hit'],
-  ['came', 'come'],
-  ['looked', 'look'],
-  ['got', 'get'], ['gotten', 'get'],
-  ['started', 'start'],
-]);
-
-/** Conservative lemma: irregular map + regular -ed/-s stripping. */
-function lemma(word: string): string {
-  const lower = word.toLowerCase();
-  const irreg = IRREGULAR_LEMMAS.get(lower);
-  if (irreg) return irreg;
-  // Regular past: word ends in 'ed' and lemma is stem.
-  if (lower.length > 3 && lower.endsWith('ed')) {
-    const stem = lower.slice(0, -2);
-    // "carried" → "carri" → "carry" (y-replacement handled by caller matching)
-    // Simple: try stem, stem+e, stem with y
-    return stem;
-  }
-  // Regular 3rd person: ends in 's'
-  if (lower.length > 3 && lower.endsWith('s') && !lower.endsWith('ss')) {
-    return lower.slice(0, -1);
-  }
-  return lower;
+/**
+ * Return all possible lemmas for a word (ADR §6 / ADR-041).
+ * Delegates to the shared `englishLemmaCandidates` module which covers ALL
+ * 8 English inflectional suffixes + irregular forms. The first candidate is
+ * the most likely lemma; others are fallbacks the matcher tries if the first
+ * doesn't match a template anchor. The original word is included as the last
+ * candidate so the matcher can fall back to exact token matching.
+ */
+function candidateLemmas(word: string): string[] {
+  return englishLemmaCandidates(word);
 }
 
 // --- Token matching ---
@@ -135,7 +147,7 @@ function tokenMatchesLiteral(node: { readonly value: string; readonly inflectabl
     return { matched: true, inflected: false, possessive: true };
   }
   // Verb inflection: only when literal is marked inflectableVerb.
-  if (node.inflectableVerb && lemma(token) === node.value) {
+  if (node.inflectableVerb && candidateLemmas(token).includes(node.value)) {
     return { matched: true, inflected: true, possessive: false };
   }
   return { matched: false, inflected: false, possessive: false };
@@ -152,8 +164,16 @@ function slotAllows(tokens: readonly SentenceToken[], start: number, end: number
   if (start >= end) return false;
   for (let i = start; i < end && i < tokens.length; i++) {
     const t = tokens[i]!;
-    // Slot stops at sentence punctuation.
+    // Slot stops at sentence punctuation (raw token is punctuation — legacy check).
     if (t.raw.length === 1 && SLOT_STOP_PUNCT.has(t.raw)) return false;
+    // Slot stops at sentence-ending punctuation that appeared before any token
+    // in the slot range (e.g. "is. It's my" → slot can't cross the "." boundary).
+    if (t.precededBySentencePunct) return false;
+    // Slot stops at clause boundary (comma, semicolon, colon, dash) that appeared
+    // before any token in the slot range (e.g. "a door, and now" → slot can't
+    // cross the "," boundary). This prevents FP like "kick in sth" matching
+    // "kick in a door, and now my leg" (slot would consume 6 tokens across comma).
+    if (t.precededByClausePunct) return false;
   }
   return true;
 }
@@ -193,7 +213,19 @@ function matchSequence(
 
   if (node.type === 'literal') {
     if (tokenIndex < tokens.length) {
-      const r = tokenMatchesLiteral(node, tokens[tokenIndex]!.text);
+      const tok = tokens[tokenIndex]!;
+      // A literal can't match a token that follows sentence-ending punctuation
+      // (e.g. "mind. You" → "You" can't be part of the same phrase as "mind").
+      if (tok.precededBySentencePunct) {
+        // Only the FIRST token in the sequence is allowed to have precededBySentencePunct
+        // (it's the anchor — the user hovered over it). Subsequent tokens can't cross.
+        if (nodeIndex > 0) {
+          const deduped = deduplicateStates(results);
+          memo.set(memoKey, deduped);
+          return deduped;
+        }
+      }
+      const r = tokenMatchesLiteral(node, tok.text);
       if (r.matched) {
         const childResults = matchSequence(nodes, nodeIndex + 1, tokens, tokenIndex + 1, memo);
         for (const cr of childResults) {
@@ -214,17 +246,21 @@ function matchSequence(
       results.push({ ...sr, optionalUsed: sr.optionalUsed });
     }
     // Branch 2: consume the optional children, then continue.
-    const consumeResults = matchChildren(node.children, tokens, tokenIndex, memo);
-    for (const cr of consumeResults) {
-      const continueResults = matchSequence(nodes, nodeIndex + 1, tokens, cr.endTokenIndex, memo);
-      for (const cont of continueResults) {
-        results.push({
-          endTokenIndex: cont.endTokenIndex,
-          inflected: cont.inflected || cr.inflected,
-          possessive: cont.possessive || cr.possessive,
-          slotUsed: cont.slotUsed || cr.slotUsed,
-          optionalUsed: true,
-        });
+    // But only if the current token doesn't follow sentence-ending punctuation
+    // (e.g. "mind. You" → optional "(you)" can't match "You" after ".").
+    if (tokenIndex < tokens.length && !tokens[tokenIndex]!.precededBySentencePunct) {
+      const consumeResults = matchChildren(node.children, tokens, tokenIndex, memo);
+      for (const cr of consumeResults) {
+        const continueResults = matchSequence(nodes, nodeIndex + 1, tokens, cr.endTokenIndex, memo);
+        for (const cont of continueResults) {
+          results.push({
+            endTokenIndex: cont.endTokenIndex,
+            inflected: cont.inflected || cr.inflected,
+            possessive: cont.possessive || cr.possessive,
+            slotUsed: cont.slotUsed || cr.slotUsed,
+            optionalUsed: true,
+          });
+        }
       }
     }
   } else if (node.type === 'alternative') {
@@ -245,14 +281,20 @@ function matchSequence(
     }
   } else if (node.type === 'slot') {
     const isPossessiveSlot = node.kind === 'possessive';
-    for (let slotLen = 1; slotLen <= MAX_SLOT_TOKENS; slotLen++) {
+    const maxSlotLen = Math.min(MAX_SLOT_TOKENS, node.maxTokens);
+    for (let slotLen = 1; slotLen <= maxSlotLen; slotLen++) {
       const nextTokenIndex = tokenIndex + slotLen;
       if (nextTokenIndex > tokens.length) break;
       // Check for sentence punctuation boundary.
       if (tokenIndex < tokens.length && isPunctuation(tokens[tokenIndex]!.raw)) break;
       if (!slotAllows(tokens, tokenIndex, nextTokenIndex)) break;
-      // Possessive slots consume exactly 1 token (a possessive pronoun).
-      if (isPossessiveSlot && slotLen > 1) break;
+      // Possessive slots consume 1-2 tokens: the possessive pronoun plus an
+      // optional intensifier (e.g. "your damn mind", "my fucking car").
+      // ponytail: allowing 2 tokens risks false positives where a non-possessive
+      // word is consumed, but the DP matcher tries slotLen=1 first and the
+      // ranking prefers shorter slots (fewer slotUsed tokens). The ceiling is
+      // idioms with 2+ intensifiers ("your whole damn mind") which are rare.
+      if (isPossessiveSlot && slotLen > 2) break;
       const continueResults = matchSequence(nodes, nodeIndex + 1, tokens, nextTokenIndex, memo);
       for (const cont of continueResults) {
         results.push({
@@ -373,11 +415,12 @@ export function matchPhrase(
     const token = windowTokens[i]!.text;
     const ids = index.lookupByAnchor(token);
     for (const id of ids) candidateIds.add(id);
-    // Also try lemma for verb inflection.
-    const lemmaKey = lemma(token);
-    if (lemmaKey !== token) {
-      const lemmaIds = index.lookupByAnchor(lemmaKey);
-      for (const id of lemmaIds) candidateIds.add(id);
+    // Also try all candidate lemmas for verb inflection.
+    for (const lemmaKey of candidateLemmas(token)) {
+      if (lemmaKey !== token) {
+        const lemmaIds = index.lookupByAnchor(lemmaKey);
+        for (const id of lemmaIds) candidateIds.add(id);
+      }
     }
   }
 
@@ -394,8 +437,9 @@ export function matchPhrase(
     const windowTokenSet = new Set<string>();
     for (const wt of windowTokens) {
       windowTokenSet.add(wt.text);
-      const lk = lemma(wt.text);
-      if (lk !== wt.text) windowTokenSet.add(lk);
+      for (const lk of candidateLemmas(wt.text)) {
+        if (lk !== wt.text) windowTokenSet.add(lk);
+      }
     }
     const scored = [...candidateIds].map((id) => {
       const template = index.templates[id];
@@ -457,6 +501,126 @@ export function matchPhrase(
     quality: best.quality,
     sourceResourceId,
   };
+}
+
+/**
+ * Match ALL phrase templates at the cursor position — returns every match
+ * sorted by the deterministic ranking tuple (ADR §9). Used by the multi-
+ * candidate popup to display all interpretations of the hovered word.
+ *
+ * Deduplicates by dictionaryTerm so the same phrase from different match
+ * positions only appears once (highest-ranked position wins).
+ */
+export function matchPhraseAll(
+  request: PhraseMatchRequest,
+  index: PhraseIndex,
+  sourceResourceId: number = 0,
+): PhraseMatch[] {
+  const { sentence, cursorOffset } = request;
+
+  // Reuse matchPhrase logic but collect all matches instead of just winner.
+  // ponytail: duplicate the matching logic to avoid refactoring matchPhrase's
+  // return type (backward compat). If this diverges, extract shared core.
+  const tokens = tokenizeSentence(sentence);
+  if (tokens.length === 0) return [];
+
+  let targetTokenIndex = -1;
+  for (let i = 0; i < tokens.length; i++) {
+    if (cursorOffset >= tokens[i]!.start && cursorOffset < tokens[i]!.end) {
+      targetTokenIndex = i;
+      break;
+    }
+  }
+  if (targetTokenIndex < 0) return [];
+
+  const windowStart = Math.max(0, targetTokenIndex - MAX_SURFACE_SPAN);
+  const windowEnd = Math.min(tokens.length, targetTokenIndex + MAX_SURFACE_SPAN + 1);
+  const windowTokens = tokens.slice(windowStart, windowEnd);
+
+  const candidateIds = new Set<number>();
+  for (let i = 0; i < windowTokens.length; i++) {
+    const token = windowTokens[i]!.text;
+    const ids = index.lookupByAnchor(token);
+    for (const id of ids) candidateIds.add(id);
+    for (const lemmaKey of candidateLemmas(token)) {
+      if (lemmaKey !== token) {
+        const lemmaIds = index.lookupByAnchor(lemmaKey);
+        for (const id of lemmaIds) candidateIds.add(id);
+      }
+    }
+  }
+
+  if (candidateIds.size === 0) return [];
+
+  if (candidateIds.size > MAX_CANDIDATES) {
+    const windowTokenSet = new Set<string>();
+    for (const wt of windowTokens) {
+      windowTokenSet.add(wt.text);
+      for (const lk of candidateLemmas(wt.text)) {
+        if (lk !== wt.text) windowTokenSet.add(lk);
+      }
+    }
+    const scored = [...candidateIds].map((id) => {
+      const template = index.templates[id];
+      if (!template) return { id, score: 0 };
+      let score = 0;
+      for (const a of template.anchors) {
+        if (windowTokenSet.has(a)) score++;
+      }
+      return { id, score };
+    });
+    scored.sort((a, b) => b.score - a.score || a.id - b.id);
+    candidateIds.clear();
+    for (let i = 0; i < Math.min(MAX_CANDIDATES, scored.length); i++) {
+      candidateIds.add(scored[i]!.id);
+    }
+  }
+
+  const matches: CandidateMatch[] = [];
+  for (const templateId of candidateIds) {
+    const template = index.templates[templateId];
+    if (!template) continue;
+
+    const maxStartOffset = targetTokenIndex - windowStart;
+    const minStartOffset = Math.max(0, maxStartOffset - template.maxSurfaceTokens + 1);
+
+    for (let startOff = minStartOffset; startOff <= maxStartOffset; startOff++) {
+      const startTokenIndex = windowStart + startOff;
+      const memo = new Map<string, MatchState[]>();
+      const results = matchSequence(template.nodes, 0, tokens, startTokenIndex, memo);
+
+      for (const state of results) {
+        const endTokenIndex = state.endTokenIndex;
+        if (targetTokenIndex < startTokenIndex || targetTokenIndex >= endTokenIndex) continue;
+        const quality = classifyQuality(state);
+        matches.push({ template, startTokenIndex, endTokenIndex, state, quality });
+      }
+    }
+  }
+
+  if (matches.length === 0) return [];
+
+  matches.sort(compareMatches);
+
+  // Build PhraseMatch[] + deduplicate by dictionaryTerm.
+  const seen = new Set<string>();
+  const result: PhraseMatch[] = [];
+  for (const best of matches) {
+    if (seen.has(best.template.sourceTerm)) continue;
+    seen.add(best.template.sourceTerm);
+    const surface = sentence.slice(tokens[best.startTokenIndex]!.start, tokens[best.endTokenIndex - 1]!.end);
+    result.push({
+      dictionaryTerm: best.template.sourceTerm,
+      surface,
+      span: {
+        start: tokens[best.startTokenIndex]!.start,
+        end: tokens[best.endTokenIndex - 1]!.end,
+      },
+      quality: best.quality,
+      sourceResourceId,
+    });
+  }
+  return result;
 }
 
 /**

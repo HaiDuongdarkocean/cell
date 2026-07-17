@@ -1,4 +1,5 @@
 import type { DetectedSubtitle } from '@/entities/media';
+import { ICON_CATALOG } from '@/shared/icons';
 import { languageMatches } from '@/shared/config/languageRegistry';
 import { formatSubtitleName } from '../logic/subtitleNaming';
 
@@ -73,8 +74,11 @@ export function createSubtitleDropdown(
     pointer-events: auto;
   `;
 
-  // chevron-down SVG (Lucide-style)
-  icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;fill:none !important"><path d="M6 9l6 6 6-6"/></svg>`;
+  // chevron-down SVG (Lucide-style) — path data from ICON_CATALOG.chevronDown
+  icon.innerHTML = ICON_CATALOG.chevronDown.svg.replace(
+    '<svg ',
+    '<svg width="16" height="16" style="display:block;fill:none !important" ',
+  );
 
   let popover: HTMLDivElement | null = null;
   let outsideClickHandler: ((e: MouseEvent) => void) | null = null;

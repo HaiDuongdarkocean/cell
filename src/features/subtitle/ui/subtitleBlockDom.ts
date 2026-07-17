@@ -1,4 +1,5 @@
-﻿import { NAV_CLUSTER_ICONS } from './navClusterIcons';
+﻿import { ICON_CATALOG } from '@/shared/icons';
+import { NAV_CLUSTER_ICONS } from './navClusterIcons';
 import { CARD_CREATOR_ICONS } from '@/features/cardCreator/ui/cardCreatorIcons';
 
 /**
@@ -6,8 +7,14 @@ import { CARD_CREATOR_ICONS } from '@/features/cardCreator/ui/cardCreatorIcons';
  * Gợi ý translate/exchange — target ↔ native. Path-based, không text, không
  * phụ thuộc font. Giống Lucide "languages" icon. Phong cách cluster: 24x24,
  * stroke 1.5, currentColor, round caps.
+ *
+ * SVG path data sourced from ICON_CATALOG.generateNative. Inline style/focusable
+ * injected for cluster-btn display + fill convention.
  */
-const GENERATE_NATIVE_ICON = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block;fill:none !important"><path d="M4 9 L18 9 M15 6 L18 9 L15 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 15 L6 15 M9 12 L6 15 L9 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const GENERATE_NATIVE_ICON = ICON_CATALOG.generateNative.svg.replace(
+  '<svg ',
+  '<svg focusable="false" style="display:block;fill:none !important" ',
+);
 
 export interface SubtitleBlockDOM {
   readonly block: HTMLDivElement;

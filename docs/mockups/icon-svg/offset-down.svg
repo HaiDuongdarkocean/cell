@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-  <!-- Offset minus: mũi tên xuống trong vòng tròn (dịch sub sớm hơn) -->
-  <!-- Style: matches offset-up (circle r=10 + chevron, stroke 1.5) -->
-  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
-  <path d="M12 8V16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M8.5 12.5L12 16L15.5 12.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>

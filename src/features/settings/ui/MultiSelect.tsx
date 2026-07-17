@@ -112,6 +112,7 @@ export function MultiSelect({
     <div className={styles.container} data-testid={testId}>
       {/* Search bar */}
       <div className={styles.searchWrap}>
+        {/* FIXME: extract to registry once stroke-width variant supported — search circle r=7 differs from ICON_CATALOG.search (r=8) */}
         <svg
           className={styles.searchIcon}
           viewBox="0 0 24 24"

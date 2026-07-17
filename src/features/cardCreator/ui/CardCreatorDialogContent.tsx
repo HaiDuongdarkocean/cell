@@ -68,6 +68,7 @@ export function CardCreatorDialogContent({
       {/* Alert: no recent card */}
       {showNoRecentAlert && (
         <div className={styles.alert} role="status" data-testid="cc-alert-no-recent">
+          {/* Matches ICON_CATALOG.info.svg (stroke 2, path identical). Kept inline as JSX. */}
           <svg
             className={styles.alertIcon}
             viewBox="0 0 24 24"
@@ -88,6 +89,7 @@ export function CardCreatorDialogContent({
       {/* Alert: load error */}
       {loadStatus === 'error' && (
         <div className={`${styles.alert} ${styles.alertError}`} role="alert" data-testid="cc-alert-error">
+          {/* Matches ICON_CATALOG.alertCircle.svg (stroke 2, path identical). Kept inline as JSX. */}
           <svg
             className={styles.alertIcon}
             viewBox="0 0 24 24"

@@ -8,7 +8,7 @@ export type PhraseNode =
   | { readonly type: 'literal'; readonly value: string; readonly inflectableVerb: boolean }
   | { readonly type: 'optional'; readonly children: readonly PhraseNode[] }
   | { readonly type: 'alternative'; readonly branches: readonly (readonly PhraseNode[])[] }
-  | { readonly type: 'slot'; readonly kind: 'object' | 'person' | 'possessive' };
+  | { readonly type: 'slot'; readonly kind: 'object' | 'person' | 'possessive'; readonly maxTokens: number };
 
 export interface PhraseTemplateParseOptions {
   readonly inflectableLiterals?: ReadonlySet<string>;
@@ -47,15 +47,29 @@ interface NodeStats {
 const DEFAULT_MAX_FIXED_TOKENS = 16;
 const DEFAULT_MAX_SURFACE_TOKENS = 32;
 const OPEN_PATTERN = /\.\.\.|(?:^|\s)etc\.?(?:$|\s|[!?.,])/i;
-const POSSESSIVE_PRONOUNS = new Set(['my', 'your', 'his', 'her', 'its', 'our', 'their', "one's"]);
+// Only "your" and "sb's" are generic possessive placeholders in dictionary
+// templates (e.g. "be (right) under your nose" matches "under my nose").
+// "his", "her", "their", "my", "our", "its" are always literal words in
+// templates (e.g. "in his/her/their wisdom" = literally "in his wisdom"
+// OR "in her wisdom" OR "in their wisdom"). Treating them as slots causes
+// FP: "in his/her/their wisdom" matches "in the trash" (possessive slot
+// consumes "the", then literal "wisdom" never matches).
+const POSSESSIVE_PLACEHOLDERS = new Set(['your', "sb's"]);
 type SlotKind = 'object' | 'person' | 'possessive';
 
-const SLOT_NAMES = new Map<string, SlotKind>([
-  ['sth', 'object'],
-  ['something', 'object'],
-  ['sb', 'person'],
-  ['someone', 'person'],
-  ['somebody', 'person'],
+interface SlotSpec { kind: SlotKind; maxTokens: number }
+
+// `sth`/`sb` are abstract placeholders — can match noun phrases (≤3 tokens).
+// `sb` (somebody) is more restrictive — a person noun phrase is usually
+// ≤2 tokens ("the man", "my sister", "John Smith"). 3 would allow
+// "you borrow them" (verb+object) which is not a person.
+// ponytail: heuristic without POS tagging. Full fix requires POS tagging.
+const SLOT_NAMES = new Map<string, SlotSpec>([
+  ['sth', { kind: 'object', maxTokens: 3 }],
+  ['something', { kind: 'object', maxTokens: 2 }],
+  ['sb', { kind: 'person', maxTokens: 2 }],
+  ['someone', { kind: 'person', maxTokens: 2 }],
+  ['somebody', { kind: 'person', maxTokens: 2 }],
 ]);
 const DETERMINERS = new Set([
   'a',
@@ -206,10 +220,10 @@ function parseAtom(state: ParserState, inflectableLiterals: ReadonlySet<string>)
     state.index += 2;
     return { type: 'literal', value: `${current.value}/${next.value}`, inflectableVerb: false };
   }
-  const slotKind = SLOT_NAMES.get(current.value);
-  if (slotKind) return { type: 'slot', kind: slotKind };
-  if (POSSESSIVE_PRONOUNS.has(current.value) || current.value === "sb's") {
-    return { type: 'slot', kind: 'possessive' };
+  const slotSpec = SLOT_NAMES.get(current.value);
+  if (slotSpec) return { type: 'slot', kind: slotSpec.kind, maxTokens: slotSpec.maxTokens };
+  if (POSSESSIVE_PLACEHOLDERS.has(current.value)) {
+    return { type: 'slot', kind: 'possessive', maxTokens: 2 };
   }
   return { type: 'literal', value: current.value, inflectableVerb: inflectableLiterals.has(current.value) };
 }
@@ -244,6 +258,27 @@ function parseSlashGroup(
   }
 
   const final = segments.pop()!;
+
+  // When the final segment is a single slot and the first segment is a single
+  // literal, the final is likely a separate alternative group.
+  // E.g. "of/about sb/sth" → branches [of], [about, sb] + final [sth]
+  // should become [of, sth], [about, sb, sth] — NOT a standalone [sth] branch
+  // that matches "think sth" without the required preposition.
+  // ponytail: this is a heuristic — doesn't handle 3+ independent slash groups,
+  // but dictionary templates rarely have more than 2.
+  if (
+    final.length === 1 &&
+    final[0].type === 'slot' &&
+    segments.length >= 2 &&
+    segments[0].length === 1 &&
+    segments[0][0].type === 'literal'
+  ) {
+    for (const branch of segments) {
+      branch.push(final[0]);
+    }
+    return { alternative: { type: 'alternative', branches: segments }, suffix: [] };
+  }
+
   const split = splitFinalAlternative(final, segments.length === 1);
   if (split) {
     segments.push(split.branch);
@@ -306,7 +341,7 @@ function getNodeStats(node: PhraseNode): NodeStats {
       return {
         sourceTokens: 1,
         minSurfaceTokens: 1,
-        maxSurfaceTokens: node.kind === 'possessive' ? 1 : 6,
+        maxSurfaceTokens: node.maxTokens,
       };
     case 'optional': {
       const stats = getStats(node.children);

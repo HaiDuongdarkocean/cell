@@ -35,7 +35,7 @@
   width: 14px;
   height: 14px;
   border-radius: var(--radius-full);
-  background: #fff;
+  background: var(--color-text-inverse, #fff);
   transition: transform var(--transition);
 }
 

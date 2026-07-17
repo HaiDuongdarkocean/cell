@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { DetectedSubtitle } from '@/entities/media';
 import { IconButton } from '@/shared/ui/IconButton';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './SubtitleCard.module.css';
 
 interface SubtitleCardProps {
@@ -72,10 +73,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
       <div className={styles.mainRow} onClick={handleCardClick}>
         {/* Icon — subtitle (amber) */}
         <div className={`${styles.icon} ${styles.subtitleIcon}`} aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-            <line x1="4" y1="22" x2="4" y2="15" />
-          </svg>
+          <Icon name="flag" />
         </div>
 
         {/* Body */}
@@ -98,19 +96,15 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
             aria-expanded={urlExpanded}
             data-testid="subtitle-expand-url-btn"
           >
-            <svg
+            <Icon
+              name="chevronDown"
               className={`${styles.expandChevron} ${urlExpanded ? styles.expandChevronOpen : ''}`}
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
+            />
           </IconButton>
           <div className={styles.action} onClick={handleActionClick}>
             {downloading ? (
               <span className={styles.downloadingIndicator} aria-label="Downloading">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </svg>
+                <Icon name="loader" />
               </span>
             ) : (
               <IconButton
@@ -120,9 +114,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
                 aria-label="Download"
                 data-testid="subtitle-download"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-                </svg>
+                <Icon name="download" size={16} />
               </IconButton>
             )}
           </div>
@@ -139,10 +131,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
             data-testid="subtitle-url"
             title="Click to copy URL"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-            </svg>
+            <Icon name="copy" />
             <span className={styles.urlText}>{subtitle.url}</span>
           </button>
           {copied && <span className={styles.copiedBadge} data-testid="subtitle-copied-toast">Copied</span>}

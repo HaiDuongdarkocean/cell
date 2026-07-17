@@ -1,6 +1,7 @@
 import type { DownloadItem } from '@/entities/media';
 import { formatFileSize, formatDuration, phaseToLabel } from '@/entrypoints/popup/utils/format';
 import { IconButton } from '@/shared/ui/IconButton';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './DownloadCard.module.css';
 
 interface DownloadCardProps {
@@ -66,6 +67,7 @@ export function DownloadCard({
           aria-label="Resume"
           data-testid="resume-btn"
         >
+          {/* FIXME: extract to registry once stroke-width variant supported — play path differs from ICON_CATALOG.play (M8 5v14l11-7z vs M5 3l14 9-14 9V3z) */}
           <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M8 5v14l11-7z" /></svg>
         </IconButton>,
       );
@@ -78,7 +80,7 @@ export function DownloadCard({
           aria-label="Pause"
           data-testid="pause-btn"
         >
-          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M6 4h4v16H6zM14 4h4v16h-4z" /></svg>
+          <Icon name="pause" size={14} />
         </IconButton>,
       );
     }
@@ -92,6 +94,7 @@ export function DownloadCard({
         aria-label="Retry"
         data-testid="retry-btn"
       >
+        {/* FIXME: extract to registry once stroke-width variant supported — retry path differs from ICON_CATALOG.rotateCcw (rotate-cw variant) */}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
       </IconButton>,
     );
@@ -106,7 +109,7 @@ export function DownloadCard({
         aria-label="Cancel"
         data-testid="cancel-btn"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M18 6L6 18M6 6l12 12" /></svg>
+        <Icon name="x" size={14} />
       </IconButton>,
     );
   } else {
@@ -119,7 +122,7 @@ export function DownloadCard({
         aria-label="Remove"
         data-testid="remove-btn"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+        <Icon name="trash" size={14} />
       </IconButton>,
     );
   }
@@ -131,14 +134,14 @@ export function DownloadCard({
       const processed = download.downloadedBytes ?? 0;
       detailItems.push(
         <span key="bytes" className={styles.detailItem}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+          <Icon name="download" size={12} />
           {formatFileSize(processed)}/{formatFileSize(download.fileSize)}
         </span>,
       );
     } else if (isConverting || isDone) {
       detailItems.push(
         <span key="size" className={styles.detailItem}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+          <Icon name="download" size={12} />
           {formatFileSize(download.fileSize)}
         </span>,
       );
@@ -147,6 +150,7 @@ export function DownloadCard({
   if (download.workerCount && download.workerCount > 0 && download.usedWorkers) {
     detailItems.push(
       <span key="workers" className={styles.detailItem}>
+        {/* FIXME: extract to registry once stroke-width variant supported — lightning path differs from ICON_CATALOG.zap (simple bolt vs newer complex path) */}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
         {download.workerCount} workers
       </span>,
@@ -155,7 +159,7 @@ export function DownloadCard({
   if (isDone && durationMs) {
     detailItems.push(
       <span key="duration" className={styles.detailItem}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+        <Icon name="clock" size={12} />
         {formatDuration(durationMs)}
       </span>,
     );
@@ -166,7 +170,7 @@ export function DownloadCard({
   if (isQueued) {
     progressHtml = (
       <div className={styles.queuedIndicator}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+        <Icon name="clock" size={14} />
         <span>Waiting…</span>
       </div>
     );
@@ -252,6 +256,7 @@ export function DownloadCard({
           )}
           {download.usedWorkers && (
             <span className={styles.parallelBadge} title="Parallel conversion">
+              {/* FIXME: extract to registry once stroke-width variant supported — lightning path differs from ICON_CATALOG.zap (simple bolt vs newer complex path) */}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
               </svg>

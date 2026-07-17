@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Icon Gallery — src/shared/icons/svg/</title>
+<style>
+/* === Cell Design System tokens (from design-system.md YAML) === */
+:root {
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-xs: 12px; --font-size-sm: 13px; --font-size-base: 14px;
+  --font-size-lg: 16px; --font-size-xl: 18px; --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  --font-weight-regular: 400; --font-weight-medium: 500;
+  --font-weight-semibold: 600; --font-weight-bold: 700;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px;
+  --radius-sm: 6px; --radius-md: 18px; --radius-lg: 10px; --radius-xl: 12px;
+  --radius-full: 9999px;
+  --transition: 150ms ease;
+  /* Dark theme (default — match showcase.html) */
+  --color-primary: #60a5fa; --color-primary-hover: #3b82f6;
+  --color-primary-subtle: rgba(96, 165, 250, 0.15);
+  --color-secondary: #334155; --color-secondary-foreground: #f1f5f9;
+  --color-background: #0f172a; --color-surface: #1e293b; --color-surface-hover: #334155;
+  --color-muted: #334155;
+  --color-text: #f1f5f9; --color-text-secondary: #cbd5e1; --color-text-muted: #64748b;
+  --color-text-inverse: #0f172a;
+  --color-border: #334155; --color-border-subtle: #1e293b; --color-border-focus: #60a5fa;
+  --shadow-md: none; --shadow-lg: none;
+}
+[data-theme="light"] {
+  --color-primary: #2563eb; --color-primary-hover: #1d4ed8;
+  --color-primary-subtle: rgba(37, 99, 235, 0.1);
+  --color-secondary: #e2e8f0; --color-secondary-foreground: #0f172a;
+  --color-background: #ffffff; --color-surface: #f8fafc; --color-surface-hover: #f1f5f9;
+  --color-muted: #f1f5f9;
+  --color-text: #0f172a; --color-text-secondary: #475569; --color-text-muted: #94a3b8;
+  --color-text-inverse: #ffffff;
+  --color-border: #e2e8f0; --color-border-subtle: #f1f5f9; --color-border-focus: #2563eb;
+  --shadow-md: none; --shadow-lg: none;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: var(--font-family);
+  background: var(--color-background);
+  color: var(--color-text);
+  margin: 0;
+  padding: var(--space-8) var(--space-6);
+  transition: background var(--transition), color var(--transition);
+}
+header { max-width: 1200px; margin: 0 auto var(--space-6); }
+h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); margin: 0 0 var(--space-1); }
+.subtitle { font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0; line-height: 1.5; }
+.subtitle code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: var(--font-size-xs);
+  background: var(--color-surface-hover); padding: 1px 6px; border-radius: var(--radius-sm);
+}
+.controls {
+  display: flex; gap: var(--space-3); align-items: center; margin-top: var(--space-4);
+  flex-wrap: wrap;
+}
+/* Search input — design-system §3 Input (pill 18px, hairline, focus ring) */
+.search-box {
+  flex: 1; min-width: 200px; padding: var(--space-2) 14px;
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  background: transparent; color: var(--color-text); font-size: var(--font-size-base);
+  font-family: var(--font-family); outline: none;
+  transition: border-color var(--transition);
+}
+.search-box:hover { border-color: var(--color-border-focus); }
+.search-box:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-subtle); }
+/* Select + theme toggle — pill button (design-system §1) */
+.size-select, .theme-toggle {
+  padding: var(--space-2) var(--space-4); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); background: transparent; color: var(--color-text);
+  cursor: pointer; font-size: var(--font-size-sm); font-family: var(--font-family);
+  transition: background var(--transition), border-color var(--transition);
+}
+.size-select:hover, .theme-toggle:hover {
+  background: var(--color-surface-hover); border-color: var(--color-border-focus);
+}
+.theme-toggle.is-active {
+  background: var(--color-primary-subtle); border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.stats { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+/* Grid — card layout (design-system §8 Card: radius lg, hairline, flat) */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-3);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.card {
+  display: flex; flex-direction: column; align-items: center;
+  padding: var(--space-4) var(--space-2) 10px;
+  border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  background: transparent; cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.card:hover { background: var(--color-surface-hover); }
+.card.is-selected {
+  background: var(--color-primary-subtle); border-color: var(--color-primary);
+}
+.card svg { display: block; color: var(--color-text); }
+.card-name {
+  font-size: var(--font-size-xs); font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  margin-top: 10px; text-align: center; word-break: break-all;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+.card-tags {
+  font-size: 9px; color: var(--color-text-muted); margin-top: var(--space-1);
+  text-align: center; line-height: 1.4;
+}
+.empty {
+  text-align: center; padding: 48px; color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+}
+/* Toast — design-system §32 Toast */
+.toast {
+  position: fixed; bottom: var(--space-6); left: 50%; transform: translateX(-50%);
+  padding: 10px var(--space-5); border-radius: var(--radius-md);
+  background: var(--color-primary); color: var(--color-text-inverse);
+  font-size: var(--font-size-sm); font-weight: var(--font-weight-medium);
+  opacity: 0; transition: opacity var(--transition); pointer-events: none;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Icon Gallery</h1>
+  <p class="subtitle">src/shared/icons/svg/ — tự động import via Vite <code>import.meta.glob</code>. Click icon để copy <code>import</code> code.</p>
+  <div class="controls">
+    <input class="search-box" type="search" placeholder="Search by name or tag (audio, close, play...)" id="search" />
+    <select class="size-select" id="size">
+      <option value="16">16px</option>
+      <option value="20" selected>20px</option>
+      <option value="24">24px</option>
+      <option value="32">32px</option>
+      <option value="48">48px</option>
+    </select>
+    <button class="theme-toggle is-active" id="theme-dark" data-theme="dark">Dark</button>
+    <button class="theme-toggle" id="theme-light" data-theme="light">Light</button>
+    <span class="stats" id="stats"></span>
+  </div>
+</header>
+<div class="grid" id="grid"></div>
+<div class="toast" id="toast">Copied!</div>
+
+<script type="module">
+// Auto-import all SVG files — no manual update needed when adding new icons.
+// Vite import.meta.glob: eager + raw string. Pattern must NOT include ?raw in
+// the path when using query: '?raw' (Vite v8 — combining both yields empty).
+const svgModules = import.meta.glob('./svg/*.svg', { eager: true, query: '?raw', import: 'default' });
+
+// Parse ICON_CATALOG tags from index.ts (re-declare here for gallery use).
+// Tags sourced from src/shared/icons/index.ts ICON_CATALOG.
+const ICON_TAGS = {
+  settings: ['settings','gear','config','preferences'],
+  pencil: ['edit','write','pencil','modify'],
+  zap: ['quick','fast','lightning','bolt','instant'],
+  resize: ['resize','drag','handle','diagonal'],
+  'audio-wave': ['audio','waveform','sound','voice','tts','play-audio'],
+  image: ['image','picture','photo','gallery'],
+  languages: ['translate','languages','i18n','localize'],
+  link: ['link','chain','url','external','hyperlink'],
+  'eye-off': ['hide','eye-off','invisible','none','conceal'],
+  'chevron-down': ['collapse','chevron','down','arrow-down','fold','dropdown','expand'],
+  'panel-bottom-close': ['panel','hide','close','bottom','collapse-panel'],
+  x: ['close','dismiss','cancel','x','clear'],
+  download: ['download','save','arrow-down-tray'],
+  search: ['search','magnifier','find','lookup'],
+  loader: ['loading','spinner','pending','progress'],
+  play: ['play','start','media','video','resume'],
+  pause: ['pause','hold','media'],
+  plus: ['add','plus','new','create'],
+  check: ['check','confirm','selected','done','tick'],
+  info: ['info','information','hint','help'],
+  'alert-circle': ['alert','error','warning','exclamation','circle'],
+  moon: ['moon','dark','night','theme-dark'],
+  sun: ['sun','light','day','theme-light'],
+  power: ['power','on','off','toggle','enable','disable'],
+  trash: ['trash','delete','remove','bin'],
+  copy: ['copy','clipboard','duplicate'],
+  clock: ['clock','time','duration','queued','timer'],
+  menu: ['menu','hamburger','sidebar','toggle'],
+  video: ['video','media','player','film'],
+  flag: ['flag','subtitle','caption','mark'],
+  'rotate-ccw': ['rotate','retry','reset','undo','refresh'],
+  'panel-right': ['panel','side','sidebar','toggle'],
+  'chevron-left': ['chevron','left','back','arrow-left','prev'],
+  'chevron-right': ['chevron','right','forward','arrow-right','next'],
+  repeat: ['repeat','loop','cycle'],
+  'triangle-alert': ['warning','alert','triangle','caution'],
+  'circle-check': ['success','check','circle','done','ok'],
+  'circle-x': ['error','fail','circle','x','close'],
+  'circle-info': ['info','toast','circle','i'],
+};
+
+// Build icon list: [{ name, svg, tags }]
+const icons = Object.entries(svgModules).map(([path, svg]) => {
+  const name = path.match(/\/([^/]+)\.svg$/)[1];
+  return { name, svg, tags: ICON_TAGS[name] || [] };
+}).sort((a, b) => a.name.localeCompare(b.name));
+
+// Render
+const grid = document.getElementById('grid');
+const searchInput = document.getElementById('search');
+const sizeSelect = document.getElementById('size');
+const statsEl = document.getElementById('stats');
+const toast = document.getElementById('toast');
+
+function render() {
+  const query = searchInput.value.trim().toLowerCase();
+  const size = sizeSelect.value;
+  const filtered = icons.filter(ic => {
+    if (!query) return true;
+    if (ic.name.includes(query)) return true;
+    return ic.tags.some(t => t.includes(query));
+  });
+
+  grid.innerHTML = '';
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="empty">No icons match "' + query + '"</div>';
+    statsEl.textContent = '0 / ' + icons.length;
+    return;
+  }
+
+  for (const ic of filtered) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = ic.svg;
+    const svgEl = card.querySelector('svg');
+    if (svgEl) {
+      svgEl.setAttribute('width', size);
+      svgEl.setAttribute('height', size);
+    }
+    const nameEl = document.createElement('div');
+    nameEl.className = 'card-name';
+    nameEl.textContent = ic.name;
+    card.appendChild(nameEl);
+    if (ic.tags.length > 0) {
+      const tagsEl = document.createElement('div');
+      tagsEl.className = 'card-tags';
+      tagsEl.textContent = ic.tags.slice(0, 4).join(' · ');
+      card.appendChild(tagsEl);
+    }
+    // Click → copy import code
+    card.addEventListener('click', () => {
+      const importCode = `import { ${toCamelCase(ic.name)}Icon } from '@/shared/icons';`;
+      navigator.clipboard.writeText(importCode).then(() => {
+        toast.textContent = 'Copied: ' + importCode;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1500);
+      });
+      // Also copy SVG markup with double-click
+    });
+    card.addEventListener('dblclick', () => {
+      navigator.clipboard.writeText(ic.svg).then(() => {
+        toast.textContent = 'Copied SVG markup';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1500);
+      });
+    });
+    grid.appendChild(card);
+  }
+  statsEl.textContent = filtered.length + ' / ' + icons.length;
+}
+
+function toCamelCase(s) {
+  return s.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+searchInput.addEventListener('input', render);
+sizeSelect.addEventListener('change', render);
+document.getElementById('theme-dark').addEventListener('click', () => {
+  document.documentElement.setAttribute('data-theme', 'dark');
+  document.getElementById('theme-dark').classList.add('is-active');
+  document.getElementById('theme-light').classList.remove('is-active');
+});
+document.getElementById('theme-light').addEventListener('click', () => {
+  document.documentElement.setAttribute('data-theme', 'light');
+  document.getElementById('theme-light').classList.add('is-active');
+  document.getElementById('theme-dark').classList.remove('is-active');
+});
+
+render();
+</script>
+</body>
+</html>

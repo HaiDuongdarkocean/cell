@@ -47,6 +47,34 @@ function buildIndex(terms: string[]): PhraseIndex {
   return compilePhraseIndex(inputs);
 }
 
+// Auto-collect first words from terms as inflectable — data-driven approach
+// that doesn't rely on a curated verb list. Any first word in a template
+// is treated as a potential verb head.
+function buildIndexWithFirstWords(terms: string[]): PhraseIndex {
+  const firstWords = new Set<string>();
+  for (const term of terms) {
+    const w = term.trim().toLowerCase().split(/\s+/)[0];
+    if (w) firstWords.add(w);
+  }
+  const inputs: PhraseIndexInput[] = [];
+  let id = 0;
+  for (const term of terms) {
+    const parsed = parsePhraseTemplate(term, { inflectableLiterals: firstWords });
+    if (parsed.status !== 'supported') throw new Error(`test template "${term}" unsupported: ${parsed.status}`);
+    inputs.push({
+      templateId: id++,
+      sourceTerm: parsed.sourceTerm,
+      normalizedTerm: parsed.normalizedTerm,
+      nodes: parsed.nodes,
+      fixedTokenCount: parsed.fixedTokenCount,
+      minSurfaceTokens: parsed.minSurfaceTokens,
+      maxSurfaceTokens: parsed.maxSurfaceTokens,
+      frequencyRank: 0,
+    });
+  }
+  return compilePhraseIndex(inputs);
+}
+
 function req(sentence: string, hoverWord: string): PhraseMatchRequest {
   const lower = sentence.toLowerCase();
   const offset = lower.indexOf(hoverWord.toLowerCase());
@@ -276,6 +304,39 @@ describe('phraseMatcher', () => {
       expect(m).not.toBeNull();
       expect(m!.dictionaryTerm).toBe('take off');
       expect(m!.surface).toBe('took off');
+    });
+
+    // P34: verb NOT in the curated inflectable set must still match inflected
+    // forms. "burn" is not in TEST_VERBS, but "burned" must lemmatize to "burn"
+    // and match "burn sth off/up". This tests the auto-inflect approach:
+    // buildIndex passes ALL first words as inflectable, not a curated list.
+    // Quality is slot-template (not inflected) because the match uses both
+    // inflection AND a slot — slotUsed takes priority per ADR §9 ranking.
+    it('P34: burn sth off/up — verb not in curated set, -ed inflection', () => {
+      const index = buildIndexWithFirstWords(['burn sth off/up']);
+      const m = matchPhrase(req('I burned them off with a torch.', 'burned'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('burn sth off/up');
+      expect(m!.surface).toBe('burned them off');
+      expect(m!.quality).toBe('slot-template');
+    });
+
+    it('P35: burn sth off/up — -ing inflection', () => {
+      const index = buildIndexWithFirstWords(['burn sth off/up']);
+      const m = matchPhrase(req('I was burning them off.', 'burning'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('burn sth off/up');
+      expect(m!.surface).toBe('burning them off');
+    });
+
+    it('P36: burn off something — -s inflection, object after particle', () => {
+      // "burns off the rust" = burn + off + object → matches "burn off something"
+      // (not "burn sth off/up" which expects object BEFORE particle)
+      const index = buildIndexWithFirstWords(['burn off something', 'burn sth off/up']);
+      const m = matchPhrase(req('It burns off the rust.', 'burns'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('burn off something');
+      expect(m!.surface).toBe('burns off the rust');
     });
   });
 

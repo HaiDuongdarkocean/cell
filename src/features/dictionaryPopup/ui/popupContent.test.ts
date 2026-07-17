@@ -6,9 +6,12 @@ import {
   renderDefinitions,
   renderFooter,
   renderPopupContent,
+  renderCandidate,
+  appendCandidateContent,
   initDefinitionSelection,
   getSelectedDefinitions,
   clearContainer,
+  getOrCreateCandidateList,
 } from './popupContent';
 import type { LookupResult, DefinitionEntry, WordStatus } from '../types';
 
@@ -65,7 +68,8 @@ describe('renderHeader', () => {
     const result = makeResult();
     callHeader(result, 'unknown');
     const freq = container.querySelector('[data-dp-frequency]');
-    expect(freq?.textContent).toBe('#1234');
+    // 2-segment pill: source + rank (toLocaleString)
+    expect(freq?.textContent).toBe('BNC1,234');
   });
 
   it('does not render frequency badge when null', () => {
@@ -149,7 +153,7 @@ describe('renderDefinitions', () => {
   it('renders examples', () => {
     const result = makeResult();
     renderDefinitions(container, result, new Map(), jest.fn());
-    const examples = container.querySelectorAll('[data-dp-definitions] div > div > div > div');
+    const examples = container.querySelectorAll('[data-dp-definitions] [data-dp-definition] > div > div');
     expect(examples.length).toBeGreaterThan(0);
   });
 
@@ -175,6 +179,39 @@ describe('renderDefinitions', () => {
     renderDefinitions(container, result, selection, jest.fn());
     const checkbox = container.querySelector('[data-dp-def-checkbox]') as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
+  });
+
+  // --- Phương án A: checkbox gutter (label wraps checkbox only) ---
+
+  it('clicking the checkbox gutter (label) toggles the checkbox', () => {
+    const onToggle = jest.fn();
+    const result = makeResult();
+    renderDefinitions(container, result, new Map([['d1', false]]), onToggle);
+    // The <label> wraps the checkbox — clicking it should toggle.
+    // ponytail: jsdom doesn't fire `change` on label click (real browsers do).
+    // Verify checkbox.checked toggled — the change→onToggle wiring is tested
+    // separately in "checkbox change triggers onToggle".
+    const label = container.querySelector('[data-dp-definition] label') as HTMLLabelElement;
+    expect(label).not.toBeNull();
+    expect(label.tagName).toBe('LABEL');
+    label.click();
+    const checkbox = container.querySelector('[data-dp-def-checkbox]') as HTMLInputElement;
+    expect(checkbox.checked).toBe(true);
+  });
+
+  it('clicking the definition text does NOT toggle the checkbox', () => {
+    const onToggle = jest.fn();
+    const result = makeResult();
+    renderDefinitions(container, result, new Map([['d1', false]]), onToggle);
+    // The text area is a sibling outside the <label> — clicking it should
+    // NOT toggle the checkbox (leaves text free for future click-to-lookup).
+    const defItem = container.querySelector('[data-dp-definition]') as HTMLDivElement;
+    const textWrap = defItem.querySelector('div:not([data-dp-def-checkbox])') as HTMLDivElement;
+    expect(textWrap).not.toBeNull();
+    textWrap.click();
+    const checkbox = container.querySelector('[data-dp-def-checkbox]') as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+    expect(onToggle).not.toHaveBeenCalled();
   });
 });
 
@@ -280,6 +317,156 @@ describe('renderPopupContent (full)', () => {
     expect(container.querySelector('[data-dp-quick-add]')).not.toBeNull();
     expect(container.querySelector('[data-dp-settings]')).not.toBeNull();
     expect(container.querySelector('[data-dp-send-to-creator]')).not.toBeNull();
+  });
+});
+
+describe('renderCandidate', () => {
+  it('wraps header + definitions in a data-dp-popup-candidate element', () => {
+    const container = document.createElement('div');
+    const result = makeResult();
+    const selection = initDefinitionSelection(result);
+    const candidate = renderCandidate(container, result, 'unknown', selection, {
+      onStatusCycle: jest.fn(),
+      onDefinitionToggle: jest.fn(),
+      onQuickAdd: jest.fn(),
+      onSendToCreator: jest.fn(),
+      onSettings: jest.fn(),
+    });
+    expect(candidate.getAttribute('data-dp-popup-candidate')).toBe('');
+    expect(container.querySelector('[data-dp-popup-candidate]')).toBe(candidate);
+    expect(candidate.querySelector('[data-dp-header]')).not.toBeNull();
+    expect(candidate.querySelector('[data-dp-definitions]')).not.toBeNull();
+  });
+});
+
+describe('appendCandidateContent', () => {
+  it('appends a second candidate without clearing existing content', () => {
+    const container = document.createElement('div');
+    const result1 = makeResult({ term: 'get out' });
+    const result2 = makeResult({ term: 'get over', definitions: [makeDefinition({ id: 'd2', text: 'to recover' })] });
+    const sel1 = initDefinitionSelection(result1);
+    const sel2 = initDefinitionSelection(result2);
+    renderCandidate(container, result1, 'unknown', sel1, {
+      onStatusCycle: jest.fn(), onDefinitionToggle: jest.fn(),
+      onQuickAdd: jest.fn(), onSendToCreator: jest.fn(), onSettings: jest.fn(),
+    });
+    appendCandidateContent(container, result2, 'unknown', sel2, {
+      onStatusCycle: jest.fn(), onDefinitionToggle: jest.fn(),
+      onQuickAdd: jest.fn(), onSendToCreator: jest.fn(), onSettings: jest.fn(),
+    });
+    const candidates = container.querySelectorAll('[data-dp-popup-candidate]');
+    expect(candidates).toHaveLength(2);
+    // First candidate still has its header (not cleared).
+    expect(candidates[0]!.querySelector('[data-dp-term]')!.textContent).toBe('get out');
+    expect(candidates[1]!.querySelector('[data-dp-term]')!.textContent).toBe('get over');
+  });
+});
+
+describe('sticky header CSS (data-dp-header)', () => {
+  it('header has position:sticky in its cssText', () => {
+    const container = document.createElement('div');
+    const result = makeResult();
+    const selection = initDefinitionSelection(result);
+    renderPopupContent(container, result, 'unknown', selection, {
+      onStatusCycle: jest.fn(),
+      onDefinitionToggle: jest.fn(),
+      onQuickAdd: jest.fn(),
+      onSendToCreator: jest.fn(),
+      onSettings: jest.fn(),
+    });
+    const header = container.querySelector('[data-dp-header]') as HTMLElement;
+    expect(header).not.toBeNull();
+    // jsdom normalizes cssText (adds spaces after colons), so check the
+    // computed style property directly + the cssText substring form.
+    expect(header.style.position).toBe('sticky');
+    expect(header.style.cssText).toContain('position: sticky');
+    expect(header.style.cssText).toContain('top: 0px');
+    expect(header.style.zIndex).toBe('10');
+  });
+
+  it('header has a non-empty background so content does not show through when sticky', () => {
+    const container = document.createElement('div');
+    const result = makeResult();
+    const selection = initDefinitionSelection(result);
+    renderPopupContent(container, result, 'unknown', selection, {
+      onStatusCycle: jest.fn(),
+      onDefinitionToggle: jest.fn(),
+      onQuickAdd: jest.fn(),
+      onSendToCreator: jest.fn(),
+      onSettings: jest.fn(),
+    });
+    const header = container.querySelector('[data-dp-header]') as HTMLElement;
+    expect(header).not.toBeNull();
+    // background must be set (not empty/transparent) — uses var(--color-background).
+    expect(header.style.background).not.toBe('');
+    expect(header.style.background).toContain('var(--color-background');
+  });
+});
+
+describe('getOrCreateCandidateList', () => {
+  it('creates a div[data-dp-candidate-list] with display:block when none exists', () => {
+    const container = document.createElement('div');
+    expect(container.querySelector('[data-dp-candidate-list]')).toBeNull();
+    const list = getOrCreateCandidateList(container);
+    expect(list).not.toBeNull();
+    expect(list.getAttribute('data-dp-candidate-list')).toBe('');
+    expect(list.style.display).toBe('block');
+    expect(container.querySelector('[data-dp-candidate-list]')).toBe(list);
+  });
+
+  it('returns the existing wrapper when one already exists (no duplicate)', () => {
+    const container = document.createElement('div');
+    const first = getOrCreateCandidateList(container);
+    const second = getOrCreateCandidateList(container);
+    expect(second).toBe(first);
+    expect(container.querySelectorAll('[data-dp-candidate-list]')).toHaveLength(1);
+  });
+});
+
+describe('renderPopupContent candidate-list wrapper', () => {
+  it('renders candidates inside the data-dp-candidate-list wrapper, not as a direct child of container', () => {
+    const container = document.createElement('div');
+    const result = makeResult();
+    const selection = initDefinitionSelection(result);
+    renderPopupContent(container, result, 'unknown', selection, {
+      onStatusCycle: jest.fn(),
+      onDefinitionToggle: jest.fn(),
+      onQuickAdd: jest.fn(),
+      onSendToCreator: jest.fn(),
+      onSettings: jest.fn(),
+    });
+    const list = container.querySelector('[data-dp-candidate-list]') as HTMLElement;
+    expect(list).not.toBeNull();
+    const candidate = container.querySelector('[data-dp-popup-candidate]') as HTMLElement;
+    expect(candidate).not.toBeNull();
+    // candidate is a child of the wrapper, not a direct child of container.
+    expect(candidate.parentElement).toBe(list);
+    expect(Array.from(container.children)).not.toContain(candidate);
+  });
+});
+
+describe('appendCandidateContent appends to the candidate-list wrapper', () => {
+  it('appends a second candidate into the existing data-dp-candidate-list wrapper', () => {
+    const container = document.createElement('div');
+    const result1 = makeResult({ term: 'get out' });
+    const result2 = makeResult({ term: 'get over', definitions: [makeDefinition({ id: 'd2', text: 'to recover' })] });
+    const sel1 = initDefinitionSelection(result1);
+    const sel2 = initDefinitionSelection(result2);
+    renderPopupContent(container, result1, 'unknown', sel1, {
+      onStatusCycle: jest.fn(), onDefinitionToggle: jest.fn(),
+      onQuickAdd: jest.fn(), onSendToCreator: jest.fn(), onSettings: jest.fn(),
+    });
+    appendCandidateContent(container, result2, 'unknown', sel2, {
+      onStatusCycle: jest.fn(), onDefinitionToggle: jest.fn(),
+      onQuickAdd: jest.fn(), onSendToCreator: jest.fn(), onSettings: jest.fn(),
+    });
+    const list = container.querySelector('[data-dp-candidate-list]') as HTMLElement;
+    expect(list).not.toBeNull();
+    const candidates = list.querySelectorAll('[data-dp-popup-candidate]');
+    expect(candidates).toHaveLength(2);
+    // Both candidates are children of the wrapper, not direct children of container.
+    expect(Array.from(candidates).every((c) => c.parentElement === list)).toBe(true);
+    expect(container.querySelectorAll('[data-dp-candidate-list]')).toHaveLength(1);
   });
 });
 

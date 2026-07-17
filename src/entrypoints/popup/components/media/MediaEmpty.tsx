@@ -8,12 +8,14 @@ interface MediaEmptyProps {
 
 const EMPTY_CONFIG = {
   videos: {
+    // FIXME: extract to registry once stroke-width variant supported — strokeWidth 1.5 differs from ICON_CATALOG.search (stroke 2)
     scanningIcon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="8" />
         <path d="M21 21l-4.35-4.35" />
       </svg>
     ),
+    // FIXME: extract to registry once stroke-width variant supported — strokeWidth 1.5 differs from ICON_CATALOG.video (stroke 2)
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -27,6 +29,7 @@ const EMPTY_CONFIG = {
   },
   subtitles: {
     scanningIcon: null,
+    // FIXME: extract to registry once stroke-width variant supported — strokeWidth 1.5 differs from ICON_CATALOG.flag (stroke 2)
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
@@ -40,6 +43,7 @@ const EMPTY_CONFIG = {
   },
   downloads: {
     scanningIcon: null,
+    // FIXME: extract to registry once stroke-width variant supported — strokeWidth 1.5 differs from ICON_CATALOG.download (stroke 2)
     icon: (
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

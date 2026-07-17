@@ -20,7 +20,7 @@
 }
 
 .item:hover {
-  background: var(--color-accent, var(--color-surface, #f8fafc));
+  background: var(--color-surface-hover, #f1f5f9);
   color: var(--color-text, #0f172a);
 }
 

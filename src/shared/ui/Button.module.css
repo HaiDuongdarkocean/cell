@@ -88,11 +88,12 @@
 }
 
 .outline:hover {
-  background: var(--color-accent);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
 }
 
 .outline:active {
-  background: var(--color-accent);
+  background: var(--color-surface-hover);
   transform: scale(0.98);
 }
 
@@ -103,11 +104,11 @@
 }
 
 .ghost:hover {
-  background: var(--color-accent);
+  background: var(--color-surface-hover);
 }
 
 .ghost:active {
-  background: var(--color-accent);
+  background: var(--color-surface-hover);
   transform: scale(0.98);
 }
 
