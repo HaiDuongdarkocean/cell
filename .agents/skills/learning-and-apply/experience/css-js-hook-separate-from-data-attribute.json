@@ -1,0 +1,32 @@
+{
+  "id": "css-js-hook-separate-from-data-attribute",
+  "title": "JS hooks use .js- class; data-* stores data, never behavior bindings",
+  "category": ["css", "ux"],
+  "tags": ["bem", "js-hook", "data-attribute", "queryselector", "separation-of-concerns"],
+  "trigger": "JS querySelector/closest chọn element để bind behavior",
+  "principle": "Bind behavior via .js-<role> class; store payload via data-* attributes, read with getAttribute. A selector may use .js- class as hook and [data-*] as a value filter, but data-* alone must never be the behavior hook — that couples DOM data to JS targeting and breaks when the attribute is refactored.",
+  "cases": [
+    {
+      "context": "JS tìm panel đang mở để replace — cần hook (bind) + payload filter (audio vs image)",
+      "bad": "container.querySelector('[data-cell-panel=\"audio\"]')",
+      "good": "// .js-cell-panel is the hook, [data-cell-panel=\"audio\"] is a payload filter\ncontainer.querySelector('.js-cell-panel[data-cell-panel=\"audio\"]')\n// or split: query by hook, filter by payload\n// const panel = [...container.querySelectorAll('.js-cell-panel')].find(p => p.dataset.cellPanel === 'audio');"
+    },
+    {
+      "context": "JS detect click outside popup, skip if click trên subtitle token",
+      "bad": "target.closest('[data-cell-term]')",
+      "good": "target.closest('.js-cell-token')"
+    },
+    {
+      "context": "Token span DOM creation — cần cả JS hook (để closest tìm) và data (để đọc term/start/end)",
+      "bad": "span.setAttribute('data-cell-term', token.text);\n// JS sau đó: target.closest('[data-cell-term]')",
+      "good": "span.className = 'js-cell-token';\nspan.setAttribute('data-cell-term', token.text);\n// JS targeting: target.closest('.js-cell-token')\n// payload read: span.getAttribute('data-cell-term')"
+    }
+  ],
+  "applyFor": [
+    "Shadow DOM content script",
+    "Vanilla DOM controllers (no framework)",
+    "BEM-style global CSS",
+    "Event delegation via closest()",
+    "Any codebase following htmlcss-css-032/033"
+  ]
+}
