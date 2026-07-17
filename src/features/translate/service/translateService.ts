@@ -7,8 +7,12 @@ import type { SrtCue } from '@/entities/media';
  * Network fetch lives in the background service worker (CORS bypass).
  */
 
-/** Google Translate unofficial endpoint base (ADR-021 D2). */
-export const GOOGLE_TRANSLATE_ENDPOINT = 'https://translate.google.com/translate_a/single';
+/** Google Translate unofficial endpoint base (ADR-021 D2).
+ *  Dùng translate.googleapis.com thay vì translate.google.com —
+ *  translate.google.com bị Chrome SW block fetch trong một số môi trường
+ *  (temp profile, Secure DNS). googleapis.com endpoint tương đương và
+ *  response shape identical. */
+export const GOOGLE_TRANSLATE_ENDPOINT = 'https://translate.googleapis.com/translate_a/single';
 
 /**
  * Build the Google Translate unofficial request URL.
