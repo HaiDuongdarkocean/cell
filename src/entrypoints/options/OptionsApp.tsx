@@ -9,13 +9,14 @@ import { TtsVoiceManagerPanel, DEFAULT_TTS_SETTINGS } from '@/features/tts/ui/Tt
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import type { TtsSettings, DictionaryPopupSettings } from '@/entities/settings/types';
 import { SidebarItem } from './SidebarItem';
+import { Icon } from '@/shared/icons/Icon';
 import type { Tab, SidebarItem as SidebarItemType } from './types';
 import styles from './OptionsApp.module.css';
 
 const SIDEBAR_ITEMS: readonly SidebarItemType[] = [
-  { id: 'resources', label: 'Tài nguyên', icon: '▣' },
-  { id: 'theme', label: 'Giao diện', icon: '▢' },
-  { id: 'settings', label: 'Cài đặt', icon: '▢' },
+  { id: 'resources', label: 'Tài nguyên', icon: 'download' },
+  { id: 'theme', label: 'Giao diện', icon: 'moon' },
+  { id: 'settings', label: 'Cài đặt', icon: 'settings' },
   { id: 'tts', label: 'TTS Voices', icon: 'audioWave' },
 ];
 
@@ -100,11 +101,23 @@ export function OptionsApp(): ReactElement {
         </button>
       </div>
       <div className={styles.layout}>
-        {drawerOpen && <div className={styles.drawerOverlay} onClick={() => setDrawerOpen(false)} aria-hidden="true" />}
+        {drawerOpen && (
+          <>
+            <div className={styles.drawerOverlay} onClick={() => setDrawerOpen(false)} aria-hidden="true" />
+            <button
+              type="button"
+              className={styles.drawerClose}
+              onClick={() => setDrawerOpen(false)}
+              aria-label="Đóng menu"
+            >
+              <Icon name="x" size={20} />
+            </button>
+          </>
+        )}
         <nav
           ref={sidebarRef}
           className={`${styles.sidebar} ${drawerOpen ? styles.sidebarOpen : ''}`}
-          role="navigation"
+          role="tablist"
           aria-label="Tùy chọn sections"
           onKeyDown={handleSidebarKeyDown}
         >
@@ -118,12 +131,8 @@ export function OptionsApp(): ReactElement {
               onClick={handleTabChange}
             />
           ))}
-          <div className={styles.sidebarDivider} role="separator" />
-          <div className={styles.sidebarRoom} aria-hidden="true">
-            <span className={styles.roomLabel}>(room sau)</span>
-          </div>
         </nav>
-        <div className={styles.panels}>
+        <div className={`${styles.panels} ${styles.contentMeasure}`}>
           <section
             className={styles.content}
             role="tabpanel"

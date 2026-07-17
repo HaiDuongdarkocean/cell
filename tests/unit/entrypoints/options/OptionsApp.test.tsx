@@ -32,7 +32,7 @@ describe('OptionsApp shell — sidebar nav (UI-UX-Contract)', () => {
 
   it('renders sidebar navigation with 3 items', () => {
     render(<OptionsApp />);
-    const nav = screen.getByRole('navigation', { name: /tùy chọn sections/i });
+    const nav = screen.getByRole('tablist', { name: /tùy chọn sections/i });
     expect(nav).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /tài nguyên/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /giao diện/i })).toBeInTheDocument();

@@ -281,11 +281,7 @@ export function appendCandidate(
       candidateTab = candidateTab === t ? null : t;
       rerenderCandidateTab();
       state.shell?.rePosition();
-    }, () => {
-      candidateTab = null;
-      rerenderCandidateTab();
-      state.shell?.rePosition();
-    }, countMapTrue(candidateAudioSelection) > 0 ? { audio: countMapTrue(candidateAudioSelection) } : undefined, (tab) => {
+    }, countSelectionsForCandidate(candidateAudioSelection, candidateImageSelection), (tab) => {
       if (tab === 'translate' && !candidateTranslation && !candidateTranslationLoading) {
         candidateTranslationLoading = true;
         rerenderCandidateTab();
@@ -485,6 +481,19 @@ function countSelections(state: PopupDictionaryState): SelectionCounts {
   return counts;
 }
 
+/** Count selected items per tab for an appended candidate. */
+function countSelectionsForCandidate(
+  audioSelection: Map<string, boolean>,
+  imageSelection: Map<string, boolean>,
+): SelectionCounts {
+  const counts: SelectionCounts = {};
+  const audioCount = countMapTrue(audioSelection);
+  const imageCount = countMapTrue(imageSelection);
+  if (audioCount > 0) counts.audio = audioCount;
+  if (imageCount > 0) counts.image = imageCount;
+  return counts;
+}
+
 /** Count true values in a Map. */
 function countMapTrue(map: Map<string, boolean>): number {
   let n = 0;
@@ -531,10 +540,7 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
   const slot = candidate.querySelector('.js-cell-toolbar-slot') as HTMLElement | null;
   if (!slot) return;
   slot.innerHTML = '';
-  renderToolbar(slot, state.activeTab, (t) => toggleTab(state, t), () => {
-    state.activeTab = null;
-    rerender(state, null);
-  }, countSelections(state), (tab) => {
+  renderToolbar(slot, state.activeTab, (t) => toggleTab(state, t), countSelections(state), (tab) => {
     if (tab === 'translate' && !state.translation && !state.translationLoading && state.currentResult) {
       state.translationLoading = true;
       rerender(state, 'translate');

@@ -10,7 +10,11 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
 import { lookupOrchestratorMulti } from '@/features/dictionaryPopup/logic/lookupOrchestrator';
-import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
+import type { LookupResult } from '@/features/dictionaryPopup/types';
+import {
+  LookupRequestPayloadSchema,
+  LookupCancelPayloadSchema,
+} from '@/features/dictionaryPopup/schema';
 
 /** In-flight lookup abort controllers (for cancellation). */
 const abortControllers = new Map<string, AbortController>();
@@ -20,12 +24,11 @@ export function registerLookupHandlers(ctx: BackgroundContext): void {
   ctx.on(
     MESSAGE_TYPES.LOOKUP_REQUEST,
     async (request): Promise<MessageResponse<LookupResult[]>> => {
-      const payload = request.payload as { requestId: string; request: LookupRequest } | undefined;
-      if (!payload?.requestId || !payload?.request) {
-        return { success: false, error: 'Missing requestId or request in LOOKUP_REQUEST' };
+      const parsed = LookupRequestPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid LOOKUP_REQUEST payload: ${parsed.error.message}` };
       }
-
-      const { requestId, request: lookupRequest } = payload;
+      const { requestId, request: lookupRequest } = parsed.data;
       const ac = new AbortController();
       abortControllers.set(requestId, ac);
 
@@ -44,8 +47,11 @@ export function registerLookupHandlers(ctx: BackgroundContext): void {
   ctx.on(
     MESSAGE_TYPES.LOOKUP_CANCEL,
     async (request): Promise<MessageResponse<null>> => {
-      const payload = request.payload as { requestId?: string } | undefined;
-      const requestId = payload?.requestId;
+      const parsed = LookupCancelPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid LOOKUP_CANCEL payload: ${parsed.error.message}` };
+      }
+      const { requestId } = parsed.data;
       if (requestId) {
         const ac = abortControllers.get(requestId);
         if (ac) {

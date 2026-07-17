@@ -17,7 +17,6 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import {
   mapYouTubeCaptionTracks,
   fetchCaptionTracksViaInnerTube,
-  type YouTubeCaptionTrack,
 } from '@/features/detection';
 import type { BackgroundContext } from '../context';
 import {
@@ -56,17 +55,12 @@ export function registerYouTubeFallbackHandlers(
         };
       }
 
-      console.log('[bg INNERTUBE_FALLBACK] fetching via InnerTube ANDROID', {
-        tabId,
-        videoId: payload.videoId,
-        hasVisitorData: !!payload.visitorData,
-      });
       const tracks = await fetchCaptionTracksViaInnerTube(
         payload.videoId,
         payload.apiKey,
         payload.visitorData,
       );
-      const subtitles = mapYouTubeCaptionTracks(tracks as YouTubeCaptionTrack[], tabId);
+      const subtitles = mapYouTubeCaptionTracks(tracks, tabId);
       if (subtitles.length === 0) {
         console.warn(
           '[bg INNERTUBE_FALLBACK] no tracks from InnerTube — PO Token may be required',

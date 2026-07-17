@@ -8,7 +8,6 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type {
   MessageResponse,
-  FetchCommunityAudioPayload,
 } from '@/entities/message';
 import type { FetchCommunityAudioResponse } from '@/features/dictionaryPopup/types';
 import { FetchCommunityAudioPayloadSchema } from '@/features/dictionaryPopup/schema';
@@ -25,12 +24,12 @@ export function registerForvoAudioHandlers(ctx: BackgroundContext): void {
           error: `Invalid FETCH_COMMUNITY_AUDIO payload: ${parsed.error.message}`,
         };
       }
-      const payload = parsed.data as FetchCommunityAudioPayload;
+      const { term, langCode } = parsed.data;
 
       try {
         const settings = await ctx.loadSettings();
         const accent = settings.dictionaryPopup?.tts?.preferredAccent ?? 'US';
-        const items = await fetchScoredCommunityAudioItems(payload.term, payload.langCode, accent);
+        const items = await fetchScoredCommunityAudioItems(term, langCode, accent);
         return { success: true, data: { items } };
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);

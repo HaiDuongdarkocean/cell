@@ -13,7 +13,7 @@ import {
   clearBadge,
 } from '../helpers';
 import type { Settings } from '@/entities/media';
-import type { MessageResponse, UpdateSettingsPayload } from '@/entities/message';
+import type { MessageResponse } from '@/entities/message';
 import { UpdateSettingsPayloadSchema } from '@/entities/message/schema';
 
 /** Register settings message handlers. */
@@ -30,7 +30,7 @@ export function registerSettingsHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) {
       return { success: false, error: `Invalid UPDATE_SETTINGS payload: ${parsed.error.message}` };
     }
-    const payload = parsed.data as unknown as UpdateSettingsPayload;
+    const payload = parsed.data;
     const current = await loadSettings();
     const merged: Settings = { ...current, ...payload.settings };
 

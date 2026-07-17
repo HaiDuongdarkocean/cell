@@ -9,7 +9,7 @@
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type { MessageResponse } from '@/entities/message';
-import type { FetchImagesPayload, FetchImagesResponse } from '@/features/dictionaryPopup/types';
+import type { FetchImagesResponse } from '@/features/dictionaryPopup/types';
 import { FetchImagesPayloadSchema } from '@/features/dictionaryPopup/schema';
 import {
   buildGoogleImagesUrl,
@@ -51,17 +51,17 @@ export function registerImageSearchHandlers(ctx: BackgroundContext): void {
       if (!parsed.success) {
         return { success: false, error: `Invalid FETCH_IMAGES payload: ${parsed.error.message}` };
       }
-      const payload = parsed.data as FetchImagesPayload;
-      const maxResults = payload.maxResults ?? DEFAULT_MAX_IMAGE_RESULTS;
+      const { term, maxResults: maxResultsParam } = parsed.data;
+      const maxResults = maxResultsParam ?? DEFAULT_MAX_IMAGE_RESULTS;
 
-      const url = buildGoogleImagesUrl(payload.term);
+      const url = buildGoogleImagesUrl(term);
       try {
         const response = await fetchWithTimeout(url, FETCH_IMAGES_TIMEOUT_MS);
         if (!response.ok) {
           return { success: false, error: `Google Images HTTP ${response.status}` };
         }
         const html = await response.text();
-        const items = parseGoogleImagesHtml(html, payload.term, maxResults);
+        const items = parseGoogleImagesHtml(html, term, maxResults);
         return { success: true, data: { items } };
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
