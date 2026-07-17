@@ -167,7 +167,7 @@ export function showPopup(
   // Render content FIRST so setPosition can use actual offsetHeight.
   const container = shell.getContainer();
   if (container) {
-    renderPopupContent(container, state.currentResult, state.currentStatus, state.definitionSelection, {
+    renderPopupContent(container, result, status, definitionSelection, {
       onStatusCycle: () => cycleStatus(state),
       onDefinitionToggle: (id, selected) => toggleDefinition(state, id, selected),
       onQuickAdd: () => doQuickAdd(state),
@@ -182,6 +182,9 @@ export function showPopup(
     // rerenderCandidateTab) — toolbar icons always visible, panel only
     // when activeTab is set. Without this the winner lacks .js-cell-toolbar
     // while appended candidates have one (inconsistent UI).
+    // Mutate the live state object so async tab callbacks (translate/audio)
+    // update the state returned by showPopup/rerender.
+    state.currentResult = result;
     renderWinnerToolbar(state, container);
   }
 
@@ -736,7 +739,9 @@ function rerender(state: PopupDictionaryState, activeTab?: PopupTab | null): voi
   // Re-append resize handle after clearContainer wiped it.
   state.shell?.reAppendResizeHandle();
   // Render winner toolbar into its slot (consistent with showPopup/appendCandidate).
-  renderWinnerToolbar({ ...state, activeTab: tab }, container);
+  // Use the live state object so async tab callbacks mutate the same state.
+  state.activeTab = tab;
+  renderWinnerToolbar(state, container);
   // Re-position after content change (height may have changed).
   state.shell?.rePosition();
 }
