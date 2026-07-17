@@ -12,6 +12,7 @@ import type {
   TranslateResult,
 } from '@/entities/message';
 import { TranslatePayloadSchema } from '@/features/dictionaryPopup/schema';
+import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import {
   buildTranslateUrl,
   parseGoogleResponse,
@@ -31,7 +32,7 @@ export function registerTranslateHandlers(ctx: BackgroundContext): void {
 
     const url = buildTranslateUrl(payload.text, payload.sl, payload.tl);
     try {
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         method: 'GET',
         headers: { 'Accept': 'application/json, text/plain, */*' },
       });

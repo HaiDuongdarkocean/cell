@@ -20,6 +20,7 @@ import {
   readFile as opfsReadFile,
 } from '@/shared/lib/storage/opfsStorage';
 import { sendMessage, onMessage, removeOnMessageListener } from '@/shared/lib/chrome-apis';
+import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 import type {
   ConvertTsToMp4V2Payload,
   ConvertTsToMp4V2ResultPayload,
@@ -428,7 +429,7 @@ export async function startMessageListener(): Promise<void> {
       const payload = request.payload as FetchRequestPayload;
       void (async () => {
         try {
-          const response = await fetch(payload.url, {
+          const response = await fetchWithTimeout(payload.url, {
             method: payload.options?.method ?? 'GET',
             headers: payload.options?.headers,
             credentials: payload.options?.credentials ?? 'same-origin',
