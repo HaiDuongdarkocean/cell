@@ -42,6 +42,13 @@ export function VideoCard({
   const [urlExpanded, setUrlExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!qualityOpen) return;
@@ -79,7 +86,8 @@ export function VideoCard({
     try {
       await navigator.clipboard.writeText(video.url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       const range = document.createRange();
       const target = e.target as HTMLElement;
