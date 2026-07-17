@@ -157,6 +157,23 @@ describe('renderAudioPanel', () => {
     expect(metaEl.textContent).toBe('US · Female');
   });
 
+  it('label with no " · " separator shows only name, no meta', () => {
+    const wordAudios = [makeAudio({ id: 'w1', label: 'SystemTTS' })];
+    renderAudioPanel(container, wordAudios, [], new Map(), jest.fn(), jest.fn());
+    const nameEl = container.querySelector('.cell-audio__label-name') as HTMLSpanElement;
+    const metaEl = container.querySelector('.cell-audio__label-meta');
+    expect(nameEl.textContent).toBe('SystemTTS');
+    expect(metaEl).toBeNull();
+  });
+
+  it('audio label has role=button and aria-pressed', () => {
+    const wordAudios = [makeAudio({ id: 'w1', label: 'Forvo · US' })];
+    renderAudioPanel(container, wordAudios, [], new Map([['w1', true]]), jest.fn(), jest.fn());
+    const labelEl = container.querySelector('.js-cell-audio-label') as HTMLSpanElement;
+    expect(labelEl.getAttribute('role')).toBe('button');
+    expect(labelEl.getAttribute('aria-pressed')).toBe('true');
+  });
+
   it('checkbox hidden when unchecked, visible when checked', () => {
     const wordAudios = [makeAudio({ id: 'w1' }), makeAudio({ id: 'w2' })];
     renderAudioPanel(container, wordAudios, [], new Map([['w1', true], ['w2', false]]), jest.fn(), jest.fn());
@@ -289,6 +306,20 @@ describe('renderTranslatePanel', () => {
     renderTranslatePanel(container, 'Xin chào', 'Hello', 'vi', jest.fn(), true);
     const block = container.querySelector('.js-cell-translate-block') as HTMLDivElement;
     expect(block.classList.contains('cell-translate__block--selected')).toBe(true);
+  });
+
+  it('translate block has role=button and aria-pressed', () => {
+    renderTranslatePanel(container, 'Xin chào', 'Hello', 'vi', jest.fn(), true);
+    const block = container.querySelector('.js-cell-translate-block') as HTMLDivElement;
+    expect(block.getAttribute('role')).toBe('button');
+    expect(block.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('shows empty state when source sentence empty but translation exists', () => {
+    renderTranslatePanel(container, 'Xin chào', '', 'vi', jest.fn());
+    // When source is empty, target shows translation, native is empty
+    const target = container.querySelector('.cell-translate__target');
+    expect(target?.textContent).toBe('Xin chào');
   });
 });
 

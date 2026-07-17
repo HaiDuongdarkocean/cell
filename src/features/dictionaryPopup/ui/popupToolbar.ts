@@ -122,6 +122,10 @@ export function renderAudioPanel(
       // Label order: Speaker → Dialect → Gender (spec wireframe).
       const labelEl = document.createElement('span');
       labelEl.className = 'cell-audio__label js-cell-audio-label';
+      labelEl.setAttribute('role', 'button');
+      labelEl.setAttribute('aria-pressed', String(isChecked));
+      labelEl.setAttribute('tabindex', '0');
+      labelEl.setAttribute('aria-label', `Select ${item.label}`);
       const parts = item.label.split(' · ');
       const nameEl = document.createElement('span');
       nameEl.className = 'cell-audio__label-name';
@@ -316,6 +320,10 @@ export function renderTranslatePanel(
   const selected = isSelected ?? false;
   const block = document.createElement('div');
   block.className = 'cell-translate__block js-cell-translate-block' + (selected ? ' cell-translate__block--selected' : '');
+  block.setAttribute('role', 'button');
+  block.setAttribute('aria-pressed', String(selected));
+  block.setAttribute('tabindex', '0');
+  block.setAttribute('aria-label', 'Toggle translation selection');
 
   const textEl = document.createElement('div');
   textEl.className = 'cell-translate__text';

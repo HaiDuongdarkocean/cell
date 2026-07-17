@@ -325,8 +325,8 @@
 /* Toolbar tab badge — selection count */
 .cell-toolbar__badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
+  top: -4px;
+  right: -4px;
   min-width: 14px;
   height: 14px;
   padding: 0 3px;
@@ -742,11 +742,11 @@
   display: block;
 }
 
-/* === Utility: hide scrollbar but keep scrollable === */
-::-webkit-scrollbar {
+/* === Utility: hide scrollbar but keep scrollable (scoped to popup) === */
+.cell-popup ::-webkit-scrollbar {
   display: none;
 }
 
-* {
+.cell-popup * {
   scrollbar-width: none;
 }
