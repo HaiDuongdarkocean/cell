@@ -1,0 +1,16 @@
+{
+  "id": "fetch-with-timeout-abortcontroller",
+  "title": "External fetch trong SW/offscreen phải có timeout",
+  "category": ["async"],
+  "tags": ["fetch", "abortcontroller", "service-worker", "offscreen", "timeout"],
+  "trigger": "Gọi `fetch()` từ service worker, offscreen document, hoặc context có thể bị treo",
+  "principle": "Mọi fetch đến endpoint bên ngoài từ SW/offscreen cần AbortController + setTimeout để tránh request treo vĩnh viễn khi network/máy chủ lỗi. Tách thành helper `fetchWithTimeout` reusable.",
+  "cases": [
+    {
+      "context": "Google Translate fetch từ background handler",
+      "bad": "const response = await fetch(url, { method: 'GET' });",
+      "good": "const response = await fetchWithTimeout(url, { method: 'GET' });\n\n// shared/lib/fetchWithTimeout.ts\nexport async function fetchWithTimeout(url, options, timeoutMs = 10000) {\n  const controller = new AbortController();\n  const timer = setTimeout(() => controller.abort(), timeoutMs);\n  try {\n    return await fetch(url, { ...options, signal: controller.signal });\n  } finally {\n    clearTimeout(timer);\n  }\n}"
+    }
+  ],
+  "applyFor": ["service worker fetch", "offscreen document fetch", "background handlers calling external APIs"]
+}

@@ -811,6 +811,30 @@
       "category": ["css", "rendering"],
       "tags": ["shadow-dom", "scrollbar", "global-selector", "css-scope", "content-script"],
       "trigger": "Khi viết utility CSS trong Shadow DOM component dùng selector toàn cục (* hoặc ::-webkit-scrollbar)"
+    },
+    {
+      "type": "experience",
+      "id": "message-payload-zod-validation",
+      "title": "MV3 message handlers → validate payload with Zod before `as` cast",
+      "category": ["messaging"],
+      "tags": ["chrome-extension", "mv3", "message-bus", "zod", "trust-boundary"],
+      "trigger": "Viết handler nhận message từ content-script/popup/offscreen trong Chrome extension"
+    },
+    {
+      "type": "experience",
+      "id": "fetch-with-timeout-abortcontroller",
+      "title": "External fetch trong SW/offscreen phải có timeout",
+      "category": ["async"],
+      "tags": ["fetch", "abortcontroller", "service-worker", "offscreen", "timeout"],
+      "trigger": "Gọi `fetch()` từ service worker, offscreen document, hoặc context có thể bị treo"
+    },
+    {
+      "type": "experience",
+      "id": "react-timeout-cleanup",
+      "title": "React component dùng setTimeout phải cleanup trên unmount",
+      "category": ["ux"],
+      "tags": ["react", "settimeout", "memory-leak", "useeffect", "useref"],
+      "trigger": "Component React set state sau một khoảng trễ (copy feedback, toast, debounce)"
     }
   ]
 }
