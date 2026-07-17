@@ -13,10 +13,8 @@ import {
   clearBadge,
 } from '../helpers';
 import type { Settings } from '@/entities/media';
-import type {
-  MessageResponse,
-  UpdateSettingsPayload,
-} from '@/entities/message';
+import type { MessageResponse, UpdateSettingsPayload } from '@/entities/message';
+import { UpdateSettingsPayloadSchema } from '@/entities/message/schema';
 
 /** Register settings message handlers. */
 export function registerSettingsHandlers(ctx: BackgroundContext): void {
@@ -28,7 +26,11 @@ export function registerSettingsHandlers(ctx: BackgroundContext): void {
 
   // UPDATE_SETTINGS: persist settings and apply to the download queue.
   ctx.on(MESSAGE_TYPES.UPDATE_SETTINGS, async (request): Promise<MessageResponse<Settings>> => {
-    const payload = request.payload as UpdateSettingsPayload;
+    const parsed = UpdateSettingsPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid UPDATE_SETTINGS payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data as unknown as UpdateSettingsPayload;
     const current = await loadSettings();
     const merged: Settings = { ...current, ...payload.settings };
 
