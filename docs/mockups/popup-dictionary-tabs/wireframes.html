@@ -132,35 +132,39 @@
 
     <!-- TRANSLATE -->
     <section class="tab-section">
-      <div class="section-title">3. Translate — final layout (target + native stacked)</div>
+      <div class="section-title">3. Translate — final layout (single clickable block)</div>
       <div class="states">
         <div>
           <div class="state-label">Empty / not loaded</div>
           <div class="popup">
             <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb tb-rest">I</div><div class="tb">T</div><div class="tb tb-rest">L</div></div>
             <div class="panel">
-              <div class="box" style="text-align:center;">Translate sentence</div>
+              <div class="empty"><div class="empty-icon"></div><div class="empty-title">No translation</div><div class="btn-sm">Translate sentence</div></div>
             </div>
           </div>
         </div>
         <div>
-          <div class="state-label">Loaded</div>
+          <div class="state-label">Loaded (not selected)</div>
           <div class="popup">
             <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb tb-rest">I</div><div class="tb">T</div><div class="tb tb-rest">L</div></div>
             <div class="panel">
-              <div class="box">The view is magnificent.</div>
-              <div class="box" style="margin-top:4px;">Quang cảnh thật hùng vĩ.</div>
+              <div class="box">
+                <div style="font-weight:600;">The view is magnificent.</div>
+                <div style="margin-top:2px; color:#64748b;">Quang cảnh thật hùng vĩ.</div>
+              </div>
+              <div class="muted">Click block to include in card.</div>
             </div>
           </div>
         </div>
         <div>
-          <div class="state-label">Loaded + included for card</div>
+          <div class="state-label">Loaded + selected</div>
           <div class="popup">
             <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb tb-rest">I</div><div class="tb">T<span class="tb-badge">1</span></div><div class="tb tb-rest">L</div></div>
             <div class="panel">
-              <div class="box">The view is magnificent.</div>
-              <div class="box" style="margin-top:4px;">Quang cảnh thật hùng vĩ.</div>
-              <div class="muted">✓ Included in flashcard</div>
+              <div class="box" style="background:#e2e8f0;">
+                <div style="display:flex;align-items:center;gap:4px;"><div class="cb check">✓</div><div style="font-weight:600;">The view is magnificent.</div></div>
+                <div style="margin-top:2px; color:#64748b;">Quang cảnh thật hùng vĩ.</div>
+              </div>
             </div>
           </div>
         </div>
