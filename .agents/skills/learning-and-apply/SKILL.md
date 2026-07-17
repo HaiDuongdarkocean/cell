@@ -1,6 +1,6 @@
 ---
 name: learning-and-apply
-description: "Two modes. APPLY: grep index.json BEFORE writing code (css/async/messaging/state/data/detection/build/ux tasks) to avoid known bad patterns — read rules or experience atoms. ACCUMULATE: after test pass + root cause understood, extract reusable principle to experience/ atom JSON with bad/good code."
+description: "Prevents recurring mistakes by applying accumulated knowledge before coding and extracting new lessons after fixes. Use this skill in two situations. BEFORE writing code: when the task involves CSS, async, messaging, state management, data parsing, detection logic, build config, testing, or UX patterns — grep index.json to find matching knowledge (style guide rules from books) or experience (bug fix principles from real projects), then check your code against known bad patterns and apply the good patterns. AFTER fixing a bug or completing a feature with a reusable insight: when a root cause is understood and tests pass — extract the principle into an atom JSON with bad/good code examples so future tasks avoid the same mistake. Triggers include: writing CSS for Shadow DOM, handling async races, chrome.runtime messaging, partial save APIs, MutationObserver timing, parser tolerance, fullscreen layout, theme switching, SPA navigation, or any task touching css/async/messaging/state/data/detection/build/ux. Do NOT use for one-off bug fixes with no reusable pattern, business logic errors, or trivial one-liner changes."
 ---
 
 # Learning and Apply
