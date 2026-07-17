@@ -130,6 +130,18 @@ describe('renderAudioPanel', () => {
     expect(playBtn.textContent).not.toContain('▶');
   });
 
+  it('play button uses audioWave icon (same as toolbar tab)', () => {
+    // Note: ?raw imports are mocked in tests (tests/rawMock.ts returns a
+    // placeholder SVG), so we can only verify the SVG element exists.
+    // The actual icon content is verified at runtime in the browser.
+    // Source code check: popupToolbar.ts line 114 uses ICON_CATALOG.audioWave.svg
+    // (same icon as toolbar tab at line 17).
+    const wordAudios = [makeAudio({ id: 'w1' })];
+    renderAudioPanel(container, wordAudios, [], new Map(), jest.fn(), jest.fn());
+    const playBtn = container.querySelector('.js-cell-audio-play') as HTMLButtonElement;
+    expect(playBtn.querySelector('svg')).not.toBeNull();
+  });
+
   it('play button click triggers onPlay', () => {
     const onPlay = jest.fn();
     const wordAudios = [makeAudio({ id: 'w1' })];

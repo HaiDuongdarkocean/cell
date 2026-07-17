@@ -111,7 +111,7 @@ export function renderAudioPanel(
       playBtn.className = 'icon-btn icon-btn--sm icon-btn--outlined js-cell-audio-play';
       playBtn.setAttribute('aria-label', `Play ${item.label}`);
       playBtn.title = `Play ${item.label}`;
-      playBtn.innerHTML = ICON_CATALOG.play.svg;
+      playBtn.innerHTML = ICON_CATALOG.audioWave.svg;
       playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         onPlay(item);
