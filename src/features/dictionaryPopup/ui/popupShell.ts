@@ -9,6 +9,7 @@
 
 import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?raw';
+import popupDictCss from './popupDictionary.css?raw';
 import { getStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 //
@@ -232,7 +233,7 @@ export class PopupShell {
     // Host element — lives in the light DOM but is visually invisible
     // (the Shadow DOM content is what's visible).
     this.host = document.createElement('div');
-    this.host.setAttribute('data-dp-popup-host', '');
+    this.host.className = 'js-cell-popup-host';
     this.host.style.position = 'fixed';
     this.host.style.left = '0';
     this.host.style.top = '0';
@@ -258,79 +259,19 @@ export class PopupShell {
     styleEl.textContent = tokensCss
       .replace(/:root/g, ':host')
       + componentsCss
-      + `
-      /* Popup-specific CSS — BEM: def-check block (checkbox dot pattern, Option A) */
-      .def-item { transition: background 0.15s ease; }
-      .def-check {
-        position: absolute; top: 0; left: 0; bottom: 0; width: 28px;
-        cursor: pointer; box-sizing: border-box;
-        display: flex; align-items: center; justify-content: center;
-      }
-      .def-check__dot {
-        width: 6px; height: 6px; border-radius: 50%;
-        background: var(--color-border);
-        display: inline-block;
-        transition: opacity 0.15s ease;
-      }
-      .def-check__box {
-        width: 16px; height: 16px; border-radius: 4px;
-        border: 1.5px solid var(--color-primary);
-        background: transparent;
-        display: none; align-items: center; justify-content: center;
-        flex-shrink: 0;
-      }
-      .def-check__tick {
-        width: 10px; height: 10px;
-        display: none;
-      }
-      /* Show checkbox on hover — applies to both def-item and audio-item */
-      .def-item:hover .def-check__dot,
-      .audio-item:hover .def-check__dot { display: none; }
-      .def-item:hover .def-check__box,
-      .audio-item:hover .def-check__box { display: flex; }
-      .def-item:hover .def-check__tick,
-      .audio-item:hover .def-check__tick { display: inline-block; }
-      /* When checked, always show checkbox (Option A) */
-      .def-check--checked .def-check__dot { display: none; }
-      .def-check--checked .def-check__box {
-        display: flex;
-        background: var(--color-primary);
-        border-color: var(--color-primary);
-      }
-      .def-check--checked .def-check__tick { display: inline-block; }
-      /* Visually hidden input — still accessible via label */
-      .def-check__input {
-        position: absolute; opacity: 0; width: 0; height: 0;
-        pointer-events: none;
-      }
-      .def-check__input:focus-visible + .def-check__box {
-        outline: 2px solid var(--color-primary); outline-offset: 2px;
-      }
-      /* Hide scrollbar but keep scrollable. */
-      ::-webkit-scrollbar { display: none; }
-      * { scrollbar-width: none; }
-    `;
+      + popupDictCss;
     this.shadow.appendChild(styleEl);
 
     // Container — the visible popup shell. Does NOT scroll itself; an inner
     // contentEl handles scrolling so the resize handle (a sibling of contentEl)
     // stays pinned at the bottom-right corner instead of scrolling with content.
     this.container = document.createElement('div');
-    this.container.setAttribute('data-dp-popup', '');
+    this.container.className = 'cell-popup js-cell-popup';
     this.container.style.position = 'fixed';
     this.container.style.pointerEvents = 'auto';
     this.container.style.width = `${this.size.width}px`;
     this.container.style.height = `${this.size.maxHeight}px`;
-    this.container.style.overflow = 'hidden';
     this.container.style.display = 'flex';
-    this.container.style.flexDirection = 'column';
-    this.container.style.borderRadius = 'var(--radius-lg, 10px)';
-    this.container.style.border = '1px solid var(--color-border)';
-    this.container.style.background = 'var(--color-background)';
-    this.container.style.boxShadow = '0 4px 24px rgba(0,0,0,0.15)';
-    this.container.style.fontFamily = 'var(--font-family, system-ui, -apple-system, sans-serif)';
-    this.container.style.fontSize = 'var(--font-size-base, 14px)';
-    this.container.style.color = 'var(--color-text)';
     // user-select is inherited — fullscreen video containers often set
     // user-select:none, which Shadow DOM inherits. Force text so definitions
     // are selectable.
@@ -345,31 +286,15 @@ export class PopupShell {
     this.initTheme();
     // Inner scroll wrapper — content renders here, this is what scrolls.
     this.contentEl = document.createElement('div');
-    this.contentEl.setAttribute('data-dp-content', '');
-    this.contentEl.style.flex = '1 1 auto';
-    this.contentEl.style.overflowY = 'auto';
-    this.contentEl.style.display = 'flex';
-    this.contentEl.style.flexDirection = 'column';
-    this.contentEl.style.minHeight = '0'; // allow flex child to shrink & scroll
+    this.contentEl.className = 'cell-popup__content js-cell-content';
     this.container.appendChild(this.contentEl);
 
     // Resize handle (bottom-right corner) — sibling of contentEl, NOT inside
     // the scroll wrapper, so it stays pinned at the shell's bottom-right.
     this.resizeHandle = document.createElement('div');
-    this.resizeHandle.setAttribute('data-dp-resize', '');
-    this.resizeHandle.style.position = 'absolute';
-    this.resizeHandle.style.bottom = '0';
-    this.resizeHandle.style.right = '0';
+    this.resizeHandle.className = 'cell-popup__resize js-cell-resize';
     this.resizeHandle.style.width = `${RESIZE_HANDLE_SIZE}px`;
     this.resizeHandle.style.height = `${RESIZE_HANDLE_SIZE}px`;
-    this.resizeHandle.style.cursor = 'nwse-resize';
-    this.resizeHandle.style.pointerEvents = 'auto';
-    this.resizeHandle.style.zIndex = '9999';
-    this.resizeHandle.style.display = 'flex';
-    this.resizeHandle.style.alignItems = 'center';
-    this.resizeHandle.style.justifyContent = 'center';
-    this.resizeHandle.style.color = 'var(--color-text-muted)';
-    this.resizeHandle.style.borderBottomRightRadius = '10px';
     this.resizeHandle.innerHTML = RESIZE_ICON_SVG;
     this.container.appendChild(this.resizeHandle);
     this.resizeHandle.addEventListener('mousedown', this.boundResizeStart);

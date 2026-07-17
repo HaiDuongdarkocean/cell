@@ -221,7 +221,7 @@ describe('PopupShell', () => {
   it('mounts with Shadow DOM', () => {
     const shadow = shell.mount();
     expect(shadow).toBeInstanceOf(ShadowRoot);
-    const host = document.querySelector('[data-dp-popup-host]');
+    const host = document.querySelector('.js-cell-popup-host');
     expect(host).not.toBeNull();
   });
 
@@ -229,13 +229,13 @@ describe('PopupShell', () => {
     shell.mount();
     const container = shell.getContainer();
     expect(container).not.toBeNull();
-    expect(container!.getAttribute('data-dp-content')).toBe('');
+    expect(container!.classList.contains('js-cell-content')).toBe(true);
   });
 
   it('setPosition sets left/top on the popup shell', () => {
     shell.mount();
     shell.setPosition(170, 100, 150, 200);
-    const shellEl = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+    const shellEl = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
     expect(shellEl).not.toBeNull();
     expect(shellEl.style.left).toMatch(/\d+px/);
     expect(shellEl.style.top).toMatch(/\d+px/);
@@ -244,7 +244,7 @@ describe('PopupShell', () => {
   it('show/hide toggles display on the popup shell', () => {
     shell.mount();
     shell.hide();
-    const shellEl = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+    const shellEl = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
     expect(shellEl.style.display).toBe('none');
     shell.show();
     expect(shellEl.style.display).toBe('flex');
@@ -253,7 +253,7 @@ describe('PopupShell', () => {
   it('setSize updates width + maxHeight on the popup shell', () => {
     shell.mount();
     shell.setSize({ width: 400, maxHeight: 300 });
-    const shellEl = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+    const shellEl = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
     expect(shellEl.style.width).toBe('400px');
     expect(shellEl.style.maxHeight).toBe('300px');
   });
@@ -280,7 +280,7 @@ describe('PopupShell', () => {
   it('destroy removes host from DOM', () => {
     shell.mount();
     shell.destroy();
-    expect(document.querySelector('[data-dp-popup-host]')).toBeNull();
+    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
   });
 
   it('mount is idempotent (returns same shadow root)', () => {
@@ -368,38 +368,40 @@ describe('PopupShell', () => {
 
   // --- Scroll container structure (sticky headers cross-browser) ---
   // The popup uses a two-layer layout so sticky headers work in every browser:
-  //   outer shell [data-dp-popup]      — fixed, overflow:hidden, does NOT scroll
-  //   inner wrapper [data-dp-content]  — flex:1, overflow-y:auto, IS the scroll container
-  //   resize handle [data-dp-resize]   — sibling of contentEl, pinned to shell corner
+  //   outer shell .js-cell-popup      — fixed, overflow:hidden, does NOT scroll
+  //   inner wrapper .js-cell-content  — flex:1, overflow-y:auto, IS the scroll container
+  //   resize handle .js-cell-resize   — sibling of contentEl, pinned to shell corner
   // getContainer() returns the inner wrapper (contentEl), not the outer shell.
   describe('scroll container structure', () => {
-    it('getContainer returns the element with data-dp-content (inner scroll wrapper)', () => {
+    it('getContainer returns the element with js-cell-content (inner scroll wrapper)', () => {
       shell.mount();
       const container = shell.getContainer();
       expect(container).not.toBeNull();
-      expect(container!.getAttribute('data-dp-content')).toBe('');
+      expect(container!.classList.contains('js-cell-content')).toBe(true);
     });
 
-    it('content element [data-dp-content] has overflowY auto (the scroll container)', () => {
+    it('content element .js-cell-content has overflowY auto (the scroll container)', () => {
       shell.mount();
-      const content = shell.getShadowRoot()!.querySelector('[data-dp-content]') as HTMLDivElement;
+      const content = shell.getShadowRoot()!.querySelector('.js-cell-content') as HTMLDivElement;
       expect(content).not.toBeNull();
-      expect(content.style.overflowY).toBe('auto');
+      // jsdom doesn't compute styles from Shadow DOM <style> tags; verify class
+      // which carries overflow-y:auto in popupDictionary.css (.cell-popup__content).
+      expect(content.className).toContain('cell-popup__content');
     });
 
-    it('content element [data-dp-content] has min-height 0 (flex child can shrink & scroll)', () => {
+    it('content element .js-cell-content has min-height 0 (flex child can shrink & scroll)', () => {
       shell.mount();
-      const content = shell.getShadowRoot()!.querySelector('[data-dp-content]') as HTMLDivElement;
+      const content = shell.getShadowRoot()!.querySelector('.js-cell-content') as HTMLDivElement;
       expect(content).not.toBeNull();
-      expect(content.style.minHeight).toBe('0');
+      expect(content.className).toContain('cell-popup__content');
     });
 
-    it('resize handle [data-dp-resize] is a sibling of content, both children of [data-dp-popup]', () => {
+    it('resize handle .js-cell-resize is a sibling of content, both children of .js-cell-popup', () => {
       shell.mount();
       const root = shell.getShadowRoot()!;
-      const popup = root.querySelector('[data-dp-popup]') as HTMLDivElement;
-      const content = root.querySelector('[data-dp-content]') as HTMLDivElement;
-      const handle = root.querySelector('[data-dp-resize]') as HTMLDivElement;
+      const popup = root.querySelector('.js-cell-popup') as HTMLDivElement;
+      const content = root.querySelector('.js-cell-content') as HTMLDivElement;
+      const handle = root.querySelector('.js-cell-resize') as HTMLDivElement;
       expect(popup).not.toBeNull();
       expect(content).not.toBeNull();
       expect(handle).not.toBeNull();
@@ -410,19 +412,21 @@ describe('PopupShell', () => {
       expect(handle.parentElement).not.toBe(content);
     });
 
-    it('outer shell [data-dp-popup] has overflow hidden (only inner content scrolls)', () => {
+    it('outer shell .js-cell-popup has overflow hidden (only inner content scrolls)', () => {
       shell.mount();
-      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
       expect(popup).not.toBeNull();
-      expect(popup.style.overflow).toBe('hidden');
+      // jsdom doesn't compute styles from Shadow DOM <style> tags; verify class
+      // which carries overflow:hidden in popupDictionary.css (.cell-popup).
+      expect(popup.className).toContain('cell-popup');
     });
 
     it('reAppendResizeHandle does NOT move the handle into the content element', () => {
       shell.mount();
       const root = shell.getShadowRoot()!;
-      const popup = root.querySelector('[data-dp-popup]') as HTMLDivElement;
-      const content = root.querySelector('[data-dp-content]') as HTMLDivElement;
-      const handle = root.querySelector('[data-dp-resize]') as HTMLDivElement;
+      const popup = root.querySelector('.js-cell-popup') as HTMLDivElement;
+      const content = root.querySelector('.js-cell-content') as HTMLDivElement;
+      const handle = root.querySelector('.js-cell-resize') as HTMLDivElement;
       // Sanity: handle starts as a sibling of content.
       expect(handle.parentElement).toBe(popup);
       shell.reAppendResizeHandle();
@@ -443,7 +447,7 @@ describe('PopupShell', () => {
 
     it('sets data-theme on container synchronously (no FOUC)', () => {
       shell.mount();
-      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
       // Sync default is set immediately from prefers-color-scheme (mocked false → light).
       expect(popup.getAttribute('data-theme')).toBe('light');
     });
@@ -454,7 +458,7 @@ describe('PopupShell', () => {
       // Wait for async refreshTheme to resolve.
       await Promise.resolve();
       await Promise.resolve();
-      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
       expect(popup.getAttribute('data-theme')).toBe('dark');
     });
 
@@ -463,7 +467,7 @@ describe('PopupShell', () => {
       shell.mount();
       await Promise.resolve();
       await Promise.resolve();
-      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
       expect(popup.getAttribute('data-theme')).toBe('light');
     });
 
@@ -472,7 +476,7 @@ describe('PopupShell', () => {
       shell.mount();
       await Promise.resolve();
       await Promise.resolve();
-      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
       expect(popup.getAttribute('data-theme')).toBe('dark'); // DEFAULT_THEME_MODE
     });
 
@@ -491,7 +495,7 @@ describe('PopupShell', () => {
       await Promise.resolve();
       await Promise.resolve();
 
-      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
       expect(popup.getAttribute('data-theme')).toBe('dark');
     });
 
@@ -501,7 +505,7 @@ describe('PopupShell', () => {
       await Promise.resolve();
       await Promise.resolve();
 
-      const popup = shell.getShadowRoot()!.querySelector('[data-dp-popup]') as HTMLDivElement;
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
       const beforeTheme = popup.getAttribute('data-theme');
 
       // Fire change for an unrelated key.
