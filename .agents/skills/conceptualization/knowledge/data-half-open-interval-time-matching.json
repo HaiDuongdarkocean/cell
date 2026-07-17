@@ -1,0 +1,21 @@
+{
+  "id": "data-half-open-interval-time-matching",
+  "title": "Half-open intervals [start, end) for time-based matching",
+  "category": ["data", "detection"],
+  "tags": ["half-open-interval", "time-matching", "findindex", "boundary-overlap", "cue-matching", "off-by-one", "closed-interval"],
+  "trigger": "Time-based matching với boundary liền nhau (cue end = cue next start) → findIndex trả index sai tại boundary",
+  "principle": "Time-based matching với boundary liền nhau phải dùng half-open interval [start, end) — boundary thuộc về item tiếp theo, không thuộc về item hiện tại. Closed interval [start, end] tạo overlap tại boundary → findIndex trả index sai (earlier match) → flash/correction.",
+  "cases": [
+    {
+      "context": "4 callsites tìm current cue dùng closed interval — tại boundary cue[i].end === cue[i+1].start, cả 2 cue match → findIndex trả cue cũ → highlight jump back flash rồi correction",
+      "bad": "const currentIndex = bilingualCues.findIndex(\n  (c) => c.start <= currentMs && c.end >= currentMs // closed [start, end]\n);\n// t = 5000ms = cue[i].end = cue[i+1].start\n// cue[i].start<=5000 && cue[i].end>=5000 → true (match)\n// cue[i+1].start<=5000 && cue[i+1].end>=5000 → true (cũng match)\n// findIndex trả cue[i] (earlier) → highlight cue cũ → timeupdate tiếp theo correction → jump back flash",
+      "good": "const currentIndex = bilingualCues.findIndex(\n  (c) => c.start <= currentMs && c.end > currentMs // half-open [start, end)\n);\n// t = cue[i].end = cue[i+1].start\n// cue[i].end > cue[i].end → false (không match)\n// cue[i+1].start<=t && cue[i+1].end>t → true (match)\n// findIndex trả cue[i+1] (next) ngay lần đầu, không jump back"
+    }
+  ],
+  "applyFor": [
+    "Time-range matching (cue, segment, chapter, bookmark)",
+    "Interval overlap detection (calendar, scheduling, Gantt)",
+    "Bucket assignment (timestamp → bucket, boundary thuộc bucket tiếp theo)",
+    "Any findIndex with start <= t && end >= t when boundaries are contiguous"
+  ]
+}

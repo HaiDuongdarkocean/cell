@@ -1,0 +1,21 @@
+{
+  "id": "signal-absence-is-not-absence-of-signal",
+  "title": "Signal absence is not absence of signal",
+  "category": ["data", "state", "messaging"],
+  "tags": ["empty-result", "dead-path", "clear-signal", "stateful-ui", "pipeline", "guards"],
+  "trigger": "A multi-layer pipeline where each guard treats empty as a no-op, composing into a silent dead path for the empty case",
+  "principle": "\"0 items\" is not \"no information\" — it is the positive signal \"this entity has no items\". When a pipeline has multiple guards that each treat empty as a no-op (early return on empty, skip post on empty, skip push on empty), the empty case becomes a silent dead path: every layer optimises for \"don't do redundant work on empty\" and collectively they ensure nothing ever happens on empty. For stateful UI showing the previous entity's data, the empty case MUST be handled as an explicit clear signal — post the empty result, clear the store, broadcast the empty update, clear the view. Empty is a value, not the absence of a value. Distinguish \"no data yet\" (transient, retry) from \"confirmed empty\" (terminal, clear).",
+  "cases": [
+    {
+      "context": "Stateful overlay shows previous entity's data; navigating to a new entity with zero items leaves stale data visible because three layers each skip the empty case",
+      "bad": "// Layer 1 (detector): only post when tracks exist\nif (tracks.length > 0) postMessage({ type: 'DETECTED', tracks });\n// Layer 2 (background): early return on 0 — no clear, no broadcast\nif (subtitles.length === 0) return { success: true };\n// Layer 3 (overlay): only toast on null, never clearCues\nif (!target && !native) showToast('No subtitles');\n// Composed: 0 tracks → no post → no clear → no clearCues → stale overlay",
+      "good": "// Layer 1: post on EVERY detect incl. 0 tracks\npostMessage({ type: 'DETECTED', tracks }); // 0 is a valid result\n// Layer 2: 0-tracks path clears tab + broadcasts empty update + sends null AUTO_LOAD\nclearTab(tabId); broadcastMediaUpdate([]); sendAutoLoad(tabId, null);\n// Layer 3: null target+native calls clearCues + resets offset + empty nav cluster\ncontroller.clearCues(); offsetController.reset(); updateNavCluster([]);"
+    }
+  ],
+  "applyFor": [
+    "Stateful UI keyed off a previous entity's data (overlay, panel, cache) — empty new entity must clear, not be ignored",
+    "Multi-layer pipelines where each layer guards on empty — verify the empty case reaches the final consumer",
+    "\"Don't store empty\" / \"don't push empty\" guards — compose into dead paths; replace with \"store empty + clear downstream\"",
+    "Detection pipelines (0 results is a result — surface it, don't swallow it)"
+  ]
+}

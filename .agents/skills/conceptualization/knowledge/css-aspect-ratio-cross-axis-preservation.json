@@ -1,0 +1,26 @@
+{
+  "id": "css-aspect-ratio-cross-axis-preservation",
+  "title": "Preserve cross-axis size when aspect-ratio conflicts with main-axis layout change",
+  "category": ["css", "rendering"],
+  "tags": ["aspect-ratio", "cross-axis", "flex-layout", "video-player", "height-preservation", "split-pane"],
+  "trigger": "Đổi main-axis size của element có aspect-ratio → cross-axis tự shrink theo ratio, nhưng muốn giữ cross-axis nguyên",
+  "principle": "Đổi main-axis size của element có intrinsic aspect-ratio sẽ trigger browser tự resize cross-axis để preserve ratio. Để cross-axis giữ nguyên (vd giữ video height khi narrow width), preserve cross-axis size của container và override aspect-ratio của element cho mode mới. Không thì element shrink proportionally cả 2 chiều.",
+  "cases": [
+    {
+      "context": "Subtitle panel docked beside video, playerContainer width giảm 70% → aspect-ratio 16:9 force height shrink theo → video height drop khỏi 453px",
+      "bad": "// showPanelDocked: chỉ set flex width\nplayerContainer.style.flex = '0 0 70%';\n// .art-video-player có CSS aspect-ratio → width 70% → height auto-shrink proportionally\n// F0 height: 453px → drop → panel không match video height",
+      "good": "// 1. Record natural height BEFORE flex layout\nconst f0h = f0.getBoundingClientRect().height; // 453.25px\n// 2. Lock container cross-axis\nf0.style.height = f0h + 'px';\n// 3. Player fill preserved height, override aspect-ratio\nplayerContainer.style.height = '100%';\nplayerContainer.style.aspectRatio = 'auto !important';\n// 4. Panel stretch same height\npanel.style.height = '100%';\n// F0 height: 453.25px unchanged ✓ panel matches video ✓"
+    },
+    {
+      "context": "Restore path không reset aspect-ratio override → floating player bị height 100% thay vì ratio-driven",
+      "bad": "// hidePanelDocked: chỉ reset flex, quên aspectRatio + height\nplayerContainer.style.flex = '';\n// aspectRatio: auto !important còn → floating player không còn 16:9 → distorted",
+      "good": "// Reset tất cả docked-specific props\nf0.style.height = '';\nplayerContainer.style.height = '';\nplayerContainer.style.aspectRatio = ''; // restore intrinsic ratio\nplayerContainer.style.flex = '';\npanel.style.height = '';"
+    }
+  ],
+  "applyFor": [
+    "Video players, image carousels, map widgets — component có aspect-ratio phải resize 1 chiều",
+    "Responsive layouts switch từ full-width sang split-pane",
+    "Content scripts override site's intrinsic sizing để add docked panel",
+    "Bất kỳ layout change nào mà cross-axis phải giữ nguyên khi main-axis đổi"
+  ]
+}

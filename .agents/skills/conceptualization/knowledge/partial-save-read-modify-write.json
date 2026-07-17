@@ -1,0 +1,26 @@
+{
+  "id": "partial-save-read-modify-write",
+  "title": "Partial save API must read-modify-write against stored state, not merge with defaults",
+  "category": ["data", "state"],
+  "tags": ["partial-save", "read-modify-write", "settings-store", "default-settings", "partial-merge", "recursion-guard", "kv-store"],
+  "trigger": "A save API accepts Partial<T> and implicitly promises to merge with current state, but the implementation merges with DEFAULT instead",
+  "principle": "An API accepting Partial<T> implicitly promises to merge with the current stored state. If the implementation merges with DEFAULT instead, any field absent from the partial resets to default — a partial save wipes every other field. Partial save must read-modify-write: load current → merge partial → write. DEFAULT is only a fallback for fields missing from stored state, not the base for every save. Callers passing full settings are unaffected (full merged with full = full, idempotent). Watch for recursion: if save calls load and load has a persist-back migration that calls save, break the cycle by having the migration write directly to storage.",
+  "cases": [
+    {
+      "context": "saveSettings(partial) merges with DEFAULT_SETTINGS instead of stored settings → a caller passing only {navClusterPosition} wipes buttonSize/bgOpacity/buttonOpacity back to defaults; another passing only {subtitleOffset} wipes ALL other fields",
+      "bad": "export async function saveSettings(settings: Partial<Settings>): Promise<void> {\n  // BUG: merges with DEFAULT, not stored state\n  const toStore = { ...DEFAULT_SETTINGS, ...settings, schemaVersion };\n  await setStorage({ [STORAGE_KEYS.SETTINGS]: toStore });\n}\n// saveSettings({ navClusterPosition }) → buttonSize/bgOpacity/buttonOpacity reset to default\n// saveSettings({ subtitleOffset }) → ALL other fields reset to default",
+      "good": "export async function saveSettings(settings: Partial<Settings>): Promise<void> {\n  // read-modify-write: load current, merge partial, write back\n  const current = await loadSettings();\n  const toStore = { ...current, ...settings, schemaVersion: CURRENT_SCHEMA_VERSION };\n  await setStorage({ [STORAGE_KEYS.SETTINGS]: toStore });\n}\n// Callers passing full settings ({...settings, [field]: value}) are unaffected — full merged with full = full"
+    },
+    {
+      "context": "After making saveSettings call loadSettings, the loadSettings persist-back migration (which called saveSettings) becomes infinite recursion: load → migrate → save → load → migrate → ...",
+      "bad": "// loadSettings persist-back migration calls saveSettings\nif (needsMigration) {\n  await saveSettings(migrated); // saveSettings now calls loadSettings → recursion\n}\n// → loadSettings → migrate → saveSettings → loadSettings → migrate → ...",
+      "good": "// Migration persist-back writes directly to storage, bypassing saveSettings\nif (needsMigration) {\n  await setStorage({ [STORAGE_KEYS.SETTINGS]: { ...migrated, schemaVersion: CURRENT_SCHEMA_VERSION } });\n}"
+    }
+  ],
+  "applyFor": [
+    "Settings / KV stores with a save(Partial<T>) API — must read-modify-write, not merge with defaults",
+    "Any partial update API that implicitly promises a merge (Redux dispatch partial, Zustand partial set)",
+    "Migration persist-back paths — avoid recursion when save calls load (have migration write directly to storage)",
+    "Designing a Partial<T> API — be explicit: merge with current state (read-modify-write) vs replace (caller must pass full)"
+  ]
+}

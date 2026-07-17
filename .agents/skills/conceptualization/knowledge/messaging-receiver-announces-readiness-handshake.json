@@ -1,0 +1,22 @@
+{
+  "id": "messaging-receiver-announces-readiness-handshake",
+  "title": "Receiver-announces-readiness handshake for fire-and-forget messages",
+  "category": ["messaging"],
+  "tags": ["handshake", "fire-and-forget", "postMessage", "spa-navigation", "persistent-producer", "re-injection", "dedup", "crxjs", "async-loader", "timing-independent"],
+  "trigger": "Persistent producer post fire-and-forget message trước khi re-injected consumer register listener (bundler async loader delays registration) — document_start không đủ.",
+  "principle": "Khi producer persistent (survives navigation) post fire-and-forget message và consumer re-injected per-navigation với listener registration delayed (bundler async loader), document_start registration không đủ — producer có thể post trước khi consumer listener register. Handshake giải quyết deterministic: consumer posts \"ready\" signal khi listener register, producer re-posts last message trên receipt. Timing-independent — không guess loader delay. Consumer dedup by id (videoId, requestId) để tránh double-process khi cả original post lẫn re-post đều đến.",
+  "cases": [
+    {
+      "context": "SPA navigation: MAIN world persistent post __YT_DETECTED_SUBTITLES ~450-930ms, ISOLATED content-script re-injected với CRXJS async loader register listener ~6000ms+ → message lost",
+      "bad": "// MAIN world: posts once, no retry — if listener not yet registered, message lost forever\nwindow.postMessage({ type: '__YT_DETECTED_SUBTITLES', tracks, videoId }, '*');\n// ISOLATED content-script: CRXJS async import() delays addEventListener past document_start → listener not ready when post arrives",
+      "good": "// ISOLATED content-script (receiver): post ready signal when listener registers\nwindow.addEventListener('message', handleDetected);\nwindow.postMessage({ type: '__YT_CS_READY' }, '*'); // announce readiness\n// dedup by videoId to avoid double-process (original post + re-post both arrive)\nif (data.videoId === __YT_LAST_RELAYED_VIDEO_ID) return;\n__YT_LAST_RELAYED_VIDEO_ID = data.videoId;\n\n// MAIN world (sender): cache last tracks, re-post on ready signal\nlet lastDetectedTracks, lastDetectedVideoId;\nwindow.addEventListener('message', (e) => {\n  if (e.data?.type === '__YT_CS_READY' && lastDetectedTracks) {\n    window.postMessage({ type: '__YT_DETECTED_SUBTITLES', tracks: lastDetectedTracks, videoId: lastDetectedVideoId }, '*');\n  }\n});"
+    }
+  ],
+  "applyFor": [
+    "MAIN world ↔ ISOLATED content-script messaging trên SPA navigation (Chrome extension)",
+    "Persistent producer + per-navigation consumer (service worker ↔ re-injected content script)",
+    "Any fire-and-forget message bus nơi consumer registration timing không guaranteed (bundler async loader, lazy module load)",
+    "WebSocket reconnect (client announces ready, server replays last message)",
+    "Event sourcing replay (consumer announces position, producer replays from position)"
+  ]
+}

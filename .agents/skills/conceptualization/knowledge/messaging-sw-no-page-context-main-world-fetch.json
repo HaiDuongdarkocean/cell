@@ -1,0 +1,26 @@
+{
+  "id": "messaging-sw-no-page-context-main-world-fetch",
+  "title": "Extension SW lacks page context → MAIN world fetch",
+  "category": ["messaging"],
+  "tags": ["mv3", "service-worker", "main-world", "content-script", "fetch", "cookies", "origin", "403", "postMessage", "relay"],
+  "trigger": "MV3 service worker fetch tới cookie/origin-gated site trả 403/401 trong khi fetch từ page DevTools thành công.",
+  "principle": "MV3 service worker fetch() chạy trong extension origin (chrome-extension://...), KHÔNG có page context (site cookies, origin header, referer). Site yêu cầu cookies + origin (YouTube, Google, login-gated) → SW fetch 403/401. MAIN world content script (\"world\": \"MAIN\") chạy trong page origin → có đầy đủ cookies + origin → fetch thành công. Khi SW fetch bị 403 do thiếu page context, chuyển fetch sang MAIN world script, relay kết quả về SW qua window.postMessage → ISOLATED content-script → chrome.runtime.sendMessage.",
+  "cases": [
+    {
+      "context": "Background service worker fetch InnerTube API trả 403 — SW không có YouTube cookies (SAPISID, HSID) và không có page origin header",
+      "bad": "// background/handlers/detection.ts (service worker)\nconst res = await fetch('https://www.youtube.com/youtubei/v1/player', {\n  method: 'POST', body: JSON.stringify(payload)\n});\n// → 403 Forbidden: no YouTube cookies, no page origin — SW runs in chrome-extension:// origin",
+      "good": "// manifest.json: content script with world: MAIN, run_at: document_start\n// MAIN world script runs in page origin (https://www.youtube.com) → has cookies + origin\nconst res = await fetch('/youtubei/v1/player', { method: 'POST', body: JSON.stringify(payload) });\nconst data = await res.json(); // 200 OK — page context present\nwindow.postMessage({ type: '__YT_DETECTED_SUBTITLES', tracks, videoId }, '*');\n// ISOLATED content-script listens → chrome.runtime.sendMessage → background SW"
+    },
+    {
+      "context": "Alternative: dùng chrome.cookies.getAll() + manual cookie header — works nhưng thiếu origin/referer, MAIN world sạch hơn khi page context available",
+      "bad": "// SW: manually assemble cookies — misses origin/referer headers, fragile\nconst cookies = await chrome.cookies.getAll({ domain: '.youtube.com' });\nconst cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');\nawait fetch(url, { headers: { Cookie: cookieHeader } }); // still no Origin/Referer → some sites still 403",
+      "good": "// MAIN world: browser sends cookies + origin + referer automatically, no manual assembly\n// Only use chrome.cookies.getAll() when page context is NOT available (no matching tab open)"
+    }
+  ],
+  "applyFor": [
+    "Chrome MV3 extension fetch tới cookie/origin-gated sites (YouTube, Google, login-gated)",
+    "Any SW fetch returning 403 where the page itself can fetch successfully (diagnose: page DevTools fetch works, SW fetch 403s)",
+    "Cross-origin requests needing session cookies (SAPISID, HSID, session cookies)",
+    "SW fetch fails but page-context fetch succeeds — move fetch to MAIN world content script, relay result back via postMessage → ISOLATED → chrome.runtime.sendMessage"
+  ]
+}
