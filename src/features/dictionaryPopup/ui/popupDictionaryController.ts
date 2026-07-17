@@ -133,7 +133,9 @@ export function showPopup(
   // Apply default active tab (spec §9.3 D2): per-lang override → global default.
   const perLang = state.settings.defaultActiveTabPerLang?.[result.langCode];
   const defaultTab = perLang !== undefined ? perLang : state.settings.defaultActiveTab;
-  state = { ...state, activeTab: defaultTab ?? null };
+  // Set contextSentence BEFORE rendering so toolbar/panel closures capture
+  // the real sentence (needed by translate auto-trigger + TTS sentence audio).
+  state = { ...state, activeTab: defaultTab ?? null, contextSentence };
 
   // Render content FIRST so setPosition can use actual offsetHeight.
   const container = shell.getContainer();
@@ -235,7 +237,14 @@ export function appendCandidate(
       candidateTab = null;
       rerenderCandidateTab();
       state.shell?.rePosition();
-    }, countMapTrue(candidateAudioSelection) > 0 ? { audio: countMapTrue(candidateAudioSelection) } : undefined);
+    }, countMapTrue(candidateAudioSelection) > 0 ? { audio: countMapTrue(candidateAudioSelection) } : undefined, (tab) => {
+      if (tab === 'translate' && !candidateTranslation) {
+        translateSentence(result, state.contextSentence, state.settings.translateTargetLang, (text) => {
+          candidateTranslation = text;
+          rerenderCandidateTab();
+        });
+      }
+    });
     if (!candidateTab) return;
     // Render panel into slot after toolbar.
     renderTabPanel(slot as HTMLElement, candidateTab, result, {
@@ -426,6 +435,35 @@ function countMapTrue(map: Map<string, boolean>): number {
   return n;
 }
 
+/** Trigger translation for the current sentence. */
+function translateSentence(
+  result: LookupResult,
+  contextSentence: string,
+  targetLang: string,
+  onDone: (text: string) => void,
+): void {
+  if (!contextSentence) return;
+  const text = contextSentence;
+  const sl = result.langCode;
+  const tl = targetLang;
+  if (!sl || !tl) return;
+  void (async () => {
+    try {
+      const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
+      type TranslateResponse = { success: boolean; data?: { translated: string[] }; error?: string };
+      const res = await sendMessage<TranslateResponse>({ type: 'TRANSLATE', payload: { tabId: 0, text, sl, tl } });
+      if (res?.success && res.data?.translated?.length) {
+        const translated = res.data.translated.join(' ');
+        onDone(translated);
+      } else {
+        console.warn('[popup] Translate failed:', res?.error ?? 'empty response');
+      }
+    } catch (err) {
+      console.warn('[popup] Translate error:', err);
+    }
+  })();
+}
+
 /** Render the winner's toolbar + optional panel into its .js-cell-toolbar-slot.
  *  Mirrors appendCandidate's rerenderCandidateTab so the winner has the same
  *  .js-cell-toolbar as appended candidates. */
@@ -439,7 +477,14 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
   renderToolbar(slot, state.activeTab, (t) => toggleTab(state, t), () => {
     state.activeTab = null;
     rerender(state, null);
-  }, countSelections(state));
+  }, countSelections(state), (tab) => {
+    if (tab === 'translate' && !state.translation && state.currentResult) {
+      translateSentence(state.currentResult, state.contextSentence, state.settings.translateTargetLang, (text) => {
+        state.translation = text;
+        rerender(state);
+      });
+    }
+  });
   if (!state.activeTab) return;
   renderTabPanel(slot, state.activeTab, state.currentResult, {
     contextSentence: state.contextSentence,
@@ -592,25 +637,12 @@ function renderTabPanel(
         ctx.translation,
         ctx.contextSentence,
         ctx.settings.translateTargetLang,
-        async () => {
-          const text = ctx.contextSentence || result.term;
-          const sl = result.langCode;
-          const tl = ctx.settings.translateTargetLang;
-          if (!text || !sl || !tl) return;
-          try {
-            const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
-            type TranslateResponse = { success: boolean; data?: { translated: string[] }; error?: string };
-            const res = await sendMessage<TranslateResponse>({ type: 'TRANSLATE', payload: { tabId: 0, text, sl, tl } });
-            // tabId: 0 — content script không có tab id thật, background không cần cho translate
-            if (res?.success && res.data?.translated?.length) {
-              const translated = res.data.translated.join(' ');
-              callbacks?.onTranslationDone?.(translated);
-            } else {
-              console.warn('[popup] Translate failed:', res?.error ?? 'empty response');
-            }
-          } catch (err) {
-            console.warn('[popup] Translate error:', err);
-          }
+        () => {
+          // Translate sentence only — never fall back to term.
+          if (!ctx.contextSentence) return;
+          translateSentence(result, ctx.contextSentence, ctx.settings.translateTargetLang, (text) => {
+            callbacks?.onTranslationDone?.(text);
+          });
         },
         ctx.translateSelected,
         () => {
@@ -774,9 +806,13 @@ async function fetchForvoAudio(term: string, langCode: string): Promise<AudioIte
       type: 'FETCH_COMMUNITY_AUDIO',
       payload: { tabId: 0, term, langCode, kind: 'word' },
     });
-    // Response shape: MessageResponse<FetchCommunityAudioResponse> = { success, data?: { items } }
+    if (!res?.success) {
+      console.warn('[fetchForvoAudio] handler failed:', res?.error);
+      return [];
+    }
     return res?.data?.items ? [...res.data.items] : [];
-  } catch {
+  } catch (err) {
+    console.warn('[fetchForvoAudio] message error:', err);
     return [];
   }
 }

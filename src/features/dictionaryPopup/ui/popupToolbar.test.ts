@@ -61,6 +61,22 @@ describe('renderToolbar', () => {
     expect(onToggle).toHaveBeenCalledWith('audio');
   });
 
+  it('tab open triggers onTabOpen when clicking inactive tab', () => {
+    const onTabOpen = jest.fn();
+    renderToolbar(container, null, jest.fn(), jest.fn(), undefined, onTabOpen);
+    const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
+    audioTab.click();
+    expect(onTabOpen).toHaveBeenCalledWith('audio');
+  });
+
+  it('tab close does not trigger onTabOpen', () => {
+    const onTabOpen = jest.fn();
+    renderToolbar(container, 'audio', jest.fn(), jest.fn(), undefined, onTabOpen);
+    const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
+    audioTab.click();
+    expect(onTabOpen).not.toHaveBeenCalled();
+  });
+
   it('has aria-label on each tab', () => {
     renderToolbar(container, null, jest.fn(), jest.fn());
     const tabs = container.querySelectorAll('.js-cell-tab');
