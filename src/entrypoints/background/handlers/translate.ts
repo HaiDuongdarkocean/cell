@@ -11,6 +11,7 @@ import type {
   TranslatePayload,
   TranslateResult,
 } from '@/entities/message';
+import { TranslatePayloadSchema } from '@/features/dictionaryPopup/schema';
 import {
   buildTranslateUrl,
   parseGoogleResponse,
@@ -19,8 +20,12 @@ import {
 /** Register translate message handler. */
 export function registerTranslateHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.TRANSLATE, async (request): Promise<MessageResponse<TranslateResult>> => {
-    const payload = request.payload as TranslatePayload;
-    if (!payload?.text || !payload.sl || !payload.tl) {
+    const parsed = TranslatePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid TRANSLATE payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data as TranslatePayload;
+    if (!payload.text || !payload.sl || !payload.tl) {
       return { success: false, error: 'Missing text, sl, or tl in TRANSLATE' };
     }
 

@@ -24,14 +24,18 @@ const SAMPLE_HTML = `
 
 describe('forvoAudioService', () => {
   describe('buildForvoUrl', () => {
-    it('encodes the term into the Forvo word URL', () => {
-      expect(buildForvoUrl('hello world')).toBe(
+    it('encodes the term into the Forvo word URL with the given langCode anchor', () => {
+      expect(buildForvoUrl('hello world', 'en')).toBe(
         'https://forvo.com/word/hello%20world/#en',
       );
     });
 
     it('encodes special characters', () => {
-      expect(buildForvoUrl("it's")).toBe("https://forvo.com/word/it's/#en");
+      expect(buildForvoUrl("it's", 'en')).toBe("https://forvo.com/word/it's/#en");
+    });
+
+    it('uses the provided langCode as the anchor (non-English)', () => {
+      expect(buildForvoUrl('bonjour', 'fr')).toBe('https://forvo.com/word/bonjour/#fr');
     });
   });
 

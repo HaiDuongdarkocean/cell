@@ -28,8 +28,9 @@ export function buildGoogleImagesUrl(term: string): string {
 }
 
 // Ponytail: Google có thể break regex bất kỳ lúc nào — upgrade to JSON parse
-// nếu có. Matches quoted image URLs ending in .jpg/.png/.jpeg.
-const IMAGE_URL_REGEX = /"(https?:\/\/[^"]+?\.(?:jpg|png|jpeg))"/g;
+// nếu có. Matches quoted image URLs ending in .jpg/.png/.jpeg/.webp/.gif,
+// optionally followed by a query string (`?...`).
+const IMAGE_URL_REGEX = /"(https?:\/\/[^"]+?\.(?:jpg|png|jpeg|webp|gif)(?:\?[^"]*)?)"/g;
 
 /**
  * Parse Google Images HTML into a deduped list of {@link ImageItem}.

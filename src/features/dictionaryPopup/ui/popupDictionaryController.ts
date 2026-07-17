@@ -497,10 +497,16 @@ function renderTabPanel(
       // Loading state while fetching Forvo + TTS voices.
       renderAudioPanel(container, [], [], ctx.audioSelection, onToggle, onPlay, true);
       void (async () => {
-        const [forvoItems, ttsVoices] = await Promise.all([
+        // TTS settings: enabled gate + maxDisplay cap.
+        // ponytail: autoplayCount skip — autoplay implement sau, cần user-gesture
+        // policy check (Chrome blocks autoplay without user interaction).
+        const ttsEnabled = ctx.settings.tts?.enabled !== false;
+        const maxDisplay = ctx.settings.tts?.maxDisplay ?? 3;
+        const [forvoItems, allTtsVoices] = await Promise.all([
           fetchForvoAudio(result.term, langCode),
-          fetchTtsVoiceRows(ctx.settings, langCode),
+          ttsEnabled ? fetchTtsVoiceRows(ctx.settings, langCode) : Promise.resolve([]),
         ]);
+        const ttsVoices = allTtsVoices.slice(0, maxDisplay);
         const ttsWordItems: AudioItem[] = ttsVoices.map((v) => ({
           id: `tts-word-${v.voiceName}`,
           kind: 'word',
@@ -590,7 +596,8 @@ function renderTabPanel(
           try {
             const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
             type TranslateResponse = { success: boolean; data?: { translated: string[] }; error?: string };
-            const res = await sendMessage<TranslateResponse>({ type: 'TRANSLATE', payload: { text, sl, tl } });
+            const res = await sendMessage<TranslateResponse>({ type: 'TRANSLATE', payload: { tabId: 0, text, sl, tl } });
+            // tabId: 0 — content script không có tab id thật, background không cần cho translate
             if (res?.success && res.data?.translated?.length) {
               const translated = res.data.translated.join(' ');
               ctx.translation = translated;
@@ -767,13 +774,18 @@ async function fetchForvoAudio(term: string, langCode: string): Promise<AudioIte
 }
 
 /** Resolve TTS voice rows from settings + engine voice list. Returns [] on
- *  error (engine unavailable). When savedVoices empty, auto-detects by langCode
- *  prefix via getTtsVoiceRows. */
+ *  error (engine unavailable). When savedVoices is non-empty, returns them
+ *  directly — content scripts fall back to Web Speech (no chrome.tts), which
+ *  would hide chrome.tts-saved voices. Only query the engine for auto-detect
+ *  (savedVoices empty). */
 async function fetchTtsVoiceRows(settings: DictionaryPopupSettings, langCode: string): Promise<TtsVoiceRow[]> {
+  const savedVoices = settings.tts?.savedVoices ?? [];
+  if (savedVoices.length > 0) {
+    return savedVoices.slice().sort((a, b) => a.order - b.order);
+  }
   try {
     const engine = createTtsEngine();
     const allVoices = await engine.getVoices();
-    const savedVoices = settings.tts?.savedVoices ?? [];
     return getTtsVoiceRows(savedVoices, allVoices, langCode);
   } catch {
     return [];

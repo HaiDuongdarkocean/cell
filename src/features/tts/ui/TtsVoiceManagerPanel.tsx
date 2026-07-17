@@ -80,6 +80,8 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
   }, [settings]);
 
   // Load voices on mount via the best available TTS engine.
+  // Pre-select savedVoices (settings.tts.savedVoices) so reopening options
+  // shows the previously-saved tester selection instead of a blank list.
   useEffect(() => {
     let cancelled = false;
     setVoicesLoading(true);
@@ -88,8 +90,16 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
       .then((list) => {
         if (cancelled) return;
         setVoices([...list]);
+        const savedVoiceMap = new Map(
+          settings.savedVoices.map((r) => [r.voiceName, r.order]),
+        );
         setTesterVoices(
-          list.map((v, i) => ({ voiceName: v.voiceName, lang: v.lang, order: i + 1, selected: false })),
+          list.map((v, i) => ({
+            voiceName: v.voiceName,
+            lang: v.lang,
+            order: savedVoiceMap.get(v.voiceName) ?? i + 1,
+            selected: savedVoiceMap.has(v.voiceName),
+          })),
         );
         setVoicesLoading(false);
       })
@@ -101,7 +111,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [settings.savedVoices]);
 
   const countries = useMemo(() => uniqueLangPrefixes(voices), [voices]);
 
@@ -171,12 +181,15 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
     );
   }, []);
 
-  const dragIndexRef = useRef(-1);
+  const dragVoiceRef = useRef<string | null>(null);
 
   const handleDragStart = useCallback((e: DragEvent<HTMLDivElement>, index: number) => {
-    dragIndexRef.current = index;
+    // Store the dragged voiceName (not the filtered index) so the drop
+    // handler can resolve the correct position in the full array even when
+    // a country filter is active (filtered index ≠ full array index).
+    dragVoiceRef.current = filteredTesterVoices[index]?.voiceName ?? null;
     e.dataTransfer.effectAllowed = 'move';
-  }, []);
+  }, [filteredTesterVoices]);
 
   const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -185,16 +198,23 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
 
   const handleDrop = useCallback((e: DragEvent<HTMLDivElement>, dropIndex: number) => {
     e.preventDefault();
-    const dragIndex = dragIndexRef.current;
-    dragIndexRef.current = -1;
-    if (dragIndex < 0 || dragIndex === dropIndex) return;
+    const draggingVoice = dragVoiceRef.current;
+    const targetVoice = filteredTesterVoices[dropIndex]?.voiceName;
+    dragVoiceRef.current = null;
+    if (!draggingVoice || !targetVoice || draggingVoice === targetVoice) return;
     setTesterVoices((prev) => {
+      // Operate on the order-sorted full array, mapping filtered positions
+      // to full-array positions by voiceName. Splicing on the filtered list
+      // with filtered indices corrupts order when a filter is active.
       const sorted = prev.slice().sort((a, b) => a.order - b.order);
-      const [moved] = sorted.splice(dragIndex, 1);
-      sorted.splice(dropIndex, 0, moved);
+      const fullFromIdx = sorted.findIndex((v) => v.voiceName === draggingVoice);
+      const fullToIdx = sorted.findIndex((v) => v.voiceName === targetVoice);
+      if (fullFromIdx < 0 || fullToIdx < 0) return prev;
+      const [moved] = sorted.splice(fullFromIdx, 1);
+      sorted.splice(fullToIdx, 0, moved);
       return sorted.map((r, i) => ({ ...r, order: i + 1 }));
     });
-  }, []);
+  }, [filteredTesterVoices]);
 
   const handleDeleteSelection = useCallback(() => {
     setTesterVoices((prev) => prev.map((r) => ({ ...r, selected: false })));

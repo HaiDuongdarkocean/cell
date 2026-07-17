@@ -16,7 +16,7 @@ const SIDEBAR_ITEMS: readonly SidebarItemType[] = [
   { id: 'resources', label: 'Tài nguyên', icon: '▣' },
   { id: 'theme', label: 'Giao diện', icon: '▢' },
   { id: 'settings', label: 'Cài đặt', icon: '▢' },
-  { id: 'tts', label: 'TTS Voices', icon: '🔊' },
+  { id: 'tts', label: 'TTS Voices', icon: 'audioWave' },
 ];
 
 export function OptionsApp(): ReactElement {

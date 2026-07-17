@@ -55,6 +55,10 @@ function getChromeTtsApi(): ChromeTtsApi | undefined {
   return c;
 }
 
+/** Speak timeout (ms). chrome.tts may never fire `end` when the engine errors
+ *  or no voice matches — without this the promise hangs forever. */
+const SPEAK_TIMEOUT_MS = 10000;
+
 /** Create a TtsEngine backed by the chrome.tts extension API. */
 export function createChromeTtsEngine(): TtsEngine {
   const api = getChromeTtsApi();
@@ -64,6 +68,13 @@ export function createChromeTtsEngine(): TtsEngine {
   return {
     speak(text, opts) {
       return new Promise<void>((resolve, reject) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          api.stop();
+          reject(new Error('TTS speak timeout'));
+        }, SPEAK_TIMEOUT_MS);
         api.speak(text, {
           voiceName: opts.voiceName,
           lang: opts.langCode,
@@ -71,8 +82,14 @@ export function createChromeTtsEngine(): TtsEngine {
           pitch: opts.pitch,
           onEvent(event) {
             if (event.type === 'end') {
+              if (settled) return;
+              settled = true;
+              clearTimeout(timer);
               resolve();
             } else if (event.type === 'error') {
+              if (settled) return;
+              settled = true;
+              clearTimeout(timer);
               reject(new Error(event.errorMessage ?? 'chrome.tts error'));
             }
           },
@@ -117,6 +134,13 @@ export function createWebSpeechEngine(): TtsEngine {
   return {
     speak(text, opts) {
       return new Promise<void>((resolve, reject) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          api.cancel();
+          reject(new Error('TTS speak timeout'));
+        }, SPEAK_TIMEOUT_MS);
         const utterance = new SpeechSynthesisUtterance(text);
         if (opts.voiceName) {
           const voices = api.getVoices();
@@ -126,8 +150,18 @@ export function createWebSpeechEngine(): TtsEngine {
         if (opts.langCode) utterance.lang = opts.langCode;
         if (opts.rate !== undefined) utterance.rate = opts.rate;
         if (opts.pitch !== undefined) utterance.pitch = opts.pitch;
-        utterance.onend = () => resolve();
-        utterance.onerror = (e) => reject(new Error(`speechSynthesis error: ${e.error ?? 'unknown'}`));
+        utterance.onend = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve();
+        };
+        utterance.onerror = (e) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          reject(new Error(`speechSynthesis error: ${e.error ?? 'unknown'}`));
+        };
         api.speak(utterance);
       });
     },

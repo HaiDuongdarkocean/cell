@@ -176,7 +176,7 @@ export function renderAudioPanel(
       checkEl.setAttribute('aria-hidden', 'true');
       const tick = document.createElement('span');
       tick.className = 'cell-audio__check-tick';
-      tick.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;display:block"><path d="M20 6 9 17l-5-5"/></svg>`;
+      tick.innerHTML = ICON_CATALOG.check.svg;
       checkEl.appendChild(tick);
       row.appendChild(checkEl);
 
@@ -399,7 +399,7 @@ export function renderTranslatePanel(
   checkEl.setAttribute('aria-hidden', 'true');
   const tick = document.createElement('span');
   tick.className = 'cell-translate__check-tick';
-  tick.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;display:block"><path d="M20 6 9 17l-5-5"/></svg>`;
+  tick.innerHTML = ICON_CATALOG.check.svg;
   checkEl.appendChild(tick);
   block.appendChild(checkEl);
 

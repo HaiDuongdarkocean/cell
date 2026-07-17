@@ -201,6 +201,7 @@ export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
     { id: 'wiktionary', name: 'Wiktionary', urlTemplate: 'https://en.wiktionary.org/wiki/{term}', langCodes: ['en'] },
     { id: 'gtranslate', name: 'Google Translate', urlTemplate: 'https://translate.google.com/?sl=auto&tl={lang}&text={term}', langCodes: [] },
   ],
+  tts: { enabled: true, savedVoices: [], voices: [], maxDisplay: 3, autoplayCount: 0, preferredAccent: 'US' },
 };
 
 export const DEFAULT_SETTINGS: Settings = {

@@ -36,7 +36,7 @@ export function registerForvoAudioHandlers(ctx: BackgroundContext): void {
       }
       const payload = parsed.data as FetchCommunityAudioPayload;
 
-      const url = buildForvoUrl(payload.term);
+      const url = buildForvoUrl(payload.term, payload.langCode);
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), FORVO_FETCH_TIMEOUT_MS);
       try {

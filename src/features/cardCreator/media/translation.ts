@@ -25,7 +25,8 @@ export async function translateSentence(
   if (!text.trim()) return '';
   if (sourceLang === targetLang) return text;
 
-  const payload: TranslatePayload = { text: text.replace(/\n/g, ' '), sl: sourceLang, tl: targetLang };
+  // tabId: 0 — content script không có tab id thật, background không cần cho translate
+  const payload: TranslatePayload = { tabId: 0, text: text.replace(/\n/g, ' '), sl: sourceLang, tl: targetLang };
 
   try {
     const response = (await sendMessage({
