@@ -451,7 +451,10 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
     imageSelection: state.imageSelection,
     imageItems: state.imageItems,
   }, {
-    onTranslationDone: () => rerender(state),
+    onTranslationDone: (text: string) => {
+      state.translation = text;
+      rerender(state);
+    },
     onToggleTranslate: () => {
       state.translationSelected = !state.translationSelected;
       rerender(state);
@@ -562,7 +565,8 @@ function renderTabPanel(
             type: 'FETCH_IMAGES',
             payload: { tabId: 0, term: result.term, langCode: result.langCode, maxResults: 8 },
           });
-          const items = res?.items ?? [];
+          // Response shape: MessageResponse<FetchImagesResponse> = { success, data?: { items } }
+          const items = res?.data?.items ?? [];
           // Store fetched items in ctx (same array ref as state) for Quick Add payload.
           ctx.imageItems.length = 0;
           ctx.imageItems.push(...items);
@@ -600,10 +604,13 @@ function renderTabPanel(
             // tabId: 0 — content script không có tab id thật, background không cần cho translate
             if (res?.success && res.data?.translated?.length) {
               const translated = res.data.translated.join(' ');
-              ctx.translation = translated;
               callbacks?.onTranslationDone?.(translated);
+            } else {
+              console.warn('[popup] Translate failed:', res?.error ?? 'empty response');
             }
-          } catch { /* best-effort */ }
+          } catch (err) {
+            console.warn('[popup] Translate error:', err);
+          }
         },
         ctx.translateSelected,
         () => {
@@ -767,7 +774,8 @@ async function fetchForvoAudio(term: string, langCode: string): Promise<AudioIte
       type: 'FETCH_COMMUNITY_AUDIO',
       payload: { tabId: 0, term, langCode, kind: 'word' },
     });
-    return res?.items ? [...res.items] : [];
+    // Response shape: MessageResponse<FetchCommunityAudioResponse> = { success, data?: { items } }
+    return res?.data?.items ? [...res.data.items] : [];
   } catch {
     return [];
   }
