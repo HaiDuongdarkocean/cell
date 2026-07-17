@@ -200,12 +200,8 @@ export function renderImagePanel(
     empty.appendChild(icon);
     const title = document.createElement('div');
     title.className = 'cell-image__empty-title';
-    title.textContent = 'No images available';
+    title.textContent = 'No images';
     empty.appendChild(title);
-    const desc = document.createElement('div');
-    desc.className = 'cell-image__empty-description';
-    desc.textContent = 'Find images on Google Images for this word.';
-    empty.appendChild(desc);
     // MVP: link to Google Images search (no scrape — ponytail: scrape later).
     if (searchTerm) {
       const link = document.createElement('a');
@@ -213,7 +209,7 @@ export function renderImagePanel(
       link.href = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(searchTerm)}`;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      link.innerHTML = `${ICON_CATALOG.search.svg}<span>Search on Google Images</span>`;
+      link.innerHTML = `${ICON_CATALOG.search.svg}<span>Search Google Images</span>`;
       empty.appendChild(link);
     }
     panel.appendChild(empty);
@@ -366,7 +362,25 @@ export function renderLinksPanel(
   if (links.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'cell-links__empty';
-    empty.textContent = 'No external dictionary links configured.';
+    const icon = document.createElement('div');
+    icon.className = 'cell-links__empty-icon';
+    icon.innerHTML = ICON_CATALOG.link.svg;
+    empty.appendChild(icon);
+    const title = document.createElement('div');
+    title.className = 'cell-links__empty-title';
+    title.textContent = 'No external links';
+    empty.appendChild(title);
+    const btn = document.createElement('button');
+    btn.className = 'btn btn--outline btn--sm js-cell-links-settings';
+    btn.textContent = 'Open settings';
+    btn.addEventListener('click', () => {
+      try {
+        void chrome.runtime.openOptionsPage();
+      } catch {
+        /* best-effort */
+      }
+    });
+    empty.appendChild(btn);
     panel.appendChild(empty);
     container.appendChild(panel);
     return;

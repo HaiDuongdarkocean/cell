@@ -216,7 +216,8 @@ describe('renderImagePanel', () => {
 
   it('renders empty state when no images', () => {
     renderImagePanel(container, [], new Map(), jest.fn());
-    expect(container.textContent).toContain('No images available');
+    expect(container.textContent).toContain('No images');
+    expect(container.querySelector('.cell-image__empty-icon svg')).not.toBeNull();
   });
 
   it('sets alt text on images', () => {
@@ -320,7 +321,9 @@ describe('renderLinksPanel', () => {
 
   it('renders empty state when no links', () => {
     renderLinksPanel(container, []);
-    expect(container.textContent).toContain('No external dictionary links');
+    expect(container.textContent).toContain('No external links');
+    expect(container.querySelector('.cell-links__empty-icon svg')).not.toBeNull();
+    expect(container.querySelector('.js-cell-links-settings')).not.toBeNull();
   });
 });
 
