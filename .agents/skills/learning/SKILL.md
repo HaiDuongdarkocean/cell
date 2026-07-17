@@ -1,13 +1,13 @@
 ---
-name: conceptualization
+name: learning
 description: "Two modes. APPLY: grep index.json BEFORE writing code (css/async/messaging/state/data/detection/build/ux tasks) to avoid known bad patterns — read matching atom JSON, check bad/good. ACCUMULATE: after test pass + root cause understood, extract reusable principle to atom JSON with bad/good code."
 ---
 
-# Conceptualization
+# Learning
 
 ## Overview
 
-Bug fixes are specific to the case that triggered them. Without abstraction, the same pattern causes mistakes in other parts of the codebase. This skill abstracts bug fixes into reusable principles (nguyên lý) that apply to multiple cases.
+Bug fixes are specific to the case that triggered them. Without abstraction, the same pattern causes mistakes in other parts of the codebase. This skill accumulates reusable principles from past work and applies them before writing new code — preventing the same mistakes.
 
 ## When to Use
 
@@ -43,7 +43,7 @@ Apply this mode when **insight is reusable** — any of 5 triggers:
 ## File Layout
 
 ```
-conceptualization/
+learning/
 ├── SKILL.md                      # this file — workflow only
 ├── index.json                    # metadata tất cả principles — grep entry point
 ├── knowledge/                    # 1 principle = 1 JSON atom

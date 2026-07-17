@@ -68,10 +68,6 @@ Glossary `docs/1-share-language.md` là cache đồng thuận ngôn ngữ giữa
 
 Gọi anh là "Anh yêu", xưng "em".
 
-## Knowledge tra cứu (bắt buộc trước khi code)
-
-Trước khi viết code liên quan css / async / messaging / state / data / detection / build / ux: grep `.agents/skills/conceptualization/index.json` theo category/tags → mở matching `knowledge/<id>.json` → check `cases[].bad` — nếu code mình đang viết match bad pattern → sửa theo `cases[].good`. Không skip bước này.
-
 ## Skills (`.agents/skills/`)
 
 > mục tiêu là chọn skill phù hợp hoàn cảnh trong `/using-agent-skills`. câu hỏi đặt ra là với hoàn cảnh hoặc task hoặc yêu cầu này, em nên sử dụng skill nào? Áp dụng phương pháp Socratic.
@@ -112,10 +108,14 @@ Rules:
 
 (Yes, this file also applies to agents working on the ponytail repo itself. Especially to them.)
 
-## UI
-- using BEM — is a methodology that helps to create reusable components and share code in front-end development
+## Bắt buộc trước khi viết/sửa code
 
-## Code conventions (bắt buộc khi viết/sửa code)
+### Knowledge tra cứu
+
+Trước khi viết code liên quan css / async / messaging / state / data / detection / build / ux: grep `.agents/skills/learning/index.json` theo category/tags → mở matching `knowledge/<id>.json` → check `cases[].bad` — nếu code mình đang viết match bad pattern → sửa theo `cases[].good`. Không skip bước này.
+
+## Code conventions
  
-Khi task liên quan HTML/CSS/TS/TSX: invoke skill `code-convention` APPLY mode
+- Khi task liên quan HTML/CSS/TS/TSX: invoke skill `code-convention` APPLY mode
 TRƯỚC khi viết code. Query theo category. Không đoán convention — query skill.
+- Using BEM — is a methodology that helps to create reusable components and share code in front-end development

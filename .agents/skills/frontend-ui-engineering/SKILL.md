@@ -21,7 +21,7 @@ Build production-quality user interfaces that are accessible, performant, and vi
 
 ### File Structure
 
-Colocate everything related to a component:
+Colocate everything related to a component or UI:
 
 ```
 src/components/

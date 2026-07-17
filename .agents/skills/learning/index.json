@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "description": "Index of all conceptualization principles. Grep this file by category/tags/trigger to find relevant principles, then open knowledge/<id>.json for full detail + bad/good cases.",
+  "description": "Index of all learning principles. Grep this file by category/tags/trigger to find relevant principles, then open knowledge/<id>.json for full detail + bad/good cases.",
   "categories": [
     "async",
     "build",
