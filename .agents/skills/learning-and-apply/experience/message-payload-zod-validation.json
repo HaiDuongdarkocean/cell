@@ -1,0 +1,16 @@
+{
+  "id": "message-payload-zod-validation",
+  "title": "MV3 message handlers → validate payload with Zod before `as` cast",
+  "category": ["messaging"],
+  "tags": ["chrome-extension", "mv3", "message-bus", "zod", "trust-boundary"],
+  "trigger": "Viết handler nhận message từ content-script/popup/offscreen trong Chrome extension",
+  "principle": "Mọi payload đến từ trust boundary (content-script/popup/offscreen) phải được runtime validate bằng Zod trước khi cast hoặc dùng. `as` cast che giấu payload tấn công và gây crash/hành vi sai.",
+  "cases": [
+    {
+      "context": "Background handler nhận DOWNLOAD_VIDEO từ popup",
+      "bad": "const payload = request.payload as DownloadVideoPayload;\nconst video = await findVideoById(ctx, payload.videoId);",
+      "good": "const parsed = DownloadVideoPayloadSchema.safeParse(request.payload);\nif (!parsed.success) {\n  return { success: false, error: `Invalid DOWNLOAD_VIDEO payload: ${parsed.error.message}` };\n}\nconst payload = parsed.data;\nconst video = await findVideoById(ctx, payload.videoId);"
+    }
+  ],
+  "applyFor": ["chrome.runtime.onMessage handlers", "MV3 message bus", "cross-context messaging"]
+}

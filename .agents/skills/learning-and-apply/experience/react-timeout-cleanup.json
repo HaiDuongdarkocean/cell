@@ -1,0 +1,16 @@
+{
+  "id": "react-timeout-cleanup",
+  "title": "React component dùng setTimeout phải cleanup trên unmount",
+  "category": ["ux"],
+  "tags": ["react", "settimeout", "memory-leak", "useeffect", "useref"],
+  "trigger": "Component React set state sau một khoảng trễ (copy feedback, toast, debounce)",
+  "principle": "setTimeout trong functional component phải được lưu ref và clear trong useEffect cleanup, tránh setState trên component đã unmount hoặc giữ closure sống quá lâu.",
+  "cases": [
+    {
+      "context": "VideoCard hiện 'copied' 2s sau khi click URL",
+      "bad": "setTimeout(() => setCopied(false), 2000);",
+      "good": "const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);\nuseEffect(() => {\n  return () => {\n    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);\n  };\n}, []);\n\n// khi click\nif (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);\ncopiedTimerRef.current = setTimeout(() => setCopied(false), 2000);"
+    }
+  ],
+  "applyFor": ["React copy feedback", "temporary UI state", "delayed toast/notification"]
+}
