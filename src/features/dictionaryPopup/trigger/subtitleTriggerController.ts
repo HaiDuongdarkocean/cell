@@ -85,6 +85,7 @@ export function wrapTokenSpans(
     }
 
     const span = document.createElement('span');
+    span.className = 'js-cell-token';
     span.textContent = text.slice(token.start, token.end);
     span.setAttribute(DATA_TERM, token.text);
     span.setAttribute(DATA_START, String(token.start));
