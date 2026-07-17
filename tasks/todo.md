@@ -13,11 +13,11 @@
 - [ ] T8: tts.ts handler (TTS_SPEAK) + register
 
 ## Phase 3: Controller wiring
-- [ ] T9: renderTabPanel — wire audio fetch + TTS voices
-- [ ] T10: renderTabPanel — wire image fetch
-- [ ] T11: renderTabPanel — wire translate (reuse TRANSLATE)
-- [ ] T12: renderTabPanel — wire links (settings.externalDictLinks)
-- [ ] T13: popupToolbar.ts — loading + error states
+- [x] T9: renderTabPanel — wire audio fetch + TTS voices
+- [x] T10: renderTabPanel — wire image fetch
+- [x] T11: renderTabPanel — wire translate (reuse TRANSLATE)
+- [x] T12: renderTabPanel — wire links (settings.externalDictLinks)
+- [x] T13: popupToolbar.ts — loading + error states
 
 ## Phase 4: Options UI — TTS voice manager
 - [ ] T14: TtsVoiceManagerPanel.tsx — voice tester

@@ -88,10 +88,32 @@ export function renderAudioPanel(
   selection: Map<string, boolean>,
   onToggle: (id: string, selected: boolean) => void,
   onPlay: (item: AudioItem) => void,
+  isLoading = false,
+  error?: string,
 ): void {
   const panel = document.createElement('div');
   panel.className = 'cell-audio js-cell-panel';
   panel.setAttribute('data-cell-panel', 'audio');
+
+  // Error state — show error message (token: --color-error).
+  if (error) {
+    const err = document.createElement('div');
+    err.className = 'cell-audio__error';
+    err.textContent = error;
+    panel.appendChild(err);
+    container.appendChild(panel);
+    return;
+  }
+
+  // Loading state — only when no items yet (token: --color-text-secondary).
+  if (isLoading && wordAudios.length === 0 && sentenceAudios.length === 0) {
+    const loading = document.createElement('div');
+    loading.className = 'cell-audio__loading';
+    loading.textContent = 'Loading...';
+    panel.appendChild(loading);
+    container.appendChild(panel);
+    return;
+  }
 
   const renderGroup = (label: string, items: readonly AudioItem[]) => {
     if (items.length === 0) return;
@@ -190,10 +212,32 @@ export function renderImagePanel(
   selection: Map<string, boolean>,
   onToggle: (id: string, selected: boolean) => void,
   searchTerm?: string,
+  isLoading = false,
+  error?: string,
 ): void {
   const panel = document.createElement('div');
   panel.className = 'cell-image js-cell-panel';
   panel.setAttribute('data-cell-panel', 'image');
+
+  // Error state — show error message (token: --color-error).
+  if (error) {
+    const err = document.createElement('div');
+    err.className = 'cell-image__error';
+    err.textContent = error;
+    panel.appendChild(err);
+    container.appendChild(panel);
+    return;
+  }
+
+  // Loading state — only when no images yet (token: --color-text-secondary).
+  if (isLoading && images.length === 0) {
+    const loading = document.createElement('div');
+    loading.className = 'cell-image__loading';
+    loading.textContent = 'Loading...';
+    panel.appendChild(loading);
+    container.appendChild(panel);
+    return;
+  }
 
   if (images.length === 0) {
     const empty = document.createElement('div');

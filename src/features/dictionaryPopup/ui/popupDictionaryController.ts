@@ -14,8 +14,8 @@
 // The controller manages the lifecycle: enable/disable, lookup → render,
 // status cycle, tab toggle, Quick Add.
 
-import type { LookupResult, WordStatus, PopupTab, QuickAddResponse, AudioItem } from '../types';
-import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
+import type { LookupResult, WordStatus, PopupTab, QuickAddResponse, AudioItem, FetchCommunityAudioResponse, FetchImagesResponse } from '../types';
+import type { DictionaryPopupSettings, CardCreatorSettings, TtsVoiceRow } from '@/entities/settings/types';
 import type { TokenWrapState } from '../trigger/subtitleTokenWrap';
 import type { PopupShell, PopupSize } from './popupShell';
 import type { DefinitionSelection } from './popupContent';
@@ -33,6 +33,7 @@ import { assembleQuickAddPayload } from '../services/quickAddAssembler';
 import { executeQuickAdd } from '../services/quickAddHandler';
 import { extractPrefill, sendToCreator } from '../services/sendToCreator';
 import { fillExternalDictLinks } from './popupToolbar';
+import { createTtsEngine, getTtsVoiceRows } from '../services/ttsEngineService';
 
 /** Controller state — holds all runtime state for the popup dictionary. */
 export interface PopupDictionaryState {
@@ -462,24 +463,89 @@ function renderTabPanel(
   switch (tab) {
     case 'audio': {
       const langCode = result.langCode;
-      const wordAudios: AudioItem[] = [
-        { id: `tts-word-${result.term}`, kind: 'word', source: 'system-tts', label: `System TTS · ${langCode.toUpperCase()}`, state: 'idle', defaultSelected: true },
-      ];
-      const sentenceAudios: AudioItem[] = ctx.contextSentence
-        ? [{ id: `tts-sentence-${result.term}`, kind: 'sentence', source: 'system-tts', label: `System TTS · Sentence`, state: 'idle', defaultSelected: false }]
-        : [];
-      renderAudioPanel(
-        container, wordAudios, sentenceAudios, ctx.audioSelection,
-        (id, selected) => { ctx.audioSelection.set(id, selected); },
-        (item) => {
-          if (callbacks?.onPlayTts) callbacks.onPlayTts(item, result.term, ctx.contextSentence, result.langCode);
-        },
-      );
+      const onToggle = (id: string, selected: boolean): void => { ctx.audioSelection.set(id, selected); };
+      const onPlay = (item: AudioItem): void => {
+        // Forvo (has url) → play via HTMLAudioElement; TTS (no url) → onPlayTts.
+        if (item.url) {
+          void new Audio(item.url).play().catch(() => { /* best-effort */ });
+          return;
+        }
+        if (callbacks?.onPlayTts) callbacks.onPlayTts(item, result.term, ctx.contextSentence, result.langCode);
+      };
+      // Loading state while fetching Forvo + TTS voices.
+      renderAudioPanel(container, [], [], ctx.audioSelection, onToggle, onPlay, true);
+      void (async () => {
+        const [forvoItems, ttsVoices] = await Promise.all([
+          fetchForvoAudio(result.term, langCode),
+          fetchTtsVoiceRows(ctx.settings, langCode),
+        ]);
+        const ttsWordItems: AudioItem[] = ttsVoices.map((v) => ({
+          id: `tts-word-${v.voiceName}`,
+          kind: 'word',
+          source: 'system-tts',
+          label: `${v.voiceName} · ${v.lang}`,
+          state: 'idle',
+          defaultSelected: false,
+        }));
+        const ttsSentenceItems: AudioItem[] = ctx.contextSentence
+          ? ttsVoices.map((v) => ({
+              id: `tts-sentence-${v.voiceName}`,
+              kind: 'sentence',
+              source: 'system-tts',
+              label: `${v.voiceName} · Sentence`,
+              state: 'idle',
+              defaultSelected: false,
+            }))
+          : [];
+        const wordAudios = [...forvoItems, ...ttsWordItems];
+        const sentenceAudios = ttsSentenceItems;
+        // Replace loading panel if still mounted (user may have closed tab).
+        const existing = container.querySelector('[data-cell-panel="audio"]');
+        if (!existing) return;
+        existing.remove();
+        // Fallback to hardcoded system TTS when both fetches return empty.
+        if (wordAudios.length === 0 && sentenceAudios.length === 0) {
+          const fallbackWord: AudioItem[] = [
+            { id: `tts-word-${result.term}`, kind: 'word', source: 'system-tts', label: `System TTS · ${langCode.toUpperCase()}`, state: 'idle', defaultSelected: true },
+          ];
+          const fallbackSentence: AudioItem[] = ctx.contextSentence
+            ? [{ id: `tts-sentence-${result.term}`, kind: 'sentence', source: 'system-tts', label: 'System TTS · Sentence', state: 'idle', defaultSelected: false }]
+            : [];
+          renderAudioPanel(container, fallbackWord, fallbackSentence, ctx.audioSelection, onToggle, onPlay);
+          return;
+        }
+        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay);
+      })();
       break;
     }
-    case 'image':
-      renderImagePanel(container, [], ctx.imageSelection, () => {}, result.term);
+    case 'image': {
+      const onToggle = (id: string, selected: boolean): void => { ctx.imageSelection.set(id, selected); };
+      // Loading state while fetching images.
+      renderImagePanel(container, [], ctx.imageSelection, onToggle, result.term, true);
+      void (async () => {
+        try {
+          const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
+          const res = await sendMessage<FetchImagesResponse>({
+            type: 'FETCH_IMAGES',
+            payload: { tabId: 0, term: result.term, langCode: result.langCode, maxResults: 8 },
+          });
+          const items = res?.items ?? [];
+          const existing = container.querySelector('[data-cell-panel="image"]');
+          if (!existing) return;
+          existing.remove();
+          renderImagePanel(container, items, ctx.imageSelection, onToggle, result.term);
+        } catch (err) {
+          const existing = container.querySelector('[data-cell-panel="image"]');
+          if (!existing) return;
+          existing.remove();
+          renderImagePanel(
+            container, [], ctx.imageSelection, onToggle, result.term,
+            false, err instanceof Error ? err.message : 'Failed to load images',
+          );
+        }
+      })();
       break;
+    }
     case 'translate':
       renderTranslatePanel(
         container,
@@ -614,19 +680,67 @@ function onResizeEnd(state: PopupDictionaryState, size: PopupSize): void {
   })();
 }
 
-/** Play TTS using Web Speech API (available in content script). */
-function playTts(item: AudioItem, term: string, sentence: string, langCode: string): void {
-  if (typeof speechSynthesis === 'undefined') {
-    showToast('Trình duyệt không hỗ trợ TTS');
-    return;
-  }
-  speechSynthesis.cancel();
+/** Play TTS — sends TTS_SPEAK to background (chrome.tts engine). Falls back to
+ *  Web Speech API (content-script available) if the message fails. For Forvo
+ *  items (item.url set), the caller plays via HTMLAudioElement directly. */
+async function playTts(item: AudioItem, term: string, sentence: string, langCode: string): Promise<void> {
   const text = item.kind === 'sentence' ? sentence : term;
   if (!text) return;
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = langCode ?? 'en';
-  utter.rate = 0.9;
-  speechSynthesis.speak(utter);
+  // Extract voiceName from id pattern `tts-{word|sentence}-{voiceName}`.
+  const voiceName = item.id.replace(/^tts-(?:word|sentence)-/, '');
+  try {
+    const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
+    await sendMessage({
+      type: 'TTS_SPEAK',
+      payload: { tabId: 0, text, langCode, voiceName: voiceName || undefined },
+    });
+  } catch {
+    // Fallback: Web Speech API (available in content script context).
+    if (typeof speechSynthesis === 'undefined') {
+      showToast('Trình duyệt không hỗ trợ TTS');
+      return;
+    }
+    speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = langCode ?? 'en';
+    utter.rate = 0.9;
+    if (voiceName) {
+      const voices = speechSynthesis.getVoices();
+      const match = voices.find((v) => v.name === voiceName);
+      if (match) utter.voice = match;
+    }
+    speechSynthesis.speak(utter);
+  }
+}
+
+/** Fetch community (Forvo) audio items via background handler. Returns [] on
+ *  error — caller falls back to TTS. tabId=0 (best-effort; background fetches
+ *  regardless of tab — AGENTS.md MV3 fan-out rule). */
+async function fetchForvoAudio(term: string, langCode: string): Promise<AudioItem[]> {
+  try {
+    const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
+    const res = await sendMessage<FetchCommunityAudioResponse>({
+      type: 'FETCH_COMMUNITY_AUDIO',
+      payload: { tabId: 0, term, langCode, kind: 'word' },
+    });
+    return res?.items ? [...res.items] : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Resolve TTS voice rows from settings + engine voice list. Returns [] on
+ *  error (engine unavailable). When savedVoices empty, auto-detects by langCode
+ *  prefix via getTtsVoiceRows. */
+async function fetchTtsVoiceRows(settings: DictionaryPopupSettings, langCode: string): Promise<TtsVoiceRow[]> {
+  try {
+    const engine = createTtsEngine();
+    const allVoices = await engine.getVoices();
+    const savedVoices = settings.tts?.savedVoices ?? [];
+    return getTtsVoiceRows(savedVoices, allVoices, langCode);
+  } catch {
+    return [];
+  }
 }
 
 /** Get the initial popup size from settings, clamped to viewport. */
