@@ -82,6 +82,25 @@ describe('imageSearchService', () => {
       expect(items[0].src).toBe('https://cdn.example.com/photo.jpeg');
     });
 
+    it('handles .webp and .gif extensions', () => {
+      const html = [
+        '"https://cdn.example.com/a.webp"',
+        '"https://cdn.example.com/b.gif"',
+      ].join('\n');
+      const items = parseGoogleImagesHtml(html, 'cat', 10);
+      expect(items.map((i) => i.src)).toEqual([
+        'https://cdn.example.com/a.webp',
+        'https://cdn.example.com/b.gif',
+      ]);
+    });
+
+    it('preserves query string on image URLs', () => {
+      const html = '"https://cdn.example.com/photo.jpg?w=400&h=300"';
+      const items = parseGoogleImagesHtml(html, 'cat', 10);
+      expect(items).toHaveLength(1);
+      expect(items[0].src).toBe('https://cdn.example.com/photo.jpg?w=400&h=300');
+    });
+
     it('filters any URL containing "encrypted" even off gstatic', () => {
       const html = [
         '"https://example.com/real.png"',

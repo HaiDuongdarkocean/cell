@@ -333,6 +333,7 @@ export interface FetchSubtitleContentResult {
  * source/target language codes. `text` = multi-line joined cues (chunk ≤ 1500 chars).
  */
 export interface TranslatePayload {
+  readonly tabId: number;
   readonly text: string;
   readonly sl: string;
   readonly tl: string;

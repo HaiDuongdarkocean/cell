@@ -16,9 +16,10 @@ import type { AudioItem } from '../types';
 /** Base URL for Forvo audio CDN (decoded base64 path appended). */
 export const FORVO_AUDIO_CDN = 'https://audio00.forvo.com/mp3/';
 
-/** Build the Forvo word page URL for a term. */
-export function buildForvoUrl(term: string): string {
-  return `https://forvo.com/word/${encodeURIComponent(term)}/#en`;
+/** Build the Forvo word page URL for a term.
+ *  `langCode` = 2-letter ISO 639-1 code used as the Forvo anchor (e.g. `#en`). */
+export function buildForvoUrl(term: string, langCode: string): string {
+  return `https://forvo.com/word/${encodeURIComponent(term)}/#${langCode}`;
 }
 
 /** Normalize whitespace (matches reference `normalize`). */

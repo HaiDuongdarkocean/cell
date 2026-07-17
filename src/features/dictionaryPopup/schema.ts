@@ -222,6 +222,15 @@ export const TtsSettingsSchema = z.object({
   preferredAccent: z.enum(['US', 'UK']).default('US'),
 });
 
+// === Translate (spec §9.4 B — TRANSLATE, ADR-021 D2) ===
+
+export const TranslatePayloadSchema = z.object({
+  tabId: z.number().int(),
+  text: z.string().min(1).max(2000),
+  sl: z.string().optional(),
+  tl: z.string().length(2),
+});
+
 // === Quick Add (spec §9.4 B — QUICK_ADD) ===
 
 export const QuickAddPayloadMessageSchema = QuickAddPayloadSchema.extend({

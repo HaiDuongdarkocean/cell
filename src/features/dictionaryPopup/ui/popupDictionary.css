@@ -423,6 +423,13 @@
   width: 10px;
   height: 10px;
   display: none;
+  color: var(--color-text-inverse);
+}
+
+.cell-audio__check-tick svg {
+  width: 10px;
+  height: 10px;
+  display: block;
 }
 
 .cell-audio__check--checked .cell-audio__check-tick {
@@ -697,6 +704,13 @@
   width: 10px;
   height: 10px;
   display: none;
+  color: var(--color-text-inverse);
+}
+
+.cell-translate__check-tick svg {
+  width: 10px;
+  height: 10px;
+  display: block;
 }
 
 .cell-translate__check--checked .cell-translate__check-tick {
