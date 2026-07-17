@@ -33,29 +33,29 @@ describe('renderToolbar', () => {
     container = document.createElement('div');
   });
 
-  it('renders 4 tab buttons + None button', () => {
-    renderToolbar(container, null, jest.fn(), jest.fn());
+  it('renders 4 tab buttons only (no close button)', () => {
+    renderToolbar(container, null, jest.fn());
     const tabs = container.querySelectorAll('.js-cell-tab');
     const close = container.querySelector('.js-cell-tab-close');
     expect(tabs.length).toBe(4);
-    expect(close).not.toBeNull();
+    expect(close).toBeNull();
   });
 
   it('marks active tab with icon-btn--active class', () => {
-    renderToolbar(container, 'audio', jest.fn(), jest.fn());
+    renderToolbar(container, 'audio', jest.fn());
     const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
     expect(audioTab.className).toContain('icon-btn--active');
   });
 
   it('inactive tab does not have icon-btn--active class', () => {
-    renderToolbar(container, 'image', jest.fn(), jest.fn());
+    renderToolbar(container, 'image', jest.fn());
     const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
     expect(audioTab.className).not.toContain('icon-btn--active');
   });
 
   it('tab click triggers onTabToggle', () => {
     const onToggle = jest.fn();
-    renderToolbar(container, null, onToggle, jest.fn());
+    renderToolbar(container, null, onToggle);
     const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
     audioTab.click();
     expect(onToggle).toHaveBeenCalledWith('audio');
@@ -63,7 +63,7 @@ describe('renderToolbar', () => {
 
   it('tab open triggers onTabOpen when clicking inactive tab', () => {
     const onTabOpen = jest.fn();
-    renderToolbar(container, null, jest.fn(), jest.fn(), undefined, onTabOpen);
+    renderToolbar(container, null, jest.fn(), undefined, onTabOpen);
     const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
     audioTab.click();
     expect(onTabOpen).toHaveBeenCalledWith('audio');
@@ -71,48 +71,40 @@ describe('renderToolbar', () => {
 
   it('tab close does not trigger onTabOpen', () => {
     const onTabOpen = jest.fn();
-    renderToolbar(container, 'audio', jest.fn(), jest.fn(), undefined, onTabOpen);
+    renderToolbar(container, 'audio', jest.fn(), undefined, onTabOpen);
     const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
     audioTab.click();
     expect(onTabOpen).not.toHaveBeenCalled();
   });
 
   it('has aria-label on each tab', () => {
-    renderToolbar(container, null, jest.fn(), jest.fn());
+    renderToolbar(container, null, jest.fn());
     const tabs = container.querySelectorAll('.js-cell-tab');
     tabs.forEach((t) => {
       expect(t.getAttribute('aria-label')).toBeTruthy();
     });
   });
 
-  it('None button click triggers onClose', () => {
-    const onClose = jest.fn();
-    renderToolbar(container, 'audio', jest.fn(), onClose);
-    const noneBtn = container.querySelector('.js-cell-tab-close') as HTMLButtonElement;
-    noneBtn.click();
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
   it('renders SVG icon inside each tab button', () => {
-    renderToolbar(container, null, jest.fn(), jest.fn());
-    const allBtns = container.querySelectorAll('.js-cell-tab, .js-cell-tab-close');
-    allBtns.forEach((t) => {
+    renderToolbar(container, null, jest.fn());
+    const tabs = container.querySelectorAll('.js-cell-tab');
+    tabs.forEach((t) => {
       expect(t.querySelector('svg')).not.toBeNull();
     });
   });
 
-  it('renders + badge when any item is selected', () => {
-    renderToolbar(container, null, jest.fn(), jest.fn(), { audio: 2, image: 1 });
+  it('renders count badge when items are selected', () => {
+    renderToolbar(container, null, jest.fn(), { audio: 2, image: 1 });
     const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
     const imageTab = container.querySelector('.js-cell-tab[data-cell-tab="image"]') as HTMLButtonElement;
     const translateTab = container.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
-    expect(audioTab.querySelector('.cell-toolbar__badge')?.textContent).toBe('+');
-    expect(imageTab.querySelector('.cell-toolbar__badge')?.textContent).toBe('+');
+    expect(audioTab.querySelector('.cell-toolbar__badge')?.textContent).toBe('2');
+    expect(imageTab.querySelector('.cell-toolbar__badge')?.textContent).toBe('1');
     expect(translateTab.querySelector('.cell-toolbar__badge')).toBeNull();
   });
 
   it('does not render badge when count is 0', () => {
-    renderToolbar(container, null, jest.fn(), jest.fn(), { audio: 0 });
+    renderToolbar(container, null, jest.fn(), { audio: 0 });
     const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
     expect(audioTab.querySelector('.cell-toolbar__badge')).toBeNull();
   });

@@ -39,19 +39,18 @@ const TAB_CONFIG: readonly { readonly tab: PopupTab; readonly label: string; rea
 /** Selection counts per tab — drives the badge on toolbar icons. */
 export type SelectionCounts = Partial<Record<PopupTab, number>>;
 
-/** Render the toolbar with icon-btn toggle buttons + None button to close panel.
- *  Uses shared .icon-btn .icon-btn--sm class from components.css (single source
- *  for hover/active/focus behavior across React + content script surfaces).
- *  Active tab = .is-active class (primary-subtle fill + primary text).
+/** Render the toolbar with 4 icon-btn toggle buttons (A/I/T/L).
+ *  No standalone close button — clicking the active tab again closes its panel.
+ *  Uses shared .icon-btn .icon-btn--sm class from components.css.
+ *  Active tab = .icon-btn--active class (primary-subtle fill + primary text).
  *  Icons: ICON_CATALOG from @/shared/icons (Lucide convention, stroke 2, currentColor).
- *  Badge: when selectionCounts[tab] > 0, a count badge is appended to the icon.
+ *  Badge: when selectionCounts[tab] > 0, the number is appended to the icon.
  *  onTabOpen: fired when a tab icon is clicked to OPEN (not close) its panel —
  *  used to lazy-trigger panel content such as translate. */
 export function renderToolbar(
   container: HTMLElement,
   activeTab: PopupTab | null,
   onTabToggle: (tab: PopupTab) => void,
-  onClose?: () => void,
   selectionCounts?: SelectionCounts,
   onTabOpen?: (tab: PopupTab) => void,
 ): void {
@@ -72,27 +71,16 @@ export function renderToolbar(
       if (isOpening && onTabOpen) onTabOpen(config.tab);
     });
 
-    // Badge — shows '+' as soon as any item in the tab is selected.
+    // Badge — shows the actual selected count (wireframe: 1, 2, …).
     const count = selectionCounts?.[config.tab] ?? 0;
     if (count > 0) {
       const badge = document.createElement('span');
       badge.className = 'cell-toolbar__badge';
-      badge.textContent = '+';
+      badge.textContent = String(count);
       btn.appendChild(badge);
     }
 
     toolbar.appendChild(btn);
-  }
-
-  // None button — closes any active tab panel. Uses eye-off icon (hide).
-  if (onClose) {
-    const noneBtn = document.createElement('button');
-    noneBtn.className = 'icon-btn icon-btn--sm js-cell-tab-close' + (activeTab === null ? ' icon-btn--active' : '');
-    noneBtn.setAttribute('aria-label', 'Hide panel');
-    noneBtn.title = 'Hide panel';
-    noneBtn.innerHTML = ICON_CATALOG.eyeOff.svg;
-    noneBtn.addEventListener('click', onClose);
-    toolbar.appendChild(noneBtn);
   }
 
   container.appendChild(toolbar);

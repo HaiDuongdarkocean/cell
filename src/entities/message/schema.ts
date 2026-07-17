@@ -4,6 +4,7 @@
 // Internal code trusts the types after validation.
 
 import { z } from 'zod';
+import type { Settings } from '@/entities/media';
 
 // === Reusable primitives ===
 
@@ -40,7 +41,7 @@ export const CancelDownloadPayloadSchema = z.object({
 // === Settings payloads ===
 
 export const UpdateSettingsPayloadSchema = z.object({
-  settings: z.record(z.string(), z.unknown()),
+  settings: z.custom<Partial<Settings>>((val) => typeof val === 'object' && val !== null && !Array.isArray(val)),
 });
 
 // === YouTube detection payloads ===

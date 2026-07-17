@@ -8,7 +8,6 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type {
   MessageResponse,
-  TranslatePayload,
   TranslateResult,
 } from '@/entities/message';
 import { TranslatePayloadSchema } from '@/features/dictionaryPopup/schema';
@@ -25,12 +24,12 @@ export function registerTranslateHandlers(ctx: BackgroundContext): void {
     if (!parsed.success) {
       return { success: false, error: `Invalid TRANSLATE payload: ${parsed.error.message}` };
     }
-    const payload = parsed.data as TranslatePayload;
-    if (!payload.text || !payload.sl || !payload.tl) {
+    const { text, sl, tl } = parsed.data;
+    if (!text || !sl || !tl) {
       return { success: false, error: 'Missing text, sl, or tl in TRANSLATE' };
     }
 
-    const url = buildTranslateUrl(payload.text, payload.sl, payload.tl);
+    const url = buildTranslateUrl(text, sl, tl);
     try {
       const response = await fetchWithTimeout(url, {
         method: 'GET',

@@ -55,7 +55,6 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
     const tabId = payload.tabId;
 
     if (tabId === undefined) {
-      console.error('PAGE_SCAN_RESULT received without tabId');
       return { success: false, error: 'Missing tabId in PAGE_SCAN_RESULT payload' };
     }
 
@@ -133,11 +132,6 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
     }
 
     const allSubtitles = ctx.networkInterceptor.getSubtitles(tabId);
-    console.log('[bg PAGE_SCAN_RESULT] subtitles detected', {
-      tabId,
-      subtitleCount: allSubtitles.length,
-      subtitleLanguages: allSubtitles.map((s) => s.language),
-    });
     if (allSubtitles.length > 0) {
       void pushAutoLoadSubtitles(ctx, tabId, allSubtitles);
     }

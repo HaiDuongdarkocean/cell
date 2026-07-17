@@ -35,6 +35,15 @@
   background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
 }
 
+/* Tablet icon-only mode: active state must be visible without text */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .itemActive {
+    background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+    border-left-color: transparent;
+    border-radius: var(--radius-md);
+  }
+}
+
 .icon {
   display: inline-flex;
   align-items: center;

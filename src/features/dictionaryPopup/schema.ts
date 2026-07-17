@@ -4,6 +4,7 @@
 // storage edges. Internal code trusts the types after validation.
 
 import { z } from 'zod';
+import type { LookupRequest } from './types';
 
 // === Reusable primitives ===
 
@@ -249,4 +250,15 @@ export const QuickAddResponseSchema = z.object({
       }),
     )
     .optional(),
+});
+
+// === Lookup (MV3 message boundary) ===
+
+export const LookupRequestPayloadSchema = z.object({
+  requestId: z.string().min(1),
+  request: z.custom<LookupRequest>((val) => typeof val === 'object' && val !== null && !Array.isArray(val)),
+});
+
+export const LookupCancelPayloadSchema = z.object({
+  requestId: z.string().optional(),
 });

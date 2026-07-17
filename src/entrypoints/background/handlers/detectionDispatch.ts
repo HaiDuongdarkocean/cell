@@ -87,10 +87,6 @@ export function registerDetectionDispatchHandlers(
         // the overlay does not persist into the new video. Broadcast empty
         // media update + send AUTO_LOAD_SUBTITLES with null target/native so
         // the content-script overlay clears its cues. (Clone ADR-020 logic.)
-        console.log(
-          '[bg DETECTED_SUBTITLES] no tracks — clearing previous subtitles',
-          { tabId, source, videoId: payload.videoId, tvid: payload.tvid, movieId: payload.movieId },
-        );
         ctx.networkInterceptor.clearTab(tabId);
         ctx.autoDownloadedTabs.delete(tabId);
         ctx.lastCuesByTab.delete(tabId);
@@ -117,16 +113,6 @@ export function registerDetectionDispatchHandlers(
       }
 
       const added = ctx.networkInterceptor.addDetectedSubtitles(subtitles);
-      console.log('[bg DETECTED_SUBTITLES] stored subtitles', {
-        tabId,
-        source,
-        videoId: payload.videoId,
-        tvid: payload.tvid,
-        movieId: payload.movieId,
-        added,
-        total: subtitles.length,
-        languages: subtitles.map((s) => s.language),
-      });
 
       if (added > 0) {
         const allSubtitles = ctx.networkInterceptor.getSubtitles(tabId);
