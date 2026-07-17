@@ -66,13 +66,31 @@ export default tseslint.config(
     },
   },
 
+  // Browser manual test scripts
+  {
+    files: ['tests/manual/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.es2022,
+        chrome: 'readonly',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+
   // Node.js scripts and E2E specs
   {
-    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'e2e/**/*.ts'],
+    files: ['scripts/**/*.js', 'scripts/**/*.mjs', 'e2e/**/*.ts', '**/*.cjs', '_manual_test_multi.ts'],
     languageOptions: {
       globals: {
         ...globals.node,
       },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 );

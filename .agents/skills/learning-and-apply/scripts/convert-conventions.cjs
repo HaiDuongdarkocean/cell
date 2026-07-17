@@ -54,7 +54,7 @@ function deriveTags(item, topic) {
 // Map category to learning categories
 const CATEGORY_MAP = {
   // htmlcss
-  'css': 'css', 'general': 'css', 'html': 'css', 'naming': 'css',
+  'css': 'css', 'general': 'css', 'html': 'css',
   // typescript
   'classes': 'build', 'comments': 'build', 'controlFlow': 'build',
   'errorHandling': 'build', 'exports': 'build', 'functions': 'build',
