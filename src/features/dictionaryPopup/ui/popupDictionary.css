@@ -70,6 +70,14 @@
   gap: var(--space-2);
 }
 
+/* Meta row — status + frequency badges, left-aligned and consecutive. */
+.cell-header__meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+}
+
 .cell-header__term-group {
   display: flex;
   flex-direction: column;
@@ -577,29 +585,111 @@
   padding: var(--space-2) var(--space-3);
 }
 
-.cell-translate__result {
-  padding: var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-hover);
-  margin-bottom: var(--space-2);
-}
-
-.cell-translate__button {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-sm);
+/* Single clickable block: target sentence (top) + native translation (bottom) */
+.cell-translate__block {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
-  background: transparent;
+  background: var(--color-surface);
   cursor: pointer;
-  font-size: var(--font-size-sm);
-  width: 100%;
+  transition: background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
+              border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
 }
 
-.cell-translate__source {
-  padding: var(--space-1-5) var(--space-2);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+.cell-translate__block:hover {
+  background: var(--color-surface-hover);
+}
+
+.cell-translate__block--selected {
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+}
+
+.cell-translate__block--selected:hover {
+  background: var(--color-primary-subtle);
+}
+
+.cell-translate__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cell-translate__target {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.cell-translate__native {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+/* Checkbox at far right — hidden when unchecked, visible when checked */
+.cell-translate__check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-primary);
+  background: transparent;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.cell-translate__check--checked {
+  display: flex;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.cell-translate__check-tick {
+  width: 10px;
+  height: 10px;
+  display: none;
+}
+
+.cell-translate__check--checked .cell-translate__check-tick {
+  display: inline-block;
+}
+
+/* Empty state */
+.cell-translate__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.cell-translate__empty-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--color-text-muted);
+}
+
+.cell-translate__empty-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cell-translate__empty-title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  font-size: var(--font-size-base);
 }
 
 /* === Block: cell-links === */

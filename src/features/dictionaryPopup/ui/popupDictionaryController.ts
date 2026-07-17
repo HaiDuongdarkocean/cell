@@ -54,6 +54,8 @@ export interface PopupDictionaryState {
   activeTab: PopupTab | null;
   /** Current translation text. */
   translation: string;
+  /** Whether translation is selected for Quick Add. */
+  translationSelected: boolean;
   /** Current context sentence. */
   contextSentence: string;
   /** Popup shell instance. */
@@ -78,6 +80,7 @@ export function createPopupDictionaryState(
     imageSelection: new Map(),
     activeTab: settings.defaultActiveTab ?? null,
     translation: '',
+    translationSelected: false,
     contextSentence: '',
     shell: null,
     tokenWrapState: null,
@@ -230,6 +233,7 @@ export function appendCandidate(
       contextSentence: state.contextSentence,
       settings: state.settings,
       translation: candidateTranslation,
+      translateSelected: false,
       audioSelection: candidateAudioSelection,
       imageSelection: candidateImageSelection,
     }, {
@@ -302,6 +306,7 @@ export function hidePopup(state: PopupDictionaryState): PopupDictionaryState {
     additionalResults: [],
     activeTab: null,
     translation: '',
+    translationSelected: false,
   };
 }
 
@@ -392,7 +397,7 @@ export async function doQuickAdd(state: PopupDictionaryState): Promise<QuickAddR
 function countSelections(state: PopupDictionaryState): SelectionCounts {
   const audioCount = countMapTrue(state.audioSelection);
   const imageCount = countMapTrue(state.imageSelection);
-  const translateCount = state.translation ? 1 : 0;
+  const translateCount = state.translationSelected ? 1 : 0;
   const counts: SelectionCounts = {};
   if (audioCount > 0) counts.audio = audioCount;
   if (imageCount > 0) counts.image = imageCount;
@@ -426,6 +431,7 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
     contextSentence: state.contextSentence,
     settings: state.settings,
     translation: state.translation,
+    translateSelected: state.translationSelected,
     audioSelection: state.audioSelection,
     imageSelection: state.imageSelection,
   }, {
@@ -443,6 +449,7 @@ function renderTabPanel(
     contextSentence: string;
     settings: DictionaryPopupSettings;
     translation: string;
+    translateSelected: boolean;
     audioSelection: Map<string, boolean>;
     imageSelection: Map<string, boolean>;
   },
@@ -494,6 +501,11 @@ function renderTabPanel(
               callbacks?.onTranslationDone?.(translated);
             }
           } catch { /* best-effort */ }
+        },
+        ctx.translateSelected,
+        () => {
+          ctx.translateSelected = !ctx.translateSelected;
+          callbacks?.onTranslationDone?.(ctx.translation);
         },
       );
       break;

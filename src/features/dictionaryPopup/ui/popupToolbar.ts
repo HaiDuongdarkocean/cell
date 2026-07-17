@@ -68,7 +68,6 @@ export function renderToolbar(
     noneBtn.setAttribute('aria-label', 'Hide panel');
     noneBtn.title = 'Hide panel';
     noneBtn.innerHTML = ICON_CATALOG.eyeOff.svg;
-    noneBtn.style.marginLeft = 'auto';
     noneBtn.addEventListener('click', onClose);
     toolbar.appendChild(noneBtn);
   }
@@ -255,41 +254,103 @@ export function renderImagePanel(
   container.appendChild(panel);
 }
 
-/** Render the translate panel — target translation + source sentence card. */
+/** Render the translate panel — single clickable block with target + native.
+ *  - Empty: icon + title + "Translate sentence" button.
+ *  - Loaded: single block with target sentence (top) + native translation (bottom).
+ *  - Click block to toggle selection; checkbox at far right when selected.
+ *  - Native language is set in Settings > Popup > Native language. */
 export function renderTranslatePanel(
   container: HTMLElement,
   translation: string,
   sourceSentence: string,
   targetLang: string,
   onTranslate: () => void,
+  isSelected?: boolean,
+  onToggleSelect?: () => void,
 ): void {
   const panel = document.createElement('div');
   panel.className = 'cell-translate js-cell-panel';
   panel.setAttribute('data-cell-panel', 'translate');
 
-  if (translation) {
-    // Show translation result.
-    const result = document.createElement('div');
-    result.className = 'cell-translate__result';
-    result.textContent = translation;
-    panel.appendChild(result);
-  } else {
-    // Show translate button.
+  if (!translation && !sourceSentence) {
+    // Empty state — icon + title + button.
+    const empty = document.createElement('div');
+    empty.className = 'cell-translate__empty';
+    const icon = document.createElement('div');
+    icon.className = 'cell-translate__empty-icon';
+    icon.innerHTML = ICON_CATALOG.languages.svg;
+    empty.appendChild(icon);
+    const title = document.createElement('div');
+    title.className = 'cell-translate__empty-title';
+    title.textContent = 'No translation';
+    empty.appendChild(title);
     const btn = document.createElement('button');
-    btn.className = 'cell-translate__button';
+    btn.className = 'btn btn--outline btn--sm js-cell-translate-btn';
     btn.textContent = `Translate to ${targetLang}`;
     btn.addEventListener('click', onTranslate);
-    panel.appendChild(btn);
+    empty.appendChild(btn);
+    panel.appendChild(empty);
+    container.appendChild(panel);
+    return;
   }
 
-  // Source sentence card.
-  if (sourceSentence) {
-    const card = document.createElement('div');
-    card.className = 'cell-translate__source';
-    card.textContent = sourceSentence;
-    panel.appendChild(card);
+  // If no translation yet but source sentence exists, show translate button.
+  if (!translation) {
+    const empty = document.createElement('div');
+    empty.className = 'cell-translate__empty';
+    const icon = document.createElement('div');
+    icon.className = 'cell-translate__empty-icon';
+    icon.innerHTML = ICON_CATALOG.languages.svg;
+    empty.appendChild(icon);
+    const title = document.createElement('div');
+    title.className = 'cell-translate__empty-title';
+    title.textContent = 'No translation';
+    empty.appendChild(title);
+    const btn = document.createElement('button');
+    btn.className = 'btn btn--outline btn--sm js-cell-translate-btn';
+    btn.textContent = `Translate to ${targetLang}`;
+    btn.addEventListener('click', onTranslate);
+    empty.appendChild(btn);
+    panel.appendChild(empty);
+    container.appendChild(panel);
+    return;
   }
 
+  // Loaded — single clickable block with target (top) + native (bottom).
+  const selected = isSelected ?? false;
+  const block = document.createElement('div');
+  block.className = 'cell-translate__block js-cell-translate-block' + (selected ? ' cell-translate__block--selected' : '');
+
+  const textEl = document.createElement('div');
+  textEl.className = 'cell-translate__text';
+  // Target sentence (top) — the original sentence being read.
+  const targetEl = document.createElement('div');
+  targetEl.className = 'cell-translate__target';
+  targetEl.textContent = sourceSentence || translation;
+  textEl.appendChild(targetEl);
+  // Native translation (bottom) — translated to user's native language.
+  const nativeEl = document.createElement('div');
+  nativeEl.className = 'cell-translate__native';
+  nativeEl.textContent = sourceSentence ? translation : '';
+  textEl.appendChild(nativeEl);
+  block.appendChild(textEl);
+
+  // Checkbox at far right — hidden when unchecked, visible when checked.
+  const checkEl = document.createElement('span');
+  checkEl.className = 'cell-translate__check js-cell-translate-check' + (selected ? ' cell-translate__check--checked' : '');
+  checkEl.setAttribute('aria-hidden', 'true');
+  const tick = document.createElement('span');
+  tick.className = 'cell-translate__check-tick';
+  tick.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;display:block"><path d="M20 6 9 17l-5-5"/></svg>`;
+  checkEl.appendChild(tick);
+  block.appendChild(checkEl);
+
+  // Click block to toggle selection.
+  block.addEventListener('click', () => {
+    if (onToggleSelect) onToggleSelect();
+  });
+
+  panel.appendChild(block);
   container.appendChild(panel);
 }
 

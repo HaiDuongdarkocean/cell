@@ -234,28 +234,60 @@ describe('renderTranslatePanel', () => {
     container = document.createElement('div');
   });
 
-  it('shows translate button when no translation', () => {
-    renderTranslatePanel(container, '', 'Hello world', 'vi', jest.fn());
-    const btn = container.querySelector('button');
-    expect(btn?.textContent).toContain('Translate to vi');
+  it('shows empty state with icon + title + button when no translation', () => {
+    renderTranslatePanel(container, '', '', 'vi', jest.fn());
+    expect(container.textContent).toContain('No translation');
+    expect(container.querySelector('.cell-translate__empty-icon svg')).not.toBeNull();
+    const btn = container.querySelector('.js-cell-translate-btn') as HTMLButtonElement;
+    expect(btn.textContent).toContain('Translate to vi');
   });
 
-  it('shows translation result when present', () => {
+  it('shows empty state when source sentence exists but no translation', () => {
+    renderTranslatePanel(container, '', 'Hello world', 'vi', jest.fn());
+    expect(container.textContent).toContain('No translation');
+    const btn = container.querySelector('.js-cell-translate-btn') as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+  });
+
+  it('shows single block with target + native when translation present', () => {
     renderTranslatePanel(container, 'Xin chào thế giới', 'Hello world', 'vi', jest.fn());
-    expect(container.textContent).toContain('Xin chào thế giới');
-  });
-
-  it('shows source sentence card', () => {
-    renderTranslatePanel(container, '', 'Hello world', 'vi', jest.fn());
-    expect(container.textContent).toContain('Hello world');
+    const block = container.querySelector('.js-cell-translate-block');
+    expect(block).not.toBeNull();
+    expect(container.querySelector('.cell-translate__target')?.textContent).toBe('Hello world');
+    expect(container.querySelector('.cell-translate__native')?.textContent).toBe('Xin chào thế giới');
   });
 
   it('translate button click triggers onTranslate', () => {
     const onTranslate = jest.fn();
     renderTranslatePanel(container, '', 'Hello world', 'vi', onTranslate);
-    const btn = container.querySelector('button') as HTMLButtonElement;
+    const btn = container.querySelector('.js-cell-translate-btn') as HTMLButtonElement;
     btn.click();
     expect(onTranslate).toHaveBeenCalledTimes(1);
+  });
+
+  it('block click triggers onToggleSelect', () => {
+    const onToggle = jest.fn();
+    renderTranslatePanel(container, 'Xin chào', 'Hello', 'vi', jest.fn(), false, onToggle);
+    const block = container.querySelector('.js-cell-translate-block') as HTMLDivElement;
+    block.click();
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('checkbox hidden when not selected, visible when selected', () => {
+    renderTranslatePanel(container, 'Xin chào', 'Hello', 'vi', jest.fn(), true);
+    const check = container.querySelector('.js-cell-translate-check') as HTMLSpanElement;
+    expect(check.classList.contains('cell-translate__check--checked')).toBe(true);
+
+    container.innerHTML = '';
+    renderTranslatePanel(container, 'Xin chào', 'Hello', 'vi', jest.fn(), false);
+    const check2 = container.querySelector('.js-cell-translate-check') as HTMLSpanElement;
+    expect(check2.classList.contains('cell-translate__check--checked')).toBe(false);
+  });
+
+  it('selected block has --selected modifier', () => {
+    renderTranslatePanel(container, 'Xin chào', 'Hello', 'vi', jest.fn(), true);
+    const block = container.querySelector('.js-cell-translate-block') as HTMLDivElement;
+    expect(block.classList.contains('cell-translate__block--selected')).toBe(true);
   });
 });
 

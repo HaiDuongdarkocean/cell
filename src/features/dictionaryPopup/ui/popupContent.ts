@@ -135,7 +135,7 @@ export function renderHeader(
 
   // Row 3: status badge (left) + frequency badge (left)
   const row3 = document.createElement('div');
-  row3.className = 'cell-header__row';
+  row3.className = 'cell-header__meta';
 
   // Status badge — pill, variant maps WordStatus → BEM modifier class.
   // unknown=neutral, tracking=primary, known=success(+checkmark), ignore=secondary.
