@@ -15,6 +15,14 @@
   ],
   "principles": [
     {
+      "type": "experience",
+      "id": "refactor-selector-contract-cross-module-sync",
+      "title": "Selector là contract creator-consumer → rename phải sync cross-module",
+      "category": ["css", "testing"],
+      "tags": ["bem", "js-hook", "data-attribute", "selector", "cross-module", "rename-refactor"],
+      "trigger": "Khi rename attribute/class/selector được query bởi module khác (click-outside, closest, querySelector)"
+    },
+    {
       "type": "knowledge",
       "topic": "htmlcss",
       "source": "https://google.github.io/styleguide/htmlcssguide.html + https://cssguidelin.es/#bem-like-naming",

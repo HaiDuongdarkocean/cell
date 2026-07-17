@@ -1,0 +1,21 @@
+{
+  "id": "refactor-selector-contract-cross-module-sync",
+  "title": "Selector là contract creator-consumer → rename phải sync cross-module",
+  "category": ["css", "testing"],
+  "tags": ["bem", "js-hook", "data-attribute", "selector", "cross-module", "rename-refactor"],
+  "trigger": "Khi rename attribute/class/selector được query bởi module khác (click-outside, closest, querySelector)",
+  "principle": "Một selector (data-attribute hoặc class) là contract giữa element creator và consumer. Khi đổi creator sang selector mới, phải grep toàn bộ consumer cùng lúc — nếu không, closest/querySelector trả null và logic vỡ im lặng (no error, chỉ sai behavior).",
+  "cases": [
+    {
+      "context": "Refactor popupShell: đổi host element từ setAttribute('data-dp-popup-host','') sang className='js-cell-popup-host'. webTriggerController ở module khác check target.closest('[data-dp-popup-host]') để skip click trên popup.",
+      "bad": "// popupShell.ts (creator)\nthis.host.className = 'js-cell-popup-host';\n// webTriggerController.ts (consumer — NOT updated)\nif (target.closest('[data-dp-popup-host]')) return; // luôn false → click-outside dismiss popup sai",
+      "good": "// popupShell.ts (creator)\nthis.host.className = 'js-cell-popup-host';\n// webTriggerController.ts (consumer — updated cùng commit)\nif (target.closest('.js-cell-popup-host')) return;"
+    },
+    {
+      "context": "Refactor subtitle token spans: đổi data-dp-term sang data-cell-term. popupShell onClickOutside check closest('[data-dp-term]') để không dismiss khi click subtitle token.",
+      "bad": "// subtitleTriggerController.ts (creator)\nconst DATA_TERM = 'data-cell-term';\n// popupShell.ts (consumer — NOT updated)\nif (target?.closest?.('[data-dp-term]')) return; // click subtitle token → dismiss popup sai",
+      "good": "// subtitleTriggerController.ts (creator)\nconst DATA_TERM = 'data-cell-term';\n// popupShell.ts (consumer — updated cùng commit)\nif (target?.closest?.('[data-cell-term]')) return;"
+    }
+  ],
+  "applyFor": ["BEM refactor (data-attr → class)", "JS hook rename (js-* prefix)", "Shadow DOM host selector", "Click-outside detection", "Event delegation closest()"]
+}
