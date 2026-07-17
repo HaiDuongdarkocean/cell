@@ -230,6 +230,14 @@ describe('renderAudioPanel', () => {
     expect(label).not.toBeNull();
     expect(check).not.toBeNull();
   });
+
+  it('renders skeleton placeholders while loading', () => {
+    renderAudioPanel(container, [], [], new Map(), jest.fn(), jest.fn(), true);
+    const skeleton = container.querySelector('.cell-audio__skeleton');
+    expect(skeleton).not.toBeNull();
+    expect(container.querySelectorAll('.cell-audio__skeleton-row').length).toBe(6);
+    expect(container.querySelectorAll('.cell-skeleton').length).toBeGreaterThan(0);
+  });
 });
 
 describe('renderImagePanel', () => {
@@ -270,6 +278,13 @@ describe('renderImagePanel', () => {
     renderImagePanel(container, images, new Map(), jest.fn());
     const img = container.querySelector('img') as HTMLImageElement;
     expect(img.alt).toBe('a cat sitting');
+  });
+
+  it('renders skeleton placeholders while loading', () => {
+    renderImagePanel(container, [], new Map(), jest.fn(), '', true);
+    const skeleton = container.querySelector('.cell-image__skeleton');
+    expect(skeleton).not.toBeNull();
+    expect(container.querySelectorAll('.cell-skeleton').length).toBe(4);
   });
 });
 
@@ -348,6 +363,14 @@ describe('renderTranslatePanel', () => {
     // When source is empty, target shows translation, native is empty
     const target = container.querySelector('.cell-translate__target');
     expect(target?.textContent).toBe('Xin chào');
+  });
+
+  it('renders skeleton placeholder while loading', () => {
+    renderTranslatePanel(container, '', 'Hello world', 'vi', jest.fn(), false, undefined, true);
+    const skeleton = container.querySelector('.cell-translate__skeleton');
+    expect(skeleton).not.toBeNull();
+    expect(container.querySelectorAll('.cell-translate__skeleton-line').length).toBe(2);
+    expect(container.querySelectorAll('.cell-skeleton').length).toBeGreaterThan(0);
   });
 });
 

@@ -12,6 +12,21 @@ import { ICON_CATALOG } from '@/shared/icons';
 
 export type { PopupTab };
 
+/** Build a skeleton placeholder element.
+ *  Mirrors shared/ui/Skeleton but for vanilla DOM content-script surfaces. */
+function createSkeleton(
+  width: string,
+  height: string,
+  shape: 'circle' | 'rounded' | 'rect' = 'rect',
+): HTMLElement {
+  const el = document.createElement('div');
+  el.className = `cell-skeleton cell-skeleton--${shape}`;
+  el.style.width = width;
+  el.style.height = height;
+  el.setAttribute('aria-hidden', 'true');
+  return el;
+}
+
 /** Toolbar tab config — icon SVG from ICON_CATALOG + which panel to show. */
 const TAB_CONFIG: readonly { readonly tab: PopupTab; readonly label: string; readonly icon: string }[] = [
   { tab: 'audio', label: 'Audio', icon: ICON_CATALOG.audioWave.svg },
@@ -112,12 +127,25 @@ export function renderAudioPanel(
     return;
   }
 
-  // Loading state — only when no items yet (token: --color-text-secondary).
+  // Loading state — skeleton placeholders while fetching audio sources.
   if (isLoading && wordAudios.length === 0 && sentenceAudios.length === 0) {
-    const loading = document.createElement('div');
-    loading.className = 'cell-audio__loading';
-    loading.textContent = 'Loading...';
-    panel.appendChild(loading);
+    const skeleton = document.createElement('div');
+    skeleton.className = 'cell-audio__skeleton';
+    for (const groupLabel of ['Word Audio', 'Sentence Audio']) {
+      const group = document.createElement('div');
+      group.className = 'cell-audio__group-label';
+      group.textContent = groupLabel;
+      skeleton.appendChild(group);
+      for (let i = 0; i < 3; i += 1) {
+        const row = document.createElement('div');
+        row.className = 'cell-audio__skeleton-row';
+        row.appendChild(createSkeleton('28px', '28px', 'circle'));
+        row.appendChild(createSkeleton('60%', '16px', 'rect'));
+        row.appendChild(createSkeleton('16px', '16px', 'rect'));
+        skeleton.appendChild(row);
+      }
+    }
+    panel.appendChild(skeleton);
     container.appendChild(panel);
     return;
   }
@@ -239,12 +267,14 @@ export function renderImagePanel(
     return;
   }
 
-  // Loading state — only when no images yet (token: --color-text-secondary).
+  // Loading state — skeleton placeholders while fetching images.
   if (isLoading && images.length === 0) {
-    const loading = document.createElement('div');
-    loading.className = 'cell-image__loading';
-    loading.textContent = 'Loading...';
-    panel.appendChild(loading);
+    const skeleton = document.createElement('div');
+    skeleton.className = 'cell-image__skeleton';
+    for (let i = 0; i < 4; i += 1) {
+      skeleton.appendChild(createSkeleton('96px', '72px', 'rounded'));
+    }
+    panel.appendChild(skeleton);
     container.appendChild(panel);
     return;
   }
@@ -292,6 +322,12 @@ export function renderImagePanel(
     thumb.className = 'cell-image__thumb';
     thumb.src = img.src;
     thumb.alt = img.alt;
+    // Remove card immediately when image URL fails to load (404, CORS, etc).
+    // Also purge from selection so Quick Add doesn't include broken images.
+    thumb.addEventListener('error', () => {
+      card.remove();
+      selection.delete(img.id);
+    });
     card.appendChild(thumb);
 
     const check = document.createElement('span');
@@ -328,10 +364,33 @@ export function renderTranslatePanel(
   onTranslate: () => void,
   isSelected?: boolean,
   onToggleSelect?: () => void,
+  isLoading = false,
 ): void {
   const panel = document.createElement('div');
   panel.className = 'cell-translate js-cell-panel';
   panel.setAttribute('data-cell-panel', 'translate');
+
+  // Loading state — skeleton placeholder while translating.
+  if (isLoading) {
+    const skeleton = document.createElement('div');
+    skeleton.className = 'cell-translate__skeleton';
+    const block = document.createElement('div');
+    block.className = 'cell-translate__skeleton-block';
+    const text = document.createElement('div');
+    text.className = 'cell-translate__skeleton-text';
+    const line1 = createSkeleton('100%', '16px', 'rect');
+    line1.className = 'cell-translate__skeleton-line';
+    const line2 = createSkeleton('100%', '16px', 'rect');
+    line2.className = 'cell-translate__skeleton-line cell-translate__skeleton-line--short';
+    text.appendChild(line1);
+    text.appendChild(line2);
+    block.appendChild(text);
+    block.appendChild(createSkeleton('16px', '16px', 'rect'));
+    skeleton.appendChild(block);
+    panel.appendChild(skeleton);
+    container.appendChild(panel);
+    return;
+  }
 
   if (!translation && !sourceSentence) {
     // Empty state — icon + title + button.

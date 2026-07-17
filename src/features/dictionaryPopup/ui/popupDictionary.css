@@ -808,3 +808,114 @@
 .cell-popup * {
   scrollbar-width: none;
 }
+
+/* === Skeleton loading placeholders === */
+.cell-skeleton {
+  display: inline-block;
+  background: var(--color-muted);
+  animation: cell-skeleton-pulse 2s ease-in-out infinite;
+}
+
+.cell-skeleton--circle {
+  border-radius: var(--radius-full);
+}
+
+.cell-skeleton--rounded {
+  border-radius: var(--radius-lg);
+}
+
+.cell-skeleton--rect {
+  border-radius: var(--radius-sm);
+}
+
+@keyframes cell-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Audio skeleton rows */
+.cell-audio__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+.cell-audio__skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-lg);
+  background: transparent;
+}
+
+.cell-audio__skeleton-play {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.cell-audio__skeleton-label {
+  flex: 1;
+  height: 16px;
+}
+
+.cell-audio__skeleton-check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+}
+
+/* Image skeleton strip */
+.cell-image__skeleton {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding: var(--space-2) var(--space-3);
+}
+
+.cell-image__skeleton-card {
+  width: 96px;
+  height: 72px;
+  flex-shrink: 0;
+}
+
+/* Translate skeleton block */
+.cell-translate__skeleton {
+  padding: var(--space-2) var(--space-3);
+}
+
+.cell-translate__skeleton-block {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.cell-translate__skeleton-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cell-translate__skeleton-line {
+  height: 16px;
+}
+
+.cell-translate__skeleton-line--short {
+  width: 60%;
+}
+
+.cell-translate__skeleton-check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
