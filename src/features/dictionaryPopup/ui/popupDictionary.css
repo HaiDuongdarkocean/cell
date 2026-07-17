@@ -227,18 +227,15 @@
   display: none;
 }
 
-.cell-def__item:hover .cell-def__check-dot,
-.cell-audio__item:hover .cell-def__check-dot {
+.cell-def__item:hover .cell-def__check-dot {
   display: none;
 }
 
-.cell-def__item:hover .cell-def__check-box,
-.cell-audio__item:hover .cell-def__check-box {
+.cell-def__item:hover .cell-def__check-box {
   display: flex;
 }
 
-.cell-def__item:hover .cell-def__check-tick,
-.cell-audio__item:hover .cell-def__check-tick {
+.cell-def__item:hover .cell-def__check-tick {
   display: inline-block;
 }
 
