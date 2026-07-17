@@ -15,7 +15,7 @@
 // status cycle, tab toggle, Quick Add.
 
 import type { MessageResponse } from '@/entities/message/types';
-import type { LookupResult, WordStatus, PopupTab, QuickAddResponse, AudioItem, ImageItem, FetchCommunityAudioResponse, FetchImagesResponse } from '../types';
+import type { LookupResult, WordStatus, PopupTab, QuickAddResponse, AudioItem, ImageItem, FetchCommunityAudioResponse, FetchImagesResponse, TabPanelCache } from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings, TtsVoiceRow } from '@/entities/settings/types';
 import type { TokenWrapState } from '../trigger/subtitleTokenWrap';
 import type { PopupShell, PopupSize } from './popupShell';
@@ -74,6 +74,19 @@ export interface PopupDictionaryState {
   cachedResultTerm: string;
   /** Last cached context sentence — used together with cachedResultTerm. */
   cachedContextSentence: string;
+  /** Per-term cache for tab panel data (audio/image/translation). Cleared when the page closes. */
+  tabPanelCache: Map<string, TabPanelCache>;
+}
+
+/** Create an empty TabPanelCache entry. */
+function createEmptyTabPanelCache(): TabPanelCache {
+  return {
+    audioItems: [],
+    audioSelection: new Map(),
+    imageItems: [],
+    imageSelection: new Map(),
+    translations: new Map(),
+  };
 }
 
 /** Create initial controller state. */
@@ -101,6 +114,7 @@ export function createPopupDictionaryState(
     tokenWrapState: null,
     cachedResultTerm: '',
     cachedContextSentence: '',
+    tabPanelCache: new Map(),
   };
 }
 
@@ -143,9 +157,23 @@ export function showPopup(
   // Apply default active tab (spec §9.3 D2): per-lang override → global default.
   const perLang = state.settings.defaultActiveTabPerLang?.[result.langCode];
   const defaultTab = perLang !== undefined ? perLang : state.settings.defaultActiveTab;
-  // Cache tab-panel data (audio/image/translation) when reopening the same
-  // term + context sentence. Reset when either changes.
-  const cacheHit = state.cachedResultTerm === result.term && state.cachedContextSentence === contextSentence;
+
+  // Save the previous term's tab-panel data into the per-term cache before
+  // switching. This lets A → B → A keep A's fetched audio/image/translation.
+  if (state.cachedResultTerm) {
+    const cache = state.tabPanelCache.get(state.cachedResultTerm) ?? createEmptyTabPanelCache();
+    cache.audioItems = state.audioItems;
+    cache.audioSelection = state.audioSelection;
+    cache.imageItems = state.imageItems;
+    cache.imageSelection = state.imageSelection;
+    cache.translations.set(state.cachedContextSentence, { translation: state.translation, selected: state.translationSelected });
+    state.tabPanelCache.set(state.cachedResultTerm, cache);
+  }
+
+  // Load cached data for the new term (if any). Audio/image are per term;
+  // translation is keyed by term + context sentence.
+  const newCache = state.tabPanelCache.get(result.term) ?? createEmptyTabPanelCache();
+  const translationEntry = newCache.translations.get(contextSentence);
   state = {
     ...state,
     activeTab: defaultTab ?? null,
@@ -156,12 +184,12 @@ export function showPopup(
     additionalResults: [],
     currentStatus: status,
     definitionSelection,
-    audioItems: cacheHit ? state.audioItems : [],
-    audioSelection: cacheHit ? state.audioSelection : new Map(),
-    imageItems: cacheHit ? state.imageItems : [],
-    imageSelection: cacheHit ? state.imageSelection : new Map(),
-    translation: cacheHit ? state.translation : '',
-    translationSelected: cacheHit ? state.translationSelected : false,
+    audioItems: newCache.audioItems,
+    audioSelection: newCache.audioSelection,
+    imageItems: newCache.imageItems,
+    imageSelection: newCache.imageSelection,
+    translation: translationEntry?.translation ?? '',
+    translationSelected: translationEntry?.selected ?? false,
   };
 
   // Render content FIRST so setPosition can use actual offsetHeight.
@@ -182,9 +210,6 @@ export function showPopup(
     // rerenderCandidateTab) — toolbar icons always visible, panel only
     // when activeTab is set. Without this the winner lacks .js-cell-toolbar
     // while appended candidates have one (inconsistent UI).
-    // Mutate the live state object so async tab callbacks (translate/audio)
-    // update the state returned by showPopup/rerender.
-    state.currentResult = result;
     renderWinnerToolbar(state, container);
   }
 
@@ -346,8 +371,8 @@ async function sendToCreatorForCandidate(
   await sendToCreator(prefill, cardCreatorSettings);
 }
 
-/** Hide popup (dismiss). Keeps tab-panel cache data (audioItems, imageItems,
- *  translation, selections) so reopening the same term+sentence reuses it. */
+/** Hide popup (dismiss). Keeps the per-term tab-panel cache so reopening any
+ *  previously looked-up term on this page reuses its fetched data. */
 export function hidePopup(state: PopupDictionaryState): PopupDictionaryState {
   if (state.shell) {
     state.shell.hide();

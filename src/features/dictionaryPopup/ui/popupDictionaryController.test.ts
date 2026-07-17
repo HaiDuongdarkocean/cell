@@ -244,16 +244,35 @@ describe('showPopup', () => {
     expect(container.querySelector('.cell-translate__block')).not.toBeNull();
   });
 
-  it('resets cached data when term changes', () => {
-    const result1 = makeResult({ term: 'take off' });
-    const result2 = makeResult({ term: 'get out' });
-    let shown = showPopup(state, result1, 170, 100, 150, 200, 'Take off your shoes.');
-    const hidden = hidePopup(shown);
-    shown = showPopup(hidden, result2, 170, 100, 150, 200, 'Take off your shoes.');
-    expect(shown.cachedResultTerm).toBe('get out');
-    expect(shown.audioItems).toEqual([]);
-    expect(shown.imageItems).toEqual([]);
+  it('caches tab data per term and restores on revisit', async () => {
+    const resultA = makeResult({ term: 'take off' });
+    const resultB = makeResult({ term: 'get out' });
+
+    // Open A, fetch translate.
+    let shown = showPopup(state, resultA, 170, 100, 150, 200, 'Take off your shoes.');
+    let container = shown.shell?.getContainer()!;
+    const translate = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    translate.click();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(shown.translation).toBe('Bỏ giày ra.');
+
+    // Switch to B (no translate fetched).
+    shown = showPopup(shown, resultB, 170, 100, 150, 200, 'Get out of here.');
     expect(shown.translation).toBe('');
+
+    // Switch back to A — translation and cache key should restore.
+    shown = showPopup(shown, resultA, 170, 100, 150, 200, 'Take off your shoes.');
+    expect(shown.translation).toBe('Bỏ giày ra.');
+    expect(shown.cachedResultTerm).toBe('take off');
+
+    // Reopening A's translate tab should NOT re-fetch.
+    container = shown.shell?.getContainer()!;
+    mockSendMessage.mockClear();
+    const translate2 = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    translate2.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const translateCalls = mockSendMessage.mock.calls.filter((c: unknown[]) => (c[0] as { type?: string })?.type === 'TRANSLATE');
+    expect(translateCalls.length).toBe(0);
   });
 });
 

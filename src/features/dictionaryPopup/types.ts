@@ -198,6 +198,16 @@ export interface WordStatusSetPayload extends WordStatusGetPayload {
   readonly status: WordStatus;
 }
 
+/** Cached tab panel data for a single term. Persists across popup close/open
+ *  within the same page; cleared when the content script unloads. */
+export interface TabPanelCache {
+  audioItems: AudioItem[];
+  audioSelection: Map<string, boolean>;
+  imageItems: ImageItem[];
+  imageSelection: Map<string, boolean>;
+  translations: Map<string, { translation: string; selected: boolean }>;
+}
+
 export interface FetchCommunityAudioPayload {
   readonly tabId: number;
   readonly term: string;
