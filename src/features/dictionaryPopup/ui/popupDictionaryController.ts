@@ -481,7 +481,9 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
     if (tab === 'translate' && !state.translation && state.currentResult) {
       translateSentence(state.currentResult, state.contextSentence, state.settings.translateTargetLang, (text) => {
         state.translation = text;
-        rerender(state);
+        // Force translate tab to stay open: the onTabOpen closure may capture
+        // a stale state object with activeTab=null, so pass 'translate' explicitly.
+        rerender(state, 'translate');
       });
     }
   });
