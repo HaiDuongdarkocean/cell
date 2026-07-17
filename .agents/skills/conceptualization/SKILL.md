@@ -1,6 +1,6 @@
 ---
 name: conceptualization
-description: Abstract bug fixes into reusable principles. Use after test pass + debug pass to extract principles that apply to multiple cases, preventing future mistakes.
+description: "Two modes. APPLY: grep index.json BEFORE writing code (css/async/messaging/state/data/detection/build/ux tasks) to avoid known bad patterns — read matching atom JSON, check bad/good. ACCUMULATE: after test pass + root cause understood, extract reusable principle to atom JSON with bad/good code."
 ---
 
 # Conceptualization

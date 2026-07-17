@@ -1,7 +1,7 @@
 # Cell — Tiện ích Chrome tải video + phụ đề
 
 > Nguồn sự thật chung cho Windsurf / Devin / Claude. Đọc đầu mỗi phiên.
-> Workflow (LOOP, ponytail, quality gates): xem `docs/loop-engineering-map.md` + 24 skill trong `.agents/skills/`.
+> Workflow (LOOP, ponytail, quality gates): 24 skill trong `.agents/skills/`.
 
 ## mô tả yêu cầu cấu hình máy
 
@@ -25,6 +25,8 @@ Lệnh đầy đủ trong `package.json` scripts. Hai thứ không hiển nhiên
 - Colocate test: `Button.tsx` → `Button.test.tsx`.
 - TypeScript strict, không `any` không lý do (ESLint đã enforce `no-explicit-any`).
 - Logic tách hàm thuần, dễ test, không side effect.
+- Icon task → đọc `ICON_CATALOG` (`src/shared/icons/index.ts`) trước → reuse hoặc tạo mới + thêm vào catalog. Không search web trước khi catalog không có. Không inline SVG trong component — import từ `ICON_CATALOG`.
+- UI/UX task → đọc `src/shared/styles/README.md` (design system trong codebase) trước → dùng token từ `tokens.css` + component pattern từ `src/shared/ui/`. Hover = `--color-surface-hover`, selected = `--color-primary-subtle`, focus = 2px ring. Không hardcode color. Không dùng `--color-accent` cho hover.
 
 ## Nhắn tin MV3 (không hiển nhiên)
 
@@ -66,6 +68,10 @@ Glossary `docs/1-share-language.md` là cache đồng thuận ngôn ngữ giữa
 
 Gọi anh là "Anh yêu", xưng "em".
 
+## Knowledge tra cứu (bắt buộc trước khi code)
+
+Trước khi viết code liên quan css / async / messaging / state / data / detection / build / ux: grep `.agents/skills/conceptualization/index.json` theo category/tags → mở matching `knowledge/<id>.json` → check `cases[].bad` — nếu code mình đang viết match bad pattern → sửa theo `cases[].good`. Không skip bước này.
+
 ## Skills (`.agents/skills/`)
 
 > mục tiêu là chọn skill phù hợp hoàn cảnh trong `/using-agent-skills`. câu hỏi đặt ra là với hoàn cảnh hoặc task hoặc yêu cầu này, em nên sử dụng skill nào? Áp dụng phương pháp Socratic.
@@ -105,3 +111,11 @@ Rules:
 - Not lazy about: understanding the problem (read it fully and trace the real flow before picking a rung, a small diff you don't understand is just laziness dressed up as efficiency), input validation at trust boundaries, error handling that prevents data loss, security, accessibility, the calibration real hardware needs (the platform is never the spec ideal, a clock drifts, a sensor reads off), anything explicitly requested. Lazy code without its check is unfinished: non-trivial logic leaves ONE runnable check behind, the smallest thing that fails if the logic breaks (an assert-based demo/self-check or one small test file; no frameworks, no fixtures).
 
 (Yes, this file also applies to agents working on the ponytail repo itself. Especially to them.)
+
+## UI
+- using BEM — is a methodology that helps to create reusable components and share code in front-end development
+
+## Code conventions (bắt buộc khi viết/sửa code)
+ 
+Khi task liên quan HTML/CSS/TS/TSX: invoke skill `code-convention` APPLY mode
+TRƯỚC khi viết code. Query theo category. Không đoán convention — query skill.
