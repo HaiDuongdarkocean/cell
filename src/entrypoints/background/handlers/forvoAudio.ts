@@ -50,7 +50,9 @@ export function registerForvoAudioHandlers(ctx: BackgroundContext): void {
         }
         const html = await response.text();
         const raw = parseForvoHtml(html, payload.langCode);
-        const items = scoreAudioByAccent(raw, 'US');
+        const settings = await ctx.loadSettings();
+        const accent = settings.dictionaryPopup?.tts?.preferredAccent ?? 'US';
+        const items = scoreAudioByAccent(raw, accent);
         return { success: true, data: { items } };
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);

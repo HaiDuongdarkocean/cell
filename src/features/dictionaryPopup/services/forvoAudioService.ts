@@ -4,6 +4,10 @@
  * Network fetch lives in the background handler; this module is pure logic,
  * tolerant of malformed input (returns `[]`, never throws).
  *
+ * Ponytail: Forvo HTML structure có thể break bất kỳ lúc nào — selector + regex
+ * parse tolerant, fallback empty array. No DOMParser (MV3 service worker lacks
+ * it); regex is intentionally permissive about attribute order/whitespace.
+ *
  * Reference: project-reference/theocean-extension-dictionary/scripts/audioManager.js
  * (parseContainer + readSpeakerMeta) and background.js fetchForvo handler.
  */
@@ -32,43 +36,72 @@ function decodeForvoUrl(base64: string): string | null {
   }
 }
 
-/** Read speaker + region metadata from a play button's row. */
-function readSpeakerMeta(
-  button: Element,
+/**
+ * Extract the inner HTML of a `#pronunciations-list-<id>` section.
+ *
+ * Slices from the `id="..."` marker up to the next `pronunciations-list`
+ * marker (or end of string). Tolerant of nested tags — we only need the
+ * substring that contains the `<li>` rows for this accent.
+ */
+function extractSection(html: string, sectionId: string): string {
+  const marker = `id="${sectionId}"`;
+  const start = html.indexOf(marker);
+  if (start < 0) return '';
+  const rest = html.slice(start + marker.length);
+  const next = rest.search(/id="pronunciations-list-/);
+  return next >= 0 ? rest.slice(0, next) : rest;
+}
+
+/**
+ * Read speaker + region metadata from a single `<li>` row's raw HTML.
+ *
+ * Tries several anchor patterns (ofLink class on `<a>` or wrapper, profile
+ * href) and the `.from` span; falls back to placeholders when absent.
+ */
+function readSpeakerMetaRegex(
+  liHtml: string,
   fallbackRegion: string,
 ): { speaker: string; region: string } {
-  const row = button.closest('li') ?? button.closest('.pronunciations') ?? button.parentElement;
-  const profileAnchor =
-    row?.querySelector('.ofLink a') ??
-    row?.querySelector('.ofLink') ??
-    row?.querySelector('a[href*="/profiles/"]');
-  const speaker = normalize(profileAnchor?.textContent) || 'Unknown speaker';
+  const anchorMatch =
+    liHtml.match(/<a[^>]*class="[^"]*ofLink[^"]*"[^>]*>([^<]+)<\/a>/i) ??
+    liHtml.match(/class="[^"]*ofLink[^"]*"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/i) ??
+    liHtml.match(/<a[^>]*href="[^"]*\/profiles\/[^"]*"[^>]*>([^<]+)<\/a>/i);
+  const speaker = normalize(anchorMatch?.[1]) || 'Unknown speaker';
 
-  const fromText = normalize(row?.querySelector('.from')?.textContent);
+  const fromMatch = liHtml.match(/<[^>]*class="[^"]*from[^"]*"[^>]*>([^<]+)<\/[^>]+>/i);
+  const fromText = normalize(fromMatch?.[1]);
   const regionText = fromText.replace(/^from\s+/i, '');
   const region = regionText || fallbackRegion || 'Unknown region';
 
   return { speaker, region };
 }
 
-/** Parse play buttons inside one pronunciation container. */
-function parseContainer(
-  container: Element | null,
+/**
+ * Parse play buttons inside one pronunciation section's raw HTML.
+ *
+ * Splits on `<li>` rows; for each row matches
+ * `Play(id,'base64')` (tolerant of quoted/unquoted first arg), decodes the
+ * base64 path to a CDN URL, and reads speaker/region metadata.
+ */
+function parseSection(
+  sectionHtml: string,
   accentId: 'UK' | 'US',
   fallbackRegion: string,
   startIndex: number,
 ): AudioItem[] {
-  if (!container) return [];
+  if (!sectionHtml) return [];
   const items: AudioItem[] = [];
-  const buttons = container.querySelectorAll('.play');
+  // Split on `<li` opening tag; first chunk is preamble, skip it.
+  const liBlocks = sectionHtml.split(/<li[\s>]/i).slice(1);
   let idx = startIndex;
-  buttons.forEach((btn) => {
-    const onClickAttr = btn.getAttribute('onclick') ?? '';
-    const match = onClickAttr.match(/Play\(\d+,'([^']+)'/i);
-    if (!match?.[1]) return;
-    const url = decodeForvoUrl(match[1]);
-    if (!url) return;
-    const { speaker, region } = readSpeakerMeta(btn, fallbackRegion);
+  for (const block of liBlocks) {
+    const endIdx = block.search(/<\/li>/i);
+    const li = endIdx >= 0 ? block.slice(0, endIdx) : block;
+    const playMatch = li.match(/Play\([^,]+,\s*['"]([A-Za-z0-9+/=]+)['"]\)/i);
+    if (!playMatch?.[1]) continue;
+    const url = decodeForvoUrl(playMatch[1]);
+    if (!url) continue;
+    const { speaker, region } = readSpeakerMetaRegex(li, fallbackRegion);
     items.push({
       id: `forvo-${accentId}-${idx}`,
       kind: 'word',
@@ -80,7 +113,7 @@ function parseContainer(
       defaultSelected: false,
     });
     idx += 1;
-  });
+  }
   return items;
 }
 
@@ -98,15 +131,14 @@ function parseContainer(
 export function parseForvoHtml(html: string, _langCode: string): AudioItem[] {
   if (!html) return [];
   try {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const uk = parseContainer(
-      doc.querySelector('#pronunciations-list-en_uk'),
+    const uk = parseSection(
+      extractSection(html, 'pronunciations-list-en_uk'),
       'UK',
       'United Kingdom',
       0,
     );
-    const us = parseContainer(
-      doc.querySelector('#pronunciations-list-en_usa'),
+    const us = parseSection(
+      extractSection(html, 'pronunciations-list-en_usa'),
       'US',
       'United States',
       uk.length,

@@ -14,7 +14,7 @@
 // The controller manages the lifecycle: enable/disable, lookup → render,
 // status cycle, tab toggle, Quick Add.
 
-import type { LookupResult, WordStatus, PopupTab, QuickAddResponse, AudioItem, FetchCommunityAudioResponse, FetchImagesResponse } from '../types';
+import type { LookupResult, WordStatus, PopupTab, QuickAddResponse, AudioItem, ImageItem, FetchCommunityAudioResponse, FetchImagesResponse } from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings, TtsVoiceRow } from '@/entities/settings/types';
 import type { TokenWrapState } from '../trigger/subtitleTokenWrap';
 import type { PopupShell, PopupSize } from './popupShell';
@@ -49,8 +49,12 @@ export interface PopupDictionaryState {
   definitionSelection: DefinitionSelection;
   /** Audio selection checkboxes. */
   audioSelection: Map<string, boolean>;
+  /** Audio items fetched by the audio panel (stored for Quick Add payload). */
+  audioItems: AudioItem[];
   /** Image selection checkboxes. */
   imageSelection: Map<string, boolean>;
+  /** Image items fetched by the image panel (stored for Quick Add payload). */
+  imageItems: ImageItem[];
   /** Active tab (null = no panel open). */
   activeTab: PopupTab | null;
   /** Current translation text. */
@@ -78,7 +82,9 @@ export function createPopupDictionaryState(
     currentStatus: 'unknown',
     definitionSelection: new Map(),
     audioSelection: new Map(),
+    audioItems: [],
     imageSelection: new Map(),
+    imageItems: [],
     activeTab: settings.defaultActiveTab ?? null,
     translation: '',
     translationSelected: false,
@@ -190,6 +196,8 @@ export function appendCandidate(
   let candidateTranslation = '';
   const candidateAudioSelection = new Map<string, boolean>();
   const candidateImageSelection = new Map<string, boolean>();
+  const candidateAudioItems: AudioItem[] = [];
+  const candidateImageItems: ImageItem[] = [];
 
   const candidateEl = appendCandidateContent(container, result, candidateStatus, candidateSelection, {
     onStatusCycle: () => {
@@ -236,7 +244,9 @@ export function appendCandidate(
       translation: candidateTranslation,
       translateSelected: false,
       audioSelection: candidateAudioSelection,
+      audioItems: candidateAudioItems,
       imageSelection: candidateImageSelection,
+      imageItems: candidateImageItems,
     }, {
       onTranslationDone: (text) => {
         candidateTranslation = text;
@@ -375,9 +385,12 @@ export async function doQuickAdd(state: PopupDictionaryState): Promise<QuickAddR
       images: state.imageSelection,
     },
     state.contextSentence,
-    state.translation,
+    // B3: only include translation if user explicitly selected it.
+    state.translationSelected ? state.translation : '',
     state.currentStatus,
     state.cardCreatorSettings,
+    state.audioItems,
+    state.imageItems,
   );
 
   // ponytail: fieldMapping comes from Card Creator draft settings.
@@ -434,9 +447,15 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
     translation: state.translation,
     translateSelected: state.translationSelected,
     audioSelection: state.audioSelection,
+    audioItems: state.audioItems,
     imageSelection: state.imageSelection,
+    imageItems: state.imageItems,
   }, {
     onTranslationDone: () => rerender(state),
+    onToggleTranslate: () => {
+      state.translationSelected = !state.translationSelected;
+      rerender(state);
+    },
     onPlayTts: (item, _term, _sentence, langCode) => playTts(item, state.currentResult?.term ?? '', state.contextSentence, langCode),
   });
 }
@@ -452,10 +471,13 @@ function renderTabPanel(
     translation: string;
     translateSelected: boolean;
     audioSelection: Map<string, boolean>;
+    audioItems: AudioItem[];
     imageSelection: Map<string, boolean>;
+    imageItems: ImageItem[];
   },
   callbacks?: {
     onTranslationDone?: (text: string) => void;
+    onToggleTranslate?: () => void;
     onPlayTts?: (item: AudioItem, term: string, sentence: string, langCode: string) => void;
   },
 ): void {
@@ -499,6 +521,9 @@ function renderTabPanel(
           : [];
         const wordAudios = [...forvoItems, ...ttsWordItems];
         const sentenceAudios = ttsSentenceItems;
+        // Store fetched items in ctx (same array ref as state) for Quick Add payload.
+        ctx.audioItems.length = 0;
+        ctx.audioItems.push(...wordAudios, ...sentenceAudios);
         // Replace loading panel if still mounted (user may have closed tab).
         const existing = container.querySelector('[data-cell-panel="audio"]');
         if (!existing) return;
@@ -511,6 +536,8 @@ function renderTabPanel(
           const fallbackSentence: AudioItem[] = ctx.contextSentence
             ? [{ id: `tts-sentence-${result.term}`, kind: 'sentence', source: 'system-tts', label: 'System TTS · Sentence', state: 'idle', defaultSelected: false }]
             : [];
+          ctx.audioItems.length = 0;
+          ctx.audioItems.push(...fallbackWord, ...fallbackSentence);
           renderAudioPanel(container, fallbackWord, fallbackSentence, ctx.audioSelection, onToggle, onPlay);
           return;
         }
@@ -530,6 +557,9 @@ function renderTabPanel(
             payload: { tabId: 0, term: result.term, langCode: result.langCode, maxResults: 8 },
           });
           const items = res?.items ?? [];
+          // Store fetched items in ctx (same array ref as state) for Quick Add payload.
+          ctx.imageItems.length = 0;
+          ctx.imageItems.push(...items);
           const existing = container.querySelector('[data-cell-panel="image"]');
           if (!existing) return;
           existing.remove();
@@ -570,8 +600,15 @@ function renderTabPanel(
         },
         ctx.translateSelected,
         () => {
-          ctx.translateSelected = !ctx.translateSelected;
-          callbacks?.onTranslationDone?.(ctx.translation);
+          // B3: mutate state via callback so toggle persists across rerenders.
+          // Mutating ctx.translateSelected alone is lost when rerender rebuilds
+          // ctx from state.translationSelected.
+          if (callbacks?.onToggleTranslate) {
+            callbacks.onToggleTranslate();
+          } else {
+            ctx.translateSelected = !ctx.translateSelected;
+            callbacks?.onTranslationDone?.(ctx.translation);
+          }
         },
       );
       break;

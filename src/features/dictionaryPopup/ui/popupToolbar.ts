@@ -161,9 +161,12 @@ export function renderAudioPanel(
       }
       labelEl.addEventListener('click', (e) => {
         e.stopPropagation();
-        const newChecked = !isChecked;
-        onToggle(item.id, newChecked);
-        checkEl.classList.toggle('cell-audio__check--checked', newChecked);
+        // M1: read current state from selection map at click time, not the
+        // isChecked captured at render — otherwise 2nd click reuses stale value.
+        const current = selection.get(item.id) ?? item.defaultSelected;
+        onToggle(item.id, !current);
+        checkEl.classList.toggle('cell-audio__check--checked', !current);
+        labelEl.setAttribute('aria-pressed', String(!current));
       });
       row.appendChild(labelEl);
 
@@ -290,7 +293,14 @@ export function renderImagePanel(
     check.innerHTML = ICON_CATALOG.check.svg;
     card.appendChild(check);
 
-    card.addEventListener('click', () => onToggle(img.id, !isSelected));
+    card.addEventListener('click', () => {
+      // M1: read current state from selection map at click time, not the
+      // isSelected captured at render — otherwise 2nd click reuses stale value.
+      const current = selection.get(img.id) ?? img.defaultSelected;
+      onToggle(img.id, !current);
+      card.classList.toggle('cell-image__card--selected', !current);
+      card.setAttribute('aria-checked', String(!current));
+    });
     strip.appendChild(card);
   }
 
