@@ -170,13 +170,13 @@ describe('showPopup', () => {
     expect(dismissedState.currentResult).toBeNull();
   });
 
-  it('renders data-dp-toolbar inside the winner candidate slot', () => {
+  it('renders .js-cell-toolbar inside the winner candidate slot', () => {
     const result = makeResult();
     const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
     const container = newState.shell?.getContainer();
-    const candidates = container!.querySelectorAll('[data-dp-popup-candidate]');
+    const candidates = container!.querySelectorAll('.js-cell-popup-candidate');
     expect(candidates).toHaveLength(1);
-    const toolbars = candidates[0]!.querySelectorAll('[data-dp-toolbar]');
+    const toolbars = candidates[0]!.querySelectorAll('.js-cell-toolbar');
     expect(toolbars).toHaveLength(1);
   });
 });
@@ -197,14 +197,14 @@ describe('appendCandidate', () => {
     expect(s.additionalResults[0]!.term).toBe('get over');
   });
 
-  it('renders a second data-dp-popup-candidate element in the shell', () => {
+  it('renders a second .js-cell-popup-candidate element in the shell', () => {
     const winner = makeResult({ term: 'get out' });
     const candidate = makeResult({ term: 'get over' });
     let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
     s = appendCandidate(s, candidate, 'sentence');
     const container = s.shell?.getContainer();
     expect(container).not.toBeNull();
-    const candidates = container!.querySelectorAll('[data-dp-popup-candidate]');
+    const candidates = container!.querySelectorAll('.js-cell-popup-candidate');
     expect(candidates).toHaveLength(2);
   });
 
@@ -214,16 +214,16 @@ describe('appendCandidate', () => {
     expect(s.additionalResults).toEqual([]);
   });
 
-  it('every candidate (winner + appended) has a data-dp-toolbar', () => {
+  it('every candidate (winner + appended) has a .js-cell-toolbar', () => {
     const winner = makeResult({ term: 'get out' });
     const candidate = makeResult({ term: 'get over' });
     let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
     s = appendCandidate(s, candidate, 'sentence');
     const container = s.shell?.getContainer();
-    const candidates = container!.querySelectorAll('[data-dp-popup-candidate]');
+    const candidates = container!.querySelectorAll('.js-cell-popup-candidate');
     expect(candidates).toHaveLength(2);
     for (const cand of candidates) {
-      const toolbars = cand.querySelectorAll('[data-dp-toolbar]');
+      const toolbars = cand.querySelectorAll('.js-cell-toolbar');
       expect(toolbars).toHaveLength(1);
     }
   });

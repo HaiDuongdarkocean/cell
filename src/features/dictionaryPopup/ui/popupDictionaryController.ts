@@ -140,7 +140,7 @@ export function showPopup(
 
     // Render winner toolbar into its slot (mirrors appendCandidate's
     // rerenderCandidateTab) — toolbar icons always visible, panel only
-    // when activeTab is set. Without this the winner lacks data-dp-toolbar
+    // when activeTab is set. Without this the winner lacks .js-cell-toolbar
     // while appended candidates have one (inconsistent UI).
     renderWinnerToolbar({ ...state, currentResult: result }, container);
   }
@@ -190,7 +190,7 @@ export function appendCandidate(
     onStatusCycle: () => {
       candidateStatus = nextStatus(candidateStatus);
       void persistStatus(result.term, result.langCode, candidateStatus);
-      const badge = candidateEl.querySelector('[data-dp-status]');
+      const badge = candidateEl.querySelector('.js-cell-status');
       if (badge) badge.textContent = candidateStatus;
     },
     onDefinitionToggle: (id, selected) => {
@@ -210,7 +210,7 @@ export function appendCandidate(
   // Per-candidate toolbar: render toolbar + panel into toolbar slot
   // (between header and definitions).
   const rerenderCandidateTab = (): void => {
-    const slot = candidateEl.querySelector('[data-dp-toolbar-slot]');
+    const slot = candidateEl.querySelector('.js-cell-toolbar-slot');
     if (!slot) return;
     slot.innerHTML = '';
     // Always render toolbar (tab icons visible, panel only when tab active).
@@ -387,14 +387,14 @@ export async function doQuickAdd(state: PopupDictionaryState): Promise<QuickAddR
 
 // --- Internal helpers ---
 
-/** Render the winner's toolbar + optional panel into its data-dp-toolbar-slot.
+/** Render the winner's toolbar + optional panel into its .js-cell-toolbar-slot.
  *  Mirrors appendCandidate's rerenderCandidateTab so the winner has the same
- *  data-dp-toolbar as appended candidates. */
+ *  .js-cell-toolbar as appended candidates. */
 function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement): void {
   if (!state.currentResult) return;
-  const candidate = container.querySelector('[data-dp-popup-candidate]');
+  const candidate = container.querySelector('.js-cell-popup-candidate');
   if (!candidate) return;
-  const slot = candidate.querySelector('[data-dp-toolbar-slot]') as HTMLElement | null;
+  const slot = candidate.querySelector('.js-cell-toolbar-slot') as HTMLElement | null;
   if (!slot) return;
   slot.innerHTML = '';
   renderToolbar(slot, state.activeTab, (t) => toggleTab(state, t), () => {
