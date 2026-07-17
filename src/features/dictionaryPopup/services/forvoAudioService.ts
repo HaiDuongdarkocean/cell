@@ -162,15 +162,18 @@ export function parseForvoHtml(html: string, _langCode: string): AudioItem[] {
  */
 export function scoreAudioByAccent(
   items: readonly AudioItem[],
-  preferredAccent: 'US' | 'UK' = 'US',
+  preferredAccent: 'US' | 'UK' | 'AU' | 'CA' = 'US',
 ): AudioItem[] {
   const preferred = preferredAccent;
-  const other = preferred === 'US' ? 'UK' : 'US';
+  const order = ['US', 'UK', 'AU', 'CA'];
+  const scoreFor = (accent: string | undefined): number => {
+    if (accent === preferred) return order.length + 1;
+    const idx = order.indexOf(accent ?? '');
+    return idx >= 0 ? order.length - idx : 0;
+  };
+
   return [...items]
-    .map((item) => ({
-      item,
-      score: item.accentId === preferred ? 2 : item.accentId === other ? 1 : 0,
-    }))
+    .map((item) => ({ item, score: scoreFor(item.accentId) }))
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.item);
 }
