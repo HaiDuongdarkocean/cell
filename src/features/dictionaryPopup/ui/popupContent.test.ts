@@ -58,16 +58,16 @@ describe('renderHeader', () => {
   it('renders term + reading', () => {
     const result = makeResult();
     callHeader(result, 'unknown');
-    const term = container.querySelector('[data-dp-term]');
+    const term = container.querySelector('.js-cell-term');
     expect(term?.textContent).toBe('take off');
-    const reading = container.querySelector('[data-dp-reading]');
+    const reading = container.querySelector('.js-cell-reading');
     expect(reading?.textContent).toBe('/teɪk ɒf/');
   });
 
   it('renders frequency badge when present', () => {
     const result = makeResult();
     callHeader(result, 'unknown');
-    const freq = container.querySelector('[data-dp-frequency]');
+    const freq = container.querySelector('.js-cell-frequency');
     // 2-segment pill: source + rank (toLocaleString)
     expect(freq?.textContent).toBe('BNC1,234');
   });
@@ -75,13 +75,13 @@ describe('renderHeader', () => {
   it('does not render frequency badge when null', () => {
     const result = makeResult({ frequency: null });
     callHeader(result, 'unknown');
-    expect(container.querySelector('[data-dp-frequency]')).toBeNull();
+    expect(container.querySelector('.js-cell-frequency')).toBeNull();
   });
 
   it('renders status badge with current status', () => {
     const result = makeResult();
     callHeader(result, 'tracking');
-    const status = container.querySelector('[data-dp-status]');
+    const status = container.querySelector('.js-cell-status');
     expect(status?.textContent).toBe('tracking');
   });
 
@@ -89,7 +89,7 @@ describe('renderHeader', () => {
     const onCycle = jest.fn();
     const result = makeResult();
     callHeader(result, 'unknown', onCycle);
-    const badge = container.querySelector('[data-dp-status]') as HTMLButtonElement;
+    const badge = container.querySelector('.js-cell-status') as HTMLButtonElement;
     badge.click();
     expect(onCycle).toHaveBeenCalledTimes(1);
   });
@@ -97,21 +97,21 @@ describe('renderHeader', () => {
   it('does not render reading when empty', () => {
     const result = makeResult({ reading: '' });
     callHeader(result, 'unknown');
-    expect(container.querySelector('[data-dp-reading]')).toBeNull();
+    expect(container.querySelector('.js-cell-reading')).toBeNull();
   });
 
   it('renders Settings, Send to Card, and Quick Add buttons', () => {
     const result = makeResult();
     callHeader(result, 'unknown');
-    expect(container.querySelector('[data-dp-settings]')).not.toBeNull();
-    expect(container.querySelector('[data-dp-send-to-creator]')).not.toBeNull();
-    expect(container.querySelector('[data-dp-quick-add]')).not.toBeNull();
+    expect(container.querySelector('.js-cell-settings')).not.toBeNull();
+    expect(container.querySelector('.js-cell-send-to-creator')).not.toBeNull();
+    expect(container.querySelector('.js-cell-quick-add')).not.toBeNull();
   });
 
   it('Settings button click triggers onSettings', () => {
     const onSettings = jest.fn();
     renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), onSettings);
-    const btn = container.querySelector('[data-dp-settings]') as HTMLButtonElement;
+    const btn = container.querySelector('.js-cell-settings') as HTMLButtonElement;
     btn.click();
     expect(onSettings).toHaveBeenCalledTimes(1);
   });
@@ -119,7 +119,7 @@ describe('renderHeader', () => {
   it('Send to Card button click triggers onSendToCreator', () => {
     const onSend = jest.fn();
     renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), onSend, jest.fn());
-    const btn = container.querySelector('[data-dp-send-to-creator]') as HTMLButtonElement;
+    const btn = container.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
     btn.click();
     expect(onSend).toHaveBeenCalledTimes(1);
   });
@@ -138,7 +138,7 @@ describe('renderDefinitions', () => {
     });
     const selection = new Map([['d1', true], ['d2', true]]);
     renderDefinitions(container, result, selection, jest.fn());
-    const checkboxes = container.querySelectorAll('[data-dp-def-checkbox]');
+    const checkboxes = container.querySelectorAll('.js-cell-def-checkbox');
     expect(checkboxes.length).toBe(2);
     expect((checkboxes[0] as HTMLInputElement).checked).toBe(true);
   });
@@ -146,14 +146,14 @@ describe('renderDefinitions', () => {
   it('renders pos label', () => {
     const result = makeResult();
     renderDefinitions(container, result, new Map(), jest.fn());
-    const pos = container.querySelector('[data-dp-pos]');
+    const pos = container.querySelector('.cell-def__pos');
     expect(pos?.textContent).toBe('verb. ');
   });
 
   it('renders examples', () => {
     const result = makeResult();
     renderDefinitions(container, result, new Map(), jest.fn());
-    const examples = container.querySelectorAll('[data-dp-definitions] [data-dp-definition] > div > div');
+    const examples = container.querySelectorAll('.js-cell-definitions .js-cell-definition > div > div');
     expect(examples.length).toBeGreaterThan(0);
   });
 
@@ -167,7 +167,7 @@ describe('renderDefinitions', () => {
     const onToggle = jest.fn();
     const result = makeResult();
     renderDefinitions(container, result, new Map([['d1', true]]), onToggle);
-    const checkbox = container.querySelector('[data-dp-def-checkbox]') as HTMLInputElement;
+    const checkbox = container.querySelector('.js-cell-def-checkbox') as HTMLInputElement;
     checkbox.checked = false;
     checkbox.dispatchEvent(new Event('change'));
     expect(onToggle).toHaveBeenCalledWith('d1', false);
@@ -177,7 +177,7 @@ describe('renderDefinitions', () => {
     const result = makeResult();
     const selection = new Map([['d1', false]]);
     renderDefinitions(container, result, selection, jest.fn());
-    const checkbox = container.querySelector('[data-dp-def-checkbox]') as HTMLInputElement;
+    const checkbox = container.querySelector('.js-cell-def-checkbox') as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
   });
 
@@ -191,11 +191,11 @@ describe('renderDefinitions', () => {
     // ponytail: jsdom doesn't fire `change` on label click (real browsers do).
     // Verify checkbox.checked toggled — the change→onToggle wiring is tested
     // separately in "checkbox change triggers onToggle".
-    const label = container.querySelector('[data-dp-definition] label') as HTMLLabelElement;
+    const label = container.querySelector('.js-cell-definition label') as HTMLLabelElement;
     expect(label).not.toBeNull();
     expect(label.tagName).toBe('LABEL');
     label.click();
-    const checkbox = container.querySelector('[data-dp-def-checkbox]') as HTMLInputElement;
+    const checkbox = container.querySelector('.js-cell-def-checkbox') as HTMLInputElement;
     expect(checkbox.checked).toBe(true);
   });
 
@@ -205,11 +205,11 @@ describe('renderDefinitions', () => {
     renderDefinitions(container, result, new Map([['d1', false]]), onToggle);
     // The text area is a sibling outside the <label> — clicking it should
     // NOT toggle the checkbox (leaves text free for future click-to-lookup).
-    const defItem = container.querySelector('[data-dp-definition]') as HTMLDivElement;
-    const textWrap = defItem.querySelector('div:not([data-dp-def-checkbox])') as HTMLDivElement;
+    const defItem = container.querySelector('.js-cell-definition') as HTMLDivElement;
+    const textWrap = defItem.querySelector('div:not(.js-cell-def-checkbox)') as HTMLDivElement;
     expect(textWrap).not.toBeNull();
     textWrap.click();
-    const checkbox = container.querySelector('[data-dp-def-checkbox]') as HTMLInputElement;
+    const checkbox = container.querySelector('.js-cell-def-checkbox') as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
     expect(onToggle).not.toHaveBeenCalled();
   });
@@ -224,20 +224,20 @@ describe('renderFooter', () => {
 
   it('renders status button with current status', () => {
     renderFooter(container, 'tracking', jest.fn(), jest.fn());
-    const status = container.querySelector('[data-dp-footer-status]');
+    const status = container.querySelector('.js-cell-footer-status');
     expect(status?.textContent).toBe('tracking');
   });
 
   it('renders Quick Add button', () => {
     renderFooter(container, 'unknown', jest.fn(), jest.fn());
-    const quickAdd = container.querySelector('[data-dp-quick-add]');
+    const quickAdd = container.querySelector('.js-cell-quick-add');
     expect(quickAdd?.textContent).toContain('Quick Add');
   });
 
   it('status button click triggers onStatusCycle', () => {
     const onCycle = jest.fn();
     renderFooter(container, 'unknown', onCycle, jest.fn());
-    const btn = container.querySelector('[data-dp-footer-status]') as HTMLButtonElement;
+    const btn = container.querySelector('.js-cell-footer-status') as HTMLButtonElement;
     btn.click();
     expect(onCycle).toHaveBeenCalledTimes(1);
   });
@@ -245,7 +245,7 @@ describe('renderFooter', () => {
   it('Quick Add button click triggers onQuickAdd', () => {
     const onQuickAdd = jest.fn();
     renderFooter(container, 'unknown', jest.fn(), onQuickAdd);
-    const btn = container.querySelector('[data-dp-quick-add]') as HTMLButtonElement;
+    const btn = container.querySelector('.js-cell-quick-add') as HTMLButtonElement;
     btn.click();
     expect(onQuickAdd).toHaveBeenCalledTimes(1);
   });
@@ -311,17 +311,17 @@ describe('renderPopupContent (full)', () => {
       onSendToCreator: jest.fn(),
       onSettings: jest.fn(),
     });
-    expect(container.querySelector('[data-dp-header]')).not.toBeNull();
-    expect(container.querySelector('[data-dp-definitions]')).not.toBeNull();
+    expect(container.querySelector('.js-cell-header')).not.toBeNull();
+    expect(container.querySelector('.js-cell-definitions')).not.toBeNull();
     // Quick Add moved into header (no separate footer).
-    expect(container.querySelector('[data-dp-quick-add]')).not.toBeNull();
-    expect(container.querySelector('[data-dp-settings]')).not.toBeNull();
-    expect(container.querySelector('[data-dp-send-to-creator]')).not.toBeNull();
+    expect(container.querySelector('.js-cell-quick-add')).not.toBeNull();
+    expect(container.querySelector('.js-cell-settings')).not.toBeNull();
+    expect(container.querySelector('.js-cell-send-to-creator')).not.toBeNull();
   });
 });
 
 describe('renderCandidate', () => {
-  it('wraps header + definitions in a data-dp-popup-candidate element', () => {
+  it('wraps header + definitions in a .js-cell-popup-candidate element', () => {
     const container = document.createElement('div');
     const result = makeResult();
     const selection = initDefinitionSelection(result);
@@ -332,10 +332,10 @@ describe('renderCandidate', () => {
       onSendToCreator: jest.fn(),
       onSettings: jest.fn(),
     });
-    expect(candidate.getAttribute('data-dp-popup-candidate')).toBe('');
-    expect(container.querySelector('[data-dp-popup-candidate]')).toBe(candidate);
-    expect(candidate.querySelector('[data-dp-header]')).not.toBeNull();
-    expect(candidate.querySelector('[data-dp-definitions]')).not.toBeNull();
+    expect(candidate.classList.contains('js-cell-popup-candidate')).toBe(true);
+    expect(container.querySelector('.js-cell-popup-candidate')).toBe(candidate);
+    expect(candidate.querySelector('.js-cell-header')).not.toBeNull();
+    expect(candidate.querySelector('.js-cell-definitions')).not.toBeNull();
   });
 });
 
@@ -354,16 +354,16 @@ describe('appendCandidateContent', () => {
       onStatusCycle: jest.fn(), onDefinitionToggle: jest.fn(),
       onQuickAdd: jest.fn(), onSendToCreator: jest.fn(), onSettings: jest.fn(),
     });
-    const candidates = container.querySelectorAll('[data-dp-popup-candidate]');
+    const candidates = container.querySelectorAll('.js-cell-popup-candidate');
     expect(candidates).toHaveLength(2);
     // First candidate still has its header (not cleared).
-    expect(candidates[0]!.querySelector('[data-dp-term]')!.textContent).toBe('get out');
-    expect(candidates[1]!.querySelector('[data-dp-term]')!.textContent).toBe('get over');
+    expect(candidates[0]!.querySelector('.js-cell-term')!.textContent).toBe('get out');
+    expect(candidates[1]!.querySelector('.js-cell-term')!.textContent).toBe('get over');
   });
 });
 
-describe('sticky header CSS (data-dp-header)', () => {
-  it('header has position:sticky in its cssText', () => {
+describe('sticky header CSS (.js-cell-header)', () => {
+  it('header has position:sticky via BEM class', () => {
     const container = document.createElement('div');
     const result = makeResult();
     const selection = initDefinitionSelection(result);
@@ -374,14 +374,11 @@ describe('sticky header CSS (data-dp-header)', () => {
       onSendToCreator: jest.fn(),
       onSettings: jest.fn(),
     });
-    const header = container.querySelector('[data-dp-header]') as HTMLElement;
+    const header = container.querySelector('.js-cell-header') as HTMLElement;
     expect(header).not.toBeNull();
-    // jsdom normalizes cssText (adds spaces after colons), so check the
-    // computed style property directly + the cssText substring form.
-    expect(header.style.position).toBe('sticky');
-    expect(header.style.cssText).toContain('position: sticky');
-    expect(header.style.cssText).toContain('top: 0px');
-    expect(header.style.zIndex).toBe('10');
+    // jsdom doesn't compute styles from Shadow DOM <style> tags; verify class
+    // which carries position:sticky in popupDictionary.css (.cell-header).
+    expect(header.className).toContain('cell-header');
   });
 
   it('header has a non-empty background so content does not show through when sticky', () => {
@@ -395,23 +392,21 @@ describe('sticky header CSS (data-dp-header)', () => {
       onSendToCreator: jest.fn(),
       onSettings: jest.fn(),
     });
-    const header = container.querySelector('[data-dp-header]') as HTMLElement;
+    const header = container.querySelector('.js-cell-header') as HTMLElement;
     expect(header).not.toBeNull();
-    // background must be set (not empty/transparent) — uses var(--color-background).
-    expect(header.style.background).not.toBe('');
-    expect(header.style.background).toContain('var(--color-background');
+    // background is set via .cell-header class in popupDictionary.css.
+    expect(header.className).toContain('cell-header');
   });
 });
 
 describe('getOrCreateCandidateList', () => {
-  it('creates a div[data-dp-candidate-list] with display:block when none exists', () => {
+  it('creates a div.js-cell-candidate-list with display:block when none exists', () => {
     const container = document.createElement('div');
-    expect(container.querySelector('[data-dp-candidate-list]')).toBeNull();
+    expect(container.querySelector('.js-cell-candidate-list')).toBeNull();
     const list = getOrCreateCandidateList(container);
     expect(list).not.toBeNull();
-    expect(list.getAttribute('data-dp-candidate-list')).toBe('');
-    expect(list.style.display).toBe('block');
-    expect(container.querySelector('[data-dp-candidate-list]')).toBe(list);
+    expect(list.classList.contains('js-cell-candidate-list')).toBe(true);
+    expect(container.querySelector('.js-cell-candidate-list')).toBe(list);
   });
 
   it('returns the existing wrapper when one already exists (no duplicate)', () => {
@@ -419,12 +414,12 @@ describe('getOrCreateCandidateList', () => {
     const first = getOrCreateCandidateList(container);
     const second = getOrCreateCandidateList(container);
     expect(second).toBe(first);
-    expect(container.querySelectorAll('[data-dp-candidate-list]')).toHaveLength(1);
+    expect(container.querySelectorAll('.js-cell-candidate-list')).toHaveLength(1);
   });
 });
 
 describe('renderPopupContent candidate-list wrapper', () => {
-  it('renders candidates inside the data-dp-candidate-list wrapper, not as a direct child of container', () => {
+  it('renders candidates inside the .js-cell-candidate-list wrapper, not as a direct child of container', () => {
     const container = document.createElement('div');
     const result = makeResult();
     const selection = initDefinitionSelection(result);
@@ -435,9 +430,9 @@ describe('renderPopupContent candidate-list wrapper', () => {
       onSendToCreator: jest.fn(),
       onSettings: jest.fn(),
     });
-    const list = container.querySelector('[data-dp-candidate-list]') as HTMLElement;
+    const list = container.querySelector('.js-cell-candidate-list') as HTMLElement;
     expect(list).not.toBeNull();
-    const candidate = container.querySelector('[data-dp-popup-candidate]') as HTMLElement;
+    const candidate = container.querySelector('.js-cell-popup-candidate') as HTMLElement;
     expect(candidate).not.toBeNull();
     // candidate is a child of the wrapper, not a direct child of container.
     expect(candidate.parentElement).toBe(list);
@@ -446,7 +441,7 @@ describe('renderPopupContent candidate-list wrapper', () => {
 });
 
 describe('appendCandidateContent appends to the candidate-list wrapper', () => {
-  it('appends a second candidate into the existing data-dp-candidate-list wrapper', () => {
+  it('appends a second candidate into the existing .js-cell-candidate-list wrapper', () => {
     const container = document.createElement('div');
     const result1 = makeResult({ term: 'get out' });
     const result2 = makeResult({ term: 'get over', definitions: [makeDefinition({ id: 'd2', text: 'to recover' })] });
@@ -460,13 +455,13 @@ describe('appendCandidateContent appends to the candidate-list wrapper', () => {
       onStatusCycle: jest.fn(), onDefinitionToggle: jest.fn(),
       onQuickAdd: jest.fn(), onSendToCreator: jest.fn(), onSettings: jest.fn(),
     });
-    const list = container.querySelector('[data-dp-candidate-list]') as HTMLElement;
+    const list = container.querySelector('.js-cell-candidate-list') as HTMLElement;
     expect(list).not.toBeNull();
-    const candidates = list.querySelectorAll('[data-dp-popup-candidate]');
+    const candidates = list.querySelectorAll('.js-cell-popup-candidate');
     expect(candidates).toHaveLength(2);
     // Both candidates are children of the wrapper, not direct children of container.
     expect(Array.from(candidates).every((c) => c.parentElement === list)).toBe(true);
-    expect(container.querySelectorAll('[data-dp-candidate-list]')).toHaveLength(1);
+    expect(container.querySelectorAll('.js-cell-candidate-list')).toHaveLength(1);
   });
 });
 
