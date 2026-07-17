@@ -18,6 +18,7 @@ import { setRefererRule, removeRefererRule } from '@/shared/lib/chrome-apis/decl
 import type {
   DetectedVideo,
   DetectedSubtitle,
+  BilingualCue,
 } from '@/entities/media';
 import type {
   MessageResponse,
@@ -158,8 +159,9 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
     if (!payload.cues) {
       return { success: false, error: 'Missing cues in SUBTITLE_CUES_LOADED' };
     }
+    const cues = payload.cues as BilingualCue[];
     if (payload.tabId !== undefined) {
-      ctx.lastCuesByTab.set(payload.tabId, payload.cues);
+      ctx.lastCuesByTab.set(payload.tabId, cues);
     }
     if (payload.tabId !== undefined && payload.tabId !== ctx.activeTabIdForPanel) {
       return { success: true };
@@ -167,7 +169,7 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
     try {
       await sendMessage({
         type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-        payload: { tabId: payload.tabId, cues: payload.cues },
+        payload: { tabId: payload.tabId, cues },
       });
     } catch {
       // Side panel may not be open — silently ignore; cues are cached above
