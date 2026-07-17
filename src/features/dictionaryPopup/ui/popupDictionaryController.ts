@@ -661,7 +661,7 @@ function renderTabPanel(
         ctx.audioItems.length = 0;
         ctx.audioItems.push(...wordAudios, ...sentenceAudios);
         // Replace loading panel if still mounted (user may have closed tab).
-        const existing = container.querySelector('[data-cell-panel="audio"]');
+        const existing = container.querySelector('.js-cell-panel[data-cell-panel="audio"]');
         if (!existing) return;
         existing.remove();
         // Fallback to hardcoded system TTS when both fetches return empty.
@@ -701,12 +701,12 @@ function renderTabPanel(
           // Store fetched items in ctx (same array ref as state) for Quick Add payload.
           ctx.imageItems.length = 0;
           ctx.imageItems.push(...items);
-          const existing = container.querySelector('[data-cell-panel="image"]');
+          const existing = container.querySelector('.js-cell-panel[data-cell-panel="image"]');
           if (!existing) return;
           existing.remove();
           renderImagePanel(container, items, ctx.imageSelection, onToggle, result.term);
         } catch (err) {
-          const existing = container.querySelector('[data-cell-panel="image"]');
+          const existing = container.querySelector('.js-cell-panel[data-cell-panel="image"]');
           if (!existing) return;
           existing.remove();
           renderImagePanel(

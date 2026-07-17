@@ -194,10 +194,10 @@ describe('showPopup', () => {
     const result = makeResult();
     const newState = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
     const container = newState.shell?.getContainer();
-    const translate = container!.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    const translate = container!.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
     translate.click();
     // Verify the panel opened.
-    expect(container!.querySelector('[data-cell-panel="translate"]')).not.toBeNull();
+    expect(container!.querySelector('.js-cell-panel[data-cell-panel="translate"]')).not.toBeNull();
     // Wait for async translateSentence (dynamic import + sendMessage roundtrip).
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(mockSendMessage).toHaveBeenCalledWith(
@@ -208,14 +208,14 @@ describe('showPopup', () => {
     );
     // Panel must stay open after async translation completes (bug: it used to close
     // because the onTabOpen closure captured a stale state with activeTab=null).
-    expect(container!.querySelector('[data-cell-panel="translate"]')).not.toBeNull();
+    expect(container!.querySelector('.js-cell-panel[data-cell-panel="translate"]')).not.toBeNull();
   });
 
   it('does not auto-translate when context sentence is empty', async () => {
     const result = makeResult();
     const newState = showPopup(state, result, 170, 100, 150, 200, '');
     const container = newState.shell?.getContainer();
-    const translate = container!.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    const translate = container!.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
     translate.click();
     await new Promise((resolve) => setTimeout(resolve, 10));
     const translateCalls = mockSendMessage.mock.calls.filter((c: unknown[]) => (c[0] as { type?: string })?.type === 'TRANSLATE');
@@ -226,7 +226,7 @@ describe('showPopup', () => {
     const result = makeResult();
     let shown = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
     let container = shown.shell!.getContainer()!;
-    const translate = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    const translate = container.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
     translate.click();
     await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -237,7 +237,7 @@ describe('showPopup', () => {
 
     // Translate tab should already show cached block; clicking tab does NOT re-fetch.
     mockSendMessage.mockClear();
-    const translate2 = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    const translate2 = container.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
     translate2.click();
     await new Promise((resolve) => setTimeout(resolve, 50));
     const translateCalls = mockSendMessage.mock.calls.filter((c: unknown[]) => (c[0] as { type?: string })?.type === 'TRANSLATE');
@@ -252,7 +252,7 @@ describe('showPopup', () => {
     // Open A, fetch translate.
     let shown = showPopup(state, resultA, 170, 100, 150, 200, 'Take off your shoes.');
     let container = shown.shell!.getContainer()!;
-    const translate = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    const translate = container.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
     translate.click();
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(shown.translation).toBe('Bỏ giày ra.');
@@ -269,7 +269,7 @@ describe('showPopup', () => {
     // Reopening A's translate tab should NOT re-fetch.
     container = shown.shell!.getContainer()!;
     mockSendMessage.mockClear();
-    const translate2 = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    const translate2 = container.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
     translate2.click();
     await new Promise((resolve) => setTimeout(resolve, 50));
     const translateCalls = mockSendMessage.mock.calls.filter((c: unknown[]) => (c[0] as { type?: string })?.type === 'TRANSLATE');

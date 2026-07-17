@@ -134,15 +134,6 @@ export class NetworkInterceptor {
     const video = detectVideo(request);
     const subtitle = detectSubtitle(request, opts);
 
-    // Debug logging for media detection
-    if (video || subtitle) {
-      console.log('[NetworkInterceptor] Detected media:', {
-        tabId: details.tabId,
-        video: video ? { id: video.id, format: video.format, url: video.url } : null,
-        subtitle: subtitle ? { id: subtitle.id, format: subtitle.format, language: subtitle.language, url: subtitle.url } : null,
-      });
-    }
-
     let detectedNewMedia = false;
 
     if (video !== null) {

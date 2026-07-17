@@ -129,17 +129,10 @@ export class OffscreenManager {
         });
         if (response?.success) {
           this.listenerReady = true;
-          console.log(
-            `[offscreen-manager] Listener ready after ${attempt + 1} ping(s)`,
-          );
           return;
         }
-      } catch (err) {
+      } catch {
         // "Could not establish connection" — listener not ready yet, retry.
-        console.log(
-          `[offscreen-manager] Ping attempt ${attempt + 1} failed:`,
-          err instanceof Error ? err.message : err,
-        );
       }
       await sleep(PING_RETRY_DELAY_MS);
     }
