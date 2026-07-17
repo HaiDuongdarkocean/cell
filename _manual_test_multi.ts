@@ -14,7 +14,7 @@ import * as fs from 'node:fs';
 import { lookupOrchestratorMulti } from './src/features/dictionaryPopup/logic/lookupOrchestrator';
 import { closeAllDBs, clearAllStores } from './src/features/dictionary/repositories/baseRepository';
 import { addResource } from './src/features/dictionary/repositories/resourceRepository';
-import { addDictionaryEntry, bulkInsertDictionaryEntries } from './src/features/dictionary/repositories/dictionaryRepository';
+import { bulkInsertDictionaryEntries } from './src/features/dictionary/repositories/dictionaryRepository';
 import { putPhraseIndex } from './src/features/dictionary/repositories/phraseIndexRepository';
 import {
   compilePhraseIndex,
@@ -70,23 +70,6 @@ function buildIndexInputs(): PhraseIndexInput[] {
     });
   }
   return inputs;
-}
-
-// --- Seed dictionary entries for matched terms ---
-function seedDictionaryEntries(data: unknown[], terms: string[], resourceId: number): void {
-  const termSet = new Set(terms.map(t => t.toLowerCase()));
-  for (const e of data as Array<{ term: string; definition?: string; pos?: string; pronunciation?: string; examples?: string }>) {
-    if (!e.term) continue;
-    if (!termSet.has(e.term.toLowerCase())) continue;
-    addDictionaryEntry('en', resourceId, {
-      term: e.term,
-      definition: e.definition || '',
-      pos: e.pos || '',
-      pronunciation: e.pronunciation || '',
-      reading: '',
-      examples: e.examples || '',
-    });
-  }
 }
 
 // --- Main ---
