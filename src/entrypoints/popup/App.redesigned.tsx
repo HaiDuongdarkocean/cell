@@ -88,7 +88,7 @@ export function AppRedesigned(): React.JSX.Element {
     if (result) {
       setSelectedIds(new Set([result.videoId, ...result.subtitleIds]));
     }
-  }, [settings.autoSelectEnabled, settings.preferredVideoFormat, settings.defaultQuality, settings.selectedSubtitleLanguages, isSettingsLoaded, videos, subtitles]);
+  }, [settings, settings.autoSelectEnabled, settings.preferredVideoFormat, settings.defaultQuality, settings.selectedSubtitleLanguages, isSettingsLoaded, videos, subtitles]);
 
   // Default quality auto-apply: when user changes defaultQuality in settings,
   // update all video cards' first variant to match (if the quality exists).

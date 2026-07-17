@@ -312,7 +312,7 @@ export function useCardCreatorState(
       setLoadStatus('error');
       pushToast('error', `AnkiConnect: ${msg}`);
     }
-  }, [settings, pushToast]);
+  }, [settings, pushToast, refreshRecentNote]);
 
   // Load data when dialog opens. Pass the restored draft to loadData so it can
   // preserve the user's note type/deck/field selections (ADR-026).

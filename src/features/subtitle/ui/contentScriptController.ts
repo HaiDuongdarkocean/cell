@@ -834,7 +834,6 @@ export function init(video: HTMLVideoElement): () => void {
       shift: e.shiftKey,
       alt: e.altKey,
     });
-    console.log('[DEBUG keydown]', { key: e.key, action, cueCount: bilingualCues.length, currentMs: Math.round(video.currentTime * 1000), shortcutsLen: shortcuts.length });
     if (!action) return;
     // Block YouTube's own shortcuts (e.g. 't' = theater mode) + other
     // same-target listeners so only our action runs.
