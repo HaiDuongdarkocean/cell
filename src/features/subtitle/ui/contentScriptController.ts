@@ -33,6 +33,7 @@ import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
 import { createPopupDictionaryState, showPopup, appendCandidate, type PopupDictionaryState } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import { WebTextTriggerController } from '@/features/dictionaryPopup/trigger/webTextTriggerController';
 import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { TranslateResult } from '@/entities/message';
@@ -166,6 +167,7 @@ export function init(video: HTMLVideoElement): () => void {
   // Popup dictionary state (spec §4.6).
   let popupDictState: PopupDictionaryState | null = null;
   let popupDictWasPlaying = false;
+  let webTextTrigger: WebTextTriggerController | null = null;
   // Track the latest target/native cues for the block controller and side panel.
   let latestTargetCues: SrtCue[] = [];
   // Track the URL the overlay currently shows cues for. On SPA navigation the
@@ -202,7 +204,8 @@ export function init(video: HTMLVideoElement): () => void {
     activeGenerateRunId = -1;
   }
 
-  /** Wire popup dictionary: enable token wrap + trigger on subtitle block. */
+  /** Wire popup dictionary: enable token wrap + trigger on subtitle block.
+   *  Also wire web-text trigger (select text anywhere on page → lookup). */
   function wireDictionaryPopup(dpSettings: DictionaryPopupSettings, ccSettings: CardCreatorSettings): void {
     popupDictState = createPopupDictionaryState(dpSettings, ccSettings);
     blockController.enableDictionaryPopup(
@@ -210,6 +213,15 @@ export function init(video: HTMLVideoElement): () => void {
       (request: LookupRequest, requestId: string, anchorRect: DOMRect) => { void handleLookup(request, requestId, anchorRect); },
       (requestId: string) => { cancelLookup(requestId); },
     );
+    // Web-text trigger: select text on page (outside subtitle overlay) → lookup.
+    // Same handleLookup/cancelLookup, but no video pause (only subtitle lookup pauses).
+    if (webTextTrigger) webTextTrigger.detach();
+    webTextTrigger = new WebTextTriggerController({
+      triggerMode: dpSettings.triggerMode,
+      onLookup: (request, requestId, anchorRect) => { void handleLookup(request, requestId, anchorRect); },
+      onCancel: (requestId) => { cancelLookup(requestId); },
+    });
+    webTextTrigger.attach();
   }
 
   /** Handle a lookup request from subtitle trigger.
