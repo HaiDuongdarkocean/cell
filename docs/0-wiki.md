@@ -9,6 +9,7 @@ docs/           # Tài liệu dự án
 ├── 0-wiki.md                          # File này — mục lục tổng quan
 ├── 1-share-language.md                # Glossary human ↔ system language
 ├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows; overlay button appearance/host-CSS defenses)
+├── technical-debt-audit.md            # Tổng hợp nợ kỹ thuật hiện có của codebase
 ├── adr/                               # Architecture Decision Records (mỗi quyết định 1 file)
 │   ├── 001-zustand-not-redux.md
 │   ├── 002-muxjs-not-ffmpeg-wasm.md
