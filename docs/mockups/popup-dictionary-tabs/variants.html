@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Popup Dictionary — Tab Content Variants</title>
+  <style>
+    :root {
+      /* Tokens from tokens.css (light) */
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-subtle: rgba(37, 99, 235, 0.1);
+      --color-background: #ffffff;
+      --color-surface: #f8fafc;
+      --color-surface-hover: #f1f5f9;
+      --color-text: #0f172a;
+      --color-text-secondary: #475569;
+      --color-text-muted: #94a3b8;
+      --color-text-inverse: #ffffff;
+      --color-border: #e2e8f0;
+      --color-success: #10b981;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-size-xs: 12px; --font-size-sm: 13px; --font-size-base: 14px; --font-size-lg: 16px;
+      --font-weight-regular: 400; --font-weight-medium: 500; --font-weight-semibold: 600;
+      --leading-normal: 1.5;
+      --space-1: 4px; --space-2: 8px; --space-2-5: 10px; --space-3: 12px; --space-4: 16px; --space-6: 24px;
+      --radius-sm: 6px; --radius-md: 18px; --radius-lg: 10px; --radius-full: 9999px;
+      --duration-fast: 150ms; --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+      --transition: 150ms ease;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-family);
+      font-size: var(--font-size-base);
+      color: var(--color-text);
+      background: #f1f5f9;
+      padding: var(--space-4);
+    }
+    .page-title { font-size: 20px; font-weight: 600; margin-bottom: var(--space-4); }
+    .sections { display: grid; gap: var(--space-6); }
+    .tab-section { background: #fff; border-radius: 12px; padding: var(--space-4); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .section-title { font-size: var(--font-size-lg); font-weight: 600; margin-bottom: var(--space-3); }
+    .variants { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-4); }
+    .variant { border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden; }
+    .variant-header { background: var(--color-surface); padding: var(--space-2) var(--space-3); font-weight: 600; border-bottom: 1px solid var(--color-border); }
+    .states { padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-4); }
+    .state-label { font-size: var(--font-size-xs); color: var(--color-text-muted); text-transform: uppercase; font-weight: 600; }
+
+    /* Fake popup shell */
+    .popup { width: 320px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-background); overflow: hidden; }
+
+    /* Toolbar */
+    .cell-toolbar { display: flex; gap: var(--space-1); padding: var(--space-1) var(--space-3); border-bottom: 1px solid var(--color-border); align-items: center; }
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; border-radius: var(--radius-full); cursor: pointer; color: var(--color-text-muted); transition: background var(--transition), color var(--transition), transform var(--transition); padding: 0; width: 32px; height: 32px; }
+    .icon-btn:hover { background: var(--color-surface-hover); color: var(--color-text); }
+    .icon-btn svg { width: 20px; height: 20px; }
+    .icon-btn--active { background: var(--color-primary-subtle); color: var(--color-primary); }
+
+    /* Panels */
+    .cell-audio, .cell-image, .cell-translate, .cell-links { padding: var(--space-2) var(--space-3); }
+    .cell-audio { overflow-y: auto; max-height: 200px; }
+
+    /* Empty state */
+    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-6) var(--space-4); text-align: center; color: var(--color-text-muted); font-size: var(--font-size-sm); }
+    .empty-icon { width: 40px; height: 40px; color: var(--color-text-muted); }
+    .empty-icon svg { width: 100%; height: 100%; }
+    .empty-title { font-weight: var(--font-weight-semibold); color: var(--color-text); font-size: var(--font-size-base); }
+    .empty-description { max-width: 220px; line-height: var(--leading-normal); }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1-5); border: none; border-radius: var(--radius-md); font-family: var(--font-family); font-weight: var(--font-weight-medium); text-decoration: none; cursor: pointer; white-space: nowrap; height: 32px; padding: 8px 16px; font-size: var(--font-size-sm); transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition); }
+    .btn--primary { background: var(--color-primary); color: var(--color-text-inverse); }
+    .btn--primary:hover { background: var(--color-primary-hover); }
+    .btn--outline { background: transparent; color: var(--color-text); border: 1px solid var(--color-border); }
+    .btn--outline:hover { background: var(--color-surface-hover); border-color: var(--color-primary); }
+    .btn--sm { height: 28px; padding: 6px 12px; font-size: var(--font-size-xs); }
+
+    /* === Audio A === */
+    .audio-a-group { font-size: 11px; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; margin: var(--space-2) 0 var(--space-1); }
+    .audio-a-row { display: flex; align-items: center; gap: var(--space-2-5); padding: var(--space-2) var(--space-2-5); border-radius: var(--radius-lg); transition: background var(--transition); }
+    .audio-a-row:hover { background: var(--color-surface-hover); }
+    .audio-a-label { flex: 1; font-size: var(--font-size-sm); color: var(--color-text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .audio-a-check { position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; }
+    .audio-a-check-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-border); }
+    .audio-a-check-box { position: absolute; width: 16px; height: 16px; border-radius: var(--radius-sm); border: 1.5px solid var(--color-primary); display: none; align-items: center; justify-content: center; }
+    .audio-a-row:hover .audio-a-check-dot { display: none; }
+    .audio-a-row:hover .audio-a-check-box { display: flex; }
+    .audio-a-check.checked .audio-a-check-dot { display: none; }
+    .audio-a-check.checked .audio-a-check-box { display: flex; background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+    .audio-a-hint { font-size: var(--font-size-xs); color: var(--color-text-muted); padding: var(--space-1) var(--space-2-5); }
+
+    /* === Audio B === */
+    .audio-b-tabs { display: flex; gap: var(--space-1); margin-bottom: var(--space-2); }
+    .audio-b-tab { height: 28px; padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--color-border); background: transparent; font-size: var(--font-size-xs); color: var(--color-text-secondary); cursor: pointer; }
+    .audio-b-tab.active { background: var(--color-primary-subtle); color: var(--color-primary); border-color: transparent; }
+    .audio-b-count { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--radius-full); background: var(--color-primary); color: #fff; font-size: 10px; margin-left: 4px; }
+
+    /* === Audio C === */
+    .audio-c-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
+    .audio-c-card { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: var(--space-2); border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-card, var(--color-surface)); cursor: pointer; }
+    .audio-c-card:hover { background: var(--color-surface-hover); }
+    .audio-c-card.selected { border-color: var(--color-primary); background: var(--color-primary-subtle); }
+    .audio-c-card svg { width: 24px; height: 24px; color: var(--color-text-muted); }
+    .audio-c-card.selected svg { color: var(--color-primary); }
+    .audio-c-name { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+
+    /* === Image A === */
+    .image-a-strip { display: flex; gap: var(--space-2); overflow-x: auto; padding-bottom: var(--space-1); }
+    .image-card { position: relative; flex-shrink: 0; width: 96px; height: 72px; padding: var(--space-1); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); cursor: pointer; }
+    .image-card:hover { background: var(--color-surface-hover); }
+    .image-card.selected { background: var(--color-primary-subtle); border: 1.5px solid var(--color-primary); }
+    .image-thumb { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-sm); background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: var(--color-text-muted); font-size: 10px; }
+    .image-check { position: absolute; top: var(--space-1); right: var(--space-1); width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: var(--color-primary); color: #fff; border-radius: var(--radius-full); opacity: 0; transform: scale(0.8); }
+    .image-card.selected .image-check { opacity: 1; transform: scale(1); }
+    .image-check svg { width: 12px; height: 12px; }
+    .image-summary { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-1); }
+
+    /* === Image B === */
+    .image-b-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
+    .image-b-card { position: relative; aspect-ratio: 4/3; padding: var(--space-1); border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-surface); cursor: pointer; }
+    .image-b-card.selected { border: 1.5px solid var(--color-primary); background: var(--color-primary-subtle); }
+    .image-b-card .image-check { opacity: 0; }
+    .image-b-card.selected .image-check { opacity: 1; }
+
+    /* === Image C === */
+    .image-c-hero { height: 120px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: var(--color-surface); display: flex; align-items: center; justify-content: center; color: var(--color-text-muted); font-size: var(--font-size-sm); margin-bottom: var(--space-2); }
+    .image-c-hero img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-lg); }
+    .image-c-strip { display: flex; gap: var(--space-2); overflow-x: auto; }
+    .image-c-thumb { width: 64px; height: 48px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); background: var(--color-surface); cursor: pointer; flex-shrink: 0; }
+    .image-c-thumb.selected { border: 1.5px solid var(--color-primary); }
+
+    /* === Translate A === */
+    .translate-result { padding: var(--space-2); border-radius: var(--radius-sm); background: var(--color-surface-hover); margin-bottom: var(--space-2); color: var(--color-text); }
+    .translate-source { padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: var(--font-size-xs); color: var(--color-text-muted); }
+    .translate-included { display: inline-flex; align-items: center; gap: 4px; font-size: var(--font-size-xs); color: var(--color-primary); margin-top: var(--space-1); }
+    .translate-hint { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-1); }
+
+    /* === Translate B === */
+    .translate-b-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+    .translate-b-card { padding: var(--space-2); border-radius: var(--radius-sm); border: 1px solid var(--color-border); background: var(--color-surface); }
+    .translate-b-card.muted { opacity: 0.6; }
+    .translate-b-card.selected { border-color: var(--color-primary); background: var(--color-primary-subtle); }
+    .translate-b-label { font-size: 10px; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: var(--space-1); }
+
+    /* === Translate C === */
+    .translate-c-block { padding: var(--space-2); border-radius: var(--radius-sm); background: var(--color-surface-hover); margin-bottom: var(--space-2); }
+    .translate-c-source { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-1) 0; color: var(--color-text-muted); font-size: var(--font-size-xs); cursor: pointer; }
+
+    /* === Links A === */
+    .links-a-list { display: flex; flex-direction: column; gap: var(--space-1); }
+    .links-a-item { display: block; padding: var(--space-1-5) var(--space-2); border-radius: var(--radius-sm); color: var(--color-primary); text-decoration: none; font-size: var(--font-size-sm); }
+    .links-a-item:hover { background: var(--color-surface-hover); }
+    .links-a-item.active { background: var(--color-primary-subtle); color: var(--color-primary); }
+
+    /* === Links B === */
+    .links-b-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+    .links-b-chip { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); font-size: var(--font-size-xs); text-decoration: none; }
+    .links-b-chip:hover { background: var(--color-surface-hover); }
+    .links-b-chip.active { background: var(--color-primary-subtle); color: var(--color-primary); border-color: transparent; }
+
+    /* === Links C === */
+    .links-c-category { border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-2); margin-bottom: var(--space-2); }
+    .links-c-title { font-size: var(--font-size-xs); font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: var(--space-1); }
+    .links-c-list { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+    .links-c-item { padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-secondary); font-size: var(--font-size-xs); text-decoration: none; }
+    .links-c-item:hover { background: var(--color-surface-hover); }
+    .links-c-item.active { background: var(--color-primary-subtle); color: var(--color-primary); }
+
+    /* Mini tabs for Audio B */
+    .mini-tabs { display: flex; gap: var(--space-1); }
+
+    .note { margin-top: var(--space-2); font-size: var(--font-size-xs); color: var(--color-text-muted); }
+  </style>
+</head>
+<body>
+  <div class="page-title">Popup Dictionary — Tab Content Variants</div>
+  <div class="sections">
+
+    <!-- AUDIO TAB -->
+    <section class="tab-section">
+      <div class="section-title">1. Audio tab</div>
+      <div class="variants">
+
+        <!-- Variant A -->
+        <div class="variant">
+          <div class="variant-header">Variant A — Grouped list rows</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🎧</button></div>
+                <div class="cell-audio">
+                  <div class="empty">
+                    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9v6a2 2 0 0 1-2 2h-2l-3 3v-3H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+                    <div class="empty-title">No audio available</div>
+                    <div class="empty-description">Forvo and TTS sources returned no results.</div>
+                    <button class="btn btn--primary btn--sm">Use system TTS</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🎧</button></div>
+                <div class="cell-audio">
+                  <div class="audio-a-group">Word Audio</div>
+                  <div class="audio-a-row"><button class="icon-btn icon-btn--outlined"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><span class="audio-a-label">Forvo · US</span><div class="audio-a-check"><div class="audio-a-check-dot"></div><div class="audio-a-check-box">✓</div></div></div>
+                  <div class="audio-a-row"><button class="icon-btn icon-btn--outlined"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><span class="audio-a-label">Forvo · UK</span><div class="audio-a-check"><div class="audio-a-check-dot"></div><div class="audio-a-check-box">✓</div></div></div>
+                  <div class="audio-a-hint">Select audio to include in your flashcard.</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🎧</button></div>
+                <div class="cell-audio">
+                  <div class="audio-a-group">Word Audio</div>
+                  <div class="audio-a-row"><button class="icon-btn icon-btn--outlined"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></button><span class="audio-a-label">Forvo · US</span><div class="audio-a-check checked"><div class="audio-a-check-dot"></div><div class="audio-a-check-box">✓</div></div></div>
+                  <div class="audio-a-row"><button class="icon-btn icon-btn--outlined"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><span class="audio-a-label">Forvo · UK</span><div class="audio-a-check"><div class="audio-a-check-dot"></div><div class="audio-a-check-box">✓</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant B -->
+        <div class="variant">
+          <div class="variant-header">Variant B — Tab-segmented groups</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🎧</button></div>
+                <div class="cell-audio">
+                  <div class="empty">
+                    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9v6a2 2 0 0 1-2 2h-2l-3 3v-3H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+                    <div class="empty-title">No audio for "magnificent"</div>
+                    <div class="empty-description">Try the system TTS fallback.</div>
+                    <button class="btn btn--primary btn--sm">Generate TTS</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🎧</button></div>
+                <div class="cell-audio">
+                  <div class="audio-b-tabs"><button class="audio-b-tab active">Word <span class="audio-b-count">2</span></button><button class="audio-b-tab">Sentence <span class="audio-b-count">0</span></button></div>
+                  <div class="audio-a-row"><button class="icon-btn icon-btn--outlined"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><span class="audio-a-label">Forvo · US</span><div class="audio-a-check"><div class="audio-a-check-dot"></div><div class="audio-a-check-box">✓</div></div></div>
+                  <div class="audio-a-row"><button class="icon-btn icon-btn--outlined"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><span class="audio-a-label">System TTS · Female</span><div class="audio-a-check"><div class="audio-a-check-dot"></div><div class="audio-a-check-box">✓</div></div></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🎧</button></div>
+                <div class="cell-audio">
+                  <div class="audio-b-tabs"><button class="audio-b-tab active">Word <span class="audio-b-count">1</span></button><button class="audio-b-tab">Sentence <span class="audio-b-count">1</span></button></div>
+                  <div class="audio-a-row"><button class="icon-btn icon-btn--outlined"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></button><span class="audio-a-label">Forvo · US</span><div class="audio-a-check checked"><div class="audio-a-check-dot"></div><div class="audio-a-check-box">✓</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant C -->
+        <div class="variant">
+          <div class="variant-header">Variant C — Source cards</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🎧</button></div>
+                <div class="cell-audio">
+                  <div class="empty">
+                    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9v6a2 2 0 0 1-2 2h-2l-3 3v-3H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+                    <div class="empty-title">No audio sources</div>
+                    <div class="empty-description">Generate a TTS pronunciation instead.</div>
+                    <button class="btn btn--primary btn--sm">Generate TTS</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🎧</button></div>
+                <div class="cell-audio">
+                  <div class="audio-c-grid">
+                    <div class="audio-c-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="audio-c-name">Forvo US</span></div>
+                    <div class="audio-c-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="audio-c-name">Forvo UK</span></div>
+                    <div class="audio-c-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="audio-c-name">TTS</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🎧</button></div>
+                <div class="cell-audio">
+                  <div class="audio-c-grid">
+                    <div class="audio-c-card selected"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="audio-c-name">Forvo US</span></div>
+                    <div class="audio-c-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="audio-c-name">Forvo UK</span></div>
+                    <div class="audio-c-card selected"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="audio-c-name">TTS</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- IMAGE TAB -->
+    <section class="tab-section">
+      <div class="section-title">2. Image tab</div>
+      <div class="variants">
+
+        <!-- Variant A -->
+        <div class="variant">
+          <div class="variant-header">Variant A — Horizontal filmstrip</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🖼</button></div>
+                <div class="cell-image">
+                  <div class="empty">
+                    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                    <div class="empty-title">No images</div>
+                    <div class="empty-description">Find images on Google Images for this word.</div>
+                    <button class="btn btn--outline btn--sm">Search Google Images</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🖼</button></div>
+                <div class="cell-image">
+                  <div class="image-a-strip">
+                    <div class="image-card"><div class="image-thumb">img1</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                    <div class="image-card"><div class="image-thumb">img2</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                    <div class="image-card"><div class="image-thumb">img3</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🖼</button></div>
+                <div class="cell-image">
+                  <div class="image-a-strip">
+                    <div class="image-card selected"><div class="image-thumb">img1</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                    <div class="image-card"><div class="image-thumb">img2</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                    <div class="image-card"><div class="image-thumb">img3</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                  </div>
+                  <div class="image-summary">1 image selected</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant B -->
+        <div class="variant">
+          <div class="variant-header">Variant B — Compact 2-column grid</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🖼</button></div>
+                <div class="cell-image">
+                  <div class="empty">
+                    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                    <div class="empty-title">No images</div>
+                    <div class="empty-description">Search Google Images for this word.</div>
+                    <button class="btn btn--outline btn--sm">Search Google Images</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🖼</button></div>
+                <div class="cell-image">
+                  <div class="image-b-grid">
+                    <div class="image-b-card"><div class="image-thumb">img1</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                    <div class="image-b-card"><div class="image-thumb">img2</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                    <div class="image-b-card"><div class="image-thumb">img3</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                    <div class="image-b-card"><div class="image-thumb">img4</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🖼</button></div>
+                <div class="cell-image">
+                  <div class="image-b-grid">
+                    <div class="image-b-card selected"><div class="image-thumb">img1</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                    <div class="image-b-card"><div class="image-thumb">img2</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                    <div class="image-b-card"><div class="image-thumb">img3</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                    <div class="image-b-card"><div class="image-thumb">img4</div><div class="image-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+                  </div>
+                  <div class="image-summary">1 image selected</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant C -->
+        <div class="variant">
+          <div class="variant-header">Variant C — Hero + filmstrip</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🖼</button></div>
+                <div class="cell-image">
+                  <div class="empty">
+                    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+                    <div class="empty-title">No images</div>
+                    <div class="empty-description">Search Google Images for this word.</div>
+                    <button class="btn btn--outline btn--sm">Search Google Images</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🖼</button></div>
+                <div class="cell-image">
+                  <div class="image-c-hero">Select an image</div>
+                  <div class="image-c-strip">
+                    <div class="image-c-thumb"></div><div class="image-c-thumb"></div><div class="image-c-thumb"></div><div class="image-c-thumb"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🖼</button></div>
+                <div class="cell-image">
+                  <div class="image-c-hero">img1 preview</div>
+                  <div class="image-c-strip">
+                    <div class="image-c-thumb selected"></div><div class="image-c-thumb"></div><div class="image-c-thumb"></div><div class="image-c-thumb"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TRANSLATE TAB -->
+    <section class="tab-section">
+      <div class="section-title">3. Translate tab</div>
+      <div class="variants">
+
+        <!-- Variant A -->
+        <div class="variant">
+          <div class="variant-header">Variant A — Single card flow</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🌐</button></div>
+                <div class="cell-translate">
+                  <button class="btn btn--outline" style="width:100%">Translate to vi</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🌐</button></div>
+                <div class="cell-translate">
+                  <div class="translate-result">Hùng vĩ</div>
+                  <div class="translate-source">The view is magnificent.</div>
+                  <div class="translate-hint">Translation not included in flashcard.</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🌐</button></div>
+                <div class="cell-translate">
+                  <div class="translate-result">Hùng vĩ</div>
+                  <div class="translate-source">The view is magnificent.</div>
+                  <div class="translate-included"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Included in flashcard</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant B -->
+        <div class="variant">
+          <div class="variant-header">Variant B — Side-by-side cards</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🌐</button></div>
+                <div class="cell-translate">
+                  <button class="btn btn--outline" style="width:100%">Translate to vi</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🌐</button></div>
+                <div class="cell-translate">
+                  <div class="translate-b-pair">
+                    <div class="translate-b-card muted"><div class="translate-b-label">Source</div>The view is magnificent.</div>
+                    <div class="translate-b-card"><div class="translate-b-label">Translation</div>Hùng vĩ</div>
+                  </div>
+                  <div class="translate-hint">Translation not included in flashcard.</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🌐</button></div>
+                <div class="cell-translate">
+                  <div class="translate-b-pair">
+                    <div class="translate-b-card"><div class="translate-b-label">Source</div>The view is magnificent.</div>
+                    <div class="translate-b-card selected"><div class="translate-b-label">Translation</div>Hùng vĩ</div>
+                  </div>
+                  <div class="translate-included"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Included in flashcard</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant C -->
+        <div class="variant">
+          <div class="variant-header">Variant C — Inline expandable</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🌐</button></div>
+                <div class="cell-translate">
+                  <button class="btn btn--outline" style="width:100%">Translate to vi</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🌐</button></div>
+                <div class="cell-translate">
+                  <div class="translate-c-block">Hùng vĩ</div>
+                  <div class="translate-c-source">▶ Source sentence</div>
+                  <div class="translate-hint">Translation not included in flashcard.</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🌐</button></div>
+                <div class="cell-translate">
+                  <div class="translate-c-block" style="border:1px solid var(--color-primary); background:var(--color-primary-subtle);">Hùng vĩ</div>
+                  <div class="translate-c-source">▼ The view is magnificent.</div>
+                  <div class="translate-included"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Included in flashcard</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- LINKS TAB -->
+    <section class="tab-section">
+      <div class="section-title">4. Links tab</div>
+      <div class="variants">
+
+        <!-- Variant A -->
+        <div class="variant">
+          <div class="variant-header">Variant A — Simple link list</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🔗</button></div>
+                <div class="cell-links">
+                  <div class="empty" style="padding:var(--space-4);">
+                    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+                    <div class="empty-title">No external links</div>
+                    <div class="empty-description">Add dictionary links in Settings.</div>
+                    <a href="#" class="btn btn--outline btn--sm">Open settings</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🔗</button></div>
+                <div class="cell-links">
+                  <div class="links-a-list">
+                    <a class="links-a-item" href="#">Cambridge</a>
+                    <a class="links-a-item" href="#">Merriam-Webster</a>
+                    <a class="links-a-item" href="#">Wiktionary</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🔗</button></div>
+                <div class="cell-links">
+                  <div class="links-a-list">
+                    <a class="links-a-item active" href="#">Cambridge</a>
+                    <a class="links-a-item" href="#">Merriam-Webster</a>
+                    <a class="links-a-item" href="#">Wiktionary</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant B -->
+        <div class="variant">
+          <div class="variant-header">Variant B — Source chips</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🔗</button></div>
+                <div class="cell-links">
+                  <div class="empty" style="padding:var(--space-4);">
+                    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+                    <div class="empty-title">No external links</div>
+                    <div class="empty-description">Add dictionary links in Settings.</div>
+                    <a href="#" class="btn btn--outline btn--sm">Open settings</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🔗</button></div>
+                <div class="cell-links">
+                  <div class="links-b-chips">
+                    <a class="links-b-chip" href="#">Cambridge</a>
+                    <a class="links-b-chip" href="#">Merriam-Webster</a>
+                    <a class="links-b-chip" href="#">Wiktionary</a>
+                    <a class="links-b-chip" href="#">Thesaurus</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🔗</button></div>
+                <div class="cell-links">
+                  <div class="links-b-chips">
+                    <a class="links-b-chip active" href="#">Cambridge</a>
+                    <a class="links-b-chip" href="#">Merriam-Webster</a>
+                    <a class="links-b-chip" href="#">Wiktionary</a>
+                    <a class="links-b-chip" href="#">Thesaurus</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant C -->
+        <div class="variant">
+          <div class="variant-header">Variant C — Categorized cards</div>
+          <div class="states">
+            <div>
+              <div class="state-label">Empty</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🔗</button></div>
+                <div class="cell-links">
+                  <div class="empty" style="padding:var(--space-4);">
+                    <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+                    <div class="empty-title">No external links</div>
+                    <div class="empty-description">Add dictionary links in Settings.</div>
+                    <a href="#" class="btn btn--outline btn--sm">Open settings</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">No-active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🔗</button></div>
+                <div class="cell-links">
+                  <div class="links-c-category"><div class="links-c-title">Dictionary</div><div class="links-c-list"><a class="links-c-item" href="#">Cambridge</a><a class="links-c-item" href="#">Merriam-Webster</a><a class="links-c-item" href="#">Wiktionary</a></div></div>
+                  <div class="links-c-category"><div class="links-c-title">Translator</div><div class="links-c-list"><a class="links-c-item" href="#">Google Translate</a></div></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="state-label">Active</div>
+              <div class="popup">
+                <div class="cell-toolbar"><button class="icon-btn icon-btn--active">🔗</button></div>
+                <div class="cell-links">
+                  <div class="links-c-category"><div class="links-c-title">Dictionary</div><div class="links-c-list"><a class="links-c-item active" href="#">Cambridge</a><a class="links-c-item" href="#">Merriam-Webster</a><a class="links-c-item" href="#">Wiktionary</a></div></div>
+                  <div class="links-c-category"><div class="links-c-title">Translator</div><div class="links-c-list"><a class="links-c-item" href="#">Google Translate</a></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+  <p class="note">Open this file in a browser to compare variants. Tokens, spacing, and colors mirror the Cell design system.</p>
+</body>
+</html>
