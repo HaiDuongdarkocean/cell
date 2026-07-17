@@ -659,3 +659,48 @@ Percentage `width`/`height` trên child resolves against parent's **content-box*
 - Flex layout với `box-sizing: border-box` + padding — percentage children resolve against content-box
 - Any `width: X%` / `height: X%` element inside a container có non-zero padding
 - Alternative: dùng `calc(var(--btn-size) * 0.65)` (absolute) thay vì `65%` (relative) để tránh content-box dependency
+
+## Mock mapper ordering — specific suffix before generic alias
+
+### Nguyên lý
+
+Jest `moduleNameMapper` thử patterns theo declaration order — first match wins. Generic alias (`^@/(.*)$`) match MỌI path kể cả những path có Vite suffix (`?raw`, `?worker`, `?url`, `?inline`). Specific suffix mappers phải declared TRƯỚC generic alias, hoặc chúng unreachable → ENOENT vì file system lookup bao gồm suffix trong filename.
+
+### Cases đã gặp
+- [jest-modnamemapper-raw-before-alias.md](jest-modnamemapper-raw-before-alias.md) — `?raw` imports fail ENOENT vì `^@/(.*)$` match trước `\\?raw$` → reorder: `\\?raw$` trước `^@/(.*)$`
+
+### Apply cho
+- Jest + Vite projects dùng `?raw`, `?worker`, `?url`, `?inline` imports
+- Bất kỳ moduleNameMapper nào có generic alias + specific suffix mappers — luôn specific trước generic
+- Webpack `resolveLoader` alias ordering (same first-match-wins semantics)
+
+## Rendering boundary → explicit token injection
+
+### Nguyên lý
+
+Rendering boundary (Shadow DOM, iframe, Web Worker, React Native vs Web) cô lập CSS — stylesheets của parent không apply vào boundary bên trong. Shared design tokens phải được explicit inject dưới dạng CSS string vào boundary. Vite `?raw` import biến file `.css` thành string — inject vào `<style>` trong Shadow DOM, remap `:root` → `:host`, và cả React + Vanilla DOM share cùng source file. Không duplication, không drift.
+
+### Cases đã gặp
+- [shadow-dom-shared-tokens-raw-injection.md](shadow-dom-shared-tokens-raw-injection.md) — Dictionary Popup Shadow DOM dùng `--dp-*` riêng, duplicate `tokens.css` → `?raw` import + `:root`→`:host` remap → single source, xóa 120 dòng `--dp-*`
+
+### Apply cho
+- Shadow DOM components (custom elements, popup dialogs, overlays)
+- iframe-embedded widgets (inject tokens vào iframe `<head>`)
+- Web Worker canvas rendering (pass token values as messages)
+- React Native + Web sharing design tokens (different runtime, same source file)
+- Bất kỳ rendering boundary nào cần shared design system — inject tokens explicitly
+
+## Isolated DOM needs explicit theme propagation
+
+### Nguyên lý
+
+Shadow DOM blocks attribute inheritance — `data-theme` trên `<html>` không propagate vào shadow boundary. `data-theme` là attribute selector match, KHÔNG phải inherited property (như `color`, `font-family`). Theme-aware Shadow DOM components phải detect theme từ source of truth (chrome.storage / media query) và set `data-theme` trên element BÊN TRONG shadow tree. CSS selector `[data-theme="dark"]` match element inner đó → tokens cascade xuống shadow children.
+
+### Cases đã gặp
+- [shadow-dom-theme-attribute-propagation.md](shadow-dom-theme-attribute-propagation.md) — Dictionary Popup Shadow DOM luôn light mode dù user chọn dark — `data-theme` trên `<html>` không truyền vào shadow → detect từ `chrome.storage.local.themeMode` + `prefers-color-scheme`, set trên container bên trong, listen `storage.onChanged` + `matchMedia` change
+
+### Apply cho
+- Shadow DOM components cần dark/light mode (popups, dialogs, overlays, custom elements)
+- iframe widgets cần theme awareness (postMessage theme từ parent → set trên iframe root)
+- Web Components dùng `data-theme` attribute selectors (must set attribute inside shadow, not rely on host)
+- Bất kỳ isolated DOM boundary nào cần theme — detect from source + set attribute inside boundary + listen for changes
