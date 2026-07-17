@@ -32,16 +32,15 @@ export function renderToolbar(
   onClose?: () => void,
 ): void {
   const toolbar = document.createElement('div');
-  toolbar.setAttribute('data-dp-toolbar', '');
-  toolbar.style.cssText = 'display:flex;gap:4px;padding:4px 12px;border-bottom:1px solid var(--color-border,#e2e8f0);align-items:center;';
+  toolbar.className = 'cell-toolbar js-cell-toolbar';
 
   for (const config of TAB_CONFIG) {
     const btn = document.createElement('button');
-    btn.setAttribute('data-dp-tab', config.tab);
+    btn.className = 'icon-btn icon-btn--sm js-cell-tab' + (activeTab === config.tab ? ' icon-btn--active' : '');
+    btn.setAttribute('data-cell-tab', config.tab);
     btn.setAttribute('aria-label', config.label);
     btn.title = config.label;
     btn.innerHTML = config.icon;
-    btn.className = 'icon-btn icon-btn--sm' + (activeTab === config.tab ? ' icon-btn--active' : '');
     btn.addEventListener('click', () => onTabToggle(config.tab));
     toolbar.appendChild(btn);
   }
@@ -49,11 +48,10 @@ export function renderToolbar(
   // None button — closes any active tab panel. Uses eye-off icon (hide).
   if (onClose) {
     const noneBtn = document.createElement('button');
-    noneBtn.setAttribute('data-dp-tab', 'none');
+    noneBtn.className = 'icon-btn icon-btn--sm js-cell-tab-close' + (activeTab === null ? ' icon-btn--active' : '');
     noneBtn.setAttribute('aria-label', 'Hide panel');
     noneBtn.title = 'Hide panel';
     noneBtn.innerHTML = ICON_CATALOG.eyeOff.svg;
-    noneBtn.className = 'icon-btn icon-btn--sm' + (activeTab === null ? ' icon-btn--active' : '');
     noneBtn.style.marginLeft = 'auto';
     noneBtn.addEventListener('click', onClose);
     toolbar.appendChild(noneBtn);
@@ -76,36 +74,29 @@ export function renderAudioPanel(
   onPlay: (item: AudioItem) => void,
 ): void {
   const panel = document.createElement('div');
-  panel.setAttribute('data-dp-panel', 'audio');
-  panel.style.cssText = 'padding:8px 12px;overflow-y:auto;max-height:200px;';
+  panel.className = 'cell-audio js-cell-panel';
+  panel.setAttribute('data-cell-panel', 'audio');
 
   const renderGroup = (label: string, items: readonly AudioItem[]) => {
     if (items.length === 0) return;
     const groupLabel = document.createElement('div');
-    groupLabel.setAttribute('data-dp-audio-group', '');
+    groupLabel.className = 'cell-audio__group-label';
     groupLabel.textContent = label;
-    groupLabel.style.cssText = 'font-size:11px;font-weight:600;color:var(--color-text-muted,#64748b);text-transform:uppercase;margin-bottom:4px;margin-top:8px;';
     panel.appendChild(groupLabel);
 
     for (const item of items) {
       const isChecked = selection.get(item.id) ?? item.defaultSelected;
       const row = document.createElement('div');
-      row.setAttribute('data-dp-audio-item', item.id);
-      row.className = 'audio-item';
-      // design-system.md list-item: hover=surface-hover, radius=lg(10px)
-      row.style.cssText = 'position:relative;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-lg,10px);transition:background 0.15s ease;cursor:default;';
-      row.addEventListener('mouseenter', () => { row.style.background = 'var(--color-surface-hover, rgba(0,0,0,0.04))'; });
-      row.addEventListener('mouseleave', () => { row.style.background = ''; });
+      row.className = 'cell-audio__item js-cell-audio-item';
+      row.setAttribute('data-cell-audio-id', item.id);
 
       // Play button — uses shared .icon-btn .icon-btn--sm .icon-btn--outlined
       // from components.css. Hover/active/focus behavior is single-sourced.
       const playBtn = document.createElement('button');
-      playBtn.setAttribute('data-dp-audio-play', item.id);
+      playBtn.className = 'icon-btn icon-btn--sm icon-btn--outlined js-cell-audio-play';
       playBtn.setAttribute('aria-label', `Play ${item.label}`);
       playBtn.title = `Play ${item.label}`;
       playBtn.innerHTML = ICON_CATALOG.play.svg;
-      playBtn.className = 'icon-btn icon-btn--sm icon-btn--outlined';
-      playBtn.style.flexShrink = '0';
       playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         onPlay(item);
@@ -114,34 +105,32 @@ export function renderAudioPanel(
 
       // Label text — flex:1 fills remaining space.
       const labelEl = document.createElement('span');
+      labelEl.className = 'cell-audio__label';
       labelEl.textContent = item.label;
-      labelEl.style.cssText = 'flex:1;font-size:13px;color:var(--color-text,#1e293b);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
       row.appendChild(labelEl);
 
       // Selection indicator — dot by default, checkbox on hover or checked.
-      // Reuses dp-def-dot / dp-def-box CSS classes from popupShell style block.
+      // Reuses cell-def__check pattern from popupDictionary.css.
       const checkLabel = document.createElement('label');
-      checkLabel.className = 'def-check' + (isChecked ? ' def-check--checked' : '');
-      checkLabel.style.cssText = 'position:relative;width:28px;height:28px;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      checkLabel.className = 'cell-def__check js-cell-audio-check' + (isChecked ? ' cell-def__check--checked' : '');
       const dot = document.createElement('span');
-      dot.className = 'def-check__dot';
+      dot.className = 'cell-def__check-dot';
       checkLabel.appendChild(dot);
       const box = document.createElement('span');
-      box.className = 'def-check__box';
+      box.className = 'cell-def__check-box';
       const tick = document.createElement('span');
-      tick.className = 'def-check__tick';
+      tick.className = 'cell-def__check-tick';
       tick.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;display:block"><path d="M20 6 9 17l-5-5"/></svg>`;
       box.appendChild(tick);
       checkLabel.appendChild(box);
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = isChecked;
-      checkbox.setAttribute('data-dp-audio-checkbox', item.id);
-      checkbox.className = 'def-check__input';
+      checkbox.className = 'cell-def__check-input js-cell-audio-checkbox';
       checkbox.addEventListener('change', (e) => {
         e.stopPropagation();
         onToggle(item.id, checkbox.checked);
-        checkLabel.classList.toggle('is-checked', checkbox.checked);
+        checkLabel.classList.toggle('cell-def__check--checked', checkbox.checked);
       });
       checkLabel.appendChild(checkbox);
       row.appendChild(checkLabel);
@@ -155,7 +144,7 @@ export function renderAudioPanel(
 
   if (wordAudios.length === 0 && sentenceAudios.length === 0) {
     const empty = document.createElement('div');
-    empty.style.cssText = 'color:var(--color-text-muted,#64748b);font-style:italic;padding:8px 0;';
+    empty.className = 'cell-audio__empty';
     empty.textContent = 'No audio available.';
     panel.appendChild(empty);
   }
@@ -172,48 +161,69 @@ export function renderImagePanel(
   searchTerm?: string,
 ): void {
   const panel = document.createElement('div');
-  panel.setAttribute('data-dp-panel', 'image');
-  panel.style.cssText = 'padding:8px 12px;overflow-x:auto;max-height:200px;display:flex;gap:8px;';
+  panel.className = 'cell-image js-cell-panel';
+  panel.setAttribute('data-cell-panel', 'image');
 
   if (images.length === 0) {
     const empty = document.createElement('div');
-    empty.style.cssText = 'color:var(--color-text-muted,#64748b);font-style:italic;padding:8px 0;';
-    empty.textContent = 'No images available.';
-    panel.appendChild(empty);
+    empty.className = 'cell-image__empty';
+    const icon = document.createElement('div');
+    icon.className = 'cell-image__empty-icon';
+    icon.innerHTML = ICON_CATALOG.image.svg;
+    empty.appendChild(icon);
+    const title = document.createElement('div');
+    title.className = 'cell-image__empty-title';
+    title.textContent = 'No images available';
+    empty.appendChild(title);
+    const desc = document.createElement('div');
+    desc.className = 'cell-image__empty-description';
+    desc.textContent = 'Find images on Google Images for this word.';
+    empty.appendChild(desc);
     // MVP: link to Google Images search (no scrape — ponytail: scrape later).
     if (searchTerm) {
       const link = document.createElement('a');
+      link.className = 'cell-image__empty-action btn btn--outline btn--sm';
       link.href = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(searchTerm)}`;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      link.style.cssText = 'display:block;margin-top:4px;font-size:12px;color:var(--color-primary,#3b82f6);';
-      link.textContent = 'Search on Google Images →';
-      panel.appendChild(link);
+      link.innerHTML = `${ICON_CATALOG.search.svg}<span>Search on Google Images</span>`;
+      empty.appendChild(link);
     }
+    panel.appendChild(empty);
     container.appendChild(panel);
     return;
   }
 
+  const strip = document.createElement('div');
+  strip.className = 'cell-image__strip';
+
   for (const img of images) {
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:relative;flex-shrink:0;';
+    const isSelected = selection.get(img.id) ?? img.defaultSelected;
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'cell-image__card js-cell-image-card' + (isSelected ? ' cell-image__card--selected' : '');
+    card.setAttribute('role', 'checkbox');
+    card.setAttribute('aria-checked', String(isSelected));
+    card.setAttribute('aria-label', img.alt);
+    card.setAttribute('data-cell-image-id', img.id);
 
-    const imgEl = document.createElement('img');
-    imgEl.src = img.src;
-    imgEl.alt = img.alt;
-    imgEl.style.cssText = 'width:80px;height:60px;object-fit:cover;border-radius:4px;border:1px solid var(--color-border,#e2e8f0);';
-    wrap.appendChild(imgEl);
+    const thumb = document.createElement('img');
+    thumb.className = 'cell-image__thumb';
+    thumb.src = img.src;
+    thumb.alt = img.alt;
+    card.appendChild(thumb);
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = selection.get(img.id) ?? img.defaultSelected;
-    checkbox.style.cssText = 'position:absolute;top:2px;right:2px;margin:0;';
-    checkbox.addEventListener('change', () => onToggle(img.id, checkbox.checked));
-    wrap.appendChild(checkbox);
+    const check = document.createElement('span');
+    check.className = 'cell-image__check';
+    check.setAttribute('aria-hidden', 'true');
+    check.innerHTML = ICON_CATALOG.check.svg;
+    card.appendChild(check);
 
-    panel.appendChild(wrap);
+    card.addEventListener('click', () => onToggle(img.id, !isSelected));
+    strip.appendChild(card);
   }
 
+  panel.appendChild(strip);
   container.appendChild(panel);
 }
 
@@ -226,20 +236,20 @@ export function renderTranslatePanel(
   onTranslate: () => void,
 ): void {
   const panel = document.createElement('div');
-  panel.setAttribute('data-dp-panel', 'translate');
-  panel.style.cssText = 'padding:8px 12px;';
+  panel.className = 'cell-translate js-cell-panel';
+  panel.setAttribute('data-cell-panel', 'translate');
 
   if (translation) {
     // Show translation result.
     const result = document.createElement('div');
-    result.style.cssText = 'padding:8px;border-radius:6px;background:var(--color-surface-hover,#f1f5f9);margin-bottom:8px;';
+    result.className = 'cell-translate__result';
     result.textContent = translation;
     panel.appendChild(result);
   } else {
     // Show translate button.
     const btn = document.createElement('button');
+    btn.className = 'cell-translate__button';
     btn.textContent = `Translate to ${targetLang}`;
-    btn.style.cssText = 'padding:4px 12px;border-radius:6px;border:1px solid var(--color-border,#cbd5e1);background:transparent;cursor:pointer;font-size:13px;width:100%;';
     btn.addEventListener('click', onTranslate);
     panel.appendChild(btn);
   }
@@ -247,7 +257,7 @@ export function renderTranslatePanel(
   // Source sentence card.
   if (sourceSentence) {
     const card = document.createElement('div');
-    card.style.cssText = 'padding:6px 8px;border-radius:6px;border:1px solid var(--color-border,#e2e8f0);font-size:12px;color:var(--color-text-muted,#64748b);';
+    card.className = 'cell-translate__source';
     card.textContent = sourceSentence;
     panel.appendChild(card);
   }
@@ -261,12 +271,12 @@ export function renderLinksPanel(
   links: readonly ExternalDictLink[],
 ): void {
   const panel = document.createElement('div');
-  panel.setAttribute('data-dp-panel', 'links');
-  panel.style.cssText = 'padding:8px 12px;';
+  panel.className = 'cell-links js-cell-panel';
+  panel.setAttribute('data-cell-panel', 'links');
 
   if (links.length === 0) {
     const empty = document.createElement('div');
-    empty.style.cssText = 'color:var(--color-text-muted,#64748b);font-style:italic;padding:8px 0;';
+    empty.className = 'cell-links__empty';
     empty.textContent = 'No external dictionary links configured.';
     panel.appendChild(empty);
     container.appendChild(panel);
@@ -275,17 +285,11 @@ export function renderLinksPanel(
 
   for (const link of links) {
     const anchor = document.createElement('a');
+    anchor.className = 'cell-links__item';
     anchor.href = link.url;
     anchor.target = '_blank';
     anchor.rel = 'noopener noreferrer';
     anchor.textContent = link.name;
-    anchor.style.cssText = 'display:block;padding:6px 8px;border-radius:6px;color:var(--color-primary,#3b82f6);text-decoration:none;font-size:13px;margin-bottom:4px;';
-    anchor.addEventListener('mouseenter', () => {
-      anchor.style.background = 'var(--color-primary-subtle,rgba(59,130,246,0.1))';
-    });
-    anchor.addEventListener('mouseleave', () => {
-      anchor.style.background = 'transparent';
-    });
     panel.appendChild(anchor);
   }
 
