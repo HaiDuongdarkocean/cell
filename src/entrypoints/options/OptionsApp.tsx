@@ -2,9 +2,12 @@
 // Sidebar 3 items: Tài nguyên / Giao diện / Cài đặt.
 // Responsive: desktop 200px full, tablet 56px icon-only, mobile drawer.
 
-import { useState, useCallback, useRef, type ReactElement, type KeyboardEvent } from 'react';
+import { useState, useCallback, useRef, useEffect, type ReactElement, type KeyboardEvent } from 'react';
 import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
 import { ThemePanel } from '@/features/theme/ui/ThemePanel';
+import { TtsVoiceManagerPanel, DEFAULT_TTS_SETTINGS } from '@/features/tts/ui/TtsVoiceManagerPanel';
+import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import type { TtsSettings, DictionaryPopupSettings } from '@/entities/settings/types';
 import { SidebarItem } from './SidebarItem';
 import type { Tab, SidebarItem as SidebarItemType } from './types';
 import styles from './OptionsApp.module.css';
@@ -13,12 +16,45 @@ const SIDEBAR_ITEMS: readonly SidebarItemType[] = [
   { id: 'resources', label: 'Tài nguyên', icon: '▣' },
   { id: 'theme', label: 'Giao diện', icon: '▢' },
   { id: 'settings', label: 'Cài đặt', icon: '▢' },
+  { id: 'tts', label: 'TTS Voices', icon: '🔊' },
 ];
 
 export function OptionsApp(): ReactElement {
   const [activeTab, setActiveTab] = useState<Tab>('resources');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
+  const [ttsSettings, setTtsSettings] = useState<TtsSettings>(DEFAULT_TTS_SETTINGS);
+
+  // Load TTS settings on mount (settings.dictionaryPopup.tts ?? defaults).
+  useEffect(() => {
+    let cancelled = false;
+    void loadSettings().then((s) => {
+      if (cancelled) return;
+      setTtsSettings(s.dictionaryPopup?.tts ?? DEFAULT_TTS_SETTINGS);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSaveTts = useCallback(async (tts: TtsSettings) => {
+    setTtsSettings(tts);
+    const current = await loadSettings();
+    const dictionaryPopup: DictionaryPopupSettings = {
+      ...(current.dictionaryPopup ?? {
+        enabled: false,
+        triggerMode: 'click',
+        defaultActiveTab: null,
+        srsDestination: 'anki',
+        popupWidthPx: 560,
+        popupMaxHeightPx: 480,
+        translateTargetLang: 'vi',
+        externalDictLinks: [],
+      }),
+      tts,
+    };
+    await saveSettings({ dictionaryPopup });
+  }, []);
 
   const handleTabChange = useCallback((tab: Tab) => {
     setActiveTab(tab);
@@ -114,6 +150,15 @@ export function OptionsApp(): ReactElement {
             hidden={activeTab !== 'settings'}
           >
             <SettingsPlaceholder />
+          </section>
+          <section
+            className={styles.content}
+            role="tabpanel"
+            id="panel-tts"
+            aria-labelledby="nav-tts"
+            hidden={activeTab !== 'tts'}
+          >
+            <TtsVoiceManagerPanel settings={ttsSettings} onSave={(tts) => void handleSaveTts(tts)} />
           </section>
         </div>
       </div>

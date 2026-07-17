@@ -32,7 +32,7 @@ export interface ThemePanelState {
 // === UI-only state (no logic) ===
 
 // Tab — UI-only state (sidebar active item)
-export type Tab = 'resources' | 'theme' | 'settings';
+export type Tab = 'resources' | 'theme' | 'settings' | 'tts';
 
 // Sidebar item — UI config (room grow cho items sau)
 export interface SidebarItem {

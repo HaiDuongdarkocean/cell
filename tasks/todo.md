@@ -20,9 +20,9 @@
 - [x] T13: popupToolbar.ts — loading + error states
 
 ## Phase 4: Options UI — TTS voice manager
-- [ ] T14: TtsVoiceManagerPanel.tsx — voice tester
-- [ ] T15: TtsVoiceManagerPanel.tsx — 3 slot selection + save
-- [ ] T16: OptionsApp.tsx — thêm tab "TTS Voices"
+- [x] T14: TtsVoiceManagerPanel.tsx — voice tester
+- [x] T15: TtsVoiceManagerPanel.tsx — 3 slot selection + save
+- [x] T16: OptionsApp.tsx — thêm tab "TTS Voices"
 
 ## Phase 5: Tests + review
 - [ ] T17: Unit test cho 3 service modules

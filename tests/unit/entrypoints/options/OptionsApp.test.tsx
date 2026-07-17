@@ -8,6 +8,21 @@ jest.mock('@/features/dictionary/ui/ResourcesPanel', () => ({
 jest.mock('@/features/theme/ui/ThemePanel', () => ({
   ThemePanel: () => <div data-testid="theme-panel">Theme</div>,
 }));
+jest.mock('@/features/tts/ui/TtsVoiceManagerPanel', () => ({
+  TtsVoiceManagerPanel: () => <div data-testid="tts-voice-manager">TTS</div>,
+  DEFAULT_TTS_SETTINGS: {
+    enabled: true,
+    savedVoices: [],
+    voices: [],
+    maxDisplay: 3,
+    autoplayCount: 0,
+    preferredAccent: 'US',
+  },
+}));
+jest.mock('@/shared/lib/storage/settingsStore', () => ({
+  loadSettings: jest.fn().mockResolvedValue({ dictionaryPopup: undefined }),
+  saveSettings: jest.fn().mockResolvedValue(undefined),
+}));
 
 describe('OptionsApp shell — sidebar nav (UI-UX-Contract)', () => {
   it('renders title "Cell — Tùy chọn"', () => {
