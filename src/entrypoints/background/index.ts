@@ -67,6 +67,9 @@ import { registerDetectionDispatchHandlers } from './handlers/detectionDispatch'
 import { registerTranslateHandlers } from './handlers/translate';
 import { registerCardCreatorHandlers } from './handlers/cardCreator';
 import { registerLookupHandlers } from './handlers/lookup';
+import { registerTtsHandlers } from './handlers/tts';
+import { registerForvoAudioHandlers } from './handlers/forvoAudio';
+import { registerImageSearchHandlers } from './handlers/images';
 import type { MessageHandler } from '@/entities/message';
 import type {
   DetectedVideo,
@@ -222,6 +225,9 @@ export class BackgroundService implements BackgroundContext {
     registerTranslateHandlers(this);
     registerCardCreatorHandlers(this);
     registerLookupHandlers(this);
+    registerTtsHandlers(this);
+    registerForvoAudioHandlers(this);
+    registerImageSearchHandlers(this);
   }
 
   /** Type-safe wrapper around messageBus.on. */
