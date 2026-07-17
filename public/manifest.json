@@ -13,7 +13,8 @@
     "tabs",
     "sidePanel",
     "webNavigation",
-    "cookies"
+    "cookies",
+    "tts"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {

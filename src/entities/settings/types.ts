@@ -95,6 +95,30 @@ export interface ExternalDictLinkTemplate {
   readonly langCodes: readonly string[];
 }
 
+/** A saved TTS voice row — user chọn + sắp xếp trong options page. */
+export interface TtsVoiceRow {
+  readonly voiceName: string;
+  readonly lang: string;
+  /** Sort order (1-based). Lower = higher priority. */
+  readonly order: number;
+}
+
+/** TTS settings slice (spec popup-dictionary-4tab-logic). */
+export interface TtsSettings {
+  /** Master toggle. Default true. */
+  readonly enabled: boolean;
+  /** User-selected + ordered voices. Empty → auto-detect at runtime. */
+  readonly savedVoices: readonly TtsVoiceRow[];
+  /** 3 priority slots (voiceName). Legacy compat with project-reference. */
+  readonly voices: readonly string[];
+  /** Max voices display in popup. Default 3. */
+  readonly maxDisplay: number;
+  /** Auto-play count on popup open. Default 0. */
+  readonly autoplayCount: number;
+  /** Preferred accent for Forvo scoring: 'US' | 'UK'. Default 'US'. */
+  readonly preferredAccent: 'US' | 'UK';
+}
+
 /** Dictionary Popup settings slice (spec §9.3 — schema v14). */
 export interface DictionaryPopupSettings {
   /** Feature flag. Default false. */
@@ -115,6 +139,8 @@ export interface DictionaryPopupSettings {
   readonly translateTargetLang: string;
   /** External dictionary link templates. */
   readonly externalDictLinks: readonly ExternalDictLinkTemplate[];
+  /** TTS voice settings (audio tab + options page manager). */
+  readonly tts?: TtsSettings;
 }
 
 // === Settings Types ===
