@@ -27,6 +27,7 @@ import {
   getSelectedDefinitions,
 } from './popupContent';
 import { renderToolbar, renderAudioPanel, renderImagePanel, renderTranslatePanel, renderLinksPanel } from './popupToolbar';
+import type { SelectionCounts } from './popupToolbar';
 import { nextStatus } from '../services/wordStatusStore';
 import { assembleQuickAddPayload } from '../services/quickAddAssembler';
 import { executeQuickAdd } from '../services/quickAddHandler';
@@ -222,7 +223,7 @@ export function appendCandidate(
       candidateTab = null;
       rerenderCandidateTab();
       state.shell?.rePosition();
-    });
+    }, countMapTrue(candidateAudioSelection) > 0 ? { audio: countMapTrue(candidateAudioSelection) } : undefined);
     if (!candidateTab) return;
     // Render panel into slot after toolbar.
     renderTabPanel(slot as HTMLElement, candidateTab, result, {
@@ -387,6 +388,25 @@ export async function doQuickAdd(state: PopupDictionaryState): Promise<QuickAddR
 
 // --- Internal helpers ---
 
+/** Count selected items per tab for toolbar badges. */
+function countSelections(state: PopupDictionaryState): SelectionCounts {
+  const audioCount = countMapTrue(state.audioSelection);
+  const imageCount = countMapTrue(state.imageSelection);
+  const translateCount = state.translation ? 1 : 0;
+  const counts: SelectionCounts = {};
+  if (audioCount > 0) counts.audio = audioCount;
+  if (imageCount > 0) counts.image = imageCount;
+  if (translateCount > 0) counts.translate = translateCount;
+  return counts;
+}
+
+/** Count true values in a Map. */
+function countMapTrue(map: Map<string, boolean>): number {
+  let n = 0;
+  for (const v of map.values()) if (v) n++;
+  return n;
+}
+
 /** Render the winner's toolbar + optional panel into its .js-cell-toolbar-slot.
  *  Mirrors appendCandidate's rerenderCandidateTab so the winner has the same
  *  .js-cell-toolbar as appended candidates. */
@@ -400,7 +420,7 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
   renderToolbar(slot, state.activeTab, (t) => toggleTab(state, t), () => {
     state.activeTab = null;
     rerender(state, null);
-  });
+  }, countSelections(state));
   if (!state.activeTab) return;
   renderTabPanel(slot, state.activeTab, state.currentResult, {
     contextSentence: state.contextSentence,

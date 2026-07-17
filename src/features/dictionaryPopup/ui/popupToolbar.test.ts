@@ -84,6 +84,22 @@ describe('renderToolbar', () => {
       expect(t.querySelector('svg')).not.toBeNull();
     });
   });
+
+  it('renders badge when selectionCounts > 0', () => {
+    renderToolbar(container, null, jest.fn(), jest.fn(), { audio: 2, image: 1 });
+    const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
+    const imageTab = container.querySelector('.js-cell-tab[data-cell-tab="image"]') as HTMLButtonElement;
+    const translateTab = container.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
+    expect(audioTab.querySelector('.cell-toolbar__badge')?.textContent).toBe('2');
+    expect(imageTab.querySelector('.cell-toolbar__badge')?.textContent).toBe('1');
+    expect(translateTab.querySelector('.cell-toolbar__badge')).toBeNull();
+  });
+
+  it('does not render badge when count is 0', () => {
+    renderToolbar(container, null, jest.fn(), jest.fn(), { audio: 0 });
+    const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
+    expect(audioTab.querySelector('.cell-toolbar__badge')).toBeNull();
+  });
 });
 
 describe('renderAudioPanel', () => {
@@ -101,15 +117,6 @@ describe('renderAudioPanel', () => {
     expect(groups.length).toBe(2);
     expect(groups[0]!.textContent).toBe('Word Audio');
     expect(groups[1]!.textContent).toBe('Sentence Audio');
-  });
-
-  it('renders checkboxes for each audio item', () => {
-    const wordAudios = [makeAudio({ id: 'w1' }), makeAudio({ id: 'w2' })];
-    renderAudioPanel(container, wordAudios, [], new Map([['w1', true], ['w2', false]]), jest.fn(), jest.fn());
-    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-    expect(checkboxes.length).toBe(2);
-    expect((checkboxes[0] as HTMLInputElement).checked).toBe(true);
-    expect((checkboxes[1] as HTMLInputElement).checked).toBe(false);
   });
 
   it('renders play buttons with SVG icon (not text ▶)', () => {
@@ -132,31 +139,51 @@ describe('renderAudioPanel', () => {
     expect(onPlay).toHaveBeenCalledWith(wordAudios[0]);
   });
 
-  it('checkbox change triggers onToggle', () => {
+  it('label click triggers onToggle', () => {
     const onToggle = jest.fn();
-    const wordAudios = [makeAudio({ id: 'w1' })];
+    const wordAudios = [makeAudio({ id: 'w1', label: 'Forvo · US · Female' })];
     renderAudioPanel(container, wordAudios, [], new Map([['w1', true]]), onToggle, jest.fn());
-    const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    checkbox.checked = false;
-    checkbox.dispatchEvent(new Event('change'));
+    const labelEl = container.querySelector('.js-cell-audio-label') as HTMLSpanElement;
+    labelEl.click();
     expect(onToggle).toHaveBeenCalledWith('w1', false);
   });
 
-  it('renders empty state when no audio', () => {
-    renderAudioPanel(container, [], [], new Map(), jest.fn(), jest.fn());
-    expect(container.textContent).toContain('No audio available');
+  it('splits label into name + meta by " · "', () => {
+    const wordAudios = [makeAudio({ id: 'w1', label: 'Forvo · US · Female' })];
+    renderAudioPanel(container, wordAudios, [], new Map(), jest.fn(), jest.fn());
+    const nameEl = container.querySelector('.cell-audio__label-name') as HTMLSpanElement;
+    const metaEl = container.querySelector('.cell-audio__label-meta') as HTMLSpanElement;
+    expect(nameEl.textContent).toBe('Forvo');
+    expect(metaEl.textContent).toBe('US · Female');
   });
 
-  it('audio item has layout: play button, label, selection indicator', () => {
+  it('checkbox hidden when unchecked, visible when checked', () => {
+    const wordAudios = [makeAudio({ id: 'w1' }), makeAudio({ id: 'w2' })];
+    renderAudioPanel(container, wordAudios, [], new Map([['w1', true], ['w2', false]]), jest.fn(), jest.fn());
+    const checks = container.querySelectorAll('.cell-audio__check');
+    expect(checks.length).toBe(2);
+    expect(checks[0]!.classList.contains('cell-audio__check--checked')).toBe(true);
+    expect(checks[1]!.classList.contains('cell-audio__check--checked')).toBe(false);
+  });
+
+  it('renders empty state with icon + title + button', () => {
+    renderAudioPanel(container, [], [], new Map(), jest.fn(), jest.fn());
+    expect(container.textContent).toContain('No audio available');
+    expect(container.querySelector('.cell-audio__empty-icon svg')).not.toBeNull();
+    expect(container.querySelector('.js-cell-audio-tts-fallback')).not.toBeNull();
+  });
+
+  it('audio item has layout: play button, label, checkbox', () => {
     const wordAudios = [makeAudio({ id: 'w1', label: 'Forvo · US' })];
     renderAudioPanel(container, wordAudios, [], new Map(), jest.fn(), jest.fn());
     const item = container.querySelector('.js-cell-audio-item') as HTMLDivElement;
     expect(item).not.toBeNull();
-    // First child = play button, second = label, third = selection label
     const playBtn = item.querySelector('.js-cell-audio-play');
-    const checkbox = item.querySelector('input[type="checkbox"]');
+    const label = item.querySelector('.js-cell-audio-label');
+    const check = item.querySelector('.js-cell-audio-check');
     expect(playBtn).not.toBeNull();
-    expect(checkbox).not.toBeNull();
+    expect(label).not.toBeNull();
+    expect(check).not.toBeNull();
   });
 });
 
