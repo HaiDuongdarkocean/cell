@@ -24,9 +24,9 @@ export const HOVER_DEBOUNCE_MS = 150;
 export const CLICK_DEBOUNCE_MS = 50;
 
 /** Data attributes on token spans. */
-const DATA_TERM = 'data-dp-term';
-const DATA_START = 'data-dp-start';
-const DATA_END = 'data-dp-end';
+const DATA_TERM = 'data-cell-term';
+const DATA_START = 'data-cell-start';
+const DATA_END = 'data-cell-end';
 
 /** Check if a modifier key matches the trigger mode. */
 function modifierMatches(mode: TriggerMode, e: MouseEvent): boolean {
@@ -61,7 +61,7 @@ export function tokenizeSubtitleText(text: string, langCode: string): readonly T
 
 /**
  * Wrap a subtitle text span's content into per-token child spans.
- * Each token span has data-dp-term, data-dp-start, data-dp-end attributes.
+ * Each token span has data-cell-term, data-cell-start, data-cell-end attributes.
  * Non-token characters (whitespace, punctuation) are kept as text nodes.
  *
  * Returns the list of created token span elements.

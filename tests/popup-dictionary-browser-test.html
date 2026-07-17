@@ -87,10 +87,10 @@ function createPopup(anchorX, anchorY) {
 document.querySelectorAll('#sub span').forEach(span => {
   span.addEventListener('click', (e) => {
     // Remove existing popup
-    document.querySelectorAll('[data-dp-popup-host]').forEach(h => h.remove());
+    document.querySelectorAll('.js-cell-popup-host').forEach(h => h.remove());
     const rect = span.getBoundingClientRect();
     const popup = createPopup(rect.left, rect.top);
-    popup.host.setAttribute('data-dp-popup-host', '');
+    popup.host.className = 'js-cell-popup-host';
     // Esc to dismiss
     const onKey = (ev) => { if (ev.key === 'Escape') { popup.host.remove(); document.removeEventListener('keydown', onKey); } };
     document.addEventListener('keydown', onKey);

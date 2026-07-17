@@ -17,6 +17,14 @@ Build production-quality user interfaces that are accessible, performant, and vi
 - Adding interactivity or state management
 - Fixing visual or UX issues
 
+## Convention
+
+Luôn luôn tuân thủ các convention htmlcss và typescript của skill /learning-and-apply
+
+luôn luôn tuân thủ design system trong src reuse hơn là tự sáng tạo
+
+chú ý file `src/shared/..` chúng là các component shared, hãy sử dụng chúng thay vì tự tạo component mới
+
 ## Component Architecture
 
 ### File Structure

@@ -46,7 +46,7 @@ describe('updateOverlayWithTokens', () => {
     const result = updateOverlayWithTokens(overlay, 'Hello world.', state);
     expect(result).toBe(true);
     // Should have token spans as children.
-    const spans = textSpan.querySelectorAll('span[data-dp-term]');
+    const spans = textSpan.querySelectorAll('span[data-cell-term]');
     expect(spans.length).toBe(2);
   });
 
@@ -57,7 +57,7 @@ describe('updateOverlayWithTokens', () => {
     enableTokenWrap(state, 'click', onLookup as unknown as (req: LookupRequest, id: string) => void, onCancel as unknown as (id: string) => void);
 
     updateOverlayWithTokens(overlay, '我喜欢你', state);
-    const spans = textSpan.querySelectorAll('span[data-dp-term]');
+    const spans = textSpan.querySelectorAll('span[data-cell-term]');
     expect(spans.length).toBe(4);
     expect(state.currentLangCode).toBe('zh');
   });

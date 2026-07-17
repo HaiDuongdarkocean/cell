@@ -240,8 +240,8 @@ export class WebTriggerController {
     const target = e.target as HTMLElement | null;
     if (!target) return;
     // Skip our own popup + subtitle overlay (handled by subtitleTriggerController).
-    if (target.closest('[data-dp-popup-host]')) return;
-    if (target.closest('[data-dp-subtitle]')) return;
+    if (target.closest('.js-cell-popup-host')) return;
+    if (target.closest('[data-cell-subtitle]')) return;
 
     // Get the text node + offset at the cursor position.
     const range = document.caretRangeFromPoint(e.clientX, e.clientY);

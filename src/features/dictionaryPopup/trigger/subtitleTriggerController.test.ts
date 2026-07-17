@@ -56,19 +56,19 @@ describe('wrapTokenSpans', () => {
     const spans = wrapTokenSpans(parent, 'Hello world.', 'en');
     expect(spans).toHaveLength(2);
     expect(spans[0]!.textContent).toBe('Hello');
-    expect(spans[0]!.getAttribute('data-dp-term')).toBe('hello');
-    expect(spans[0]!.getAttribute('data-dp-start')).toBe('0');
-    expect(spans[0]!.getAttribute('data-dp-end')).toBe('5');
+    expect(spans[0]!.getAttribute('data-cell-term')).toBe('hello');
+    expect(spans[0]!.getAttribute('data-cell-start')).toBe('0');
+    expect(spans[0]!.getAttribute('data-cell-end')).toBe('5');
     expect(spans[1]!.textContent).toBe('world');
-    expect(spans[1]!.getAttribute('data-dp-term')).toBe('world');
+    expect(spans[1]!.getAttribute('data-cell-term')).toBe('world');
   });
 
   it('wraps Chinese text into per-char token spans', () => {
     const parent = document.createElement('span');
     const spans = wrapTokenSpans(parent, '我喜欢你', 'zh');
     expect(spans).toHaveLength(4);
-    expect(spans[0]!.getAttribute('data-dp-term')).toBe('我');
-    expect(spans[1]!.getAttribute('data-dp-term')).toBe('喜');
+    expect(spans[0]!.getAttribute('data-cell-term')).toBe('我');
+    expect(spans[1]!.getAttribute('data-cell-term')).toBe('喜');
   });
 
   it('preserves whitespace between tokens as text nodes', () => {
