@@ -247,6 +247,23 @@
     },
     {
       "type": "experience",
+      "id": "css-js-hook-separate-from-data-attribute",
+      "title": "JS hooks use .js- class; data-* stores data, never behavior bindings",
+      "category": [
+        "css",
+        "ux"
+      ],
+      "tags": [
+        "bem",
+        "js-hook",
+        "data-attribute",
+        "queryselector",
+        "separation-of-concerns"
+      ],
+      "trigger": "JS querySelector/closest chọn element để bind behavior"
+    },
+    {
+      "type": "experience",
       "id": "data-half-open-interval-time-matching",
       "title": "Half-open intervals [start, end) for time-based matching",
       "category": [
