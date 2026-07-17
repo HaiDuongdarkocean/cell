@@ -17,8 +17,6 @@ import type {
 import type {
   MessageResponse,
   DownloadListResponse,
-  GetDownloadProgressPayload,
-  ConversionProgressUpdatePayload,
   DownloadProgressUpdatePayload,
 } from '@/entities/message';
 import {
@@ -26,6 +24,8 @@ import {
   DownloadSubtitlePayloadSchema,
   DownloadAllPayloadSchema,
   CancelDownloadPayloadSchema,
+  GetDownloadProgressPayloadSchema,
+  ConversionProgressUpdatePayloadSchema,
 } from '@/entities/message/schema';
 
 /** Register all download-related message handlers on the context's messageBus. */
@@ -164,7 +164,11 @@ export function registerDownloadHandlers(ctx: BackgroundContext): void {
 
   ctx.on(MESSAGE_TYPES.GET_DOWNLOAD_PROGRESS, async (request): Promise<MessageResponse<DownloadListResponse>> => {
     await ctx.sessionReady;
-    const payload = request.payload as GetDownloadProgressPayload | undefined;
+    const parsed = GetDownloadProgressPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid GET_DOWNLOAD_PROGRESS payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     const downloads =
       payload?.tabId !== undefined
         ? ctx.downloadQueue.getByTab(payload.tabId)
@@ -173,10 +177,11 @@ export function registerDownloadHandlers(ctx: BackgroundContext): void {
   });
 
   ctx.on(MESSAGE_TYPES.CONVERSION_PROGRESS_UPDATE, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as ConversionProgressUpdatePayload;
-    if (!payload?.downloadId) {
-      return { success: false, error: 'Missing downloadId in conversion progress' };
+    const parsed = ConversionProgressUpdatePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid CONVERSION_PROGRESS_UPDATE payload: ${parsed.error.message}` };
     }
+    const payload = parsed.data;
 
     const progress: DownloadProgress = {
       itemId: payload.downloadId,

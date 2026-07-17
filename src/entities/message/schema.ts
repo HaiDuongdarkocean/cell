@@ -105,6 +105,30 @@ export const RequestSubtitleCuesPayloadSchema = z.object({
   tabId: z.number().int().optional(),
 });
 
+// === Download / conversion payloads ===
+
+export const GetDownloadProgressPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+}).optional();
+
+export const ConversionPhaseSchema = z.enum([
+  'planning',
+  'transmuxing',
+  'merging',
+  'validating',
+  'done',
+]);
+
+export const ConversionProgressUpdatePayloadSchema = z.object({
+  downloadId: z.string().min(1),
+  percent: z.number().min(0).max(100),
+  phase: ConversionPhaseSchema,
+  fileSize: z.number().int().min(0),
+  processedBytes: z.number().int().min(0),
+  workerCount: z.number().int().min(0),
+  usedWorkers: z.boolean(),
+});
+
 // === Side panel payloads ===
 
 export const TogglePlayPayloadSchema = z.object({
