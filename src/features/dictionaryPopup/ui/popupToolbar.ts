@@ -56,12 +56,12 @@ export function renderToolbar(
       if (isOpening && onTabOpen) onTabOpen(config.tab);
     });
 
-    // Badge — selection count when > 0.
+    // Badge — shows '+' as soon as any item in the tab is selected.
     const count = selectionCounts?.[config.tab] ?? 0;
     if (count > 0) {
       const badge = document.createElement('span');
       badge.className = 'cell-toolbar__badge';
-      badge.textContent = String(count);
+      badge.textContent = '+';
       btn.appendChild(badge);
     }
 

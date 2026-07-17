@@ -101,13 +101,13 @@ describe('renderToolbar', () => {
     });
   });
 
-  it('renders badge when selectionCounts > 0', () => {
+  it('renders + badge when any item is selected', () => {
     renderToolbar(container, null, jest.fn(), jest.fn(), { audio: 2, image: 1 });
     const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
     const imageTab = container.querySelector('.js-cell-tab[data-cell-tab="image"]') as HTMLButtonElement;
     const translateTab = container.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
-    expect(audioTab.querySelector('.cell-toolbar__badge')?.textContent).toBe('2');
-    expect(imageTab.querySelector('.cell-toolbar__badge')?.textContent).toBe('1');
+    expect(audioTab.querySelector('.cell-toolbar__badge')?.textContent).toBe('+');
+    expect(imageTab.querySelector('.cell-toolbar__badge')?.textContent).toBe('+');
     expect(translateTab.querySelector('.cell-toolbar__badge')).toBeNull();
   });
 
