@@ -1,0 +1,16 @@
+{
+  "id": "css-shadow-dom-scrollbar-scope",
+  "title": "Shadow DOM utility CSS must be scoped — global * leaks to host page",
+  "category": ["css", "rendering"],
+  "tags": ["shadow-dom", "scrollbar", "global-selector", "css-scope", "content-script"],
+  "trigger": "Khi viết utility CSS trong Shadow DOM component dùng selector toàn cục (* hoặc ::-webkit-scrollbar)",
+  "principle": "CSS trong Shadow DOM không bị leak ra host page, NHƯNG nếu CSS được inject qua ?raw import string rồi append vào document (không qua Shadow DOM) thì selector toàn cục * ảnh hưởng toàn bộ trang. Luôn scope utility CSS bằng class block (.cell-popup *) thay vì *.",
+  "cases": [
+    {
+      "context": "popupDictionary.css có utility ẩn scrollbar: * { scrollbar-width: none; } — file được import ?raw và append vào Shadow DOM, nhưng nếu có path nào append ngoài Shadow DOM thì leak",
+      "bad": "/* === Utility: hide scrollbar but keep scrollable === */\n::-webkit-scrollbar { display: none; }\n* { scrollbar-width: none; }",
+      "good": "/* === Utility: hide scrollbar (scoped to popup) === */\n.cell-popup ::-webkit-scrollbar { display: none; }\n.cell-popup * { scrollbar-width: none; }"
+    }
+  ],
+  "applyFor": ["Shadow DOM components", "Content script CSS injection", "Any utility CSS that uses global selectors"]
+}

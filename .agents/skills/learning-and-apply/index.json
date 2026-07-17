@@ -803,6 +803,14 @@
         "accessibility"
       ],
       "trigger": "scrollIntoView smooth gây motion sickness trên long list khi distance lớn (panel open, seek far)"
+    },
+    {
+      "type": "experience",
+      "id": "css-shadow-dom-scrollbar-scope",
+      "title": "Shadow DOM utility CSS must be scoped — global * leaks to host page",
+      "category": ["css", "rendering"],
+      "tags": ["shadow-dom", "scrollbar", "global-selector", "css-scope", "content-script"],
+      "trigger": "Khi viết utility CSS trong Shadow DOM component dùng selector toàn cục (* hoặc ::-webkit-scrollbar)"
     }
   ]
 }
