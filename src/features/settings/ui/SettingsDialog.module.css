@@ -2,7 +2,7 @@
 .overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--dialog-overlay-bg, rgba(0, 0, 0, 0.5));
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition);

@@ -489,10 +489,10 @@ export class PopupShell {
     if (!this.host) return;
     const composedPath = e.composedPath();
     if (!composedPath.includes(this.host)) {
-      // Don't dismiss if clicking on a subtitle token span (data-cell-term) —
+      // Don't dismiss if clicking on a subtitle token span (.js-cell-token) —
       // that triggers a new lookup, not a dismiss.
       const target = e.target as HTMLElement | null;
-      if (target?.closest?.('[data-cell-term]')) return;
+      if (target?.closest?.('.js-cell-token')) return;
       // Click outside — dismiss.
       this.onDismiss();
     }
