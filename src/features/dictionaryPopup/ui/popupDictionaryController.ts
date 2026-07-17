@@ -14,6 +14,7 @@
 // The controller manages the lifecycle: enable/disable, lookup → render,
 // status cycle, tab toggle, Quick Add.
 
+import type { MessageResponse } from '@/entities/message/types';
 import type { LookupResult, WordStatus, PopupTab, QuickAddResponse, AudioItem, ImageItem, FetchCommunityAudioResponse, FetchImagesResponse } from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings, TtsVoiceRow } from '@/entities/settings/types';
 import type { TokenWrapState } from '../trigger/subtitleTokenWrap';
@@ -575,8 +576,8 @@ function renderTabPanel(
               defaultSelected: false,
             }))
           : [];
-        const wordAudios = [...forvoItems, ...ttsWordItems];
-        const sentenceAudios = ttsSentenceItems;
+        const wordAudios = [...forvoItems, ...ttsWordItems].slice(0, 3);
+        const sentenceAudios = ttsSentenceItems.slice(0, 3);
         // Store fetched items in ctx (same array ref as state) for Quick Add payload.
         ctx.audioItems.length = 0;
         ctx.audioItems.push(...wordAudios, ...sentenceAudios);
@@ -608,11 +609,10 @@ function renderTabPanel(
       void (async () => {
         try {
           const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
-          const res = await sendMessage<FetchImagesResponse>({
+          const res = await sendMessage<MessageResponse<FetchImagesResponse>>({
             type: 'FETCH_IMAGES',
             payload: { tabId: 0, term: result.term, langCode: result.langCode, maxResults: 8 },
           });
-          // Response shape: MessageResponse<FetchImagesResponse> = { success, data?: { items } }
           const items = res?.data?.items ?? [];
           // Store fetched items in ctx (same array ref as state) for Quick Add payload.
           ctx.imageItems.length = 0;
@@ -804,7 +804,7 @@ async function playTts(item: AudioItem, term: string, sentence: string, langCode
 async function fetchForvoAudio(term: string, langCode: string): Promise<AudioItem[]> {
   try {
     const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
-    const res = await sendMessage<FetchCommunityAudioResponse>({
+    const res = await sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
       type: 'FETCH_COMMUNITY_AUDIO',
       payload: { tabId: 0, term, langCode, kind: 'word' },
     });
