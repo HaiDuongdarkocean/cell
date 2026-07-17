@@ -422,7 +422,7 @@ export class PopupShell {
 
     // Re-resolve when OS theme changes (matters when mode='system').
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
-    const onSystemChange = (): void => this.refreshTheme();
+    const onSystemChange = (): void => { void this.refreshTheme(); };
     mql.addEventListener('change', onSystemChange);
 
     this.themeCleanup = (): void => {

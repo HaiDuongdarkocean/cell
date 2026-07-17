@@ -15,6 +15,7 @@ import {
   getInitialPopupSize,
   appendCandidate,
 } from './popupDictionaryController';
+import type { PopupDictionaryState } from './popupDictionaryController';
 import type { LookupResult, WordStatus } from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
@@ -36,7 +37,7 @@ beforeAll(() => {
     removeListener: jest.fn(),
   };
   c.runtime = { sendMessage: jest.fn() };
-  window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+  window.matchMedia = jest.fn((query: string) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -45,7 +46,7 @@ beforeAll(() => {
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
-  }));
+  })) as unknown as typeof window.matchMedia;
 });
 
 function makeResult(overrides: Partial<LookupResult> = {}): LookupResult {
@@ -175,7 +176,7 @@ describe('showPopup', () => {
     // Simulate shell dismiss (Esc / click outside).
     newState.shell?.['onDismiss']();
     expect(onDismiss).toHaveBeenCalledTimes(1);
-    const dismissedState = onDismiss.mock.calls[0]![0];
+    const dismissedState = onDismiss.mock.calls[0]![0] as PopupDictionaryState;
     expect(dismissedState.currentResult).toBeNull();
   });
 
@@ -224,15 +225,15 @@ describe('showPopup', () => {
   it('reuses cached translation when reopening same term+sentence', async () => {
     const result = makeResult();
     let shown = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
-    let container = shown.shell?.getContainer()!;
+    let container = shown.shell!.getContainer()!;
     const translate = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
     translate.click();
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Close popup, then reopen same term + sentence.
-    let hidden = hidePopup(shown);
+    const hidden = hidePopup(shown);
     shown = showPopup(hidden, result, 170, 100, 150, 200, 'Take off your shoes.');
-    container = shown.shell?.getContainer()!;
+    container = shown.shell!.getContainer()!;
 
     // Translate tab should already show cached block; clicking tab does NOT re-fetch.
     mockSendMessage.mockClear();
@@ -250,7 +251,7 @@ describe('showPopup', () => {
 
     // Open A, fetch translate.
     let shown = showPopup(state, resultA, 170, 100, 150, 200, 'Take off your shoes.');
-    let container = shown.shell?.getContainer()!;
+    let container = shown.shell!.getContainer()!;
     const translate = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
     translate.click();
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -266,7 +267,7 @@ describe('showPopup', () => {
     expect(shown.cachedResultTerm).toBe('take off');
 
     // Reopening A's translate tab should NOT re-fetch.
-    container = shown.shell?.getContainer()!;
+    container = shown.shell!.getContainer()!;
     mockSendMessage.mockClear();
     const translate2 = container.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
     translate2.click();

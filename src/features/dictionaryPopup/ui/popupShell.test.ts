@@ -25,7 +25,7 @@ beforeAll(() => {
     }),
   };
   // matchMedia mock (jsdom doesn't have it)
-  window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+  window.matchMedia = jest.fn((query: string) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -34,7 +34,7 @@ beforeAll(() => {
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
-  }));
+  })) as unknown as typeof window.matchMedia;
 });
 
 describe('clampPopupSize', () => {
