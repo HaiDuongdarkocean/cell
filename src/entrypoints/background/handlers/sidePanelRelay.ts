@@ -12,36 +12,40 @@ import {
   sendMessage,
   queryTabs,
   sendTabMessage,
+  getTab,
 } from '@/shared/lib/chrome-apis';
 import type { BackgroundContext } from '../context';
 import {
   updateBadgeForTab,
   clearSessionMedia,
 } from '../helpers';
-import type {
-  MessageResponse,
-  OpenSidePanelPayload,
-  CloseSidePanelPayload,
-  VideoTimeUpdatePayload,
-  VideoPlayStatePayload,
-  SeekToPayload,
-  ShortcutActionPayload,
-  VideoEpisodeChangedPayload,
-} from '@/entities/message';
+import type { MessageResponse } from '@/entities/message';
+import {
+  TogglePlayPayloadSchema,
+  OpenSidePanelPayloadSchema,
+  CloseSidePanelPayloadSchema,
+  VideoTimeUpdatePayloadSchema,
+  VideoPlayStatePayloadSchema,
+  SeekToPayloadSchema,
+  ShortcutActionPayloadSchema,
+  VideoEpisodeChangedPayloadSchema,
+} from '@/entities/message/schema';
 
 /** Register side panel relay message handlers. */
 export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
   // OPEN_SIDE_PANEL: content-script asks background to open the side panel.
   ctx.on(MESSAGE_TYPES.OPEN_SIDE_PANEL, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as OpenSidePanelPayload;
-    const tabId = payload?.tabId;
-    console.log('[bg OPEN_SIDE_PANEL] received', { tabId });
+    const parsed = OpenSidePanelPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid OPEN_SIDE_PANEL payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
+    const tabId = payload.tabId;
     if (tabId === undefined) {
       return { success: false, error: 'Missing tabId in OPEN_SIDE_PANEL' };
     }
     try {
       await openSidePanel({ tabId });
-      console.log('[bg OPEN_SIDE_PANEL] success', { tabId });
       return { success: true };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -54,13 +58,17 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
   // chrome.sidePanel.close() (Chrome 141+) takes tabId or windowId. We resolve
   // the tab's windowId from the tabId so the global panel closes for that window.
   ctx.on(MESSAGE_TYPES.CLOSE_SIDE_PANEL, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as CloseSidePanelPayload;
-    const tabId = payload?.tabId;
+    const parsed = CloseSidePanelPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid CLOSE_SIDE_PANEL payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
+    const tabId = payload.tabId;
     if (tabId === undefined) {
       return { success: false, error: 'Missing tabId in CLOSE_SIDE_PANEL' };
     }
     try {
-      const tab = await chrome.tabs.get(tabId);
+      const tab = await getTab(tabId);
       await closeSidePanel({ windowId: tab.windowId });
       // Relay close back to the content script so it resets its sidePanelOpen
       // flag. runtime.sendMessage from the side panel does NOT reach content
@@ -83,10 +91,11 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
 
   // VIDEO_TIME_UPDATE: relay current playback time to side panel (active tab only).
   ctx.on(MESSAGE_TYPES.VIDEO_TIME_UPDATE, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as VideoTimeUpdatePayload;
-    if (payload?.currentTimeMs === undefined) {
-      return { success: false, error: 'Missing currentTimeMs' };
+    const parsed = VideoTimeUpdatePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid VIDEO_TIME_UPDATE payload: ${parsed.error.message}` };
     }
+    const payload = parsed.data;
     if (payload.tabId !== undefined && payload.tabId !== ctx.activeTabIdForPanel) {
       return { success: true };
     }
@@ -110,10 +119,11 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
 
   // VIDEO_PLAY_STATE: relay play/pause state to side panel (active tab only).
   ctx.on(MESSAGE_TYPES.VIDEO_PLAY_STATE, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as VideoPlayStatePayload;
-    if (payload?.isPlaying === undefined) {
-      return { success: false, error: 'Missing isPlaying' };
+    const parsed = VideoPlayStatePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid VIDEO_PLAY_STATE payload: ${parsed.error.message}` };
     }
+    const payload = parsed.data;
     if (payload.tabId !== undefined && payload.tabId !== ctx.activeTabIdForPanel) {
       return { success: true };
     }
@@ -130,9 +140,13 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
 
   // SEEK_TO: side panel asks background to seek the video in the content script.
   ctx.on(MESSAGE_TYPES.SEEK_TO, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as SeekToPayload;
-    let tabId = payload?.tabId;
-    const timeMs = payload?.timeMs;
+    const parsed = SeekToPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid SEEK_TO payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
+    let tabId = payload.tabId;
+    const { timeMs } = payload;
     if (timeMs === undefined) {
       return { success: false, error: 'Missing timeMs in SEEK_TO' };
     }
@@ -162,7 +176,11 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
 
   // TOGGLE_PLAY: side panel asks background to toggle play/pause.
   ctx.on(MESSAGE_TYPES.TOGGLE_PLAY, async (request): Promise<MessageResponse> => {
-    let tabId = (request.payload as { tabId?: number })?.tabId;
+    const parsed = TogglePlayPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid TOGGLE_PLAY payload: ${parsed.error.message}` };
+    }
+    let tabId = parsed.data.tabId;
     if (tabId === undefined) {
       try {
         const [activeTab] = await queryTabs({ active: true, currentWindow: true });
@@ -188,12 +206,13 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
 
   // SHORTCUT_ACTION: side panel asks background to trigger a cue navigation shortcut.
   ctx.on(MESSAGE_TYPES.SHORTCUT_ACTION, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as ShortcutActionPayload;
-    const action = payload?.action;
-    if (!action || !['prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay'].includes(action)) {
-      return { success: false, error: `Invalid shortcut action: ${action}` };
+    const parsed = ShortcutActionPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid SHORTCUT_ACTION payload: ${parsed.error.message}` };
     }
-    let tabId = payload?.tabId;
+    const payload = parsed.data;
+    const { action } = payload;
+    let tabId = payload.tabId;
     if (tabId === undefined) {
       try {
         const [activeTab] = await queryTabs({ active: true, currentWindow: true });
@@ -220,18 +239,20 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
 
   // VIDEO_EPISODE_CHANGED: content-script detected an in-page episode switch.
   ctx.on(MESSAGE_TYPES.VIDEO_EPISODE_CHANGED, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as VideoEpisodeChangedPayload;
-    const tabId = payload?.tabId;
+    const parsed = VideoEpisodeChangedPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid VIDEO_EPISODE_CHANGED payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
+    const tabId = payload.tabId;
     if (tabId === undefined) {
       return { success: false, error: 'Missing tabId in VIDEO_EPISODE_CHANGED payload' };
     }
-    const beforeSubs = ctx.networkInterceptor.getSubtitles(tabId).length;
     ctx.networkInterceptor.clearTab(tabId);
     clearSessionMedia(ctx, tabId);
     ctx.lastCuesByTab.delete(tabId);
     ctx.autoDownloadedTabs.delete(tabId);
     updateBadgeForTab(ctx, tabId);
-    console.log('[bg VIDEO_EPISODE_CHANGED] cleared', { tabId, beforeSubs, afterSubs: ctx.networkInterceptor.getSubtitles(tabId).length });
     return { success: true };
   });
 }

@@ -21,22 +21,25 @@ import type {
 } from '@/entities/media';
 import type {
   MessageResponse,
-  UpdateSubtitleLanguagePayload,
-  RequestAutoLoadSubtitlesPayload,
-  FetchSubtitleContentPayload,
   FetchSubtitleContentResult,
-  SubtitleCuesLoadedPayload,
-  RequestSubtitleCuesPayload,
 } from '@/entities/message';
+import {
+  UpdateSubtitleLanguagePayloadSchema,
+  RequestAutoLoadSubtitlesPayloadSchema,
+  FetchSubtitleContentPayloadSchema,
+  SubtitleCuesLoadedPayloadSchema,
+  RequestSubtitleCuesPayloadSchema,
+} from '@/entities/message/schema';
 
 /** Register subtitle message handlers. */
 export function registerSubtitleHandlers(ctx: BackgroundContext): void {
   // UPDATE_SUBTITLE_LANGUAGE: update a subtitle's detected language code.
   ctx.on(MESSAGE_TYPES.UPDATE_SUBTITLE_LANGUAGE, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as UpdateSubtitleLanguagePayload;
-    if (!payload?.subtitleId || !payload?.language) {
-      return { success: false, error: 'Missing subtitleId or language' };
+    const parsed = UpdateSubtitleLanguagePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid UPDATE_SUBTITLE_LANGUAGE payload: ${parsed.error.message}` };
     }
+    const payload = parsed.data;
 
     const existingSub = ctx.networkInterceptor.getAllSubtitles().find((s) => s.id === payload.subtitleId);
     if (existingSub) {
@@ -63,9 +66,12 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
 
   // REQUEST_AUTO_LOAD_SUBTITLES: content-script asks background to re-push.
   ctx.on(MESSAGE_TYPES.REQUEST_AUTO_LOAD_SUBTITLES, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as RequestAutoLoadSubtitlesPayload;
-    const tabId = payload?.tabId;
-    console.log('[bg REQUEST_AUTO_LOAD_SUBTITLES]', { tabId });
+    const parsed = RequestAutoLoadSubtitlesPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid REQUEST_AUTO_LOAD_SUBTITLES payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
+    const tabId = payload.tabId;
     if (tabId === undefined) {
       return { success: false, error: 'Missing tabId in REQUEST_AUTO_LOAD_SUBTITLES' };
     }
@@ -76,12 +82,6 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
         | Record<string, { videos: DetectedVideo[]; subtitles: DetectedSubtitle[] }>
         | undefined;
       const entry = all?.[String(tabId)];
-      console.log('[bg REQUEST_AUTO_LOAD_SUBTITLES] session media', {
-        tabId,
-        hasEntry: !!entry,
-        subtitleCount: entry?.subtitles?.length ?? 0,
-        subtitleLanguages: entry?.subtitles?.map((s) => s.language),
-      });
       if (!entry || entry.subtitles.length === 0) {
         return { success: true };
       }
@@ -95,11 +95,12 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
 
   // FETCH_SUBTITLE_CONTENT: content-script asks background to fetch a subtitle URL (CORS).
   ctx.on(MESSAGE_TYPES.FETCH_SUBTITLE_CONTENT, async (request): Promise<MessageResponse<FetchSubtitleContentResult>> => {
-    const payload = request.payload as FetchSubtitleContentPayload;
-    const rawUrl = payload?.url;
-    if (!rawUrl) {
-      return { success: false, error: 'Missing url in FETCH_SUBTITLE_CONTENT' };
+    const parsed = FetchSubtitleContentPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid FETCH_SUBTITLE_CONTENT payload: ${parsed.error.message}` };
     }
+    const payload = parsed.data;
+    const rawUrl = payload.url;
 
     let finalUrl = rawUrl;
     const tabUrl = payload.tabUrl;
@@ -149,8 +150,12 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
 
   // SUBTITLE_CUES_LOADED: relay bilingual cues from content-script to side panel.
   ctx.on(MESSAGE_TYPES.SUBTITLE_CUES_LOADED, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as SubtitleCuesLoadedPayload;
-    if (!payload?.cues) {
+    const parsed = SubtitleCuesLoadedPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid SUBTITLE_CUES_LOADED payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
+    if (!payload.cues) {
       return { success: false, error: 'Missing cues in SUBTITLE_CUES_LOADED' };
     }
     if (payload.tabId !== undefined) {
@@ -172,8 +177,12 @@ export function registerSubtitleHandlers(ctx: BackgroundContext): void {
 
   // REQUEST_SUBTITLE_CUES: side panel asks background for cached cues.
   ctx.on(MESSAGE_TYPES.REQUEST_SUBTITLE_CUES, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as RequestSubtitleCuesPayload;
-    const tabId = payload?.tabId;
+    const parsed = RequestSubtitleCuesPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid REQUEST_SUBTITLE_CUES payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
+    const tabId = payload.tabId;
     if (tabId === undefined) {
       return { success: false, error: 'Missing tabId in REQUEST_SUBTITLE_CUES' };
     }

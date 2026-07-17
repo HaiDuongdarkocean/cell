@@ -78,3 +78,81 @@ export const DetectedSubtitleUrlPayloadSchema = z.object({
   tabId: z.number().int().optional(),
   url: z.string().min(1),
 });
+
+// === Subtitle payloads ===
+
+export const UpdateSubtitleLanguagePayloadSchema = z.object({
+  subtitleId: z.string().min(1),
+  language: z.string().min(1),
+});
+
+export const RequestAutoLoadSubtitlesPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+});
+
+export const FetchSubtitleContentPayloadSchema = z.object({
+  url: z.string().min(1),
+  tabUrl: z.string().optional(),
+  initiator: z.string().optional(),
+});
+
+export const SubtitleCuesLoadedPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+  cues: z.array(z.unknown()),
+});
+
+export const RequestSubtitleCuesPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+});
+
+// === Side panel payloads ===
+
+export const TogglePlayPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+});
+
+export const OpenSidePanelPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+});
+
+export const CloseSidePanelPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+});
+
+export const VideoTimeUpdatePayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+  currentTimeMs: z.number().int(),
+  durationMs: z.number().int(),
+  offsetMs: z.number().int().optional(),
+});
+
+export const VideoPlayStatePayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+  isPlaying: z.boolean(),
+});
+
+export const SeekToPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+  timeMs: z.number().int(),
+});
+
+export const ShortcutActionPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+  action: z.enum(['prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay']),
+});
+
+export const VideoEpisodeChangedPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+});
+
+// === Detection dispatch payloads ===
+
+export const DetectedSubtitlesPayloadSchema = z.object({
+  tabId: z.number().int().optional(),
+  tracks: z.array(z.unknown()),
+  source: z.enum(['youtube', 'iqiyi', 'netflix']).optional(),
+  videoId: z.string().optional(),
+  tvid: z.string().optional(),
+  origin: z.string().optional(),
+  movieId: z.union([z.string(), z.number().int()]).optional(),
+});
