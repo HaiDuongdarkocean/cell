@@ -1,6 +1,9 @@
 // popupDictionaryController tests — spec §4.6.3 P0: full flow wiring.
 
 import { describe, expect, it, beforeEach, beforeAll, jest } from '@jest/globals';
+
+jest.mock('@/shared/lib/chrome-apis/runtime');
+
 import {
   createPopupDictionaryState,
   showPopup,
@@ -14,12 +17,15 @@ import {
 } from './popupDictionaryController';
 import type { LookupResult, WordStatus } from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
+import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
+
+const mockSendMessage = jest.mocked(sendMessage);
 
 // Mock chrome.storage.local + matchMedia (needed by PopupShell theme detection)
 beforeAll(() => {
   const g = global as unknown as { chrome?: unknown };
   g.chrome = g.chrome ?? {};
-  const c = g.chrome as { storage: Record<string, unknown> };
+  const c = g.chrome as { storage: Record<string, unknown>; runtime?: { sendMessage: jest.Mock } };
   c.storage = c.storage ?? {};
   c.storage.local = {
     get: jest.fn(() => Promise.resolve({})),
@@ -29,6 +35,7 @@ beforeAll(() => {
     addListener: jest.fn(),
     removeListener: jest.fn(),
   };
+  c.runtime = { sendMessage: jest.fn() };
   window.matchMedia = jest.fn().mockImplementation((query: string) => ({
     matches: false,
     media: query,
@@ -121,6 +128,8 @@ describe('showPopup', () => {
 
   beforeEach(() => {
     state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    mockSendMessage.mockReset();
+    mockSendMessage.mockResolvedValue({ success: true, data: { translated: ['Bỏ giày ra.'] } });
   });
 
   it('sets currentResult', () => {
@@ -178,6 +187,35 @@ describe('showPopup', () => {
     expect(candidates).toHaveLength(1);
     const toolbars = candidates[0]!.querySelectorAll('.js-cell-toolbar');
     expect(toolbars).toHaveLength(1);
+  });
+
+  it('auto-translates sentence when translate tab is opened', async () => {
+    const result = makeResult();
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
+    const container = newState.shell?.getContainer();
+    const translate = container!.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    translate.click();
+    // Verify the panel opened.
+    expect(container!.querySelector('[data-cell-panel="translate"]')).not.toBeNull();
+    // Wait for async translateSentence (dynamic import + sendMessage roundtrip).
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'TRANSLATE',
+        payload: expect.objectContaining({ text: 'Take off your shoes.', sl: 'en', tl: 'vi' }),
+      }),
+    );
+  });
+
+  it('does not auto-translate when context sentence is empty', async () => {
+    const result = makeResult();
+    const newState = showPopup(state, result, 170, 100, 150, 200, '');
+    const container = newState.shell?.getContainer();
+    const translate = container!.querySelector('[data-cell-tab="translate"]') as HTMLButtonElement;
+    translate.click();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const translateCalls = mockSendMessage.mock.calls.filter((c: unknown[]) => (c[0] as { type?: string })?.type === 'TRANSLATE');
+    expect(translateCalls.length).toBe(0);
   });
 });
 

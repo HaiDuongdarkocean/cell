@@ -28,13 +28,16 @@ export type SelectionCounts = Partial<Record<PopupTab, number>>;
  *  for hover/active/focus behavior across React + content script surfaces).
  *  Active tab = .is-active class (primary-subtle fill + primary text).
  *  Icons: ICON_CATALOG from @/shared/icons (Lucide convention, stroke 2, currentColor).
- *  Badge: when selectionCounts[tab] > 0, a count badge is appended to the icon. */
+ *  Badge: when selectionCounts[tab] > 0, a count badge is appended to the icon.
+ *  onTabOpen: fired when a tab icon is clicked to OPEN (not close) its panel —
+ *  used to lazy-trigger panel content such as translate. */
 export function renderToolbar(
   container: HTMLElement,
   activeTab: PopupTab | null,
   onTabToggle: (tab: PopupTab) => void,
   onClose?: () => void,
   selectionCounts?: SelectionCounts,
+  onTabOpen?: (tab: PopupTab) => void,
 ): void {
   const toolbar = document.createElement('div');
   toolbar.className = 'cell-toolbar js-cell-toolbar';
@@ -47,7 +50,11 @@ export function renderToolbar(
     btn.title = config.label;
     btn.style.position = 'relative';
     btn.innerHTML = config.icon;
-    btn.addEventListener('click', () => onTabToggle(config.tab));
+    btn.addEventListener('click', () => {
+      const isOpening = activeTab !== config.tab;
+      onTabToggle(config.tab);
+      if (isOpening && onTabOpen) onTabOpen(config.tab);
+    });
 
     // Badge — selection count when > 0.
     const count = selectionCounts?.[config.tab] ?? 0;
