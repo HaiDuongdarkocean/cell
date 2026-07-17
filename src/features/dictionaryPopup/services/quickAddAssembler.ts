@@ -13,6 +13,8 @@ import type {
   LookupResult,
   DefinitionEntry,
   WordStatus,
+  AudioItem,
+  ImageItem,
 } from '../types';
 import type { CardCreatorSettings, AutoCompletableField } from '@/entities/settings/types';
 
@@ -62,6 +64,8 @@ export function assembleQuickAddPayload(
   translation: string,
   status: WordStatus,
   cardCreatorSettings: CardCreatorSettings,
+  audioItems: readonly AudioItem[] = [],
+  imageItems: readonly ImageItem[] = [],
 ): QuickAddPayload {
   const toggles = cardCreatorSettings.autoCompleteToggles ?? {
     definitions: true,
@@ -79,18 +83,30 @@ export function assembleQuickAddPayload(
     ? selectedDefs
     : selectedDefs.filter((d) => selection.definitions.get(d.id) === true);
 
-  // Audios: same logic. (Audio items come from the audio panel, not LookupResult.
-  // For now, we pass through the selection — the caller provides audio items
-  // separately via the audio panel state.)
-  // This function focuses on definitions + sentence + translation.
-  // Audio/image filtering happens in the Quick Add handler (Task 5.2).
+  // Audios: split by kind so wordAudios/sentenceAudios toggles apply independently.
+  // auto-complete ON → fallback to defaultSelected; OFF → only explicitly ticked.
+  const wordAudios = audioItems.filter((a) => a.kind === 'word');
+  const sentenceAudios = audioItems.filter((a) => a.kind === 'sentence');
+  const selectedWordAudios = toggles.wordAudios
+    ? filterSelected(wordAudios, selection.audios)
+    : wordAudios.filter((a) => selection.audios.get(a.id) === true);
+  const selectedSentenceAudios = toggles.sentenceAudios
+    ? filterSelected(sentenceAudios, selection.audios)
+    : sentenceAudios.filter((a) => selection.audios.get(a.id) === true);
+  const audios = [...selectedWordAudios, ...selectedSentenceAudios];
+
+  // Images: same auto-complete logic as definitions.
+  const selectedImgs = filterSelected(imageItems, selection.images);
+  const images = toggles.images
+    ? selectedImgs
+    : selectedImgs.filter((i) => selection.images.get(i.id) === true);
 
   return {
     term: result.term,
     langCode: result.langCode,
     definitions,
-    audios: [],
-    images: [],
+    audios,
+    images,
     translation: toggles.sentenceTranslation ? translation : '',
     sentence: toggles.sentence ? sentence : '',
     status,
