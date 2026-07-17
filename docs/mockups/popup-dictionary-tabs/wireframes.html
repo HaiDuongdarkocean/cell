@@ -3,129 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Popup Dictionary — Tab Content Wireframes</title>
+  <title>Popup Dictionary — Final Tab Content Wireframes</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #f8fafc; color: #334155; padding: 24px; font-size: 12px; line-height: 1.4; }
-    h1 { font-size: 16px; margin-bottom: 24px; color: #0f172a; }
+    h1 { font-size: 16px; margin-bottom: 8px; color: #0f172a; }
+    .summary { color: #64748b; margin-bottom: 16px; max-width: 700px; }
+    .summary li { margin-bottom: 4px; }
     .sections { display: grid; gap: 32px; }
     .tab-section { background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; }
     .section-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; color: #0f172a; }
-    .variants { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-    .variant { border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; }
-    .variant-header { background: #f1f5f9; padding: 8px 12px; font-weight: 600; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
-    .states { padding: 12px; display: flex; flex-direction: column; gap: 16px; }
+    .states { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
     .state-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
     .popup { width: 180px; border: 1px solid #94a3b8; border-radius: 4px; background: #fff; overflow: hidden; }
     .toolbar { height: 28px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; display: flex; align-items: center; padding: 0 8px; gap: 4px; }
-    .tb-active { width: 20px; height: 20px; border: 1px solid #64748b; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
-    .tb-rest { width: 20px; height: 20px; border: 1px dashed #cbd5e1; border-radius: 50%; }
+    .tb { position: relative; width: 20px; height: 20px; border: 1px solid #64748b; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+    .tb-rest { border-style: dashed; background: transparent; }
+    .tb-badge { position: absolute; top: -4px; right: -4px; min-width: 12px; height: 12px; padding: 0 2px; border-radius: 999px; background: #334155; color: #fff; font-size: 8px; display: flex; align-items: center; justify-content: center; }
     .panel { padding: 8px; min-height: 80px; }
     .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 16px 8px; color: #64748b; }
     .empty-icon { width: 28px; height: 28px; border: 1.5px dashed #94a3b8; border-radius: 50%; }
     .empty-title { font-weight: 600; color: #334155; }
-    .box { border: 1px solid #94a3b8; background: #f8fafc; border-radius: 3px; padding: 4px 6px; text-align: center; }
-    .box-hollow { border: 1px solid #cbd5e1; border-radius: 3px; padding: 4px 6px; text-align: center; color: #94a3b8; }
+    .btn-sm { display: inline-block; border: 1px solid #94a3b8; border-radius: 3px; padding: 2px 6px; font-size: 10px; background: #f1f5f9; }
     .row { border-bottom: 1px solid #e2e8f0; padding: 4px 2px; display: flex; align-items: center; gap: 4px; }
     .row:last-child { border-bottom: none; }
-    .btn-sm { display: inline-block; border: 1px solid #94a3b8; border-radius: 3px; padding: 2px 6px; font-size: 10px; background: #f1f5f9; }
+    .play { width: 14px; height: 14px; border: 1px solid #94a3b8; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
+    .label { flex: 1; min-width: 0; }
+    .label-name { display: block; }
+    .label-meta { font-size: 9px; color: #64748b; }
+    .cb { width: 10px; height: 10px; border: 1px solid #94a3b8; margin-left: auto; display: flex; align-items: center; justify-content: center; font-size: 8px; }
+    .group-label { font-size: 9px; color: #64748b; text-transform: uppercase; margin: 4px 0 2px; }
     .strip { display: flex; gap: 4px; overflow: hidden; }
     .thumb { width: 44px; height: 34px; border: 1px solid #94a3b8; border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; }
     .thumb-sel { background: #e2e8f0; }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-    .hero { height: 60px; border: 1px solid #94a3b8; border-radius: 3px; display: flex; align-items: center; justify-content: center; color: #94a3b8; margin-bottom: 4px; }
-    .mini-tabs { display: flex; gap: 4px; margin-bottom: 6px; }
-    .mini-tab { border: 1px solid #cbd5e1; border-radius: 3px; padding: 2px 6px; font-size: 10px; }
-    .mini-tab-active { background: #e2e8f0; }
-    .cards3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-    .card { border: 1px solid #94a3b8; border-radius: 3px; padding: 6px 2px; text-align: center; font-size: 9px; }
-    .card-sel { background: #e2e8f0; }
-    .chips { display: flex; flex-wrap: wrap; gap: 4px; }
-    .chip { border: 1px solid #94a3b8; border-radius: 10px; padding: 2px 6px; font-size: 9px; }
-    .chip-sel { background: #e2e8f0; }
-    .cat { border: 1px solid #cbd5e1; border-radius: 3px; padding: 4px; margin-bottom: 4px; }
-    .cat-title { font-size: 9px; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+    .box { border: 1px solid #94a3b8; background: #f8fafc; border-radius: 3px; padding: 4px 6px; text-align: left; }
     .muted { color: #94a3b8; font-size: 9px; margin-top: 4px; }
-    .hint { color: #64748b; font-size: 9px; margin-top: 4px; }
-    .check { color: #334155; font-weight: 700; }
-    .group-label { font-size: 9px; color: #64748b; text-transform: uppercase; margin: 4px 0 2px; }
-    .play { width: 14px; height: 14px; border: 1px solid #94a3b8; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; }
-    .cb { width: 10px; height: 10px; border: 1px solid #94a3b8; margin-left: auto; display: flex; align-items: center; justify-content: center; font-size: 8px; }
   </style>
 </head>
 <body>
-  <h1>Popup Dictionary — Tab Content Wireframes (layout only)</h1>
+  <h1>Popup Dictionary — Final Tab Content Wireframes</h1>
+  <ul class="summary">
+    <li>Toolbar icon buttons show a badge count when items in that tab are selected.</li>
+    <li>All media content (audio, image, translate, links) is lazy-loaded only when its tab is clicked. Target: &lt;2s.</li>
+    <li>Audio: click the speaker icon to play; click the label text to select. No visible checkbox when inactive.</li>
+    <li>Audio label order: <strong>Speaker → Dialect/Region → Gender</strong>.</li>
+    <li>Image: horizontal filmstrip; no selected-count summary line.</li>
+    <li>Translate: two stacked lines — top target sentence, bottom native translation. Native language is set in Settings &gt; Popup &gt; Native language block.</li>
+    <li>External dictionary: simple vertical link list.</li>
+  </ul>
+
   <div class="sections">
 
     <!-- AUDIO -->
     <section class="tab-section">
-      <div class="section-title">1. Audio tab</div>
-      <div class="variants">
-        <div class="variant">
-          <div class="variant-header">Variant A — Grouped list rows</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-active">A</div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel"><div class="empty"><div class="empty-icon"></div><div class="empty-title">No audio</div><div class="btn-sm">Use TTS</div></div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-active">A</div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="group-label">Word audio</div>
-                <div class="row"><div class="play">▶</div> Forvo US <div class="cb"></div></div>
-                <div class="row"><div class="play">▶</div> Forvo UK <div class="cb"></div></div>
-                <div class="group-label">Sentence audio</div>
-                <div class="row"><div class="play">▶</div> TTS <div class="cb"></div></div>
-                <div class="hint">Select audio to add.</div>
-              </div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-active">A</div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="group-label">Word audio</div>
-                <div class="row"><div class="play">▶</div> Forvo US <div class="cb check">✓</div></div>
-                <div class="row"><div class="play">▶</div> Forvo UK <div class="cb"></div></div>
-                <div class="group-label">Sentence audio</div>
-                <div class="row"><div class="play">▶</div> TTS <div class="cb check">✓</div></div>
-              </div></div>
+      <div class="section-title">1. Audio — final layout (grouped list rows)</div>
+      <div class="states">
+        <div>
+          <div class="state-label">Empty</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb">A</div><div class="tb tb-rest">I</div><div class="tb tb-rest">T</div><div class="tb tb-rest">L</div></div>
+            <div class="panel">
+              <div class="empty"><div class="empty-icon"></div><div class="empty-title">No audio</div><div class="btn-sm">Use system TTS</div></div>
             </div>
           </div>
         </div>
-
-        <div class="variant">
-          <div class="variant-header">Variant B — Tab-segmented groups</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-active">A</div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel"><div class="empty"><div class="empty-icon"></div><div class="empty-title">No audio</div><div class="btn-sm">Generate TTS</div></div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-active">A</div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="mini-tabs"><div class="mini-tab mini-tab-active">Word 2</div><div class="mini-tab">Sent 0</div></div>
-                <div class="row"><div class="play">▶</div> Forvo US <div class="cb"></div></div>
-                <div class="row"><div class="play">▶</div> TTS <div class="cb"></div></div>
-              </div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-active">A</div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="mini-tabs"><div class="mini-tab mini-tab-active">Word 1</div><div class="mini-tab">Sent 1</div></div>
-                <div class="row"><div class="play">▶</div> Forvo US <div class="cb check">✓</div></div>
-              </div></div>
+        <div>
+          <div class="state-label">No-active (checkbox hidden)</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb">A</div><div class="tb tb-rest">I</div><div class="tb tb-rest">T</div><div class="tb tb-rest">L</div></div>
+            <div class="panel">
+              <div class="group-label">Word audio</div>
+              <div class="row"><div class="play">▶</div><div class="label"><span class="label-name">Forvo</span><span class="label-meta">US · Female</span></div></div>
+              <div class="row"><div class="play">▶</div><div class="label"><span class="label-name">Forvo</span><span class="label-meta">UK · Male</span></div></div>
+              <div class="group-label">Sentence audio</div>
+              <div class="row"><div class="play">▶</div><div class="label"><span class="label-name">System TTS</span><span class="label-meta">US · Female</span></div></div>
             </div>
           </div>
         </div>
-
-        <div class="variant">
-          <div class="variant-header">Variant C — Source cards</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-active">A</div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel"><div class="empty"><div class="empty-icon"></div><div class="empty-title">No sources</div><div class="btn-sm">Generate TTS</div></div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-active">A</div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="cards3"><div class="card">▶<br>Forvo US</div><div class="card">▶<br>Forvo UK</div><div class="card">▶<br>TTS</div></div>
-              </div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-active">A</div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="cards3"><div class="card card-sel">✓<br>Forvo US</div><div class="card">▶<br>Forvo UK</div><div class="card card-sel">✓<br>TTS</div></div>
-              </div></div>
+        <div>
+          <div class="state-label">Active (badge on icon)</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb">A<span class="tb-badge">2</span></div><div class="tb tb-rest">I</div><div class="tb tb-rest">T</div><div class="tb tb-rest">L</div></div>
+            <div class="panel">
+              <div class="group-label">Word audio</div>
+              <div class="row"><div class="play">▶</div><div class="label"><span class="label-name">Forvo</span><span class="label-meta">US · Female</span></div><div class="cb check">✓</div></div>
+              <div class="row"><div class="play">▶</div><div class="label"><span class="label-name">Forvo</span><span class="label-meta">UK · Male</span></div></div>
+              <div class="group-label">Sentence audio</div>
+              <div class="row"><div class="play">▶</div><div class="label"><span class="label-name">System TTS</span><span class="label-meta">US · Female</span></div><div class="cb check">✓</div></div>
             </div>
           </div>
         </div>
@@ -134,65 +98,32 @@
 
     <!-- IMAGE -->
     <section class="tab-section">
-      <div class="section-title">2. Image tab</div>
-      <div class="variants">
-        <div class="variant">
-          <div class="variant-header">Variant A — Horizontal filmstrip</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-active">I</div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel"><div class="empty"><div class="empty-icon"></div><div class="empty-title">No images</div><div class="btn-sm">Search Google</div></div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-active">I</div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="strip"><div class="thumb">img1</div><div class="thumb">img2</div><div class="thumb">img3</div></div>
-              </div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-active">I</div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="strip"><div class="thumb thumb-sel">✓img1</div><div class="thumb">img2</div><div class="thumb">img3</div></div>
-                <div class="hint">1 image selected</div>
-              </div></div>
+      <div class="section-title">2. Image — final layout (horizontal filmstrip)</div>
+      <div class="states">
+        <div>
+          <div class="state-label">Empty</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb">I</div><div class="tb tb-rest">T</div><div class="tb tb-rest">L</div></div>
+            <div class="panel">
+              <div class="empty"><div class="empty-icon"></div><div class="empty-title">No images</div><div class="btn-sm">Search Google Images</div></div>
             </div>
           </div>
         </div>
-
-        <div class="variant">
-          <div class="variant-header">Variant B — Compact 2-column grid</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-active">I</div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel"><div class="empty"><div class="empty-icon"></div><div class="empty-title">No images</div><div class="btn-sm">Search Google</div></div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-active">I</div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="grid2"><div class="thumb">img1</div><div class="thumb">img2</div><div class="thumb">img3</div><div class="thumb">img4</div></div>
-              </div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-active">I</div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="grid2"><div class="thumb thumb-sel">✓img1</div><div class="thumb">img2</div><div class="thumb">img3</div><div class="thumb">img4</div></div>
-                <div class="hint">1 image selected</div>
-              </div></div>
+        <div>
+          <div class="state-label">No-active</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb">I</div><div class="tb tb-rest">T</div><div class="tb tb-rest">L</div></div>
+            <div class="panel">
+              <div class="strip"><div class="thumb">img1</div><div class="thumb">img2</div><div class="thumb">img3</div><div class="thumb">img4</div></div>
             </div>
           </div>
         </div>
-
-        <div class="variant">
-          <div class="variant-header">Variant C — Hero + filmstrip</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-active">I</div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel"><div class="empty"><div class="empty-icon"></div><div class="empty-title">No images</div><div class="btn-sm">Search Google</div></div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-active">I</div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="hero">Select an image</div>
-                <div class="strip"><div class="thumb"></div><div class="thumb"></div><div class="thumb"></div></div>
-              </div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-active">I</div><div class="tb-rest"></div><div class="tb-rest"></div></div><div class="panel">
-                <div class="hero">selected img</div>
-                <div class="strip"><div class="thumb thumb-sel">✓</div><div class="thumb"></div><div class="thumb"></div></div>
-              </div></div>
+        <div>
+          <div class="state-label">Active (badge on icon, no summary)</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb">I<span class="tb-badge">1</span></div><div class="tb tb-rest">T</div><div class="tb tb-rest">L</div></div>
+            <div class="panel">
+              <div class="strip"><div class="thumb thumb-sel">✓img1</div><div class="thumb">img2</div><div class="thumb">img3</div><div class="thumb">img4</div></div>
             </div>
           </div>
         </div>
@@ -201,49 +132,35 @@
 
     <!-- TRANSLATE -->
     <section class="tab-section">
-      <div class="section-title">3. Translate tab</div>
-      <div class="variants">
-        <div class="variant">
-          <div class="variant-header">Variant A — Single card flow</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">T</div><div class="tb-rest"></div></div><div class="panel"><div class="box-hollow">Translate to vi</div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">T</div><div class="tb-rest"></div></div><div class="panel"><div class="box">Translation</div><div class="box" style="margin-top:4px;">Source sentence</div><div class="muted">Not included.</div></div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">T</div><div class="tb-rest"></div></div><div class="panel"><div class="box">✓ Translation</div><div class="box" style="margin-top:4px;">Source sentence</div><div class="hint">✓ Included</div></div></div>
+      <div class="section-title">3. Translate — final layout (target + native stacked)</div>
+      <div class="states">
+        <div>
+          <div class="state-label">Empty / not loaded</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb tb-rest">I</div><div class="tb">T</div><div class="tb tb-rest">L</div></div>
+            <div class="panel">
+              <div class="box" style="text-align:center;">Translate sentence</div>
             </div>
           </div>
         </div>
-
-        <div class="variant">
-          <div class="variant-header">Variant B — Side-by-side cards</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">T</div><div class="tb-rest"></div></div><div class="panel"><div class="box-hollow">Translate to vi</div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">T</div><div class="tb-rest"></div></div><div class="panel"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div class="box">SOURCE</div><div class="box">TRANS</div></div><div class="muted">Translation muted.</div></div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">T</div><div class="tb-rest"></div></div><div class="panel"><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div class="box">SOURCE</div><div class="box">✓ TRANS</div></div><div class="hint">✓ Included</div></div></div>
+        <div>
+          <div class="state-label">Loaded</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb tb-rest">I</div><div class="tb">T</div><div class="tb tb-rest">L</div></div>
+            <div class="panel">
+              <div class="box">The view is magnificent.</div>
+              <div class="box" style="margin-top:4px;">Quang cảnh thật hùng vĩ.</div>
             </div>
           </div>
         </div>
-
-        <div class="variant">
-          <div class="variant-header">Variant C — Inline expandable</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">T</div><div class="tb-rest"></div></div><div class="panel"><div class="box-hollow">Translate to vi</div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">T</div><div class="tb-rest"></div></div><div class="panel"><div class="box">Translation</div><div class="muted">▶ Source sentence</div><div class="muted">Not included.</div></div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">T</div><div class="tb-rest"></div></div><div class="panel"><div class="box">✓ Translation</div><div class="muted">▼ Source sentence</div><div class="box" style="margin-top:2px;font-size:9px;">The view is...</div><div class="hint">✓ Included</div></div></div>
+        <div>
+          <div class="state-label">Loaded + included for card</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb tb-rest">I</div><div class="tb">T<span class="tb-badge">1</span></div><div class="tb tb-rest">L</div></div>
+            <div class="panel">
+              <div class="box">The view is magnificent.</div>
+              <div class="box" style="margin-top:4px;">Quang cảnh thật hùng vĩ.</div>
+              <div class="muted">✓ Included in flashcard</div>
             </div>
           </div>
         </div>
@@ -252,49 +169,36 @@
 
     <!-- LINKS -->
     <section class="tab-section">
-      <div class="section-title">4. Links tab</div>
-      <div class="variants">
-        <div class="variant">
-          <div class="variant-header">Variant A — Simple link list</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">L</div></div><div class="panel"><div class="empty"><div class="empty-icon"></div><div class="empty-title">No links</div><div class="btn-sm">Open settings</div></div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">L</div></div><div class="panel"><div class="row">Cambridge ></div><div class="row">Merriam ></div><div class="row">Wiktionary ></div></div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">L</div></div><div class="panel"><div class="row" style="background:#e2e8f0;">▓ Cambridge ></div><div class="row">Merriam ></div><div class="row">Wiktionary ></div></div></div>
+      <div class="section-title">4. External dictionary — final layout (simple list)</div>
+      <div class="states">
+        <div>
+          <div class="state-label">Empty</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb tb-rest">I</div><div class="tb tb-rest">T</div><div class="tb">L</div></div>
+            <div class="panel">
+              <div class="empty"><div class="empty-icon"></div><div class="empty-title">No links</div><div class="btn-sm">Open settings</div></div>
             </div>
           </div>
         </div>
-
-        <div class="variant">
-          <div class="variant-header">Variant B — Source chips</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">L</div></div><div class="panel"><div class="empty"><div class="empty-icon"></div><div class="empty-title">No links</div><div class="btn-sm">Open settings</div></div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">L</div></div><div class="panel"><div class="chips"><div class="chip">Cambridge</div><div class="chip">Merriam</div><div class="chip">Wiktionary</div></div></div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">L</div></div><div class="panel"><div class="chips"><div class="chip chip-sel">✓ Cambridge</div><div class="chip">Merriam</div><div class="chip">Wiktionary</div></div></div></div>
+        <div>
+          <div class="state-label">No-active</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb tb-rest">I</div><div class="tb tb-rest">T</div><div class="tb">L</div></div>
+            <div class="panel">
+              <div class="row">Cambridge ></div>
+              <div class="row">Merriam-Webster ></div>
+              <div class="row">Wiktionary ></div>
             </div>
           </div>
         </div>
-
-        <div class="variant">
-          <div class="variant-header">Variant C — Categorized cards</div>
-          <div class="states">
-            <div><div class="state-label">Empty</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">L</div></div><div class="panel"><div class="empty"><div class="empty-icon"></div><div class="empty-title">No links</div><div class="btn-sm">Open settings</div></div></div></div>
-            </div>
-            <div><div class="state-label">No-active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">L</div></div><div class="panel"><div class="cat"><div class="cat-title">Dictionary</div><div class="chips"><div class="chip">Cambridge</div><div class="chip">Merriam</div><div class="chip">Wiktionary</div></div></div><div class="cat"><div class="cat-title">Translator</div><div class="chips"><div class="chip">Google</div></div></div></div></div>
-            </div>
-            <div><div class="state-label">Active</div>
-              <div class="popup"><div class="toolbar"><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-rest"></div><div class="tb-active">L</div></div><div class="panel"><div class="cat"><div class="cat-title">Dictionary</div><div class="chips"><div class="chip chip-sel">✓ Cambridge</div><div class="chip">Merriam</div><div class="chip">Wiktionary</div></div></div><div class="cat"><div class="cat-title">Translator</div><div class="chips"><div class="chip">Google</div></div></div></div></div>
+        <div>
+          <div class="state-label">Active (last opened / primary)</div>
+          <div class="popup">
+            <div class="toolbar"><div class="tb tb-rest">A</div><div class="tb tb-rest">I</div><div class="tb tb-rest">T</div><div class="tb">L</div></div>
+            <div class="panel">
+              <div class="row" style="background:#e2e8f0;">▓ Cambridge ></div>
+              <div class="row">Merriam-Webster ></div>
+              <div class="row">Wiktionary ></div>
             </div>
           </div>
         </div>
