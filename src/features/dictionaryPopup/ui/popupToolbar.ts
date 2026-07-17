@@ -18,9 +18,10 @@ function createSkeleton(
   width: string,
   height: string,
   shape: 'circle' | 'rounded' | 'rect' = 'rect',
+  className?: string,
 ): HTMLElement {
   const el = document.createElement('div');
-  el.className = `cell-skeleton cell-skeleton--${shape}`;
+  el.className = `cell-skeleton cell-skeleton--${shape}${className ? ' ' + className : ''}`;
   el.style.width = width;
   el.style.height = height;
   el.setAttribute('aria-hidden', 'true');
@@ -139,9 +140,9 @@ export function renderAudioPanel(
       for (let i = 0; i < 3; i += 1) {
         const row = document.createElement('div');
         row.className = 'cell-audio__skeleton-row';
-        row.appendChild(createSkeleton('28px', '28px', 'circle'));
-        row.appendChild(createSkeleton('60%', '16px', 'rect'));
-        row.appendChild(createSkeleton('16px', '16px', 'rect'));
+        row.appendChild(createSkeleton('28px', '28px', 'circle', 'cell-audio__skeleton-play'));
+        row.appendChild(createSkeleton('100%', '16px', 'rect', 'cell-audio__skeleton-label'));
+        row.appendChild(createSkeleton('16px', '16px', 'rect', 'cell-audio__skeleton-check'));
         skeleton.appendChild(row);
       }
     }
@@ -272,7 +273,7 @@ export function renderImagePanel(
     const skeleton = document.createElement('div');
     skeleton.className = 'cell-image__skeleton';
     for (let i = 0; i < 4; i += 1) {
-      skeleton.appendChild(createSkeleton('96px', '72px', 'rounded'));
+      skeleton.appendChild(createSkeleton('100%', '72px', 'rounded', 'cell-image__skeleton-card'));
     }
     panel.appendChild(skeleton);
     container.appendChild(panel);
@@ -381,11 +382,11 @@ export function renderTranslatePanel(
     const line1 = createSkeleton('100%', '16px', 'rect');
     line1.className = 'cell-translate__skeleton-line';
     const line2 = createSkeleton('100%', '16px', 'rect');
-    line2.className = 'cell-translate__skeleton-line cell-translate__skeleton-line--short';
+    line2.className = 'cell-translate__skeleton-line';
     text.appendChild(line1);
     text.appendChild(line2);
     block.appendChild(text);
-    block.appendChild(createSkeleton('16px', '16px', 'rect'));
+    block.appendChild(createSkeleton('16px', '16px', 'rect', 'cell-translate__skeleton-check'));
     skeleton.appendChild(block);
     panel.appendChild(skeleton);
     container.appendChild(panel);
