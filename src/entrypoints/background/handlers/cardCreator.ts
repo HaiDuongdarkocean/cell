@@ -10,9 +10,9 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
 import type {
   MessageResponse,
-  CardCreatorRequestPayload,
   CardCreatorResponseData,
 } from '@/entities/message';
+import { CardCreatorRequestPayloadSchema } from '@/entities/message/schema';
 import { invokeAnkiConnect, AnkiConnectError } from '@/features/cardCreator/service/ankiConnectClient';
 
 /** Register the Card Creator request handler. */
@@ -20,7 +20,11 @@ export function registerCardCreatorHandlers(ctx: BackgroundContext): void {
   ctx.on(
     MESSAGE_TYPES.CARD_CREATOR_REQUEST,
     async (request): Promise<MessageResponse<CardCreatorResponseData>> => {
-      const payload = request.payload as CardCreatorRequestPayload | undefined;
+      const parsed = CardCreatorRequestPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return { success: false, error: `Invalid CARD_CREATOR_REQUEST payload: ${parsed.error.message}` };
+      }
+      const payload = parsed.data;
       if (!payload?.url || !payload.action) {
         return { success: false, error: 'Missing url or action in CARD_CREATOR_REQUEST' };
       }

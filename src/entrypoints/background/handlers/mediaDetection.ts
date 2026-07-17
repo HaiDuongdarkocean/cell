@@ -17,18 +17,24 @@ import type {
 } from '@/entities/media';
 import type {
   MessageResponse,
-  GetDetectedMediaPayload,
   DetectedMediaUpdatePayload,
-  PageScanResultPayload,
-  DetectedSubtitleUrlPayload,
 } from '@/entities/message';
+import {
+  GetDetectedMediaPayloadSchema,
+  PageScanResultPayloadSchema,
+  DetectedSubtitleUrlPayloadSchema,
+} from '@/entities/message/schema';
 
 /** Register media detection message handlers. */
 export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
   // GET_DETECTED_MEDIA: return videos + subtitles for the requested tab only.
   ctx.on(MESSAGE_TYPES.GET_DETECTED_MEDIA, async (request): Promise<MessageResponse<DetectedMediaUpdatePayload>> => {
     await ctx.sessionReady;
-    const payload = request.payload as GetDetectedMediaPayload | undefined;
+    const parsed = GetDetectedMediaPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid GET_DETECTED_MEDIA payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     const tabId = payload?.tabId ?? (await getActiveTabId(ctx));
 
     if (tabId === undefined) {
@@ -41,7 +47,11 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
 
   // PAGE_SCAN_RESULT: merge scanned URLs with network detection.
   ctx.on(MESSAGE_TYPES.PAGE_SCAN_RESULT, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as PageScanResultPayload;
+    const parsed = PageScanResultPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid PAGE_SCAN_RESULT payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     const tabId = payload.tabId;
 
     if (tabId === undefined) {
@@ -137,7 +147,11 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
 
   // DETECTED_SUBTITLE_URL: main-world fetch interceptor caught a subtitle fetch.
   ctx.on(MESSAGE_TYPES.DETECTED_SUBTITLE_URL, (request): MessageResponse => {
-    const payload = request.payload as DetectedSubtitleUrlPayload;
+    const parsed = DetectedSubtitleUrlPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid DETECTED_SUBTITLE_URL payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     const tabId = payload.tabId;
     if (!tabId || !payload.url) {
       return { success: false, error: 'Missing tabId or url' };

@@ -27,9 +27,9 @@ import {
 } from '../helpers';
 import type {
   MessageResponse,
-  InnertubeFallbackPayload,
+  DetectedMediaUpdatePayload,
 } from '@/entities/message';
-import type { DetectedMediaUpdatePayload } from '@/entities/message';
+import { InnertubeFallbackPayloadSchema } from '@/entities/message/schema';
 
 /** Register YouTube-specific fallback handler (ADR-020; DETECTED_SUBTITLES moved to detectionDispatch.ts in ADR-028). */
 export function registerYouTubeFallbackHandlers(
@@ -40,7 +40,14 @@ export function registerYouTubeFallbackHandlers(
   ctx.on(
     MESSAGE_TYPES.INNERTUBE_FALLBACK_REQUEST,
     async (request): Promise<MessageResponse> => {
-      const payload = request.payload as InnertubeFallbackPayload;
+      const parsed = InnertubeFallbackPayloadSchema.safeParse(request.payload);
+      if (!parsed.success) {
+        return {
+          success: false,
+          error: `Invalid INNERTUBE_FALLBACK_REQUEST payload: ${parsed.error.message}`,
+        };
+      }
+      const payload = parsed.data;
       const tabId = payload.tabId ?? (await getActiveTabId(ctx));
       if (tabId === undefined) {
         return {

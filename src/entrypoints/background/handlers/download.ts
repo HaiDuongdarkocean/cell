@@ -16,20 +16,26 @@ import type {
 } from '@/entities/media';
 import type {
   MessageResponse,
-  DownloadVideoPayload,
-  DownloadSubtitlePayload,
-  DownloadAllPayload,
-  CancelDownloadPayload,
-  GetDownloadProgressPayload,
   DownloadListResponse,
+  GetDownloadProgressPayload,
   ConversionProgressUpdatePayload,
   DownloadProgressUpdatePayload,
 } from '@/entities/message';
+import {
+  DownloadVideoPayloadSchema,
+  DownloadSubtitlePayloadSchema,
+  DownloadAllPayloadSchema,
+  CancelDownloadPayloadSchema,
+} from '@/entities/message/schema';
 
 /** Register all download-related message handlers on the context's messageBus. */
 export function registerDownloadHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.DOWNLOAD_VIDEO, async (request): Promise<MessageResponse<DownloadItem>> => {
-    const payload = request.payload as DownloadVideoPayload;
+    const parsed = DownloadVideoPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid DOWNLOAD_VIDEO payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     const video = await findVideoById(ctx, payload.videoId);
 
     if (!video) {
@@ -43,7 +49,11 @@ export function registerDownloadHandlers(ctx: BackgroundContext): void {
   });
 
   ctx.on(MESSAGE_TYPES.DOWNLOAD_SUBTITLE, async (request): Promise<MessageResponse<DownloadItem>> => {
-    const payload = request.payload as DownloadSubtitlePayload;
+    const parsed = DownloadSubtitlePayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid DOWNLOAD_SUBTITLE payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     const subtitle = await findSubtitleById(ctx, payload.subtitleId);
 
     if (!subtitle) {
@@ -63,7 +73,11 @@ export function registerDownloadHandlers(ctx: BackgroundContext): void {
   });
 
   ctx.on(MESSAGE_TYPES.DOWNLOAD_ALL, async (request): Promise<MessageResponse<DownloadListResponse>> => {
-    const payload = request.payload as DownloadAllPayload;
+    const parsed = DownloadAllPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid DOWNLOAD_ALL payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     const tabId = payload.tabId ?? (await getActiveTabId(ctx));
 
     if (tabId === undefined) {
@@ -91,35 +105,55 @@ export function registerDownloadHandlers(ctx: BackgroundContext): void {
   });
 
   ctx.on(MESSAGE_TYPES.CANCEL_DOWNLOAD, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as CancelDownloadPayload;
+    const parsed = CancelDownloadPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid CANCEL_DOWNLOAD payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     ctx.downloadQueue.cancel(payload.downloadId);
     ctx.downloader.cancel(payload.downloadId);
     return { success: true };
   });
 
   ctx.on(MESSAGE_TYPES.PAUSE_DOWNLOAD, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as CancelDownloadPayload;
+    const parsed = CancelDownloadPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid PAUSE_DOWNLOAD payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     ctx.downloader.pause(payload.downloadId);
     ctx.downloadQueue.pause(payload.downloadId);
     return { success: true };
   });
 
   ctx.on(MESSAGE_TYPES.RESUME_DOWNLOAD, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as CancelDownloadPayload;
+    const parsed = CancelDownloadPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid RESUME_DOWNLOAD payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     ctx.downloadQueue.resume(payload.downloadId);
     ctx.downloader.resume(payload.downloadId);
     return { success: true };
   });
 
   ctx.on(MESSAGE_TYPES.RETRY_DOWNLOAD, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as CancelDownloadPayload;
+    const parsed = CancelDownloadPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid RETRY_DOWNLOAD payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     ctx.downloader.retry(payload.downloadId);
     ctx.downloadQueue.retry(payload.downloadId);
     return { success: true };
   });
 
   ctx.on(MESSAGE_TYPES.REMOVE_DOWNLOAD, async (request): Promise<MessageResponse> => {
-    const payload = request.payload as CancelDownloadPayload;
+    const parsed = CancelDownloadPayloadSchema.safeParse(request.payload);
+    if (!parsed.success) {
+      return { success: false, error: `Invalid REMOVE_DOWNLOAD payload: ${parsed.error.message}` };
+    }
+    const payload = parsed.data;
     const item = ctx.downloadQueue.getById(payload.downloadId);
     if (item && (item.status === 'downloading' || item.status === 'converting')) {
       ctx.downloader.cancel(payload.downloadId);
