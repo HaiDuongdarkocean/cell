@@ -318,22 +318,29 @@
   align-items: center;
 }
 
-/* Toolbar tab badge — selection count */
+/* Toolbar tab badge — selection count.
+ * Kept inside the button bounds so the popup's rounded top-right corner
+ * (overflow:hidden) does not clip it. White ring + shadow make it pop. */
 .cell-toolbar__badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 14px;
-  height: 14px;
+  top: 1px;
+  right: 1px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 3px;
   border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--color-primary);
   color: var(--color-text-inverse);
-  font-size: 9px;
-  font-weight: var(--font-weight-semibold);
-  line-height: 14px;
-  text-align: center;
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  border: 2px solid var(--color-background);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   pointer-events: none;
+  z-index: 1;
 }
 
 /* === Block: cell-audio === */

@@ -53,7 +53,7 @@ export function renderToolbar(
   onTabToggle: (tab: PopupTab) => void,
   selectionCounts?: SelectionCounts,
   onTabOpen?: (tab: PopupTab) => void,
-): void {
+): HTMLElement {
   const toolbar = document.createElement('div');
   toolbar.className = 'cell-toolbar js-cell-toolbar';
 
@@ -85,6 +85,7 @@ export function renderToolbar(
   }
 
   container.appendChild(toolbar);
+  return toolbar;
 }
 
 /** Render the audio panel — Word Audio / Sentence Audio groups.
@@ -104,6 +105,7 @@ export function renderAudioPanel(
   error?: string,
   currentlyPlayingId?: string,
   onTts?: () => void,
+  onSelectionChange?: () => void,
 ): void {
   const panel = document.createElement('div');
   panel.className = 'cell-audio js-cell-panel';
@@ -195,6 +197,7 @@ export function renderAudioPanel(
         onToggle(item.id, !current);
         checkEl.classList.toggle('cell-audio__check--checked', !current);
         labelEl.setAttribute('aria-pressed', String(!current));
+        onSelectionChange?.();
       };
       labelEl.addEventListener('click', toggleAudioLabel);
       labelEl.addEventListener('keydown', (e) => {
@@ -253,6 +256,7 @@ export function renderImagePanel(
   searchTerm?: string,
   isLoading = false,
   error?: string,
+  onSelectionChange?: () => void,
 ): void {
   const panel = document.createElement('div');
   panel.className = 'cell-image js-cell-panel';
@@ -344,6 +348,7 @@ export function renderImagePanel(
       onToggle(img.id, !current);
       card.classList.toggle('cell-image__card--selected', !current);
       card.setAttribute('aria-checked', String(!current));
+      onSelectionChange?.();
     });
     strip.appendChild(card);
   }
@@ -366,6 +371,7 @@ export function renderTranslatePanel(
   isSelected?: boolean,
   onToggleSelect?: () => void,
   isLoading = false,
+  onSelectionChange?: () => void,
 ): void {
   const panel = document.createElement('div');
   panel.className = 'cell-translate js-cell-panel';
@@ -472,6 +478,7 @@ export function renderTranslatePanel(
 
   const toggleTranslate = (): void => {
     if (onToggleSelect) onToggleSelect();
+    onSelectionChange?.();
   };
   // Click or keyboard activate.
   block.addEventListener('click', toggleTranslate);

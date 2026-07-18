@@ -304,22 +304,32 @@ export function appendCandidate(
     const slot = candidateEl.querySelector('.js-cell-toolbar-slot');
     if (!slot) return;
     slot.innerHTML = '';
+    let toolbarEl: HTMLElement | null = null;
+
     // Always render toolbar (tab icons visible, panel only when tab active).
-    renderToolbar(slot as HTMLElement, candidateTab, (t) => {
-      candidateTab = candidateTab === t ? null : t;
-      rerenderCandidateTab();
-      state.shell?.rePosition();
-    }, countSelectionsForCandidate(candidateAudioSelection, candidateImageSelection), (tab) => {
-      if (tab === 'translate' && !candidateTranslation && !candidateTranslationLoading) {
-        candidateTranslationLoading = true;
+    const renderToolbarOnly = (): void => {
+      const newToolbar = renderToolbar(slot as HTMLElement, candidateTab, (t) => {
+        candidateTab = candidateTab === t ? null : t;
         rerenderCandidateTab();
-        translateSentence(result, state.contextSentence, state.settings.translateTargetLang, (text) => {
-          candidateTranslation = text;
-          candidateTranslationLoading = false;
+        state.shell?.rePosition();
+      }, countSelectionsForCandidate(candidateAudioSelection, candidateImageSelection), (tab) => {
+        if (tab === 'translate' && !candidateTranslation && !candidateTranslationLoading) {
+          candidateTranslationLoading = true;
           rerenderCandidateTab();
-        });
+          translateSentence(result, state.contextSentence, state.settings.translateTargetLang, (text) => {
+            candidateTranslation = text;
+            candidateTranslationLoading = false;
+            rerenderCandidateTab();
+          });
+        }
+      });
+      if (toolbarEl && toolbarEl.parentNode === slot) {
+        slot.replaceChild(newToolbar, toolbarEl);
       }
-    });
+      toolbarEl = newToolbar;
+    };
+
+    renderToolbarOnly();
     if (!candidateTab) return;
     // Render panel into slot after toolbar.
     renderTabPanel(slot as HTMLElement, candidateTab, result, {
@@ -342,6 +352,7 @@ export function appendCandidate(
         rerenderCandidateTab();
       },
       onPlayTts: (item, term, sentence, langCode) => playTts(item, term, sentence, langCode),
+      onSelectionChange: renderToolbarOnly,
     });
     state.shell?.rePosition();
   };
@@ -566,19 +577,29 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
   const slot = candidate.querySelector('.js-cell-toolbar-slot') as HTMLElement | null;
   if (!slot) return;
   slot.innerHTML = '';
-  renderToolbar(slot, state.activeTab, (t) => toggleTab(state, t), countSelections(state), (tab) => {
-    if (tab === 'translate' && !state.translation && !state.translationLoading && state.currentResult) {
-      state.translationLoading = true;
-      rerender(state, 'translate');
-      translateSentence(state.currentResult, state.contextSentence, state.settings.translateTargetLang, (text) => {
-        state.translation = text;
-        state.translationLoading = false;
-        // Force translate tab to stay open: the onTabOpen closure may capture
-        // a stale state object with activeTab=null, so pass 'translate' explicitly.
+  let toolbarEl: HTMLElement | null = null;
+
+  const renderToolbarOnly = (): void => {
+    const newToolbar = renderToolbar(slot, state.activeTab, (t) => toggleTab(state, t), countSelections(state), (tab) => {
+      if (tab === 'translate' && !state.translation && !state.translationLoading && state.currentResult) {
+        state.translationLoading = true;
         rerender(state, 'translate');
-      });
+        translateSentence(state.currentResult, state.contextSentence, state.settings.translateTargetLang, (text) => {
+          state.translation = text;
+          state.translationLoading = false;
+          // Force translate tab to stay open: the onTabOpen closure may capture
+          // a stale state object with activeTab=null, so pass 'translate' explicitly.
+          rerender(state, 'translate');
+        });
+      }
+    });
+    if (toolbarEl && toolbarEl.parentNode === slot) {
+      slot.replaceChild(newToolbar, toolbarEl);
     }
-  });
+    toolbarEl = newToolbar;
+  };
+
+  renderToolbarOnly();
   if (!state.activeTab) return;
   renderTabPanel(slot, state.activeTab, state.currentResult, {
     contextSentence: state.contextSentence,
@@ -604,6 +625,7 @@ function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement
       rerender(state);
     },
     onPlayTts: (item, _term, _sentence, langCode) => playTts(item, state.currentResult?.term ?? '', state.contextSentence, langCode),
+    onSelectionChange: renderToolbarOnly,
   });
 }
 
@@ -628,6 +650,7 @@ function renderTabPanel(
     onTranslationLoading?: (loading: boolean) => void;
     onToggleTranslate?: () => void;
     onPlayTts?: (item: AudioItem, term: string, sentence: string, langCode: string) => void;
+    onSelectionChange?: () => void;
   },
 ): void {
   if (!tab) return;
@@ -658,7 +681,7 @@ function renderTabPanel(
         if (currentlyPlayingAudioId === item.id && currentlyPlayingAudio) {
           currentlyPlayingAudio.pause();
           stopCurrentAudio();
-          renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+          renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           return;
         }
         stopCurrentAudio();
@@ -668,17 +691,17 @@ function renderTabPanel(
           currentlyPlayingAudioId = item.id;
           audio.addEventListener('ended', () => {
             stopCurrentAudio();
-            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           });
           audio.addEventListener('pause', () => {
             stopCurrentAudio();
-            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           });
           void audio.play().catch(() => {
             stopCurrentAudio();
-            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           });
-          renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+          renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           return;
         }
         // TTS: we can't reliably track finish time, so keep the play icon.
@@ -689,11 +712,11 @@ function renderTabPanel(
       if (ctx.audioItems.length > 0) {
         wordAudios = ctx.audioItems.filter((a) => a.kind === 'word');
         sentenceAudios = ctx.audioItems.filter((a) => a.kind === 'sentence');
-        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
         break;
       }
       // Loading state while fetching Forvo + TTS voices.
-      renderAudioPanel(container, [], [], ctx.audioSelection, onToggle, onPlay, true, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+      renderAudioPanel(container, [], [], ctx.audioSelection, onToggle, onPlay, true, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
       void (async () => {
         // TTS settings: enabled gate + maxDisplay cap.
         // ponytail: autoplayCount skip — autoplay implement sau, cần user-gesture
@@ -744,10 +767,10 @@ function renderTabPanel(
           ctx.audioItems.push(...fallbackWord, ...fallbackSentence);
           wordAudios = fallbackWord;
           sentenceAudios = fallbackSentence;
-          renderAudioPanel(container, fallbackWord, fallbackSentence, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+          renderAudioPanel(container, fallbackWord, fallbackSentence, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           return;
         }
-        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
       })();
       break;
     }
@@ -755,11 +778,11 @@ function renderTabPanel(
       const onToggle = (id: string, selected: boolean): void => { ctx.imageSelection.set(id, selected); };
       // Cache hit: image panel data already exists for this term.
       if (ctx.imageItems.length > 0) {
-        renderImagePanel(container, ctx.imageItems, ctx.imageSelection, onToggle, result.term);
+        renderImagePanel(container, ctx.imageItems, ctx.imageSelection, onToggle, result.term, false, undefined, callbacks?.onSelectionChange);
         break;
       }
       // Loading state while fetching images.
-      renderImagePanel(container, [], ctx.imageSelection, onToggle, result.term, true);
+      renderImagePanel(container, [], ctx.imageSelection, onToggle, result.term, true, undefined, callbacks?.onSelectionChange);
       void (async () => {
         try {
           const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
@@ -774,7 +797,7 @@ function renderTabPanel(
           const existing = container.querySelector('.js-cell-panel[data-cell-panel="image"]');
           if (!existing) return;
           existing.remove();
-          renderImagePanel(container, items, ctx.imageSelection, onToggle, result.term);
+          renderImagePanel(container, items, ctx.imageSelection, onToggle, result.term, false, undefined, callbacks?.onSelectionChange);
         } catch (err) {
           const existing = container.querySelector('.js-cell-panel[data-cell-panel="image"]');
           if (!existing) return;
@@ -782,6 +805,7 @@ function renderTabPanel(
           renderImagePanel(
             container, [], ctx.imageSelection, onToggle, result.term,
             false, err instanceof Error ? err.message : 'Failed to load images',
+            callbacks?.onSelectionChange,
           );
         }
       })();
@@ -815,6 +839,7 @@ function renderTabPanel(
           }
         },
         ctx.translationLoading ?? false,
+        callbacks?.onSelectionChange,
       );
       break;
     case 'links': {
