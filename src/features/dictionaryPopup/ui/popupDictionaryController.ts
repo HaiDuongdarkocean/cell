@@ -388,18 +388,28 @@ export function appendCandidate(
  *  selected definitions + context sentence + translation + selected audio/image URLs). */
 function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill | null {
   if (!state.currentResult) return null;
+  // Definitions: use selected; if none selected, fall back to first.
   const selectedDefs = getSelectedDefinitions(state.currentResult, state.definitionSelection);
-  const audioUrls = state.audioItems
-    .filter((a) => a.url && state.audioSelection.get(a.id) === true)
-    .map((a) => a.url!) ;
-  const imageUrls = state.imageItems
-    .filter((img) => state.imageSelection.get(img.id) === true)
-    .map((img) => img.src);
+  const defs = selectedDefs.length > 0
+    ? selectedDefs
+    : state.currentResult.definitions.slice(0, 1);
+  // Audio: use selected; if none selected, fall back to first with a URL.
+  const selectedAudio = state.audioItems
+    .filter((a) => a.url && state.audioSelection.get(a.id) === true);
+  const audioUrls = selectedAudio.length > 0
+    ? selectedAudio.map((a) => a.url!)
+    : state.audioItems.filter((a) => a.url).slice(0, 1).map((a) => a.url!);
+  // Image: use selected; if none selected, fall back to first.
+  const selectedImages = state.imageItems
+    .filter((img) => state.imageSelection.get(img.id) === true);
+  const imageUrls = selectedImages.length > 0
+    ? selectedImages.map((img) => img.src)
+    : state.imageItems.slice(0, 1).map((img) => img.src);
   return {
     term: state.currentResult.term,
     langCode: state.currentResult.langCode,
     reading: state.currentResult.reading,
-    definitions: selectedDefs.map((d) => ({ pos: d.pos, text: d.text })),
+    definitions: defs.map((d) => ({ pos: d.pos, text: d.text })),
     contextSentence: state.contextSentence,
     translation: state.translationSelected ? state.translation : undefined,
     audioUrls: audioUrls.length > 0 ? audioUrls : undefined,
@@ -413,12 +423,14 @@ function buildCandidatePrefill(
   selection: DefinitionSelection,
   contextSentence: string,
 ): PopupCardCreatorPrefill {
+  // Definitions: use selected; if none selected, fall back to first.
   const selectedDefs = getSelectedDefinitions(result, selection);
+  const defs = selectedDefs.length > 0 ? selectedDefs : result.definitions.slice(0, 1);
   return {
     term: result.term,
     langCode: result.langCode,
     reading: result.reading,
-    definitions: selectedDefs.map((d) => ({ pos: d.pos, text: d.text })),
+    definitions: defs.map((d) => ({ pos: d.pos, text: d.text })),
     contextSentence,
   };
 }
@@ -767,7 +779,7 @@ function renderTabPanel(
         // Fallback to hardcoded system TTS when both fetches return empty.
         if (wordAudios.length === 0 && sentenceAudios.length === 0) {
           const fallbackWord: AudioItem[] = [
-            { id: `tts-word-${result.term}`, kind: 'word', source: 'system-tts', label: `System TTS · ${langCode.toUpperCase()}`, state: 'idle', defaultSelected: true },
+            { id: `tts-word-${result.term}`, kind: 'word', source: 'system-tts', label: `System TTS · ${langCode.toUpperCase()}`, state: 'idle', defaultSelected: false },
           ];
           const fallbackSentence: AudioItem[] = ctx.contextSentence
             ? [{ id: `tts-sentence-${result.term}`, kind: 'sentence', source: 'system-tts', label: 'System TTS · Sentence', state: 'idle', defaultSelected: false }]
