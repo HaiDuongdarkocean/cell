@@ -19,16 +19,15 @@ import type { LookupResult, WordStatus, PopupTab, AudioItem, ImageItem, FetchCom
 import type { DictionaryPopupSettings, CardCreatorSettings, TtsVoiceRow } from '@/entities/settings/types';
 import type { TokenWrapState } from '../trigger/subtitleTokenWrap';
 import type { PopupShell, PopupSize } from './popupShell';
-import type { DefinitionSelection } from './popupContent';
+import type { DefinitionSelection, CandidateInfo, PopupContentCallbacks } from './popupContent';
 import { PopupShell as PopupShellClass, clampPopupSize } from './popupShell';
 import {
   renderPopupContent,
-  renderCandidate,
-  appendCandidateContent,
-  getOrCreateCandidateList,
+  renderActiveEntry,
+  renderCandidateChips,
+  getOrCreateCandidatesContainer,
   initDefinitionSelection,
   getSelectedDefinitions,
-  STATUS_BADGE_VARIANT,
 } from './popupContent';
 import { renderToolbar, renderAudioPanel, renderImagePanel, renderTranslatePanel, renderLinksPanel } from './popupToolbar';
 import type { SelectionCounts } from './popupToolbar';
@@ -61,6 +60,36 @@ export type OnCardCreatorAction = (
   prefill: PopupCardCreatorPrefill,
 ) => void;
 
+/** Per-candidate runtime state (for active candidate switching). */
+export interface CandidateState {
+  status: WordStatus;
+  definitionSelection: DefinitionSelection;
+  audioSelection: Map<string, boolean>;
+  audioItems: AudioItem[];
+  imageSelection: Map<string, boolean>;
+  imageItems: ImageItem[];
+  translation: string;
+  translationSelected: boolean;
+  translationLoading: boolean;
+  activeTab: PopupTab | null;
+}
+
+/** Snapshot of the active candidate's mutable state.
+ *  Used to read/write either winner fields (index 0) or a CandidateState (index > 0). */
+interface ActiveCandidateSnapshot {
+  result: LookupResult;
+  status: WordStatus;
+  definitionSelection: DefinitionSelection;
+  audioSelection: Map<string, boolean>;
+  audioItems: AudioItem[];
+  imageSelection: Map<string, boolean>;
+  imageItems: ImageItem[];
+  translation: string;
+  translationSelected: boolean;
+  translationLoading: boolean;
+  activeTab: PopupTab | null;
+}
+
 /** Controller state — holds all runtime state for the popup dictionary. */
 export interface PopupDictionaryState {
   readonly settings: DictionaryPopupSettings;
@@ -71,25 +100,29 @@ export interface PopupDictionaryState {
   currentResult: LookupResult | null;
   /** Additional candidates appended after winner. */
   additionalResults: LookupResult[];
-  /** Current word status. */
+  /** Index of the candidate currently shown in the active entry (0 = winner). */
+  activeCandidateIndex: number;
+  /** Per-candidate state for appended candidates (key = 1..n, 0 uses top-level winner fields). */
+  candidateStates: Map<number, CandidateState>;
+  /** Current word status (winner; appended candidates live in candidateStates). */
   currentStatus: WordStatus;
-  /** Definition selection checkboxes. */
+  /** Definition selection checkboxes (winner). */
   definitionSelection: DefinitionSelection;
-  /** Audio selection checkboxes. */
+  /** Audio selection checkboxes (winner). */
   audioSelection: Map<string, boolean>;
-  /** Audio items fetched by the audio panel (stored for Quick Add payload). */
+  /** Audio items fetched by the audio panel (winner). */
   audioItems: AudioItem[];
-  /** Image selection checkboxes. */
+  /** Image selection checkboxes (winner). */
   imageSelection: Map<string, boolean>;
-  /** Image items fetched by the image panel (stored for Quick Add payload). */
+  /** Image items fetched by the image panel (winner). */
   imageItems: ImageItem[];
-  /** Active tab (null = no panel open). */
+  /** Active tab (winner). */
   activeTab: PopupTab | null;
-  /** Current translation text. */
+  /** Current translation text (winner). */
   translation: string;
-  /** Whether translation is selected for Quick Add. */
+  /** Whether translation is selected for Quick Add (winner). */
   translationSelected: boolean;
-  /** Whether translation is currently loading. */
+  /** Whether translation is currently loading (winner). */
   translationLoading: boolean;
   /** Current context sentence. */
   contextSentence: string;
@@ -116,6 +149,22 @@ function createEmptyTabPanelCache(): TabPanelCache {
   };
 }
 
+/** Create initial per-candidate state. */
+export function createCandidateState(result: LookupResult): CandidateState {
+  return {
+    status: result.status,
+    definitionSelection: initDefinitionSelection(result),
+    audioSelection: new Map(),
+    audioItems: [],
+    imageSelection: new Map(),
+    imageItems: [],
+    translation: '',
+    translationSelected: false,
+    translationLoading: false,
+    activeTab: null,
+  };
+}
+
 /** Create initial controller state. */
 export function createPopupDictionaryState(
   settings: DictionaryPopupSettings,
@@ -128,6 +177,8 @@ export function createPopupDictionaryState(
     onCardCreatorAction,
     currentResult: null,
     additionalResults: [],
+    activeCandidateIndex: 0,
+    candidateStates: new Map(),
     currentStatus: 'unknown',
     definitionSelection: new Map(),
     audioSelection: new Map(),
@@ -194,7 +245,7 @@ export function showPopup(
 
   // Save the previous term's tab-panel data into the per-term cache before
   // switching. This lets A → B → A keep A's fetched audio/image/translation.
-  if (state.cachedResultTerm) {
+  if (state.cachedResultTerm && state.activeCandidateIndex === 0) {
     const cache = state.tabPanelCache.get(state.cachedResultTerm) ?? createEmptyTabPanelCache();
     cache.audioItems = state.audioItems;
     cache.audioSelection = state.audioSelection;
@@ -210,12 +261,14 @@ export function showPopup(
   const translationEntry = newCache.translations.get(contextSentence);
   state = {
     ...state,
+    activeCandidateIndex: 0,
     activeTab: defaultTab ?? null,
     contextSentence,
     cachedResultTerm: result.term,
     cachedContextSentence: contextSentence,
     currentResult: result,
     additionalResults: [],
+    candidateStates: new Map(),
     currentStatus: status,
     definitionSelection,
     audioItems: newCache.audioItems,
@@ -240,16 +293,22 @@ export function showPopup(
         onDismiss?.(state);
       },
       onPlayTerm: () => {
-        if (!state.currentResult) return;
-        void playTermAudio(state.currentResult.term, state.currentResult.langCode, state.audioItems);
+        const active = getActiveResult(state);
+        if (!active) return;
+        void playTermAudio(active.term, active.langCode, getActiveSnapshot(state).audioItems);
       },
+      onPlaySentence: () => {
+        const active = getActiveResult(state);
+        if (!active) return;
+        void playSentenceAudio(state.contextSentence, active.langCode, getActiveSnapshot(state).audioItems);
+      },
+      onCandidateSelect: (idx) => { state = setActiveCandidate(state, idx); },
     });
 
-    // Render winner toolbar into its slot (mirrors appendCandidate's
-    // rerenderCandidateTab) — toolbar icons always visible, panel only
-    // when activeTab is set. Without this the winner lacks .js-cell-toolbar
-    // while appended candidates have one (inconsistent UI).
-    renderWinnerToolbar(state, container);
+    // Render toolbar (1 per popup, context = active candidate).
+    renderPopupToolbar(state, container);
+    // Render candidates chips + list.
+    renderCandidateChipsAndList(state, container);
   }
 
   // Show first so offsetHeight is correct (display:none → offsetHeight=0).
@@ -262,182 +321,89 @@ export function showPopup(
 }
 
 /**
- * Append an additional candidate to an existing popup.
- * Renders header + definitions for the candidate below the existing content.
- * Per-candidate buttons (Quick Add, status cycle, Send to Creator) are wired
- * with closures that capture this candidate's result + selection — independent
- * of the winner's state.
+ * Append an additional candidate to the existing popup.
+ * Spec redesign: candidates shown as chips; active entry stays on winner.
  */
 export function appendCandidate(
   state: PopupDictionaryState,
   result: LookupResult,
   _contextSentence: string,
-  onDismiss?: (newState: PopupDictionaryState) => void,
 ): PopupDictionaryState {
   if (!state.shell) return state;
   const container = state.shell.getContainer();
   if (!container) return state;
 
-  const candidateSelection = initDefinitionSelection(result);
-  let candidateStatus = result.status; // mutable per-candidate status
-  // Per-candidate tab state (independent from winner's tab).
-  let candidateTab: PopupTab | null = null;
-  let candidateTranslation = '';
-  const candidateAudioSelection = new Map<string, boolean>();
-  const candidateImageSelection = new Map<string, boolean>();
-  const candidateAudioItems: AudioItem[] = [];
-  const candidateImageItems: ImageItem[] = [];
-  let candidateTranslationLoading = false;
+  const index = state.additionalResults.length + 1;
+  const candidateState = createCandidateState(result);
+  state.candidateStates.set(index, candidateState);
+  state.additionalResults = [...state.additionalResults, result];
 
-  const candidateEl = appendCandidateContent(container, result, candidateStatus, candidateSelection, {
-    onStatusCycle: () => {
-      candidateStatus = nextStatus(candidateStatus);
-      void persistStatus(result.term, result.langCode, candidateStatus);
-      const badge = candidateEl.querySelector('.js-cell-status');
-      if (badge) {
-        badge.textContent = candidateStatus;
-        badge.className = `cell-header__status cell-header__status--${STATUS_BADGE_VARIANT[candidateStatus]} js-cell-status`;
-      }
-    },
-    onDefinitionToggle: (id, selected) => {
-      candidateSelection.set(id, selected);
-    },
-    onQuickAdd: () => {
-      state = triggerCardCreatorActionForCandidate(state, 'quick-add', result, candidateSelection);
-      onDismiss?.(state);
-    },
-    onSendToCreator: () => {
-      state = triggerCardCreatorActionForCandidate(state, 'edit-card', result, candidateSelection);
-      onDismiss?.(state);
-    },
-    onSettings: () => openSettings(state),
-    onClose: () => {
-      state = hidePopup(state);
-      onDismiss?.(state);
-    },
-    onPlayTerm: () => { void playTermAudio(result.term, result.langCode, candidateAudioItems); },
-  });
+  // Re-render candidates chips + list (active entry and toolbar stay unchanged).
+  renderCandidateChipsAndList(state, container);
+  state.shell?.rePosition();
 
-  // Per-candidate toolbar: render toolbar + panel into toolbar slot
-  // (between header and definitions).
-  const rerenderCandidateTab = (): void => {
-    const slot = candidateEl.querySelector('.js-cell-toolbar-slot');
-    if (!slot) return;
-    slot.innerHTML = '';
-    let toolbarEl: HTMLElement | null = null;
+  // Persist candidate status when it changes (async).
+  void persistStatus(result.term, result.langCode, candidateState.status);
 
-    // Always render toolbar (tab icons visible, panel only when tab active).
-    const renderToolbarOnly = (): void => {
-      const newToolbar = renderToolbar(slot as HTMLElement, candidateTab, (t) => {
-        candidateTab = candidateTab === t ? null : t;
-        rerenderCandidateTab();
-        state.shell?.rePosition();
-      }, countSelectionsForCandidate(candidateAudioSelection, candidateImageSelection), (tab) => {
-        if (tab === 'translate' && !candidateTranslation && !candidateTranslationLoading) {
-          candidateTranslationLoading = true;
-          rerenderCandidateTab();
-          translateSentence(result, state.contextSentence, state.settings.translateTargetLang, (text) => {
-            candidateTranslation = text;
-            candidateTranslationLoading = false;
-            rerenderCandidateTab();
-          });
-        }
-      });
-      if (toolbarEl && toolbarEl.parentNode === slot) {
-        slot.replaceChild(newToolbar, toolbarEl);
-      }
-      toolbarEl = newToolbar;
-    };
-
-    renderToolbarOnly();
-    if (!candidateTab) return;
-    // Render panel into slot after toolbar.
-    renderTabPanel(slot as HTMLElement, candidateTab, result, {
-      contextSentence: state.contextSentence,
-      settings: state.settings,
-      translation: candidateTranslation,
-      translateSelected: false,
-      translationLoading: candidateTranslationLoading,
-      audioSelection: candidateAudioSelection,
-      audioItems: candidateAudioItems,
-      imageSelection: candidateImageSelection,
-      imageItems: candidateImageItems,
-    }, {
-      onTranslationDone: (text) => {
-        candidateTranslation = text;
-        rerenderCandidateTab();
-      },
-      onTranslationLoading: (loading) => {
-        candidateTranslationLoading = loading;
-        rerenderCandidateTab();
-      },
-      onPlayTts: (item, term, sentence, langCode) => playTts(item, term, sentence, langCode),
-      onSelectionChange: renderToolbarOnly,
-    });
-    state.shell?.rePosition();
-  };
-
-  // Initial toolbar render (no tab active — just icons).
-  rerenderCandidateTab();
-
-  return {
-    ...state,
-    additionalResults: [...state.additionalResults, result],
-  };
+  return state;
 }
 
-/** Build a PopupCardCreatorPrefill from the winner's state (lookup result +
- *  selected definitions + context sentence + translation + selected audio/image URLs). */
+/** Switch the active candidate shown in the active entry + toolbar. */
+export function setActiveCandidate(
+  state: PopupDictionaryState,
+  idx: number,
+): PopupDictionaryState {
+  if (!state.shell) return state;
+  if (idx < 0 || idx > state.additionalResults.length) return state;
+
+  state.activeCandidateIndex = idx;
+  const container = state.shell.getContainer();
+  if (!container) return state;
+
+  // Re-render active entry + toolbar + candidates (chips active highlight).
+  renderActiveEntryFromState(state, container);
+  renderPopupToolbar(state, container);
+  renderCandidateChipsAndList(state, container);
+  state.shell?.rePosition();
+  return state;
+}
+
+/** Build a PopupCardCreatorPrefill from the active candidate's state. */
 function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill | null {
-  if (!state.currentResult) return null;
+  const result = getActiveResult(state);
+  if (!result) return null;
+  const snapshot = getActiveSnapshot(state);
+
   // Definitions: use selected; if none selected, fall back to first.
-  const selectedDefs = getSelectedDefinitions(state.currentResult, state.definitionSelection);
+  const selectedDefs = getSelectedDefinitions(result, snapshot.definitionSelection);
   const defs = selectedDefs.length > 0
     ? selectedDefs
-    : state.currentResult.definitions.slice(0, 1);
+    : result.definitions.slice(0, 1);
   // Audio: use selected; if none selected, fall back to first with a URL.
-  const selectedAudio = state.audioItems
-    .filter((a) => a.url && state.audioSelection.get(a.id) === true);
+  const selectedAudio = snapshot.audioItems
+    .filter((a) => a.url && snapshot.audioSelection.get(a.id) === true);
   const audioUrls = selectedAudio.length > 0
     ? selectedAudio.map((a) => a.url!)
-    : state.audioItems.filter((a) => a.url).slice(0, 1).map((a) => a.url!);
+    : snapshot.audioItems.filter((a) => a.url).slice(0, 1).map((a) => a.url!);
   // Image: use selected; if none selected, fall back to first.
-  const selectedImages = state.imageItems
-    .filter((img) => state.imageSelection.get(img.id) === true);
+  const selectedImages = snapshot.imageItems
+    .filter((img) => snapshot.imageSelection.get(img.id) === true);
   const imageUrls = selectedImages.length > 0
     ? selectedImages.map((img) => img.src)
-    : state.imageItems.slice(0, 1).map((img) => img.src);
-  return {
-    term: state.currentResult.term,
-    langCode: state.currentResult.langCode,
-    reading: state.currentResult.reading,
-    definitions: defs.map((d) => ({ pos: d.pos, text: d.text })),
-    contextSentence: state.contextSentence,
-    translation: state.translationSelected ? state.translation : undefined,
-    audioUrls: audioUrls.length > 0 ? audioUrls : undefined,
-    imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
-  };
-}
-
-/** Build a PopupCardCreatorPrefill for an appended candidate (own result + selection). */
-function buildCandidatePrefill(
-  result: LookupResult,
-  selection: DefinitionSelection,
-  contextSentence: string,
-): PopupCardCreatorPrefill {
-  // Definitions: use selected; if none selected, fall back to first.
-  const selectedDefs = getSelectedDefinitions(result, selection);
-  const defs = selectedDefs.length > 0 ? selectedDefs : result.definitions.slice(0, 1);
+    : snapshot.imageItems.slice(0, 1).map((img) => img.src);
   return {
     term: result.term,
     langCode: result.langCode,
     reading: result.reading,
     definitions: defs.map((d) => ({ pos: d.pos, text: d.text })),
-    contextSentence,
+    contextSentence: state.contextSentence,
+    translation: snapshot.translationSelected ? snapshot.translation : undefined,
+    audioUrls: audioUrls.length > 0 ? audioUrls : undefined,
+    imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
   };
 }
 
-/** Trigger Card Creator action for the winner — opens dialog pre-filled. */
+/** Trigger Card Creator action for the active candidate — opens dialog pre-filled. */
 function triggerCardCreatorAction(
   state: PopupDictionaryState,
   action: PopupCardCreatorAction,
@@ -453,22 +419,6 @@ function triggerCardCreatorAction(
   return hidePopup(state);
 }
 
-/** Trigger Card Creator action for an appended candidate. */
-function triggerCardCreatorActionForCandidate(
-  state: PopupDictionaryState,
-  action: PopupCardCreatorAction,
-  result: LookupResult,
-  selection: DefinitionSelection,
-): PopupDictionaryState {
-  if (!state.onCardCreatorAction) {
-    showToast('Card Creator not available — open from subtitle cluster.', state.shell);
-    return state;
-  }
-  const prefill = buildCandidatePrefill(result, selection, state.contextSentence);
-  state.onCardCreatorAction(action, prefill);
-  return hidePopup(state);
-}
-
 /** Hide popup (dismiss). Keeps the per-term tab-panel cache so reopening any
  *  previously looked-up term on this page reuses its fetched data. */
 export function hidePopup(state: PopupDictionaryState): PopupDictionaryState {
@@ -481,6 +431,8 @@ export function hidePopup(state: PopupDictionaryState): PopupDictionaryState {
     additionalResults: [],
     activeTab: null,
     translationLoading: false,
+    activeCandidateIndex: 0,
+    candidateStates: new Map(),
   };
 }
 
@@ -495,66 +447,283 @@ export function destroyPopup(state: PopupDictionaryState): PopupDictionaryState 
     currentResult: null,
     activeTab: null,
     translationLoading: false,
+    activeCandidateIndex: 0,
+    candidateStates: new Map(),
+    currentStatus: 'unknown',
+    definitionSelection: new Map(),
+    audioSelection: new Map(),
+    audioItems: [],
+    imageSelection: new Map(),
+    imageItems: [],
+    translation: '',
+    translationSelected: false,
   };
 }
 
-/** Cycle word status: unknown → tracking → known → ignore → unknown. */
+/** Cycle word status for the active candidate. */
 export function cycleStatus(state: PopupDictionaryState): PopupDictionaryState {
-  if (!state.currentResult) return state;
-  const newStatus = nextStatus(state.currentStatus);
-  // Persist to word status store (async — fire and forget).
-  void persistStatus(state.currentResult.term, state.currentResult.langCode, newStatus);
-  // Re-render header with new status.
-  const newState = { ...state, currentStatus: newStatus };
-  rerender(newState);
-  return newState;
+  const active = getActiveResult(state);
+  if (!active) return state;
+  const newStatus = nextStatus(getActiveSnapshot(state).status);
+  void persistStatus(active.term, active.langCode, newStatus);
+  setActiveSnapshot(state, { status: newStatus });
+  rerender(state);
+  return state;
 }
 
-/** Toggle a definition checkbox. */
+/** Toggle a definition checkbox for the active candidate. */
 export function toggleDefinition(
   state: PopupDictionaryState,
   id: string,
   selected: boolean,
 ): PopupDictionaryState {
-  const newSelection = new Map(state.definitionSelection);
+  const snapshot = getActiveSnapshot(state);
+  const newSelection = new Map(snapshot.definitionSelection);
   newSelection.set(id, selected);
-  return { ...state, definitionSelection: newSelection };
+  return setActiveSnapshot(state, { definitionSelection: newSelection });
 }
 
-/** Toggle a tab (open/close panel). */
+/** Toggle a tab for the active candidate. */
 export function toggleTab(state: PopupDictionaryState, tab: PopupTab): PopupDictionaryState {
-  const newTab = state.activeTab === tab ? null : tab;
+  const snapshot = getActiveSnapshot(state);
+  const newTab = snapshot.activeTab === tab ? null : tab;
   if (state.shell?.getContainer()) {
     rerender(state, newTab);
+  } else {
+    state.activeTab = newTab;
   }
-  return { ...state, activeTab: newTab };
+  return state;
 }
 
 // --- Internal helpers ---
 
-/** Count selected items per tab for toolbar badges. */
-function countSelections(state: PopupDictionaryState): SelectionCounts {
-  const audioCount = countMapTrue(state.audioSelection);
-  const imageCount = countMapTrue(state.imageSelection);
-  const translateCount = state.translationSelected ? 1 : 0;
+/** Count selected items per tab for the active candidate. */
+function countActiveSelections(snapshot: ActiveCandidateSnapshot): SelectionCounts {
   const counts: SelectionCounts = {};
+  const audioCount = countMapTrue(snapshot.audioSelection);
+  const imageCount = countMapTrue(snapshot.imageSelection);
+  const translateCount = snapshot.translationSelected ? 1 : 0;
   if (audioCount > 0) counts.audio = audioCount;
   if (imageCount > 0) counts.image = imageCount;
   if (translateCount > 0) counts.translate = translateCount;
   return counts;
 }
 
-/** Count selected items per tab for an appended candidate. */
-function countSelectionsForCandidate(
-  audioSelection: Map<string, boolean>,
-  imageSelection: Map<string, boolean>,
-): SelectionCounts {
-  const counts: SelectionCounts = {};
-  const audioCount = countMapTrue(audioSelection);
-  const imageCount = countMapTrue(imageSelection);
-  if (audioCount > 0) counts.audio = audioCount;
-  if (imageCount > 0) counts.image = imageCount;
-  return counts;
+/** Get the active candidate result (0 = winner). */
+function getActiveResult(state: PopupDictionaryState): LookupResult | null {
+  if (state.activeCandidateIndex === 0) return state.currentResult;
+  return state.additionalResults[state.activeCandidateIndex - 1] ?? null;
+}
+
+/** Build a snapshot of the active candidate's mutable state. */
+function getActiveSnapshot(state: PopupDictionaryState): ActiveCandidateSnapshot {
+  const result = getActiveResult(state);
+  if (!result) {
+    throw new Error('No active candidate result');
+  }
+  if (state.activeCandidateIndex === 0) {
+    return {
+      result,
+      status: state.currentStatus,
+      definitionSelection: state.definitionSelection,
+      audioSelection: state.audioSelection,
+      audioItems: state.audioItems,
+      imageSelection: state.imageSelection,
+      imageItems: state.imageItems,
+      translation: state.translation,
+      translationSelected: state.translationSelected,
+      translationLoading: state.translationLoading,
+      activeTab: state.activeTab,
+    };
+  }
+  const cs = state.candidateStates.get(state.activeCandidateIndex) ?? createCandidateState(result);
+  return {
+    result,
+    status: cs.status,
+    definitionSelection: cs.definitionSelection,
+    audioSelection: cs.audioSelection,
+    audioItems: cs.audioItems,
+    imageSelection: cs.imageSelection,
+    imageItems: cs.imageItems,
+    translation: cs.translation,
+    translationSelected: cs.translationSelected,
+    translationLoading: cs.translationLoading,
+    activeTab: cs.activeTab,
+  };
+}
+
+/** Apply a partial snapshot update to the active candidate in state (mutates in place). */
+function setActiveSnapshot(state: PopupDictionaryState, patch: Partial<ActiveCandidateSnapshot>): PopupDictionaryState {
+  if (state.activeCandidateIndex === 0) {
+    state.currentStatus = patch.status ?? state.currentStatus;
+    state.definitionSelection = patch.definitionSelection ?? state.definitionSelection;
+    state.audioSelection = patch.audioSelection ?? state.audioSelection;
+    state.audioItems = patch.audioItems ?? state.audioItems;
+    state.imageSelection = patch.imageSelection ?? state.imageSelection;
+    state.imageItems = patch.imageItems ?? state.imageItems;
+    state.translation = patch.translation ?? state.translation;
+    state.translationSelected = patch.translationSelected ?? state.translationSelected;
+    state.translationLoading = patch.translationLoading ?? state.translationLoading;
+    state.activeTab = patch.activeTab ?? state.activeTab;
+    return state;
+  }
+  const result = getActiveResult(state);
+  if (!result) return state;
+  const old = state.candidateStates.get(state.activeCandidateIndex) ?? createCandidateState(result);
+  const updated: CandidateState = {
+    status: patch.status ?? old.status,
+    definitionSelection: patch.definitionSelection ?? old.definitionSelection,
+    audioSelection: patch.audioSelection ?? old.audioSelection,
+    audioItems: patch.audioItems ?? old.audioItems,
+    imageSelection: patch.imageSelection ?? old.imageSelection,
+    imageItems: patch.imageItems ?? old.imageItems,
+    translation: patch.translation ?? old.translation,
+    translationSelected: patch.translationSelected ?? old.translationSelected,
+    translationLoading: patch.translationLoading ?? old.translationLoading,
+    activeTab: patch.activeTab ?? old.activeTab,
+  };
+  state.candidateStates.set(state.activeCandidateIndex, updated);
+  return state;
+}
+
+/** Render the active entry (header + definitions) from state. */
+function renderActiveEntryFromState(state: PopupDictionaryState, container: HTMLElement): void {
+  const active = getActiveResult(state);
+  if (!active) return;
+  const snapshot = getActiveSnapshot(state);
+
+  // Replace existing active entry if any.
+  const existing = container.querySelector('.js-cell-active-entry');
+  if (existing) existing.remove();
+
+  const callbacks: PopupContentCallbacks = {
+    onStatusCycle: () => { state = cycleStatus(state); },
+    onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
+    onQuickAdd: () => { state = triggerCardCreatorAction(state, 'quick-add'); },
+    onSendToCreator: () => { state = triggerCardCreatorAction(state, 'edit-card'); },
+    onSettings: () => openSettings(state),
+    onClose: () => { state = hidePopup(state); },
+    onPlayTerm: () => {
+      const r = getActiveResult(state);
+      if (!r) return;
+      void playTermAudio(r.term, r.langCode, getActiveSnapshot(state).audioItems);
+    },
+    onPlaySentence: () => {
+      const r = getActiveResult(state);
+      if (!r) return;
+      void playSentenceAudio(state.contextSentence, r.langCode, getActiveSnapshot(state).audioItems);
+    },
+    onCandidateSelect: (idx) => { state = setActiveCandidate(state, idx); },
+  };
+
+  renderActiveEntry(container, active, snapshot.status, snapshot.definitionSelection, callbacks);
+
+  // Keep the active entry as the first child (candidates + footer follow it).
+  const newEntry = container.querySelector('.js-cell-active-entry');
+  if (newEntry && container.firstChild !== newEntry) {
+    container.insertBefore(newEntry, container.firstChild);
+  }
+}
+
+/** Render candidates as a single horizontal scrollable chips row. */
+function renderCandidateChipsAndList(state: PopupDictionaryState, container: HTMLElement): void {
+  const candidatesEl = getOrCreateCandidatesContainer(container);
+  candidatesEl.innerHTML = '';
+
+  const candidates: CandidateInfo[] = [];
+  if (state.currentResult) {
+    candidates.push({ idx: 0, result: state.currentResult, status: state.currentStatus });
+  }
+  for (let i = 0; i < state.additionalResults.length; i++) {
+    const r = state.additionalResults[i]!;
+    const cs = state.candidateStates.get(i + 1);
+    candidates.push({ idx: i + 1, result: r, status: cs?.status ?? r.status });
+  }
+
+  renderCandidateChips(
+    candidatesEl,
+    candidates,
+    state.activeCandidateIndex,
+    (idx) => { state = setActiveCandidate(state, idx); },
+  );
+}
+
+function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement): void {
+  const slot = container.querySelector('.js-cell-materials-slot') as HTMLElement | null;
+  if (!slot) return;
+
+  const active = getActiveResult(state);
+  if (!active) return;
+  const snapshot = getActiveSnapshot(state);
+  slot.innerHTML = '';
+
+  const bar = document.createElement('div');
+  bar.className = 'cell-materials__bar';
+  slot.appendChild(bar);
+  const body = document.createElement('div');
+  body.className = 'cell-materials__body';
+  slot.appendChild(body);
+
+  slot.classList.toggle('cell-materials--open', !!snapshot.activeTab);
+
+  let toolbarEl: HTMLElement | null = null;
+
+  const renderToolbarOnly = (): void => {
+    const s = getActiveSnapshot(state);
+    const newToolbar = renderToolbar(bar, s.activeTab, (t) => {
+      const newTab = s.activeTab === t ? null : t;
+      setActiveSnapshot(state, { activeTab: newTab });
+      rerender(state, newTab);
+    }, countActiveSelections(s), (tab) => {
+      if (tab === 'translate') {
+        const s2 = getActiveSnapshot(state);
+        if (!s2.translation && !s2.translationLoading) {
+          setActiveSnapshot(state, { translationLoading: true, activeTab: 'translate' });
+          rerender(state, 'translate');
+          const r = getActiveResult(state);
+          if (!r) return;
+          translateSentence(r, state.contextSentence, state.settings.translateTargetLang, (text) => {
+            setActiveSnapshot(state, { translation: text, translationLoading: false, activeTab: 'translate' });
+            rerender(state, 'translate');
+          });
+        }
+      }
+    });
+    if (toolbarEl && toolbarEl.parentNode === bar) {
+      bar.replaceChild(newToolbar, toolbarEl);
+    }
+    toolbarEl = newToolbar;
+  };
+
+  renderToolbarOnly();
+  if (!snapshot.activeTab) return;
+
+  renderTabPanel(body, snapshot.activeTab, active, {
+    contextSentence: state.contextSentence,
+    settings: state.settings,
+    translation: snapshot.translation,
+    translateSelected: snapshot.translationSelected,
+    translationLoading: snapshot.translationLoading,
+    audioSelection: snapshot.audioSelection,
+    audioItems: snapshot.audioItems,
+    imageSelection: snapshot.imageSelection,
+    imageItems: snapshot.imageItems,
+  }, {
+    onTranslationDone: (text: string) => {
+      setActiveSnapshot(state, { translation: text });
+      rerender(state);
+    },
+    onTranslationLoading: (loading: boolean) => {
+      setActiveSnapshot(state, { translationLoading: loading });
+      rerender(state);
+    },
+    onToggleTranslate: () => {
+      setActiveSnapshot(state, { translationSelected: !snapshot.translationSelected });
+      rerender(state);
+    },
+    onPlayTts: (item, term, sentence, langCode) => playTts(item, term, sentence, langCode),
+    onSelectionChange: renderToolbarOnly,
+  });
 }
 
 /** Count true values in a Map. */
@@ -593,69 +762,7 @@ function translateSentence(
   })();
 }
 
-/** Render the winner's toolbar + optional panel into its .js-cell-toolbar-slot.
- *  Mirrors appendCandidate's rerenderCandidateTab so the winner has the same
- *  .js-cell-toolbar as appended candidates. */
-function renderWinnerToolbar(state: PopupDictionaryState, container: HTMLElement): void {
-  if (!state.currentResult) return;
-  const candidate = container.querySelector('.js-cell-popup-candidate');
-  if (!candidate) return;
-  const slot = candidate.querySelector('.js-cell-toolbar-slot') as HTMLElement | null;
-  if (!slot) return;
-  slot.innerHTML = '';
-  let toolbarEl: HTMLElement | null = null;
-
-  const renderToolbarOnly = (): void => {
-    const newToolbar = renderToolbar(slot, state.activeTab, (t) => toggleTab(state, t), countSelections(state), (tab) => {
-      if (tab === 'translate' && !state.translation && !state.translationLoading && state.currentResult) {
-        state.translationLoading = true;
-        rerender(state, 'translate');
-        translateSentence(state.currentResult, state.contextSentence, state.settings.translateTargetLang, (text) => {
-          state.translation = text;
-          state.translationLoading = false;
-          // Force translate tab to stay open: the onTabOpen closure may capture
-          // a stale state object with activeTab=null, so pass 'translate' explicitly.
-          rerender(state, 'translate');
-        });
-      }
-    });
-    if (toolbarEl && toolbarEl.parentNode === slot) {
-      slot.replaceChild(newToolbar, toolbarEl);
-    }
-    toolbarEl = newToolbar;
-  };
-
-  renderToolbarOnly();
-  if (!state.activeTab) return;
-  renderTabPanel(slot, state.activeTab, state.currentResult, {
-    contextSentence: state.contextSentence,
-    settings: state.settings,
-    translation: state.translation,
-    translateSelected: state.translationSelected,
-    translationLoading: state.translationLoading,
-    audioSelection: state.audioSelection,
-    audioItems: state.audioItems,
-    imageSelection: state.imageSelection,
-    imageItems: state.imageItems,
-  }, {
-    onTranslationDone: (text: string) => {
-      state.translation = text;
-      rerender(state);
-    },
-    onTranslationLoading: (loading: boolean) => {
-      state.translationLoading = loading;
-      rerender(state);
-    },
-    onToggleTranslate: () => {
-      state.translationSelected = !state.translationSelected;
-      rerender(state);
-    },
-    onPlayTts: (item, _term, _sentence, langCode) => playTts(item, state.currentResult?.term ?? '', state.contextSentence, langCode),
-    onSelectionChange: renderToolbarOnly,
-  });
-}
-
-/** Render a tab panel for any result (winner or candidate). Reused by appendCandidate. */
+/** Render a tab panel for the active candidate (reused by renderPopupToolbar). */
 function renderTabPanel(
   container: HTMLElement,
   tab: PopupTab | null,
@@ -688,6 +795,13 @@ function renderTabPanel(
       let wordAudios: AudioItem[] = [];
       let sentenceAudios: AudioItem[] = [];
 
+      // Show all audio items in the tab — header play buttons are quick-play
+      // shortcuts (first available), not "owners" of the first item. Hiding the
+      // first item when it's the only one made the tab show "No audio available"
+      // even though audio exists.
+      const tabWordAudios = (): AudioItem[] => wordAudios;
+      const tabSentenceAudios = (): AudioItem[] => sentenceAudios;
+
       const stopCurrentAudio = (): void => {
         if (currentlyPlayingAudio) {
           currentlyPlayingAudio.pause();
@@ -707,7 +821,7 @@ function renderTabPanel(
         if (currentlyPlayingAudioId === item.id && currentlyPlayingAudio) {
           currentlyPlayingAudio.pause();
           stopCurrentAudio();
-          renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+          renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           return;
         }
         stopCurrentAudio();
@@ -717,17 +831,17 @@ function renderTabPanel(
           currentlyPlayingAudioId = item.id;
           audio.addEventListener('ended', () => {
             stopCurrentAudio();
-            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+            renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           });
           audio.addEventListener('pause', () => {
             stopCurrentAudio();
-            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+            renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           });
           void audio.play().catch(() => {
             stopCurrentAudio();
-            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+            renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           });
-          renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+          renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           return;
         }
         // TTS: we can't reliably track finish time, so keep the play icon.
@@ -738,7 +852,7 @@ function renderTabPanel(
       if (ctx.audioItems.length > 0) {
         wordAudios = ctx.audioItems.filter((a) => a.kind === 'word');
         sentenceAudios = ctx.audioItems.filter((a) => a.kind === 'sentence');
-        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+        renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
         break;
       }
       // Loading state while fetching Forvo + TTS voices.
@@ -793,10 +907,10 @@ function renderTabPanel(
           ctx.audioItems.push(...fallbackWord, ...fallbackSentence);
           wordAudios = fallbackWord;
           sentenceAudios = fallbackSentence;
-          renderAudioPanel(container, fallbackWord, fallbackSentence, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+          renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
           return;
         }
-        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+        renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
       })();
       break;
     }
@@ -879,31 +993,13 @@ function renderTabPanel(
 
 function rerender(state: PopupDictionaryState, activeTab?: PopupTab | null): void {
   if (!state.shell?.getContainer() || !state.currentResult) return;
-  const tab = activeTab ?? state.activeTab;
+  if (activeTab !== undefined) {
+    state.activeTab = activeTab;
+  }
   const container = state.shell.getContainer()!;
-  // Re-render only the winner candidate and preserve appended candidates.
-  const list = getOrCreateCandidateList(container);
-  const existing = Array.from(list.children);
-  const winnerCandidate = existing.shift();
-  if (winnerCandidate) winnerCandidate.remove();
-  renderCandidate(list, state.currentResult, state.currentStatus, state.definitionSelection, {
-    onStatusCycle: () => { state = cycleStatus(state); },
-    onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
-    onQuickAdd: () => { state = triggerCardCreatorAction(state, 'quick-add'); },
-    onSendToCreator: () => { state = triggerCardCreatorAction(state, 'edit-card'); },
-    onSettings: () => openSettings(state),
-    onClose: () => { state = hidePopup(state); },
-    onPlayTerm: () => {
-      if (!state.currentResult) return;
-      void playTermAudio(state.currentResult.term, state.currentResult.langCode, state.audioItems);
-    },
-  }, true);
-  existing.forEach((c) => list.appendChild(c));
-  // Render winner toolbar into its slot (consistent with showPopup/appendCandidate).
-  // Use the live state object so async tab callbacks mutate the same state.
-  state.activeTab = tab;
-  renderWinnerToolbar(state, container);
-  // Re-position after content change (height may have changed).
+  renderActiveEntryFromState(state, container);
+  renderPopupToolbar(state, container);
+  renderCandidateChipsAndList(state, container);
   state.shell?.rePosition();
 }
 
@@ -983,6 +1079,17 @@ async function playTermAudio(term: string, langCode: string, audioItems: readonl
     return;
   }
   await playTts({ id: 'tts-word-', kind: 'word', source: 'system-tts', label: '', state: 'idle', defaultSelected: false }, term, '', langCode);
+}
+
+/** Play the sentence from the header audio button: use first cached sentence URL or TTS. */
+async function playSentenceAudio(sentence: string, langCode: string, audioItems: readonly AudioItem[]): Promise<void> {
+  if (!sentence) return;
+  const sentenceItem = audioItems.find((a) => a.kind === 'sentence' && a.url);
+  if (sentenceItem?.url) {
+    void new Audio(sentenceItem.url).play().catch(() => { /* best-effort */ });
+    return;
+  }
+  await playTts({ id: 'tts-sentence-', kind: 'sentence', source: 'system-tts', label: '', state: 'idle', defaultSelected: false }, '', sentence, langCode);
 }
 
 /** Play TTS — sends TTS_SPEAK to background (chrome.tts engine). Falls back to
