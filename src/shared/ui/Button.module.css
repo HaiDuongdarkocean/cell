@@ -11,10 +11,7 @@
   text-align: center;
   cursor: pointer;
   white-space: nowrap;
-  transition: color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
+  transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
 }
 
 .button:focus-visible {
