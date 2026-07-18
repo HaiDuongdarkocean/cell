@@ -12,7 +12,7 @@
 
 .dropzone:hover:not(.disabled) {
   border-color: var(--color-primary);
-  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+  background: var(--color-primary-subtle);
 }
 
 .dropzone:focus-visible {
@@ -22,7 +22,7 @@
 
 .dragging {
   border-color: var(--color-primary);
-  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.15));
+  background: var(--color-primary-subtle);
 }
 
 .disabled {

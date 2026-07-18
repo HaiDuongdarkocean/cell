@@ -146,7 +146,7 @@
 .progressFill {
   height: 100%;
   border-radius: var(--radius-full);
-  transition: width 200ms ease;
+  transition: width var(--duration-normal, 200ms) ease;
 }
 
 .progressFill.downloading { background: var(--color-primary); }

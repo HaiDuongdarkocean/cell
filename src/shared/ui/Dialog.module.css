@@ -4,7 +4,7 @@
   display: grid;
   place-items: center;
   padding: var(--space-4, 16px);
-  background: var(--dialog-overlay-bg, rgb(0 0 0 / 0.5));
+  background: var(--dialog-overlay-bg);
   z-index: var(--z-modal, 1200);
   box-sizing: border-box;
 }
