@@ -114,14 +114,28 @@ export async function captureSentenceAudio(
   }
 }
 
-/** Seek video to a time, resolving when the seek completes. */
+/** Seek video to a time, resolving when the seek completes.
+ *  Timeout fallback prevents hanging if 'seeked' never fires (hidden tab,
+ *  video error, Netflix player edge cases). */
 function seekTo(video: HTMLVideoElement, timeSec: number): Promise<void> {
   return new Promise((resolve) => {
+    let settled = false;
     const onSeeked = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
       video.removeEventListener('seeked', onSeeked);
       resolve();
     };
     video.addEventListener('seeked', onSeeked);
+    // Timeout: if seek doesn't fire within 3s, resolve anyway (captureScreenshot
+    // will handle the unready state). Prevents listener leak + promise hang.
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      video.removeEventListener('seeked', onSeeked);
+      resolve();
+    }, 3000);
     // ADR-030: route through seekVideo to avoid Netflix M7375.
     // Netflix player.seek() sets video.currentTime internally → fires 'seeked'.
     seekVideo(video, timeSec);
@@ -133,25 +147,26 @@ function playForDuration(video: HTMLVideoElement, durationSec: number): Promise<
   return new Promise((resolve) => {
     let settled = false;
     let startTime = video.currentTime; // captured when play actually starts
-    const finish = () => {
-      if (settled) return;
-      settled = true;
-      // ADR-030: route through pauseVideo to avoid Netflix M7375.
-      pauseVideo(video);
-      resolve();
-    };
-    // Timeout fallback in case 'timeupdate' doesn't fire fast enough.
-    const timer = setTimeout(finish, durationSec * 1000 + 500);
     const onTimeUpdate = () => {
       // Stop when the video has played for the full duration from when play
       // started. Comparing against startTime (not cue.start) handles the case
       // where play() takes a moment to begin after the seek.
       if (video.currentTime - startTime >= durationSec) {
         clearTimeout(timer);
-        video.removeEventListener('timeupdate', onTimeUpdate);
         finish();
       }
     };
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      video.removeEventListener('timeupdate', onTimeUpdate);
+      // ADR-030: route through pauseVideo to avoid Netflix M7375.
+      pauseVideo(video);
+      resolve();
+    };
+    // Timeout fallback in case 'timeupdate' doesn't fire fast enough.
+    const timer = setTimeout(finish, durationSec * 1000 + 500);
     video.addEventListener('timeupdate', onTimeUpdate);
     // ADR-030: route through playVideo to avoid Netflix M7375.
     void playVideo(video).then(() => {
@@ -159,8 +174,6 @@ function playForDuration(video: HTMLVideoElement, durationSec: number): Promise<
       // MediaRecorder starts capturing audio.
       startTime = video.currentTime;
     }).catch(() => {
-      clearTimeout(timer);
-      video.removeEventListener('timeupdate', onTimeUpdate);
       finish();
     });
   });
