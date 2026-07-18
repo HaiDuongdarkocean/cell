@@ -9,6 +9,8 @@
  *
  * Receives state from `useCardCreatorState` + a `variant` ('desktop' | 'mobile')
  * to adjust layout (mobile stacks pairRow + footer vertically).
+ *
+ * BEM block: .cc-dialog
  */
 import type { ReactElement } from 'react';
 import { Icon } from '@/shared/icons/Icon';
@@ -54,7 +56,10 @@ export function CardCreatorDialogContent({
     submit,
   } = state;
 
-  const containerClass = variant === 'mobile' ? `${styles.body} ${styles.mobile}` : styles.body;
+  const containerClass =
+    variant === 'mobile'
+      ? `${styles['cc-dialog--mobile']} ${styles['cc-dialog__body']}`
+      : styles['cc-dialog__body'];
 
   // Dropdowns (Note type, Deck) are always enabled — no disable/opacity
   // flash. Options populate instantly when the prefetched AnkiConnect data
@@ -65,44 +70,48 @@ export function CardCreatorDialogContent({
   const showNoRecentAlert = loadStatus === 'ready' && recentNoteId === null;
 
   return (
-    <div className={containerClass} data-dataId="card-creator-content">
+    <div className={containerClass} data-testid="card-creator-content">
       {/* Alert: no recent card */}
       {showNoRecentAlert && (
-        <div className={styles.alert} role="status" data-dataId="cc-alert-no-recent">
-          <Icon name="info" className={styles.alertIcon} />
+        <div className={styles['cc-dialog__alert']} role="status" data-testid="cc-alert-no-recent">
+          <Icon name="info" className={styles['cc-dialog__alert-icon']} />
           <span>No existing card found in this deck. Fill in the fields below to create a new card.</span>
         </div>
       )}
       {/* Alert: load error */}
       {loadStatus === 'error' && (
-        <div className={`${styles.alert} ${styles.alertError}`} role="alert" data-dataId="cc-alert-error">
-          <Icon name="alertCircle" className={styles.alertIcon} />
+        <div
+          className={`${styles['cc-dialog__alert']} ${styles['cc-dialog__alert--error']}`}
+          role="alert"
+          data-testid="cc-alert-error"
+        >
+          <Icon name="alertCircle" className={styles['cc-dialog__alert-icon']} />
           <span>Failed to load from AnkiConnect: {loadError}. Check the URL in Settings → Card Creator.</span>
         </div>
       )}
 
       {/* Section: Card destination */}
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Card destination</h3>
-        <div className={styles.pairRow}>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>Note type</label>
+      <div className={styles['cc-dialog__section']}>
+        <h3 className={styles['cc-dialog__section-title']}>Card destination</h3>
+        <div className={styles['cc-dialog__pair-row']}>
+          <div className={styles['cc-dialog__field']}>
+            <label className={styles['cc-dialog__field-label']}>Note type</label>
             <Select
               value={draft.noteType}
               options={noteTypes.map((n) => ({ value: n, label: n }))}
               onChange={changeNoteType}
               aria-label="Note type"
-              data-dataId="cc-note-type"
+              data-testid="cc-note-type"
             />
           </div>
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>Deck</label>
+          <div className={styles['cc-dialog__field']}>
+            <label className={styles['cc-dialog__field-label']}>Deck</label>
             <Select
               value={draft.deck}
               options={decks.map((d) => ({ value: d, label: d }))}
               onChange={(d) => void changeDeck(d)}
               aria-label="Deck"
-              data-dataId="cc-deck"
+              data-testid="cc-deck"
             />
           </div>
         </div>
@@ -113,12 +122,12 @@ export function CardCreatorDialogContent({
       <PreviewBlock
         targetWord={draft.fields.targetWord}
         sentence={draft.fields.sentence}
-        testId="cc-preview"
+        dataId="cc-preview"
       />
 
       {/* Section: Fields */}
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Fields</h3>
+      <div className={styles['cc-dialog__section']}>
+        <h3 className={styles['cc-dialog__section-title']}>Fields</h3>
 
         <FieldRow
           label="Target word"
@@ -164,7 +173,7 @@ export function CardCreatorDialogContent({
             aria-label="Sentence translation"
             dataId="cc-sentence-translation"
           />
-          <Button variant="ghost" size="sm" onClick={translateSentenceField} data-dataId="cc-translate">
+          <Button variant="ghost" size="sm" onClick={translateSentenceField} data-testid="cc-translate">
             Translate
           </Button>
         </FieldRow>
@@ -201,7 +210,7 @@ export function CardCreatorDialogContent({
             onFilesDrop={(files, invalidCount) => addFiles('images', files, invalidCount)}
             onReorder={(from, to) => reorderMedia('images', from, to)}
             addDisabled={capturingMedia}
-            testId="cc-images-list"
+            dataId="cc-images-list"
           />
         </FieldRow>
 
@@ -221,7 +230,7 @@ export function CardCreatorDialogContent({
             onFilesDrop={(files, invalidCount) => addFiles('sentenceAudios', files, invalidCount)}
             onReorder={(from, to) => reorderMedia('sentenceAudios', from, to)}
             addDisabled={capturingMedia}
-            testId="cc-sentence-audios-list"
+            dataId="cc-sentence-audios-list"
           />
         </FieldRow>
 
@@ -241,7 +250,7 @@ export function CardCreatorDialogContent({
             onFilesDrop={(files, invalidCount) => addFiles('wordAudios', files, invalidCount)}
             onReorder={(from, to) => reorderMedia('wordAudios', from, to)}
             addDisabled={capturingMedia}
-            testId="cc-word-audios-list"
+            dataId="cc-word-audios-list"
           />
         </FieldRow>
 
@@ -291,9 +300,9 @@ export function CardCreatorDialogContent({
       </div>
 
       {/* Footer */}
-      <div className={styles.footer}>
-        <div className={styles.footerMode}>
-          <label className={styles.fieldLabel}>Update mode</label>
+      <div className={styles['cc-dialog__footer']}>
+        <div className={styles['cc-dialog__footer-mode']}>
+          <label className={styles['cc-dialog__field-label']}>Update mode</label>
           <Select
             value={draft.mediaUpdateMode}
             options={[
@@ -303,10 +312,10 @@ export function CardCreatorDialogContent({
             ]}
             onChange={(m) => updateDraft({ mediaUpdateMode: m as 'overwrite' | 'append' | 'skip' })}
             aria-label="Update mode"
-            data-dataId="cc-update-mode"
+            data-testid="cc-update-mode"
           />
         </div>
-        <div className={styles.footerActions}>
+        <div className={styles['cc-dialog__footer-actions']}>
           <Button variant="secondary" size="sm" onClick={onCancel} disabled={submitting}>
             Cancel
           </Button>
@@ -315,7 +324,7 @@ export function CardCreatorDialogContent({
             size="sm"
             onClick={() => submit('add')}
             disabled={submitting}
-            data-dataId="cc-add"
+            data-testid="cc-add"
           >
             Add
           </Button>
@@ -324,7 +333,7 @@ export function CardCreatorDialogContent({
             size="sm"
             onClick={() => submit('update')}
             disabled={submitting || recentNoteId === null}
-            data-dataId="cc-update"
+            data-testid="cc-update"
           >
             Update
           </Button>

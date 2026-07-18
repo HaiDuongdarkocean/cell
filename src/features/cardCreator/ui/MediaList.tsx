@@ -8,6 +8,8 @@
  *
  * ADR-026: image click opens full-size preview; audio waveform plays in-place.
  * Blob URLs are created from MediaFile ArrayBuffers and revoked on unmount.
+ *
+ * BEM block: .cc-media
  */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { Icon } from '@/shared/icons/Icon';
@@ -16,31 +18,31 @@ import styles from './MediaList.module.css';
 
 interface MediaListProps {
   /** Media files currently attached. */
-  files: readonly MediaFile[];
+  readonly files: readonly MediaFile[];
   /** Kind of media — controls gallery vs list layout. */
-  kind: 'image' | 'audio';
+  readonly kind: 'image' | 'audio';
   /** Label for the add button / aria-label. */
-  addLabel: string;
+  readonly addLabel: string;
   /** Called when the user clicks the add button. */
-  onAdd: () => void;
+  readonly onAdd: () => void;
   /** Called when the user clicks remove on a file. Receives the index. */
-  onRemove: (index: number) => void;
+  readonly onRemove: (index: number) => void;
   /** Called when files are dropped onto the media zone. Receives valid files and the count of ignored invalid files. */
-  onFilesDrop?: (files: MediaFile[], invalidCount: number) => void;
+  readonly onFilesDrop?: (files: MediaFile[], invalidCount: number) => void;
   /** Called when the user reorders media items. Receives (fromIndex, toIndex). */
-  onReorder?: (fromIndex: number, toIndex: number) => void;
+  readonly onReorder?: (fromIndex: number, toIndex: number) => void;
   /** Whether the add button is disabled (e.g. while capturing). */
-  addDisabled?: boolean;
-  /** Optional test id prefix. */
-  testId?: string;
+  readonly addDisabled?: boolean;
+  /** Optional data id prefix. */
+  readonly dataId?: string;
 }
 
 /** Image icon for empty dropzone and audio waveform icon. */
 function ThumbIcon({ kind, size = 20 }: { kind: 'image' | 'audio'; size?: number }): ReactElement {
   return kind === 'image' ? (
-    <Icon name="image" size={size} className={styles.imageThumbIcon} />
+    <Icon name="image" size={size} className={styles['cc-media__icon--image']} />
   ) : (
-    <Icon name="audioWave" size={size} className={styles.audioThumbIcon} />
+    <Icon name="audioWave" size={size} className={styles['cc-media__icon--audio']} />
   );
 }
 
@@ -101,7 +103,7 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
   }, [onClose]);
   return (
     <div
-      className={styles.previewOverlay}
+      className={styles['cc-media__preview']}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -110,13 +112,13 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
     >
       <button
         type="button"
-        className={styles.previewClose}
+        className={styles['cc-media__preview-close']}
         onClick={onClose}
         aria-label="Close preview"
       >
         ×
       </button>
-      {url && <img className={styles.previewImg} src={url} alt={file.filename} />}
+      {url && <img className={styles['cc-media__preview-img']} src={url} alt={file.filename} />}
     </div>
   );
 }
@@ -127,23 +129,23 @@ function EmptyDropzone({
   addLabel,
   onAdd,
   addDisabled,
-  testId,
+  dataId,
 }: {
   kind: 'image' | 'audio';
   addLabel: string;
   onAdd: () => void;
   addDisabled?: boolean;
-  testId?: string;
+  dataId?: string;
 }): ReactElement {
   const text = kind === 'image' ? 'Drop image here or click to add' : 'Drop audio here or click to add';
   return (
     <button
       type="button"
-      className={styles.emptyDropzone}
+      className={styles['cc-media__empty']}
       onClick={onAdd}
       disabled={addDisabled}
       aria-label={addLabel}
-      data-testid={testId ? `${testId}-empty` : undefined}
+      data-testid={dataId ? `${dataId}-empty` : undefined}
     >
       <ThumbIcon kind={kind} size={24} />
       <span>{text}</span>
@@ -164,7 +166,7 @@ function ImageThumb({
   onDragEnd,
   isDragging,
   isDragOver,
-  testId,
+  dataId,
 }: {
   file: MediaFile;
   index: number;
@@ -177,7 +179,7 @@ function ImageThumb({
   onDragEnd?: React.DragEventHandler<HTMLDivElement>;
   isDragging?: boolean;
   isDragOver?: boolean;
-  testId?: string;
+  dataId?: string;
 }): ReactElement {
   const url = useBlobUrl(file);
 
@@ -188,9 +190,9 @@ function ImageThumb({
     }
   };
 
-  const thumbClass = [styles.imageThumb]
-    .concat(isDragging ? styles.imageThumbDragging : [])
-    .concat(isDragOver ? styles.imageThumbDragOver : [])
+  const thumbClass = [styles['cc-media__thumb']]
+    .concat(isDragging ? [styles['cc-media__thumb--dragging']] : [])
+    .concat(isDragOver ? [styles['cc-media__thumb--drag-over']] : [])
     .join(' ');
 
   return (
@@ -207,18 +209,18 @@ function ImageThumb({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       data-index={index}
-      data-testid={testId ? `${testId}-thumb-${index}` : undefined}
+      data-testid={dataId ? `${dataId}-thumb-${index}` : undefined}
     >
-      {url && <img className={styles.imageImg} src={url} alt={file.filename} />}
+      {url && <img className={styles['cc-media__img']} src={url} alt={file.filename} />}
       <button
         type="button"
-        className={styles.imageRemoveButton}
+        className={styles['cc-media__thumb-remove']}
         aria-label={`Remove ${file.filename}`}
         onClick={(e) => {
           e.stopPropagation();
           onRemove(index);
         }}
-        data-testid={testId ? `${testId}-remove-${index}` : undefined}
+        data-testid={dataId ? `${dataId}-remove-${index}` : undefined}
       >
         ×
       </button>
@@ -235,7 +237,7 @@ function ImageGallery({
   onReorder,
   addDisabled,
   addLabel,
-  testId,
+  dataId,
 }: {
   files: readonly MediaFile[];
   onAdd: () => void;
@@ -244,7 +246,7 @@ function ImageGallery({
   onReorder?: (fromIndex: number, toIndex: number) => void;
   addDisabled?: boolean;
   addLabel: string;
-  testId?: string;
+  dataId?: string;
 }): ReactElement {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -295,7 +297,7 @@ function ImageGallery({
   const draggable = onReorder !== undefined;
 
   return (
-    <div className={styles.imageGallery} role="list" onDrop={handleGalleryDrop}>
+    <div className={styles['cc-media__gallery']} role="list" onDrop={handleGalleryDrop}>
       {files.map((file, index) => (
         <ImageThumb
           key={`${file.filename}-${index}`}
@@ -310,16 +312,16 @@ function ImageGallery({
           onDragEnd={handleDragEnd}
           isDragging={draggingIndex === index}
           isDragOver={dragOverIndex === index}
-          testId={testId}
+          dataId={dataId}
         />
       ))}
       <button
         type="button"
-        className={styles.imageAddButton}
+        className={styles['cc-media__gallery-add']}
         onClick={onAdd}
         disabled={addDisabled}
         aria-label={addLabel}
-        data-testid={testId ? `${testId}-add` : undefined}
+        data-testid={dataId ? `${dataId}-add` : undefined}
       >
         <PlusIcon />
       </button>
@@ -336,7 +338,7 @@ function AudioList({
   onReorder,
   addDisabled,
   addLabel,
-  testId,
+  dataId,
 }: {
   files: readonly MediaFile[];
   onAdd: () => void;
@@ -345,7 +347,7 @@ function AudioList({
   onReorder?: (fromIndex: number, toIndex: number) => void;
   addDisabled?: boolean;
   addLabel: string;
-  testId?: string;
+  dataId?: string;
 }): ReactElement {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -396,20 +398,20 @@ function AudioList({
   const draggable = onReorder !== undefined;
 
   return (
-    <div className={styles.mediaList} onDrop={handleListDrop}>
+    <div className={styles['cc-media__list']} onDrop={handleListDrop}>
       {files.length === 0 && (
         <EmptyDropzone
           kind="audio"
           addLabel={addLabel}
           onAdd={onAdd}
           addDisabled={addDisabled}
-          testId={testId}
+          dataId={dataId}
         />
       )}
       {files.map((file, index) => {
-        const rowClass = [styles.mediaRow]
-          .concat(draggingIndex === index ? styles.mediaRowDragging : [])
-          .concat(dragOverIndex === index ? styles.mediaRowDragOver : [])
+        const rowClass = [styles['cc-media__row']]
+          .concat(draggingIndex === index ? [styles['cc-media__row--dragging']] : [])
+          .concat(dragOverIndex === index ? [styles['cc-media__row--drag-over']] : [])
           .join(' ');
         return (
           <div
@@ -424,20 +426,20 @@ function AudioList({
           >
             <button
               type="button"
-              className={styles.mediaThumb}
+              className={styles['cc-media__play']}
               onClick={() => onPlay(file)}
               aria-label={`Play ${file.filename}`}
-              data-testid={testId ? `${testId}-view-${index}` : undefined}
+              data-testid={dataId ? `${dataId}-view-${index}` : undefined}
             >
               <ThumbIcon kind="audio" size={16} />
             </button>
-            <span className={styles.mediaName}>{file.filename}</span>
+            <span className={styles['cc-media__name']}>{file.filename}</span>
             <button
               type="button"
-              className={styles.removeButton}
+              className={styles['cc-media__row-remove']}
               onClick={() => onRemove(index)}
               aria-label={`Remove ${file.filename}`}
-              data-testid={testId ? `${testId}-remove-${index}` : undefined}
+              data-testid={dataId ? `${dataId}-remove-${index}` : undefined}
             >
               ×
             </button>
@@ -447,10 +449,10 @@ function AudioList({
       {files.length > 0 && (
         <button
           type="button"
-          className={styles.addButton}
+          className={styles['cc-media__list-add']}
           onClick={onAdd}
           disabled={addDisabled}
-          data-testid={testId ? `${testId}-add` : undefined}
+          data-testid={dataId ? `${dataId}-add` : undefined}
         >
           + {addLabel}
         </button>
@@ -468,7 +470,7 @@ export function MediaList({
   onFilesDrop,
   onReorder,
   addDisabled,
-  testId,
+  dataId,
 }: MediaListProps): ReactElement {
   const [previewFile, setPreviewFile] = useState<MediaFile | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -546,12 +548,14 @@ export function MediaList({
     void processDrop(e.dataTransfer);
   };
 
-  const zoneClass = isDragOver ? `${styles.mediaZone} ${styles.mediaZoneDragOver}` : styles.mediaZone;
+  const zoneClass = isDragOver
+    ? `${styles['cc-media']} ${styles['cc-media--drag-over']}`
+    : styles['cc-media'];
 
   return (
     <div
       className={zoneClass}
-      data-testid={testId}
+      data-testid={dataId}
       data-kind={kind}
       onDragEnter={onFilesDrop ? handleDragEnter : undefined}
       onDragLeave={onFilesDrop ? handleDragLeave : undefined}
@@ -565,7 +569,7 @@ export function MediaList({
             addLabel={addLabel}
             onAdd={onAdd}
             addDisabled={addDisabled}
-            testId={testId}
+            dataId={dataId}
           />
         ) : (
           <ImageGallery
@@ -576,7 +580,7 @@ export function MediaList({
             onReorder={onReorder}
             addDisabled={addDisabled}
             addLabel={addLabel}
-            testId={testId}
+            dataId={dataId}
           />
         )
       ) : (
@@ -588,7 +592,7 @@ export function MediaList({
           onReorder={onReorder}
           addDisabled={addDisabled}
           addLabel={addLabel}
-          testId={testId}
+          dataId={dataId}
         />
       )}
       {/* Hidden audio element for playback */}

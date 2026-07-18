@@ -1,4 +1,9 @@
-.previewBlock {
+/* === PreviewBlock — read-only preview (Yomitan scan zone) ===
+   BEM block: .cc-preview
+   Spec: docs/specs/spec-card-creator-ui-redesign.md §9.4
+*/
+
+.cc-preview {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12,21 +17,21 @@
   min-height: calc(var(--space-5) * 4);
 }
 
-.previewTarget {
+.cc-preview__target {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   word-break: break-word;
 }
 
-.previewSentence {
+.cc-preview__sentence {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
   word-break: break-word;
 }
 
-.previewSentence strong {
+.cc-preview__sentence strong {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
 }
