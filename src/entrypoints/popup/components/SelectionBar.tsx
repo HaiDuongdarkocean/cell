@@ -29,11 +29,8 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
         size="sm"
         onClick={onDownload}
         data-testid="selection-download-btn"
+        leadingIcon={<Icon name="download" size={14} className={styles.downloadIcon} />}
       >
-        {/* FIXME: extract to registry once stroke-width variant supported — strokeWidth 2.5 differs from ICON_CATALOG.download (stroke 2) */}
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" style={{ marginRight: '4px' }}>
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-        </svg>
         Download
       </Button>
     </div>
