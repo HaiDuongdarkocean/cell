@@ -27,7 +27,6 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 //                          [resize] ↘
 
 const POPUP_Z_INDEX = '2147483647'; // max int — above everything
-const RESIZE_HANDLE_SIZE = 24;
 const VIEWPORT_MARGIN = 8;
 
 
@@ -315,8 +314,6 @@ export class PopupShell {
     // the scroll wrapper, so it stays pinned at the shell's bottom-right.
     this.resizeHandle = document.createElement('div');
     this.resizeHandle.className = 'cell-popup__resize js-cell-resize';
-    this.resizeHandle.style.width = `${RESIZE_HANDLE_SIZE}px`;
-    this.resizeHandle.style.height = `${RESIZE_HANDLE_SIZE}px`;
     this.resizeHandle.innerHTML = ICON_CATALOG.resize.svg;
     this.container.appendChild(this.resizeHandle);
     // Pointer events handle both mouse + touch (touch-action:none prevents

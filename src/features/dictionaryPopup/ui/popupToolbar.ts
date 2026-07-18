@@ -138,9 +138,9 @@ export function renderAudioPanel(
     for (let i = 0; i < 6; i += 1) {
       const row = document.createElement('div');
       row.className = 'cell-audio__skeleton-row';
-      row.appendChild(createSkeleton('28px', '28px', 'circle', 'cell-audio__skeleton-play'));
-      row.appendChild(createSkeleton('100%', '16px', 'rect', 'cell-audio__skeleton-label'));
-      row.appendChild(createSkeleton('16px', '16px', 'rect', 'cell-audio__skeleton-check'));
+      row.appendChild(createSkeleton('var(--space-7, 28px)', 'var(--space-7, 28px)', 'circle', 'cell-audio__skeleton-play'));
+      row.appendChild(createSkeleton('100%', 'var(--space-4, 16px)', 'rect', 'cell-audio__skeleton-label'));
+      row.appendChild(createSkeleton('var(--space-4, 16px)', 'var(--space-4, 16px)', 'rect', 'cell-audio__skeleton-check'));
       skeleton.appendChild(row);
     }
     panel.appendChild(skeleton);
@@ -405,14 +405,14 @@ export function renderTranslatePanel(
     block.className = 'cell-translate__skeleton-block';
     const text = document.createElement('div');
     text.className = 'cell-translate__skeleton-text';
-    const line1 = createSkeleton('100%', '16px', 'rect');
+    const line1 = createSkeleton('100%', 'var(--space-4, 16px)', 'rect');
     line1.className = 'cell-translate__skeleton-line';
-    const line2 = createSkeleton('100%', '16px', 'rect');
+    const line2 = createSkeleton('100%', 'var(--space-4, 16px)', 'rect');
     line2.className = 'cell-translate__skeleton-line';
     text.appendChild(line1);
     text.appendChild(line2);
     block.appendChild(text);
-    block.appendChild(createSkeleton('16px', '16px', 'rect', 'cell-translate__skeleton-check'));
+    block.appendChild(createSkeleton('var(--space-4, 16px)', 'var(--space-4, 16px)', 'rect', 'cell-translate__skeleton-check'));
     skeleton.appendChild(block);
     panel.appendChild(skeleton);
     container.appendChild(panel);
