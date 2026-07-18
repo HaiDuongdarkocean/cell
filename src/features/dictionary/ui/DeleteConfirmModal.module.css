@@ -30,7 +30,7 @@
   font-size: var(--font-size-base, 14px);
   color: var(--color-text-secondary);
   margin: 0 0 var(--space-6, 24px) 0;
-  line-height: 1.5;
+  line-height: var(--leading-normal, 1.5);
 }
 
 .actions {

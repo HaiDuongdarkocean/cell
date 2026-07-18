@@ -139,7 +139,7 @@
   cursor: pointer;
   transition: color var(--transition), background var(--transition), border-color var(--transition);
   height: 22px;
-  line-height: 1;
+  line-height: var(--leading-none, 1);
   white-space: nowrap;
 }
 
