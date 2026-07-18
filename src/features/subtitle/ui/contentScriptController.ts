@@ -37,7 +37,7 @@ import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
 import { fetchUrlAsMediaFile } from '@/features/cardCreator/media/mediaFile';
 import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { createPopupDictionaryState, showPopup, appendCandidate, type PopupDictionaryState, type PopupCardCreatorPrefill, type PopupCardCreatorAction } from '@/features/dictionaryPopup/ui/popupDictionaryController';
-import { WebTextTriggerController } from '@/features/dictionaryPopup/trigger/webTextTriggerController';
+import { WebTriggerController } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { TranslateResult } from '@/entities/message';
@@ -171,7 +171,7 @@ export function init(video: HTMLVideoElement): () => void {
   // Popup dictionary state (spec §4.6).
   let popupDictState: PopupDictionaryState | null = null;
   let popupDictWasPlaying = false;
-  let webTextTrigger: WebTextTriggerController | null = null;
+  let webTextTrigger: WebTriggerController | null = null;
   // Track the latest target/native cues for the block controller and side panel.
   let latestTargetCues: SrtCue[] = [];
   // Track the URL the overlay currently shows cues for. On SPA navigation the
@@ -220,7 +220,7 @@ export function init(video: HTMLVideoElement): () => void {
     // Web-text trigger: select text on page (outside subtitle overlay) → lookup.
     // Same handleLookup/cancelLookup, but no video pause (only subtitle lookup pauses).
     if (webTextTrigger) webTextTrigger.detach();
-    webTextTrigger = new WebTextTriggerController({
+    webTextTrigger = new WebTriggerController({
       triggerMode: dpSettings.triggerMode,
       onLookup: (request, requestId, anchorRect) => { void handleLookup(request, requestId, anchorRect); },
       onCancel: (requestId) => { cancelLookup(requestId); },
