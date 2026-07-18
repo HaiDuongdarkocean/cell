@@ -1,36 +1,48 @@
 /**
  * FieldRow — Card Creator field row: label + field-map select (which Anki
- * field this maps to) + input or textarea for the value.
+ * field this maps to) + auto-grow input for the value.
  *
- * Per the mockup, each field has:
+ * Per the mockup (docs/mockups/anki-card-mockup.html), each field has:
  *  - A label (e.g. "Target word", "Sentence")
  *  - A field-map select (which Anki field name this maps to, e.g. TargetWord)
- *  - An input (single line) or textarea (multi-line) for the value
+ *  - An auto-grow input for the value (replaces both input + textarea)
+ *
+ * The auto-grow input:
+ *  - Uses CSS `field-sizing: content` to grow vertically with content
+ *    (JS fallback: rows attribute synced from value length for browsers
+ *    without field-sizing support).
+ *  - Has a clear (x) button on the right that empties the field in one click.
+ *  - Uses the same surface background as the old textarea.
  *
  * The field-map select lets users override the auto-mapped field. Options
  * come from the note type's actual fields (queried via modelFieldNames).
+ *
+ * BEM blocks:
+ *  - .field-row (this component's wrapper)
+ *  - .field-input (the auto-grow input — also exported standalone)
  */
-import type { ReactElement, ReactNode } from 'react';
+import { useRef, type ChangeEvent, type InputHTMLAttributes, type ReactElement, type ReactNode } from 'react';
 import { Select, type SelectOption } from '@/shared/ui/Select';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './FieldRow.module.css';
 
 interface FieldRowProps {
   /** Human-readable label (e.g. "Target word"). */
-  label: string;
+  readonly label: string;
   /** Anki field name this row is currently mapped to. When omitted, no
    *  field-map select is rendered (e.g. Tags row — tags aren't mapped to an
    *  Anki field, they're sent via the note's `tags` array). */
-  mappedField?: string;
+  readonly mappedField?: string;
   /** Available Anki field names (from modelFieldNames) for the map select.
    *  Required when mappedField is provided. */
-  availableFields?: readonly string[];
+  readonly availableFields?: readonly string[];
   /** Called when the user changes the field mapping. Required when mappedField
    *  is provided. */
-  onMapChange?: (field: string) => void;
+  readonly onMapChange?: (field: string) => void;
   /** The value input/textarea element. */
-  children: ReactNode;
-  /** Optional test id prefix. */
-  testId?: string;
+  readonly children: ReactNode;
+  /** Optional data id — applied to the wrapper div as `<id>-row`. */
+  readonly dataId?: string;
 }
 
 export function FieldRow({
@@ -39,7 +51,7 @@ export function FieldRow({
   availableFields,
   onMapChange,
   children,
-  testId,
+  dataId,
 }: FieldRowProps): ReactElement {
   // ADR-026: prepend a "None" option (value '') so the user can opt out of
   // mapping a source field to any Anki field (e.g. don't send the screenshot
@@ -49,18 +61,18 @@ export function FieldRow({
     ? [{ value: '', label: 'None' }, ...availableFields!.map((f) => ({ value: f, label: f }))]
     : [];
   return (
-    <div className={styles.field} data-testid={testId ? `${testId}-row` : undefined}>
-      <div className={styles.fieldHeader}>
-        <label className={styles.fieldLabel}>{label}</label>
+    <div className={styles.fieldRow} data-testid={dataId ? `${dataId}-row` : undefined}>
+      <div className={styles.fieldRow__header}>
+        <label className={styles.fieldRow__label}>{label}</label>
         {showMap && (
-          <span className={styles.fieldMap}>
+          <span className={styles.fieldRow__map}>
             <Select
-              className={styles.fieldMapSelect}
+              className={styles.fieldRow__mapSelect}
               value={mappedField}
               options={options}
               onChange={onMapChange}
               aria-label={`Map ${label} to Anki field`}
-              data-testid={testId ? `${testId}-map` : undefined}
+              data-testid={dataId ? `${dataId}-map` : undefined}
               menuAlign="right"
             />
           </span>
@@ -71,12 +83,86 @@ export function FieldRow({
   );
 }
 
-/** Styled input matching the mockup's `.input` class. */
-export function FieldInput(props: React.InputHTMLAttributes<HTMLInputElement>): ReactElement {
-  return <input className={styles.input} {...props} />;
+interface FieldAutoGrowInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value' | 'size'> {
+  /** Current value (controlled). */
+  readonly value: string;
+  /** Called with the new value when the input changes. */
+  onChange: (value: string) => void;
+  /** Called when the user clicks the clear (x) button. Default: sets value to ''. */
+  readonly onClear?: () => void;
+  /** Show the clear button. Default: true (shown whenever value is non-empty). */
+  readonly clearable?: boolean;
+  /** Optional data id — applied to the wrapper div as `<id>-input`. */
+  readonly dataId?: string;
 }
 
-/** Styled textarea matching the mockup's `.textarea` class. */
-export function FieldTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>): ReactElement {
-  return <textarea className={styles.textarea} {...props} />;
+/**
+ * FieldAutoGrowInput — auto-growing single-line input with a clear (x) button.
+ *
+ * Replaces both FieldInput (single-line) and FieldTextarea (multi-line):
+ *  - `field-sizing: content` (CSS) grows the input vertically to fit content.
+ *  - JS fallback: when `field-sizing` is unsupported, a `rows` attribute is
+ *    derived from the value's line count so the input still grows.
+ *  - Clear button (x icon) sits top-right inside the input box; one click
+ *    empties the field.
+ *  - Background matches the old textarea look (`--color-surface`).
+ *
+ * BEM block: `.field-input` (`.field-input__control`, `.field-input__clear`).
+ */
+export function FieldAutoGrowInput({
+  value,
+  onChange,
+  onClear,
+  clearable = true,
+  dataId,
+  className,
+  ...rest
+}: FieldAutoGrowInputProps): ReactElement {
+  const controlRef = useRef<HTMLInputElement>(null);
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    onChange(e.target.value);
+  };
+
+  const handleClear = (): void => {
+    if (onClear) {
+      onClear();
+    } else {
+      onChange('');
+    }
+    // Return focus to the input after clearing so the user can keep typing.
+    controlRef.current?.focus();
+  };
+
+  // JS fallback for browsers without `field-sizing: content` support:
+  // derive `rows` from line count so the input grows vertically. Multi-line
+  // input uses `rows` to size itself; single-line stays at the min-height.
+  const lineCount = Math.max(1, value.split('\n').length);
+  const isMultiLine = value.includes('\n') || lineCount > 1;
+
+  const controlClass = [styles.fieldInput__control, className ?? ''].filter(Boolean).join(' ');
+
+  return (
+    <div className={styles.fieldInput} data-testid={dataId ? `${dataId}-input` : undefined}>
+      <input
+        ref={controlRef}
+        className={controlClass}
+        value={value}
+        onChange={handleChange}
+        // Multi-line input: allow wrapping + rows. Single-line: default.
+        {...(isMultiLine ? { rows: lineCount } : {})}
+        {...rest}
+      />
+      {clearable && value.length > 0 && (
+        <button
+          type="button"
+          className={styles.fieldInput__clear}
+          aria-label="Clear"
+          onClick={handleClear}
+        >
+          <Icon name="x" size={12} />
+        </button>
+      )}
+    </div>
+  );
 }
