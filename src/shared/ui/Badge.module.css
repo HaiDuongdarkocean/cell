@@ -4,7 +4,7 @@
   justify-content: center;
   gap: var(--space-1);
   border: 1px solid transparent;
-  border-radius: var(--radius-full);
+  border-radius: var(--badge-radius, var(--radius-full));
   font-family: var(--font-family);
   font-weight: var(--font-weight-medium);
   line-height: var(--leading-tight);
@@ -13,7 +13,7 @@
 
 .sm {
   padding: var(--space-0-5, 2px) var(--space-2, 8px);
-  font-size: var(--font-size-xs);
+  font-size: var(--badge-font-size, var(--font-size-xs));
 }
 
 .md {
@@ -22,24 +22,24 @@
 }
 
 .default {
-  background: var(--color-primary);
-  color: var(--color-primary-foreground);
+  background: var(--badge-bg, var(--color-primary));
+  color: var(--badge-fg, var(--color-primary-foreground));
 }
 
 .secondary {
-  background: var(--color-secondary);
-  color: var(--color-secondary-foreground);
+  background: var(--badge-secondary-bg, var(--color-secondary));
+  color: var(--badge-secondary-fg, var(--color-secondary-foreground));
 }
 
 .outline {
   background: transparent;
-  border-color: var(--color-border);
-  color: var(--color-foreground);
+  border-color: var(--badge-outline-border, var(--color-border));
+  color: var(--badge-outline-fg, var(--color-foreground));
 }
 
 .destructive {
-  background: var(--color-destructive);
-  color: var(--color-destructive-foreground);
+  background: var(--badge-destructive-bg, var(--color-destructive));
+  color: var(--badge-destructive-fg, var(--color-destructive-foreground));
 }
 
 .success {
