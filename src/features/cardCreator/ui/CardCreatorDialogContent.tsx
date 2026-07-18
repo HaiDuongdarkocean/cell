@@ -11,6 +11,7 @@
  * to adjust layout (mobile stacks pairRow + footer vertically).
  */
 import type { ReactElement } from 'react';
+import { Icon } from '@/shared/icons/Icon';
 import { Button } from '@/shared/ui/Button';
 import { Select } from '@/shared/ui/Select';
 import { FieldRow, FieldInput, FieldTextarea } from './FieldRow';
@@ -68,42 +69,14 @@ export function CardCreatorDialogContent({
       {/* Alert: no recent card */}
       {showNoRecentAlert && (
         <div className={styles.alert} role="status" data-testid="cc-alert-no-recent">
-          {/* Matches ICON_CATALOG.info.svg (stroke 2, path identical). Kept inline as JSX. */}
-          <svg
-            className={styles.alertIcon}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4" />
-            <path d="M12 8h.01" />
-          </svg>
+          <Icon name="info" className={styles.alertIcon} />
           <span>No existing card found in this deck. Fill in the fields below to create a new card.</span>
         </div>
       )}
       {/* Alert: load error */}
       {loadStatus === 'error' && (
         <div className={`${styles.alert} ${styles.alertError}`} role="alert" data-testid="cc-alert-error">
-          {/* Matches ICON_CATALOG.alertCircle.svg (stroke 2, path identical). Kept inline as JSX. */}
-          <svg
-            className={styles.alertIcon}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
+          <Icon name="alertCircle" className={styles.alertIcon} />
           <span>Failed to load from AnkiConnect: {loadError}. Check the URL in Settings → Card Creator.</span>
         </div>
       )}

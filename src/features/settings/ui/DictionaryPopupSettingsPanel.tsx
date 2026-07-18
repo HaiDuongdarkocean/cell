@@ -6,6 +6,7 @@
 
 import type React from 'react';
 import type { DictionaryPopupSettings, Settings } from '@/entities/settings/types';
+import styles from './DictionaryPopupSettingsPanel.module.css';
 
 interface DictionaryPopupSettingsPanelProps {
   readonly settings: DictionaryPopupSettings;
@@ -38,9 +39,9 @@ export function DictionaryPopupSettingsPanel({
   };
 
   return (
-    <div className="dp-settings-panel">
+    <div className={styles.panel}>
       {/* Enabled toggle */}
-      <div className="dp-settings-field">
+      <div className={styles.field}>
         <label htmlFor="dp-enabled">
           <input
             id="dp-enabled"
@@ -54,7 +55,7 @@ export function DictionaryPopupSettingsPanel({
       </div>
 
       {/* Trigger mode */}
-      <div className="dp-settings-field">
+      <div className={styles.field}>
         <label htmlFor="dp-trigger-mode">Trigger mode</label>
         <select
           id="dp-trigger-mode"
@@ -68,7 +69,7 @@ export function DictionaryPopupSettingsPanel({
       </div>
 
       {/* Default active tab */}
-      <div className="dp-settings-field">
+      <div className={styles.field}>
         <label htmlFor="dp-default-tab">Default active tab</label>
         <select
           id="dp-default-tab"
@@ -83,7 +84,7 @@ export function DictionaryPopupSettingsPanel({
       </div>
 
       {/* Popup width */}
-      <div className="dp-settings-field">
+      <div className={styles.field}>
         <label htmlFor="dp-width">Popup width (px)</label>
         <input
           id="dp-width"
@@ -96,7 +97,7 @@ export function DictionaryPopupSettingsPanel({
       </div>
 
       {/* Popup max height */}
-      <div className="dp-settings-field">
+      <div className={styles.field}>
         <label htmlFor="dp-max-height">Popup max height (px)</label>
         <input
           id="dp-max-height"
@@ -109,7 +110,7 @@ export function DictionaryPopupSettingsPanel({
       </div>
 
       {/* Translate target language */}
-      <div className="dp-settings-field">
+      <div className={styles.field}>
         <label htmlFor="dp-translate-lang">Translate target language</label>
         <input
           id="dp-translate-lang"
@@ -121,7 +122,7 @@ export function DictionaryPopupSettingsPanel({
       </div>
 
       {/* SRS destination */}
-      <div className="dp-settings-field">
+      <div className={styles.field}>
         <label htmlFor="dp-srs">SRS destination</label>
         <select
           id="dp-srs"
@@ -131,7 +132,7 @@ export function DictionaryPopupSettingsPanel({
         >
           <option value="anki">Anki</option>
         </select>
-        <small style={{ display: 'block', color: '#64748b', marginTop: '4px' }}>
+        <small className={styles.hint}>
           Cell Memory integration coming soon.
         </small>
       </div>

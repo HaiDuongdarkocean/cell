@@ -153,9 +153,9 @@ export function CardCreatorSettingsPanel({
         <p className={styles.hint}>
           When ON, Quick Add auto-fills the field with best-match items. When OFF, only user-ticked items are filled.
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px' }}>
+        <div className={styles.toggleList}>
           {(['definitions', 'wordAudios', 'sentenceAudios', 'images', 'sentenceTranslation', 'sentence'] as const).map((field) => (
-            <label key={field} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+            <label key={field} className={styles.toggleRow}>
               <input
                 type="checkbox"
                 checked={settings.autoCompleteToggles?.[field] ?? true}

@@ -10,6 +10,7 @@
  * Blob URLs are created from MediaFile ArrayBuffers and revoked on unmount.
  */
 import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { Icon } from '@/shared/icons/Icon';
 import type { MediaFile } from '../media/mediaFile';
 import styles from './MediaList.module.css';
 
@@ -36,69 +37,16 @@ interface MediaListProps {
 
 /** Image icon for empty dropzone and audio waveform icon. */
 function ThumbIcon({ kind, size = 20 }: { kind: 'image' | 'audio'; size?: number }): ReactElement {
-  if (kind === 'image') {
-    // FIXME: stroke 1.25 variant + different path — registry has stroke 2 (lucide image). Extract variant when needed.
-    return (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.25"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-        width={size}
-        height={size}
-        className={styles.imageThumbIcon}
-      >
-        <rect x="3" y="3" width="18" height="18" rx="2" fill="none" />
-        <circle cx="9" cy="9" r="2" fill="none" />
-        <path d="M21 15l-5-5L5 21" fill="none" />
-      </svg>
-    );
-  }
-  // FIXME: stroke 1.5 variant — registry has stroke 2. Extract variant when needed.
-  // Path data matches ICON_CATALOG.audioWave exactly (source of the registry icon).
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      width={size}
-      height={size}
-    >
-      <path d="M3 10v4" />
-      <path d="M7 6v12" />
-      <path d="M11 3v18" />
-      <path d="M15 8v8" />
-      <path d="M19 11v2" />
-    </svg>
+  return kind === 'image' ? (
+    <Icon name="image" size={size} className={styles.imageThumbIcon} />
+  ) : (
+    <Icon name="audioWave" size={size} className={styles.audioThumbIcon} />
   );
 }
 
 /** Plus icon used in the dashed image add button. */
-// Matches ICON_CATALOG.plus.svg (stroke 2, path identical). Kept inline as JSX for prop-based sizing.
 function PlusIcon(): ReactElement {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      width="24"
-      height="24"
-    >
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
-    </svg>
-  );
+  return <Icon name="plus" size={24} />;
 }
 
 /** Determine whether a File is an image or an audio file.

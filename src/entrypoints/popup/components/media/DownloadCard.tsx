@@ -253,10 +253,7 @@ export function DownloadCard({
           )}
           {download.usedWorkers && (
             <span className={styles.parallelBadge} title="Parallel conversion">
-              {/* FIXME: extract to registry once stroke-width variant supported — lightning path differs from ICON_CATALOG.zap (simple bolt vs newer complex path) */}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-              </svg>
+              <Icon name="zap" size={12} />
             </span>
           )}
         </div>

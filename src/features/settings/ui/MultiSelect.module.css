@@ -77,7 +77,7 @@
 
 /* === Options list === */
 .list {
-  max-height: 220px;
+  max-height: var(--list-max-height, 220px);
   overflow-y: auto;
   list-style: none;
   margin: 0;

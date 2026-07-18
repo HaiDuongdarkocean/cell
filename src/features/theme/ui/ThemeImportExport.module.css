@@ -64,3 +64,11 @@
   color: var(--color-text-secondary);
   margin-bottom: var(--space-1, 4px);
 }
+
+.fileInput {
+  display: none;
+}
+
+.actionRow {
+  margin-top: var(--space-2, 8px);
+}

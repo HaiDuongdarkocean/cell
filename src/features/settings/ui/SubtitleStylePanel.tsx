@@ -215,7 +215,7 @@ export function SubtitleStylePanel({
                   onChange={() => onChange({ horizontalAlign: align })}
                   aria-label={`Align ${align}`}
                 />
-                <span style={{ textTransform: 'capitalize' }}>{align}</span>
+                <span className={styles.capitalize}>{align}</span>
               </label>
             ))}
           </div>
