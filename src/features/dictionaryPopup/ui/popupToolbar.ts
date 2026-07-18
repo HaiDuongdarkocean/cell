@@ -159,16 +159,11 @@ export function renderAudioPanel(
       row.setAttribute('data-cell-audio-id', item.id);
 
       // Play/pause button — click to play, does NOT toggle selection.
-      // Sentence audio uses audio-wave icon variant; word audio uses play icon.
       const playBtn = document.createElement('button');
       playBtn.className = 'icon-btn icon-btn--sm icon-btn--outlined js-cell-audio-play';
       playBtn.setAttribute('aria-label', isPlaying ? `Pause ${item.label}` : `Play ${item.label}`);
       playBtn.title = isPlaying ? `Pause ${item.label}` : `Play ${item.label}`;
-      if (variant === 'sentence') {
-        playBtn.innerHTML = isPlaying ? ICON_CATALOG.pause.svg : ICON_CATALOG.audioWave.svg;
-      } else {
-        playBtn.innerHTML = isPlaying ? ICON_CATALOG.pause.svg : ICON_CATALOG.play.svg;
-      }
+      playBtn.innerHTML = isPlaying ? ICON_CATALOG.pause.svg : ICON_CATALOG.audioWave.svg;
       playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         onPlay(item);

@@ -10,16 +10,9 @@ import type { LookupResult, DefinitionEntry, WordStatus } from '../types';
 import { nextStatus } from '../services/wordStatusStore';
 import { ICON_CATALOG } from '@/shared/icons';
 
-// Design system §9 Badge — variant CSS per WordStatus.
-// All variants: radius full (pill), font 12px semibold, flat (no shadow).
-// BEM modifier classes: .cell-header__status--<variant>
-type BadgeVariant = 'neutral' | 'primary' | 'success' | 'secondary';
-export const STATUS_BADGE_VARIANT: Record<WordStatus, BadgeVariant> = {
-  unknown: 'neutral',
-  tracking: 'primary',
-  known: 'success',
-  ignore: 'secondary',
-};
+// Design system §9 Status badge — soft pill per WordStatus.
+// BEM modifier classes: .cell-header__status--<status>
+//   unknown=error, tracking=warning, known=success, ignore=neutral
 
 /** Generate a stable ID for a sense within a definition. */
 export function makeSenseId(definitionId: string, senseIndex: number): string {
@@ -122,7 +115,7 @@ export function renderHeader(
       playBtn.className = 'icon-btn icon-btn--xs cell-header__audio js-cell-play-term';
       playBtn.setAttribute('aria-label', 'Play word audio');
       playBtn.title = 'Play word audio';
-      playBtn.innerHTML = `${ICON_CATALOG.audioWave.svg}<span class="cell-header__audio-label cell-label">Word audio</span>`;
+      playBtn.innerHTML = ICON_CATALOG.audioWave.svg;
       playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         onPlayTerm();
@@ -135,7 +128,7 @@ export function renderHeader(
       sentenceBtn.className = 'icon-btn icon-btn--xs cell-header__audio js-cell-play-sentence';
       sentenceBtn.setAttribute('aria-label', 'Play sentence audio');
       sentenceBtn.title = 'Play sentence audio';
-      sentenceBtn.innerHTML = `${ICON_CATALOG.messageSquare.svg}<span class="cell-header__audio-label cell-label">Sentence audio</span>`;
+      sentenceBtn.innerHTML = ICON_CATALOG.messageSquare.svg;
       sentenceBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         onPlaySentence();
@@ -184,9 +177,8 @@ export function renderHeader(
   second.className = 'cell-header__second';
 
   // Status badge — clickable cycle (LEFT of badges per UX)
-  const statusVariant = STATUS_BADGE_VARIANT[currentStatus] ?? 'neutral';
   const statusBadge = document.createElement('button');
-  statusBadge.className = `btn cell-header__status cell-header__status--${statusVariant} js-cell-status`;
+  statusBadge.className = `btn cell-header__status cell-header__status--${currentStatus} js-cell-status`;
   const next = nextStatus(currentStatus);
   statusBadge.title = `Click to cycle: ${currentStatus} → ${next}`;
   statusBadge.addEventListener('click', onStatusCycle);

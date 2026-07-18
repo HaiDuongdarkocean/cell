@@ -91,7 +91,7 @@
 .btn:active { transform: scale(0.98); }
 
 .btn--primary { background: var(--color-primary); color: var(--color-text-inverse); }
-.btn--primary:hover { background: var(--color-primary-hover); }
+.btn--primary:hover { }
 
 .btn--secondary { background: var(--color-secondary); color: var(--color-secondary-foreground); }
 .btn--secondary:hover { background: var(--color-secondary-hover); }
