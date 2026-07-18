@@ -1,6 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
 import { SubtitlePreview } from './SubtitlePreview';
+import { Button } from '@/shared/ui/Button';
 import styles from './SubtitleStylePanel.module.css';
 
 interface SubtitleStylePanelProps {
@@ -315,24 +316,24 @@ export function SubtitleStylePanel({
       {/* Reset button — in panel, justify-end (settings-dialog-rearrange) */}
       <div className={styles.resetRow}>
         {!showResetConfirm ? (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleResetClick}
-            className={styles.resetBtn}
             aria-label={`Reset ${role} style to defaults`}
             data-testid={`style-${role}-reset`}
           >
             Reset to defaults
-          </button>
+          </Button>
         ) : (
           <div className={styles.confirmRow} data-testid={`style-${role}-reset-confirm`}>
             <span>Reset {role} style to defaults?</span>
-            <button type="button" onClick={handleResetConfirm} className={styles.confirmBtn}>
+            <Button variant="destructive" size="sm" onClick={handleResetConfirm}>
               Yes, reset
-            </button>
-            <button type="button" onClick={handleResetCancel} className={styles.cancelBtn}>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleResetCancel}>
               Cancel
-            </button>
+            </Button>
           </div>
         )}
       </div>

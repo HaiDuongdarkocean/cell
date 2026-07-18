@@ -187,46 +187,10 @@
   text-transform: capitalize;
 }
 
-.resetBtn {
-  padding: 6px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.resetBtn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
-}
-
 .confirmRow {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   font-size: var(--font-size-xs);
   color: var(--color-text);
-}
-
-.confirmBtn {
-  padding: 4px 10px;
-  border: 1px solid var(--color-error);
-  border-radius: var(--radius-sm);
-  background: var(--color-error);
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
-}
-
-.cancelBtn {
-  padding: 4px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: var(--font-size-xs);
-  cursor: pointer;
 }

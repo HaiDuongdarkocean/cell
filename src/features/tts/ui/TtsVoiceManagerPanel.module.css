@@ -221,34 +221,6 @@
 }
 
 /* === Shared voice row bits === */
-.voicePlayBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--space-8, 32px);
-  height: var(--space-8, 32px);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
-  background: var(--color-background);
-  color: var(--color-primary);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.voicePlayBtn:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-}
-
-.voicePlayBtn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -1px;
-}
-
-.voicePlayBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .voiceCheckbox {
   display: inline-flex;
   align-items: center;
