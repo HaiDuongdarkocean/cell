@@ -7,9 +7,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--space-1, 4px);
   min-width: 140px;
-  padding: 4px 10px;
+  padding: var(--space-1, 4px) var(--space-2-5, 10px);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
@@ -40,9 +40,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  min-width: var(--space-5, 20px);
+  height: var(--space-5, 20px);
+  padding: 0 var(--space-1-5, 6px);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
@@ -57,9 +57,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  min-width: var(--space-5, 20px);
+  height: var(--space-5, 20px);
+  padding: 0 var(--space-1-5, 6px);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;

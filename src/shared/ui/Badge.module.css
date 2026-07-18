@@ -12,12 +12,12 @@
 }
 
 .sm {
-  padding: 2px 8px;
+  padding: var(--space-0-5, 2px) var(--space-2, 8px);
   font-size: var(--font-size-xs);
 }
 
 .md {
-  padding: 4px 10px;
+  padding: var(--space-1, 4px) var(--space-2-5, 10px);
   font-size: var(--font-size-sm);
 }
 
