@@ -21,7 +21,8 @@ export interface DrawerProps {
 }
 
 /**
- * Drawer — slide-in panel with overlay, focus management, and Esc to close.
+ * Drawer — slide-in panel with overlay, focus trap (Tab/Shift+Tab cycle
+ * within panel) + restore focus to trigger on close, and Esc to close.
  */
 export function Drawer({
   open,
