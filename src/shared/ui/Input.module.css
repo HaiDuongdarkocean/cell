@@ -40,18 +40,21 @@
 
 /* === Sizes === */
 .sm {
-  height: 28px;
-  padding: 6px 12px;
+  height: var(--input-height-sm, 28px);
+  padding: var(--input-padding-sm-y, 6px) var(--input-padding-sm-x, 12px);
+  font-size: var(--input-font-size-sm, var(--font-size-xs, 12px));
 }
 
 .md {
-  height: 32px;
-  padding: 8px 12px;
+  height: var(--input-height, 32px);
+  padding: var(--input-padding-y, 8px) var(--input-padding-x, 12px);
+  font-size: var(--input-font-size, var(--font-size-sm, 13px));
 }
 
 .lg {
-  height: 40px;
-  padding: 10px 16px;
+  height: var(--input-height-lg, 40px);
+  padding: var(--input-padding-lg-y, 10px) var(--input-padding-lg-x, 16px);
+  font-size: var(--input-font-size-lg, var(--font-size-base, 14px));
 }
 
 .errorText {
