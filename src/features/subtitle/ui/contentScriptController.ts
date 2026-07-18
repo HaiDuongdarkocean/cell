@@ -415,7 +415,7 @@ export function init(video: HTMLVideoElement): () => void {
       cardCreatorMount.updateSettings(cardCreatorSettings);
     }
 
-    // Build definitions text from prefill (same format as sendToCreator.buildDefinitionsText).
+    // Build definitions text from prefill (POS-prefixed format: "(pos) text" per line).
     const definitionsText = prefill.definitions
       .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
       .join('\n');
@@ -434,7 +434,8 @@ export function init(video: HTMLVideoElement): () => void {
         const screenshot = await captureScreenshot(video);
         initialMedia.push(screenshot);
       } catch {
-        // Screenshot failure is non-fatal.
+        // Screenshot failure is non-fatal — user can re-capture in the dialog.
+        showToast('Screenshot failed — you can capture manually in the dialog.', container, { variant: 'warning' });
       }
       // Sentence audio: only if the context sentence matches a subtitle cue.
       // For web-text selection (no matching cue), skip audio capture.
@@ -464,6 +465,8 @@ export function init(video: HTMLVideoElement): () => void {
         definitions: definitionsText,
         sentenceTranslation: prefill.translation ?? '',
         sentence: prefill.contextSentence,
+        audioUrls: prefill.audioUrls,
+        imageUrls: prefill.imageUrls,
       },
     };
 
