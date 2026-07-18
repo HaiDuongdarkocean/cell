@@ -85,7 +85,7 @@
 
 /* Input — design-system §3.3 Input */
 .input {
-  width: auto;
+  width: 100%;
   padding: var(--input-padding-y) var(--input-padding-x);
   border: 1px solid var(--input-border);
   border-radius: var(--input-radius);
@@ -94,6 +94,7 @@
   font-size: var(--input-font-size);
   font-family: inherit;
   line-height: var(--leading-normal);
+  box-sizing: border-box;
 }
 
 .input::placeholder {
@@ -108,7 +109,7 @@
 
 /* Textarea — same as Input but multiline + resize */
 .textarea {
-  width: auto;
+  width: 100%;
   min-height: 56px;
   padding: var(--input-padding-y) var(--input-padding-x);
   border: 1px solid var(--input-border);
@@ -119,6 +120,7 @@
   font-family: inherit;
   line-height: var(--leading-normal);
   resize: vertical;
+  box-sizing: border-box;
 }
 
 .textarea::placeholder {
