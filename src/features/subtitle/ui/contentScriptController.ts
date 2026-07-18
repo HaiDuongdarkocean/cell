@@ -33,6 +33,9 @@ import { mountCardCreatorDialog, buildCardCreatorContext } from '@/features/card
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
+import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
+import { fetchUrlAsMediaFile } from '@/features/cardCreator/media/mediaFile';
+import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { createPopupDictionaryState, showPopup, appendCandidate, type PopupDictionaryState, type PopupCardCreatorPrefill, type PopupCardCreatorAction } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import { WebTextTriggerController } from '@/features/dictionaryPopup/trigger/webTextTriggerController';
 import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
@@ -208,7 +211,7 @@ export function init(video: HTMLVideoElement): () => void {
   /** Wire popup dictionary: enable token wrap + trigger on subtitle block.
    *  Also wire web-text trigger (select text anywhere on page → lookup). */
   function wireDictionaryPopup(dpSettings: DictionaryPopupSettings, ccSettings: CardCreatorSettings): void {
-    popupDictState = createPopupDictionaryState(dpSettings, ccSettings, handlePopupCardCreatorAction);
+    popupDictState = createPopupDictionaryState(dpSettings, ccSettings, handlePopupCardCreatorAction, handlePopupQuickAdd);
     blockController.enableDictionaryPopup(
       dpSettings.triggerMode,
       (request: LookupRequest, requestId: string, anchorRect: DOMRect) => { void handleLookup(request, requestId, anchorRect); },
@@ -470,6 +473,114 @@ export function init(video: HTMLVideoElement): () => void {
     };
 
     cardCreatorMount.open(ctx, action);
+  }
+
+  /** Quick Add directly from popup — bypass the Card Creator dialog.
+   *  Collects media (word audio + sentence audio + image from popup prefill,
+   *  plus screenshot + sentence audio from video if available), builds Anki
+   *  fields using the last-used draft's config (deck, noteType, fieldMapping,
+   *  tags), uploads media, and calls addNote. Best-effort: failed media
+   *  fetches are skipped (toast warning), the note is still added. */
+  async function handlePopupQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {
+    // Load settings fresh.
+    let settings: Settings;
+    try {
+      settings = await loadSettings();
+    } catch {
+      showToast('Cannot load settings — storage unavailable.', container, { variant: 'error' });
+      return;
+    }
+    const ccSettings = settings.cardCreator;
+    const url = ccSettings.ankiConnectUrl;
+
+    // Load last-used draft for deck/noteType/fieldMapping/tags.
+    const autosaver = new DraftAutosaver();
+    const restored = await autosaver.load();
+    const deck = restored?.deck ?? ccSettings.defaultDeck;
+    const noteType = restored?.noteType ?? ccSettings.defaultNoteType;
+    const fieldMapping = restored?.fieldMapping ?? {};
+    const tags = restored?.tags ?? ccSettings.defaultTags;
+
+    if (!deck || !noteType) {
+      showToast('Quick Add needs a deck + note type. Open Card Creator first to configure.', container, { variant: 'error' });
+      return;
+    }
+
+    showToast('Quick Add — collecting media…', container, { variant: 'info' });
+
+    // Fetch media URLs from popup prefill (best-effort).
+    const wordAudios: MediaFile[] = [];
+    const sentenceAudios: MediaFile[] = [];
+    const images: MediaFile[] = [];
+    const warnings: string[] = [];
+
+    for (const audioUrl of prefill.wordAudioUrls ?? []) {
+      try { wordAudios.push(await fetchUrlAsMediaFile(audioUrl, 'audio')); }
+      catch { warnings.push(`word audio: ${audioUrl}`); }
+    }
+    for (const audioUrl of prefill.sentenceAudioUrls ?? []) {
+      try { sentenceAudios.push(await fetchUrlAsMediaFile(audioUrl, 'audio')); }
+      catch { warnings.push(`sentence audio: ${audioUrl}`); }
+    }
+    for (const imageUrl of prefill.imageUrls ?? []) {
+      try { images.push(await fetchUrlAsMediaFile(imageUrl, 'image')); }
+      catch { warnings.push(`image: ${imageUrl}`); }
+    }
+
+    // Capture screenshot + sentence audio from video if available.
+    if (video && video.videoWidth > 0) {
+      await waitForVideoReady(video);
+      try {
+        const screenshot = await captureScreenshot(video);
+        images.push(screenshot);
+      } catch { warnings.push('screenshot'); }
+      try {
+        const cues = blockController.getTargetCues();
+        const currentMs = video.currentTime * 1000;
+        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
+        if (matchingCue) {
+          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
+          if (audioR.ok) sentenceAudios.push(audioR.file);
+        }
+      } catch { warnings.push('sentence audio capture'); }
+    }
+
+    // Build text fields from prefill.
+    const definitionsText = prefill.definitions
+      .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
+      .join('\n');
+
+    // Add the note.
+    const result = await quickAddNote(
+      url,
+      deck,
+      noteType,
+      fieldMapping,
+      tags,
+      {
+        targetWord: prefill.term,
+        sentence: prefill.contextSentence,
+        sentenceTranslation: prefill.translation ?? '',
+        definitions: definitionsText,
+        note: '',
+        moreExample: '',
+      },
+      { images, sentenceAudios, wordAudios },
+      (msg) => warnings.push(msg),
+    );
+
+    if (result.ok) {
+      if (result.noteId === null) {
+        showToast('Card not added — a duplicate may already exist.', container, { variant: 'warning' });
+      } else {
+        showToast(`Card added to "${deck}" (#${result.noteId}).`, container, { variant: 'success' });
+      }
+    } else {
+      showToast(`Quick Add failed: ${result.error}`, container, { variant: 'error' });
+    }
+    if (warnings.length > 0) {
+      showToast(`Skipped: ${warnings.join(', ')}`, container, { variant: 'warning' });
+    }
   }
 
   /** Generate native subtitle by translating the active target cues into the

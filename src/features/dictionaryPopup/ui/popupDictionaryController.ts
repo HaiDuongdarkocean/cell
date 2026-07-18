@@ -99,8 +99,12 @@ interface ActiveCandidateSnapshot {
 export interface PopupDictionaryState {
   readonly settings: DictionaryPopupSettings;
   readonly cardCreatorSettings: CardCreatorSettings;
-  /** Callback to open the Card Creator dialog pre-filled (wired by content script). */
+  /** Callback to open the Card Creator dialog pre-filled (wired by content script).
+   *  Used by 'edit-card' (Send to Card) action. */
   onCardCreatorAction?: OnCardCreatorAction;
+  /** Callback to Quick Add directly (bypass dialog). Wired by content script.
+   *  Used by 'quick-add' action. Collects media + adds note to Anki immediately. */
+  onQuickAddDirect?: (prefill: PopupCardCreatorPrefill) => void;
   /** Current lookup result — winner/first candidate (null when popup is closed). */
   currentResult: LookupResult | null;
   /** Additional candidates appended after winner. */
@@ -178,11 +182,13 @@ export function createPopupDictionaryState(
   settings: DictionaryPopupSettings,
   cardCreatorSettings: CardCreatorSettings,
   onCardCreatorAction?: OnCardCreatorAction,
+  onQuickAddDirect?: (prefill: PopupCardCreatorPrefill) => void,
 ): PopupDictionaryState {
   return {
     settings,
     cardCreatorSettings,
     onCardCreatorAction,
+    onQuickAddDirect,
     currentResult: null,
     additionalResults: [],
     activeCandidateIndex: 0,
@@ -432,17 +438,29 @@ function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill
   };
 }
 
-/** Trigger Card Creator action for the active candidate — opens dialog pre-filled. */
+/** Trigger Card Creator action for the active candidate.
+ *  - 'quick-add' → onQuickAddDirect (bypass dialog, add note directly).
+ *  - 'edit-card' → onCardCreatorAction (open dialog pre-filled). */
 function triggerCardCreatorAction(
   state: PopupDictionaryState,
   action: PopupCardCreatorAction,
 ): PopupDictionaryState {
+  const prefill = buildPopupPrefill(state);
+  if (!prefill) return state;
+
+  if (action === 'quick-add') {
+    if (!state.onQuickAddDirect) {
+      showToast('Quick Add not available — open from subtitle cluster.', state.shell);
+      return state;
+    }
+    state.onQuickAddDirect(prefill);
+    return hidePopup(state);
+  }
+
   if (!state.onCardCreatorAction) {
     showToast('Card Creator not available — open from subtitle cluster.', state.shell);
     return state;
   }
-  const prefill = buildPopupPrefill(state);
-  if (!prefill) return state;
   state.onCardCreatorAction(action, prefill);
   // Dismiss popup — user no longer needs it after triggering card creation.
   return hidePopup(state);
