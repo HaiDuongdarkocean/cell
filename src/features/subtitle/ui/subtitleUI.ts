@@ -293,14 +293,14 @@ export function showToast(message: string, container: HTMLElement, options: Toas
     border: 1px solid var(--color-border);
     border-left: 3px solid ${color};
     border-radius: var(--radius-md, 8px);
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    padding: var(--space-2, 8px) var(--space-3, 12px);
     font-size: var(--font-size-sm, 13px);
     font-weight: 500;
     font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
     box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm, 8px);
+    gap: var(--space-2, 8px);
     pointer-events: none;
     user-select: none;
     white-space: nowrap;

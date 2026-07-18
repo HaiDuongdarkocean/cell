@@ -72,7 +72,7 @@ export function createSubtitleManagerPanel(
     top: 8px;
     left: 8px;
     display: flex;
-    gap: var(--spacing-sm, 8px);
+    gap: var(--space-2, 8px);
     z-index: 1000001;
     pointer-events: none;
   `;
@@ -151,7 +151,7 @@ export function createSubtitleManagerPanel(
     border: 1px solid var(--color-border);
     border-radius: var(--radius-xl, 12px);
     box-shadow: var(--shadow-md, none);
-    padding: var(--spacing-xs, 4px);
+    padding: var(--space-1, 4px);
     font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
     font-size: var(--font-size-base, 14px);
     font-weight: 400;
@@ -181,7 +181,7 @@ export function createSubtitleManagerPanel(
       outline-offset: 2px;
     }
     [data-testid="subtitle-manager-panel"]::-webkit-scrollbar {
-      width: var(--spacing-sm, 8px);
+      width: var(--space-2, 8px);
     }
     [data-testid="subtitle-manager-panel"]::-webkit-scrollbar-track {
       background: var(--color-surface-hover);
@@ -209,7 +209,7 @@ export function createSubtitleManagerPanel(
     justify-content: space-between;
     min-height: 40px;
     margin: 0;
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    padding: var(--space-2, 8px) var(--space-3, 12px);
     border-bottom: 1px solid var(--color-border-subtle);
     box-sizing: border-box;
   `;
@@ -275,8 +275,8 @@ export function createSubtitleManagerPanel(
       row.style.cssText = `
         display: flex;
         align-items: center;
-        gap: var(--spacing-sm, 8px);
-        padding: ${isActive ? 'calc(var(--spacing-sm, 8px) - 1px) calc(var(--spacing-md, 12px) - 1px)' : 'var(--spacing-sm, 8px) var(--spacing-md, 12px)'};
+        gap: var(--space-2, 8px);
+        padding: ${isActive ? 'calc(var(--space-2, 8px) - 1px) calc(var(--space-3, 12px) - 1px)' : 'var(--space-2, 8px) var(--space-3, 12px)'};
         cursor: pointer;
         border-radius: var(--radius-sm, 6px);
         border: 1px solid ${isActive ? roleColor(role) : 'transparent'};
@@ -311,7 +311,7 @@ export function createSubtitleManagerPanel(
       name.textContent = item.name;
       name.style.cssText = 'font-size: var(--font-size-sm, 13px); font-weight: 500; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
       const meta = document.createElement('div');
-      meta.style.cssText = 'display: flex; gap: var(--spacing-sm, 8px); align-items: center; font-size: var(--font-size-xs, 12px); color: var(--color-text-muted);';
+      meta.style.cssText = 'display: flex; gap: var(--space-2, 8px); align-items: center; font-size: var(--font-size-xs, 12px); color: var(--color-text-muted);';
       const formatBadge = document.createElement('span');
       formatBadge.textContent = item.format.toUpperCase();
       formatBadge.style.cssText = `
@@ -539,8 +539,8 @@ function createSection(
   header.style.cssText = `
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm, 8px);
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    gap: var(--space-2, 8px);
+    padding: var(--space-2, 8px) var(--space-3, 12px);
     cursor: pointer;
     border-radius: var(--radius-sm, 6px);
     user-select: none;
@@ -594,7 +594,7 @@ function createSection(
   const body = document.createElement('div');
   body.setAttribute('data-testid', 'manager-section-body');
   body.setAttribute('data-role', role);
-  body.style.cssText = 'padding: 0 var(--spacing-xs, 4px); display: block;';
+  body.style.cssText = 'padding: 0 var(--space-1, 4px); display: block;';
   section.appendChild(body);
 
   return { header, body, count, label: labelEl, chevron };

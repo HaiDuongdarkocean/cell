@@ -1,16 +1,16 @@
 /* ColorCustomization — 9 color pickers per mode, light/dark tabs */
 .wrapper {
-  margin-top: var(--spacing-md, 12px);
+  margin-top: var(--space-3, 12px);
 }
 
 .tabs {
   display: flex;
-  gap: var(--spacing-xs, 4px);
-  margin-bottom: var(--spacing-sm, 8px);
+  gap: var(--space-1, 4px);
+  margin-bottom: var(--space-2, 8px);
 }
 
 .tab {
-  padding: var(--spacing-xs, 4px) var(--spacing-md, 12px);
+  padding: var(--space-1, 4px) var(--space-3, 12px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm, 6px);
   background: var(--color-surface);
@@ -28,13 +28,13 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: var(--spacing-sm, 8px);
+  gap: var(--space-2, 8px);
 }
 
 .field {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs, 4px);
+  gap: var(--space-1, 4px);
 }
 
 .swatch {

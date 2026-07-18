@@ -3,7 +3,7 @@
 .previewWrapper {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--space-1);
 }
 
 .previewLabel {
@@ -15,7 +15,7 @@
 }
 
 .previewBox {
-  padding: var(--spacing-md);
+  padding: var(--space-3);
   background: #000000;
   border-radius: var(--radius-sm);
   text-align: center;
