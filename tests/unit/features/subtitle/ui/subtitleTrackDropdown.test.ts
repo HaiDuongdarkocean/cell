@@ -29,7 +29,7 @@ describe('subtitleTrackDropdown', () => {
 
     it('should be hidden initially when no options', () => {
       const dropdown = createTrackDropdown(container);
-      expect(dropdown.style.display).toBe('none');
+      expect(dropdown.classList.contains('subtitle-track-dropdown--visible')).toBe(false);
     });
   });
 
@@ -41,7 +41,7 @@ describe('subtitleTrackDropdown', () => {
         { id: 'en-2', label: 'English (manual)', cues: [] },
       ];
       updateTrackOptions(dropdown, tracks);
-      expect(dropdown.style.display).toBe('block');
+      expect(dropdown.classList.contains('subtitle-track-dropdown--visible')).toBe(true);
       expect(dropdown.options.length).toBe(2);
       expect(dropdown.options[0].text).toBe('English (auto)');
       expect(dropdown.options[1].text).toBe('English (manual)');
@@ -50,7 +50,7 @@ describe('subtitleTrackDropdown', () => {
     it('should hide dropdown when tracks is empty', () => {
       const dropdown = createTrackDropdown(container);
       updateTrackOptions(dropdown, []);
-      expect(dropdown.style.display).toBe('none');
+      expect(dropdown.classList.contains('subtitle-track-dropdown--visible')).toBe(false);
       expect(dropdown.options.length).toBe(0);
     });
 
