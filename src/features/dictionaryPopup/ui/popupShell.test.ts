@@ -246,7 +246,7 @@ describe('PopupShell', () => {
 
   it('setPosition sets left/top on the popup shell', () => {
     shell.mount();
-    shell.setPosition(170, 100, 150, 200);
+    shell.setPosition({ top: 170, left: 100, right: 150, bottom: 200 });
     const shellEl = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
     expect(shellEl).not.toBeNull();
     expect(shellEl.style.left).toMatch(/\d+px/);
@@ -562,7 +562,7 @@ describe('PopupShell', () => {
 
     it('drag moves the popup by updating dragOffset and applying position', () => {
       shell.mount();
-      shell.setPosition(100, 100, 200, 150);
+      shell.setPosition({ top: 100, left: 100, right: 200, bottom: 150 });
       const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
       popup.setPointerCapture = jest.fn();
       popup.releasePointerCapture = jest.fn();

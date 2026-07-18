@@ -143,51 +143,51 @@ describe('showPopup', () => {
 
   it('sets currentResult', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
     expect(newState.currentResult).toBe(result);
   });
 
   it('sets contextSentence', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
     expect(newState.contextSentence).toBe('Take off your shoes.');
   });
 
   it('initializes definition selection from result', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     expect(newState.definitionSelection.get('d1')).toBe(true);
   });
 
   it('sets currentStatus from result', () => {
     const result = makeResult({ status: 'tracking' as WordStatus });
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     expect(newState.currentStatus).toBe('tracking');
   });
 
   it('creates shell on first show', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     expect(newState.shell).not.toBeNull();
   });
 
   it('initializes additionalResults as empty', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     expect(newState.additionalResults).toEqual([]);
   });
 
   it('resets activeCandidateIndex on show', () => {
     state = { ...state, activeCandidateIndex: 2 };
     const result = makeResult();
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     expect(newState.activeCandidateIndex).toBe(0);
   });
 
   it('invokes onDismiss callback with hidden state when shell dismisses', () => {
     const result = makeResult();
     const onDismiss = jest.fn();
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence', onDismiss);
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence', onDismiss });
     // Simulate shell dismiss (Esc / click outside).
     (newState.shell as unknown as { onDismiss: () => void })?.onDismiss?.();
     expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -197,7 +197,7 @@ describe('showPopup', () => {
 
   it('renders .js-cell-toolbar inside the materials slot (1 toolbar per popup)', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const container = newState.shell?.getContainer();
     const materialsSlot = container!.querySelector('.js-cell-materials-slot');
     expect(materialsSlot).not.toBeNull();
@@ -206,7 +206,7 @@ describe('showPopup', () => {
 
   it('renders active entry + candidates + footer', () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const container = newState.shell?.getContainer();
     expect(container!.querySelector('.js-cell-active-entry')).not.toBeNull();
     expect(container!.querySelector('.js-cell-candidates')).not.toBeNull();
@@ -215,7 +215,7 @@ describe('showPopup', () => {
 
   it('auto-translates sentence when translate tab is opened', async () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
     const container = newState.shell?.getContainer();
     const translate = container!.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
     translate.click();
@@ -235,7 +235,7 @@ describe('showPopup', () => {
 
   it('does not auto-translate when context sentence is empty', async () => {
     const result = makeResult();
-    const newState = showPopup(state, result, 170, 100, 150, 200, '');
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: '' });
     const container = newState.shell?.getContainer();
     const translate = container!.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
     translate.click();
@@ -246,7 +246,7 @@ describe('showPopup', () => {
 
   it('reuses cached translation when reopening same term+sentence', async () => {
     const result = makeResult();
-    let shown = showPopup(state, result, 170, 100, 150, 200, 'Take off your shoes.');
+    let shown = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
     let container = shown.shell!.getContainer()!;
     const translate = container.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
     translate.click();
@@ -254,7 +254,7 @@ describe('showPopup', () => {
 
     // Close popup, then reopen same term + sentence.
     const hidden = hidePopup(shown);
-    shown = showPopup(hidden, result, 170, 100, 150, 200, 'Take off your shoes.');
+    shown = showPopup(hidden, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
     container = shown.shell!.getContainer()!;
 
     // Translate tab should already show cached block; clicking tab does NOT re-fetch.
@@ -272,7 +272,7 @@ describe('showPopup', () => {
     const resultB = makeResult({ term: 'get out' });
 
     // Open A, fetch translate.
-    let shown = showPopup(state, resultA, 170, 100, 150, 200, 'Take off your shoes.');
+    let shown = showPopup(state, resultA, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
     let container = shown.shell!.getContainer()!;
     const translate = container.querySelector('.js-cell-tab[data-cell-tab="translate"]') as HTMLButtonElement;
     translate.click();
@@ -280,11 +280,11 @@ describe('showPopup', () => {
     expect(shown.translation).toBe('Bỏ giày ra.');
 
     // Switch to B (no translate fetched).
-    shown = showPopup(shown, resultB, 170, 100, 150, 200, 'Get out of here.');
+    shown = showPopup(shown, resultB, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Get out of here.' });
     expect(shown.translation).toBe('');
 
     // Switch back to A — translation and cache key should restore.
-    shown = showPopup(shown, resultA, 170, 100, 150, 200, 'Take off your shoes.');
+    shown = showPopup(shown, resultA, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
     expect(shown.translation).toBe('Bỏ giày ra.');
     expect(shown.cachedResultTerm).toBe('take off');
 
@@ -309,7 +309,7 @@ describe('appendCandidate', () => {
   it('appends a candidate to additionalResults', () => {
     const winner = makeResult({ term: 'get out' });
     const candidate = makeResult({ term: 'get over' });
-    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     s = appendCandidate(s, candidate, 'sentence');
     expect(s.additionalResults).toHaveLength(1);
     expect(s.additionalResults[0]!.term).toBe('get over');
@@ -319,7 +319,7 @@ describe('appendCandidate', () => {
     const winner = makeResult({ term: 'get out' });
     const c1 = makeResult({ term: 'get over' });
     const c2 = makeResult({ term: 'get by' });
-    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     s = appendCandidate(s, c1, 'sentence');
     // 2 candidates → no chips rendered
     let container = s.shell?.getContainer();
@@ -339,7 +339,7 @@ describe('appendCandidate', () => {
   it('keeps active entry on winner after append', () => {
     const winner = makeResult({ term: 'get out' });
     const candidate = makeResult({ term: 'get over' });
-    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     s = appendCandidate(s, candidate, 'sentence');
     expect(s.activeCandidateIndex).toBe(0);
     const container = s.shell?.getContainer();
@@ -351,21 +351,21 @@ describe('appendCandidate', () => {
 describe('hidePopup', () => {
   it('clears currentResult', () => {
     const state = makePopupState();
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const hidden = hidePopup(shown);
     expect(hidden.currentResult).toBeNull();
   });
 
   it('clears activeTab', () => {
     const state = makePopupState({ defaultActiveTab: 'audio' });
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const hidden = hidePopup(shown);
     expect(hidden.activeTab).toBeNull();
   });
 
   it('keeps tab panel cache data', () => {
     const state = makePopupState();
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'Take off your shoes.');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
     const hidden = hidePopup(shown);
     expect(hidden.translation).toBe(shown.translation);
     expect(hidden.cachedResultTerm).toBe('take off');
@@ -376,7 +376,7 @@ describe('hidePopup', () => {
 describe('destroyPopup', () => {
   it('clears shell', () => {
     const state = makePopupState();
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const destroyed = destroyPopup(shown);
     expect(destroyed.shell).toBeNull();
     expect(destroyed.currentResult).toBeNull();
@@ -386,14 +386,14 @@ describe('destroyPopup', () => {
 describe('cycleStatus', () => {
   it('cycles unknown → tracking', () => {
     const state = makePopupState();
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const cycled = cycleStatus(shown);
     expect(cycled.currentStatus).toBe('tracking');
   });
 
   it('cycles tracking → known', () => {
     const state = makePopupState();
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const cycled1 = cycleStatus(shown);
     const cycled2 = cycleStatus(cycled1);
     expect(cycled2.currentStatus).toBe('known');
@@ -401,7 +401,7 @@ describe('cycleStatus', () => {
 
   it('updates header status badge in DOM', () => {
     const state = makePopupState();
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const cycled = cycleStatus(shown);
     const container = cycled.shell?.getContainer();
     const badge = container!.querySelector('.cell-header__second .js-cell-status');
@@ -412,7 +412,7 @@ describe('cycleStatus', () => {
 describe('toggleDefinition', () => {
   it('toggles definition selection', () => {
     const state = makePopupState();
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const toggled = toggleDefinition(shown, 'd1', false);
     expect(toggled.definitionSelection.get('d1')).toBe(false);
   });
@@ -421,21 +421,21 @@ describe('toggleDefinition', () => {
 describe('toggleTab', () => {
   it('sets activeTab to clicked tab', () => {
     const state = makePopupState();
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const toggled = toggleTab(shown, 'audio');
     expect(toggled.activeTab).toBe('audio');
   });
 
   it('closes activeTab when same tab clicked', () => {
     const state = makePopupState({ defaultActiveTab: 'audio' });
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const toggled = toggleTab(shown, 'audio');
     expect(toggled.activeTab).toBeNull();
   });
 
   it('renders panel in materials body', () => {
     const state = makePopupState();
-    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     const toggled = toggleTab(shown, 'links');
     const container = toggled.shell?.getContainer();
     const body = container!.querySelector('.js-cell-materials-slot .cell-materials__body');
@@ -462,7 +462,7 @@ describe('setActiveCandidate', () => {
   it('switches activeCandidateIndex from 0 to 1', () => {
     const winner = makeResult({ term: 'get out' });
     const candidate = makeResult({ term: 'get over' });
-    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     s = appendCandidate(s, candidate, 'sentence');
     s = setActiveCandidate(s, 1);
     expect(s.activeCandidateIndex).toBe(1);
@@ -471,7 +471,7 @@ describe('setActiveCandidate', () => {
   it('updates active entry term to the selected candidate', () => {
     const winner = makeResult({ term: 'get out' });
     const candidate = makeResult({ term: 'get over' });
-    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     s = appendCandidate(s, candidate, 'sentence');
     s = setActiveCandidate(s, 1);
     const container = s.shell?.getContainer();
@@ -482,7 +482,7 @@ describe('setActiveCandidate', () => {
   it('switches back to winner (index 0)', () => {
     const winner = makeResult({ term: 'get out' });
     const candidate = makeResult({ term: 'get over' });
-    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     s = appendCandidate(s, candidate, 'sentence');
     s = setActiveCandidate(s, 1);
     s = setActiveCandidate(s, 0);
@@ -496,7 +496,7 @@ describe('setActiveCandidate', () => {
     const winner = makeResult({ term: 'get out' });
     const c1 = makeResult({ term: 'get over' });
     const c2 = makeResult({ term: 'get by' });
-    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     s = appendCandidate(s, c1, 'sentence');
     s = appendCandidate(s, c2, 'sentence');
     s = setActiveCandidate(s, 1);
@@ -507,7 +507,7 @@ describe('setActiveCandidate', () => {
 
   it('no-ops for out-of-range index', () => {
     const winner = makeResult({ term: 'get out' });
-    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     s = setActiveCandidate(s, 99);
     expect(s.activeCandidateIndex).toBe(0);
   });
