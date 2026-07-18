@@ -359,7 +359,7 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-inverse);
   background: var(--color-success);
-  padding: 2px var(--space-2);
+  padding: var(--space-0-5, 2px) var(--space-2);
   border-radius: var(--radius-sm);
   white-space: nowrap;
   flex-shrink: 0;

@@ -45,8 +45,8 @@
   .btn:has(.cell-label) {
     border-radius: var(--radius-full);
     padding: 0;
-    width: 32px;
-    height: 32px;
+    width: var(--space-8, 32px);
+    height: var(--space-8, 32px);
     gap: 0;
   }
   /* Badge on circle button — nudge to top-right edge of the circle. */
@@ -82,8 +82,8 @@
   position: absolute;
   bottom: calc(-1 * var(--space-2, 8px));
   right: calc(-1 * var(--space-2, 8px));
-  width: 24px;
-  height: 24px;
+  width: var(--space-6, 24px);
+  height: var(--space-6, 24px);
   cursor: nwse-resize;
   pointer-events: auto;
   z-index: var(--popup-z-base);
