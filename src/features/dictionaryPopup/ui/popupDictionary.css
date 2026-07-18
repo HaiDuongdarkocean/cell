@@ -61,6 +61,10 @@
   top: 0;
   z-index: 10;
   background: var(--color-background);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .cell-header__row {
@@ -86,6 +90,14 @@
   min-width: 0;
 }
 
+.cell-header__term-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
 .cell-header__reading {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
@@ -99,11 +111,25 @@
   text-overflow: ellipsis;
 }
 
+.cell-header__audio {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
 .cell-header__actions {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   flex-shrink: 0;
+}
+
+.cell-popup--dragging .cell-header,
+.cell-header:active {
+  cursor: grabbing;
+}
+
+.cell-popup:focus {
+  outline: none;
 }
 
 .cell-header__status {
@@ -222,9 +248,13 @@
 }
 
 .cell-def__check-tick {
+  display: none;
+}
+
+.cell-def__check-tick svg {
   width: 10px;
   height: 10px;
-  display: none;
+  display: block;
 }
 
 .cell-def__item:hover .cell-def__check-dot {
@@ -233,10 +263,7 @@
 
 .cell-def__item:hover .cell-def__check-box {
   display: flex;
-}
-
-.cell-def__item:hover .cell-def__check-tick {
-  display: inline-block;
+  background: var(--color-primary-subtle);
 }
 
 .cell-def__check--checked .cell-def__check-dot {
@@ -251,6 +278,7 @@
 
 .cell-def__check--checked .cell-def__check-tick {
   display: inline-block;
+  color: var(--color-text-inverse);
 }
 
 .cell-def__check-input {
@@ -369,6 +397,10 @@
 
 .cell-audio__item:hover {
   background: var(--color-surface-hover);
+}
+
+.cell-audio__item--playing {
+  background: var(--color-primary-subtle);
 }
 
 /* Label is clickable to toggle selection */
@@ -496,18 +528,19 @@
 }
 
 .cell-image__strip {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: var(--space-2);
-  overflow-x: auto;
-  max-height: 200px;
+  overflow-y: auto;
+  max-height: 240px;
   padding-bottom: var(--space-1);
 }
 
 .cell-image__card {
   position: relative;
-  flex-shrink: 0;
-  width: 96px;
-  height: 72px;
+  box-sizing: border-box;
+  width: 100%;
+  aspect-ratio: 4 / 3;
   padding: var(--space-1);
   background: var(--color-card);
   border: 1px solid var(--color-border);
@@ -749,6 +782,9 @@
 
 /* === Block: cell-links === */
 .cell-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1-5);
   padding: var(--space-2) var(--space-3);
 }
 
@@ -758,6 +794,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  width: 100%;
   padding: var(--space-6) var(--space-4);
   text-align: center;
   color: var(--color-text-muted);
@@ -782,17 +819,28 @@
 }
 
 .cell-links__item {
-  display: block;
-  padding: var(--space-1-5) var(--space-2);
-  border-radius: var(--radius-sm);
-  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
   text-decoration: none;
   font-size: var(--font-size-sm);
-  margin-bottom: var(--space-1);
 }
 
 .cell-links__item:hover {
   background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+}
+
+.cell-links__item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
 
 /* === Block: cell-candidate === */
@@ -869,15 +917,17 @@
 
 /* Image skeleton strip */
 .cell-image__skeleton {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: var(--space-2);
-  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 240px;
 }
 
 .cell-image__skeleton-card {
-  flex: 1;
-  min-width: 96px;
-  height: 72px;
+  box-sizing: border-box;
+  width: 100%;
+  aspect-ratio: 4 / 3;
 }
 
 /* Translate skeleton block */
@@ -913,4 +963,30 @@
   height: 16px;
   flex-shrink: 0;
   margin-top: 2px;
+}
+
+/* === Block: cell-toast (Quick Add feedback) === */
+.cell-toast {
+  position: absolute;
+  bottom: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  max-width: calc(100% - var(--space-6));
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-text);
+  color: var(--color-background);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
+              transform var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  z-index: 10000;
+}
+
+.cell-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }

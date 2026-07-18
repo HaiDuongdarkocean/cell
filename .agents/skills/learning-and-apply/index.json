@@ -891,6 +891,22 @@
       "category": ["ux"],
       "tags": ["react", "settimeout", "memory-leak", "useeffect", "useref"],
       "trigger": "Component React set state sau một khoảng trễ (copy feedback, toast, debounce)"
+    },
+    {
+      "type": "experience",
+      "id": "popup-audio-currently-playing-state",
+      "title": "Track currently-playing media in UI state and render from it",
+      "category": ["state", "ux"],
+      "tags": ["audio", "play-pause", "currently-playing-id", "media-state", "re-render", "icon-swap", "ui-feedback"],
+      "trigger": "A list of playable media items where the play button should swap to pause and the row should highlight while playing"
+    },
+    {
+      "type": "experience",
+      "id": "popup-state-closure-rerender",
+      "title": "Capture updated state in closures and rerender without destroying sibling UI state",
+      "category": ["state", "rendering", "ux"],
+      "tags": ["closure", "mutable-state", "rerender", "candidate-list", "state-capture", "dom-preservation", "vanilla-dom"],
+      "trigger": "A vanilla-DOM popup/component uses helper functions that return a new immutable state object, and callbacks close over a mutable `state` variable; rerendering the active component must not destroy appended siblings"
     }
   ]
 }

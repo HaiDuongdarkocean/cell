@@ -123,6 +123,30 @@ describe('renderHeader', () => {
     btn.click();
     expect(onSend).toHaveBeenCalledTimes(1);
   });
+
+  it('Close button is rendered and triggers onClose', () => {
+    const onClose = jest.fn();
+    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), jest.fn(), onClose);
+    const btn = container.querySelector('.js-cell-close') as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+    btn.click();
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('Play term button is rendered and triggers onPlayTerm', () => {
+    const onPlayTerm = jest.fn();
+    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), jest.fn(), undefined, onPlayTerm);
+    const btn = container.querySelector('.js-cell-play-term') as HTMLButtonElement;
+    expect(btn).not.toBeNull();
+    btn.click();
+    expect(onPlayTerm).toHaveBeenCalledTimes(1);
+  });
+
+  it('winner term gets aria-labelledby id', () => {
+    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), jest.fn(), undefined, jest.fn(), true);
+    const term = container.querySelector('.js-cell-term') as HTMLElement;
+    expect(term.id).toBe('cell-popup-term');
+  });
 });
 
 describe('renderDefinitions', () => {

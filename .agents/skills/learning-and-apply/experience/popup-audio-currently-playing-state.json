@@ -1,0 +1,20 @@
+{
+  "id": "popup-audio-currently-playing-state",
+  "title": "Track currently-playing media in UI state and render from it",
+  "category": ["state", "ux"],
+  "tags": ["audio", "play-pause", "currently-playing-id", "media-state", "re-render", "icon-swap", "ui-feedback"],
+  "trigger": "A list of playable media items where the play button should swap to pause and the row should highlight while playing",
+  "principle": "Don't mutate DOM icons/classes directly inside the play handler. Store `currentlyPlayingId` (and the active `HTMLAudioElement`) in the panel's state, then call the same render function with the updated state. The render function derives `isPlaying = currentlyPlayingId === item.id` and sets the icon, ARIA label, and highlight class from that state. This keeps the UI a pure function of state and makes pause/ended/error cleanup a single render call.",
+  "cases": [
+    {
+      "context": "Popup dictionary Audio tab — clicking a Forvo row should play, show pause icon, and highlight the row; clicking again pauses",
+      "bad": "const onPlay = (item) => {\n  const btn = row.querySelector('.play-btn');\n  btn.innerHTML = pauseIcon;\n  row.classList.add('playing');\n  const audio = new Audio(item.url);\n  audio.play();\n  audio.addEventListener('ended', () => {\n    btn.innerHTML = playIcon;\n    row.classList.remove('playing');\n  });\n};\n// UI and state drift: if another item is clicked, old button stays pause, old row stays highlighted",
+      "good": "let currentlyPlayingId: string | null = null;\nlet currentAudio: HTMLAudioElement | null = null;\nconst onPlay = (item) => {\n  if (currentAudio) { currentAudio.pause(); currentAudio = null; }\n  currentlyPlayingId = null;\n  if (item.url) {\n    currentAudio = new Audio(item.url);\n    currentlyPlayingId = item.id;\n    currentAudio.addEventListener('ended', () => { currentlyPlayingId = null; renderAudioPanel(); });\n    currentAudio.play();\n  }\n  renderAudioPanel();\n};\n// renderAudioPanel reads currentlyPlayingId and sets play/pause icon + highlight class per item"
+    }
+  ],
+  "applyFor": [
+    "Audio/tts item lists with play/pause toggle",
+    "Video thumbnail grids with a playing preview",
+    "Any media list where the active item needs visual feedback"
+  ]
+}

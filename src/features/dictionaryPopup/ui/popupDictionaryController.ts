@@ -23,9 +23,12 @@ import type { DefinitionSelection } from './popupContent';
 import { PopupShell as PopupShellClass, clampPopupSize } from './popupShell';
 import {
   renderPopupContent,
+  renderCandidate,
   appendCandidateContent,
+  getOrCreateCandidateList,
   initDefinitionSelection,
   getSelectedDefinitions,
+  STATUS_BADGE_VARIANT,
 } from './popupContent';
 import { renderToolbar, renderAudioPanel, renderImagePanel, renderTranslatePanel, renderLinksPanel } from './popupToolbar';
 import type { SelectionCounts } from './popupToolbar';
@@ -150,6 +153,11 @@ export function showPopup(
   // rerender all no-op because state.shell is null.
   state = { ...state, shell };
 
+  // Update shell callbacks on every showPopup so stale closures from a
+  // previous lookup don't hide the wrong state or call an old onDismiss.
+  shell.setOnDismiss(() => { state = hidePopup(state); onDismiss?.(state); });
+  shell.setOnResizeEnd((newSize) => onResizeEnd(state, newSize));
+
   // Initialize state from result.
   const definitionSelection = initDefinitionSelection(result);
   const status = result.status;
@@ -196,15 +204,23 @@ export function showPopup(
   const container = shell.getContainer();
   if (container) {
     renderPopupContent(container, result, status, definitionSelection, {
-      onStatusCycle: () => cycleStatus(state),
-      onDefinitionToggle: (id, selected) => toggleDefinition(state, id, selected),
-      onQuickAdd: () => doQuickAdd(state),
-      onSendToCreator: () => void sendToCreatorFromPopup(state),
+      onStatusCycle: () => { state = cycleStatus(state); },
+      onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
+      onQuickAdd: async () => {
+        const res = await doQuickAdd(state);
+        showToast(res.ok ? 'Added to Anki' : (res.error ?? 'Quick Add failed'), state.shell);
+      },
+      onSendToCreator: () => { state = sendToCreatorFromPopup(state); },
       onSettings: () => openSettings(state),
+      onClose: () => {
+        state = hidePopup(state);
+        onDismiss?.(state);
+      },
+      onPlayTerm: () => {
+        if (!state.currentResult) return;
+        void playTermAudio(state.currentResult.term, state.currentResult.langCode, state.audioItems);
+      },
     });
-
-    // Re-append resize handle after clearContainer wiped it.
-    shell.reAppendResizeHandle();
 
     // Render winner toolbar into its slot (mirrors appendCandidate's
     // rerenderCandidateTab) — toolbar icons always visible, panel only
@@ -233,6 +249,7 @@ export function appendCandidate(
   state: PopupDictionaryState,
   result: LookupResult,
   _contextSentence: string,
+  onDismiss?: (newState: PopupDictionaryState) => void,
 ): PopupDictionaryState {
   if (!state.shell) return state;
   const container = state.shell.getContainer();
@@ -254,20 +271,31 @@ export function appendCandidate(
       candidateStatus = nextStatus(candidateStatus);
       void persistStatus(result.term, result.langCode, candidateStatus);
       const badge = candidateEl.querySelector('.js-cell-status');
-      if (badge) badge.textContent = candidateStatus;
+      if (badge) {
+        badge.textContent = candidateStatus;
+        badge.className = `cell-header__status cell-header__status--${STATUS_BADGE_VARIANT[candidateStatus]} js-cell-status`;
+      }
     },
     onDefinitionToggle: (id, selected) => {
       candidateSelection.set(id, selected);
     },
-    onQuickAdd: () => void doQuickAddForCandidate(
-      result, candidateSelection, candidateStatus,
-      state.contextSentence, state.cardCreatorSettings,
-    ),
+    onQuickAdd: async () => {
+      const res = await doQuickAddForCandidate(
+        result, candidateSelection, candidateStatus,
+        state.contextSentence, state.cardCreatorSettings,
+      );
+      showToast(res.ok ? 'Added to Anki' : (res.error ?? 'Quick Add failed'), state.shell);
+    },
     onSendToCreator: () => void sendToCreatorForCandidate(
       result, candidateSelection,
       state.contextSentence, state.cardCreatorSettings,
     ),
     onSettings: () => openSettings(state),
+    onClose: () => {
+      state = hidePopup(state);
+      onDismiss?.(state);
+    },
+    onPlayTerm: () => { void playTermAudio(result.term, result.langCode, candidateAudioItems); },
   });
 
   // Per-candidate toolbar: render toolbar + panel into toolbar slot
@@ -320,9 +348,6 @@ export function appendCandidate(
 
   // Initial toolbar render (no tab active — just icons).
   rerenderCandidateTab();
-
-  // Re-append resize handle after content change.
-  state.shell.reAppendResizeHandle();
 
   return {
     ...state,
@@ -402,9 +427,10 @@ export function cycleStatus(state: PopupDictionaryState): PopupDictionaryState {
   const newStatus = nextStatus(state.currentStatus);
   // Persist to word status store (async — fire and forget).
   void persistStatus(state.currentResult.term, state.currentResult.langCode, newStatus);
-  // Re-render header + footer with new status.
-  rerender(state);
-  return { ...state, currentStatus: newStatus };
+  // Re-render header with new status.
+  const newState = { ...state, currentStatus: newStatus };
+  rerender(newState);
+  return newState;
 }
 
 /** Toggle a definition checkbox. */
@@ -608,24 +634,66 @@ function renderTabPanel(
   switch (tab) {
     case 'audio': {
       const langCode = result.langCode;
+      let currentlyPlayingAudioId: string | null = null;
+      let currentlyPlayingAudio: HTMLAudioElement | null = null;
+      let wordAudios: AudioItem[] = [];
+      let sentenceAudios: AudioItem[] = [];
+
+      const stopCurrentAudio = (): void => {
+        if (currentlyPlayingAudio) {
+          currentlyPlayingAudio.pause();
+          currentlyPlayingAudio = null;
+        }
+        currentlyPlayingAudioId = null;
+      };
+
       const onToggle = (id: string, selected: boolean): void => { ctx.audioSelection.set(id, selected); };
-      const onPlay = (item: AudioItem): void => {
-        // Forvo (has url) → play via HTMLAudioElement; TTS (no url) → onPlayTts.
-        if (item.url) {
-          void new Audio(item.url).play().catch(() => { /* best-effort */ });
+
+      const onTts = (): void => {
+        void playTts({ id: 'tts-fallback', kind: 'word', source: 'system-tts', label: '', state: 'idle', defaultSelected: false }, result.term, '', result.langCode);
+      };
+
+      const onPlay: (item: AudioItem) => void = (item) => {
+        // Pause if already playing this Forvo item.
+        if (currentlyPlayingAudioId === item.id && currentlyPlayingAudio) {
+          currentlyPlayingAudio.pause();
+          stopCurrentAudio();
+          renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
           return;
         }
+        stopCurrentAudio();
+        if (item.url) {
+          const audio = new Audio(item.url);
+          currentlyPlayingAudio = audio;
+          currentlyPlayingAudioId = item.id;
+          audio.addEventListener('ended', () => {
+            stopCurrentAudio();
+            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+          });
+          audio.addEventListener('pause', () => {
+            stopCurrentAudio();
+            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+          });
+          void audio.play().catch(() => {
+            stopCurrentAudio();
+            renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+          });
+          renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
+          return;
+        }
+        // TTS: we can't reliably track finish time, so keep the play icon.
         if (callbacks?.onPlayTts) callbacks.onPlayTts(item, result.term, ctx.contextSentence, result.langCode);
       };
+
       // Cache hit: audio panel data already exists for this term+sentence.
       if (ctx.audioItems.length > 0) {
-        const wordAudios = ctx.audioItems.filter((a) => a.kind === 'word');
-        const sentenceAudios = ctx.audioItems.filter((a) => a.kind === 'sentence');
-        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay);
+        wordAudios = ctx.audioItems.filter((a) => a.kind === 'word');
+        sentenceAudios = ctx.audioItems.filter((a) => a.kind === 'sentence');
+        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
         break;
       }
       // Loading state while fetching Forvo + TTS voices.
-      renderAudioPanel(container, [], [], ctx.audioSelection, onToggle, onPlay, true);
+      renderAudioPanel(container, [], [], ctx.audioSelection, onToggle, onPlay, true, undefined, currentlyPlayingAudioId ?? undefined, onTts);
       void (async () => {
         // TTS settings: enabled gate + maxDisplay cap.
         // ponytail: autoplayCount skip — autoplay implement sau, cần user-gesture
@@ -655,8 +723,8 @@ function renderTabPanel(
               defaultSelected: false,
             }))
           : [];
-        const wordAudios = [...forvoItems, ...ttsWordItems].slice(0, 3);
-        const sentenceAudios = ttsSentenceItems.slice(0, 3);
+        wordAudios = [...forvoItems, ...ttsWordItems].slice(0, 3);
+        sentenceAudios = ttsSentenceItems.slice(0, 3);
         // Store fetched items in ctx (same array ref as state) for Quick Add payload.
         ctx.audioItems.length = 0;
         ctx.audioItems.push(...wordAudios, ...sentenceAudios);
@@ -674,10 +742,12 @@ function renderTabPanel(
             : [];
           ctx.audioItems.length = 0;
           ctx.audioItems.push(...fallbackWord, ...fallbackSentence);
-          renderAudioPanel(container, fallbackWord, fallbackSentence, ctx.audioSelection, onToggle, onPlay);
+          wordAudios = fallbackWord;
+          sentenceAudios = fallbackSentence;
+          renderAudioPanel(container, fallbackWord, fallbackSentence, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
           return;
         }
-        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay);
+        renderAudioPanel(container, wordAudios, sentenceAudios, ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts);
       })();
       break;
     }
@@ -760,15 +830,27 @@ function rerender(state: PopupDictionaryState, activeTab?: PopupTab | null): voi
   if (!state.shell?.getContainer() || !state.currentResult) return;
   const tab = activeTab ?? state.activeTab;
   const container = state.shell.getContainer()!;
-  renderPopupContent(container, state.currentResult, state.currentStatus, state.definitionSelection, {
-    onStatusCycle: () => cycleStatus(state),
-    onDefinitionToggle: (id, selected) => toggleDefinition(state, id, selected),
-    onQuickAdd: () => void doQuickAdd(state),
-    onSendToCreator: () => void sendToCreatorFromPopup(state),
+  // Re-render only the winner candidate and preserve appended candidates.
+  const list = getOrCreateCandidateList(container);
+  const existing = Array.from(list.children);
+  const winnerCandidate = existing.shift();
+  if (winnerCandidate) winnerCandidate.remove();
+  renderCandidate(list, state.currentResult, state.currentStatus, state.definitionSelection, {
+    onStatusCycle: () => { state = cycleStatus(state); },
+    onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
+    onQuickAdd: async () => {
+      const res = await doQuickAdd(state);
+      showToast(res.ok ? 'Added to Anki' : (res.error ?? 'Quick Add failed'), state.shell);
+    },
+    onSendToCreator: () => { state = sendToCreatorFromPopup(state); },
     onSettings: () => openSettings(state),
-  });
-  // Re-append resize handle after clearContainer wiped it.
-  state.shell?.reAppendResizeHandle();
+    onClose: () => { state = hidePopup(state); },
+    onPlayTerm: () => {
+      if (!state.currentResult) return;
+      void playTermAudio(state.currentResult.term, state.currentResult.langCode, state.audioItems);
+    },
+  }, true);
+  existing.forEach((c) => list.appendChild(c));
   // Render winner toolbar into its slot (consistent with showPopup/appendCandidate).
   // Use the live state object so async tab callbacks mutate the same state.
   state.activeTab = tab;
@@ -811,24 +893,30 @@ async function persistStatus(term: string, langCode: string, status: WordStatus)
 }
 
 /** Show a toast message in the popup's Shadow DOM. */
-function showToast(message: string): void {
-  // ponytail: MVP uses console.warn. Real toast = a div in Shadow DOM that
-  // auto-dismisses after 3s. Upgrade: renderToast(shell, message).
-  console.warn(`[popupDictionary] ${message}`);
+function showToast(message: string, shell?: PopupShell | null): void {
+  if (shell) {
+    shell.showToast(message);
+  } else {
+    // ponytail: no popup mounted yet → fallback to console.
+    console.warn(`[popupDictionary] ${message}`);
+  }
 }
 
 /** Send to Creator — open Card Creator pre-filled with lookup result (P1.2). */
-export async function sendToCreatorFromPopup(state: PopupDictionaryState): Promise<void> {
-  if (!state.currentResult) return;
-  const prefill = extractPrefill(
-    state.currentResult,
-    state.definitionSelection,
-    state.contextSentence,
-    state.translation ?? undefined,
-  );
-  await sendToCreator(prefill, state.cardCreatorSettings);
+export function sendToCreatorFromPopup(state: PopupDictionaryState): PopupDictionaryState {
+  const result = state.currentResult;
+  if (!result) return state;
+  void (async () => {
+    const prefill = extractPrefill(
+      result,
+      state.definitionSelection,
+      state.contextSentence,
+      state.translationSelected ? state.translation : undefined,
+    );
+    await sendToCreator(prefill, state.cardCreatorSettings);
+  })();
   // Hide popup after sending to Creator.
-  hidePopup(state);
+  return hidePopup(state);
 }
 
 function onResizeEnd(state: PopupDictionaryState, size: PopupSize): void {
@@ -852,6 +940,18 @@ function onResizeEnd(state: PopupDictionaryState, size: PopupSize): void {
       // Best-effort — fail silently (next popup uses last persisted size).
     }
   })();
+}
+
+/** Play the term from the header audio button: use first cached Forvo URL or TTS. */
+async function playTermAudio(term: string, langCode: string, audioItems: readonly AudioItem[]): Promise<void> {
+  // ponytail: state.audioItems may not be loaded yet (lazy Audio tab). If a Forvo
+  // word URL is already cached, play it; otherwise fall back to system TTS.
+  const forvoItem = audioItems.find((a) => a.kind === 'word' && a.url);
+  if (forvoItem?.url) {
+    void new Audio(forvoItem.url).play().catch(() => { /* best-effort */ });
+    return;
+  }
+  await playTts({ id: 'tts-word-', kind: 'word', source: 'system-tts', label: '', state: 'idle', defaultSelected: false }, term, '', langCode);
 }
 
 /** Play TTS — sends TTS_SPEAK to background (chrome.tts engine). Falls back to

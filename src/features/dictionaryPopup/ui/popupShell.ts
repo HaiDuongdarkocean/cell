@@ -11,6 +11,7 @@ import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?raw';
 import popupDictCss from './popupDictionary.css?raw';
 import { getStorage, onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
+import { ICON_CATALOG } from '@/shared/icons';
 import { STORAGE_KEYS } from '@/shared/config/config';
 //
 // Layout:
@@ -29,9 +30,7 @@ const POPUP_Z_INDEX = '2147483647'; // max int — above everything
 const RESIZE_HANDLE_SIZE = 24;
 const VIEWPORT_MARGIN = 8;
 
-// Resize handle icon — diagonal lines (jQuery UI / PrimeNG style).
-// Lucide style: stroke 2.0, 24×24, currentColor, round caps.
-const RESIZE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;display:block"><path d="M22 2 L2 22" opacity="0.3"/><path d="M22 8 L8 22"/><path d="M22 14 L14 22"/></svg>`;
+
 
 /** Popup position strategy (spec: auto-position tránh overflow). */
 export interface PopupPosition {
@@ -200,6 +199,10 @@ export class PopupShell {
   private resizeStartWidth = 0;
   private resizeStartHeight = 0;
   private lastAnchor: { top: number; left: number; right: number; bottom: number } | null = null;
+  private dragOffset: { x: number; y: number } = { x: 0, y: 0 };
+  private dragStart: { x: number; y: number } | null = null;
+  private dragOffsetStart: { x: number; y: number } = { x: 0, y: 0 };
+  private previouslyFocused: Element | null = null;
   private themeCleanup: (() => void) | null = null;
   private readonly onDismiss: () => void;
   private readonly onResizeComplete: (size: PopupSize) => void;
@@ -209,6 +212,9 @@ export class PopupShell {
   private readonly boundResizeMove: (e: MouseEvent) => void;
   private readonly boundResizeEnd: () => void;
   private readonly boundFullscreenChange: () => void;
+  private readonly boundPointerDown: (e: PointerEvent) => void;
+  private readonly boundPointerMove: (e: PointerEvent) => void;
+  private readonly boundPointerUp: (e: PointerEvent) => void;
 
   constructor(
     initialSize: PopupSize,
@@ -224,6 +230,9 @@ export class PopupShell {
     this.boundResizeMove = this.onResizeMove.bind(this);
     this.boundResizeEnd = this.onResizeEnd.bind(this);
     this.boundFullscreenChange = this.onFullscreenChange.bind(this);
+    this.boundPointerDown = this.onPointerDown.bind(this);
+    this.boundPointerMove = this.onPointerMove.bind(this);
+    this.boundPointerUp = this.onPointerUp.bind(this);
   }
 
   /** Mount the popup shell into the document body (or fullscreen element) with Shadow DOM. */
@@ -267,6 +276,10 @@ export class PopupShell {
     // stays pinned at the bottom-right corner instead of scrolling with content.
     this.container = document.createElement('div');
     this.container.className = 'cell-popup js-cell-popup';
+    this.container.setAttribute('role', 'dialog');
+    this.container.setAttribute('aria-modal', 'true');
+    this.container.setAttribute('tabindex', '-1');
+    this.container.setAttribute('aria-label', 'Dictionary popup');
     this.container.style.position = 'fixed';
     this.container.style.pointerEvents = 'auto';
     this.container.style.width = `${this.size.width}px`;
@@ -278,6 +291,7 @@ export class PopupShell {
     this.container.style.userSelect = 'text';
     this.container.style.webkitUserSelect = 'text';
     this.shadow.appendChild(this.container);
+    this.container.addEventListener('pointerdown', this.boundPointerDown);
 
     // Theme: set data-theme on container so [data-theme="dark"] selectors in
     // tokens.css apply inside Shadow DOM. Sync initial from prefers-color-scheme
@@ -295,7 +309,7 @@ export class PopupShell {
     this.resizeHandle.className = 'cell-popup__resize js-cell-resize';
     this.resizeHandle.style.width = `${RESIZE_HANDLE_SIZE}px`;
     this.resizeHandle.style.height = `${RESIZE_HANDLE_SIZE}px`;
-    this.resizeHandle.innerHTML = RESIZE_ICON_SVG;
+    this.resizeHandle.innerHTML = ICON_CATALOG.resize.svg;
     this.container.appendChild(this.resizeHandle);
     this.resizeHandle.addEventListener('mousedown', this.boundResizeStart);
 
@@ -315,6 +329,8 @@ export class PopupShell {
   setPosition(anchorTop: number, anchorLeft: number, anchorRight: number, anchorBottom: number): void {
     if (!this.container) return;
     this.lastAnchor = { top: anchorTop, left: anchorLeft, right: anchorRight, bottom: anchorBottom };
+    // New lookup → start from the anchored position, not the previous drag offset.
+    this.dragOffset = { x: 0, y: 0 };
     this.applyPosition();
   }
 
@@ -337,11 +353,16 @@ export class PopupShell {
       this.lastAnchor.top, this.lastAnchor.left, this.lastAnchor.right, this.lastAnchor.bottom,
       this.size.width, vw, vh, estHeight,
     );
-    this.container.style.left = `${pos.left}px`;
-    this.container.style.top = `${pos.top}px`;
+    // Apply any user drag offset and keep the popup inside the viewport.
+    const width = this.container.offsetWidth || this.size.width;
+    const height = this.container.offsetHeight || estHeight;
+    const left = Math.max(VIEWPORT_MARGIN, Math.min(vw - width - VIEWPORT_MARGIN, pos.left + this.dragOffset.x));
+    const top = Math.max(VIEWPORT_MARGIN, Math.min(vh - height - VIEWPORT_MARGIN, pos.top + this.dragOffset.y));
+    this.container.style.left = `${left}px`;
+    this.container.style.top = `${top}px`;
     // Shrink popup height to fit the viewport so it never overflows.
     // The user wants the popup to "thu nhỏ lại" when there isn't enough space.
-    const availableHeight = vh - pos.top - VIEWPORT_MARGIN;
+    const availableHeight = vh - top - VIEWPORT_MARGIN;
     const clampedHeight = Math.max(200, Math.min(this.size.maxHeight, availableHeight));
     this.container.style.height = `${clampedHeight}px`;
   }
@@ -373,12 +394,32 @@ export class PopupShell {
     }
   }
 
+  /** Update the dismiss callback (used when showPopup is called multiple
+   *  times and the caller's onDismiss closure changes). */
+  setOnDismiss(onDismiss: () => void): void {
+    (this as unknown as { onDismiss: () => void }).onDismiss = onDismiss;
+  }
+
+  /** Update the resize-complete callback. */
+  setOnResizeEnd(onResizeEnd: (size: PopupSize) => void): void {
+    (this as unknown as { onResizeComplete: (size: PopupSize) => void }).onResizeComplete = onResizeEnd;
+  }
+
   /** Show the popup. Locks Escape key via Keyboard Lock API when in
    *  fullscreen so Chromium's browser process doesn't intercept Esc
    *  (which exits fullscreen before our keydown handler can close the popup). */
   show(): void {
     if (this.container) {
       this.container.style.display = 'flex';
+      // Point aria-labelledby at the winner term when rendered.
+      const term = this.shadow?.getElementById('cell-popup-term');
+      if (term) {
+        this.container.setAttribute('aria-labelledby', 'cell-popup-term');
+        this.container.removeAttribute('aria-label');
+      }
+      // Trap focus inside the popup and restore on close (WCAG AA).
+      this.previouslyFocused = document.activeElement;
+      this.container.focus({ preventScroll: true });
     }
     // ponytail: Keyboard Lock API requires fullscreen + user gesture.
     // show() is called from a click handler (user gesture active).
@@ -396,6 +437,7 @@ export class PopupShell {
     if (this.container) {
       this.container.style.display = 'none';
     }
+    this.restoreFocus();
     const kb = (navigator as { keyboard?: { lock: (keys: string[]) => Promise<void>; unlock: () => void } }).keyboard;
     if (kb) {
       try { kb.unlock(); } catch { /* not locked */ }
@@ -453,8 +495,12 @@ export class PopupShell {
     }
     document.removeEventListener('mousemove', this.boundResizeMove);
     document.removeEventListener('mouseup', this.boundResizeEnd);
+    this.container?.removeEventListener('pointerdown', this.boundPointerDown);
+    this.container?.removeEventListener('pointermove', this.boundPointerMove);
+    this.container?.removeEventListener('pointerup', this.boundPointerUp);
     this.themeCleanup?.();
     this.themeCleanup = null;
+    this.restoreFocus();
     if (this.host && this.host.parentNode) {
       this.host.parentNode.removeChild(this.host);
     }
@@ -475,14 +521,34 @@ export class PopupShell {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
+    if (this.container?.style.display === 'none') return;
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
       this.onDismiss();
+      return;
+    }
+    if (e.key === 'Tab') {
+      // Focus trap: Tab/Shift+Tab cycles inside the popup (WCAG AA).
+      const active = this.shadow?.activeElement as HTMLElement | null;
+      if (!active || !this.container?.contains(active)) return;
+      const focusable = this.getFocusableElements();
+      if (focusable.length === 0) return;
+      const currentIndex = focusable.indexOf(active);
+      let nextIndex: number;
+      if (e.shiftKey) {
+        nextIndex = currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1;
+      } else {
+        nextIndex = currentIndex < 0 || currentIndex >= focusable.length - 1 ? 0 : currentIndex + 1;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      focusable[nextIndex]?.focus();
     }
   }
 
   private onClickOutside(e: MouseEvent): void {
+    if (this.container?.style.display === 'none') return;
     // Check if the click target is inside the popup's Shadow DOM.
     // In Shadow DOM, event.target is the host element for outside listeners.
     // We check if the composed path includes our host.
@@ -535,5 +601,73 @@ export class PopupShell {
     document.removeEventListener('mousemove', this.boundResizeMove);
     document.removeEventListener('mouseup', this.boundResizeEnd);
     this.onResizeComplete(this.size);
+  }
+
+  /** Show a transient toast inside the popup shell. */
+  showToast(message: string): void {
+    if (!this.container) return;
+    const toast = document.createElement('div');
+    toast.className = 'cell-toast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    toast.textContent = message;
+    this.container.appendChild(toast);
+    // Trigger reflow so the CSS transition has a start state.
+    void toast.offsetHeight;
+    toast.classList.add('cell-toast--visible');
+    setTimeout(() => {
+      toast.classList.remove('cell-toast--visible');
+      toast.addEventListener('transitionend', () => { toast.remove(); }, { once: true });
+      // ponytail: if transitionend doesn't fire (e.g. popup removed), force cleanup.
+      setTimeout(() => { toast.remove(); }, 400);
+    }, 3000);
+  }
+
+  /** Restore focus to the element that was focused before the popup opened. */
+  private restoreFocus(): void {
+    if (this.previouslyFocused && 'focus' in this.previouslyFocused) {
+      (this.previouslyFocused as HTMLElement).focus({ preventScroll: true });
+    }
+    this.previouslyFocused = null;
+  }
+
+  /** Get focusable elements inside the popup for Tab cycling. */
+  private getFocusableElements(): HTMLElement[] {
+    if (!this.container) return [];
+    const selector = 'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])';
+    return Array.from(this.container.querySelectorAll(selector));
+  }
+
+  /** Pointer down on the header starts a drag move. */
+  private onPointerDown(e: PointerEvent): void {
+    if (!this.container) return;
+    const target = e.target as HTMLElement | null;
+    // Only drag from the header, and never from interactive controls.
+    if (!target?.closest('.cell-header')) return;
+    if (target.closest('button, a, input, [role="button"], .cell-header__status, .cell-header__frequency, .cell-popup__resize')) return;
+    e.preventDefault();
+    this.dragStart = { x: e.clientX, y: e.clientY };
+    this.dragOffsetStart = { ...this.dragOffset };
+    this.container.classList.add('cell-popup--dragging');
+    this.container.setPointerCapture(e.pointerId);
+    this.container.addEventListener('pointermove', this.boundPointerMove);
+    this.container.addEventListener('pointerup', this.boundPointerUp);
+  }
+
+  private onPointerMove(e: PointerEvent): void {
+    if (!this.container || !this.dragStart) return;
+    const dx = e.clientX - this.dragStart.x;
+    const dy = e.clientY - this.dragStart.y;
+    this.dragOffset = { x: this.dragOffsetStart.x + dx, y: this.dragOffsetStart.y + dy };
+    this.applyPosition();
+  }
+
+  private onPointerUp(e: PointerEvent): void {
+    if (!this.container) return;
+    this.dragStart = null;
+    this.container.classList.remove('cell-popup--dragging');
+    this.container.releasePointerCapture(e.pointerId);
+    this.container.removeEventListener('pointermove', this.boundPointerMove);
+    this.container.removeEventListener('pointerup', this.boundPointerUp);
   }
 }
