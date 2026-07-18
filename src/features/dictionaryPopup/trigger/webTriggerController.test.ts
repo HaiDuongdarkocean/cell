@@ -1,6 +1,6 @@
 // webTriggerController tests — spec §4.6 P1.1: generic web-text lookup.
 
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import {
   extractWordAtOffset,
   buildSelectionLookupRequest,
@@ -168,5 +168,104 @@ describe('WebTriggerController', () => {
     ctrl['inFlightRequestId'] = 'abc';
     ctrl.clearRequestId('xyz');
     expect(ctrl.isCurrentRequestId('abc')).toBe(true);
+  });
+
+  describe('hover dispatch', () => {
+    let originalCaretRange: typeof document.caretRangeFromPoint;
+
+    beforeEach(() => {
+      originalCaretRange = document.caretRangeFromPoint;
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      document.caretRangeFromPoint = originalCaretRange;
+      jest.useRealTimers();
+    });
+
+    it('hover dispatches lookup with anchorRect after debounce', () => {
+      // Create a real text node in a paragraph for the hover test.
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+
+      // Mock caretRangeFromPoint to return a range pointing at the text node.
+      const textNode = p.firstChild as Text;
+      const mockRange = document.createRange();
+      mockRange.setStart(textNode, 4); // "quick"
+      mockRange.setEnd(textNode, 9);
+      document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
+
+      let lookupCalled = false;
+      let capturedRect: DOMRect | null = null;
+
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover',
+        onLookup: (_req, _id, rect) => {
+          lookupCalled = true;
+          capturedRect = rect;
+        },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      // Simulate mousemove over the paragraph.
+      const event = new MouseEvent('mousemove', {
+        bubbles: true,
+        clientX: 50,
+        clientY: 10,
+      });
+      Object.defineProperty(event, 'target', { value: p });
+      document.dispatchEvent(event);
+
+      // Before debounce — no lookup yet.
+      expect(lookupCalled).toBe(false);
+
+      // After 150ms — lookup dispatched with rect.
+      jest.advanceTimersByTime(150);
+      expect(lookupCalled).toBe(true);
+      expect(capturedRect).not.toBeNull();
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
+    it('hover over non-text cancels pending timer', () => {
+      const p = document.createElement('p');
+      p.textContent = 'Hello world';
+      document.body.appendChild(p);
+
+      const textNode = p.firstChild as Text;
+      const mockRange = document.createRange();
+      mockRange.setStart(textNode, 0);
+      mockRange.setEnd(textNode, 5);
+      document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      // First mousemove over text — starts timer.
+      const event1 = new MouseEvent('mousemove', { bubbles: true, clientX: 10, clientY: 10 });
+      Object.defineProperty(event1, 'target', { value: p });
+      document.dispatchEvent(event1);
+
+      // Second mousemove — caretRangeFromPoint returns null (cursor over image).
+      document.caretRangeFromPoint = jest.fn(() => null) as typeof document.caretRangeFromPoint;
+      const event2 = new MouseEvent('mousemove', { bubbles: true, clientX: 200, clientY: 200 });
+      Object.defineProperty(event2, 'target', { value: p });
+      document.dispatchEvent(event2);
+
+      // Advance past debounce — no lookup should fire (timer was cancelled).
+      jest.advanceTimersByTime(200);
+      expect(lookupCount).toBe(0);
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
   });
 });

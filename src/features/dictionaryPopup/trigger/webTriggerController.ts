@@ -246,9 +246,18 @@ export class WebTriggerController {
 
     // Get the text node + offset at the cursor position.
     const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-    if (!range) return;
+    if (!range) {
+      // Cursor over non-text (image, canvas, etc.) — cancel pending hover.
+      if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
+      this.lastHoveredTerm = null;
+      return;
+    }
     const textNode = range.startContainer as Text;
-    if (textNode.nodeType !== Node.TEXT_NODE) return;
+    if (textNode.nodeType !== Node.TEXT_NODE) {
+      if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
+      this.lastHoveredTerm = null;
+      return;
+    }
     const offset = range.startOffset;
 
     // Build the request (debounced).
