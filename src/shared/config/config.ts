@@ -1,6 +1,7 @@
 import type { Settings, FilenameSource, KeyboardShortcut, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
 import type { CardCreatorSettings, DictionaryPopupSettings } from '@/entities/settings';
+import tokensJson from '@/shared/styles/tokens.json';
 
 // === Default Configuration ===
 
@@ -120,7 +121,7 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
 
 const DEFAULT_TEXT_SHADOW: TextShadowConfig = {
   preset: 'soft',
-  color: '#000000',
+  color: tokensJson.static.overlay['text-shadow'],
   blur: 2,
   offsetX: 0,
   offsetY: 1,
@@ -132,8 +133,8 @@ export const SUBTITLE_BLOCK_REFERENCE_SIZE = 1000;
 /** Default appearance for target subtitle overlay (prominent — UI v4, ADR-025). */
 export const DEFAULT_OVERLAY_STYLE_TARGET: OverlayStyleConfig = {
   fontSize: 24,
-  textColor: '#ffffff',
-  backgroundColor: '#000000',
+  textColor: tokensJson.static.overlay.text,
+  backgroundColor: tokensJson.static.overlay.background,
   backgroundOpacity: 0.85,
   textOpacity: 1,
   textShadow: DEFAULT_TEXT_SHADOW,
@@ -145,8 +146,8 @@ export const DEFAULT_OVERLAY_STYLE_TARGET: OverlayStyleConfig = {
 /** Default appearance for native subtitle overlay (muted — UI v4, ADR-025). */
 export const DEFAULT_OVERLAY_STYLE_NATIVE: OverlayStyleConfig = {
   fontSize: 20,
-  textColor: '#ffffff',
-  backgroundColor: '#000000',
+  textColor: tokensJson.static.overlay.text,
+  backgroundColor: tokensJson.static.overlay.background,
   backgroundOpacity: 0.7,
   textOpacity: 0.85,
   textShadow: DEFAULT_TEXT_SHADOW,

@@ -1,4 +1,5 @@
 import type { SrtCue } from '@/entities/media';
+import tokensJson from '@/shared/styles/tokens.json';
 
 export interface TrackOption {
   readonly id: string;
@@ -22,7 +23,7 @@ export function createTrackDropdown(parent: HTMLElement): HTMLSelectElement {
   dropdown.style.fontSize = '12px';
   dropdown.style.padding = '2px 4px';
   dropdown.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-  dropdown.style.color = '#ffffff';
+  dropdown.style.color = tokensJson.static.overlay.text;
   dropdown.style.border = 'none';
   dropdown.style.borderRadius = '4px';
   dropdown.style.display = 'none';

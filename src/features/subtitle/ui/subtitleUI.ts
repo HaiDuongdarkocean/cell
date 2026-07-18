@@ -1,4 +1,5 @@
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
+import tokensJson from '@/shared/styles/tokens.json';
 import { mountToWatchVideo } from './netflixPlayback';
 
 // === Pure style helpers (ADR-013 D6) ===
@@ -50,7 +51,7 @@ export function sanitizeFontFamily(raw: string): string {
 
 /**
  * Convert hex color + alpha to rgba string.
- * Supports 3-digit (#fff) and 6-digit (#ffffff) hex.
+ * Supports 3-digit and 6-digit hex (with or without leading #).
  * Falls back to rgba(0,0,0,alpha) for invalid hex.
  * Pure — no DOM access.
  */
@@ -230,8 +231,8 @@ export function createDragHint(container: HTMLElement): HTMLDivElement {
   hint.style.pointerEvents = 'none';
   hint.style.userSelect = 'none';
   hint.style.fontSize = '18px';
-  hint.style.color = '#ffffff';
-  hint.style.textShadow = '0 1px 4px rgba(0,0,0,0.8)';
+  hint.style.color = tokensJson.static.overlay.text;
+  hint.style.textShadow = `0 1px 4px rgba(0, 0, 0, 0.8)`;
   hint.style.fontFamily = 'sans-serif';
   hint.textContent = 'Drop subtitle file here';
   hint.style.display = 'none';

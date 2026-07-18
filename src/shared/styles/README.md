@@ -41,7 +41,7 @@ import '@/shared/styles/tokens.css';
 
 /* WRONG — don't use these for hover */
 :hover { background: var(--color-accent); }      /* ← drift, use surface-hover */
-:hover { background: #f1f5f9; }                   /* ← hardcoded, use token */
+:hover { background: var(--color-surface-hover); } /* ← hardcoded, use token */
 ```
 
 ## Component inventory — `src/shared/ui/`

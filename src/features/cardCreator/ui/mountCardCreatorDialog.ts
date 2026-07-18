@@ -79,7 +79,7 @@ export function mountCardCreatorDialog(
   const host = document.createElement('div');
   host.id = 'cell-card-creator-host';
   host.style.cssText =
-    'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:#000;font-size:medium;line-height:normal;isolation:isolate;z-index:2147483647;pointer-events:none;overflow:hidden;transform:none;';
+    'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:medium;line-height:normal;isolation:isolate;z-index:2147483647;pointer-events:none;overflow:hidden;transform:none;';
   document.body.appendChild(host);
 
   // ADR-026: Fullscreen support. When the video element enters fullscreen,

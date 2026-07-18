@@ -75,6 +75,11 @@ function flattenStaticTokens(staticObj) {
     push(`nav-cluster-${key}`, value);
   }
 
+  // overlay
+  for (const [key, value] of Object.entries(staticObj.overlay)) {
+    push(`overlay-${key}`, value);
+  }
+
   return lines.join('\n');
 }
 
