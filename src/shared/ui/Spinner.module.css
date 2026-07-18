@@ -5,18 +5,18 @@
 }
 
 .sm {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4, 16px);
+  height: var(--space-4, 16px);
 }
 
 .md {
-  width: 24px;
-  height: 24px;
+  width: var(--space-6, 24px);
+  height: var(--space-6, 24px);
 }
 
 .lg {
-  width: 32px;
-  height: 32px;
+  width: var(--space-8, 32px);
+  height: var(--space-8, 32px);
 }
 
 @keyframes spin {
