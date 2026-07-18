@@ -206,7 +206,8 @@ export async function storeMedia(
   return { ok: true, value: stored ?? filename };
 }
 
-/** Add a new note. Returns the new note id (or null if duplicate was skipped). */
+/** Add a new note. Returns the new note id (or null if duplicate was skipped).
+ *  Pass allowDuplicate: true to bypass Anki's duplicate check. */
 export async function addNote(
   url: string,
   note: {
@@ -214,6 +215,7 @@ export async function addNote(
     modelName: string;
     fields: Record<string, string>;
     tags: string[];
+    options?: { allowDuplicate?: boolean };
   },
 ): Promise<Result<number | null>> {
   const r = await sendAction(url, 'addNote', { note });
