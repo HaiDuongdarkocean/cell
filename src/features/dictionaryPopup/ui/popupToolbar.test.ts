@@ -231,6 +231,15 @@ describe('renderAudioPanel', () => {
     expect(container.querySelectorAll('.cell-skeleton').length).toBeGreaterThan(0);
   });
 
+  it('label click triggers onSelectionChange', () => {
+    const onSelectionChange = jest.fn();
+    const wordAudios = [makeAudio({ id: 'w1', label: 'Forvo · US · Female' })];
+    renderAudioPanel(container, wordAudios, [], new Map([['w1', true]]), jest.fn(), jest.fn(), false, undefined, undefined, undefined, onSelectionChange);
+    const labelEl = container.querySelector('.js-cell-audio-label') as HTMLSpanElement;
+    labelEl.click();
+    expect(onSelectionChange).toHaveBeenCalledTimes(1);
+  });
+
   it('currentlyPlayingId switches play button to pause icon and row to playing state', () => {
     const wordAudios = [makeAudio({ id: 'w1' })];
     renderAudioPanel(container, wordAudios, [], new Map(), jest.fn(), jest.fn(), false, undefined, 'w1');
@@ -295,6 +304,15 @@ describe('renderImagePanel', () => {
     const skeleton = container.querySelector('.cell-image__skeleton');
     expect(skeleton).not.toBeNull();
     expect(container.querySelectorAll('.cell-skeleton').length).toBe(4);
+  });
+
+  it('card click triggers onSelectionChange', () => {
+    const onSelectionChange = jest.fn();
+    const images = [makeImage({ id: 'img1' })];
+    renderImagePanel(container, images, new Map(), jest.fn(), '', false, undefined, onSelectionChange);
+    const card = container.querySelector('.js-cell-image-card') as HTMLButtonElement;
+    card.click();
+    expect(onSelectionChange).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -381,6 +399,14 @@ describe('renderTranslatePanel', () => {
     expect(skeleton).not.toBeNull();
     expect(container.querySelectorAll('.cell-translate__skeleton-line').length).toBe(2);
     expect(container.querySelectorAll('.cell-skeleton').length).toBeGreaterThan(0);
+  });
+
+  it('block click triggers onSelectionChange', () => {
+    const onSelectionChange = jest.fn();
+    renderTranslatePanel(container, 'Xin chào', 'Hello', 'vi', jest.fn(), false, jest.fn(), false, onSelectionChange);
+    const block = container.querySelector('.js-cell-translate-block') as HTMLDivElement;
+    block.click();
+    expect(onSelectionChange).toHaveBeenCalledTimes(1);
   });
 });
 
