@@ -264,6 +264,45 @@
     },
     {
       "type": "experience",
+      "id": "ux-modal-focus-trap-restore",
+      "title": "Modal must trap Tab + restore focus to trigger on close (WCAG AA)",
+      "category": [
+        "ux",
+        "css"
+      ],
+      "tags": [
+        "modal",
+        "dialog",
+        "focus-trap",
+        "focus-restore",
+        "wcag",
+        "accessibility",
+        "tab-navigation",
+        "aria-modal"
+      ],
+      "trigger": "Component có role=\"dialog\" + aria-modal=\"true\" (Dialog, Drawer, BottomSheet, Modal)"
+    },
+    {
+      "type": "experience",
+      "id": "react-no-side-effect-in-render",
+      "title": "Side effects (focus, DOM mutation, state) must run in useEffect, not during render",
+      "category": [
+        "ux",
+        "state"
+      ],
+      "tags": [
+        "react",
+        "useeffect",
+        "side-effect",
+        "render",
+        "focus",
+        "dom-mutation",
+        "strict-mode"
+      ],
+      "trigger": "Component React gọi .focus(), .click(), DOM mutation, hoặc setState trực tiếp trong render body (không trong useEffect/callback)"
+    },
+    {
+      "type": "experience",
       "id": "data-half-open-interval-time-matching",
       "title": "Half-open intervals [start, end) for time-based matching",
       "category": [

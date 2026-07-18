@@ -1,0 +1,26 @@
+{
+  "id": "react-no-side-effect-in-render",
+  "title": "Side effects (focus, DOM mutation, state) must run in useEffect, not during render",
+  "category": ["ux", "state"],
+  "tags": ["react", "useeffect", "side-effect", "render", "strict-mode"],
+  "trigger": "Component React gọi .focus(), .click(), DOM mutation, hoặc setState trực tiếp trong render body (không trong useEffect/callback)",
+  "principle": "React render phải thuần (pure) — không side effect. Focus, DOM measurement, event dispatch trong render body chạy 2× under StrictMode + chạy trước commit (DOM có thể chưa sẵn sàng). Đặt trong useEffect: chạy sau commit, cleanup-safe, và có cleanup path.",
+  "cases": [
+    {
+      "context": "SearchableSelect focus search input khi menu mở — focus gọi trong render body",
+      "bad": "// Render body — runs during render, before commit, twice under StrictMode\nif (isOpen && searchRef.current) {\n  searchRef.current.focus();\n}",
+      "good": "// useEffect — runs after commit, once, with cleanup path\nuseEffect(() => {\n  if (isOpen) {\n    searchRef.current?.focus();\n  }\n}, [isOpen]);"
+    },
+    {
+      "context": "Component measure DOM height ngay trong render để tính style",
+      "bad": "const height = ref.current?.offsetHeight; // ref.current is null on first render\nreturn <div style={{ height }}>...;",
+      "good": "const [height, setHeight] = useState(0);\nuseEffect(() => {\n  if (ref.current) setHeight(ref.current.offsetHeight);\n}, [deps]);\nreturn <div style={{ height }}>...;"
+    }
+  ],
+  "applyFor": [
+    "Focus management (.focus(), .blur()) on open/state change",
+    "DOM measurement (offsetHeight, getBoundingClientRect) before paint",
+    "setState in render body (causes infinite loop or StrictMode double-fire)",
+    "Any DOM API call in component render body"
+  ]
+}
