@@ -137,7 +137,7 @@ function modifierMatches(mode: TriggerMode, e: MouseEvent): boolean {
 
 export interface WebTriggerDeps {
   readonly triggerMode: TriggerMode;
-  readonly onLookup: (request: LookupRequest, requestId: string) => void;
+  readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect) => void;
   readonly onCancel: (requestId: string) => void;
 }
 
@@ -226,7 +226,9 @@ export class WebTriggerController {
     if (!text) return;
     const request = buildSelectionLookupRequest(selection);
     if (!request) return;
-    this.dispatchLookup(request);
+    const range = selection.getRangeAt(0);
+    const rect = safeGetRangeRect(range);
+    this.dispatchLookup(request, rect);
   }
 
   private onSelectionChange(): void {
@@ -259,14 +261,25 @@ export class WebTriggerController {
     if (this.hoverTimer) clearTimeout(this.hoverTimer);
     this.hoverTimer = setTimeout(() => {
       this.hoverTimer = null;
-      this.dispatchLookup(request);
+      const rect = safeGetRangeRect(range);
+      this.dispatchLookup(request, rect);
     }, WEB_HOVER_DEBOUNCE_MS);
   }
 
-  private dispatchLookup(request: LookupRequest): void {
+  private dispatchLookup(request: LookupRequest, anchorRect: DOMRect): void {
     this.cancelInFlight();
     const requestId = nextRequestId();
     this.inFlightRequestId = requestId;
-    this.deps.onLookup(request, requestId);
+    this.deps.onLookup(request, requestId, anchorRect);
   }
+}
+
+/** Safely get a DOMRect from a Range (jsdom fallback). */
+function safeGetRangeRect(range: Range): DOMRect {
+  try {
+    const rect = range.getBoundingClientRect();
+    if (rect.width > 0) return rect;
+  } catch { /* jsdom */ }
+  const parent = range.startContainer.parentElement;
+  return parent?.getBoundingClientRect() ?? new DOMRect(0, 0, 0, 0);
 }
