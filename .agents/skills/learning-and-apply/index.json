@@ -939,6 +939,14 @@
       "category": ["css"],
       "tags": ["button", "ssot", "design-system", "hover", "active", "state", "maintainability"],
       "trigger": "Tạo/sửa component có trạng thái hover/active mà tự định nghĩa lại background/color thay vì dùng .btn--primary, .btn--outline, .btn--ghost có sẵn"
+    },
+    {
+      "type": "experience",
+      "id": "debounce-timer-cancel-on-exit-zone",
+      "title": "Debounce timer phải cancel khi cursor rời zone trigger — không để popup flicker",
+      "category": ["async", "ux"],
+      "tags": ["debounce", "setTimeout", "cancel", "hover", "mousemove", "caretRangeFromPoint", "stale-timer", "popup-flicker"],
+      "trigger": "Khi dùng setTimeout debounce cho hover/mousemove event và callback dùng Range/object từ event cũ — nếu cursor rời zone trigger (non-text, image, null), timer cũ vẫn fire và gây popup flicker hoặc stale anchor"
     }
   ]
 }
