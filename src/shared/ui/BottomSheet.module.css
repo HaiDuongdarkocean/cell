@@ -40,6 +40,22 @@
   flex-shrink: 0;
 }
 
+/* Centered title variant — close button positioned absolutely. */
+.headerCenterTitle {
+  position: relative;
+  justify-content: center;
+}
+
+.headerCenterTitle .title {
+  text-align: center;
+}
+
+.closeButtonAbsolute {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
 .title {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);

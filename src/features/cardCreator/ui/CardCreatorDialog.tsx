@@ -12,7 +12,6 @@ import type { MediaFile } from '../media/mediaFile';
 import { CardCreatorDialogContent } from './CardCreatorDialogContent';
 import { useCardCreatorState, type OpenContext } from './useCardCreatorState';
 import { clearAnkiConnectPrefetch } from '../service/cardCreatorPrefetch';
-import styles from './CardCreatorDialog.module.css';
 
 interface CardCreatorDialogProps {
   /** Whether the dialog is open. */
@@ -47,20 +46,19 @@ export function CardCreatorDialog({
   };
 
   return (
-    <div className={styles.dialogWrapper}>
-      <Dialog
-        open={open}
-        onOpenChange={handleOpenChange}
-        title="Card Creator"
-        showCloseButton
-        data-testid="card-creator-dialog"
-      >
-        <CardCreatorDialogContent
-          state={state}
-          variant="desktop"
-          onCancel={() => handleOpenChange(false)}
-        />
-      </Dialog>
-    </div>
+    <Dialog
+      open={open}
+      onOpenChange={handleOpenChange}
+      title="Card Creator"
+      showCloseButton
+      centerTitle
+      data-testid="card-creator-dialog"
+    >
+      <CardCreatorDialogContent
+        state={state}
+        variant="desktop"
+        onCancel={() => handleOpenChange(false)}
+      />
+    </Dialog>
   );
 }

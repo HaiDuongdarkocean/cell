@@ -15,6 +15,9 @@ export interface BottomSheetProps {
   children?: ReactNode;
   /** Footer actions. */
   footer?: ReactNode;
+  /** Center the title in the header (close button stays right via absolute
+   *  positioning). Default: left-aligned with space-between. */
+  centerTitle?: boolean;
   /** Test id for the overlay. */
   'data-testid'?: string;
 }
@@ -34,6 +37,7 @@ export function BottomSheet({
   title,
   children,
   footer,
+  centerTitle,
   'data-testid': dataTestId,
 }: BottomSheetProps): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -73,7 +77,7 @@ export function BottomSheet({
       >
         <div className={styles.dragHandle} aria-hidden="true" />
         {(title || onOpenChange) && (
-          <div className={styles.header}>
+          <div className={centerTitle ? `${styles.header} ${styles.headerCenterTitle}` : styles.header}>
             {title && (
               <h2 id="bottom-sheet-title" className={styles.title}>{title}</h2>
             )}
@@ -81,8 +85,9 @@ export function BottomSheet({
               size="sm"
               aria-label="Close"
               onClick={() => onOpenChange?.(false)}
+              className={centerTitle ? styles.closeButtonAbsolute : styles.closeIcon}
             >
-              <Icon name="x" size={20} className={styles.closeIcon} />
+              <Icon name="x" size={20} />
             </IconButton>
           </div>
         )}
