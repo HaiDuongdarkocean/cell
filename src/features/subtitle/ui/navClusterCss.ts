@@ -12,13 +12,13 @@ export const NAV_CLUSTER_CSS = `
 .nav-cluster {
   position: absolute;
   display: flex;
-  gap: 4px;
-  padding: 4px;
+  gap: var(--space-1, 4px);
+  padding: var(--space-1, 4px);
   border-radius: var(--radius-md, 8px);
   background: transparent;
   border: 1px solid var(--color-border);
   z-index: var(--nav-cluster-z-index, 1000001);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-family, system-ui, -apple-system, sans-serif);
   user-select: none;
   transition: transform 150ms ease, opacity 150ms ease;
   pointer-events: auto;
@@ -94,7 +94,7 @@ export const NAV_CLUSTER_CSS = `
 .nav-cluster-secondary {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5, 2px);
   align-items: center;
   justify-content: center;
   cursor: default !important;
@@ -163,7 +163,7 @@ export const NAV_CLUSTER_CSS = `
 .nav-cluster.no-sub .nav-cluster-no-sub {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5, 2px);
   align-items: center;
   justify-content: center;
   cursor: default !important;

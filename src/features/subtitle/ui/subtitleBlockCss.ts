@@ -67,7 +67,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .cluster-column {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5, 2px);
   align-items: center;
 }
 
@@ -171,13 +171,13 @@ export const SUBTITLE_BLOCK_CSS = `
   justify-content: center;
   align-items: center;
   padding: var(--space-1, 4px);
-  gap: 2px;
+  gap: var(--space-0-5, 2px);
   text-align: center;
 }
 
 .subtitle-line {
   display: block;
-  padding: 2px 8px;
+  padding: var(--space-0-5, 2px) var(--space-2, 8px);
   border-radius: 4px;
   line-height: 1.4;
   text-align: center;
@@ -214,7 +214,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .block-right-column {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1, 4px);
   align-items: center;
   justify-content: center;
 }
@@ -263,18 +263,18 @@ export const SUBTITLE_BLOCK_CSS = `
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px;
-  padding: 4px;
+  padding: var(--space-1, 4px);
   min-width: 180px;
   font-size: 12px;
 }
 
 .subtitle-selector-item {
-  padding: 6px 8px;
+  padding: var(--space-1-5, 6px) var(--space-2, 8px);
   cursor: pointer;
   border-radius: 4px;
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-2, 8px);
 }
 
 .subtitle-selector-item--active {
@@ -295,7 +295,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.18);
   color: rgba(255, 255, 255, 0.85);
-  margin-left: 4px;
+  margin-left: var(--space-1, 4px);
 }
 
 .subtitle-selector-meta {
@@ -369,7 +369,7 @@ export const SUBTITLE_BLOCK_CSS = `
   font-size: var(--font-size-xs, 12px);
   font-weight: var(--font-weight-medium, 500);
   font-variant-numeric: tabular-nums;
-  padding: 8px 4px;
+  padding: var(--space-2, 8px) var(--space-1, 4px);
   min-height: 40px;
   transition: background 150ms ease, color 150ms ease;
   user-select: none;
@@ -404,7 +404,7 @@ export const SUBTITLE_BLOCK_CSS = `
   font-weight: var(--font-weight-semibold, 600);
   font-variant-numeric: tabular-nums;
   border-radius: var(--radius-sm, 6px);
-  padding: 4px 8px;
+  padding: var(--space-1, 4px) var(--space-2, 8px);
   min-height: 40px;
   min-width: 0;
   width: 100%;
@@ -437,7 +437,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .offset-reset-btn {
   width: 100%;
-  padding: 8px;
+  padding: var(--space-2, 8px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full, 9999px);
   background: var(--color-surface);
@@ -446,7 +446,7 @@ export const SUBTITLE_BLOCK_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-1-5, 6px);
   font-family: var(--font-family, sans-serif);
   font-size: var(--font-size-xs, 12px);
   font-weight: var(--font-weight-medium, 500);
@@ -465,7 +465,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .offset-disabled-hint {
-  padding: 8px 0 0;
+  padding: var(--space-2, 8px) 0 0;
   text-align: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-xs, 12px);
@@ -771,7 +771,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-manager-item-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5, 2px);
   min-width: 0;
   flex: 1;
 }
@@ -903,7 +903,7 @@ export const SUBTITLE_BLOCK_CSS = `
   left: 8px;
   z-index: 999999;
   font-size: 12px;
-  padding: 2px 4px;
+  padding: var(--space-0-5, 2px) var(--space-1, 4px);
   background-color: rgba(0, 0, 0, 0.7);
   color: rgba(255, 255, 255, 0.95);
   border: none;
@@ -922,7 +922,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  padding: 4px 12px;
+  padding: var(--space-1, 4px) var(--space-3, 12px);
   border-radius: 4px;
   pointer-events: auto;
   cursor: ns-resize;
@@ -964,10 +964,10 @@ export const SUBTITLE_BLOCK_CSS = `
   z-index: 999998;
   pointer-events: none;
   user-select: none;
-  font-size: 18px;
+  font-size: var(--font-size-xl, 18px);
   color: rgba(255, 255, 255, 0.95);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
-  font-family: sans-serif;
+  font-family: var(--font-family, sans-serif);
 }
 
 .subtitle-drag-hint--visible {
