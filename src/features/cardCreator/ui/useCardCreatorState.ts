@@ -61,7 +61,15 @@ export interface OpenContext {
   initialMedia?: readonly MediaFile[];
   /** Popup dictionary pre-fill (term + definitions + translation + media URLs).
    *  When present, overrides the empty defaults for these draft fields. */
-  prefill?: { readonly targetWord?: string; readonly definitions?: string; readonly sentenceTranslation?: string; readonly sentence?: string; readonly audioUrls?: readonly string[]; readonly imageUrls?: readonly string[] };
+  prefill?: {
+    readonly targetWord?: string;
+    readonly definitions?: string;
+    readonly sentenceTranslation?: string;
+    readonly sentence?: string;
+    readonly wordAudioUrls?: readonly string[];
+    readonly sentenceAudioUrls?: readonly string[];
+    readonly imageUrls?: readonly string[];
+  };
 }
 
 /** Hook return type. */
@@ -247,34 +255,46 @@ export function useCardCreatorState(
       mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? settings.mediaUpdateMode,
     });
 
-    // Fetch prefill media URLs (word audio + images from popup dictionary
-    // selection) asynchronously and append to the draft. Best-effort —
-    // failures are skipped (toast warning), the dialog still opens with
-    // text fields. Runs after setDraft so the form renders immediately.
-    if (prefill?.audioUrls?.length || prefill?.imageUrls?.length) {
+    // Fetch prefill media URLs (word audio, sentence audio + images from popup
+    // dictionary) asynchronously and append to the correct draft fields. Best-effort
+    // — failures are skipped (toast warning), the dialog still opens with text fields.
+    // Runs after setDraft so the form renders immediately.
+    const hasMedia = (prefill?.wordAudioUrls?.length ?? 0) > 0
+      || (prefill?.sentenceAudioUrls?.length ?? 0) > 0
+      || (prefill?.imageUrls?.length ?? 0) > 0;
+    if (hasMedia) {
       void (async () => {
-        const fetchedAudios: MediaFile[] = [];
+        const fetchedWordAudios: MediaFile[] = [];
+        const fetchedSentenceAudios: MediaFile[] = [];
         const fetchedImages: MediaFile[] = [];
-        for (const audioUrl of prefill.audioUrls ?? []) {
+        for (const audioUrl of prefill?.wordAudioUrls ?? []) {
           try {
-            fetchedAudios.push(await fetchUrlAsMediaFile(audioUrl, 'audio'));
+            fetchedWordAudios.push(await fetchUrlAsMediaFile(audioUrl, 'audio'));
           } catch {
-            pushToast('warning', `Could not fetch audio: ${audioUrl}`);
+            pushToast('warning', `Could not fetch word audio: ${audioUrl}`);
           }
         }
-        for (const imageUrl of prefill.imageUrls ?? []) {
+        for (const audioUrl of prefill?.sentenceAudioUrls ?? []) {
+          try {
+            fetchedSentenceAudios.push(await fetchUrlAsMediaFile(audioUrl, 'audio'));
+          } catch {
+            pushToast('warning', `Could not fetch sentence audio: ${audioUrl}`);
+          }
+        }
+        for (const imageUrl of prefill?.imageUrls ?? []) {
           try {
             fetchedImages.push(await fetchUrlAsMediaFile(imageUrl, 'image'));
           } catch {
             pushToast('warning', `Could not fetch image: ${imageUrl}`);
           }
         }
-        if (fetchedAudios.length > 0 || fetchedImages.length > 0) {
+        if (fetchedWordAudios.length > 0 || fetchedSentenceAudios.length > 0 || fetchedImages.length > 0) {
           setDraft((prev) => ({
             ...prev,
             fields: {
               ...prev.fields,
-              wordAudios: [...prev.fields.wordAudios, ...fetchedAudios],
+              wordAudios: [...prev.fields.wordAudios, ...fetchedWordAudios],
+              sentenceAudios: [...prev.fields.sentenceAudios, ...fetchedSentenceAudios],
               images: [...prev.fields.images, ...fetchedImages],
             },
           }));
