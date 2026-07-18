@@ -116,21 +116,22 @@ describe('showToast', () => {
     container.remove();
   });
 
-  it('renders success variant with check icon and success-colored CSS var', () => {
+  it('renders success variant with icon and success-colored CSS var', () => {
     showToast('Subtitles loaded', container, { variant: 'success' });
     const toast = container.querySelector('[data-testid="subtitle-toast"]');
     expect(toast).not.toBeNull();
     expect(toast?.getAttribute('data-variant')).toBe('success');
     expect((toast as HTMLElement).style.getPropertyValue('--toast-variant-color')).toBe('var(--color-success)');
-    expect((toast as HTMLElement).innerHTML).toContain('M20 6L9 17l-5-5');
+    // Icon comes from ICON_CATALOG (mocked in tests as generic SVG)
+    expect(toast?.querySelector('.subtitle-toast-icon svg')).toBeTruthy();
   });
 
-  it('renders error variant with X icon and error-colored CSS var', () => {
+  it('renders error variant with icon and error-colored CSS var', () => {
     showToast('Could not load subtitles', container, { variant: 'error' });
     const toast = container.querySelector('[data-testid="subtitle-toast"]');
     expect(toast?.getAttribute('data-variant')).toBe('error');
     expect((toast as HTMLElement).style.getPropertyValue('--toast-variant-color')).toBe('var(--color-error)');
-    expect((toast as HTMLElement).innerHTML).toContain('M18 6L6 18');
+    expect(toast?.querySelector('.subtitle-toast-icon svg')).toBeTruthy();
   });
 
   it('defaults to info variant when no options provided', () => {
