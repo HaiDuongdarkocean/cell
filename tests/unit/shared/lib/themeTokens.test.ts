@@ -198,7 +198,7 @@ describe('buildStyleContent', () => {
   it('includes static tokens (fonts, spacing)', () => {
     const css = buildStyleContent(DEFAULT_THEME_CONFIG);
     expect(css).toContain('--font-family');
-    expect(css).toContain('--spacing-md');
+    expect(css).toContain('--space-3');
     expect(css).toContain('--radius-md');
   });
 

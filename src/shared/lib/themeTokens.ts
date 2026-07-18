@@ -54,12 +54,6 @@ const STATIC_TOKENS = `
   --tracking-tight: -0.025em;
   --tracking-normal: 0;
   --tracking-wide: 0.025em;
-  /* Legacy spacing aliases (subtitle block, nav cluster) */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
   /* Design system --space-* scale (4px base) */
   --space-0: 0;
   --space-0-5: 2px;
