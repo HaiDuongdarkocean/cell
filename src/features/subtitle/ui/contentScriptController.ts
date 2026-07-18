@@ -2,6 +2,7 @@ import { sendMessage, onMessage, onStorageChanged, removeOnMessageListener } fro
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
+import tokensJson from '@/shared/styles/tokens.json';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS } from '@/shared/config/config';
 import {
@@ -51,7 +52,7 @@ const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
   fontSize: 24,
   position: 'bottom',
   backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  textColor: '#ffffff',
+  textColor: tokensJson.static.overlay.text,
   showTimestamps: false,
 };
 

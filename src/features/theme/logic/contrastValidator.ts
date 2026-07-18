@@ -4,6 +4,7 @@
 // text/canvas, text-secondary/canvas, white/primary (button text trên primary bg).
 
 import { getLuminance } from '@/features/theme/logic/colorGenerator';
+import tokensJson from '@/shared/styles/tokens.json';
 import type { CoreColorTokens } from '@/entities/theme';
 
 /** WCAG contrast ratio giữa 2 hex color (1-21). */
@@ -66,7 +67,7 @@ export function validateTheme(colors: CoreColorTokens): ValidationResult {
   const pairs: PairResult[] = [
     makePair('Text / Canvas', colors.text, colors.background),
     makePair('Text Secondary / Canvas', colors.textSecondary, colors.background),
-    makePair('White / Primary', '#ffffff', colors.primary),
+    makePair('White / Primary', tokensJson.core.light.background, colors.primary),
   ];
   return { pairs, allPass: pairs.every((p) => p.rating.pass) };
 }

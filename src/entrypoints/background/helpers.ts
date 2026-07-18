@@ -4,6 +4,7 @@
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import tokensJson from '@/shared/styles/tokens.json';
 import {
   getStorage,
   setStorage,
@@ -131,8 +132,8 @@ export function updateBadgeForTab(ctx: BackgroundContext, tabId: number): void {
   const text = count > 0 ? String(count) : '';
   try {
     void setBadgeText({ text, tabId });
-    void setBadgeBackgroundColor({ color: '#2563eb', tabId });
-    void setBadgeTextColor({ color: '#ffffff', tabId });
+    void setBadgeBackgroundColor({ color: tokensJson.core.light.primary, tabId });
+    void setBadgeTextColor({ color: tokensJson.derived.light['color-primary-foreground'], tabId });
   } catch (err: unknown) {
     console.warn('[background] Failed to update badge:', err);
   }

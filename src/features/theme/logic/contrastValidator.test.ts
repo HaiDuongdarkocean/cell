@@ -7,6 +7,7 @@ import {
   validateTheme,
 } from '@/features/theme/logic/contrastValidator';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
+import { DEFAULT_LIGHT_COLORS } from '@/shared/lib/tokens';
 
 describe('contrastValidator', () => {
   describe('getContrastRatio', () => {
@@ -14,7 +15,7 @@ describe('contrastValidator', () => {
       expect(getContrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 0);
     });
     it('same color = 1', () => {
-      expect(getContrastRatio('#2563eb', '#2563eb')).toBeCloseTo(1, 5);
+      expect(getContrastRatio(DEFAULT_LIGHT_COLORS.primary, DEFAULT_LIGHT_COLORS.primary)).toBeCloseTo(1, 5);
     });
     it('is symmetric (fg/bg swap same result)', () => {
       expect(getContrastRatio('#ffffff', '#000000')).toBeCloseTo(getContrastRatio('#000000', '#ffffff'), 5);

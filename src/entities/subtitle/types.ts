@@ -43,7 +43,7 @@ export interface OverlayConfig {
  */
 export interface TextShadowConfig {
   readonly preset: 'none' | 'soft' | 'cinema' | 'custom';
-  readonly color: string; // hex, default '#000000'
+  readonly color: string; // hex, default from tokensJson.static.overlay['text-shadow']
   readonly blur: number; // px, default 2
   readonly offsetX: number; // px, default 1
   readonly offsetY: number; // px, default 1
@@ -58,8 +58,8 @@ export interface TextShadowConfig {
  */
 export interface OverlayStyleConfig {
   readonly fontSize: number; // px, default 24 (target) / 20 (native)
-  readonly textColor: string; // hex, default '#ffffff'
-  readonly backgroundColor: string; // hex (alpha tách rời — color picker native không hỗ trợ alpha)
+  readonly textColor: string; // hex, default from tokensJson.static.overlay.text
+  readonly backgroundColor: string; // hex, default from tokensJson.static.overlay.background (alpha tách rời — color picker native không hỗ trợ alpha)
   readonly backgroundOpacity: number; // 0-1, default 0.7
   readonly textOpacity: number; // 0-1, default 1
   readonly textShadow: TextShadowConfig;
