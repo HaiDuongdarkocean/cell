@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, type KeyboardEvent, type ReactElement } from 'react';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './MultiSelect.module.css';
 
 /** A single selectable option. */
@@ -112,20 +113,7 @@ export function MultiSelect({
     <div className={styles.container} data-testid={testId}>
       {/* Search bar */}
       <div className={styles.searchWrap}>
-        {/* FIXME: extract to registry once stroke-width variant supported — search circle r=7 differs from ICON_CATALOG.search (r=8) */}
-        <svg
-          className={styles.searchIcon}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="11" cy="11" r="7" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <Icon name="search" className={styles.searchIcon} />
         <input
           ref={searchRef}
           type="search"
@@ -144,7 +132,7 @@ export function MultiSelect({
       </div>
 
       {/* Options list */}
-      <ul className={styles.list} role="listbox" style={{ maxHeight }}>
+      <ul className={styles.list} role="listbox" style={{ '--list-max-height': `${maxHeight}px` } as React.CSSProperties}>
         {sorted.selected.length > 0 && (
           <>
             <li className={styles.sectionHeader} role="presentation">

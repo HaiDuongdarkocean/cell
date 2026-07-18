@@ -1,4 +1,5 @@
 import { useRef, type ReactNode, type KeyboardEvent } from 'react';
+import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from './IconButton';
 import { useFocusTrap } from './useFocusTrap';
 import styles from './BottomSheet.module.css';
@@ -81,10 +82,7 @@ export function BottomSheet({
               aria-label="Close"
               onClick={() => onOpenChange?.(false)}
             >
-              {/* FIXME: extract to registry once stroke-width variant supported — strokeWidth 1.5 differs from ICON_CATALOG.x (stroke 2) */}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="20" height="20">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
+              <Icon name="x" size={20} className={styles.closeIcon} />
             </IconButton>
           </div>
         )}

@@ -153,6 +153,14 @@
   opacity: 0.85;
 }
 
+.imageThumbIcon svg {
+  stroke-width: 1.25;
+}
+
+.audioThumbIcon svg {
+  stroke-width: 1.5;
+}
+
 /* === Image preview overlay (design-system §3.5 Dialog overlay pattern) === */
 .previewOverlay {
   position: fixed;
