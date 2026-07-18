@@ -503,12 +503,18 @@ export function destroyPopup(state: PopupDictionaryState): PopupDictionaryState 
     currentStatus: 'unknown',
     definitionSelection: new Map(),
     audioSelection: new Map(),
-    audioItems: [],
     imageSelection: new Map(),
-    imageItems: [],
-    translation: '',
-    translationSelected: false,
   };
+}
+
+/** Update settings on an existing popup state (live, without re-creating).
+ *  Called when chrome.storage.onChanged fires with new dictionaryPopup settings.
+ *  Re-wires trigger mode on the subtitle block controller if needed. */
+export function updatePopupSettings(
+  state: PopupDictionaryState,
+  settings: DictionaryPopupSettings,
+): PopupDictionaryState {
+  return { ...state, settings };
 }
 
 /** Cycle word status for the active candidate. */

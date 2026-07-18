@@ -36,7 +36,7 @@ import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCrea
 import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
 import { fetchUrlAsMediaFile } from '@/features/cardCreator/media/mediaFile';
 import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
-import { createPopupDictionaryState, showPopup, appendCandidate, type PopupDictionaryState, type PopupCardCreatorPrefill, type PopupCardCreatorAction } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import { createPopupDictionaryState, showPopup, appendCandidate, updatePopupSettings, type PopupDictionaryState, type PopupCardCreatorPrefill, type PopupCardCreatorAction } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import { WebTriggerController } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
@@ -806,6 +806,26 @@ export function init(video: HTMLVideoElement): () => void {
       // without a page reload. loadShortcuts reads from the new settings.
       if (newSettings.keyboardShortcuts) {
         loadShortcuts().then((s) => { shortcuts = s; });
+      }
+      // Live-update dictionary popup settings (defaultActiveTab, triggerMode, etc.)
+      // without requiring a page reload.
+      if (newSettings.dictionaryPopup && popupDictState) {
+        popupDictState = updatePopupSettings(popupDictState, newSettings.dictionaryPopup);
+        // Re-wire trigger mode if it changed.
+        if (webTextTrigger) {
+          webTextTrigger.detach();
+          webTextTrigger = new WebTriggerController({
+            triggerMode: newSettings.dictionaryPopup.triggerMode,
+            onLookup: (request, requestId, anchorRect) => { void handleLookup(request, requestId, anchorRect); },
+            onCancel: (requestId) => { cancelLookup(requestId); },
+          });
+          webTextTrigger.attach();
+        }
+        blockController.enableDictionaryPopup(
+          newSettings.dictionaryPopup.triggerMode,
+          (request: LookupRequest, requestId: string, anchorRect: DOMRect) => { void handleLookup(request, requestId, anchorRect); },
+          (requestId: string) => { cancelLookup(requestId); },
+        );
       }
     });
   });
