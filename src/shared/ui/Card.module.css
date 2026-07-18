@@ -20,10 +20,10 @@
 
 .selected {
   border-color: var(--color-primary);
-  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+  background: var(--color-primary-subtle);
 }
 
 .selected:hover {
   border-color: var(--color-primary);
-  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+  background: var(--color-primary-subtle);
 }

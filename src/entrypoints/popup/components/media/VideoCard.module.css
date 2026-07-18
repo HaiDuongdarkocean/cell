@@ -166,7 +166,7 @@
   width: 12px;
   height: 12px;
   color: inherit;
-  transition: transform 200ms ease;
+  transition: transform var(--duration-normal, 200ms) ease;
   flex-shrink: 0;
 }
 
@@ -236,7 +236,7 @@
 .expandChevron {
   width: 14px;
   height: 14px;
-  transition: transform 200ms ease;
+  transition: transform var(--duration-normal, 200ms) ease;
 }
 
 .expandChevronOpen {

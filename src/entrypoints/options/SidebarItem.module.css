@@ -32,13 +32,13 @@
 .itemActive {
   border-left-color: var(--color-primary);
   color: var(--color-text);
-  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+  background: var(--color-primary-subtle);
 }
 
 /* Tablet icon-only mode: active state must be visible without text */
 @media (max-width: 1023px) and (min-width: 768px) {
   .itemActive {
-    background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+    background: var(--color-primary-subtle);
     border-left-color: transparent;
     border-radius: var(--radius-md);
   }

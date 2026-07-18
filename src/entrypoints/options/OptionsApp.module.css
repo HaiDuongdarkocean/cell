@@ -160,7 +160,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: var(--dialog-overlay-bg, rgba(0, 0, 0, 0.5));
+    background: var(--dialog-overlay-bg);
     z-index: 1000;
   }
   .drawerClose {

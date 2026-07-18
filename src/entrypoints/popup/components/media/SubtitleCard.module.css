@@ -129,7 +129,7 @@
 .expandChevron {
   width: 14px;
   height: 14px;
-  transition: transform 200ms ease;
+  transition: transform var(--duration-normal, 200ms) ease;
 }
 
 .expandChevronOpen {
