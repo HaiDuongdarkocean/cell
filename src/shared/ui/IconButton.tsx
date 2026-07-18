@@ -5,7 +5,7 @@ type IconButtonSize = 'xs' | 'sm' | 'md';
 type IconButtonVariant = 'ghost' | 'danger';
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Size: xs=24, sm=28, md=32. Default 'md'. */
+  /** Size: xs=28, sm=32, md=40. Default 'md'. */
   size?: IconButtonSize;
   /** Hover behavior: ghost=surface-hover bg, danger=error-subtle bg + error color. Default 'ghost'. */
   variant?: IconButtonVariant;
