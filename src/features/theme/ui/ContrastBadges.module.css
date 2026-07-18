@@ -9,8 +9,8 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px var(--space-2, 8px);
+  gap: var(--space-1, 4px);
+  padding: var(--space-0-5, 2px) var(--space-2, 8px);
   border-radius: var(--radius-full, 9999px);
   font-size: var(--font-size-xs, 12px);
   font-weight: var(--font-weight-semibold, 600);
