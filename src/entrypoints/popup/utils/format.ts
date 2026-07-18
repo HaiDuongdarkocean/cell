@@ -42,6 +42,14 @@ export function formatFileSize(bytes?: number): string {
 }
 
 /**
+ * Like {@link formatFileSize} but returns 'Unknown' for undefined/zero,
+ * for UI contexts where an explicit label is preferable to empty string.
+ */
+export function formatFileSizeOrUnknown(bytes?: number): string {
+  return bytes ? formatFileSize(bytes) : 'Unknown';
+}
+
+/**
  * Format a duration in milliseconds for display.
  *
  * @example formatDuration(undefined) → ''
