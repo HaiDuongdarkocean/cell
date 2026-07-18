@@ -302,4 +302,177 @@ export const SUBTITLE_BLOCK_CSS = `
   opacity: 0.7;
   font-size: 11px;
 }
+
+/* === Subtitle offset panel (ADR-019 V3) ===
+   Uses design tokens — theme-aware (sits inside manager panel, not on video). */
+.offset-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  cursor: pointer;
+  border-radius: var(--radius-sm, 6px);
+  user-select: none;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  transition: background 150ms ease;
+}
+
+.offset-header:hover {
+  background: var(--color-surface-hover);
+}
+
+.offset-header-chevron {
+  display: inline-flex;
+  color: var(--color-text-muted);
+  transition: transform 150ms ease;
+}
+
+.offset-header-label {
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex: 1;
+  color: var(--color-text-muted);
+}
+
+.offset-body {
+  padding: var(--space-1, 4px) var(--space-1, 4px) var(--space-2, 8px);
+  display: block;
+}
+
+.offset-pill {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr;
+  align-items: stretch;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full, 9999px);
+  padding: 3px;
+  gap: 0;
+  margin-bottom: var(--space-2, 8px);
+  isolation: isolate;
+}
+
+.offset-step-btn {
+  position: relative;
+  z-index: 1;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-family, sans-serif);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-medium, 500);
+  font-variant-numeric: tabular-nums;
+  padding: 8px 4px;
+  min-height: 40px;
+  transition: background 150ms ease, color 150ms ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.offset-step-btn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.offset-step-btn--plus {
+  color: var(--color-success);
+}
+
+.offset-step-btn--minus {
+  color: var(--color-info);
+}
+
+.offset-value {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+  color: var(--color-primary);
+  font-family: var(--font-family, sans-serif);
+  font-size: var(--font-size-lg, 16px);
+  font-weight: var(--font-weight-semibold, 600);
+  font-variant-numeric: tabular-nums;
+  border-radius: var(--radius-sm, 6px);
+  padding: 4px 8px;
+  min-height: 40px;
+  min-width: 0;
+  width: 100%;
+  border: none;
+  transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+  text-align: center;
+  outline: none;
+}
+
+.offset-value:focus {
+  z-index: 3;
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+  background: var(--color-background);
+}
+
+.offset-value--zero {
+  color: var(--color-text-muted);
+  background: var(--color-surface-hover);
+}
+
+.offset-value--positive {
+  color: var(--color-success);
+  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+}
+
+.offset-value--negative {
+  color: var(--color-info);
+  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+}
+
+.offset-reset-btn {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-family, sans-serif);
+  font-size: var(--font-size-xs, 12px);
+  font-weight: var(--font-weight-medium, 500);
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.offset-reset-btn:hover:not(:disabled) {
+  background: var(--color-error-subtle, rgba(239, 68, 68, 0.08));
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.offset-reset-icon {
+  display: inline-flex;
+}
+
+.offset-disabled-hint {
+  padding: 8px 0 0;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs, 12px);
+  display: none;
+}
+
+.offset-disabled-hint--visible {
+  display: block;
+}
 `;
