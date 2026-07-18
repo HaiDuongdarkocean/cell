@@ -16,7 +16,6 @@ import {
   mergeCuesForPanel,
   createImportButton,
   createToggleButton,
-  seekToCue,
   handleShortcutKey,
   isEditableTarget,
   createSubtitleManagerPanel,
@@ -28,6 +27,8 @@ import {
   createTranslateFunction,
   broadcastCues,
   loadSettingsOrToast,
+  navigateCue,
+  toggleOverlayState,
 } from '@/features/subtitle';
 import { SubtitleBlockController, type SubtitleBlockControllerUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleBlockController';
 import { OffsetController } from '@/features/subtitle/ui/offsetController';
@@ -1070,36 +1071,21 @@ export function init(video: HTMLVideoElement): () => void {
     }
 
     switch (action) {
-      case 'prev-cue': {
+      case 'prev-cue':
+      case 'next-cue':
+      case 'replay-cue': {
         // ADR-019 sync: find cue via effective time, seek so overlay DISPLAYS it.
         // ADR-033: use getEffectiveMs so rapid press computes from intended pos.
         const offsetMs = offsetController?.getOffsetMs() ?? 0;
         const effectiveMs = getEffectiveMs();
-        const prevCue = [...bilingualCues].reverse().find((c) => c.end < effectiveMs);
-        if (prevCue) seekToCue(video, prevCue, offsetMs);
-        break;
-      }
-      case 'next-cue': {
-        const offsetMs = offsetController?.getOffsetMs() ?? 0;
-        const effectiveMs = getEffectiveMs();
-        const nextCue = bilingualCues.find((c) => c.start > effectiveMs + 100);
-        if (nextCue) seekToCue(video, nextCue, offsetMs);
-        break;
-      }
-      case 'replay-cue': {
-        const offsetMs = offsetController?.getOffsetMs() ?? 0;
-        const effectiveMs = getEffectiveMs();
-        // Half-open [start, end) — at boundary t = cue[i].end = cue[i+1].start,
-        // match the NEXT cue, not the previous one (replay-cue "jump back" bug).
-        const currentCue = bilingualCues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
-          ?? [...bilingualCues].reverse().find((c) => c.start < effectiveMs);
-        if (currentCue) seekToCue(video, currentCue, offsetMs);
+        navigateCue(action, video, bilingualCues, effectiveMs, offsetMs);
         break;
       }
       case 'toggle-overlay': {
-        overlayVisible = !overlayVisible;
-        targetStyle = { ...targetStyle, visible: overlayVisible };
-        nativeStyle = { ...nativeStyle, visible: overlayVisible };
+        const result = toggleOverlayState(overlayVisible, targetStyle, nativeStyle);
+        overlayVisible = result.overlayVisible;
+        targetStyle = result.targetStyle;
+        nativeStyle = result.nativeStyle;
         blockController.updateSettings({ targetStyle, nativeStyle });
         break;
       }
@@ -1254,30 +1240,20 @@ export function init(video: HTMLVideoElement): () => void {
         // ADR-033: use getEffectiveMs so rapid press computes from intended pos.
         const effectiveMs = getEffectiveMs();
         switch (action) {
-          case 'prev-cue': {
-            const prevCue = [...bilingualCues].reverse().find((c) => c.end < effectiveMs);
-            if (prevCue) seekToCue(video, prevCue, offsetMs);
-            break;
-          }
-          case 'next-cue': {
-            const nextCue = bilingualCues.find((c) => c.start > effectiveMs + 100);
-            if (nextCue) seekToCue(video, nextCue, offsetMs);
-            break;
-          }
+          case 'prev-cue':
+          case 'next-cue':
           case 'replay-cue': {
-            // Half-open [start, end) — see in-page keydown handler above.
-            const currentCue = bilingualCues.find((c) => c.start <= effectiveMs && c.end > effectiveMs)
-              ?? [...bilingualCues].reverse().find((c) => c.start < effectiveMs);
-            if (currentCue) seekToCue(video, currentCue, offsetMs);
+            navigateCue(action as 'prev-cue' | 'next-cue' | 'replay-cue', video, bilingualCues, effectiveMs, offsetMs);
             break;
           }
           case 'toggle-overlay': {
-          overlayVisible = !overlayVisible;
-          targetStyle = { ...targetStyle, visible: overlayVisible };
-          nativeStyle = { ...nativeStyle, visible: overlayVisible };
-          blockController.updateSettings({ targetStyle, nativeStyle });
-          break;
-        }
+            const result = toggleOverlayState(overlayVisible, targetStyle, nativeStyle);
+            overlayVisible = result.overlayVisible;
+            targetStyle = result.targetStyle;
+            nativeStyle = result.nativeStyle;
+            blockController.updateSettings({ targetStyle, nativeStyle });
+            break;
+          }
         case 'toggle-translate': {
           // ADR-021 D7: temporary toggle (no setting change).
           // If prefill running → clear + hide native overlay. If not → restart from latestTargetCues.
