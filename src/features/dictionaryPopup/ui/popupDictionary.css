@@ -31,17 +31,22 @@
 
 /* === Popup-wide button micro-interactions ===
  * Only transform scale; remove previous background/color hover/active effects.
- * Scale values vary per button role so not all buttons feel identical. */
-.cell-popup .btn {
+ * Uniform scale: 1.05 on hover, 1.0 on active for every popup button. */
+.cell-popup .btn,
+.cell-popup .icon-btn {
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.cell-popup .btn:hover {
-  transform: scale(1.08);
+.cell-popup .btn:hover,
+.cell-popup .icon-btn:hover {
+  transform: scale(1.05);
+  background: transparent;
 }
 
-.cell-popup .btn:active {
-  transform: scale(0.96);
+.cell-popup .btn:active,
+.cell-popup .icon-btn:active {
+  transform: scale(1);
+  background: transparent;
 }
 
 .cell-popup .btn--ghost:hover,
@@ -62,50 +67,8 @@
   color: var(--color-text-inverse);
 }
 
-/* Toolbar tabs: subtle pop */
-.cell-popup .cell-toolbar__tab:hover {
-  transform: scale(1.05);
-}
-
-.cell-popup .cell-toolbar__tab:active {
-  transform: scale(1);
-}
-
-/* Header/footer actions: stronger pop, slight press */
-.cell-popup .cell-header__quick-add:hover,
-.cell-popup .cell-footer__send:hover,
-.cell-popup .cell-chip:hover {
-  transform: scale(1.1);
-}
-
-.cell-popup .cell-header__quick-add:active,
-.cell-popup .cell-footer__send:active,
-.cell-popup .cell-chip:active {
-  transform: scale(0.95);
-}
-
-/* Status badge: very subtle */
-.cell-popup .cell-header__status:hover {
-  transform: scale(1.04);
-}
-
-.cell-popup .cell-header__status:active {
-  transform: scale(1);
-}
-
-.cell-popup .icon-btn {
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.cell-popup .icon-btn:hover {
-  transform: scale(1.12);
-  background: transparent;
-  color: var(--color-text-muted);
-}
-
+.cell-popup .icon-btn:hover,
 .cell-popup .icon-btn:active {
-  transform: scale(0.9);
-  background: transparent;
   color: var(--color-text-muted);
 }
 
@@ -588,23 +551,22 @@
   color: var(--color-primary);
 }
 
-/* Play/pause button: zoom on hover, elastic bounce on press/release.
- * Override base .icon-btn--outlined hover/active color+background so only
- * the transform scale feedback remains. */
+/* Play/pause button: zoom on hover, bounce on press/release.
+ * Uniform scale: 1.05 on hover, 1.0 on active. */
 .cell-audio__item .icon-btn {
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-    color 0.25s var(--ease-in-out, ease-in-out);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 0.2s var(--ease-in-out, ease-in-out);
   will-change: transform;
 }
 
 .cell-audio__item .icon-btn:hover {
-  transform: scale(1.15);
+  transform: scale(1.05);
   background: transparent;
   color: var(--color-primary);
 }
 
 .cell-audio__item .icon-btn:active {
-  transform: scale(0.85);
+  transform: scale(1);
   background: transparent;
   color: var(--color-primary);
 }
