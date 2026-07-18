@@ -915,6 +915,14 @@
       "category": ["state", "data"],
       "tags": ["bridge", "prefill", "cross-module", "silent-data-loss", "type-mismatch", "interface-coverage"],
       "trigger": "Một module A thu thập dữ liệu vào interface rồi truyền qua bridge (callback/message) cho module B, nhưng interface ở B hẹp hơn A — field thừa bị drop silently vì TypeScript không bắt được khi field là optional."
+    },
+    {
+      "type": "experience",
+      "id": "css-hardcoded-px-to-token",
+      "title": "Hardcoded px trong CSS module → thay bằng design-system token (calc nếu cần)",
+      "category": ["css"],
+      "tags": ["hardcoded-px", "design-token", "css-module", "convention", "maintainability"],
+      "trigger": "CSS file có giá trị px hardcoded thay vì dùng var(--space-*)/var(--font-size-*) từ design system"
     }
   ]
 }
