@@ -230,4 +230,76 @@ export const SUBTITLE_BLOCK_CSS = `
     display: none;
   }
 }
+
+/* === Subtitle selector dropdown (ADR-014 D3) ===
+   Dark overlay colors intentional — sits on top of video, not theme-aware. */
+.subtitle-selector-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1000001;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.subtitle-selector-popover {
+  position: absolute;
+  top: 40px;
+  right: 8px;
+  z-index: 1000002;
+  max-height: 200px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 180px;
+  font-size: 12px;
+}
+
+.subtitle-selector-item {
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.subtitle-selector-item--active {
+  background: rgba(255, 255, 255, 0.15);
+  font-weight: bold;
+}
+
+.subtitle-selector-item:hover:not(.subtitle-selector-item--active) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.subtitle-selector-asr-badge {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.85);
+  margin-left: 4px;
+}
+
+.subtitle-selector-meta {
+  opacity: 0.7;
+  font-size: 11px;
+}
 `;
