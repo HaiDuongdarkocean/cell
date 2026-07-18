@@ -8,32 +8,32 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: var(--iconbutton-bg, transparent);
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: var(--iconbutton-radius, var(--radius-full));
   cursor: pointer;
-  color: var(--color-text-muted);
+  color: var(--iconbutton-fg, var(--color-text-muted));
   transition: background var(--transition), color var(--transition), transform var(--transition);
   padding: 0;
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: var(--iconbutton-size-md, 40px);
+  height: var(--iconbutton-size-md, 40px);
 }
 
 /* === Sizes — DS spec §2 Icon Button: default 40×40 (md) === */
-.xs { width: 28px; height: 28px; }
-.sm { width: 32px; height: 32px; }
-.md { width: 40px; height: 40px; }
+.xs { width: var(--iconbutton-size-xs, 28px); height: var(--iconbutton-size-xs, 28px); }
+.sm { width: var(--iconbutton-size-sm, 32px); height: var(--iconbutton-size-sm, 32px); }
+.md { width: var(--iconbutton-size-md, 40px); height: var(--iconbutton-size-md, 40px); }
 
 /* === Hover variants === */
 .ghost:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
+  background: var(--iconbutton-hover-bg, var(--color-surface-hover));
+  color: var(--iconbutton-hover-fg, var(--color-text));
 }
 
 .danger:hover {
-  background: var(--color-error-subtle);
-  color: var(--color-error);
+  background: var(--iconbutton-danger-hover-bg, var(--color-error-subtle));
+  color: var(--iconbutton-danger-hover-fg, var(--color-error));
 }
 
 /* === Active states (persistent — no hover change) ===
@@ -41,8 +41,8 @@
    variant='danger' + active → danger active (Header.extDisabled pattern) */
 .activePrimary,
 .activePrimary:hover {
-  color: var(--color-primary);
-  background: var(--color-primary-subtle);
+  color: var(--iconbutton-active-fg, var(--color-primary));
+  background: var(--iconbutton-active-bg, var(--color-primary-subtle));
 }
 
 .activeDanger,

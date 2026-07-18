@@ -4,9 +4,9 @@
   justify-content: center;
   gap: var(--space-1-5, 6px);
   border: none;
-  border-radius: var(--radius-md, 18px);
+  border-radius: var(--button-radius, var(--radius-md, 18px));
   font-family: var(--font-family);
-  font-weight: var(--font-weight-semibold, 600);
+  font-weight: var(--button-font-weight, var(--font-weight-semibold, 600));
   text-decoration: none;
   text-align: center;
   cursor: pointer;
@@ -15,65 +15,65 @@
 }
 
 .button:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--button-focus-ring, var(--color-primary));
   outline-offset: 2px;
 }
 
 .button:disabled,
 .button.loading {
-  opacity: 0.5;
+  opacity: var(--button-disabled-opacity, 0.5);
   pointer-events: none;
   cursor: not-allowed;
 }
 
 /* === Sizes === */
 .sm {
-  height: 28px;
-  padding: 6px 12px;
-  font-size: var(--font-size-xs, 12px);
+  height: var(--button-height-sm, 28px);
+  padding: var(--button-padding-sm-y, 6px) var(--button-padding-sm-x, 12px);
+  font-size: var(--button-font-size-sm, var(--font-size-xs, 12px));
 }
 
 .md {
-  height: 32px;
-  padding: 8px 16px;
-  font-size: var(--font-size-sm, 13px);
+  height: var(--button-height, 32px);
+  padding: var(--button-padding-y, 8px) var(--button-padding-x, 16px);
+  font-size: var(--button-font-size, var(--font-size-sm, 13px));
 }
 
 .lg {
-  height: 40px;
-  padding: 10px 20px;
-  font-size: var(--font-size-sm, 14px);
+  height: var(--button-height-lg, 40px);
+  padding: var(--button-padding-lg-y, 10px) var(--button-padding-lg-x, 20px);
+  font-size: var(--button-font-size-lg, var(--font-size-base, 14px));
 }
 
 /* === Variants === */
 
 /* Primary */
 .primary {
-  background: var(--color-primary);
-  color: var(--color-primary-foreground-soft, var(--color-primary-foreground, var(--color-text-inverse)));
+  background: var(--button-bg, var(--color-primary));
+  color: var(--button-fg, var(--color-primary-foreground-soft, var(--color-primary-foreground, var(--color-text-inverse))));
 }
 
 .primary:hover {
-  background: var(--color-primary-hover);
+  background: var(--button-hover-bg, var(--color-primary-hover));
 }
 
 .primary:active {
-  background: var(--color-primary-active, var(--color-primary-hover));
+  background: var(--button-active-bg, var(--color-primary-active, var(--color-primary-hover)));
   transform: scale(0.98);
 }
 
 /* Secondary */
 .secondary {
-  background: var(--color-secondary);
-  color: var(--color-secondary-foreground);
+  background: var(--button-secondary-bg, var(--color-secondary));
+  color: var(--button-secondary-fg, var(--color-secondary-foreground));
 }
 
 .secondary:hover {
-  background: var(--color-secondary-hover);
+  background: var(--button-secondary-hover-bg, var(--color-secondary-hover));
 }
 
 .secondary:active {
-  background: var(--color-secondary-hover);
+  background: var(--button-secondary-hover-bg, var(--color-secondary-hover));
   transform: scale(0.98);
 }
 
@@ -81,7 +81,7 @@
 .outline {
   background: transparent;
   color: var(--color-text);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--button-outline-border, var(--color-border));
 }
 
 .outline:hover {
@@ -111,16 +111,16 @@
 
 /* Destructive */
 .destructive {
-  background: var(--color-destructive);
-  color: var(--color-destructive-foreground);
+  background: var(--button-destructive-bg, var(--color-destructive));
+  color: var(--button-destructive-fg, var(--color-destructive-foreground));
 }
 
 .destructive:hover {
-  background: var(--color-destructive-hover);
+  background: var(--button-destructive-hover-bg, var(--color-destructive-hover));
 }
 
 .destructive:active {
-  background: var(--color-destructive-hover);
+  background: var(--button-destructive-hover-bg, var(--color-destructive-hover));
   transform: scale(0.98);
 }
 
@@ -128,7 +128,7 @@
 .link {
   background: transparent;
   color: var(--color-primary);
-  padding: 4px 8px;
+  padding: var(--space-1, 4px) var(--space-2, 8px);
   height: auto;
 }
 
@@ -149,8 +149,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 16px;
-  height: 16px;
+  width: var(--iconbutton-icon-xs, 16px);
+  height: var(--iconbutton-icon-xs, 16px);
 }
 
 .leadingIcon svg,
