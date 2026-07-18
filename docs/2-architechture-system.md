@@ -15,8 +15,8 @@ src/
 ├── app/                # App-wide config, providers, global setup
 ├── stores/             # Global state stores (Zustand)
 ├── entrypoints/        # Extension entrypoints (manifest-declared)
-│   ├── background/     #   Service Worker (MV3) — thin orchestrator (M14: index ≤284 lines)
-│   ├── content/        #   Content scripts (ISOLATED + MAIN world) — thin (M20: 178 lines)
+│   ├── background/     #   Service Worker (MV3) — thin orchestrator (M14: index ~321 lines)
+│   ├── content/        #   Content scripts (ISOLATED + MAIN world) — thin (M20: ~414 lines)
 │   ├── offscreen/      #   Offscreen document (OPFS, workers, fetch proxy M15)
 │   ├── popup/          #   Popup UI (React)
 │   ├── sidepanel/      #   Side panel UI (React)
@@ -102,13 +102,13 @@ src/
 ```
 
 **Refactor status**: M0-M13 COMPLETE (FSD migration). M14-M21 COMPLETE (architecture debt refactor, ADR-017):
-- M14: SW god-file split (2203→284 lines, 8 handler files)
+- M14: SW god-file split (2203→321 lines, 8 handler files)
 - M15: fetch() moved to offscreen document
 - M16: onStartup/onInstalled lifecycle rehydration
 - M17: 9 chrome.* adapters, ~129 entrypoint calls routed
 - M18: 32 deep imports → barrel-only (0 deep imports in entrypoints)
 - M19: 94 @/types/ imports → @/entities/* (Strangler Fig complete)
-- M20: content-script 787→178 lines (orchestration → contentScriptController.ts)
+- M20: content-script 787→414 lines (orchestration → contentScriptController.ts)
 - M21: settingsStore.ts with schema versioning + migration (CURRENT_SCHEMA_VERSION=1)
 
 ---
@@ -387,7 +387,7 @@ tests/
 
 | File | Import từ (depends on) | Được import bởi (depended by) | Sửa file này → ảnh hưởng |
 |------|------------------------|-------------------------------|--------------------------|
-| `background/index.ts` | networkInterceptor, messageBus, downloadQueue, downloader, offscreenManager, context, helpers, wireEvents, handlers/* | `service-worker-loader.js` (entry) | **Thin orchestrator (M14 refactor: 2203→284 lines)** — init/stop/registerHandlers only. Shared state (mediaMap, autoDownloadedTabs, lastCuesByTab, activeTabIdForPanel, extensionActive, sessionReady). Delegates to handlers/* + wireEvents + helpers |
+| `background/index.ts` | networkInterceptor, messageBus, downloadQueue, downloader, offscreenManager, context, helpers, wireEvents, handlers/* | `service-worker-loader.js` (entry) | **Thin orchestrator (M14 refactor: 2203→321 lines)** — init/stop/registerHandlers only. Shared state (mediaMap, autoDownloadedTabs, lastCuesByTab, activeTabIdForPanel, extensionActive, sessionReady). Delegates to handlers/* + wireEvents + helpers |
 | `background/context.ts` | types | `background/index.ts`, `helpers.ts`, `wireEvents.ts`, `handlers/*` | `BackgroundContext` interface — shared state + building blocks + helpers contract |
 | `background/helpers.ts` | config, messages, opfsStorage, autoDownload, subtitleService, languageDetector, m3u8Parser, types | `background/index.ts`, `wireEvents.ts`, `handlers/*` | Helper functions: generateId, extractBaseName, buildDetails (ADR-035: optional `initiator` param from scanned frame URL), getActiveTabId, reloadActiveTab, badge helpers, enrichVideo, enrichM3u8Variants, findVideoById, findSubtitleById, createDownloadItem, settings helpers, session persistence helpers, pushAutoLoadSubtitles, resolveUnknownSubtitleLanguages, **ADR-036: resolveStremioSubtitleListing** (fetch Stremio addon JSON listing → extract subtitles[].url → re-inject via handleRequest), extractOrigin, maybeAutoDownload |
 | `background/wireEvents.ts` | messages, helpers, types | `background/index.ts` | Event wiring: networkInterceptor.onMediaDetected → broadcast, **ADR-036: networkInterceptor.onListingDetected → resolveStremioSubtitleListing**, downloadQueue.onProgress → broadcast, downloader callbacks (convert, saveOpfs, executor), chrome.tabs.onUpdated/onRemoved/onActivated, chrome.windows.onFocusChanged, chrome.downloads.onDeterminingFilename |
@@ -555,7 +555,7 @@ tests/
 | `constants/config.ts` | types | index, downloader, popupStore, fileUtils, SettingsDialog, **whitelist**, **autoDownload** | Defaults, limits, keys; **`DEFAULT_PREFERRED_VIDEO_FORMAT`**, **`DEFAULT_SELECTED_SUBTITLE_LANGUAGES`**, **`DEFAULT_AUTO_SELECT_ENABLED`**, **`STORAGE_KEYS.AUTO_DOWNLOAD_WHITELIST`** |
 | `constants/messages.ts` | — | index, useDetectedMedia, useDownloadProgress, ffmpegRunner | Message type strings |
 | `constants/urls.ts` | — | videoDetector, subtitleDetector, pageScanner | URL patterns |
-| `types/media.ts` | — | Hầu hết mọi file | Type definitions; **`AutoSelectResult`**, **`WhitelistEntry`** interfaces. Settings gained: `preferredVideoFormat`, `selectedSubtitleLanguages`, `autoSelectEnabled` (`defaultSubtitleLanguage` deprecated) |
+| `types/media.ts` | — | (deprecated barrel — M19 Strangler Fig) | **DEPRECATED** barrel re-export from `entities/*`. No callers import `@/types/media` directly anymore (M19 complete). New code SHOULD import from `@/entities/video`, `@/entities/settings`, `@/entities/media`. Kept for backward compat only |
 | `types/message.ts` | types/media | index, hooks, ffmpegRunner | Message payloads |
 
 ---
