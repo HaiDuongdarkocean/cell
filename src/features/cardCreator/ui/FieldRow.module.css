@@ -114,7 +114,7 @@
   padding: var(--input-padding-y) var(--input-padding-x);
   border: 1px solid var(--input-border);
   border-radius: var(--input-radius);
-  background: var(--input-bg);
+  background: var(--color-surface);
   color: var(--input-fg);
   font-size: var(--input-font-size);
   font-family: inherit;
