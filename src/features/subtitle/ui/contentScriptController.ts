@@ -461,9 +461,10 @@ export function init(video: HTMLVideoElement): () => void {
       prefill: {
         targetWord: prefill.term,
         definitions: definitionsText,
-        sentenceTranslation: prefill.translation ?? '',
+        sentenceTranslation: prefill.translation,
         sentence: prefill.contextSentence,
-        audioUrls: prefill.audioUrls,
+        wordAudioUrls: prefill.wordAudioUrls,
+        sentenceAudioUrls: prefill.sentenceAudioUrls,
         imageUrls: prefill.imageUrls,
       },
     };

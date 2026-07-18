@@ -34,7 +34,9 @@ export interface CardCreatorPrefill {
   readonly sentenceTranslation?: string;
   readonly sentence?: string;
   /** Word audio URLs (Forvo/TTS) selected in the popup — fetched + stored as MediaFile. */
-  readonly audioUrls?: readonly string[];
+  readonly wordAudioUrls?: readonly string[];
+  /** Sentence audio URLs (Forvo/TTS) selected in the popup — fetched + stored as MediaFile. */
+  readonly sentenceAudioUrls?: readonly string[];
   /** Image URLs (Google Images) selected in the popup — fetched + stored as MediaFile. */
   readonly imageUrls?: readonly string[];
 }

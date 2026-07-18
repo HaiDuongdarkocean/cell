@@ -36,7 +36,9 @@ import { fillExternalDictLinks } from './popupToolbar';
 import { createTtsEngine, getTtsVoiceRows } from '../services/ttsEngineService';
 
 /** Pre-fill data extracted from the popup dictionary for the Card Creator.
- *  Built from the lookup result + selections + context sentence + translation. */
+ *  Built from the lookup result + selections + context sentence + translation.
+ *  Word audio, sentence audio and image are treated as mandatory: at least one
+ *  of each is always included (selected first, then fallback to first available). */
 export interface PopupCardCreatorPrefill {
   readonly term: string;
   readonly langCode: string;
@@ -44,7 +46,8 @@ export interface PopupCardCreatorPrefill {
   readonly definitions: readonly { readonly pos?: string; readonly text: string }[];
   readonly contextSentence: string;
   readonly translation?: string;
-  readonly audioUrls?: readonly string[];
+  readonly wordAudioUrls?: readonly string[];
+  readonly sentenceAudioUrls?: readonly string[];
   readonly imageUrls?: readonly string[];
 }
 
@@ -398,13 +401,19 @@ function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill
   const defs = selectedDefs.length > 0
     ? selectedDefs
     : result.definitions.slice(0, 1);
-  // Audio: use selected; if none selected, fall back to first with a URL.
-  const selectedAudio = snapshot.audioItems
-    .filter((a) => a.url && snapshot.audioSelection.get(a.id) === true);
-  const audioUrls = selectedAudio.length > 0
-    ? selectedAudio.map((a) => a.url!)
-    : snapshot.audioItems.filter((a) => a.url).slice(0, 1).map((a) => a.url!);
-  // Image: use selected; if none selected, fall back to first.
+  // Mandatory word audio: selected word audios, or first available word audio.
+  const selectedWordAudios = snapshot.audioItems
+    .filter((a) => a.url && a.kind === 'word' && snapshot.audioSelection.get(a.id) === true);
+  const wordAudios = selectedWordAudios.length > 0
+    ? selectedWordAudios.map((a) => a.url!)
+    : snapshot.audioItems.filter((a) => a.url && a.kind === 'word').slice(0, 1).map((a) => a.url!);
+  // Mandatory sentence audio: selected sentence audios, or first available sentence audio.
+  const selectedSentenceAudios = snapshot.audioItems
+    .filter((a) => a.url && a.kind === 'sentence' && snapshot.audioSelection.get(a.id) === true);
+  const sentenceAudios = selectedSentenceAudios.length > 0
+    ? selectedSentenceAudios.map((a) => a.url!)
+    : snapshot.audioItems.filter((a) => a.url && a.kind === 'sentence').slice(0, 1).map((a) => a.url!);
+  // Mandatory image: selected images, or first available image.
   const selectedImages = snapshot.imageItems
     .filter((img) => snapshot.imageSelection.get(img.id) === true);
   const imageUrls = selectedImages.length > 0
@@ -417,7 +426,8 @@ function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill
     definitions: defs.map((d) => ({ pos: d.pos, text: d.text })),
     contextSentence: state.contextSentence,
     translation: snapshot.translationSelected ? snapshot.translation : undefined,
-    audioUrls: audioUrls.length > 0 ? audioUrls : undefined,
+    wordAudioUrls: wordAudios.length > 0 ? wordAudios : undefined,
+    sentenceAudioUrls: sentenceAudios.length > 0 ? sentenceAudios : undefined,
     imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
   };
 }
