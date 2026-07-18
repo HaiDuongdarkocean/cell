@@ -244,11 +244,14 @@ export function init(video: HTMLVideoElement): () => void {
         // Render winner first (immediate), then append remaining candidates progressively.
         const [winner, ...rest] = response.data;
         popupDictState = showPopup(
-          popupDictState, winner!, anchorRect.top, anchorRect.left, anchorRect.right, anchorRect.bottom + 4, request.contextSentence,
-          // onDismiss: resume video when popup is truly dismissed (Esc / click outside).
-          (dismissedState) => {
-            popupDictState = dismissedState;
-            if (popupDictWasPlaying) { void video.play(); popupDictWasPlaying = false; }
+          popupDictState, winner!, {
+            anchor: { top: anchorRect.top, left: anchorRect.left, right: anchorRect.right, bottom: anchorRect.bottom + 4 },
+            contextSentence: request.contextSentence,
+            // onDismiss: resume video when popup is truly dismissed (Esc / click outside).
+            onDismiss: (dismissedState) => {
+              popupDictState = dismissedState;
+              if (popupDictWasPlaying) { void video.play(); popupDictWasPlaying = false; }
+            },
           },
         );
         // Append remaining candidates in subsequent frames for progressive rendering.

@@ -38,6 +38,14 @@ export interface PopupPosition {
   readonly top: number;
 }
 
+/** Anchor rectangle for popup positioning (token's bounding box). */
+export interface PopupAnchor {
+  readonly top: number;
+  readonly left: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
 /** Popup size (sticky — persisted to chrome.storage.local). */
 export interface PopupSize {
   readonly width: number;
@@ -329,9 +337,9 @@ export class PopupShell {
   }
 
   /** Position the popup anchored to a token's bounding box. */
-  setPosition(anchorTop: number, anchorLeft: number, anchorRight: number, anchorBottom: number): void {
+  setPosition(anchor: PopupAnchor): void {
     if (!this.container) return;
-    this.lastAnchor = { top: anchorTop, left: anchorLeft, right: anchorRight, bottom: anchorBottom };
+    this.lastAnchor = { top: anchor.top, left: anchor.left, right: anchor.right, bottom: anchor.bottom };
     // New lookup → start from the anchored position, not the previous drag offset.
     this.dragOffset = { x: 0, y: 0 };
     this.applyPosition();

@@ -35,6 +35,19 @@ import { nextStatus } from '../services/wordStatusStore';
 import { fillExternalDictLinks } from './popupToolbar';
 import { createTtsEngine, getTtsVoiceRows } from '../services/ttsEngineService';
 import { FALLBACK_VIEWPORT_WIDTH, FALLBACK_VIEWPORT_HEIGHT } from '@/shared/config/config';
+import type { PopupAnchor } from './popupShell';
+
+export type { PopupAnchor };
+
+/** Options for {@link showPopup}. */
+export interface ShowPopupOptions {
+  /** Token's bounding rect for anchoring the popup. */
+  readonly anchor: PopupAnchor;
+  /** Surrounding sentence for context display + Card Creator prefill. */
+  readonly contextSentence: string;
+  /** Called when popup is dismissed (Esc / click outside). */
+  readonly onDismiss?: (newState: PopupDictionaryState) => void;
+}
 
 /** Pre-fill data extracted from the popup dictionary for the Card Creator.
  *  Built from the lookup result + selections + context sentence + translation.
@@ -227,13 +240,9 @@ export function createPopupDictionaryState(
 export function showPopup(
   state: PopupDictionaryState,
   result: LookupResult,
-  anchorTop: number,
-  anchorLeft: number,
-  anchorRight: number,
-  anchorBottom: number,
-  contextSentence: string,
-  onDismiss?: (newState: PopupDictionaryState) => void,
+  options: ShowPopupOptions,
 ): PopupDictionaryState {
+  const { anchor, contextSentence, onDismiss } = options;
   // Create shell if needed.
   let shell = state.shell;
   if (!shell) {
@@ -353,7 +362,7 @@ export function showPopup(
   // Then position using actual rendered height. No visible flash because
   // setPosition runs synchronously in the same frame.
   shell.show();
-  shell.setPosition(anchorTop, anchorLeft, anchorRight, anchorBottom);
+  shell.setPosition(anchor);
 
   return state;
 }
