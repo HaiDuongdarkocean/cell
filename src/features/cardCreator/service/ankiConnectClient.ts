@@ -121,27 +121,6 @@ export async function getVersion(fetchFn: FetchFn, baseUrl: string): Promise<num
   return result as number;
 }
 
-export async function getDeckNames(fetchFn: FetchFn, baseUrl: string): Promise<string[]> {
-  const result = await invokeAnkiConnect(fetchFn, baseUrl, 'deckNames');
-  return result as string[];
-}
-
-export async function getModelNames(fetchFn: FetchFn, baseUrl: string): Promise<string[]> {
-  const result = await invokeAnkiConnect(fetchFn, baseUrl, 'modelNames');
-  return result as string[];
-}
-
-export async function getModelFieldNames(
-  fetchFn: FetchFn,
-  baseUrl: string,
-  modelName: string,
-): Promise<string[]> {
-  const result = await invokeAnkiConnect(fetchFn, baseUrl, 'modelFieldNames', {
-    modelName,
-  });
-  return result as string[];
-}
-
 export interface AnkiNote {
   readonly deckName: string;
   readonly modelName: string;
@@ -152,56 +131,6 @@ export interface AnkiNote {
 export async function addNote(fetchFn: FetchFn, baseUrl: string, note: AnkiNote): Promise<number | null> {
   const result = await invokeAnkiConnect(fetchFn, baseUrl, 'addNote', { note });
   return result as number | null;
-}
-
-export async function updateNoteFields(
-  fetchFn: FetchFn,
-  baseUrl: string,
-  noteId: number,
-  fields: Record<string, string>,
-): Promise<void> {
-  await invokeAnkiConnect(fetchFn, baseUrl, 'updateNoteFields', {
-    note: { id: noteId, fields },
-  });
-}
-
-export async function addTags(
-  fetchFn: FetchFn,
-  baseUrl: string,
-  notes: number[],
-  tags: string,
-): Promise<void> {
-  await invokeAnkiConnect(fetchFn, baseUrl, 'addTags', { notes, tags });
-}
-
-export async function removeTags(
-  fetchFn: FetchFn,
-  baseUrl: string,
-  notes: number[],
-  tags: string,
-): Promise<void> {
-  await invokeAnkiConnect(fetchFn, baseUrl, 'removeTags', { notes, tags });
-}
-
-export async function findCards(fetchFn: FetchFn, baseUrl: string, query: string): Promise<number[]> {
-  const result = await invokeAnkiConnect(fetchFn, baseUrl, 'findCards', { query });
-  return result as number[];
-}
-
-export interface AnkiNoteInfo {
-  readonly noteId: number;
-  readonly modelName: string;
-  readonly fields: Record<string, { readonly value: string; readonly order: number }>;
-  readonly tags: string[];
-}
-
-export async function getNotesInfo(
-  fetchFn: FetchFn,
-  baseUrl: string,
-  noteIds: number[],
-): Promise<AnkiNoteInfo[]> {
-  const result = await invokeAnkiConnect(fetchFn, baseUrl, 'notesInfo', { notes: noteIds });
-  return result as AnkiNoteInfo[];
 }
 
 export interface StoreMediaFileParams {
@@ -224,22 +153,4 @@ export async function storeMediaFile(
   return result as string;
 }
 
-export interface CreateModelParams {
-  readonly modelName: string;
-  readonly inOrderFields: string[];
-  readonly cardTemplates: { readonly Front: string; readonly Back: string }[];
-  readonly css?: string;
-}
 
-export async function createModel(
-  fetchFn: FetchFn,
-  baseUrl: string,
-  params: CreateModelParams,
-): Promise<void> {
-  await invokeAnkiConnect(
-    fetchFn,
-    baseUrl,
-    'createModel',
-    params as unknown as Record<string, unknown>,
-  );
-}

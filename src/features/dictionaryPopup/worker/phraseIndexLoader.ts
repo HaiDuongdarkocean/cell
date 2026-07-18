@@ -11,7 +11,6 @@
 import {
   deserializePhraseIndex,
   type PhraseIndex,
-  type CompiledTemplate,
 } from '@/features/dictionary/logic/phraseIndexCompiler';
 
 /** Expected compiler version (must match phraseIndexCompiler.COMPILER_VERSION). */
@@ -144,10 +143,4 @@ export function totalResidentBytes(resident: Iterable<ResidentPhraseIndex>): num
   return sum;
 }
 
-/** Find a template by ID within a resident index. */
-export function findTemplate(
-  resident: ResidentPhraseIndex,
-  templateId: number,
-): CompiledTemplate | undefined {
-  return resident.index.templates.find((t) => t.templateId === templateId);
-}
+

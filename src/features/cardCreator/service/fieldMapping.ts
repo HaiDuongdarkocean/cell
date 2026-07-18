@@ -54,19 +54,6 @@ export const SOURCE_FIELD_ORDER: readonly SourceFieldKey[] = [
   'moreExample',
 ];
 
-/** Human-readable labels for source fields (matches mockup field-label text). */
-export const SOURCE_FIELD_LABELS: Record<SourceFieldKey, string> = {
-  targetWord: 'Target word',
-  sentence: 'Sentence',
-  sentenceTranslation: 'Sentence translation',
-  definitions: 'Definitions',
-  images: 'Image',
-  sentenceAudios: 'Sentence audio',
-  wordAudios: 'Word audio',
-  note: 'Note',
-  moreExample: 'More example',
-};
-
 /** Levenshtein edit distance between two strings (case-insensitive). */
 export function levenshtein(a: string, b: string): number {
   const la = a.toLowerCase();

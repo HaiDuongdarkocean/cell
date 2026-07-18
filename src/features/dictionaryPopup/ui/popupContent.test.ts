@@ -1,10 +1,9 @@
-// popupContent tests — spec §4.6.3 A4/A9, §9: header + definitions + footer.
+// popupContent tests — spec §4.6.3 A4/A9, §9: header + definitions.
 
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import {
   renderHeader,
   renderDefinitions,
-  renderFooter,
   renderPopupContent,
   renderCandidate,
   appendCandidateContent,
@@ -236,42 +235,6 @@ describe('renderDefinitions', () => {
     const checkbox = container.querySelector('.js-cell-def-checkbox') as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
     expect(onToggle).not.toHaveBeenCalled();
-  });
-});
-
-describe('renderFooter', () => {
-  let container: HTMLDivElement;
-
-  beforeEach(() => {
-    container = document.createElement('div');
-  });
-
-  it('renders status button with current status', () => {
-    renderFooter(container, 'tracking', jest.fn(), jest.fn());
-    const status = container.querySelector('.js-cell-footer-status');
-    expect(status?.textContent).toBe('tracking');
-  });
-
-  it('renders Quick Add button', () => {
-    renderFooter(container, 'unknown', jest.fn(), jest.fn());
-    const quickAdd = container.querySelector('.js-cell-quick-add');
-    expect(quickAdd?.textContent).toContain('Quick Add');
-  });
-
-  it('status button click triggers onStatusCycle', () => {
-    const onCycle = jest.fn();
-    renderFooter(container, 'unknown', onCycle, jest.fn());
-    const btn = container.querySelector('.js-cell-footer-status') as HTMLButtonElement;
-    btn.click();
-    expect(onCycle).toHaveBeenCalledTimes(1);
-  });
-
-  it('Quick Add button click triggers onQuickAdd', () => {
-    const onQuickAdd = jest.fn();
-    renderFooter(container, 'unknown', jest.fn(), onQuickAdd);
-    const btn = container.querySelector('.js-cell-quick-add') as HTMLButtonElement;
-    btn.click();
-    expect(onQuickAdd).toHaveBeenCalledTimes(1);
   });
 });
 

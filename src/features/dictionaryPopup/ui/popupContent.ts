@@ -1,13 +1,12 @@
-// popupContent — renders header + definitions + footer into the popup shell.
+// popupContent — renders header + definitions into the popup shell.
 //
 // Spec §4.6.3 A4/A9, §9: header (term + reading + frequency + status badge),
-// definitions (always visible, checkbox per-definition, default all selected),
-// footer (status cycle dropdown + Quick Add button).
+// definitions (always visible, checkbox per-definition, default all selected).
 //
 // Content-script isolated world — vanilla DOM rendered into Shadow DOM.
 
 import type { LookupResult, DefinitionEntry, WordStatus } from '../types';
-import { STATUS_CYCLE, nextStatus } from '../services/wordStatusStore';
+import { nextStatus } from '../services/wordStatusStore';
 import { ICON_CATALOG } from '@/shared/icons';
 
 // Design system §9 Badge — variant CSS per WordStatus.
@@ -24,16 +23,6 @@ export const STATUS_BADGE_VARIANT: Record<WordStatus, BadgeVariant> = {
 /** Generate a stable ID for a sense within a definition. */
 export function makeSenseId(definitionId: string, senseIndex: number): string {
   return `${definitionId}::sense::${senseIndex}`;
-}
-
-/**
- * Parse a sense ID back to definition ID + index.
- * Returns null for legacy definition IDs (no sense marker).
- */
-export function parseSenseId(senseId: string): { definitionId: string; index: number } | null {
-  const match = senseId.match(/^(.*)::sense::(\d+)$/);
-  if (!match) return null;
-  return { definitionId: match[1]!, index: Number(match[2]) };
 }
 
 /**
@@ -297,36 +286,6 @@ export function renderDefinitions(
   }
 
   container.appendChild(panel);
-}
-
-/** Render the footer: status cycle + Quick Add button. */
-export function renderFooter(
-  container: HTMLElement,
-  currentStatus: WordStatus,
-  onStatusCycle: () => void,
-  onQuickAdd: () => void,
-): void {
-  const footer = document.createElement('div');
-  footer.className = 'cell-footer js-cell-footer';
-
-  // Status cycle button (left)
-  const statusBtn = document.createElement('button');
-  statusBtn.className = 'cell-footer__status js-cell-footer-status';
-  statusBtn.textContent = currentStatus;
-  statusBtn.title = `Cycle: ${STATUS_CYCLE.join(' → ')}`;
-  statusBtn.addEventListener('click', onStatusCycle);
-  footer.appendChild(statusBtn);
-
-  // Quick Add button (right) — design-system.md §1 Button (pill, primary)
-  const quickAdd = document.createElement('button');
-  quickAdd.className = 'cell-footer__quick-add btn btn--primary js-cell-quick-add';
-  quickAdd.setAttribute('aria-label', 'Quick Add to Anki');
-  quickAdd.title = 'Quick Add to Anki';
-  quickAdd.textContent = 'Quick Add';
-  quickAdd.addEventListener('click', onQuickAdd);
-  footer.appendChild(quickAdd);
-
-  container.appendChild(footer);
 }
 
 /** Initialize definition selection from LookupResult (default all selected). */

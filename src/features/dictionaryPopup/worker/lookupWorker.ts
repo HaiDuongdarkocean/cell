@@ -5,8 +5,8 @@
 // WORKER_READY so the background knows the worker is alive and ready to
 // receive HYDRATE_CHUNK / LOOKUP messages.
 //
-// This file is loaded via `workerFactory.ts` (which isolates import.meta.url)
-// and is never imported by Jest tests. Test the handler, not this entry.
+// Currently unused — the popup orchestrator loads phrase indexes in the main
+// thread. Kept as a reference entry point; do not import in Jest tests.
 
 import {
   buildWorkerReadyMessage,

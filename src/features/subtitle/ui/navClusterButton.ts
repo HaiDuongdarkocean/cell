@@ -56,8 +56,4 @@ export function createNavClusterButton(props: NavClusterButtonProps): HTMLButton
   return btn;
 }
 
-/** Update aria-pressed on an existing button (for repeat toggle state). */
-export function setButtonPressed(btn: HTMLButtonElement, pressed: boolean): void {
-  btn.setAttribute('aria-pressed', String(pressed));
-  btn.classList.toggle('nav-cluster-btn--active', pressed);
-}
+
