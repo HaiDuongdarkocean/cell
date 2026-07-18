@@ -75,39 +75,17 @@ export function createOffsetSection(
   header.setAttribute('aria-expanded', 'true');
   header.setAttribute('aria-label', 'Toggle Offset section');
   header.setAttribute('title', 'Toggle Offset section');
-  header.style.cssText = `
-    display: flex;
-    align-items: center;
-    gap: var(--space-2, 8px);
-    padding: var(--space-2, 8px) var(--space-3, 12px);
-    cursor: pointer;
-    border-radius: var(--radius-sm, 6px);
-    user-select: none;
-    width: 100%;
-    border: none;
-    background: transparent;
-    color: var(--color-text);
-    font: inherit;
-    text-align: left;
-    transition: background 150ms ease;
-  `;
+  header.className = 'offset-header';
 
   const chevron = document.createElement('span');
   chevron.setAttribute('aria-hidden', 'true');
   chevron.innerHTML = CHEVRON_SVG;
-  chevron.style.cssText = 'display: inline-flex; color: var(--color-text-muted); transition: transform 150ms ease;';
+  chevron.className = 'offset-header-chevron';
   header.appendChild(chevron);
 
   const labelEl = document.createElement('span');
   labelEl.textContent = 'OFFSET';
-  labelEl.style.cssText = `
-    font-size: var(--font-size-xs, 12px);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    flex: 1;
-    color: var(--color-text-muted);
-  `;
+  labelEl.className = 'offset-header-label';
   header.appendChild(labelEl);
 
   section.appendChild(header);
@@ -115,7 +93,7 @@ export function createOffsetSection(
   // === Body ===
   const body = document.createElement('div');
   body.setAttribute('data-testid', 'offset-section-body');
-  body.style.cssText = 'padding: var(--space-1, 4px) var(--space-1, 4px) var(--space-2, 8px); display: block;';
+  body.className = 'offset-body';
   section.appendChild(body);
 
   // === Pill — 5 ô: [−2s][−0.5s][VALUE-input][+0.5s][+2s] ===
@@ -125,18 +103,7 @@ export function createOffsetSection(
   pill.setAttribute('data-testid', 'offset-pill');
   pill.setAttribute('role', 'group');
   pill.setAttribute('aria-label', 'Subtitle offset control');
-  pill.style.cssText = `
-    display: grid;
-    grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr;
-    align-items: stretch;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-full, 9999px);
-    padding: 3px;
-    gap: 0;
-    margin-bottom: var(--space-2, 8px);
-    isolation: isolate;
-  `;
+  pill.className = 'offset-pill';
   body.appendChild(pill);
 
   // --- Build step button factory (lắp theo thứ tự: −2s, −0.5s, VALUE, +0.5s, +2s) ---
@@ -147,34 +114,9 @@ export function createOffsetSection(
     btn.setAttribute('data-testid', `offset-step-${delta}`);
     const isPlus = delta > 0;
     btn.setAttribute('aria-label', isPlus ? `Tiến ${delta / 1000} giây` : `Lùi ${Math.abs(delta) / 1000} giây`);
-    btn.style.cssText = `
-      position: relative;
-      z-index: 1;
-      border: none;
-      background: transparent;
-      color: ${isPlus ? 'var(--color-success)' : 'var(--color-info)'};
-      cursor: pointer;
-      font-family: var(--font-family, sans-serif);
-      font-size: var(--font-size-xs, 12px);
-      font-weight: var(--font-weight-medium, 500);
-      font-variant-numeric: tabular-nums;
-      padding: 8px 4px;
-      min-height: 40px;
-      transition: background 150ms ease, color 150ms ease;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    `;
+    btn.className = `offset-step-btn ${isPlus ? 'offset-step-btn--plus' : 'offset-step-btn--minus'}`;
     btn.textContent = `${isPlus ? '+' : '−'}${Math.abs(delta) / 1000}s`;
     btn.addEventListener('click', () => handlers.onStep(delta));
-    btn.addEventListener('mouseenter', () => {
-      if (!btn.disabled) btn.style.background = 'var(--color-surface-hover)';
-    });
-    btn.addEventListener('mouseleave', () => {
-      if (!btn.disabled) btn.style.background = 'transparent';
-    });
     return btn;
   };
 
@@ -188,28 +130,7 @@ export function createOffsetSection(
   valueInput.setAttribute('aria-label', 'Current offset (nhập số giây)');
   valueInput.setAttribute('inputmode', 'decimal');
   valueInput.value = '0s';
-  valueInput.style.cssText = `
-    position: relative;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
-    color: var(--color-primary);
-    font-family: var(--font-family, sans-serif);
-    font-size: var(--font-size-lg, 16px);
-    font-weight: var(--font-weight-semibold, 600);
-    font-variant-numeric: tabular-nums;
-    border-radius: var(--radius-sm, 6px);
-    padding: 4px 8px;
-    min-height: 40px;
-    min-width: 0;
-    width: 100%;
-    border: none;
-    transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease;
-    text-align: center;
-    outline: none;
-  `;
+  valueInput.className = 'offset-value offset-value--zero';
 
   // --- Lắp vào pill theo thứ tự: −2s, −0.5s, VALUE, +0.5s, +2s ---
   const minus2 = createStepBtn(-2000);
@@ -224,11 +145,9 @@ export function createOffsetSection(
   stepBtns.push(minus2, minusHalf, plusHalf, plus2);
 
   // Value input: focus → select all. Enter/blur → parse + commit. Esc → revert.
+  // Focus styling handled by CSS :focus rule on .offset-value.
   valueInput.addEventListener('focus', () => {
     valueInput.select();
-    valueInput.style.zIndex = '3';
-    valueInput.style.boxShadow = 'inset 0 0 0 2px var(--color-primary)';
-    valueInput.style.background = 'var(--color-background)';
   });
   const commitValueInput = (): void => {
     const parsed = parseOffsetInputSafe(valueInput.value);
@@ -241,8 +160,6 @@ export function createOffsetSection(
       // Invalid → revert to current valueMs
       valueInput.value = formatOffsetValue(currentValueMs);
     }
-    valueInput.style.zIndex = '';
-    valueInput.style.boxShadow = '';
   };
   valueInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -263,53 +180,22 @@ export function createOffsetSection(
   resetBtn.setAttribute('data-testid', 'offset-reset');
   resetBtn.setAttribute('aria-label', 'Đặt lại về 0');
   resetBtn.setAttribute('title', 'Đặt lại về 0');
-  resetBtn.style.cssText = `
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-full, 9999px);
-    background: var(--color-surface);
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    font-family: var(--font-family, sans-serif);
-    font-size: var(--font-size-xs, 12px);
-    font-weight: var(--font-weight-medium, 500);
-    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
-    -webkit-tap-highlight-color: transparent;
-  `;
+  resetBtn.className = 'offset-reset-btn';
   const resetIcon = document.createElement('span');
   resetIcon.innerHTML = RESET_SVG;
-  resetIcon.style.cssText = 'display: inline-flex;';
+  resetIcon.className = 'offset-reset-icon';
   resetBtn.appendChild(resetIcon);
   const resetLabel = document.createElement('span');
   resetLabel.textContent = 'Đặt lại về 0';
   resetBtn.appendChild(resetLabel);
   resetBtn.addEventListener('click', () => handlers.onReset());
-  resetBtn.addEventListener('mouseenter', () => {
-    if (!resetBtn.disabled) {
-      resetBtn.style.background = 'var(--color-error-subtle, rgba(239, 68, 68, 0.08))';
-      resetBtn.style.color = 'var(--color-error)';
-      resetBtn.style.borderColor = 'var(--color-error)';
-    }
-  });
-  resetBtn.addEventListener('mouseleave', () => {
-    if (!resetBtn.disabled) {
-      resetBtn.style.background = 'var(--color-surface)';
-      resetBtn.style.color = 'var(--color-text-secondary)';
-      resetBtn.style.borderColor = 'var(--color-border)';
-    }
-  });
   body.appendChild(resetBtn);
 
   // --- Disabled hint (hidden by default) ---
   const disabledHint = document.createElement('div');
   disabledHint.setAttribute('data-testid', 'offset-disabled-hint');
   disabledHint.textContent = 'Cần load subtitle trước';
-  disabledHint.style.cssText = 'padding: 8px 0 0; text-align: center; color: var(--color-text-muted); font-size: var(--font-size-xs, 12px); display: none;';
+  disabledHint.className = 'offset-disabled-hint';
   body.appendChild(disabledHint);
 
   // === Collapse toggle ===
@@ -319,12 +205,6 @@ export function createOffsetSection(
     body.style.display = expanded ? 'block' : 'none';
     header.setAttribute('aria-expanded', String(expanded));
     chevron.style.transform = expanded ? 'rotate(0deg)' : 'rotate(-90deg)';
-  });
-  header.addEventListener('mouseenter', () => {
-    header.style.background = 'var(--color-surface-hover)';
-  });
-  header.addEventListener('mouseleave', () => {
-    header.style.background = 'transparent';
   });
 
   // === Update logic ===
@@ -339,25 +219,21 @@ export function createOffsetSection(
       valueInput.value = formatOffsetValue(valueMs);
     }
 
-    // Value color: 0 = muted, + = success, - = info
-    if (valueMs === 0) {
-      valueInput.style.color = 'var(--color-text-muted)';
-      valueInput.style.background = 'var(--color-surface-hover)';
-    } else if (valueMs > 0) {
-      valueInput.style.color = 'var(--color-success)';
-      valueInput.style.background = 'var(--color-primary-subtle, rgba(37, 99, 235, 0.1))';
-    } else {
-      valueInput.style.color = 'var(--color-info)';
-      valueInput.style.background = 'var(--color-primary-subtle, rgba(37, 99, 235, 0.1))';
-    }
+    // Value color via state class: 0 = muted, + = success, - = info
+    const stateClass = valueMs === 0
+      ? 'offset-value--zero'
+      : valueMs > 0
+        ? 'offset-value--positive'
+        : 'offset-value--negative';
+    valueInput.className = `offset-value ${stateClass}`;
 
     // Disabled state
     if (!hasSubtitle) {
       allControls.forEach((c) => ((c as HTMLButtonElement | HTMLInputElement).disabled = true));
-      disabledHint.style.display = 'block';
+      disabledHint.className = 'offset-disabled-hint offset-disabled-hint--visible';
     } else {
       allControls.forEach((c) => ((c as HTMLButtonElement | HTMLInputElement).disabled = false));
-      disabledHint.style.display = 'none';
+      disabledHint.className = 'offset-disabled-hint';
     }
   }
 

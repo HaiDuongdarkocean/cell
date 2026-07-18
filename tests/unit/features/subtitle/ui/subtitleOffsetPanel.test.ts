@@ -65,44 +65,31 @@ describe('subtitleOffsetSection (V3 — value=input ở giữa pill, reset botto
     expect(btns[3].getAttribute('aria-label')).toBe('Tiến 2 giây');
   });
 
-  it('pill has border-radius full (pill shape)', () => {
+  it('pill has offset-pill class (pill shape + isolation via CSS)', () => {
     const { section } = createOffsetSection(parentPanel, noopHandlers);
     const pill = section.querySelector('[data-testid="offset-pill"]') as HTMLDivElement;
-    expect(pill.style.borderRadius).toContain('9999');
+    expect(pill.className).toContain('offset-pill');
   });
 
-  it('pill has isolation: isolate (CSS bleed fix)', () => {
-    const { section } = createOffsetSection(parentPanel, noopHandlers);
-    const pill = section.querySelector('[data-testid="offset-pill"]') as HTMLDivElement;
-    expect(pill.style.isolation).toBe('isolate');
-  });
-
-  it('value input has prominent styling (large font + semibold)', () => {
+  it('value input has offset-value class (prominent styling via CSS)', () => {
     const { section } = createOffsetSection(parentPanel, noopHandlers);
     const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
-    expect(value.style.fontSize).toContain('16'); // --font-size-lg
-    expect(value.style.fontWeight).toContain('600'); // --font-weight-semibold
+    expect(value.className).toContain('offset-value');
   });
 
-  it('value input has inset focus ring (CSS bleed fix — không tràn ra step buttons)', () => {
+  it('value input focus styling handled by CSS :focus (no inline box-shadow)', () => {
     const { section } = createOffsetSection(parentPanel, noopHandlers);
     const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
-    // Trigger focus → inset box-shadow applied (not outset which would bleed)
+    // Trigger focus — CSS :focus rule applies inset ring, no inline style mutation.
     value.focus();
-    expect(value.style.boxShadow).toMatch(/^inset/);
+    expect(value.style.boxShadow).toBe('');
   });
 
-  it('value input has border-radius sm (không full — tránh khoảng trống kỳ)', () => {
-    const { section } = createOffsetSection(parentPanel, noopHandlers);
-    const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
-    expect(value.style.borderRadius).toContain('6'); // --radius-sm
-  });
-
-  it('reset button is full-width (bottom, tách khỏi pill)', () => {
+  it('reset button has offset-reset-btn class (full-width via CSS)', () => {
     const { section } = createOffsetSection(parentPanel, noopHandlers);
     const reset = section.querySelector('[data-testid="offset-reset"]') as HTMLButtonElement;
     expect(reset).not.toBeNull();
-    expect(reset.style.width).toBe('100%');
+    expect(reset.className).toContain('offset-reset-btn');
     expect(reset.getAttribute('aria-label')).toBe('Đặt lại về 0');
     expect(reset.textContent).toContain('Đặt lại về 0');
   });
@@ -119,7 +106,7 @@ describe('subtitleOffsetSection (V3 — value=input ở giữa pill, reset botto
     const { section, update } = createOffsetSection(parentPanel, noopHandlers);
     update(0, false);
     const hint = section.querySelector('[data-testid="offset-disabled-hint"]') as HTMLDivElement;
-    expect(hint.style.display).toBe('block');
+    expect(hint.className).toContain('offset-disabled-hint--visible');
     const reset = section.querySelector('[data-testid="offset-reset"]') as HTMLButtonElement;
     expect(reset.disabled).toBe(true);
     const btns = section.querySelectorAll('button[data-testid^="offset-step-"]');
@@ -133,10 +120,10 @@ describe('subtitleOffsetSection (V3 — value=input ở giữa pill, reset botto
     const { section, update } = createOffsetSection(parentPanel, noopHandlers);
     update(0, true);
     const hint = section.querySelector('[data-testid="offset-disabled-hint"]') as HTMLDivElement;
-    expect(hint.style.display).toBe('none');
+    expect(hint.className).not.toContain('offset-disabled-hint--visible');
     const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
     expect(value.value).toBe('0s');
-    expect(value.style.color).toContain('muted');
+    expect(value.className).toContain('offset-value--zero');
   });
 
   // === Positive offset ===
@@ -145,7 +132,7 @@ describe('subtitleOffsetSection (V3 — value=input ở giữa pill, reset botto
     update(700, true);
     const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
     expect(value.value).toContain('+0.7');
-    expect(value.style.color).toContain('success');
+    expect(value.className).toContain('offset-value--positive');
   });
 
   // === Negative offset ===
@@ -154,7 +141,7 @@ describe('subtitleOffsetSection (V3 — value=input ở giữa pill, reset botto
     update(-500, true);
     const value = section.querySelector('[data-testid="offset-value"]') as HTMLInputElement;
     expect(value.value).toContain('−0.5');
-    expect(value.style.color).toContain('info');
+    expect(value.className).toContain('offset-value--negative');
   });
 
   // === Handlers ===
