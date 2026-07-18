@@ -49,7 +49,6 @@ export function OptionsApp(): ReactElement {
         srsDestination: 'anki',
         popupWidthPx: 560,
         popupMaxHeightPx: 480,
-        translateTargetLang: 'vi',
         externalDictLinks: [],
       }),
       tts,

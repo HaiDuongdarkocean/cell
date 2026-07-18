@@ -183,7 +183,7 @@ docs/adr/                              ← MỚI: ADR plugin interface + ADR dic
 | Bước | Màn | Data input (user / system) | Data output / persist |
 |---|---|---|---|
 | Setup | M0 | File dict (5 format), lang code | IndexedDB: langDictionaryEntry, langFrequencyEntry, langResourceInfo |
-| Preference | M1 | triggerMode, defaultActiveTab, popupWidthPx/popupMaxHeightPx, translateTargetLang | `chrome.storage.local` → `DictionaryPopupSettings` (+ migration schema v13→v14). Debounce internal 150ms hover / 50ms click (không setting) |
+| Preference | M1 | triggerMode, defaultActiveTab, popupWidthPx/popupMaxHeightPx | `chrome.storage.local` → `DictionaryPopupSettings` (+ migration schema v13→v14). Debounce internal 150ms hover / 50ms click (không setting). Translate target language sourced from `subtitleOverlayNativeLanguage` (SSOT, không có field riêng). |
 | Trigger | M2 | click/hover token (+ modifier nếu hover-ctrl/shift/alt); debounce 150/50 | Worker envelope `LOOKUP` { requestId, payload: LookupRequest }; BG messages có tabId khi cần |
 | Lookup | Worker (off UI) | LOOKUP + TermProbe (top-10k LRU; miss → BG IndexedDB) | `LOOKUP_RESULT` / LookupResult ≤1s hit; miss ~10–50ms; cancel `LOOKUP_CANCEL` |
 | Popup core | M3 | LookupResult | UI: target, reading, frequency, definitions (selected default true), status |
@@ -206,7 +206,7 @@ docs/adr/                              ← MỚI: ADR plugin interface + ADR dic
 | A4 | M3 | Thấy popup ≤1s, Shadow DOM, auto-position, sticky size | Render header + Definitions (không phải tab) | LookupResult | UI definitions checkbox none selected |
 | A5 | M3a | Mở tab Audio (hoặc defaultActiveTab=`audio`) | Lazy FETCH community audio + system/cloud TTS fallback | term + accents | AudioItem[] (top selected theo priorityResolver) |
 | A6 | M3b | (tuỳ chọn) mở Image | Lazy image scrape | term | ImageItem[] |
-| A7 | M3c | (tuỳ chọn) mở Translate | TRANSLATE target + sentence | term, sentence, translateTargetLang | translation string |
+| A7 | M3c | (tuỳ chọn) mở Translate | TRANSLATE target + sentence | term, sentence, nativeLang (từ `subtitleOverlayNativeLanguage`) | translation string |
 | A8 | M3 | Bỏ tick definition không cần; tick/untick audio/image | Local selection state | click checkbox | selected flags |
 | A9 | M3 footer | Cycle status unknown → tracking → known → ignore (vòng tròn) | WORD_STATUS_SET | status | IndexedDB persist |
 | A10 | M3 | Bấm Quick Add (1 nút) | Build QuickAddPayload, destination=`anki` only; tôn trọng Card Creator auto-complete settings (field mapping + per-field toggle + fallback) | selection | QUICK_ADD |
@@ -657,7 +657,8 @@ export interface DictionaryPopupSettings {
   readonly srsDestination: SrsDestination;            // default 'anki'. Single source: DictionaryPopupSettings (Card Creator UI proxy nếu cần).
   readonly popupWidthPx: number;                      // sticky size, default 560, clamp min(width, viewportWidth - 16)
   readonly popupMaxHeightPx: number;                  // default 480 (px), clamp Math.round(window.innerHeight * 0.7) ở mount
-  readonly translateTargetLang: string;               // ISO 639-1; default: navigator.language startsWith('zh') → 'en', else 'vi' (không phụ thuộc settings.uiLang — field này không có trong Settings hiện tại)
+  // Translate target language: không có field riêng — sourced từ
+  // subtitleOverlayNativeLanguage (SSOT) khi tạo PopupDictionaryState.
   readonly externalDictLinks: readonly ExternalDictLinkTemplate[];
 }
 
@@ -669,7 +670,7 @@ export interface ExternalDictLinkTemplate {
 }
 ```
 
-**Migration**: `settingsStore` `CURRENT_SCHEMA_VERSION` hiện = **13** → bump **14** khi thêm slice:
+**Migration**: `settingsStore` `CURRENT_SCHEMA_VERSION` hiện = **15**.
 ```typescript
 // migrate v13 → v14: DictionaryPopupSettings default
 if (oldVersion < 14) {
@@ -680,10 +681,6 @@ if (oldVersion < 14) {
     srsDestination: 'anki',
     popupWidthPx: 560,
     popupMaxHeightPx: 480,
-    translateTargetLang:
-      (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('zh'))
-        ? 'en'
-        : 'vi',
     externalDictLinks: [
       { id: 'cambridge', name: 'Cambridge Dictionary', urlTemplate: 'https://dictionary.cambridge.org/dictionary/english/{term}', langCodes: ['en'] },
       { id: 'wiktionary', name: 'Wiktionary', urlTemplate: 'https://en.wiktionary.org/wiki/{term}', langCodes: ['en'] },
@@ -691,6 +688,14 @@ if (oldVersion < 14) {
     ],
   };
   // schemaVersion = 14
+}
+// migrate v14 → v15: strip orphaned translateTargetLang from dictionaryPopup
+// (field removed — translate target now sourced from subtitleOverlayNativeLanguage)
+if (oldVersion < 15) {
+  if (settings.dictionaryPopup) {
+    delete settings.dictionaryPopup.translateTargetLang;
+  }
+  // schemaVersion = 15
 }
 ```
 

@@ -103,6 +103,9 @@ interface ActiveCandidateSnapshot {
 export interface PopupDictionaryState {
   readonly settings: DictionaryPopupSettings;
   readonly cardCreatorSettings: CardCreatorSettings;
+  /** Native language (ISO 639-1) — used as translate target. Sourced from
+   *  subtitleOverlayNativeLanguage (SSOT) instead of a duplicate setting. */
+  readonly nativeLang: string;
   /** Callback to open the Card Creator dialog pre-filled (wired by content script).
    *  Used by 'edit-card' (Send to Card) action. */
   onCardCreatorAction?: OnCardCreatorAction;
@@ -187,10 +190,12 @@ export function createPopupDictionaryState(
   cardCreatorSettings: CardCreatorSettings,
   onCardCreatorAction?: OnCardCreatorAction,
   onQuickAddDirect?: OnQuickAddDirect,
+  nativeLang = '',
 ): PopupDictionaryState {
   return {
     settings,
     cardCreatorSettings,
+    nativeLang,
     onCardCreatorAction,
     onQuickAddDirect,
     currentResult: null,
@@ -336,7 +341,7 @@ export function showPopup(
     if (defaultTab === 'translate' && !state.translation && !state.translationLoading) {
       setActiveSnapshot(state, { translationLoading: true, activeTab: 'translate' });
       renderPopupToolbar(state, container);
-      translateSentence(result, contextSentence, state.settings.translateTargetLang, (text) => {
+      translateSentence(result, contextSentence, state.nativeLang, (text) => {
         setActiveSnapshot(state, { translation: text, translationLoading: false });
         rerender(state, 'translate');
       });
@@ -513,8 +518,9 @@ export function destroyPopup(state: PopupDictionaryState): PopupDictionaryState 
 export function updatePopupSettings(
   state: PopupDictionaryState,
   settings: DictionaryPopupSettings,
+  nativeLang?: string,
 ): PopupDictionaryState {
-  return { ...state, settings };
+  return { ...state, settings, ...(nativeLang !== undefined ? { nativeLang } : {}) };
 }
 
 /** Cycle word status for the active candidate. */
@@ -747,7 +753,7 @@ function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement)
           if (!r) return;
           setActiveSnapshot(state, { translationLoading: true, activeTab: 'translate' });
           rerender(state, 'translate');
-          translateSentence(r, state.contextSentence, state.settings.translateTargetLang, (text) => {
+          translateSentence(r, state.contextSentence, state.nativeLang, (text) => {
             setActiveSnapshot(state, { translation: text, translationLoading: false, activeTab: 'translate' });
             rerender(state, 'translate');
           });
@@ -766,6 +772,7 @@ function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement)
   renderTabPanel(body, snapshot.activeTab, active, {
     contextSentence: state.contextSentence,
     settings: state.settings,
+    nativeLang: state.nativeLang,
     translation: snapshot.translation,
     translateSelected: snapshot.translationSelected,
     translationLoading: snapshot.translationLoading,
@@ -846,6 +853,7 @@ function renderTabPanel(
   ctx: {
     contextSentence: string;
     settings: DictionaryPopupSettings;
+    nativeLang: string;
     translation: string;
     translateSelected: boolean;
     translationLoading?: boolean;
@@ -1034,12 +1042,12 @@ function renderTabPanel(
         container,
         ctx.translation,
         ctx.contextSentence,
-        ctx.settings.translateTargetLang,
+        ctx.nativeLang,
         () => {
           // Translate sentence only — never fall back to term.
           if (!ctx.contextSentence) return;
           callbacks?.onTranslationLoading?.(true);
-          translateSentence(result, ctx.contextSentence, ctx.settings.translateTargetLang, (text) => {
+          translateSentence(result, ctx.contextSentence, ctx.nativeLang, (text) => {
             callbacks?.onTranslationLoading?.(false);
             callbacks?.onTranslationDone?.(text);
           });

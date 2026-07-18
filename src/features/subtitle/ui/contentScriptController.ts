@@ -211,7 +211,7 @@ export function init(video: HTMLVideoElement): () => void {
   /** Wire popup dictionary: enable token wrap + trigger on subtitle block.
    *  Also wire web-text trigger (select text anywhere on page → lookup). */
   function wireDictionaryPopup(dpSettings: DictionaryPopupSettings, ccSettings: CardCreatorSettings): void {
-    popupDictState = createPopupDictionaryState(dpSettings, ccSettings, handlePopupCardCreatorAction, handlePopupQuickAdd);
+    popupDictState = createPopupDictionaryState(dpSettings, ccSettings, handlePopupCardCreatorAction, handlePopupQuickAdd, currentSettings?.subtitleOverlayNativeLanguage ?? '');
     blockController.enableDictionaryPopup(
       dpSettings.triggerMode,
       (request: LookupRequest, requestId: string, anchorRect: DOMRect) => { void handleLookup(request, requestId, anchorRect); },
@@ -810,7 +810,7 @@ export function init(video: HTMLVideoElement): () => void {
       // Live-update dictionary popup settings (defaultActiveTab, triggerMode, etc.)
       // without requiring a page reload.
       if (newSettings.dictionaryPopup && popupDictState) {
-        popupDictState = updatePopupSettings(popupDictState, newSettings.dictionaryPopup);
+        popupDictState = updatePopupSettings(popupDictState, newSettings.dictionaryPopup, newSettings.subtitleOverlayNativeLanguage ?? '');
         // Re-wire trigger mode if it changed.
         if (webTextTrigger) {
           webTextTrigger.detach();

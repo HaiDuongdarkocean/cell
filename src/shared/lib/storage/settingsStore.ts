@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } fro
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 14;
+export const CURRENT_SCHEMA_VERSION = 15;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -263,6 +263,16 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
       if (!cc.audioFallback) {
         cc.audioFallback = 'community-then-tts';
       }
+    }
+    return merged;
+  },
+  // v14 → v15: strip orphaned translateTargetLang from dictionaryPopup.
+  // Field removed — translate target now sourced from subtitleOverlayNativeLanguage (SSOT).
+  14: (s) => {
+    const merged = { ...s, schemaVersion: 15 } as Record<string, unknown>;
+    const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
+    if (dp) {
+      delete dp.translateTargetLang;
     }
     return merged;
   },

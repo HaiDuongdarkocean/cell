@@ -135,8 +135,6 @@ export interface DictionaryPopupSettings {
   readonly popupWidthPx: number;
   /** Popup max height in px. Default 480. */
   readonly popupMaxHeightPx: number;
-  /** Translate target language (ISO 639-1). Default based on navigator.language. */
-  readonly translateTargetLang: string;
   /** External dictionary link templates. */
   readonly externalDictLinks: readonly ExternalDictLinkTemplate[];
   /** TTS voice settings (audio tab + options page manager). */
