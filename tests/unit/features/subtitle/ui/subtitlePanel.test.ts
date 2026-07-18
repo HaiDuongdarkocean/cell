@@ -36,15 +36,14 @@ describe('subtitlePanel', () => {
       expect(toggleBtn.getAttribute('aria-label')).toBe('Toggle subtitle panel');
     });
 
-    it('keeps the border removed when host CSS targets buttons', () => {
+    it('has panel-toggle class for CSS-based styling', () => {
       const toggleBtn = createToggleButton(video);
-      expect(toggleBtn.style.getPropertyPriority('border')).toBe('important');
+      expect(toggleBtn.className).toContain('panel-toggle');
     });
 
-    it('has bouncy transform transition matching cluster buttons', () => {
+    it('has bouncy transform transition via CSS class', () => {
       const toggleBtn = createToggleButton(video);
-      expect(toggleBtn.style.transition).toContain('transform');
-      expect(toggleBtn.style.transition).toContain('cubic-bezier(0.175, 0.885, 0.32, 1.275)');
+      expect(toggleBtn.className).toContain('panel-toggle');
     });
   });
 

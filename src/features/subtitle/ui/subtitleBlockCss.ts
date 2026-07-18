@@ -838,4 +838,80 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-manager-role-indicator--native {
   color: var(--color-warning);
 }
+
+/* === Panel toggle button (ADR-008 D1) ===
+   Overlay appearance — sits on video, not theme-aware. */
+.panel-toggle {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: var(--sb-btn-size, 40px);
+  height: var(--sb-btn-size, 40px);
+  border: none;
+  border-radius: var(--radius-full, 9999px);
+  background: rgba(30, 41, 59, var(--sb-bg-opacity, 0.2));
+  color: rgba(241, 245, 249, var(--sb-text-opacity, 1));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
+  isolation: isolate;
+  z-index: 1000000;
+  user-select: none;
+  pointer-events: auto;
+  transition: background 150ms ease, color 150ms ease, transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.panel-toggle:hover {
+  color: var(--color-primary);
+}
+
+.panel-toggle:active {
+  transform: scale(0.88);
+}
+
+.panel-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.panel-toggle-feather {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: var(--radius-full, 9999px);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  background: rgba(15, 23, 42, 0.1);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+  z-index: -1;
+  transition: background 150ms ease;
+  pointer-events: none;
+}
+
+.panel-toggle:hover .panel-toggle-feather {
+  background: rgba(15, 23, 42, 0.25);
+}
+
+/* === Subtitle track dropdown (overlay) ===
+   Dark overlay colors intentional — sits on top of video. */
+.subtitle-track-dropdown {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 999999;
+  font-size: 12px;
+  padding: 2px 4px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 4px;
+  display: none;
+}
+
+.subtitle-track-dropdown--visible {
+  display: block;
+}
 `;

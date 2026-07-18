@@ -1,5 +1,4 @@
 import type { SrtCue } from '@/entities/media';
-import tokensJson from '@/shared/styles/tokens.json';
 
 export interface TrackOption {
   readonly id: string;
@@ -16,17 +15,7 @@ export interface TrackOption {
 export function createTrackDropdown(parent: HTMLElement): HTMLSelectElement {
   const dropdown = document.createElement('select');
   dropdown.setAttribute('data-testid', 'subtitle-track-dropdown');
-  dropdown.style.position = 'absolute';
-  dropdown.style.top = '8px';
-  dropdown.style.left = '8px';
-  dropdown.style.zIndex = '999999';
-  dropdown.style.fontSize = '12px';
-  dropdown.style.padding = '2px 4px';
-  dropdown.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-  dropdown.style.color = tokensJson.static.overlay.text;
-  dropdown.style.border = 'none';
-  dropdown.style.borderRadius = '4px';
-  dropdown.style.display = 'none';
+  dropdown.className = 'subtitle-track-dropdown';
 
   parent.appendChild(dropdown);
   return dropdown;
@@ -43,7 +32,7 @@ export function updateTrackOptions(dropdown: HTMLSelectElement, tracks: TrackOpt
   dropdown.innerHTML = '';
 
   if (tracks.length === 0) {
-    dropdown.style.display = 'none';
+    dropdown.classList.remove('subtitle-track-dropdown--visible');
     return;
   }
 
@@ -55,5 +44,5 @@ export function updateTrackOptions(dropdown: HTMLSelectElement, tracks: TrackOpt
   }
 
   dropdown.selectedIndex = 0;
-  dropdown.style.display = 'block';
+  dropdown.classList.add('subtitle-track-dropdown--visible');
 }
