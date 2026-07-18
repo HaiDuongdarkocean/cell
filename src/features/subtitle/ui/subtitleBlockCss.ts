@@ -21,7 +21,7 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: auto;
   user-select: none;
   cursor: grab;
-  transition: border-color var(--transition, 150ms ease), box-shadow var(--transition, 150ms ease);
+  transition: border-color var(--transition, 150ms ease);
 }
 
 .subtitle-block::before {
