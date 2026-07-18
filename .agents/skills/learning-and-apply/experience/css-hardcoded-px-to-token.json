@@ -1,0 +1,21 @@
+{
+  "id": "css-hardcoded-px-to-token",
+  "title": "Hardcoded px trong CSS module → thay bằng design-system token (calc nếu cần)",
+  "category": ["css"],
+  "tags": ["hardcoded-px", "design-token", "css-module", "convention", "maintainability"],
+  "trigger": "CSS file có giá trị px hardcoded (width: 120px, height: 28px, font-size: 16px) thay vì dùng var(--space-*)/var(--font-size-*) từ design system",
+  "principle": "Khi codebase có design-system tokens (--space-*, --font-size-*, --radius-*), mọi giá trị px trong CSS module phải dùng token. Nếu giá trị không khớp token trực tiếp, dùng calc(var(--space-N) * M) thay vì hardcoded số. Token đảm bảo consistency (đổi 1 chỗ → đổi mọi nơi) + responsive (token thay đổi theo theme/breakpoint). Hardcoded px là convention violation — review sẽ bắt.",
+  "cases": [
+    {
+      "context": "MediaList.module.css dùng hardcoded px cho thumbnail sizes",
+      "bad": ".imageThumb { height: 120px; }\n.imageImg { height: 120px; max-width: 200px; }\n.imageAddButton { width: 80px; height: 120px; }\n.mediaThumb { width: 28px; height: 28px; }\n.removeButton { width: 20px; height: 20px; font-size: 16px; }",
+      "good": ".imageThumb { height: calc(var(--space-5) * 6); }\n.imageImg { height: calc(var(--space-5) * 6); max-width: calc(var(--space-5) * 10); }\n.imageAddButton { width: calc(var(--space-5) * 4); height: calc(var(--space-5) * 6); }\n.mediaThumb { width: calc(var(--space-5) + var(--space-2)); height: calc(var(--space-5) + var(--space-2)); }\n.removeButton { width: var(--space-5); height: var(--space-5); font-size: var(--space-4); }"
+    }
+  ],
+  "applyFor": [
+    "CSS Modules trong project có design-system tokens",
+    "Review convention compliance (BEM + Google HTML/CSS)",
+    "Refactor hardcoded px → tokens",
+    "New component CSS — luôn dùng token từ đầu"
+  ]
+}
