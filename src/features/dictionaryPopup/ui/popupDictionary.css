@@ -179,6 +179,17 @@
   flex-shrink: 0;
 }
 
+.cell-header__audio {
+  width: auto;
+  min-width: 28px;
+  padding: 0 var(--space-1);
+  gap: var(--space-0-5);
+}
+
+.cell-header__audio-label {
+  white-space: nowrap;
+}
+
 /* Row 2: second header — badges + status, scroll main axis if overflow. */
 .cell-header__second {
   display: flex;
@@ -473,15 +484,6 @@
   border-bottom-color: var(--color-primary);
 }
 
-.cell-audio__group-label {
-  font-size: 11px;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  margin-bottom: var(--space-1);
-  margin-top: var(--space-2);
-}
-
 .cell-audio__item {
   position: relative;
   display: flex;
@@ -504,6 +506,21 @@
 /* Sentence audio variant — audio-wave icon, subtle accent */
 .cell-audio__item--sentence .icon-btn svg {
   color: var(--color-primary);
+}
+
+/* Play/pause button: zoom on hover, elastic bounce on press/release */
+.cell-audio__item .icon-btn {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  will-change: transform;
+}
+
+.cell-audio__item .icon-btn:hover {
+  transform: scale(1.15);
+}
+
+.cell-audio__item .icon-btn:active {
+  transform: scale(0.85);
 }
 
 /* Label is clickable to toggle selection */
@@ -626,7 +643,6 @@
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: var(--space-2);
   overflow-y: auto;
-  flex: 1 1 auto;
   min-height: 0;
   padding-bottom: var(--space-1);
 }
