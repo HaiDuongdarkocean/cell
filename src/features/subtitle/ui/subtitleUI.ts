@@ -297,7 +297,7 @@ export function showToast(message: string, container: HTMLElement, options: Toas
     font-size: var(--font-size-sm, 13px);
     font-weight: 500;
     font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
-    box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.08));
+    box-shadow: var(--shadow-md, none);
     display: flex;
     align-items: center;
     gap: var(--space-2, 8px);

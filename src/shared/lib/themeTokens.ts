@@ -167,9 +167,9 @@ function buildColorTokens(colors: CoreColorTokens, mode: ResolvedMode): string {
     `--color-scrollbar-thumb: ${mode === 'dark' ? '#475569' : '#cbd5e1'};`,
     `--color-scrollbar-thumb-hover: ${mode === 'dark' ? '#64748b' : '#94a3b8'};`,
     `--color-scrollbar-track: transparent;`,
-    `--shadow-sm: 0 1px 2px rgba(0, 0, 0, ${mode === 'dark' ? 0.3 : 0.05});`,
-    `--shadow-md: 0 4px 12px rgba(0, 0, 0, ${mode === 'dark' ? 0.4 : 0.08});`,
-    `--shadow-lg: 0 10px 24px rgba(0, 0, 0, ${mode === 'dark' ? 0.5 : 0.12});`,
+    `--shadow-sm: none;`,
+    `--shadow-md: none;`,
+    `--shadow-lg: none;`,
     // === Component tokens (ADR-026: design-system §2.3) ===
     // Button
     `--button-bg: var(--color-primary);`,

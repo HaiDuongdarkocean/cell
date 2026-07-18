@@ -20,17 +20,17 @@ export const NAV_CLUSTER_CSS = `
   z-index: var(--nav-cluster-z-index, 1000001);
   font-family: system-ui, -apple-system, sans-serif;
   user-select: none;
-  transition: transform 150ms ease, opacity 150ms ease, box-shadow 150ms ease;
+  transition: transform 150ms ease, opacity 150ms ease;
   pointer-events: auto;
   /* ADR-018 D5-rev: drag is via grip tab only — cluster body = default cursor */
   cursor: default;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
   /* ADR-024: position values represent the *center* of the cluster, not the
      top-left corner. translate(-50%, -50%) makes left/top the anchor point. */
   transform: translate(-50%, -50%);
 }
 .nav-cluster.dragging {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
   transform: translate(-50%, -50%) scale(1.03);
 }
 /* Background layer with opacity so controls can change opacity without affecting
