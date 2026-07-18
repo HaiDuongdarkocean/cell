@@ -280,3 +280,7 @@ export const STORAGE_KEYS = {
 export const POPUP_WIDTH = 400;
 export const POPUP_HEIGHT = 600;
 
+/** Fallback viewport dimensions when `window` is undefined (SSR/test env). */
+export const FALLBACK_VIEWPORT_WIDTH = 1920;
+export const FALLBACK_VIEWPORT_HEIGHT = 1080;
+

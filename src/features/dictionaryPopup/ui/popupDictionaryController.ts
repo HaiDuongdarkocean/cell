@@ -34,6 +34,7 @@ import type { SelectionCounts } from './popupToolbar';
 import { nextStatus } from '../services/wordStatusStore';
 import { fillExternalDictLinks } from './popupToolbar';
 import { createTtsEngine, getTtsVoiceRows } from '../services/ttsEngineService';
+import { FALLBACK_VIEWPORT_WIDTH, FALLBACK_VIEWPORT_HEIGHT } from '@/shared/config/config';
 
 /** Pre-fill data extracted from the popup dictionary for the Card Creator.
  *  Built from the lookup result + selections + context sentence + translation.
@@ -1255,7 +1256,7 @@ async function fetchTtsVoiceRows(settings: DictionaryPopupSettings, langCode: st
 export function getInitialPopupSize(settings: DictionaryPopupSettings): PopupSize {
   return clampPopupSize(
     { width: settings.popupWidthPx, maxHeight: settings.popupMaxHeightPx },
-    typeof window !== 'undefined' ? window.innerWidth : 1920,
-    typeof window !== 'undefined' ? window.innerHeight : 1080,
+    typeof window !== 'undefined' ? window.innerWidth : FALLBACK_VIEWPORT_WIDTH,
+    typeof window !== 'undefined' ? window.innerHeight : FALLBACK_VIEWPORT_HEIGHT,
   );
 }
