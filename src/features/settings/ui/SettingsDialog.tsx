@@ -28,6 +28,7 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { Toggle } from '@/shared/ui/Toggle';
 import { ShortcutInput } from '@/shared/ui/ShortcutInput';
 import { SearchableSelect } from '@/shared/ui/SearchableSelect';
+import { Select } from '@/shared/ui/Select';
 import { HintIcon } from '@/shared/ui/HintIcon';
 
 import styles from './SettingsDialog.module.css';
@@ -532,11 +533,11 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
               <div className={styles.sectionBody}>
                 {/* === Group 1: Concurrency (settings-dialog-rearrange) === */}
                 <SettingField label="Downloads at once" htmlFor="set-concurrent">
-                  <CustomSelect
-                    testId="concurrent-select"
+                  <Select
+                    data-testid="concurrent-select"
                     value={String(settings.concurrentDownloads)}
                     options={[1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: String(n) }))}
-                    onSelect={(val) => update('concurrentDownloads', Number(val))}
+                    onChange={(val) => update('concurrentDownloads', Number(val))}
                   />
                 </SettingField>
 
@@ -545,19 +546,19 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                 {/* === Group 2: Format + Quality (pair) === */}
                 <div className={styles.pairRow}>
                   <SettingField label="Preferred format" htmlFor="set-format">
-                    <CustomSelect
-                      testId="format-select"
+                    <Select
+                      data-testid="format-select"
                       value={settings.preferredVideoFormat}
                       options={PREFERRED_FORMAT_OPTIONS.map((f) => ({ value: f, label: PREFERRED_FORMAT_LABELS[f] }))}
-                      onSelect={(val) => update('preferredVideoFormat', val as 'mp4' | 'm3u8')}
+                      onChange={(val) => update('preferredVideoFormat', val as 'mp4' | 'm3u8')}
                     />
                   </SettingField>
                   <SettingField label="Default quality" htmlFor="set-quality">
-                    <CustomSelect
-                      testId="quality-select"
+                    <Select
+                      data-testid="quality-select"
                       value={settings.defaultQuality}
                       options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABELS[q] }))}
-                      onSelect={(val) => update('defaultQuality', val as VideoQuality)}
+                      onChange={(val) => update('defaultQuality', val as VideoQuality)}
                     />
                   </SettingField>
                 </div>
@@ -566,11 +567,11 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
 
                 {/* === Group 3: Conversion === */}
                 <SettingField label="Convert to MP4" htmlFor="set-convert">
-                  <CustomSelect
-                    testId="convert-select"
+                  <Select
+                    data-testid="convert-select"
                     value={settings.convertToMp4}
                     options={CONVERT_OPTIONS.map((m) => ({ value: m, label: CONVERT_LABELS[m] }))}
-                    onSelect={(val) => update('convertToMp4', val as ConvertToMp4Mode)}
+                    onChange={(val) => update('convertToMp4', val as ConvertToMp4Mode)}
                   />
                 </SettingField>
 
@@ -583,11 +584,11 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                       ariaLabel="Show hint for Parallel conversion"
                     />
                   </label>
-                  <CustomSelect
-                    testId="parallel-select"
+                  <Select
+                    data-testid="parallel-select"
                     value={settings.parallelConversion}
                     options={PARALLEL_OPTIONS.map((m) => ({ value: m, label: PARALLEL_LABELS[m] }))}
-                    onSelect={(val) => update('parallelConversion', val as ParallelConversionMode)}
+                    onChange={(val) => update('parallelConversion', val as ParallelConversionMode)}
                   />
                 </div>
 
@@ -595,11 +596,11 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                 {settings.parallelConversion === 'manual' && (
                   <div className={`${styles.field} ${styles.childField}`}>
                     <label className={styles.label} htmlFor="set-workers">Workers</label>
-                    <CustomSelect
-                      testId="workers-select"
+                    <Select
+                      data-testid="workers-select"
                       value={String(settings.manualWorkerCount)}
                       options={WORKER_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
-                      onSelect={(val) => update('manualWorkerCount', Math.max(MIN_PARALLEL_WORKERS, Math.min(MAX_PARALLEL_WORKERS, Number(val))))}
+                      onChange={(val) => update('manualWorkerCount', Math.max(MIN_PARALLEL_WORKERS, Math.min(MAX_PARALLEL_WORKERS, Number(val))))}
                     />
                   </div>
                 )}
@@ -608,11 +609,11 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
 
                 {/* === Group 4: Filename === */}
                 <SettingField label="Filename source" htmlFor="set-filename-source">
-                  <CustomSelect
-                    testId="filename-source-select"
+                  <Select
+                    data-testid="filename-source-select"
                     value={settings.filenameSource}
                     options={FILENAME_SOURCE_OPTIONS.map((m) => ({ value: m, label: FILENAME_SOURCE_LABELS[m] }))}
-                    onSelect={(val) => update('filenameSource', val as FilenameSource)}
+                    onChange={(val) => update('filenameSource', val as FilenameSource)}
                   />
                 </SettingField>
               </div>
@@ -652,7 +653,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
               </p>
               <div className={styles.sectionBody}>
                 <DictionaryPopupSettingsPanel
-                  settings={settings.dictionaryPopup ?? { enabled: false, triggerMode: 'click', defaultActiveTab: null, srsDestination: 'anki', popupWidthPx: 560, popupMaxHeightPx: 480, translateTargetLang: 'vi', externalDictLinks: [] }}
+                  settings={settings.dictionaryPopup ?? { enabled: false, triggerMode: 'click', defaultActiveTab: null, srsDestination: 'anki', popupWidthPx: 560, popupMaxHeightPx: 480, externalDictLinks: [] }}
                   onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
                 />
               </div>
@@ -675,61 +676,4 @@ function SettingField({ label, htmlFor, children }: { label: string; htmlFor: st
   );
 }
 
-/* === Custom Dropdown — matches prototype exactly === */
-interface DropdownOption { value: string; label: string }
-interface CustomSelectProps {
-  testId: string;
-  value: string;
-  options: DropdownOption[];
-  onSelect: (value: string) => void;
-}
-
-function CustomSelect({ testId, value, options, onSelect }: CustomSelectProps): React.JSX.Element {
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleClickOutside = (e: MouseEvent): void => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [open]);
-
-  const selected = options.find((o) => o.value === value) ?? options[0];
-
-  return (
-    <div className={`${styles.customSelect} ${open ? styles.open : ''}`} ref={wrapperRef} data-testid={testId}>
-      <button
-        type="button"
-        className={styles.customSelectTrigger}
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        <span className={styles.customSelectValue}>{selected?.label}</span>
-        <Icon name="chevronDown" className={styles.customSelectChevron} />
-      </button>
-
-      {open && (
-        <div className={`${styles.customSelectMenu} ${styles.menuOpen}`} role="listbox">
-          {options.map((opt) => (
-            <div
-              key={opt.value}
-              className={`${styles.customSelectOption} ${opt.value === value ? styles.selected : ''}`}
-              role="option"
-              aria-selected={opt.value === value}
-              onClick={() => { onSelect(opt.value); setOpen(false); }}
-            >
-              {opt.label}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
