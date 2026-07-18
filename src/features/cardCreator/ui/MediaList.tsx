@@ -398,7 +398,7 @@ function AudioList({
   const draggable = onReorder !== undefined;
 
   return (
-    <div className={styles['cc-media__list']} onDrop={handleListDrop}>
+    <div className={styles['cc-media__list']} role="list" onDrop={handleListDrop}>
       {files.length === 0 && (
         <EmptyDropzone
           kind="audio"

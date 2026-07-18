@@ -322,7 +322,7 @@ export function AppRedesigned(): React.JSX.Element {
               </div>
             )}
           </div>
-          <div className={styles.mediaList}>
+          <div className={styles.mediaList} role="list">
             {hasMedia ? (
               <>
                 {videos.map((video) => (
@@ -361,7 +361,7 @@ export function AppRedesigned(): React.JSX.Element {
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Downloads</h2>
           </div>
-          <div className={styles.downloadsList}>
+          <div className={styles.downloadsList} role="list">
             {downloads.length > 0 ? (
               downloads.map((download) => (
                 <DownloadCard
