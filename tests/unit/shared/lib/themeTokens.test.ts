@@ -1,4 +1,5 @@
-import { injectThemeTokens, buildStyleContent, buildColorTokens, syncElementTheme } from '@/shared/lib/themeTokens';
+import { injectThemeTokens, buildStyleContent, syncElementTheme } from '@/shared/lib/themeTokens';
+import { buildColorTokenCSS } from '@/shared/lib/tokens';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { ThemeConfig } from '@/entities/theme';
@@ -208,9 +209,9 @@ describe('buildStyleContent', () => {
   });
 });
 
-describe('buildColorTokens', () => {
+describe('buildColorTokenCSS', () => {
   it('returns 9 core + derived token lines', () => {
-    const css = buildColorTokens(DEFAULT_THEME_CONFIG.customColors.dark, 'dark');
+    const css = buildColorTokenCSS(DEFAULT_THEME_CONFIG.customColors.dark, 'dark');
     expect(css).toContain('--color-primary:');
     expect(css).toContain('--color-primary-hover:');
     expect(css).toContain('--color-primary-subtle:');
@@ -224,7 +225,7 @@ describe('buildColorTokens', () => {
 
   it('uses custom primary color', () => {
     const custom = { ...DEFAULT_THEME_CONFIG.customColors.dark, primary: '#ff0000' };
-    const css = buildColorTokens(custom, 'dark');
+    const css = buildColorTokenCSS(custom, 'dark');
     expect(css).toContain('--color-primary: #ff0000;');
   });
 });

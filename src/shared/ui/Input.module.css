@@ -1,8 +1,8 @@
 .input {
   width: 100%;
-  color: var(--input-fg, var(--color-foreground, #0f172a));
-  background: var(--input-bg, var(--color-background, #ffffff));
-  border: 1px solid var(--input-border, var(--color-border, #e2e8f0));
+  color: var(--input-fg, var(--color-foreground));
+  background: var(--input-bg, var(--color-background));
+  border: 1px solid var(--input-border, var(--color-border));
   border-radius: var(--input-radius, var(--radius-md, 18px));
   font-family: var(--font-family);
   font-size: var(--input-font-size, var(--font-size-sm, 13px));
@@ -10,11 +10,11 @@
 }
 
 .input::placeholder {
-  color: var(--input-placeholder, var(--color-muted-foreground, #94a3b8));
+  color: var(--input-placeholder, var(--color-muted-foreground));
 }
 
 .input:hover:not(:disabled) {
-  border-color: var(--color-border-focus, var(--color-primary, #2563eb));
+  border-color: var(--color-border-focus, var(--color-primary));
 }
 
 .input:focus-visible {
@@ -23,14 +23,14 @@
 }
 
 .input:disabled {
-  background: var(--input-disabled-bg, var(--color-muted, #f1f5f9));
-  color: var(--input-disabled-fg, var(--color-muted-foreground, #94a3b8));
+  background: var(--input-disabled-bg, var(--color-muted));
+  color: var(--input-disabled-fg, var(--color-muted-foreground));
   cursor: not-allowed;
   opacity: 0.5;
 }
 
 .input.error {
-  border-color: var(--input-error-border, var(--color-error, #ef4444));
+  border-color: var(--input-error-border, var(--color-error));
 }
 
 .input.error:focus-visible {
@@ -58,5 +58,5 @@
   display: block;
   margin-top: var(--space-1, 4px);
   font-size: var(--font-size-xs, 12px);
-  color: var(--input-error-fg, var(--color-error, #ef4444));
+  color: var(--input-error-fg, var(--color-error));
 }

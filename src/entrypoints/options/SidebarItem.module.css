@@ -7,7 +7,7 @@
   background: transparent;
   border: none;
   border-left: 2px solid transparent;
-  color: var(--color-text-secondary, #475569);
+  color: var(--color-text-secondary);
   font-family: var(--font-family);
   font-size: var(--font-size-base, 16px);
   font-weight: var(--font-weight-regular, 400);
@@ -20,8 +20,8 @@
 }
 
 .item:hover {
-  background: var(--color-surface-hover, #f1f5f9);
-  color: var(--color-text, #0f172a);
+  background: var(--color-surface-hover);
+  color: var(--color-text);
 }
 
 .item:focus-visible {
@@ -30,8 +30,8 @@
 }
 
 .itemActive {
-  border-left-color: var(--color-primary, #2563eb);
-  color: var(--color-text, #0f172a);
+  border-left-color: var(--color-primary);
+  color: var(--color-text);
   background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
 }
 

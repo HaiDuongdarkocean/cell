@@ -7,51 +7,51 @@
   max-width: 880px;
   margin: 0 auto;
   font-family: var(--font-family);
-  color: var(--color-text, #0f172a);
+  color: var(--color-text);
 }
 
 .error {
   padding: var(--space-3, 12px) var(--space-4, 16px);
   background: var(--color-error-subtle, rgba(239, 68, 68, 0.1));
-  border: 1px solid var(--color-error, #ef4444);
+  border: 1px solid var(--color-error);
   border-radius: var(--radius-md, 8px);
-  color: var(--color-error, #ef4444);
+  color: var(--color-error);
   font-size: var(--font-size-sm, 14px);
 }
 
 .status {
   padding: var(--space-3, 12px) var(--space-4, 16px);
   background: var(--color-success-subtle, rgba(5, 150, 105, 0.1));
-  border: 1px solid var(--color-success, #10b981);
+  border: 1px solid var(--color-success);
   border-radius: var(--radius-md, 8px);
-  color: var(--color-success, #10b981);
+  color: var(--color-success);
   font-size: var(--font-size-sm, 14px);
 }
 
 .muted {
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted);
   font-size: var(--font-size-sm, 14px);
   margin: 0;
 }
 
 /* === Card === */
 .card {
-  background: var(--color-card, var(--color-surface, #f8fafc));
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-card, var(--color-surface));
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-2xl, 24px);
   overflow: hidden;
 }
 
 .card__header {
   padding: var(--space-4, 16px) var(--space-6, 24px);
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .card__title {
   margin: 0;
   font-size: var(--font-size-xl, 18px);
   font-weight: var(--font-weight-semibold, 600);
-  color: var(--color-text, #0f172a);
+  color: var(--color-text);
   letter-spacing: -0.01em;
 }
 
@@ -76,7 +76,7 @@
 .row__label {
   flex: 0 0 140px;
   font-size: var(--font-size-sm, 14px);
-  color: var(--color-text-secondary, #475569);
+  color: var(--color-text-secondary);
   padding-top: var(--space-1, 4px);
 }
 
@@ -93,10 +93,10 @@
   width: 100%;
   max-width: 320px;
   padding: var(--space-2, 8px) var(--space-3, 12px);
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm, 6px);
-  background: var(--color-background, #ffffff);
-  color: var(--color-text, #0f172a);
+  background: var(--color-background);
+  color: var(--color-text);
   font-family: var(--font-family);
   font-size: var(--font-size-sm, 14px);
 }
@@ -108,7 +108,7 @@
 
 .row__control select:focus-visible,
 .row__control textarea:focus-visible {
-  outline: 2px solid var(--color-primary, #2563eb);
+  outline: 2px solid var(--color-primary);
   outline-offset: -1px;
 }
 
@@ -131,12 +131,12 @@
   gap: var(--space-2, 8px);
   padding: var(--space-2, 8px) var(--space-3, 12px);
   border-radius: var(--radius-sm, 6px);
-  background: var(--color-background, #ffffff);
-  border: 1px solid var(--color-border-subtle, #f1f5f9);
+  background: var(--color-background);
+  border: 1px solid var(--color-border-subtle);
 }
 
 .voiceSelectionItem:hover {
-  background: var(--color-surface-hover, #f1f5f9);
+  background: var(--color-surface-hover);
 }
 
 .voiceSelectionSlots {
@@ -149,7 +149,7 @@
   align-items: center;
   gap: var(--space-1, 4px);
   font-size: var(--font-size-xs, 12px);
-  color: var(--color-text-secondary, #475569);
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
 
@@ -183,13 +183,13 @@
   gap: var(--space-2, 8px);
   padding: var(--space-2, 8px) var(--space-3, 12px);
   border-radius: var(--radius-sm, 6px);
-  background: var(--color-background, #ffffff);
-  border: 1px solid var(--color-border-subtle, #f1f5f9);
+  background: var(--color-background);
+  border: 1px solid var(--color-border-subtle);
   cursor: grab;
 }
 
 .voiceItem:hover {
-  background: var(--color-surface-hover, #f1f5f9);
+  background: var(--color-surface-hover);
 }
 
 .voiceItem:active {
@@ -197,7 +197,7 @@
 }
 
 .dragHandle {
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted);
   font-size: var(--font-size-md, 16px);
   cursor: grab;
   user-select: none;
@@ -206,17 +206,17 @@
 .orderInput {
   width: 48px;
   padding: var(--space-1, 4px) var(--space-2, 8px);
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm, 6px);
-  background: var(--color-background, #ffffff);
-  color: var(--color-text, #0f172a);
+  background: var(--color-background);
+  color: var(--color-text);
   font-family: var(--font-family);
   font-size: var(--font-size-sm, 14px);
   text-align: center;
 }
 
 .orderInput:focus-visible {
-  outline: 2px solid var(--color-primary, #2563eb);
+  outline: 2px solid var(--color-primary);
   outline-offset: -1px;
 }
 
@@ -227,20 +227,20 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm, 6px);
-  background: var(--color-background, #ffffff);
-  color: var(--color-primary, #2563eb);
+  background: var(--color-background);
+  color: var(--color-primary);
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .voicePlayBtn:hover:not(:disabled) {
-  background: var(--color-surface-hover, #f1f5f9);
+  background: var(--color-surface-hover);
 }
 
 .voicePlayBtn:focus-visible {
-  outline: 2px solid var(--color-primary, #2563eb);
+  outline: 2px solid var(--color-primary);
   outline-offset: -1px;
 }
 
@@ -259,7 +259,7 @@
 
 .voiceName {
   font-size: var(--font-size-sm, 14px);
-  color: var(--color-text, #0f172a);
+  color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -267,7 +267,7 @@
 
 .voiceLang {
   font-size: var(--font-size-xs, 12px);
-  color: var(--color-text-muted, #94a3b8);
+  color: var(--color-text-muted);
   flex-shrink: 0;
 }
 

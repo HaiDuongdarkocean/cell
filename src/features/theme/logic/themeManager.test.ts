@@ -1,5 +1,6 @@
 import { applyTheme, resolveMode, registerSystemModeListener, getPalette } from '@/features/theme/logic/themeManager';
 import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
+import { DEFAULT_DARK_TOKENS } from '@/shared/lib/tokens';
 import type { ThemeConfig } from '@/entities/theme';
 
 // jsdom provides window.matchMedia but cần mock (jsdom default returns false matches).
@@ -62,13 +63,16 @@ describe('themeManager', () => {
     it('derives secondary tokens', () => {
       applyTheme('dark', DEFAULT_THEME_CONFIG);
       const root = document.documentElement;
-      // primary-hover = shade(primary, 10%)
-      const expectedHover = generateHoverColorExpected(DEFAULT_THEME_CONFIG.customColors.dark.primary);
-      expect(root.style.getPropertyValue('--color-primary-hover')).toBe(expectedHover);
-      // border-focus = primary
-      expect(root.style.getPropertyValue('--color-border-focus')).toBe(DEFAULT_THEME_CONFIG.customColors.dark.primary);
-      // primary-subtle = rgba(primary, 0.1)
-      expect(root.style.getPropertyValue('--color-primary-subtle')).toMatch(/^rgba\(.*,\s*0\.1\)$/);
+      // Default palette uses precomputed derived values from tokens.json
+      expect(root.style.getPropertyValue('--color-primary-hover')).toBe(
+        DEFAULT_DARK_TOKENS['--color-primary-hover'],
+      );
+      expect(root.style.getPropertyValue('--color-border-focus')).toBe(
+        DEFAULT_THEME_CONFIG.customColors.dark.primary,
+      );
+      expect(root.style.getPropertyValue('--color-primary-subtle')).toBe(
+        DEFAULT_DARK_TOKENS['--color-primary-subtle'],
+      );
     });
 
     it('sets data-theme attribute', () => {
@@ -116,9 +120,4 @@ describe('themeManager', () => {
   });
 });
 
-// Local helper to compute expected hover (avoid importing colorGenerator directly
-// to keep test independent — but we DO want same logic, so import).
-import { generateHoverColor } from '@/features/theme/logic/colorGenerator';
-function generateHoverColorExpected(hex: string): string {
-  return generateHoverColor(hex);
-}
+

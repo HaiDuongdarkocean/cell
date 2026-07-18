@@ -85,7 +85,7 @@
   overflow-y: auto;
   /* Design-system scrollbar (same as Dialog and SearchableSelect). */
   scrollbar-width: thin;
-  scrollbar-color: var(--color-scrollbar-thumb, #cbd5e1) transparent;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 
 /* Default: menu's left edge aligns with trigger's left edge (opens rightward). */
@@ -110,12 +110,12 @@
 }
 
 .menu::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar-thumb, #cbd5e1);
+  background: var(--color-scrollbar-thumb);
   border-radius: var(--radius-full, 9999px);
 }
 
 .menu::-webkit-scrollbar-thumb:hover {
-  background: var(--color-scrollbar-thumb-hover, #94a3b8);
+  background: var(--color-scrollbar-thumb-hover);
 }
 
 .option {

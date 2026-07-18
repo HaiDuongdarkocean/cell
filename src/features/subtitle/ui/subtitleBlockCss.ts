@@ -29,7 +29,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   inset: 0;
   border-radius: var(--radius-md, 8px);
-  background: var(--color-surface, #1e293b);
+  background: var(--color-surface);
   backdrop-filter: blur(8px);
   opacity: 0;
   z-index: -1;
@@ -37,7 +37,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-block.dragging {
-  border-color: var(--color-border, #334155);
+  border-color: var(--color-border);
   box-shadow: none;
   cursor: grabbing;
 }
@@ -111,7 +111,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .cluster-btn:hover {
-  color: var(--color-primary, #60a5fa);
+  color: var(--color-primary);
 }
 
 .cluster-btn:hover::before {
@@ -123,7 +123,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .cluster-btn:focus-visible {
-  outline: 2px solid var(--color-primary, #60a5fa);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
@@ -143,7 +143,7 @@ export const SUBTITLE_BLOCK_CSS = `
 [data-testid="panel-toggle"]:focus-visible,
 [data-testid="subtitle-manager-icon"]:focus-visible,
 [data-testid="subtitle-import-button"]:focus-visible {
-  outline: 2px solid var(--color-primary, #60a5fa);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 

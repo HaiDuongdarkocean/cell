@@ -71,7 +71,7 @@ export function createToggleButton(container: HTMLElement): HTMLButtonElement {
 
   // Hover — icon đổi màu primary (no border feedback)
   btn.addEventListener('mouseenter', () => {
-    btn.style.color = 'var(--color-primary, #60a5fa)';
+    btn.style.color = 'var(--color-primary)';
     feather.style.background = 'rgba(15, 23, 42, 0.25)';
   });
   btn.addEventListener('mouseleave', () => {
