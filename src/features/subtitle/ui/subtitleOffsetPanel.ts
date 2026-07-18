@@ -129,8 +129,8 @@ export function createOffsetSection(
     display: grid;
     grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr;
     align-items: stretch;
-    background: var(--color-surface, #f8fafc);
-    border: 1px solid var(--color-border, #e2e8f0);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-full, 9999px);
     padding: 3px;
     gap: 0;
@@ -152,7 +152,7 @@ export function createOffsetSection(
       z-index: 1;
       border: none;
       background: transparent;
-      color: ${isPlus ? 'var(--color-success, #10b981)' : 'var(--color-info, #2563eb)'};
+      color: ${isPlus ? 'var(--color-success)' : 'var(--color-info)'};
       cursor: pointer;
       font-family: var(--font-family, sans-serif);
       font-size: var(--font-size-xs, 12px);
@@ -170,7 +170,7 @@ export function createOffsetSection(
     btn.textContent = `${isPlus ? '+' : '−'}${Math.abs(delta) / 1000}s`;
     btn.addEventListener('click', () => handlers.onStep(delta));
     btn.addEventListener('mouseenter', () => {
-      if (!btn.disabled) btn.style.background = 'var(--color-surface-hover, #f1f5f9)';
+      if (!btn.disabled) btn.style.background = 'var(--color-surface-hover)';
     });
     btn.addEventListener('mouseleave', () => {
       if (!btn.disabled) btn.style.background = 'transparent';
@@ -195,7 +195,7 @@ export function createOffsetSection(
     align-items: center;
     justify-content: center;
     background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
-    color: var(--color-primary, #2563eb);
+    color: var(--color-primary);
     font-family: var(--font-family, sans-serif);
     font-size: var(--font-size-lg, 16px);
     font-weight: var(--font-weight-semibold, 600);
@@ -227,8 +227,8 @@ export function createOffsetSection(
   valueInput.addEventListener('focus', () => {
     valueInput.select();
     valueInput.style.zIndex = '3';
-    valueInput.style.boxShadow = 'inset 0 0 0 2px var(--color-primary, #2563eb)';
-    valueInput.style.background = 'var(--color-background, #ffffff)';
+    valueInput.style.boxShadow = 'inset 0 0 0 2px var(--color-primary)';
+    valueInput.style.background = 'var(--color-background)';
   });
   const commitValueInput = (): void => {
     const parsed = parseOffsetInputSafe(valueInput.value);
@@ -266,10 +266,10 @@ export function createOffsetSection(
   resetBtn.style.cssText = `
     width: 100%;
     padding: 8px;
-    border: 1px solid var(--color-border, #e2e8f0);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-full, 9999px);
-    background: var(--color-surface, #f8fafc);
-    color: var(--color-text-secondary, #475569);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -292,15 +292,15 @@ export function createOffsetSection(
   resetBtn.addEventListener('mouseenter', () => {
     if (!resetBtn.disabled) {
       resetBtn.style.background = 'var(--color-error-subtle, rgba(239, 68, 68, 0.08))';
-      resetBtn.style.color = 'var(--color-error, #ef4444)';
-      resetBtn.style.borderColor = 'var(--color-error, #ef4444)';
+      resetBtn.style.color = 'var(--color-error)';
+      resetBtn.style.borderColor = 'var(--color-error)';
     }
   });
   resetBtn.addEventListener('mouseleave', () => {
     if (!resetBtn.disabled) {
-      resetBtn.style.background = 'var(--color-surface, #f8fafc)';
-      resetBtn.style.color = 'var(--color-text-secondary, #475569)';
-      resetBtn.style.borderColor = 'var(--color-border, #e2e8f0)';
+      resetBtn.style.background = 'var(--color-surface)';
+      resetBtn.style.color = 'var(--color-text-secondary)';
+      resetBtn.style.borderColor = 'var(--color-border)';
     }
   });
   body.appendChild(resetBtn);
@@ -309,7 +309,7 @@ export function createOffsetSection(
   const disabledHint = document.createElement('div');
   disabledHint.setAttribute('data-testid', 'offset-disabled-hint');
   disabledHint.textContent = 'Cần load subtitle trước';
-  disabledHint.style.cssText = 'padding: 8px 0 0; text-align: center; color: var(--color-text-muted, #94a3b8); font-size: var(--font-size-xs, 12px); display: none;';
+  disabledHint.style.cssText = 'padding: 8px 0 0; text-align: center; color: var(--color-text-muted); font-size: var(--font-size-xs, 12px); display: none;';
   body.appendChild(disabledHint);
 
   // === Collapse toggle ===
@@ -341,13 +341,13 @@ export function createOffsetSection(
 
     // Value color: 0 = muted, + = success, - = info
     if (valueMs === 0) {
-      valueInput.style.color = 'var(--color-text-muted, #94a3b8)';
-      valueInput.style.background = 'var(--color-surface-hover, #f1f5f9)';
+      valueInput.style.color = 'var(--color-text-muted)';
+      valueInput.style.background = 'var(--color-surface-hover)';
     } else if (valueMs > 0) {
-      valueInput.style.color = 'var(--color-success, #10b981)';
+      valueInput.style.color = 'var(--color-success)';
       valueInput.style.background = 'var(--color-primary-subtle, rgba(37, 99, 235, 0.1))';
     } else {
-      valueInput.style.color = 'var(--color-info, #2563eb)';
+      valueInput.style.color = 'var(--color-info)';
       valueInput.style.background = 'var(--color-primary-subtle, rgba(37, 99, 235, 0.1))';
     }
 

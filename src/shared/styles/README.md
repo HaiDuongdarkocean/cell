@@ -1,13 +1,21 @@
 # Design System — Codebase Reference
 
 > Single source of truth for AI agents writing UI code.
-> `tokens.css` = tokens. `src/shared/ui/*.module.css` = component patterns.
+> `tokens.json` = token source. `tokens.css` = generated artifact. `src/shared/ui/*.module.css` = component patterns.
 > `docs/design-system/design-system-showcase/` = full spec (read when adding new component).
 
 ## Token file
 
-`src/shared/styles/tokens.css` — imported by all 3 entrypoints (popup, sidepanel, options).
+`src/shared/styles/tokens.json` — canonical design-token source (core colors, derived colors, static tokens, component tokens).
+`src/shared/styles/tokens.css` — generated from `tokens.json`, imported by all 3 entrypoints (popup, sidepanel, options).
 Defines `:root` (light) + `[data-theme="dark"]` (dark) CSS custom properties.
+
+**Regenerate after editing `tokens.json`:**
+```bash
+node scripts/generate-tokens.js
+```
+
+`predev`/`prebuild` in `package.json` also regenerate `tokens.css` so the artifact stays in sync.
 
 **Import in new entrypoint:**
 ```ts
@@ -94,5 +102,5 @@ grep -rn 'tokens.css' src/entrypoints/
 ## When to read full spec
 
 - Adding NEW component (not in inventory above) → read `docs/design-system/design-system-showcase/design-system.md`
-- Changing token value → update `tokens.css` + `design-system.md` YAML
+- Changing token value → update `tokens.json` + regenerate `tokens.css` + `design-system.md` YAML
 - Unsure which variant to use → read `design-system.md` component section

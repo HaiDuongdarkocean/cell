@@ -3,8 +3,8 @@
   margin: 0 auto;
   padding: var(--space-6, 24px);
   font-family: var(--font-family);
-  color: var(--color-text, #0f172a);
-  background: var(--color-background, #ffffff);
+  color: var(--color-text);
+  background: var(--color-background);
   min-height: 100dvh;
   box-sizing: border-box;
   position: relative;
@@ -14,8 +14,8 @@
   position: absolute;
   top: -40px;
   left: 0;
-  background: var(--color-primary, #2563eb);
-  color: var(--color-text, #0f172a);
+  background: var(--color-primary);
+  color: var(--color-text);
   padding: var(--space-2, 8px) var(--space-4, 16px);
   z-index: 100;
   font-family: var(--font-family);
@@ -33,7 +33,7 @@
   font-weight: 425;
   letter-spacing: -0.02em;
   margin: 0 0 var(--space-6, 24px) 0;
-  color: var(--color-text, #0f172a);
+  color: var(--color-text);
   line-height: 1.2;
   text-wrap: balance;
 }
@@ -51,9 +51,9 @@
   width: 44px;
   height: 44px;
   background: transparent;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  color: var(--color-text, #0f172a);
+  color: var(--color-text);
   font-size: 20px;
   cursor: pointer;
   align-items: center;
@@ -62,7 +62,7 @@
 }
 
 .hamburger:focus-visible {
-  outline: 2px solid var(--color-primary, #2563eb);
+  outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
@@ -79,7 +79,7 @@
   flex-direction: column;
   gap: var(--space-1, 4px);
   padding: var(--space-4, 16px);
-  border-right: 1px solid var(--color-border, #e2e8f0);
+  border-right: 1px solid var(--color-border);
   position: sticky;
   top: var(--space-6, 24px);
 }
@@ -99,10 +99,10 @@
 
 .placeholder {
   padding: var(--space-6, 24px);
-  color: var(--color-text-secondary, #475569);
+  color: var(--color-text-secondary);
   text-align: center;
-  background: var(--color-surface, #f8fafc);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-2xl);
 }
 
@@ -147,8 +147,8 @@
     left: 0;
     bottom: 0;
     width: 200px;
-    background: var(--color-surface, #f8fafc);
-    border-right: 1px solid var(--color-border, #e2e8f0);
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
     padding: var(--space-4, 16px);
     z-index: 1001;
     gap: var(--space-1, 4px);
@@ -173,10 +173,10 @@
     height: 40px;
     align-items: center;
     justify-content: center;
-    background: var(--color-surface, #f8fafc);
-    border: 1px solid var(--color-border, #e2e8f0);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-full);
-    color: var(--color-text, #0f172a);
+    color: var(--color-text);
     cursor: pointer;
   }
 }

@@ -16,7 +16,7 @@ export const NAV_CLUSTER_CSS = `
   padding: 4px;
   border-radius: var(--radius-md, 8px);
   background: transparent;
-  border: 1px solid var(--color-border, #334155);
+  border: 1px solid var(--color-border);
   z-index: var(--nav-cluster-z-index, 1000001);
   font-family: system-ui, -apple-system, sans-serif;
   user-select: none;
@@ -40,7 +40,7 @@ export const NAV_CLUSTER_CSS = `
   position: absolute;
   inset: 0;
   border-radius: var(--radius-md, 8px);
-  background: var(--color-surface, #1e293b);
+  background: var(--color-surface);
   backdrop-filter: blur(8px);
   opacity: var(--nav-cluster-bg-opacity, 0.7);
   z-index: -1;
@@ -71,7 +71,7 @@ export const NAV_CLUSTER_CSS = `
   width: 28px;
   height: 4px;
   border-radius: var(--radius-full, 9999px);
-  background: var(--color-text-muted, #94a3b8);
+  background: var(--color-text-muted);
   opacity: 0.35;
   transition: opacity 150ms ease, background 150ms ease;
 }
@@ -79,13 +79,13 @@ export const NAV_CLUSTER_CSS = `
   opacity: 0.7;
 }
 .nav-cluster-grip:focus-visible {
-  outline: 2px solid var(--color-border-focus, #60a5fa);
+  outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
   border-radius: var(--radius-sm, 6px);
 }
 .nav-cluster.dragging .nav-cluster-grip::before {
   opacity: 0.9;
-  background: var(--color-text, #f1f5f9);
+  background: var(--color-text);
 }
 .nav-cluster.dragging .nav-cluster-grip {
   cursor: grabbing;
@@ -120,7 +120,7 @@ export const NAV_CLUSTER_CSS = `
   border: 1px solid transparent;
   border-radius: var(--radius-md, 8px);
   background: transparent;
-  color: var(--color-text, #f1f5f9);
+  color: var(--color-text);
   cursor: pointer !important;
   padding: 0;
   line-height: 1;
@@ -140,20 +140,20 @@ export const NAV_CLUSTER_CSS = `
   background: transparent !important;
 }
 .nav-cluster-btn:hover {
-  background: var(--color-surface-hover, #334155);
-  border-color: var(--color-border-focus, #60a5fa);
-  color: var(--color-text, #f1f5f9);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
 }
 .nav-cluster-btn:focus-visible {
-  outline: 2px solid var(--color-border-focus, #60a5fa);
+  outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
 }
 .nav-cluster-btn:active,
 .nav-cluster-btn--active {
   transform: scale(0.88);
-  background: var(--color-surface-hover, #334155);
-  border-color: var(--color-border-focus, #60a5fa);
-  color: var(--color-primary, #60a5fa);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-primary);
 }
 .nav-cluster.no-sub .nav-cluster-main,
 .nav-cluster.no-sub .nav-cluster-secondary,

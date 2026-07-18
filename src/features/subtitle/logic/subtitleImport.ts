@@ -157,7 +157,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
 
   // Hover — icon đổi màu primary (no border feedback)
   label.addEventListener('mouseenter', () => {
-    label.style.color = 'var(--color-primary, #60a5fa)';
+    label.style.color = 'var(--color-primary)';
     labelFeather.style.background = 'rgba(15, 23, 42, 0.25)';
   });
   label.addEventListener('mouseleave', () => {

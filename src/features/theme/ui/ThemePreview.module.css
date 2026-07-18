@@ -38,7 +38,7 @@
 
 .btnPrimary {
   background: var(--color-primary);
-  color: var(--color-text-inverse, #fff);
+  color: var(--color-text-inverse);
   border-color: var(--color-primary);
 }
 
@@ -101,6 +101,6 @@
   font-size: var(--font-size-sm, 13px);
 }
 
-.toastSuccess { background: var(--color-success); color: var(--color-text-inverse, #fff); }
-.toastError { background: var(--color-error); color: var(--color-text-inverse, #fff); }
+.toastSuccess { background: var(--color-success); color: var(--color-text-inverse); }
+.toastError { background: var(--color-error); color: var(--color-text-inverse); }
 

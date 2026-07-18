@@ -30,7 +30,7 @@
 
 .btnPrimary {
   background: var(--color-primary);
-  color: var(--color-text-inverse, #fff);
+  color: var(--color-text-inverse);
   border-color: var(--color-primary);
 }
 

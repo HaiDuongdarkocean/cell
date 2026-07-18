@@ -5,7 +5,9 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "predev": "node scripts/generate-tokens.js",
     "dev": "vite",
+    "prebuild": "node scripts/generate-tokens.js",
     "build": "vite build",
     "preview": "vite preview",
     "test": "jest --passWithNoTests",

@@ -331,7 +331,7 @@ export function createSubtitleManagerPanel(
           padding: 1px 5px;
           border-radius: var(--radius-sm, 6px);
           background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
-          color: var(--color-warning, #f59e0b);
+          color: var(--color-warning);
           font-weight: 600;
           font-size: 9px;
           letter-spacing: 0.04em;
@@ -356,7 +356,7 @@ export function createSubtitleManagerPanel(
           padding: 1px 5px;
           border-radius: var(--radius-sm, 6px);
           background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
-          color: var(--color-warning, #f59e0b);
+          color: var(--color-warning);
           font-weight: 600;
           font-size: 9px;
           letter-spacing: 0.04em;

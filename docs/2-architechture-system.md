@@ -37,7 +37,7 @@ src/
 │   │       └── logic/subtitleOffset.ts  # ADR-019: pure offset logic — OffsetState, parseOffsetInput, clampOffsetMs, shouldAutoCommit, formatOffsetDisplay, AUTO_COMMIT_MS=120000
 │   ├── download/       #   Download queue/selection
 │   ├── settings/       #   Settings UI + validation logic
-│   ├── theme/          #   Theme system (ADR-022) — logic/colorGenerator, contrastValidator, themeManager, themeStorage, themeConfig; ui/ThemePanel, ThemeProvider, ModeCards, ColorCustomization, ThemePreview, ContrastBadges, ThemeImportExport
+│   ├── theme/          #   Theme system (ADR-022) — logic/colorGenerator, contrastValidator, themeManager, themeStorage, themeConfig; ui/ThemePanel, ThemeProvider, ModeCards, ColorCustomization, ThemePreview, ContrastBadges, ThemeImportExport; reads token defaults from shared/lib/tokens
 │   └── dictionary/     #   Dictionary import + phrase-template system (ADR-023, ADR-037) — logic/fileDetector, formatDetector, signatureGenerator, importErrors, batchProcessor, normalizationPipeline, phraseTemplateParser, phraseIndexCompiler, phraseIndexBuilder, phraseMatcher, phraseMatchService, phraseMatchBenchmark, importOrchestrator; repositories/baseRepository (v10: +langPhraseIndex), resourceRepository, frequencyRepository, dictionaryRepository, phraseIndexRepository; strategies/baseImportStrategy, txtLineStrategy, jsonArrayStrategy, yomitanStrategy, cambridgeJsonStrategy, sqliteStrategy, strategyFactory; ui/ResourcesPanel, Dropzone, ResourceCard, ImportProgress, DeleteConfirmModal
 │   └── dictionaryPopup/  # Popup Dictionary (spec §9, ADR-037) — types, schema; worker/lookupWorker, lookupWorkerHandler, phraseIndexLoader, resourcePriority; logic/lruCache, lookupOrchestrator, lookupOrchestratorBenchmark, englishLemma (ADR-041: unified multi-candidate lemma); trigger/subtitleTriggerController, subtitleTokenWrap, webTextTriggerController; services/wordStatusStore, quickAddAssembler, quickAddHandler, sendToCreator, ttsEngineService; ui/popupShell (Shadow DOM popup: role=dialog, focus trap, drag header, toast overlay), popupContent (getOrCreateCandidateList, renderHeader with inline play/close buttons, renderDefinitions, renderCandidate), popupToolbar (renderToolbar, renderAudioPanel with play/pause state + TTS fallback, renderImagePanel, renderTranslatePanel, renderLinksPanel chips), popupDictionaryController (showPopup, appendCandidate, playTermAudio, Quick Add toast feedback, status cycle); plugins/languagePlugin, englishPlugin, chinesePlugin, fallbackPlugin, pluginRegistry
 ├── entities/           # Domain entities (types/models) — M19: @/types/ fully migrated here
@@ -49,9 +49,15 @@ src/
 │   ├── media/          #   DownloadItem, Ass/Vtt/Srt types (re-exports video+settings)
 │   └── message/        #   Message bus types
 ├── shared/             # Shared infrastructure (cross-feature)
-│   ├── lib/            #   parsers/, storage/, chrome-apis/ (adapters), themeTokens
+│   ├── lib/            #   parsers/, storage/, chrome-apis/ (adapters), themeTokens, tokens
 │   │   ├── chrome-apis/  # M17: 9 adapters (tabs/runtime/storage/downloads/webRequest/offscreen/sidePanel/action/windows)
-│   │   └── storage/      # M21: settingsStore.ts (schema versioning + migration)
+│   │   ├── storage/      # M21: settingsStore.ts (schema versioning + migration)
+│   │   └── tokens.ts     # Design-token runtime helpers (SSOT: shared/styles/tokens.json); exports defaults + getColorTokens/buildColorTokenCSS/formatStaticTokens/formatComponentTokens
+│   ├── styles/         #   Global design-system styles
+│   │   ├── tokens.json   # Canonical design-token source (core/derived/static/component tokens)
+│   │   ├── tokens.css    # Generated from tokens.json; imported by popup/sidepanel/options + Shadow DOM popup
+│   │   ├── components.css # Global non-hashed component classes (icon-btn, btn)
+│   │   └── README.md     # Design-system usage guide for AI agents
 │   ├── ui/             #   Reusable UI atoms (design-system-ui-ux Step 3, Rule of Three)
 │   │   ├── index.ts                       # Barrel exports for shared UI
 │   │   ├── Button.tsx + .module.css        # Text button: primary/secondary/outline/ghost/destructive/link, sm/md/lg, loading, disabled
@@ -842,17 +848,19 @@ downloader.downloadM3u8Streaming(playlist)
 | `convertTtmlToSrt` | `lib/parsers/ttmlToSrt.ts` | string → string | (download path) | **ADR-029**: Convert TTML content to SRT format (parseTtml → msToSrtTime per cue) |
 | `stripSubtitleTags` | `lib/parsers/srtNormalizer.ts` | string → string | srtParser, vttParser, srtNormalizer | Strip `<i>`/`<b>`/`<c>`/`<v>`/`{\an8}` tags, preserve newlines (display path) |
 | `Toggle` | `shared/ui/Toggle.tsx` | checked, onChange, ariaLabel → ReactElement | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
-| `hexToRgb` | `features/theme/logic/colorGenerator.ts` | string → {r,g,b} | themeManager, contrastValidator | **ADR-022**: Parse hex → RGB (3/6 digit, case-insensitive) |
+| `hexToRgb` | `features/theme/logic/colorGenerator.ts` | string → {r,g,b} | contrastValidator, tokens | **ADR-022**: Parse hex → RGB (3/6 digit, case-insensitive) |
 | `getLuminance` | `features/theme/logic/colorGenerator.ts` | string → number | contrastValidator | **ADR-022**: WCAG 2.1 relative luminance (0-1) |
-| `generateShade` | `features/theme/logic/colorGenerator.ts` | (hex, percent) → hex | themeManager | **ADR-022**: Darken hex by percent (0-100) |
-| `generateHoverColor` | `features/theme/logic/colorGenerator.ts` | hex → hex | themeManager | **ADR-022**: Hover = shade 10% |
+| `generateShade` | `features/theme/logic/colorGenerator.ts` | (hex, percent) → hex | tokens | **ADR-022**: Darken hex by percent (0-100) |
+| `generateHoverColor` | `features/theme/logic/colorGenerator.ts` | hex → hex | tokens | **ADR-022**: Hover = shade 10% |
 | `getContrastRatio` | `features/theme/logic/contrastValidator.ts` | (fg, bg) → number | contrastValidator | **ADR-022**: WCAG contrast ratio (1-21) |
 | `validateTheme` | `features/theme/logic/contrastValidator.ts` | CoreColorTokens → ValidationResult | ThemePanel | **ADR-022**: Validate 3 pairs (text/canvas, textSecondary/canvas, white/primary) |
-| `applyTheme` | `features/theme/logic/themeManager.ts` | (ResolvedMode, ThemeConfig) → void | ThemeProvider, ThemePanel | **ADR-022**: Set 9 core + derived CSS vars on :root + data-theme attr |
+| `applyTheme` | `features/theme/logic/themeManager.ts` | (ResolvedMode, ThemeConfig) → void | ThemeProvider, ThemePanel | **ADR-022**: Set all color (core + derived) CSS vars on :root via shared/lib/tokens + data-theme attr |
 | `resolveMode` | `features/theme/logic/themeManager.ts` | ThemeMode → ResolvedMode | ThemeProvider, ThemePanel, popup App | **ADR-022**: system → light/dark via prefers-color-scheme |
 | `useThemeStore` | `stores/themeStore.ts` | Zustand store | ThemeProvider, ThemePanel, popup App | **ADR-022**: mode + config + init/switchMode/updateColor/setConfig/resetTheme |
-| `injectThemeTokens` | `shared/lib/themeTokens.ts` | HTMLElement → cleanup | contentScriptController | **ADR-022 + ADR-024**: Content-script `<style>` injection from themeConfig + storage.onChanged. Static tokens on `:root`, color tokens on `[data-theme]` |
+| `injectThemeTokens` | `shared/lib/themeTokens.ts` | HTMLElement → cleanup | contentScriptController | **ADR-022 + ADR-024**: Content-script `<style>` injection from themeConfig + storage.onChanged. Static + component tokens on `:root`, color tokens on `[data-theme]` via shared/lib/tokens |
 | `syncElementTheme` | `shared/lib/themeTokens.ts` | (element: HTMLElement, container: HTMLElement) → cleanup | subtitleBlockController.ts | **ADR-024**: Sync `data-theme` attribute from container to a portable element; uses MutationObserver to keep the element self-themed when re-parented |
+| `tokens.ts` | `shared/lib/tokens.ts` | — | themeTokens, themeManager, themeConfig | **ADR-022 SSOT**: Reads `shared/styles/tokens.json`; exports default palettes, getColorTokens(), buildColorTokenCSS(), formatStaticTokens(), formatComponentTokens() |
+| `generate-tokens.js` | `scripts/generate-tokens.js` | — | package.json predev/prebuild | Generates `shared/styles/tokens.css` from `shared/styles/tokens.json` |
 | `ThemeProvider` | `features/theme/ui/ThemeProvider.tsx` | children → JSX | popup/sidepanel/options main.tsx | **ADR-022**: Boot themeStore + applyTheme + system listener + storage.onChanged sync |
 | `importFile` | `features/dictionary/logic/importOrchestrator.ts` | (file, resourceType, options) → ImportResult | ResourcesPanel | **ADR-023**: validate → detect → signature → dedupe → create resource → strategy.execute() → finalize; error → rollbackImport |
 | `rollbackImport` | `features/dictionary/logic/importOrchestrator.ts` | (langCode, resourceId) → void | importOrchestrator | **ADR-023 D6**: Delete dictionary + frequency + resource (cascade); rollback-during-rollback → RollbackError |

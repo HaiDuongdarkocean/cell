@@ -11,6 +11,7 @@ meta:
   version: 1.0.0
   shape_source: YouTube DS (pill 18px / card 10px / dialog 12px, flat, hairline)
   color_source: Cell semantic tokens (slate + blue, NOT YouTube red)
+  token_source: src/shared/styles/tokens.json (canonical; tokens.css is generated from it)
   visual_reference: ./showcase.html
   principles:
     - id: P1
