@@ -178,7 +178,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-line {
   display: block;
   padding: var(--space-0-5, 2px) var(--space-2, 8px);
-  border-radius: 4px;
+  border-radius: var(--radius-2xs, 4px);
   line-height: 1.4;
   text-align: center;
   white-space: pre-wrap;
@@ -235,14 +235,14 @@ export const SUBTITLE_BLOCK_CSS = `
    Dark overlay colors intentional — sits on top of video, not theme-aware. */
 .subtitle-selector-icon {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: var(--space-2, 8px);
+  right: var(--space-2, 8px);
   z-index: 1000001;
-  width: 28px;
-  height: 28px;
+  width: var(--space-7, 28px);
+  height: var(--space-7, 28px);
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
+  border-radius: var(--radius-2xs, 4px);
   background: rgba(0, 0, 0, 0.6);
   color: white;
   cursor: pointer;
@@ -255,23 +255,23 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-selector-popover {
   position: absolute;
   top: 40px;
-  right: 8px;
+  right: var(--space-2, 8px);
   z-index: 1000002;
   max-height: 200px;
   overflow-y: auto;
   background: rgba(0, 0, 0, 0.85);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
+  border-radius: var(--radius-sm, 6px);
   padding: var(--space-1, 4px);
   min-width: 180px;
-  font-size: 12px;
+  font-size: var(--font-size-xs, 12px);
 }
 
 .subtitle-selector-item {
   padding: var(--space-1-5, 6px) var(--space-2, 8px);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-2xs, 4px);
   display: flex;
   justify-content: space-between;
   gap: var(--space-2, 8px);
@@ -481,8 +481,8 @@ export const SUBTITLE_BLOCK_CSS = `
    (sits on video). Item active state uses role-colored border + bg. */
 .subtitle-toolbar {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: var(--space-2, 8px);
+  left: var(--space-2, 8px);
   display: flex;
   gap: var(--space-2, 8px);
   z-index: 1000001;
@@ -545,7 +545,7 @@ export const SUBTITLE_BLOCK_CSS = `
   display: none;
   position: absolute;
   top: 44px;
-  left: 8px;
+  left: var(--space-2, 8px);
   z-index: 1000002;
   width: 320px;
   max-height: 360px;
@@ -622,8 +622,8 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-close {
-  width: 20px;
-  height: 20px;
+  width: var(--space-5, 20px);
+  height: var(--space-5, 20px);
   border: none;
   background: transparent;
   color: var(--color-text-muted);
@@ -675,9 +675,9 @@ export const SUBTITLE_BLOCK_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
+  flex: 0 0 var(--space-4, 16px);
+  width: var(--space-4, 16px);
+  height: var(--space-4, 16px);
   margin: 0;
   color: var(--color-text-muted);
   transition: transform 150ms ease;
@@ -740,8 +740,8 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-radio {
-  width: 14px;
-  height: 14px;
+  width: var(--space-3-5, 14px);
+  height: var(--space-3-5, 14px);
   border-radius: 50%;
   border: 2px solid var(--color-text-muted);
   background: transparent;
@@ -762,8 +762,8 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-radio-dot {
-  width: 4px;
-  height: 4px;
+  width: var(--space-1, 4px);
+  height: var(--space-1, 4px);
   border-radius: 50%;
   background: var(--color-text-inverse, white);
 }
@@ -843,8 +843,8 @@ export const SUBTITLE_BLOCK_CSS = `
    Overlay appearance — sits on video, not theme-aware. */
 .panel-toggle {
   position: absolute;
-  right: 8px;
-  top: 8px;
+  right: var(--space-2, 8px);
+  top: var(--space-2, 8px);
   width: var(--sb-btn-size, 40px);
   height: var(--sb-btn-size, 40px);
   border: none;
@@ -899,15 +899,15 @@ export const SUBTITLE_BLOCK_CSS = `
    Dark overlay colors intentional — sits on top of video. */
 .subtitle-track-dropdown {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: var(--space-2, 8px);
+  left: var(--space-2, 8px);
   z-index: 999999;
-  font-size: 12px;
+  font-size: var(--font-size-xs, 12px);
   padding: var(--space-0-5, 2px) var(--space-1, 4px);
   background-color: rgba(0, 0, 0, 0.7);
   color: rgba(255, 255, 255, 0.95);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-2xs, 4px);
   display: none;
 }
 
@@ -923,7 +923,7 @@ export const SUBTITLE_BLOCK_CSS = `
   left: 50%;
   transform: translateX(-50%);
   padding: var(--space-1, 4px) var(--space-3, 12px);
-  border-radius: 4px;
+  border-radius: var(--radius-2xs, 4px);
   pointer-events: auto;
   cursor: ns-resize;
   white-space: pre-wrap !important;

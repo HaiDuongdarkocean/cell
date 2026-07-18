@@ -14,26 +14,6 @@
   margin-bottom: var(--space-2, 8px);
 }
 
-.btn {
-  padding: var(--space-1, 4px) var(--space-3, 12px);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
-  background: var(--color-background);
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: var(--font-size-sm, 13px);
-}
-
-.btn:hover {
-  background: var(--color-surface-hover);
-}
-
-.btnPrimary {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-  border-color: var(--color-primary);
-}
-
 .textarea {
   width: 100%;
   min-height: 80px;

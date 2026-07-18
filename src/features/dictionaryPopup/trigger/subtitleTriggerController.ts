@@ -91,9 +91,9 @@ export function wrapTokenSpans(
     span.setAttribute(DATA_START, String(token.start));
     span.setAttribute(DATA_END, String(token.end));
     span.style.cursor = 'pointer';
-    span.style.borderRadius = '2px';
+    span.style.borderRadius = 'var(--radius-xs, 2px)';
     // Hover highlight (subtle, theme-agnostic).
-    span.style.transition = 'background-color 100ms';
+    span.style.transition = 'background-color var(--duration-100, 100ms)';
     textSpan.appendChild(span);
     tokenSpans.push(span);
 

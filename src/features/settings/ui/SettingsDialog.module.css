@@ -310,35 +310,3 @@
 .shortcutField:hover {
   background: var(--color-surface-hover);
 }
-
-/* === ADR-013: Subtitle style tab (Target/Native) === */
-.tabRow {
-  display: flex;
-  gap: var(--space-1, 4px);
-  padding: var(--space-0-5, 2px);
-  background: var(--color-surface-hover);
-  border-radius: var(--radius-sm);
-  margin-bottom: var(--space-1);
-}
-
-.tabBtn {
-  flex: 1;
-  padding: var(--space-1-5, 6px) var(--space-3, 12px);
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.tabBtn:hover {
-  color: var(--color-text);
-}
-
-.tabBtnActive {
-  background: var(--color-background);
-  color: var(--color-text);
-}

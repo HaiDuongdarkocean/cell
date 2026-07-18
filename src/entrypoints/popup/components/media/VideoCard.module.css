@@ -247,35 +247,6 @@
   flex-shrink: 0;
 }
 
-.downloadBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: transparent;
-  color: var(--color-text-muted);
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.downloadBtn:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-primary);
-}
-
-.downloadBtn svg {
-  width: 16px;
-  height: 16px;
-}
-
-.downloadBtn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
 /* Downloading spinner */
 .downloadingIndicator {
   display: flex;
