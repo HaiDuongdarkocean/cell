@@ -24,6 +24,18 @@ beforeAll(() => {
       if (idx >= 0) storageListeners.splice(idx, 1);
     }),
   };
+  // PointerEvent mock (jsdom doesn't have it but PopupShell uses pointer events).
+  if (typeof PointerEvent === 'undefined') {
+    class MockPointerEvent extends MouseEvent {
+      readonly pointerId: number;
+      constructor(type: string, init: MouseEventInit & { pointerId?: number } = {}) {
+        super(type, init);
+        this.pointerId = init.pointerId ?? 1;
+      }
+    }
+    (globalThis as unknown as { PointerEvent: typeof MouseEvent }).PointerEvent = MockPointerEvent as unknown as typeof MouseEvent;
+  }
+
   // matchMedia mock (jsdom doesn't have it)
   window.matchMedia = jest.fn((query: string) => ({
     matches: false,
@@ -524,6 +536,85 @@ describe('PopupShell', () => {
       expect(storageListeners.length).toBe(beforeCount + 1);
       shell.destroy();
       expect(storageListeners.length).toBe(beforeCount);
+    });
+  });
+
+  // --- Focus trap + drag + toast ---
+  describe('accessibility + drag feedback', () => {
+    it('container has role=dialog and aria-modal when mounted', () => {
+      shell.mount();
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
+      expect(popup.getAttribute('role')).toBe('dialog');
+      expect(popup.getAttribute('aria-modal')).toBe('true');
+      expect(popup.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('show() focuses the popup container', () => {
+      shell.mount();
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
+      // jsdom does not implement .focus by default; add a spy.
+      const focusSpy = jest.spyOn(popup, 'focus').mockImplementation(() => {});
+      shell.show();
+      expect(focusSpy).toHaveBeenCalled();
+      focusSpy.mockRestore();
+    });
+
+    it('Tab key cycles focus inside the popup', () => {
+      shell.mount();
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
+      const btn1 = document.createElement('button');
+      const btn2 = document.createElement('button');
+      popup.appendChild(btn1);
+      popup.appendChild(btn2);
+      // jsdom shadow.activeElement support is limited; cast popup as active.
+      jest.spyOn(shell.getShadowRoot() as unknown as ShadowRoot, 'activeElement', 'get').mockReturnValue(btn1);
+      const btn2Spy = jest.spyOn(btn2, 'focus').mockImplementation(() => {});
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      expect(btn2Spy).toHaveBeenCalled();
+      btn2Spy.mockRestore();
+    });
+
+    it('drag moves the popup by updating dragOffset and applying position', () => {
+      shell.mount();
+      shell.setPosition(100, 100, 200, 150);
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
+      popup.setPointerCapture = jest.fn();
+      popup.releasePointerCapture = jest.fn();
+      // Cast to access private members for testing.
+      const shellAny = shell as unknown as Record<string, unknown>;
+      const startTop = parseFloat(popup.style.top);
+      const startLeft = parseFloat(popup.style.left);
+      // Simulate pointerdown on the header.
+      const header = document.createElement('div');
+      header.className = 'cell-header';
+      popup.appendChild(header);
+      const pointerDown = new PointerEvent('pointerdown', { clientX: 110, clientY: 120, bubbles: true });
+      header.dispatchEvent(pointerDown);
+      const pointerMove = new PointerEvent('pointermove', { clientX: 160, clientY: 170, bubbles: true });
+      popup.dispatchEvent(pointerMove);
+      expect((shellAny.dragOffset as { x: number; y: number }).x).toBe(50);
+      expect((shellAny.dragOffset as { x: number; y: number }).y).toBe(50);
+      expect(parseFloat(popup.style.left)).toBeGreaterThan(startLeft);
+      expect(parseFloat(popup.style.top)).toBeGreaterThan(startTop);
+      const pointerUp = new PointerEvent('pointerup', { clientX: 160, clientY: 170, bubbles: true });
+      popup.dispatchEvent(pointerUp);
+      expect((shellAny.dragStart as unknown)).toBeNull();
+    });
+
+    it('showToast appends a toast and removes it after timeout', () => {
+      jest.useFakeTimers();
+      shell.mount();
+      const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
+      shell.showToast('Added to Anki');
+      const toast = popup.querySelector('.cell-toast') as HTMLDivElement;
+      expect(toast).not.toBeNull();
+      expect(toast.getAttribute('role')).toBe('status');
+      expect(toast.textContent).toBe('Added to Anki');
+      // Toast becomes visible after reflow (class added synchronously).
+      expect(toast.classList.contains('cell-toast--visible')).toBe(true);
+      jest.advanceTimersByTime(3400);
+      expect(popup.querySelector('.cell-toast')).toBeNull();
+      jest.useRealTimers();
     });
   });
 });

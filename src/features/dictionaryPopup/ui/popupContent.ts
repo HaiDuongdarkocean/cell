@@ -7,21 +7,14 @@
 // Content-script isolated world — vanilla DOM rendered into Shadow DOM.
 
 import type { LookupResult, DefinitionEntry, WordStatus } from '../types';
-import { STATUS_CYCLE } from '../services/wordStatusStore';
-import { settingsIcon, pencilIcon, zapIcon } from '@/shared/icons';
-
-// Checkmark icon for "known" status badge (success variant).
-// Lucide style: stroke 2.0, 24×24, currentColor, round caps.
-const CHECK_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg>`;
-
-// Tick for definition checkbox — white on primary fill when checked.
-const CHECK_TICK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;display:block"><path d="M20 6 9 17l-5-5"/></svg>`;
+import { STATUS_CYCLE, nextStatus } from '../services/wordStatusStore';
+import { ICON_CATALOG } from '@/shared/icons';
 
 // Design system §9 Badge — variant CSS per WordStatus.
 // All variants: radius full (pill), font 12px semibold, flat (no shadow).
 // BEM modifier classes: .cell-header__status--<variant>
 type BadgeVariant = 'neutral' | 'primary' | 'success' | 'secondary';
-const STATUS_BADGE_VARIANT: Record<WordStatus, BadgeVariant> = {
+export const STATUS_BADGE_VARIANT: Record<WordStatus, BadgeVariant> = {
   unknown: 'neutral',
   tracking: 'primary',
   known: 'success',
@@ -73,6 +66,9 @@ export function renderHeader(
   onQuickAdd: () => void,
   onSendToCreator: () => void,
   onSettings: () => void,
+  onClose?: () => void,
+  onPlayTerm?: () => void,
+  isWinner?: boolean,
 ): void {
   const header = document.createElement('div');
   header.className = 'cell-header js-cell-header';
@@ -81,7 +77,7 @@ export function renderHeader(
   const row1 = document.createElement('div');
   row1.className = 'cell-header__row';
 
-  // Term + reading group (reading on top, term below — centered on main axis)
+  // Term + reading group (reading on top, term + audio button below)
   const termGroup = document.createElement('div');
   termGroup.className = 'cell-header__term-group';
 
@@ -92,13 +88,33 @@ export function renderHeader(
     termGroup.appendChild(reading);
   }
 
+  const termRow = document.createElement('div');
+  termRow.className = 'cell-header__term-row';
+
   const term = document.createElement('span');
   term.className = 'cell-header__term js-cell-term';
   term.textContent = result.term;
-  termGroup.appendChild(term);
+  if (isWinner) term.id = 'cell-popup-term';
+  termRow.appendChild(term);
+
+  // Inline pronunciation button — play term audio/TTS without opening the Audio tab.
+  if (onPlayTerm) {
+    const playTermBtn = document.createElement('button');
+    playTermBtn.className = 'icon-btn icon-btn--xs cell-header__audio js-cell-play-term';
+    playTermBtn.setAttribute('aria-label', 'Play pronunciation');
+    playTermBtn.title = 'Play pronunciation';
+    playTermBtn.innerHTML = ICON_CATALOG.audioWave.svg;
+    playTermBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onPlayTerm();
+    });
+    termRow.appendChild(playTermBtn);
+  }
+
+  termGroup.appendChild(termRow);
   row1.appendChild(termGroup);
 
-  // Action button group: Settings (gear) | Send to Card (pencil) | Quick Add (zap)
+  // Action button group: Settings | Send to Card | Quick Add | Close
   // Uses .icon-btn .icon-btn--sm from components.css (design-system.md §2 Icon Button).
   const btnGroup = document.createElement('div');
   btnGroup.className = 'cell-header__actions';
@@ -108,7 +124,7 @@ export function renderHeader(
   settingsBtn.className = 'icon-btn icon-btn--sm js-cell-settings';
   settingsBtn.setAttribute('aria-label', 'Popup dictionary settings');
   settingsBtn.title = 'Settings';
-  settingsBtn.innerHTML = settingsIcon;
+  settingsBtn.innerHTML = ICON_CATALOG.settings.svg;
   settingsBtn.addEventListener('click', onSettings);
   btnGroup.appendChild(settingsBtn);
 
@@ -117,7 +133,7 @@ export function renderHeader(
   sendBtn.className = 'icon-btn icon-btn--sm js-cell-send-to-creator';
   sendBtn.setAttribute('aria-label', 'Send to Card Creator');
   sendBtn.title = 'Send to Card Creator';
-  sendBtn.innerHTML = pencilIcon;
+  sendBtn.innerHTML = ICON_CATALOG.pencil.svg;
   sendBtn.addEventListener('click', onSendToCreator);
   btnGroup.appendChild(sendBtn);
 
@@ -126,9 +142,23 @@ export function renderHeader(
   quickAdd.className = 'icon-btn icon-btn--sm icon-btn--filled js-cell-quick-add';
   quickAdd.setAttribute('aria-label', 'Quick Add to Anki');
   quickAdd.title = 'Quick Add to Anki';
-  quickAdd.innerHTML = zapIcon;
+  quickAdd.innerHTML = ICON_CATALOG.zap.svg;
   quickAdd.addEventListener('click', onQuickAdd);
   btnGroup.appendChild(quickAdd);
+
+  // Close button — explicit dismissal next to primary actions.
+  if (onClose) {
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'icon-btn icon-btn--sm js-cell-close';
+    closeBtn.setAttribute('aria-label', 'Close popup dictionary');
+    closeBtn.title = 'Close popup dictionary';
+    closeBtn.innerHTML = ICON_CATALOG.x.svg;
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onClose();
+    });
+    btnGroup.appendChild(closeBtn);
+  }
 
   row1.appendChild(btnGroup);
   header.appendChild(row1);
@@ -142,11 +172,12 @@ export function renderHeader(
   const statusVariant = STATUS_BADGE_VARIANT[currentStatus] ?? 'neutral';
   const statusBadge = document.createElement('button');
   statusBadge.className = `cell-header__status cell-header__status--${statusVariant} js-cell-status`;
-  statusBadge.title = 'Click to cycle status';
+  const next = nextStatus(currentStatus);
+  statusBadge.title = `Click to cycle: ${currentStatus} → ${next}`;
   statusBadge.addEventListener('click', onStatusCycle);
   // Checkmark icon for "known" status (success variant).
   if (currentStatus === 'known') {
-    statusBadge.innerHTML = `${CHECK_ICON_SVG}<span>${currentStatus}</span>`;
+    statusBadge.innerHTML = `${ICON_CATALOG.check.svg}<span>${currentStatus}</span>`;
   } else {
     statusBadge.textContent = currentStatus;
   }
@@ -207,19 +238,7 @@ export function renderDefinitions(
       const isChecked = selection.get(itemId) ?? def.defaultSelected;
       const checkLabel = document.createElement('label');
       checkLabel.className = 'cell-def__check js-cell-def-check' + (isChecked ? ' cell-def__check--checked' : '');
-      // Dot indicator (default visible)
-      const dot = document.createElement('span');
-      dot.className = 'cell-def__check-dot';
-      checkLabel.appendChild(dot);
-      // Checkbox visual (hidden by default, shown on hover or when checked)
-      const box = document.createElement('span');
-      box.className = 'cell-def__check-box';
-      const tick = document.createElement('span');
-      tick.className = 'cell-def__check-tick';
-      tick.innerHTML = CHECK_TICK_SVG;
-      box.appendChild(tick);
-      checkLabel.appendChild(box);
-      // Visually hidden input — still functional via label click
+      // Visually hidden input first so :focus-visible + .cell-def__check-box matches.
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = isChecked;
@@ -230,6 +249,18 @@ export function renderDefinitions(
         checkLabel.classList.toggle('cell-def__check--checked', checkbox.checked);
       });
       checkLabel.appendChild(checkbox);
+      // Dot indicator (default visible)
+      const dot = document.createElement('span');
+      dot.className = 'cell-def__check-dot';
+      checkLabel.appendChild(dot);
+      // Checkbox visual (hidden by default, shown on hover or when checked)
+      const box = document.createElement('span');
+      box.className = 'cell-def__check-box';
+      const tick = document.createElement('span');
+      tick.className = 'cell-def__check-tick';
+      tick.innerHTML = ICON_CATALOG.check.svg;
+      box.appendChild(tick);
+      checkLabel.appendChild(box);
       item.appendChild(checkLabel);
 
       // Definition text — padding-left makes room for the absolute gutter.
@@ -384,17 +415,11 @@ export function renderPopupContent(
   result: LookupResult,
   currentStatus: WordStatus,
   selection: DefinitionSelection,
-  callbacks: {
-    onStatusCycle: () => void;
-    onDefinitionToggle: (id: string, selected: boolean) => void;
-    onQuickAdd: () => void;
-    onSendToCreator: () => void;
-    onSettings: () => void;
-  },
+  callbacks: CandidateCallbacks,
 ): void {
   clearContainer(container);
   const list = getOrCreateCandidateList(container);
-  renderCandidate(list, result, currentStatus, selection, callbacks);
+  renderCandidate(list, result, currentStatus, selection, callbacks, true);
 }
 
 /** Callbacks for a single candidate. */
@@ -404,6 +429,8 @@ export interface CandidateCallbacks {
   onQuickAdd: () => void;
   onSendToCreator: () => void;
   onSettings: () => void;
+  onClose?: () => void;
+  onPlayTerm?: () => void;
 }
 
 /**
@@ -417,10 +444,22 @@ export function renderCandidate(
   currentStatus: WordStatus,
   selection: DefinitionSelection,
   callbacks: CandidateCallbacks,
+  isPrimary = false,
 ): HTMLElement {
   const candidate = document.createElement('div');
   candidate.className = 'cell-candidate js-cell-popup-candidate';
-  renderHeader(candidate, result, currentStatus, callbacks.onStatusCycle, callbacks.onQuickAdd, callbacks.onSendToCreator, callbacks.onSettings);
+  renderHeader(
+    candidate,
+    result,
+    currentStatus,
+    callbacks.onStatusCycle,
+    callbacks.onQuickAdd,
+    callbacks.onSendToCreator,
+    callbacks.onSettings,
+    callbacks.onClose,
+    callbacks.onPlayTerm,
+    isPrimary,
+  );
   // Toolbar slot — filled by appendCandidate (per-candidate tab state).
   const toolbarSlot = document.createElement('div');
   toolbarSlot.className = 'js-cell-toolbar-slot';
@@ -442,5 +481,5 @@ export function appendCandidateContent(
   callbacks: CandidateCallbacks,
 ): HTMLElement {
   const list = getOrCreateCandidateList(container);
-  return renderCandidate(list, result, currentStatus, selection, callbacks);
+  return renderCandidate(list, result, currentStatus, selection, callbacks, false);
 }

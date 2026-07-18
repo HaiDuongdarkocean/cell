@@ -52,6 +52,7 @@ docs/           # Tài liệu dự án
 │   └── 040-inflectional-morphology-lemma.md # ADR-040: inflectional morphology lemma — comparative/superlative (-er/-est/-ier/-iest) + irregular comparison; orchestrator lemma fallback + multi-candidate
 │   └── 041-unified-lemma-module.md          # ADR-041: unified multi-candidate lemma module — ALL 8 inflectional suffixes + irregulars; supersedes ADR-040 single-candidate; phraseMatcher delegates
 │   └── 042-sticky-candidate-header.md       # ADR-042: sticky candidate header cho popup dictionary (CSS position:sticky, 2-layer shell + candidate-list wrapper, iOS Safari bug workaround)
+│   └── 043-popup-dictionary-ux-improvements.md # ADR-043: header audio/close buttons, audio play/pause state, image grid, links chips, Quick Add toast, focus trap, drag header
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -95,6 +96,8 @@ docs/           # Tài liệu dự án
 │   └── spec-shared-ui-components.md # Shared UI component library (Button/Card/Dialog/Input + atoms/molecules + migration of existing feature UI)
 │   └── spec-icon-library.md # SVG icon library (Lucide reference catalog, 1995 icons, ISC license, docs-only not bundled)
 │   └── design/dictionary-popup-prototype-handoff.md # Interactive dictionary popup prototype handoff (English/Chinese, tabs, media, card creator, design-system constraints)
+│   └── design/popup-dictionary-tab-ui-design.md # Popup Dictionary tab UI design variants: audio, image, translate, links (selected variants + CSS)
+│   └── design/popup-dictionary-ux-improvements.md # Popup Dictionary UX improvement spec: Socratic audit, selected improvements, implementation notes
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md

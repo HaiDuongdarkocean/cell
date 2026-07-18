@@ -206,11 +206,20 @@ Links grouped by category (Dictionary, Translator, Thesaurus). Each category a s
 
 ## Recommendation
 
-| Tab | Recommended | Reason |
+| Tab | Selected | Reason |
 |---|---|---|
-| Audio | **Variant A** | Matches list mental model, minimal clicks, easy to show playing state. |
-| Image | **Variant A** or **B** | A is most compact; B shows more results. Let user test. |
-| Translate | **Variant A** | Translate is a binary action; single flow keeps panel tiny. |
-| Links | **Variant B** | Wraps efficiently in narrow popup and looks more intentional than plain list. |
+| Audio | **Variant A** | List rows grouped by Word/Sentence Audio; play button switches to pause while the Forvo item is playing. |
+| Image | **Variant B** | Responsive `auto-fill` grid shows more thumbnails without horizontal scrolling. |
+| Translate | **Variant A** | Single card flow keeps the panel compact. |
+| Links | **Variant B** | Flex-wrap source chips with icon are scannable and fit narrow popups. |
 
-Next step: pick one variant per tab, then I will update `popupDictionary.css`, `popupToolbar.ts`, and `popupDictionaryController.ts` accordingly.
+## Implementation notes
+
+Implemented in `popupDictionary.css`, `popupToolbar.ts`, `popupContent.ts`, `popupShell.ts`, and `popupDictionaryController.ts`:
+
+- **Header**: added inline audio button (term pronunciation) and explicit close button; status badge title now shows the next cycle state.
+- **Popup shell**: `role=dialog`, `aria-modal`, focus trap on `Tab`, focus restore on hide/destroy, pointer-drag header, viewport-clamped drag offset, `showToast()` overlay.
+- **Audio panel**: `renderAudioPanel` accepts an optional `currentlyPlayingId`; play button swaps to pause and row gets `cell-audio__item--playing` while active.
+- **Image panel**: `.cell-image__strip` is a CSS grid (`repeat(auto-fill, minmax(96px, 1fr))`) with `aspect-ratio: 4/3` cards.
+- **Links panel**: links render as chips with `link` icon and `aria-label` indicating they open in a new tab.
+- **Quick Add feedback**: `doQuickAdd` now awaits the response and shows a transient toast via `PopupShell.showToast`.

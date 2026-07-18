@@ -62,6 +62,7 @@ export function renderToolbar(
     btn.className = 'icon-btn icon-btn--sm js-cell-tab' + (activeTab === config.tab ? ' icon-btn--active' : '');
     btn.setAttribute('data-cell-tab', config.tab);
     btn.setAttribute('aria-label', config.label);
+    btn.setAttribute('aria-pressed', String(activeTab === config.tab));
     btn.title = config.label;
     btn.style.position = 'relative';
     btn.innerHTML = config.icon;
@@ -101,6 +102,8 @@ export function renderAudioPanel(
   onPlay: (item: AudioItem) => void,
   isLoading = false,
   error?: string,
+  currentlyPlayingId?: string,
+  onTts?: () => void,
 ): void {
   const panel = document.createElement('div');
   panel.className = 'cell-audio js-cell-panel';
@@ -148,16 +151,17 @@ export function renderAudioPanel(
 
     for (const item of items) {
       const isChecked = selection.get(item.id) ?? item.defaultSelected;
+      const isPlaying = currentlyPlayingId === item.id;
       const row = document.createElement('div');
-      row.className = 'cell-audio__item js-cell-audio-item';
+      row.className = 'cell-audio__item js-cell-audio-item' + (isPlaying ? ' cell-audio__item--playing' : '');
       row.setAttribute('data-cell-audio-id', item.id);
 
-      // Play button — click to play, does NOT toggle selection.
+      // Play/pause button — click to play, does NOT toggle selection.
       const playBtn = document.createElement('button');
       playBtn.className = 'icon-btn icon-btn--sm icon-btn--outlined js-cell-audio-play';
-      playBtn.setAttribute('aria-label', `Play ${item.label}`);
-      playBtn.title = `Play ${item.label}`;
-      playBtn.innerHTML = ICON_CATALOG.audioWave.svg;
+      playBtn.setAttribute('aria-label', isPlaying ? `Pause ${item.label}` : `Play ${item.label}`);
+      playBtn.title = isPlaying ? `Pause ${item.label}` : `Play ${item.label}`;
+      playBtn.innerHTML = isPlaying ? ICON_CATALOG.pause.svg : ICON_CATALOG.play.svg;
       playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         onPlay(item);
@@ -183,14 +187,21 @@ export function renderAudioPanel(
         metaEl.textContent = parts.slice(1).join(' · ');
         labelEl.appendChild(metaEl);
       }
-      labelEl.addEventListener('click', (e) => {
-        e.stopPropagation();
+      const toggleAudioLabel = (e?: Event): void => {
+        e?.stopPropagation();
         // M1: read current state from selection map at click time, not the
         // isChecked captured at render — otherwise 2nd click reuses stale value.
         const current = selection.get(item.id) ?? item.defaultSelected;
         onToggle(item.id, !current);
         checkEl.classList.toggle('cell-audio__check--checked', !current);
         labelEl.setAttribute('aria-pressed', String(!current));
+      };
+      labelEl.addEventListener('click', toggleAudioLabel);
+      labelEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleAudioLabel(e);
+        }
       });
       row.appendChild(labelEl);
 
@@ -225,6 +236,7 @@ export function renderAudioPanel(
     const btn = document.createElement('button');
     btn.className = 'btn btn--outline btn--sm js-cell-audio-tts-fallback';
     btn.textContent = 'Use system TTS';
+    if (onTts) btn.addEventListener('click', onTts);
     empty.appendChild(btn);
     panel.appendChild(empty);
   }
@@ -304,7 +316,7 @@ export function renderImagePanel(
     card.className = 'cell-image__card js-cell-image-card' + (isSelected ? ' cell-image__card--selected' : '');
     card.setAttribute('role', 'checkbox');
     card.setAttribute('aria-checked', String(isSelected));
-    card.setAttribute('aria-label', img.alt);
+    card.setAttribute('aria-label', img.alt || `Image for ${searchTerm || 'term'}`);
     card.setAttribute('data-cell-image-id', img.id);
 
     const thumb = document.createElement('img');
@@ -458,9 +470,16 @@ export function renderTranslatePanel(
   checkEl.appendChild(tick);
   block.appendChild(checkEl);
 
-  // Click block to toggle selection.
-  block.addEventListener('click', () => {
+  const toggleTranslate = (): void => {
     if (onToggleSelect) onToggleSelect();
+  };
+  // Click or keyboard activate.
+  block.addEventListener('click', toggleTranslate);
+  block.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleTranslate();
+    }
   });
 
   panel.appendChild(block);
@@ -509,7 +528,8 @@ export function renderLinksPanel(
     anchor.href = link.url;
     anchor.target = '_blank';
     anchor.rel = 'noopener noreferrer';
-    anchor.textContent = link.name;
+    anchor.setAttribute('aria-label', `${link.name} (opens in new tab)`);
+    anchor.innerHTML = `${ICON_CATALOG.link.svg}<span class="cell-links__name">${link.name}</span>`;
     panel.appendChild(anchor);
   }
 
@@ -528,6 +548,6 @@ export function fillExternalDictLinks(
     .map((t) => ({
       id: t.id,
       name: t.name,
-      url: t.urlTemplate.replace('{term}', encodedTerm).replace('{lang}', langCode),
+      url: t.urlTemplate.replaceAll('{term}', encodedTerm).replaceAll('{lang}', langCode),
     }));
 }

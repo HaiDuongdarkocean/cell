@@ -230,6 +230,24 @@ describe('renderAudioPanel', () => {
     expect(container.querySelectorAll('.cell-audio__skeleton-row').length).toBe(6);
     expect(container.querySelectorAll('.cell-skeleton').length).toBeGreaterThan(0);
   });
+
+  it('currentlyPlayingId switches play button to pause icon and row to playing state', () => {
+    const wordAudios = [makeAudio({ id: 'w1' })];
+    renderAudioPanel(container, wordAudios, [], new Map(), jest.fn(), jest.fn(), false, undefined, 'w1');
+    const playBtn = container.querySelector('.js-cell-audio-play') as HTMLButtonElement;
+    const row = container.querySelector('.js-cell-audio-item') as HTMLDivElement;
+    expect(playBtn.getAttribute('aria-label')).toContain('Pause');
+    expect(row.classList.contains('cell-audio__item--playing')).toBe(true);
+  });
+
+  it('non-playing items keep play aria-label and no playing class', () => {
+    const wordAudios = [makeAudio({ id: 'w1' })];
+    renderAudioPanel(container, wordAudios, [], new Map(), jest.fn(), jest.fn(), false, undefined, 'w2');
+    const playBtn = container.querySelector('.js-cell-audio-play') as HTMLButtonElement;
+    const row = container.querySelector('.js-cell-audio-item') as HTMLDivElement;
+    expect(playBtn.getAttribute('aria-label')).toContain('Play');
+    expect(row.classList.contains('cell-audio__item--playing')).toBe(false);
+  });
 });
 
 describe('renderImagePanel', () => {
@@ -373,7 +391,7 @@ describe('renderLinksPanel', () => {
     container = document.createElement('div');
   });
 
-  it('renders external dict links', () => {
+  it('renders external dict links as chips with icon and name', () => {
     const links = [
       { id: 'cambridge', name: 'Cambridge', url: 'https://dictionary.cambridge.org/dictionary/english/take' },
       { id: 'wiktionary', name: 'Wiktionary', url: 'https://en.wiktionary.org/wiki/take' },
@@ -381,8 +399,11 @@ describe('renderLinksPanel', () => {
     renderLinksPanel(container, links);
     const anchors = container.querySelectorAll('a');
     expect(anchors.length).toBe(2);
-    expect(anchors[0]!.textContent).toBe('Cambridge');
     expect(anchors[0]!.getAttribute('href')).toBe('https://dictionary.cambridge.org/dictionary/english/take');
+    expect(anchors[0]!.querySelector('.cell-links__name')?.textContent).toBe('Cambridge');
+    expect(anchors[0]!.querySelector('svg')).not.toBeNull();
+    expect(anchors[0]!.classList.contains('cell-links__item')).toBe(true);
+    expect(anchors[0]!.getAttribute('aria-label')).toContain('Cambridge (opens in new tab)');
   });
 
   it('links open in new tab with noopener', () => {
