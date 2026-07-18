@@ -20,7 +20,7 @@ export const NAV_CLUSTER_CSS = `
   z-index: var(--nav-cluster-z-index, 1000001);
   font-family: var(--font-family, system-ui, -apple-system, sans-serif);
   user-select: none;
-  transition: transform 150ms ease, opacity 150ms ease;
+  transition: transform var(--duration-fast, 150ms) ease, opacity var(--duration-fast, 150ms) ease;
   pointer-events: auto;
   /* ADR-018 D5-rev: drag is via grip tab only — cluster body = default cursor */
   cursor: default;
@@ -73,7 +73,7 @@ export const NAV_CLUSTER_CSS = `
   border-radius: var(--radius-full, 9999px);
   background: var(--color-text-muted);
   opacity: 0.35;
-  transition: opacity 150ms ease, background 150ms ease;
+  transition: opacity var(--duration-fast, 150ms) ease, background var(--duration-fast, 150ms) ease;
 }
 .nav-cluster-grip:hover::before {
   opacity: 0.7;
@@ -126,7 +126,7 @@ export const NAV_CLUSTER_CSS = `
   line-height: 1;
   opacity: var(--nav-cluster-btn-opacity, 0.9);
   -webkit-tap-highlight-color: transparent;
-  transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 150ms ease, background 150ms ease, color 150ms ease;
+  transition: transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color var(--duration-fast, 150ms) ease, background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease;
 }
 .nav-cluster-btn .nav-cluster-icon {
   width: 65%;

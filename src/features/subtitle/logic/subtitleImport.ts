@@ -117,7 +117,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     isolation: isolate;
     pointer-events: auto;
     user-select: none;
-    transition: background 150ms ease, color 150ms ease, transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275);
   `;
   label.style.setProperty('border', 'none', 'important');
   label.style.setProperty('opacity', '1', 'important');
@@ -135,7 +135,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
     mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
     z-index: -1;
-    transition: background 150ms ease;
+    transition: background var(--duration-fast, 150ms) ease;
     pointer-events: none;
   `;
   label.appendChild(labelFeather);

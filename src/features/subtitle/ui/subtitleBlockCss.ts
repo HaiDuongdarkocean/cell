@@ -91,7 +91,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: relative;
   isolation: isolate;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), background var(--transition, 150ms ease), color var(--transition, 150ms ease);
+  transition: transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275), background var(--transition, 150ms ease), color var(--transition, 150ms ease);
 }
 
 /* Feathered backdrop — ::before mở rộng + backdrop-filter blur 1px + mask radial fade.
@@ -107,7 +107,7 @@ export const SUBTITLE_BLOCK_CSS = `
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   z-index: -1;
-  transition: background 150ms ease;
+  transition: background var(--duration-fast, 150ms) ease;
 }
 
 .cluster-btn:hover {
@@ -319,7 +319,7 @@ export const SUBTITLE_BLOCK_CSS = `
   color: var(--color-text);
   font: inherit;
   text-align: left;
-  transition: background 150ms ease;
+  transition: background var(--duration-fast, 150ms) ease;
 }
 
 .offset-header:hover {
@@ -329,7 +329,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .offset-header-chevron {
   display: inline-flex;
   color: var(--color-text-muted);
-  transition: transform 150ms ease;
+  transition: transform var(--duration-fast, 150ms) ease;
 }
 
 .offset-header-label {
@@ -371,7 +371,7 @@ export const SUBTITLE_BLOCK_CSS = `
   font-variant-numeric: tabular-nums;
   padding: var(--space-2, 8px) var(--space-1, 4px);
   min-height: 40px;
-  transition: background 150ms ease, color 150ms ease;
+  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   display: flex;
@@ -409,7 +409,7 @@ export const SUBTITLE_BLOCK_CSS = `
   min-width: 0;
   width: 100%;
   border: none;
-  transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+  transition: color var(--duration-fast, 150ms) ease, background var(--duration-fast, 150ms) ease, box-shadow var(--duration-fast, 150ms) ease;
   text-align: center;
   outline: none;
 }
@@ -450,7 +450,7 @@ export const SUBTITLE_BLOCK_CSS = `
   font-family: var(--font-family, sans-serif);
   font-size: var(--font-size-xs, 12px);
   font-weight: var(--font-weight-medium, 500);
-  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -506,7 +506,7 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: auto;
   user-select: none;
   position: relative;
-  transition: background 150ms ease, color 150ms ease, transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .subtitle-manager-icon-feather {
@@ -519,7 +519,7 @@ export const SUBTITLE_BLOCK_CSS = `
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   z-index: -1;
-  transition: background 150ms ease;
+  transition: background var(--duration-fast, 150ms) ease;
   pointer-events: none;
 }
 
@@ -634,7 +634,7 @@ export const SUBTITLE_BLOCK_CSS = `
   padding: 0;
   box-sizing: border-box;
   border-radius: var(--radius-sm, 6px);
-  transition: background 150ms ease, color 150ms ease, transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .subtitle-manager-close:hover {
@@ -664,7 +664,7 @@ export const SUBTITLE_BLOCK_CSS = `
   line-height: 1.5;
   text-align: left;
   box-sizing: border-box;
-  transition: background 150ms ease;
+  transition: background var(--duration-fast, 150ms) ease;
 }
 
 .subtitle-manager-section-header:hover {
@@ -680,7 +680,7 @@ export const SUBTITLE_BLOCK_CSS = `
   height: var(--space-4, 16px);
   margin: 0;
   color: var(--color-text-muted);
-  transition: transform 150ms ease;
+  transition: transform var(--duration-fast, 150ms) ease;
 }
 
 .subtitle-manager-section-label {
@@ -718,7 +718,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border-radius: var(--radius-sm, 6px);
   border: 1px solid transparent;
   background: transparent;
-  transition: background 150ms ease;
+  transition: background var(--duration-fast, 150ms) ease;
 }
 
 .subtitle-manager-item:hover:not(.subtitle-manager-item--active) {
@@ -861,7 +861,7 @@ export const SUBTITLE_BLOCK_CSS = `
   z-index: 1000000;
   user-select: none;
   pointer-events: auto;
-  transition: background 150ms ease, color 150ms ease, transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .panel-toggle:hover {
@@ -887,7 +887,7 @@ export const SUBTITLE_BLOCK_CSS = `
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   z-index: -1;
-  transition: background 150ms ease;
+  transition: background var(--duration-fast, 150ms) ease;
   pointer-events: none;
 }
 
@@ -1009,7 +1009,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-toast--fade-out {
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--duration-slow, 300ms) ease;
 }
 
 @keyframes subtitle-toast-in {
