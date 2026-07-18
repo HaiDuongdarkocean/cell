@@ -406,11 +406,11 @@ function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill
   if (!result) return null;
   const snapshot = getActiveSnapshot(state);
 
-  // Definitions: use selected; if none selected, fall back to first.
+  // Definitions: use selected; if none selected, use all.
   const selectedDefs = getSelectedDefinitions(result, snapshot.definitionSelection);
   const defs = selectedDefs.length > 0
     ? selectedDefs
-    : result.definitions.slice(0, 1);
+    : result.definitions;
   // Mandatory word audio: selected word audios, or first available word audio.
   const selectedWordAudios = snapshot.audioItems
     .filter((a) => a.url && a.kind === 'word' && snapshot.audioSelection.get(a.id) === true);
@@ -694,6 +694,10 @@ function renderCandidateChipsAndList(state: PopupDictionaryState, container: HTM
     const cs = state.candidateStates.get(i + 1);
     candidates.push({ idx: i + 1, result: r, status: cs?.status ?? r.status });
   }
+
+  // Chips only render when there are more than 2 candidates — with 1 or 2,
+  // the header word + reading already conveys the choice and chips add noise.
+  if (candidates.length <= 2) return;
 
   renderCandidateChips(
     candidatesEl,
