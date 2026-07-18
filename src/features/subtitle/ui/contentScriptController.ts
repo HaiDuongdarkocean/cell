@@ -54,7 +54,7 @@ const DEFAULT_OVERLAY_CONFIG: OverlayConfig = {
   autoLoadEnabled: false,
   fontSize: 24,
   position: 'bottom',
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  backgroundColor: `${tokensJson.static.overlay.background}B3`, // 0.7 alpha (~B3 in hex)
   textColor: tokensJson.static.overlay.text,
   showTimestamps: false,
 };
