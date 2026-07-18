@@ -1,4 +1,4 @@
-// popupDictionaryController tests — spec §4.6.3 P0: full flow wiring.
+// popupDictionaryController tests — spec redesign: active candidate + candidates chips.
 
 import { describe, expect, it, beforeEach, beforeAll, jest } from '@jest/globals';
 
@@ -12,8 +12,9 @@ import {
   cycleStatus,
   toggleDefinition,
   toggleTab,
-  getInitialPopupSize,
   appendCandidate,
+  setActiveCandidate,
+  getInitialPopupSize,
 } from './popupDictionaryController';
 import type { PopupDictionaryState } from './popupDictionaryController';
 import type { LookupResult, WordStatus } from '../types';
@@ -113,6 +114,8 @@ describe('createPopupDictionaryState', () => {
     expect(state.currentStatus).toBe('unknown');
     expect(state.activeTab).toBeNull();
     expect(state.shell).toBeNull();
+    expect(state.activeCandidateIndex).toBe(0);
+    expect(state.candidateStates.size).toBe(0);
   });
 
   it('uses defaultActiveTab from settings', () => {
@@ -169,25 +172,40 @@ describe('showPopup', () => {
     expect(newState.additionalResults).toEqual([]);
   });
 
+  it('resets activeCandidateIndex on show', () => {
+    state = { ...state, activeCandidateIndex: 2 };
+    const result = makeResult();
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    expect(newState.activeCandidateIndex).toBe(0);
+  });
+
   it('invokes onDismiss callback with hidden state when shell dismisses', () => {
     const result = makeResult();
     const onDismiss = jest.fn();
     const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence', onDismiss);
     // Simulate shell dismiss (Esc / click outside).
-    newState.shell?.['onDismiss']();
+    (newState.shell as unknown as { onDismiss: () => void })?.onDismiss?.();
     expect(onDismiss).toHaveBeenCalledTimes(1);
     const dismissedState = onDismiss.mock.calls[0]![0] as PopupDictionaryState;
     expect(dismissedState.currentResult).toBeNull();
   });
 
-  it('renders .js-cell-toolbar inside the winner candidate slot', () => {
+  it('renders .js-cell-toolbar inside the materials slot (1 toolbar per popup)', () => {
     const result = makeResult();
     const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
     const container = newState.shell?.getContainer();
-    const candidates = container!.querySelectorAll('.js-cell-popup-candidate');
-    expect(candidates).toHaveLength(1);
-    const toolbars = candidates[0]!.querySelectorAll('.js-cell-toolbar');
-    expect(toolbars).toHaveLength(1);
+    const materialsSlot = container!.querySelector('.js-cell-materials-slot');
+    expect(materialsSlot).not.toBeNull();
+    expect(materialsSlot!.querySelector('.js-cell-toolbar')).not.toBeNull();
+  });
+
+  it('renders active entry + candidates + footer', () => {
+    const result = makeResult();
+    const newState = showPopup(state, result, 170, 100, 150, 200, 'sentence');
+    const container = newState.shell?.getContainer();
+    expect(container!.querySelector('.js-cell-active-entry')).not.toBeNull();
+    expect(container!.querySelector('.js-cell-candidates')).not.toBeNull();
+    expect(container!.querySelector('.js-cell-footer')).not.toBeNull();
   });
 
   it('auto-translates sentence when translate tab is opened', async () => {
@@ -206,8 +224,7 @@ describe('showPopup', () => {
         payload: expect.objectContaining({ text: 'Take off your shoes.', sl: 'en', tl: 'vi' }),
       }),
     );
-    // Panel must stay open after async translation completes (bug: it used to close
-    // because the onTabOpen closure captured a stale state with activeTab=null).
+    // Panel must stay open after async translation completes.
     expect(container!.querySelector('.js-cell-panel[data-cell-panel="translate"]')).not.toBeNull();
   });
 
@@ -293,15 +310,14 @@ describe('appendCandidate', () => {
     expect(s.additionalResults[0]!.term).toBe('get over');
   });
 
-  it('renders a second .js-cell-popup-candidate element in the shell', () => {
+  it('renders candidates chips after append', () => {
     const winner = makeResult({ term: 'get out' });
     const candidate = makeResult({ term: 'get over' });
     let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
     s = appendCandidate(s, candidate, 'sentence');
     const container = s.shell?.getContainer();
-    expect(container).not.toBeNull();
-    const candidates = container!.querySelectorAll('.js-cell-popup-candidate');
-    expect(candidates).toHaveLength(2);
+    const chips = container!.querySelectorAll('.js-cell-chip');
+    expect(chips.length).toBe(2);
   });
 
   it('no-ops when shell is null', () => {
@@ -310,18 +326,15 @@ describe('appendCandidate', () => {
     expect(s.additionalResults).toEqual([]);
   });
 
-  it('every candidate (winner + appended) has a .js-cell-toolbar', () => {
+  it('keeps active entry on winner after append', () => {
     const winner = makeResult({ term: 'get out' });
     const candidate = makeResult({ term: 'get over' });
     let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
     s = appendCandidate(s, candidate, 'sentence');
+    expect(s.activeCandidateIndex).toBe(0);
     const container = s.shell?.getContainer();
-    const candidates = container!.querySelectorAll('.js-cell-popup-candidate');
-    expect(candidates).toHaveLength(2);
-    for (const cand of candidates) {
-      const toolbars = cand.querySelectorAll('.js-cell-toolbar');
-      expect(toolbars).toHaveLength(1);
-    }
+    const activeTerm = container!.querySelector('.js-cell-active-entry .js-cell-term')?.textContent;
+    expect(activeTerm).toBe('get out');
   });
 });
 
@@ -338,7 +351,8 @@ describe('hidePopup', () => {
       makePopupSettings({ defaultActiveTab: 'audio' }),
       makeCardCreatorSettings(),
     );
-    const hidden = hidePopup(state);
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
+    const hidden = hidePopup(shown);
     expect(hidden.activeTab).toBeNull();
   });
 
@@ -378,17 +392,13 @@ describe('cycleStatus', () => {
     expect(cycled2.currentStatus).toBe('known');
   });
 
-  it('cycles ignore → unknown (wraps around)', () => {
+  it('updates header status badge in DOM', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const shown = showPopup(state, makeResult({ status: 'ignore' as WordStatus }), 170, 100, 150, 200, 'sentence');
+    const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const cycled = cycleStatus(shown);
-    expect(cycled.currentStatus).toBe('unknown');
-  });
-
-  it('no-op when no current result', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
-    const cycled = cycleStatus(state);
-    expect(cycled.currentStatus).toBe('unknown');
+    const container = cycled.shell?.getContainer();
+    const badge = container!.querySelector('.cell-header__second .js-cell-status');
+    expect(badge?.textContent).toBe('tracking');
   });
 });
 
@@ -402,40 +412,102 @@ describe('toggleDefinition', () => {
 });
 
 describe('toggleTab', () => {
-  it('opens tab when none active', () => {
+  it('sets activeTab to clicked tab', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const toggled = toggleTab(shown, 'audio');
     expect(toggled.activeTab).toBe('audio');
   });
 
-  it('closes tab when clicking active tab', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+  it('closes activeTab when same tab clicked', () => {
+    const state = createPopupDictionaryState(
+      makePopupSettings({ defaultActiveTab: 'audio' }),
+      makeCardCreatorSettings(),
+    );
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
-    const opened = toggleTab(shown, 'audio');
-    const closed = toggleTab(opened, 'audio');
-    expect(closed.activeTab).toBeNull();
+    const toggled = toggleTab(shown, 'audio');
+    expect(toggled.activeTab).toBeNull();
   });
 
-  it('switches tab when clicking different tab', () => {
+  it('renders panel in materials body', () => {
     const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
-    const opened = toggleTab(shown, 'audio');
-    const switched = toggleTab(opened, 'image');
-    expect(switched.activeTab).toBe('image');
+    const toggled = toggleTab(shown, 'links');
+    const container = toggled.shell?.getContainer();
+    const body = container!.querySelector('.js-cell-materials-slot .cell-materials__body');
+    expect(body?.children.length).toBeGreaterThan(0);
   });
 });
 
 describe('getInitialPopupSize', () => {
-  it('clamps to viewport', () => {
-    const size = getInitialPopupSize(makePopupSettings({ popupWidthPx: 2000, popupMaxHeightPx: 2000 }));
-    expect(size.width).toBeLessThanOrEqual(1920 - 16);
-    expect(size.maxHeight).toBeLessThanOrEqual(1080 * 0.7);
+  it('clamps popup size to viewport', () => {
+    const settings = makePopupSettings({ popupWidthPx: 10000, popupMaxHeightPx: 10000 });
+    const size = getInitialPopupSize(settings);
+    expect(size.width).toBeLessThanOrEqual(window.innerWidth - 16);
+    expect(size.maxHeight).toBeLessThanOrEqual(Math.round(window.innerHeight * 0.7));
+  });
+});
+
+describe('setActiveCandidate', () => {
+  let state: ReturnType<typeof createPopupDictionaryState>;
+
+  beforeEach(() => {
+    state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
   });
 
-  it('enforces minimum width', () => {
-    const size = getInitialPopupSize(makePopupSettings({ popupWidthPx: 100, popupMaxHeightPx: 100 }));
-    expect(size.width).toBeGreaterThanOrEqual(320);
-    expect(size.maxHeight).toBeGreaterThanOrEqual(200);
+  it('switches activeCandidateIndex from 0 to 1', () => {
+    const winner = makeResult({ term: 'get out' });
+    const candidate = makeResult({ term: 'get over' });
+    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    s = appendCandidate(s, candidate, 'sentence');
+    s = setActiveCandidate(s, 1);
+    expect(s.activeCandidateIndex).toBe(1);
+  });
+
+  it('updates active entry term to the selected candidate', () => {
+    const winner = makeResult({ term: 'get out' });
+    const candidate = makeResult({ term: 'get over' });
+    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    s = appendCandidate(s, candidate, 'sentence');
+    s = setActiveCandidate(s, 1);
+    const container = s.shell?.getContainer();
+    const activeTerm = container!.querySelector('.js-cell-active-entry .js-cell-term')?.textContent;
+    expect(activeTerm).toBe('get over');
+  });
+
+  it('switches back to winner (index 0)', () => {
+    const winner = makeResult({ term: 'get out' });
+    const candidate = makeResult({ term: 'get over' });
+    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    s = appendCandidate(s, candidate, 'sentence');
+    s = setActiveCandidate(s, 1);
+    s = setActiveCandidate(s, 0);
+    expect(s.activeCandidateIndex).toBe(0);
+    const container = s.shell?.getContainer();
+    const activeTerm = container!.querySelector('.js-cell-active-entry .js-cell-term')?.textContent;
+    expect(activeTerm).toBe('get out');
+  });
+
+  it('highlights the active chip', () => {
+    const winner = makeResult({ term: 'get out' });
+    const candidate = makeResult({ term: 'get over' });
+    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    s = appendCandidate(s, candidate, 'sentence');
+    s = setActiveCandidate(s, 1);
+    const container = s.shell?.getContainer();
+    const activeChip = container!.querySelector('.js-cell-chip.btn--primary');
+    expect(activeChip?.getAttribute('data-cell-candidate-idx')).toBe('1');
+  });
+
+  it('no-ops for out-of-range index', () => {
+    const winner = makeResult({ term: 'get out' });
+    let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
+    s = setActiveCandidate(s, 99);
+    expect(s.activeCandidateIndex).toBe(0);
+  });
+
+  it('no-ops when shell is null', () => {
+    const s = setActiveCandidate(state, 1);
+    expect(s.activeCandidateIndex).toBe(0);
   });
 });

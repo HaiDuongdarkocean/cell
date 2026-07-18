@@ -33,6 +33,27 @@
   .cell-label { display: inline; }
 }
 
+/* SSOT: When labels are hidden (narrow popup < 440px), every button
+ * containing a .cell-label becomes a circular icon-only button.
+ * Applies to: Quick Add, Send to Card, cell-chip, toolbar tabs, etc.
+ * One rule for all — no per-button overrides needed.
+ * Badges (e.g. .cell-toolbar__badge) are position:absolute so they
+ * automatically reposition on the circle — no extra rule needed. */
+@container (max-width: 439px) {
+  .btn:has(.cell-label) {
+    border-radius: var(--radius-full);
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    gap: 0;
+  }
+  /* Badge on circle button — nudge to top-right edge of the circle. */
+  .btn:has(.cell-label) .cell-toolbar__badge {
+    top: -2px;
+    right: -2px;
+  }
+}
+
 /* Ensure buttons with hidden labels still size correctly. */
 .cell-header__quick-add svg,
 .cell-footer__send svg,
@@ -102,7 +123,7 @@
 /* Row 1: main group (word-row + audio) + actions */
 .cell-header__row {
   display: flex;
-  align-items: center;
+  align-items: start;
   justify-content: space-between;
   gap: var(--space-2);
 }
@@ -194,18 +215,13 @@
   outline: none;
 }
 
+/* Status badge extends .btn; only override size + color variants. */
 .cell-header__status {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
   padding: var(--space-1) var(--space-2-5);
-  border-radius: var(--radius-full);
-  border: none;
-  cursor: pointer;
+  height: auto;
+  min-height: 24px;
   text-transform: capitalize;
-  line-height: 1;
 }
 
 .cell-header__status--neutral {
@@ -313,31 +329,38 @@
 }
 
 .cell-def__check-tick svg {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
   display: block;
+  color: var(--color-text);
 }
 
+/* Hover unchecked: dot hides, empty checkbox border appears */
 .cell-def__item:hover .cell-def__check-dot {
   display: none;
 }
 
 .cell-def__item:hover .cell-def__check-box {
   display: flex;
-  background: var(--color-primary-subtle);
+  background: transparent;
+  border-color: var(--color-primary);
 }
 
-.cell-def__check--checked .cell-def__check-dot {
+/* Checked: filled primary background + tick, must stay filled even on hover */
+.cell-def__check--checked .cell-def__check-dot,
+.cell-def__item:hover .cell-def__check--checked .cell-def__check-dot {
   display: none;
 }
 
-.cell-def__check--checked .cell-def__check-box {
+.cell-def__check--checked .cell-def__check-box,
+.cell-def__item:hover .cell-def__check--checked .cell-def__check-box {
   display: flex;
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.cell-def__check--checked .cell-def__check-tick {
+.cell-def__check--checked .cell-def__check-tick,
+.cell-def__item:hover .cell-def__check--checked .cell-def__check-tick {
   display: inline-block;
   color: var(--color-text-inverse);
 }
@@ -378,28 +401,12 @@
   align-items: center;
 }
 
+/* cell-toolbar__tab extends .btn.btn--ghost (default) or .btn.btn--primary (active).
+ * Only add layout-specific styles — don't duplicate button states. */
 .cell-toolbar__tab {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  border-radius: var(--radius-md);
-  padding: 0 var(--space-2-5);
-  height: 32px;
-  cursor: pointer;
   flex-shrink: 0;
-  white-space: nowrap;
-  transition: background var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out), color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
 }
-
-.cell-toolbar__tab:hover { background: var(--color-surface-hover); color: var(--color-text); }
-.cell-toolbar__tab--active { background: var(--color-primary-subtle); color: var(--color-primary); }
 
 /* Toolbar tab badge — selection count
    Positioned at top-right corner INSIDE the button (top:0) to avoid
@@ -408,18 +415,19 @@
    box-shadow ring = background-color halo for visibility against icon. */
 .cell-toolbar__badge {
   position: absolute;
-  top: 0;
+  top: -2px;
   right: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-width: 12px;
-  height: 12px;
+  aspect-ratio: 1;
   padding: 0 2px;
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-text-inverse);
   font-size: 8px;
   font-weight: var(--font-weight-semibold);
-  line-height: 12px;
-  text-align: center;
   pointer-events: none;
   box-shadow: 0 0 0 1.5px var(--color-background);
   z-index: 1;
@@ -431,6 +439,38 @@
   overflow-y: auto;
   flex: 1 1 auto;
   min-height: 0;
+}
+
+.cell-audio__subtabs {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-1) 0 var(--space-2);
+}
+
+.cell-audio__subtab {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-bottom: 1.5px solid transparent;
+  padding-bottom: var(--space-1);
+  transition: color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
+    border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+}
+
+.cell-audio__subtab:hover {
+  color: var(--color-text);
+}
+
+.cell-audio__subtab--active {
+  color: var(--color-text);
+  border-bottom-color: var(--color-primary);
 }
 
 .cell-audio__group-label {
@@ -950,32 +990,15 @@
 
 .cell-candidates__chips-scroll::-webkit-scrollbar { display: none; }
 
+/* cell-chip extends .btn.btn--outline (default) or .btn.btn--primary (active).
+ * Only add shape/behavior specific to chips — don't duplicate button states.
+ * States (hover/active/colors) are inherited from the DS .btn modifiers. */
 .cell-chip {
   flex-shrink: 0;
-  max-width: 22ch;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--font-size-sm);
-  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
-  background: var(--color-surface-hover);
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
   white-space: nowrap;
-  transition: background var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
-}
-
-.cell-chip:hover {
-  background: var(--color-primary-subtle);
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.cell-chip--active {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-  border-color: var(--color-primary);
 }
 
 
@@ -1083,10 +1106,8 @@
   aspect-ratio: 4 / 3;
 }
 
-/* Translate skeleton block */
-.cell-translate__skeleton {
-  /* inherits padding from parent .cell-translate so the block spans full width */
-}
+/* Translate skeleton block — inherits padding from parent .cell-translate
+ * so the block spans full width. No own styles needed. */
 
 .cell-translate__skeleton-block {
   display: flex;

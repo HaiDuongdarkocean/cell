@@ -59,6 +59,7 @@ import triangleAlertSvg from './svg/triangle-alert.svg?raw';
 import circleCheckSvg from './svg/circle-check.svg?raw';
 import circleXSvg from './svg/circle-x.svg?raw';
 import circleInfoSvg from './svg/circle-info.svg?raw';
+import messageSquareSvg from './svg/message-square.svg?raw';
 
 // === Nav cluster icons (stroke 1.5 — subtitle overlay convention) ===
 import navPrevSvg from './svg/nav-prev.svg?raw';
@@ -116,6 +117,7 @@ export { default as triangleAlertIcon } from './svg/triangle-alert.svg?raw';
 export { default as circleCheckIcon } from './svg/circle-check.svg?raw';
 export { default as circleXIcon } from './svg/circle-x.svg?raw';
 export { default as circleInfoIcon } from './svg/circle-info.svg?raw';
+export { default as messageSquareIcon } from './svg/message-square.svg?raw';
 export { default as navPrevIcon } from './svg/nav-prev.svg?raw';
 export { default as navNextIcon } from './svg/nav-next.svg?raw';
 export { default as navRepeatIcon } from './svg/nav-repeat.svg?raw';
@@ -199,6 +201,7 @@ export const ICON_CATALOG = {
   circleCheck:   { svg: circleCheckSvg,   source: 'lucide/circle-check',   tags: ['success','check','circle','done','ok'] } as IconEntry,
   circleX:       { svg: circleXSvg,       source: 'lucide/circle-x',       tags: ['error','fail','circle','x','close'] } as IconEntry,
   circleInfo:    { svg: circleInfoSvg,    source: 'lucide/circle-info',    tags: ['info','toast','circle','i'] } as IconEntry,
+  messageSquare: { svg: messageSquareSvg, source: 'lucide/message-square', tags: ['message','sentence','text','speech','bubble','chat','audio-sentence'] } as IconEntry,
 
   // === Nav cluster (stroke 1.5 — subtitle overlay) ===
   navPrev:         { svg: navPrevSvg,         source: 'svgrepo/round-alt-arrow-left',  tags: ['nav','prev','previous','back','sentence','chevron-left','circle'] } as IconEntry,

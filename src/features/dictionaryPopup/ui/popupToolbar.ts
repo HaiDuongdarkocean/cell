@@ -28,6 +28,12 @@ function createSkeleton(
   return el;
 }
 
+/** Remove an existing panel of the same type before re-rendering. Prevents duplicate panels. */
+function replaceExistingPanel(container: HTMLElement, panelType: string): void {
+  const existing = container.querySelector(`.js-cell-panel[data-cell-panel="${panelType}"]`);
+  if (existing) existing.remove();
+}
+
 /** Toolbar tab config — icon SVG from ICON_CATALOG + which panel to show. */
 const TAB_CONFIG: readonly { readonly tab: PopupTab; readonly label: string; readonly icon: string }[] = [
   { tab: 'audio', label: 'Audio', icon: ICON_CATALOG.audioWave.svg },
@@ -39,10 +45,11 @@ const TAB_CONFIG: readonly { readonly tab: PopupTab; readonly label: string; rea
 /** Selection counts per tab — drives the badge on toolbar icons. */
 export type SelectionCounts = Partial<Record<PopupTab, number>>;
 
-/** Render the toolbar with 4 icon-btn toggle buttons (A/I/T/L).
+/** Render the toolbar with 4 tab toggle buttons (A/I/T/L).
+ *  Each button shows an icon + label; the label is hidden on narrow popups
+ *  and shown on wide ones via the `.cell-label` container query.
  *  No standalone close button — clicking the active tab again closes its panel.
- *  Uses shared .icon-btn .icon-btn--sm class from components.css.
- *  Active tab = .icon-btn--active class (primary-subtle fill + primary text).
+ *  Active tab = .cell-toolbar__tab--active class (primary-subtle fill + primary text).
  *  Icons: ICON_CATALOG from @/shared/icons (Lucide convention, stroke 2, currentColor).
  *  Badge: when selectionCounts[tab] > 0, the number is appended to the icon.
  *  onTabOpen: fired when a tab icon is clicked to OPEN (not close) its panel —
@@ -59,13 +66,13 @@ export function renderToolbar(
 
   for (const config of TAB_CONFIG) {
     const btn = document.createElement('button');
-    btn.className = 'icon-btn icon-btn--sm js-cell-tab' + (activeTab === config.tab ? ' icon-btn--active' : '');
+    btn.className = 'btn ' + (activeTab === config.tab ? 'btn--primary ' : 'btn--ghost ') + 'cell-toolbar__tab js-cell-tab';
     btn.setAttribute('data-cell-tab', config.tab);
     btn.setAttribute('aria-label', config.label);
     btn.setAttribute('aria-pressed', String(activeTab === config.tab));
     btn.title = config.label;
     btn.style.position = 'relative';
-    btn.innerHTML = config.icon;
+    btn.innerHTML = `${config.icon}<span class="cell-toolbar__label cell-label">${config.label}</span>`;
     btn.addEventListener('click', () => {
       const isOpening = activeTab !== config.tab;
       onTabToggle(config.tab);
@@ -106,7 +113,10 @@ export function renderAudioPanel(
   currentlyPlayingId?: string,
   onTts?: () => void,
   onSelectionChange?: () => void,
+  activeGroup: 'word' | 'sentence' = 'word',
+  onGroupChange?: (group: 'word' | 'sentence') => void,
 ): void {
+  replaceExistingPanel(container, 'audio');
   const panel = document.createElement('div');
   panel.className = 'cell-audio js-cell-panel';
   panel.setAttribute('data-cell-panel', 'audio');
@@ -144,7 +154,7 @@ export function renderAudioPanel(
     return;
   }
 
-  const renderGroup = (label: string, items: readonly AudioItem[]) => {
+  const renderGroup = (label: string, items: readonly AudioItem[], variant: 'word' | 'sentence' = 'word') => {
     if (items.length === 0) return;
     const groupLabel = document.createElement('div');
     groupLabel.className = 'cell-audio__group-label';
@@ -155,15 +165,20 @@ export function renderAudioPanel(
       const isChecked = selection.get(item.id) ?? item.defaultSelected;
       const isPlaying = currentlyPlayingId === item.id;
       const row = document.createElement('div');
-      row.className = 'cell-audio__item js-cell-audio-item' + (isPlaying ? ' cell-audio__item--playing' : '');
+      row.className = 'cell-audio__item js-cell-audio-item' + (isPlaying ? ' cell-audio__item--playing' : '') + (variant === 'sentence' ? ' cell-audio__item--sentence' : '');
       row.setAttribute('data-cell-audio-id', item.id);
 
       // Play/pause button — click to play, does NOT toggle selection.
+      // Sentence audio uses audio-wave icon variant; word audio uses play icon.
       const playBtn = document.createElement('button');
       playBtn.className = 'icon-btn icon-btn--sm icon-btn--outlined js-cell-audio-play';
       playBtn.setAttribute('aria-label', isPlaying ? `Pause ${item.label}` : `Play ${item.label}`);
       playBtn.title = isPlaying ? `Pause ${item.label}` : `Play ${item.label}`;
-      playBtn.innerHTML = isPlaying ? ICON_CATALOG.pause.svg : ICON_CATALOG.play.svg;
+      if (variant === 'sentence') {
+        playBtn.innerHTML = isPlaying ? ICON_CATALOG.pause.svg : ICON_CATALOG.audioWave.svg;
+      } else {
+        playBtn.innerHTML = isPlaying ? ICON_CATALOG.pause.svg : ICON_CATALOG.play.svg;
+      }
       playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         onPlay(item);
@@ -222,8 +237,26 @@ export function renderAudioPanel(
     }
   };
 
-  renderGroup('Word Audio', wordAudios);
-  renderGroup('Sentence Audio', sentenceAudios);
+  // Sub-tabs: minimal text buttons to switch between word/sentence audio.
+  const subTabs = document.createElement('div');
+  subTabs.className = 'cell-audio__subtabs';
+  const wordTab = document.createElement('button');
+  wordTab.className = 'cell-audio__subtab js-cell-audio-subtab-word' + (activeGroup === 'word' ? ' cell-audio__subtab--active' : '');
+  wordTab.textContent = 'PLAY WORD';
+  wordTab.addEventListener('click', () => onGroupChange?.('word'));
+  const sentenceTab = document.createElement('button');
+  sentenceTab.className = 'cell-audio__subtab js-cell-audio-subtab-sentence' + (activeGroup === 'sentence' ? ' cell-audio__subtab--active' : '');
+  sentenceTab.textContent = 'PLAY SENTENCE';
+  sentenceTab.addEventListener('click', () => onGroupChange?.('sentence'));
+  subTabs.appendChild(wordTab);
+  subTabs.appendChild(sentenceTab);
+  panel.appendChild(subTabs);
+
+  if (activeGroup === 'word') {
+    renderGroup('Word Audio', wordAudios, 'word');
+  } else {
+    renderGroup('Sentence Audio', sentenceAudios, 'sentence');
+  }
 
   if (wordAudios.length === 0 && sentenceAudios.length === 0) {
     const empty = document.createElement('div');

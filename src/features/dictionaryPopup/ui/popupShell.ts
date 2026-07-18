@@ -208,9 +208,9 @@ export class PopupShell {
   private readonly onResizeComplete: (size: PopupSize) => void;
   private readonly boundKeyDown: (e: KeyboardEvent) => void;
   private readonly boundClickOutside: (e: MouseEvent) => void;
-  private readonly boundResizeStart: (e: MouseEvent) => void;
-  private readonly boundResizeMove: (e: MouseEvent) => void;
-  private readonly boundResizeEnd: () => void;
+  private readonly boundResizeStart: (e: PointerEvent) => void;
+  private readonly boundResizeMove: (e: PointerEvent) => void;
+  private readonly boundResizeEnd: (e: PointerEvent) => void;
   private readonly boundFullscreenChange: () => void;
   private readonly boundPointerDown: (e: PointerEvent) => void;
   private readonly boundPointerMove: (e: PointerEvent) => void;
@@ -311,7 +311,10 @@ export class PopupShell {
     this.resizeHandle.style.height = `${RESIZE_HANDLE_SIZE}px`;
     this.resizeHandle.innerHTML = ICON_CATALOG.resize.svg;
     this.container.appendChild(this.resizeHandle);
-    this.resizeHandle.addEventListener('mousedown', this.boundResizeStart);
+    // Pointer events handle both mouse + touch (touch-action:none prevents
+    // the browser from scrolling/zooming during resize drag on touch screens).
+    this.resizeHandle.style.touchAction = 'none';
+    this.resizeHandle.addEventListener('pointerdown', this.boundResizeStart);
 
     // Dismiss listeners.
     // keydown uses capture:true so we intercept Esc before the browser's
@@ -485,10 +488,10 @@ export class PopupShell {
     document.removeEventListener('mousedown', this.boundClickOutside, true);
     document.removeEventListener('fullscreenchange', this.boundFullscreenChange);
     if (this.resizeHandle) {
-      this.resizeHandle.removeEventListener('mousedown', this.boundResizeStart);
+      this.resizeHandle.removeEventListener('pointerdown', this.boundResizeStart);
     }
-    document.removeEventListener('mousemove', this.boundResizeMove);
-    document.removeEventListener('mouseup', this.boundResizeEnd);
+    document.removeEventListener('pointermove', this.boundResizeMove);
+    document.removeEventListener('pointerup', this.boundResizeEnd);
     this.container?.removeEventListener('pointerdown', this.boundPointerDown);
     this.container?.removeEventListener('pointermove', this.boundPointerMove);
     this.container?.removeEventListener('pointerup', this.boundPointerUp);
@@ -558,7 +561,7 @@ export class PopupShell {
     }
   }
 
-  private onResizeStart(e: MouseEvent): void {
+  private onResizeStart(e: PointerEvent): void {
     e.preventDefault();
     e.stopPropagation();
     this.isResizing = true;
@@ -567,11 +570,11 @@ export class PopupShell {
     this.resizeStartWidth = this.size.width;
     // Capture actual rendered height — container may be shorter than maxHeight.
     this.resizeStartHeight = this.container?.offsetHeight ?? this.size.maxHeight;
-    document.addEventListener('mousemove', this.boundResizeMove);
-    document.addEventListener('mouseup', this.boundResizeEnd);
+    document.addEventListener('pointermove', this.boundResizeMove);
+    document.addEventListener('pointerup', this.boundResizeEnd);
   }
 
-  private onResizeMove(e: MouseEvent): void {
+  private onResizeMove(e: PointerEvent): void {
     if (!this.isResizing || !this.container) return;
     const dx = e.clientX - this.resizeStartX;
     const dy = e.clientY - this.resizeStartY;
@@ -589,11 +592,11 @@ export class PopupShell {
     this.container.style.maxHeight = `${clamped.maxHeight}px`;
   }
 
-  private onResizeEnd(): void {
+  private onResizeEnd(_e: PointerEvent): void {
     if (!this.isResizing) return;
     this.isResizing = false;
-    document.removeEventListener('mousemove', this.boundResizeMove);
-    document.removeEventListener('mouseup', this.boundResizeEnd);
+    document.removeEventListener('pointermove', this.boundResizeMove);
+    document.removeEventListener('pointerup', this.boundResizeEnd);
     this.onResizeComplete(this.size);
   }
 

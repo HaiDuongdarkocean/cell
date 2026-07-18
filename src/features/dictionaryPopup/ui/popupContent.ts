@@ -1,7 +1,8 @@
-// popupContent — renders header + definitions into the popup shell.
+// popupContent — renders active entry + candidates + footer into the popup shell.
 //
-// Spec §4.6.3 A4/A9, §9: header (term + reading + frequency + status badge),
-// definitions (always visible, checkbox per-definition, default all selected).
+// Spec redesign: spec-popup-dictionary-redesign.md
+// Structure: active-entry (header 3-row + definitions) + materials slot +
+//            candidates (chips + expand list) + footer (status + send + settings).
 //
 // Content-script isolated world — vanilla DOM rendered into Shadow DOM.
 
@@ -42,10 +43,24 @@ export function splitNumberedSenses(text: string): string[] {
 /** Selection state for definitions (checkboxes). */
 export type DefinitionSelection = Map<string, boolean>;
 
-/** Render the popup header: 3-row layout.
- *  Row 1: term (left) + Quick Add button (right)
- *  Row 2: reading / IPA
- *  Row 3: status badge (left) + frequency (right)
+/** Callbacks for popup content (header + footer + candidates). */
+export interface PopupContentCallbacks {
+  onStatusCycle: () => void;
+  onDefinitionToggle: (id: string, selected: boolean) => void;
+  onQuickAdd: () => void;
+  onSendToCreator: () => void;
+  onSettings: () => void;
+  onClose?: () => void;
+  onPlayTerm?: () => void;
+  /** Play sentence audio from header. */
+  onPlaySentence?: () => void;
+  /** Click chip → switch active candidate. */
+  onCandidateSelect?: (idx: number) => void;
+}
+
+/** Render the popup header: 2-row layout (spec redesign v3).
+ *  Row 1: word + reading-row(IPA + audio-group) + actions (QuickAdd + Close)
+ *  Row 2: second header (badges + status, scroll main axis if overflow)
  */
 export function renderHeader(
   container: HTMLElement,
@@ -53,89 +68,101 @@ export function renderHeader(
   currentStatus: WordStatus,
   onStatusCycle: () => void,
   onQuickAdd: () => void,
-  onSendToCreator: () => void,
-  onSettings: () => void,
+  _onSendToCreator: () => void,
+  _onSettings: () => void,
   onClose?: () => void,
   onPlayTerm?: () => void,
-  isWinner?: boolean,
+  onPlaySentence?: () => void,
 ): void {
   const header = document.createElement('div');
   header.className = 'cell-header js-cell-header';
 
-  // Row 1: term + reading (left, stacked) + action buttons (right)
-  const row1 = document.createElement('div');
-  row1.className = 'cell-header__row';
+  // === Row 1: word-row + IPA + audio-group + actions ===
+  const row = document.createElement('div');
+  row.className = 'cell-header__row';
 
-  // Term + reading group (reading on top, term + audio button below)
-  const termGroup = document.createElement('div');
-  termGroup.className = 'cell-header__term-group';
+  // Main group: word + reading-row (IPA + audio buttons)
+  const main = document.createElement('div');
+  main.className = 'cell-header__main';
+
+  // word-row: word only, truncates with ellipsis
+  const wordRow = document.createElement('div');
+  wordRow.className = 'cell-header__word-row';
+
+  const word = document.createElement('span');
+  word.className = 'cell-header__word js-cell-term';
+  word.textContent = result.term;
+  word.id = 'cell-popup-term';
+  wordRow.appendChild(word);
+  main.appendChild(wordRow);
+
+  // Reading row: IPA + audio buttons; wraps under the word when header is narrow.
+  const readingRow = document.createElement('div');
+  readingRow.className = 'cell-header__reading';
 
   if (result.reading) {
-    const reading = document.createElement('span');
-    reading.className = 'cell-header__reading js-cell-reading';
-    reading.textContent = result.reading;
-    termGroup.appendChild(reading);
+    const ipa = document.createElement('span');
+    ipa.className = 'cell-header__ipa js-cell-reading';
+    // Wrap IPA in /.../ when readingKind is 'ipa' (don't double-wrap if already slashed)
+    if (result.readingKind === 'ipa' && !(result.reading.startsWith('/') && result.reading.endsWith('/'))) {
+      ipa.textContent = `/${result.reading}/`;
+    } else {
+      ipa.textContent = result.reading;
+    }
+    readingRow.appendChild(ipa);
   }
 
-  const termRow = document.createElement('div');
-  termRow.className = 'cell-header__term-row';
+  // Audio group: word audio + sentence audio, close together
+  if (onPlayTerm || onPlaySentence) {
+    const audioGroup = document.createElement('div');
+    audioGroup.className = 'cell-header__audio-group';
 
-  const term = document.createElement('span');
-  term.className = 'cell-header__term js-cell-term';
-  term.textContent = result.term;
-  if (isWinner) term.id = 'cell-popup-term';
-  termRow.appendChild(term);
+    if (onPlayTerm) {
+      const playBtn = document.createElement('button');
+      playBtn.className = 'icon-btn icon-btn--xs cell-header__audio js-cell-play-term';
+      playBtn.setAttribute('aria-label', 'Play word pronunciation');
+      playBtn.title = 'Play word pronunciation';
+      playBtn.innerHTML = ICON_CATALOG.audioWave.svg;
+      playBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onPlayTerm();
+      });
+      audioGroup.appendChild(playBtn);
+    }
 
-  // Inline pronunciation button — play term audio/TTS without opening the Audio tab.
-  if (onPlayTerm) {
-    const playTermBtn = document.createElement('button');
-    playTermBtn.className = 'icon-btn icon-btn--xs cell-header__audio js-cell-play-term';
-    playTermBtn.setAttribute('aria-label', 'Play pronunciation');
-    playTermBtn.title = 'Play pronunciation';
-    playTermBtn.innerHTML = ICON_CATALOG.audioWave.svg;
-    playTermBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      onPlayTerm();
-    });
-    termRow.appendChild(playTermBtn);
+    if (onPlaySentence) {
+      const sentenceBtn = document.createElement('button');
+      sentenceBtn.className = 'icon-btn icon-btn--xs cell-header__audio js-cell-play-sentence';
+      sentenceBtn.setAttribute('aria-label', 'Play sentence audio');
+      sentenceBtn.title = 'Play sentence audio';
+      sentenceBtn.innerHTML = ICON_CATALOG.messageSquare.svg;
+      sentenceBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onPlaySentence();
+      });
+      audioGroup.appendChild(sentenceBtn);
+    }
+    readingRow.appendChild(audioGroup);
   }
 
-  termGroup.appendChild(termRow);
-  row1.appendChild(termGroup);
+  if (readingRow.hasChildNodes()) {
+    main.appendChild(readingRow);
+  }
 
-  // Action button group: Settings | Send to Card | Quick Add | Close
-  // Uses .icon-btn .icon-btn--sm from components.css (design-system.md §2 Icon Button).
-  const btnGroup = document.createElement('div');
-  btnGroup.className = 'cell-header__actions';
+  row.appendChild(main);
 
-  // Settings button — standard variant (no border, no bg, surface-hover fill).
-  const settingsBtn = document.createElement('button');
-  settingsBtn.className = 'icon-btn icon-btn--sm js-cell-settings';
-  settingsBtn.setAttribute('aria-label', 'Popup dictionary settings');
-  settingsBtn.title = 'Settings';
-  settingsBtn.innerHTML = ICON_CATALOG.settings.svg;
-  settingsBtn.addEventListener('click', onSettings);
-  btnGroup.appendChild(settingsBtn);
+  // Actions: Quick Add + Close
+  const actions = document.createElement('div');
+  actions.className = 'cell-header__actions';
 
-  // Send to Card button — standard variant.
-  const sendBtn = document.createElement('button');
-  sendBtn.className = 'icon-btn icon-btn--sm js-cell-send-to-creator';
-  sendBtn.setAttribute('aria-label', 'Send to Card Creator');
-  sendBtn.title = 'Send to Card Creator';
-  sendBtn.innerHTML = ICON_CATALOG.pencil.svg;
-  sendBtn.addEventListener('click', onSendToCreator);
-  btnGroup.appendChild(sendBtn);
-
-  // Quick Add button — filled variant (primary bg, text-inverse color).
   const quickAdd = document.createElement('button');
-  quickAdd.className = 'icon-btn icon-btn--sm icon-btn--filled js-cell-quick-add';
+  quickAdd.className = 'btn btn--primary cell-header__quick-add js-cell-quick-add';
   quickAdd.setAttribute('aria-label', 'Quick Add to Anki');
   quickAdd.title = 'Quick Add to Anki';
-  quickAdd.innerHTML = ICON_CATALOG.zap.svg;
+  quickAdd.innerHTML = `${ICON_CATALOG.zap.svg}<span class="cell-header__quick-add-label cell-label">Quick Add</span>`;
   quickAdd.addEventListener('click', onQuickAdd);
-  btnGroup.appendChild(quickAdd);
+  actions.appendChild(quickAdd);
 
-  // Close button — explicit dismissal next to primary actions.
   if (onClose) {
     const closeBtn = document.createElement('button');
     closeBtn.className = 'icon-btn icon-btn--sm js-cell-close';
@@ -146,34 +173,34 @@ export function renderHeader(
       e.stopPropagation();
       onClose();
     });
-    btnGroup.appendChild(closeBtn);
+    actions.appendChild(closeBtn);
   }
 
-  row1.appendChild(btnGroup);
-  header.appendChild(row1);
+  row.appendChild(actions);
+  header.appendChild(row);
 
-  // Row 3: status badge (left) + frequency badge (left)
-  const row3 = document.createElement('div');
-  row3.className = 'cell-header__meta';
+  // === Row 2: second header — badges + status (scroll main axis if overflow) ===
+  const second = document.createElement('div');
+  second.className = 'cell-header__second';
 
-  // Status badge — pill, variant maps WordStatus → BEM modifier class.
-  // unknown=neutral, tracking=primary, known=success(+checkmark), ignore=secondary.
+  // Status badge — clickable cycle (LEFT of badges per UX)
   const statusVariant = STATUS_BADGE_VARIANT[currentStatus] ?? 'neutral';
   const statusBadge = document.createElement('button');
-  statusBadge.className = `cell-header__status cell-header__status--${statusVariant} js-cell-status`;
+  statusBadge.className = `btn cell-header__status cell-header__status--${statusVariant} js-cell-status`;
   const next = nextStatus(currentStatus);
   statusBadge.title = `Click to cycle: ${currentStatus} → ${next}`;
   statusBadge.addEventListener('click', onStatusCycle);
-  // Checkmark icon for "known" status (success variant).
   if (currentStatus === 'known') {
     statusBadge.innerHTML = `${ICON_CATALOG.check.svg}<span>${currentStatus}</span>`;
   } else {
     statusBadge.textContent = currentStatus;
   }
-  row3.appendChild(statusBadge);
+  second.appendChild(statusBadge);
 
-  // Frequency badge — 2-segment pill: source (primary) + rank (primary-subtle).
+  // Frequency badges (RIGHT of status)
   if (result.frequency) {
+    const badges = document.createElement('div');
+    badges.className = 'cell-header__badges';
     const freq = document.createElement('span');
     freq.className = 'cell-header__frequency js-cell-frequency';
     const src = document.createElement('span');
@@ -184,10 +211,11 @@ export function renderHeader(
     rank.textContent = result.frequency.rank.toLocaleString();
     freq.appendChild(src);
     freq.appendChild(rank);
-    row3.appendChild(freq);
+    badges.appendChild(freq);
+    second.appendChild(badges);
   }
 
-  header.appendChild(row3);
+  header.appendChild(second);
   container.appendChild(header);
 }
 
@@ -222,27 +250,21 @@ export function renderDefinitions(
       item.setAttribute('data-cell-def-id', itemId);
 
       // Checkbox gutter — dot by default, checkbox on hover or when checked.
-      // <label> wraps the visually-hidden input + visual indicators so clicking
-      // the gutter toggles. Text area is a sibling outside the label.
       const isChecked = selection.get(itemId) ?? def.defaultSelected;
       const checkLabel = document.createElement('label');
       checkLabel.className = 'cell-def__check js-cell-def-check' + (isChecked ? ' cell-def__check--checked' : '');
-      // Visually hidden input first so :focus-visible + .cell-def__check-box matches.
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = isChecked;
       checkbox.className = 'cell-def__check-input js-cell-def-checkbox';
       checkbox.addEventListener('change', () => {
         onToggle(itemId, checkbox.checked);
-        // Update visual state — toggle checked modifier class on label
         checkLabel.classList.toggle('cell-def__check--checked', checkbox.checked);
       });
       checkLabel.appendChild(checkbox);
-      // Dot indicator (default visible)
       const dot = document.createElement('span');
       dot.className = 'cell-def__check-dot';
       checkLabel.appendChild(dot);
-      // Checkbox visual (hidden by default, shown on hover or when checked)
       const box = document.createElement('span');
       box.className = 'cell-def__check-box';
       const tick = document.createElement('span');
@@ -252,11 +274,9 @@ export function renderDefinitions(
       checkLabel.appendChild(box);
       item.appendChild(checkLabel);
 
-      // Definition text — padding-left makes room for the absolute gutter.
       const textWrap = document.createElement('div');
       textWrap.className = 'cell-def__text';
 
-      // Show POS only on the first sense; subsequent senses share the same POS.
       if (i === 0 && def.pos) {
         const pos = document.createElement('span');
         pos.className = 'cell-def__pos';
@@ -268,7 +288,6 @@ export function renderDefinitions(
       text.textContent = senses[i];
       textWrap.appendChild(text);
 
-      // Examples attach to the first sense only (we don't know which sense each example belongs to).
       if (i === 0 && def.examples.length > 0) {
         const examples = document.createElement('div');
         examples.className = 'cell-def__examples';
@@ -286,6 +305,106 @@ export function renderDefinitions(
   }
 
   container.appendChild(panel);
+}
+
+/** Render the active entry: header + toolbar slot + definitions, wrapped as a flex column. */
+export function renderActiveEntry(
+  container: HTMLElement,
+  result: LookupResult,
+  currentStatus: WordStatus,
+  selection: DefinitionSelection,
+  callbacks: PopupContentCallbacks,
+): HTMLElement {
+  const entry = document.createElement('div');
+  entry.className = 'cell-active-entry js-cell-active-entry';
+  renderHeader(
+    entry,
+    result,
+    currentStatus,
+    callbacks.onStatusCycle,
+    callbacks.onQuickAdd,
+    callbacks.onSendToCreator,
+    callbacks.onSettings,
+    callbacks.onClose,
+    callbacks.onPlayTerm,
+    callbacks.onPlaySentence,
+  );
+  getOrCreateMaterialsSlot(entry);
+  renderDefinitions(entry, result, selection, callbacks.onDefinitionToggle);
+  container.appendChild(entry);
+  return entry;
+}
+
+/** Render the footer: Send to Creator + Settings (status moved to header row 2). */
+export function renderFooter(
+  container: HTMLElement,
+  onSendToCreator: () => void,
+  onSettings: () => void,
+): void {
+  const footer = document.createElement('div');
+  footer.className = 'cell-footer js-cell-footer';
+
+  // Actions: Send to Creator + Settings
+  const actions = document.createElement('div');
+  actions.className = 'cell-footer__actions';
+
+  const sendBtn = document.createElement('button');
+  sendBtn.className = 'btn btn--outline cell-footer__send js-cell-send-to-creator';
+  sendBtn.setAttribute('aria-label', 'Send to Card Creator');
+  sendBtn.title = 'Send to Card Creator';
+  sendBtn.innerHTML = `${ICON_CATALOG.pencil.svg}<span class="cell-footer__send-label cell-label">Send to Creator</span>`;
+  sendBtn.addEventListener('click', onSendToCreator);
+  actions.appendChild(sendBtn);
+
+  const settingsBtn = document.createElement('button');
+  settingsBtn.className = 'icon-btn icon-btn--sm js-cell-settings';
+  settingsBtn.setAttribute('aria-label', 'Popup dictionary settings');
+  settingsBtn.title = 'Settings';
+  settingsBtn.innerHTML = ICON_CATALOG.settings.svg;
+  settingsBtn.addEventListener('click', onSettings);
+  actions.appendChild(settingsBtn);
+
+  footer.appendChild(actions);
+  container.appendChild(footer);
+}
+
+/** Candidate info for chips + list rendering. */
+export interface CandidateInfo {
+  readonly idx: number;
+  readonly result: LookupResult;
+  readonly status: WordStatus;
+}
+
+/** Render candidate chips row (spec redesign v3).
+ *  Chips scroll-x in a single horizontal container; no expand/list. */
+export function renderCandidateChips(
+  container: HTMLElement,
+  candidates: readonly CandidateInfo[],
+  activeIdx: number,
+  onChipClick: (idx: number) => void,
+): void {
+  const chips = document.createElement('div');
+  chips.className = 'cell-candidates__chips js-cell-candidate-chips';
+
+  // Scroll container for chips
+  const scroll = document.createElement('div');
+  scroll.className = 'cell-candidates__chips-scroll';
+
+  for (const c of candidates) {
+    const chip = document.createElement('button');
+    chip.className = 'btn ' + (c.idx === activeIdx ? 'btn--primary ' : 'btn--outline ') + 'cell-chip js-cell-chip';
+    chip.setAttribute('data-cell-candidate-idx', String(c.idx));
+    chip.title = c.result.term;
+    if (c.idx === activeIdx) {
+      chip.setAttribute('aria-current', 'true');
+    }
+    chip.textContent = c.result.term;
+    chip.addEventListener('click', () => onChipClick(c.idx));
+    scroll.appendChild(chip);
+  }
+
+  chips.appendChild(scroll);
+  container.appendChild(chips);
 }
 
 /** Initialize definition selection from LookupResult (default all selected). */
@@ -328,19 +447,16 @@ export function getSelectedDefinitions(
 
     if (selectedIndexes.length === 0) continue;
 
-    // If all senses selected, keep the original definition entry (less duplication).
     if (selectedIndexes.length === senses.length) {
       selected.push(def);
       continue;
     }
 
-    // Otherwise, create a separate DefinitionEntry for each selected sense.
     for (const idx of selectedIndexes) {
       selected.push({
         ...def,
         id: makeSenseId(def.id, idx),
         text: senses[idx]!,
-        // Attach examples to the first selected sense as a reasonable default.
         examples: idx === 0 ? def.examples : [],
       });
     }
@@ -355,90 +471,42 @@ export function clearContainer(container: HTMLElement): void {
   }
 }
 
-/** Get or create the candidate-list wrapper (display:block) inside a container.
- *  iOS Safari has a known bug with position:sticky inside flex containers —
- *  wrapping candidates in a block-level div avoids it. */
-export function getOrCreateCandidateList(container: HTMLElement): HTMLElement {
-  let list = container.querySelector<HTMLElement>('.js-cell-candidate-list');
-  if (!list) {
-    list = document.createElement('div');
-    list.className = 'cell-candidate js-cell-candidate-list';
-    container.appendChild(list);
+/** Get or create the materials slot (toolbar goes here — inside active entry, between header and definitions). */
+export function getOrCreateMaterialsSlot(container: HTMLElement): HTMLElement {
+  let slot = container.querySelector<HTMLElement>('.js-cell-materials-slot');
+  if (!slot) {
+    slot = document.createElement('div');
+    slot.className = 'cell-materials js-cell-materials-slot';
+    container.appendChild(slot);
   }
-  return list;
+  return slot;
 }
 
-/** Render the full popup content (header + definitions + footer). */
+/** Get or create the candidates container (chips + list). */
+export function getOrCreateCandidatesContainer(container: HTMLElement): HTMLElement {
+  let c = container.querySelector<HTMLElement>('.js-cell-candidates');
+  if (!c) {
+    c = document.createElement('div');
+    c.className = 'cell-candidates js-cell-candidates';
+    container.appendChild(c);
+  }
+  return c;
+}
+
+/** Render the full popup content (active entry + candidates + footer).
+ *  Spec redesign: materials slot now lives inside active entry (between header and definitions). */
 export function renderPopupContent(
   container: HTMLElement,
   result: LookupResult,
   currentStatus: WordStatus,
   selection: DefinitionSelection,
-  callbacks: CandidateCallbacks,
+  callbacks: PopupContentCallbacks,
 ): void {
   clearContainer(container);
-  const list = getOrCreateCandidateList(container);
-  renderCandidate(list, result, currentStatus, selection, callbacks, true);
-}
-
-/** Callbacks for a single candidate. */
-export interface CandidateCallbacks {
-  onStatusCycle: () => void;
-  onDefinitionToggle: (id: string, selected: boolean) => void;
-  onQuickAdd: () => void;
-  onSendToCreator: () => void;
-  onSettings: () => void;
-  onClose?: () => void;
-  onPlayTerm?: () => void;
-}
-
-/**
- * Render a single candidate (header + definitions) into a wrapper div with
- * .js-cell-popup-candidate class. Used for both the first candidate
- * (winner) and appended candidates.
- */
-export function renderCandidate(
-  container: HTMLElement,
-  result: LookupResult,
-  currentStatus: WordStatus,
-  selection: DefinitionSelection,
-  callbacks: CandidateCallbacks,
-  isPrimary = false,
-): HTMLElement {
-  const candidate = document.createElement('div');
-  candidate.className = 'cell-candidate js-cell-popup-candidate';
-  renderHeader(
-    candidate,
-    result,
-    currentStatus,
-    callbacks.onStatusCycle,
-    callbacks.onQuickAdd,
-    callbacks.onSendToCreator,
-    callbacks.onSettings,
-    callbacks.onClose,
-    callbacks.onPlayTerm,
-    isPrimary,
-  );
-  // Toolbar slot — filled by appendCandidate (per-candidate tab state).
-  const toolbarSlot = document.createElement('div');
-  toolbarSlot.className = 'js-cell-toolbar-slot';
-  candidate.appendChild(toolbarSlot);
-  renderDefinitions(candidate, result, selection, callbacks.onDefinitionToggle);
-  container.appendChild(candidate);
-  return candidate;
-}
-
-/**
- * Append a candidate to an existing popup container.
- * Used for progressive rendering of additional phrase match candidates.
- */
-export function appendCandidateContent(
-  container: HTMLElement,
-  result: LookupResult,
-  currentStatus: WordStatus,
-  selection: DefinitionSelection,
-  callbacks: CandidateCallbacks,
-): HTMLElement {
-  const list = getOrCreateCandidateList(container);
-  return renderCandidate(list, result, currentStatus, selection, callbacks, false);
+  // Active entry (header + toolbar slot + definitions)
+  renderActiveEntry(container, result, currentStatus, selection, callbacks);
+  // Candidates container — chips injected by controller
+  getOrCreateCandidatesContainer(container);
+  // Footer — Send + Settings (status moved to header row 2)
+  renderFooter(container, callbacks.onSendToCreator, callbacks.onSettings);
 }

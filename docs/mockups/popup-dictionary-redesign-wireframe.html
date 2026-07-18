@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Popup Dictionary Redesign — Active Entry Model</title>
+  <style>
+    /* =========================================================
+       Source of truth: src/shared/styles/tokens.css (light + dark)
+       ========================================================= */
+    :root {
+      color-scheme: light;
+      --color-primary: #2563eb;
+      --color-primary-hover: #1d4ed8;
+      --color-primary-active: #1e40af;
+      --color-primary-subtle: rgba(37, 99, 235, 0.1);
+      --color-primary-foreground: #ffffff;
+      --color-background: #ffffff;
+      --color-surface: #f8fafc;
+      --color-text: #0f172a;
+      --color-text-secondary: #475569;
+      --color-text-muted: #94a3b8;
+      --color-text-inverse: #ffffff;
+      --color-border: #e2e8f0;
+      --color-border-subtle: #f1f5f9;
+      --color-border-focus: #2563eb;
+      --color-success: #059669;
+      --color-success-subtle: rgba(5, 150, 105, 0.1);
+      --color-warning: #d97706;
+      --color-error: #dc2626;
+      --color-secondary: #e2e8f0;
+      --color-secondary-hover: #cbd5e1;
+      --color-secondary-foreground: #0f172a;
+      --color-accent: #f1f5f9;
+      --color-accent-foreground: #0f172a;
+      --color-muted: #f1f5f9;
+      --color-muted-foreground: #94a3b8;
+      --color-card: #f8fafc;
+      --color-card-foreground: #0f172a;
+      --color-popover: #ffffff;
+      --color-popover-foreground: #0f172a;
+      --color-surface-hover: #f1f5f9;
+      --color-destructive: #dc2626;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-size-xs: 12px;
+      --font-size-sm: 13px;
+      --font-size-base: 14px;
+      --font-size-lg: 16px;
+      --font-size-xl: 18px;
+      --font-size-2xl: 20px;
+      --font-weight-regular: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --font-weight-bold: 700;
+      --radius-sm: 6px;
+      --radius-md: 18px;
+      --radius-lg: 10px;
+      --radius-xl: 12px;
+      --radius-full: 9999px;
+      --space-0-5: 2px;
+      --space-1: 4px;
+      --space-1-5: 6px;
+      --space-2: 8px;
+      --space-2-5: 10px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --duration-150: 150ms;
+      --duration-200: 200ms;
+      --duration-300: 300ms;
+      --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --color-primary: #60a5fa;
+      --color-primary-hover: #3b82f6;
+      --color-primary-active: #2563eb;
+      --color-primary-subtle: rgba(96, 165, 250, 0.15);
+      --color-primary-foreground: #0f172a;
+      --color-background: #0f172a;
+      --color-surface: #1e293b;
+      --color-text: #f1f5f9;
+      --color-text-secondary: #cbd5e1;
+      --color-text-muted: #64748b;
+      --color-text-inverse: #0f172a;
+      --color-border: #334155;
+      --color-border-subtle: #1e293b;
+      --color-border-focus: #60a5fa;
+      --color-success: #10b981;
+      --color-success-subtle: rgba(16, 185, 129, 0.15);
+      --color-warning: #f59e0b;
+      --color-error: #ef4444;
+      --color-secondary: #334155;
+      --color-secondary-hover: #475569;
+      --color-secondary-foreground: #f1f5f9;
+      --color-accent: #334155;
+      --color-accent-foreground: #f1f5f9;
+      --color-muted: #334155;
+      --color-muted-foreground: #64748b;
+      --color-card: #1e293b;
+      --color-card-foreground: #f1f5f9;
+      --color-popover: #0f172a;
+      --color-popover-foreground: #f1f5f9;
+      --color-surface-hover: #334155;
+      --color-destructive: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: var(--font-family);
+      background: var(--color-surface);
+      color: var(--color-text);
+      padding: var(--space-5);
+      transition: background var(--duration-200) var(--ease-in-out), color var(--duration-200) var(--ease-in-out);
+    }
+
+    h1, h2 { margin: 0; }
+    h1 { font-size: 22px; margin-bottom: var(--space-1); }
+    h2 { font-size: 16px; color: var(--color-text-secondary); font-weight: var(--font-weight-medium); margin-bottom: var(--space-3); }
+
+    /* Top controls */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-bottom: var(--space-5);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+      align-items: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .topbar h1 { font-size: var(--font-size-xl); margin: 0; flex: 1 1 100%; }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .control-group label { font-size: var(--font-size-sm); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); }
+    input[type="range"] { width: 110px; }
+    .size-readout {
+      font-variant-numeric: tabular-nums;
+      min-width: 70px;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+    }
+    button.preset {
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      border-radius: var(--radius-md);
+      padding: var(--space-1-5) var(--space-3);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+    }
+    button.preset:hover { background: var(--color-surface-hover); }
+    button.preset.active { background: var(--color-primary-subtle); color: var(--color-primary); border-color: var(--color-primary); }
+    button.icon-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      border-radius: var(--radius-full);
+      cursor: pointer;
+    }
+    button.icon-toggle:hover { background: var(--color-surface-hover); }
+    .hint {
+      flex: 1 1 100%;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      margin-top: var(--space-1);
+    }
+
+    /* Stage */
+    .stage {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: var(--space-5);
+      align-items: start;
+    }
+    .viewport {
+      position: relative;
+      background: #000;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+      width: 100%;
+      height: 760px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      resize: both;
+      min-width: 320px;
+      min-height: 360px;
+    }
+    .video-layer {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: var(--font-size-sm);
+    }
+    .video-layer::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 14px);
+    }
+
+    /* Popup */
+    .cell-popup {
+      position: absolute;
+      right: 24px;
+      bottom: 80px;
+      width: 480px;
+      height: 520px;
+      max-width: calc(100% - 32px);
+      max-height: calc(100% - 96px);
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: var(--font-size-base);
+      color: var(--color-text);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.45);
+      transition: width .2s, height .2s, border-radius .2s;
+    }
+    .cell-popup.mobile {
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-width: 100%;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      height: 56%;
+      max-height: 70%;
+    }
+    .cell-popup__content {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .cell-popup__resize {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 18px;
+      height: 18px;
+      cursor: se-resize;
+      color: var(--color-text-muted);
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 2px;
+      pointer-events: none;
+    }
+
+    /* Scroll area */
+    .cell-popup__scroll {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Active Entry — co được khi popup nhỏ, scroll riêng */
+    .active-entry {
+      padding: var(--space-3);
+      background: var(--color-background);
+      border-bottom: 2px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .entry-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-2);
+    }
+    .entry-header__main {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      min-width: 0;
+      flex: 1;
+    }
+    .entry-header__word {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .entry-header__ipa {
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .entry-header__badges {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+    .entry-header__actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      flex-shrink: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      padding: var(--space-1) var(--space-2-5);
+      border-radius: var(--radius-full);
+      border: none;
+      line-height: 1;
+      cursor: default;
+    }
+    .badge--neutral { background: var(--color-surface-hover); color: var(--color-text-muted); }
+    .badge--primary { background: var(--color-primary); color: var(--color-primary-foreground); }
+    .badge--success { background: var(--color-success); color: var(--color-text-inverse); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1-5);
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      white-space: nowrap;
+      height: 32px;
+      padding: 0 14px;
+      font-size: var(--font-size-sm);
+      background: transparent;
+      color: var(--color-text);
+    }
+    .btn--primary { background: var(--color-primary); color: var(--color-primary-foreground); }
+    .btn--primary:hover { background: var(--color-primary-hover); }
+    .btn--sm { height: 28px; padding: 0 10px; font-size: var(--font-size-xs); }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      width: 32px;
+      height: 32px;
+      padding: 0;
+    }
+    .icon-btn:hover { background: var(--color-surface-hover); color: var(--color-text); }
+    .icon-btn svg, .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* Definition — primary content */
+    .cell-def {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    .cell-def__title {
+      font-size: var(--font-size-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+      font-weight: var(--font-weight-semibold);
+    }
+    .cell-def__item {
+      position: relative;
+      padding: var(--space-2) 0 var(--space-2) 24px;
+      border-radius: var(--radius-lg);
+      transition: background-color var(--duration-150) var(--ease-in-out);
+      cursor: pointer;
+    }
+    .cell-def__item:hover { background: var(--color-surface-hover); }
+    .cell-def__item.selected { background: var(--color-primary-subtle); }
+    .cell-def__item::before {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 13px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-text-muted);
+    }
+    .cell-def__item.selected::before { background: var(--color-primary); }
+    .cell-def__pos {
+      font-style: italic;
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+      display: inline;
+      margin-right: var(--space-1);
+    }
+    .cell-def__meaning {
+      color: var(--color-text);
+      line-height: 1.5;
+      font-size: var(--font-size-base);
+    }
+
+    /* Materials panel — nằm trên chips candidates, collapse khi expand list */
+    .cell-materials {
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      flex-shrink: 0;
+    }
+    /* Khi candidate list mở, toolbar body collapse để nhường chỗ */
+    .cell-materials--collapsed .cell-materials__body { display: none; }
+    .cell-materials__bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-2) var(--space-3);
+      min-height: 44px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .cell-materials__bar::-webkit-scrollbar { display: none; }
+    .cell-materials__tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-1);
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      border-radius: var(--radius-md);
+      padding: 0 var(--space-2-5);
+      height: 32px;
+      cursor: pointer;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .cell-materials__tab:hover { background: var(--color-surface-hover); }
+    .cell-materials__tab--active { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .cell-materials__tab .count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      background: var(--color-primary);
+      color: var(--color-primary-foreground);
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: var(--font-weight-bold);
+    }
+    .cell-materials__tab--active .count { color: var(--color-primary); background: var(--color-background); }
+    .cell-materials__body {
+      padding: var(--space-2) var(--space-3);
+      overflow-y: auto;
+      max-height: 170px;
+    }
+    .cell-materials__placeholder {
+      color: var(--color-text-muted);
+      font-size: var(--font-size-sm);
+      text-align: center;
+      padding: var(--space-5) 0;
+    }
+    .audio-group { margin-bottom: var(--space-3); }
+    .audio-group__label {
+      font-size: var(--font-size-xs);
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--space-1);
+    }
+    .audio-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2);
+      border-radius: var(--radius-lg);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+    }
+    .audio-item:hover { background: var(--color-surface-hover); }
+    .audio-item .meta { font-size: 11px; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .audio-item .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Variant D: Hybrid chips + expand — candidate selector */
+    .candidates {
+      flex: 0 0 auto;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+    }
+    /* Chips row — expand button sticky bên phải, chips scroll-x ở giữa */
+    .candidates__chips {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+    }
+    .candidates__chips-scroll {
+      flex: 1 1 auto;
+      display: flex;
+      gap: var(--space-2);
+      overflow-x: auto;
+      scrollbar-width: none;
+      min-width: 0;
+    }
+    .candidates__chips-scroll::-webkit-scrollbar { display: none; }
+    .chip {
+      flex-shrink: 0;
+      font-size: var(--font-size-sm);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      background: var(--color-surface-hover);
+      color: var(--color-text-secondary);
+      border: 1px solid var(--color-border);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background var(--duration-150) var(--ease-in-out);
+    }
+    .chip:hover { background: var(--color-primary-subtle); color: var(--color-primary); border-color: var(--color-primary); }
+    .chip--active { background: var(--color-primary); color: var(--color-primary-foreground); border-color: var(--color-primary); }
+    /* Expand button — luôn visible bên phải, không bị chips che */
+    .chip__expand {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: transform var(--duration-150) var(--ease-in-out), background var(--duration-150) var(--ease-in-out);
+    }
+    .chip__expand:hover { background: var(--color-surface-hover); color: var(--color-text); }
+    .chip__expand--open { transform: rotate(180deg); color: var(--color-primary); border-color: var(--color-primary); }
+    /* Expanded list — detail on demand, toolbar body sẽ collapse khi list mở */
+    .candidates__list {
+      max-height: 40%;
+      overflow-y: auto;
+      border-top: 1px solid var(--color-border);
+    }
+    .candidates__list--hidden { display: none; }
+    .candidate {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-0-5);
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      cursor: pointer;
+      transition: background var(--duration-150) var(--ease-in-out);
+    }
+    .candidate:hover { background: var(--color-surface-hover); }
+    .candidate:last-child { border-bottom: none; }
+    .candidate__word {
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--font-size-sm);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .candidate__meta {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Footer */
+    .cell-footer {
+      padding: var(--space-2) var(--space-3);
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      background: var(--color-background);
+      flex-shrink: 0;
+    }
+    .cell-footer__actions { display: flex; align-items: center; gap: var(--space-1); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-text-muted); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-text-secondary); }
+
+    /* Sidebar */
+    .sidebar {
+      position: sticky;
+      top: 0;
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+    .sidebar h2 { font-size: var(--font-size-lg); }
+    .scenario-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      border-radius: var(--radius-md);
+      padding: var(--space-2-5) var(--space-3);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+    }
+    .scenario-btn:hover { background: var(--color-surface-hover); }
+    .scenario-btn.active { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-subtle); }
+    .scenario-desc {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+      line-height: 1.5;
+      margin: 0;
+    }
+    .metric {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: var(--font-size-sm);
+      padding: var(--space-2) 0;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+    .metric span:last-child { font-weight: var(--font-weight-semibold); color: var(--color-text-secondary); }
+
+    @media (max-width: 900px) {
+      .stage { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .viewport { height: 560px; }
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <div class="topbar">
+    <h1>Popup Dictionary Redesign — Active Entry + Collapsed Candidates</h1>
+
+    <div class="control-group">
+      <label for="widthRange">W</label>
+      <input id="widthRange" type="range" min="320" max="720" value="480" />
+      <span id="widthReadout" class="size-readout">480px</span>
+    </div>
+
+    <div class="control-group">
+      <label for="heightRange">H</label>
+      <input id="heightRange" type="range" min="300" max="680" value="520" />
+      <span id="heightReadout" class="size-readout">520px</span>
+    </div>
+
+    <div class="control-group">
+      <button class="preset" data-w="360" data-h="400" data-mobile="true">Mobile</button>
+      <button class="preset" data-w="440" data-h="480">Small</button>
+      <button class="preset active" data-w="480" data-h="520">Desktop</button>
+      <button class="preset" data-w="620" data-h="560">Large</button>
+    </div>
+
+    <button class="icon-toggle" id="themeToggle" title="Toggle light/dark" aria-label="Toggle theme">
+      <!-- sun icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+    </button>
+
+    <p class="hint">
+      Variant D: toolbar nằm trên chips. Click ▾ (bên phải) để mở list chi tiết — toolbar body sẽ collapse nhường chỗ. Click chip để chọn nhanh. Drag viewport corner để resize.
+    </p>
+  </div>
+
+  <div class="stage">
+    <div class="viewport" id="viewport">
+      <div class="video-layer">Video stage</div>
+
+      <div class="cell-popup" id="popup">
+        <div class="cell-popup__content">
+          <div class="cell-popup__scroll">
+            <!-- Active entry -->
+            <div class="active-entry" id="activeEntry">
+              <div class="entry-header">
+                <div class="entry-header__main">
+                  <div class="entry-header__word" id="activeWord">character</div>
+                  <div class="entry-header__ipa" id="activeIpa">/ˈkærəktər/</div>
+                  <div class="entry-header__badges">
+                    <span class="badge badge--neutral" id="activeStatus">unknown</span>
+                    <span class="badge badge--primary" id="activeFreq">COCA top 1k</span>
+                  </div>
+                </div>
+                <div class="entry-header__actions">
+                  <button class="btn btn--primary" id="quickAddBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg>
+                    Quick Add
+                  </button>
+                  <button class="icon-btn" title="More actions" id="moreBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" /></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="cell-def" id="definitions">
+                <div class="cell-def__item selected" data-def="1">
+                  <span class="cell-def__pos">n.</span>
+                  <span class="cell-def__meaning">the mental and moral qualities distinctive to an individual</span>
+                </div>
+                <div class="cell-def__item" data-def="2">
+                  <span class="cell-def__pos">n.</span>
+                  <span class="cell-def__meaning">a person in a novel, play, or movie</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Toolbar materials — nằm trên chips candidates, collapse khi expand list -->
+            <div class="cell-materials" id="materials">
+              <div class="cell-materials__bar" id="tabBar">
+                <button class="cell-materials__tab cell-materials__tab--active" data-tab="audio">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4" /><path d="M7 6v12" /><path d="M11 3v18" /><path d="M15 8v8" /><path d="M19 11v2" /></svg>
+                  Audio <span class="count">2</span>
+                </button>
+                <button class="cell-materials__tab" data-tab="image">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.5-3.5a2 2 0 0 0-2.8 0L6 21" /></svg>
+                  Image <span class="count">0</span>
+                </button>
+                <button class="cell-materials__tab" data-tab="translate">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6" /><path d="m4 14 6-6 2-3" /><path d="M2 5h12" /><path d="M7 2h1" /><path d="m22 22-5-10-5 10" /><path d="M14 18h6" /></svg>
+                  Translate
+                </button>
+                <button class="cell-materials__tab" data-tab="links">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+                  Links
+                </button>
+              </div>
+              <div class="cell-materials__body" id="materialsBody"></div>
+            </div>
+
+            <!-- Variant D: Hybrid chips + expand -->
+            <div class="candidates" id="candidates">
+              <div class="candidates__chips" id="candChips">
+                <!-- chips injected by JS -->
+              </div>
+              <div class="candidates__list candidates__list--hidden" id="candList">
+                <!-- detail list injected by JS -->
+              </div>
+            </div>
+          </div>
+
+          <div class="cell-footer">
+            <button class="badge badge--neutral" id="statusBadge">unknown</button>
+            <div class="cell-footer__actions">
+              <button class="btn btn--sm" style="border:1px solid var(--color-border); color:var(--color-text-secondary)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /><path d="m15 5 4 4" /></svg>
+                Send to Creator
+              </button>
+              <button class="icon-btn" title="Settings">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="cell-popup__resize">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 L2 22" opacity="0.3" /><path d="M22 8 L8 22" /><path d="M22 14 L14 22" /></svg>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <h2>Design Decisions</h2>
+      <p class="scenario-desc">
+        <strong>Active entry + hybrid chips (Variant D).</strong> Chỉ entry đang chọn hiển thị definitions + learning toolbar. Candidates là chips ngang compact; nút ▾ mở list chi tiết với def preview.
+      </p>
+
+      <h2>Scenarios</h2>
+      <button class="scenario-btn active" data-scenario="default">
+        <span>Default — active entry</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+      </button>
+      <p class="scenario-desc">Popup mở: word + IPA + badges, definitions, learning toolbar, chips candidates ở dưới.</p>
+
+      <button class="scenario-btn" data-scenario="switch">
+        <span>Switch candidate (chip)</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+      </button>
+      <p class="scenario-desc">Click chip → active entry đổi toàn bộ (header, def, audio/image/translate/links).</p>
+
+      <button class="scenario-btn" data-scenario="expand">
+        <span>Expand detail list</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+      </button>
+      <p class="scenario-desc">Click ▾ bên phải chips → list chi tiết hiện, toolbar body collapse nhường chỗ. Click item để chọn.</p>
+
+      <button class="scenario-btn" data-scenario="small">
+        <span>Small popup</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+      </button>
+      <p class="scenario-desc">Resize 440×480. Active entry scroll riêng; chips vẫn visible; list expand có max-height 35%.</p>
+
+      <button class="scenario-btn" data-scenario="mobile">
+        <span>Mobile bottom sheet</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+      </button>
+      <p class="scenario-desc">Mobile: popup là bottom sheet full-width. Nội dung cùng cấu trúc, chỉ rộng hơn.</p>
+
+      <div style="height:1px;background:var(--color-border);margin:var(--space-2) 0"></div>
+      <h2>IA Metrics</h2>
+      <div class="metric"><span>Primary visible</span><span>Word + IPA + Status + Def</span></div>
+      <div class="metric"><span>Secondary</span><span>Learning toolbar</span></div>
+      <div class="metric"><span>Tertiary</span><span>Chips + expand list</span></div>
+      <div class="metric"><span>Actions</span><span>Quick Add primary</span></div>
+      <div class="metric"><span>Toolbar per popup</span><span>1 (context-aware)</span></div>
+    </aside>
+  </div>
+
+  <script>
+    const data = {
+      0: {
+        word: 'character',
+        ipa: '/ˈkærəktər/',
+        status: 'unknown',
+        freq: 'COCA top 1k',
+        defs: [
+          { pos: 'n.', meaning: 'the mental and moral qualities distinctive to an individual' },
+          { pos: 'n.', meaning: 'a person in a novel, play, or movie' },
+        ],
+        audio: [
+          { group: 'Word Audio', items: [{ label: 'UK — Oxford', meta: '/ˈkærəktə(r)/' }, { label: 'US — Forvo', meta: '/ˈkɛrəktɚ/' }] },
+          { group: 'Sentence Audio', items: [{ label: 'The main character of the film...', meta: 'UK' }] },
+        ],
+        image: 'Image grid for "character"',
+        translate: '<strong>Target:</strong> tính cách, nhân vật',
+        links: 'Cambridge • Oxford • Wiktionary'
+      },
+      1: {
+        word: 'character assassination',
+        ipa: '/ˈkærəktər əˌsæsɪˈneɪʃn/',
+        status: 'unknown',
+        freq: 'phrase',
+        defs: [
+          { pos: 'n. phrase', meaning: 'the malicious denigration of someone\'s character' },
+        ],
+        audio: [
+          { group: 'Word Audio', items: [{ label: 'UK — Oxford', meta: '/ˈkærəktər əˌsæsɪˈneɪʃn/' }] },
+          { group: 'Sentence Audio', items: [{ label: 'The article was a blatant character assassination.', meta: 'UK' }] },
+        ],
+        image: 'Image grid for "character assassination"',
+        translate: '<strong>Target:</strong> bôi nhọ danh dự',
+        links: 'Cambridge • TheFreeDictionary'
+      },
+      2: {
+        word: 'character actor',
+        ipa: '/ˈkærəktər ˈæktər/',
+        status: 'unknown',
+        freq: 'phrase',
+        defs: [
+          { pos: 'n. phrase', meaning: 'an actor who specializes in eccentric or unusual roles' },
+        ],
+        audio: [
+          { group: 'Word Audio', items: [{ label: 'US — Forvo', meta: '/ˈkærəktər ˈæktɚ/' }] },
+        ],
+        image: 'Image grid for "character actor"',
+        translate: '<strong>Target:</strong> diễn viên đóng vai đặc trưng',
+        links: 'Oxford • Collins'
+      },
+      3: {
+        word: 'characteristic',
+        ipa: '/ˌkærəktəˈrɪstɪk/',
+        status: 'unknown',
+        freq: 'COCA top 2k',
+        defs: [
+          { pos: 'adj.', meaning: 'typical of a particular person or thing' },
+          { pos: 'n.', meaning: 'a feature or quality belonging typically to a person or thing' },
+        ],
+        audio: [
+          { group: 'Word Audio', items: [{ label: 'UK — Oxford', meta: '/ˌkærəktəˈrɪstɪk/' }, { label: 'US — Forvo', meta: '/ˌkɛrəktəˈrɪstɪk/' }] },
+        ],
+        image: 'Image grid for "characteristic"',
+        translate: '<strong>Target:</strong> đặc trưng, đặc điểm',
+        links: 'Cambridge • Oxford'
+      }
+    };
+
+    let activeIdx = 0;
+    let activeTab = 'audio';
+    let theme = 'dark';
+
+    const els = {
+      activeWord: document.getElementById('activeWord'),
+      activeIpa: document.getElementById('activeIpa'),
+      activeStatus: document.getElementById('activeStatus'),
+      activeFreq: document.getElementById('activeFreq'),
+      definitions: document.getElementById('definitions'),
+      materialsBody: document.getElementById('materialsBody'),
+      tabBar: document.getElementById('tabBar'),
+      candidates: document.getElementById('candidates'),
+      popup: document.getElementById('popup'),
+      widthRange: document.getElementById('widthRange'),
+      heightRange: document.getElementById('heightRange'),
+      widthReadout: document.getElementById('widthReadout'),
+      heightReadout: document.getElementById('heightReadout'),
+      themeToggle: document.getElementById('themeToggle'),
+      statusBadge: document.getElementById('statusBadge'),
+      quickAddBtn: document.getElementById('quickAddBtn'),
+    };
+
+    function renderActive() {
+      const item = data[activeIdx];
+      els.activeWord.textContent = item.word;
+      els.activeIpa.textContent = item.ipa;
+      els.activeStatus.textContent = item.status;
+      els.activeFreq.textContent = item.freq;
+      els.statusBadge.textContent = item.status;
+
+      // Reset materials collapse state (renderCandidates sẽ set lại nếu cần)
+      const materials = document.getElementById('materials');
+      if (materials) materials.classList.remove('cell-materials--collapsed');
+
+      // Definitions
+      els.definitions.innerHTML =
+        item.defs.map((d, i) => `
+          <div class="cell-def__item ${i === 0 ? 'selected' : ''}" data-def="${i}">
+            <span class="cell-def__pos">${d.pos}</span>
+            <span class="cell-def__meaning">${d.meaning}</span>
+          </div>
+        `).join('');
+
+      renderPanel();
+      renderCandidates();
+    }
+
+    function renderPanel() {
+      const item = data[activeIdx];
+      let html = '';
+      if (activeTab === 'audio') {
+        html = item.audio.map(g => `
+          <div class="audio-group">
+            <div class="audio-group__label">${g.group}</div>
+            ${g.items.map(it => `
+              <div class="audio-item">
+                <button class="icon-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 9-14 9V3z" /></svg>
+                </button>
+                <div style="min-width:0">
+                  <div class="label">${it.label}</div>
+                  <div class="meta">${it.meta}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `).join('');
+      } else if (activeTab === 'image') {
+        html = `<div class="cell-materials__placeholder">${item.image}</div>`;
+      } else if (activeTab === 'translate') {
+        html = `<div class="cell-materials__placeholder">${item.translate}</div>`;
+      } else if (activeTab === 'links') {
+        html = `<div class="cell-materials__placeholder">${item.links}</div>`;
+      }
+      els.materialsBody.innerHTML = html;
+
+      els.tabBar.querySelectorAll('.cell-materials__tab').forEach(btn => {
+        if (btn.dataset.tab === activeTab) btn.classList.add('cell-materials__tab--active');
+        else btn.classList.remove('cell-materials__tab--active');
+      });
+    }
+
+    function renderCandidates() {
+      const candChips = document.getElementById('candChips');
+      const candList = document.getElementById('candList');
+      const all = Object.keys(data).map(Number);
+      // Chips trong scroll container + expand button sticky bên phải
+      const chipsHtml = all.map(k => {
+        const c = data[k];
+        const isActive = k === activeIdx;
+        const short = c.word.length > 22 ? c.word.slice(0, 20) + '…' : c.word;
+        return `<button class="chip ${isActive ? 'chip--active' : ''}" data-idx="${k}" title="${c.word}">${short}</button>`;
+      }).join('');
+      candChips.innerHTML = `
+        <div class="candidates__chips-scroll" id="candChipsScroll">${chipsHtml}</div>
+        <button class="chip__expand" id="candExpand" title="Show details" aria-label="Expand candidates">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+        </button>
+      `;
+      // Detail list: non-active candidates with def preview
+      candList.innerHTML = all.filter(k => k !== activeIdx).map(k => {
+        const c = data[k];
+        return `
+          <div class="candidate" data-idx="${k}">
+            <div class="candidate__word">${c.word}</div>
+            <div class="candidate__meta">${c.defs[0].pos} • ${c.defs[0].meaning}</div>
+          </div>
+        `;
+      }).join('');
+      // Wire chip click
+      candChips.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          activeIdx = Number(chip.dataset.idx);
+          renderActive();
+        });
+      });
+      // Wire expand toggle — toolbar body collapse khi list mở
+      const expand = document.getElementById('candExpand');
+      const materials = document.getElementById('materials');
+      if (expand) {
+        expand.addEventListener('click', () => {
+          const list = document.getElementById('candList');
+          const hidden = list.classList.toggle('candidates__list--hidden');
+          expand.classList.toggle('chip__expand--open', !hidden);
+          // Toolbar body collapse khi list mở, mở lại khi list đóng
+          materials.classList.toggle('cell-materials--collapsed', !hidden);
+        });
+      }
+      // Wire detail list click
+      candList.querySelectorAll('.candidate').forEach(cand => {
+        cand.addEventListener('click', () => {
+          activeIdx = Number(cand.dataset.idx);
+          renderActive();
+        });
+      });
+    }
+
+    els.tabBar.addEventListener('click', e => {
+      const btn = e.target.closest('.cell-materials__tab');
+      if (!btn) return;
+      activeTab = btn.dataset.tab;
+      renderPanel();
+    });
+
+    els.definitions.addEventListener('click', e => {
+      const item = e.target.closest('.cell-def__item');
+      if (item) item.classList.toggle('selected');
+    });
+
+    // Candidate clicks handled inside renderCandidates() (chips + detail list)
+
+    // Status cycle
+    const statuses = ['unknown', 'tracking', 'known', 'ignore'];
+    let statusIdx = 0;
+    function cycleStatus() {
+      statusIdx = (statusIdx + 1) % statuses.length;
+      const s = statuses[statusIdx];
+      data[activeIdx].status = s;
+      renderActive();
+    }
+    els.statusBadge.addEventListener('click', cycleStatus);
+    els.activeStatus.addEventListener('click', cycleStatus);
+
+    // Quick Add toast
+    els.quickAddBtn.addEventListener('click', () => {
+      const old = els.quickAddBtn.innerHTML;
+      els.quickAddBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg> Added`;
+      setTimeout(() => els.quickAddBtn.innerHTML = old, 1200);
+    });
+
+    // Theme toggle
+    els.themeToggle.addEventListener('click', () => {
+      theme = theme === 'light' ? 'dark' : 'light';
+      document.body.setAttribute('data-theme', theme);
+      els.themeToggle.innerHTML = theme === 'light'
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>`;
+    });
+
+    // Resize controls
+    function updateSize() {
+      const w = parseInt(els.widthRange.value, 10);
+      const h = parseInt(els.heightRange.value, 10);
+      els.popup.style.width = w + 'px';
+      els.popup.style.height = h + 'px';
+      els.popup.classList.remove('mobile');
+      els.widthReadout.textContent = w + 'px';
+      els.heightReadout.textContent = h + 'px';
+      document.querySelectorAll('.preset').forEach(b => b.classList.remove('active'));
+    }
+    els.widthRange.addEventListener('input', updateSize);
+    els.heightRange.addEventListener('input', updateSize);
+
+    new ResizeObserver(() => {
+      els.widthRange.value = els.popup.offsetWidth;
+      els.heightRange.value = els.popup.offsetHeight;
+      els.widthReadout.textContent = els.popup.offsetWidth + 'px';
+      els.heightReadout.textContent = els.popup.offsetHeight + 'px';
+    }).observe(els.popup);
+
+    // Presets
+    document.querySelectorAll('.preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const w = parseInt(btn.dataset.w, 10);
+        const h = parseInt(btn.dataset.h, 10);
+        const mobile = btn.dataset.mobile === 'true';
+        els.widthRange.value = w;
+        els.heightRange.value = h;
+        if (mobile) {
+          els.popup.style.width = '100%';
+          els.popup.style.height = h + 'px';
+          els.popup.style.right = '0';
+          els.popup.style.bottom = '0';
+          els.popup.classList.add('mobile');
+        } else {
+          els.popup.style.width = w + 'px';
+          els.popup.style.height = h + 'px';
+          els.popup.style.right = '24px';
+          els.popup.style.bottom = '80px';
+          els.popup.classList.remove('mobile');
+        }
+        els.widthReadout.textContent = w + 'px';
+        els.heightReadout.textContent = h + 'px';
+        document.querySelectorAll('.preset').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Scenario buttons
+    document.querySelectorAll('.scenario-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const s = btn.dataset.scenario;
+        if (s === 'default') { activeIdx = 0; activeTab = 'audio'; }
+        if (s === 'switch') { activeIdx = 1; activeTab = 'audio'; }
+        if (s === 'expand') {
+          activeIdx = 0; activeTab = 'audio';
+          renderActive();
+          setTimeout(() => {
+            const exp = document.getElementById('candExpand');
+            if (exp) exp.click();
+          }, 50);
+          return;
+        }
+        if (s === 'small') {
+          activeIdx = 0; activeTab = 'audio';
+          document.querySelector('[data-w="440"]').click();
+        }
+        if (s === 'mobile') {
+          activeIdx = 0; activeTab = 'audio';
+          document.querySelector('[data-w="360"]').click();
+        }
+        renderActive();
+      });
+    });
+
+    // Init
+    renderActive();
+  </script>
+</body>
+</html>

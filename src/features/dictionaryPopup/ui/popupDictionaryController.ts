@@ -66,6 +66,7 @@ export interface CandidateState {
   definitionSelection: DefinitionSelection;
   audioSelection: Map<string, boolean>;
   audioItems: AudioItem[];
+  audioSubTab: 'word' | 'sentence';
   imageSelection: Map<string, boolean>;
   imageItems: ImageItem[];
   translation: string;
@@ -82,6 +83,7 @@ interface ActiveCandidateSnapshot {
   definitionSelection: DefinitionSelection;
   audioSelection: Map<string, boolean>;
   audioItems: AudioItem[];
+  audioSubTab: 'word' | 'sentence';
   imageSelection: Map<string, boolean>;
   imageItems: ImageItem[];
   translation: string;
@@ -112,6 +114,8 @@ export interface PopupDictionaryState {
   audioSelection: Map<string, boolean>;
   /** Audio items fetched by the audio panel (winner). */
   audioItems: AudioItem[];
+  /** Active audio sub-tab (winner). */
+  audioSubTab: 'word' | 'sentence';
   /** Image selection checkboxes (winner). */
   imageSelection: Map<string, boolean>;
   /** Image items fetched by the image panel (winner). */
@@ -156,6 +160,7 @@ export function createCandidateState(result: LookupResult): CandidateState {
     definitionSelection: initDefinitionSelection(result),
     audioSelection: new Map(),
     audioItems: [],
+    audioSubTab: 'word',
     imageSelection: new Map(),
     imageItems: [],
     translation: '',
@@ -183,6 +188,7 @@ export function createPopupDictionaryState(
     definitionSelection: new Map(),
     audioSelection: new Map(),
     audioItems: [],
+    audioSubTab: 'word',
     imageSelection: new Map(),
     imageItems: [],
     activeTab: settings.defaultActiveTab ?? null,
@@ -309,6 +315,19 @@ export function showPopup(
     renderPopupToolbar(state, container);
     // Render candidates chips + list.
     renderCandidateChipsAndList(state, container);
+
+    // Auto-translate when translate tab is the default and no cached translation.
+    // onTabOpen (which triggers auto-translate on click) never fires for the
+    // default tab, so without this the user sees the empty state with a button
+    // instead of the skeleton loading state.
+    if (defaultTab === 'translate' && !state.translation && !state.translationLoading) {
+      setActiveSnapshot(state, { translationLoading: true, activeTab: 'translate' });
+      renderPopupToolbar(state, container);
+      translateSentence(result, contextSentence, state.settings.translateTargetLang, (text) => {
+        setActiveSnapshot(state, { translation: text, translationLoading: false });
+        rerender(state, 'translate');
+      });
+    }
   }
 
   // Show first so offsetHeight is correct (display:none → offsetHeight=0).
@@ -528,6 +547,7 @@ function getActiveSnapshot(state: PopupDictionaryState): ActiveCandidateSnapshot
       definitionSelection: state.definitionSelection,
       audioSelection: state.audioSelection,
       audioItems: state.audioItems,
+      audioSubTab: state.audioSubTab,
       imageSelection: state.imageSelection,
       imageItems: state.imageItems,
       translation: state.translation,
@@ -543,6 +563,7 @@ function getActiveSnapshot(state: PopupDictionaryState): ActiveCandidateSnapshot
     definitionSelection: cs.definitionSelection,
     audioSelection: cs.audioSelection,
     audioItems: cs.audioItems,
+    audioSubTab: cs.audioSubTab,
     imageSelection: cs.imageSelection,
     imageItems: cs.imageItems,
     translation: cs.translation,
@@ -559,6 +580,7 @@ function setActiveSnapshot(state: PopupDictionaryState, patch: Partial<ActiveCan
     state.definitionSelection = patch.definitionSelection ?? state.definitionSelection;
     state.audioSelection = patch.audioSelection ?? state.audioSelection;
     state.audioItems = patch.audioItems ?? state.audioItems;
+    state.audioSubTab = patch.audioSubTab ?? state.audioSubTab;
     state.imageSelection = patch.imageSelection ?? state.imageSelection;
     state.imageItems = patch.imageItems ?? state.imageItems;
     state.translation = patch.translation ?? state.translation;
@@ -575,6 +597,7 @@ function setActiveSnapshot(state: PopupDictionaryState, patch: Partial<ActiveCan
     definitionSelection: patch.definitionSelection ?? old.definitionSelection,
     audioSelection: patch.audioSelection ?? old.audioSelection,
     audioItems: patch.audioItems ?? old.audioItems,
+    audioSubTab: patch.audioSubTab ?? old.audioSubTab,
     imageSelection: patch.imageSelection ?? old.imageSelection,
     imageItems: patch.imageItems ?? old.imageItems,
     translation: patch.translation ?? old.translation,
@@ -678,10 +701,10 @@ function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement)
       if (tab === 'translate') {
         const s2 = getActiveSnapshot(state);
         if (!s2.translation && !s2.translationLoading) {
-          setActiveSnapshot(state, { translationLoading: true, activeTab: 'translate' });
-          rerender(state, 'translate');
           const r = getActiveResult(state);
           if (!r) return;
+          setActiveSnapshot(state, { translationLoading: true, activeTab: 'translate' });
+          rerender(state, 'translate');
           translateSentence(r, state.contextSentence, state.settings.translateTargetLang, (text) => {
             setActiveSnapshot(state, { translation: text, translationLoading: false, activeTab: 'translate' });
             rerender(state, 'translate');
@@ -706,6 +729,7 @@ function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement)
     translationLoading: snapshot.translationLoading,
     audioSelection: snapshot.audioSelection,
     audioItems: snapshot.audioItems,
+    audioSubTab: snapshot.audioSubTab,
     imageSelection: snapshot.imageSelection,
     imageItems: snapshot.imageItems,
   }, {
@@ -723,6 +747,10 @@ function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement)
     },
     onPlayTts: (item, term, sentence, langCode) => playTts(item, term, sentence, langCode),
     onSelectionChange: renderToolbarOnly,
+    onAudioSubTabChange: (group) => {
+      setActiveSnapshot(state, { audioSubTab: group });
+      rerender(state);
+    },
   });
 }
 
@@ -733,31 +761,37 @@ function countMapTrue(map: Map<string, boolean>): number {
   return n;
 }
 
-/** Trigger translation for the current sentence. */
+/** Trigger translation for the current sentence.
+ *  Always calls onDone — with the translated text on success, empty string on
+ *  failure/early-return — so the caller can reset translationLoading and show
+ *  the appropriate state (loaded translation or empty-with-button). */
 function translateSentence(
   result: LookupResult,
   contextSentence: string,
   targetLang: string,
   onDone: (text: string) => void,
 ): void {
-  if (!contextSentence) return;
+  if (!contextSentence || !result.langCode || !targetLang) {
+    onDone('');
+    return;
+  }
   const text = contextSentence;
   const sl = result.langCode;
   const tl = targetLang;
-  if (!sl || !tl) return;
   void (async () => {
     try {
       const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
       type TranslateResponse = { success: boolean; data?: { translated: string[] }; error?: string };
       const res = await sendMessage<TranslateResponse>({ type: 'TRANSLATE', payload: { tabId: 0, text, sl, tl } });
       if (res?.success && res.data?.translated?.length) {
-        const translated = res.data.translated.join(' ');
-        onDone(translated);
+        onDone(res.data.translated.join(' '));
       } else {
         console.warn('[popup] Translate failed:', res?.error ?? 'empty response');
+        onDone('');
       }
     } catch (err) {
       console.warn('[popup] Translate error:', err);
+      onDone('');
     }
   })();
 }
@@ -775,6 +809,7 @@ function renderTabPanel(
     translationLoading?: boolean;
     audioSelection: Map<string, boolean>;
     audioItems: AudioItem[];
+    audioSubTab: 'word' | 'sentence';
     imageSelection: Map<string, boolean>;
     imageItems: ImageItem[];
   },
@@ -784,6 +819,7 @@ function renderTabPanel(
     onToggleTranslate?: () => void;
     onPlayTts?: (item: AudioItem, term: string, sentence: string, langCode: string) => void;
     onSelectionChange?: () => void;
+    onAudioSubTabChange?: (group: 'word' | 'sentence') => void;
   },
 ): void {
   if (!tab) return;
@@ -821,7 +857,7 @@ function renderTabPanel(
         if (currentlyPlayingAudioId === item.id && currentlyPlayingAudio) {
           currentlyPlayingAudio.pause();
           stopCurrentAudio();
-          renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+          renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
           return;
         }
         stopCurrentAudio();
@@ -831,17 +867,17 @@ function renderTabPanel(
           currentlyPlayingAudioId = item.id;
           audio.addEventListener('ended', () => {
             stopCurrentAudio();
-            renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+            renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
           });
           audio.addEventListener('pause', () => {
             stopCurrentAudio();
-            renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+            renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
           });
           void audio.play().catch(() => {
             stopCurrentAudio();
-            renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+            renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
           });
-          renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+          renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
           return;
         }
         // TTS: we can't reliably track finish time, so keep the play icon.
@@ -852,11 +888,11 @@ function renderTabPanel(
       if (ctx.audioItems.length > 0) {
         wordAudios = ctx.audioItems.filter((a) => a.kind === 'word');
         sentenceAudios = ctx.audioItems.filter((a) => a.kind === 'sentence');
-        renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+        renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
         break;
       }
       // Loading state while fetching Forvo + TTS voices.
-      renderAudioPanel(container, [], [], ctx.audioSelection, onToggle, onPlay, true, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+      renderAudioPanel(container, [], [], ctx.audioSelection, onToggle, onPlay, true, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
       void (async () => {
         // TTS settings: enabled gate + maxDisplay cap.
         // ponytail: autoplayCount skip — autoplay implement sau, cần user-gesture
@@ -907,10 +943,10 @@ function renderTabPanel(
           ctx.audioItems.push(...fallbackWord, ...fallbackSentence);
           wordAudios = fallbackWord;
           sentenceAudios = fallbackSentence;
-          renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+          renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
           return;
         }
-        renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange);
+        renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
       })();
       break;
     }

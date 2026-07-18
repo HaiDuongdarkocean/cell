@@ -54,6 +54,7 @@ docs/           # Tài liệu dự án
 │   └── 042-sticky-candidate-header.md       # ADR-042: sticky candidate header cho popup dictionary (CSS position:sticky, 2-layer shell + candidate-list wrapper, iOS Safari bug workaround)
 │   └── 043-popup-dictionary-ux-improvements.md # ADR-043: header audio/close buttons, audio play/pause state, image grid, links chips, Quick Add toast, focus trap, drag header
 │   └── 044-design-token-ssot.md        # ADR-044: Single source of truth cho design tokens (tokens.json + generator + runtime wrapper)
+│   └── 045-popup-dictionary-redesign-hybrid-chips.md # ADR-045: Popup Dictionary redesign — hybrid chips + expand, single context-aware toolbar, 3-row header, footer status/send/settings
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)

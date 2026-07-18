@@ -894,6 +894,14 @@
     },
     {
       "type": "experience",
+      "id": "popup-mutate-in-place-rerender-from-live",
+      "title": "Mutate state in place + rerender from live state to avoid stale closures in vanilla-DOM popups",
+      "category": ["state", "rendering", "ux"],
+      "tags": ["closure", "mutable-state", "rerender", "stale-closure", "vanilla-dom", "async-callback", "active-candidate", "snapshot", "context-aware"],
+      "trigger": "Vanilla-DOM popup with async tab callbacks that mutate state and rerender — returning new immutable state objects causes closures to capture stale refs"
+    },
+    {
+      "type": "experience",
       "id": "popup-audio-currently-playing-state",
       "title": "Track currently-playing media in UI state and render from it",
       "category": ["state", "ux"],
@@ -923,6 +931,14 @@
       "category": ["css"],
       "tags": ["hardcoded-px", "design-token", "css-module", "convention", "maintainability"],
       "trigger": "CSS file có giá trị px hardcoded thay vì dùng var(--space-*)/var(--font-size-*) từ design system"
+    },
+    {
+      "type": "experience",
+      "id": "button-states-ssot-use-ds-modifiers",
+      "title": "Không viết lại hover/active states cho button — dùng .btn + .btn--* modifiers từ design system",
+      "category": ["css"],
+      "tags": ["button", "ssot", "design-system", "hover", "active", "state", "maintainability"],
+      "trigger": "Tạo/sửa component có trạng thái hover/active mà tự định nghĩa lại background/color thay vì dùng .btn--primary, .btn--outline, .btn--ghost có sẵn"
     }
   ]
 }

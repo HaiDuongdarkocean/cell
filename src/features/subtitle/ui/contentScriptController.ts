@@ -250,9 +250,7 @@ export function init(video: HTMLVideoElement): () => void {
         );
         // Append remaining candidates in subsequent frames for progressive rendering.
         for (const candidate of rest) {
-          popupDictState = appendCandidate(popupDictState, candidate, request.contextSentence, (dismissedState) => {
-            popupDictState = dismissedState;
-          });
+          popupDictState = appendCandidate(popupDictState, candidate, request.contextSentence);
         }
       } else {
         console.warn('[popup-dict] lookup failed', response.error);
