@@ -25,6 +25,9 @@ import {
   seekVideo,
   playVideo,
   pauseVideo,
+  createTranslateFunction,
+  broadcastCues,
+  loadSettingsOrToast,
 } from '@/features/subtitle';
 import { SubtitleBlockController, type SubtitleBlockControllerUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleBlockController';
 import { OffsetController } from '@/features/subtitle/ui/offsetController';
@@ -40,7 +43,6 @@ import { createPopupDictionaryState, showPopup, appendCandidate, updatePopupSett
 import { WebTriggerController } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
-import type { TranslateResult } from '@/entities/message';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
 import type { CardCreatorSettings, DictionaryPopupSettings } from '@/entities/settings';
@@ -332,13 +334,8 @@ export function init(video: HTMLVideoElement): () => void {
   /** ADR-026: Handle Card Creator action (quick-update or edit-card). */
   async function handleCardCreatorAction(action: CardCreatorAction): Promise<void> {
     // Load settings fresh (URL/deck/noteType/lang may have changed since init).
-    let settings: Settings;
-    try {
-      settings = await loadSettings();
-    } catch {
-      showToast('Cannot load settings — storage unavailable.', container, { variant: 'error' });
-      return;
-    }
+    const settings = await loadSettingsOrToast(container);
+    if (!settings) return;
     cardCreatorSettings = settings.cardCreator;
 
     // ADR-026: prefetch AnkiConnect decks + models NOW (on click) so the
@@ -411,13 +408,8 @@ export function init(video: HTMLVideoElement): () => void {
     prefill: PopupCardCreatorPrefill,
   ): Promise<void> {
     // Load settings fresh (URL/deck/noteType/lang may have changed since init).
-    let settings: Settings;
-    try {
-      settings = await loadSettings();
-    } catch {
-      showToast('Cannot load settings — storage unavailable.', container, { variant: 'error' });
-      return;
-    }
+    const settings = await loadSettingsOrToast(container);
+    if (!settings) return;
     cardCreatorSettings = settings.cardCreator;
 
     // Prefetch AnkiConnect decks + models NOW so the network round-trip
@@ -500,13 +492,8 @@ export function init(video: HTMLVideoElement): () => void {
    *  fetches are skipped (toast warning), the note is still added. */
   async function handlePopupQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {
     // Load settings fresh.
-    let settings: Settings;
-    try {
-      settings = await loadSettings();
-    } catch {
-      showToast('Cannot load settings — storage unavailable.', container, { variant: 'error' });
-      return;
-    }
+    const settings = await loadSettingsOrToast(container);
+    if (!settings) return;
     const ccSettings = settings.cardCreator;
     const url = ccSettings.ankiConnectUrl;
 
@@ -689,26 +676,14 @@ export function init(video: HTMLVideoElement): () => void {
     blockController.setGenerateNativeEnabled(false);
 
     translatePrefill = new BackgroundPrefillController({
-      translate: async (text: string): Promise<string[]> => {
-        const res = await sendMessage<{ success?: boolean; data?: TranslateResult; error?: string }>({
-          type: MESSAGE_TYPES.TRANSLATE,
-          payload: { text, sl, tl },
-        });
-        if (!res?.success || !res.data?.translated) {
-          throw new Error(res?.error ?? 'translate failed');
-        }
-        return res.data.translated;
-      },
+      translate: createTranslateFunction(sl, tl),
       onChunkTranslated: (translatedCues: SrtCue[]) => {
         if (activeGenerateRunId !== runId || !translatedNativeSlot || translatedNativeSlot.runId !== runId) return;
         translatedNativeSlot.cues = translatedCues;
         blockController?.loadBilingualCues(targetCues, translatedCues);
         showOverlay();
         bilingualCues = mergeCuesForPanel(targetCues, translatedCues);
-        void sendMessage({
-          type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-          payload: { tabId: undefined, cues: bilingualCues },
-        });
+        broadcastCues(bilingualCues);
         refreshPanel('native');
       },
       onError: (msg: string) => {
@@ -993,10 +968,7 @@ export function init(video: HTMLVideoElement): () => void {
       blockController.getTargetCues() as SrtCue[],
       blockController.getNativeCues() as SrtCue[],
     );
-    void sendMessage({
-      type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-      payload: { tabId: undefined, cues: bilingualCues },
-    });
+    broadcastCues(bilingualCues);
   };
   // ADR-015 T10: parsed files side-map (panel items don't carry cues)
   let importedParsedTarget: ParsedFile[] = [];
@@ -1158,25 +1130,13 @@ export function init(video: HTMLVideoElement): () => void {
             if (!sl || !tl || sl === tl) return;
             translatePrefill?.clear();
             translatePrefill = new BackgroundPrefillController({
-              translate: async (text: string): Promise<string[]> => {
-                const res = await sendMessage<{ success?: boolean; data?: TranslateResult; error?: string }>({
-                  type: MESSAGE_TYPES.TRANSLATE,
-                  payload: { text, sl, tl },
-                });
-                if (!res?.success || !res.data?.translated) {
-                  throw new Error(res?.error ?? 'translate failed');
-                }
-                return res.data.translated;
-              },
+              translate: createTranslateFunction(sl, tl),
               onChunkTranslated: (translatedCues: SrtCue[]) => {
                 blockController?.loadBilingualCues(latestTargetCues, translatedCues);
                 showOverlay();
                 bilingualCues = mergeCuesForPanel(latestTargetCues, translatedCues);
                 // updateCues(latestTargetCues, translatedCues);
-                void sendMessage({
-                  type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-                  payload: { tabId: undefined, cues: bilingualCues },
-                });
+                broadcastCues(bilingualCues);
               },
               onError: (msg: string) => {
                 showToast(msg, container, { variant: 'error' });
@@ -1339,24 +1299,12 @@ export function init(video: HTMLVideoElement): () => void {
               if (!sl || !tl || sl === tl) return;
               translatePrefill?.clear();
               translatePrefill = new BackgroundPrefillController({
-                translate: async (text: string): Promise<string[]> => {
-                  const res = await sendMessage<{ success?: boolean; data?: TranslateResult; error?: string }>({
-                    type: MESSAGE_TYPES.TRANSLATE,
-                    payload: { text, sl, tl },
-                  });
-                  if (!res?.success || !res.data?.translated) {
-                    throw new Error(res?.error ?? 'translate failed');
-                  }
-                  return res.data.translated;
-                },
+                translate: createTranslateFunction(sl, tl),
                 onChunkTranslated: (translatedCues: SrtCue[]) => {
                   blockController?.loadBilingualCues(latestTargetCues, translatedCues);
                   bilingualCues = mergeCuesForPanel(latestTargetCues, translatedCues);
                   // updateCues(latestTargetCues, translatedCues);
-                  void sendMessage({
-                    type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-                    payload: { tabId: undefined, cues: bilingualCues },
-                  });
+                  broadcastCues(bilingualCues);
                 },
                 onError: (msg: string) => {
                   showToast(msg, container, { variant: 'error' });
@@ -1506,10 +1454,7 @@ export function init(video: HTMLVideoElement): () => void {
             bilingualCueCount: bilingualCues.length,
           });
           // Send cues to Side Panel
-          void sendMessage({
-            type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-            payload: { tabId: undefined, cues: bilingualCues },
-          });
+          broadcastCues(bilingualCues);
         },
         onToast: (message, variant) => showToast(message, container, { variant }),
         autoTranslate: currentSettings.subtitleOverlayAutoTranslate,
@@ -1525,16 +1470,7 @@ export function init(video: HTMLVideoElement): () => void {
           // Clear any previous prefill (SPA nav or re-trigger)
           translatePrefill?.clear();
           translatePrefill = new BackgroundPrefillController({
-            translate: async (text: string): Promise<string[]> => {
-              const res = await sendMessage<{ success?: boolean; data?: TranslateResult; error?: string }>({
-                type: MESSAGE_TYPES.TRANSLATE,
-                payload: { text, sl, tl },
-              });
-              if (!res?.success || !res.data?.translated) {
-                throw new Error(res?.error ?? 'translate failed');
-              }
-              return res.data.translated;
-            },
+            translate: createTranslateFunction(sl, tl),
             onChunkTranslated: (translatedCues: SrtCue[]) => {
               // Feed translated cues to overlay (reuse loadBilingualCues path ADR-013/014)
               blockController?.loadBilingualCues(targetCues, translatedCues);
@@ -1543,10 +1479,7 @@ export function init(video: HTMLVideoElement): () => void {
               bilingualCues = mergeCuesForPanel(targetCues, translatedCues);
               latestTargetCues = targetCues;
               // updateCues(targetCues, translatedCues);
-              void sendMessage({
-                type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-                payload: { tabId: undefined, cues: bilingualCues },
-              });
+              broadcastCues(bilingualCues);
             },
             onError: (msg: string) => {
               showToast(msg, container, { variant: 'error' });
@@ -1663,10 +1596,7 @@ export function init(video: HTMLVideoElement): () => void {
       offsetController?.loadCues(true);
       // ADR-015 T10: merge for Side Panel + keyboard shortcuts
       bilingualCues = mergeCuesForPanel(targetCues, nativeCues);
-      void sendMessage({
-        type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-        payload: { tabId: undefined, cues: bilingualCues },
-      });
+      broadcastCues(bilingualCues);
     } else if (assignment.target.length === 0 && assignment.native.length === 0) {
       blockController?.loadCues(parsed[0].cues); // fallback: single mode
       showOverlay();
@@ -1837,10 +1767,7 @@ export function init(video: HTMLVideoElement): () => void {
     } else if (document.visibilityState === 'visible') {
       translatePrefill?.resume();
       if (bilingualCues.length === 0) return;
-      void sendMessage({
-        type: MESSAGE_TYPES.SUBTITLE_CUES_LOADED,
-        payload: { tabId: undefined, cues: bilingualCues },
-      });
+      broadcastCues(bilingualCues);
     }
   };
   document.addEventListener('visibilitychange', onVisibilityChange);
