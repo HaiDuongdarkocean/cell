@@ -137,6 +137,10 @@ export function useCardCreatorState(
   const [capturingMedia, setCapturingMedia] = useState(false);
   const [toasts, setToasts] = useState<readonly Toast[]>([]);
 
+  // Track toast auto-dismiss timers so we can clear them on unmount
+  // (react-timeout-cleanup: setTimeout in component must be cleared on unmount).
+  const toastTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
   const autosaverRef = useRef(new DraftAutosaver());
   const openContextRef = useRef<OpenContext | null>(openContext);
   openContextRef.current = openContext;
@@ -150,10 +154,12 @@ export function useCardCreatorState(
   const pushToast = useCallback((kind: Toast['kind'], message: string) => {
     const id = ++toastIdCounter;
     setToasts((prev) => [...prev, { id, kind, message }]);
-    // Auto-dismiss after 4s.
-    setTimeout(() => {
+    // Auto-dismiss after 4s. Track timer for unmount cleanup.
+    const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
+      toastTimersRef.current.delete(timer);
     }, 4000);
+    toastTimersRef.current.add(timer);
   }, []);
 
   const dismissToast = useCallback((id: number) => {
@@ -335,6 +341,14 @@ export function useCardCreatorState(
     if (loadStatus !== 'ready') return;
     autosaverRef.current.schedule(draft);
   }, [draft, loadStatus]);
+
+  // Clear all pending toast timers on unmount (react-timeout-cleanup).
+  useEffect(() => {
+    return () => {
+      for (const timer of toastTimersRef.current) clearTimeout(timer);
+      toastTimersRef.current.clear();
+    };
+  }, []);
 
   /** Update draft (triggers autosave via effect). */
   const updateDraft = useCallback((partial: Partial<CardDraft>) => {
