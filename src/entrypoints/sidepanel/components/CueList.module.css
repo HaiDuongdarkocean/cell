@@ -40,3 +40,18 @@
   line-height: 1.3;
   margin-top: 2px;
 }
+
+/* === Responsive — narrow sidepanel === */
+@media (max-width: 350px) {
+  .cue {
+    padding: var(--space-1);
+  }
+
+  .targetText {
+    font-size: var(--font-size-sm);
+  }
+
+  .nativeText {
+    font-size: var(--font-size-xs);
+  }
+}

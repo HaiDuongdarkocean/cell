@@ -35,3 +35,14 @@
 .downloadIcon svg {
   stroke-width: 2.5;
 }
+
+/* === Responsive — narrow popup === */
+@media (max-width: 400px) {
+  .selectionBar {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .count {
+    font-size: var(--font-size-xs);
+  }
+}
