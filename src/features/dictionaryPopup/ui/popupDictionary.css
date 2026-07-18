@@ -240,7 +240,7 @@
 /* Status badges — solid badges. Maps directly to WordStatus values. */
 .cell-header__status--unknown {
   background: var(--color-error);
-  color: var(--color-text-inverse);
+  color: var(--color-text);
 }
 
 .cell-header__status--tracking {
