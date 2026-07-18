@@ -381,6 +381,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
                       onChange={(val) => update('subtitleOverlayNativeLanguage', val)}
                       ariaLabel="Select Native language"
                       disabled={!settings.subtitleOverlayAutoLoad}
+                      menuAlign="right"
                     />
                   </SettingField>
                 </div>

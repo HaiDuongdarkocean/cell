@@ -30,6 +30,8 @@ export interface SearchableSelectProps {
   maxHeight?: number;
   /** Whether the select is disabled. */
   disabled?: boolean;
+  /** Menu alignment relative to trigger. Default: left (opens rightward). Use right when trigger sits on the right side of a row. */
+  menuAlign?: 'left' | 'right';
 }
 
 /**
@@ -57,6 +59,7 @@ export function SearchableSelect({
   placeholder = 'Search...',
   maxHeight = 220,
   disabled = false,
+  menuAlign = 'left',
 }: SearchableSelectProps): ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -97,7 +100,8 @@ export function SearchableSelect({
       setHighlightedIndex((prev) => Math.max(prev - 1, 0));
     } else if (e.key === 'Enter' && filtered.length > 0) {
       e.preventDefault();
-      handleSelect(filtered[highlightedIndex].value);
+      const clampedIndex = Math.min(highlightedIndex, filtered.length - 1);
+      handleSelect(filtered[clampedIndex].value);
     }
   };
 
@@ -122,10 +126,17 @@ export function SearchableSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // Focus search input when menu opens
-  if (isOpen && searchRef.current) {
-    searchRef.current.focus();
-  }
+  // Clamp highlighted index when the filtered list shrinks (e.g. search query narrows).
+  useEffect(() => {
+    setHighlightedIndex((prev) => Math.min(prev, Math.max(filtered.length - 1, 0)));
+  }, [filtered.length]);
+
+  // Focus search input when menu opens (side effect in useEffect, not during render)
+  useEffect(() => {
+    if (isOpen) {
+      searchRef.current?.focus();
+    }
+  }, [isOpen]);
 
   return (
     <div className={styles.container} ref={menuRef}>
@@ -149,23 +160,14 @@ export function SearchableSelect({
 
       {/* Menu */}
       {isOpen && (
-        <div className={styles.menu} role="listbox" style={{ maxHeight }}>
+        <div
+          className={`${styles.menu} ${menuAlign === 'right' ? styles.menuAlignRight : styles.menuAlignLeft}`}
+          role="listbox"
+          style={{ maxHeight }}
+        >
           {/* Search input */}
           <div className={styles.searchWrap}>
-            {/* FIXME: extract to registry once stroke-width variant supported — search circle r=7 differs from ICON_CATALOG.search (r=8) */}
-            <svg
-              className={styles.searchIcon}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+            <Icon name="search" className={styles.searchIcon} />
             <input
               ref={searchRef}
               type="search"

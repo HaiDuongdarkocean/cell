@@ -67,11 +67,15 @@
 }
 
 /* === Menu (with embedded search) === */
+/* Width follows content so a narrow trigger doesn't clip long options,
+   but never shrinks below the trigger and is capped to guard very long
+   items. (ux-dropdown-width-follows-content) */
 .menu {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
-  right: 0;
+  width: max-content;
+  min-width: 100%;
+  max-width: 320px;
   display: flex;
   flex-direction: column;
   background: var(--color-background);
@@ -79,6 +83,19 @@
   border-radius: var(--radius-xl);
   z-index: 10;
   overflow: hidden;
+}
+
+/* Default: menu's left edge aligns with trigger's left edge (opens rightward). */
+.menuAlignLeft {
+  left: 0;
+}
+
+/* Right-aligned: menu's right edge aligns with trigger's right edge (opens
+   leftward). Use when the select sits on the right side of a row so the
+   menu doesn't overflow the card/container. */
+.menuAlignRight {
+  right: 0;
+  left: auto;
 }
 
 /* === Search input === */
