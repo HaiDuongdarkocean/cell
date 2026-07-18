@@ -53,9 +53,7 @@ export function SearchField({
 
   return (
     <div className={[styles.root, className ?? ''].filter(Boolean).join(' ')}>
-      <span className={styles.leadingIcon} aria-hidden="true">
-        <Icon name="search" />
-      </span>
+      <Icon name="search" className={styles.leadingIcon} />
       <Input
         type="search"
         value={currentValue}
@@ -74,7 +72,7 @@ export function SearchField({
           size="xs"
           onClick={handleClear}
         >
-          <Icon name="x" />
+          <Icon name="x" size={16} />
         </IconButton>
       )}
     </div>
