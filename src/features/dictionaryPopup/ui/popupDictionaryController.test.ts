@@ -81,7 +81,6 @@ function makePopupSettings(overrides: Partial<DictionaryPopupSettings> = {}): Di
     srsDestination: 'anki',
     popupWidthPx: 560,
     popupMaxHeightPx: 480,
-    translateTargetLang: 'vi',
     externalDictLinks: [],
     ...overrides,
   };
@@ -107,9 +106,18 @@ function makeCardCreatorSettings(overrides: Partial<CardCreatorSettings> = {}): 
   };
 }
 
+/** Create popup state with default settings + nativeLang='vi'. Hides the
+ *  two undefined positional args (onCardCreatorAction, onQuickAddDirect). */
+function makePopupState(
+  popupOverrides: Partial<DictionaryPopupSettings> = {},
+  nativeLang = 'vi',
+): PopupDictionaryState {
+  return createPopupDictionaryState(makePopupSettings(popupOverrides), makeCardCreatorSettings(), undefined, undefined, nativeLang);
+}
+
 describe('createPopupDictionaryState', () => {
   it('creates state with default values', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const state = makePopupState();
     expect(state.currentResult).toBeNull();
     expect(state.currentStatus).toBe('unknown');
     expect(state.activeTab).toBeNull();
@@ -119,10 +127,7 @@ describe('createPopupDictionaryState', () => {
   });
 
   it('uses defaultActiveTab from settings', () => {
-    const state = createPopupDictionaryState(
-      makePopupSettings({ defaultActiveTab: 'audio' }),
-      makeCardCreatorSettings(),
-    );
+    const state = makePopupState({ defaultActiveTab: 'audio' });
     expect(state.activeTab).toBe('audio');
   });
 });
@@ -131,7 +136,7 @@ describe('showPopup', () => {
   let state: ReturnType<typeof createPopupDictionaryState>;
 
   beforeEach(() => {
-    state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    state = makePopupState();
     mockSendMessage.mockReset();
     mockSendMessage.mockResolvedValue({ success: true, data: { translated: ['Bỏ giày ra.'] } });
   });
@@ -298,7 +303,7 @@ describe('appendCandidate', () => {
   let state: ReturnType<typeof createPopupDictionaryState>;
 
   beforeEach(() => {
-    state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    state = makePopupState();
   });
 
   it('appends a candidate to additionalResults', () => {
@@ -345,24 +350,21 @@ describe('appendCandidate', () => {
 
 describe('hidePopup', () => {
   it('clears currentResult', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const state = makePopupState();
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const hidden = hidePopup(shown);
     expect(hidden.currentResult).toBeNull();
   });
 
   it('clears activeTab', () => {
-    const state = createPopupDictionaryState(
-      makePopupSettings({ defaultActiveTab: 'audio' }),
-      makeCardCreatorSettings(),
-    );
+    const state = makePopupState({ defaultActiveTab: 'audio' });
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const hidden = hidePopup(shown);
     expect(hidden.activeTab).toBeNull();
   });
 
   it('keeps tab panel cache data', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const state = makePopupState();
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'Take off your shoes.');
     const hidden = hidePopup(shown);
     expect(hidden.translation).toBe(shown.translation);
@@ -373,7 +375,7 @@ describe('hidePopup', () => {
 
 describe('destroyPopup', () => {
   it('clears shell', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const state = makePopupState();
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const destroyed = destroyPopup(shown);
     expect(destroyed.shell).toBeNull();
@@ -383,14 +385,14 @@ describe('destroyPopup', () => {
 
 describe('cycleStatus', () => {
   it('cycles unknown → tracking', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const state = makePopupState();
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const cycled = cycleStatus(shown);
     expect(cycled.currentStatus).toBe('tracking');
   });
 
   it('cycles tracking → known', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const state = makePopupState();
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const cycled1 = cycleStatus(shown);
     const cycled2 = cycleStatus(cycled1);
@@ -398,7 +400,7 @@ describe('cycleStatus', () => {
   });
 
   it('updates header status badge in DOM', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const state = makePopupState();
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const cycled = cycleStatus(shown);
     const container = cycled.shell?.getContainer();
@@ -409,7 +411,7 @@ describe('cycleStatus', () => {
 
 describe('toggleDefinition', () => {
   it('toggles definition selection', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const state = makePopupState();
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const toggled = toggleDefinition(shown, 'd1', false);
     expect(toggled.definitionSelection.get('d1')).toBe(false);
@@ -418,24 +420,21 @@ describe('toggleDefinition', () => {
 
 describe('toggleTab', () => {
   it('sets activeTab to clicked tab', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const state = makePopupState();
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const toggled = toggleTab(shown, 'audio');
     expect(toggled.activeTab).toBe('audio');
   });
 
   it('closes activeTab when same tab clicked', () => {
-    const state = createPopupDictionaryState(
-      makePopupSettings({ defaultActiveTab: 'audio' }),
-      makeCardCreatorSettings(),
-    );
+    const state = makePopupState({ defaultActiveTab: 'audio' });
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const toggled = toggleTab(shown, 'audio');
     expect(toggled.activeTab).toBeNull();
   });
 
   it('renders panel in materials body', () => {
-    const state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    const state = makePopupState();
     const shown = showPopup(state, makeResult(), 170, 100, 150, 200, 'sentence');
     const toggled = toggleTab(shown, 'links');
     const container = toggled.shell?.getContainer();
@@ -457,7 +456,7 @@ describe('setActiveCandidate', () => {
   let state: ReturnType<typeof createPopupDictionaryState>;
 
   beforeEach(() => {
-    state = createPopupDictionaryState(makePopupSettings(), makeCardCreatorSettings());
+    state = makePopupState();
   });
 
   it('switches activeCandidateIndex from 0 to 1', () => {

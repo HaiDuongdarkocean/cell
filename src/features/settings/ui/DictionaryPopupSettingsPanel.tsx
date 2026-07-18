@@ -109,18 +109,6 @@ export function DictionaryPopupSettingsPanel({
         />
       </div>
 
-      {/* Translate target language */}
-      <div className={styles.field}>
-        <label htmlFor="dp-translate-lang">Translate target language</label>
-        <input
-          id="dp-translate-lang"
-          type="text"
-          value={settings.translateTargetLang}
-          onChange={(e) => update({ translateTargetLang: e.target.value })}
-          placeholder="vi, en, zh, ..."
-        />
-      </div>
-
       {/* SRS destination */}
       <div className={styles.field}>
         <label htmlFor="dp-srs">SRS destination</label>

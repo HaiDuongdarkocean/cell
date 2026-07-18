@@ -26,8 +26,8 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     chromeMock.storage.local.set.mockClear();
   });
 
-  it('CURRENT_SCHEMA_VERSION is 14 (bumped for Dictionary Popup settings)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(14);
+  it('CURRENT_SCHEMA_VERSION is 15 (bumped to strip orphaned translateTargetLang)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(15);
   });
 
   it('migrates v1 settings to v13 with nav cluster + block defaults merged', async () => {
@@ -199,10 +199,10 @@ describe('settingsStore schema v9 migration (ADR-025 unified subtitle block)', (
     expect(result.navClusterButtonSize).toBe(34);
   });
 
-  it('saveSettings stamps schemaVersion 13', async () => {
+  it('saveSettings stamps schemaVersion 15', async () => {
     await saveSettings({ navClusterEnabled: false });
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(14);
+    expect(stored.schemaVersion).toBe(15);
   });
 
   it('saveSettings partial preserves existing stored fields (read-modify-write)', async () => {
