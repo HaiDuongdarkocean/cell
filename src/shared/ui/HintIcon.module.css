@@ -13,8 +13,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: var(--space-4, 16px);
+  height: var(--space-4, 16px);
   padding: 0;
   border: none;
   background: transparent;
@@ -40,14 +40,14 @@
 }
 
 .hintBtn svg {
-  width: 14px;
-  height: 14px;
+  width: var(--space-3-5, 14px);
+  height: var(--space-3-5, 14px);
 }
 
 /* === Floating hint popover (nổi lên trên icon) === */
 .hintText {
   position: absolute;
-  bottom: calc(100% + 6px);
+  bottom: calc(100% + var(--space-1-5, 6px));
   left: 0;
   width: max-content;
   max-width: 280px;
@@ -60,7 +60,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   z-index: 30;
-  animation: hintPop 150ms ease;
+  animation: hintPop var(--duration-fast, 150ms) var(--ease-standard, ease);
   pointer-events: none;
 }
 
@@ -69,8 +69,8 @@
   content: '';
   position: absolute;
   top: 100%;
-  left: 8px;
-  border: 5px solid transparent;
+  left: var(--space-2, 8px);
+  border: var(--space-1-5, 6px) solid transparent;
   border-top-color: var(--color-border);
 }
 
@@ -79,7 +79,7 @@
 /* Flip vertical: popover below icon (when near top viewport edge) */
 .hintText.flip-top {
   bottom: auto;
-  top: calc(100% + 6px);
+  top: calc(100% + var(--space-1-5, 6px));
 }
 
 .hintText.flip-top::after {
@@ -97,7 +97,7 @@
 
 .hintText.align-right::after {
   left: auto;
-  right: 8px;
+  right: var(--space-2, 8px);
 }
 
 /* Center horizontal: when centered in viewport */
@@ -118,7 +118,7 @@
   border-top-color: transparent;
   border-bottom-color: var(--color-border);
   left: auto;
-  right: 8px;
+  right: var(--space-2, 8px);
 }
 
 .hintText.flip-top.align-center::after {

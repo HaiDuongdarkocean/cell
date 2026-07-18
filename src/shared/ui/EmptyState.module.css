@@ -12,8 +12,8 @@
 }
 
 .icon {
-  width: 40px;
-  height: 40px;
+  width: var(--iconbutton-size-md, 40px);
+  height: var(--iconbutton-size-md, 40px);
   color: var(--color-text-muted);
 }
 
