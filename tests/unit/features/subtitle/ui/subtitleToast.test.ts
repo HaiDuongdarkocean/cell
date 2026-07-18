@@ -116,20 +116,20 @@ describe('showToast', () => {
     container.remove();
   });
 
-  it('renders success variant with check icon and success-colored border', () => {
+  it('renders success variant with check icon and success-colored CSS var', () => {
     showToast('Subtitles loaded', container, { variant: 'success' });
     const toast = container.querySelector('[data-testid="subtitle-toast"]');
     expect(toast).not.toBeNull();
     expect(toast?.getAttribute('data-variant')).toBe('success');
-    expect((toast as HTMLElement).style.cssText).toContain('border-left: 3px solid var(--color-success)');
+    expect((toast as HTMLElement).style.getPropertyValue('--toast-variant-color')).toBe('var(--color-success)');
     expect((toast as HTMLElement).innerHTML).toContain('M20 6L9 17l-5-5');
   });
 
-  it('renders error variant with X icon and error-colored border', () => {
+  it('renders error variant with X icon and error-colored CSS var', () => {
     showToast('Could not load subtitles', container, { variant: 'error' });
     const toast = container.querySelector('[data-testid="subtitle-toast"]');
     expect(toast?.getAttribute('data-variant')).toBe('error');
-    expect((toast as HTMLElement).style.cssText).toContain('border-left: 3px solid var(--color-error)');
+    expect((toast as HTMLElement).style.getPropertyValue('--toast-variant-color')).toBe('var(--color-error)');
     expect((toast as HTMLElement).innerHTML).toContain('M18 6L6 18');
   });
 
@@ -137,6 +137,6 @@ describe('showToast', () => {
     showToast('No subtitles detected', container);
     const toast = container.querySelector('[data-testid="subtitle-toast"]');
     expect(toast?.getAttribute('data-variant')).toBe('info');
-    expect((toast as HTMLElement).style.cssText).toContain('border-left: 3px solid var(--color-info)');
+    expect((toast as HTMLElement).style.getPropertyValue('--toast-variant-color')).toBe('var(--color-info)');
   });
 });
