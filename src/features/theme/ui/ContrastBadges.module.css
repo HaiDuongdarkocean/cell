@@ -2,15 +2,15 @@
 .badges {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-xs, 4px);
-  margin-top: var(--spacing-sm, 8px);
+  gap: var(--space-1, 4px);
+  margin-top: var(--space-2, 8px);
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px var(--spacing-sm, 8px);
+  padding: 2px var(--space-2, 8px);
   border-radius: var(--radius-full, 9999px);
   font-size: var(--font-size-xs, 12px);
   font-weight: var(--font-weight-semibold, 600);

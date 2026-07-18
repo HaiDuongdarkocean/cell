@@ -3,28 +3,28 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) 0;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--space-1);
 }
 
 .fieldRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-sm);
+  gap: var(--space-2);
 }
 
 /* === Pair row — 2 fields side-by-side (settings-dialog-rearrange) === */
 .pairRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-md);
+  gap: var(--space-3);
   align-items: start;
 }
 
@@ -36,7 +36,7 @@
 .divider {
   height: 1px;
   background: var(--color-border-subtle);
-  margin: var(--spacing-xs) 0;
+  margin: var(--space-1) 0;
 }
 
 /* === Number input — for position X/Y percent === */
@@ -89,7 +89,7 @@
 /* === Preset buttons — overlay appearance quick-select === */
 .presetRow {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--space-1);
   flex-wrap: wrap;
 }
 

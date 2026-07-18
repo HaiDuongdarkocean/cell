@@ -78,8 +78,8 @@ export function createOffsetSection(
   header.style.cssText = `
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm, 8px);
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
+    gap: var(--space-2, 8px);
+    padding: var(--space-2, 8px) var(--space-3, 12px);
     cursor: pointer;
     border-radius: var(--radius-sm, 6px);
     user-select: none;
@@ -115,7 +115,7 @@ export function createOffsetSection(
   // === Body ===
   const body = document.createElement('div');
   body.setAttribute('data-testid', 'offset-section-body');
-  body.style.cssText = 'padding: var(--spacing-xs, 4px) var(--spacing-xs, 4px) var(--spacing-sm, 8px); display: block;';
+  body.style.cssText = 'padding: var(--space-1, 4px) var(--space-1, 4px) var(--space-2, 8px); display: block;';
   section.appendChild(body);
 
   // === Pill — 5 ô: [−2s][−0.5s][VALUE-input][+0.5s][+2s] ===
@@ -134,7 +134,7 @@ export function createOffsetSection(
     border-radius: var(--radius-full, 9999px);
     padding: 3px;
     gap: 0;
-    margin-bottom: var(--spacing-sm, 8px);
+    margin-bottom: var(--space-2, 8px);
     isolation: isolate;
   `;
   body.appendChild(pill);

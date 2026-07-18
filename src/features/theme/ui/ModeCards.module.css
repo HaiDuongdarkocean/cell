@@ -2,16 +2,16 @@
 .cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-md, 12px);
-  margin-bottom: var(--spacing-lg, 16px);
+  gap: var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
 }
 
 .card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-xs, 4px);
-  padding: var(--spacing-md, 12px);
+  gap: var(--space-1, 4px);
+  padding: var(--space-3, 12px);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md, 8px);
   background: var(--color-surface);

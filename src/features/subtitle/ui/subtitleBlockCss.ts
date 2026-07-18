@@ -49,7 +49,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .block-body {
   display: grid;
   grid-template-columns: var(--sb-cluster-width, 84px) 1fr var(--sb-cluster-width, 84px);
-  gap: var(--spacing-xs, 4px);
+  gap: var(--space-1, 4px);
   align-items: center;
   min-height: 0;
 }
@@ -60,8 +60,8 @@ export const SUBTITLE_BLOCK_CSS = `
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: var(--spacing-xs, 4px);
-  padding: var(--spacing-xs, 4px);
+  gap: var(--space-1, 4px);
+  padding: var(--space-1, 4px);
 }
 
 .cluster-column {
@@ -170,7 +170,7 @@ export const SUBTITLE_BLOCK_CSS = `
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: var(--spacing-xs, 4px);
+  padding: var(--space-1, 4px);
   gap: 2px;
   text-align: center;
 }

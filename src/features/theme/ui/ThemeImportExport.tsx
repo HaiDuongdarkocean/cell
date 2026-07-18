@@ -113,7 +113,7 @@ export function ThemeImportExport({ config, onApply }: ThemeImportExportProps): 
         rows={4}
         data-testid="theme-paste-textarea"
       />
-      <div className={styles.row} style={{ marginTop: 'var(--spacing-sm, 8px)' }}>
+      <div className={styles.row} style={{ marginTop: 'var(--space-2, 8px)' }}>
         <Button variant="primary" size="sm" onClick={handlePasteApply} data-testid="theme-apply-paste">Apply</Button>
       </div>
       {error && <Alert variant="error" description={error} data-testid="theme-import-error" />}

@@ -12,7 +12,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-sm);
+  gap: var(--space-2);
   width: 100%;
   padding: 9px 12px;
   border: 1px solid var(--color-border);
@@ -103,8 +103,8 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-surface);
 }
@@ -157,8 +157,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   cursor: pointer;
   transition: background var(--transition);
 }
@@ -191,7 +191,7 @@
 
 /* === Empty state === */
 .emptyState {
-  padding: var(--spacing-md);
+  padding: var(--space-3);
   text-align: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);

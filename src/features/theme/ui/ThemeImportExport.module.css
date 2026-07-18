@@ -1,7 +1,7 @@
 /* ThemeImportExport — export/import theme JSON */
 .wrapper {
-  margin-top: var(--spacing-md, 12px);
-  padding: var(--spacing-md, 12px);
+  margin-top: var(--space-3, 12px);
+  padding: var(--space-3, 12px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md, 8px);
   background: var(--color-surface);
@@ -9,13 +9,13 @@
 
 .row {
   display: flex;
-  gap: var(--spacing-sm, 8px);
+  gap: var(--space-2, 8px);
   flex-wrap: wrap;
-  margin-bottom: var(--spacing-sm, 8px);
+  margin-bottom: var(--space-2, 8px);
 }
 
 .btn {
-  padding: var(--spacing-xs, 4px) var(--spacing-md, 12px);
+  padding: var(--space-1, 4px) var(--space-3, 12px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm, 6px);
   background: var(--color-background);
@@ -37,7 +37,7 @@
 .textarea {
   width: 100%;
   min-height: 80px;
-  padding: var(--spacing-sm, 8px);
+  padding: var(--space-2, 8px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm, 6px);
   background: var(--color-background);
@@ -50,17 +50,17 @@
 .error {
   color: var(--color-error);
   font-size: var(--font-size-xs, 12px);
-  margin-top: var(--spacing-xs, 4px);
+  margin-top: var(--space-1, 4px);
 }
 
 .success {
   color: var(--color-success);
   font-size: var(--font-size-xs, 12px);
-  margin-top: var(--spacing-xs, 4px);
+  margin-top: var(--space-1, 4px);
 }
 
 .label {
   font-size: var(--font-size-xs, 12px);
   color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-xs, 4px);
+  margin-bottom: var(--space-1, 4px);
 }
