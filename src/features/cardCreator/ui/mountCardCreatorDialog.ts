@@ -26,13 +26,17 @@ import type { MediaFile } from '../media/mediaFile';
  *  'edit-card' = subtitle cluster edit-card (neutral). */
 type CardCreatorAction = 'quick-add' | 'quick-update' | 'edit-card';
 
-/** Pre-fill data from the popup dictionary (term + definitions + translation).
+/** Pre-fill data from the popup dictionary (term + definitions + translation + media URLs).
  *  When present, useCardCreatorState uses these instead of empty strings. */
 export interface CardCreatorPrefill {
   readonly targetWord?: string;
   readonly definitions?: string;
   readonly sentenceTranslation?: string;
   readonly sentence?: string;
+  /** Word audio URLs (Forvo/TTS) selected in the popup — fetched + stored as MediaFile. */
+  readonly audioUrls?: readonly string[];
+  /** Image URLs (Google Images) selected in the popup — fetched + stored as MediaFile. */
+  readonly imageUrls?: readonly string[];
 }
 
 /** Context for opening the dialog (video + cue + languages).

@@ -28,7 +28,7 @@ import {
   DraftAutosaver,
   type CardDraft,
 } from '../state/cardDraft';
-import { arrayBufferToBase64, joinAnkiFieldRefs, type MediaFile, type MediaKind } from '../media/mediaFile';
+import { arrayBufferToBase64, joinAnkiFieldRefs, fetchUrlAsMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
 import { translateSentence } from '../media/translation';
@@ -59,9 +59,9 @@ export interface OpenContext {
    * audio). When present, the draft is initialized with these files instead
    * of empty media arrays. */
   initialMedia?: readonly MediaFile[];
-  /** Popup dictionary pre-fill (term + definitions + translation).
+  /** Popup dictionary pre-fill (term + definitions + translation + media URLs).
    *  When present, overrides the empty defaults for these draft fields. */
-  prefill?: { readonly targetWord?: string; readonly definitions?: string; readonly sentenceTranslation?: string; readonly sentence?: string };
+  prefill?: { readonly targetWord?: string; readonly definitions?: string; readonly sentenceTranslation?: string; readonly sentence?: string; readonly audioUrls?: readonly string[]; readonly imageUrls?: readonly string[] };
 }
 
 /** Hook return type. */
@@ -246,6 +246,41 @@ export function useCardCreatorState(
       tags: restoredDraft?.tags ?? settings.defaultTags,
       mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? settings.mediaUpdateMode,
     });
+
+    // Fetch prefill media URLs (word audio + images from popup dictionary
+    // selection) asynchronously and append to the draft. Best-effort —
+    // failures are skipped (toast warning), the dialog still opens with
+    // text fields. Runs after setDraft so the form renders immediately.
+    if (prefill?.audioUrls?.length || prefill?.imageUrls?.length) {
+      void (async () => {
+        const fetchedAudios: MediaFile[] = [];
+        const fetchedImages: MediaFile[] = [];
+        for (const audioUrl of prefill.audioUrls ?? []) {
+          try {
+            fetchedAudios.push(await fetchUrlAsMediaFile(audioUrl, 'audio'));
+          } catch {
+            pushToast('warning', `Could not fetch audio: ${audioUrl}`);
+          }
+        }
+        for (const imageUrl of prefill.imageUrls ?? []) {
+          try {
+            fetchedImages.push(await fetchUrlAsMediaFile(imageUrl, 'image'));
+          } catch {
+            pushToast('warning', `Could not fetch image: ${imageUrl}`);
+          }
+        }
+        if (fetchedAudios.length > 0 || fetchedImages.length > 0) {
+          setDraft((prev) => ({
+            ...prev,
+            fields: {
+              ...prev.fields,
+              wordAudios: [...prev.fields.wordAudios, ...fetchedAudios],
+              images: [...prev.fields.images, ...fetchedImages],
+            },
+          }));
+        }
+      })();
+    }
 
     const url = settings.ankiConnectUrl;
     try {

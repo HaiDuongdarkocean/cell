@@ -62,3 +62,47 @@ export function generateMediaFilename(prefix: string, ext: string): string {
   const rand = Math.random().toString(36).slice(2, 8);
   return `cell-${prefix}-${ts}-${rand}.${ext}`;
 }
+
+/** MIME type → file extension lookup for common media types. */
+const MIME_TO_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg',
+  'audio/mpeg': 'mp3',
+  'audio/mp3': 'mp3',
+  'audio/wav': 'wav',
+  'audio/ogg': 'ogg',
+  'audio/webm': 'webm',
+  'audio/aac': 'aac',
+  'audio/mp4': 'm4a',
+};
+
+/** Fetch a URL and convert it to a MediaFile.
+ *  Used by the popup dictionary bridge to turn selected audio/image URLs
+ *  (Forvo, Google Images) into MediaFile entries for the Card Creator draft.
+ *  Throws on fetch failure or non-ok response — caller handles (skip item).
+ *  ponytail: best-effort — caller wraps in try/catch and skips on failure. */
+export async function fetchUrlAsMediaFile(
+  url: string,
+  kind: MediaKind,
+  fetchFn: (input: string, init?: RequestInit) => Promise<Response> = fetch,
+): Promise<MediaFile> {
+  const response = await fetchFn(url);
+  if (!response.ok) {
+    throw new Error(`Media fetch failed: ${response.status} ${url}`);
+  }
+  const blob = await response.blob();
+  const mimeType = blob.type || (kind === 'image' ? 'image/png' : 'audio/mpeg');
+  const ext = MIME_TO_EXT[mimeType] ?? (kind === 'image' ? 'png' : 'mp3');
+  const data = await blob.arrayBuffer();
+  const prefix = kind === 'image' ? 'img' : 'audio';
+  return {
+    kind,
+    filename: generateMediaFilename(prefix, ext),
+    mimeType,
+    data,
+  };
+}
