@@ -1,0 +1,21 @@
+{
+  "id": "bridge-field-drop-cross-module-prefill",
+  "title": "Cross-module bridge: map every prefill field at the boundary or data is silently dropped",
+  "category": ["state", "data"],
+  "tags": ["bridge", "prefill", "cross-module", "silent-data-loss", "type-mismatch", "interface-coverage"],
+  "trigger": "Một module A thu thập dữ liệu vào một interface rồi truyền qua bridge (callback/message) cho module B, nhưng interface ở B hẹp hơn A — các field thừa của A bị drop silently vì TypeScript không bắt được khi field là optional.",
+  "principle": "Khi hai module giao tiếp qua một bridge (callback, message, props), interface ở receiving end phải bao phủ TẤT CẢ field mà sending end có thể truyền. Optional field (`?:`) khiến TypeScript không báo lỗi khi gửi có field nhưng nhận thiếu field — dữ liệu bị mất silently. Review cross-module flow bằng cách so sánh field-by-field: interface gửi vs interface nhận. Nếu nhận thiếu field, hoặc mở rộng interface nhận, hoặc explicitly bỏ field với comment giải thích WHY.",
+  "cases": [
+    {
+      "context": "Popup dictionary thu thập audioUrls + imageUrls vào PopupCardCreatorPrefill, truyền qua onCardCreatorAction callback cho content script. Content script build CardCreatorOpenContext.prefill nhưng chỉ map 4 field (term, definitions, translation, sentence) — quên audioUrls + imageUrls. CardCreatorPrefill interface cũng không có 2 field này. Kết quả: user chọn audio/image trong popup → click Quick Add → Card Creator mở với wordAudios=[] images=[]. TypeScript không báo lỗi vì prefill.audioUrls là optional.",
+      "bad": "// Sending end (popupDictionaryController):\ninterface PopupCardCreatorPrefill {\n  term: string;\n  audioUrls?: readonly string[];  // collected\n  imageUrls?: readonly string[];   // collected\n}\n\n// Receiving end (contentScriptController):\nprefill: {\n  targetWord: prefill.term,\n  // audioUrls + imageUrls NOT mapped — silently dropped\n}\n\n// CardCreatorPrefill interface also missing audioUrls/imageUrls\n// → TypeScript OK because all fields optional → no error",
+      "good": "// Receiving end maps EVERY field:\nprefill: {\n  targetWord: prefill.term,\n  audioUrls: prefill.audioUrls,   // mapped\n  imageUrls: prefill.imageUrls,   // mapped\n}\n\n// CardCreatorPrefill interface covers all sending-end fields:\ninterface CardCreatorPrefill {\n  targetWord?: string;\n  audioUrls?: readonly string[];\n  imageUrls?: readonly string[];\n}\n\n// Review checklist: diff field-by-field sending interface vs receiving interface."
+    }
+  ],
+  "applyFor": [
+    "Cross-module callbacks where sending interface has more fields than receiving",
+    "Message bridges (content script → background → popup) with optional payload fields",
+    "Props drilling where intermediate components drop fields",
+    "Prefill/pre-populate flows where collected data must survive the bridge"
+  ]
+}

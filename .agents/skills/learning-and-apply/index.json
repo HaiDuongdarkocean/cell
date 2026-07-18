@@ -907,6 +907,14 @@
       "category": ["state", "rendering", "ux"],
       "tags": ["closure", "mutable-state", "rerender", "candidate-list", "state-capture", "dom-preservation", "vanilla-dom"],
       "trigger": "A vanilla-DOM popup/component uses helper functions that return a new immutable state object, and callbacks close over a mutable `state` variable; rerendering the active component must not destroy appended siblings"
+    },
+    {
+      "type": "experience",
+      "id": "bridge-field-drop-cross-module-prefill",
+      "title": "Cross-module bridge: map every prefill field at the boundary or data is silently dropped",
+      "category": ["state", "data"],
+      "tags": ["bridge", "prefill", "cross-module", "silent-data-loss", "type-mismatch", "interface-coverage"],
+      "trigger": "Một module A thu thập dữ liệu vào interface rồi truyền qua bridge (callback/message) cho module B, nhưng interface ở B hẹp hơn A — field thừa bị drop silently vì TypeScript không bắt được khi field là optional."
     }
   ]
 }
