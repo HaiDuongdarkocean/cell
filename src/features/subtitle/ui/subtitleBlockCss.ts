@@ -475,4 +475,367 @@ export const SUBTITLE_BLOCK_CSS = `
 .offset-disabled-hint--visible {
   display: block;
 }
+
+/* === Subtitle Manager Panel (ADR-015 V2) ===
+   Panel uses design tokens (theme-aware). Manager icon uses overlay colors
+   (sits on video). Item active state uses role-colored border + bg. */
+.subtitle-toolbar {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: var(--space-2, 8px);
+  z-index: 1000001;
+  pointer-events: none;
+}
+
+.subtitle-manager-icon {
+  width: var(--sb-btn-size, 40px);
+  height: var(--sb-btn-size, 40px);
+  border: none;
+  border-radius: var(--radius-full, 9999px);
+  background: rgba(30, 41, 59, var(--sb-bg-opacity, 0.2));
+  color: rgba(241, 245, 249, var(--sb-text-opacity, 1));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
+  isolation: isolate;
+  pointer-events: auto;
+  user-select: none;
+  position: relative;
+  transition: background 150ms ease, color 150ms ease, transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.subtitle-manager-icon-feather {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: var(--radius-full, 9999px);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  background: rgba(15, 23, 42, 0.1);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+  z-index: -1;
+  transition: background 150ms ease;
+  pointer-events: none;
+}
+
+.subtitle-manager-icon--active,
+.subtitle-manager-icon:hover:not(.subtitle-manager-icon--active) {
+  color: var(--color-primary);
+}
+
+.subtitle-manager-icon:hover:not(.subtitle-manager-icon--active) .subtitle-manager-icon-feather {
+  background: rgba(15, 23, 42, 0.25);
+}
+
+.subtitle-manager-icon:active {
+  transform: scale(0.88);
+}
+
+.subtitle-manager-icon:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.subtitle-manager-panel {
+  display: none;
+  position: absolute;
+  top: 44px;
+  left: 8px;
+  z-index: 1000002;
+  width: 320px;
+  max-height: 360px;
+  overflow-y: auto;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl, 12px);
+  box-shadow: var(--shadow-md, none);
+  padding: var(--space-1, 4px);
+  font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: var(--font-size-base, 14px);
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: left;
+  text-shadow: none;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-surface-hover);
+}
+
+.subtitle-manager-panel--open {
+  display: block;
+}
+
+.subtitle-manager-panel *,
+.subtitle-manager-panel *::before,
+.subtitle-manager-panel *::after {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.subtitle-manager-panel button {
+  margin: 0;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.subtitle-manager-panel::-webkit-scrollbar {
+  width: var(--space-2, 8px);
+}
+
+.subtitle-manager-panel::-webkit-scrollbar-track {
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-full, 9999px);
+}
+
+.subtitle-manager-panel::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full, 9999px);
+  border: 2px solid var(--color-surface-hover);
+}
+
+.subtitle-manager-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+.subtitle-manager-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  margin: 0;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  border-bottom: 1px solid var(--color-border-subtle);
+  box-sizing: border-box;
+}
+
+.subtitle-manager-title {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.subtitle-manager-close {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm, 6px);
+  transition: background 150ms ease, color 150ms ease, transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.subtitle-manager-close:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.subtitle-manager-close:active {
+  transform: scale(0.88);
+}
+
+.subtitle-manager-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  cursor: pointer;
+  border-radius: var(--radius-sm, 6px);
+  user-select: none;
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  line-height: 1.5;
+  text-align: left;
+  box-sizing: border-box;
+  transition: background 150ms ease;
+}
+
+.subtitle-manager-section-header:hover {
+  background: var(--color-surface-hover);
+}
+
+.subtitle-manager-section-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  color: var(--color-text-muted);
+  transition: transform 150ms ease;
+}
+
+.subtitle-manager-section-label {
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex: 1;
+}
+
+.subtitle-manager-section-label--target {
+  color: var(--color-primary);
+}
+
+.subtitle-manager-section-label--native {
+  color: var(--color-warning);
+}
+
+.subtitle-manager-section-count {
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-muted);
+}
+
+.subtitle-manager-section-body {
+  padding: 0 var(--space-1, 4px);
+  display: block;
+}
+
+.subtitle-manager-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  cursor: pointer;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background 150ms ease;
+}
+
+.subtitle-manager-item:hover:not(.subtitle-manager-item--active) {
+  background: var(--color-surface-hover);
+}
+
+.subtitle-manager-item--active {
+  padding: calc(var(--space-2, 8px) - 1px) calc(var(--space-3, 12px) - 1px);
+}
+
+.subtitle-manager-item--active.subtitle-manager-item--target {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.subtitle-manager-item--active.subtitle-manager-item--native {
+  border-color: var(--color-warning);
+  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.1));
+}
+
+.subtitle-manager-radio {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--color-text-muted);
+  background: transparent;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subtitle-manager-radio--active.subtitle-manager-radio--target {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.subtitle-manager-radio--active.subtitle-manager-radio--native {
+  border-color: var(--color-warning);
+  background: var(--color-warning);
+}
+
+.subtitle-manager-radio-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-text-inverse, white);
+}
+
+.subtitle-manager-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.subtitle-manager-item-name {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subtitle-manager-item-meta {
+  display: flex;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--color-text-muted);
+}
+
+.subtitle-manager-format-badge {
+  padding: 1px 5px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-surface-hover);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.subtitle-manager-asr-badge {
+  padding: 1px 5px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
+  color: var(--color-warning);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.subtitle-manager-imported-badge {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.subtitle-manager-translated-badge {
+  padding: 1px 5px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
+  color: var(--color-warning);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+.subtitle-manager-role-indicator {
+  font-weight: 600;
+}
+
+.subtitle-manager-role-indicator--target {
+  color: var(--color-primary);
+}
+
+.subtitle-manager-role-indicator--native {
+  color: var(--color-warning);
+}
 `;

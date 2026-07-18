@@ -56,34 +56,31 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
 
   it('opens panel when manager icon clicked', () => {
     const { icon, panel } = createSubtitleManagerPanel(container, createImportButton());
-    expect(panel.style.display).toBe('none');
+    expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(false);
     icon.click();
-    expect(panel.style.display).toBe('block');
+    expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(true);
   });
 
-  it('uses the overlay appearance and changes only SVG color while active', () => {
+  it('uses the overlay appearance and active class for SVG color', () => {
     const { icon } = createSubtitleManagerPanel(container, createImportButton());
-    expect(icon.style.getPropertyPriority('border')).toBe('important');
-    expect(icon.style.background).toBe('rgba(30, 41, 59, var(--sb-bg-opacity, 0.2))');
+    expect(icon.className).toContain('subtitle-manager-icon');
+    expect(icon.classList.contains('subtitle-manager-icon--active')).toBe(false);
     icon.click();
-    expect(icon.style.getPropertyPriority('border')).toBe('important');
-    expect(icon.style.background).toBe('rgba(30, 41, 59, var(--sb-bg-opacity, 0.2))');
-    expect(icon.style.color).toBe('var(--color-primary)');
+    expect(icon.classList.contains('subtitle-manager-icon--active')).toBe(true);
   });
 
-  it('has bouncy transform transition matching cluster buttons', () => {
+  it('has bouncy transform transition via CSS class', () => {
     const { icon } = createSubtitleManagerPanel(container, createImportButton());
-    expect(icon.style.transition).toContain('transform');
-    expect(icon.style.transition).toContain('cubic-bezier(0.175, 0.885, 0.32, 1.275)');
+    expect(icon.className).toContain('subtitle-manager-icon');
   });
 
-  it('panel resets inherited text-shadow to avoid blurred/frosted text', () => {
+  it('panel resets inherited text-shadow via CSS class', () => {
     // Host players (e.g. Artplayer) often set text-shadow on their container.
     // Our panel is injected inside that container, so it inherits the shadow
-    // and text looks slightly blurred. We explicitly reset it.
+    // and text looks slightly blurred. We explicitly reset it via CSS.
     container.style.textShadow = '0 0 2px rgba(0,0,0,0.5)';
     const { panel } = createSubtitleManagerPanel(container, createImportButton());
-    expect(panel.style.textShadow).toBe('none');
+    expect(panel.className).toContain('subtitle-manager-panel');
   });
 
   it('panel has 2 sections (Target + Native)', () => {
@@ -114,29 +111,29 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     const item1 = panel.querySelector('[data-testid="manager-item-target-1"]') as HTMLElement;
     item1.click();
     expect(selected).toEqual({ role: 'target', index: 1 });
-    expect(panel.style.display).toBe('block');
+    expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(true);
   });
 
   it('closes panel via close button', () => {
     const { icon, panel, close } = createSubtitleManagerPanel(container, createImportButton());
     icon.click();
-    expect(panel.style.display).toBe('block');
+    expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(true);
     close();
-    expect(panel.style.display).toBe('none');
+    expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(false);
   });
 
   it('closes panel on Esc', () => {
     const { icon, panel } = createSubtitleManagerPanel(container, createImportButton());
     icon.click();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    expect(panel.style.display).toBe('none');
+    expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(false);
   });
 
   it('closes panel on click outside', () => {
     const { icon, panel } = createSubtitleManagerPanel(container, createImportButton());
     icon.click();
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    expect(panel.style.display).toBe('none');
+    expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(false);
   });
 
   it('sections are collapsible', () => {
@@ -151,11 +148,9 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     expect(body.style.display).not.toBe('none');
   });
 
-  it('panel uses CSS theme tokens', () => {
+  it('panel uses CSS theme tokens via class', () => {
     const { panel } = createSubtitleManagerPanel(container, createImportButton());
-    expect(panel.style.width).toBe('320px');
-    expect(panel.style.backgroundColor).toBe('var(--color-background)');
-    expect(panel.style.color).toBe('var(--color-text)');
+    expect(panel.className).toContain('subtitle-manager-panel');
   });
 
   it('destroy removes all elements', () => {
