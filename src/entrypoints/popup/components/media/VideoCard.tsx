@@ -72,6 +72,14 @@ export function VideoCard({
     onToggleSelect(video.id);
   };
 
+  const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    if (e.target !== e.currentTarget) return; // nested buttons handle their own keys
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleCardClick();
+    }
+  };
+
   const handleActionClick = (e: React.MouseEvent): void => {
     e.stopPropagation();
     if (!downloading) onDownload(video.id);
@@ -105,7 +113,14 @@ export function VideoCard({
       data-id={video.id}
     >
       {/* === Main row — icon | body | actions === */}
-      <div className={styles.mainRow} onClick={handleCardClick}>
+      <div
+        className={styles.mainRow}
+        onClick={handleCardClick}
+        onKeyDown={handleCardKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-label={`Select ${displayTitle ?? video.title}`}
+      >
         {/* Icon */}
         <div className={`${styles.icon} ${styles.videoIcon}`} aria-hidden="true">
           <Icon name="play" size={18} />
@@ -181,7 +196,7 @@ export function VideoCard({
               className={`${styles.expandChevron} ${urlExpanded ? styles.expandChevronOpen : ''}`}
             />
           </IconButton>
-          <div className={styles.action} onClick={handleActionClick}>
+          <div className={styles.action}>
             {downloading ? (
               <span className={styles.downloadingIndicator} aria-label="Downloading">
                 <Icon name="loader" size={16} />

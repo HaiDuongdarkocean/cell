@@ -28,12 +28,6 @@
   border-color: var(--color-primary);
 }
 
-.shortcutPill:focus {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  border-color: var(--color-primary);
-}
-
 /* Single-char display — uppercase center */
 .kbdSingle {
   text-transform: uppercase;

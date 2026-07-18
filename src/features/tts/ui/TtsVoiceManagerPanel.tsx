@@ -300,7 +300,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
               ) : voices.length === 0 ? (
                 <p className={styles.muted}>Không có giọng đọc nào.</p>
               ) : (
-                <div className={styles.voiceSelectionList} data-testid="tts-voice-selection">
+                <div className={styles.voiceSelectionList} role="list" data-testid="tts-voice-selection">
                   {voices.map((v) => (
                     <div className={styles.voiceSelectionItem} key={v.voiceName}>
                       <button
@@ -422,7 +422,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                   </Button>
                 </div>
               </div>
-              <div className={styles.voiceList} data-testid="tts-voice-list">
+              <div className={styles.voiceList} role="list" data-testid="tts-voice-list">
                 {filteredTesterVoices.map((row, index) => (
                   <div
                     className={styles.voiceItem}

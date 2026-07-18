@@ -130,9 +130,9 @@
   font-family: inherit;
 }
 
-.numberInput:focus,
-.textInput:focus,
-.select:focus {
+.numberInput:focus-visible,
+.textInput:focus-visible,
+.select:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-color: var(--color-primary);

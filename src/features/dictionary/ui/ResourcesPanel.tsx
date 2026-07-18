@@ -109,7 +109,7 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
           disabled={importing}
           onFiles={(files) => void handleFiles(files, 'DICTIONARY')}
         />
-        <div className={styles.resourceList}>
+        <div className={styles.resourceList} role="list">
           {loading ? (
             <>
               <ResourceCardSkeleton />
@@ -133,7 +133,7 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
           disabled={importing}
           onFiles={(files) => void handleFiles(files, 'FREQUENCY')}
         />
-        <div className={styles.resourceList}>
+        <div className={styles.resourceList} role="list">
           {loading ? (
             <>
               <ResourceCardSkeleton />
