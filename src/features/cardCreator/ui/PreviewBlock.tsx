@@ -4,20 +4,20 @@ import styles from './PreviewBlock.module.css';
 export interface PreviewBlockProps {
   readonly targetWord: string;
   readonly sentence: string;
-  readonly testId?: string;
+  readonly dataId?: string;
 }
 
-export function PreviewBlock({ targetWord, sentence, testId }: PreviewBlockProps): ReactElement {
+export function PreviewBlock({ targetWord, sentence, dataId }: PreviewBlockProps): ReactElement {
   const highlightedSentence = highlightOccurrences(sentence, targetWord);
   return (
     <div
-      className={styles.previewBlock}
+      className={styles['cc-preview']}
       aria-label="Preview"
       role="region"
-      data-testid={testId}
+      data-testid={dataId}
     >
-      <div className={styles.previewTarget}>{targetWord}</div>
-      <div className={styles.previewSentence}>{highlightedSentence}</div>
+      <div className={styles['cc-preview__target']}>{targetWord}</div>
+      <div className={styles['cc-preview__sentence']}>{highlightedSentence}</div>
     </div>
   );
 }

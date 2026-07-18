@@ -13,8 +13,8 @@ function countOccurrences(sentence: string, target: string): number {
 describe('PreviewBlock', () => {
   it('renders target word and sentence', () => {
     const { container } = render(<PreviewBlock targetWord="study" sentence="I like to study." />);
-    expect(container.querySelector('.previewTarget')).toHaveTextContent('study');
-    expect(container.querySelector('.previewSentence')).toHaveTextContent('I like to study.');
+    expect(container.querySelector('[class*="cc-preview__target"]')).toHaveTextContent('study');
+    expect(container.querySelector('[class*="cc-preview__sentence"]')).toHaveTextContent('I like to study.');
   });
 
   it('wraps all occurrences of target word in <strong>', () => {
@@ -47,8 +47,8 @@ describe('PreviewBlock', () => {
     expect(preview).toHaveAttribute('aria-label', 'Preview');
   });
 
-  it('applies data-testid when provided', () => {
-    render(<PreviewBlock targetWord="study" sentence="I like to study." testId="cc-preview" />);
+  it('applies data-testid when dataId is provided', () => {
+    render(<PreviewBlock targetWord="study" sentence="I like to study." dataId="cc-preview" />);
     expect(screen.getByTestId('cc-preview')).toBeInTheDocument();
   });
 });

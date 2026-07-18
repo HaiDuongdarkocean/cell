@@ -1,9 +1,11 @@
 /* === MediaList — media zone + image gallery + audio list (Card Creator) ===
+   BEM block: .cc-media
    ADR-026: uses design-system tokens (--space-*, --color-*, --radius-*) per
    docs/design-system/design-system.md §2.2.
+   Spec: docs/specs/spec-card-creator-ui-redesign.md §9.7-9.8
 */
 
-.mediaZone {
+.cc-media {
   padding: var(--space-2);
   background: var(--color-surface);
   border-radius: var(--radius-md);
@@ -11,12 +13,12 @@
   transition: border-color var(--duration-fast) var(--ease-in-out);
 }
 
-.mediaZoneDragOver {
+.cc-media--drag-over {
   border-color: var(--color-border-focus);
 }
 
 /* === Empty dropzone (image or audio) === */
-.emptyDropzone {
+.cc-media__empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -36,18 +38,18 @@
               color var(--duration-fast) var(--ease-in-out);
 }
 
-.emptyDropzone:hover {
+.cc-media__empty:hover {
   border-color: var(--color-border-focus);
   color: var(--color-text-secondary);
 }
 
-.emptyDropzone:disabled {
+.cc-media__empty:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* === Image gallery === */
-.imageGallery {
+.cc-media__gallery {
   display: flex;
   flex-direction: row;
   gap: var(--space-2);
@@ -55,7 +57,7 @@
   padding-bottom: var(--space-1);
 }
 
-.imageThumb {
+.cc-media__thumb {
   position: relative;
   flex-shrink: 0;
   height: calc(var(--space-5) * 6);
@@ -69,15 +71,15 @@
   transition: opacity var(--duration-fast) var(--ease-in-out);
 }
 
-.imageThumbDragging {
+.cc-media__thumb--dragging {
   opacity: 0.4;
 }
 
-.imageThumbDragOver {
+.cc-media__thumb--drag-over {
   box-shadow: 0 0 0 2px var(--color-border-focus);
 }
 
-.imageImg {
+.cc-media__img {
   height: calc(var(--space-5) * 6);
   width: auto;
   max-width: calc(var(--space-5) * 10);
@@ -85,7 +87,7 @@
   border-radius: var(--radius-sm);
 }
 
-.imageRemoveButton {
+.cc-media__thumb-remove {
   position: absolute;
   top: var(--space-1);
   right: var(--space-1);
@@ -105,17 +107,17 @@
               color var(--duration-fast) var(--ease-in-out);
 }
 
-.imageRemoveButton:hover {
+.cc-media__thumb-remove:hover {
   background: var(--color-error);
   color: var(--color-text-inverse);
 }
 
-.imageRemoveButton:focus-visible {
+.cc-media__thumb-remove:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-.imageAddButton {
+.cc-media__gallery-add {
   flex-shrink: 0;
   width: calc(var(--space-5) * 4);
   height: calc(var(--space-5) * 6);
@@ -131,17 +133,17 @@
               color var(--duration-fast) var(--ease-in-out);
 }
 
-.imageAddButton:hover {
+.cc-media__gallery-add:hover {
   border-color: var(--color-border-focus);
   color: var(--color-primary);
 }
 
-.imageAddButton:disabled {
+.cc-media__gallery-add:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.imageAddButton:focus-visible {
+.cc-media__gallery-add:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -149,20 +151,20 @@
 /* Image icon has more continuous strokes (rect frame + mountain + sun) than the
  * audio waveform, so it visually pops more. Tone it down slightly so it sits at
  * the same perceived brightness as the waveform icon. */
-.imageThumbIcon {
+.cc-media__icon--image {
   opacity: 0.85;
 }
 
-.imageThumbIcon svg {
+.cc-media__icon--image svg {
   stroke-width: 1.25;
 }
 
-.audioThumbIcon svg {
+.cc-media__icon--audio svg {
   stroke-width: 1.5;
 }
 
 /* === Image preview overlay (design-system §3.5 Dialog overlay pattern) === */
-.previewOverlay {
+.cc-media__preview {
   position: fixed;
   inset: 0;
   z-index: var(--z-popover);
@@ -174,14 +176,14 @@
   cursor: zoom-out;
 }
 
-.previewImg {
+.cc-media__preview-img {
   max-width: 90vw;
   max-height: 90vh;
   border-radius: var(--radius-lg);
   cursor: default;
 }
 
-.previewClose {
+.cc-media__preview-close {
   position: fixed;
   top: var(--space-4);
   right: var(--space-4);
@@ -200,23 +202,23 @@
   transition: background var(--duration-fast) var(--ease-in-out);
 }
 
-.previewClose:hover {
+.cc-media__preview-close:hover {
   background: var(--color-secondary-hover);
 }
 
-.previewClose:focus-visible {
+.cc-media__preview-close:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
 /* === Audio list === */
-.mediaList {
+.cc-media__list {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
 
-.mediaRow {
+.cc-media__row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -226,15 +228,15 @@
   transition: opacity var(--duration-fast) var(--ease-in-out);
 }
 
-.mediaRowDragging {
+.cc-media__row--dragging {
   opacity: 0.4;
 }
 
-.mediaRowDragOver {
+.cc-media__row--drag-over {
   box-shadow: 0 0 0 2px var(--color-border-focus);
 }
 
-.mediaThumb {
+.cc-media__play {
   width: calc(var(--space-5) + var(--space-2));
   height: calc(var(--space-5) + var(--space-2));
   display: flex;
@@ -251,16 +253,16 @@
               color var(--duration-fast) var(--ease-in-out);
 }
 
-.mediaThumb:hover {
+.cc-media__play:hover {
   color: var(--color-text);
 }
 
-.mediaThumb:focus-visible {
+.cc-media__play:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-.mediaName {
+.cc-media__name {
   flex: 1;
   font-size: var(--font-size-sm);
   color: var(--color-text);
@@ -269,7 +271,7 @@
   white-space: nowrap;
 }
 
-.removeButton {
+.cc-media__row-remove {
   width: var(--space-5);
   height: var(--space-5);
   display: flex;
@@ -287,17 +289,17 @@
               color var(--duration-fast) var(--ease-in-out);
 }
 
-.removeButton:hover {
+.cc-media__row-remove:hover {
   background: var(--color-error-subtle);
   color: var(--color-error);
 }
 
-.removeButton:focus-visible {
+.cc-media__row-remove:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-.addButton {
+.cc-media__list-add {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
@@ -314,12 +316,12 @@
               background var(--duration-fast) var(--ease-in-out);
 }
 
-.addButton:hover {
+.cc-media__list-add:hover {
   color: var(--color-primary);
   background: var(--color-primary-subtle);
 }
 
-.addButton:disabled {
+.cc-media__list-add:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

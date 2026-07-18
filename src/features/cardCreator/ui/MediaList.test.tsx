@@ -36,14 +36,14 @@ describe('MediaList — image gallery', () => {
 
   it('renders empty dropzone when no images are attached', () => {
     const onAdd = jest.fn();
-    render(<MediaList files={[]} kind="image" addLabel="Add image" onAdd={onAdd} onRemove={jest.fn()} testId="cc-images" />);
+    render(<MediaList files={[]} kind="image" addLabel="Add image" onAdd={onAdd} onRemove={jest.fn()} dataId="cc-images" />);
     expect(screen.getByTestId('cc-images-empty')).toBeInTheDocument();
     expect(screen.getByText('Drop image here or click to add')).toBeInTheDocument();
   });
 
   it('calls onAdd when the empty dropzone is clicked', () => {
     const onAdd = jest.fn();
-    render(<MediaList files={[]} kind="image" addLabel="Add image" onAdd={onAdd} onRemove={jest.fn()} testId="cc-images" />);
+    render(<MediaList files={[]} kind="image" addLabel="Add image" onAdd={onAdd} onRemove={jest.fn()} dataId="cc-images" />);
     fireEvent.click(screen.getByTestId('cc-images-empty'));
     expect(onAdd).toHaveBeenCalled();
   });
@@ -58,7 +58,7 @@ describe('MediaList — image gallery', () => {
         addLabel="Add image"
         onAdd={onAdd}
         onRemove={onRemove}
-        testId="cc-images"
+        dataId="cc-images"
       />
     );
 
@@ -76,7 +76,7 @@ describe('MediaList — image gallery', () => {
         addLabel="Add image"
         onAdd={jest.fn()}
         onRemove={onRemove}
-        testId="cc-images"
+        dataId="cc-images"
       />
     );
 
@@ -93,7 +93,7 @@ describe('MediaList — image gallery', () => {
         addLabel="Add image"
         onAdd={onAdd}
         onRemove={jest.fn()}
-        testId="cc-images"
+        dataId="cc-images"
       />
     );
 
@@ -117,7 +117,7 @@ describe('MediaList — image gallery', () => {
         onAdd={jest.fn()}
         onRemove={jest.fn()}
         onReorder={onReorder}
-        testId="cc-images"
+        dataId="cc-images"
       />
     );
 
@@ -152,7 +152,7 @@ describe('MediaList — image gallery', () => {
         onAdd={jest.fn()}
         onRemove={jest.fn()}
         onFilesDrop={onFilesDrop}
-        testId="cc-images"
+        dataId="cc-images"
       />
     );
 
@@ -181,7 +181,7 @@ describe('MediaList — image gallery', () => {
         onAdd={jest.fn()}
         onRemove={jest.fn()}
         onFilesDrop={onFilesDrop}
-        testId="cc-images"
+        dataId="cc-images"
       />
     );
 
@@ -208,7 +208,7 @@ describe('MediaList — image gallery', () => {
         onRemove={jest.fn()}
         onFilesDrop={onFilesDrop}
         onReorder={jest.fn()}
-        testId="cc-images"
+        dataId="cc-images"
       />
     );
 
@@ -246,7 +246,7 @@ describe('MediaList — audio list', () => {
         addLabel="Add sentence audio"
         onAdd={onAdd}
         onRemove={jest.fn()}
-        testId="cc-audio"
+        dataId="cc-audio"
       />
     );
 
@@ -264,7 +264,7 @@ describe('MediaList — audio list', () => {
         addLabel="Add sentence audio"
         onAdd={jest.fn()}
         onRemove={jest.fn()}
-        testId="cc-audio"
+        dataId="cc-audio"
       />
     );
 
@@ -282,7 +282,7 @@ describe('MediaList — audio list', () => {
         addLabel="Add sentence audio"
         onAdd={jest.fn()}
         onRemove={onRemove}
-        testId="cc-audio"
+        dataId="cc-audio"
       />
     );
 
@@ -299,7 +299,7 @@ describe('MediaList — audio list', () => {
         addLabel="Add sentence audio"
         onAdd={onAdd}
         onRemove={jest.fn()}
-        testId="cc-audio"
+        dataId="cc-audio"
       />
     );
 
@@ -323,7 +323,7 @@ describe('MediaList — audio list', () => {
         onAdd={jest.fn()}
         onRemove={jest.fn()}
         onReorder={onReorder}
-        testId="cc-audio"
+        dataId="cc-audio"
       />
     );
 
@@ -343,7 +343,7 @@ describe('MediaList — audio list', () => {
         onAdd={jest.fn()}
         onRemove={jest.fn()}
         onFilesDrop={onFilesDrop}
-        testId="cc-audio"
+        dataId="cc-audio"
       />
     );
 
@@ -373,7 +373,7 @@ describe('MediaList — audio list', () => {
         onRemove={jest.fn()}
         onFilesDrop={onFilesDrop}
         onReorder={jest.fn()}
-        testId="cc-audio"
+        dataId="cc-audio"
       />
     );
 

@@ -1,10 +1,12 @@
 /* === CardCreatorDialog — shared content styles (desktop + mobile) ===
+   BEM block: .cc-dialog
    ADR-026: uses design-system tokens (--space-*, --color-foreground,
    --color-card, --color-border, etc.) per docs/design-system/design-system.md
    §2.2-2.3. Single-column layout: preview above Fields section.
+   Spec: docs/specs/spec-card-creator-ui-redesign.md §9.1-9.3, §9.5, §9.9
 */
 
-.body {
+.cc-dialog__body {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -12,12 +14,12 @@
   background: var(--color-background);
 }
 
-.mobile .body {
+.cc-dialog--mobile .cc-dialog__body {
   padding-top: 0;
 }
 
 /* === Alert (notice style: left border only) === */
-.alert {
+.cc-dialog__alert {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
@@ -31,17 +33,17 @@
   line-height: var(--leading-normal);
 }
 
-.alertError {
+.cc-dialog__alert--error {
   background: var(--color-error-subtle);
   border-left-color: var(--color-error);
 }
 
-.alertSuccess {
+.cc-dialog__alert--success {
   background: var(--color-success-subtle);
   border-left-color: var(--color-success);
 }
 
-.alertIcon {
+.cc-dialog__alert-icon {
   width: var(--space-4);
   height: var(--space-4);
   flex-shrink: 0;
@@ -49,22 +51,22 @@
   color: var(--color-warning);
 }
 
-.alertError .alertIcon {
+.cc-dialog__alert--error .cc-dialog__alert-icon {
   color: var(--color-error);
 }
 
-.alertSuccess .alertIcon {
+.cc-dialog__alert--success .cc-dialog__alert-icon {
   color: var(--color-success);
 }
 
 /* === Section (title + gap, no bordered wrapper) === */
-.section {
+.cc-dialog__section {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
 }
 
-.sectionTitle {
+.cc-dialog__section-title {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
@@ -74,29 +76,29 @@
 }
 
 /* === Pair row (Note type + Deck) === */
-.pairRow {
+.cc-dialog__pair-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
   align-items: start;
 }
 
-.pairRow > div {
+.cc-dialog__pair-row > div {
   min-width: 0;
 }
 
-/* Mobile: stack pairRow vertically */
-.mobile .pairRow {
+/* Mobile: stack pair-row vertically */
+.cc-dialog--mobile .cc-dialog__pair-row {
   grid-template-columns: 1fr;
 }
 
-.field {
+.cc-dialog__field {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
 }
 
-.fieldLabel {
+.cc-dialog__field-label {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
@@ -104,7 +106,7 @@
 }
 
 /* === Footer (design-system: border-top + space-between) === */
-.footer {
+.cc-dialog__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -114,41 +116,41 @@
   border-top: 1px solid var(--color-border-subtle);
 }
 
-.footerMode {
+.cc-dialog__footer-mode {
   display: flex;
   align-items: center;
   gap: var(--space-2);
 }
 
-.footerMode .fieldLabel {
+.cc-dialog__footer-mode .cc-dialog__field-label {
   white-space: nowrap;
 }
 
-.footerActions {
+.cc-dialog__footer-actions {
   display: flex;
   gap: var(--space-3);
 }
 
-.mobile .footer {
+.cc-dialog--mobile .cc-dialog__footer {
   flex-direction: column;
   align-items: stretch;
   gap: var(--space-3);
 }
 
-.mobile .footerMode {
+.cc-dialog--mobile .cc-dialog__footer-mode {
   justify-content: space-between;
 }
 
-.mobile .footerActions {
+.cc-dialog--mobile .cc-dialog__footer-actions {
   display: flex;
 }
 
-.mobile .footerActions > * {
+.cc-dialog--mobile .cc-dialog__footer-actions > * {
   flex: 1;
 }
 
 /* === Loading overlay === */
-.loading {
+.cc-dialog__loading {
   display: flex;
   align-items: center;
   justify-content: center;
