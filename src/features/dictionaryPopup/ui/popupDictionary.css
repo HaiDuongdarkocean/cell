@@ -23,20 +23,42 @@
   font-size: var(--font-size-base, 14px);
   color: var(--color-text);
   user-select: text;
+  container-type: inline-size;
+}
+
+/* Labels are hidden by default on narrow popups; revealed when the popup is wide. */
+.cell-label { display: none; }
+
+@container (min-width: 440px) {
+  .cell-label { display: inline; }
+}
+
+/* Ensure buttons with hidden labels still size correctly. */
+.cell-header__quick-add svg,
+.cell-footer__send svg,
+.cell-toolbar__tab svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .cell-popup__content {
   flex: 1 1 auto;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
+/* Resize handle — pinned to bottom-right edge of popup.
+ * Visual icon is small (12px) but the hit area extends beyond the
+ * popup border (negative inset + 24px box) so touch screens have a
+ * large enough target (~24px) to grab. touch-action:none set in JS
+ * prevents scroll/zoom interference during drag. */
 .cell-popup__resize {
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: calc(-1 * var(--space-2, 8px));
+  right: calc(-1 * var(--space-2, 8px));
   width: 24px;
   height: 24px;
   cursor: nwse-resize;
@@ -46,13 +68,23 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-muted);
-  border-bottom-right-radius: 10px;
+  opacity: 0.35;
+  transition: opacity var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
 }
 
-/* === Block: cell-header === */
+.cell-popup__resize:hover,
+.cell-popup__resize:active {
+  opacity: 1;
+}
+
+.cell-popup__resize svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* === Block: cell-header (2-row layout — spec redesign v2) === */
 .cell-header {
   padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -67,6 +99,7 @@
   -webkit-user-select: none;
 }
 
+/* Row 1: main group (word-row + audio) + actions */
 .cell-header__row {
   display: flex;
   align-items: center;
@@ -74,45 +107,74 @@
   gap: var(--space-2);
 }
 
-/* Meta row — status + frequency badges, left-aligned and consecutive. */
-.cell-header__meta {
+/* Main group — word + reading-row (IPA + audio), wraps on narrow headers. */
+.cell-header__main {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
-.cell-header__term-group {
+/* word-row: word only, truncates with ellipsis. */
+.cell-header__word-row {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
   min-width: 0;
 }
 
-.cell-header__term-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-.cell-header__reading {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
-.cell-header__term {
-  font-size: var(--font-size-lg);
+.cell-header__word {
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
-.cell-header__audio {
-  color: var(--color-primary);
+.cell-header__ipa {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
+/* Reading row: IPA + audio buttons, wraps under the word when narrow. */
+.cell-header__reading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+/* Audio group: word audio + sentence audio, close together. */
+.cell-header__audio-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  flex-shrink: 0;
+}
+
+/* Row 2: second header — badges + status, scroll main axis if overflow. */
+.cell-header__second {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cell-header__second::-webkit-scrollbar { display: none; }
+
+/* Badges — frequency etc. */
+.cell-header__badges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   flex-shrink: 0;
 }
 
@@ -188,12 +250,12 @@
   color: var(--color-primary);
 }
 
-/* === Block: cell-def (definitions) === */
+/* === Block: cell-def (definitions) — inside active entry, flex:1 === */
 .cell-def {
   padding: var(--space-2) var(--space-3);
-  overflow-y: auto;
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
 }
 
 .cell-def__empty {
@@ -204,7 +266,6 @@
 
 .cell-def__item {
   position: relative;
-  border-bottom: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   transition: background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
 }
@@ -314,9 +375,31 @@
   display: flex;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-3);
-  border-bottom: 1px solid var(--color-border);
   align-items: center;
 }
+
+.cell-toolbar__tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-2-5);
+  height: 32px;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: background var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out), color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+}
+
+.cell-toolbar__tab:hover { background: var(--color-surface-hover); color: var(--color-text); }
+.cell-toolbar__tab--active { background: var(--color-primary-subtle); color: var(--color-primary); }
 
 /* Toolbar tab badge — selection count
    Positioned at top-right corner INSIDE the button (top:0) to avoid
@@ -346,7 +429,8 @@
 .cell-audio {
   padding: var(--space-2) var(--space-3);
   overflow-y: auto;
-  max-height: 200px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .cell-audio__group-label {
@@ -375,6 +459,11 @@
 
 .cell-audio__item--playing {
   background: var(--color-primary-subtle);
+}
+
+/* Sentence audio variant — audio-wave icon, subtle accent */
+.cell-audio__item--sentence .icon-btn svg {
+  color: var(--color-primary);
 }
 
 /* Label is clickable to toggle selection */
@@ -488,6 +577,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .cell-image__strip {
@@ -495,7 +586,8 @@
   grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: var(--space-2);
   overflow-y: auto;
-  max-height: 240px;
+  flex: 1 1 auto;
+  min-height: 0;
   padding-bottom: var(--space-1);
 }
 
@@ -609,6 +701,9 @@
 /* === Block: cell-translate === */
 .cell-translate {
   padding: var(--space-2) var(--space-3);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Single clickable block: target sentence (top) + native translation (bottom) */
@@ -731,6 +826,8 @@
   flex-wrap: wrap;
   gap: var(--space-1-5);
   padding: var(--space-2) var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .cell-links__empty {
@@ -764,6 +861,7 @@
 }
 
 .cell-links__item {
+  height: fit-content;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -788,7 +886,117 @@
   color: var(--color-text-muted);
 }
 
-/* === Block: cell-candidate === */
+/* === Block: cell-active-entry (spec redesign v3 — flex column) === */
+.cell-active-entry {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === Block: cell-materials (toolbar slot inside active entry) === */
+.cell-materials {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+}
+
+.cell-materials--open {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.cell-materials--open ~ .cell-def { display: none; }
+
+.cell-materials__bar {
+  flex: 0 0 auto;
+}
+
+.cell-materials__body {
+  display: none;
+  overflow-y: auto;
+}
+
+.cell-materials--open .cell-materials__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* === Block: cell-candidates (spec redesign v3 — chips only, scroll-x) === */
+.cell-candidates {
+  flex: 0 0 auto;
+  background: var(--color-surface);
+}
+
+.cell-candidates__chips {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+.cell-candidates__chips-scroll {
+  flex: 1 1 auto;
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+}
+
+.cell-candidates__chips-scroll::-webkit-scrollbar { display: none; }
+
+.cell-chip {
+  flex-shrink: 0;
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--font-size-sm);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+}
+
+.cell-chip:hover {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.cell-chip--active {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-color: var(--color-primary);
+}
+
+
+/* === Block: cell-footer (spec redesign v2 — Send + Settings, status in header) === */
+.cell-footer {
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  background: var(--color-background);
+  flex-shrink: 0;
+}
+
+.cell-footer__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* === Block: cell-candidate (legacy — giữ cho backward compat) === */
 .cell-candidate {
   display: block;
 }
