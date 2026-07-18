@@ -176,7 +176,7 @@
 
 .qualityMenu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + var(--space-1, 4px));
   left: 0;
   min-width: 140px;
   background: var(--color-background);
@@ -185,7 +185,7 @@
   padding: var(--space-1);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5, 2px);
   z-index: 5;
 }
 
@@ -252,8 +252,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: var(--space-8, 32px);
+  height: var(--space-8, 32px);
   color: var(--color-text-muted);
 }
 
