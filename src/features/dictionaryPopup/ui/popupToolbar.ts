@@ -95,7 +95,7 @@ export function renderToolbar(
   return toolbar;
 }
 
-/** Render the audio panel — Word Audio / Sentence Audio groups.
+/** Render the audio panel — word / sentence audio items, switchable via sub-tabs.
  *  Layout per item: [play button] [label: name + meta] [checkbox if checked].
  *  - Play button: click to play audio (stopPropagation — does NOT toggle selection).
  *  - Label: click to toggle selection (Speaker → Dialect → Gender).
@@ -135,31 +135,21 @@ export function renderAudioPanel(
   if (isLoading && wordAudios.length === 0 && sentenceAudios.length === 0) {
     const skeleton = document.createElement('div');
     skeleton.className = 'cell-audio__skeleton';
-    for (const groupLabel of ['Word Audio', 'Sentence Audio']) {
-      const group = document.createElement('div');
-      group.className = 'cell-audio__group-label';
-      group.textContent = groupLabel;
-      skeleton.appendChild(group);
-      for (let i = 0; i < 3; i += 1) {
-        const row = document.createElement('div');
-        row.className = 'cell-audio__skeleton-row';
-        row.appendChild(createSkeleton('28px', '28px', 'circle', 'cell-audio__skeleton-play'));
-        row.appendChild(createSkeleton('100%', '16px', 'rect', 'cell-audio__skeleton-label'));
-        row.appendChild(createSkeleton('16px', '16px', 'rect', 'cell-audio__skeleton-check'));
-        skeleton.appendChild(row);
-      }
+    for (let i = 0; i < 6; i += 1) {
+      const row = document.createElement('div');
+      row.className = 'cell-audio__skeleton-row';
+      row.appendChild(createSkeleton('28px', '28px', 'circle', 'cell-audio__skeleton-play'));
+      row.appendChild(createSkeleton('100%', '16px', 'rect', 'cell-audio__skeleton-label'));
+      row.appendChild(createSkeleton('16px', '16px', 'rect', 'cell-audio__skeleton-check'));
+      skeleton.appendChild(row);
     }
     panel.appendChild(skeleton);
     container.appendChild(panel);
     return;
   }
 
-  const renderGroup = (label: string, items: readonly AudioItem[], variant: 'word' | 'sentence' = 'word') => {
+  const renderGroup = (items: readonly AudioItem[], variant: 'word' | 'sentence' = 'word') => {
     if (items.length === 0) return;
-    const groupLabel = document.createElement('div');
-    groupLabel.className = 'cell-audio__group-label';
-    groupLabel.textContent = label;
-    panel.appendChild(groupLabel);
 
     for (const item of items) {
       const isChecked = selection.get(item.id) ?? item.defaultSelected;
@@ -253,9 +243,9 @@ export function renderAudioPanel(
   panel.appendChild(subTabs);
 
   if (activeGroup === 'word') {
-    renderGroup('Word Audio', wordAudios, 'word');
+    renderGroup(wordAudios, 'word');
   } else {
-    renderGroup('Sentence Audio', sentenceAudios, 'sentence');
+    renderGroup(sentenceAudios, 'sentence');
   }
 
   if (wordAudios.length === 0 && sentenceAudios.length === 0) {
@@ -533,6 +523,7 @@ export function renderLinksPanel(
   container: HTMLElement,
   links: readonly ExternalDictLink[],
 ): void {
+  replaceExistingPanel(container, 'links');
   const panel = document.createElement('div');
   panel.className = 'cell-links js-cell-panel';
   panel.setAttribute('data-cell-panel', 'links');

@@ -120,9 +120,9 @@ export function renderHeader(
     if (onPlayTerm) {
       const playBtn = document.createElement('button');
       playBtn.className = 'icon-btn icon-btn--xs cell-header__audio js-cell-play-term';
-      playBtn.setAttribute('aria-label', 'Play word pronunciation');
-      playBtn.title = 'Play word pronunciation';
-      playBtn.innerHTML = ICON_CATALOG.audioWave.svg;
+      playBtn.setAttribute('aria-label', 'Play word audio');
+      playBtn.title = 'Play word audio';
+      playBtn.innerHTML = `${ICON_CATALOG.audioWave.svg}<span class="cell-header__audio-label cell-label">Word audio</span>`;
       playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         onPlayTerm();
@@ -135,7 +135,7 @@ export function renderHeader(
       sentenceBtn.className = 'icon-btn icon-btn--xs cell-header__audio js-cell-play-sentence';
       sentenceBtn.setAttribute('aria-label', 'Play sentence audio');
       sentenceBtn.title = 'Play sentence audio';
-      sentenceBtn.innerHTML = ICON_CATALOG.messageSquare.svg;
+      sentenceBtn.innerHTML = `${ICON_CATALOG.messageSquare.svg}<span class="cell-header__audio-label cell-label">Sentence audio</span>`;
       sentenceBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         onPlaySentence();

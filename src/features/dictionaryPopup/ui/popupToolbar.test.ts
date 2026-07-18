@@ -125,13 +125,11 @@ describe('renderAudioPanel', () => {
     expect(tabs[1]!.textContent).toBe('PLAY SENTENCE');
   });
 
-  it('defaults to showing word audio group and hides sentence group', () => {
+  it('defaults to showing word audio items and hides sentence group', () => {
     const wordAudios = [makeAudio({ id: 'w1', label: 'Forvo · US' })];
     const sentenceAudios = [makeAudio({ id: 's1', kind: 'sentence', label: 'System TTS' })];
     renderAudioPanel(container, wordAudios, sentenceAudios, new Map(), jest.fn(), jest.fn());
-    const groups = container.querySelectorAll('.cell-audio__group-label');
-    expect(groups.length).toBe(1);
-    expect(groups[0]!.textContent).toBe('Word Audio');
+    expect(container.querySelectorAll('.cell-audio__group-label').length).toBe(0);
     expect(container.querySelectorAll('.js-cell-audio-item').length).toBe(1);
   });
 
