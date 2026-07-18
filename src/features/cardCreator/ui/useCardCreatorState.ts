@@ -412,10 +412,12 @@ export function useCardCreatorState(
   // selections survive the unmount (dialog close → component unmounts →
   // state is lost; without flush, the debounced save never fires).
   useEffect(() => {
+    const timers = toastTimersRef.current;
+    const autosaver = autosaverRef.current;
     return () => {
-      for (const timer of toastTimersRef.current) clearTimeout(timer);
-      toastTimersRef.current.clear();
-      void autosaverRef.current.flush();
+      for (const timer of timers) clearTimeout(timer);
+      timers.clear();
+      void autosaver.flush();
     };
   }, []);
 
