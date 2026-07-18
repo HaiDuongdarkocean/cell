@@ -1,5 +1,5 @@
 // popupDictionaryController — spec §4.6.3 P0: wires the full flow
-// subtitle token → lookup → popup → Quick Add.
+// subtitle token → lookup → popup → Quick Add / Send to Card.
 //
 // This is the orchestrator that ties together:
 // 1. subtitleTokenWrap (Task 4.1) — wraps tokens, attaches trigger.
@@ -9,13 +9,13 @@
 // 5. popupContent (Task 4.3) — header + definitions + footer.
 // 6. popupToolbar (Task 4.4/4.5) — tab panels.
 // 7. wordStatusStore (Task 3.1) — status cycle.
-// 8. quickAddAssembler + quickAddHandler (Task 5.1/5.2) — Quick Add.
+// 8. onCardCreatorAction — opens Card Creator dialog pre-filled (spec UC09.2).
 //
 // The controller manages the lifecycle: enable/disable, lookup → render,
-// status cycle, tab toggle, Quick Add.
+// status cycle, tab toggle, Quick Add / Send to Card.
 
 import type { MessageResponse } from '@/entities/message/types';
-import type { LookupResult, WordStatus, PopupTab, QuickAddResponse, AudioItem, ImageItem, FetchCommunityAudioResponse, FetchImagesResponse, TabPanelCache } from '../types';
+import type { LookupResult, WordStatus, PopupTab, AudioItem, ImageItem, FetchCommunityAudioResponse, FetchImagesResponse, TabPanelCache } from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings, TtsVoiceRow } from '@/entities/settings/types';
 import type { TokenWrapState } from '../trigger/subtitleTokenWrap';
 import type { PopupShell, PopupSize } from './popupShell';
@@ -33,16 +33,40 @@ import {
 import { renderToolbar, renderAudioPanel, renderImagePanel, renderTranslatePanel, renderLinksPanel } from './popupToolbar';
 import type { SelectionCounts } from './popupToolbar';
 import { nextStatus } from '../services/wordStatusStore';
-import { assembleQuickAddPayload } from '../services/quickAddAssembler';
-import { executeQuickAdd } from '../services/quickAddHandler';
-import { extractPrefill, sendToCreator } from '../services/sendToCreator';
 import { fillExternalDictLinks } from './popupToolbar';
 import { createTtsEngine, getTtsVoiceRows } from '../services/ttsEngineService';
+
+/** Pre-fill data extracted from the popup dictionary for the Card Creator.
+ *  Built from the lookup result + selections + context sentence + translation. */
+export interface PopupCardCreatorPrefill {
+  readonly term: string;
+  readonly langCode: string;
+  readonly reading: string;
+  readonly definitions: readonly { readonly pos?: string; readonly text: string }[];
+  readonly contextSentence: string;
+  readonly translation?: string;
+  readonly audioUrls?: readonly string[];
+  readonly imageUrls?: readonly string[];
+}
+
+/** Card Creator action triggered by the popup's Quick Add / Send to Card buttons.
+ *  'quick-add' = Quick Add button (hardcoded as Add mode for now),
+ *  'edit-card' = Send to Card button (neutral — user picks Add/Update in dialog). */
+export type PopupCardCreatorAction = 'quick-add' | 'edit-card';
+
+/** Callback when the user clicks Quick Add or Send to Card in the popup.
+ *  The content script controller opens the Card Creator dialog pre-filled. */
+export type OnCardCreatorAction = (
+  action: PopupCardCreatorAction,
+  prefill: PopupCardCreatorPrefill,
+) => void;
 
 /** Controller state — holds all runtime state for the popup dictionary. */
 export interface PopupDictionaryState {
   readonly settings: DictionaryPopupSettings;
   readonly cardCreatorSettings: CardCreatorSettings;
+  /** Callback to open the Card Creator dialog pre-filled (wired by content script). */
+  onCardCreatorAction?: OnCardCreatorAction;
   /** Current lookup result — winner/first candidate (null when popup is closed). */
   currentResult: LookupResult | null;
   /** Additional candidates appended after winner. */
@@ -96,10 +120,12 @@ function createEmptyTabPanelCache(): TabPanelCache {
 export function createPopupDictionaryState(
   settings: DictionaryPopupSettings,
   cardCreatorSettings: CardCreatorSettings,
+  onCardCreatorAction?: OnCardCreatorAction,
 ): PopupDictionaryState {
   return {
     settings,
     cardCreatorSettings,
+    onCardCreatorAction,
     currentResult: null,
     additionalResults: [],
     currentStatus: 'unknown',
@@ -206,11 +232,8 @@ export function showPopup(
     renderPopupContent(container, result, status, definitionSelection, {
       onStatusCycle: () => { state = cycleStatus(state); },
       onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
-      onQuickAdd: async () => {
-        const res = await doQuickAdd(state);
-        showToast(res.ok ? 'Added to Anki' : (res.error ?? 'Quick Add failed'), state.shell);
-      },
-      onSendToCreator: () => { state = sendToCreatorFromPopup(state); },
+      onQuickAdd: () => { triggerCardCreatorAction(state, 'quick-add'); },
+      onSendToCreator: () => { triggerCardCreatorAction(state, 'edit-card'); },
       onSettings: () => openSettings(state),
       onClose: () => {
         state = hidePopup(state);
@@ -279,17 +302,12 @@ export function appendCandidate(
     onDefinitionToggle: (id, selected) => {
       candidateSelection.set(id, selected);
     },
-    onQuickAdd: async () => {
-      const res = await doQuickAddForCandidate(
-        result, candidateSelection, candidateStatus,
-        state.contextSentence, state.cardCreatorSettings,
-      );
-      showToast(res.ok ? 'Added to Anki' : (res.error ?? 'Quick Add failed'), state.shell);
+    onQuickAdd: () => {
+      triggerCardCreatorActionForCandidate(state, 'quick-add', result, candidateSelection);
     },
-    onSendToCreator: () => void sendToCreatorForCandidate(
-      result, candidateSelection,
-      state.contextSentence, state.cardCreatorSettings,
-    ),
+    onSendToCreator: () => {
+      triggerCardCreatorActionForCandidate(state, 'edit-card', result, candidateSelection);
+    },
     onSettings: () => openSettings(state),
     onClose: () => {
       state = hidePopup(state);
@@ -366,41 +384,72 @@ export function appendCandidate(
   };
 }
 
-/** Per-candidate Quick Add — builds payload from candidate's own result + selection. */
-async function doQuickAddForCandidate(
-  result: LookupResult,
-  selection: DefinitionSelection,
-  status: WordStatus,
-  contextSentence: string,
-  cardCreatorSettings: CardCreatorSettings,
-): Promise<QuickAddResponse> {
-  const selectedResult: LookupResult = {
-    ...result,
-    definitions: getSelectedDefinitions(result, selection),
+/** Build a PopupCardCreatorPrefill from the winner's state (lookup result +
+ *  selected definitions + context sentence + translation + selected audio/image URLs). */
+function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill | null {
+  if (!state.currentResult) return null;
+  const selectedDefs = getSelectedDefinitions(state.currentResult, state.definitionSelection);
+  const audioUrls = state.audioItems
+    .filter((a) => a.url && state.audioSelection.get(a.id) === true)
+    .map((a) => a.url!) ;
+  const imageUrls = state.imageItems
+    .filter((img) => state.imageSelection.get(img.id) === true)
+    .map((img) => img.src);
+  return {
+    term: state.currentResult.term,
+    langCode: state.currentResult.langCode,
+    reading: state.currentResult.reading,
+    definitions: selectedDefs.map((d) => ({ pos: d.pos, text: d.text })),
+    contextSentence: state.contextSentence,
+    translation: state.translationSelected ? state.translation : undefined,
+    audioUrls: audioUrls.length > 0 ? audioUrls : undefined,
+    imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
   };
-  const payload = assembleQuickAddPayload(
-    selectedResult,
-    { definitions: selection, audios: new Map(), images: new Map() },
-    contextSentence,
-    '', // no translation for additional candidates
-    status,
-    cardCreatorSettings,
-  );
-  const fieldMapping: Record<string, string> = {
-    Front: 'term', Back: 'definitions', Sentence: 'sentence', Translation: 'translation',
-  };
-  return executeQuickAdd(payload, cardCreatorSettings, fieldMapping);
 }
 
-/** Per-candidate Send to Creator — uses candidate's own result + selection. */
-async function sendToCreatorForCandidate(
+/** Build a PopupCardCreatorPrefill for an appended candidate (own result + selection). */
+function buildCandidatePrefill(
   result: LookupResult,
   selection: DefinitionSelection,
   contextSentence: string,
-  cardCreatorSettings: CardCreatorSettings,
-): Promise<void> {
-  const prefill = extractPrefill(result, selection, contextSentence, undefined);
-  await sendToCreator(prefill, cardCreatorSettings);
+): PopupCardCreatorPrefill {
+  const selectedDefs = getSelectedDefinitions(result, selection);
+  return {
+    term: result.term,
+    langCode: result.langCode,
+    reading: result.reading,
+    definitions: selectedDefs.map((d) => ({ pos: d.pos, text: d.text })),
+    contextSentence,
+  };
+}
+
+/** Trigger Card Creator action for the winner — opens dialog pre-filled. */
+function triggerCardCreatorAction(
+  state: PopupDictionaryState,
+  action: PopupCardCreatorAction,
+): void {
+  if (!state.onCardCreatorAction) {
+    showToast('Card Creator not available — open from subtitle cluster.', state.shell);
+    return;
+  }
+  const prefill = buildPopupPrefill(state);
+  if (!prefill) return;
+  state.onCardCreatorAction(action, prefill);
+}
+
+/** Trigger Card Creator action for an appended candidate. */
+function triggerCardCreatorActionForCandidate(
+  state: PopupDictionaryState,
+  action: PopupCardCreatorAction,
+  result: LookupResult,
+  selection: DefinitionSelection,
+): void {
+  if (!state.onCardCreatorAction) {
+    showToast('Card Creator not available — open from subtitle cluster.', state.shell);
+    return;
+  }
+  const prefill = buildCandidatePrefill(result, selection, state.contextSentence);
+  state.onCardCreatorAction(action, prefill);
 }
 
 /** Hide popup (dismiss). Keeps the per-term tab-panel cache so reopening any
@@ -462,46 +511,6 @@ export function toggleTab(state: PopupDictionaryState, tab: PopupTab): PopupDict
     rerender(state, newTab);
   }
   return { ...state, activeTab: newTab };
-}
-
-/** Execute Quick Add. */
-export async function doQuickAdd(state: PopupDictionaryState): Promise<QuickAddResponse> {
-  if (!state.currentResult) {
-    return { ok: false, error: 'No lookup result to Quick Add' };
-  }
-
-  // Build a result that only contains the selected senses/definitions.
-  const selectedResult: LookupResult = {
-    ...state.currentResult,
-    definitions: getSelectedDefinitions(state.currentResult, state.definitionSelection),
-  };
-
-  const payload = assembleQuickAddPayload(
-    selectedResult,
-    {
-      definitions: state.definitionSelection,
-      audios: state.audioSelection,
-      images: state.imageSelection,
-    },
-    state.contextSentence,
-    // B3: only include translation if user explicitly selected it.
-    state.translationSelected ? state.translation : '',
-    state.currentStatus,
-    state.cardCreatorSettings,
-    state.audioItems,
-    state.imageItems,
-  );
-
-  // ponytail: fieldMapping comes from Card Creator draft settings.
-  // For MVP, use a default mapping. Real mapping comes from the Card Creator dialog.
-  const fieldMapping: Record<string, string> = {
-    Front: 'term',
-    Back: 'definitions',
-    Sentence: 'sentence',
-    Translation: 'translation',
-  };
-
-  return executeQuickAdd(payload, state.cardCreatorSettings, fieldMapping);
 }
 
 // --- Internal helpers ---
@@ -863,11 +872,8 @@ function rerender(state: PopupDictionaryState, activeTab?: PopupTab | null): voi
   renderCandidate(list, state.currentResult, state.currentStatus, state.definitionSelection, {
     onStatusCycle: () => { state = cycleStatus(state); },
     onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
-    onQuickAdd: async () => {
-      const res = await doQuickAdd(state);
-      showToast(res.ok ? 'Added to Anki' : (res.error ?? 'Quick Add failed'), state.shell);
-    },
-    onSendToCreator: () => { state = sendToCreatorFromPopup(state); },
+    onQuickAdd: () => { triggerCardCreatorAction(state, 'quick-add'); },
+    onSendToCreator: () => { triggerCardCreatorAction(state, 'edit-card'); },
     onSettings: () => openSettings(state),
     onClose: () => { state = hidePopup(state); },
     onPlayTerm: () => {
@@ -925,23 +931,6 @@ function showToast(message: string, shell?: PopupShell | null): void {
     // ponytail: no popup mounted yet → fallback to console.
     console.warn(`[popupDictionary] ${message}`);
   }
-}
-
-/** Send to Creator — open Card Creator pre-filled with lookup result (P1.2). */
-export function sendToCreatorFromPopup(state: PopupDictionaryState): PopupDictionaryState {
-  const result = state.currentResult;
-  if (!result) return state;
-  void (async () => {
-    const prefill = extractPrefill(
-      result,
-      state.definitionSelection,
-      state.contextSentence,
-      state.translationSelected ? state.translation : undefined,
-    );
-    await sendToCreator(prefill, state.cardCreatorSettings);
-  })();
-  // Hide popup after sending to Creator.
-  return hidePopup(state);
 }
 
 function onResizeEnd(state: PopupDictionaryState, size: PopupSize): void {

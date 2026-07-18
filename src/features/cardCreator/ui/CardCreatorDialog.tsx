@@ -20,10 +20,10 @@ interface CardCreatorDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Card Creator settings (URL, defaults). */
   settings: CardCreatorSettings;
-  /** Context for media extraction (video + cue + languages + pre-captured media). */
-  openContext: { video: HTMLVideoElement; cue: BilingualCue; sourceLang: string; targetLang: string; initialMedia?: readonly MediaFile[] } | null;
-  /** Initial action hint ('quick-update' pre-selects Update, 'edit-card' is neutral). */
-  initialAction?: 'quick-update' | 'edit-card';
+  /** Context for media extraction (video + cue + languages + pre-captured media + popup prefill). */
+  openContext: { video?: HTMLVideoElement; cue?: BilingualCue; sourceLang: string; targetLang: string; initialMedia?: readonly MediaFile[]; prefill?: { readonly targetWord?: string; readonly definitions?: string; readonly sentenceTranslation?: string; readonly sentence?: string } } | null;
+  /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' pre-selects Update, 'edit-card' is neutral). */
+  initialAction?: 'quick-add' | 'quick-update' | 'edit-card';
 }
 
 export function CardCreatorDialog({

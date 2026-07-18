@@ -20,13 +20,27 @@ import type { CardCreatorSettings } from '@/entities/settings';
 import type { BilingualCue } from '@/entities/media';
 import type { MediaFile } from '../media/mediaFile';
 
-/** Card Creator action (mirrors subtitleBlockController). */
-type CardCreatorAction = 'quick-update' | 'edit-card';
+/** Card Creator action (mirrors subtitleBlockController + popup dictionary).
+ *  'quick-add' = popup dictionary Quick Add (hardcoded as Add mode for now),
+ *  'quick-update' = subtitle cluster quick-update (focus Update button),
+ *  'edit-card' = subtitle cluster edit-card (neutral). */
+type CardCreatorAction = 'quick-add' | 'quick-update' | 'edit-card';
 
-/** Context for opening the dialog (video + cue + languages). */
+/** Pre-fill data from the popup dictionary (term + definitions + translation).
+ *  When present, useCardCreatorState uses these instead of empty strings. */
+export interface CardCreatorPrefill {
+  readonly targetWord?: string;
+  readonly definitions?: string;
+  readonly sentenceTranslation?: string;
+  readonly sentence?: string;
+}
+
+/** Context for opening the dialog (video + cue + languages).
+ *  video + cue are optional — when absent (popup dictionary text-reading case),
+ *  media capture (screenshot/audio) is skipped and prefill provides text fields. */
 export interface CardCreatorOpenContext {
-  readonly video: HTMLVideoElement;
-  readonly cue: BilingualCue;
+  readonly video?: HTMLVideoElement;
+  readonly cue?: BilingualCue;
   readonly sourceLang: string;
   readonly targetLang: string;
   /** ADR-026: media captured BEFORE the dialog opens (screenshot of the
@@ -35,6 +49,9 @@ export interface CardCreatorOpenContext {
    * clicked, and audio capture can seek/play the video without the dialog
    * overlay interfering. */
   readonly initialMedia?: readonly MediaFile[];
+  /** Popup dictionary pre-fill (term + definitions + translation).
+   *  When present, overrides the empty defaults for these draft fields. */
+  readonly prefill?: CardCreatorPrefill;
 }
 
 /** Controller returned by mountCardCreatorDialog. */

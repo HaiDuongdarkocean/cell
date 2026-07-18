@@ -33,7 +33,7 @@ import { mountCardCreatorDialog, buildCardCreatorContext } from '@/features/card
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
-import { createPopupDictionaryState, showPopup, appendCandidate, type PopupDictionaryState } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import { createPopupDictionaryState, showPopup, appendCandidate, type PopupDictionaryState, type PopupCardCreatorPrefill, type PopupCardCreatorAction } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import { WebTextTriggerController } from '@/features/dictionaryPopup/trigger/webTextTriggerController';
 import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
@@ -208,7 +208,7 @@ export function init(video: HTMLVideoElement): () => void {
   /** Wire popup dictionary: enable token wrap + trigger on subtitle block.
    *  Also wire web-text trigger (select text anywhere on page → lookup). */
   function wireDictionaryPopup(dpSettings: DictionaryPopupSettings, ccSettings: CardCreatorSettings): void {
-    popupDictState = createPopupDictionaryState(dpSettings, ccSettings);
+    popupDictState = createPopupDictionaryState(dpSettings, ccSettings, handlePopupCardCreatorAction);
     blockController.enableDictionaryPopup(
       dpSettings.triggerMode,
       (request: LookupRequest, requestId: string, anchorRect: DOMRect) => { void handleLookup(request, requestId, anchorRect); },
@@ -373,13 +373,101 @@ export function init(video: HTMLVideoElement): () => void {
       // Screenshot failure is non-fatal — the user can re-capture manually.
     }
     try {
-      const audioR = await captureSentenceAudio(video, { start: ctx.cue.start, end: ctx.cue.end });
+      const cue = ctx.cue!;
+      const audioR = await captureSentenceAudio(video, { start: cue.start, end: cue.end });
       if (audioR.ok) initialMedia.push(audioR.file);
     } catch {
       // Audio failure is non-fatal — screenshot + text fields still work.
     }
 
     cardCreatorMount.open({ ...ctx, initialMedia }, action);
+  }
+
+  /** Handle Card Creator action triggered from the popup dictionary (Quick Add
+   *  or Send to Card). Opens the Card Creator dialog pre-filled with the
+   *  popup's lookup data (term, definitions, context sentence, translation).
+   *  If a video is available, also captures screenshot + sentence audio.
+   *  Syncs with the cluster overlay block's handleCardCreatorAction flow. */
+  async function handlePopupCardCreatorAction(
+    action: PopupCardCreatorAction,
+    prefill: PopupCardCreatorPrefill,
+  ): Promise<void> {
+    // Load settings fresh (URL/deck/noteType/lang may have changed since init).
+    let settings: Settings;
+    try {
+      settings = await loadSettings();
+    } catch {
+      showToast('Cannot load settings — storage unavailable.', container, { variant: 'error' });
+      return;
+    }
+    cardCreatorSettings = settings.cardCreator;
+
+    // Prefetch AnkiConnect decks + models NOW so the network round-trip
+    // overlaps with media capture.
+    void prefetchAnkiConnectData(cardCreatorSettings.ankiConnectUrl).catch(() => {
+      // Prefetch failure is non-fatal — loadData will retry.
+    });
+
+    // Lazy-init the dialog mount on first action.
+    if (!cardCreatorMount) {
+      cardCreatorMount = mountCardCreatorDialog(cardCreatorSettings, container);
+    } else {
+      cardCreatorMount.updateSettings(cardCreatorSettings);
+    }
+
+    // Build definitions text from prefill (same format as sendToCreator.buildDefinitionsText).
+    const definitionsText = prefill.definitions
+      .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
+      .join('\n');
+
+    const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
+    const targetLang = settings.subtitleOverlayNativeLanguage || 'vi';
+
+    // Capture media (screenshot + sentence audio) if video is available.
+    // For text-reading (no video context), skip media capture — the dialog
+    // opens with text fields only, user can add media manually.
+    const initialMedia: MediaFile[] = [];
+    if (video && video.videoWidth > 0) {
+      showToast('Capturing media…', container, { variant: 'info' });
+      await waitForVideoReady(video);
+      try {
+        const screenshot = await captureScreenshot(video);
+        initialMedia.push(screenshot);
+      } catch {
+        // Screenshot failure is non-fatal.
+      }
+      // Sentence audio: only if the context sentence matches a subtitle cue.
+      // For web-text selection (no matching cue), skip audio capture.
+      try {
+        const cues = blockController.getTargetCues();
+        const currentMs = video.currentTime * 1000;
+        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
+        if (matchingCue) {
+          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
+          if (audioR.ok) initialMedia.push(audioR.file);
+        }
+      } catch {
+        // Audio failure is non-fatal.
+      }
+    }
+
+    // Build the Card Creator open context with popup prefill.
+    // video + cue are optional — the dialog handles their absence.
+    const ctx = {
+      video: video && video.videoWidth > 0 ? video : undefined,
+      cue: undefined, // popup dictionary doesn't use subtitle cue timing
+      sourceLang,
+      targetLang,
+      initialMedia: initialMedia.length > 0 ? initialMedia : undefined,
+      prefill: {
+        targetWord: prefill.term,
+        definitions: definitionsText,
+        sentenceTranslation: prefill.translation ?? '',
+        sentence: prefill.contextSentence,
+      },
+    };
+
+    cardCreatorMount.open(ctx, action);
   }
 
   /** Generate native subtitle by translating the active target cues into the
