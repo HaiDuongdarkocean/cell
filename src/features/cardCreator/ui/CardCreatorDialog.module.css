@@ -4,6 +4,14 @@
    P1.3: two-pane layout for desktop (form left, preview right).
 */
 
+/* Widen the shared Dialog panel only for the Card Creator desktop dialog.
+ * The default --dialog-max-width is 512px, which is too narrow for the
+ * two-pane layout (form + 320px preview) and squishes the form into ~120px.
+ * 760px gives the form ~400px and the preview 320px with a 20px gap. */
+.dialogWrapper {
+  --dialog-max-width: 760px;
+}
+
 .body {
   display: flex;
   flex-direction: column;
@@ -12,18 +20,21 @@
   background: var(--color-background);
 }
 
-/* P1.3: two-pane layout for desktop — form left, preview right. */
+/* P1.3: two-pane layout for desktop — form left, preview right.
+ * Uses flex with wrap so the preview drops below the form when the dialog
+ * is narrower than ~640px (e.g. small laptop / split screen). */
 .twoPane {
-  display: grid;
-  grid-template-columns: 1fr 320px;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-5);
-  align-items: start;
+  align-items: flex-start;
 }
 
 .twoPaneForm {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  flex: 1 1 360px;
   min-width: 0;
 }
 
@@ -33,6 +44,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  flex: 0 1 320px;
+  min-width: 0;
 }
 
 .mobile .body {
