@@ -182,11 +182,7 @@ export function renderHeader(
   const next = nextStatus(currentStatus);
   statusBadge.title = `Click to cycle: ${currentStatus} → ${next}`;
   statusBadge.addEventListener('click', onStatusCycle);
-  if (currentStatus === 'known') {
-    statusBadge.innerHTML = `${ICON_CATALOG.check.svg}<span>${currentStatus}</span>`;
-  } else {
-    statusBadge.textContent = currentStatus;
-  }
+  statusBadge.textContent = currentStatus;
   second.appendChild(statusBadge);
 
   // Frequency badges (RIGHT of status)
