@@ -822,7 +822,7 @@ export function init(video: HTMLVideoElement): () => void {
       // Reload keyboard shortcuts so remaps (e.g. 't' → 'y') take effect
       // without a page reload. loadShortcuts reads from the new settings.
       if (newSettings.keyboardShortcuts) {
-        loadShortcuts().then((s) => { shortcuts = s; });
+        loadShortcuts().then((s) => { shortcuts = s; }).catch((err) => console.warn('[content-script] Failed to reload shortcuts:', err));
       }
       // Live-update dictionary popup settings (defaultActiveTab, triggerMode, etc.)
       // without requiring a page reload.
@@ -845,6 +845,8 @@ export function init(video: HTMLVideoElement): () => void {
         );
       }
     });
+  }).catch((err) => {
+    console.error('[content-script] Failed to load overlay settings:', err);
   });
 
   // === State ===
@@ -1003,7 +1005,7 @@ export function init(video: HTMLVideoElement): () => void {
   const debouncedToast = createDebouncedToast(showToast, 500);
 
   // Load shortcuts from storage
-  loadShortcuts().then((s) => { shortcuts = s; });
+  loadShortcuts().then((s) => { shortcuts = s; }).catch((err) => console.warn('[content-script] Failed to load shortcuts:', err));
 
   // Create toggle button (overlay) — click → open Side Panel
   toggleBtn = createToggleButton(container);

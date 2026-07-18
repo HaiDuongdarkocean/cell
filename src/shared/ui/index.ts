@@ -8,6 +8,7 @@ export { Checkbox } from './Checkbox';
 export { CheckboxGroup } from './CheckboxGroup';
 export { Dialog } from './Dialog';
 export { EmptyState } from './EmptyState';
+export { ErrorBoundary } from './ErrorBoundary';
 export { ListItem } from './ListItem';
 export { NavItem } from './NavItem';
 export { Drawer } from './Drawer';

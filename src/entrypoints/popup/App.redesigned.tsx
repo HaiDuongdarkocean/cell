@@ -223,7 +223,7 @@ export function AppRedesigned(): React.JSX.Element {
       const res = response as MessageResponse<DownloadItem> | undefined;
       if (res?.success && res.data) addDownload(res.data);
       else if (res && !res.success) setError(res.error ?? 'Failed to start video download');
-    });
+    }).catch((err) => setError(String(err ?? 'Failed to start video download')));
   };
 
   const handleQualitySelect = (videoId: string, quality: VideoQuality): void => {
@@ -232,7 +232,7 @@ export function AppRedesigned(): React.JSX.Element {
       const res = response as MessageResponse<DownloadItem> | undefined;
       if (res?.success && res.data) addDownload(res.data);
       else if (res && !res.success) setError(res.error ?? 'Failed to start video download');
-    });
+    }).catch((err) => setError(String(err ?? 'Failed to start video download')));
   };
 
   const handleSubtitleDownload = (subtitleId: string): void => {
@@ -241,7 +241,7 @@ export function AppRedesigned(): React.JSX.Element {
       const res = response as MessageResponse<DownloadItem> | undefined;
       if (res?.success && res.data) addDownload(res.data);
       else if (res && !res.success) setError(res.error ?? 'Failed to start subtitle download');
-    });
+    }).catch((err) => setError(String(err ?? 'Failed to start subtitle download')));
   };
 
   const handleThemeToggle = (): void => {

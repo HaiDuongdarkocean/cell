@@ -32,6 +32,8 @@ export function OptionsApp(): ReactElement {
     void loadSettings().then((s) => {
       if (cancelled) return;
       setTtsSettings(s.dictionaryPopup?.tts ?? DEFAULT_TTS_SETTINGS);
+    }).catch((err) => {
+      if (!cancelled) console.warn('[options] Failed to load TTS settings:', err);
     });
     return () => {
       cancelled = true;
