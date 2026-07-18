@@ -20,8 +20,8 @@
   border: 1px solid var(--dialog-border, var(--color-border));
   border-radius: var(--dialog-radius, var(--radius-xl, 12px));
   padding: var(--dialog-padding, var(--space-6, 24px));
-  box-shadow: none;
-  animation: dialog-in 200ms ease-out;
+  box-shadow: var(--dialog-shadow, none);
+  animation: dialog-in var(--duration-normal, 200ms) var(--ease-out, ease-out);
   box-sizing: border-box;
   /* Design-system scrollbar (themeTokens §scrollbar) — replaces the browser
    * default scrollbar with a thin themed one matching the dialog's surface. */
@@ -30,8 +30,8 @@
 }
 
 .panel::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: var(--space-2, 8px);
+  height: var(--space-2, 8px);
 }
 
 .panel::-webkit-scrollbar-track {
