@@ -226,7 +226,6 @@ export class SubtitleBlockController {
     if (!this.dom) return;
     const targetText = this.lastTargetIndex >= 0 ? this.targetCues[this.lastTargetIndex]?.text ?? '' : '';
     const nativeText = this.lastNativeIndex >= 0 ? this.nativeCues[this.lastNativeIndex]?.text ?? '' : '';
-    console.debug('[SB] render', { targetVisible: this.targetStyle.visible, nativeVisible: this.nativeStyle.visible, targetText: targetText.slice(0, 60), nativeText: nativeText.slice(0, 60), lastTargetIndex: this.lastTargetIndex, lastNativeIndex: this.lastNativeIndex });
     this.dom.targetLine.textContent = this.targetStyle.visible ? targetText : '';
     this.dom.targetLine.style.display = this.targetStyle.visible && targetText ? 'block' : 'none';
     this.dom.nativeLine.textContent = this.nativeStyle.visible ? nativeText : '';

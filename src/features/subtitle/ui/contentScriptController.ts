@@ -1340,21 +1340,12 @@ export function init(video: HTMLVideoElement): () => void {
     const m = msg as { type?: string; payload?: unknown };
     if (m?.type === MESSAGE_TYPES.AUTO_LOAD_SUBTITLES) {
       const payload = m.payload as AutoLoadSubtitlesPayload;
-      console.log('[content-script] AUTO_LOAD_SUBTITLES received', {
-        targetUrl: payload?.target?.url,
-        nativeUrl: payload?.native?.url,
-        targetLang: payload?.target?.language,
-        nativeLang: payload?.native?.language,
-        targetMatchesCount: payload?.targetMatches?.length,
-        nativeMatchesCount: payload?.nativeMatches?.length,
-      });
 
       // Skip duplicate payloads to avoid re-loading the same subtitle and
       // restarting translate prefill (e.g. when PAGE_SCAN_RESULT or network
       // re-detection re-pushes the same target/native URLs on seek).
       const autoLoadKey = `${payload?.target?.url ?? ''}|${payload?.native?.url ?? ''}`;
       if (autoLoadKey === lastAutoLoadKey && autoLoadKey !== '|') {
-        console.log('[content-script] AUTO_LOAD_SUBTITLES duplicate, skipping');
         return;
       }
       lastAutoLoadKey = autoLoadKey;
@@ -1424,11 +1415,6 @@ export function init(video: HTMLVideoElement): () => void {
           // updateCues(targetCues, nativeCues);
           // ADR-019: notify offset controller that subtitles loaded
           offsetController?.loadCues(true);
-          console.log('[content-script] onPanelRender', {
-            targetCueCount: targetCues.length,
-            nativeCueCount: nativeCues.length,
-            bilingualCueCount: bilingualCues.length,
-          });
           // Send cues to Side Panel
           broadcastCues(bilingualCues);
         },
@@ -1758,10 +1744,6 @@ export function init(video: HTMLVideoElement): () => void {
   // MutationObserver on <video> src.
   const onSpaNav = (): void => {
     if (lastAutoLoadUrl === undefined || lastAutoLoadUrl === location.href) return;
-    console.log('[content-script] SPA nav detected, clearing overlay', {
-      from: lastAutoLoadUrl,
-      to: location.href,
-    });
     blockController?.clearCues();
     offsetController?.loadCues(false);
     latestTargetCues = [];
