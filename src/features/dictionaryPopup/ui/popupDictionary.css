@@ -29,49 +29,6 @@
 /* Labels are hidden by default on narrow popups; revealed when the popup is wide. */
 .cell-label { display: none; }
 
-/* === Popup-wide button micro-interactions ===
- * Only transform scale; remove previous background/color hover/active effects.
- * Uniform scale: 1.05 on hover, 1.0 on active for every popup button. */
-.cell-popup .btn,
-.cell-popup .icon-btn {
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.cell-popup .btn:hover,
-.cell-popup .icon-btn:hover {
-  transform: scale(1.05);
-  background: transparent;
-}
-
-.cell-popup .btn:active,
-.cell-popup .icon-btn:active {
-  transform: scale(1);
-  background: transparent;
-}
-
-.cell-popup .btn--ghost:hover,
-.cell-popup .btn--ghost:active,
-.cell-popup .btn--outline:hover,
-.cell-popup .btn--outline:active {
-  background: transparent;
-}
-
-.cell-popup .btn--outline:hover,
-.cell-popup .btn--outline:active {
-  border-color: var(--color-border);
-}
-
-.cell-popup .btn--primary:hover,
-.cell-popup .btn--primary:active {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-}
-
-.cell-popup .icon-btn:hover,
-.cell-popup .icon-btn:active {
-  color: var(--color-text-muted);
-}
-
 @container (min-width: 440px) {
   .cell-label { display: inline; }
 }
@@ -278,24 +235,25 @@
   text-transform: capitalize;
 }
 
-.cell-header__status--neutral {
-  background: var(--color-surface-hover);
-  color: var(--color-text-muted);
+/* Status badges — soft pill. Maps directly to WordStatus values. */
+.cell-header__status--unknown {
+  background: var(--color-error-subtle);
+  color: var(--color-error);
 }
 
-.cell-header__status--primary {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
+.cell-header__status--tracking {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
 }
 
-.cell-header__status--success {
-  background: var(--color-success);
-  color: var(--color-text-inverse);
+.cell-header__status--known {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
-.cell-header__status--secondary {
-  background: var(--color-secondary);
-  color: var(--color-secondary-foreground);
+.cell-header__status--ignore {
+  background: var(--color-muted);
+  color: var(--color-text-secondary);
 }
 
 .cell-header__frequency {
@@ -551,11 +509,12 @@
   color: var(--color-primary);
 }
 
-/* Play/pause button: zoom on hover, bounce on press/release.
- * Uniform scale: 1.05 on hover, 1.0 on active. */
+/* Play/pause button: zoom on hover, elastic bounce on press/release.
+ * Override base .icon-btn--outlined hover/active color+background so only
+ * the transform scale feedback remains. */
 .cell-audio__item .icon-btn {
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    color 0.2s var(--ease-in-out, ease-in-out);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 0.25s var(--ease-in-out, ease-in-out);
   will-change: transform;
 }
 
