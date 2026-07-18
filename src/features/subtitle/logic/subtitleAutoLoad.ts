@@ -234,9 +234,7 @@ export async function handleAutoLoadSubtitles(
   deps: AutoLoadDeps,
 ): Promise<void> {
   const { target, native } = payload;
-  console.log('[handleAutoLoadSubtitles] start', { hasTarget: !!target, hasNative: !!native });
   if (!target && !native) {
-    console.log('[handleAutoLoadSubtitles] both target and native null');
     return;
   }
 
@@ -244,14 +242,6 @@ export async function handleAutoLoadSubtitles(
     target ? fetchAndParseSubtitle(target.url, resolveFormat(target.format, target.url), deps.tabUrl, target.initiator) : Promise.resolve(null),
     native ? fetchAndParseSubtitle(native.url, resolveFormat(native.format, native.url), deps.tabUrl, native.initiator) : Promise.resolve(null),
   ]);
-  console.log('[handleAutoLoadSubtitles] parse results', {
-    targetSuccess: targetResult?.success,
-    targetCueCount: targetResult?.success ? targetResult.cues.length : 0,
-    targetError: targetResult && !targetResult.success ? targetResult.error : undefined,
-    nativeSuccess: nativeResult?.success,
-    nativeCueCount: nativeResult?.success ? nativeResult.cues.length : 0,
-    nativeError: nativeResult && !nativeResult.success ? nativeResult.error : undefined,
-  });
 
   const targetCues = targetResult?.success ? targetResult.cues : [];
   const nativeCues = nativeResult?.success ? nativeResult.cues : [];
@@ -288,7 +278,6 @@ export async function handleAutoLoadSubtitles(
   // BackgroundPrefillController instance + manages lifecycle (SPA nav clear,
   // tab hidden pause). Prefill feeds loadBilingualCues on each chunk.
   if (nativeCues.length === 0 && targetCues.length > 0 && deps.autoTranslate && deps.onStartTranslatePrefill) {
-    console.log('[handleAutoLoadSubtitles] no native track + autoTranslate ON → start prefill');
     deps.onStartTranslatePrefill(targetCues);
   }
 
