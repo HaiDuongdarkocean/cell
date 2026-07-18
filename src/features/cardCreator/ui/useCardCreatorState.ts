@@ -552,7 +552,6 @@ export function useCardCreatorState(
    *  audio for the current cue). */
   const addFileFromDisk = useCallback(
     async (kind: 'images' | 'sentenceAudios' | 'wordAudios'): Promise<void> => {
-      console.log('[addFileFromDisk] called', kind);
       const accept = kind === 'images' ? 'image/*' : 'audio/*';
       const input = document.createElement('input');
       input.type = 'file';

@@ -145,6 +145,43 @@ const shouldDedupeCueSeek = (action: string): boolean => {
   return false;
 };
 
+/** Wait for the video to reach readyState ≥ 2 (HAVE_CURRENT_DATA) with a
+ *  timeout. Used before screenshot capture — the user may have just seeked
+ *  or paused, leaving the video in a transient state where drawImage would
+ *  throw "Video not ready". */
+async function waitForVideoReady(video: HTMLVideoElement, timeoutMs = 2000): Promise<void> {
+  if (video.readyState >= 2 && video.videoWidth > 0) return;
+  const start = Date.now();
+  await new Promise<void>((resolve) => {
+    const check = (): void => {
+      if (video.readyState >= 2 && video.videoWidth > 0) {
+        resolve();
+        return;
+      }
+      if (Date.now() - start >= timeoutMs) {
+        resolve(); // give up — captureScreenshot will throw a clear error
+        return;
+      }
+      setTimeout(check, 100);
+    };
+    check();
+  });
+}
+
+/** Load target/native language codes from settings.
+ *  Used by import file role assignment + panel selection. */
+async function loadTargetNativeLangs(): Promise<{ targetLang: string; nativeLang: string }> {
+  try {
+    const settings = await loadSettings();
+    return {
+      targetLang: settings.subtitleOverlayTargetLanguage ?? '',
+      nativeLang: settings.subtitleOverlayNativeLanguage ?? '',
+    };
+  } catch {
+    return { targetLang: '', nativeLang: '' };
+  }
+}
+
 export function init(video: HTMLVideoElement): () => void {
   // ADR-008 D2: overlay UI neo vào video container — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
@@ -293,29 +330,6 @@ export function init(video: HTMLVideoElement): () => void {
   );
 
   /** ADR-026: Handle Card Creator action (quick-update or edit-card). */
-  /** Wait for the video to reach readyState ≥ 2 (HAVE_CURRENT_DATA) with a
-   *  timeout. Used before screenshot capture — the user may have just seeked
-   *  or paused, leaving the video in a transient state where drawImage would
-   *  throw "Video not ready". */
-  async function waitForVideoReady(video: HTMLVideoElement, timeoutMs = 2000): Promise<void> {
-    if (video.readyState >= 2 && video.videoWidth > 0) return;
-    const start = Date.now();
-    await new Promise<void>((resolve) => {
-      const check = (): void => {
-        if (video.readyState >= 2 && video.videoWidth > 0) {
-          resolve();
-          return;
-        }
-        if (Date.now() - start >= timeoutMs) {
-          resolve(); // give up — captureScreenshot will throw a clear error
-          return;
-        }
-        setTimeout(check, 100);
-      };
-      check();
-    });
-  }
-
   async function handleCardCreatorAction(action: CardCreatorAction): Promise<void> {
     // Load settings fresh (URL/deck/noteType/lang may have changed since init).
     let settings: Settings;
@@ -1674,23 +1688,6 @@ export function init(video: HTMLVideoElement): () => void {
       if (assignment.native.length > 0) parts.push(`native:${assignment.native.length}`);
       const ignoredTxt = ignoredCount > 0 ? ` (${ignoredCount} ignored)` : '';
       debouncedToast(`Imported ${total} subtitle files (${parts.join(', ')})${ignoredTxt}`, _container, { variant: 'success' });
-    }
-  }
-
-  /**
-   * ADR-015 T10: Load target/native languages from chrome.storage.local.
-   * Falls back to empty strings (assignImportRole handles empty → all ignored
-   * → fallback-to-target).
-   */
-  async function loadTargetNativeLangs(): Promise<{ targetLang: string; nativeLang: string }> {
-    try {
-      const settings = await loadSettings();
-      return {
-        targetLang: settings.subtitleOverlayTargetLanguage ?? '',
-        nativeLang: settings.subtitleOverlayNativeLanguage ?? '',
-      };
-    } catch {
-      return { targetLang: '', nativeLang: '' };
     }
   }
 
