@@ -67,8 +67,7 @@ export function DownloadCard({
           aria-label="Resume"
           data-testid="resume-btn"
         >
-          {/* FIXME: extract to registry once stroke-width variant supported — play path differs from ICON_CATALOG.play (M8 5v14l11-7z vs M5 3l14 9-14 9V3z) */}
-          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M8 5v14l11-7z" /></svg>
+          <Icon name="play" size={14} />
         </IconButton>,
       );
     } else {
@@ -94,8 +93,7 @@ export function DownloadCard({
         aria-label="Retry"
         data-testid="retry-btn"
       >
-        {/* FIXME: extract to registry once stroke-width variant supported — retry path differs from ICON_CATALOG.rotateCcw (rotate-cw variant) */}
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
+        <Icon name="rotateCcw" size={14} />
       </IconButton>,
     );
   }
@@ -150,8 +148,7 @@ export function DownloadCard({
   if (download.workerCount && download.workerCount > 0 && download.usedWorkers) {
     detailItems.push(
       <span key="workers" className={styles.detailItem}>
-        {/* FIXME: extract to registry once stroke-width variant supported — lightning path differs from ICON_CATALOG.zap (simple bolt vs newer complex path) */}
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
+        <Icon name="zap" size={12} />
         {download.workerCount} workers
       </span>,
     );

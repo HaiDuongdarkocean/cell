@@ -1,24 +1,27 @@
 /* === Empty State — matches prototype === */
 .empty {
   text-align: center;
-  padding: var(--spacing-xl) var(--spacing-md);
+  padding: var(--space-6) var(--space-3);
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
   line-height: 1.5;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: var(--space-2);
 }
 
-.icon {
+.emptyIcon {
   color: var(--color-text-muted);
   opacity: 0.5;
-  margin-bottom: var(--spacing-xs);
+}
+
+.emptyIcon svg {
+  stroke-width: 1.5;
 }
 
 /* Scanning state: pulsing icon */
-.scanning .icon {
+.scanning .emptyIcon {
   animation: scan-pulse 1.5s ease-in-out infinite;
   opacity: 0.7;
 }
