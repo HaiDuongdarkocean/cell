@@ -63,6 +63,10 @@ export type OnCardCreatorAction = (
   prefill: PopupCardCreatorPrefill,
 ) => void;
 
+/** Callback when the user clicks Quick Add in the popup (bypass dialog).
+ *  The content script controller collects media + adds the note directly. */
+export type OnQuickAddDirect = (prefill: PopupCardCreatorPrefill) => void;
+
 /** Per-candidate runtime state (for active candidate switching). */
 export interface CandidateState {
   status: WordStatus;
@@ -104,7 +108,7 @@ export interface PopupDictionaryState {
   onCardCreatorAction?: OnCardCreatorAction;
   /** Callback to Quick Add directly (bypass dialog). Wired by content script.
    *  Used by 'quick-add' action. Collects media + adds note to Anki immediately. */
-  onQuickAddDirect?: (prefill: PopupCardCreatorPrefill) => void;
+  onQuickAddDirect?: OnQuickAddDirect;
   /** Current lookup result — winner/first candidate (null when popup is closed). */
   currentResult: LookupResult | null;
   /** Additional candidates appended after winner. */
@@ -182,7 +186,7 @@ export function createPopupDictionaryState(
   settings: DictionaryPopupSettings,
   cardCreatorSettings: CardCreatorSettings,
   onCardCreatorAction?: OnCardCreatorAction,
-  onQuickAddDirect?: (prefill: PopupCardCreatorPrefill) => void,
+  onQuickAddDirect?: OnQuickAddDirect,
 ): PopupDictionaryState {
   return {
     settings,
