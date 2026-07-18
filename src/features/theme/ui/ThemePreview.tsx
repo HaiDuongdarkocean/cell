@@ -4,6 +4,7 @@
 // form+input, dropzone, toast (success/error). Tất cả dùng var(--color-*) nên
 // auto-update khi themeManager.applyTheme đổi CSS vars.
 
+import { Button } from '@/shared/ui/Button';
 import styles from './ThemePreview.module.css';
 
 export function ThemePreview(): React.JSX.Element {
@@ -12,9 +13,9 @@ export function ThemePreview(): React.JSX.Element {
       <div className={styles.section}>
         <div className={styles.sectionLabel}>Buttons</div>
         <div className={styles.row}>
-          <button className={`${styles.btn} ${styles.btnPrimary}`}>Primary</button>
-          <button className={styles.btn}>Secondary</button>
-          <button className={`${styles.btn} ${styles.btnDisabled}`} disabled>Disabled</button>
+          <Button variant="primary" size="sm">Primary</Button>
+          <Button variant="secondary" size="sm">Secondary</Button>
+          <Button variant="primary" size="sm" disabled>Disabled</Button>
         </div>
       </div>
 

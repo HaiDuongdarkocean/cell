@@ -8,7 +8,7 @@
 //     settings.tts.savedVoices: {voiceName, lang, order}[] (checked only).
 
 import { useState, useEffect, useCallback, useMemo, useRef, type ReactElement, type DragEvent } from 'react';
-import { Button } from '@/shared/ui';
+import { Button, IconButton } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { createTtsEngine, type TtsVoiceInfo } from '@/features/dictionaryPopup/services/ttsEngineService';
 import type { TtsSettings, TtsVoiceRow } from '@/entities/settings/types';
@@ -303,15 +303,14 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                 <div className={styles.voiceSelectionList} role="list" data-testid="tts-voice-selection">
                   {voices.map((v) => (
                     <div className={styles.voiceSelectionItem} key={v.voiceName}>
-                      <button
-                        type="button"
-                        className={styles.voicePlayBtn}
+                      <IconButton
+                        size="sm"
                         onClick={() => void handlePlayVoice(v.voiceName)}
                         disabled={playing}
                         aria-label={`Phát giọng ${v.voiceName}`}
                       >
                         <Icon name="play" size={16} />
-                      </button>
+                      </IconButton>
                       <div className={styles.voiceSelectionSlots}>
                         {[0, 1, 2].map((slot) => (
                           <label key={slot} className={styles.slotRadio}>

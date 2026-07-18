@@ -16,6 +16,7 @@ import { useState, useCallback } from 'react';
 import type { ReactElement } from 'react';
 import type { CardCreatorSettings, AutoCompletableField, AudioFallbackStrategy } from '@/entities/settings';
 import { testConnection } from '@/features/cardCreator/service/cardCreatorService';
+import { Button } from '@/shared/ui/Button';
 import styles from './CardCreatorSettingsPanel.module.css';
 
 interface CardCreatorSettingsPanelProps {
@@ -135,16 +136,16 @@ export function CardCreatorSettingsPanel({
             {buildStatusDetail(status, version, settings.ankiConnectUrl)}
           </span>
         </div>
-        <button
-          type="button"
-          className={styles.testButton}
+        <Button
+          variant="outline"
+          size="sm"
           onClick={handleTest}
           disabled={status === 'testing'}
           aria-label="Test AnkiConnect connection again"
           data-testid="cc-test-again-button"
         >
           {status === 'testing' ? 'Testing…' : 'Test again'}
-        </button>
+        </Button>
       </div>
 
       {/* Auto-complete toggles (spec §9.3.1, D7 — schema v14) */}
