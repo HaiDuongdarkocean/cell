@@ -1,0 +1,21 @@
+{
+  "id": "button-states-ssot-use-ds-modifiers",
+  "title": "Không viết lại hover/active states cho button — dùng .btn + .btn--* modifiers từ design system",
+  "category": ["css"],
+  "tags": ["button", "ssot", "design-system", "hover", "active", "state", "maintainability"],
+  "trigger": "Tạo/sửa component có trạng thái hover/active mà tự định nghĩa lại background/color thay vì dùng .btn--primary, .btn--outline, .btn--ghost có sẵn",
+  "principle": "Nếu một element là button và có các trạng thái hover/active, nó PHẢI kế thừa từ design-system button classes (.btn + .btn--primary/.outline/.ghost/.secondary). KHÔNG tự định nghĩa .my-button:hover, .my-button--active với background/color riêng. Điều này gây lặp code, drift với DS, bug khi đổi token, khó maintain. Chỉ thêm class đặc thù cho hình dạng/layout (ví dụ: .cell-chip { border-radius: full; max-width; ellipsis }). Chuyển trạng thái bằng cách thay đổi DS modifier class trong JS/TSX, không tạo modifier CSS riêng.",
+  "cases": [
+    {
+      "context": "cell-chip active state",
+      "bad": ".cell-chip { background: surface-hover; color: text-secondary; border: 1px solid border; }\n.cell-chip:hover { background: primary-subtle; color: primary; border-color: primary; }\n.cell-chip--active { background: primary; color: text-inverse; border-color: primary; }\n.cell-chip--active:hover { background: primary-hover; }\n\n// JS:\nchip.className = 'btn cell-chip' + (active ? ' cell-chip--active' : '');",
+      "good": "// components.css\n.btn--outline { background: transparent; color: text; border: 1px solid border; }\n.btn--outline:hover { background: surface-hover; border-color: border-focus; }\n.btn--primary { background: primary; color: text-inverse; }\n.btn--primary:hover { background: primary-hover; }\n\n// CSS:\n.cell-chip { border-radius: var(--radius-full); max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n\n// JS:\nchip.className = 'btn ' + (active ? 'btn--primary ' : 'btn--outline ') + 'cell-chip';"
+    }
+  ],
+  "applyFor": [
+    "CSS Modules",
+    "CSS trong Shadow DOM",
+    "Component styling",
+    "Review convention compliance"
+  ]
+}

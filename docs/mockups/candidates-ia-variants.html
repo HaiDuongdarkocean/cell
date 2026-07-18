@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Candidates IA Variants — Side by Side</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --color-primary: #60a5fa;
+      --color-primary-hover: #3b82f6;
+      --color-primary-subtle: rgba(96, 165, 250, 0.15);
+      --color-primary-foreground: #0f172a;
+      --color-background: #0f172a;
+      --color-surface: #1e293b;
+      --color-text: #f1f5f9;
+      --color-text-secondary: #cbd5e1;
+      --color-text-muted: #64748b;
+      --color-border: #334155;
+      --color-border-subtle: #1e293b;
+      --color-success: #10b981;
+      --color-success-subtle: rgba(16, 185, 129, 0.15);
+      --font-family: 'Inter', -apple-system, sans-serif;
+      --font-size-xs: 12px;
+      --font-size-sm: 13px;
+      --font-size-base: 14px;
+      --font-size-lg: 16px;
+      --font-size-2xl: 20px;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --font-weight-bold: 700;
+      --radius-md: 18px;
+      --radius-lg: 10px;
+      --radius-full: 9999px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-family);
+      background: #020617;
+      color: var(--color-text);
+      padding: var(--space-4);
+    }
+    h1 { font-size: 22px; margin: 0 0 var(--space-2); }
+    .subtitle { color: var(--color-text-muted); font-size: var(--font-size-sm); margin: 0 0 var(--space-4); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-4);
+    }
+    @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+
+    .variant {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    .variant__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+    }
+    .variant__title { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); margin: 0; }
+    .variant__tag {
+      font-size: var(--font-size-xs);
+      padding: var(--space-1) var(--space-2);
+      background: var(--color-primary-subtle);
+      color: var(--color-primary);
+      border-radius: var(--radius-full);
+      font-weight: var(--font-weight-semibold);
+    }
+    .variant__desc { font-size: var(--font-size-sm); color: var(--color-text-secondary); line-height: 1.5; margin: 0; }
+    .variant__pros, .variant__cons { font-size: var(--font-size-sm); margin: 0; padding-left: var(--space-4); }
+    .variant__pros li, .variant__cons li { margin: var(--space-1) 0; }
+    .variant__pros { color: var(--color-success); }
+    .variant__cons { color: var(--color-text-muted); }
+    .variant__pros strong, .variant__cons strong { color: var(--color-text); }
+
+    /* Popup demo */
+    .demo {
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      height: 480px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: var(--font-size-base);
+    }
+    .demo__active {
+      padding: var(--space-3);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      border-bottom: 2px solid var(--color-border);
+    }
+    .demo__word { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); }
+    .demo__ipa { color: var(--color-text-muted); font-size: var(--font-size-sm); }
+    .demo__badges { display: flex; gap: var(--space-2); }
+    .badge {
+      font-size: var(--font-size-xs);
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-full);
+      font-weight: var(--font-weight-semibold);
+    }
+    .badge--neutral { background: var(--color-border); color: var(--color-text-muted); }
+    .badge--primary { background: var(--color-primary); color: var(--color-primary-foreground); }
+    .demo__def { color: var(--color-text); line-height: 1.5; padding-left: var(--space-3); position: relative; }
+    .demo__def::before { content: "•"; position: absolute; left: 0; color: var(--color-primary); }
+    .demo__toolbar { display: flex; gap: var(--space-1); padding: var(--space-2) var(--space-3); background: var(--color-surface); border-top: 1px solid var(--color-border); }
+    .tab {
+      font-size: var(--font-size-sm);
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-md);
+      color: var(--color-text-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .tab--active { background: var(--color-primary-subtle); color: var(--color-primary); }
+
+    /* Variant A: vertical list */
+    .va__candidates {
+      flex: 0 0 auto;
+      min-height: 120px;
+      max-height: 40%;
+      overflow-y: auto;
+      background: var(--color-surface);
+    }
+    .va__cand {
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      cursor: pointer;
+    }
+    .va__cand:hover { background: var(--color-border-subtle); }
+    .va__cand__word { font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
+    .va__cand__meta { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+
+    /* Variant B: horizontal chips */
+    .vb__chips {
+      flex: 0 0 auto;
+      display: flex;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      overflow-x: auto;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      scrollbar-width: none;
+    }
+    .vb__chips::-webkit-scrollbar { display: none; }
+    .chip {
+      flex-shrink: 0;
+      font-size: var(--font-size-sm);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      background: var(--color-border);
+      color: var(--color-text-secondary);
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .chip:hover { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .chip--active { background: var(--color-primary); color: var(--color-primary-foreground); }
+
+    /* Variant C: accordion */
+    .vc__toggle {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-3);
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+    .vc__toggle:hover { background: var(--color-border-subtle); }
+    .vc__list {
+      flex: 0 0 auto;
+      max-height: 40%;
+      overflow-y: auto;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+    }
+    .vc__list--hidden { display: none; }
+    .vc__cand {
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      cursor: pointer;
+    }
+    .vc__cand:hover { background: var(--color-border-subtle); }
+    .vc__cand__word { font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
+    .vc__cand__meta { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+
+    /* Variant D: hybrid chips + expand */
+    .vd__chips {
+      flex: 0 0 auto;
+      display: flex;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      overflow-x: auto;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      scrollbar-width: none;
+      align-items: center;
+    }
+    .vd__chips::-webkit-scrollbar { display: none; }
+    .vd__expand {
+      flex-shrink: 0;
+      font-size: var(--font-size-xs);
+      padding: var(--space-1) var(--space-2);
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+    }
+    .vd__expand:hover { background: var(--color-border-subtle); }
+    .vd__list {
+      flex: 0 0 auto;
+      max-height: 35%;
+      overflow-y: auto;
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+    }
+    .vd__list--hidden { display: none; }
+    .vd__cand {
+      display: flex;
+      flex-direction: column;
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--color-border);
+      cursor: pointer;
+    }
+    .vd__cand:hover { background: var(--color-border-subtle); }
+    .vd__cand__word { font-weight: var(--font-weight-semibold); font-size: var(--font-size-sm); }
+    .vd__cand__meta { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+
+    .pick {
+      text-align: center;
+      padding: var(--space-4);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-muted);
+    }
+    .pick strong { color: var(--color-primary); }
+  </style>
+</head>
+<body>
+  <h1>Candidates IA — 4 biến thể</h1>
+  <p class="subtitle">Context: user thường đúng term đầu tiên, N candidate biến thiên. Mỗi biến thể là 1 popup demo thật, click để thử.</p>
+
+  <div class="grid">
+    <!-- Variant A -->
+    <div class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title">A. Vertical list</h2>
+        <span class="variant__tag">scan-and-pick</span>
+      </div>
+      <p class="variant__desc">List dọc, mỗi candidate 1 dòng word + meta. Luôn visible min 120px.</p>
+      <ul class="variant__pros">
+        <li><strong>+</strong> Mọi candidate visible ngay</li>
+        <li><strong>+</strong> Đọc được word + def preview</li>
+      </ul>
+      <ul class="variant__cons">
+        <li><strong>−</strong> Ăn chiều cao ≥120px</li>
+        <li><strong>−</strong> N&gt;5 thì list dài</li>
+      </ul>
+
+      <div class="demo">
+        <div class="demo__active">
+          <div class="demo__word">character</div>
+          <div class="demo__ipa">/ˈkærəktər/</div>
+          <div class="demo__badges"><span class="badge badge--neutral">unknown</span><span class="badge badge--primary">top 1k</span></div>
+          <div class="demo__def">the mental and moral qualities distinctive to an individual</div>
+          <div class="demo__def">a person in a novel, play, or movie</div>
+        </div>
+        <div class="demo__toolbar">
+          <button class="tab tab--active">Audio</button>
+          <button class="tab">Image</button>
+          <button class="tab">Translate</button>
+        </div>
+        <div class="va__candidates">
+          <div class="va__cand"><div class="va__cand__word">character assassination</div><div class="va__cand__meta">phrase • malicious denigration</div></div>
+          <div class="va__cand"><div class="va__cand__word">character actor</div><div class="va__cand__meta">phrase • actor in unusual roles</div></div>
+          <div class="va__cand"><div class="va__cand__word">characteristic</div><div class="va__cand__meta">adj • typical of a person</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Variant B -->
+    <div class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title">B. Horizontal chips</h2>
+        <span class="variant__tag">compact selector</span>
+      </div>
+      <p class="variant__desc">Chips ngang, scroll-x. Candidate là filter, không phải content.</p>
+      <ul class="variant__pros">
+        <li><strong>+</strong> Tiết kiệm chiều cao ~44px</li>
+        <li><strong>+</strong> Active entry chiếm gần hết</li>
+        <li><strong>+</strong> Mobile-friendly, swipe</li>
+      </ul>
+      <ul class="variant__cons">
+        <li><strong>−</strong> Mất def preview</li>
+        <li><strong>−</strong> Term dài phải truncate</li>
+      </ul>
+
+      <div class="demo">
+        <div class="demo__active" style="flex:1 1 auto">
+          <div class="demo__word">character</div>
+          <div class="demo__ipa">/ˈkærəktər/</div>
+          <div class="demo__badges"><span class="badge badge--neutral">unknown</span><span class="badge badge--primary">top 1k</span></div>
+          <div class="demo__def">the mental and moral qualities distinctive to an individual</div>
+          <div class="demo__def">a person in a novel, play, or movie</div>
+          <div class="demo__def">a printed or written letter or symbol</div>
+        </div>
+        <div class="demo__toolbar">
+          <button class="tab tab--active">Audio</button>
+          <button class="tab">Image</button>
+          <button class="tab">Translate</button>
+        </div>
+        <div class="vb__chips">
+          <button class="chip chip--active">character</button>
+          <button class="chip">char. assassination</button>
+          <button class="chip">char. actor</button>
+          <button class="chip">characteristic</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Variant C -->
+    <div class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title">C. Accordion</h2>
+        <span class="variant__tag">progressive disclosure</span>
+      </div>
+      <p class="variant__desc">Collapsed mặc định "N alternatives". Click mở ra list dọc.</p>
+      <ul class="variant__pros">
+        <li><strong>+</strong> Active entry full chiều cao</li>
+        <li><strong>+</strong> Scalable với N lớn</li>
+        <li><strong>+</strong> Focus tối đa vào active</li>
+      </ul>
+      <ul class="variant__cons">
+        <li><strong>−</strong> User phải click để thấy</li>
+        <li><strong>−</strong> Có thể không biết có candidate</li>
+      </ul>
+
+      <div class="demo">
+        <div class="demo__active" style="flex:1 1 auto">
+          <div class="demo__word">character</div>
+          <div class="demo__ipa">/ˈkærəktər/</div>
+          <div class="demo__badges"><span class="badge badge--neutral">unknown</span><span class="badge badge--primary">top 1k</span></div>
+          <div class="demo__def">the mental and moral qualities distinctive to an individual</div>
+          <div class="demo__def">a person in a novel, play, or movie</div>
+          <div class="demo__def">a printed or written letter or symbol</div>
+        </div>
+        <div class="demo__toolbar">
+          <button class="tab tab--active">Audio</button>
+          <button class="tab">Image</button>
+          <button class="tab">Translate</button>
+        </div>
+        <div class="vc__toggle" onclick="document.getElementById('vcList').classList.toggle('vc__list--hidden')">
+          <span>▾ 3 alternatives</span>
+          <span>click to expand</span>
+        </div>
+        <div class="vc__list" id="vcList">
+          <div class="vc__cand"><div class="vc__cand__word">character assassination</div><div class="vc__cand__meta">phrase • malicious denigration</div></div>
+          <div class="vc__cand"><div class="vc__cand__word">character actor</div><div class="vc__cand__meta">phrase • actor in unusual roles</div></div>
+          <div class="vc__cand"><div class="vc__cand__word">characteristic</div><div class="vc__cand__meta">adj • typical of a person</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Variant D -->
+    <div class="variant">
+      <div class="variant__header">
+        <h2 class="variant__title">D. Hybrid chips + expand</h2>
+        <span class="variant__tag">compact + detail on demand</span>
+      </div>
+      <p class="variant__desc">Chips ngang mặc định. Nút "▾" mở ra list dọc với def preview.</p>
+      <ul class="variant__pros">
+        <li><strong>+</strong> Compact mặc định (B)</li>
+        <li><strong>+</strong> Expand ra detail (A) khi cần</li>
+        <li><strong>+</strong> Best of both worlds</li>
+      </ul>
+      <ul class="variant__cons">
+        <li><strong>−</strong> Phức tạp hơn 2 state</li>
+        <li><strong>−</strong> Thêm 1 click để xem detail</li>
+      </ul>
+
+      <div class="demo">
+        <div class="demo__active" style="flex:1 1 auto">
+          <div class="demo__word">character</div>
+          <div class="demo__ipa">/ˈkærəktər/</div>
+          <div class="demo__badges"><span class="badge badge--neutral">unknown</span><span class="badge badge--primary">top 1k</span></div>
+          <div class="demo__def">the mental and moral qualities distinctive to an individual</div>
+          <div class="demo__def">a person in a novel, play, or movie</div>
+        </div>
+        <div class="demo__toolbar">
+          <button class="tab tab--active">Audio</button>
+          <button class="tab">Image</button>
+          <button class="tab">Translate</button>
+        </div>
+        <div class="vd__chips">
+          <button class="chip chip--active">character</button>
+          <button class="chip">char. assassination</button>
+          <button class="chip">char. actor</button>
+          <button class="chip">characteristic</button>
+          <button class="vd__expand" onclick="document.getElementById('vdList').classList.toggle('vd__list--hidden')">▾</button>
+        </div>
+        <div class="vd__list vd__list--hidden" id="vdList">
+          <div class="vd__cand"><div class="vd__cand__word">character assassination</div><div class="vd__cand__meta">phrase • malicious denigration of someone's character</div></div>
+          <div class="vd__cand"><div class="vd__cand__word">character actor</div><div class="vd__cand__meta">phrase • actor specializing in unusual roles</div></div>
+          <div class="vd__cand"><div class="vd__cand__word">characteristic</div><div class="vd__cand__meta">adj • typical of a particular person</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="pick">
+    Anh chọn biến thể nào? Hoặc muốn em làm thêm biến thể khác (ví dụ: <strong>tabs ngang</strong> thay chips, <strong>dropdown select</strong>, <strong>swipe carousel mobile</strong>)?
+  </p>
+
+  <script>
+    // Click chip/cand to highlight
+    document.querySelectorAll('.chip, .va__cand, .vc__cand, .vd__cand').forEach(el => {
+      el.addEventListener('click', () => {
+        const siblings = el.parentElement.querySelectorAll('.chip, .va__cand, .vc__cand, .vd__cand');
+        siblings.forEach(s => s.classList.remove('chip--active'));
+        el.classList.add('chip--active');
+      });
+    });
+  </script>
+</body>
+</html>

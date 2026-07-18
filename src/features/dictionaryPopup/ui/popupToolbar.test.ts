@@ -41,16 +41,16 @@ describe('renderToolbar', () => {
     expect(close).toBeNull();
   });
 
-  it('marks active tab with icon-btn--active class', () => {
+  it('marks active tab with btn--primary class', () => {
     renderToolbar(container, 'audio', jest.fn());
     const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
-    expect(audioTab.className).toContain('icon-btn--active');
+    expect(audioTab.className).toContain('btn--primary');
   });
 
-  it('inactive tab does not have icon-btn--active class', () => {
+  it('inactive tab does not have btn--primary class', () => {
     renderToolbar(container, 'image', jest.fn());
     const audioTab = container.querySelector('.js-cell-tab[data-cell-tab="audio"]') as HTMLButtonElement;
-    expect(audioTab.className).not.toContain('icon-btn--active');
+    expect(audioTab.className).not.toContain('btn--primary');
   });
 
   it('tab click triggers onTabToggle', () => {
@@ -117,14 +117,32 @@ describe('renderAudioPanel', () => {
     container = document.createElement('div');
   });
 
-  it('renders word + sentence groups with renamed headers', () => {
+  it('renders sub-tabs PLAY WORD and PLAY SENTENCE', () => {
+    renderAudioPanel(container, [], [], new Map(), jest.fn(), jest.fn());
+    const tabs = container.querySelectorAll('.cell-audio__subtab');
+    expect(tabs.length).toBe(2);
+    expect(tabs[0]!.textContent).toBe('PLAY WORD');
+    expect(tabs[1]!.textContent).toBe('PLAY SENTENCE');
+  });
+
+  it('defaults to showing word audio group and hides sentence group', () => {
     const wordAudios = [makeAudio({ id: 'w1', label: 'Forvo · US' })];
     const sentenceAudios = [makeAudio({ id: 's1', kind: 'sentence', label: 'System TTS' })];
     renderAudioPanel(container, wordAudios, sentenceAudios, new Map(), jest.fn(), jest.fn());
     const groups = container.querySelectorAll('.cell-audio__group-label');
-    expect(groups.length).toBe(2);
+    expect(groups.length).toBe(1);
     expect(groups[0]!.textContent).toBe('Word Audio');
-    expect(groups[1]!.textContent).toBe('Sentence Audio');
+    expect(container.querySelectorAll('.js-cell-audio-item').length).toBe(1);
+  });
+
+  it('clicking PLAY SENTENCE switches to sentence audio group', () => {
+    const wordAudios = [makeAudio({ id: 'w1', label: 'Forvo · US' })];
+    const sentenceAudios = [makeAudio({ id: 's1', kind: 'sentence', label: 'System TTS' })];
+    const onGroupChange = jest.fn();
+    renderAudioPanel(container, wordAudios, sentenceAudios, new Map(), jest.fn(), jest.fn(), false, undefined, undefined, undefined, undefined, 'word', onGroupChange);
+    const sentenceTab = container.querySelector('.js-cell-audio-subtab-sentence') as HTMLButtonElement;
+    sentenceTab.click();
+    expect(onGroupChange).toHaveBeenCalledWith('sentence');
   });
 
   it('renders play buttons with SVG icon (not text ▶)', () => {

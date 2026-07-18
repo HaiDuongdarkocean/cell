@@ -5,10 +5,9 @@
 
 ## mô tả yêu cầu cấu hình máy
 
-- extension hướng cấu hình đa nền tảng như các broswer nhân chrome trên desktop, tablet, android, ios.
-- cấu hình máy ram yếu 4GB cũng có thể chạy được.
-- giao diện thiết kế responsive, tối ưu cho mobile, tablet và desktop.
-- extension có thể chạy trên các trình duyệt khác nhau như chrome, firefox, edge, opera, brave, v.v.
+- ALWAYS design for extension cross broswer nhân chrome trên desktop, tablet, android; chrome, edge, brave, v.v. responsive.
+- ALWAYS thiết kế algorithm tối ưu để chạy trên cấu hình 1GB RAM.
+- ALWAYS UI-UX design responsive, optimize for mobile, tablet and desktop.
 
 ## Lệnh hay dùng
 
@@ -20,18 +19,23 @@ Lệnh đầy đủ trong `package.json` scripts. Hai thứ không hiển nhiên
 
 ## Quy ước mã
 
-- Function component + hooks, không class component.
-- Named export, không default export.
+- MUST NOT hardcoded
+- ALWAYS single-souce-of-truth (SSOT).
+- Function component + hooks, DON'T class component.
+- Named export, DON'T default export.
 - Colocate test: `Button.tsx` → `Button.test.tsx`.
-- TypeScript strict, không `any` không lý do (ESLint đã enforce `no-explicit-any`).
-- Logic tách hàm thuần, dễ test, không side effect.
-- Icon task → đọc `ICON_CATALOG` (`src/shared/icons/index.ts`) trước → reuse hoặc tạo mới + thêm vào catalog. Không search web trước khi catalog không có. Không inline SVG trong component — import từ `ICON_CATALOG`.
-- UI/UX task → đọc `src/shared/styles/README.md` (design system trong codebase) trước → dùng token từ `tokens.css` + component pattern từ `src/shared/ui/`. Hover = `--color-surface-hover`, selected = `--color-primary-subtle`, focus = 2px ring. Không hardcode color. Không dùng `--color-accent` cho hover.
+- MUST TypeScript strict
+- MUST NOT use `any` DON'T lý do (ESLint đã enforce `no-explicit-any`).
+- MUST Logic tách hàm thuần, dễ test, DON'T side effect.
+- IF Icon task → ALWAYS FIRST READ `ICON_CATALOG` (`src/shared/icons/index.ts`) → reuse hoặc tạo mới + thêm vào catalog. 
+- DON'T search web trước khi catalog DON'T có. 
+- DON'T inline SVG trong component — import từ `ICON_CATALOG`.
+- IF UI/UX task → ALWAYS FIRST READ `src/shared/styles/README.md` (design system trong codebase) → USE token từ `tokens.css` + component pattern từ `src/shared/ui/`.
 
 ## Nhắn tin MV3 (không hiển nhiên)
 
 - `sendMessage` fan-out mọi listener → payload phải có `tabId` để popup lọc.
-- Lấy tab active: dùng `getActiveContentTab()` từ `src/entrypoints/popup/utils/` (xử lý Edge app-windows).
+- Lấy tab active: USE `getActiveContentTab()` từ `src/entrypoints/popup/utils/` (xử lý Edge app-windows).
 - Dedup auto-download theo id, không theo URL: `autoDownloadedTabs: Map<tabId, { url, enqueuedIds: Set<string> }>`.
 
 ## Ranh giới
@@ -110,11 +114,11 @@ tuân thủ design system trong codebase. chỉ có một nguồn design system 
 
 ### Knowledge tra cứu
 
-Trước khi viết code liên quan css / async / messaging / state / data / detection / build / ux: grep `.agents/skills/learning-and-apply/index.json` theo category/tags → mở matching `experience/<id>.json` hoặc `knowledge/<topic>.json` → check `cases[].bad` — nếu code mình đang viết match bad pattern → sửa theo `cases[].good`. Không skip bước này.
+Trước khi viết code liên quan css / async / messaging / state / data / detection / build / ux: grep `.agents/skills/learning-and-apply/index.json` theo category/tags → mở matching `experience/<id>.json` hoặc `knowledge/<topic>.json` → check `cases[].bad` — nếu code mình đang viết match bad pattern → sửa theo `cases[].good`. DON'T skip bước này.
 
-(match ở đây có nghĩa là code mình đang viết có chứa pattern bad không không theo convention good không)
+(match ở đây có nghĩa là code mình đang viết có chứa pattern bad DON'T theo convention good)
 
 ### Code conventions
  
-- Khi task liên quan HTML/CSS/TS/TSX: grep `.agents/skills/learning-and-apply/index.json` type=knowledge → mở `knowledge/htmlcss.json` hoặc `knowledge/typescript.json` → grep `rules[]` theo category/tags. Không đoán convention — query knowledge.
+- IF task liên quan HTML/CSS/TS/TSX: ALWAYS FIRST grep `.agents/skills/learning-and-apply/index.json` -> type=knowledge → grep `rules[]` theo category/tags. DON'T đoán convention — query knowledge.
 - Using BEM — is a methodology that helps to create reusable components and share code in front-end development

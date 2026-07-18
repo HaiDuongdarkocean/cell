@@ -1,0 +1,21 @@
+{
+  "id": "popup-mutate-in-place-rerender-from-live",
+  "title": "Mutate state in place + rerender from live state to avoid stale closures in vanilla-DOM popups",
+  "category": ["state", "rendering", "ux"],
+  "tags": ["closure", "mutable-state", "rerender", "stale-closure", "vanilla-dom", "async-callback", "active-candidate", "snapshot", "context-aware"],
+  "trigger": "A vanilla-DOM popup has async tab callbacks (translation, audio fetch) that mutate state and trigger a rerender. If helpers return a new immutable state object, closures that captured the old state object keep mutating the stale copy, so the rerender shows old data. This is especially sharp when a single toolbar binds to an 'active candidate' that can switch — the callback must read/write the active candidate's slice, not the winner's.",
+  "principle": "When a vanilla-DOM popup has async callbacks that mutate state and rerender, prefer mutating the live state object in place and reading from it during rerender, instead of returning a new immutable state object. Pair this with getActiveSnapshot/setActiveSnapshot helpers that route reads/writes to the right slice (winner fields or candidateStates Map) based on activeCandidateIndex. This eliminates the 'state = helper(state)' discipline that breaks when an async callback closes over an old state reference. The rerender function reads from the live state, so it always sees the latest data. Trade-off: the state object is no longer immutable, so React-style time-travel debugging won't work — acceptable for vanilla-DOM popups where the state is a single mutable singleton.",
+  "cases": [
+    {
+      "context": "Popup dictionary redesign: single toolbar binds to active candidate. Translation callback fires async, mutates state, and rerenders. If setActiveSnapshot returns a new state object, the callback's closed-over `state` is stale and the next mutation writes to the old copy.",
+      "bad": "function setActiveSnapshot(state, patch) {\n  if (state.activeCandidateIndex === 0) {\n    return { ...state, ...patch };  // new object — closures now have stale ref\n  }\n  const cs = new Map(state.candidateStates);\n  cs.set(state.activeCandidateIndex, { ...old, ...patch });\n  return { ...state, candidateStates: cs };\n}\n\n// In toolbar callback (closure):\nconst patched = setActiveSnapshot(state, { translationLoading: true });\nrerender(patched, 'translate');\ntranslateSentence(..., (text) => {\n  // `state` is still the OLD reference — mutation lost\n  state = setActiveSnapshot(state, { translation: text });\n  rerender(state);\n});",
+      "good": "function setActiveSnapshot(state, patch) {\n  if (state.activeCandidateIndex === 0) {\n    // Mutate winner fields in place — closures see updates\n    state.translation = patch.translation ?? state.translation;\n    state.translationLoading = patch.translationLoading ?? state.translationLoading;\n    state.activeTab = patch.activeTab ?? state.activeTab;\n    // ...other fields\n    return state;\n  }\n  const old = state.candidateStates.get(state.activeCandidateIndex) ?? createCandidateState(result);\n  state.candidateStates.set(state.activeCandidateIndex, { ...old, ...patch });\n  return state;\n}\n\n// In toolbar callback (closure):\nsetActiveSnapshot(state, { translationLoading: true, activeTab: 'translate' });\nrerender(state, 'translate');\ntranslateSentence(..., (text) => {\n  setActiveSnapshot(state, { translation: text, translationLoading: false });\n  rerender(state);  // reads from live state — sees the mutation\n});"
+    }
+  ],
+  "applyFor": [
+    "Vanilla-DOM popups with async tab callbacks (translation, audio/image fetch)",
+    "Single-toolbar-multiple-candidate patterns where the toolbar binds to an 'active' item",
+    "Any vanilla-DOM state singleton where closures + async callbacks coexist"
+  ],
+  "related": ["popup-state-closure-rerender"]
+}
