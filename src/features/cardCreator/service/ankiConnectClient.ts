@@ -126,6 +126,9 @@ export interface AnkiNote {
   readonly modelName: string;
   readonly fields: Record<string, string>;
   readonly tags?: string[];
+  /** AnkiConnect addNote options. allowDuplicate: true bypasses the
+   *  duplicate check so the same card can be added multiple times. */
+  readonly options?: { readonly allowDuplicate?: boolean };
 }
 
 export async function addNote(fetchFn: FetchFn, baseUrl: string, note: AnkiNote): Promise<number | null> {

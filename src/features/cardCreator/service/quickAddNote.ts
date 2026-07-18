@@ -54,6 +54,7 @@ export async function quickAddNote(
     modelName: noteType,
     fields,
     tags: tagList,
+    options: { allowDuplicate: true },
   });
   if (!r.ok) return { ok: false, error: r.error };
   return { ok: true, noteId: r.value };

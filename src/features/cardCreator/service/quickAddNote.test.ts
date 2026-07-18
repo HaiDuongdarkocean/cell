@@ -176,8 +176,8 @@ describe('quickAddNote', () => {
     if (!r.ok) expect(r.error).toContain('corrupt');
   });
 
-  it('duplicate skipped: returns noteId null', async () => {
-    queueResponses([{ result: null }]);
+  it('duplicate allowed: addNote sends allowDuplicate true', async () => {
+    queueResponses([{ result: 777 }]);
 
     const r = await quickAddNote(URL, 'Default', 'Basic', fieldMapping, '', text, {
       images: [],
@@ -186,6 +186,10 @@ describe('quickAddNote', () => {
     });
 
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.noteId).toBeNull();
+    if (r.ok) expect(r.noteId).toBe(777);
+
+    const last = captureLastAction();
+    const note = (last?.params as { note: Record<string, unknown> }).note;
+    expect(note.options).toEqual({ allowDuplicate: true });
   });
 });
