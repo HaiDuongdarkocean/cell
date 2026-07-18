@@ -107,7 +107,7 @@ export function VideoCard({
       <div className={styles.mainRow} onClick={handleCardClick}>
         {/* Icon */}
         <div className={`${styles.icon} ${styles.videoIcon}`} aria-hidden="true">
-          <Icon name="play" />
+          <Icon name="play" size={18} />
         </div>
 
         {/* Body */}
@@ -183,7 +183,7 @@ export function VideoCard({
           <div className={styles.action} onClick={handleActionClick}>
             {downloading ? (
               <span className={styles.downloadingIndicator} aria-label="Downloading">
-                <Icon name="loader" />
+                <Icon name="loader" size={16} />
               </span>
             ) : (
               <IconButton
@@ -210,7 +210,7 @@ export function VideoCard({
             data-testid="video-url"
             title="Click to copy URL"
           >
-            <Icon name="copy" />
+            <Icon name="copy" size={14} />
             <span className={styles.urlText}>{video.url}</span>
           </button>
           {copied && <span className={styles.copiedBadge} data-testid="copied-toast">Copied</span>}

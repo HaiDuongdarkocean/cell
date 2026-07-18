@@ -55,7 +55,7 @@ export function Alert({
           size="xs"
           onClick={handleDismiss}
         >
-          <Icon name="x" />
+          <Icon name="x" size={16} />
         </IconButton>
       )}
     </div>

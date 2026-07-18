@@ -126,7 +126,7 @@ export function HintIcon({
         aria-label={ariaLabel}
         onClick={toggle}
       >
-        <Icon name="info" />
+        <Icon name="info" size={14} />
       </button>
       {isOpen && (
         <div

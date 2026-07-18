@@ -58,7 +58,7 @@ export function Button({
     >
       {loading && (
         <span className={styles.spinner} aria-hidden="true">
-          <Icon name="loader" />
+          <Icon name="loader" size={16} />
         </span>
       )}
       {!loading && leadingIcon && <span className={styles.leadingIcon}>{leadingIcon}</span>}

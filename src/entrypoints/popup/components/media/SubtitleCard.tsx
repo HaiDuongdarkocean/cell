@@ -81,7 +81,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
       <div className={styles.mainRow} onClick={handleCardClick}>
         {/* Icon — subtitle (amber) */}
         <div className={`${styles.icon} ${styles.subtitleIcon}`} aria-hidden="true">
-          <Icon name="flag" />
+          <Icon name="flag" size={18} />
         </div>
 
         {/* Body */}
@@ -112,7 +112,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
           <div className={styles.action} onClick={handleActionClick}>
             {downloading ? (
               <span className={styles.downloadingIndicator} aria-label="Downloading">
-                <Icon name="loader" />
+                <Icon name="loader" size={16} />
               </span>
             ) : (
               <IconButton
@@ -139,7 +139,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
             data-testid="subtitle-url"
             title="Click to copy URL"
           >
-            <Icon name="copy" />
+            <Icon name="copy" size={14} />
             <span className={styles.urlText}>{subtitle.url}</span>
           </button>
           {copied && <span className={styles.copiedBadge} data-testid="subtitle-copied-toast">Copied</span>}
