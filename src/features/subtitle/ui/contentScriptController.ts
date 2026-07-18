@@ -505,27 +505,36 @@ export function init(video: HTMLVideoElement): () => void {
       showToast('Quick Add needs a deck + note type. Open Card Creator first to configure.', container, { variant: 'error' });
       return;
     }
+    if (Object.keys(fieldMapping).length === 0) {
+      showToast('Quick Add needs field mapping. Open Card Creator first to configure.', container, { variant: 'error' });
+      return;
+    }
 
     showToast('Quick Add — collecting media…', container, { variant: 'info' });
 
-    // Fetch media URLs from popup prefill (best-effort).
+    // Fetch media URLs from popup prefill (best-effort, parallel).
     const wordAudios: MediaFile[] = [];
     const sentenceAudios: MediaFile[] = [];
     const images: MediaFile[] = [];
     const warnings: string[] = [];
 
-    for (const audioUrl of prefill.wordAudioUrls ?? []) {
-      try { wordAudios.push(await fetchUrlAsMediaFile(audioUrl, 'audio')); }
-      catch { warnings.push(`word audio: ${audioUrl}`); }
-    }
-    for (const audioUrl of prefill.sentenceAudioUrls ?? []) {
-      try { sentenceAudios.push(await fetchUrlAsMediaFile(audioUrl, 'audio')); }
-      catch { warnings.push(`sentence audio: ${audioUrl}`); }
-    }
-    for (const imageUrl of prefill.imageUrls ?? []) {
-      try { images.push(await fetchUrlAsMediaFile(imageUrl, 'image')); }
-      catch { warnings.push(`image: ${imageUrl}`); }
-    }
+    const [wordResults, sentenceResults, imageResults] = await Promise.all([
+      Promise.allSettled((prefill.wordAudioUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'audio'))),
+      Promise.allSettled((prefill.sentenceAudioUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'audio'))),
+      Promise.allSettled((prefill.imageUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'image'))),
+    ]);
+    wordResults.forEach((r, i) => {
+      if (r.status === 'fulfilled') wordAudios.push(r.value);
+      else warnings.push(`word audio: ${prefill.wordAudioUrls![i]}`);
+    });
+    sentenceResults.forEach((r, i) => {
+      if (r.status === 'fulfilled') sentenceAudios.push(r.value);
+      else warnings.push(`sentence audio: ${prefill.sentenceAudioUrls![i]}`);
+    });
+    imageResults.forEach((r, i) => {
+      if (r.status === 'fulfilled') images.push(r.value);
+      else warnings.push(`image: ${prefill.imageUrls![i]}`);
+    });
 
     // Capture screenshot + sentence audio from video if available.
     if (video && video.videoWidth > 0) {

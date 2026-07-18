@@ -16,11 +16,11 @@ import {
   listModelFields,
   findRecentNote,
   getNoteInfo,
-  storeMedia,
   addNote,
   updateNote,
   addNoteTags,
 } from '../service/cardCreatorService';
+import { buildAnkiFields } from '../service/buildAnkiFields';
 import { prefetchAnkiConnectData } from '../service/cardCreatorPrefetch';
 import { autoMapFields } from '../service/fieldMapping';
 import {
@@ -28,7 +28,7 @@ import {
   DraftAutosaver,
   type CardDraft,
 } from '../state/cardDraft';
-import { arrayBufferToBase64, joinAnkiFieldRefs, fetchUrlAsMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
+import { fetchUrlAsMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
 import { translateSentence } from '../media/translation';
@@ -650,55 +650,26 @@ export function useCardCreatorState(
   }, [updateField, pushToast]);
 
   /** Build the Anki note fields from the draft (apply mapping + media refs). */
-  const buildAnkiFields = useCallback(
+  const buildAnkiFieldsCb = useCallback(
     async (): Promise<Record<string, string>> => {
-      const url = settings.ankiConnectUrl;
-      const fields: Record<string, string> = {};
-
-      // Text fields.
-      const textMap: Record<string, string> = {
-        targetWord: draft.fields.targetWord,
-        sentence: draft.fields.sentence,
-        sentenceTranslation: draft.fields.sentenceTranslation,
-        definitions: draft.fields.definitions,
-        note: draft.fields.note,
-        moreExample: draft.fields.moreExample,
-      };
-      for (const [sourceKey, value] of Object.entries(textMap)) {
-        const ankiField = draft.fieldMapping[sourceKey as keyof typeof draft.fieldMapping];
-        if (ankiField && value) {
-          fields[ankiField] = value;
-        }
-      }
-
-      // Media fields: upload each file + build field refs.
-      const mediaGroups: Array<{
-        sourceKey: 'images' | 'sentenceAudios' | 'wordAudios';
-        files: readonly MediaFile[];
-      }> = [
-        { sourceKey: 'images', files: draft.fields.images },
-        { sourceKey: 'sentenceAudios', files: draft.fields.sentenceAudios },
-        { sourceKey: 'wordAudios', files: draft.fields.wordAudios },
-      ];
-      for (const group of mediaGroups) {
-        const ankiField = draft.fieldMapping[group.sourceKey];
-        if (!ankiField || group.files.length === 0) continue;
-        const uploadedFiles: MediaFile[] = [];
-        for (const file of group.files) {
-          const base64 = arrayBufferToBase64(file.data);
-          const storeR = await storeMedia(url, file.filename, base64);
-          if (storeR.ok) {
-            uploadedFiles.push({ ...file, filename: storeR.value });
-          } else {
-            pushToast('error', `Media upload failed: ${storeR.error}`);
-          }
-        }
-        if (uploadedFiles.length > 0) {
-          fields[ankiField] = joinAnkiFieldRefs(uploadedFiles);
-        }
-      }
-
-      return fields;
+      return buildAnkiFields(
+        settings.ankiConnectUrl,
+        draft.fieldMapping,
+        {
+          targetWord: draft.fields.targetWord,
+          sentence: draft.fields.sentence,
+          sentenceTranslation: draft.fields.sentenceTranslation,
+          definitions: draft.fields.definitions,
+          note: draft.fields.note,
+          moreExample: draft.fields.moreExample,
+        },
+        {
+          images: draft.fields.images,
+          sentenceAudios: draft.fields.sentenceAudios,
+          wordAudios: draft.fields.wordAudios,
+        },
+        (msg) => pushToast('error', msg),
+      );
     },
     [draft, settings.ankiConnectUrl, pushToast],
   );
@@ -710,7 +681,7 @@ export function useCardCreatorState(
       setSubmitting(true);
       try {
         const url = settings.ankiConnectUrl;
-        const fields = await buildAnkiFields();
+        const fields = await buildAnkiFieldsCb();
         const tags = draft.tags.split(/\s+/).filter(Boolean);
 
         if (mode === 'add') {
@@ -780,7 +751,7 @@ export function useCardCreatorState(
         setSubmitting(false);
       }
     },
-    [submitting, settings.ankiConnectUrl, draft, buildAnkiFields, refreshRecentNote, pushToast],
+    [submitting, settings.ankiConnectUrl, draft, buildAnkiFieldsCb, refreshRecentNote, pushToast],
   );
 
   return {

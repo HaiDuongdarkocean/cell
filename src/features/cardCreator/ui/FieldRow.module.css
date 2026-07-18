@@ -88,11 +88,14 @@
 /* === Auto-grow input — BEM block: .field-input ===
    Single-line <input> that grows vertically with content (via rows attr
    synced from value length). Background matches the textarea look from
-   the mockup (--color-surface). Clear (x) button on the right. */
+   the mockup (--color-surface). Clear (x) button on the right.
+
+   Layout: flex row — input fills, clear button is a flex item (not
+   absolute) so it stays vertically centered as the input grows. */
 .fieldInput {
-  position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: var(--space-1);
   width: 100%;
   background: var(--color-surface);
   border: 1px solid var(--input-border);
@@ -114,7 +117,7 @@
   flex: 1 1 auto;
   min-width: 0;
   min-height: calc(var(--space-5) * 2);
-  padding: var(--input-padding-y) var(--space-8) var(--input-padding-y) var(--input-padding-x);
+  padding: var(--input-padding-y) var(--input-padding-x);
   border: none;
   background: transparent;
   color: var(--input-fg);
@@ -138,16 +141,16 @@
   outline: none;
 }
 
-/* Clear button — top-right inside the input box. Hidden when empty. */
+/* Clear button — flex item (not absolute) so it centers vertically as the
+   input grows. Sized 28×28 (DS IconButton xs) with 16px icon. Bounce
+   effect on hover via scale transform. Hidden when empty (component). */
 .fieldInput__clear {
-  position: absolute;
-  top: var(--space-1);
-  right: var(--space-1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-4);
-  height: var(--space-4);
+  width: var(--space-7);
+  height: var(--space-7);
+  margin-right: var(--space-1);
   padding: 0;
   border: none;
   border-radius: var(--radius-full);
@@ -156,12 +159,18 @@
   cursor: pointer;
   flex-shrink: 0;
   transition: background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+              color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
+              transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
 }
 
 .fieldInput__clear:hover {
   background: var(--color-surface-hover);
   color: var(--color-text);
+  transform: scale(1.05);
+}
+
+.fieldInput__clear:active {
+  transform: scale(1);
 }
 
 .fieldInput__clear:focus-visible {
@@ -170,6 +179,6 @@
 }
 
 .fieldInput__clear svg {
-  width: var(--space-3);
-  height: var(--space-3);
+  width: var(--space-4);
+  height: var(--space-4);
 }

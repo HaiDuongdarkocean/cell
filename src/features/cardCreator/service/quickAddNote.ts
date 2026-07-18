@@ -8,27 +8,15 @@
  * media succeeded.
  */
 
-import type { MediaFile } from '../media/mediaFile';
 import type { FieldMapping } from './fieldMapping';
-import { arrayBufferToBase64, joinAnkiFieldRefs } from '../media/mediaFile';
-import { addNote, storeMedia } from './cardCreatorService';
+import { buildAnkiFields, type AnkiTextFields, type AnkiMediaFields } from './buildAnkiFields';
+import { addNote } from './cardCreatorService';
 
-/** Text fields for Quick Add (same shape as CardFields text portion). */
-export interface QuickAddTextFields {
-  readonly targetWord: string;
-  readonly sentence: string;
-  readonly sentenceTranslation: string;
-  readonly definitions: string;
-  readonly note: string;
-  readonly moreExample: string;
-}
+/** Text fields for Quick Add (reuses shared AnkiTextFields). */
+export type QuickAddTextFields = AnkiTextFields;
 
-/** Media files for Quick Add (already fetched/captured). */
-export interface QuickAddMedia {
-  readonly images: readonly MediaFile[];
-  readonly sentenceAudios: readonly MediaFile[];
-  readonly wordAudios: readonly MediaFile[];
-}
+/** Media files for Quick Add (reuses shared AnkiMediaFields). */
+export type QuickAddMedia = AnkiMediaFields;
 
 /** Result of a Quick Add operation. */
 export type QuickAddResult =
@@ -58,50 +46,7 @@ export async function quickAddNote(
   media: QuickAddMedia,
   onWarning?: (msg: string) => void,
 ): Promise<QuickAddResult> {
-  const fields: Record<string, string> = {};
-
-  // Text fields.
-  const textMap: Record<string, string> = {
-    targetWord: text.targetWord,
-    sentence: text.sentence,
-    sentenceTranslation: text.sentenceTranslation,
-    definitions: text.definitions,
-    note: text.note,
-    moreExample: text.moreExample,
-  };
-  for (const [sourceKey, value] of Object.entries(textMap)) {
-    const ankiField = fieldMapping[sourceKey as keyof FieldMapping];
-    if (ankiField && value) {
-      fields[ankiField] = value;
-    }
-  }
-
-  // Media fields: upload each file + build field refs.
-  const mediaGroups: Array<{
-    sourceKey: 'images' | 'sentenceAudios' | 'wordAudios';
-    files: readonly MediaFile[];
-  }> = [
-    { sourceKey: 'images', files: media.images },
-    { sourceKey: 'sentenceAudios', files: media.sentenceAudios },
-    { sourceKey: 'wordAudios', files: media.wordAudios },
-  ];
-  for (const group of mediaGroups) {
-    const ankiField = fieldMapping[group.sourceKey];
-    if (!ankiField || group.files.length === 0) continue;
-    const uploadedFiles: MediaFile[] = [];
-    for (const file of group.files) {
-      const base64 = arrayBufferToBase64(file.data);
-      const storeR = await storeMedia(url, file.filename, base64);
-      if (storeR.ok) {
-        uploadedFiles.push({ ...file, filename: storeR.value });
-      } else if (onWarning) {
-        onWarning(`Media upload failed: ${storeR.error}`);
-      }
-    }
-    if (uploadedFiles.length > 0) {
-      fields[ankiField] = joinAnkiFieldRefs(uploadedFiles);
-    }
-  }
+  const fields = await buildAnkiFields(url, fieldMapping, text, media, onWarning);
 
   const tagList = tags.split(/\s+/).filter(Boolean);
   const r = await addNote(url, {
