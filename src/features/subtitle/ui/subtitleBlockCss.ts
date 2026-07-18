@@ -38,7 +38,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-block.dragging {
   border-color: var(--color-border, #334155);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
   cursor: grabbing;
 }
 
