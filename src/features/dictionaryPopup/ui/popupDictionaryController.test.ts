@@ -310,14 +310,19 @@ describe('appendCandidate', () => {
     expect(s.additionalResults[0]!.term).toBe('get over');
   });
 
-  it('renders candidates chips after append', () => {
+  it('renders candidates chips after append (only when > 2 candidates)', () => {
     const winner = makeResult({ term: 'get out' });
-    const candidate = makeResult({ term: 'get over' });
+    const c1 = makeResult({ term: 'get over' });
+    const c2 = makeResult({ term: 'get by' });
     let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
-    s = appendCandidate(s, candidate, 'sentence');
-    const container = s.shell?.getContainer();
-    const chips = container!.querySelectorAll('.js-cell-chip');
-    expect(chips.length).toBe(2);
+    s = appendCandidate(s, c1, 'sentence');
+    // 2 candidates → no chips rendered
+    let container = s.shell?.getContainer();
+    expect(container!.querySelectorAll('.js-cell-chip').length).toBe(0);
+    s = appendCandidate(s, c2, 'sentence');
+    // 3 candidates → chips rendered
+    container = s.shell?.getContainer();
+    expect(container!.querySelectorAll('.js-cell-chip').length).toBe(3);
   });
 
   it('no-ops when shell is null', () => {
@@ -488,11 +493,13 @@ describe('setActiveCandidate', () => {
     expect(activeTerm).toBe('get out');
   });
 
-  it('highlights the active chip', () => {
+  it('highlights the active chip (only when > 2 candidates)', () => {
     const winner = makeResult({ term: 'get out' });
-    const candidate = makeResult({ term: 'get over' });
+    const c1 = makeResult({ term: 'get over' });
+    const c2 = makeResult({ term: 'get by' });
     let s = showPopup(state, winner, 170, 100, 150, 200, 'sentence');
-    s = appendCandidate(s, candidate, 'sentence');
+    s = appendCandidate(s, c1, 'sentence');
+    s = appendCandidate(s, c2, 'sentence');
     s = setActiveCandidate(s, 1);
     const container = s.shell?.getContainer();
     const activeChip = container!.querySelector('.js-cell-chip.btn--primary');
