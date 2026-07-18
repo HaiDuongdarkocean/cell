@@ -291,6 +291,7 @@ export function renderImagePanel(
   error?: string,
   onSelectionChange?: () => void,
 ): void {
+  replaceExistingPanel(container, 'image');
   const panel = document.createElement('div');
   panel.className = 'cell-image js-cell-panel';
   panel.setAttribute('data-cell-panel', 'image');
@@ -406,6 +407,7 @@ export function renderTranslatePanel(
   isLoading = false,
   onSelectionChange?: () => void,
 ): void {
+  replaceExistingPanel(container, 'translate');
   const panel = document.createElement('div');
   panel.className = 'cell-translate js-cell-panel';
   panel.setAttribute('data-cell-panel', 'translate');
