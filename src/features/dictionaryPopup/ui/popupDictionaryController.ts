@@ -232,8 +232,8 @@ export function showPopup(
     renderPopupContent(container, result, status, definitionSelection, {
       onStatusCycle: () => { state = cycleStatus(state); },
       onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
-      onQuickAdd: () => { triggerCardCreatorAction(state, 'quick-add'); },
-      onSendToCreator: () => { triggerCardCreatorAction(state, 'edit-card'); },
+      onQuickAdd: () => { state = triggerCardCreatorAction(state, 'quick-add'); onDismiss?.(state); },
+      onSendToCreator: () => { state = triggerCardCreatorAction(state, 'edit-card'); onDismiss?.(state); },
       onSettings: () => openSettings(state),
       onClose: () => {
         state = hidePopup(state);
@@ -303,10 +303,12 @@ export function appendCandidate(
       candidateSelection.set(id, selected);
     },
     onQuickAdd: () => {
-      triggerCardCreatorActionForCandidate(state, 'quick-add', result, candidateSelection);
+      state = triggerCardCreatorActionForCandidate(state, 'quick-add', result, candidateSelection);
+      onDismiss?.(state);
     },
     onSendToCreator: () => {
-      triggerCardCreatorActionForCandidate(state, 'edit-card', result, candidateSelection);
+      state = triggerCardCreatorActionForCandidate(state, 'edit-card', result, candidateSelection);
+      onDismiss?.(state);
     },
     onSettings: () => openSettings(state),
     onClose: () => {
@@ -439,14 +441,16 @@ function buildCandidatePrefill(
 function triggerCardCreatorAction(
   state: PopupDictionaryState,
   action: PopupCardCreatorAction,
-): void {
+): PopupDictionaryState {
   if (!state.onCardCreatorAction) {
     showToast('Card Creator not available — open from subtitle cluster.', state.shell);
-    return;
+    return state;
   }
   const prefill = buildPopupPrefill(state);
-  if (!prefill) return;
+  if (!prefill) return state;
   state.onCardCreatorAction(action, prefill);
+  // Dismiss popup — user no longer needs it after triggering card creation.
+  return hidePopup(state);
 }
 
 /** Trigger Card Creator action for an appended candidate. */
@@ -455,13 +459,14 @@ function triggerCardCreatorActionForCandidate(
   action: PopupCardCreatorAction,
   result: LookupResult,
   selection: DefinitionSelection,
-): void {
+): PopupDictionaryState {
   if (!state.onCardCreatorAction) {
     showToast('Card Creator not available — open from subtitle cluster.', state.shell);
-    return;
+    return state;
   }
   const prefill = buildCandidatePrefill(result, selection, state.contextSentence);
   state.onCardCreatorAction(action, prefill);
+  return hidePopup(state);
 }
 
 /** Hide popup (dismiss). Keeps the per-term tab-panel cache so reopening any
@@ -884,8 +889,8 @@ function rerender(state: PopupDictionaryState, activeTab?: PopupTab | null): voi
   renderCandidate(list, state.currentResult, state.currentStatus, state.definitionSelection, {
     onStatusCycle: () => { state = cycleStatus(state); },
     onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
-    onQuickAdd: () => { triggerCardCreatorAction(state, 'quick-add'); },
-    onSendToCreator: () => { triggerCardCreatorAction(state, 'edit-card'); },
+    onQuickAdd: () => { state = triggerCardCreatorAction(state, 'quick-add'); },
+    onSendToCreator: () => { state = triggerCardCreatorAction(state, 'edit-card'); },
     onSettings: () => openSettings(state),
     onClose: () => { state = hidePopup(state); },
     onPlayTerm: () => {
