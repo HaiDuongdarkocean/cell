@@ -23,7 +23,7 @@
   justify-content: center;
   gap: var(--space-2);
   width: 100%;
-  min-height: 120px;
+  min-height: calc(var(--space-5) * 6);
   padding: var(--space-4);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
@@ -58,7 +58,7 @@
 .imageThumb {
   position: relative;
   flex-shrink: 0;
-  height: 120px;
+  height: calc(var(--space-5) * 6);
   width: auto;
   display: flex;
   align-items: center;
@@ -78,19 +78,19 @@
 }
 
 .imageImg {
-  height: 120px;
+  height: calc(var(--space-5) * 6);
   width: auto;
-  max-width: 200px;
+  max-width: calc(var(--space-5) * 10);
   object-fit: contain;
   border-radius: var(--radius-sm);
 }
 
 .imageRemoveButton {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
+  top: var(--space-1);
+  right: var(--space-1);
+  width: var(--space-5);
+  height: var(--space-5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -117,8 +117,8 @@
 
 .imageAddButton {
   flex-shrink: 0;
-  width: 80px;
-  height: 120px;
+  width: calc(var(--space-5) * 4);
+  height: calc(var(--space-5) * 6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -235,8 +235,8 @@
 }
 
 .mediaThumb {
-  width: 28px;
-  height: 28px;
+  width: calc(var(--space-5) + var(--space-2));
+  height: calc(var(--space-5) + var(--space-2));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -270,8 +270,8 @@
 }
 
 .removeButton {
-  width: 20px;
-  height: 20px;
+  width: var(--space-5);
+  height: var(--space-5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -280,7 +280,7 @@
   color: var(--color-text-muted);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  font-size: 16px;
+  font-size: var(--space-4);
   line-height: 1;
   flex-shrink: 0;
   transition: background var(--duration-fast) var(--ease-in-out),

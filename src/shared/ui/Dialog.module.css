@@ -55,6 +55,23 @@
   margin-bottom: var(--space-3, 12px);
 }
 
+/* Centered title variant — close button positioned absolutely so the
+ * title can center in the full header width. */
+.headerCenterTitle {
+  position: relative;
+  justify-content: center;
+}
+
+.headerCenterTitle .headerText {
+  text-align: center;
+}
+
+.closeButtonAbsolute {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
 .headerText {
   min-width: 0;
 }

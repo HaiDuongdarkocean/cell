@@ -48,6 +48,7 @@ export function CardCreatorBottomSheet({
       open={open}
       onOpenChange={handleOpenChange}
       title="Card Creator"
+      centerTitle
       data-testid="card-creator-bottom-sheet"
     >
       <CardCreatorDialogContent
