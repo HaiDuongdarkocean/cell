@@ -654,7 +654,7 @@ export class Downloader {
         if (items.length > 0) {
           console.log(`[downloader] saveBlob: ACTUAL filename="${items[0].filename}", mime="${items[0].mime}"`);
         }
-      }).catch(() => {});
+      }).catch((err) => console.warn('[downloader] Failed to verify download filename:', err));
     } catch (err) {
       this.pendingFilename = null;
       console.error(`[downloader] saveBlob FAILED for filename="${filename}":`, err);

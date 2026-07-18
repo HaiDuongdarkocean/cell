@@ -71,6 +71,7 @@ src/
 │   │   ├── Dialog.tsx + .module.css        # Accessible modal overlay + panel (DeleteConfirmModal now uses this)
 │   │   ├── Drawer.tsx + .module.css        # Slide-in panel with overlay
 │   │   ├── EmptyState.tsx + .module.css    # Empty list/panel placeholder
+│   │   ├── ErrorBoundary.tsx + .module.css # React error boundary (class component — React requirement) with reload fallback
 │   │   ├── FormGroup.tsx + .module.css     # Label + children wrapper with consistent spacing
 │   │   ├── Header.tsx + .module.css        # Top chrome with title and actions
 │   │   ├── Input.tsx + .module.css         # Text input with error state and size variants
@@ -495,6 +496,7 @@ tests/
 | `shared/ui/Badge.tsx` | — | — | Small status label with variants/sizes |
 | `shared/ui/Button.tsx` | — | App.redesigned, OptionsApp, ResourceCard, Dropzone, ImportProgress, DeleteConfirmModal, ResourcesPanel, ThemePanel, ThemeImportExport, SelectionBar | Text button: primary/secondary/outline/ghost/destructive/link, sm/md/lg, loading, disabled |
 | `shared/ui/EmptyState.tsx` | — | MediaEmpty | Empty list/panel placeholder |
+| `shared/ui/ErrorBoundary.tsx` | — | popup/main.tsx, sidepanel/main.tsx, options/main.tsx | React error boundary (class component — React platform requirement) with reload fallback |
 | `shared/ui/Tooltip.tsx` | — | — | Accessible hover/focus tooltip |
 | `shared/ui/Card.tsx` | — | ResourceCard, ResourcesPanel, ThemePanel | Surface container: default/interactive/selected variants |
 | `shared/ui/Checkbox.tsx` | — | CheckboxGroup | Checkbox with label, indeterminate, error, disabled states |

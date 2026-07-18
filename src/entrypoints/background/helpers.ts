@@ -345,7 +345,7 @@ export function saveSessionMedia(
     void setSessionStorage({
       [STORAGE_KEYS.SESSION_MEDIA]: all,
     });
-  });
+  }).catch((err: unknown) => console.warn('[background] Failed to save session media:', err));
 }
 
 export async function loadSessionMedia(ctx: BackgroundContext): Promise<void> {
@@ -373,7 +373,7 @@ export function clearSessionMedia(_ctx: BackgroundContext, tabId: number): void 
     void setSessionStorage({
       [STORAGE_KEYS.SESSION_MEDIA]: all,
     });
-  });
+  }).catch((err: unknown) => console.warn('[background] Failed to clear session media:', err));
 }
 
 export function saveSessionDownloads(ctx: BackgroundContext, tabId: number): void {
@@ -385,7 +385,7 @@ export function saveSessionDownloads(ctx: BackgroundContext, tabId: number): voi
     void setSessionStorage({
       [STORAGE_KEYS.SESSION_DOWNLOADS]: all,
     });
-  });
+  }).catch((err: unknown) => console.warn('[background] Failed to save session downloads:', err));
 }
 
 export async function loadSessionDownloads(ctx: BackgroundContext): Promise<void> {
