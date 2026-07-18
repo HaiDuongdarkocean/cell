@@ -1370,7 +1370,7 @@ export function init(video: HTMLVideoElement): () => void {
   container.addEventListener('dragenter', (e) => {
     e.preventDefault();
     dragCounter++;
-    dragHint.style.display = 'flex';
+    dragHint.classList.add('subtitle-drag-hint--visible');
   });
   container.addEventListener('dragover', (e) => e.preventDefault());
   container.addEventListener('dragleave', (e) => {
@@ -1378,13 +1378,13 @@ export function init(video: HTMLVideoElement): () => void {
     dragCounter--;
     if (dragCounter <= 0) {
       dragCounter = 0;
-      dragHint.style.display = 'none';
+      dragHint.classList.remove('subtitle-drag-hint--visible');
     }
   });
   container.addEventListener('drop', async (e) => {
     e.preventDefault();
     dragCounter = 0;
-    dragHint.style.display = 'none';
+    dragHint.classList.remove('subtitle-drag-hint--visible');
     const files = Array.from(e.dataTransfer?.files ?? []);
     if (files.length === 0) return;
     await processImportedFiles(files, container);

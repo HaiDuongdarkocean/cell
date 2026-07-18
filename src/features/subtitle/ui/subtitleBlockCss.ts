@@ -914,4 +914,106 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-track-dropdown--visible {
   display: block;
 }
+
+/* === Subtitle overlay layers (ADR-013 D6) ===
+   Static positioning via class; dynamic config (fontSize, color, opacity,
+   textShadow, fontFamily, textAlign, display) stays as inline style. */
+.subtitle-overlay {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  border-radius: 4px;
+  pointer-events: auto;
+  cursor: ns-resize;
+  white-space: pre-wrap !important;
+  line-height: 1.4 !important;
+  max-width: 90%;
+}
+
+.subtitle-overlay[data-role="target"] {
+  z-index: 999999;
+}
+
+.subtitle-overlay[data-role="native"] {
+  z-index: 999998;
+}
+
+.subtitle-overlay-text {
+  display: block;
+  pointer-events: auto;
+  user-select: text;
+  cursor: text;
+  line-height: 1.4 !important;
+}
+
+/* === Drag hint overlay ===
+   Dark overlay colors intentional — sits on top of video. */
+.subtitle-drag-hint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 150, 255, 0.2);
+  border: 3px dashed rgba(0, 150, 255, 0.8);
+  border-radius: 8px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999998;
+  pointer-events: none;
+  user-select: none;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  font-family: sans-serif;
+}
+
+.subtitle-drag-hint--visible {
+  display: flex;
+}
+
+/* === Toast notification (UI v4) ===
+   Theme-aware — uses design tokens. Variant color via CSS custom property. */
+.subtitle-toast {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000003;
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--toast-variant-color, var(--color-info));
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+  font-size: var(--font-size-sm, 13px);
+  font-weight: 500;
+  font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+  box-shadow: var(--shadow-md, none);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  animation: subtitle-toast-in 0.2s ease;
+}
+
+.subtitle-toast-icon {
+  color: var(--toast-variant-color, var(--color-info));
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.subtitle-toast--fade-out {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+@keyframes subtitle-toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
 `;

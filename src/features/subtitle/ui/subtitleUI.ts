@@ -1,5 +1,4 @@
 import type { OverlayStyleConfig, TextShadowConfig } from '@/entities/subtitle';
-import tokensJson from '@/shared/styles/tokens.json';
 import { mountToWatchVideo } from './netflixPlayback';
 
 // === Pure style helpers (ADR-013 D6) ===
@@ -101,24 +100,7 @@ export function createOverlayLayer(
   const overlay = document.createElement('div');
   overlay.setAttribute('data-role', role);
   overlay.setAttribute('data-testid', `subtitle-overlay-${role}`);
-
-  // Base positioning: absolute in container, bottom-anchored (yOffset applies)
-  overlay.style.position = 'absolute';
-  overlay.style.left = '50%';
-  overlay.style.transform = 'translateX(-50%)';
-  overlay.style.padding = '4px 12px';
-  overlay.style.borderRadius = '4px';
-  // ADR-015 D1: overlay receives pointer events for background drag.
-  // Text span keeps pointer-events: auto + user-select: text below.
-  overlay.style.pointerEvents = 'auto';
-  overlay.style.cursor = 'ns-resize'; // hover affordance — ADR-015 D1
-  // G7: guard against host CSS leaking line-height / white-space and breaking
-  // multi-line subtitle cues. Use !important because the overlay lives in a
-  // hostile page and must keep its own typography regardless of site resets.
-  overlay.style.setProperty('white-space', 'pre-wrap', 'important');
-  overlay.style.setProperty('line-height', '1.4', 'important');
-  overlay.style.maxWidth = '90%';
-  overlay.style.zIndex = role === 'target' ? '999999' : '999998';
+  overlay.className = 'subtitle-overlay';
 
   // ARIA slider on overlay div (ADR-015 D2 — moved from handle button)
   overlay.setAttribute('role', 'slider');
@@ -130,13 +112,7 @@ export function createOverlayLayer(
   // Text span: user-select text (copy word), pointer-events auto
   const textSpan = document.createElement('span');
   textSpan.setAttribute('data-testid', `overlay-${role}-text`);
-  textSpan.style.display = 'block';
-  textSpan.style.pointerEvents = 'auto';
-  textSpan.style.userSelect = 'text';
-  textSpan.style.cursor = 'text';
-  // G7: line-height guard inherited from overlay, but set directly with
-  // !important on the span as well to defeat any host selector targeting the span.
-  textSpan.style.setProperty('line-height', '1.4', 'important');
+  textSpan.className = 'subtitle-overlay-text';
   overlay.appendChild(textSpan);
 
   // Apply initial style
@@ -164,13 +140,12 @@ export function applyStyle(config: OverlayStyleConfig, overlay: HTMLDivElement):
   overlay.style.textAlign = config.horizontalAlign;
   // G7: re-apply line-height guard whenever style is refreshed; host CSS may
   // have overridden it via !important or high-specificity selectors.
+  // Inline style with !important wins over any CSS class rule.
   overlay.style.setProperty('line-height', '1.4', 'important');
   // Only hide when visible=false. When visible=true, do NOT force display:block —
   // display is managed by timeupdate (updateOverlayText/hideOverlay) based on
   // current cue. Forcing block here shows drag handle with no subtitle (bug fix).
   if (!config.visible) overlay.style.display = 'none';
-
-
 }
 
 /**
@@ -215,27 +190,8 @@ export function removeOverlay(overlay: HTMLDivElement): void {
 export function createDragHint(container: HTMLElement): HTMLDivElement {
   const hint = document.createElement('div');
   hint.setAttribute('data-testid', 'subtitle-drag-hint');
-
-  hint.style.position = 'absolute';
-  hint.style.top = '0';
-  hint.style.left = '0';
-  hint.style.width = '100%';
-  hint.style.height = '100%';
-  hint.style.backgroundColor = 'rgba(0, 150, 255, 0.2)';
-  hint.style.border = '3px dashed rgba(0, 150, 255, 0.8)';
-  hint.style.borderRadius = '8px';
-  hint.style.display = 'flex';
-  hint.style.alignItems = 'center';
-  hint.style.justifyContent = 'center';
-  hint.style.zIndex = '999998';
-  hint.style.pointerEvents = 'none';
-  hint.style.userSelect = 'none';
-  hint.style.fontSize = '18px';
-  hint.style.color = tokensJson.static.overlay.text;
-  hint.style.textShadow = `0 1px 4px rgba(0, 0, 0, 0.8)`;
-  hint.style.fontFamily = 'sans-serif';
+  hint.className = 'subtitle-drag-hint';
   hint.textContent = 'Drop subtitle file here';
-  hint.style.display = 'none';
 
   container.appendChild(hint);
   // ADR-031: Netflix z-index fix — drag hint must sit above Netflix overlays.
@@ -282,34 +238,11 @@ export function showToast(message: string, container: HTMLElement, options: Toas
   const toast = document.createElement('div');
   toast.setAttribute('data-testid', 'subtitle-toast');
   toast.setAttribute('data-variant', variant);
-
-  toast.style.cssText = `
-    position: absolute;
-    bottom: 30%;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000003;
-    background: var(--color-background);
-    color: var(--color-text);
-    border: 1px solid var(--color-border);
-    border-left: 3px solid ${color};
-    border-radius: var(--radius-md, 8px);
-    padding: var(--space-2, 8px) var(--space-3, 12px);
-    font-size: var(--font-size-sm, 13px);
-    font-weight: 500;
-    font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
-    box-shadow: var(--shadow-md, none);
-    display: flex;
-    align-items: center;
-    gap: var(--space-2, 8px);
-    pointer-events: none;
-    user-select: none;
-    white-space: nowrap;
-    animation: subtitle-toast-in 0.2s ease;
-  `;
+  toast.className = 'subtitle-toast';
+  toast.style.setProperty('--toast-variant-color', color);
 
   const icon = document.createElement('span');
-  icon.style.cssText = `color: ${color}; display: inline-flex; flex-shrink: 0;`;
+  icon.className = 'subtitle-toast-icon';
   icon.innerHTML = ICONS[variant];
   toast.appendChild(icon);
 
@@ -320,8 +253,7 @@ export function showToast(message: string, container: HTMLElement, options: Toas
   container.appendChild(toast);
 
   setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s ease';
+    toast.classList.add('subtitle-toast--fade-out');
     setTimeout(() => toast.remove(), 300);
   }, 3000);
 }

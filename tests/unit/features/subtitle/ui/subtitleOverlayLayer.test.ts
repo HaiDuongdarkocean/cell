@@ -22,11 +22,10 @@ describe('createOverlayLayer', () => {
     expect(container.contains(overlay)).toBe(true);
   });
 
-  it('creates text span with user-select text and pointer-events auto', () => {
+  it('creates text span with subtitle-overlay-text class', () => {
     const container = document.createElement('div');
     const { textSpan } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
-    expect(textSpan.style.userSelect).toBe('text');
-    expect(textSpan.style.pointerEvents).toBe('auto');
+    expect(textSpan.className).toContain('subtitle-overlay-text');
   });
 
   it('ADR-015: no drag handle button — drag integrated into overlay background', () => {
@@ -37,11 +36,10 @@ describe('createOverlayLayer', () => {
     expect(overlay.querySelector('button')).toBeNull();
   });
 
-  it('ADR-015 D1: overlay has pointer-events auto + cursor ns-resize (background drag affordance)', () => {
+  it('ADR-015 D1: overlay has subtitle-overlay class (pointer-events + cursor via CSS)', () => {
     const container = document.createElement('div');
     const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
-    expect(overlay.style.pointerEvents).toBe('auto');
-    expect(overlay.style.cursor).toBe('ns-resize');
+    expect(overlay.className).toContain('subtitle-overlay');
   });
 
   it('ADR-015 D2: overlay has ARIA role=slider + per-role aria-label (moved from handle button)', () => {
@@ -56,12 +54,12 @@ describe('createOverlayLayer', () => {
     expect(nativeOverlay.getAttribute('aria-label')).toBe('Subtitle native');
   });
 
-  it('sets z-index target=999999 > native=999998', () => {
+  it('sets z-index via CSS class (target > native)', () => {
     const container = document.createElement('div');
     const { overlay: targetOverlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
     const { overlay: nativeOverlay } = createOverlayLayer('native', DEFAULT_OVERLAY_STYLE_NATIVE, container);
-    expect(targetOverlay.style.zIndex).toBe('999999');
-    expect(nativeOverlay.style.zIndex).toBe('999998');
+    expect(targetOverlay.getAttribute('data-role')).toBe('target');
+    expect(nativeOverlay.getAttribute('data-role')).toBe('native');
   });
 
   it('overlay hidden initially (display none)', () => {
@@ -70,25 +68,24 @@ describe('createOverlayLayer', () => {
     expect(overlay.style.display).toBe('none');
   });
 
-  it('G7: resets overlay line-height with !important to block host CSS leak', () => {
+  it('G7: applyStyle re-applies line-height with !important (host CSS guard)', () => {
     const container = document.createElement('div');
     const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
+    // applyStyle is called by createOverlayLayer, so line-height should be set
     expect(overlay.style.getPropertyValue('line-height')).toBe('1.4');
     expect(overlay.style.getPropertyPriority('line-height')).toBe('important');
   });
 
-  it('G7: resets text span line-height with !important to block host CSS leak', () => {
+  it('G7: text span has subtitle-overlay-text class (line-height via CSS)', () => {
     const container = document.createElement('div');
     const { textSpan } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
-    expect(textSpan.style.getPropertyValue('line-height')).toBe('1.4');
-    expect(textSpan.style.getPropertyPriority('line-height')).toBe('important');
+    expect(textSpan.className).toContain('subtitle-overlay-text');
   });
 
-  it('G7: protects white-space pre-wrap with !important for multi-line cues', () => {
+  it('G7: overlay has subtitle-overlay class (white-space pre-wrap via CSS)', () => {
     const container = document.createElement('div');
     const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
-    expect(overlay.style.getPropertyValue('white-space')).toBe('pre-wrap');
-    expect(overlay.style.getPropertyPriority('white-space')).toBe('important');
+    expect(overlay.className).toContain('subtitle-overlay');
   });
 });
 
