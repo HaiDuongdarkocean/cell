@@ -3,6 +3,7 @@ import type { DetectedSubtitle } from '@/entities/media';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
+import { formatFileSize } from '@/entrypoints/popup/utils/format';
 import styles from './SubtitleCard.module.css';
 
 interface SubtitleCardProps {
@@ -14,18 +15,6 @@ interface SubtitleCardProps {
   downloading: boolean;
   onToggleSelect: (subtitleId: string) => void;
   onDownload: (subtitleId: string) => void;
-}
-
-function formatFileSize(bytes?: number): string {
-  if (!bytes) return 'Unknown';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let size = bytes;
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-  return `${size.toFixed(1)} ${units[unitIndex]}`;
 }
 
 export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, downloading, onToggleSelect, onDownload }: SubtitleCardProps): React.JSX.Element {

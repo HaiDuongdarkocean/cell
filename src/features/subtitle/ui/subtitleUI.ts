@@ -6,24 +6,6 @@ import { mountToWatchVideo } from './netflixPlayback';
 // Logic ở pure function — testable 100%, no DOM side effect.
 
 /**
- * Calculate Y-offset percent from pointer delta + container height.
- * Clamps result to [0, 95] and rounds to nearest integer.
- * Pure — no DOM access.
- */
-export function calcYOffsetPercent(
-  pointerDeltaY: number,
-  containerHeight: number,
-  currentOffset: number,
-): number {
-  if (containerHeight <= 0) return clamp(currentOffset, 0, 95);
-  // Subtract: overlay anchored at `bottom%` (distance from bottom). Pointer Y
-  // increases downward on screen, but bottom% increases upward. Drag up
-  // (deltaY<0) → offset increases → subtitle moves up (natural drag direction).
-  const deltaPercent = (pointerDeltaY / containerHeight) * 100;
-  return clamp(Math.round(currentOffset - deltaPercent), 0, 95);
-}
-
-/**
  * Build CSS text-shadow string from config.
  * 3 preset (none/soft/cinema) + custom (offsetX/offsetY/blur/color).
  * Pure — no DOM access.
@@ -72,11 +54,6 @@ export function hexToRgba(hex: string, alpha: number): string {
   if (Number.isNaN(g)) g = 0;
   if (Number.isNaN(b)) b = 0;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-/** Internal clamp helper. */
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
 }
 
 // === Overlay layer (ADR-013 D1, ADR-015 D1-D3) ===

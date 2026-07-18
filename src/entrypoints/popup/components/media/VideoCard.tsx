@@ -3,6 +3,7 @@ import type { DetectedVideo, VideoQuality } from '@/entities/media';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
+import { formatFileSizeOrUnknown } from '@/entrypoints/popup/utils/format';
 import styles from './VideoCard.module.css';
 
 interface VideoCardProps {
@@ -13,18 +14,6 @@ interface VideoCardProps {
   onToggleSelect: (videoId: string) => void;
   onDownload: (videoId: string) => void;
   onSelectQuality: (videoId: string, quality: VideoQuality) => void;
-}
-
-function formatFileSize(bytes?: number): string {
-  if (!bytes) return 'Unknown';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let size = bytes;
-  let unitIndex = 0;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-  return `${size.toFixed(1)} ${units[unitIndex]}`;
 }
 
 export function VideoCard({
@@ -140,7 +129,7 @@ export function VideoCard({
               <>
                 {selectedVariant?.size && (
                   <span className={styles.meta} data-testid="video-size">
-                    {formatFileSize(selectedVariant.size)}
+                    {formatFileSizeOrUnknown(selectedVariant.size)}
                   </span>
                 )}
 
@@ -169,7 +158,7 @@ export function VideoCard({
                           >
                             <span>{variant.quality}</span>
                             {variant.size && (
-                              <span className={styles.qualitySize}>{formatFileSize(variant.size)}</span>
+                              <span className={styles.qualitySize}>{formatFileSizeOrUnknown(variant.size)}</span>
                             )}
                           </div>
                         ))}
