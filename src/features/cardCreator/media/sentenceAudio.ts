@@ -98,7 +98,6 @@ export async function captureSentenceAudio(
     const blob = new Blob(chunks, { type: mimeType ?? 'audio/webm' });
     const data = await blob.arrayBuffer();
     const ext = mimeType?.includes('mp3') ? 'mp3' : 'webm';
-    console.log('[sentenceAudio] capture done', { cueStart: cue.start, cueEnd: cue.end, durationMs, blobSize: blob.size, videoTimeAfter: video.currentTime });
 
     return {
       ok: true,
