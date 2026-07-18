@@ -35,3 +35,19 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
+
+/* === Responsive — narrow sidepanel (Chrome side panel min ~300px) === */
+@media (max-width: 350px) {
+  .header {
+    padding: var(--space-1) var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .title {
+    font-size: var(--font-size-sm);
+  }
+
+  .meta {
+    font-size: 10px;
+  }
+}

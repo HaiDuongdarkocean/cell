@@ -365,3 +365,31 @@
   flex-shrink: 0;
   animation: fade-in 150ms ease;
 }
+
+/* === Responsive — narrow popup === */
+@media (max-width: 400px) {
+  .mainRow {
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .downloadBtn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .downloadBtn svg {
+    width: 14px;
+    height: 14px;
+  }
+}
