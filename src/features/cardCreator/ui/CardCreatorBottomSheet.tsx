@@ -22,8 +22,8 @@ interface CardCreatorBottomSheetProps {
   settings: CardCreatorSettings;
   /** Context for media extraction (video + cue + languages + pre-captured media). */
   openContext: OpenContext | null;
-  /** Initial action hint ('quick-update' pre-selects Update, 'edit-card' is neutral). */
-  initialAction?: 'quick-update' | 'edit-card';
+  /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' pre-selects Update, 'edit-card' is neutral). */
+  initialAction?: 'quick-add' | 'quick-update' | 'edit-card';
 }
 
 export function CardCreatorBottomSheet({

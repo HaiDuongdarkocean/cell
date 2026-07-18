@@ -45,10 +45,12 @@ export type LoadStatus = 'idle' | 'loading' | 'destination-ready' | 'ready' | 'e
 
 /** Result of opening the dialog. */
 export interface OpenContext {
-  /** The video element to capture media from. */
-  video: HTMLVideoElement;
-  /** The current subtitle cue (for sentence text + audio timing). */
-  cue: BilingualCue;
+  /** The video element to capture media from (optional — popup dictionary
+   *  text-reading case has no video). */
+  video?: HTMLVideoElement;
+  /** The current subtitle cue (for sentence text + audio timing). Optional —
+   *  when absent, prefill.sentence provides the sentence text. */
+  cue?: BilingualCue;
   /** Source language code (e.g. 'en'). */
   sourceLang: string;
   /** Target/native language code (e.g. 'vi'). */
@@ -57,6 +59,9 @@ export interface OpenContext {
    * audio). When present, the draft is initialized with these files instead
    * of empty media arrays. */
   initialMedia?: readonly MediaFile[];
+  /** Popup dictionary pre-fill (term + definitions + translation).
+   *  When present, overrides the empty defaults for these draft fields. */
+  prefill?: { readonly targetWord?: string; readonly definitions?: string; readonly sentenceTranslation?: string; readonly sentence?: string };
 }
 
 /** Hook return type. */
@@ -83,8 +88,8 @@ export interface CardCreatorState {
   toasts: readonly Toast[];
   /** Whether a media capture is in progress (disables add buttons). */
   capturingMedia: boolean;
-  /** Initial action hint ('quick-update' = focus Update button, 'edit-card' = neutral). */
-  initialAction?: 'quick-update' | 'edit-card';
+  /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' = focus Update button, 'edit-card' = neutral). */
+  initialAction?: 'quick-add' | 'quick-update' | 'edit-card';
   /** Update the draft (triggers autosave). */
   updateDraft: (partial: Partial<CardDraft>) => void;
   /** Update a single text field in the draft. */
@@ -121,7 +126,7 @@ let toastIdCounter = 0;
 export function useCardCreatorState(
   settings: CardCreatorSettings,
   openContext: OpenContext | null,
-  initialAction?: 'quick-update' | 'edit-card',
+  initialAction?: 'quick-add' | 'quick-update' | 'edit-card',
 ): CardCreatorState {
   const [draft, setDraft] = useState<CardDraft>(() =>
     createEmptyDraft(settings.defaultNoteType, settings.defaultDeck),
@@ -216,19 +221,21 @@ export function useCardCreatorState(
     setLoadStatus('loading');
     setLoadError('');
 
-    // Immediately set draft with cue data + restored config + defaults so
-    // the form renders right away (sentence text, media, tags visible while
-    // AnkiConnect data loads in the background).
+    // Immediately set draft with cue/prefill data + restored config + defaults
+    // so the form renders right away (sentence text, media, tags visible while
+    // AnkiConnect data loads in the background). Prefill (popup dictionary)
+    // takes precedence over cue (subtitle) for text fields.
     const initialImages = ctx.initialMedia?.filter((f) => f.kind === 'image') ?? [];
     const initialAudios = ctx.initialMedia?.filter((f) => f.kind === 'audio') ?? [];
+    const prefill = ctx.prefill;
     setDraft({
       noteType: restoredDraft?.noteType ?? settings.defaultNoteType,
       deck: restoredDraft?.deck ?? settings.defaultDeck,
       fields: {
-        targetWord: '',
-        sentence: ctx.cue.targetText,
-        sentenceTranslation: ctx.cue.nativeText,
-        definitions: '',
+        targetWord: prefill?.targetWord ?? '',
+        sentence: prefill?.sentence ?? ctx.cue?.targetText ?? '',
+        sentenceTranslation: prefill?.sentenceTranslation ?? ctx.cue?.nativeText ?? '',
+        definitions: prefill?.definitions ?? '',
         images: initialImages,
         sentenceAudios: initialAudios,
         wordAudios: [],
@@ -412,7 +419,7 @@ export function useCardCreatorState(
   /** Add a screenshot. */
   const addScreenshot = useCallback(async () => {
     const ctx = openContextRef.current;
-    if (!ctx) return;
+    if (!ctx?.video) return;
     setCapturingMedia(true);
     try {
       const file = await captureScreenshot(ctx.video);
@@ -431,7 +438,7 @@ export function useCardCreatorState(
   /** Add sentence audio for the current cue. */
   const addSentenceAudio = useCallback(async () => {
     const ctx = openContextRef.current;
-    if (!ctx) return;
+    if (!ctx?.video || !ctx.cue) return;
     setCapturingMedia(true);
     try {
       const result = await captureSentenceAudio(ctx.video, {
@@ -558,13 +565,18 @@ export function useCardCreatorState(
     const ctx = openContextRef.current;
     if (!ctx) return;
     // If native track already has text, use it.
-    if (ctx.cue.nativeText.trim()) {
+    if (ctx.cue?.nativeText.trim()) {
       updateField('sentenceTranslation', ctx.cue.nativeText);
       return;
     }
-    // Else Google Translate.
+    // Else Google Translate the current sentence (from cue or prefill).
+    const sentence = ctx.cue?.targetText ?? ctx.prefill?.sentence ?? '';
+    if (!sentence) {
+      pushToast('warning', 'No sentence to translate.');
+      return;
+    }
     const translated = await translateSentence(
-      ctx.cue.targetText,
+      sentence,
       ctx.sourceLang,
       ctx.targetLang,
     );
