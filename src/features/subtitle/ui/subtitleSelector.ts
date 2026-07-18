@@ -55,24 +55,7 @@ export function createSubtitleDropdown(
   icon.setAttribute('aria-label', `Select ${role} subtitle`);
   icon.setAttribute('aria-haspopup', 'listbox');
   icon.setAttribute('aria-expanded', 'false');
-  icon.style.cssText = `
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: 1000001;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius: 4px;
-    background: rgba(0,0,0,0.6);
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-  `;
+  icon.className = 'subtitle-selector-icon';
 
   // chevron-down SVG (Lucide-style) — path data from ICON_CATALOG.chevronDown
   icon.innerHTML = ICON_CATALOG.chevronDown.svg.replace(
@@ -111,15 +94,7 @@ export function createSubtitleDropdown(
       item.setAttribute('role', 'option');
       item.setAttribute('data-testid', `subtitle-selector-item-${role}-${index}`);
       item.setAttribute('aria-selected', String(index === currentActiveIndex));
-      item.style.cssText = `
-        padding: 6px 8px;
-        cursor: pointer;
-        border-radius: 4px;
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        ${index === currentActiveIndex ? 'background: rgba(255,255,255,0.15); font-weight: bold;' : ''}
-      `;
+      item.className = `subtitle-selector-item${index === currentActiveIndex ? ' subtitle-selector-item--active' : ''}`;
       item.textContent = formatSubtitleName(
         'auto',
         sub.language,
@@ -130,28 +105,18 @@ export function createSubtitleDropdown(
       // ADR-020: render ASR badge for YouTube auto-generated captions.
       if (sub.isAsr === true) {
         const badge = document.createElement('span');
-        badge.style.cssText =
-          'font-size: 9px; font-weight: 600; text-transform: uppercase;' +
-          'letter-spacing: 0.5px; padding: 1px 5px; border-radius: 3px;' +
-          'background: rgba(255,255,255,0.18); color: rgba(255,255,255,0.85);' +
-          'margin-left: 4px;';
+        badge.className = 'subtitle-selector-asr-badge';
         badge.textContent = 'auto';
         item.appendChild(badge);
       }
       const meta = document.createElement('span');
-      meta.style.cssText = 'opacity: 0.7; font-size: 11px;';
+      meta.className = 'subtitle-selector-meta';
       meta.textContent = sub.format.toUpperCase();
       item.appendChild(meta);
 
       item.addEventListener('click', () => {
         onSelect(index);
         closePopover();
-      });
-      item.addEventListener('mouseenter', () => {
-        if (index !== currentActiveIndex) item.style.background = 'rgba(255,255,255,0.1)';
-      });
-      item.addEventListener('mouseleave', () => {
-        if (index !== currentActiveIndex) item.style.background = 'transparent';
       });
       popover!.appendChild(item);
     });
@@ -166,21 +131,7 @@ export function createSubtitleDropdown(
     popover = document.createElement('div');
     popover.setAttribute('data-testid', `subtitle-selector-popover-${role}`);
     popover.setAttribute('role', 'listbox');
-    popover.style.cssText = `
-      position: absolute;
-      top: 40px;
-      right: 8px;
-      z-index: 1000002;
-      max-height: 200px;
-      overflow-y: auto;
-      background: rgba(0,0,0,0.85);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 6px;
-      padding: 4px;
-      min-width: 180px;
-      font-size: 12px;
-    `;
+    popover.className = 'subtitle-selector-popover';
 
     renderItems();
     container.appendChild(popover);
