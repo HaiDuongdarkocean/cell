@@ -378,17 +378,24 @@ export function useCardCreatorState(
     });
   }, [openContext, loadData]);
 
-  // Autosave on draft change (debounced).
+  // Autosave on draft change (debounced). Save as soon as the user
+  // makes any selection — not only when fully 'ready' — so config
+  // (noteType, deck, fieldMapping, tags, mediaUpdateMode) survives
+  // even if the dialog closes before AnkiConnect finishes loading.
   useEffect(() => {
-    if (loadStatus !== 'ready') return;
+    if (loadStatus === 'idle') return;
     autosaverRef.current.schedule(draft);
   }, [draft, loadStatus]);
 
   // Clear all pending toast timers on unmount (react-timeout-cleanup).
+  // Also flush pending autosave so the user's noteType/deck/fieldMapping
+  // selections survive the unmount (dialog close → component unmounts →
+  // state is lost; without flush, the debounced save never fires).
   useEffect(() => {
     return () => {
       for (const timer of toastTimersRef.current) clearTimeout(timer);
       toastTimersRef.current.clear();
+      void autosaverRef.current.flush();
     };
   }, []);
 
