@@ -267,7 +267,7 @@
   overflow: hidden;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  line-height: 1;
+  line-height: var(--leading-none, 1);
 }
 
 .cell-header__frequency-source {

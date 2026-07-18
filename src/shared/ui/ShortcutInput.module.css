@@ -49,7 +49,7 @@
   border-radius: var(--radius-full);
   background: var(--color-surface-hover);
   color: var(--color-text);
-  line-height: 1;
+  line-height: var(--leading-none, 1);
 }
 
 /* Combo: key chip — solid bg primary */
@@ -66,5 +66,5 @@
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-text-inverse);
-  line-height: 1;
+  line-height: var(--leading-none, 1);
 }

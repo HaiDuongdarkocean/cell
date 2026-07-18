@@ -161,7 +161,7 @@
     position: fixed;
     inset: 0;
     background: var(--dialog-overlay-bg);
-    z-index: 1000;
+    z-index: var(--z-dropdown, 1000);
   }
   .drawerClose {
     display: inline-flex;

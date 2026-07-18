@@ -81,14 +81,14 @@
   font-size: var(--font-size-xl, 18px);
   font-weight: var(--font-weight-semibold, 600);
   color: var(--color-text);
-  line-height: 1.25;
+  line-height: var(--leading-tight, 1.25);
 }
 
 .description {
   margin: var(--space-1, 4px) 0 0 0;
   font-size: var(--font-size-sm, 13px);
   color: var(--color-text-secondary);
-  line-height: 1.5;
+  line-height: var(--leading-normal, 1.5);
 }
 
 .content {

@@ -124,7 +124,7 @@
   background: var(--color-surface-hover);
   padding: var(--space-0-5, 2px) 7px;
   border-radius: var(--radius-sm);
-  letter-spacing: 0;
+  letter-spacing: var(--tracking-normal, 0);
   text-transform: none;
 }
 
@@ -190,7 +190,7 @@
   height: var(--space-4, 16px);
   background: var(--color-text-inverse);
   border-radius: var(--radius-full);
-  transition: transform var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--duration-normal, 200ms) var(--ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 /* Selected state */
@@ -204,7 +204,7 @@
 
 .optionSelected .optionLabel {
   color: var(--color-primary);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium, 500);
 }
 
 .optionSelected .toggleSwitch {

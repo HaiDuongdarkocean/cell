@@ -266,7 +266,7 @@
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: var(--leading-normal, 1.5);
 }
 
 /* === Auto select toggle row === */
@@ -292,7 +292,7 @@
   margin: var(--space-1, 4px) 0 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.5;
+  line-height: var(--leading-normal, 1.5);
 }
 
 /* === Shortcut field — horizontal layout for keyboard shortcuts === */
