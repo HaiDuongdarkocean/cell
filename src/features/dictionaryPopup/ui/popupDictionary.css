@@ -232,30 +232,30 @@
   padding: var(--space-1) var(--space-2-5);
   height: auto;
   min-height: 24px;
-  min-width: 9ch;
+  min-width: 10ch;
   justify-content: center;
   text-transform: capitalize;
 }
 
-/* Status badges — soft pill. Maps directly to WordStatus values. */
+/* Status badges — solid badges. Maps directly to WordStatus values. */
 .cell-header__status--unknown {
-  background: var(--color-error-subtle);
-  color: var(--color-error);
+  background: var(--color-error);
+  color: var(--color-text-inverse);
 }
 
 .cell-header__status--tracking {
-  background: var(--color-warning-subtle);
-  color: var(--color-warning);
+  background: var(--color-warning);
+  color: var(--color-text-inverse);
 }
 
 .cell-header__status--known {
-  background: var(--color-success-subtle);
-  color: var(--color-success);
+  background: var(--color-success);
+  color: var(--color-text-inverse);
 }
 
 .cell-header__status--ignore {
-  background: var(--color-muted);
-  color: var(--color-text-secondary);
+  background: var(--color-secondary);
+  color: var(--color-secondary-foreground);
 }
 
 .cell-header__frequency {
