@@ -104,11 +104,13 @@ export class MessageBus {
       };
     }
 
-    // Inject tabId from sender when missing (content script → background)
+    // Inject tabId from sender when missing (content script → background).
+    // Create a shallow copy to avoid mutating the original request payload
+    // (callers may retain references for retry/logging).
     if (sender.tab?.id !== undefined) {
       const payload = request.payload as Record<string, unknown> | undefined;
       if (payload && payload.tabId === undefined) {
-        payload.tabId = sender.tab.id;
+        request = { ...request, payload: { ...payload, tabId: sender.tab.id } };
       }
     }
 

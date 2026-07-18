@@ -10,6 +10,8 @@
 
 /* === Block: cell-popup (shell) === */
 .cell-popup {
+  --popup-z-base: 9999;
+  --popup-z-top: 10000;
   position: fixed;
   pointer-events: auto;
   overflow: hidden;
@@ -84,7 +86,7 @@
   height: 24px;
   cursor: nwse-resize;
   pointer-events: auto;
-  z-index: 9999;
+  z-index: var(--popup-z-base);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1182,7 +1184,7 @@
   pointer-events: none;
   transition: opacity var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
               transform var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
-  z-index: 10000;
+  z-index: var(--popup-z-top);
 }
 
 .cell-toast--visible {
