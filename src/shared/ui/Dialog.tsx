@@ -1,5 +1,6 @@
-import { useEffect, useRef, type ReactNode, type KeyboardEvent } from 'react';
+import { useRef, type ReactNode, type KeyboardEvent } from 'react';
 import { Button } from './Button';
+import { useFocusTrap } from './useFocusTrap';
 import styles from './Dialog.module.css';
 
 interface DialogProps {
@@ -22,7 +23,8 @@ interface DialogProps {
 }
 
 /**
- * Dialog — accessible modal with overlay, focus management, Esc to close, and
+ * Dialog — accessible modal with overlay, focus trap (Tab/Shift+Tab cycle
+ * within panel) + restore focus to trigger on close, Esc to close, and
  * click outside to close.
  */
 export function Dialog({
@@ -36,14 +38,7 @@ export function Dialog({
   'data-testid': dataTestId,
 }: DialogProps): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const first = panelRef.current?.querySelector<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    first?.focus();
-  }, [open]);
+  useFocusTrap(panelRef, open);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Escape') {

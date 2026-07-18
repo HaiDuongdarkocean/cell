@@ -1,5 +1,6 @@
-import { useEffect, useRef, type ReactNode, type KeyboardEvent } from 'react';
+import { useRef, type ReactNode, type KeyboardEvent } from 'react';
 import { IconButton } from './IconButton';
+import { useFocusTrap } from './useFocusTrap';
 import styles from './BottomSheet.module.css';
 
 export interface BottomSheetProps {
@@ -23,7 +24,8 @@ export interface BottomSheetProps {
  * with bottom-anchored layout, drag handle, and 75vh max height.
  *
  * Accessibility: role="dialog" + aria-modal, Esc to close, click outside to
- * close, focus moves to first focusable element on open.
+ * close, focus trap (Tab/Shift+Tab cycle within panel) + restore focus to
+ * trigger on close (useFocusTrap hook).
  */
 export function BottomSheet({
   open,
@@ -34,14 +36,7 @@ export function BottomSheet({
   'data-testid': dataTestId,
 }: BottomSheetProps): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const first = panelRef.current?.querySelector<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    first?.focus();
-  }, [open]);
+  useFocusTrap(panelRef, open);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Escape') {

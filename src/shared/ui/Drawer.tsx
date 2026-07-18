@@ -1,5 +1,6 @@
-import { useEffect, useRef, type ReactNode, type KeyboardEvent } from 'react';
+import { useRef, type ReactNode, type KeyboardEvent } from 'react';
 import { Button } from './Button';
+import { useFocusTrap } from './useFocusTrap';
 import styles from './Drawer.module.css';
 
 export interface DrawerProps {
@@ -32,14 +33,7 @@ export function Drawer({
   className,
 }: DrawerProps): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const first = panelRef.current?.querySelector<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-    first?.focus();
-  }, [open]);
+  useFocusTrap(panelRef, open);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Escape') {
