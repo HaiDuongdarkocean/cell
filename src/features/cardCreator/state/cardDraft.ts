@@ -16,7 +16,7 @@
  * emptied on restore (closing the dialog = clear content, keep tags + config).
  */
 import type { MediaFile } from '../media/mediaFile';
-import type { FieldMapping, SourceFieldKey } from '../service/fieldMapping';
+import type { FieldMapping } from '../service/fieldMapping';
 
 /** Update mode for media + fields when updating an existing note. */
 export type MediaUpdateMode = 'overwrite' | 'append' | 'skip';
@@ -201,17 +201,4 @@ export function createEmptyDraft(noteType: string, deck: string): CardDraft {
   };
 }
 
-/** All source field keys (used to iterate when building the Anki note).
- *  Tags are NOT included — they're sent via the note's `tags` array, not
- *  mapped to an Anki note field. */
-export const ALL_SOURCE_KEYS: readonly SourceFieldKey[] = [
-  'targetWord',
-  'sentence',
-  'sentenceTranslation',
-  'definitions',
-  'images',
-  'sentenceAudios',
-  'wordAudios',
-  'note',
-  'moreExample',
-];
+

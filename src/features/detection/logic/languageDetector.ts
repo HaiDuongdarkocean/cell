@@ -13,9 +13,6 @@ export {
   toIso6391,
   isValidIsoCode,
   languageMatches,
-  ISO_LANGUAGE_MAP,
-  LABEL_TO_ISO_CODE,
-  ISO_639_2_TO_639_1,
 } from '@/shared/config/languageRegistry';
 
 /**

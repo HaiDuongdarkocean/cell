@@ -379,12 +379,6 @@ export class PopupShell {
     return this.contentEl;
   }
 
-  /** No-op kept for backward compat — the resize handle is now a sibling of
-   *  the scroll wrapper, so clearContainer on contentEl no longer wipes it. */
-  reAppendResizeHandle(): void {
-    /* intentionally empty — handle is not a child of contentEl */
-  }
-
   /** Update popup size. */
   setSize(size: PopupSize): void {
     this.size = size;

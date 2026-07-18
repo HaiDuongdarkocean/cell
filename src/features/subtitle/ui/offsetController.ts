@@ -17,12 +17,6 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { Settings } from '@/entities/media';
 
-/** Cue source injected by caller (lazy read for fresh cues on every action). */
-export interface OffsetCueSource {
-  readonly targetCues: readonly unknown[];
-  readonly nativeCues: readonly unknown[];
-}
-
 /** Settings snapshot injected by caller (for initial offset load). */
 export interface OffsetSettingsSnapshot {
   readonly subtitleOffset?: Record<string, number>;

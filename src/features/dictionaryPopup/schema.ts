@@ -208,21 +208,6 @@ export const TtsSpeakPayloadSchema = z.object({
 
 // === TTS settings (spec popup-dictionary-4tab-logic) ===
 
-export const TtsVoiceRowSchema = z.object({
-  voiceName: z.string().min(1),
-  lang: z.string(),
-  order: z.number().int().min(1),
-});
-
-export const TtsSettingsSchema = z.object({
-  enabled: z.boolean().default(true),
-  savedVoices: z.array(TtsVoiceRowSchema).default([]),
-  voices: z.array(z.string()).default([]),
-  maxDisplay: z.number().int().min(1).max(10).default(3),
-  autoplayCount: z.number().int().min(0).max(10).default(0),
-  preferredAccent: z.enum(['US', 'UK']).default('US'),
-});
-
 // === Translate (spec §9.4 B — TRANSLATE, ADR-021 D2) ===
 
 export const TranslatePayloadSchema = z.object({

@@ -5,7 +5,7 @@
 // (debounce internal — spec D9).
 
 import type React from 'react';
-import type { DictionaryPopupSettings, Settings } from '@/entities/settings/types';
+import type { DictionaryPopupSettings } from '@/entities/settings/types';
 import styles from './DictionaryPopupSettingsPanel.module.css';
 
 interface DictionaryPopupSettingsPanelProps {
@@ -140,10 +140,4 @@ export function DictionaryPopupSettingsPanel({
   );
 }
 
-/** Helper: update the dictionaryPopup slice in Settings. */
-export function updateDictionaryPopupSettings(
-  settings: Settings,
-  dictionaryPopup: DictionaryPopupSettings,
-): Settings {
-  return { ...settings, dictionaryPopup };
-}
+

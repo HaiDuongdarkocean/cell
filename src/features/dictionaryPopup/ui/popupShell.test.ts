@@ -433,20 +433,6 @@ describe('PopupShell', () => {
       expect(popup.className).toContain('cell-popup');
     });
 
-    it('reAppendResizeHandle does NOT move the handle into the content element', () => {
-      shell.mount();
-      const root = shell.getShadowRoot()!;
-      const popup = root.querySelector('.js-cell-popup') as HTMLDivElement;
-      const content = root.querySelector('.js-cell-content') as HTMLDivElement;
-      const handle = root.querySelector('.js-cell-resize') as HTMLDivElement;
-      // Sanity: handle starts as a sibling of content.
-      expect(handle.parentElement).toBe(popup);
-      shell.reAppendResizeHandle();
-      // After the no-op call, handle must still be a sibling of content
-      // (a direct child of the outer shell), not reparented into content.
-      expect(handle.parentElement).toBe(popup);
-      expect(handle.parentElement).not.toBe(content);
-    });
   });
 
   // --- Theme integration (dark/light mode via chrome.storage.local.themeMode) ---
