@@ -22,7 +22,7 @@ export interface SubtitlePanelItem {
 export interface SubtitleManagerPanel {
   readonly toolbar: HTMLDivElement;
   readonly icon: HTMLButtonElement;
-  readonly importButton: HTMLButtonElement;
+  readonly importButton: HTMLElement;
   readonly panel: HTMLDivElement;
   readonly open: () => void;
   readonly close: () => void;
@@ -53,7 +53,7 @@ const CHEVRON_SVG = ICON_CATALOG.chevronDown.svg.replace('<svg ', '<svg style="w
  */
 export function createSubtitleManagerPanel(
   container: HTMLElement,
-  importButton: HTMLButtonElement,
+  importButton: HTMLElement,
   options: {
     targetLabel?: string;
     nativeLabel?: string;

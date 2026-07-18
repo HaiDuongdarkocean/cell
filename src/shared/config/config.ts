@@ -284,3 +284,6 @@ export const POPUP_HEIGHT = 600;
 export const FALLBACK_VIEWPORT_WIDTH = 1920;
 export const FALLBACK_VIEWPORT_HEIGHT = 1080;
 
+/** Duration (ms) for "Copied!" feedback on URL copy buttons. */
+export const COPY_FEEDBACK_DURATION_MS = 2000;
+

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { DetectedVideo, VideoQuality } from '@/entities/media';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
+import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
 import styles from './VideoCard.module.css';
 
 interface VideoCardProps {
@@ -87,7 +88,7 @@ export function VideoCard({
       await navigator.clipboard.writeText(video.url);
       setCopied(true);
       if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
-      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
+      copiedTimerRef.current = setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION_MS);
     } catch {
       const range = document.createRange();
       const target = e.target as HTMLElement;

@@ -85,14 +85,14 @@ const UPLOAD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" 
  *
  * @param container - Video wrapper (button appended here, then moved into toolbar by panel)
  * @param _config - Overlay configuration (unused, kept for API compat)
- * @returns Button element
+ * @returns Label element (styled as button, wraps file input for native picker)
  */
-export function createImportButton(container: HTMLElement, _config: OverlayConfig): HTMLButtonElement {
+export function createImportButton(container: HTMLElement, _config: OverlayConfig): HTMLElement {
   // ponytail: use <label> wrapping <input type=file> — native HTML, click label
   // = click input = file picker opens. <button> swallows input click (invalid HTML),
   // <label> is semantic + accessible + guaranteed.
   // Source: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label
-  const label = document.createElement('label') as unknown as HTMLButtonElement;
+  const label = document.createElement('label');
   label.setAttribute('role', 'button');
   label.setAttribute('tabindex', '0');
   label.setAttribute('aria-label', 'Import subtitle file');

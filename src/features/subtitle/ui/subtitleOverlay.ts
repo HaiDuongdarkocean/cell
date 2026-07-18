@@ -34,7 +34,7 @@ import type { SrtCue } from '@/entities/media';
 export class SubtitleOverlayController {
   private targetOverlay: HTMLDivElement | null = null;
   private nativeOverlay: HTMLDivElement | null = null;
-  public importButton: HTMLButtonElement | null = null;
+  public importButton: HTMLElement | null = null;
   private cues: SrtCue[] = [];
   private nativeCues: SrtCue[] = [];
   private lastIndex: number = -1;
