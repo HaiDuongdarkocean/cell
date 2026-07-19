@@ -205,12 +205,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
             popupDictState = appendCandidate(popupDictState, candidate, request.contextSentence);
           }
         } else {
-          // eslint-disable-next-line no-console
           console.warn('[web-text-dict] lookup failed', error);
         }
       })
       .catch((err) => {
-        // eslint-disable-next-line no-console
         console.warn('[web-text-dict] lookup error', err);
       });
   }
