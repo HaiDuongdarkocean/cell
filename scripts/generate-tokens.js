@@ -115,6 +115,12 @@ async function main() {
   const lightColorBlock = buildColorBlock(tokens.core.light, tokens.derived.light, 'light');
   const darkColorBlock = buildColorBlock(tokens.core.dark, tokens.derived.dark, 'dark');
 
+  // componentBlock is duplicated in [data-theme="dark"] because CSS custom
+  // properties resolve at the element where they are DECLARED, not where they
+  // are used. --button-bg: var(--color-primary) in :root freezes to light's
+  // --color-primary. Re-declaring in [data-theme="dark"] forces re-resolution
+  // with dark colors. Critical for Shadow DOM where data-theme is on a
+  // descendant of :root (shadow host), not on :root itself.
   const css = `/* ============================================================
    Design System — Theme Tokens
    Auto-generated from tokens.json. DO NOT EDIT MANUALLY.
@@ -129,6 +135,7 @@ ${componentBlock}
 
 [data-theme="dark"] {
 ${darkColorBlock}
+${componentBlock}
 }
 `;
 
