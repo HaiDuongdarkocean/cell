@@ -111,6 +111,9 @@ Rules:
 
 ### Design System UI (bắt buộc khi thiết kế/sửa giao diện)
 tuân thủ design system trong codebase. chỉ có một nguồn design system duy nhất là codebase.
+- Sửa token: sửa `src/shared/styles/tokens.json` → `npm run dev` hoặc `npm run build` (tự chạy `generate-tokens.js` qua hook `predev`/`prebuild`). KHÔNG tự sửa `tokens.css` hay `tokens.ts` (generated files).
+- Dùng component: `import { Button, Card } from '@/shared/ui'` — không tự tạo.
+- Đọc `src/shared/styles/README.md` trước khi viết CSS.
 
 ### Knowledge tra cứu
 
