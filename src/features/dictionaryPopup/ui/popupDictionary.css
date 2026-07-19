@@ -230,10 +230,10 @@
 
 /* Status badge extends .btn; only override size + color variants. */
 .cell-header__status {
+  box-sizing: border-box;
   font-size: var(--font-size-xs);
   padding: var(--space-1) var(--space-2-5);
-  height: auto;
-  min-height: var(--space-6, 24px);
+  height: var(--space-5, 20px);
   min-width: 10ch;
   justify-content: center;
   text-transform: capitalize;
@@ -263,6 +263,8 @@
 .cell-header__frequency {
   display: inline-flex;
   align-items: center;
+  box-sizing: border-box;
+  height: var(--space-5, 20px);
   border-radius: var(--radius-full);
   overflow: hidden;
   font-size: var(--font-size-xs);

@@ -1,0 +1,27 @@
+{
+  "id": "css-custom-property-resolution-scope",
+  "title": "CSS custom property var() resolves at declaration scope, not usage scope",
+  "category": ["css", "rendering"],
+  "tags": ["custom-property", "var", "theme", "dark-mode", "token-cascade", "css-variables"],
+  "trigger": "Component token (e.g. --button-bg: var(--color-primary)) defined in :root, but --color-primary overridden in [data-theme=\"dark\"] on a descendant — token freezes to light value",
+  "principle": "CSS custom property var() references resolve at the element where the referencing property is DECLARED, not where the property is USED. If --button-bg: var(--color-primary) is declared in :root, it freezes to :root's --color-primary value. Overriding --color-primary on a descendant (e.g. [data-theme=\"dark\"]) does NOT re-resolve --button-bg inherited from :root. Fix: re-declare the component token block inside each theme selector so var() re-resolves with the theme-scoped color. Critical for Shadow DOM where data-theme lives on a descendant of :root inside the shadow tree.",
+  "cases": [
+    {
+      "context": "Shadow DOM popup: <html> has no data-theme, .cell-popup[data-theme=\"dark\"] inside shadow has --color-primary: #60a5fa. Button uses var(--button-bg). --button-bg: var(--color-primary) declared only in :root → resolves to light #2563eb, button stays blue-light in dark mode.",
+      "bad": "/* tokens.css */\n:root {\n  --color-primary: #2563eb;\n  --button-bg: var(--color-primary);   /* freezes here = #2563eb */\n}\n[data-theme=\"dark\"] {\n  --color-primary: #60a5fa;\n  /* --button-bg NOT re-declared → inherits #2563eb from :root */\n}\n/* .btn--primary { background: var(--button-bg); } → #2563eb in dark mode (BUG) */",
+      "good": "/* tokens.css */\n:root {\n  --color-primary: #2563eb;\n  --button-bg: var(--color-primary);\n}\n[data-theme=\"dark\"] {\n  --color-primary: #60a5fa;\n  --button-bg: var(--color-primary);   /* re-resolves here = #60a5fa */\n}\n/* .btn--primary { background: var(--button-bg); } → #60a5fa in dark mode (CORRECT) */"
+    },
+    {
+      "context": "Token generator script only emits component tokens in :root block, dark block only has color overrides — component tokens silently freeze to light values in dark mode",
+      "bad": "// generate-tokens.js\nconst css = `:root { ${lightColors} ${static} ${component} }\n[data-theme=\"dark\"] { ${darkColors} }`;\n// component tokens (button-bg, input-border, etc.) only in :root → dark mode broken",
+      "good": "// generate-tokens.js — duplicate component block in dark selector\nconst css = `:root { ${lightColors} ${static} ${component} }\n[data-theme=\"dark\"] { ${darkColors} ${component} }`;\n// component tokens re-resolve against dark color overrides"
+    }
+  ],
+  "applyFor": [
+    "Design token systems with component-level tokens referencing core color tokens (button-bg → color-primary)",
+    "Theme switching via [data-theme] attribute selector on a descendant of :root (Shadow DOM, iframe-injected roots)",
+    "CSS custom property cascades where a var() reference must track a theme-scoped override",
+    "Token generators / build scripts that emit :root + [data-theme] blocks — must emit component tokens in BOTH",
+    "Any case where inherited custom property seems to ignore a descendant override — check declaration scope vs usage scope"
+  ]
+}
