@@ -1,8 +1,8 @@
 # Design System — Codebase Reference
 
 > Single source of truth for AI agents writing UI code.
-> `tokens.json` = token source. `tokens.css` = generated artifact. `src/shared/ui/*.module.css` = component patterns.
-> `docs/design-system/design-system-showcase/` = full spec (read when adding new component).
+> `tokens.json` = token source (sửa ở đây). `tokens.css` = generated artifact. `src/shared/ui/*.module.css` = component patterns.
+> Codebase chính là tài liệu — không có document riêng.
 
 ## Token file
 
@@ -21,6 +21,17 @@ node scripts/generate-tokens.js
 ```ts
 import '@/shared/styles/tokens.css';
 ```
+
+## Cách sửa token và gọi nó (SSOT)
+
+| # | Việc cần làm | BAD — không làm | GOOD — làm thế này |
+|---|-------------|-----------------|-------------------|
+| 1 | Đổi giá trị token | Hardcoded `padding: 16px` trong từng file CSS | Sửa 1 chỗ: `tokens.json` → `"4": "20px"` |
+| 2 | Sinh lại file artifact | Sửa tokens.json rồi quên regenerate | Chạy `node scripts/generate-tokens.js` (hoặc `npm run dev` — tự chạy) |
+| 3 | Dùng trong React (popup/sidepanel/options) | `padding: 16px` — hardcoded, drift | `padding: var(--space-4, 16px)` — tokens.css tự `@import` |
+| 4 | Dùng trong Shadow DOM (dictionary popup) | Copy-paste CSS vào Shadow Root | `import tokensCss from '...?raw'` → đổi `:root`→`:host` → inject `<style>` |
+| 5 | Dùng trong content-script (subtitle/nav cluster) | Hardcoded `150ms` trong TS string | `var(--duration-fast, 150ms)` — tokens.ts đọc tokens.json, sinh CSS string |
+| 6 | Dùng component | Tự tạo `<button className={styles.myBtn}>` + custom hover | `import { Button } from '@/shared/ui'` — hover/active đã có sẵn |
 
 ## 3 nguyên lý root (check mọi UI change)
 
@@ -99,8 +110,8 @@ grep -rn 'color-accent' src/ --include="*.css" | grep hover
 grep -rn 'tokens.css' src/entrypoints/
 ```
 
-## When to read full spec
+## When to read what
 
-- Adding NEW component (not in inventory above) → read `docs/design-system/design-system-showcase/design-system.md`
-- Changing token value → update `tokens.json` + regenerate `tokens.css` + `design-system.md` YAML
-- Unsure which variant to use → read `design-system.md` component section
+- Adding NEW component (not in inventory above) → đọc `src/shared/ui/` component gần nhất → bắt chước pattern
+- Changing token value → sửa `tokens.json` → chạy `node scripts/generate-tokens.js` → xong
+- Unsure which variant to use → đọc component `.tsx` + `.module.css` trong `src/shared/ui/`

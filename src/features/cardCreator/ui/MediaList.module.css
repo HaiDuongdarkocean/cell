@@ -1,7 +1,7 @@
 /* === MediaList — media zone + image gallery + audio list (Card Creator) ===
    BEM block: .cc-media
    ADR-026: uses design-system tokens (--space-*, --color-*, --radius-*) per
-   docs/design-system/design-system.md §2.2.
+   src/shared/styles/tokens.json.
    Spec: docs/specs/spec-card-creator-ui-redesign.md §9.7-9.8
 */
 

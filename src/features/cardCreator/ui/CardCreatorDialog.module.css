@@ -1,8 +1,8 @@
 /* === CardCreatorDialog — shared content styles (desktop + mobile) ===
    BEM block: .cc-dialog
    ADR-026: uses design-system tokens (--space-*, --color-foreground,
-   --color-card, --color-border, etc.) per docs/design-system/design-system.md
-   §2.2-2.3. Single-column layout: preview above Fields section.
+   --color-card, --color-border, etc.) per src/shared/styles/tokens.json.
+   Single-column layout: preview above Fields section.
    Spec: docs/specs/spec-card-creator-ui-redesign.md §9.1-9.3, §9.5, §9.9
 */
 
