@@ -42,6 +42,136 @@ Add the following to your project's `.mcp.json` or Claude Code settings:
 
 There is also `--autoConnect` (Chrome 144+, requires enabling remote debugging via `chrome://inspect/#remote-debugging`), which attaches the agent to your **running** Chrome instead. Only use it when the test genuinely needs your logged-in state — see Profile Isolation under Security Boundaries first.
 
+### Extension Testing Setup (load + reload + test in persistent profile)
+
+For Chrome extension projects, the agent must be able to **install the built extension, reload it after each rebuild, and verify behavior in a real browser** — without manual `chrome://extensions` clicks. This requires the **Extensions tool category** plus a **persistent user-data-dir** so the extension survives browser restarts.
+
+#### Why `--isolated` does NOT work for extension testing
+
+`--isolated` wipes the profile when Chrome closes → the installed extension is gone next session → the agent must reinstall every time, and any extension state (settings, granted permissions, theme choice) is lost. For extension dev you want the opposite: **install once, persist across sessions**.
+
+#### Required config
+
+The Extensions category is **only supported with a pipe connection** (the default when no `--browserUrl`/`--wsEndpoint`/`--autoConnect` is passed). Do NOT combine `--categoryExtensions` with any connect flag — the server will reject it (until Chrome 149+).
+
+```json
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--categoryExtensions",
+        "--user-data-dir=<ABSOLUTE-PATH-TO-PERSISTENT-PROFILE>",
+        "--chromeArg=--enable-unsafe-extension-debugging"
+      ]
+    }
+  }
+}
+```
+
+**Windows path note:** backslashes must be escaped in JSON (`C:\\Users\\name\\.cache\\chrome-devtools-mcp\\chrome-profile`). On POSIX, use a normal absolute path.
+
+**Flags explained:**
+| Flag | Why |
+|------|-----|
+| `--categoryExtensions` | Enables `install_extension`, `list_extensions`, `reload_extension`, `uninstall_extension`, `trigger_extension_action` (5 tools). Without it, none of these are exposed. |
+| `--user-data-dir=<abs>` | Persistent profile. Extension installs, granted permissions, and `chrome.storage` data survive browser restarts. Default dir is `$HOME/.cache/chrome-devtools-mcp/chrome-profile$CHANNEL_SUFFIX_IF_NON_STABLE` — set it explicitly so the path is deterministic and portable across machines. |
+| `--chromeArg=--enable-unsafe-extension-debugging` | Chrome requires this flag to allow programmatic install/reload of unpacked extensions. Without it, `install_extension` silently fails or Chrome blocks the operation. |
+
+**Do NOT combine with:** `--autoConnect`, `--browserUrl`, `--wsEndpoint`, `--isolated`. Any of these disables the Extensions category (pipe-only feature).
+
+#### Apply config — restart the MCP client
+
+The MCP server config is read **once at client startup**. After editing `mcp_config.json` / `.mcp.json`, the user must **restart the Devin CLI / Windsurf / Claude Code** process. The agent cannot hot-reload MCP config mid-session. Surface this to the user explicitly:
+
+> "Em đã update MCP config. Anh restart Devin CLI để pickup config mới, rồi em sẽ verify 5 extension tools xuất hiện."
+
+#### Verify the 5 extension tools are available
+
+After restart, the agent MUST call `mcp_list_tools` before any `mcp_call_tool`. Never guess tool names or schemas.
+
+```
+mcp_list_tools → server_name: "chrome-devtools"
+# Confirm these 5 names appear in the output:
+#   install_extension, list_extensions, reload_extension,
+#   uninstall_extension, trigger_extension_action
+```
+
+If they do NOT appear, the config was not picked up — ask the user to restart again. Do NOT proceed to call `install_extension` against a missing tool.
+
+#### Extension test workflow (build → install → reload → verify)
+
+```
+1. BUILD
+   └── npm run build  (or the project's build command)
+       └── Produces dist/ with manifest.json
+
+2. INSTALL (once per profile lifetime)
+   └── mcp_call_tool → install_extension
+       arguments: { "path": "<ABSOLUTE-PATH-TO-dist>" }
+       └── Returns: { id: "<extensionId>" }
+       └── Save the extensionId — needed for reload/uninstall
+
+3. VERIFY INSTALL
+   └── mcp_call_tool → list_extensions, arguments: {}
+       └── Confirm: id=<extensionId>, name, version, Enabled
+
+4. NAVIGATE TO TEST PAGE
+   └── mcp_call_tool → navigate_page, arguments: { "url": "<test-url>" }
+       └── Returns: page list + "Extension Service Workers" section
+       └── Confirm service worker for the extension is listed → SW is alive
+
+5. INTERACT + VERIFY (one evaluate_script, see Anti-Latency Patterns)
+   └── Pause video / click word / trigger popup — all in one async Promise
+   └── Inspect computed styles, shadow DOM, tokens — return JSON
+
+6. RELOAD AFTER REBUILD (the inner loop)
+   └── npm run build
+   └── mcp_call_tool → reload_extension, arguments: { "id": "<extensionId>" }
+   └── mcp_call_tool → evaluate_script → location.reload()  (refresh the test page)
+       └── Content scripts re-inject with the new build
+```
+
+**Install once, reload many.** `install_extension` is for the first run on a fresh profile. After that, `reload_extension` + page reload is the inner loop — much faster than reinstall.
+
+#### Gotchas observed in practice
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `install_extension` returns success but extension not in `list_extensions` | `--enable-unsafe-extension-debugging` missing from `--chromeArg` | Add the chromeArg, restart MCP client |
+| Extension tools missing from `mcp_list_tools` | Config combined with `--browserUrl`/`--autoConnect`/`--isolated` | Remove connect flags — Extensions is pipe-only |
+| `reload_extension` after rebuild but page still shows old behavior | Content scripts cached on the page | Call `evaluate_script` → `location.reload()` after `reload_extension` |
+| Extension gone after browser restart | `--isolated` used, or temp profile | Use explicit `--user-data-dir=<abs>` for persistence |
+| `data-theme` on `<html>` but tokens still light | Shadow DOM blocks attribute inheritance — see `css-shadow-dom-theme-propagation` experience atom | Set `data-theme` on element INSIDE the shadow tree |
+| Component tokens (`--button-bg`) freeze to light value in dark mode | CSS custom property resolves at declaration scope — see `css-custom-property-resolution-scope` atom | Re-declare component token block in `[data-theme="dark"]` |
+| Service worker listed but content script not injecting on navigate | Reload happened before navigate completed | Navigate first, then wait 5-8s in `evaluate_script` Promise before inspecting |
+| Windows: `&&` in `exec` fails with "token not valid" | PowerShell session, not bash | Use `;` separator, or run commands in separate `exec` calls |
+
+#### Inspecting inside Shadow DOM
+
+Extension UIs often render into a Shadow DOM host (e.g. `.js-cell-popup-host`). Standard `document.querySelector` returns null for shadow-enclosed elements. Use:
+
+```js
+() => {
+  const host = document.querySelector('.js-cell-popup-host');
+  if (!host?.shadowRoot) return { error: 'no shadow' };
+  const btn = host.shadowRoot.querySelector('.cell-header__quick-add');
+  const cs = getComputedStyle(btn);
+  const popup = host.shadowRoot.querySelector('.cell-popup');
+  const pcs = getComputedStyle(popup);
+  return {
+    bg: cs.backgroundColor,
+    dataTheme: popup.getAttribute('data-theme'),
+    colorPrimary: pcs.getPropertyValue('--color-primary').trim(),
+    buttonBg: pcs.getPropertyValue('--button-bg').trim(),
+  };
+}
+```
+
+Read computed styles from the **element inside the shadow tree**, not from `:root` of the host page — the host page's `:root` has no `data-theme` and no theme tokens.
+
 ### Available Tools
 
 Chrome DevTools MCP provides these capabilities:
