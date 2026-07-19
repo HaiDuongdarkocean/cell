@@ -4,7 +4,7 @@ import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import tokensJson from '@/shared/styles/tokens.json';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS } from '@/shared/config/config';
+import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS } from '@/shared/config/config';
 import {
   parseAndDetectFiles,
   assignImportRole,
@@ -33,20 +33,16 @@ import {
 import { SubtitleBlockController, type SubtitleBlockControllerUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleBlockController';
 import { OffsetController } from '@/features/subtitle/ui/offsetController';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
-import { mountCardCreatorDialog, buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
+import { buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
-import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
-import { fetchUrlAsMediaFile } from '@/features/cardCreator/media/mediaFile';
-import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
-import { createPopupDictionaryState, showPopup, appendCandidate, updatePopupSettings, type PopupDictionaryState, type PopupCardCreatorPrefill, type PopupCardCreatorAction } from '@/features/dictionaryPopup/ui/popupDictionaryController';
-import { WebTriggerController } from '@/features/dictionaryPopup/trigger/webTriggerController';
-import type { LookupRequest, LookupResult } from '@/features/dictionaryPopup/types';
+
+import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
-import type { CardCreatorSettings, DictionaryPopupSettings } from '@/entities/settings';
+
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
 import type { SubtitlePanelItem, SubtitleManagerPanel, ParsedFile } from '@/features/subtitle';
 
@@ -185,7 +181,7 @@ async function loadTargetNativeLangs(): Promise<{ targetLang: string; nativeLang
   }
 }
 
-export function init(video: HTMLVideoElement): () => void {
+export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryController): () => void {
   // ADR-008 D2: overlay UI neo vào video container — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   // G8: walk-up để xử lý sites có video.parentElement height=0 (YouTube pattern).
@@ -205,13 +201,8 @@ export function init(video: HTMLVideoElement): () => void {
   let currentSettings: Settings | null = null;
   // ADR-019: offset controller (subtitle time offset)
   let offsetController: OffsetController | null = null;
-  // ADR-026: Card Creator dialog mount controller (lazy-initialized on first open).
-  let cardCreatorMount: ReturnType<typeof mountCardCreatorDialog> | null = null;
-  let cardCreatorSettings: CardCreatorSettings | null = null;
-  // Popup dictionary state (spec §4.6).
-  let popupDictState: PopupDictionaryState | null = null;
-  let popupDictWasPlaying = false;
-  let webTextTrigger: WebTriggerController | null = null;
+  // Shared web-text dictionary controller (owned by top-level content-script).
+  const sharedWebTextCtrl = webTextCtrl;
   // Track the latest target/native cues for the block controller and side panel.
   let latestTargetCues: SrtCue[] = [];
   // Track the URL the overlay currently shows cues for. On SPA navigation the
@@ -248,71 +239,6 @@ export function init(video: HTMLVideoElement): () => void {
     activeGenerateRunId = -1;
   }
 
-  /** Wire popup dictionary: enable token wrap + trigger on subtitle block.
-   *  Also wire web-text trigger (select text anywhere on page → lookup). */
-  function wireDictionaryPopup(dpSettings: DictionaryPopupSettings, ccSettings: CardCreatorSettings): void {
-    popupDictState = createPopupDictionaryState(dpSettings, ccSettings, handlePopupCardCreatorAction, handlePopupQuickAdd, currentSettings?.subtitleOverlayNativeLanguage ?? '');
-    blockController.enableDictionaryPopup(
-      dpSettings.triggerMode,
-      (request: LookupRequest, requestId: string, anchorRect: DOMRect) => { void handleLookup(request, requestId, anchorRect); },
-      (requestId: string) => { cancelLookup(requestId); },
-    );
-    // Web-text trigger: select text on page (outside subtitle overlay) → lookup.
-    // Same handleLookup/cancelLookup, but no video pause (only subtitle lookup pauses).
-    if (webTextTrigger) webTextTrigger.detach();
-    webTextTrigger = new WebTriggerController({
-      triggerMode: dpSettings.triggerMode,
-      onLookup: (request, requestId, anchorRect) => { void handleLookup(request, requestId, anchorRect); },
-      onCancel: (requestId) => { cancelLookup(requestId); },
-    });
-    webTextTrigger.attach();
-  }
-
-  /** Handle a lookup request from subtitle trigger.
-   *  Routes via sendMessage to background (IDB is origin-isolated — content
-   *  scripts on web pages cannot access the extension's IDB databases). */
-  async function handleLookup(request: LookupRequest, requestId: string, anchorRect: DOMRect): Promise<void> {
-    if (!popupDictState) return;
-    try {
-      const response = await sendMessage({
-        type: MESSAGE_TYPES.LOOKUP_REQUEST,
-        payload: { requestId, request },
-      }) as { success: boolean; data?: LookupResult[]; error?: string };
-      if (response.success && response.data && response.data.length > 0) {
-        // Pause video so subtitle cue doesn't change while popup is open.
-        if (!video.paused) { video.pause(); popupDictWasPlaying = true; }
-        // Render winner first (immediate), then append remaining candidates progressively.
-        const [winner, ...rest] = response.data;
-        popupDictState = showPopup(
-          popupDictState, winner!, {
-            anchor: { top: anchorRect.top, left: anchorRect.left, right: anchorRect.right, bottom: anchorRect.bottom + 4 },
-            contextSentence: request.contextSentence,
-            // onDismiss: resume video when popup is truly dismissed (Esc / click outside).
-            onDismiss: (dismissedState) => {
-              popupDictState = dismissedState;
-              if (popupDictWasPlaying) { void video.play(); popupDictWasPlaying = false; }
-            },
-          },
-        );
-        // Append remaining candidates in subsequent frames for progressive rendering.
-        for (const candidate of rest) {
-          popupDictState = appendCandidate(popupDictState, candidate, request.contextSentence);
-        }
-      } else {
-        console.warn('[popup-dict] lookup failed', response.error);
-      }
-    } catch (err) {
-      console.warn('[popup-dict] lookup error', err);
-    }
-  }
-
-  /** Cancel an in-flight lookup (sends LOOKUP_CANCEL to background only).
-   *  Does NOT hide popup or resume video — a new lookup is about to replace
-   *  the popup content. Video resume happens on true dismiss (onDismiss). */
-  function cancelLookup(requestId: string): void {
-    void sendMessage({ type: MESSAGE_TYPES.LOOKUP_CANCEL, payload: { requestId } });
-  }
-
   const blockController = new SubtitleBlockController(
     video,
     container,
@@ -334,26 +260,20 @@ export function init(video: HTMLVideoElement): () => void {
 
   /** ADR-026: Handle Card Creator action (quick-update or edit-card). */
   async function handleCardCreatorAction(action: CardCreatorAction): Promise<void> {
+    if (!sharedWebTextCtrl) return;
     // Load settings fresh (URL/deck/noteType/lang may have changed since init).
     const settings = await loadSettingsOrToast(container);
     if (!settings) return;
-    cardCreatorSettings = settings.cardCreator;
+    sharedWebTextCtrl.updateCardCreatorSettings(settings.cardCreator);
 
     // ADR-026: prefetch AnkiConnect decks + models NOW (on click) so the
     // network round-trip overlaps with media capture (screenshot + sentence
     // audio, 2-5s). When the dialog mounts and loadData runs, it reuses the
     // cached promise — resolving instantly if capture finished first.
-    void prefetchAnkiConnectData(cardCreatorSettings.ankiConnectUrl).catch(() => {
+    void prefetchAnkiConnectData(settings.cardCreator.ankiConnectUrl).catch(() => {
       // Prefetch failure is non-fatal — loadData will retry with a fresh
       // promise and surface the error via toast.
     });
-
-    // Lazy-init the dialog mount on first action.
-    if (!cardCreatorMount) {
-      cardCreatorMount = mountCardCreatorDialog(cardCreatorSettings, container);
-    } else {
-      cardCreatorMount.updateSettings(cardCreatorSettings);
-    }
 
     // Build context from current subtitle state + actual subtitle languages.
     const sourceLang = settings.subtitleOverlayTargetLanguage || 'en';
@@ -396,205 +316,7 @@ export function init(video: HTMLVideoElement): () => void {
       // Audio failure is non-fatal — screenshot + text fields still work.
     }
 
-    cardCreatorMount.open({ ...ctx, initialMedia }, action);
-  }
-
-  /** Handle Card Creator action triggered from the popup dictionary (Quick Add
-   *  or Send to Card). Opens the Card Creator dialog pre-filled with the
-   *  popup's lookup data (term, definitions, context sentence, translation).
-   *  If a video is available, also captures screenshot + sentence audio.
-   *  Syncs with the cluster overlay block's handleCardCreatorAction flow. */
-  async function handlePopupCardCreatorAction(
-    action: PopupCardCreatorAction,
-    prefill: PopupCardCreatorPrefill,
-  ): Promise<void> {
-    // Load settings fresh (URL/deck/noteType/lang may have changed since init).
-    const settings = await loadSettingsOrToast(container);
-    if (!settings) return;
-    cardCreatorSettings = settings.cardCreator;
-
-    // Prefetch AnkiConnect decks + models NOW so the network round-trip
-    // overlaps with media capture.
-    void prefetchAnkiConnectData(cardCreatorSettings.ankiConnectUrl).catch(() => {
-      // Prefetch failure is non-fatal — loadData will retry.
-    });
-
-    // Lazy-init the dialog mount on first action.
-    if (!cardCreatorMount) {
-      cardCreatorMount = mountCardCreatorDialog(cardCreatorSettings, container);
-    } else {
-      cardCreatorMount.updateSettings(cardCreatorSettings);
-    }
-
-    // Build definitions text from prefill (POS-prefixed format: "(pos) text" per line).
-    const definitionsText = prefill.definitions
-      .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
-      .join('\n');
-
-    const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
-    const targetLang = settings.subtitleOverlayNativeLanguage || 'vi';
-
-    // Capture media (screenshot + sentence audio) if video is available.
-    // For text-reading (no video context), skip media capture — the dialog
-    // opens with text fields only, user can add media manually.
-    const initialMedia: MediaFile[] = [];
-    if (video && video.videoWidth > 0) {
-      showToast('Capturing media…', container, { variant: 'info' });
-      await waitForVideoReady(video);
-      try {
-        const screenshot = await captureScreenshot(video);
-        initialMedia.push(screenshot);
-      } catch {
-        // Screenshot failure is non-fatal — user can re-capture in the dialog.
-        showToast('Screenshot failed — you can capture manually in the dialog.', container, { variant: 'warning' });
-      }
-      // Sentence audio: only if the context sentence matches a subtitle cue.
-      // For web-text selection (no matching cue), skip audio capture.
-      try {
-        const cues = blockController.getTargetCues();
-        const currentMs = video.currentTime * 1000;
-        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
-        if (matchingCue) {
-          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
-          if (audioR.ok) initialMedia.push(audioR.file);
-        }
-      } catch {
-        // Audio failure is non-fatal.
-      }
-    }
-
-    // Build the Card Creator open context with popup prefill.
-    // video + cue are optional — the dialog handles their absence.
-    const ctx = {
-      video: video && video.videoWidth > 0 ? video : undefined,
-      cue: undefined, // popup dictionary doesn't use subtitle cue timing
-      sourceLang,
-      targetLang,
-      initialMedia: initialMedia.length > 0 ? initialMedia : undefined,
-      prefill: {
-        targetWord: prefill.term,
-        definitions: definitionsText,
-        sentenceTranslation: prefill.translation,
-        sentence: prefill.contextSentence,
-        wordAudioUrls: prefill.wordAudioUrls,
-        sentenceAudioUrls: prefill.sentenceAudioUrls,
-        imageUrls: prefill.imageUrls,
-      },
-    };
-
-    cardCreatorMount.open(ctx, action);
-  }
-
-  /** Quick Add directly from popup — bypass the Card Creator dialog.
-   *  Collects media (word audio + sentence audio + image from popup prefill,
-   *  plus screenshot + sentence audio from video if available), builds Anki
-   *  fields using the last-used draft's config (deck, noteType, fieldMapping,
-   *  tags), uploads media, and calls addNote. Best-effort: failed media
-   *  fetches are skipped (toast warning), the note is still added. */
-  async function handlePopupQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {
-    // Load settings fresh.
-    const settings = await loadSettingsOrToast(container);
-    if (!settings) return;
-    const ccSettings = settings.cardCreator;
-    const url = ccSettings.ankiConnectUrl;
-
-    // Load last-used draft for deck/noteType/fieldMapping/tags.
-    const autosaver = new DraftAutosaver();
-    const restored = await autosaver.load();
-    const deck = restored?.deck ?? ccSettings.defaultDeck;
-    const noteType = restored?.noteType ?? ccSettings.defaultNoteType;
-    const fieldMapping = restored?.fieldMapping ?? {};
-    const tags = restored?.tags ?? ccSettings.defaultTags;
-
-    if (!deck || !noteType) {
-      showToast('Quick Add needs a deck + note type. Open Card Creator first to configure.', container, { variant: 'error' });
-      return;
-    }
-    if (Object.keys(fieldMapping).length === 0) {
-      showToast('Quick Add needs field mapping. Open Card Creator first to configure.', container, { variant: 'error' });
-      return;
-    }
-
-    showToast('Quick Add — collecting media…', container, { variant: 'info' });
-
-    // Fetch media URLs from popup prefill (best-effort, parallel).
-    const wordAudios: MediaFile[] = [];
-    const sentenceAudios: MediaFile[] = [];
-    const images: MediaFile[] = [];
-    const warnings: string[] = [];
-
-    const [wordResults, sentenceResults, imageResults] = await Promise.all([
-      Promise.allSettled((prefill.wordAudioUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'audio'))),
-      Promise.allSettled((prefill.sentenceAudioUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'audio'))),
-      Promise.allSettled((prefill.imageUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'image'))),
-    ]);
-    wordResults.forEach((r, i) => {
-      if (r.status === 'fulfilled') wordAudios.push(r.value);
-      else warnings.push(`word audio: ${prefill.wordAudioUrls![i]}`);
-    });
-    sentenceResults.forEach((r, i) => {
-      if (r.status === 'fulfilled') sentenceAudios.push(r.value);
-      else warnings.push(`sentence audio: ${prefill.sentenceAudioUrls![i]}`);
-    });
-    imageResults.forEach((r, i) => {
-      if (r.status === 'fulfilled') images.push(r.value);
-      else warnings.push(`image: ${prefill.imageUrls![i]}`);
-    });
-
-    // Capture screenshot + sentence audio from video if available.
-    if (video && video.videoWidth > 0) {
-      await waitForVideoReady(video);
-      try {
-        const screenshot = await captureScreenshot(video);
-        images.push(screenshot);
-      } catch { warnings.push('screenshot'); }
-      try {
-        const cues = blockController.getTargetCues();
-        const currentMs = video.currentTime * 1000;
-        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
-        if (matchingCue) {
-          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
-          if (audioR.ok) sentenceAudios.push(audioR.file);
-        }
-      } catch { warnings.push('sentence audio capture'); }
-    }
-
-    // Build text fields from prefill.
-    const definitionsText = prefill.definitions
-      .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
-      .join('\n');
-
-    // Add the note.
-    const result = await quickAddNote(
-      url,
-      deck,
-      noteType,
-      fieldMapping,
-      tags,
-      {
-        targetWord: prefill.term,
-        sentence: prefill.contextSentence,
-        sentenceTranslation: prefill.translation ?? '',
-        definitions: definitionsText,
-        note: '',
-        moreExample: '',
-      },
-      { images, sentenceAudios, wordAudios },
-      (msg) => warnings.push(msg),
-    );
-
-    if (result.ok) {
-      if (result.noteId === null) {
-        showToast('Card not added — a duplicate may already exist.', container, { variant: 'warning' });
-      } else {
-        showToast(`Card added to "${deck}" (#${result.noteId}).`, container, { variant: 'success' });
-      }
-    } else {
-      showToast(`Quick Add failed: ${result.error}`, container, { variant: 'error' });
-    }
-    if (warnings.length > 0) {
-      showToast(`Skipped: ${warnings.join(', ')}`, container, { variant: 'warning' });
-    }
+    sharedWebTextCtrl.openCardCreator({ ...ctx, initialMedia }, action);
   }
 
   /** Generate native subtitle by translating the active target cues into the
@@ -716,10 +438,29 @@ export function init(video: HTMLVideoElement): () => void {
     });
     updateGenerateNativeEnabled();
 
-    // Popup dictionary: wire trigger → lookup → popup (spec §4.6).
+    // Popup dictionary: wire shared web-text controller for subtitle tokens.
     const dpSettings = settings.dictionaryPopup;
-    if (dpSettings?.enabled) {
-      wireDictionaryPopup(dpSettings, settings.cardCreator ?? { ankiDeck: '', ankiTags: [], enableAudio: true, enableImage: true, enableScreenshot: true, enableSentence: true });
+    if (dpSettings?.enabled && sharedWebTextCtrl) {
+      sharedWebTextCtrl.updateSettings({
+        dictionaryPopup: dpSettings,
+        cardCreator: settings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
+        subtitleOverlayNativeLanguage: settings.subtitleOverlayNativeLanguage,
+      });
+      sharedWebTextCtrl.configureVideo({
+        hasVideo: true,
+        video,
+        getTargetCues: () => blockController.getTargetCues(),
+      });
+      sharedWebTextCtrl.attach(dpSettings.triggerMode);
+      blockController.enableDictionaryPopup(
+        dpSettings.triggerMode,
+        (request, requestId, anchorRect, tokenSpan) => {
+          sharedWebTextCtrl?.handleLookup(request, requestId, anchorRect, tokenSpan);
+        },
+        (requestId) => { sharedWebTextCtrl?.cancelLookup(requestId); },
+      );
+    } else {
+      blockController.disableDictionaryPopup();
     }
 
     // ADR-015 UI v4: create import button + manager panel.
@@ -802,22 +543,19 @@ export function init(video: HTMLVideoElement): () => void {
       }
       // Live-update dictionary popup settings (defaultActiveTab, triggerMode, etc.)
       // without requiring a page reload.
-      if (newSettings.dictionaryPopup && popupDictState) {
-        popupDictState = updatePopupSettings(popupDictState, newSettings.dictionaryPopup, newSettings.subtitleOverlayNativeLanguage ?? '');
-        // Re-wire trigger mode if it changed.
-        if (webTextTrigger) {
-          webTextTrigger.detach();
-          webTextTrigger = new WebTriggerController({
-            triggerMode: newSettings.dictionaryPopup.triggerMode,
-            onLookup: (request, requestId, anchorRect) => { void handleLookup(request, requestId, anchorRect); },
-            onCancel: (requestId) => { cancelLookup(requestId); },
-          });
-          webTextTrigger.attach();
-        }
+      if (newSettings.dictionaryPopup && sharedWebTextCtrl) {
+        sharedWebTextCtrl.updateSettings({
+          dictionaryPopup: newSettings.dictionaryPopup,
+          cardCreator: newSettings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
+          subtitleOverlayNativeLanguage: newSettings.subtitleOverlayNativeLanguage,
+        });
+        sharedWebTextCtrl.attach(newSettings.dictionaryPopup.triggerMode);
         blockController.enableDictionaryPopup(
           newSettings.dictionaryPopup.triggerMode,
-          (request: LookupRequest, requestId: string, anchorRect: DOMRect) => { void handleLookup(request, requestId, anchorRect); },
-          (requestId: string) => { cancelLookup(requestId); },
+          (request, requestId, anchorRect, tokenSpan) => {
+            sharedWebTextCtrl?.handleLookup(request, requestId, anchorRect, tokenSpan);
+          },
+          (requestId) => { sharedWebTextCtrl?.cancelLookup(requestId); },
         );
       }
     });
@@ -1139,7 +877,7 @@ export function init(video: HTMLVideoElement): () => void {
       case 'quick-update':
       case 'edit-card': {
         if (e.repeat) return;
-        if (cardCreatorMount?.isOpen()) return;
+        if (sharedWebTextCtrl?.isCardCreatorOpen()) return;
         void handleCardCreatorAction(action);
         break;
       }
@@ -1773,7 +1511,6 @@ export function init(video: HTMLVideoElement): () => void {
     removeOnMessageListener(onRuntimeMessage2);
     toggleBtn?.remove();
     managerPanel?.destroy();
-    cardCreatorMount?.unmount();
     offsetController?.destroy();
     blockController?.destroy();
   };

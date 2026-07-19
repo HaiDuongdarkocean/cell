@@ -88,6 +88,9 @@ export interface CandidateState {
   audioSelection: Map<string, boolean>;
   audioItems: AudioItem[];
   audioSubTab: 'word' | 'sentence';
+  /** ID of the community audio item "owned" by the header play button.
+   *  The Audio tab excludes this item from its list to avoid duplication. */
+  headerAudioId: string | null;
   imageSelection: Map<string, boolean>;
   imageItems: ImageItem[];
   translation: string;
@@ -105,6 +108,7 @@ interface ActiveCandidateSnapshot {
   audioSelection: Map<string, boolean>;
   audioItems: AudioItem[];
   audioSubTab: 'word' | 'sentence';
+  headerAudioId: string | null;
   imageSelection: Map<string, boolean>;
   imageItems: ImageItem[];
   translation: string;
@@ -144,6 +148,9 @@ export interface PopupDictionaryState {
   audioItems: AudioItem[];
   /** Active audio sub-tab (winner). */
   audioSubTab: 'word' | 'sentence';
+  /** ID of community audio item owned by header play button (winner).
+   *  Audio tab excludes this from its list to avoid duplication. */
+  headerAudioId: string | null;
   /** Image selection checkboxes (winner). */
   imageSelection: Map<string, boolean>;
   /** Image items fetched by the image panel (winner). */
@@ -175,6 +182,7 @@ function createEmptyTabPanelCache(): TabPanelCache {
   return {
     audioItems: [],
     audioSelection: new Map(),
+    headerAudioId: null,
     imageItems: [],
     imageSelection: new Map(),
     translations: new Map(),
@@ -189,6 +197,7 @@ export function createCandidateState(result: LookupResult): CandidateState {
     audioSelection: new Map(),
     audioItems: [],
     audioSubTab: 'word',
+    headerAudioId: null,
     imageSelection: new Map(),
     imageItems: [],
     translation: '',
@@ -221,6 +230,7 @@ export function createPopupDictionaryState(
     audioSelection: new Map(),
     audioItems: [],
     audioSubTab: 'word',
+    headerAudioId: null,
     imageSelection: new Map(),
     imageItems: [],
     activeTab: settings.defaultActiveTab ?? null,
@@ -283,6 +293,7 @@ export function showPopup(
     const cache = state.tabPanelCache.get(state.cachedResultTerm) ?? createEmptyTabPanelCache();
     cache.audioItems = state.audioItems;
     cache.audioSelection = state.audioSelection;
+    cache.headerAudioId = state.headerAudioId;
     cache.imageItems = state.imageItems;
     cache.imageSelection = state.imageSelection;
     cache.translations.set(state.cachedContextSentence, { translation: state.translation, selected: state.translationSelected });
@@ -307,6 +318,7 @@ export function showPopup(
     definitionSelection,
     audioItems: newCache.audioItems,
     audioSelection: newCache.audioSelection,
+    headerAudioId: newCache.headerAudioId,
     imageItems: newCache.imageItems,
     imageSelection: newCache.imageSelection,
     translation: translationEntry?.translation ?? '',
@@ -329,7 +341,14 @@ export function showPopup(
       onPlayTerm: () => {
         const active = getActiveResult(state);
         if (!active) return;
-        void playTermAudio(active.term, active.langCode, getActiveSnapshot(state).audioItems);
+        void playTermAudio(active.term, active.langCode, getActiveSnapshot(state).audioItems).then(({ playedItem, fetchedItems }) => {
+          if (playedItem) {
+            const patch: Partial<ActiveCandidateSnapshot> = { headerAudioId: playedItem.id };
+            // Cache fetched community items so subsequent header clicks + Audio tab can reuse them.
+            if (fetchedItems.length > 0) patch.audioItems = fetchedItems;
+            setActiveSnapshot(state, patch);
+          }
+        });
       },
       onPlaySentence: () => {
         const active = getActiveResult(state);
@@ -602,6 +621,7 @@ function getActiveSnapshot(state: PopupDictionaryState): ActiveCandidateSnapshot
       audioSelection: state.audioSelection,
       audioItems: state.audioItems,
       audioSubTab: state.audioSubTab,
+      headerAudioId: state.headerAudioId,
       imageSelection: state.imageSelection,
       imageItems: state.imageItems,
       translation: state.translation,
@@ -618,6 +638,7 @@ function getActiveSnapshot(state: PopupDictionaryState): ActiveCandidateSnapshot
     audioSelection: cs.audioSelection,
     audioItems: cs.audioItems,
     audioSubTab: cs.audioSubTab,
+    headerAudioId: cs.headerAudioId,
     imageSelection: cs.imageSelection,
     imageItems: cs.imageItems,
     translation: cs.translation,
@@ -635,6 +656,7 @@ function setActiveSnapshot(state: PopupDictionaryState, patch: Partial<ActiveCan
     state.audioSelection = patch.audioSelection ?? state.audioSelection;
     state.audioItems = patch.audioItems ?? state.audioItems;
     state.audioSubTab = patch.audioSubTab ?? state.audioSubTab;
+    state.headerAudioId = patch.headerAudioId ?? state.headerAudioId;
     state.imageSelection = patch.imageSelection ?? state.imageSelection;
     state.imageItems = patch.imageItems ?? state.imageItems;
     state.translation = patch.translation ?? state.translation;
@@ -652,6 +674,7 @@ function setActiveSnapshot(state: PopupDictionaryState, patch: Partial<ActiveCan
     audioSelection: patch.audioSelection ?? old.audioSelection,
     audioItems: patch.audioItems ?? old.audioItems,
     audioSubTab: patch.audioSubTab ?? old.audioSubTab,
+    headerAudioId: patch.headerAudioId ?? old.headerAudioId,
     imageSelection: patch.imageSelection ?? old.imageSelection,
     imageItems: patch.imageItems ?? old.imageItems,
     translation: patch.translation ?? old.translation,
@@ -683,7 +706,13 @@ function renderActiveEntryFromState(state: PopupDictionaryState, container: HTML
     onPlayTerm: () => {
       const r = getActiveResult(state);
       if (!r) return;
-      void playTermAudio(r.term, r.langCode, getActiveSnapshot(state).audioItems);
+      void playTermAudio(r.term, r.langCode, getActiveSnapshot(state).audioItems).then(({ playedItem, fetchedItems }) => {
+        if (playedItem) {
+          const patch: Partial<ActiveCandidateSnapshot> = { headerAudioId: playedItem.id };
+          if (fetchedItems.length > 0) patch.audioItems = fetchedItems;
+          setActiveSnapshot(state, patch);
+        }
+      });
     },
     onPlaySentence: () => {
       const r = getActiveResult(state);
@@ -789,6 +818,7 @@ function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement)
     audioSelection: snapshot.audioSelection,
     audioItems: snapshot.audioItems,
     audioSubTab: snapshot.audioSubTab,
+    headerAudioId: snapshot.headerAudioId,
     imageSelection: snapshot.imageSelection,
     imageItems: snapshot.imageItems,
   }, {
@@ -870,6 +900,7 @@ function renderTabPanel(
     audioSelection: Map<string, boolean>;
     audioItems: AudioItem[];
     audioSubTab: 'word' | 'sentence';
+    headerAudioId: string | null;
     imageSelection: Map<string, boolean>;
     imageItems: ImageItem[];
   },
@@ -891,11 +922,9 @@ function renderTabPanel(
       let wordAudios: AudioItem[] = [];
       let sentenceAudios: AudioItem[] = [];
 
-      // Show all audio items in the tab — header play buttons are quick-play
-      // shortcuts (first available), not "owners" of the first item. Hiding the
-      // first item when it's the only one made the tab show "No audio available"
-      // even though audio exists.
-      const tabWordAudios = (): AudioItem[] => wordAudios;
+      // Exclude the header audio item from the tab list — the header play button
+      // "owns" that item, so the tab shows the remaining audio to avoid duplication.
+      const tabWordAudios = (): AudioItem[] => wordAudios.filter((a) => a.id !== ctx.headerAudioId);
       const tabSentenceAudios = (): AudioItem[] => sentenceAudios;
 
       const stopCurrentAudio = (): void => {
@@ -945,9 +974,49 @@ function renderTabPanel(
       };
 
       // Cache hit: audio panel data already exists for this term+sentence.
+      // But if the cache was populated by a header click (community items only,
+      // no TTS), we still need to fetch TTS and merge it in.
       if (ctx.audioItems.length > 0) {
         wordAudios = ctx.audioItems.filter((a) => a.kind === 'word');
         sentenceAudios = ctx.audioItems.filter((a) => a.kind === 'sentence');
+        const hasTts = ctx.audioItems.some((a) => a.source === 'system-tts');
+        const ttsEnabled = ctx.settings.tts?.enabled !== false;
+        const maxDisplay = ctx.settings.tts?.maxDisplay ?? 3;
+        if (!hasTts && ttsEnabled) {
+          // Render existing community items immediately, then fetch TTS in background.
+          renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
+          void (async () => {
+            const allTtsVoices = await fetchTtsVoiceRows(ctx.settings, langCode);
+            const ttsVoices = allTtsVoices.slice(0, maxDisplay);
+            const ttsWordItems: AudioItem[] = ttsVoices.map((v) => ({
+              id: `tts-word-${v.voiceName}`,
+              kind: 'word',
+              source: 'system-tts',
+              label: `${v.voiceName} · ${v.lang}`,
+              state: 'idle',
+              defaultSelected: false,
+            }));
+            const ttsSentenceItems: AudioItem[] = ctx.contextSentence
+              ? ttsVoices.map((v) => ({
+                  id: `tts-sentence-${v.voiceName}`,
+                  kind: 'sentence',
+                  source: 'system-tts',
+                  label: `${v.voiceName} · Sentence`,
+                  state: 'idle',
+                  defaultSelected: false,
+                }))
+              : [];
+            wordAudios = [...wordAudios, ...ttsWordItems].slice(0, 3);
+            sentenceAudios = [...sentenceAudios, ...ttsSentenceItems].slice(0, 3);
+            ctx.audioItems.length = 0;
+            ctx.audioItems.push(...wordAudios, ...sentenceAudios);
+            const existing = container.querySelector('.js-cell-panel[data-cell-panel="audio"]');
+            if (!existing) return;
+            existing.remove();
+            renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
+          })();
+          break;
+        }
         renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
         break;
       }
@@ -1165,16 +1234,41 @@ function onResizeEnd(state: PopupDictionaryState, size: PopupSize): void {
   })();
 }
 
-/** Play the term from the header audio button: use first cached Forvo URL or TTS. */
-async function playTermAudio(term: string, langCode: string, audioItems: readonly AudioItem[]): Promise<void> {
-  // ponytail: state.audioItems may not be loaded yet (lazy Audio tab). If a Forvo
-  // word URL is already cached, play it; otherwise fall back to system TTS.
-  const forvoItem = audioItems.find((a) => a.kind === 'word' && a.url);
-  if (forvoItem?.url) {
-    void new Audio(forvoItem.url).play().catch(() => { /* best-effort */ });
-    return;
+/** Play an audio URL best-effort. Handles both sync throws (jsdom) and async
+ *  rejections (browser autoplay policy) silently. */
+function playUrlBestEffort(url: string): void {
+  try {
+    void new Audio(url).play().catch(() => { /* best-effort */ });
+  } catch { /* best-effort — jsdom throws synchronously */ }
+}
+
+/** Play the term from the header audio button: use first cached community URL,
+ *  or fetch community audio on-demand if not cached yet. Falls back to TTS only
+ *  when no human audio is available.
+ *  Returns the played AudioItem (so caller can set headerAudioId) and any fetched
+ *  items (so caller can cache them for the Audio tab). */
+async function playTermAudio(
+  term: string,
+  langCode: string,
+  audioItems: readonly AudioItem[],
+): Promise<{ playedItem: AudioItem | null; fetchedItems: AudioItem[] }> {
+  // Try cached community audio first (from Audio tab or previous header click).
+  const communityItem = audioItems.find((a) => a.kind === 'word' && a.url);
+  if (communityItem?.url) {
+    playUrlBestEffort(communityItem.url);
+    return { playedItem: communityItem, fetchedItems: [] };
   }
+  // No cached community audio — fetch on-demand so the header plays real human
+  // speech instead of immediately falling back to TTS.
+  const fetched = await fetchForvoAudio(term, langCode);
+  const firstHuman = fetched.find((a) => a.kind === 'word' && a.url);
+  if (firstHuman?.url) {
+    playUrlBestEffort(firstHuman.url);
+    return { playedItem: firstHuman, fetchedItems: fetched };
+  }
+  // No human audio available — fall back to system TTS.
   await playTts({ id: 'tts-word-', kind: 'word', source: 'system-tts', label: '', state: 'idle', defaultSelected: false }, term, '', langCode);
+  return { playedItem: null, fetchedItems: [] };
 }
 
 /** Play the sentence from the header audio button: use first cached sentence URL or TTS. */
@@ -1182,7 +1276,7 @@ async function playSentenceAudio(sentence: string, langCode: string, audioItems:
   if (!sentence) return;
   const sentenceItem = audioItems.find((a) => a.kind === 'sentence' && a.url);
   if (sentenceItem?.url) {
-    void new Audio(sentenceItem.url).play().catch(() => { /* best-effort */ });
+    playUrlBestEffort(sentenceItem.url);
     return;
   }
   await playTts({ id: 'tts-sentence-', kind: 'sentence', source: 'system-tts', label: '', state: 'idle', defaultSelected: false }, '', sentence, langCode);

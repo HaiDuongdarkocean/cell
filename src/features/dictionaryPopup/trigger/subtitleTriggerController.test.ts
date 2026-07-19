@@ -118,7 +118,7 @@ describe('nextRequestId', () => {
 });
 
 describe('SubtitleTriggerController', () => {
-  let onLookup: jest.Mock<(req: LookupRequest, requestId: string, anchorRect: DOMRect) => void>;
+  let onLookup: jest.Mock<(req: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => void>;
   let onCancel: jest.Mock<(requestId: string) => void>;
   let parent: HTMLSpanElement;
   let spans: HTMLSpanElement[];
@@ -132,7 +132,7 @@ describe('SubtitleTriggerController', () => {
   }
 
   beforeEach(() => {
-    onLookup = jest.fn<(req: LookupRequest, requestId: string, anchorRect: DOMRect) => void>();
+    onLookup = jest.fn<(req: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => void>();
     onCancel = jest.fn<(requestId: string) => void>();
     parent = document.createElement('span');
     spans = wrapTokenSpans(parent, 'Hello world.', 'en');

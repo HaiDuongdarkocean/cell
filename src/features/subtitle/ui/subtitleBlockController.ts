@@ -534,7 +534,7 @@ export class SubtitleBlockController {
   /** Enable popup dictionary on this subtitle block. */
   enableDictionaryPopup(
     triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt',
-    onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect) => void,
+    onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => void,
     onCancel: (requestId: string) => void,
   ): void {
     this.dpEnabled = true;

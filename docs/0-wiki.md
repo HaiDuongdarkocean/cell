@@ -55,6 +55,7 @@ docs/           # Tài liệu dự án
 │   └── 043-popup-dictionary-ux-improvements.md # ADR-043: header audio/close buttons, audio play/pause state, image grid, links chips, Quick Add toast, focus trap, drag header
 │   └── 044-design-token-ssot.md        # ADR-044: Single source of truth cho design tokens (tokens.json + generator + runtime wrapper)
 │   └── 045-popup-dictionary-redesign-hybrid-chips.md # ADR-045: Popup Dictionary redesign — hybrid chips + expand, single context-aware toolbar, 3-row header, footer status/send/settings
+│   └── 046-web-text-dictionary-decouple.md # ADR-046: Decouple web-text dictionary popup from video presence + word highlight
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -73,6 +74,7 @@ docs/           # Tài liệu dự án
 │   └── intent-subtitle-block-unified.md # Gộp target + native + nav cluster thành 1 block, pill kéo trục Y, auto-scale theo video
 │   ├── intent-card-creator.md # Card Creator — tạo + update Anki flashcard từ subtitle block (desktop + mobile)
 │   └── intent-card-creator-ui-redesign.md # Card Creator UI redesign (preview block + Yomitan scan + media D&D/reorder)
+│   └── intent-web-text-dictionary-popup.md # Web-text dictionary popup (decouple from video + word highlight)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
@@ -100,6 +102,7 @@ docs/           # Tài liệu dự án
 │   └── design/dictionary-popup-prototype-handoff.md # Interactive dictionary popup prototype handoff (English/Chinese, tabs, media, card creator, design-system constraints)
 │   └── design/popup-dictionary-tab-ui-design.md # Popup Dictionary tab UI design variants: audio, image, translate, links (selected variants + CSS)
 │   └── design/popup-dictionary-ux-improvements.md # Popup Dictionary UX improvement spec: Socratic audit, selected improvements, implementation notes
+│   └── web-text-dictionary-popup.md   # Web-text dictionary popup PRD (decouple from video + word highlight)
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md
