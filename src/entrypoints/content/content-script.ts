@@ -265,7 +265,6 @@ async function initWebTextDictionary(): Promise<void> {
     ctrl.attach(dp.triggerMode);
   } catch (err) {
     // Storage may be unavailable in some test/sandbox contexts — safe fallback.
-    // eslint-disable-next-line no-console
     console.warn('[content-script] initWebTextDictionary failed', err);
   }
 }
