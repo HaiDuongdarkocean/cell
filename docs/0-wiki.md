@@ -183,34 +183,7 @@ docs/           # Tài liệu dự án
 │   └── design-system-inventory-2026-07-02-nav-cluster.md # Design system inventory nav cluster (G3: 0 inconsist baseline, 10 new tokens, NavClusterButton atom, 3-layer enforcement)
 │   └── nav-cluster-frontend-design.md # Frontend UI engineering nav cluster (G3 build HOW: DOM tree, state machines, ARIA toolbar, responsive touch target, perf, anti-AI-aesthetic)
 │   └── review-youtube-subtitle-detection.md # Spec review: YouTube subtitle detection (APPROVED_WITH_CONDITIONS → revised → APPROVED, Opus 4.8, 3 CRITICAL + 4 HIGH resolved)
-├── design-system/                     # Living design system documentation + mockups
-│   ├── design-system.md               # Source-of-truth design system spec (tokens + component specs + usage rules)
-│   ├── design-dark-github.md          # Reference: GitHub dark theme extraction
-│   ├── design-dark-github.css         # Reference: GitHub dark theme CSS tokens
-│   ├── design-dark-github.json        # Reference: GitHub dark theme DTCG tokens
-│   ├── design-light-youtube.md        # Reference: YouTube light theme extraction
-│   ├── design-light-youtube.css       # Reference: YouTube light theme CSS tokens
-│   ├── design-light-youtube.json      # Reference: YouTube light theme DTCG tokens
-│   ├── icon/                          # Lucide reference catalog (1995 SVG, ISC license, NOT bundled, chỉ tham khảo phong cách)
-│   │   ├── README.md                  # Workflow: find icon → copy to src/ → import ?raw → use
-│   │   ├── LICENSE                    # ISC license from Lucide (redistribution obligation)
-│   │   ├── catalog.md                 # Auto-generated index of 1995 icons with tags (do not edit by hand)
-│   │   ├── index.html                 # Visual overview page (search + click-to-copy, self-contained, open in browser)
-│   │   └── svg/                       # 1995 raw .svg files from lucide-static (stroke 2.0, 24x24, round caps)
-│   ├── icon-system/                   # Cell icon system — tự vẽ 322 icon (KHÔNG bundled, docs-only)
-│   │   ├── README.md                  # Workflow: tìm icon → copy to src/ → import ?raw → use
-│   │   ├── STYLE-GUIDE.md             # Phong cách thiết kế (24x24, stroke 2, round caps, currentColor)
-│   │   ├── catalog.md                 # Auto-generated index of 322 icons (do not edit by hand)
-│   │   ├── index.html                 # Visual overview page (search + filter by category + click-to-copy, self-contained)
-│   │   ├── icon-list.txt              # Danh sách icon gốc (reference)
-│   │   └── svg/                       # 322 SVG files (12 categories: media/subtitle/dictionary/flashcard/mediatype/download/nav/edit/settings/time/status/comm)
-│   └── icon-system_v2/                # Cell icon system v2 — minimalism V1 (322 icons, 42 synced fallback V1)
-│       ├── README.md                  # Workflow: tìm icon v2 → copy to src/ → import ?raw → use
-│       ├── STYLE-GUIDE.md             # Phong cách thiết kế (24x24, stroke 2, round caps, currentColor)
-│       ├── catalog.md                 # Auto-generated index of 322 icons (do not edit by hand)
-│       ├── index.html                 # Visual overview page (search + filter by category + click-to-copy, self-contained)
-│       ├── icon-list.txt              # Danh sách icon gốc (reference)
-│       └── svg/                       # 322 SVG files (12 categories, variant V1 minimalism)
+├── (design-system/ đã xóa — codebase là nguồn duy nhất: src/shared/styles/tokens.json + src/shared/ui/)
 ├── mockups/                           # HTML mockups (design-driven-development output, G0.5)
 │   ├── subtitle-selector-mockup.html  # Subtitle selector mockup v4 (ADR-014 enhancement)
 │   ├── mockup-settings-grouped.html   # Settings dialog grouped layout v1 (sidebar + cards)

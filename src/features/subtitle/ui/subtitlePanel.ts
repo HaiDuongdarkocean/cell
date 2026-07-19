@@ -3,11 +3,11 @@
 // Only the overlay toggle button + seek helper remain in content script.
 //
 // Design-system sync (2026-07-02): panel-toggle, subtitle-manager-icon, and
-// subtitle-import-button share the same DS §2 Icon Button pattern —
+// subtitle-import-button share the same Icon Button pattern —
 //   box: 40×40, --radius-full (circular), no border at rest, no shadow
 //   hover: --color-surface-hover bg
 //   focus: outline 2px --color-primary, offset 2px
-// Reference: design-system.md §2 Icon Button.
+// Reference: src/shared/ui/IconButton.tsx + src/shared/styles/components.css.
 
 import { ICON_CATALOG } from '@/shared/icons';
 import { seekVideo, mountToWatchVideo } from './netflixPlayback';

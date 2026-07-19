@@ -1,7 +1,7 @@
 /* === FieldRow — label + field-map select + auto-grow input (Card Creator) ===
    BEM block: .field-row
    ADR-026: uses design-system tokens (--space-*, --color-*, --input-*) per
-   docs/design-system/design-system.md §2.2-2.3 + §3.3 Input.
+   src/shared/styles/tokens.json + src/shared/ui/Input.tsx.
    Spec: docs/specs/spec-card-creator-ui-redesign.md §9.5
 */
 
