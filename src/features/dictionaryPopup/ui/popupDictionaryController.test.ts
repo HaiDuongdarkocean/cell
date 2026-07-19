@@ -517,3 +517,69 @@ describe('setActiveCandidate', () => {
     expect(s.activeCandidateIndex).toBe(0);
   });
 });
+
+describe('header audio', () => {
+  let state: ReturnType<typeof createPopupDictionaryState>;
+
+  beforeEach(() => {
+    state = makePopupState();
+    mockSendMessage.mockReset();
+  });
+
+  it('initializes headerAudioId to null', () => {
+    expect(state.headerAudioId).toBeNull();
+  });
+
+  it('fetches community audio on-demand when header play is clicked (not just TTS)', async () => {
+    const communityItems = [
+      { id: 'wiktionary-US-0', kind: 'word' as const, source: 'community' as const, label: 'US pronunciation', accentId: 'US', state: 'idle' as const, url: 'https://example.com/audio.ogg', defaultSelected: false },
+    ];
+    // showPopup with defaultActiveTab=null won't call sendMessage, so all calls
+    // are from playTermAudio's fetchForvoAudio.
+    mockSendMessage.mockResolvedValue({ success: true, data: { items: communityItems } });
+
+    const shown = showPopup(state, makeResult(), {
+      anchor: { top: 170, left: 100, right: 150, bottom: 200 },
+      contextSentence: 'Take off your shoes.',
+    });
+    const container = shown.shell?.getContainer();
+    const playBtn = container!.querySelector('.js-cell-play-term') as HTMLButtonElement;
+    expect(playBtn).toBeTruthy();
+    playBtn.click();
+
+    // Wait for the async fetch + play to complete.
+    await new Promise((r) => setTimeout(r, 50));
+
+    const fetchCalls = mockSendMessage.mock.calls.filter((c) => (c[0] as { type?: string })?.type === 'FETCH_COMMUNITY_AUDIO');
+    expect(fetchCalls.length).toBeGreaterThanOrEqual(1);
+    // headerAudioId should be set to the played community item's ID.
+    expect(shown.headerAudioId).toBe('wiktionary-US-0');
+  });
+
+  it('uses cached community audio when audioItems already populated', async () => {
+    const cachedItem = { id: 'wiktionary-US-0', kind: 'word' as const, source: 'community' as const, label: 'US', accentId: 'US', state: 'idle' as const, url: 'https://example.com/cached.ogg', defaultSelected: false };
+    // Populate tab panel cache so showPopup loads the cached audioItems.
+    state.tabPanelCache.set('take off', {
+      audioItems: [cachedItem],
+      audioSelection: new Map(),
+      headerAudioId: null,
+      imageItems: [],
+      imageSelection: new Map(),
+      translations: new Map(),
+    });
+
+    const shown = showPopup(state, makeResult(), {
+      anchor: { top: 170, left: 100, right: 150, bottom: 200 },
+      contextSentence: 'Take off your shoes.',
+    });
+    const container = shown.shell?.getContainer();
+    const playBtn = container!.querySelector('.js-cell-play-term') as HTMLButtonElement;
+    playBtn.click();
+
+    // Should not fetch — cached item has a URL.
+    await new Promise((r) => setTimeout(r, 20));
+    const fetchCalls = mockSendMessage.mock.calls.filter((c) => (c[0] as { type?: string })?.type === 'FETCH_COMMUNITY_AUDIO');
+    expect(fetchCalls.length).toBe(0);
+    expect(shown.headerAudioId).toBe('wiktionary-US-0');
+  });
+});

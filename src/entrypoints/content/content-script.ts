@@ -1,7 +1,11 @@
-import { sendMessage } from '@/shared/lib/chrome-apis';
+import { sendMessage, onStorageChanged } from '@/shared/lib/chrome-apis';
 import { PageScanner } from './pageScanner';
 import { clearAutoLoadCache, initContentScriptController } from '@/features/subtitle';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import { STORAGE_KEYS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { createWebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
+import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 
 // ISOLATED content-script marker (verify injection from DevTools — MAIN world
@@ -227,13 +231,52 @@ let currentOverlayCleanup: (() => void) | null = null;
 // mount/unmount the same element multiple times during phase render).
 let currentVideo: HTMLVideoElement | null = null;
 
+// Top-level web-text dictionary controller (independent of video presence).
+// Shared with subtitle overlay controller for token lookup + highlight.
+let webTextCtrl: WebTextDictionaryController | null = null;
+
+function ensureWebTextCtrl(): WebTextDictionaryController {
+  if (!webTextCtrl) {
+    webTextCtrl = createWebTextDictionaryController({
+      container: document.body ?? document.documentElement,
+      dictionaryPopupSettings: DEFAULT_DICTIONARY_POPUP_SETTINGS,
+      cardCreatorSettings: DEFAULT_CARD_CREATOR_SETTINGS,
+      hasVideo: false,
+    });
+  }
+  return webTextCtrl;
+}
+
+async function initWebTextDictionary(): Promise<void> {
+  try {
+    const settings = await loadSettings();
+    const dp = settings.dictionaryPopup;
+    const ctrl = ensureWebTextCtrl();
+    if (!dp?.enabled) {
+      ctrl.detach();
+      ctrl.clearHighlight();
+      return;
+    }
+    ctrl.updateSettings({
+      dictionaryPopup: dp,
+      cardCreator: settings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
+      subtitleOverlayNativeLanguage: settings.subtitleOverlayNativeLanguage,
+    });
+    ctrl.attach(dp.triggerMode);
+  } catch (err) {
+    // Storage may be unavailable in some test/sandbox contexts — safe fallback.
+    // eslint-disable-next-line no-console
+    console.warn('[content-script] initWebTextDictionary failed', err);
+  }
+}
+
 function findAndInitOverlay(): void {
   const video = document.querySelector('video');
   if (video && isVideoReady(video)) {
     if (video === currentVideo) return; // already initialized for this element
     currentOverlayCleanup?.();
     currentVideo = video;
-    currentOverlayCleanup = initContentScriptController(video);
+    currentOverlayCleanup = initContentScriptController(video, ensureWebTextCtrl());
     return;
   }
 
@@ -251,7 +294,7 @@ function findAndInitOverlay(): void {
       clearTimeout(disconnectTimer);
       currentOverlayCleanup?.();
       currentVideo = v;
-      currentOverlayCleanup = initContentScriptController(v);
+      currentOverlayCleanup = initContentScriptController(v, ensureWebTextCtrl());
     }
   });
   observer.observe(document.body, {
@@ -428,6 +471,15 @@ if (document.readyState === 'loading') {
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', findAndInitOverlay);
+  document.addEventListener('DOMContentLoaded', () => { void initWebTextDictionary(); });
 } else {
   findAndInitOverlay();
+  void initWebTextDictionary();
 }
+
+// Re-init web-text dictionary when settings change (no page reload needed).
+onStorageChanged((changes, area) => {
+  if (area === 'local' && changes[STORAGE_KEYS.SETTINGS]) {
+    void initWebTextDictionary();
+  }
+});

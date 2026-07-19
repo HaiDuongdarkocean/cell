@@ -27,7 +27,7 @@ const MAX_SELECTION_LENGTH = 100;
 export function extractSentenceContext(
   textNode: Text,
   offsetInNode: number,
-): { sentence: string; cursorOffset: number; term: string } | null {
+): { sentence: string; cursorOffset: number; blockOffset: number; term: string; word: { text: string; start: number } } | null {
   // Walk up to nearest block-level element.
   let block: HTMLElement | null = textNode.parentElement;
   while (block) {
@@ -64,7 +64,9 @@ export function extractSentenceContext(
   return {
     sentence: fullText,
     cursorOffset: word.start,
+    blockOffset: cursorOffset,
     term: word.text,
+    word,
   };
 }
 
@@ -115,6 +117,13 @@ export function buildSelectionLookupRequest(selection: Selection): LookupRequest
 export function buildHoverLookupRequest(textNode: Text, offset: number): LookupRequest | null {
   const ctx = extractSentenceContext(textNode, offset);
   if (!ctx) return null;
+  return buildHoverLookupRequestFromContext(ctx);
+}
+
+/** Build a LookupRequest from an already-extracted sentence context. */
+function buildHoverLookupRequestFromContext(
+  ctx: NonNullable<ReturnType<typeof extractSentenceContext>>,
+): LookupRequest {
   const langCode = detectLangCode(ctx.sentence);
   return {
     term: ctx.term,
@@ -123,6 +132,27 @@ export function buildHoverLookupRequest(textNode: Text, offset: number): LookupR
     cursorOffset: ctx.cursorOffset,
     fallback: false,
   };
+}
+
+/** Build a DOM Range covering the word returned by extractSentenceContext.
+ *  This lets the consumer highlight the exact word even for hover/caret lookups. */
+function createWordRange(
+  textNode: Text,
+  offsetInNode: number,
+  ctx: NonNullable<ReturnType<typeof extractSentenceContext>>,
+): Range | null {
+  const nodeStart = ctx.word.start - (ctx.blockOffset - offsetInNode);
+  const nodeEnd = nodeStart + ctx.word.text.length;
+  const nodeText = textNode.textContent ?? '';
+  if (nodeStart < 0 || nodeEnd > nodeText.length || nodeStart >= nodeEnd) return null;
+  const range = document.createRange();
+  try {
+    range.setStart(textNode, nodeStart);
+    range.setEnd(textNode, nodeEnd);
+    return range;
+  } catch {
+    return null;
+  }
 }
 
 /** Check if a modifier key matches the trigger mode. */
@@ -137,7 +167,8 @@ function modifierMatches(mode: TriggerMode, e: MouseEvent): boolean {
 
 export interface WebTriggerDeps {
   readonly triggerMode: TriggerMode;
-  readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect) => void;
+  /** onLookup receives the cloned Range so the consumer can highlight the target word. */
+  readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, range: Range) => void;
   readonly onCancel: (requestId: string) => void;
 }
 
@@ -218,17 +249,34 @@ export class WebTriggerController {
     }
   }
 
-  private onMouseUp(_e: MouseEvent): void {
+  private onMouseUp(e: MouseEvent): void {
     // Selection-based lookup (click mode or fallback in hover mode).
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    const text = selection.toString().trim();
-    if (!text) return;
-    const request = buildSelectionLookupRequest(selection);
+    const text = selection?.toString().trim() ?? '';
+
+    if (text) {
+      const request = buildSelectionLookupRequest(selection!);
+      if (!request) return;
+      const range = selection!.getRangeAt(0);
+      const rect = safeGetRangeRect(range);
+      this.dispatchLookup(request, rect, range);
+      return;
+    }
+
+    // No selection: fallback to caret range (helps on user-select:none sites).
+    if (!document.caretRangeFromPoint) return;
+    const caretRange = document.caretRangeFromPoint(e.clientX, e.clientY);
+    if (!caretRange) return;
+    const textNode = caretRange.startContainer as Text;
+    if (textNode.nodeType !== Node.TEXT_NODE) return;
+    const ctx = extractSentenceContext(textNode, caretRange.startOffset);
+    if (!ctx) return;
+    const wordRange = createWordRange(textNode, caretRange.startOffset, ctx);
+    if (!wordRange) return;
+    const request = buildHoverLookupRequestFromContext(ctx);
     if (!request) return;
-    const range = selection.getRangeAt(0);
-    const rect = safeGetRangeRect(range);
-    this.dispatchLookup(request, rect);
+    const rect = safeGetRangeRect(wordRange);
+    this.dispatchLookup(request, rect, wordRange);
   }
 
   private onSelectionChange(): void {
@@ -241,27 +289,33 @@ export class WebTriggerController {
     // Get the text node under the cursor.
     const target = e.target as HTMLElement | null;
     if (!target) return;
-    // Skip our own popup + subtitle overlay (handled by subtitleTriggerController).
+    // Skip our own popup.
     if (target.closest('.js-cell-popup-host')) return;
+    // Skip subtitle tokens (handled by SubtitleTriggerController via shared controller).
+    if (target.closest('.js-cell-token')) return;
 
     // Get the text node + offset at the cursor position.
-    const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-    if (!range) {
+    const caretRange = document.caretRangeFromPoint(e.clientX, e.clientY);
+    if (!caretRange) {
       // Cursor over non-text (image, canvas, etc.) — cancel pending hover.
       if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
       this.lastHoveredTerm = null;
       return;
     }
-    const textNode = range.startContainer as Text;
+    const textNode = caretRange.startContainer as Text;
     if (textNode.nodeType !== Node.TEXT_NODE) {
       if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
       this.lastHoveredTerm = null;
       return;
     }
-    const offset = range.startOffset;
+    const offset = caretRange.startOffset;
 
-    // Build the request (debounced).
-    const request = buildHoverLookupRequest(textNode, offset);
+    // Extract word context + build a DOM range covering the word for highlight.
+    const ctx = extractSentenceContext(textNode, offset);
+    if (!ctx) return;
+    const wordRange = createWordRange(textNode, offset, ctx);
+    if (!wordRange) return;
+    const request = buildHoverLookupRequestFromContext(ctx);
     if (!request) return;
     // Skip if same term as last hover (avoid re-triggering).
     if (request.term === this.lastHoveredTerm) return;
@@ -270,16 +324,17 @@ export class WebTriggerController {
     if (this.hoverTimer) clearTimeout(this.hoverTimer);
     this.hoverTimer = setTimeout(() => {
       this.hoverTimer = null;
-      const rect = safeGetRangeRect(range);
-      this.dispatchLookup(request, rect);
+      const rect = safeGetRangeRect(wordRange);
+      this.dispatchLookup(request, rect, wordRange);
     }, WEB_HOVER_DEBOUNCE_MS);
   }
 
-  private dispatchLookup(request: LookupRequest, anchorRect: DOMRect): void {
+  private dispatchLookup(request: LookupRequest, anchorRect: DOMRect, range?: Range): void {
     this.cancelInFlight();
     const requestId = nextRequestId();
     this.inFlightRequestId = requestId;
-    this.deps.onLookup(request, requestId, anchorRect);
+    // Clone range so the consumer gets a stable snapshot for highlight.
+    this.deps.onLookup(request, requestId, anchorRect, range ? range.cloneRange() : new Range());
   }
 }
 

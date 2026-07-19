@@ -203,6 +203,9 @@ export interface WordStatusSetPayload extends WordStatusGetPayload {
 export interface TabPanelCache {
   audioItems: AudioItem[];
   audioSelection: Map<string, boolean>;
+  /** ID of community audio item owned by header play button.
+   *  Audio tab excludes this from its list to avoid duplication. */
+  headerAudioId: string | null;
   imageItems: ImageItem[];
   imageSelection: Map<string, boolean>;
   translations: Map<string, { translation: string; selected: boolean }>;

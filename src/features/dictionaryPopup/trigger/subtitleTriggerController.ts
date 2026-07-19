@@ -149,7 +149,8 @@ export function nextRequestId(): string {
  */
 export interface SubtitleTriggerDeps {
   readonly triggerMode: TriggerMode;
-  readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect) => void;
+  /** onLookup receives the token span so the consumer can highlight it. */
+  readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => void;
   readonly onCancel: (requestId: string) => void;
 }
 
@@ -285,7 +286,7 @@ export class SubtitleTriggerController {
       tokenRect.width,
       lineRect.height,
     );
-    this.deps.onLookup(request, requestId, anchorRect);
+    this.deps.onLookup(request, requestId, anchorRect, span);
   }
 
   /** Check if a LOOKUP_RESULT's requestId matches the in-flight request. */

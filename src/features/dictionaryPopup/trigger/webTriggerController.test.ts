@@ -201,7 +201,7 @@ describe('WebTriggerController', () => {
 
       const ctrl = new WebTriggerController({
         triggerMode: 'hover',
-        onLookup: (_req, _id, rect) => {
+        onLookup: (_req, _id, rect, _range) => {
           lookupCalled = true;
           capturedRect = rect;
         },
@@ -261,6 +261,70 @@ describe('WebTriggerController', () => {
       document.dispatchEvent(event2);
 
       // Advance past debounce — no lookup should fire (timer was cancelled).
+      jest.advanceTimersByTime(200);
+      expect(lookupCount).toBe(0);
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
+    it('hover dispatches lookup with Range passed for highlighting', () => {
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+
+      const textNode = p.firstChild as Text;
+      const mockRange = document.createRange();
+      mockRange.setStart(textNode, 4);
+      mockRange.setEnd(textNode, 9);
+      document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
+
+      let capturedRange: Range | null = null;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover',
+        onLookup: (_req, _id, _rect, range) => { capturedRange = range; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      const event = new MouseEvent('mousemove', { bubbles: true, clientX: 50, clientY: 10 });
+      Object.defineProperty(event, 'target', { value: p });
+      document.dispatchEvent(event);
+
+      jest.advanceTimersByTime(150);
+      expect(capturedRange).not.toBeNull();
+
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
+    it('hover over subtitle token does not dispatch lookup', () => {
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      const token = document.createElement('span');
+      token.className = 'js-cell-token';
+      token.textContent = 'quick';
+      p.appendChild(token);
+      document.body.appendChild(p);
+
+      const mockRange = document.createRange();
+      const tokenText = token.firstChild as Text;
+      mockRange.setStart(tokenText, 0);
+      mockRange.setEnd(tokenText, 5);
+      document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      const event = new MouseEvent('mousemove', { bubbles: true, clientX: 50, clientY: 10 });
+      Object.defineProperty(event, 'target', { value: token });
+      document.dispatchEvent(event);
+
       jest.advanceTimersByTime(200);
       expect(lookupCount).toBe(0);
 
