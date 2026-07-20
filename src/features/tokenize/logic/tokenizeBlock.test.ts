@@ -19,11 +19,11 @@ describe('findTextBlocks', () => {
     expect(blocks[0]!.originalText).toBe('Keep me.');
   });
 
-  it('skips text inside buttons but tokenizes anchors', () => {
+  it('skips text inside form controls but tokenizes buttons', () => {
     const root = document.createElement('div');
-    root.innerHTML = '<p>Normal text <a href="#">link text</a> <button>click</button></p>';
+    root.innerHTML = '<p>Normal text <a href="#">link text</a> <button>click</button> <input value="text"></p>';
     const blocks = findTextBlocks(root);
-    expect(blocks.map((b) => b.originalText)).toEqual(['Normal text ', 'link text']);
+    expect(blocks.map((b) => b.originalText)).toEqual(['Normal text ', 'link text', 'click']);
   });
 
   it('skips empty text nodes', () => {
