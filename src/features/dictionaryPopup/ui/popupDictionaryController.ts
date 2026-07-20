@@ -47,6 +47,8 @@ export interface ShowPopupOptions {
   readonly contextSentence: string;
   /** Called when popup is dismissed (Esc / click outside). */
   readonly onDismiss?: (newState: PopupDictionaryState) => void;
+  /** Called when the user cycles the word status inside the popup. */
+  readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
 }
 
 /** Pre-fill data extracted from the popup dictionary for the Card Creator.
@@ -130,6 +132,8 @@ export interface PopupDictionaryState {
   /** Callback to Quick Add directly (bypass dialog). Wired by content script.
    *  Used by 'quick-add' action. Collects media + adds note to Anki immediately. */
   onQuickAddDirect?: OnQuickAddDirect;
+  /** Callback when the user cycles the word status inside the popup. */
+  onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Current lookup result — winner/first candidate (null when popup is closed). */
   currentResult: LookupResult | null;
   /** Additional candidates appended after winner. */
@@ -252,7 +256,7 @@ export function showPopup(
   result: LookupResult,
   options: ShowPopupOptions,
 ): PopupDictionaryState {
-  const { anchor, contextSentence, onDismiss } = options;
+  const { anchor, contextSentence, onDismiss, onStatusChange } = options;
   // Create shell if needed.
   let shell = state.shell;
   if (!shell) {
@@ -323,6 +327,7 @@ export function showPopup(
     imageSelection: newCache.imageSelection,
     translation: translationEntry?.translation ?? '',
     translationSelected: translationEntry?.selected ?? false,
+    onStatusChange,
   };
 
   // Render content FIRST so setPosition can use actual offsetHeight.
@@ -559,6 +564,7 @@ export function cycleStatus(state: PopupDictionaryState): PopupDictionaryState {
   const newStatus = nextStatus(getActiveSnapshot(state).status);
   void persistStatus(active.term, active.langCode, newStatus);
   setActiveSnapshot(state, { status: newStatus });
+  state.onStatusChange?.(active.term, active.langCode, newStatus);
   rerender(state);
   return state;
 }

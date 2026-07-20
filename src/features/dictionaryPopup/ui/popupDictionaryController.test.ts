@@ -407,6 +407,14 @@ describe('cycleStatus', () => {
     const badge = container!.querySelector('.cell-header__second .js-cell-status');
     expect(badge?.textContent).toBe('tracking');
   });
+
+  it('calls onStatusChange callback with term, langCode and new status', () => {
+    const onStatusChange = jest.fn();
+    const state = makePopupState();
+    const shown = showPopup(state, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence', onStatusChange });
+    cycleStatus(shown);
+    expect(onStatusChange).toHaveBeenCalledWith('take off', 'en', 'tracking');
+  });
 });
 
 describe('toggleDefinition', () => {
