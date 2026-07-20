@@ -6,6 +6,7 @@ const loadTokenizeSettings = jest.fn() as jest.MockedFunction<() => Promise<Toke
 const saveTokenizeSettings = jest.fn() as jest.MockedFunction<(settings: TokenizeSettings) => Promise<void>>;
 const getWordStatuses = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, string>>>;
 const findFrequencyByTerms = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, FrequencyEntry[]>>>;
+const setWordStatus = jest.fn() as jest.MockedFunction<(langCode: string, term: string, status: string) => Promise<void>>;
 
 jest.mock('@/features/tokenize/services/tokenizeSettingsStore', () => ({
   loadTokenizeSettings,
@@ -23,6 +24,7 @@ jest.mock('@/features/tokenize/services/tokenizeSettingsStore', () => ({
 
 jest.mock('@/features/dictionaryPopup/services/wordStatusStore', () => ({
   getWordStatuses,
+  setWordStatus,
   getWordStatus: jest.fn(),
 }));
 
@@ -58,6 +60,7 @@ beforeEach(() => {
   saveTokenizeSettings.mockResolvedValue(undefined);
   getWordStatuses.mockResolvedValue(new Map<string, string>());
   findFrequencyByTerms.mockResolvedValue(new Map<string, FrequencyEntry[]>());
+  setWordStatus.mockResolvedValue(undefined);
   document.body.innerHTML = '';
 });
 
@@ -97,6 +100,35 @@ describe('createWebTokenizeController', () => {
     expect(spans.length).toBeGreaterThan(0);
     expect(paragraph.textContent).toBe('Hello world.');
 
+    controller.destroy();
+  });
+
+  it('changes hovered token status with 1-4 keys', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    MockIntersectionObserver.trigger(paragraph);
+    controller.enable();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const hello = paragraph.querySelector('[data-cell-term="hello"]');
+    expect(hello).not.toBeNull();
+    hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+    const event = new KeyboardEvent('keydown', { key: '2', bubbles: true });
+    document.dispatchEvent(event);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
     controller.destroy();
   });
 });

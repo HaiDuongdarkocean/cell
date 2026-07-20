@@ -6,6 +6,14 @@ export interface TokenSpanBindOptions {
   readonly showStatus: boolean;
   /** Show frequency background/text layer. */
   readonly showFrequency: boolean;
+  /** Hover a word token (desktop). */
+  readonly onTokenEnter?: (term: string, block: TokenBlock) => void;
+  /** Leave a word token (desktop). */
+  readonly onTokenLeave?: (term: string, block: TokenBlock) => void;
+  /** Click a word token to open the popup dictionary. */
+  readonly onTokenClick?: (term: string, block: TokenBlock) => void;
+  /** Ctrl/Cmd+click a word token to multi-select. */
+  readonly onTokenCtrlClick?: (term: string, block: TokenBlock) => void;
 }
 
 const TOKEN_CLASS = 'js-cell-token';
@@ -25,10 +33,23 @@ function createSeparatorSpan(text: string, block: TokenBlock): HTMLSpanElement {
 function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBindOptions): HTMLSpanElement {
   const span = document.createElement('span');
   span.className = TOKEN_CLASS;
-  span.setAttribute('data-cell-term', token.text);
+  span.setAttribute('data-cell-term', token.term);
   span.setAttribute('data-cell-block-id', block.id);
   span.setAttribute('data-cell-start', String(token.start));
   span.setAttribute('data-cell-end', String(token.end));
+
+  if (!token.isSeparator && (options.onTokenEnter || options.onTokenLeave || options.onTokenClick || options.onTokenCtrlClick)) {
+    span.addEventListener('mouseenter', () => options.onTokenEnter?.(token.term, block));
+    span.addEventListener('mouseleave', () => options.onTokenLeave?.(token.term, block));
+    span.addEventListener('click', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        options.onTokenCtrlClick?.(token.term, block);
+      } else {
+        options.onTokenClick?.(token.term, block);
+      }
+    });
+  }
 
   if (token.status) {
     span.classList.add(`js-cell-token--status-${token.status}`);
