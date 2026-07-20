@@ -273,6 +273,8 @@ export const STORAGE_KEYS = {
   THEME_MODE: 'themeMode',
   /** ADR-022 D1: theme config (customColors palette) tách riêng khỏi settings. */
   THEME_CONFIG: 'themeConfig',
+  /** Tokenize on Media per-origin/URL enable state. */
+  TOKENIZE_SETTINGS: 'tokenizeSettings',
 } as const;
 
 // === Popup Dimensions ===
