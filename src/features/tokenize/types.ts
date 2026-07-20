@@ -26,6 +26,8 @@ export interface TokenBlock {
   readonly id: string;
   /** Container element (paragraph/section/cue). */
   readonly element: Element;
+  /** Source text node(s) that make up the block. */
+  readonly sourceNodes: readonly Text[];
   /** Original text content before tokenization. */
   readonly originalText: string;
   /** Prepared token metadata; undefined if not prepared yet. */
