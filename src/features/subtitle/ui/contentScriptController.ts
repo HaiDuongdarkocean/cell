@@ -32,6 +32,8 @@ import {
 } from '@/features/subtitle';
 import { SubtitleBlockController, type SubtitleBlockControllerUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleBlockController';
 import { OffsetController } from '@/features/subtitle/ui/offsetController';
+import { loadTokenizeSettings, isTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
+import type { LookupRequest } from '@/features/dictionaryPopup/types';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
 import { buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
@@ -461,6 +463,30 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       );
     } else {
       blockController.disableDictionaryPopup();
+    }
+
+    // Tokenize on media: enable if configured for this URL (T14/T15).
+    try {
+      const tokenizeSettings = await loadTokenizeSettings();
+      const url = window.location.href;
+      if (isTokenizeEnabledForUrl(tokenizeSettings, url) && settings.subtitleOverlayTargetLanguage) {
+        blockController.enableTokenize({
+          langCode: settings.subtitleOverlayTargetLanguage,
+          onOpenDictionary: (term, element, contextSentence) => {
+            if (!sharedWebTextCtrl) return;
+            const request: LookupRequest = {
+              term,
+              langCode: settings.subtitleOverlayTargetLanguage,
+              contextSentence,
+              cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
+            };
+            const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+            sharedWebTextCtrl.handleLookup(request, requestId, element.getBoundingClientRect(), element);
+          },
+        });
+      }
+    } catch {
+      // ponytail: tokenize settings not available — keep subtitle plain
     }
 
     // ADR-015 UI v4: create import button + manager panel.
