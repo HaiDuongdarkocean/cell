@@ -5,7 +5,7 @@ import type { FrequencyEntry } from '@/entities/dictionary';
 const loadTokenizeSettings = jest.fn() as jest.MockedFunction<() => Promise<TokenizeSettings>>;
 const saveTokenizeSettings = jest.fn() as jest.MockedFunction<(settings: TokenizeSettings) => Promise<void>>;
 const getWordStatuses = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, string>>>;
-const findFrequencyByTerms = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, FrequencyEntry[]>>>;
+const getFrequencyEntries = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, FrequencyEntry[]>>>;
 const setWordStatus = jest.fn() as jest.MockedFunction<(langCode: string, term: string, status: string) => Promise<void>>;
 
 jest.mock('@/features/tokenize/services/tokenizeSettingsStore', () => ({
@@ -27,9 +27,8 @@ jest.mock('@/features/dictionaryPopup/services/wordStatusClient', () => ({
   setWordStatus,
 }));
 
-jest.mock('@/features/dictionary/repositories/frequencyRepository', () => ({
-  findFrequencyByTerms,
-  findFrequencyByTerm: jest.fn(),
+jest.mock('@/features/dictionaryPopup/services/frequencyClient', () => ({
+  getFrequencyEntries,
 }));
 
 import { createWebTokenizeController } from './webTokenizeController';
@@ -59,7 +58,7 @@ beforeEach(() => {
   loadTokenizeSettings.mockResolvedValue({ schemaVersion: 1, origins: {}, urls: {} });
   saveTokenizeSettings.mockResolvedValue(undefined);
   getWordStatuses.mockResolvedValue(new Map<string, string>());
-  findFrequencyByTerms.mockResolvedValue(new Map<string, FrequencyEntry[]>());
+  getFrequencyEntries.mockResolvedValue(new Map<string, FrequencyEntry[]>());
   setWordStatus.mockResolvedValue(undefined);
   document.body.innerHTML = '';
 });
@@ -83,7 +82,7 @@ describe('createWebTokenizeController', () => {
     document.body.appendChild(root);
 
     getWordStatuses.mockResolvedValue(new Map([['hello', 'known']]));
-    findFrequencyByTerms.mockResolvedValue(new Map([['hello', [{ resourceId: 1, term: 'hello', reading: '', frequency: 100 } as FrequencyEntry]]]));
+    getFrequencyEntries.mockResolvedValue(new Map([['hello', [{ resourceId: 1, term: 'hello', reading: '', frequency: 100 } as FrequencyEntry]]]));
 
     const controller = await createWebTokenizeController({
       url: 'https://example.com/',

@@ -14,7 +14,7 @@ import {
   isTokenizeEnabledForUrl,
   setTokenizeEnabledForUrl,
 } from '@/features/tokenize/services/tokenizeSettingsStore';
-import { findFrequencyByTerms } from '@/features/dictionary/repositories/frequencyRepository';
+import { getFrequencyEntries } from '@/features/dictionaryPopup/services/frequencyClient';
 import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusClient';
 import type { WordStatus } from '@/features/dictionaryPopup/types';
 import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
@@ -156,7 +156,7 @@ export async function createWebTokenizeController(
     if (terms.length > 0) {
       const [statusMap, freqMaps] = await Promise.all([
         getWordStatuses(langCode, terms),
-        findFrequencyByTerms(langCode, terms),
+        getFrequencyEntries(langCode, terms),
       ]);
       await resolveTokenMetadata(
         tokens,

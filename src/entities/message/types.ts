@@ -75,6 +75,7 @@ export type MessageType =
   | 'WORD_STATUS_GET'
   | 'WORD_STATUSES_GET'
   | 'WORD_STATUS_SET'
+  | 'FREQUENCY_GET'
   | 'QUICK_ADD'
   | 'LOOKUP_REQUEST'
   | 'LOOKUP_RESULT'
