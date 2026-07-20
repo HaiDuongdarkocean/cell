@@ -2,7 +2,7 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import type { FrequencyEntry } from '@/entities/dictionary';
 
 const getWordStatuses = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, string>>>;
-const findFrequencyByTerms = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, FrequencyEntry[]>>>;
+const getFrequencyEntries = jest.fn() as jest.MockedFunction<(langCode: string, terms: readonly string[]) => Promise<Map<string, FrequencyEntry[]>>>;
 const setWordStatus = jest.fn() as jest.MockedFunction<(langCode: string, term: string, status: string) => Promise<void>>;
 
 jest.mock('@/features/dictionaryPopup/services/wordStatusClient', () => ({
@@ -10,9 +10,8 @@ jest.mock('@/features/dictionaryPopup/services/wordStatusClient', () => ({
   setWordStatus,
 }));
 
-jest.mock('@/features/dictionary/repositories/frequencyRepository', () => ({
-  findFrequencyByTerms,
-  findFrequencyByTerm: jest.fn(),
+jest.mock('@/features/dictionaryPopup/services/frequencyClient', () => ({
+  getFrequencyEntries,
 }));
 
 import { createSubtitleTokenizeController } from './subtitleTokenizeController';
@@ -20,7 +19,7 @@ import type { SrtCue } from '@/entities/media';
 
 beforeEach(() => {
   getWordStatuses.mockResolvedValue(new Map<string, string>());
-  findFrequencyByTerms.mockResolvedValue(new Map<string, FrequencyEntry[]>());
+  getFrequencyEntries.mockResolvedValue(new Map<string, FrequencyEntry[]>());
   setWordStatus.mockResolvedValue(undefined);
   document.body.innerHTML = '';
 });

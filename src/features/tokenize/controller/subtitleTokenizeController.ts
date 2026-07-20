@@ -6,7 +6,7 @@ import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_IDLE } from '@/features/
 import { tokenizeTextBlock, resolveTokenMetadata } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusClient';
-import { findFrequencyByTerms } from '@/features/dictionary/repositories/frequencyRepository';
+import { getFrequencyEntries } from '@/features/dictionaryPopup/services/frequencyClient';
 import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
 
 const DEFAULT_WINDOW = 1;
@@ -116,7 +116,7 @@ export function createSubtitleTokenizeController(
     if (terms.length > 0) {
       const [statusMap, freqMaps] = await Promise.all([
         getWordStatuses(langCode, terms),
-        findFrequencyByTerms(langCode, terms),
+        getFrequencyEntries(langCode, terms),
       ]);
       await resolveTokenMetadata(
         tokens,

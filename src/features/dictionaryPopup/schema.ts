@@ -179,6 +179,26 @@ export const WordStatusSetPayloadSchema = WordStatusGetPayloadSchema.extend({
   status: WordStatusSchema,
 });
 
+// === Frequency lookup (spec §9.4 B — FREQUENCY_GET) ===
+
+export const FrequencyEntrySchema = z.object({
+  id: z.number().int().optional(),
+  resourceId: z.number().int(),
+  term: z.string(),
+  reading: z.string(),
+  frequency: z.number(),
+});
+
+export const FrequencyGetPayloadSchema = z.object({
+  tabId: z.number().int(),
+  langCode: z.string().length(2),
+  terms: z.array(z.string().min(1).max(200)).min(1).max(1000),
+});
+
+export const FrequencyGetResponseSchema = z.object({
+  entries: z.record(z.string(), z.array(FrequencyEntrySchema)),
+});
+
 // === Audio fetch (spec §9.4 B — FETCH_COMMUNITY_AUDIO) ===
 
 export const FetchCommunityAudioPayloadSchema = z.object({
