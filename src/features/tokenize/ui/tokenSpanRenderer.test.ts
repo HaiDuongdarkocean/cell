@@ -29,7 +29,7 @@ describe('tokenSpanRenderer', () => {
     const spans = Array.from(block.element.querySelectorAll('.js-cell-token'));
     expect(spans).toHaveLength(4); // 2 words + 2 separators (space + period)
 
-    const hello = spans.find((s) => s.getAttribute('data-cell-term') === 'Hello');
+    const hello = spans.find((s) => s.getAttribute('data-cell-term') === 'hello');
     expect(hello).toBeTruthy();
     expect(hello!.classList.contains('js-cell-token--status-unknown')).toBe(true);
     expect(hello!.classList.contains('js-cell-token--frequency-high')).toBe(true);

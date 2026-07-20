@@ -3,7 +3,7 @@ import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
 import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_BUFFER, PRIORITY_IDLE } from '@/features/tokenize/logic/tokenizeScheduler';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { tokenizeTextBlock, resolveTokenMetadata } from '@/features/tokenize/logic/textTokenizer';
-import { bindTokenBlock, unbindTokenBlock } from '@/features/tokenize/ui/tokenSpanRenderer';
+import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { createTokenBadge } from '@/features/tokenize/ui/tokenBadge';
 import type { TokenBadge } from '@/features/tokenize/ui/tokenBadge';
 import { createTokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
@@ -15,13 +15,21 @@ import {
   setTokenizeEnabledForUrl,
 } from '@/features/tokenize/services/tokenizeSettingsStore';
 import { findFrequencyByTerms } from '@/features/dictionary/repositories/frequencyRepository';
-import { getWordStatuses } from '@/features/dictionaryPopup/services/wordStatusStore';
+import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusStore';
+import type { WordStatus } from '@/features/dictionaryPopup/types';
 import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
 import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
 const CACHE_CAPACITY = 50; // ~50 blocks ≈ a few MB on 1GB RAM devices
 const VIEWPORT_ROOT_MARGIN = '150px';
+
+const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
+  '1': 'unknown',
+  '2': 'tracking',
+  '3': 'known',
+  '4': 'ignore',
+};
 
 export interface WebTokenizeControllerOptions {
   /** Current page URL used for per-URL enable state. */
@@ -158,13 +166,31 @@ export async function createWebTokenizeController(
     block.tokens = tokens;
   }
 
+  function getDisplayOptions(): TokenSpanBindOptions {
+    const state = stateStore.getState();
+    return {
+      showStatus: state.showStatus,
+      showFrequency: state.showFrequency,
+      onTokenEnter: (term) => stateStore.setHoveredTerm(term),
+      onTokenLeave: (term) => {
+        if (stateStore.getState().hoveredTerm === term) {
+          stateStore.setHoveredTerm(null);
+        }
+      },
+      onTokenClick: (term) => options.onOpenDictionary?.(term),
+      onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
+    };
+  }
+
+  function rebindBlock(block: TokenBlock): void {
+    unbindTokenBlock(block);
+    bindTokenBlock(block, getDisplayOptions());
+  }
+
   async function prepareAndBind(block: TokenBlock): Promise<void> {
     await prepareBlock(block);
     if (stateStore.getState().enabled && visibleElements.has(block.element)) {
-      bindTokenBlock(block, {
-        showStatus: stateStore.getState().showStatus,
-        showFrequency: stateStore.getState().showFrequency,
-      });
+      bindTokenBlock(block, getDisplayOptions());
     }
   }
 
@@ -176,6 +202,49 @@ export async function createWebTokenizeController(
       }
     }
   }
+
+  function isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    const tag = target.tagName.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+    return target.getAttribute('contenteditable') === 'true' || target.isContentEditable === true;
+  }
+
+  async function applyStatusToTerms(terms: readonly string[], status: WordStatus): Promise<void> {
+    await Promise.all(terms.map((term) => setWordStatus(langCode, term, status).catch(() => { /* best-effort */ })));
+    for (const block of blocks) {
+      if (!block.tokens) continue;
+      let changed = false;
+      for (const token of block.tokens) {
+        if (terms.includes(token.term)) {
+          token.status = status;
+          changed = true;
+        }
+      }
+      if (changed && visibleElements.has(block.element)) {
+        rebindBlock(block);
+      }
+    }
+  }
+
+  function handleKeydown(e: KeyboardEvent): void {
+    if (isEditableTarget(e.target)) return;
+    if (e.key === 'Escape') {
+      stateStore.clearSelection();
+      stateStore.setHoveredTerm(null);
+      return;
+    }
+    const status = STATUS_BY_KEY[e.key];
+    if (!status) return;
+    const state = stateStore.getState();
+    const terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : state.hoveredTerm ? [state.hoveredTerm] : [];
+    if (terms.length === 0) return;
+    e.preventDefault();
+    void applyStatusToTerms(terms, status);
+    if (state.selectedTerms.size > 0) stateStore.clearSelection();
+  }
+
+  document.addEventListener('keydown', handleKeydown);
 
   function unbindAll(): void {
     for (const block of blocks) {
@@ -199,6 +268,7 @@ export async function createWebTokenizeController(
     setShowFrequency: (show) => stateStore.setShowFrequency(show),
 
     destroy: () => {
+      document.removeEventListener('keydown', handleKeydown);
       unsubscribe();
       scheduler.stop();
       viewport.destroy();
