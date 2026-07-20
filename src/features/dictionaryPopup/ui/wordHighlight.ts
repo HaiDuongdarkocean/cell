@@ -36,7 +36,7 @@ function buildHighlightCss(): string {
   background-color: ${lightSubtle} !important;
   color: inherit !important;
   border-radius: ${radiusXs} !important;
-  padding: 0 !important;
+  padding: 0 1px !important;
   margin: 0 !important;
   box-sizing: border-box !important;
   transition: background-color ${duration100} ease !important;
