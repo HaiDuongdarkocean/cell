@@ -17,6 +17,11 @@
 // CRXJS: this file MUST use the `.iife.ts` suffix so CRXJS emits it as a
 // standalone bundle (no HMR, no async loader) — see crxjs.dev/concepts/content.
 (() => {
+  // Skip in iframes — patching window.fetch in Cloudflare's challenge iframe
+  // (1x1 hidden) causes bot detection to fail, blocking the page entirely.
+  // Subtitle fetches happen in the top-level frame, not in challenge iframes.
+  if (window.self !== window.top) return;
+
   const SUBTITLE_PATTERN = /\.srt(\?|$)|\.vtt(\?|$)|\.ass(\?|$)|\/(subtitles|subs|caption|cc)\//i;
 
   const originalFetch = window.fetch;
