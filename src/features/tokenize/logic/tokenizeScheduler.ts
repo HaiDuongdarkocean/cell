@@ -73,7 +73,7 @@ export class TokenizeScheduler {
       });
     } else {
       const start = performance.now();
-      const budget = 5; // ms fallback budget per chunk
+      const budget = 50; // ms fallback budget per chunk (idle-but-responsive)
       this.scheduledFrameId = window.setTimeout(() => {
         void this.runLoop({ timeRemaining: () => budget - (performance.now() - start) });
       }, 1);

@@ -19,6 +19,11 @@ import { syncElementTheme } from '@/shared/lib/themeTokens';
 import { mountToWatchVideo } from './netflixPlayback';
 import { wrapTokenSpans, detectLangCode, SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
+import {
+  createSubtitleTokenizeController,
+  type SubtitleTokenizeController,
+  type SubtitleTokenizeControllerOptions,
+} from '@/features/tokenize/controller/subtitleTokenizeController';
 
 export interface SubtitleBlockControllerUpdate {
   readonly blockSettings?: Partial<SubtitleBlockSettings>;
@@ -62,6 +67,8 @@ export class SubtitleBlockController {
   /** Popup dictionary state (spec §4.6 — P1.1 wire). */
   private dpEnabled = false;
   private dpTriggerController: SubtitleTriggerController | null = null;
+  /** Tokenize-on-media controller for active cue (T14). */
+  private tokenizeController: SubtitleTokenizeController | null = null;
 
   constructor(
     private readonly video: HTMLVideoElement,
@@ -230,6 +237,12 @@ export class SubtitleBlockController {
     this.dom.targetLine.style.display = this.targetStyle.visible && targetText ? 'block' : 'none';
     this.dom.nativeLine.textContent = this.nativeStyle.visible ? nativeText : '';
     this.dom.nativeLine.style.display = this.nativeStyle.visible && nativeText ? 'block' : 'none';
+
+    // Tokenize on media: wrap active cue with status/frequency + click handlers (T14).
+    if (this.tokenizeController) {
+      this.tokenizeController.render(this.lastTargetIndex, this.lastNativeIndex);
+      return;
+    }
 
     // Popup dictionary: wrap target line tokens + attach trigger (spec §4.6).
     if (this.dpEnabled && this.targetStyle.visible && targetText) {
@@ -454,6 +467,7 @@ export class SubtitleBlockController {
     this.bilingual = false;
     this.lastTargetIndex = -1;
     this.lastNativeIndex = -1;
+    this.tokenizeController?.setCues(this.targetCues, this.nativeCues);
     this.applyClusterLayout();
     this.onTimeUpdate();
     this.render();
@@ -469,6 +483,7 @@ export class SubtitleBlockController {
     this.bilingual = this.targetCues.length > 0 || this.nativeCues.length > 0;
     this.lastTargetIndex = -1;
     this.lastNativeIndex = -1;
+    this.tokenizeController?.setCues(this.targetCues, this.nativeCues);
     this.applyClusterLayout();
     this.onTimeUpdate();
   }
@@ -496,6 +511,7 @@ export class SubtitleBlockController {
     this.bilingual = false;
     this.lastTargetIndex = -1;
     this.lastNativeIndex = -1;
+    this.tokenizeController?.setCues(this.targetCues, this.nativeCues);
     this.applyClusterLayout();
     this.render();
   }
@@ -526,6 +542,11 @@ export class SubtitleBlockController {
     if (this.dpTriggerController) {
       this.dpTriggerController.detach();
       this.dpTriggerController = null;
+    }
+    // Cleanup tokenize controller (T14).
+    if (this.tokenizeController) {
+      this.tokenizeController.destroy();
+      this.tokenizeController = null;
     }
   }
 
@@ -569,5 +590,47 @@ export class SubtitleBlockController {
   /** Check if popup dictionary is enabled. */
   isDictionaryPopupEnabled(): boolean {
     return this.dpEnabled;
+  }
+
+  // === Tokenize on media integration (T14/T15) ===
+
+  /** Enable tokenize on the subtitle block. */
+  enableTokenize(
+    options: Pick<SubtitleTokenizeControllerOptions, 'onOpenDictionary' | 'langCode' | 'windowSize'>,
+  ): void {
+    if (this.tokenizeController) {
+      this.tokenizeController.destroy();
+    }
+    this.tokenizeController = createSubtitleTokenizeController({
+      ...options,
+      getLineElements: () => ({ target: this.dom?.targetLine ?? null, native: this.dom?.nativeLine ?? null }),
+    });
+    this.tokenizeController.setCues(this.targetCues, this.nativeCues);
+    this.tokenizeController.enable();
+    this.render();
+  }
+
+  /** Disable tokenize and restore plain cue text. */
+  disableTokenize(): void {
+    if (this.tokenizeController) {
+      this.tokenizeController.destroy();
+      this.tokenizeController = null;
+    }
+    this.render();
+  }
+
+  /** Toggle tokenize status display. */
+  setTokenizeShowStatus(show: boolean): void {
+    this.tokenizeController?.setShowStatus(show);
+  }
+
+  /** Toggle tokenize frequency display. */
+  setTokenizeShowFrequency(show: boolean): void {
+    this.tokenizeController?.setShowFrequency(show);
+  }
+
+  /** Check if tokenize is enabled. */
+  isTokenizeEnabled(): boolean {
+    return this.tokenizeController?.getState().enabled ?? false;
   }
 }
