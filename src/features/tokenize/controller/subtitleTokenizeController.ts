@@ -5,7 +5,7 @@ import { createTokenizeStateStore, type TokenizeStateStore } from '@/features/to
 import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_IDLE } from '@/features/tokenize/logic/tokenizeScheduler';
 import { tokenizeTextBlock, resolveTokenMetadata } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
-import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusStore';
+import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusClient';
 import { findFrequencyByTerms } from '@/features/dictionary/repositories/frequencyRepository';
 import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
 
