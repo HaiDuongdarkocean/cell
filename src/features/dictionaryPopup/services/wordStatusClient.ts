@@ -29,7 +29,7 @@ export async function getWordStatuses(
     return new Map();
   }
 
-  return new Map(Object.entries(response.data.statuses));
+  return new Map(Object.entries(response.data.statuses ?? {}));
 }
 
 /**

@@ -29,5 +29,5 @@ export async function getFrequencyEntries(
     return new Map();
   }
 
-  return new Map(Object.entries(response.data.entries));
+  return new Map(Object.entries(response.data.entries ?? {}));
 }
