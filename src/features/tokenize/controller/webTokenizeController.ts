@@ -134,23 +134,24 @@ export async function createWebTokenizeController(
     }
   }
 
-  // === MutationObserver: handle dynamically added content (React/Vue/Angular) ===
+  // === MutationObserver: handle dynamically added content (React/Vue/Angular/Cloudflare) ===
   // ponytail: debounced childList scan — doesn't catch characterData mutations
   // (text node content changes). Ceiling: a framework that replaces text content
   // in-place without adding/removing nodes won't be re-tokenized. Upgrade path:
   // also observe characterData, but that's very chatty on content-editable pages.
   let mutationTimer: ReturnType<typeof setTimeout> | null = null;
+  let dynIdCounter = 0;
   const mutationObserver = new MutationObserver(() => {
     if (mutationTimer) clearTimeout(mutationTimer);
     mutationTimer = setTimeout(() => {
       mutationTimer = null;
       if (!stateStore.getState().enabled) return;
       // Re-scan root for text blocks. findTextBlocks walks all text nodes,
-      // but we filter to only new ones (not already in cache).
-      const newBlocks = findTextBlocks(root, { langCode, idPrefix: 'dyn-' });
+      // but we filter to only new ones (not already bound).
+      const scanId = dynIdCounter;
+      dynIdCounter += 1000; // reserve a range for this scan
+      const newBlocks = findTextBlocks(root, { langCode, idPrefix: `dyn-${scanId}-` });
       for (const block of newBlocks) {
-        // Skip if this text node is already part of an existing block
-        if (cache.has(block.id)) continue;
         // Skip if inside a token span (our own injected content)
         if (block.element.closest('.js-cell-token')) continue;
         // Skip if source node is already bound by another block
