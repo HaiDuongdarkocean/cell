@@ -6,6 +6,8 @@ import { STORAGE_KEYS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_S
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { createWebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
+import { createWebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
+import type { WebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 
 // ISOLATED content-script marker (verify injection from DevTools — MAIN world
@@ -234,6 +236,7 @@ let currentVideo: HTMLVideoElement | null = null;
 // Top-level web-text dictionary controller (independent of video presence).
 // Shared with subtitle overlay controller for token lookup + highlight.
 let webTextCtrl: WebTextDictionaryController | null = null;
+let webTokenizeCtrl: WebTokenizeController | null = null;
 
 function ensureWebTextCtrl(): WebTextDictionaryController {
   if (!webTextCtrl) {
@@ -266,6 +269,34 @@ async function initWebTextDictionary(): Promise<void> {
   } catch (err) {
     // Storage may be unavailable in some test/sandbox contexts — safe fallback.
     console.warn('[content-script] initWebTextDictionary failed', err);
+  }
+}
+
+async function initTokenize(): Promise<void> {
+  try {
+    if (webTokenizeCtrl) return;
+    const settings = await loadSettings();
+    const langCode = settings.subtitleOverlayTargetLanguage || 'en';
+    webTokenizeCtrl = await createWebTokenizeController({
+      url: window.location.href,
+      root: document.body,
+      langCode,
+      onOpenDictionary: (term) => {
+        const ctrl = ensureWebTextCtrl();
+        const range = document.createRange();
+        range.setStart(document.body, 0);
+        range.collapse(true);
+        ctrl.handleLookup(
+          { term, langCode, contextSentence: '', cursorOffset: 0 },
+          `tokenize-${term}`,
+          document.body.getBoundingClientRect(),
+          range,
+        );
+      },
+    });
+  } catch (err) {
+    // Storage may be unavailable in some test/sandbox contexts — safe fallback.
+    console.warn('[content-script] initTokenize failed', err);
   }
 }
 
@@ -471,9 +502,11 @@ if (document.readyState === 'loading') {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', findAndInitOverlay);
   document.addEventListener('DOMContentLoaded', () => { void initWebTextDictionary(); });
+  document.addEventListener('DOMContentLoaded', () => { void initTokenize(); });
 } else {
   findAndInitOverlay();
   void initWebTextDictionary();
+  void initTokenize();
 }
 
 // Re-init web-text dictionary when settings change (no page reload needed).

@@ -9,7 +9,7 @@ export interface TokenizeState {
   enabled: boolean;
   showStatus: boolean;
   showFrequency: boolean;
-  hoverTerm: string | null;
+  hoveredTerm: string | null;
   selectedTerms: ReadonlySet<string>;
 }
 
@@ -18,7 +18,7 @@ export interface TokenizeStateStore {
   setEnabled(enabled: boolean): void;
   setShowStatus(show: boolean): void;
   setShowFrequency(show: boolean): void;
-  setHoverTerm(term: string | null): void;
+  setHoveredTerm(term: string | null): void;
   toggleSelectedTerm(term: string): void;
   addSelectedTerm(term: string): void;
   removeSelectedTerm(term: string): void;
@@ -37,7 +37,7 @@ export function createTokenizeStateStore(options: CreateTokenizeStateStoreOption
     enabled: options.initialEnabled ?? false,
     showStatus: options.initialShowStatus ?? true,
     showFrequency: options.initialShowFrequency ?? true,
-    hoverTerm: null,
+    hoveredTerm: null,
     selectedTerms: new Set<string>(),
   };
 
@@ -61,7 +61,7 @@ export function createTokenizeStateStore(options: CreateTokenizeStateStoreOption
     setEnabled: (enabled) => set('enabled', enabled),
     setShowStatus: (show) => set('showStatus', show),
     setShowFrequency: (show) => set('showFrequency', show),
-    setHoverTerm: (term) => set('hoverTerm', term),
+    setHoveredTerm: (term) => set('hoveredTerm', term),
 
     toggleSelectedTerm(term) {
       const next = new Set(state.selectedTerms as Set<string>);
