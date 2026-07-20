@@ -36,7 +36,7 @@ function buildHighlightCss(): string {
   background-color: ${lightSubtle} !important;
   color: inherit !important;
   border-radius: ${radiusXs} !important;
-  padding: 0 1px !important;
+  padding: 0 !important;
   margin: 0 !important;
   box-sizing: border-box !important;
   transition: background-color ${duration100} ease !important;
@@ -158,6 +158,7 @@ export function createWordHighlight(): WordHighlight {
   }
 
   function showOverlay(range: Range): void {
+    if (!document.body) return; // guard: content scripts may fire before </body>
     const rects = range.getClientRects();
     for (const rect of rects) {
       const overlay = document.createElement('div');
