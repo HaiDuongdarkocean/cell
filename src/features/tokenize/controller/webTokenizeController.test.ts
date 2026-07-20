@@ -284,4 +284,27 @@ describe('createWebTokenizeController', () => {
 
     controller.destroy();
   });
+
+  it('tokenizes a subtitle-line target element', async () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<div class="subtitle-block"><div class="subtitle-line target">Hello world.</div></div>';
+    document.body.appendChild(root);
+
+    const target = root.querySelector('.subtitle-line.target')!;
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    controller.enable();
+    MockIntersectionObserver.trigger(target);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const spans = target.querySelectorAll('.js-cell-token');
+    expect(spans.length).toBeGreaterThan(0);
+    expect(target.textContent).toBe('Hello world.');
+
+    controller.destroy();
+  });
 });

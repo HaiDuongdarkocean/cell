@@ -75,7 +75,7 @@ export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}):
   let idCounter = 0;
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
-  let textNode: Text | null = walker.currentNode as Text | null;
+  let textNode: Text | null = walker.nextNode() as Text | null;
 
   while (textNode) {
     const text = textNode.textContent ?? '';

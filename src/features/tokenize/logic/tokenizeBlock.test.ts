@@ -49,4 +49,11 @@ describe('findTextBlocks', () => {
     const blocks = findTextBlocks(root, { maxLength: 15 });
     expect(blocks.map((b) => b.originalText)).toEqual(['Short.']);
   });
+
+  it('tokenizes subtitle-line target text', () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<div class="subtitle-block"><div class="subtitle-line target">Hello world.</div><div class="subtitle-line native">Xin chào.</div></div>';
+    const blocks = findTextBlocks(root);
+    expect(blocks.map((b) => b.originalText)).toEqual(['Hello world.', 'Xin chào.']);
+  });
 });
