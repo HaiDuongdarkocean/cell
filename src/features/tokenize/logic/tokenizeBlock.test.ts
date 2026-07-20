@@ -26,6 +26,15 @@ describe('findTextBlocks', () => {
     expect(blocks.map((b) => b.originalText)).toEqual(['Normal text ', 'link text', 'click']);
   });
 
+  it('tokenizes text inside <a role="link"> (Facebook-style redundant ARIA)', () => {
+    // Facebook/Twitter add explicit role="link" to anchors; that must not
+    // disable tokenize for content like names or article titles.
+    const root = document.createElement('div');
+    root.innerHTML = '<a href="/u/1" role="link" tabindex="0">Nguyễn Minh Phương</a>';
+    const blocks = findTextBlocks(root);
+    expect(blocks.map((b) => b.originalText)).toEqual(['Nguyễn Minh Phương']);
+  });
+
   it('skips empty text nodes', () => {
     const root = document.createElement('div');
     root.innerHTML = '<p>   </p><p>Real text</p>';

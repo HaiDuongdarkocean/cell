@@ -23,7 +23,11 @@ const FORBIDDEN_TAGS = new Set([
   'VAR',
 ]);
 
-const FORBIDDEN_ROLE_ATTRS = ['link', 'textbox', 'tab', 'menuitem'];
+// 'link' is intentionally NOT forbidden: <a href> is already implicit link and
+// is tokenized (see test). Many sites (Facebook, Twitter) add explicit
+// role="link" to anchors for ARIA redundancy — that must not disable tokenize
+// for content like names, article titles, or post text inside those anchors.
+const FORBIDDEN_ROLE_ATTRS = ['textbox', 'tab', 'menuitem'];
 
 export interface FindTextBlocksOptions {
   /** Maximum characters for a single text block. Longer blocks are skipped. */

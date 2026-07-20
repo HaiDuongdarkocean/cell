@@ -53,7 +53,7 @@ export class TokenizeScheduler {
   async flush(): Promise<void> {
     this.stop();
     this.running = true;
-    await this.runLoop({ timeRemaining: () => Number.MAX_SAFE_INTEGER });
+    await this.runLoop({ timeRemaining: () => Number.MAX_SAFE_INTEGER }, Number.MAX_SAFE_INTEGER);
   }
 
   /** Number of pending tasks. */
@@ -67,23 +67,36 @@ export class TokenizeScheduler {
       this.running = false;
       return;
     }
-    if (typeof requestIdleCallback === 'function') {
+    const frontPriority = this.queue[0]!.priority;
+    // Viewport-priority tasks must run in the next frame, NOT gated on browser
+    // idle. requestIdleCallback only fires when the browser is idle, which
+    // during fast scrolling can be delayed by seconds — making tokenize feel
+    // frozen until the user stops scrolling. Buffer/idle tasks stay on the
+    // idle callback so they don't compete with scroll/paint.
+    if (frontPriority < PRIORITY_BUFFER) {
+      this.scheduledFrameId = window.setTimeout(() => {
+        // Only drain viewport-priority tasks here; buffer/idle tasks must wait
+        // for their own idle callback so they don't piggyback on the fast path.
+        void this.runLoop({ timeRemaining: () => 16 }, PRIORITY_BUFFER); // ~one frame budget
+      }, 0);
+    } else if (typeof requestIdleCallback === 'function') {
       this.scheduledFrameId = requestIdleCallback((deadline) => {
-        void this.runLoop({ timeRemaining: () => deadline.timeRemaining() });
+        void this.runLoop({ timeRemaining: () => deadline.timeRemaining() }, Number.MAX_SAFE_INTEGER);
       });
     } else {
       const start = performance.now();
       const budget = 50; // ms fallback budget per chunk (idle-but-responsive)
       this.scheduledFrameId = window.setTimeout(() => {
-        void this.runLoop({ timeRemaining: () => budget - (performance.now() - start) });
+        void this.runLoop({ timeRemaining: () => budget - (performance.now() - start) }, Number.MAX_SAFE_INTEGER);
       }, 1);
     }
   }
 
-  private async runLoop(budget: TimeBudget): Promise<void> {
+  private async runLoop(budget: TimeBudget, maxPriority: number): Promise<void> {
     while (this.queue.length > 0 && budget.timeRemaining() > 1) {
-      const task = this.queue.shift();
-      if (!task) break;
+      const next = this.queue[0]!;
+      if (next.priority >= maxPriority) break; // leave lower-priority tasks for their own frame
+      const task = this.queue.shift()!;
       const result = task.fn();
       if (result instanceof Promise) {
         await result;

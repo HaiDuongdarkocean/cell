@@ -177,6 +177,7 @@ const scanner = new PageScanner();
 // Page scanning needs DOM ready, but the message listener above registers
 // immediately at document_start (no DOM dependency).
 function runPageScan(): void {
+  if (window.self !== window.top) return;
   const urls = scanner.scan();
   if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
     void sendMessage({
@@ -306,6 +307,7 @@ async function initTokenize(): Promise<void> {
 }
 
 function findAndInitOverlay(): void {
+  if (window.self !== window.top) return;
   const video = document.querySelector('video');
   if (video && isVideoReady(video)) {
     if (video === currentVideo) return; // already initialized for this element
@@ -332,7 +334,8 @@ function findAndInitOverlay(): void {
       currentOverlayCleanup = initContentScriptController(v, ensureWebTextCtrl());
     }
   });
-  observer.observe(document.body, {
+  const root = document.body ?? document.documentElement;
+  observer.observe(root, {
     childList: true,
     subtree: true,
     attributes: true,
@@ -471,6 +474,7 @@ function initVideoSrcWatcher(): void {
 }
 
 function initEpisodeChangeWatcher(): void {
+  if (window.self !== window.top) return;
   // If a <video> is already present at inject time, that's the first one —
   // baseline it without firing an episode-changed event.
   const existing = document.querySelector('video');
@@ -493,7 +497,8 @@ function initEpisodeChangeWatcher(): void {
       }
     }
   });
-  observer.observe(document.body, { childList: true, subtree: true });
+  const root = document.body ?? document.documentElement;
+  observer.observe(root, { childList: true, subtree: true });
   // Also watch for src changes on the same element (aniwatch sub→dub case).
   initVideoSrcWatcher();
 }
@@ -512,6 +517,10 @@ if (document.readyState === 'loading') {
 // make sense in the top-level frame anyway.
 const isTopFrame = window.self === window.top;
 
+// Run heavy DOM setup (tokenize + dictionary) at DOMContentLoaded, before
+// Angular/Vue hydration rewires the DOM. These features only observe when
+// enabled, so the initial badge append is cheap. findAndInitOverlay is kept
+// early because it must catch <video> as soon as it appears.
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', findAndInitOverlay);
   if (isTopFrame) {
@@ -528,6 +537,7 @@ if (document.readyState === 'loading') {
 
 // Re-init web-text dictionary when settings change (no page reload needed).
 onStorageChanged((changes, area) => {
+  if (window.self !== window.top) return;
   if (area === 'local' && changes[STORAGE_KEYS.SETTINGS]) {
     void initWebTextDictionary();
   }

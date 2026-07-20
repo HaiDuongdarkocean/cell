@@ -33,4 +33,35 @@ describe('TokenizeScheduler', () => {
     await scheduler.flush();
     expect(order).toEqual(['kept']);
   });
+
+  it('runs viewport-priority tasks without waiting for requestIdleCallback', async () => {
+    // Simulate a busy browser: requestIdleCallback is installed but never fires
+    // (as happens during fast scrolling). Viewport tasks must still run via the
+    // setTimeout(0) fast path; idle-priority tasks must NOT run.
+    const idleCallbacks: Array<() => void> = [];
+    const originalRIC = (globalThis as { requestIdleCallback?: unknown }).requestIdleCallback;
+    const originalCIC = (globalThis as { cancelIdleCallback?: unknown }).cancelIdleCallback;
+    (globalThis as { requestIdleCallback?: unknown }).requestIdleCallback = (cb: () => void) => {
+      idleCallbacks.push(cb);
+      return 0;
+    };
+    (globalThis as { cancelIdleCallback?: unknown }).cancelIdleCallback = () => { /* no-op */ };
+
+    try {
+      const scheduler = new TokenizeScheduler();
+      const order: string[] = [];
+      scheduler.schedule(() => { order.push('viewport'); }, PRIORITY_VIEWPORT);
+      scheduler.schedule(() => { order.push('idle'); }, PRIORITY_IDLE);
+
+      // Wait long enough for setTimeout(0) to fire. Idle callback never fires.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(order).toContain('viewport');
+      expect(order).not.toContain('idle');
+      scheduler.stop();
+    } finally {
+      (globalThis as { requestIdleCallback?: unknown }).requestIdleCallback = originalRIC;
+      (globalThis as { cancelIdleCallback?: unknown }).cancelIdleCallback = originalCIC;
+    }
+  });
 });

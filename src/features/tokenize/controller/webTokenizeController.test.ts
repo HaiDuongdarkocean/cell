@@ -74,6 +74,99 @@ describe('createWebTokenizeController', () => {
     controller.destroy();
   });
 
+  it('falls back to documentElement when the page body is unavailable', async () => {
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root: null,
+    });
+
+    expect(() => controller.enable()).not.toThrow();
+    expect(controller.getState().enabled).toBe(true);
+    controller.destroy();
+  });
+
+  it('does not scan text blocks until enabled', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Challenge content';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(false);
+    expect(paragraph.querySelector('.js-cell-token')).toBeNull();
+
+    controller.enable();
+
+    expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(true);
+    controller.destroy();
+  });
+
+  it('waits for DOM quiescence after page load before activating a persisted session', async () => {
+    jest.useFakeTimers();
+    const readyState = jest.spyOn(document, 'readyState', 'get').mockReturnValue('interactive');
+    loadTokenizeSettings.mockResolvedValue({
+      schemaVersion: 1,
+      origins: {},
+      urls: { 'https://example.com/': true },
+    });
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Challenge content';
+    root.appendChild(paragraph);
+
+    try {
+      const controller = await createWebTokenizeController({
+        url: 'https://example.com/',
+        root,
+      });
+
+      expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(false);
+      window.dispatchEvent(new Event('load'));
+      expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(false);
+
+      await jest.advanceTimersByTimeAsync(500);
+
+      expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(true);
+      controller.destroy();
+    } finally {
+      readyState.mockRestore();
+      jest.useRealTimers();
+    }
+  });
+
+  it('does not activate a persisted session disabled before page load', async () => {
+    const readyState = jest.spyOn(document, 'readyState', 'get').mockReturnValue('interactive');
+    loadTokenizeSettings.mockResolvedValue({
+      schemaVersion: 1,
+      origins: {},
+      urls: { 'https://example.com/': true },
+    });
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Challenge content';
+    root.appendChild(paragraph);
+
+    try {
+      const controller = await createWebTokenizeController({
+        url: 'https://example.com/',
+        root,
+      });
+
+      controller.disable();
+      window.dispatchEvent(new Event('load'));
+
+      expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(false);
+      controller.destroy();
+    } finally {
+      readyState.mockRestore();
+    }
+  });
+
   it('tokenizes a visible block after enable', async () => {
     const root = document.createElement('div');
     const paragraph = document.createElement('p');
@@ -89,10 +182,9 @@ describe('createWebTokenizeController', () => {
       root,
     });
 
-    MockIntersectionObserver.trigger(paragraph);
     controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
 
-    // Give the scheduler a frame to run idle tasks.
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const spans = paragraph.querySelectorAll('.js-cell-token');
@@ -114,8 +206,8 @@ describe('createWebTokenizeController', () => {
       root,
     });
 
-    MockIntersectionObserver.trigger(paragraph);
     controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const hello = paragraph.querySelector('[data-cell-term="hello"]');
@@ -143,8 +235,8 @@ describe('createWebTokenizeController', () => {
       root,
     });
 
-    MockIntersectionObserver.trigger(paragraph);
     controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const helloBefore = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
@@ -175,8 +267,8 @@ describe('createWebTokenizeController', () => {
       root,
     });
 
-    MockIntersectionObserver.trigger(paragraph);
     controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const helloBefore = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
