@@ -10,6 +10,7 @@ docs/           # Tài liệu dự án
 ├── 1-share-language.md                # Glossary human ↔ system language
 ├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows; overlay button appearance/host-CSS defenses)
 ├── technical-debt-audit.md            # Tổng hợp nợ kỹ thuật hiện có của codebase
+├── interview_ui-ux-tokenize-on-media.md # Interview UI/UX phân tích từ trên media (đã hoàn thành 2026-07-20: wireframe + prototype verified Edge DevTools; 7 IA groups, token inline-block + status float absolute không nhảy dòng, status underline 2px, không viền outline hover/active, bỏ hiển thị IPA trên token, FAB draggable, desktop anchored dialog, known/ignore ẩn phân tích mặc định hover hiện status, văn bản dài multi-line test)
 ├── adr/                               # Architecture Decision Records (mỗi quyết định 1 file)
 │   ├── 001-zustand-not-redux.md
 │   ├── 002-muxjs-not-ffmpeg-wasm.md
@@ -56,6 +57,13 @@ docs/           # Tài liệu dự án
 │   └── 044-design-token-ssot.md        # ADR-044: Single source of truth cho design tokens (tokens.json + generator + runtime wrapper)
 │   └── 045-popup-dictionary-redesign-hybrid-chips.md # ADR-045: Popup Dictionary redesign — hybrid chips + expand, single context-aware toolbar, 3-row header, footer status/send/settings
 │   └── 046-web-text-dictionary-decouple.md # ADR-046: Decouple web-text dictionary popup from video presence + word highlight
+│   └── 047-viewport-lazy-tokenization.md # ADR-047: Viewport-driven lazy tokenization for 1GB RAM (text + subtitle)
+├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
+│   ├── overlay-appearance-settings.md
+│   ├── subtitle-panel-outside-video.md
+│   ├── subtitle-text-selection.md
+│   ├── sync-all-icon-buttons-to-ds.md
+│   └── tokenize-on-media.md           # Simplified native tokenize on media
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -74,7 +82,8 @@ docs/           # Tài liệu dự án
 │   └── intent-subtitle-block-unified.md # Gộp target + native + nav cluster thành 1 block, pill kéo trục Y, auto-scale theo video
 │   ├── intent-card-creator.md # Card Creator — tạo + update Anki flashcard từ subtitle block (desktop + mobile)
 │   └── intent-card-creator-ui-redesign.md # Card Creator UI redesign (preview block + Yomitan scan + media D&D/reorder)
-│   └── intent-web-text-dictionary-popup.md # Web-text dictionary popup (decouple from video + word highlight)
+│   ├── intent-web-text-dictionary-popup.md # Web-text dictionary popup (decouple from video + word highlight)
+│   └── tokenize-on-media.md           # Simplified native tokenize on media (interview-me confirmed)
 ├── specs/                             # PRD chi tiết — "what to build"
 │   ├── spec-subtitle-overlay.md       # Subtitle overlay PRD
 │   ├── spec-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load PRD
@@ -102,7 +111,8 @@ docs/           # Tài liệu dự án
 │   └── design/dictionary-popup-prototype-handoff.md # Interactive dictionary popup prototype handoff (English/Chinese, tabs, media, card creator, design-system constraints)
 │   └── design/popup-dictionary-tab-ui-design.md # Popup Dictionary tab UI design variants: audio, image, translate, links (selected variants + CSS)
 │   └── design/popup-dictionary-ux-improvements.md # Popup Dictionary UX improvement spec: Socratic audit, selected improvements, implementation notes
-│   └── web-text-dictionary-popup.md   # Web-text dictionary popup PRD (decouple from video + word highlight)
+│   ├── web-text-dictionary-popup.md   # Web-text dictionary popup PRD (decouple from video + word highlight)
+│   └── spec-tokenize-on-media.md      # Tokenize on media PRD (text page + subtitle, VDLT hybrid, 1GB RAM)
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md
@@ -194,6 +204,7 @@ docs/           # Tài liệu dự án
 │   ├── mockup-settings-rearrange.html # Settings dialog rearrange v2 (pair/indent/divider, fix Nav Cluster position)
 │   ├── mockup-subtitle-block-unified.html # Unified subtitle block mockup: target + native + nav cluster gộp thành 1 block, pill kéo trục Y
 │   ├── anki-card-mockup.html          # Card Creator mockup v2 (preview block + Yomitan scan + media D&D/reorder)
+│   ├── tokenize-on-media-prototype.html # Floating badge manager prototype: Shadow DOM, design-system tokens + icons, 7 IA groups, full Settings mock data, host-page tokenization (inline-block token + status float absolute không nhảy dòng, status underline 2px, không viền outline hover/active, không hiển thị IPA trên token, frequency bg+text; known/ignore ẩn phân tích), desktop shortcuts 1/2/3/4 + multi-select, draggable FAB, desktop anchored dialog with FAB collapse button, văn bản dài multi-line test, responsive + focus trap + host-CSS isolation, verified edge-devtools
 │   └── popup-dictionary/              # Modular interactive prototype (index.html + tokens/base/popup/creator.css + fixtures/icons/dropdown/popup/creator/app.js; Gate 2 contract: docs/specs/design/UI-UX-Contract-popup-dictionary.md; 4-icon toolbar single-select + 5-status + edit-mode config; verified edge-devtools)
 ├── intent/
 │   └── intent-card-creator.md         # Card Creator intent (interview-me output, confirmed)
