@@ -15,7 +15,7 @@ import {
   setTokenizeEnabledForUrl,
 } from '@/features/tokenize/services/tokenizeSettingsStore';
 import { findFrequencyByTerms } from '@/features/dictionary/repositories/frequencyRepository';
-import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusStore';
+import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusClient';
 import type { WordStatus } from '@/features/dictionaryPopup/types';
 import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
 import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';

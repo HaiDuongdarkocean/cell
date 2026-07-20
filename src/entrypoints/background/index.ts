@@ -67,6 +67,7 @@ import { registerDetectionDispatchHandlers } from './handlers/detectionDispatch'
 import { registerTranslateHandlers } from './handlers/translate';
 import { registerCardCreatorHandlers } from './handlers/cardCreator';
 import { registerLookupHandlers } from './handlers/lookup';
+import { registerWordStatusHandlers } from './handlers/wordStatus';
 import { registerTtsHandlers } from './handlers/tts';
 import { registerForvoAudioHandlers } from './handlers/forvoAudio';
 import { registerImageSearchHandlers } from './handlers/images';
@@ -225,6 +226,7 @@ export class BackgroundService implements BackgroundContext {
     registerTranslateHandlers(this);
     registerCardCreatorHandlers(this);
     registerLookupHandlers(this);
+    registerWordStatusHandlers(this);
     registerTtsHandlers(this);
     registerForvoAudioHandlers(this);
     registerImageSearchHandlers(this);

@@ -157,12 +157,22 @@ export const WorkerLookupResultMessageSchema = z.object({
   error: z.string().optional(),
 });
 
-// === Word status (spec §9.4 B — WORD_STATUS_GET / WORD_STATUS_SET payloads) ===
+// === Word status (spec §9.4 B — WORD_STATUS_GET / WORD_STATUSES_GET / WORD_STATUS_SET payloads) ===
 
 export const WordStatusGetPayloadSchema = z.object({
   tabId: z.number().int(),
   term: z.string().min(1).max(200),
   langCode: z.string().length(2),
+});
+
+export const WordStatusesGetPayloadSchema = z.object({
+  tabId: z.number().int(),
+  langCode: z.string().length(2),
+  terms: z.array(z.string().min(1).max(200)).min(1).max(1000),
+});
+
+export const WordStatusesGetResponseSchema = z.object({
+  statuses: z.record(z.string(), WordStatusSchema),
 });
 
 export const WordStatusSetPayloadSchema = WordStatusGetPayloadSchema.extend({

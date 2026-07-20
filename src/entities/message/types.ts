@@ -73,6 +73,7 @@ export type MessageType =
   | 'FETCH_IMAGES'
   | 'TTS_SPEAK'
   | 'WORD_STATUS_GET'
+  | 'WORD_STATUSES_GET'
   | 'WORD_STATUS_SET'
   | 'QUICK_ADD'
   | 'LOOKUP_REQUEST'
