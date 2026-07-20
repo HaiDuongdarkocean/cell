@@ -37,7 +37,7 @@ When anything unexpected happens:
 
 **Don't push past a failing test or broken build to work on the next feature.** Errors compound. A bug in Step 3 that goes unfixed makes Steps 4-6 wrong.
 
-**Do not form a root-cause theory before evidence is preserved.** Preserving evidence means capturing data before your next action changes the system. A screenshot after a reload is not the same evidence as one before it.
+**Ocean rule: do not form a root-cause theory before evidence is preserved.** Preserving evidence means capturing data before your next action changes the system. A screenshot after a reload is not the same evidence as one before it.
 
 ## Socratic Debugging
 
@@ -49,9 +49,13 @@ The Socratic method applied to debugging: don't defend your first theory; interr
 Observe → Question → Hypothesize → Falsify → Fix → Verify
 ```
 
-**Observe and Question must come before Hypothesize.** Do not let a theory form before you have evidence. A theory formed too early becomes a filter: you will only see data that confirms it.
+**Observe and Question must come before Hypothesize.** This is the Ocean method: evidence first, theory second. Do not let a theory form before you have evidence. A theory formed too early becomes a filter: you will only see data that confirms it.
 
-### Evidence Before Hypothesis
+### Ocean (Evidence First)
+
+**Ocean** = the project's evidence-first debugging method: gather enough context and evidence before forming or acting on a root-cause theory.
+
+> Why "Ocean"? The ocean is deep, wide, and full of data. You do not conclude what lives in it from one wave. You observe, gather samples, map currents, then reason. The method is **evidence first**.
 
 **The No-Guess Rule:** Do not state a root cause before you have evidence. You may have hunches, but a hunch is not a diagnosis. Gather enough context to distinguish facts from guesses.
 
@@ -245,10 +249,10 @@ Can you reproduce the failure?
     └── If truly non-reproducible, document conditions and monitor
 ```
 
-**Evidence you must capture during reproduction:**
+**Ocean Minimum Evidence you must capture during reproduction:**
 
 ```
-Minimum evidence before moving to Step 2:
+Ocean Minimum Evidence before moving to Step 2:
 ├── Exact error message / stack trace / console output
 ├── Runtime snapshot (DOM, state, variables, storage)
 ├── Network log if external calls are involved
@@ -384,10 +388,10 @@ page request → HTML parse → scripts load → Rocket Loader → Angular boots
 
 ### Step 4: Fix the Root Cause
 
-**Evidence gate:** Before writing any fix, confirm you have:
+**Ocean Evidence Gate:** Before writing any fix, confirm you have:
 
 ```
-Evidence gate:
+Ocean Evidence Gate:
 ├── A reproduced failure with captured evidence
 ├── A leading hypothesis supported by at least one observation
 ├── One experiment designed to falsify that hypothesis
