@@ -55,30 +55,57 @@ export async function findFrequencyByResource(langCode: string, resourceId: numb
   });
 }
 
-/** Find frequency entries for multiple exact terms in a single transaction. */
+/** Find frequency entries for multiple exact terms in a single cursor pass. */
 export async function findFrequencyByTerms(
   langCode: string,
   terms: readonly string[],
 ): Promise<Map<string, FrequencyEntry[]>> {
+  const result = new Map<string, FrequencyEntry[]>();
+  if (terms.length === 0) return result;
+
+  const sortedTerms = [...terms].sort();
+  for (const term of terms) {
+    result.set(term, []);
+  }
+
   const db = await getDB(langCode);
   const tx = db.transaction(STORES.FREQUENCY, 'readonly');
-  const store = tx.objectStore(STORES.FREQUENCY);
-  const index = store.index(INDEXES.by_term);
-  const result = new Map<string, FrequencyEntry[]>();
-  await Promise.all(
-    terms.map(
-      (term) =>
-        new Promise<void>((resolve, reject) => {
-          const request = index.getAll(term);
-          request.onsuccess = () => {
-            result.set(term, request.result as FrequencyEntry[]);
-            resolve();
-          };
-          request.onerror = () => reject(request.error);
-        }),
-    ),
-  );
-  return result;
+  const index = tx.objectStore(STORES.FREQUENCY).index(INDEXES.by_term);
+  const lower = sortedTerms[0];
+  const upper = sortedTerms[sortedTerms.length - 1] + '\uffff';
+
+  return new Promise((resolve, reject) => {
+    let termIndex = 0;
+    const request = index.openCursor(IDBKeyRange.bound(lower, upper, false, false));
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) {
+        resolve(result);
+        return;
+      }
+
+      const key = cursor.key as string;
+      // Skip requested terms the cursor has already passed (no entries for them).
+      while (termIndex < sortedTerms.length && sortedTerms[termIndex] < key) {
+        termIndex++;
+      }
+      if (termIndex >= sortedTerms.length) {
+        resolve(result);
+        return;
+      }
+
+      if (sortedTerms[termIndex] === key) {
+        const entries = result.get(key) ?? [];
+        entries.push(cursor.value as FrequencyEntry);
+        result.set(key, entries);
+        cursor.continue();
+      } else {
+        // key is between two requested terms; jump to the next requested term.
+        cursor.continue(sortedTerms[termIndex]);
+      }
+    };
+    request.onerror = () => reject(request.error);
+  });
 }
 
 /** Find frequency entries by exact term match. */
