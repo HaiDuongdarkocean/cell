@@ -78,4 +78,18 @@ describe('ViewportTracker', () => {
     expect(onEnter).toHaveBeenCalledTimes(1);
     expect(onExit).toHaveBeenCalledTimes(1);
   });
+
+  it('fires all handler sets for the same element', () => {
+    const tracker = new ViewportTracker();
+    const el = document.createElement('p');
+    const onEnterA = jest.fn();
+    const onEnterB = jest.fn();
+    tracker.observe(el, { onEnter: onEnterA });
+    tracker.observe(el, { onEnter: onEnterB });
+    // IntersectionObserver.observe should only be called once for the element
+    expect(mockObservers).toHaveLength(1);
+    mockObservers[0]!.emit([{ target: el, isIntersecting: true }]);
+    expect(onEnterA).toHaveBeenCalledTimes(1);
+    expect(onEnterB).toHaveBeenCalledTimes(1);
+  });
 });

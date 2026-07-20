@@ -2,7 +2,7 @@ import { findTextBlocks } from '@/features/tokenize/logic/tokenizeBlock';
 import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
 import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_BUFFER, PRIORITY_IDLE } from '@/features/tokenize/logic/tokenizeScheduler';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
-import { tokenizeTextBlock, resolveTokenMetadata } from '@/features/tokenize/logic/textTokenizer';
+import { tokenizeTextBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { createTokenBadge } from '@/features/tokenize/ui/tokenBadge';
 import type { TokenBadge } from '@/features/tokenize/ui/tokenBadge';
@@ -21,8 +21,9 @@ import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
 import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
-const CACHE_CAPACITY = 50; // ~50 blocks ≈ a few MB on 1GB RAM devices
+const CACHE_CAPACITY = 500; // enough for most article pages without eviction churn
 const VIEWPORT_ROOT_MARGIN = '150px';
+const MUTATION_DEBOUNCE_MS = 300;
 
 const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
   '1': 'unknown',
@@ -109,7 +110,7 @@ export async function createWebTokenizeController(
     }
   });
 
-  const blocks = findTextBlocks(root, { langCode });
+  const blocks: TokenBlock[] = findTextBlocks(root, { langCode });
   for (const block of blocks) {
     cache.set(block);
     viewport.observe(block.element, {
@@ -132,6 +133,51 @@ export async function createWebTokenizeController(
       scheduler.schedule(() => prepareBlock(block), PRIORITY_IDLE);
     }
   }
+
+  // === MutationObserver: handle dynamically added content (React/Vue/Angular) ===
+  // ponytail: debounced childList scan — doesn't catch characterData mutations
+  // (text node content changes). Ceiling: a framework that replaces text content
+  // in-place without adding/removing nodes won't be re-tokenized. Upgrade path:
+  // also observe characterData, but that's very chatty on content-editable pages.
+  let mutationTimer: ReturnType<typeof setTimeout> | null = null;
+  const mutationObserver = new MutationObserver(() => {
+    if (mutationTimer) clearTimeout(mutationTimer);
+    mutationTimer = setTimeout(() => {
+      mutationTimer = null;
+      if (!stateStore.getState().enabled) return;
+      // Re-scan root for text blocks. findTextBlocks walks all text nodes,
+      // but we filter to only new ones (not already in cache).
+      const newBlocks = findTextBlocks(root, { langCode, idPrefix: 'dyn-' });
+      for (const block of newBlocks) {
+        // Skip if this text node is already part of an existing block
+        if (cache.has(block.id)) continue;
+        // Skip if inside a token span (our own injected content)
+        if (block.element.closest('.js-cell-token')) continue;
+        // Skip if source node is already bound by another block
+        const existing = cache.getByElement(block.element);
+        if (existing.some((b) => b.sourceNodes[0] === block.sourceNodes[0])) continue;
+        cache.set(block);
+        blocks.push(block);
+        viewport.observe(block.element, {
+          onEnter: () => {
+            visibleElements.add(block.element);
+            if (stateStore.getState().enabled) {
+              scheduler.schedule(() => prepareAndBind(block), PRIORITY_VIEWPORT);
+            }
+          },
+          onExit: () => {
+            visibleElements.delete(block.element);
+            scheduler.schedule(() => unbindTokenBlock(block), PRIORITY_BUFFER);
+          },
+        });
+        // If element is already visible, schedule immediately
+        if (visibleElements.has(block.element)) {
+          scheduler.schedule(() => prepareAndBind(block), PRIORITY_VIEWPORT);
+        }
+      }
+    }, MUTATION_DEBOUNCE_MS);
+  });
+  mutationObserver.observe(root, { childList: true, subtree: true });
 
   function pickDictionaryTerm(state: TokenizeState): string | null {
     if (state.selectedTerms.size > 0) return state.selectedTerms.values().next().value as string;
@@ -178,8 +224,8 @@ export async function createWebTokenizeController(
           stateStore.setHoveredTerm(null);
         }
       },
-      onTokenClick: (term, block, element) =>
-        options.onOpenDictionary?.(term, element, block.originalText),
+      onTokenClick: (term, block, element, token) =>
+        options.onOpenDictionary?.(term, element, getSentenceText(block, token)),
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
     };
   }
@@ -192,14 +238,18 @@ export async function createWebTokenizeController(
   async function prepareAndBind(block: TokenBlock): Promise<void> {
     await prepareBlock(block);
     if (stateStore.getState().enabled && visibleElements.has(block.element)) {
-      bindTokenBlock(block, getDisplayOptions());
+      // rebind (not bind): unbind is a no-op on first bind, but is required when
+      // a layer toggle (showStatus/showFrequency) fires scheduleVisible() for an
+      // already-bound block — plain bindTokenBlock would no-op on isBound=true
+      // and the new display options would never apply.
+      rebindBlock(block);
     }
   }
 
   function scheduleVisible(): void {
     for (const element of visibleElements) {
-      const block = cache.getByElement(element);
-      if (block) {
+      const elementBlocks = cache.getByElement(element);
+      for (const block of elementBlocks) {
         scheduler.schedule(() => prepareAndBind(block), PRIORITY_VIEWPORT);
       }
     }
@@ -274,6 +324,8 @@ export async function createWebTokenizeController(
       unsubscribe();
       scheduler.stop();
       viewport.destroy();
+      mutationObserver.disconnect();
+      if (mutationTimer) clearTimeout(mutationTimer);
       unbindAll();
       badge.destroy();
     },

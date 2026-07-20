@@ -9,7 +9,7 @@ export interface TokenizeCacheOptions {
 /** Bounded LRU cache for tokenized blocks with DOM-to-block WeakMap. */
 export class TokenizeCache {
   private readonly cache: LruCache<string, TokenBlock>;
-  private readonly domMap = new WeakMap<Element, TokenBlock>();
+  private readonly domMap = new WeakMap<Element, Set<TokenBlock>>();
   private readonly onEvict?: (block: TokenBlock) => void;
 
   constructor({ capacity, onEvict }: TokenizeCacheOptions) {
@@ -47,7 +47,12 @@ export class TokenizeCache {
       }
     }
     this.cache.set(block.id, block);
-    this.domMap.set(block.element, block);
+    let set = this.domMap.get(block.element);
+    if (!set) {
+      set = new Set();
+      this.domMap.set(block.element, set);
+    }
+    set.add(block);
   }
 
   /** Remove a block by id. */
@@ -55,9 +60,10 @@ export class TokenizeCache {
     return this.cache.delete(id);
   }
 
-  /** Look up block from its DOM element. */
-  getByElement(element: Element): TokenBlock | undefined {
-    return this.domMap.get(element);
+  /** Look up all blocks sharing a DOM element. */
+  getByElement(element: Element): TokenBlock[] {
+    const set = this.domMap.get(element);
+    return set ? [...set] : [];
   }
 
   /** Remove all blocks. */

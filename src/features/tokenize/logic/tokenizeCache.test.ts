@@ -23,7 +23,7 @@ describe('TokenizeCache', () => {
     const block = makeBlock('a', 'hello');
     cache.set(block);
     expect(cache.get('a')).toBe(block);
-    expect(cache.getByElement(block.element)).toBe(block);
+    expect(cache.getByElement(block.element)).toContain(block);
   });
 
   it('evicts LRU when over capacity', () => {

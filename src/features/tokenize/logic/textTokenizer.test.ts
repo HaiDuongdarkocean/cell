@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { tokenizeTextBlock, resolveTokenMetadata } from './textTokenizer';
-import type { Token } from '@/features/tokenize/types';
+import { tokenizeTextBlock, resolveTokenMetadata, getSentenceText } from './textTokenizer';
+import type { Token, TokenBlock } from '@/features/tokenize/types';
 
 describe('tokenizeTextBlock', () => {
   it('tokenizes English preserving surface case', () => {
@@ -30,14 +30,71 @@ describe('tokenizeTextBlock', () => {
     expect(tokens[1]!.term).toBe('quick');
     expect(tokens[2]!.term).toBe('test');
   });
+
+  it('assigns sentenceIndex incrementing at sentence-ending punctuation', () => {
+    const tokens = tokenizeTextBlock('Hello world. Bye now!', 'en');
+    // Sentence 0: "Hello world." → Hello, world
+    // Sentence 1: "Bye now!" → Bye, now
+    expect(tokens).toHaveLength(4);
+    expect(tokens[0]).toMatchObject({ text: 'Hello', sentenceIndex: 0 });
+    expect(tokens[1]).toMatchObject({ text: 'world', sentenceIndex: 0 });
+    expect(tokens[2]).toMatchObject({ text: 'Bye', sentenceIndex: 1 });
+    expect(tokens[3]).toMatchObject({ text: 'now', sentenceIndex: 1 });
+  });
+
+  it('handles multiple sentences with question marks', () => {
+    const tokens = tokenizeTextBlock('Are you sure? Yes I am.', 'en');
+    expect(tokens).toHaveLength(6);
+    expect(tokens[0]).toMatchObject({ text: 'Are', sentenceIndex: 0 });
+    expect(tokens[2]).toMatchObject({ text: 'sure', sentenceIndex: 0 });
+    expect(tokens[3]).toMatchObject({ text: 'Yes', sentenceIndex: 1 });
+    expect(tokens[5]).toMatchObject({ text: 'am', sentenceIndex: 1 });
+  });
+});
+
+describe('getSentenceText', () => {
+  function makeBlock(text: string, tokens: Token[]): TokenBlock {
+    return {
+      id: 'test',
+      element: {} as Element,
+      sourceNodes: [],
+      originalText: text,
+      tokens,
+      isBound: false,
+      lastAccessedAt: 0,
+    };
+  }
+
+  it('extracts the sentence containing a token (single sentence)', () => {
+    const text = 'Hello world.';
+    const tokens = tokenizeTextBlock(text, 'en');
+    const block = makeBlock(text, tokens);
+    expect(getSentenceText(block, tokens[1]!)).toBe('Hello world.');
+  });
+
+  it('extracts the correct sentence from a multi-sentence block', () => {
+    const text = 'Hello world. Bye now!';
+    const tokens = tokenizeTextBlock(text, 'en');
+    const block = makeBlock(text, tokens);
+    expect(getSentenceText(block, tokens[0]!)).toBe('Hello world.');
+    expect(getSentenceText(block, tokens[2]!)).toBe('Bye now!');
+  });
+
+  it('extracts sentence with question mark boundary', () => {
+    const text = 'Are you sure? Yes I am.';
+    const tokens = tokenizeTextBlock(text, 'en');
+    const block = makeBlock(text, tokens);
+    expect(getSentenceText(block, tokens[0]!)).toBe('Are you sure?');
+    expect(getSentenceText(block, tokens[3]!)).toBe('Yes I am.');
+  });
 });
 
 describe('resolveTokenMetadata', () => {
   it('fills status and frequency band for unique terms', async () => {
     const tokens: Token[] = [
-      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, status: undefined, frequencyBand: undefined },
-      { text: 'hello', term: 'hello', start: 6, end: 11, isSeparator: false, status: undefined, frequencyBand: undefined },
-      { text: ' ', term: ' ', start: 5, end: 6, isSeparator: true, status: undefined, frequencyBand: undefined },
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: undefined, frequencyBand: undefined },
+      { text: 'hello', term: 'hello', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: undefined, frequencyBand: undefined },
+      { text: ' ', term: ' ', start: 5, end: 6, isSeparator: true, sentenceIndex: 0, status: undefined, frequencyBand: undefined },
     ];
     await resolveTokenMetadata(
       tokens,

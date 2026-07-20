@@ -15,6 +15,8 @@ export interface Token {
   readonly end: number;
   /** True if this token is whitespace/punctuation and should not be clickable. */
   readonly isSeparator: boolean;
+  /** Index of the sentence this token belongs to (0-based, increments at .!?). */
+  readonly sentenceIndex: number;
   /** Status for known words; undefined until resolved. */
   status: TokenStatus | undefined;
   /** Frequency band for known words; undefined until resolved. */

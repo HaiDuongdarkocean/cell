@@ -130,4 +130,66 @@ describe('createWebTokenizeController', () => {
     expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
     controller.destroy();
   });
+
+  it('re-binds visible blocks when showFrequency is toggled off', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    MockIntersectionObserver.trigger(paragraph);
+    controller.enable();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const helloBefore = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    expect(helloBefore).not.toBeNull();
+    // showFrequency defaults to true, status unknown -> frequency layer visible
+    expect(helloBefore.classList.contains('js-cell-token--frequency-off')).toBe(false);
+
+    controller.setShowFrequency(false);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const helloAfter = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    expect(helloAfter).not.toBeNull();
+    // toggle off must re-bind so the frequency-off class is now applied
+    expect(helloAfter.classList.contains('js-cell-token--frequency-off')).toBe(true);
+
+    controller.destroy();
+  });
+
+  it('re-binds visible blocks when showStatus is toggled off', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    MockIntersectionObserver.trigger(paragraph);
+    controller.enable();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const helloBefore = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    expect(helloBefore).not.toBeNull();
+    expect(helloBefore.classList.contains('js-cell-token--status-off')).toBe(false);
+
+    controller.setShowStatus(false);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const helloAfter = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    expect(helloAfter).not.toBeNull();
+    expect(helloAfter.classList.contains('js-cell-token--status-off')).toBe(true);
+
+    controller.destroy();
+  });
 });
