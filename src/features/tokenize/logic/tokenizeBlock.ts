@@ -21,7 +21,6 @@ const FORBIDDEN_TAGS = new Set([
   'KBD',
   'SAMP',
   'VAR',
-  'NAV',
 ]);
 
 const FORBIDDEN_ROLE_ATTRS = ['link', 'textbox', 'tab', 'menuitem'];
