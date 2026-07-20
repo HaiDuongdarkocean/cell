@@ -38,8 +38,9 @@ export interface WebTokenizeControllerOptions {
   readonly root?: Element;
   /** Language code for lookups. */
   readonly langCode?: string;
-  /** Callback when the user asks to open the Popup Dictionary. */
-  readonly onOpenDictionary?: (term: string) => void;
+  /** Callback when the user asks to open the Popup Dictionary.
+   *  Provides the clicked token element and the original sentence for context. */
+  readonly onOpenDictionary?: (term: string, element: HTMLElement, contextSentence: string) => void;
 }
 
 export interface WebTokenizeController extends TokenizeController {
@@ -91,7 +92,7 @@ export async function createWebTokenizeController(
     onToggleFrequency: () => stateStore.setShowFrequency(!stateStore.getState().showFrequency),
     onOpenDictionary: () => {
       const term = pickDictionaryTerm(stateStore.getState());
-      if (term) options.onOpenDictionary?.(term);
+      if (term) options.onOpenDictionary?.(term, document.body, '');
     },
   });
 
@@ -177,7 +178,8 @@ export async function createWebTokenizeController(
           stateStore.setHoveredTerm(null);
         }
       },
-      onTokenClick: (term) => options.onOpenDictionary?.(term),
+      onTokenClick: (term, block, element) =>
+        options.onOpenDictionary?.(term, element, block.originalText),
       onTokenCtrlClick: (term) => stateStore.toggleSelectedTerm(term),
     };
   }

@@ -7,13 +7,13 @@ export interface TokenSpanBindOptions {
   /** Show frequency background/text layer. */
   readonly showFrequency: boolean;
   /** Hover a word token (desktop). */
-  readonly onTokenEnter?: (term: string, block: TokenBlock) => void;
+  readonly onTokenEnter?: (term: string, block: TokenBlock, element: HTMLElement) => void;
   /** Leave a word token (desktop). */
-  readonly onTokenLeave?: (term: string, block: TokenBlock) => void;
+  readonly onTokenLeave?: (term: string, block: TokenBlock, element: HTMLElement) => void;
   /** Click a word token to open the popup dictionary. */
-  readonly onTokenClick?: (term: string, block: TokenBlock) => void;
+  readonly onTokenClick?: (term: string, block: TokenBlock, element: HTMLElement) => void;
   /** Ctrl/Cmd+click a word token to multi-select. */
-  readonly onTokenCtrlClick?: (term: string, block: TokenBlock) => void;
+  readonly onTokenCtrlClick?: (term: string, block: TokenBlock, element: HTMLElement) => void;
 }
 
 const TOKEN_CLASS = 'js-cell-token';
@@ -39,14 +39,14 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
   span.setAttribute('data-cell-end', String(token.end));
 
   if (!token.isSeparator && (options.onTokenEnter || options.onTokenLeave || options.onTokenClick || options.onTokenCtrlClick)) {
-    span.addEventListener('mouseenter', () => options.onTokenEnter?.(token.term, block));
-    span.addEventListener('mouseleave', () => options.onTokenLeave?.(token.term, block));
+    span.addEventListener('mouseenter', () => options.onTokenEnter?.(token.term, block, span));
+    span.addEventListener('mouseleave', () => options.onTokenLeave?.(token.term, block, span));
     span.addEventListener('click', (e) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
-        options.onTokenCtrlClick?.(token.term, block);
+        options.onTokenCtrlClick?.(token.term, block, span);
       } else {
-        options.onTokenClick?.(token.term, block);
+        options.onTokenClick?.(token.term, block, span);
       }
     });
   }
@@ -85,7 +85,7 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
 
 /** Bind a prepared block to the DOM: replace source text with token spans. */
 export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions): void {
-  if (block.isBound || !block.tokens || block.sourceNodes.length === 0) return;
+  if (block.isBound || !block.tokens || block.tokens.length === 0 || block.sourceNodes.length === 0) return;
 
   injectTokenSpanStyle();
 

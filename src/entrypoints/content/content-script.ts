@@ -281,15 +281,20 @@ async function initTokenize(): Promise<void> {
       url: window.location.href,
       root: document.body,
       langCode,
-      onOpenDictionary: (term) => {
+      onOpenDictionary: (term, element, contextSentence) => {
         const ctrl = ensureWebTextCtrl();
+        const start = parseInt(element.getAttribute('data-cell-start') ?? '0', 10);
+        const wordEl = element.querySelector('.js-cell-token-word');
         const range = document.createRange();
-        range.setStart(document.body, 0);
-        range.collapse(true);
+        if (wordEl) {
+          range.selectNodeContents(wordEl);
+        } else {
+          range.selectNodeContents(element);
+        }
         ctrl.handleLookup(
-          { term, langCode, contextSentence: '', cursorOffset: 0 },
+          { term, langCode, contextSentence, cursorOffset: start },
           `tokenize-${term}`,
-          document.body.getBoundingClientRect(),
+          element.getBoundingClientRect(),
           range,
         );
       },

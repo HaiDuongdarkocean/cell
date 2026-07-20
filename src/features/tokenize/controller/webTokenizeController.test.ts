@@ -36,7 +36,7 @@ jest.mock('@/features/dictionary/repositories/frequencyRepository', () => ({
 import { createWebTokenizeController } from './webTokenizeController';
 
 class MockIntersectionObserver {
-  private static callbacks = new Map<Element, () => void>();
+  static callbacks = new Map<Element, () => void>();
 
   constructor(private callback: (entries: { target: Element; isIntersecting: boolean }[]) => void) {}
 
@@ -55,6 +55,7 @@ class MockIntersectionObserver {
 }
 
 beforeEach(() => {
+  MockIntersectionObserver.callbacks.clear();
   global.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
   loadTokenizeSettings.mockResolvedValue({ schemaVersion: 1, origins: {}, urls: {} });
   saveTokenizeSettings.mockResolvedValue(undefined);
