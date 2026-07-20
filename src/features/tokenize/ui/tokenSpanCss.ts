@@ -11,8 +11,8 @@ function buildVariables(): string {
   const dark = DEFAULT_DARK_TOKENS;
   const vars: Record<string, { light: string; dark: string }> = {
     '--cell-token-status-unknown': {
-      light: pick(light, '--color-muted-foreground', '#64748b'),
-      dark: pick(dark, '--color-muted-foreground', '#94a3b8'),
+      light: pick(light, '--color-error', '#dc2626'),
+      dark: pick(dark, '--color-error', '#ef4444'),
     },
     '--cell-token-status-tracking': {
       light: pick(light, '--color-warning', '#d97706'),
@@ -23,8 +23,8 @@ function buildVariables(): string {
       dark: pick(dark, '--color-success', '#10b981'),
     },
     '--cell-token-status-ignore': {
-      light: pick(light, '--color-error', '#dc2626'),
-      dark: pick(dark, '--color-error', '#ef4444'),
+      light: pick(light, '--color-secondary', '#e2e8f0'),
+      dark: pick(dark, '--color-secondary', '#334155'),
     },
     '--cell-token-freq-high-bg': {
       light: pick(light, '--color-success-subtle', 'rgba(5, 150, 105, 0.1)'),

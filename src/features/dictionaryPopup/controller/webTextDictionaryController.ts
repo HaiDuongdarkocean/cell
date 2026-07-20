@@ -9,7 +9,7 @@
 // - Handles Card Creator / Quick Add actions from the popup.
 
 
-import type { LookupRequest, LookupResult, TriggerMode } from '../types';
+import type { LookupRequest, LookupResult, TriggerMode, WordStatus } from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAction } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import {
@@ -134,6 +134,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let webTrigger: WebTriggerController | null = null;
   let currentAttachedMode: TriggerMode | null = null;
   let cardCreatorMount: CardCreatorMountController | null = null;
+  let currentHighlightTarget: HighlightTarget | null = null;
 
   function showHighlight(target: HighlightTarget): void {
     wordHighlight.show(target);
@@ -141,6 +142,34 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   function clearHighlight(): void {
     wordHighlight.clear();
+  }
+
+  const ALL_STATUSES: WordStatus[] = ['unknown', 'tracking', 'known', 'ignore'];
+
+  function getTokenElement(target: HighlightTarget): HTMLElement | null {
+    if (target instanceof HTMLElement) {
+      return target.closest('.js-cell-token');
+    }
+    if (target instanceof Range) {
+      const node = target.startContainer;
+      const element = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+      return element?.closest('.js-cell-token') ?? null;
+    }
+    return null;
+  }
+
+  function applyTokenStatus(target: HighlightTarget, status: WordStatus): void {
+    const token = getTokenElement(target);
+    if (!token) return;
+    for (const s of ALL_STATUSES) {
+      token.classList.remove(`js-cell-token--status-${s}`);
+    }
+    token.classList.add(`js-cell-token--status-${status}`);
+    if (status === 'known' || status === 'ignore') {
+      token.classList.add('js-cell-token--frequency-off');
+    } else {
+      token.classList.remove('js-cell-token--frequency-off');
+    }
   }
 
   function pauseVideoIfNeeded(): void {
@@ -166,6 +195,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   function onPopupDismiss(dismissedState: PopupDictionaryState): void {
     popupDictState = dismissedState;
     popupDictWasPlaying = false;
+    currentHighlightTarget = null;
     wordHighlight.clear();
     resumeVideoIfNeeded();
   }
@@ -176,6 +206,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     anchorRect: DOMRect,
     highlightTarget: HighlightTarget,
   ): void {
+    currentHighlightTarget = highlightTarget;
     wordHighlight.show(highlightTarget);
 
     void sendMessage({
@@ -199,6 +230,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
               },
               contextSentence: request.contextSentence,
               onDismiss: onPopupDismiss,
+              onStatusChange: (_term, _langCode, status) => {
+                if (currentHighlightTarget) {
+                  applyTokenStatus(currentHighlightTarget, status);
+                }
+              },
             },
           );
           for (const candidate of rest) {
