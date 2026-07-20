@@ -1,0 +1,21 @@
+{
+  "id": "content-script-dom-mutation-hydration-quiescence",
+  "title": "Content-script DOM mutation → wait for load + quiescence, guard subframes",
+  "category": ["async", "rendering"],
+  "tags": ["content-script", "hydration", "angular", "rocket-loader", "cloudflare", "all-frames", "mutation-observer", "dom-quiescence", "tokenize"],
+  "trigger": "Content script/extension phải scan/mutate text DOM trên SPA hydration chậm (Angular + Cloudflare Rocket Loader) và content script còn chạy trong challenge iframe do manifest all_frames: true",
+  "principle": "Đừng dùng setTimeout để đoán hydration xong. Hãy quan sát signal thật: window.load + MutationObserver child-list quiescence để xác nhận framework đã ổn định, và luôn guard window.self === window.top để tránh side effect trong Cloudflare challenge iframe.",
+  "cases": [
+    {
+      "context": "Extension tokenize text trên kisskh.co (Angular + Rocket Loader). Controller activate sau setTimeout 500ms → scan chạy khi fallback HTML 'Feel Free To Watch' còn trong app-root, Angular chưa bootstrap. Mutation làm hỏng hydration, app-root biến mất, trang hiển thị lại challenge script.",
+      "bad": "if (initialEnabled) setTimeout(() => setActive(true), 500);\n// setTimeout không phải hydration signal\n// 500ms quá sớm với Rocket Loader; scan xóa/thay text node trong app-root\n// Angular hydration thất bại → app-root rỗng, body bị xóa, challenge fallback hiện lại",
+      "good": "// 1. Chỉ chạy ở top frame; bỏ qua Cloudflare challenge iframe\nif (window.self !== window.top) return;\n\n// 2. Đợi load + DOM quiescence trước khi scan/mutate\nfunction activateAfterStability(): void {\n  let stabilityTimer: ReturnType<typeof setTimeout> | null = null;\n  const observer = new MutationObserver(() => scheduleStabilityCheck());\n  const scheduleStabilityCheck = (): void => {\n    if (stabilityTimer) clearTimeout(stabilityTimer);\n    stabilityTimer = setTimeout(() => {\n      observer.disconnect();\n      if (state.enabled) setActive(true);\n    }, 500);\n  };\n  observer.observe(document.documentElement, { childList: true, subtree: true });\n  scheduleStabilityCheck();\n}\nif (document.readyState === 'complete') activateAfterStability();\nelse window.addEventListener('load', activateAfterStability, { once: true });"
+    }
+  ],
+  "applyFor": [
+    "Browser extension content script scan/mutate page text (tokenize, translate, annotate)",
+    "SPA với hydration chậm (Angular + Cloudflare Rocket Loader, Next.js, Nuxt)",
+    "Extension có all_frames: true chạy trên trang có bot challenge iframe",
+    "Bất kỳ feature nào phụ thuộc DOM text ổn định trước khi mutate"
+  ]
+}

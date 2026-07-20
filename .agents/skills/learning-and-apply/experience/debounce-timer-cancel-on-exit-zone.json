@@ -5,16 +5,18 @@
   "category": ["async", "ux"],
   "tags": ["debounce", "setTimeout", "cancel", "hover", "mousemove", "caretRangeFromPoint", "stale-timer", "popup-flicker"],
   "trigger": "Khi dùng setTimeout debounce cho hover/mousemove event và callback dùng Range/object từ event cũ — nếu cursor rời zone trigger (non-text, image, null), timer cũ vẫn fire và gây popup flicker hoặc stale anchor",
+  "principle": "Mọi early-return path trong event handler có debounce timer phải clear timer + reset dedup state. Pattern: 'exit zone = cancel pending work'.",
   "cases": [
     {
       "context": "WebTriggerController hover lookup — mousemove → caretRangeFromPoint → setTimeout 150ms → dispatchLookup với rect từ range cũ",
-      "bad": "onMouseMove chỉ return khi caretRangeFromPoint null hoặc node không phải TEXT_NODE — không clear hoverTimer. Timer cũ fire 150ms sau khi cursor đã rời text → popup hiện ở vị trí stale.",
-      "bad_code": "private onMouseMove(e: MouseEvent): void {\n  const range = document.caretRangeFromPoint(e.clientX, e.clientY);\n  if (!range) return; // ← timer cũ vẫn pending!\n  const textNode = range.startContainer as Text;\n  if (textNode.nodeType !== Node.TEXT_NODE) return; // ← same bug\n  // ...\n  this.hoverTimer = setTimeout(() => {\n    this.dispatchLookup(request, rect); // fires even after cursor left\n  }, 150);\n}",
-      "good": "Khi caretRangeFromPoint null hoặc node không phải TEXT_NODE → clear hoverTimer + reset lastHoveredTerm. Timer cũ bị hủy, không popup flicker.",
-      "good_code": "private onMouseMove(e: MouseEvent): void {\n  const range = document.caretRangeFromPoint(e.clientX, e.clientY);\n  if (!range) {\n    if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }\n    this.lastHoveredTerm = null;\n    return;\n  }\n  const textNode = range.startContainer as Text;\n  if (textNode.nodeType !== Node.TEXT_NODE) {\n    if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }\n    this.lastHoveredTerm = null;\n    return;\n  }\n  // ...\n}",
-      "root_cause": "Debounce timer giữ reference đến Range/object từ event cũ. Khi điều kiện trigger không còn thỏa (cursor rời zone), timer vẫn fire với stale data.",
-      "fix_principle": "Mọi early-return path trong event handler có debounce timer phải clear timer + reset dedup state. Pattern: 'exit zone = cancel pending work'.",
-      "verification": "Test: hover text → mousemove → mousemove over non-text (caretRangeFromPoint null) → advance 200ms → assert lookupCount === 0."
+      "bad": "private onMouseMove(e: MouseEvent): void {\n  const range = document.caretRangeFromPoint(e.clientX, e.clientY);\n  if (!range) return; // ← timer cũ vẫn pending!\n  const textNode = range.startContainer as Text;\n  if (textNode.nodeType !== Node.TEXT_NODE) return; // ← same bug\n  // ...\n  this.hoverTimer = setTimeout(() => {\n    this.dispatchLookup(request, rect); // fires even after cursor left\n  }, 150);\n}",
+      "good": "private onMouseMove(e: MouseEvent): void {\n  const range = document.caretRangeFromPoint(e.clientX, e.clientY);\n  if (!range) {\n    if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }\n    this.lastHoveredTerm = null;\n    return;\n  }\n  const textNode = range.startContainer as Text;\n  if (textNode.nodeType !== Node.TEXT_NODE) {\n    if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }\n    this.lastHoveredTerm = null;\n    return;\n  }\n  // ...\n}"
     }
+  ],
+  "applyFor": [
+    "Hover/mousemove debounce trong content script",
+    "Event handler với setTimeout giữ reference đến object cũ",
+    "Popup trigger khi cursor rời zone",
+    "Any early-return path cần cancel pending async work"
   ]
 }

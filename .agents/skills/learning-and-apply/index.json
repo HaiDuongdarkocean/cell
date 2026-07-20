@@ -965,6 +965,14 @@
       "category": ["async", "ux"],
       "tags": ["debounce", "setTimeout", "cancel", "hover", "mousemove", "caretRangeFromPoint", "stale-timer", "popup-flicker"],
       "trigger": "Khi dùng setTimeout debounce cho hover/mousemove event và callback dùng Range/object từ event cũ — nếu cursor rời zone trigger (non-text, image, null), timer cũ vẫn fire và gây popup flicker hoặc stale anchor"
+    },
+    {
+      "type": "experience",
+      "id": "content-script-dom-mutation-hydration-quiescence",
+      "title": "Content-script DOM mutation → wait for load + quiescence, guard subframes",
+      "category": ["async", "rendering"],
+      "tags": ["content-script", "hydration", "angular", "rocket-loader", "cloudflare", "all-frames", "mutation-observer", "dom-quiescence", "tokenize"],
+      "trigger": "Content script/extension phải scan/mutate text DOM trên SPA hydration chậm (Angular + Cloudflare Rocket Loader) và content script còn chạy trong challenge iframe do manifest all_frames: true"
     }
   ]
 }
