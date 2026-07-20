@@ -121,7 +121,17 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
 
   fab.addEventListener('click', () => setOpen(!isOpen));
 
-  document.body.appendChild(host);
+  // Append the badge host after the page (and Angular/Cloudflare hydration)
+  // has finished loading. Appending during hydration can cause DOM
+  // mismatches that break script injection and leave the page stuck.
+  function appendHost(): void {
+    (document.body ?? document.documentElement).appendChild(host);
+  }
+  if (document.readyState === 'complete') {
+    appendHost();
+  } else {
+    window.addEventListener('load', () => appendHost(), { once: true });
+  }
   buildPanel();
 
   return {

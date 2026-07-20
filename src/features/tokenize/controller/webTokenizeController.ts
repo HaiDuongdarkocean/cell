@@ -24,6 +24,7 @@ const DEFAULT_LANG = 'en';
 const CACHE_CAPACITY = 500; // enough for most article pages without eviction churn
 const VIEWPORT_ROOT_MARGIN = '150px';
 const MUTATION_DEBOUNCE_MS = 300;
+const HYDRATION_QUIET_MS = 500;
 
 const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
   '1': 'unknown',
@@ -36,7 +37,7 @@ export interface WebTokenizeControllerOptions {
   /** Current page URL used for per-URL enable state. */
   readonly url: string;
   /** Root element to scan for text blocks. Defaults to document.body. */
-  readonly root?: Element;
+  readonly root?: Element | null;
   /** Language code for lookups. */
   readonly langCode?: string;
   /** Callback when the user asks to open the Popup Dictionary.
@@ -62,7 +63,7 @@ export async function createWebTokenizeController(
 ): Promise<WebTokenizeController> {
   const url = options.url;
   const langCode = options.langCode ?? DEFAULT_LANG;
-  const root = options.root ?? document.body;
+  const root = options.root ?? document.body ?? document.documentElement;
 
   const settings = await loadTokenizeSettings();
   const initialEnabled = isTokenizeEnabledForUrl(settings, url);
@@ -79,8 +80,12 @@ export async function createWebTokenizeController(
   });
 
   const scheduler = new TokenizeScheduler();
-  const viewport = new ViewportTracker({ rootMargin: VIEWPORT_ROOT_MARGIN });
+  let viewport = createViewport();
   const visibleElements = new Set<Element>();
+
+  function createViewport(): ViewportTracker {
+    return new ViewportTracker({ rootMargin: VIEWPORT_ROOT_MARGIN });
+  }
 
   const badge = createTokenBadge({
     initialState: {
@@ -97,22 +102,27 @@ export async function createWebTokenizeController(
     },
   });
 
-  const unsubscribe = stateStore.subscribe((state) => {
-    badge.setState({
-      enabled: state.enabled,
-      showStatus: state.showStatus,
-      showFrequency: state.showFrequency,
-    });
-    if (state.enabled) {
-      scheduleVisible();
+  // MutationObserver is created lazily below and toggled via state. Keeping it
+  // disconnected during page load prevents conflicts with Cloudflare Rocket
+  // Loader / Angular hydration while scripts are still being injected.
+  let mutationObserver: MutationObserver | null = null;
+  let isObservingMutations = false;
+  function updateMutationObservation(enabled: boolean): void {
+    if (enabled === isObservingMutations || !mutationObserver) return;
+    if (enabled) {
+      mutationObserver.observe(root, { childList: true, subtree: true });
+      isObservingMutations = true;
     } else {
-      unbindAll();
+      mutationObserver.disconnect();
+      isObservingMutations = false;
     }
-  });
+  }
 
-  const blocks: TokenBlock[] = findTextBlocks(root, { langCode });
-  for (const block of blocks) {
-    cache.set(block);
+  const blocks: TokenBlock[] = [];
+  let isActive = false;
+  let cancelPendingActivation: (() => void) | null = null;
+
+  function observeBlock(block: TokenBlock): void {
     viewport.observe(block.element, {
       onEnter: () => {
         visibleElements.add(block.element);
@@ -127,21 +137,57 @@ export async function createWebTokenizeController(
     });
   }
 
-  // If the page is already enabled, eagerly prepare visible/buffer blocks.
-  if (initialEnabled) {
+  function scanAndObserveBlocks(): void {
+    const scanned = findTextBlocks(root, { langCode });
+    for (const block of scanned) {
+      cache.set(block);
+      blocks.push(block);
+      observeBlock(block);
+    }
     for (const block of blocks.slice(0, CACHE_CAPACITY)) {
       scheduler.schedule(() => prepareBlock(block), PRIORITY_IDLE);
     }
   }
 
+  function setActive(active: boolean): void {
+    if (active === isActive) return;
+    isActive = active;
+    if (active) {
+      viewport = createViewport();
+      scanAndObserveBlocks();
+      updateMutationObservation(true);
+      scheduleVisible();
+    } else {
+      updateMutationObservation(false);
+      viewport.destroy();
+      visibleElements.clear();
+      unbindAll();
+      blocks.length = 0;
+    }
+  }
+
+  const unsubscribe = stateStore.subscribe((state) => {
+    badge.setState({
+      enabled: state.enabled,
+      showStatus: state.showStatus,
+      showFrequency: state.showFrequency,
+    });
+    const wasActive = isActive;
+    setActive(state.enabled);
+    if (state.enabled && wasActive) scheduleVisible();
+    if (!state.enabled) {
+      cancelPendingActivation?.();
+      cancelPendingActivation = null;
+    }
+  });
+
   // === MutationObserver: handle dynamically added content (React/Vue/Angular/Cloudflare) ===
-  // ponytail: debounced childList scan — doesn't catch characterData mutations
-  // (text node content changes). Ceiling: a framework that replaces text content
-  // in-place without adding/removing nodes won't be re-tokenized. Upgrade path:
-  // also observe characterData, but that's very chatty on content-editable pages.
+  // The observer is only connected when tokenize is enabled. Keeping it
+  // disconnected during page load avoids conflicts with Cloudflare Rocket
+  // Loader / Angular hydration while scripts are still being injected.
   let mutationTimer: ReturnType<typeof setTimeout> | null = null;
   let dynIdCounter = 0;
-  const mutationObserver = new MutationObserver(() => {
+  mutationObserver = new MutationObserver(() => {
     if (mutationTimer) clearTimeout(mutationTimer);
     mutationTimer = setTimeout(() => {
       mutationTimer = null;
@@ -159,18 +205,7 @@ export async function createWebTokenizeController(
         if (existing.some((b) => b.sourceNodes[0] === block.sourceNodes[0])) continue;
         cache.set(block);
         blocks.push(block);
-        viewport.observe(block.element, {
-          onEnter: () => {
-            visibleElements.add(block.element);
-            if (stateStore.getState().enabled) {
-              scheduler.schedule(() => prepareAndBind(block), PRIORITY_VIEWPORT);
-            }
-          },
-          onExit: () => {
-            visibleElements.delete(block.element);
-            scheduler.schedule(() => unbindTokenBlock(block), PRIORITY_BUFFER);
-          },
-        });
+        observeBlock(block);
         // If element is already visible, schedule immediately
         if (visibleElements.has(block.element)) {
           scheduler.schedule(() => prepareAndBind(block), PRIORITY_VIEWPORT);
@@ -178,7 +213,41 @@ export async function createWebTokenizeController(
       }
     }, MUTATION_DEBOUNCE_MS);
   });
-  mutationObserver.observe(root, { childList: true, subtree: true });
+
+  // Activate only when tokenize is already enabled for this URL. By default the
+  // controller starts inactive, so no heavy DOM scanning/observation happens
+  // during page load and Rocket Loader / Angular hydration can finish safely.
+  if (initialEnabled) {
+    const activateAfterStability = (): void => {
+      let stabilityTimer: ReturnType<typeof setTimeout> | null = null;
+      const stabilityObserver = new MutationObserver(() => scheduleStabilityCheck());
+      const cleanup = (): void => {
+        stabilityObserver.disconnect();
+        if (stabilityTimer) clearTimeout(stabilityTimer);
+      };
+      const scheduleStabilityCheck = (): void => {
+        if (stabilityTimer) clearTimeout(stabilityTimer);
+        stabilityTimer = setTimeout(() => {
+          cleanup();
+          cancelPendingActivation = null;
+          if (stateStore.getState().enabled) setActive(true);
+        }, HYDRATION_QUIET_MS);
+      };
+      stabilityObserver.observe(document.documentElement, { childList: true, subtree: true });
+      scheduleStabilityCheck();
+      cancelPendingActivation = cleanup;
+    };
+    const handleLoad = (): void => {
+      cancelPendingActivation = null;
+      if (stateStore.getState().enabled) activateAfterStability();
+    };
+    if (document.readyState === 'complete') {
+      handleLoad();
+    } else {
+      window.addEventListener('load', handleLoad, { once: true });
+      cancelPendingActivation = () => window.removeEventListener('load', handleLoad);
+    }
+  }
 
   function pickDictionaryTerm(state: TokenizeState): string | null {
     if (state.selectedTerms.size > 0) return state.selectedTerms.values().next().value as string;
@@ -324,10 +393,9 @@ export async function createWebTokenizeController(
       document.removeEventListener('keydown', handleKeydown);
       unsubscribe();
       scheduler.stop();
-      viewport.destroy();
-      mutationObserver.disconnect();
+      setActive(false);
+      cancelPendingActivation?.();
       if (mutationTimer) clearTimeout(mutationTimer);
-      unbindAll();
       badge.destroy();
     },
   };

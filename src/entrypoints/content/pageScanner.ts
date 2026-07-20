@@ -143,7 +143,8 @@ export class PageScanner {
       }
     });
 
-    this.observer.observe(document.body, {
+    const root = document.body ?? document.documentElement;
+    this.observer.observe(root, {
       childList: true,
       subtree: true,
     });
