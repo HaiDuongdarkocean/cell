@@ -4,6 +4,7 @@ import {
   bulkInsertFrequencyEntries,
   findFrequencyByResource,
   findFrequencyByTerm,
+  findFrequencyByTerms,
   findFrequencyByPrefix,
   findFrequencyBySuffix,
   countFrequencyByResource,
@@ -141,6 +142,40 @@ describe('frequencyRepository', () => {
     await deleteFrequencyByResource(LANG, RESOURCE_ID);
     await expect(countFrequencyByResource(LANG, RESOURCE_ID)).resolves.toBe(0);
     await expect(countFrequencyByResource(LANG, 2)).resolves.toBe(1);
+  });
+
+  it('findFrequencyByTerms returns empty map for empty terms', async () => {
+    const result = await findFrequencyByTerms(LANG, []);
+    expect(result.size).toBe(0);
+  });
+
+  it('findFrequencyByTerms returns entries for requested terms and empty arrays for missing terms', async () => {
+    await bulkInsertFrequencyEntries(LANG, [
+      makeEntry('apple', 10),
+      makeEntry('banana', 8),
+      makeEntry('cherry', 5),
+    ]);
+
+    const result = await findFrequencyByTerms(LANG, ['banana', 'date', 'apple']);
+
+    expect(result.get('apple')).toHaveLength(1);
+    expect(result.get('apple')![0].frequency).toBe(10);
+    expect(result.get('banana')).toHaveLength(1);
+    expect(result.get('banana')![0].frequency).toBe(8);
+    expect(result.get('date')).toEqual([]);
+  });
+
+  it('findFrequencyByTerms handles duplicates and unsorted input', async () => {
+    await bulkInsertFrequencyEntries(LANG, [
+      makeEntry('apple', 10),
+      makeEntry('apple', 20, 2),
+      makeEntry('banana', 8),
+    ]);
+
+    const result = await findFrequencyByTerms(LANG, ['banana', 'apple', 'banana']);
+
+    expect(result.get('apple')).toHaveLength(2);
+    expect(result.get('banana')).toHaveLength(1);
   });
 });
 
