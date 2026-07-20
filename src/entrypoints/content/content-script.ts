@@ -504,14 +504,26 @@ if (document.readyState === 'loading') {
   initEpisodeChangeWatcher();
 }
 
+// Skip heavy initialization in iframes — Cloudflare's challenge iframe (1x1
+// hidden) runs our content script via all_frames: true. Creating badge hosts,
+// MutationObservers, and viewport observers modifies the iframe's DOM, which
+// Cloudflare's bot detection can flag, causing the challenge to fail and the
+// page to get stuck at "Infinite loading". Tokenize/dictionary features only
+// make sense in the top-level frame anyway.
+const isTopFrame = window.self === window.top;
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', findAndInitOverlay);
-  document.addEventListener('DOMContentLoaded', () => { void initWebTextDictionary(); });
-  document.addEventListener('DOMContentLoaded', () => { void initTokenize(); });
+  if (isTopFrame) {
+    document.addEventListener('DOMContentLoaded', () => { void initWebTextDictionary(); });
+    document.addEventListener('DOMContentLoaded', () => { void initTokenize(); });
+  }
 } else {
   findAndInitOverlay();
-  void initWebTextDictionary();
-  void initTokenize();
+  if (isTopFrame) {
+    void initWebTextDictionary();
+    void initTokenize();
+  }
 }
 
 // Re-init web-text dictionary when settings change (no page reload needed).
