@@ -55,6 +55,32 @@ export async function findFrequencyByResource(langCode: string, resourceId: numb
   });
 }
 
+/** Find frequency entries for multiple exact terms in a single transaction. */
+export async function findFrequencyByTerms(
+  langCode: string,
+  terms: readonly string[],
+): Promise<Map<string, FrequencyEntry[]>> {
+  const db = await getDB(langCode);
+  const tx = db.transaction(STORES.FREQUENCY, 'readonly');
+  const store = tx.objectStore(STORES.FREQUENCY);
+  const index = store.index(INDEXES.by_term);
+  const result = new Map<string, FrequencyEntry[]>();
+  await Promise.all(
+    terms.map(
+      (term) =>
+        new Promise<void>((resolve, reject) => {
+          const request = index.getAll(term);
+          request.onsuccess = () => {
+            result.set(term, request.result as FrequencyEntry[]);
+            resolve();
+          };
+          request.onerror = () => reject(request.error);
+        }),
+    ),
+  );
+  return result;
+}
+
 /** Find frequency entries by exact term match. */
 export async function findFrequencyByTerm(langCode: string, term: string): Promise<FrequencyEntry[]> {
   const db = await getDB(langCode);

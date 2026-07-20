@@ -4,6 +4,11 @@ import type { Token, TokenStatus, TokenFrequencyBand } from '@/features/tokenize
 
 const DEFAULT_LANG = 'en';
 
+/** Treat a token as a separator if it contains no letters or digits. */
+function isSeparator(surface: string): boolean {
+  return /^[^\p{L}\p{N}]+$/u.test(surface);
+}
+
 /** Tokenize a block of text into word tokens with UTF-16 offsets. */
 export function tokenizeTextBlock(text: string, langCode: string = DEFAULT_LANG): Token[] {
   const rawTokens = langCode === 'zh' ? segmentFMM(text, { hasTerm: () => false }) : tokenizeSentence(text);
@@ -20,7 +25,7 @@ export function tokenizeTextBlock(text: string, langCode: string = DEFAULT_LANG)
       term,
       start: raw.start,
       end: raw.end,
-      isSeparator: false,
+      isSeparator: isSeparator(surface),
       status: undefined,
       frequencyBand: undefined,
     });
