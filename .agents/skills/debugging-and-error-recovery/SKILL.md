@@ -37,6 +37,8 @@ When anything unexpected happens:
 
 **Don't push past a failing test or broken build to work on the next feature.** Errors compound. A bug in Step 3 that goes unfixed makes Steps 4-6 wrong.
 
+**Do not form a root-cause theory before evidence is preserved.** Preserving evidence means capturing data before your next action changes the system. A screenshot after a reload is not the same evidence as one before it.
+
 ## Socratic Debugging
 
 The Socratic method applied to debugging: don't defend your first theory; interrogate it. Ask until the assumptions behind the bug are exposed.
@@ -46,6 +48,55 @@ The Socratic method applied to debugging: don't defend your first theory; interr
 ```
 Observe → Question → Hypothesize → Falsify → Fix → Verify
 ```
+
+**Observe and Question must come before Hypothesize.** Do not let a theory form before you have evidence. A theory formed too early becomes a filter: you will only see data that confirms it.
+
+### Evidence Before Hypothesis
+
+**The No-Guess Rule:** Do not state a root cause before you have evidence. You may have hunches, but a hunch is not a diagnosis. Gather enough context to distinguish facts from guesses.
+
+**Context gathering checklist:**
+
+Before proposing any root cause, collect:
+
+```
+Required context:
+├── Error output / stack trace / console logs
+├── Runtime state (DOM, variables, storage, network requests)
+├── Code paths involved (grep callers, imports, lifecycle hooks)
+├── Project conventions (docs, architecture, skills, prior ADRs)
+├── Environment (browser version, OS, extension state, cached data)
+└── Reproduction steps that make the bug appear reliably
+```
+
+**Evidence types by bug category:**
+
+| Bug type | Evidence to gather first |
+|---|---|
+| Test failure | Full test output, order dependence, isolation result, recent changes |
+| Build error | Exact error line, config diff, dependency lockfile, Node version |
+| Runtime crash | Stack trace, input data, state at crash point, last user action |
+| UI/SPA bug | DOM snapshot, `innerText`, `readyState`, network, console, iframe list |
+| Extension bug | `manifest.json`, content script injection logs, top/subframe state, storage |
+| Performance | Profiler flame graph, memory snapshot, network waterfall, metrics |
+
+**Separate facts and theories:**
+
+```
+Fact:    After reload, `document.body` is null after 6.5s on kisskh.co.
+Fact:    `setTimeout(500)` fires before `app-root` appears.
+Fact:    Content script runs in a 1×1 Cloudflare iframe.
+
+Theory:  The page is broken because tokenize mutates too early.     ← needs proof
+Theory:  Cloudflare detects the extension and blocks the page.       ← needs proof
+
+Do not act on a theory until you have at least one observation that supports it
+and one experiment that could falsify it.
+```
+
+**When you want to say "I think the bug is X":**
+
+Stop. Instead say: "The evidence I have is Y. A possible explanation is X. To confirm or reject X, I will check Z."
 
 ### Six Question Categories
 
@@ -183,15 +234,26 @@ Work through these steps in order. Do not skip steps.
 
 ### Step 1: Reproduce
 
-Make the failure happen reliably. If you can't reproduce it, you can't fix it with confidence.
+Make the failure happen reliably. If you can't reproduce it, you can't fix it with confidence. A reproduction without evidence is just a story.
 
 ```
 Can you reproduce the failure?
-├── YES → Proceed to Step 2
+├── YES → Capture evidence, then proceed to Step 2
 └── NO
     ├── Gather more context (logs, environment details, persisted state)
     ├── Try reproducing in a minimal environment
     └── If truly non-reproducible, document conditions and monitor
+```
+
+**Evidence you must capture during reproduction:**
+
+```
+Minimum evidence before moving to Step 2:
+├── Exact error message / stack trace / console output
+├── Runtime snapshot (DOM, state, variables, storage)
+├── Network log if external calls are involved
+├── Steps that trigger the failure every time
+└── One measurement showing the failure is real (e.g. tokenCount=0, hasBody=false)
 ```
 
 **Find the exact scenario.** Bugs often hide in specific lifecycle moments:
@@ -321,6 +383,19 @@ page request → HTML parse → scripts load → Rocket Loader → Angular boots
 - "What is the minimal timeline that reproduces the failure?"
 
 ### Step 4: Fix the Root Cause
+
+**Evidence gate:** Before writing any fix, confirm you have:
+
+```
+Evidence gate:
+├── A reproduced failure with captured evidence
+├── A leading hypothesis supported by at least one observation
+├── One experiment designed to falsify that hypothesis
+├── At least two alternative hypotheses considered
+└── A written evidence board separating facts from theories
+```
+
+If you cannot check every box, go back to Step 2 or 3.
 
 Fix the underlying issue, not the symptom:
 
