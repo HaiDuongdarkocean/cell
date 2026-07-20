@@ -4,10 +4,12 @@ import type { TokenBlock } from '@/features/tokenize/types';
 
 function makeBlock(id: string, text: string): TokenBlock {
   const element = document.createElement('p');
-  element.textContent = text;
+  const textNode = document.createTextNode(text);
+  element.appendChild(textNode);
   return {
     id,
     element,
+    sourceNodes: [textNode],
     originalText: text,
     tokens: undefined,
     isBound: false,
