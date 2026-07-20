@@ -34,6 +34,7 @@ import { SubtitleBlockController, type SubtitleBlockControllerUpdate, type CardC
 import { OffsetController } from '@/features/subtitle/ui/offsetController';
 import { loadTokenizeSettings, isTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
+import type { TokenizeSettings } from '@/features/tokenize/types';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
 import { buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
@@ -260,6 +261,39 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     () => { void handleGenerateNative(); },
   );
 
+  /** Enable/disable subtitle tokenize based on current settings and tokenize settings. */
+  async function syncSubtitleTokenize(tokenizeSettings?: TokenizeSettings): Promise<void> {
+    const settings = currentSettings;
+    if (!settings?.subtitleOverlayTargetLanguage) {
+      blockController.disableTokenize();
+      return;
+    }
+    try {
+      const ts = tokenizeSettings ?? (await loadTokenizeSettings());
+      const url = window.location.href;
+      if (isTokenizeEnabledForUrl(ts, url)) {
+        blockController.enableTokenize({
+          langCode: settings.subtitleOverlayTargetLanguage,
+          onOpenDictionary: (term, element, contextSentence) => {
+            if (!sharedWebTextCtrl) return;
+            const request: LookupRequest = {
+              term,
+              langCode: settings.subtitleOverlayTargetLanguage,
+              contextSentence,
+              cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
+            };
+            const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+            sharedWebTextCtrl.handleLookup(request, requestId, element.getBoundingClientRect(), element);
+          },
+        });
+      } else {
+        blockController.disableTokenize();
+      }
+    } catch {
+      // ponytail: tokenize settings not available — keep subtitle plain
+    }
+  }
+
   /** ADR-026: Handle Card Creator action (quick-update or edit-card). */
   async function handleCardCreatorAction(action: CardCreatorAction): Promise<void> {
     if (!sharedWebTextCtrl) return;
@@ -466,28 +500,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
 
     // Tokenize on media: enable if configured for this URL (T14/T15).
-    try {
-      const tokenizeSettings = await loadTokenizeSettings();
-      const url = window.location.href;
-      if (isTokenizeEnabledForUrl(tokenizeSettings, url) && settings.subtitleOverlayTargetLanguage) {
-        blockController.enableTokenize({
-          langCode: settings.subtitleOverlayTargetLanguage,
-          onOpenDictionary: (term, element, contextSentence) => {
-            if (!sharedWebTextCtrl) return;
-            const request: LookupRequest = {
-              term,
-              langCode: settings.subtitleOverlayTargetLanguage,
-              contextSentence,
-              cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
-            };
-            const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-            sharedWebTextCtrl.handleLookup(request, requestId, element.getBoundingClientRect(), element);
-          },
-        });
-      }
-    } catch {
-      // ponytail: tokenize settings not available — keep subtitle plain
-    }
+    await syncSubtitleTokenize();
 
     // ADR-015 UI v4: create import button + manager panel.
     // Legacy target/native dropdowns are removed; the manager panel handles selection
@@ -536,40 +549,51 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     onStorageChanged((changes, area) => {
       if (area !== 'local') return;
       const newSettings = changes.settings?.newValue as Settings | undefined;
-      if (!newSettings) return;
-      if (newSettings.subtitleOverlayTargetStyle) {
+      if (newSettings) {
+        currentSettings = newSettings;
+      }
+      if (newSettings?.subtitleOverlayTargetStyle) {
         targetStyle = { ...newSettings.subtitleOverlayTargetStyle, visible: overlayVisible };
       }
-      if (newSettings.subtitleOverlayNativeStyle) {
+      if (newSettings?.subtitleOverlayNativeStyle) {
         nativeStyle = { ...newSettings.subtitleOverlayNativeStyle, visible: overlayVisible };
       }
-      if (newSettings.subtitleBlockSettings) {
+      if (newSettings?.subtitleBlockSettings) {
         blockSettings = { ...newSettings.subtitleBlockSettings };
       }
       const clusterPartial: Partial<NavClusterSettings> = {
-        ...(newSettings.navClusterEnabled !== undefined && { enabled: newSettings.navClusterEnabled }),
-        ...(newSettings.navClusterButtonSize !== undefined && { buttonSize: newSettings.navClusterButtonSize as NavClusterSettings['buttonSize'] }),
-        ...(newSettings.navClusterTextOpacity !== undefined && { textOpacity: newSettings.navClusterTextOpacity }),
-        ...(newSettings.navClusterButtonBgOpacity !== undefined && { bgOpacity: newSettings.navClusterButtonBgOpacity }),
+        ...(newSettings?.navClusterEnabled !== undefined && { enabled: newSettings.navClusterEnabled }),
+        ...(newSettings?.navClusterButtonSize !== undefined && { buttonSize: newSettings.navClusterButtonSize as NavClusterSettings['buttonSize'] }),
+        ...(newSettings?.navClusterTextOpacity !== undefined && { textOpacity: newSettings.navClusterTextOpacity }),
+        ...(newSettings?.navClusterButtonBgOpacity !== undefined && { bgOpacity: newSettings.navClusterButtonBgOpacity }),
       };
       if (Object.keys(clusterPartial).length > 0) {
         clusterSettings = { ...clusterSettings, ...clusterPartial };
       }
       const update: SubtitleBlockControllerUpdate = {
-        ...(newSettings.subtitleOverlayTargetStyle && { targetStyle }),
-        ...(newSettings.subtitleOverlayNativeStyle && { nativeStyle }),
-        ...(newSettings.subtitleBlockSettings && { blockSettings }),
+        ...(newSettings?.subtitleOverlayTargetStyle && { targetStyle }),
+        ...(newSettings?.subtitleOverlayNativeStyle && { nativeStyle }),
+        ...(newSettings?.subtitleBlockSettings && { blockSettings }),
         ...(Object.keys(clusterPartial).length > 0 && { clusterSettings: clusterPartial }),
       };
       if (Object.keys(update).length > 0) blockController.updateSettings(update);
       // Reload keyboard shortcuts so remaps (e.g. 't' → 'y') take effect
       // without a page reload. loadShortcuts reads from the new settings.
-      if (newSettings.keyboardShortcuts) {
+      if (newSettings?.keyboardShortcuts) {
         loadShortcuts().then((s) => { shortcuts = s; }).catch((err) => console.warn('[content-script] Failed to reload shortcuts:', err));
       }
+      // Tokenize on media: react to per-URL tokenize setting changes in real time.
+      const tokenizeSettings = changes.tokenizeSettings?.newValue as TokenizeSettings | undefined;
+      if (tokenizeSettings) {
+        void syncSubtitleTokenize(tokenizeSettings);
+      } else if (newSettings?.subtitleOverlayTargetLanguage) {
+        // Target language changed — re-evaluate with current tokenize settings.
+        void syncSubtitleTokenize();
+      }
+
       // Live-update dictionary popup settings (defaultActiveTab, triggerMode, etc.)
       // without requiring a page reload.
-      if (newSettings.dictionaryPopup && sharedWebTextCtrl) {
+      if (newSettings?.dictionaryPopup && sharedWebTextCtrl) {
         sharedWebTextCtrl.updateSettings({
           dictionaryPopup: newSettings.dictionaryPopup,
           cardCreator: newSettings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
