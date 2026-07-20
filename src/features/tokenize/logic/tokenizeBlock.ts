@@ -17,7 +17,6 @@ const FORBIDDEN_TAGS = new Set([
   'OPTION',
   'OPTGROUP',
   'LABEL',
-  'A',
   'CODE',
   'PRE',
   'KBD',
@@ -33,6 +32,8 @@ export interface FindTextBlocksOptions {
   readonly maxLength?: number;
   /** Language code hint for downstream tokenization. */
   readonly langCode?: string;
+  /** Prefix for block IDs. Defaults to 'block-'. */
+  readonly idPrefix?: string;
 }
 
 /** Skip text nodes inside elements that are not meant for reading. */
@@ -67,7 +68,7 @@ function hasForbiddenAncestor(element: Element, root: Node): boolean {
  * multiple source nodes.
  */
 export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}): TokenBlock[] {
-  const { maxLength = 2000 } = options;
+  const { maxLength = 2000, idPrefix = 'block-' } = options;
   const blocks: TokenBlock[] = [];
   let idCounter = 0;
 
@@ -80,7 +81,7 @@ export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}):
       const parent = textNode.parentElement;
       if (parent && !hasForbiddenAncestor(parent, root)) {
         blocks.push({
-          id: `block-${idCounter++}`,
+          id: `${idPrefix}${idCounter++}`,
           element: parent,
           sourceNodes: [textNode],
           originalText: text,

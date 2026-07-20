@@ -17,7 +17,7 @@ export interface ViewportTrackerOptions {
 /** Thin wrapper around IntersectionObserver for viewport/buffer tracking. */
 export class ViewportTracker {
   private readonly observer: IntersectionObserver | null;
-  private readonly handlers = new WeakMap<Element, ViewportTrackerHandlers>();
+  private readonly handlers = new WeakMap<Element, Set<ViewportTrackerHandlers>>();
   private readonly state = new WeakMap<Element, boolean>();
 
   constructor({ rootMargin = '0px', threshold = 0, root = null }: ViewportTrackerOptions = {}) {
@@ -31,16 +31,26 @@ export class ViewportTracker {
     );
   }
 
-  /** Observe an element and attach handlers. */
+  /** Observe an element and attach handlers. Multiple handler sets per element are supported. */
   observe(element: Element, handlers: ViewportTrackerHandlers = {}): void {
-    if (this.handlers.has(element)) return;
-    this.handlers.set(element, handlers);
-    this.state.set(element, false);
-    this.observer?.observe(element);
+    let set = this.handlers.get(element);
+    if (!set) {
+      set = new Set();
+      this.handlers.set(element, set);
+      this.state.set(element, false);
+      this.observer?.observe(element);
+    }
+    set.add(handlers);
   }
 
-  /** Stop observing an element. */
-  unobserve(element: Element): void {
+  /** Stop observing a specific handler set for an element. */
+  unobserve(element: Element, handlers?: ViewportTrackerHandlers): void {
+    const set = this.handlers.get(element);
+    if (!set) return;
+    if (handlers) {
+      set.delete(handlers);
+      if (set.size > 0) return;
+    }
     this.observer?.unobserve(element);
     this.handlers.delete(element);
     this.state.delete(element);
@@ -54,14 +64,14 @@ export class ViewportTracker {
   private handleEntries(entries: IntersectionObserverEntry[]): void {
     for (const entry of entries) {
       const target = entry.target as Element;
-      const handlers = this.handlers.get(target);
-      if (!handlers) continue;
+      const set = this.handlers.get(target);
+      if (!set) continue;
       const wasIntersecting = this.state.get(target) ?? false;
       const isIntersecting = entry.isIntersecting;
       if (isIntersecting && !wasIntersecting) {
-        handlers.onEnter?.();
+        for (const h of set) h.onEnter?.();
       } else if (!isIntersecting && wasIntersecting) {
-        handlers.onExit?.();
+        for (const h of set) h.onExit?.();
       }
       this.state.set(target, isIntersecting);
     }
