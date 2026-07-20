@@ -47,14 +47,19 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
         options.onTokenCtrlClick?.(token.term, block, span);
         return;
       }
-      // Inside <a>: single click opens popup, double click navigates link.
+      // Inside <a> or <button>: single click opens popup, double click triggers native action.
       // e.detail === 2 on the second click of a double-click sequence.
-      const anchor = span.closest('a');
-      if (anchor) {
+      const interactive = span.closest('a, button');
+      if (interactive) {
         e.preventDefault();
         if (e.detail === 2) {
-          const href = anchor.href;
-          if (href) window.location.href = href;
+          if (interactive.tagName === 'A') {
+            const href = (interactive as HTMLAnchorElement).href;
+            if (href) window.location.href = href;
+          } else {
+            // Re-dispatch a clean click so the button's own handler fires.
+            interactive.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+          }
           return;
         }
       }

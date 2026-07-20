@@ -10,7 +10,6 @@ const FORBIDDEN_TAGS = new Set([
   'CANVAS',
   'SVG',
   'MATH',
-  'BUTTON',
   'INPUT',
   'TEXTAREA',
   'SELECT',
@@ -25,7 +24,7 @@ const FORBIDDEN_TAGS = new Set([
   'NAV',
 ]);
 
-const FORBIDDEN_ROLE_ATTRS = ['button', 'link', 'textbox', 'tab', 'menuitem'];
+const FORBIDDEN_ROLE_ATTRS = ['link', 'textbox', 'tab', 'menuitem'];
 
 export interface FindTextBlocksOptions {
   /** Maximum characters for a single text block. Longer blocks are skipped. */
