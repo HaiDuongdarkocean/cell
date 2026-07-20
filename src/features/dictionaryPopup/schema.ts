@@ -184,8 +184,8 @@ export const WordStatusSetPayloadSchema = WordStatusGetPayloadSchema.extend({
 export const FrequencyEntrySchema = z.object({
   id: z.number().int().optional(),
   resourceId: z.number().int(),
-  term: z.string(),
-  reading: z.string(),
+  term: z.string().min(1).max(200),
+  reading: z.string().max(200),
   frequency: z.number(),
 });
 
