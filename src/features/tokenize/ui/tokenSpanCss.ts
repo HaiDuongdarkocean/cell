@@ -26,44 +26,44 @@ function buildVariables(): string {
       light: pick(light, '--color-secondary', '#e2e8f0'),
       dark: pick(dark, '--color-secondary', '#334155'),
     },
+    // Solid frequency bands (same contrast pairing as popup source badge):
+    // core/general use white/dark inverse text; common uses foreground text for
+    // WCAG contrast on the warning orange.
     '--cell-token-freq-core-bg': {
-      light: pick(light, '--color-success-subtle', 'rgba(5, 150, 105, 0.1)'),
-      dark: pick(dark, '--color-success-subtle', 'rgba(16, 185, 129, 0.15)'),
-    },
-    '--cell-token-freq-core-fg': {
       light: pick(light, '--color-success', '#059669'),
       dark: pick(dark, '--color-success', '#10b981'),
     },
-    '--cell-token-freq-common-bg': {
-      light: pick(light, '--color-warning-subtle', 'rgba(217, 119, 6, 0.1)'),
-      dark: pick(dark, '--color-warning-subtle', 'rgba(245, 158, 11, 0.15)'),
+    '--cell-token-freq-core-fg': {
+      light: pick(light, '--color-text-inverse', '#ffffff'),
+      dark: pick(dark, '--color-text-inverse', '#0f172a'),
     },
-    '--cell-token-freq-common-fg': {
+    '--cell-token-freq-common-bg': {
       light: pick(light, '--color-warning', '#d97706'),
       dark: pick(dark, '--color-warning', '#f59e0b'),
     },
-    '--cell-token-freq-general-bg': {
-      light: pick(light, '--color-info-subtle', 'rgba(37, 99, 235, 0.1)'),
-      dark: pick(dark, '--color-info-subtle', 'rgba(96, 165, 250, 0.15)'),
+    '--cell-token-freq-common-fg': {
+      light: pick(light, '--color-foreground', '#0f172a'),
+      dark: pick(dark, '--color-foreground', '#f1f5f9'),
     },
-    '--cell-token-freq-general-fg': {
+    '--cell-token-freq-general-bg': {
       light: pick(light, '--color-info', '#2563eb'),
       dark: pick(dark, '--color-info', '#60a5fa'),
     },
-    // ponytail: 'advanced' uses a surface token because the design system does
-    // not currently expose a distinct semantic color for the 4th band. Tuning
-    // this to a dedicated color (e.g. purple or teal) is a known upgrade path.
+    '--cell-token-freq-general-fg': {
+      light: pick(light, '--color-text-inverse', '#ffffff'),
+      dark: pick(dark, '--color-text-inverse', '#0f172a'),
+    },
     '--cell-token-freq-advanced-bg': {
-      light: pick(light, '--color-secondary', '#f8fafc'),
-      dark: pick(dark, '--color-secondary', '#1e293b'),
+      light: pick(light, '--color-secondary', '#e2e8f0'),
+      dark: pick(dark, '--color-secondary', '#334155'),
     },
     '--cell-token-freq-advanced-fg': {
       light: pick(light, '--color-secondary-foreground', '#0f172a'),
       dark: pick(dark, '--color-secondary-foreground', '#f1f5f9'),
     },
     '--cell-token-freq-rare-bg': {
-      light: pick(light, '--color-muted', 'rgba(100, 116, 139, 0.1)'),
-      dark: pick(dark, '--color-muted', 'rgba(148, 163, 184, 0.15)'),
+      light: pick(light, '--color-muted', '#f1f5f9'),
+      dark: pick(dark, '--color-muted', '#334155'),
     },
     '--cell-token-freq-rare-fg': {
       light: pick(light, '--color-muted-foreground', '#64748b'),
