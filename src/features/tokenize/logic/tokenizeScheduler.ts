@@ -77,7 +77,11 @@ export class TokenizeScheduler {
       this.scheduledFrameId = window.setTimeout(() => {
         // Only drain viewport-priority tasks here; buffer/idle tasks must wait
         // for their own idle callback so they don't piggyback on the fast path.
-        void this.runLoop({ timeRemaining: () => 16 }, PRIORITY_BUFFER); // ~one frame budget
+        // Use a real time budget so a long queue does not block the main thread
+        // for multiple frames on low-end devices.
+        const start = performance.now();
+        const viewportBudget = 16;
+        void this.runLoop({ timeRemaining: () => viewportBudget - (performance.now() - start) }, PRIORITY_BUFFER);
       }, 0);
     } else if (typeof requestIdleCallback === 'function') {
       this.scheduledFrameId = requestIdleCallback((deadline) => {

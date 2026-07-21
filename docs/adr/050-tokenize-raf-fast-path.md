@@ -1,4 +1,4 @@
-# ADR-050: MutationObserver Fast Path via requestAnimationFrame for Instant Tokenize
+# ADR-050: MutationObserver Fast Path for Instant Tokenize
 
 ## Context
 
@@ -16,6 +16,9 @@ Ngoài ra:
   dài và làm `applyStatusForTerm`/`unbindAll` lặp qua nhiều entry đã detached.
 - Text node thay đổi nội dung (`characterData`) không được re-tokenize; một số SPA cập nhật
   text in-place thay vì thay thế node.
+- Trên máy 500MB RAM, cache 500 blocks + viewport margin 300px giữ quá nhiều DOM references.
+- `TokenizeScheduler` viewport-priority tasks dùng `setTimeout(..., 0)` nhưng `timeRemaining()`
+  trả về hằng số 16ms, nên toàn bộ queue viewport có thể chạy trong một frame dài.
 
 ## Evidence (Edge DevTools MCP, Facebook feed, build mới)
 
@@ -25,61 +28,78 @@ Trước fast path:
   500ms đầu, chỉ tăng mạnh sau khi max-delay cap 1500ms fire.
 
 Sau fast path:
-- Scroll 1200px: token count cập nhật trong vòng 1-3 frame (~50-300ms).
-- rAF samples: t=115ms count từ 298 → 324, t=319ms ổn định 357 tokens.
-- Vùng viewport ở scrollY=9718: 137/148 text parents tokenized (~93%).
+- Scroll 1200px: token count cập nhật trong ~100-200ms (queueMicrotask + eager bind).
+- Coverage viewport trên Facebook: >90% text parents visible được tokenized.
 - Console không có lỗi từ tokenize renderer/scheduler.
 
 ## Decision
 
-Thực hiện 4 thay đổi trong `features/tokenize`:
+Thực hiện các thay đổi trong `features/tokenize`:
 
-1. **MutationObserver `requestAnimationFrame` fast path** (`webTokenizeController.ts`)
-   - Mỗi khi `MutationObserver` nhận `addedNodes`, lập tức `requestAnimationFrame` để
-     xử lý batch ngay frame kế tiếp, không chờ trailing debounce 300ms.
-   - Giữ `setTimeout` fallback với `MAX_MUTATION_SCAN_DELAY_MS` để xử lý residual batch
-     khi mutations dừng hoặc khi tab background throttling khiến rAF không chạy.
+1. **MutationObserver `queueMicrotask` fast path** (`webTokenizeController.ts`)
+   - Mỗi khi `MutationObserver` nhận `addedNodes`, schedule `queueMicrotask` để flush batch
+     ngay trong cùng event loop, trước khi browser paint, cắt ~16ms so với `requestAnimationFrame`.
+   - Giữ `setTimeout` fallback với `MAX_MUTATION_SCAN_DELAY_MS` cho tab background/throttling.
+   - `pendingAddedNodes` được cắt thành từng nhóm `PENDING_MUTATION_LIMIT` (1000 nodes) để tránh
+     một microtask duy nhất đi qua subtree DOM quá lớn trên máy 500MB RAM.
 
-2. **Eager sync bind for in-viewport blocks** (`webTokenizeController.ts`)
-   - Sau `observeBlock`, gọi `tryBindVisible(block)`: nếu `getBoundingClientRect()` cho thấy
-     element đang trong viewport margin 300px, thêm vào `visibleElements` và bind đồng bộ
-     ngay lập tức.
-   - Tách `prepareAndBind` cũ thành `bindVisibleBlock` (bind nếu chưa bound) và
-     `rebindVisibleBlock` (force rebind cho layer toggle / status update) để tránh double
-     unbind/bind khi eager path và `onEnter` callback cùng chạy.
+2. **Eager sync bind cho mutation batch nhỏ; initial scan dùng IntersectionObserver**
+   (`webTokenizeController.ts`)
+   - `observeBlock(block, eager)` chỉ gọi `tryBindVisible` khi batch có <=50 nodes. Các batch lớn
+     (hydration, re-render subtree) dùng `IntersectionObserver`, tránh hàng trăm lần
+     `getBoundingClientRect` synchronous layout read.
+   - `scanAndObserveBlocks` (initial full-page scan) không dùng eager bind để tránh forced
+     reflow khi DOM đang load.
 
-3. **Prune `blocks` array on cache eviction + clean `domMap`** (`webTokenizeController.ts`,
+3. **Dynamic cache capacity theo `navigator.deviceMemory`** (`webTokenizeController.ts`)
+   - <=0.5 GiB: 100 blocks; <2 GiB: 150 blocks; >=2 GiB: 250 blocks.
+   - `VIEWPORT_ROOT_MARGIN` giảm từ 300px xuống 200px để giảm số block resident trên máy yếu.
+
+4. **Prune `blocks` array on cache eviction + clean `domMap`** (`webTokenizeController.ts`,
    `tokenizeCache.ts`)
    - `TokenizeCache.onEvict` vừa `unbindTokenBlock` vừa xóa block khỏi `blocks` array.
-   - `TokenizeCache` gỡ block bị evict/`delete` khỏi `domMap` WeakMap, tránh `getByElement`
-     trả về block đã evicted.
+   - `TokenizeCache` gỡ block bị evict/`delete` khỏi `domMap` WeakMap.
 
-4. **Handle `characterData` mutations** (`webTokenizeController.ts`)
-   - Observer options thêm `characterData: true`.
-   - Khi một text node đã được cache thay đổi nội dung, reset `block.tokens` và `isBound`,
-     sau đó `bindVisibleBlock` nếu parent còn visible.
+5. **Xử lý `characterData` và `removedNodes` mutations** (`webTokenizeController.ts`)
+   - `characterData: true` để re-tokenize text node thay đổi nội dung in-place.
+   - `removedNodes` để `unobserve` element bị xóa, xóa khỏi `visibleElements`, và xóa block
+     khỏi cache/controller, giảm memory leak khi SPA re-render.
+
+6. **Evict stale block khi `bindTokenBlock` thất bại** (`webTokenizeController.ts`)
+   - Nếu source node hoặc parent bị detach giữa scan/observe và bind, xóa block khỏi `blocks`
+     và cache để mutation tiếp theo tạo block mới, tránh để text untokenized.
+
+7. **TokenizeScheduler viewport budget thực** (`tokenizeScheduler.ts`)
+   - Viewport-priority tasks dùng `setTimeout(..., 0)` nhưng đo thời gian thực tế qua
+     `performance.now()`; nếu queue dài, yield sau ~16ms để không block main thread trên
+     máy yếu.
 
 ## Why (chỉ WHY)
 
-- **rAF fast path**: trailing debounce 300ms là tối ưu cho batch processing, nhưng trên SPA
-  nặng nó là độ trễ nhìn thấy được. `requestAnimationFrame` chạy trước paint, cho phép text
-  được tách từ ngay khi DOM xuất hiện, đáp ứng yêu cầu "parse <1s như ngay lập tức".
-- **Eager bind**: `IntersectionObserver` là async theo spec; nếu element đã visible khi tạo
-  block, ta không cần chờ callback. Điều này cắt 1-2 frame (16-33ms) và loại bỏ rủi ro IO
-  không fire khi intersection state không đổi.
+- **queueMicrotask fast path**: `requestAnimationFrame` đợi 16ms frame kế tiếp, đủ để user
+  thấy text nguyên vẹn. `queueMicrotask` flush ngay sau synchronous mutations, trước paint,
+  giảm độ trễ xuống gần bằng thời gian tokenize + DOM insert.
+- **Eager bind có chọn lọc**: `getBoundingClientRect` cho từng block trong batch lớn là
+  forced-reflow nguy hiểm; nhưng với batch nhỏ (lazy-load 1 post) thì sync bind rất nhanh và
+  cắt IO async frame.
+- **Cache capacity động**: máy 500MB RAM không thể giữ 500 blocks; `navigator.deviceMemory`
+  cho hint sơ bộ để giảm resident blocks mà không cần detect memory phức tạp.
 - **Prune blocks + domMap**: `blocks` array là nguồn memory growth tiềm tàng khi user lướt
   dài. Eviction phải là end-to-end: cache, domMap, và controller state đều dọn.
-- **characterData**: một số framework (React, Vue, Svelte) có thể update `textContent` in-place
-  cho các node leaf. Nếu bỏ qua, text đã tokenize sẽ trở nên stale hoặc biến mất.
+- **removedNodes cleanup**: SPA re-render xóa và thay thế subtree liên tục; để element bị
+  xóa vẫn được observe và cache giữ reference là memory leak rõ ràng.
+- **Stale bind eviction**: giữa `observe` và `bind` có thể có re-render; nếu source node đã
+  bị detach, block cũ trở nên stale. Xóa nó để `processAddedNodes` tạo block mới cho text
+  node mới, tránh text bị bỏ sót.
+- **Viewport budget thực**: `timeRemaining()` hằng số khiến viewport queue chạy hết trong một
+  frame, gây jank trên máy yếu. Đo `performance.now()` và yield giữa các chunk.
 
 ## Trade-offs
 
-- `getBoundingClientRect()` trong `tryBindVisible` là synchronous layout read. Gọi cho mỗi
-  block mới trong initial scan hoặc mutation batch có thể gây forced reflow nếu DOM đang
-  thay đổi. Rủi ro thấp vì chỉ chạy khi tạo block mới, không phải mỗi frame.
-- rAF fast path process toàn bộ `pendingAddedNodes` trong một frame. Nếu Facebook thêm một
-  subtree rất lớn (hàng nghìn nodes) trong một mutation, frame có thể bị block. Upgrade path:
-  cắt `processAddedNodes` thành chunks theo `performance.now()` budget.
-- `characterData: true` kết hợp `subtree: true` có thể nhận nhiều events trên các input/textarea
-  hoặc contenteditable. Tuy nhiên `handleCharacterDataMutation` chỉ re-tokenize nếu text node
-  thuộc block đã cache, nên sẽ không xử lý input fields.
+- `queueMicrotask` chạy trước paint; nếu batch rất lớn vẫn có thể block. Đã giảm bằng
+  `PENDING_MUTATION_LIMIT` chunking.
+- `navigator.deviceMemory` không chính xác và không có trên mọi trình duyệt; fallback 250 blocks.
+- `removedNodes` cleanup chỉ xử lý element trực tiếp bị xóa, không traverse descendants để
+  tránh cost lớn. Các block con bị xóa cùng subtree vẫn tồn tại đến khi LRU eviction.
+- `bindTokenBlock` thất bại do detached source node sẽ xóa block; nếu text node chỉ tạm thời
+  detach và sắp re-attach, block phải được tạo lại từ `addedNodes` mutation.
