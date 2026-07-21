@@ -23,6 +23,14 @@
       "trigger": "Khi rename attribute/class/selector được query bởi module khác (click-outside, closest, querySelector)"
     },
     {
+      "type": "experience",
+      "id": "async-debounce-starvation-max-delay-cap",
+      "title": "Trailing-only debounce bị starve trên continuous event stream — thêm max-delay cap",
+      "category": ["async", "rendering", "state"],
+      "tags": ["debounce", "mutationobserver", "spa", "facebook", "react", "angular", "intersectionobserver", "starvation", "max-delay", "trailing", "activation-gate", "recovery"],
+      "trigger": "Feature intermittent trên SPA nặng (FB/Twitter): có lúc work có lúc không; count decline sau re-render không recover; activation gate 0 token nhiều giây"
+    },
+    {
       "type": "knowledge",
       "topic": "htmlcss",
       "source": "https://google.github.io/styleguide/htmlcssguide.html + https://cssguidelin.es/#bem-like-naming",

@@ -84,9 +84,9 @@ The Extensions category is **only supported with a pipe connection** (the defaul
 
 #### Apply config — restart the MCP client
 
-The MCP server config is read **once at client startup**. After editing `mcp_config.json` / `.mcp.json`, the user must **restart the Devin CLI / Windsurf / Claude Code** process. The agent cannot hot-reload MCP config mid-session. Surface this to the user explicitly:
+The MCP server config is read **once at client startup**. After editing `mcp_config.json` / `.mcp.json`, the user must **restart the agent** process. The agent cannot hot-reload MCP config mid-session. Surface this to the user explicitly:
 
-> "Em đã update MCP config. Anh restart Devin CLI để pickup config mới, rồi em sẽ verify 5 extension tools xuất hiện."
+> "Restart agent to pickup config, then I will verify the 5 extension tools are available."
 
 #### Verify the 5 extension tools are available
 
@@ -136,6 +136,40 @@ If they do NOT appear, the config was not picked up — ask the user to restart 
 
 **Install once, reload many.** `install_extension` is for the first run on a fresh profile. After that, `reload_extension` + page reload is the inner loop — much faster than reinstall.
 
+#### Reliable install workflow on Devin CLI (works around the workspace-roots guard)
+
+Devin CLI's MCP client negotiates the MCP `roots` capability but does **not** send the project workspace as a root. chrome-devtools-mcp therefore restricts every file-path tool (including `install_extension`) to the OS temp directory only. `--allow-unrestricted-paths` does NOT help here — that flag is only honored when the client does not negotiate roots at all (chrome-devtools-mcp PR #2296). The reliable fix is to copy `dist/` into the OS temp dir and install from there. The installed extension lives in `--user-data-dir`, so it persists across browser restarts; only `reload_extension` is needed after subsequent rebuilds.
+
+Run this on a fresh profile (PowerShell, Windows):
+
+```powershell
+# 1. Build the extension
+npm --prefix "D:\Tool\learning apply skill\cell" run build
+
+# 2. Copy dist/ into the OS temp dir (always accepted by the server's roots)
+$dst = "$env:TEMP\cell-ext-dist"
+if (Test-Path $dst) { Remove-Item -Recurse -Force $dst }
+New-Item -ItemType Directory -Force $dst | Out-Null
+Copy-Item -Recurse -Force "D:\Tool\learning apply skill\cell\dist\*" "$dst\"
+
+# 3. Install from the temp path (escape backslashes in JSON)
+#    mcp_call_tool → install_extension
+#    arguments: { "path": "C:\\Users\\The0cean\\AppData\\Local\\Temp\\cell-ext-dist" }
+#    → returns { id: "<extensionId>" }   SAVE THIS ID
+
+# 4. Verify
+#    mcp_call_tool → list_extensions, arguments: {}
+#    → confirm id=<extensionId>, Enabled
+
+# 5. Inner loop after a rebuild:
+#    npm run build
+#    Copy-Item -Recurse -Force "D:\Tool\learning apply skill\cell\dist\*" "$dst\" -Force
+#    mcp_call_tool → reload_extension, arguments: { "id": "<extensionId>" }
+#    mcp_call_tool → evaluate_script → () => location.reload()
+```
+
+Do NOT pass `D:\Tool\learning apply skill\cell\dist` directly to `install_extension` — it will be rejected with `Access denied: path ... is not within any of the configured workspace roots`. Always go through the OS temp dir.
+
 #### Gotchas observed in practice
 
 | Symptom | Cause | Fix |
@@ -144,10 +178,9 @@ If they do NOT appear, the config was not picked up — ask the user to restart 
 | Extension tools missing from `mcp_list_tools` | Config combined with `--browserUrl`/`--autoConnect`/`--isolated` | Remove connect flags — Extensions is pipe-only |
 | `reload_extension` after rebuild but page still shows old behavior | Content scripts cached on the page | Call `evaluate_script` → `location.reload()` after `reload_extension` |
 | Extension gone after browser restart | `--isolated` used, or temp profile | Use explicit `--user-data-dir=<abs>` for persistence |
-| `data-theme` on `<html>` but tokens still light | Shadow DOM blocks attribute inheritance — see `css-shadow-dom-theme-propagation` experience atom | Set `data-theme` on element INSIDE the shadow tree |
-| Component tokens (`--button-bg`) freeze to light value in dark mode | CSS custom property resolves at declaration scope — see `css-custom-property-resolution-scope` atom | Re-declare component token block in `[data-theme="dark"]` |
 | Service worker listed but content script not injecting on navigate | Reload happened before navigate completed | Navigate first, then wait 5-8s in `evaluate_script` Promise before inspecting |
 | Windows: `&&` in `exec` fails with "token not valid" | PowerShell session, not bash | Use `;` separator, or run commands in separate `exec` calls |
+| `install_extension` → `Access denied: path ... is not within any of the configured workspace roots` | Devin MCP client negotiates the MCP `roots` capability but does **not** send the project workspace as a root; `--allow-unrestricted-paths` is **silently ignored** when the client declares `roots` (per chrome-devtools-mcp PR #2296, the flag only applies when the client does NOT negotiate roots). The server therefore validates against its default roots = OS temp dir only. | Copy `dist/` into the OS temp dir and install from there. PowerShell: `New-Item -ItemType Directory -Force "$env:TEMP\cell-ext-dist" | Out-Null; Copy-Item -Recurse -Force "D:\Tool\learning apply skill\cell\dist\*" "$env:TEMP\cell-ext-dist\"` then `install_extension { "path": "$env:TEMP\\cell-ext-dist" }` (escape backslashes in JSON). The OS temp dir is always appended to the server's roots list, so this path is always accepted. The installed extension persists in `--user-data-dir`, so subsequent rebuilds only need `reload_extension` after re-copying `dist/`. |
 
 #### Inspecting inside Shadow DOM
 

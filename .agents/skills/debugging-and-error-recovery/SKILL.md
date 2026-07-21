@@ -528,6 +528,7 @@ npm run dev  # Verify in browser
 
 For browser extension bugs:
 ```bash
+# 0. Using skill "browser-testing-with-devtools" <- how to use mcp to test browser extension
 # 1. Build extension
 # 2. Install / reload in Chrome DevTools MCP
 # 3. Navigate to failing URL

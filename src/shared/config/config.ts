@@ -275,6 +275,8 @@ export const STORAGE_KEYS = {
   THEME_CONFIG: 'themeConfig',
   /** Tokenize on Media per-origin/URL enable state. */
   TOKENIZE_SETTINGS: 'tokenizeSettings',
+  /** Tokenize badge FAB position { left, top } in viewport px (survives reload). */
+  TOKEN_BADGE_POSITION: 'tokenBadgePosition',
 } as const;
 
 // === Popup Dimensions ===

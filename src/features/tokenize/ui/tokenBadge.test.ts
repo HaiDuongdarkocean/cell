@@ -81,4 +81,65 @@ describe('createTokenBadge', () => {
 
     badge.destroy();
   });
+
+  it('closes the panel when a pointerdown lands outside the badge', () => {
+    const badge = createTokenBadge({
+      initialState: { enabled: false, showStatus: true, showFrequency: true },
+      onToggleEnabled: jest.fn(),
+      onToggleStatus: jest.fn(),
+      onToggleFrequency: jest.fn(),
+      onOpenDictionary: jest.fn(),
+    });
+
+    const host = document.querySelector('.js-cell-token-badge-host') as HTMLElement;
+    const shadow = getShadow(host);
+    const fab = shadow.querySelector('.js-cell-token-fab') as HTMLButtonElement;
+    fab.click();
+    expect(shadow.querySelector('.cell-token-panel--open')).not.toBeNull();
+
+    // Pointerdown on body (outside host) → panel closes.
+    document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+    expect(shadow.querySelector('.cell-token-panel--open')).toBeNull();
+
+    badge.destroy();
+  });
+
+  it('dragging the FAB repositions it and suppresses toggle', () => {
+    const badge = createTokenBadge({
+      initialState: { enabled: false, showStatus: true, showFrequency: true },
+      onToggleEnabled: jest.fn(),
+      onToggleStatus: jest.fn(),
+      onToggleFrequency: jest.fn(),
+      onOpenDictionary: jest.fn(),
+    });
+
+    const host = document.querySelector('.js-cell-token-badge-host') as HTMLElement;
+    const shadow = getShadow(host);
+    const fab = shadow.querySelector('.js-cell-token-fab') as HTMLButtonElement;
+
+    // jsdom lacks getBoundingClientRect layout; stub a fixed rect so drag math
+    // produces a deterministic new left/top.
+    jest.spyOn(fab, 'getBoundingClientRect').mockReturnValue({
+      left: 100, top: 200, right: 148, bottom: 248, width: 48, height: 48,
+      x: 100, y: 200, toJSON: () => ({}),
+    } as DOMRect);
+    Object.defineProperty(fab, 'offsetWidth', { value: 48, configurable: true });
+    Object.defineProperty(fab, 'offsetHeight', { value: 48, configurable: true });
+
+    fab.dispatchEvent(new MouseEvent('pointerdown', { button: 0, clientX: 110, clientY: 210, bubbles: true }));
+    // Move beyond 4px threshold → enters drag mode.
+    fab.dispatchEvent(new MouseEvent('pointermove', { clientX: 160, clientY: 260, bubbles: true }));
+    fab.dispatchEvent(new MouseEvent('pointerup', { clientX: 160, clientY: 260, bubbles: true }));
+
+    // FAB now has explicit left/top inline styles (switched from right/bottom).
+    expect(fab.style.getPropertyValue('left')).not.toBe('');
+    expect(fab.style.getPropertyValue('top')).not.toBe('');
+    expect(fab.style.getPropertyValue('right')).toBe('auto');
+
+    // Drag suppresses the click that follows → panel stays closed.
+    fab.click();
+    expect(shadow.querySelector('.cell-token-panel--open')).toBeNull();
+
+    badge.destroy();
+  });
 });

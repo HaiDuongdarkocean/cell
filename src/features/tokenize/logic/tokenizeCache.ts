@@ -39,14 +39,15 @@ export class TokenizeCache {
 
   /** Store a block; evict LRU if over capacity. */
   set(block: TokenBlock): void {
+    let evicted: TokenBlock | undefined;
     if (!this.cache.has(block.id) && this.cache.size >= this.cache.capacity) {
       const oldestKey = this.cache.keys().next().value as string | undefined;
       if (oldestKey !== undefined) {
-        const evicted = this.cache.peek(oldestKey);
-        if (evicted) this.onEvict?.(evicted);
+        evicted = this.cache.peek(oldestKey);
       }
     }
     this.cache.set(block.id, block);
+    if (evicted) this.onEvict?.(evicted);
     let set = this.domMap.get(block.element);
     if (!set) {
       set = new Set();
@@ -58,6 +59,11 @@ export class TokenizeCache {
   /** Remove a block by id. */
   delete(id: string): boolean {
     return this.cache.delete(id);
+  }
+
+  /** Mark a resident block as recently used (prevents visible blocks from being evicted). */
+  touch(block: TokenBlock): void {
+    this.cache.get(block.id);
   }
 
   /** Look up all blocks sharing a DOM element. */

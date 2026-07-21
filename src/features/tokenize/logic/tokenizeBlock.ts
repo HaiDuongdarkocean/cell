@@ -48,14 +48,32 @@ function isForbiddenElement(element: Element): boolean {
   return false;
 }
 
-/** Walk up to root, stopping if a forbidden ancestor is found. */
-function hasForbiddenAncestor(element: Element, root: Node): boolean {
-  let current: Element | null = element;
+/** Check whether `element` or any ancestor up to (but not including) `root` is forbidden. */
+function hasForbiddenContext(element: Element, root: Node): boolean {
+  if (isForbiddenElement(element)) return true;
+  let current: Element | null = element.parentElement;
   while (current && current !== root) {
     if (isForbiddenElement(current)) return true;
     current = current.parentElement;
   }
   return false;
+}
+
+function createBlock(textNode: Text, id: string, text: string): TokenBlock {
+  return {
+    id,
+    element: textNode.parentElement!,
+    sourceNodes: [textNode],
+    originalText: text,
+    tokens: undefined,
+    isBound: false,
+    lastAccessedAt: 0,
+  };
+}
+
+function insideTokenSpan(element: Element | null): boolean {
+  if (!element) return false;
+  return element.closest('.js-cell-token') !== null;
 }
 
 /**
@@ -81,19 +99,58 @@ export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}):
     const text = textNode.textContent ?? '';
     if (text.trim().length > 0 && text.length <= maxLength) {
       const parent = textNode.parentElement;
-      if (parent && !hasForbiddenAncestor(parent, root)) {
-        blocks.push({
-          id: `${idPrefix}${idCounter++}`,
-          element: parent,
-          sourceNodes: [textNode],
-          originalText: text,
-          tokens: undefined,
-          isBound: false,
-          lastAccessedAt: 0,
-        });
+      if (parent && !hasForbiddenContext(parent, root)) {
+        blocks.push(createBlock(textNode, `${idPrefix}${idCounter++}`, text));
       }
     }
     textNode = walker.nextNode() as Text | null;
+  }
+
+  return blocks;
+}
+
+/**
+ * Find candidate text blocks inside a list of newly added DOM nodes.
+ *
+ * This is used by the MutationObserver re-scan path to avoid walking the
+ * entire document body after every small DOM change (Facebook re-renders,
+ * lazy-loaded content, etc.). Text nodes are handled directly; elements and
+ * document fragments are walked recursively. Nodes inside existing token
+ * spans are skipped.
+ */
+export function findTextBlocksInNodes(nodes: readonly Node[], options: FindTextBlocksOptions = {}): TokenBlock[] {
+  const { maxLength = 2000, idPrefix = 'block-' } = options;
+  const blocks: TokenBlock[] = [];
+  let idCounter = 0;
+
+  function addTextNode(textNode: Text, root: Node): void {
+    const text = textNode.textContent ?? '';
+    if (text.trim().length === 0 || text.length > maxLength) return;
+    const parent = textNode.parentElement;
+    if (!parent || insideTokenSpan(parent) || hasForbiddenContext(parent, root)) return;
+    blocks.push(createBlock(textNode, `${idPrefix}${idCounter++}`, text));
+  }
+
+  function walkRoot(root: Node): void {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    let textNode: Text | null = walker.nextNode() as Text | null;
+    while (textNode) {
+      addTextNode(textNode, root);
+      textNode = walker.nextNode() as Text | null;
+    }
+  }
+
+  for (const node of nodes) {
+    if (!node.isConnected) continue;
+    if (node.nodeType === Node.TEXT_NODE) {
+      const parent = (node as Text).parentElement;
+      if (parent && !insideTokenSpan(parent)) {
+        addTextNode(node as Text, parent);
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE || node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+      if (node instanceof Element && (insideTokenSpan(node) || isForbiddenElement(node))) continue;
+      walkRoot(node);
+    }
   }
 
   return blocks;

@@ -1,0 +1,33 @@
+{
+  "id": "async-debounce-starvation-max-delay-cap",
+  "title": "Trailing-only debounce bị starve trên continuous event stream — thêm max-delay cap",
+  "category": ["async", "rendering", "state"],
+  "tags": ["debounce", "mutationobserver", "spa", "facebook", "react", "angular", "intersectionobserver", "starvation", "max-delay", "trailing", "activation-gate", "recovery"],
+  "trigger": "Feature intermittent trên SPA nặng (Facebook, Twitter, Instagram): có lúc work, có lúc không; token/overlay/scan 0 suốt nhiều giây rồi tự nhiên xuất hiện; count decline sau framework re-render và không recover. Cause root: trailing-only debounce reset mãi bởi event liên tục, không bao giờ fire.",
+  "principle": "Trailing-only debounce (clear+reset timer mỗi event) giả định event stream CÓ khoảng lặng. SPA nặng mutate liên tục (hydration, polling, lazy load, ad refresh) → timer reset mãi → callback không bao giờ fire → feature starve. Fix: thêm max-delay cap — đo timestamp của event đầu tiên trong window, force fire khi `now - windowStart >= MAX_DELAY` bất kể event tiếp tục. Áp dụng cho cả activation gate (chờ quiet) và recovery re-scan (debounce batch). Phân biệt với leading-debounce: leading fire ngay event đầu tiên (sai cho hydration — fire quá sớm); max-delay cap giữ trailing semantics nhưng bounded.",
+  "cases": [
+    {
+      "context": "Tokenize activation gate chờ 500ms KHÔNG mutation trước khi setActive(true). Facebook mutate mỗi ~100ms → timer reset mãi → 0 token suốt 9s+ (verified Edge DevTools MCP, Fast 3G + 6x CPU)",
+      "bad": "const scheduleStabilityCheck = (): void => {\n  if (stabilityTimer) clearTimeout(stabilityTimer);\n  stabilityTimer = setTimeout(activate, HYDRATION_QUIET_MS); // 500ms — never fires on FB\n};\nstabilityObserver.observe(document.documentElement, { childList: true, subtree: true });\nscheduleStabilityCheck();",
+      "good": "let maxDelayTimer: ReturnType<typeof setTimeout> | null = null;\nconst scheduleStabilityCheck = (): void => {\n  if (stabilityTimer) clearTimeout(stabilityTimer);\n  stabilityTimer = setTimeout(activate, HYDRATION_QUIET_MS);\n};\nstabilityObserver.observe(document.documentElement, { childList: true, subtree: true });\nscheduleStabilityCheck();\nmaxDelayTimer = setTimeout(activate, MAX_ACTIVATION_DELAY_MS); // 3000ms hard cap — fires regardless of mutations"
+    },
+    {
+      "context": "MutationObserver re-scan dùng pure trailing 300ms debounce. Facebook re-render mỗi <300ms → re-scan không fire → content mới/replaced không tokenize, count decline không recover",
+      "bad": "mutationObserver = new MutationObserver(() => {\n  if (mutationTimer) clearTimeout(mutationTimer);\n  mutationTimer = setTimeout(() => { /* re-scan */ }, MUTATION_DEBOUNCE_MS); // 300ms trailing — starved forever\n});",
+      "good": "let mutationWindowStart = 0;\nmutationObserver = new MutationObserver(() => {\n  const now = Date.now();\n  if (!mutationTimer) mutationWindowStart = now; // open window on first event\n  if (mutationTimer) clearTimeout(mutationTimer);\n  const remaining = MAX_MUTATION_SCAN_DELAY_MS - (now - mutationWindowStart);\n  const delay = Math.min(MUTATION_DEBOUNCE_MS, Math.max(0, remaining));\n  mutationTimer = setTimeout(() => { mutationWindowStart = 0; /* re-scan */ }, delay);\n}); // fires within 300ms if quiet, else forced at 1500ms cap"
+    },
+    {
+      "context": "ViewportTracker.observe thêm handler set mới cho element đã intersecting (SPA re-render reuse parent). IntersectionObserver không fire callback mới vì state không đổi → onEnter không fire → block mới không bind",
+      "bad": "observe(element, handlers) {\n  let set = this.handlers.get(element);\n  if (!set) { set = new Set(); this.handlers.set(element, set); this.state.set(element, false); this.observer?.observe(element); }\n  set.add(handlers); // new handlers for already-intersecting element — onEnter never fires\n}",
+      "good": "observe(element, handlers) {\n  let set = this.handlers.get(element);\n  if (!set) { set = new Set(); this.handlers.set(element, set); this.state.set(element, false); this.observer?.observe(element); }\n  set.add(handlers);\n  if (this.state.get(element) === true) handlers.onEnter?.(); // sync fire for already-intersecting — IO won't re-callback"
+}"
+    }
+  ],
+  "applyFor": [
+    "Trailing debounce trên MutationObserver / IntersectionObserver / scroll / resize / input event stream có thể continuous",
+    "Activation gate / 'wait for quiet' pattern trên SPA (Angular, React, Vue, Svelte) — hydration + polling + lazy load không bao giờ yên",
+    "Recovery / re-scan handler sau framework re-render (foreign DOM injection bị wipe)",
+    "Re-observe element đã intersecting với handler set mới (ViewportTracker, IO wrapper)",
+    "Browser extension content-script trên heavy SPA (Facebook, Twitter, Instagram, YouTube feed)"
+  ]
+}

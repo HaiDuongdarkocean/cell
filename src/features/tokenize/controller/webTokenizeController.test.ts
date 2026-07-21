@@ -52,9 +52,34 @@ class MockIntersectionObserver {
   }
 }
 
+// MutationObserver mock: records every constructed observer's callback so tests
+// can simulate continuous DOM mutations (e.g. heavy SPA re-renders on Facebook)
+// without relying on jsdom's async mutation dispatch.
+class MockMutationObserver {
+  static instances: MockMutationObserver[] = [];
+
+  constructor(public callback: (mutations: MutationRecord[]) => void) {
+    MockMutationObserver.instances.push(this);
+  }
+
+  observe(_target: Node, _options: MutationObserverInit): void { /* no-op */ }
+  disconnect(): void { /* no-op */ }
+  takeRecords(): MutationRecord[] { return []; }
+
+  static triggerAll(mutations: MutationRecord[] = []): void {
+    for (const inst of MockMutationObserver.instances) inst.callback(mutations);
+  }
+
+  static reset(): void {
+    MockMutationObserver.instances = [];
+  }
+}
+
 beforeEach(() => {
   MockIntersectionObserver.callbacks.clear();
+  MockMutationObserver.reset();
   global.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+  global.MutationObserver = MockMutationObserver as unknown as typeof MutationObserver;
   // jsdom does not implement matchMedia — mock the same shape popupShell.test.ts uses.
   if (!window.matchMedia) {
     window.matchMedia = jest.fn((query: string) => ({
@@ -160,6 +185,110 @@ describe('createWebTokenizeController', () => {
       controller.destroy();
     } finally {
       readyState.mockRestore();
+      jest.useRealTimers();
+    }
+  });
+
+  it('activates within the max-delay cap even under continuous mutations (heavy SPA)', async () => {
+    // Regression guard: Facebook/Twitter mutate continuously, so the 500ms
+    // quiet-period gate never fires. The MAX_ACTIVATION_DELAY_MS hard cap must
+    // guarantee activation regardless. Without the cap, tokenize stays at 0
+    // tokens indefinitely on slow devices (observed: 9s+ delay under throttle).
+    jest.useFakeTimers();
+    const readyState = jest.spyOn(document, 'readyState', 'get').mockReturnValue('interactive');
+    loadTokenizeSettings.mockResolvedValue({
+      schemaVersion: 1,
+      origins: {},
+      urls: { 'https://example.com/': true },
+    });
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Challenge content';
+    root.appendChild(paragraph);
+
+    try {
+      const controller = await createWebTokenizeController({
+        url: 'https://example.com/',
+        root,
+      });
+      window.dispatchEvent(new Event('load'));
+
+      // The stability observer is the second MutationObserver instance created
+      // (the first is the main re-scan observer, which is only connected after
+      // activation in production). Only trigger the stability observer to
+      // simulate continuous hydration mutations without prematurely running the
+      // re-scan (which the mock would do regardless of connection state).
+      const stabilityObserver = MockMutationObserver.instances[MockMutationObserver.instances.length - 1];
+      expect(stabilityObserver).toBeTruthy();
+
+      // Simulate continuous mutations every 100ms — well under HYDRATION_QUIET_MS
+      // (500ms), so the quiet-period timer keeps resetting and would never fire.
+      for (let elapsed = 0; elapsed < 2900; elapsed += 100) {
+        stabilityObserver.callback([]);
+        await jest.advanceTimersByTimeAsync(100);
+      }
+      // Just before the 3000ms cap: still not activated (quiet period never met).
+      expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(false);
+
+      // Trigger one more mutation batch and advance past the 3000ms cap.
+      stabilityObserver.callback([]);
+      await jest.advanceTimersByTimeAsync(200);
+
+      // Activated despite continuous mutations — the hard cap fired.
+      expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(true);
+      controller.destroy();
+    } finally {
+      readyState.mockRestore();
+      jest.useRealTimers();
+    }
+  });
+
+  it('re-scans dynamically added content within the max-delay cap under continuous mutations', async () => {
+    // Regression guard: the MutationObserver re-scan uses a trailing 300ms
+    // debounce. On heavy SPAs that mutate continuously, a pure trailing debounce
+    // is starved forever and new/replaced content never gets tokenized. The
+    // MAX_MUTATION_SCAN_DELAY_MS cap must force a re-scan even while mutations
+    // keep coming.
+    jest.useFakeTimers();
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Initial content';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    try {
+      const controller = await createWebTokenizeController({
+        url: 'https://example.com/',
+        root,
+      });
+      controller.enable();
+      MockIntersectionObserver.trigger(paragraph);
+      await jest.advanceTimersByTimeAsync(50);
+
+      // Add a new text block AFTER activation — the mutation observer should
+      // eventually pick it up. Simulate continuous mutations every 100ms (well
+      // under the 300ms debounce) so a pure trailing debounce would starve.
+      const newParagraph = document.createElement('p');
+      newParagraph.textContent = 'Dynamically added content';
+      root.appendChild(newParagraph);
+
+      const mutationObservers = MockMutationObserver.instances;
+      // The last MutationObserver instance is the main re-scan observer (created
+      // in createWebTokenizeController). Trigger it continuously for 1.6s — past
+      // the 1500ms max-delay cap but with mutations every 100ms so the trailing
+      // 300ms debounce never settles.
+      for (let elapsed = 0; elapsed < 1600; elapsed += 100) {
+        for (const obs of mutationObservers) {
+          obs.callback([{ addedNodes: [newParagraph] } as MutationRecord]);
+        }
+        await jest.advanceTimersByTimeAsync(100);
+      }
+
+      // The new paragraph must have been observed by the viewport tracker —
+      // proving the re-scan fired despite continuous mutations.
+      expect(MockIntersectionObserver.callbacks.has(newParagraph)).toBe(true);
+      controller.destroy();
+    } finally {
       jest.useRealTimers();
     }
   });

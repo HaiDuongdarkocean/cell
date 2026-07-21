@@ -1,7 +1,7 @@
 ---
 name: spec-reviewer-glm
 description: Spec review. Reads spec-review-stakeholder skill.
-model: glm-5-2
+model: swe-1.7
 allowed-tools:
   - read
   - grep

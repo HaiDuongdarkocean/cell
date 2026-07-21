@@ -3,7 +3,7 @@
 > Confirmed via `/interview-me` on 2026-07-20. Source of truth for downstream spec/plan/code.
 
 ## Outcome
-Dictionary popup hoạt động trên **bất kỳ trang web nào có text** (không chỉ trang có video) — hover/click vào 1 từ → trích xuất đúng sentence + target word tại vị trí con trỏ → popup dictionary hiện.
+Dictionary popup hoạt động trên **bất kỳ trang web nào có text** (không chỉ trang có video) — hover/click hoặc hover + ctrl/shift/alt vào 1 từ → trích xuất đúng sentence + target word tại vị trí con trỏ → popup dictionary hiện.
 
 ## User
 Anh yêu (học tiếng qua web content: blog, Apple HIG docs, National Geographic articles, subtitle overlay).
