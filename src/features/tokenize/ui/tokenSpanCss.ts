@@ -63,8 +63,8 @@ function buildVariables(): string {
       dark: pick(dark, '--color-secondary', '#334155'),
     },
     '--cell-token-freq-advanced-fg': {
-      light: pick(light, '--color-secondary-foreground', '#0f172a'),
-      dark: pick(dark, '--color-secondary-foreground', '#f1f5f9'),
+      light: pick(light, '--color-fill-foreground-white', '#FAFAFA'),
+      dark: pick(dark, '--color-fill-foreground-white', '#FAFAFA'),
     },
     '--cell-token-freq-rare-bg': {
       light: pick(light, '--color-muted', '#f1f5f9'),
