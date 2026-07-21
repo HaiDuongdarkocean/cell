@@ -50,6 +50,10 @@ export interface WebTokenizeController extends TokenizeController {
   readonly getState: () => TokenizeState;
   /** Expose the badge for tests. */
   readonly badge: TokenBadge;
+  /** Apply a status change to all cached tokens matching `term` without persisting.
+   *  Used by the popup dictionary status cycle so token blocks rebind with the new
+   *  status instead of reverting to the stale cached value on the next rebind. */
+  readonly applyStatusForTerm: (term: string, status: WordStatus) => void;
 }
 
 /**
@@ -349,6 +353,26 @@ export async function createWebTokenizeController(
     }
   }
 
+  /** Apply a status change to all cached tokens matching `term` without persisting.
+   *  Used by the popup dictionary status cycle (which already persists via its own
+   *  WORD_STATUS_SET message) so token blocks rebind with the new status instead of
+   *  reverting to the stale cached value on the next scroll/toggle rebind. */
+  function applyStatusForTerm(term: string, status: WordStatus): void {
+    for (const block of blocks) {
+      if (!block.tokens) continue;
+      let changed = false;
+      for (const token of block.tokens) {
+        if (token.term === term) {
+          token.status = status;
+          changed = true;
+        }
+      }
+      if (changed && visibleElements.has(block.element)) {
+        rebindBlock(block);
+      }
+    }
+  }
+
   function handleKeydown(e: KeyboardEvent): void {
     if (isEditableTarget(e.target)) return;
     if (e.key === 'Escape') {
@@ -388,6 +412,8 @@ export async function createWebTokenizeController(
 
     setShowStatus: (show) => stateStore.setShowStatus(show),
     setShowFrequency: (show) => stateStore.setShowFrequency(show),
+
+    applyStatusForTerm,
 
     destroy: () => {
       document.removeEventListener('keydown', handleKeydown);

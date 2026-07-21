@@ -246,6 +246,14 @@ function ensureWebTextCtrl(): WebTextDictionaryController {
       dictionaryPopupSettings: DEFAULT_DICTIONARY_POPUP_SETTINGS,
       cardCreatorSettings: DEFAULT_CARD_CREATOR_SETTINGS,
       hasVideo: false,
+      // Bridge popup status cycle → tokenize controller so token blocks rebind
+      // with the new status instead of reverting from stale cache on rebind.
+      // `webTokenizeCtrl` is module-level and may still be null on the first
+      // lookup (tokenize init runs in parallel); the closure reads it lazily
+      // at click time, by which point both controllers are ready.
+      onStatusChange: (term, _langCode, status) => {
+        webTokenizeCtrl?.applyStatusForTerm(term, status);
+      },
     });
   }
   return webTextCtrl;
