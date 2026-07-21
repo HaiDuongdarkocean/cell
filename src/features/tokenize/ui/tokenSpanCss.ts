@@ -125,6 +125,11 @@ ${buildVariables()}
   text-decoration: none !important;
   -webkit-box-decoration-break: clone !important;
   box-decoration-break: clone !important;
+  /* Framer and similar gradient-text hosts set -webkit-text-fill-color: transparent
+     on an ancestor (with -webkit-background-clip: text). That property inherits and
+     overrides color, making our token text invisible over the pill background.
+     Force it back to currentColor so each band color wins. */
+  -webkit-text-fill-color: currentColor !important;
   /* Guard color used by text-shadow on status tokens to keep the text legible
      over the inset status underline. Default follows the text color; frequency
      bands override it to the pill background so the halo is invisible. */
@@ -156,66 +161,114 @@ ${buildVariables()}
   color: inherit !important;
 }
 
-/* Frequency bands: solid pill background + contrasting text. */
-.js-cell-token--frequency-core { --cell-token-guard: var(--cell-token-freq-core-bg); background-color: var(--cell-token-freq-core-bg) !important; color: var(--cell-token-freq-core-fg) !important; }
-.js-cell-token--frequency-common { --cell-token-guard: var(--cell-token-freq-common-bg); background-color: var(--cell-token-freq-common-bg) !important; color: var(--cell-token-freq-common-fg) !important; }
-.js-cell-token--frequency-general { --cell-token-guard: var(--cell-token-freq-general-bg); background-color: var(--cell-token-freq-general-bg) !important; color: var(--cell-token-freq-general-fg) !important; }
-.js-cell-token--frequency-advanced { --cell-token-guard: var(--cell-token-freq-advanced-bg); background-color: var(--cell-token-freq-advanced-bg) !important; color: var(--cell-token-freq-advanced-fg) !important; }
-.js-cell-token--frequency-rare { --cell-token-guard: var(--cell-token-freq-rare-bg); background-color: var(--cell-token-freq-rare-bg) !important; color: var(--cell-token-freq-rare-fg) !important; }
+/* Frequency bands: solid pill background + contrasting text.
+   Double-class (.js-cell-token.js-cell-token--frequency-*) raises specificity
+   to (0,2,0) so host pages with high-specificity color rules (e.g. Framer's
+   [data-framer-component-type=Text] span span span at (0,1,3)) cannot
+   override our !important even if they add !important themselves.
+   Variables are defined ON the token class itself (not just :root) so they
+   always resolve even if the host breaks the :root cascade. */
+.js-cell-token.js-cell-token--frequency-core {
+  --cell-token-freq-core-bg: #e2f3e7;
+  --cell-token-freq-core-fg: #14532d;
+  background-color: var(--cell-token-freq-core-bg) !important;
+  color: var(--cell-token-freq-core-fg) !important;
+}
+.js-cell-token.js-cell-token--frequency-common {
+  --cell-token-freq-common-bg: #e5effd;
+  --cell-token-freq-common-fg: #1e3a8a;
+  background-color: var(--cell-token-freq-common-bg) !important;
+  color: var(--cell-token-freq-common-fg) !important;
+}
+.js-cell-token.js-cell-token--frequency-general {
+  --cell-token-freq-general-bg: #fdf9e6;
+  --cell-token-freq-general-fg: #713f12;
+  background-color: var(--cell-token-freq-general-bg) !important;
+  color: var(--cell-token-freq-general-fg) !important;
+}
+.js-cell-token.js-cell-token--frequency-advanced {
+  --cell-token-freq-advanced-bg: #fff3e8;
+  --cell-token-freq-advanced-fg: #7c2d12;
+  background-color: var(--cell-token-freq-advanced-bg) !important;
+  color: var(--cell-token-freq-advanced-fg) !important;
+}
+.js-cell-token.js-cell-token--frequency-rare {
+  --cell-token-freq-rare-bg: #f3f4f6;
+  --cell-token-freq-rare-fg: #1f2937;
+  background-color: var(--cell-token-freq-rare-bg) !important;
+  color: var(--cell-token-freq-rare-fg) !important;
+}
+@media (prefers-color-scheme: dark) {
+  .js-cell-token.js-cell-token--frequency-core {
+    --cell-token-freq-core-bg: #374151;
+    --cell-token-freq-core-fg: #bbf7d0;
+  }
+  .js-cell-token.js-cell-token--frequency-common {
+    --cell-token-freq-common-bg: #374151;
+    --cell-token-freq-common-fg: #bfdbfe;
+  }
+  .js-cell-token.js-cell-token--frequency-general {
+    --cell-token-freq-general-bg: #374151;
+    --cell-token-freq-general-fg: #fef08a;
+  }
+  .js-cell-token.js-cell-token--frequency-advanced {
+    --cell-token-freq-advanced-bg: #374151;
+    --cell-token-freq-advanced-fg: #fed7aa;
+  }
+  .js-cell-token.js-cell-token--frequency-rare {
+    --cell-token-freq-rare-bg: #374151;
+    --cell-token-freq-rare-fg: #f3f4f6;
+  }
+}
 
 /* Status bar: 2px inset underline in the semantic color plus a 2px white
    highlight at the same offset. The highlight lightens the underline when the
-   status color matches the pill background (e.g. known on a core green token). */
-.js-cell-token--status-unknown {
+   status color matches the pill background (e.g. known on a core green token).
+   Double-class specificity so host box-shadow rules don't override. */
+.js-cell-token.js-cell-token--status-unknown {
   box-shadow:
     inset 0 -2px 0 0 var(--cell-token-status-unknown),
     inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
-.js-cell-token--status-tracking {
+.js-cell-token.js-cell-token--status-tracking {
   box-shadow:
     inset 0 -2px 0 0 var(--cell-token-status-tracking),
     inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
-.js-cell-token--status-known {
+.js-cell-token.js-cell-token--status-known {
   box-shadow:
     inset 0 -2px 0 0 var(--cell-token-status-known),
     inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
-.js-cell-token--status-ignore {
+.js-cell-token.js-cell-token--status-ignore {
   box-shadow:
     inset 0 -2px 0 0 var(--cell-token-status-ignore),
     inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 
-/* Text guard: a soft halo in the guard color keeps the glyph legible over the
-   2px inset status underline. Frequency bands use the pill background so the
-   halo is invisible; known/ignore use the inherited text color. The guard is
-   hidden when the status bar is hidden (status-off, known/ignore not hovered). */
-.js-cell-token--status-unknown,
-.js-cell-token--status-tracking,
-.js-cell-token--status-known:hover,
-.js-cell-token--status-known.js-cell-token--popup-open,
-.js-cell-token--status-ignore:hover,
-.js-cell-token--status-ignore.js-cell-token--popup-open {
-  text-shadow:
-    0 0 1px var(--cell-token-guard),
-    0 1px 1px var(--cell-token-guard),
-    0 -1px 1px var(--cell-token-guard),
-    1px 0 1px var(--cell-token-guard),
-    -1px 0 1px var(--cell-token-guard) !important;
+/* Text guard removed: the 2px inset status underline no longer needs a halo
+   to keep the glyph legible. */
+.js-cell-token.js-cell-token--status-unknown,
+.js-cell-token.js-cell-token--status-tracking,
+.js-cell-token.js-cell-token--status-known:hover,
+.js-cell-token.js-cell-token--status-known.js-cell-token--popup-open,
+.js-cell-token.js-cell-token--status-ignore:hover,
+.js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open {
+  text-shadow: none !important;
 }
 
 /* known/ignore hide frequency and status by default; hover reveals status when
    the status layer is on. A popup-open pin keeps status visible while the popup
-   is open. Frequency reappears for unknown/tracking. */
-.js-cell-token--status-known,
-.js-cell-token--status-ignore {
+   is open. Frequency reappears for unknown/tracking.
+   Double-class specificity so host !important color rules don't fight back. */
+.js-cell-token.js-cell-token--status-known,
+.js-cell-token.js-cell-token--status-ignore {
   --cell-token-guard: currentColor;
   background-color: transparent !important;
   color: inherit !important;
 }
-.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
-.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
+.js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
+.js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
   box-shadow: none !important;
   text-shadow: none !important;
 }
@@ -224,11 +277,11 @@ ${buildVariables()}
    status appears on hover. No extra de-emphasis styling is applied. */
 
 /* Global layer toggles (applied per token) */
-.js-cell-token--status-off {
+.js-cell-token.js-cell-token--status-off {
   box-shadow: none !important;
   text-shadow: none !important;
 }
-.js-cell-token--frequency-off {
+.js-cell-token.js-cell-token--frequency-off {
   --cell-token-guard: currentColor;
   background-color: transparent !important;
   color: inherit !important;
