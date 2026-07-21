@@ -87,6 +87,17 @@ describe('renderHeader', () => {
     expect(freq?.textContent).toBe('BNC1,234');
   });
 
+  it('colors frequency badge by band', () => {
+    const result = makeResult({ frequency: { rank: 1234, source: 'BNC' } });
+    callHeader(result, 'unknown');
+    const freq = container.querySelector('.cell-header__frequency');
+    const source = container.querySelector('.cell-header__frequency-source');
+    const rank = container.querySelector('.cell-header__frequency-rank');
+    expect(freq?.classList.contains('cell-header__frequency--core')).toBe(true);
+    expect(source).not.toBeNull();
+    expect(rank).not.toBeNull();
+  });
+
   it('does not render frequency badge when null', () => {
     const result = makeResult({ frequency: null });
     callHeader(result, 'unknown');

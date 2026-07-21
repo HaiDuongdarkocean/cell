@@ -9,6 +9,7 @@
 import type { LookupResult, DefinitionEntry, WordStatus } from '../types';
 import { nextStatus } from '../services/wordStatusStore';
 import { ICON_CATALOG } from '@/shared/icons';
+import { rankToBand } from '@/shared/lib/frequencyBand';
 
 // Design system §9 Status badge — soft pill per WordStatus.
 // BEM modifier classes: .cell-header__status--<status>
@@ -189,8 +190,9 @@ export function renderHeader(
   if (result.frequency) {
     const badges = document.createElement('div');
     badges.className = 'cell-header__badges';
+    const band = rankToBand(result.frequency.rank);
     const freq = document.createElement('span');
-    freq.className = 'cell-header__frequency js-cell-frequency';
+    freq.className = `cell-header__frequency js-cell-frequency cell-header__frequency--${band}`;
     const src = document.createElement('span');
     src.className = 'cell-header__frequency-source';
     src.textContent = result.frequency.source;
