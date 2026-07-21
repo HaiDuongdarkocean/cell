@@ -163,28 +163,28 @@ ${buildVariables()}
 .js-cell-token--frequency-advanced { background-color: var(--cell-token-freq-advanced-bg) !important; color: var(--cell-token-freq-advanced-fg) !important; }
 .js-cell-token--frequency-rare { background-color: var(--cell-token-freq-rare-bg) !important; color: var(--cell-token-freq-rare-fg) !important; }
 
-/* Status bar: 2px inset band in the semantic color plus a 1px white highlight
-   above it. The highlight guarantees the bar is visible even when the status
-   color is identical to the pill background (e.g. known on a core green token). */
+/* Status bar: 1px inset underline in the semantic color plus a 1px white
+   highlight above it. The highlight keeps the underline visible even when the
+   status color matches the pill background (e.g. known on a core green token). */
 .js-cell-token--status-unknown {
   box-shadow:
-    inset 0 -2px 0 0 var(--cell-token-status-unknown),
-    inset 0 -3px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 -1px 0 0 var(--cell-token-status-unknown),
+    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 .js-cell-token--status-tracking {
   box-shadow:
-    inset 0 -2px 0 0 var(--cell-token-status-tracking),
-    inset 0 -3px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 -1px 0 0 var(--cell-token-status-tracking),
+    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 .js-cell-token--status-known {
   box-shadow:
-    inset 0 -2px 0 0 var(--cell-token-status-known),
-    inset 0 -3px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 -1px 0 0 var(--cell-token-status-known),
+    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 .js-cell-token--status-ignore {
   box-shadow:
-    inset 0 -2px 0 0 var(--cell-token-status-ignore),
-    inset 0 -3px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 -1px 0 0 var(--cell-token-status-ignore),
+    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 
 /* Known words keep full pill+status. Ignored words are de-emphasized but still
