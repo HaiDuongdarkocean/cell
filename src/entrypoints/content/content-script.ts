@@ -264,17 +264,14 @@ async function initWebTextDictionary(): Promise<void> {
     const settings = await loadSettings();
     const dp = settings.dictionaryPopup;
     const ctrl = ensureWebTextCtrl();
-    if (!dp?.enabled) {
-      ctrl.detach();
-      ctrl.clearHighlight();
-      return;
-    }
     ctrl.updateSettings({
-      dictionaryPopup: dp,
+      dictionaryPopup: dp ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
       cardCreator: settings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
       subtitleOverlayNativeLanguage: settings.subtitleOverlayNativeLanguage,
     });
-    ctrl.attach(dp.triggerMode);
+    if (dp?.enabled) {
+      findAndInitOverlay();
+    }
   } catch (err) {
     // Storage may be unavailable in some test/sandbox contexts — safe fallback.
     console.warn('[content-script] initWebTextDictionary failed', err);
