@@ -28,53 +28,49 @@ function buildVariables(): string {
       light: pick(light, '--color-text-muted', '#64748b'),
       dark: pick(dark, '--color-text-muted', '#94a3b8'),
     },
-    // Solid frequency bands (same contrast pairing as popup source badge):
-    // core/general use white/dark inverse text; common uses foreground text for
-    // WCAG contrast on the warning orange. advanced/rare reuse secondary/muted
-    // DS tokens to match popupDictionary.css; on dark mode these two bands are
-    // very close (known DS gap — dedicated frequency-advanced/rare tokens would
-    // be the clean fix).
+    // Soft Tonal frequency bands: dedicated tokens in tokens.json.
+    // Light mode uses muted pastel backgrounds with dark text.
+    // Dark mode uses a single slate container (#374151) with soft pastel text
+    // to reduce eye strain and avoid the saturated M3 dark container colors.
     '--cell-token-freq-core-bg': {
-      light: pick(light, '--color-success', '#059669'),
-      dark: pick(dark, '--color-success', '#10b981'),
+      light: pick(light, '--color-token-freq-core-bg', '#e2f3e7'),
+      dark: pick(dark, '--color-token-freq-core-bg', '#374151'),
     },
     '--cell-token-freq-core-fg': {
-      light: pick(light, '--color-text-inverse', '#ffffff'),
-      dark: pick(dark, '--color-text-inverse', '#0f172a'),
+      light: pick(light, '--color-token-freq-core-fg', '#14532d'),
+      dark: pick(dark, '--color-token-freq-core-fg', '#bbf7d0'),
     },
     '--cell-token-freq-common-bg': {
-      light: pick(light, '--color-warning', '#d97706'),
-      dark: pick(dark, '--color-warning', '#f59e0b'),
+      light: pick(light, '--color-token-freq-common-bg', '#e5effd'),
+      dark: pick(dark, '--color-token-freq-common-bg', '#374151'),
     },
     '--cell-token-freq-common-fg': {
-      light: pick(light, '--color-foreground', '#0f172a'),
-      dark: pick(dark, '--color-foreground', '#f1f5f9'),
+      light: pick(light, '--color-token-freq-common-fg', '#1e3a8a'),
+      dark: pick(dark, '--color-token-freq-common-fg', '#bfdbfe'),
     },
     '--cell-token-freq-general-bg': {
-      light: pick(light, '--color-info', '#2563eb'),
-      dark: pick(dark, '--color-info', '#60a5fa'),
+      light: pick(light, '--color-token-freq-general-bg', '#fdf9e6'),
+      dark: pick(dark, '--color-token-freq-general-bg', '#374151'),
     },
     '--cell-token-freq-general-fg': {
-      light: pick(light, '--color-text-inverse', '#ffffff'),
-      dark: pick(dark, '--color-text-inverse', '#0f172a'),
+      light: pick(light, '--color-token-freq-general-fg', '#713f12'),
+      dark: pick(dark, '--color-token-freq-general-fg', '#fef08a'),
     },
     '--cell-token-freq-advanced-bg': {
-      light: pick(light, '--color-secondary', '#e2e8f0'),
-      dark: pick(dark, '--color-secondary', '#334155'),
+      light: pick(light, '--color-token-freq-advanced-bg', '#fff3e8'),
+      dark: pick(dark, '--color-token-freq-advanced-bg', '#374151'),
     },
     '--cell-token-freq-advanced-fg': {
-      light: pick(light, '--color-fill-foreground-white', '#FAFAFA'),
-      dark: pick(dark, '--color-fill-foreground-white', '#FAFAFA'),
+      light: pick(light, '--color-token-freq-advanced-fg', '#7c2d12'),
+      dark: pick(dark, '--color-token-freq-advanced-fg', '#fed7aa'),
     },
     '--cell-token-freq-rare-bg': {
-      light: pick(light, '--color-muted', '#f1f5f9'),
-      dark: pick(dark, '--color-muted', '#334155'),
+      light: pick(light, '--color-token-freq-rare-bg', '#f3f4f6'),
+      dark: pick(dark, '--color-token-freq-rare-bg', '#374151'),
     },
     '--cell-token-freq-rare-fg': {
-      // color-text-muted gives better contrast on the light/dark muted pill
-      // than color-muted-foreground, which is intentionally more subtle.
-      light: pick(light, '--color-text-muted', '#64748b'),
-      dark: pick(dark, '--color-text-muted', '#94a3b8'),
+      light: pick(light, '--color-token-freq-rare-fg', '#1f2937'),
+      dark: pick(dark, '--color-token-freq-rare-fg', '#f3f4f6'),
     },
   };
 
