@@ -64,6 +64,7 @@ docs/           # Tài liệu dự án
 │   └── 051-tokenize-frequency-very-low-band.md # ADR-051: thêm band 'very-low' để 100% token có frequency data được tô màu
 │   └── 052-frequency-five-bands.md # ADR-052: 5 band frequency (core/common/general/advanced/rare) cho tokenize
 │   └── 053-tokenize-visual-style.md # ADR-053: tokenize dùng solid pill + status bar, giữ nguyên box model host, hỗ trợ multi-line + dark mode
+│   └── 054-soft-tonal-frequency-colors.md # ADR-054: bảng màu Soft Tonal cho 5 frequency band, chế độ light/dark
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── overlay-appearance-settings.md
 │   ├── subtitle-panel-outside-video.md
