@@ -20,7 +20,12 @@ export function rankToBand(rank: number): TokenFrequencyBand {
 }
 
 export function entriesToBand(entries: readonly FrequencyEntry[]): TokenFrequencyBand {
-  if (entries.length === 0) return 'none';
+  if (entries.length === 0) {
+    // A term that was tokenized but has no frequency entry is treated as the
+    // rarest band rather than uncolored, so 100% of parsed tokens receive a
+    // visible frequency layer.
+    return 'very-low';
+  }
   // Use the best (lowest) rank across resources.
   const best = Math.min(...entries.map((e) => e.frequency));
   return rankToBand(best);

@@ -19,11 +19,15 @@ thêm số lượng token có frequency visible, dù người dùng đã bật f
    - `high` ≤ 1000, `medium` ≤ 5000, `low` ≤ 20000.
    - Mọi rank dương hữu hạn còn lại trả về `'very-low'`.
    - Chỉ `rank <= 0`, `NaN`, hoặc `Infinity` mới trả về `'none'`.
-3. **Cập nhật `tokenSpanRenderer`** (`src/features/tokenize/ui/tokenSpanRenderer.ts`):
+3. **Sửa `entriesToBand` fallback cho missing data** (`src/features/tokenize/utils/frequencyBand.ts`):
+   - Nếu một term được tokenize nhưng không có frequency entry nào trong dictionary,
+     trả về `'very-low'` thay vì `'none'`. Điều này đảm bảo 100% token đều có
+     frequency band visible.
+4. **Cập nhật `tokenSpanRenderer`** (`src/features/tokenize/ui/tokenSpanRenderer.ts`):
    - Thêm class `js-cell-token--frequency-very-low` khi `frequencyBand === 'very-low'`.
    - Chỉ ẩn frequency layer khi `!options.showFrequency`; không ẩn thêm cho
      `known`/`ignore` để `showFrequency` toggle kiểm soát 100% token.
-4. **Cập nhật `tokenSpanCss`** (`src/features/tokenize/ui/tokenSpanCss.ts`):
+5. **Cập nhật `tokenSpanCss`** (`src/features/tokenize/ui/tokenSpanCss.ts`):
    - Thêm CSS variables `--cell-token-freq-very-low-bg/fg`.
    - Thêm class `.js-cell-token--frequency-very-low`.
 
