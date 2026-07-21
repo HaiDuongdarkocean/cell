@@ -10,6 +10,8 @@ function buildVariables(): string {
   const light = DEFAULT_LIGHT_TOKENS;
   const dark = DEFAULT_DARK_TOKENS;
   const vars: Record<string, { light: string; dark: string }> = {
+    // Status bar colors (semantic DS colors). The bar is rendered as an inset
+    // box-shadow on the token so it survives multi-line inline fragments.
     '--cell-token-status-unknown': {
       light: pick(light, '--color-error', '#dc2626'),
       dark: pick(dark, '--color-error', '#ef4444'),
@@ -23,12 +25,15 @@ function buildVariables(): string {
       dark: pick(dark, '--color-success', '#10b981'),
     },
     '--cell-token-status-ignore': {
-      light: pick(light, '--color-secondary', '#e2e8f0'),
-      dark: pick(dark, '--color-secondary', '#334155'),
+      light: pick(light, '--color-text-muted', '#64748b'),
+      dark: pick(dark, '--color-text-muted', '#94a3b8'),
     },
     // Solid frequency bands (same contrast pairing as popup source badge):
     // core/general use white/dark inverse text; common uses foreground text for
-    // WCAG contrast on the warning orange.
+    // WCAG contrast on the warning orange. advanced/rare reuse secondary/muted
+    // DS tokens to match popupDictionary.css; on dark mode these two bands are
+    // very close (known DS gap — dedicated frequency-advanced/rare tokens would
+    // be the clean fix).
     '--cell-token-freq-core-bg': {
       light: pick(light, '--color-success', '#059669'),
       dark: pick(dark, '--color-success', '#10b981'),
@@ -66,48 +71,64 @@ function buildVariables(): string {
       dark: pick(dark, '--color-muted', '#334155'),
     },
     '--cell-token-freq-rare-fg': {
-      light: pick(light, '--color-muted-foreground', '#64748b'),
-      dark: pick(dark, '--color-muted-foreground', '#94a3b8'),
+      // color-text-muted gives better contrast on the light/dark muted pill
+      // than color-muted-foreground, which is intentionally more subtle.
+      light: pick(light, '--color-text-muted', '#64748b'),
+      dark: pick(dark, '--color-text-muted', '#94a3b8'),
     },
   };
 
-  const lines: string[] = [':root {'];
-  for (const [name, values] of Object.entries(vars)) {
-    lines.push(`  ${name}: ${values.light};`);
+  const lightDecls = Object.entries(vars).map(([name, values]) => `  ${name}: ${values.light};`).join('\n');
+  const darkDecls = Object.entries(vars).map(([name, values]) => `  ${name}: ${values.dark};`).join('\n');
+
+  return `
+:root {
+${lightDecls}
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+${darkDecls}
   }
-  lines.push('}');
-  lines.push('@media (prefers-color-scheme: dark) {');
-  lines.push('  :root {');
-  for (const [name, values] of Object.entries(vars)) {
-    lines.push(`    ${name}: ${values.dark};`);
-  }
-  lines.push('  }');
-  lines.push('}');
-  return lines.join('\n');
+}
+
+[data-theme="light"] {
+${lightDecls}
+}
+
+[data-theme="dark"] {
+${darkDecls}
+}
+`.trim();
 }
 
 export function buildTokenSpanCss(): string {
   return `
 ${buildVariables()}
 
+/* Tokens are wrapped inline and kept visually lightweight.  No padding,
+   margin, or line-height is added so the host page box model is preserved.
+   box-decoration-break: clone ensures a multi-line token still gets styled
+   per line fragment. */
 .js-cell-token {
-  display: inline-block !important;
+  display: inline !important;
   vertical-align: baseline !important;
-  line-height: inherit !important;
-  position: relative !important;
   white-space: normal !important;
   overflow-wrap: break-word !important;
+  word-break: normal !important;
   cursor: pointer !important;
-  margin: 0 !important;
-  padding: 0 !important;
   border: none !important;
+  border-radius: 0.15em !important;
   outline: none !important;
   box-shadow: none !important;
   background: transparent !important;
   color: inherit !important;
+  font: inherit !important;
   user-select: text !important;
   -webkit-user-select: text !important;
   text-decoration: none !important;
+  -webkit-box-decoration-break: clone !important;
+  box-decoration-break: clone !important;
 }
 
 .js-cell-token--word {
@@ -118,18 +139,14 @@ ${buildVariables()}
   display: inline !important;
   background: transparent !important;
   color: inherit !important;
+  text-decoration: none !important;
 }
 
+/* Status span is kept in the DOM for tests/backwards compatibility but the
+   visual status bar is rendered as an inset box-shadow on the token itself
+   so it follows multi-line fragments via box-decoration-break. */
 .js-cell-token-status {
-  position: absolute !important;
-  top: 82% !important;
-  left: 0 !important;
-  right: 0 !important;
-  height: 0.2px !important;
-  border-radius: 1px !important;
-  pointer-events: none !important;
-  display: block !important;
-  margin-top: 1px !important;
+  display: none !important;
 }
 
 .js-cell-token--separator {
@@ -139,43 +156,49 @@ ${buildVariables()}
   color: inherit !important;
 }
 
-.js-cell-token--status-unknown .js-cell-token-status { background-color: var(--cell-token-status-unknown) !important; }
-.js-cell-token--status-tracking .js-cell-token-status { background-color: var(--cell-token-status-tracking) !important; }
-.js-cell-token--status-known .js-cell-token-status { background-color: var(--cell-token-status-known) !important; }
-.js-cell-token--status-ignore .js-cell-token-status { background-color: var(--cell-token-status-ignore) !important; }
-
+/* Frequency bands: solid pill background + contrasting text. */
 .js-cell-token--frequency-core { background-color: var(--cell-token-freq-core-bg) !important; color: var(--cell-token-freq-core-fg) !important; }
 .js-cell-token--frequency-common { background-color: var(--cell-token-freq-common-bg) !important; color: var(--cell-token-freq-common-fg) !important; }
 .js-cell-token--frequency-general { background-color: var(--cell-token-freq-general-bg) !important; color: var(--cell-token-freq-general-fg) !important; }
 .js-cell-token--frequency-advanced { background-color: var(--cell-token-freq-advanced-bg) !important; color: var(--cell-token-freq-advanced-fg) !important; }
 .js-cell-token--frequency-rare { background-color: var(--cell-token-freq-rare-bg) !important; color: var(--cell-token-freq-rare-fg) !important; }
 
-/* known/ignore hide status + frequency by default; hover reveals status when status layer is on */
-.js-cell-token--status-known .js-cell-token-status,
-.js-cell-token--status-ignore .js-cell-token-status {
-  display: none !important;
+/* Status bar: 2px inset band in the semantic color plus a 1px white highlight
+   above it. The highlight guarantees the bar is visible even when the status
+   color is identical to the pill background (e.g. known on a core green token). */
+.js-cell-token--status-unknown {
+  box-shadow:
+    inset 0 -2px 0 0 var(--cell-token-status-unknown),
+    inset 0 -3px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
-.js-cell-token--status-known:hover .js-cell-token-status,
-.js-cell-token--status-ignore:hover .js-cell-token-status {
-  display: block !important;
+.js-cell-token--status-tracking {
+  box-shadow:
+    inset 0 -2px 0 0 var(--cell-token-status-tracking),
+    inset 0 -3px 0 0 rgba(255, 255, 255, 0.45) !important;
+}
+.js-cell-token--status-known {
+  box-shadow:
+    inset 0 -2px 0 0 var(--cell-token-status-known),
+    inset 0 -3px 0 0 rgba(255, 255, 255, 0.45) !important;
+}
+.js-cell-token--status-ignore {
+  box-shadow:
+    inset 0 -2px 0 0 var(--cell-token-status-ignore),
+    inset 0 -3px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 
-.js-cell-token--status-known,
+/* Known words keep full pill+status. Ignored words are de-emphasized but still
+   keep their frequency pill so the visual layer is consistent. */
 .js-cell-token--status-ignore {
-  background-color: transparent !important;
-  color: inherit !important;
-}
-
-.js-cell-token--status-ignore {
-  opacity: 0.5 !important;
+  opacity: 0.65 !important;
 }
 .js-cell-token--status-ignore .js-cell-token-word {
   text-decoration: line-through !important;
 }
 
 /* Global layer toggles (applied per token) */
-.js-cell-token--status-off .js-cell-token-status {
-  display: none !important;
+.js-cell-token--status-off {
+  box-shadow: none !important;
 }
 .js-cell-token--frequency-off {
   background-color: transparent !important;

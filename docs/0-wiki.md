@@ -63,6 +63,7 @@ docs/           # Tài liệu dự án
 │   └── 050-tokenize-raf-fast-path.md # ADR-050: MutationObserver fast path qua requestAnimationFrame để tokenize ngay lập tức khi DOM xuất hiện
 │   └── 051-tokenize-frequency-very-low-band.md # ADR-051: thêm band 'very-low' để 100% token có frequency data được tô màu
 │   └── 052-frequency-five-bands.md # ADR-052: 5 band frequency (core/common/general/advanced/rare) cho tokenize
+│   └── 053-tokenize-visual-style.md # ADR-053: tokenize dùng solid pill + status bar, giữ nguyên box model host, hỗ trợ multi-line + dark mode
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── overlay-appearance-settings.md
 │   ├── subtitle-panel-outside-video.md
