@@ -23,6 +23,9 @@ const FORBIDDEN_TAGS = new Set([
   'VAR',
 ]);
 
+const SUBTITLE_LINE_CLASS = 'subtitle-line';
+const NATIVE_CLASS = 'native';
+
 // 'link' is intentionally NOT forbidden: <a href> is already implicit link and
 // is tokenized (see test). Many sites (Facebook, Twitter) add explicit
 // role="link" to anchors for ARIA redundancy — that must not disable tokenize
@@ -39,8 +42,13 @@ export interface FindTextBlocksOptions {
 }
 
 /** Skip text nodes inside elements that are not meant for reading. */
+function isNativeLine(element: Element): boolean {
+  return element.classList.contains(SUBTITLE_LINE_CLASS) && element.classList.contains(NATIVE_CLASS);
+}
+
 function isForbiddenElement(element: Element): boolean {
   if (FORBIDDEN_TAGS.has(element.tagName)) return true;
+  if (isNativeLine(element)) return true;
   const role = element.getAttribute('role');
   if (role && FORBIDDEN_ROLE_ATTRS.includes(role)) return true;
   const contenteditable = element.getAttribute('contenteditable');

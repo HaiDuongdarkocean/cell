@@ -462,6 +462,28 @@ describe('createWebTokenizeController', () => {
     controller.destroy();
   });
 
+  it('skips subtitle-line native text', async () => {
+    const root = document.createElement('div');
+    root.innerHTML = '<div class="subtitle-block"><div class="subtitle-line target">Hello world.</div><div class="subtitle-line native">Xin chào.</div></div>';
+    document.body.appendChild(root);
+
+    const native = root.querySelector('.subtitle-line.native')!;
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    controller.enable();
+    MockIntersectionObserver.trigger(native);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(native.querySelectorAll('.js-cell-token').length).toBe(0);
+    expect(native.textContent).toBe('Xin chào.');
+
+    controller.destroy();
+  });
+
   it('applyStatusForTerm rebinds visible tokens with the new status without persisting', async () => {
     const root = document.createElement('div');
     const paragraph = document.createElement('p');

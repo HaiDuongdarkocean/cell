@@ -75,13 +75,9 @@ export function createSubtitleTokenizeController(
   const scheduler = new TokenizeScheduler();
   const stateStore: TokenizeStateStore = createTokenizeStateStore({ initialEnabled: false });
   const targetCache = new Map<number, PreparedCue>();
-  const nativeCache = new Map<number, PreparedCue>();
   let targetCues: readonly SrtCue[] = [];
-  let nativeCues: readonly SrtCue[] = [];
   let lastTargetIndex = -1;
-  let lastNativeIndex = -1;
   let currentTargetBlock: TokenBlock | null = null;
-  let currentNativeBlock: TokenBlock | null = null;
 
   function getDisplayOptions(): TokenSpanBindOptions {
     return {
@@ -135,9 +131,7 @@ export function createSubtitleTokenizeController(
 
   function clearCurrentBlocks(): void {
     unbindLineElement(getLineElements().target, currentTargetBlock);
-    unbindLineElement(getLineElements().native, currentNativeBlock);
     currentTargetBlock = null;
-    currentNativeBlock = null;
   }
 
   function bindLine(
@@ -189,7 +183,6 @@ export function createSubtitleTokenizeController(
   function applyStatusToTerms(terms: readonly string[], status: WordStatus): void {
     const allBlocks: TokenBlock[] = [];
     if (currentTargetBlock) allBlocks.push(currentTargetBlock);
-    if (currentNativeBlock) allBlocks.push(currentNativeBlock);
     if (allBlocks.length === 0 || terms.length === 0) return;
 
     void Promise.all(terms.map((term) => setWordStatus(langCode, term, status).catch(() => { /* best-effort */ })));
@@ -251,28 +244,23 @@ export function createSubtitleTokenizeController(
       this.rebind();
     },
 
-    setCues(nextTargetCues, nextNativeCues) {
+    setCues(nextTargetCues, _nextNativeCues) {
       targetCues = nextTargetCues;
-      nativeCues = nextNativeCues;
       targetCache.clear();
-      nativeCache.clear();
       clearCurrentBlocks();
       lastTargetIndex = -1;
-      lastNativeIndex = -1;
     },
 
     rebind() {
-      this.render(lastTargetIndex, lastNativeIndex);
+      this.render(lastTargetIndex, -1);
     },
 
-    render(activeTargetIndex, activeNativeIndex) {
+    render(activeTargetIndex, _activeNativeIndex) {
       lastTargetIndex = activeTargetIndex;
-      lastNativeIndex = activeNativeIndex;
-      const { target, native } = getLineElements();
+      const { target } = getLineElements();
       if (!stateStore.getState().enabled) return;
 
       const targetText = targetCues[activeTargetIndex]?.text ?? '';
-      const nativeText = nativeCues[activeNativeIndex]?.text ?? '';
 
       unbindLineElement(target, currentTargetBlock);
       bindLine(
@@ -285,18 +273,6 @@ export function createSubtitleTokenizeController(
         (block) => { currentTargetBlock = block; },
       );
       prepareWindow(targetCache, targetCues, activeTargetIndex);
-
-      unbindLineElement(native, currentNativeBlock);
-      bindLine(
-        native,
-        nativeText,
-        activeNativeIndex,
-        nativeCache,
-        nativeCues,
-        () => lastNativeIndex === activeNativeIndex,
-        (block) => { currentNativeBlock = block; },
-      );
-      prepareWindow(nativeCache, nativeCues, activeNativeIndex);
     },
 
     getState() {
@@ -309,7 +285,6 @@ export function createSubtitleTokenizeController(
       scheduler.stop();
       clearCurrentBlocks();
       targetCache.clear();
-      nativeCache.clear();
     },
   };
 }

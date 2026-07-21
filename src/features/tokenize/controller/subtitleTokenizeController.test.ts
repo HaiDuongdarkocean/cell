@@ -47,7 +47,7 @@ describe('createSubtitleTokenizeController', () => {
     return { target, native, cues, controller, onOpenDictionary };
   }
 
-  it('tokenizes the active target and native cues after render', async () => {
+  it('tokenizes the active target cue and leaves the native line plain', async () => {
     const { target, native, cues, controller } = setup();
 
     target.textContent = cues[0]!.text;
@@ -59,7 +59,7 @@ describe('createSubtitleTokenizeController', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(target.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
-    expect(native.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+    expect(native.querySelectorAll('.js-cell-token').length).toBe(0);
     expect(target.textContent).toBe('Hello world.');
     expect(native.textContent).toBe('Hello world.');
 
