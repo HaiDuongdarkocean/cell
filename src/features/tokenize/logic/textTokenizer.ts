@@ -9,6 +9,12 @@ function isSeparator(surface: string): boolean {
   return /^[^\p{L}\p{N}]+$/u.test(surface);
 }
 
+/** Tokenize a block's source text synchronously and store the result on the block. */
+export function prepareTokenBlock(block: TokenBlock, langCode: string = DEFAULT_LANG): void {
+  if (block.tokens) return;
+  block.tokens = tokenizeTextBlock(block.originalText, langCode);
+}
+
 /** Tokenize a block of text into word tokens with UTF-16 offsets + sentence index. */
 export function tokenizeTextBlock(text: string, langCode: string = DEFAULT_LANG): Token[] {
   const rawTokens = langCode === 'zh' ? segmentFMM(text, { hasTerm: () => false }) : tokenizeSentence(text);

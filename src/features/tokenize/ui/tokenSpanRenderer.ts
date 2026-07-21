@@ -101,12 +101,25 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
 
 /** Bind a prepared block to the DOM: replace source text with token spans. */
 export function bindTokenBlock(block: TokenBlock, options: TokenSpanBindOptions): void {
-  if (block.isBound || !block.tokens || block.tokens.length === 0 || block.sourceNodes.length === 0) return;
-
-  injectTokenSpanStyle();
+  if (!block.tokens || block.tokens.length === 0 || block.sourceNodes.length === 0) return;
 
   const parent = block.element;
   const sourceNode = block.sourceNodes[0]!;
+  if (!parent.contains(sourceNode)) {
+    // SPA re-render removed the original text node; we cannot safely bind here.
+    block.isBound = false;
+    return;
+  }
+
+  // If already bound, verify the rendered spans are still present. SPA re-renders
+  // can wipe them while leaving block.isBound=true, which would no-op rebinding.
+  if (block.isBound) {
+    if (parent.querySelector(`[data-cell-block-id="${block.id}"]`)) return;
+    block.isBound = false;
+  }
+
+  injectTokenSpanStyle();
+
   const text = block.originalText;
   const tokens = [...block.tokens].sort((a, b) => a.start - b.start);
 
@@ -132,12 +145,20 @@ export function unbindTokenBlock(block: TokenBlock): void {
   if (!block.isBound || block.sourceNodes.length === 0) return;
 
   const parent = block.element;
-  const sourceNode = block.sourceNodes[0]!;
+  let sourceNode = block.sourceNodes[0]!;
   const selector = `[data-cell-block-id="${block.id}"]`;
   const rendered = Array.from(parent.querySelectorAll(selector));
   if (rendered.length === 0) {
     block.isBound = false;
     return;
+  }
+
+  // SPA re-render may have removed the original source node (e.g. React replaced
+  // the parent). Restore the text with a fresh text node and update the block so
+  // subsequent rebinds can replace the new node instead of the detached one.
+  if (!parent.contains(sourceNode)) {
+    sourceNode = document.createTextNode(block.originalText);
+    block.sourceNodes = [sourceNode];
   }
 
   parent.insertBefore(sourceNode, rendered[0]!);

@@ -58,6 +58,8 @@ docs/           # Tài liệu dự án
 │   └── 045-popup-dictionary-redesign-hybrid-chips.md # ADR-045: Popup Dictionary redesign — hybrid chips + expand, single context-aware toolbar, 3-row header, footer status/send/settings
 │   └── 046-web-text-dictionary-decouple.md # ADR-046: Decouple web-text dictionary popup from video presence + word highlight
 │   └── 047-viewport-lazy-tokenization.md # ADR-047: Viewport-driven lazy tokenization for 1GB RAM (text + subtitle)
+│   └── 048-tokenize-spa-activation-starvation.md # ADR-048: Fix activation/re-scan starvation trên heavy SPA (Facebook/Twitter) — max-delay cap + ViewportTracker re-observe onEnter
+│   └── 049-tokenize-smooth-fast-spa.md # ADR-049: Tokenize mượt hơn, toàn diện hơn, nhanh hơn trên heavy SPA — early bind + batched metadata + incremental scan + defensive renderer
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── overlay-appearance-settings.md
 │   ├── subtitle-panel-outside-video.md

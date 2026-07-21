@@ -41,6 +41,15 @@ export class ViewportTracker {
       this.observer?.observe(element);
     }
     set.add(handlers);
+    // If the element is already intersecting (e.g. Facebook re-rendered the text
+    // but reused the parent element, and the mutation re-scan created a new block
+    // for it), the IntersectionObserver will NOT fire a new callback because the
+    // intersection state did not change. Fire onEnter synchronously for the new
+    // handlers so the new block gets scheduled for binding instead of waiting for
+    // a state change that never comes.
+    if (this.state.get(element) === true) {
+      handlers.onEnter?.();
+    }
   }
 
   /** Stop observing a specific handler set for an element. */

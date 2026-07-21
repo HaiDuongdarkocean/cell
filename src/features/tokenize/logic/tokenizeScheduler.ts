@@ -97,10 +97,17 @@ export class TokenizeScheduler {
       const next = this.queue[0]!;
       if (next.priority >= maxPriority) break; // leave lower-priority tasks for their own frame
       const task = this.queue.shift()!;
-      const result = task.fn();
-      if (result instanceof Promise) {
-        await result;
-        if (budget.timeRemaining() <= 1) break;
+      try {
+        const result = task.fn();
+        if (result instanceof Promise) {
+          await result;
+          if (budget.timeRemaining() <= 1) break;
+        }
+      } catch (err) {
+        // ponytail: a single failing task must not hang the scheduler. Log and
+        // continue so other blocks still bind/unbind (e.g. SPA re-render left a
+        // detached source node that replaceChild would throw on).
+        console.error('[TokenizeScheduler] task failed:', err);
       }
     }
     if (this.running && this.queue.length > 0) {

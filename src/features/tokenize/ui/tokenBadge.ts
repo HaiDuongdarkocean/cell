@@ -2,7 +2,7 @@ import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?raw';
 import { ICON_CATALOG } from '@/shared/icons';
 import { buildTokenBadgeCss } from './tokenBadgeCss';
-import { onStorageChanged, removeOnStorageChangedListener, getStorage } from '@/shared/lib/chrome-apis';
+import { onStorageChanged, removeOnStorageChangedListener, getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { ThemeMode } from '@/entities/theme';
 
@@ -45,6 +45,14 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
   let state = { ...options.initialState };
   let isOpen = false;
   let themeCleanup: (() => void) | null = null;
+
+  // Drag-to-reposition state. dragStart null = not dragging; dragging true once
+  // movement exceeds DRAG_THRESHOLD (distinguishes click vs drag on the FAB).
+  // suppressClick swallows the synthetic click that follows a drag pointerup.
+  let dragStart: { x: number; y: number; fabLeft: number; fabTop: number } | null = null;
+  let dragging = false;
+  let suppressClick = false;
+  const DRAG_THRESHOLD = 4;
 
   const host = document.createElement('div');
   host.className = HOST_CLASS;
@@ -177,12 +185,134 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
     if (open) {
       buildPanel();
       panel.classList.add('cell-token-panel--open');
+      anchorPanelToFAB();
     } else {
       panel.classList.remove('cell-token-panel--open');
     }
   }
 
-  fab.addEventListener('click', () => setOpen(!isOpen));
+  /**
+   * Position the panel relative to the FAB's current viewport rect.
+   * Horizontal: right-align panel to FAB when FAB is on the right half of the
+   * viewport, else left-align. Vertical: prefer above FAB; fall back to below
+   * when there isn't room. Overrides the CSS right/bottom defaults via inline
+   * !important so the panel follows a dragged FAB.
+   */
+  function anchorPanelToFAB(): void {
+    const fabRect = fab.getBoundingClientRect();
+    const gap = 8;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const panelW = panel.offsetWidth;
+    const panelH = panel.offsetHeight;
+    if (panelW === 0 || panelH === 0) return; // not laid out yet
+
+    const fabCenter = fabRect.left + fabRect.width / 2;
+    let left: number;
+    if (fabCenter > vw / 2) {
+      left = fabRect.right - panelW;
+    } else {
+      left = fabRect.left;
+    }
+    left = Math.max(gap, Math.min(vw - panelW - gap, left));
+
+    const spaceAbove = fabRect.top - gap;
+    let top: number;
+    if (spaceAbove >= panelH + gap) {
+      top = fabRect.top - gap - panelH;
+    } else {
+      top = fabRect.bottom + gap;
+      if (top + panelH > vh - gap) top = Math.max(gap, vh - panelH - gap);
+    }
+
+    panel.style.setProperty('right', 'auto', 'important');
+    panel.style.setProperty('bottom', 'auto', 'important');
+    panel.style.setProperty('left', `${left}px`, 'important');
+    panel.style.setProperty('top', `${top}px`, 'important');
+  }
+
+  /** Persist current FAB viewport position so it survives reload/navigation. */
+  async function persistPosition(): Promise<void> {
+    const rect = fab.getBoundingClientRect();
+    if (rect.left === 0 && rect.top === 0) return; // uninit layout
+    await setStorage({ [STORAGE_KEYS.TOKEN_BADGE_POSITION]: { left: rect.left, top: rect.top } });
+  }
+
+  /** Restore FAB position from storage, clamped to current viewport. */
+  async function restorePosition(): Promise<void> {
+    const data = await getStorage<Record<string, unknown>>(STORAGE_KEYS.TOKEN_BADGE_POSITION);
+    const pos = data[STORAGE_KEYS.TOKEN_BADGE_POSITION] as { left: number; top: number } | undefined;
+    if (!pos || typeof pos.left !== 'number' || typeof pos.top !== 'number') return;
+    const w = fab.offsetWidth;
+    const h = fab.offsetHeight;
+    const left = Math.max(0, Math.min(window.innerWidth - w, pos.left));
+    const top = Math.max(0, Math.min(window.innerHeight - h, pos.top));
+    fab.style.setProperty('right', 'auto', 'important');
+    fab.style.setProperty('bottom', 'auto', 'important');
+    fab.style.setProperty('left', `${left}px`, 'important');
+    fab.style.setProperty('top', `${top}px`, 'important');
+  }
+
+  /** Click-outside: close the panel when a pointerdown lands outside the host. */
+  function onDocPointerDown(e: PointerEvent): void {
+    if (!isOpen) return;
+    const t = e.target as Node | null;
+    // Shadow DOM retargets inner clicks to `host`, so contains() covers both.
+    if (t && host.contains(t)) return;
+    setOpen(false);
+  }
+
+  fab.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (e.button !== 0) return;
+    const rect = fab.getBoundingClientRect();
+    dragStart = { x: e.clientX, y: e.clientY, fabLeft: rect.left, fabTop: rect.top };
+    dragging = false;
+    try { fab.setPointerCapture(e.pointerId); } catch { /* ponytail: capture throws on some platforms */ }
+  });
+
+  fab.addEventListener('pointermove', (e: PointerEvent) => {
+    if (!dragStart) return;
+    const dx = e.clientX - dragStart.x;
+    const dy = e.clientY - dragStart.y;
+    if (!dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    if (!dragging) {
+      dragging = true;
+      // Switch FAB from right/bottom-anchored to left/top-anchored once we
+      // start dragging, so left/top inline values take effect.
+      fab.style.setProperty('right', 'auto', 'important');
+      fab.style.setProperty('bottom', 'auto', 'important');
+    }
+    const w = fab.offsetWidth;
+    const h = fab.offsetHeight;
+    const nx = Math.max(0, Math.min(window.innerWidth - w, dragStart.fabLeft + dx));
+    const ny = Math.max(0, Math.min(window.innerHeight - h, dragStart.fabTop + dy));
+    fab.style.setProperty('left', `${nx}px`, 'important');
+    fab.style.setProperty('top', `${ny}px`, 'important');
+    if (isOpen) anchorPanelToFAB();
+  });
+
+  fab.addEventListener('pointerup', (e: PointerEvent) => {
+    if (dragging) {
+      suppressClick = true;
+      void persistPosition();
+    }
+    dragging = false;
+    dragStart = null;
+    try { fab.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+  });
+
+  fab.addEventListener('pointercancel', () => {
+    dragging = false;
+    dragStart = null;
+  });
+
+  fab.addEventListener('click', () => {
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
+    setOpen(!isOpen);
+  });
 
   // Append the badge host after the page (and Angular/Cloudflare hydration)
   // has finished loading. Appending during hydration can cause DOM
@@ -190,6 +320,8 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
   function appendHost(): void {
     (document.body ?? document.documentElement).appendChild(host);
     initTheme();
+    void restorePosition();
+    document.addEventListener('pointerdown', onDocPointerDown, true);
   }
   if (document.readyState === 'complete') {
     appendHost();
@@ -206,6 +338,7 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
     destroy() {
       themeCleanup?.();
       themeCleanup = null;
+      document.removeEventListener('pointerdown', onDocPointerDown, true);
       host.remove();
     },
   };

@@ -103,10 +103,10 @@ ${buildVariables()}
 
 .js-cell-token-status {
   position: absolute !important;
-  top: 100% !important;
+  top: 82% !important;
   left: 0 !important;
   right: 0 !important;
-  height: 2px !important;
+  height: 0.2px !important;
   border-radius: 1px !important;
   pointer-events: none !important;
   display: block !important;

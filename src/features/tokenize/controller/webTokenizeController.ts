@@ -1,8 +1,8 @@
-import { findTextBlocks } from '@/features/tokenize/logic/tokenizeBlock';
+import { findTextBlocks, findTextBlocksInNodes } from '@/features/tokenize/logic/tokenizeBlock';
 import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
 import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_BUFFER, PRIORITY_IDLE } from '@/features/tokenize/logic/tokenizeScheduler';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
-import { tokenizeTextBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
+import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { createTokenBadge } from '@/features/tokenize/ui/tokenBadge';
 import type { TokenBadge } from '@/features/tokenize/ui/tokenBadge';
@@ -22,9 +22,17 @@ import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
 const CACHE_CAPACITY = 500; // enough for most article pages without eviction churn
-const VIEWPORT_ROOT_MARGIN = '150px';
+const VIEWPORT_ROOT_MARGIN = '300px';
 const MUTATION_DEBOUNCE_MS = 300;
 const HYDRATION_QUIET_MS = 500;
+// ponytail: hard caps prevent starvation on heavy SPAs (Facebook/Twitter) that
+// mutate continuously — without these, the trailing-only debounce resets forever
+// and tokenize never activates / never re-scans. Ceiling is generous enough to
+// skip the initial hydration burst but bounded so users on slow devices (per
+// AGENTS.md target: >=1GB RAM, >=200k benchmark) see tokens within a few seconds.
+// Upgrade path: replace polling debounce with a requestIdleCallback + budget.
+const MAX_ACTIVATION_DELAY_MS = 3000;
+const MAX_MUTATION_SCAN_DELAY_MS = 1500;
 
 const STATUS_BY_KEY: Readonly<Record<string, WordStatus>> = {
   '1': 'unknown',
@@ -87,8 +95,69 @@ export async function createWebTokenizeController(
   let viewport = createViewport();
   const visibleElements = new Set<Element>();
 
+  // Batch metadata resolver: gather terms from all blocks that become visible in
+  // the same microtask, then send a single message pair (status + frequency) to
+  // the background. Per-block messages are the main bottleneck on pages like
+  // Facebook with many visible paragraphs.
+  let metadataQueue: TokenBlock[] = [];
+  let metadataFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  const metadataResolved = new WeakSet<TokenBlock>();
+  const metadataPending = new WeakSet<TokenBlock>();
+
   function createViewport(): ViewportTracker {
     return new ViewportTracker({ rootMargin: VIEWPORT_ROOT_MARGIN });
+  }
+
+  async function flushMetadataQueue(): Promise<void> {
+    metadataFlushTimer = null;
+    const batch = metadataQueue;
+    metadataQueue = [];
+    const terms = new Set<string>();
+    for (const block of batch) {
+      if (!block.tokens) continue;
+      for (const token of block.tokens) {
+        if (!token.isSeparator) terms.add(token.term);
+      }
+    }
+    if (terms.size === 0) {
+      for (const block of batch) {
+        metadataPending.delete(block);
+        metadataResolved.add(block);
+      }
+      return;
+    }
+    const termList = [...terms];
+    const [statusMap, freqMaps] = await Promise.all([
+      getWordStatuses(langCode, termList),
+      getFrequencyEntries(langCode, termList),
+    ]);
+    for (const block of batch) {
+      if (!block.tokens) {
+        metadataPending.delete(block);
+        continue;
+      }
+      await resolveTokenMetadata(
+        block.tokens,
+        (term) => Promise.resolve(statusMap.get(term) ?? 'unknown'),
+        (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [])),
+      );
+      metadataPending.delete(block);
+      metadataResolved.add(block);
+      if (visibleElements.has(block.element)) {
+        rebindBlock(block);
+      }
+    }
+  }
+
+  function scheduleMetadataResolve(block: TokenBlock): void {
+    if (metadataResolved.has(block) || metadataPending.has(block)) return;
+    metadataPending.add(block);
+    metadataQueue.push(block);
+    if (!metadataFlushTimer) {
+      // Flush in the next microtask so multiple visible blocks arriving in the
+      // same scheduler tick are batched into one background request.
+      metadataFlushTimer = setTimeout(() => void flushMetadataQueue(), 0);
+    }
   }
 
   const badge = createTokenBadge({
@@ -190,20 +259,43 @@ export async function createWebTokenizeController(
   // disconnected during page load avoids conflicts with Cloudflare Rocket
   // Loader / Angular hydration while scripts are still being injected.
   let mutationTimer: ReturnType<typeof setTimeout> | null = null;
+  // First-pending timestamp: when the current debounce window opened. Used to
+  // enforce MAX_MUTATION_SCAN_DELAY_MS — without it, continuous mutations
+  // (Facebook re-renders, polling) reset the trailing debounce forever and the
+  // re-scan never fires, leaving dynamically added/replaced content untokenized.
+  let mutationWindowStart = 0;
   let dynIdCounter = 0;
-  mutationObserver = new MutationObserver(() => {
+  // Accumulate added nodes across multiple rapid MutationObserver callbacks so
+  // the debounced re-scan does not lose nodes that arrived between resets.
+  let pendingAddedNodes: Node[] = [];
+  mutationObserver = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const n of m.addedNodes) {
+        pendingAddedNodes.push(n);
+      }
+    }
+    const now = Date.now();
+    if (!mutationTimer) mutationWindowStart = now;
     if (mutationTimer) clearTimeout(mutationTimer);
+    // Force a re-scan if mutations have been pending longer than the max delay,
+    // even if the page keeps mutating (trailing debounce would otherwise starve).
+    // remaining = how long until the max-delay cap is hit; clamp to >=0.
+    const remaining = MAX_MUTATION_SCAN_DELAY_MS - (now - mutationWindowStart);
+    const delay = Math.min(MUTATION_DEBOUNCE_MS, Math.max(0, remaining));
     mutationTimer = setTimeout(() => {
       mutationTimer = null;
+      mutationWindowStart = 0;
       if (!stateStore.getState().enabled) return;
-      // Re-scan root for text blocks. findTextBlocks walks all text nodes,
-      // but we filter to only new ones (not already bound).
+      // Incremental re-scan: only walk the nodes that were added since the last
+      // scan. This is much cheaper than walking the entire body on every
+      // Facebook re-render or lazy-loaded content batch.
+      const added = pendingAddedNodes;
+      pendingAddedNodes = [];
+      if (added.length === 0) return;
       const scanId = dynIdCounter;
       dynIdCounter += 1000; // reserve a range for this scan
-      const newBlocks = findTextBlocks(root, { langCode, idPrefix: `dyn-${scanId}-` });
+      const newBlocks = findTextBlocksInNodes(added, { langCode, idPrefix: `dyn-${scanId}-` });
       for (const block of newBlocks) {
-        // Skip if inside a token span (our own injected content)
-        if (block.element.closest('.js-cell-token')) continue;
         // Skip if source node is already bound by another block
         const existing = cache.getByElement(block.element);
         if (existing.some((b) => b.sourceNodes[0] === block.sourceNodes[0])) continue;
@@ -215,7 +307,7 @@ export async function createWebTokenizeController(
           scheduler.schedule(() => prepareAndBind(block), PRIORITY_VIEWPORT);
         }
       }
-    }, MUTATION_DEBOUNCE_MS);
+    }, delay);
   });
 
   // Activate only when tokenize is already enabled for this URL. By default the
@@ -224,21 +316,29 @@ export async function createWebTokenizeController(
   if (initialEnabled) {
     const activateAfterStability = (): void => {
       let stabilityTimer: ReturnType<typeof setTimeout> | null = null;
+      // Hard cap: activate after MAX_ACTIVATION_DELAY_MS regardless of ongoing
+      // mutations. Without this, heavy SPAs that mutate continuously (Facebook,
+      // Twitter) never reach the HYDRATION_QUIET_MS quiet period and tokenize
+      // stays at 0 tokens indefinitely (observed: 9s+ delay under throttle).
+      let maxDelayTimer: ReturnType<typeof setTimeout> | null = null;
       const stabilityObserver = new MutationObserver(() => scheduleStabilityCheck());
       const cleanup = (): void => {
         stabilityObserver.disconnect();
         if (stabilityTimer) clearTimeout(stabilityTimer);
+        if (maxDelayTimer) clearTimeout(maxDelayTimer);
+      };
+      const activate = (): void => {
+        cleanup();
+        cancelPendingActivation = null;
+        if (stateStore.getState().enabled) setActive(true);
       };
       const scheduleStabilityCheck = (): void => {
         if (stabilityTimer) clearTimeout(stabilityTimer);
-        stabilityTimer = setTimeout(() => {
-          cleanup();
-          cancelPendingActivation = null;
-          if (stateStore.getState().enabled) setActive(true);
-        }, HYDRATION_QUIET_MS);
+        stabilityTimer = setTimeout(activate, HYDRATION_QUIET_MS);
       };
       stabilityObserver.observe(document.documentElement, { childList: true, subtree: true });
       scheduleStabilityCheck();
+      maxDelayTimer = setTimeout(activate, MAX_ACTIVATION_DELAY_MS);
       cancelPendingActivation = cleanup;
     };
     const handleLoad = (): void => {
@@ -269,22 +369,8 @@ export async function createWebTokenizeController(
     })();
   }
 
-  async function prepareBlock(block: TokenBlock): Promise<void> {
-    if (block.tokens) return;
-    const tokens = tokenizeTextBlock(block.originalText, langCode);
-    const terms = [...new Set(tokens.filter((t) => !t.isSeparator).map((t) => t.term))];
-    if (terms.length > 0) {
-      const [statusMap, freqMaps] = await Promise.all([
-        getWordStatuses(langCode, terms),
-        getFrequencyEntries(langCode, terms),
-      ]);
-      await resolveTokenMetadata(
-        tokens,
-        (term) => Promise.resolve(statusMap.get(term) ?? 'unknown'),
-        (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [])),
-      );
-    }
-    block.tokens = tokens;
+  function prepareBlock(block: TokenBlock): void {
+    prepareTokenBlock(block, langCode);
   }
 
   function getDisplayOptions(): TokenSpanBindOptions {
@@ -309,14 +395,15 @@ export async function createWebTokenizeController(
     bindTokenBlock(block, getDisplayOptions());
   }
 
-  async function prepareAndBind(block: TokenBlock): Promise<void> {
-    await prepareBlock(block);
+  function prepareAndBind(block: TokenBlock): void {
+    prepareBlock(block);
     if (stateStore.getState().enabled && visibleElements.has(block.element)) {
-      // rebind (not bind): unbind is a no-op on first bind, but is required when
-      // a layer toggle (showStatus/showFrequency) fires scheduleVisible() for an
-      // already-bound block — plain bindTokenBlock would no-op on isBound=true
-      // and the new display options would never apply.
+      // Bind tokens immediately so the user sees tokenized text right away.
+      // Status/frequency metadata is resolved asynchronously and the block is
+      // re-bound once the metadata arrives, giving a smooth visual update.
       rebindBlock(block);
+      cache.touch(block);
+      scheduleMetadataResolve(block);
     }
   }
 
