@@ -39,6 +39,14 @@
       "trigger": "Khi scroll/lazy-load trên SPA nặng, content mới xuất hiện nhưng phải chờ debounce mới được tokenize; memory tăng khi blocks array/domMap không được dọn"
     },
     {
+      "type": "experience",
+      "id": "frequency-band-very-low-coverage",
+      "title": "Frequency band fallback 'very-low' để 100% token có dữ liệu được hiển thị",
+      "category": ["ux", "data"],
+      "tags": ["tokenize", "frequency", "rank", "fallback", "css", "band", "coverage"],
+      "trigger": "Token được tokenize nhưng hầu hết không có frequency color; chỉ rare words hoặc common words được hiển thị, còn lại plain text"
+    },
+    {
       "type": "knowledge",
       "topic": "htmlcss",
       "source": "https://google.github.io/styleguide/htmlcssguide.html + https://cssguidelin.es/#bem-like-naming",

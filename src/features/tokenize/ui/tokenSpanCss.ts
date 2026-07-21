@@ -50,6 +50,14 @@ function buildVariables(): string {
       light: pick(light, '--color-info', '#2563eb'),
       dark: pick(dark, '--color-info', '#60a5fa'),
     },
+    '--cell-token-freq-very-low-bg': {
+      light: pick(light, '--color-muted', 'rgba(100, 116, 139, 0.1)'),
+      dark: pick(dark, '--color-muted', 'rgba(148, 163, 184, 0.15)'),
+    },
+    '--cell-token-freq-very-low-fg': {
+      light: pick(light, '--color-muted-foreground', '#64748b'),
+      dark: pick(dark, '--color-muted-foreground', '#94a3b8'),
+    },
   };
 
   const lines: string[] = [':root {'];
@@ -128,6 +136,7 @@ ${buildVariables()}
 .js-cell-token--frequency-high { background-color: var(--cell-token-freq-high-bg) !important; color: var(--cell-token-freq-high-fg) !important; }
 .js-cell-token--frequency-medium { background-color: var(--cell-token-freq-medium-bg) !important; color: var(--cell-token-freq-medium-fg) !important; }
 .js-cell-token--frequency-low { background-color: var(--cell-token-freq-low-bg) !important; color: var(--cell-token-freq-low-fg) !important; }
+.js-cell-token--frequency-very-low { background-color: var(--cell-token-freq-very-low-bg) !important; color: var(--cell-token-freq-very-low-fg) !important; }
 
 /* known/ignore hide status + frequency by default; hover reveals status when status layer is on */
 .js-cell-token--status-known .js-cell-token-status,

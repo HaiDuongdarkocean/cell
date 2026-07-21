@@ -79,8 +79,10 @@ function createTokenSpan(token: Token, block: TokenBlock, options: TokenSpanBind
     span.classList.add('js-cell-token--status-off');
   }
 
-  // known/ignore always hide frequency by default; showFrequency toggle only affects unknown/tracking
-  if (!options.showFrequency || token.status === 'known' || token.status === 'ignore') {
+  // The showFrequency toggle controls the frequency layer for all tokens;
+  // known/ignore words still keep their status styling, but frequency can be
+  // shown when the user wants 100% frequency coverage.
+  if (!options.showFrequency) {
     span.classList.add('js-cell-token--frequency-off');
   }
 

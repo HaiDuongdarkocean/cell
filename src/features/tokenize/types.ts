@@ -2,7 +2,7 @@ import type { WordStatus } from '@/features/dictionaryPopup/types';
 
 export type TokenStatus = WordStatus;
 
-export type TokenFrequencyBand = 'high' | 'medium' | 'low' | 'none';
+export type TokenFrequencyBand = 'high' | 'medium' | 'low' | 'very-low' | 'none';
 
 export interface Token {
   /** Surface text as it appears in the page. */

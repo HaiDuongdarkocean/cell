@@ -494,8 +494,8 @@ describe('createWebTokenizeController', () => {
     for (const span of helloSpansAfter) {
       expect(span.classList.contains('js-cell-token--status-known')).toBe(true);
       expect(span.classList.contains('js-cell-token--status-unknown')).toBe(false);
-      // known/ignore must hide frequency layer on rebind
-      expect(span.classList.contains('js-cell-token--frequency-off')).toBe(true);
+      // showFrequency is on by default; known/ignore no longer forces frequency-off.
+      expect(span.classList.contains('js-cell-token--frequency-off')).toBe(false);
     }
 
     controller.destroy();
