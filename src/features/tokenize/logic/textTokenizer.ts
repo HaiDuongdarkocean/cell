@@ -1,5 +1,6 @@
 import { tokenizeSentence, type SentenceToken } from '@/features/dictionary/logic/phraseMatcher';
 import { segmentFMM } from '@/features/dictionaryPopup/plugins/chinesePlugin';
+import { languageMatches } from '@/shared/config/languageRegistry';
 import type { Token, TokenStatus, TokenFrequencyBand, TokenBlock } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
@@ -7,6 +8,31 @@ const DEFAULT_LANG = 'en';
 /** Treat a token as a separator if it contains no letters or digits. */
 function isSeparator(surface: string): boolean {
   return /^[^\p{L}\p{N}]+$/u.test(surface);
+}
+
+/** Allowed characters for an English token surface (ASCII letters, digits,
+ *  apostrophes, hyphens) plus a check that at least one letter is present.
+ *  This filters Vietnamese diacritics and other non-English scripts.
+ *
+ *  ponytail: this is an ASCII-only heuristic. It deliberately drops legitimate
+ *  English words with diacritics (café, naïve, résumé) to keep the check fast
+ *  and deterministic. Upgrade path: derive allowed character sets per language
+ *  from the language registry or a Unicode script profile. */
+const ENGLISH_TOKEN_CHARS = /^[A-Za-z0-9'-]+$/;
+const HAS_LATIN_LETTER = /[A-Za-z]/;
+
+/** Check whether a token surface looks like an English word. */
+function isEnglishLikeToken(surface: string): boolean {
+  return ENGLISH_TOKEN_CHARS.test(surface) && HAS_LATIN_LETTER.test(surface);
+}
+
+/** Check whether a token surface is compatible with the target tokenize language.
+ *  For English this rejects words containing non-ASCII characters, preventing
+ *  Vietnamese/French/etc. words from being tokenized and looked up by mistake. */
+function isTokenCompatibleWithLanguage(surface: string, langCode: string): boolean {
+  if (languageMatches('zh', langCode)) return true;
+  if (languageMatches('en', langCode)) return isEnglishLikeToken(surface);
+  return true;
 }
 
 /** Tokenize a block's source text synchronously and store the result on the block. */
@@ -27,6 +53,7 @@ export function tokenizeTextBlock(text: string, langCode: string = DEFAULT_LANG)
         ? raw.text
         : (raw as SentenceToken).raw ?? text.slice(raw.start, raw.end);
     const term = langCode === 'zh' ? raw.text : raw.text.toLowerCase();
+    if (!isTokenCompatibleWithLanguage(surface, langCode)) continue;
     // English: increment sentence index when sentence-ending punctuation preceded this token.
     if (langCode !== 'zh' && (raw as SentenceToken).precededBySentencePunct) {
       sentenceIndex++;
