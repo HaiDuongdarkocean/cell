@@ -1,25 +1,35 @@
 {
   "id": "raf-mutation-fast-path-incremental-tokenize",
-  "title": "MutationObserver fast path qua requestAnimationFrame cho incremental tokenize trên SPA nặng",
+  "title": "MutationObserver fast path qua microtask cho incremental tokenize trên SPA nặng + low-RAM",
   "category": ["async", "rendering", "state"],
-  "tags": ["mutationobserver", "requestanimationframe", "spa", "facebook", "tokenize", "incremental", "eager-bind", "memory", "domMap"],
-  "trigger": "Khi scroll/lazy-load trên SPA nặng (Facebook/Twitter), content mới xuất hiện nhưng phải chờ 300-1500ms debounce mới được tokenize; user thấy text nguyên vẹn rồi mới bị tách từ, hoặc memory tăng khi blocks array không bao giờ được dọn.",
-  "principle": "Trailing debounce + max-delay cap (ADR-048) ngăn starvation nhưng vẫn để lại độ trễ nhìn thấy được. Khi content mới liên tục đến, hãy dùng requestAnimationFrame fast path để xử lý batch ngay frame kế tiếp, giữ setTimeout fallback cho residual/background tab. Kết hợp eager synchronous bind cho block đã trong viewport (getBoundingClientRect) để không chờ IntersectionObserver. Đồng thời đảm bảo eviction end-to-end: cache, domMap, và controller state đều dọn block bị evict; xử lý cả characterData mutations để re-tokenize text node thay đổi nội dung.",
+  "tags": ["mutationobserver", "queuemicrotask", "requestanimationframe", "spa", "facebook", "tokenize", "incremental", "eager-bind", "memory", "domMap", "low-ram"],
+  "trigger": "Khi scroll/lazy-load trên SPA nặng (Facebook/Twitter), content mới xuất hiện nhưng phải chờ 300-1500ms debounce mới được tokenize; user thấy text nguyên vẹn rồi mới bị tách từ, hoặc memory tăng khi blocks array không bao giờ được dọn, hoặc máy 500MB RAM bị jank.",
+  "principle": "Trailing debounce + max-delay cap (ADR-048) ngăn starvation nhưng vẫn để lại độ trễ nhìn thấy được. Dùng queueMicrotask fast path để flush batch ngay trong cùng event loop, trước paint, thay vì đợi 16ms rAF. Giữ setTimeout fallback cho residual/background tab. Eager synchronous bind chỉ cho mutation batch nhỏ (<=50 nodes) để tránh forced reflow; batch lớn dùng IntersectionObserver. Cache capacity động theo navigator.deviceMemory (100/150/250) cho máy yếu. Eviction end-to-end: cache, domMap, controller state. Xử lý removedNodes để dọn block khi element bị xóa; evict stale block ngay khi bindTokenBlock thất bại do detached source node. TokenizeScheduler viewport tasks cần budget thực (performance.now()) để không chạy hết queue trong một frame.",
   "cases": [
     {
       "context": "MutationObserver re-scan dùng trailing debounce 300ms + max-delay cap 1500ms. Facebook lazy-load content khi scroll, mutations đến liên tục. Count token giữ nguyên ~58 trong 1.8s rồi mới tăng.",
       "bad": "mutationObserver = new MutationObserver(() => {\n  if (mutationTimer) clearTimeout(mutationTimer);\n  mutationTimer = setTimeout(() => { /* re-scan */ }, MUTATION_DEBOUNCE_MS);\n});",
-      "good": "let mutationRafHandle: number | null = null;\nmutationObserver = new MutationObserver((mutations) => {\n  for (const m of mutations) for (const n of m.addedNodes) pendingAddedNodes.push(n);\n  if (mutationRafHandle === null) {\n    mutationRafHandle = requestAnimationFrame(processPendingAddedNodes);\n  }\n  // keep setTimeout fallback for residual/background tab\n  if (mutationTimer) clearTimeout(mutationTimer);\n  mutationTimer = setTimeout(() => {\n    if (mutationRafHandle !== null) { cancelAnimationFrame(mutationRafHandle); mutationRafHandle = null; }\n    processPendingAddedNodes();\n  }, MUTATION_DEBOUNCE_MS);\n});"
+      "good": "let mutationFlushPending = false;\nfunction flushPendingAddedNodes() {\n  mutationFlushPending = false;\n  if (pendingAddedNodes.length > PENDING_MUTATION_LIMIT) {\n    /* slice and reschedule */\n  }\n  processAddedNodes(pendingAddedNodes);\n  pendingAddedNodes = [];\n}\nfunction scheduleMutationFlush() {\n  if (mutationFlushPending) return;\n  mutationFlushPending = true;\n  queueMicrotask(flushPendingAddedNodes);\n}\nmutationObserver = new MutationObserver((mutations) => {\n  for (const m of mutations) for (const n of m.addedNodes ?? []) pendingAddedNodes.push(n);\n  scheduleMutationFlush();\n  // keep setTimeout fallback\n  if (mutationTimer) clearTimeout(mutationTimer);\n  mutationTimer = setTimeout(() => { scheduleMutationFlush(); }, MUTATION_DEBOUNCE_MS);\n});"
     },
     {
-      "context": "Block mới từ mutation scan được observe qua IntersectionObserver. IO callback async, có thể mất 1-2 frame; block đã visible không bind ngay.",
-      "bad": "function observeBlock(block) {\n  viewport.observe(block.element, {\n    onEnter: () => scheduler.schedule(() => prepareAndBind(block), PRIORITY_VIEWPORT),\n  });\n}",
-      "good": "function observeBlock(block) {\n  viewport.observe(block.element, {\n    onEnter: () => scheduler.schedule(() => bindVisibleBlock(block), PRIORITY_VIEWPORT),\n  });\n  tryBindVisible(block); // sync bind if already in viewport\n}\nfunction tryBindVisible(block) {\n  const rect = block.element.getBoundingClientRect();\n  if (rect.height > 0 && rect.bottom >= -margin && rect.top <= window.innerHeight + margin) {\n    visibleElements.add(block.element);\n    bindVisibleBlock(block);\n  }\n}"
+      "context": "Block mới từ mutation scan được observe qua IntersectionObserver. IO callback async, có thể mất 1-2 frame; block đã visible không bind ngay. Nhưng eager getBoundingClientRect cho mọi block trong batch lớn gây forced reflow.",
+      "bad": "function observeBlock(block) {\n  viewport.observe(block.element, {\n    onEnter: () => scheduler.schedule(() => bindVisibleBlock(block), PRIORITY_VIEWPORT),\n  });\n  tryBindVisible(block); // always sync\n}",
+      "good": "function observeBlock(block, eager = false) {\n  viewport.observe(block.element, {\n    onEnter: () => {\n      visibleElements.add(block.element);\n      if (state.enabled && !block.isBound) scheduler.schedule(() => bindVisibleBlock(block), PRIORITY_VIEWPORT);\n    },\n  });\n  if (eager && added.length <= 50) tryBindVisible(block);\n}"
     },
     {
       "context": "TokenizeCache evict LRU nhưng block vẫn nằm trong controller blocks[] và WeakMap domMap, gây memory growth và getByElement trả về block đã detached.",
       "bad": "const cache = new TokenizeCache({\n  capacity,\n  onEvict: (block) => unbindTokenBlock(block),\n});",
       "good": "const cache = new TokenizeCache({\n  capacity,\n  onEvict: (block) => {\n    unbindTokenBlock(block);\n    const idx = blocks.indexOf(block);\n    if (idx >= 0) blocks.splice(idx, 1);\n  },\n});\n// inside TokenizeCache:\nprivate removeFromDomMap(block) {\n  const set = this.domMap.get(block.element);\n  if (set) { set.delete(block); if (set.size === 0) this.domMap.delete(block.element); }\n}\nset(block) {\n  ...\n  if (evicted) { this.onEvict?.(evicted); this.removeFromDomMap(evicted); }\n}\ndelete(id) {\n  const block = this.cache.peek(id);\n  const removed = this.cache.delete(id);\n  if (removed && block) this.removeFromDomMap(block);\n  return removed;\n}"
+    },
+    {
+      "context": "bindTokenBlock thất bại khi source node bị detach giữa observe và bind (SPA re-render). Block cũ ở lại cache, text mới không được tạo block vì getByElement trả về block cũ.",
+      "bad": "function bindVisibleBlock(block) {\n  prepareBlock(block);\n  if (!enabled || !visibleElements.has(block.element)) return;\n  if (!block.isBound) bindTokenBlock(block, getDisplayOptions());\n  cache.touch(block);\n  scheduleMetadataResolve(block);\n}",
+      "good": "function bindVisibleBlock(block) {\n  prepareBlock(block);\n  if (!enabled || !visibleElements.has(block.element)) return;\n  if (!block.isBound) bindTokenBlock(block, getDisplayOptions());\n  if (!block.isBound) {\n    // source/parent detached; evict stale block so addedNodes can create a fresh one\n    const idx = blocks.indexOf(block);\n    if (idx >= 0) blocks.splice(idx, 1);\n    cache.delete(block.id);\n    return;\n  }\n  cache.touch(block);\n  scheduleMetadataResolve(block);\n}"
+    },
+    {
+      "context": "TokenizeScheduler viewport tasks dùng setTimeout(..., 0) nhưng budget.timeRemaining() trả về hằng số 16ms. Một queue dài chạy hết trong một frame, gây jank trên máy yếu.",
+      "bad": "this.scheduledFrameId = window.setTimeout(() => {\n  void this.runLoop({ timeRemaining: () => 16 }, PRIORITY_BUFFER);\n}, 0);",
+      "good": "this.scheduledFrameId = window.setTimeout(() => {\n  const start = performance.now();\n  const viewportBudget = 16;\n  void this.runLoop({ timeRemaining: () => viewportBudget - (performance.now() - start) }, PRIORITY_BUFFER);\n}, 0);"
     }
   ],
   "applyFor": [
@@ -27,6 +37,8 @@
     "MutationObserver re-scan cần phản hồi nhanh mà vẫn batch",
     "Lazy tokenization/text highlight khi scroll",
     "Cache eviction phải đồng bộ với controller state và WeakMap",
-    "Xử lý characterData mutations cho text nodes"
+    "Xử lý characterData/removedNodes mutations cho text nodes",
+    "Tối ưu bộ nhớ cho máy low-end (<=1GB RAM)",
+    "Tránh scheduler viewport queue gây long task"
   ]
 }

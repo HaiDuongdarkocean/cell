@@ -21,9 +21,26 @@ import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
 import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
-const CACHE_CAPACITY = 500; // enough for most article pages without eviction churn
-const VIEWPORT_ROOT_MARGIN = '300px';
+// ponytail: tune cache capacity to the device's reported RAM. The
+// navigator.deviceMemory API returns approximate GiB (0.25, 0.5, 1, 2, 4, 8).
+// On low-end devices (<=0.5 GiB) we keep the cache tiny to stay usable on
+// 500MB RAM machines; on 1 GiB machines we use a medium cap; otherwise the
+// default 250 blocks is enough for a full viewport plus a couple of screens of
+// buffer without eviction churn.
+const BASE_CACHE_CAPACITY = 250;
+const LOW_MEMORY_CACHE_CAPACITY = 100;
+const MID_MEMORY_CACHE_CAPACITY = 150;
+function resolveCacheCapacity(): number {
+  const mem = (globalThis.navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+  if (typeof mem !== 'number') return BASE_CACHE_CAPACITY;
+  if (mem <= 0.5) return LOW_MEMORY_CACHE_CAPACITY;
+  if (mem < 2) return MID_MEMORY_CACHE_CAPACITY;
+  return BASE_CACHE_CAPACITY;
+}
+const CACHE_CAPACITY = resolveCacheCapacity();
+const VIEWPORT_ROOT_MARGIN = '200px';
 const MUTATION_DEBOUNCE_MS = 300;
+const PENDING_MUTATION_LIMIT = 1000;
 const HYDRATION_QUIET_MS = 500;
 // ponytail: hard caps prevent starvation on heavy SPAs (Facebook/Twitter) that
 // mutate continuously — without these, the trailing-only debounce resets forever
@@ -199,11 +216,14 @@ export async function createWebTokenizeController(
   let isActive = false;
   let cancelPendingActivation: (() => void) | null = null;
 
-  function observeBlock(block: TokenBlock): void {
+  function observeBlock(block: TokenBlock, eager = false): void {
     viewport.observe(block.element, {
       onEnter: () => {
         visibleElements.add(block.element);
-        if (stateStore.getState().enabled) {
+        // If the block is already bound (e.g. by eager tryBindVisible during a
+        // mutation batch), skip scheduling a no-op bind task to keep the queue
+        // short on low-end devices.
+        if (stateStore.getState().enabled && !block.isBound) {
           scheduler.schedule(() => bindVisibleBlock(block), PRIORITY_VIEWPORT);
         }
       },
@@ -212,10 +232,10 @@ export async function createWebTokenizeController(
         scheduler.schedule(() => unbindTokenBlock(block), PRIORITY_BUFFER);
       },
     });
-    // Eager bind: if the element is already in the viewport (e.g. it was just
-    // created by a MutationObserver batch during scroll), don't wait for the
-    // IntersectionObserver callback, which may not fire until the next frame.
-    tryBindVisible(block);
+    // Eager bind only for dynamically added nodes during scroll. The initial
+    // full-page scan uses IntersectionObserver callbacks instead, avoiding a
+    // synchronous layout read (getBoundingClientRect) for every block on load.
+    if (eager) tryBindVisible(block);
   }
 
   function scanAndObserveBlocks(): void {
@@ -244,10 +264,7 @@ export async function createWebTokenizeController(
       unbindAll();
       blocks.length = 0;
       pendingAddedNodes = [];
-      if (mutationRafHandle !== null) {
-        cancelAnimationFrame(mutationRafHandle);
-        mutationRafHandle = null;
-      }
+      mutationFlushPending = false;
       if (mutationTimer) {
         clearTimeout(mutationTimer);
         mutationTimer = null;
@@ -276,7 +293,7 @@ export async function createWebTokenizeController(
   // disconnected during page load avoids conflicts with Cloudflare Rocket
   // Loader / Angular hydration while scripts are still being injected.
   let mutationTimer: ReturnType<typeof setTimeout> | null = null;
-  let mutationRafHandle: number | null = null;
+  let mutationFlushPending = false;
   // First-pending timestamp: when the current debounce window opened. Used to
   // enforce MAX_MUTATION_SCAN_DELAY_MS — without it, continuous mutations
   // (Facebook re-renders, polling) reset the trailing debounce forever and the
@@ -287,7 +304,7 @@ export async function createWebTokenizeController(
   // the debounced re-scan does not lose nodes that arrived between resets.
   let pendingAddedNodes: Node[] = [];
 
-  function processAddedNodes(added: readonly Node[]): void {
+  function processAddedNodes(added: readonly Node[], eager: boolean): void {
     if (!stateStore.getState().enabled) return;
     if (added.length === 0) return;
     const scanId = dynIdCounter;
@@ -299,7 +316,10 @@ export async function createWebTokenizeController(
       if (existing.some((b) => b.sourceNodes[0] === block.sourceNodes[0])) continue;
       cache.set(block);
       blocks.push(block);
-      observeBlock(block);
+      // Only eager-bind small mutation batches. Large batches (e.g. hydration,
+      // re-rendering a whole subtree) can produce hundreds of blocks; doing a
+      // synchronous getBoundingClientRect for each one forces repeated layout.
+      observeBlock(block, eager && added.length <= 50);
     }
   }
 
@@ -319,15 +339,45 @@ export async function createWebTokenizeController(
     }
   }
 
-  function processPendingAddedNodes(): void {
-    mutationRafHandle = null;
+  function handleRemovedNode(node: Node): void {
+    if (!(node instanceof Element)) return;
+    // Stop observing and release the element so a removed/re-rendered subtree
+    // does not stay alive via the tracker set until cache eviction.
+    viewport.unobserve(node);
+    visibleElements.delete(node);
+    const existing = cache.getByElement(node);
+    for (const block of existing) {
+      const idx = blocks.indexOf(block);
+      if (idx >= 0) blocks.splice(idx, 1);
+      cache.delete(block.id);
+    }
+  }
+
+  function flushPendingAddedNodes(): void {
+    mutationFlushPending = false;
     if (!stateStore.getState().enabled) {
       pendingAddedNodes = [];
       return;
     }
-    const added = pendingAddedNodes;
-    pendingAddedNodes = [];
-    processAddedNodes(added);
+    let added = pendingAddedNodes;
+    if (added.length > PENDING_MUTATION_LIMIT) {
+      // Chunk processing so a single microtask cannot walk an unbounded DOM
+      // subtree on low-end devices with 500MB RAM.
+      pendingAddedNodes = added.slice(PENDING_MUTATION_LIMIT);
+      added = added.slice(0, PENDING_MUTATION_LIMIT);
+    } else {
+      pendingAddedNodes = [];
+    }
+    processAddedNodes(added, true);
+    if (pendingAddedNodes.length > 0) {
+      scheduleMutationFlush();
+    }
+  }
+
+  function scheduleMutationFlush(): void {
+    if (mutationFlushPending) return;
+    mutationFlushPending = true;
+    queueMicrotask(flushPendingAddedNodes);
   }
 
   mutationObserver = new MutationObserver((mutations) => {
@@ -337,30 +387,28 @@ export async function createWebTokenizeController(
         handleCharacterDataMutation(m.target);
         continue;
       }
-      for (const n of m.addedNodes) {
+      for (const n of m.addedNodes ?? []) {
         pendingAddedNodes.push(n);
+      }
+      for (const n of m.removedNodes ?? []) {
+        handleRemovedNode(n);
       }
     }
     if (pendingAddedNodes.length === 0) return;
     if (!mutationWindowStart) mutationWindowStart = now;
-    // Fast path: schedule a scan on the next animation frame so new content
-    // starts tokenizing immediately instead of waiting for the trailing debounce.
-    if (mutationRafHandle === null) {
-      mutationRafHandle = requestAnimationFrame(processPendingAddedNodes);
-    }
-    // Fallback: if rAF is throttled (background tab, very slow device), still
-    // process after the debounce/max-delay cap so we never starve.
+    // Fast path: flush in the next microtask, before the browser paints, so new
+    // content is tokenized immediately instead of waiting for a 16ms animation
+    // frame or the trailing debounce.
+    scheduleMutationFlush();
+    // Fallback: if the microtask path somehow stalls (tab backgrounded, very
+    // slow device), still process after the debounce/max-delay cap.
     if (mutationTimer) clearTimeout(mutationTimer);
     const remaining = MAX_MUTATION_SCAN_DELAY_MS - (now - mutationWindowStart);
     const delay = Math.min(MUTATION_DEBOUNCE_MS, Math.max(0, remaining));
     mutationTimer = setTimeout(() => {
       mutationTimer = null;
       mutationWindowStart = 0;
-      if (mutationRafHandle !== null) {
-        cancelAnimationFrame(mutationRafHandle);
-        mutationRafHandle = null;
-      }
-      processPendingAddedNodes();
+      scheduleMutationFlush();
     }, delay);
   });
 
@@ -454,6 +502,15 @@ export async function createWebTokenizeController(
     if (!stateStore.getState().enabled || !visibleElements.has(block.element)) return;
     if (!block.isBound) {
       bindTokenBlock(block, getDisplayOptions());
+    }
+    // If binding could not replace the source node (e.g. SPA re-render detached
+    // it between scan/observe and bind), evict the stale block so the next
+    // mutation can create a fresh one instead of leaving text untokenized.
+    if (!block.isBound) {
+      const idx = blocks.indexOf(block);
+      if (idx >= 0) blocks.splice(idx, 1);
+      cache.delete(block.id);
+      return;
     }
     cache.touch(block);
     scheduleMetadataResolve(block);
