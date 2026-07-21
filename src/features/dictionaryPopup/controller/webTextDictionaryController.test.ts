@@ -286,6 +286,45 @@ describe('createWebTextDictionaryController', () => {
     ctrl.destroy();
   });
 
+  it('updateSettings attaches and triggers popup when enabled', async () => {
+    jest.useFakeTimers();
+    const result = makeResult();
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
+
+    const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
+    const settings = {
+      dictionaryPopup: makePopupSettings({ enabled: true, triggerMode: 'hover' }),
+      cardCreator: makeCardCreatorSettings(),
+      subtitleOverlayNativeLanguage: 'vi',
+    };
+    ctrl.updateSettings(settings);
+
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+
+    const textNode = p.firstChild as Text;
+    const fakeRange = document.createRange();
+    fakeRange.setStart(textNode, 0);
+    fakeRange.setEnd(textNode, 4);
+    const original = document.caretRangeFromPoint;
+    document.caretRangeFromPoint = () => fakeRange;
+
+    const move = new MouseEvent('mousemove', { bubbles: true, clientX: 10, clientY: 10 });
+    Object.defineProperty(move, 'target', { value: p });
+    document.dispatchEvent(move);
+
+    jest.advanceTimersByTime(150);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    document.caretRangeFromPoint = original;
+
+    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    ctrl.destroy();
+    jest.useRealTimers();
+  });
+
   it('destroy removes popup and highlight artifacts', () => {
     const ctrl = createWebTextDictionaryController(makeDeps());
     const p = document.createElement('p');

@@ -4,7 +4,7 @@ import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import tokensJson from '@/shared/styles/tokens.json';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS } from '@/shared/config/config';
+import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import {
   parseAndDetectFiles,
   assignImportRole,
@@ -476,27 +476,28 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
 
     // Popup dictionary: wire shared web-text controller for subtitle tokens.
     const dpSettings = settings.dictionaryPopup;
-    if (dpSettings?.enabled && sharedWebTextCtrl) {
+    if (sharedWebTextCtrl) {
       sharedWebTextCtrl.updateSettings({
-        dictionaryPopup: dpSettings,
+        dictionaryPopup: dpSettings ?? DEFAULT_DICTIONARY_POPUP_SETTINGS,
         cardCreator: settings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
         subtitleOverlayNativeLanguage: settings.subtitleOverlayNativeLanguage,
       });
-      sharedWebTextCtrl.configureVideo({
-        hasVideo: true,
-        video,
-        getTargetCues: () => blockController.getTargetCues(),
-      });
-      sharedWebTextCtrl.attach(dpSettings.triggerMode);
-      blockController.enableDictionaryPopup(
-        dpSettings.triggerMode,
-        (request, requestId, anchorRect, tokenSpan) => {
-          sharedWebTextCtrl?.handleLookup(request, requestId, anchorRect, tokenSpan);
-        },
-        (requestId) => { sharedWebTextCtrl?.cancelLookup(requestId); },
-      );
-    } else {
-      blockController.disableDictionaryPopup();
+      if (dpSettings?.enabled) {
+        sharedWebTextCtrl.configureVideo({
+          hasVideo: true,
+          video,
+          getTargetCues: () => blockController.getTargetCues(),
+        });
+        blockController.enableDictionaryPopup(
+          dpSettings.triggerMode,
+          (request, requestId, anchorRect, tokenSpan) => {
+            sharedWebTextCtrl?.handleLookup(request, requestId, anchorRect, tokenSpan);
+          },
+          (requestId) => { sharedWebTextCtrl?.cancelLookup(requestId); },
+        );
+      } else {
+        blockController.disableDictionaryPopup();
+      }
     }
 
     // Tokenize on media: enable if configured for this URL (T14/T15).
@@ -599,14 +600,22 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           cardCreator: newSettings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
           subtitleOverlayNativeLanguage: newSettings.subtitleOverlayNativeLanguage,
         });
-        sharedWebTextCtrl.attach(newSettings.dictionaryPopup.triggerMode);
-        blockController.enableDictionaryPopup(
-          newSettings.dictionaryPopup.triggerMode,
-          (request, requestId, anchorRect, tokenSpan) => {
-            sharedWebTextCtrl?.handleLookup(request, requestId, anchorRect, tokenSpan);
-          },
-          (requestId) => { sharedWebTextCtrl?.cancelLookup(requestId); },
-        );
+        if (newSettings.dictionaryPopup.enabled) {
+          sharedWebTextCtrl.configureVideo({
+            hasVideo: true,
+            video,
+            getTargetCues: () => blockController.getTargetCues(),
+          });
+          blockController.enableDictionaryPopup(
+            newSettings.dictionaryPopup.triggerMode,
+            (request, requestId, anchorRect, tokenSpan) => {
+              sharedWebTextCtrl?.handleLookup(request, requestId, anchorRect, tokenSpan);
+            },
+            (requestId) => { sharedWebTextCtrl?.cancelLookup(requestId); },
+          );
+        } else {
+          blockController.disableDictionaryPopup();
+        }
       }
     });
   }).catch((err) => {

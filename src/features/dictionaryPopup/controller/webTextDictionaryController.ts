@@ -482,8 +482,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     popupDictState = updatePopupSettings(popupDictState, dpSettings, nativeLang);
     popupDictState = { ...popupDictState, cardCreatorSettings: ccSettings };
     cardCreatorMount?.updateSettings(ccSettings);
-    if (currentAttachedMode !== null) {
+    if (dpSettings.enabled) {
       attach(dpSettings.triggerMode);
+    } else {
+      detach();
     }
   }
 
