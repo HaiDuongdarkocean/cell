@@ -285,53 +285,53 @@
 }
 
 .cell-header__frequency--core .cell-header__frequency-source {
-  background: var(--color-success);
-  color: var(--color-text-inverse);
+  background: var(--color-token-freq-core-bg);
+  color: var(--color-token-freq-core-fg);
 }
 
 .cell-header__frequency--core .cell-header__frequency-rank {
-  background: var(--color-success-subtle);
-  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-token-freq-core-fg) 12%, transparent);
+  color: var(--color-token-freq-core-fg);
 }
 
 .cell-header__frequency--common .cell-header__frequency-source {
-  background: var(--color-warning);
-  color: var(--color-foreground);
+  background: var(--color-token-freq-common-bg);
+  color: var(--color-token-freq-common-fg);
 }
 
 .cell-header__frequency--common .cell-header__frequency-rank {
-  background: var(--color-warning-subtle);
-  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-token-freq-common-fg) 12%, transparent);
+  color: var(--color-token-freq-common-fg);
 }
 
 .cell-header__frequency--general .cell-header__frequency-source {
-  background: var(--color-info);
-  color: var(--color-text-inverse);
+  background: var(--color-token-freq-general-bg);
+  color: var(--color-token-freq-general-fg);
 }
 
 .cell-header__frequency--general .cell-header__frequency-rank {
-  background: var(--color-info-subtle);
-  color: var(--color-info);
+  background: color-mix(in srgb, var(--color-token-freq-general-fg) 12%, transparent);
+  color: var(--color-token-freq-general-fg);
 }
 
 .cell-header__frequency--advanced .cell-header__frequency-source {
-  background: var(--color-secondary);
-  color: var(--color-secondary-foreground);
+  background: var(--color-token-freq-advanced-bg);
+  color: var(--color-token-freq-advanced-fg);
 }
 
 .cell-header__frequency--advanced .cell-header__frequency-rank {
-  background: var(--color-secondary);
-  color: var(--color-secondary-foreground);
+  background: color-mix(in srgb, var(--color-token-freq-advanced-fg) 12%, transparent);
+  color: var(--color-token-freq-advanced-fg);
 }
 
 .cell-header__frequency--rare .cell-header__frequency-source {
-  background: var(--color-muted);
-  color: var(--color-muted-foreground);
+  background: var(--color-token-freq-rare-bg);
+  color: var(--color-token-freq-rare-fg);
 }
 
 .cell-header__frequency--rare .cell-header__frequency-rank {
-  background: var(--color-muted);
-  color: var(--color-muted-foreground);
+  background: color-mix(in srgb, var(--color-token-freq-rare-fg) 12%, transparent);
+  color: var(--color-token-freq-rare-fg);
 }
 
 /* === Block: cell-def (definitions) — inside active entry, flex:1 === */
