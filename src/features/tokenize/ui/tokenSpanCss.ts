@@ -26,35 +26,46 @@ function buildVariables(): string {
       light: pick(light, '--color-secondary', '#e2e8f0'),
       dark: pick(dark, '--color-secondary', '#334155'),
     },
-    '--cell-token-freq-high-bg': {
+    '--cell-token-freq-core-bg': {
       light: pick(light, '--color-success-subtle', 'rgba(5, 150, 105, 0.1)'),
       dark: pick(dark, '--color-success-subtle', 'rgba(16, 185, 129, 0.15)'),
     },
-    '--cell-token-freq-high-fg': {
+    '--cell-token-freq-core-fg': {
       light: pick(light, '--color-success', '#059669'),
       dark: pick(dark, '--color-success', '#10b981'),
     },
-    '--cell-token-freq-medium-bg': {
+    '--cell-token-freq-common-bg': {
       light: pick(light, '--color-warning-subtle', 'rgba(217, 119, 6, 0.1)'),
       dark: pick(dark, '--color-warning-subtle', 'rgba(245, 158, 11, 0.15)'),
     },
-    '--cell-token-freq-medium-fg': {
+    '--cell-token-freq-common-fg': {
       light: pick(light, '--color-warning', '#d97706'),
       dark: pick(dark, '--color-warning', '#f59e0b'),
     },
-    '--cell-token-freq-low-bg': {
+    '--cell-token-freq-general-bg': {
       light: pick(light, '--color-info-subtle', 'rgba(37, 99, 235, 0.1)'),
       dark: pick(dark, '--color-info-subtle', 'rgba(96, 165, 250, 0.15)'),
     },
-    '--cell-token-freq-low-fg': {
+    '--cell-token-freq-general-fg': {
       light: pick(light, '--color-info', '#2563eb'),
       dark: pick(dark, '--color-info', '#60a5fa'),
     },
-    '--cell-token-freq-very-low-bg': {
+    // ponytail: 'advanced' uses a surface token because the design system does
+    // not currently expose a distinct semantic color for the 4th band. Tuning
+    // this to a dedicated color (e.g. purple or teal) is a known upgrade path.
+    '--cell-token-freq-advanced-bg': {
+      light: pick(light, '--color-secondary', '#f8fafc'),
+      dark: pick(dark, '--color-secondary', '#1e293b'),
+    },
+    '--cell-token-freq-advanced-fg': {
+      light: pick(light, '--color-secondary-foreground', '#0f172a'),
+      dark: pick(dark, '--color-secondary-foreground', '#f1f5f9'),
+    },
+    '--cell-token-freq-rare-bg': {
       light: pick(light, '--color-muted', 'rgba(100, 116, 139, 0.1)'),
       dark: pick(dark, '--color-muted', 'rgba(148, 163, 184, 0.15)'),
     },
-    '--cell-token-freq-very-low-fg': {
+    '--cell-token-freq-rare-fg': {
       light: pick(light, '--color-muted-foreground', '#64748b'),
       dark: pick(dark, '--color-muted-foreground', '#94a3b8'),
     },
@@ -133,10 +144,11 @@ ${buildVariables()}
 .js-cell-token--status-known .js-cell-token-status { background-color: var(--cell-token-status-known) !important; }
 .js-cell-token--status-ignore .js-cell-token-status { background-color: var(--cell-token-status-ignore) !important; }
 
-.js-cell-token--frequency-high { background-color: var(--cell-token-freq-high-bg) !important; color: var(--cell-token-freq-high-fg) !important; }
-.js-cell-token--frequency-medium { background-color: var(--cell-token-freq-medium-bg) !important; color: var(--cell-token-freq-medium-fg) !important; }
-.js-cell-token--frequency-low { background-color: var(--cell-token-freq-low-bg) !important; color: var(--cell-token-freq-low-fg) !important; }
-.js-cell-token--frequency-very-low { background-color: var(--cell-token-freq-very-low-bg) !important; color: var(--cell-token-freq-very-low-fg) !important; }
+.js-cell-token--frequency-core { background-color: var(--cell-token-freq-core-bg) !important; color: var(--cell-token-freq-core-fg) !important; }
+.js-cell-token--frequency-common { background-color: var(--cell-token-freq-common-bg) !important; color: var(--cell-token-freq-common-fg) !important; }
+.js-cell-token--frequency-general { background-color: var(--cell-token-freq-general-bg) !important; color: var(--cell-token-freq-general-fg) !important; }
+.js-cell-token--frequency-advanced { background-color: var(--cell-token-freq-advanced-bg) !important; color: var(--cell-token-freq-advanced-fg) !important; }
+.js-cell-token--frequency-rare { background-color: var(--cell-token-freq-rare-bg) !important; color: var(--cell-token-freq-rare-fg) !important; }
 
 /* known/ignore hide status + frequency by default; hover reveals status when status layer is on */
 .js-cell-token--status-known .js-cell-token-status,

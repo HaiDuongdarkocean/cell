@@ -61,6 +61,8 @@ docs/           # Tài liệu dự án
 │   └── 048-tokenize-spa-activation-starvation.md # ADR-048: Fix activation/re-scan starvation trên heavy SPA (Facebook/Twitter) — max-delay cap + ViewportTracker re-observe onEnter
 │   └── 049-tokenize-smooth-fast-spa.md # ADR-049: Tokenize mượt hơn, toàn diện hơn, nhanh hơn trên heavy SPA — early bind + batched metadata + incremental scan + defensive renderer
 │   └── 050-tokenize-raf-fast-path.md # ADR-050: MutationObserver fast path qua requestAnimationFrame để tokenize ngay lập tức khi DOM xuất hiện
+│   └── 051-tokenize-frequency-very-low-band.md # ADR-051: thêm band 'very-low' để 100% token có frequency data được tô màu
+│   └── 052-frequency-five-bands.md # ADR-052: 5 band frequency (core/common/general/advanced/rare) cho tokenize
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── overlay-appearance-settings.md
 │   ├── subtitle-panel-outside-video.md

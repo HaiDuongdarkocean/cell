@@ -284,6 +284,56 @@
   color: var(--color-primary);
 }
 
+.cell-header__frequency--core .cell-header__frequency-source {
+  background: var(--color-success);
+  color: var(--color-text-inverse);
+}
+
+.cell-header__frequency--core .cell-header__frequency-rank {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+}
+
+.cell-header__frequency--common .cell-header__frequency-source {
+  background: var(--color-warning);
+  color: var(--color-foreground);
+}
+
+.cell-header__frequency--common .cell-header__frequency-rank {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+}
+
+.cell-header__frequency--general .cell-header__frequency-source {
+  background: var(--color-info);
+  color: var(--color-text-inverse);
+}
+
+.cell-header__frequency--general .cell-header__frequency-rank {
+  background: var(--color-info-subtle);
+  color: var(--color-info);
+}
+
+.cell-header__frequency--advanced .cell-header__frequency-source {
+  background: var(--color-secondary);
+  color: var(--color-secondary-foreground);
+}
+
+.cell-header__frequency--advanced .cell-header__frequency-rank {
+  background: var(--color-secondary);
+  color: var(--color-secondary-foreground);
+}
+
+.cell-header__frequency--rare .cell-header__frequency-source {
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+}
+
+.cell-header__frequency--rare .cell-header__frequency-rank {
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+}
+
 /* === Block: cell-def (definitions) — inside active entry, flex:1 === */
 .cell-def {
   padding: var(--space-2) var(--space-3);

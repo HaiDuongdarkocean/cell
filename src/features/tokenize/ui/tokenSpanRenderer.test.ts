@@ -21,8 +21,8 @@ function makeBlock(text: string, tokens: Token[]): TokenBlock {
 describe('tokenSpanRenderer', () => {
   it('binds token spans into a block', () => {
     const block = makeBlock('Hello world.', [
-      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'high' },
-      { text: 'world', term: 'world', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: 'known', frequencyBand: 'medium' },
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core' },
+      { text: 'world', term: 'world', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: 'known', frequencyBand: 'common' },
     ]);
     bindTokenBlock(block, { showStatus: true, showFrequency: true });
 
@@ -32,7 +32,7 @@ describe('tokenSpanRenderer', () => {
     const hello = spans.find((s) => s.getAttribute('data-cell-term') === 'hello');
     expect(hello).toBeTruthy();
     expect(hello!.classList.contains('js-cell-token--status-unknown')).toBe(true);
-    expect(hello!.classList.contains('js-cell-token--frequency-high')).toBe(true);
+    expect(hello!.classList.contains('js-cell-token--frequency-core')).toBe(true);
     expect(hello!.querySelector('.js-cell-token-status')).not.toBeNull();
   });
 
@@ -50,7 +50,7 @@ describe('tokenSpanRenderer', () => {
 
   it('hides status and frequency when toggled off', () => {
     const block = makeBlock('Hello.', [
-      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'high' },
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'core' },
     ]);
     bindTokenBlock(block, { showStatus: false, showFrequency: false });
     const span = block.element.querySelector('.js-cell-token');
@@ -64,6 +64,6 @@ describe('tokenSpanCss', () => {
     const css = buildTokenSpanCss();
     expect(css).toContain('.js-cell-token');
     expect(css).toContain('--cell-token-status-known');
-    expect(css).toContain('--cell-token-freq-high-bg');
+    expect(css).toContain('--cell-token-freq-core-bg');
   });
 });

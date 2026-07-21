@@ -1,8 +1,8 @@
 import type { WordStatus } from '@/features/dictionaryPopup/types';
+import type { TokenFrequencyBand } from '@/shared/lib/frequencyBand';
 
+export type { TokenFrequencyBand };
 export type TokenStatus = WordStatus;
-
-export type TokenFrequencyBand = 'high' | 'medium' | 'low' | 'very-low' | 'none';
 
 export interface Token {
   /** Surface text as it appears in the page. */
