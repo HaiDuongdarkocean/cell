@@ -3,8 +3,14 @@ export const BADGE_STYLE_ID = 'cell-token-badge-style';
 /**
  * CSS for the Shadow DOM mini badge + panel.
  *
- * Uses --color-* / --space-* / --radius-* tokens. The caller is expected to
- * inject tokens.css (with :root remapped to :host) before this stylesheet.
+ * Conventions:
+ * - Uses --color-* / --space-* / --radius-* / --transition tokens from tokens.css.
+ * - Buttons reuse .btn / .icon-btn classes from components.css for hover/active
+ *   states (SSOT — never redefine hover here).
+ * - BEM: .cell-token-panel is the block; .cell-toggle is its own block (matches
+ *   DS Toggle.tsx pattern: button + aria-pressed + .cell-toggle__thumb).
+ * - Theme: caller sets data-theme on the panel element inside the shadow tree
+ *   so [data-theme="dark"] selectors in tokens.css match and cascade.
  */
 export function buildTokenBadgeCss(): string {
   return `
@@ -13,19 +19,18 @@ export function buildTokenBadgeCss(): string {
   color: var(--color-foreground, #0f172a);
 }
 
+/* FAB — floating action button. .btn--primary provides bg/color/hover/active.
+   .cell-token-fab only adds floating layout (position, size, z-index). */
 .cell-token-fab {
   position: fixed !important;
   right: var(--space-4, 16px) !important;
   bottom: var(--space-4, 16px) !important;
-  width: 48px !important;
-  height: 48px !important;
+  width: var(--space-12, 48px) !important;
+  height: var(--space-12, 48px) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   border-radius: var(--radius-full, 9999px) !important;
-  background: var(--color-primary, #2563eb) !important;
-  color: var(--color-primary-foreground, #ffffff) !important;
-  border: none !important;
   padding: 0 !important;
   margin: 0 !important;
   cursor: pointer !important;
@@ -34,24 +39,25 @@ export function buildTokenBadgeCss(): string {
   outline: none !important;
 }
 
-.cell-token-fab:hover {
-  background: var(--color-primary-hover, #1d4ed8) !important;
-}
-
 .cell-token-fab svg {
-  width: 22px !important;
-  height: 22px !important;
+  width: var(--iconbutton-icon-md, 24px) !important;
+  height: var(--iconbutton-icon-md, 24px) !important;
   fill: none !important;
   stroke: currentColor !important;
   stroke-width: 2 !important;
 }
 
+/* Panel — popover container. data-theme is set on this element so dark-mode
+   tokens cascade to all children. */
 .cell-token-panel {
   position: fixed !important;
   right: var(--space-4, 16px) !important;
-  bottom: 72px !important;
+  /* ponytail: 260px panel width is a design choice — no exact token; keep
+     hardcoded with fallback until a --panel-width token is introduced. */
   width: 260px !important;
   max-width: calc(100vw - var(--space-8, 32px)) !important;
+  /* bottom = FAB height (var(--space-12)) + gap (var(--space-2)) + base offset (var(--space-4)) */
+  bottom: calc(var(--space-4, 16px) + var(--space-12, 48px) + var(--space-2, 8px)) !important;
   background: var(--color-popover, #ffffff) !important;
   color: var(--color-popover-foreground, #0f172a) !important;
   border: 1px solid var(--color-border, #e2e8f0) !important;
@@ -76,26 +82,10 @@ export function buildTokenBadgeCss(): string {
   font-weight: var(--font-weight-semibold, 600) !important;
 }
 
-.cell-token-panel__close {
-  width: 28px !important;
-  height: 28px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: var(--radius-full, 9999px) !important;
-  background: transparent !important;
-  border: none !important;
-  color: var(--color-muted-foreground, #64748b) !important;
-  cursor: pointer !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
+/* Close button — .icon-btn--xs provides size/hover/active. .cell-token-panel__close
+   is kept only as a BEM hook for tests/inspector; no extra CSS needed. */
 
-.cell-token-panel__close:hover {
-  background: var(--color-surface-hover, #f1f5f9) !important;
-  color: var(--color-foreground, #0f172a) !important;
-}
-
+/* Toggle row — label + toggle */
 .cell-token-row {
   display: flex !important;
   align-items: center !important;
@@ -107,55 +97,57 @@ export function buildTokenBadgeCss(): string {
   color: var(--color-foreground, #0f172a) !important;
 }
 
-.cell-token-toggle {
-  appearance: none !important;
-  width: 40px !important;
-  height: 22px !important;
-  border-radius: 11px !important;
-  background: var(--color-muted, #f1f5f9) !important;
-  position: relative !important;
-  cursor: pointer !important;
-  outline: none !important;
-  border: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
+/* Toggle block — matches DS Toggle.tsx pattern (button + aria-pressed + thumb).
+   Mirrors Toggle.module.css so vanilla DOM and React share the same look. */
+.cell-toggle {
+  width: var(--space-8, 32px);
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  position: relative;
+  transition: background var(--transition);
+  cursor: pointer;
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
 }
 
-.cell-token-toggle::after {
-  content: '' !important;
-  position: absolute !important;
-  top: 2px !important;
-  left: 2px !important;
-  width: 18px !important;
-  height: 18px !important;
-  border-radius: 50% !important;
-  background: var(--color-background, #ffffff) !important;
-  transition: transform var(--duration-fast, 150ms) ease !important;
+.cell-toggle[aria-pressed="true"] {
+  background: var(--color-primary);
 }
 
-.cell-token-toggle:checked {
-  background: var(--color-primary, #2563eb) !important;
+.cell-toggle:hover {
+  background: var(--color-text-muted);
 }
 
-.cell-token-toggle:checked::after {
-  transform: translateX(18px) !important;
+.cell-toggle[aria-pressed="true"]:hover {
+  background: var(--color-primary-hover);
 }
 
+.cell-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.cell-toggle__thumb {
+  position: absolute;
+  top: var(--space-0-5, 2px);
+  left: var(--space-0-5, 2px);
+  width: var(--space-3-5, 14px);
+  height: var(--space-3-5, 14px);
+  border-radius: var(--radius-full);
+  background: var(--color-text-inverse);
+  transition: transform var(--transition);
+}
+
+.cell-toggle[aria-pressed="true"] .cell-toggle__thumb {
+  transform: translateX(var(--space-3-5, 14px));
+}
+
+/* Dictionary action button — .btn--primary provides bg/color/hover/active.
+   .cell-token-action only adds full-width layout. */
 .cell-token-action {
   width: 100% !important;
-  padding: var(--space-2, 8px) var(--space-3, 12px) !important;
-  border-radius: var(--radius-md, 10px) !important;
-  background: var(--color-primary, #2563eb) !important;
-  color: var(--color-primary-foreground, #ffffff) !important;
-  border: none !important;
-  font-size: var(--font-size-sm, 13px) !important;
-  font-weight: var(--font-weight-medium, 500) !important;
-  cursor: pointer !important;
-  text-align: center !important;
-}
-
-.cell-token-action:hover {
-  background: var(--color-primary-hover, #1d4ed8) !important;
 }
 `.trim();
 }

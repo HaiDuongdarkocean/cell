@@ -55,6 +55,31 @@ class MockIntersectionObserver {
 beforeEach(() => {
   MockIntersectionObserver.callbacks.clear();
   global.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+  // jsdom does not implement matchMedia — mock the same shape popupShell.test.ts uses.
+  if (!window.matchMedia) {
+    window.matchMedia = jest.fn((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })) as unknown as typeof window.matchMedia;
+  }
+  const g = global as unknown as { chrome?: unknown };
+  g.chrome = g.chrome ?? {};
+  const c = g.chrome as { storage: Record<string, unknown> };
+  c.storage = c.storage ?? {};
+  c.storage.local = {
+    get: jest.fn(() => Promise.resolve({})),
+    set: jest.fn(() => Promise.resolve()),
+  };
+  c.storage.onChanged = {
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+  };
   loadTokenizeSettings.mockResolvedValue({ schemaVersion: 1, origins: {}, urls: {} });
   saveTokenizeSettings.mockResolvedValue(undefined);
   getWordStatuses.mockResolvedValue(new Map<string, string>());

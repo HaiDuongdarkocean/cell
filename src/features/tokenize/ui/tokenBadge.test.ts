@@ -1,5 +1,33 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it, jest, beforeAll } from '@jest/globals';
 import { createTokenBadge } from './tokenBadge';
+
+beforeAll(() => {
+  // jsdom does not implement matchMedia — mock the same shape popupShell.test.ts uses.
+  if (!window.matchMedia) {
+    window.matchMedia = jest.fn((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })) as unknown as typeof window.matchMedia;
+  }
+  const g = global as unknown as { chrome?: unknown };
+  g.chrome = g.chrome ?? {};
+  const c = g.chrome as { storage: Record<string, unknown> };
+  c.storage = c.storage ?? {};
+  c.storage.local = {
+    get: jest.fn(() => Promise.resolve({})),
+    set: jest.fn(() => Promise.resolve()),
+  };
+  c.storage.onChanged = {
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+  };
+});
 
 function getShadow(host: HTMLElement): ShadowRoot {
   return host.shadowRoot as ShadowRoot;
@@ -44,10 +72,12 @@ describe('createTokenBadge', () => {
     const shadow = getShadow(host);
     (shadow.querySelector('.js-cell-token-fab') as HTMLButtonElement).click();
 
-    const toggle = shadow.querySelector('.js-cell-token-toggle') as HTMLInputElement;
-    toggle.checked = true;
-    toggle.dispatchEvent(new Event('change'));
+    // DS Toggle pattern: <button aria-pressed> + click handler flips pressed state.
+    const toggle = shadow.querySelector('.js-cell-token-toggle') as HTMLButtonElement;
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    toggle.click();
     expect(onToggleEnabled).toHaveBeenCalledTimes(1);
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
 
     badge.destroy();
   });
