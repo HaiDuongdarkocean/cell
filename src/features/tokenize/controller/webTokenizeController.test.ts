@@ -279,7 +279,7 @@ describe('createWebTokenizeController', () => {
       // 300ms debounce never settles.
       for (let elapsed = 0; elapsed < 1600; elapsed += 100) {
         for (const obs of mutationObservers) {
-          obs.callback([{ addedNodes: [newParagraph] } as MutationRecord]);
+          obs.callback([{ addedNodes: [newParagraph], type: 'childList' } as unknown as MutationRecord]);
         }
         await jest.advanceTimersByTimeAsync(100);
       }

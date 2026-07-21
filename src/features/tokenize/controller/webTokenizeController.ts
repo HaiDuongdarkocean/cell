@@ -88,7 +88,11 @@ export async function createWebTokenizeController(
 
   const cache = new TokenizeCache({
     capacity: CACHE_CAPACITY,
-    onEvict: (block) => unbindTokenBlock(block),
+    onEvict: (block) => {
+      unbindTokenBlock(block);
+      const idx = blocks.indexOf(block);
+      if (idx >= 0) blocks.splice(idx, 1);
+    },
   });
 
   const scheduler = new TokenizeScheduler();
@@ -183,7 +187,7 @@ export async function createWebTokenizeController(
   function updateMutationObservation(enabled: boolean): void {
     if (enabled === isObservingMutations || !mutationObserver) return;
     if (enabled) {
-      mutationObserver.observe(root, { childList: true, subtree: true });
+      mutationObserver.observe(root, { childList: true, subtree: true, characterData: true });
       isObservingMutations = true;
     } else {
       mutationObserver.disconnect();
@@ -200,7 +204,7 @@ export async function createWebTokenizeController(
       onEnter: () => {
         visibleElements.add(block.element);
         if (stateStore.getState().enabled) {
-          scheduler.schedule(() => prepareAndBind(block), PRIORITY_VIEWPORT);
+          scheduler.schedule(() => bindVisibleBlock(block), PRIORITY_VIEWPORT);
         }
       },
       onExit: () => {
@@ -208,6 +212,10 @@ export async function createWebTokenizeController(
         scheduler.schedule(() => unbindTokenBlock(block), PRIORITY_BUFFER);
       },
     });
+    // Eager bind: if the element is already in the viewport (e.g. it was just
+    // created by a MutationObserver batch during scroll), don't wait for the
+    // IntersectionObserver callback, which may not fire until the next frame.
+    tryBindVisible(block);
   }
 
   function scanAndObserveBlocks(): void {
@@ -229,13 +237,22 @@ export async function createWebTokenizeController(
       viewport = createViewport();
       scanAndObserveBlocks();
       updateMutationObservation(true);
-      scheduleVisible();
     } else {
       updateMutationObservation(false);
       viewport.destroy();
       visibleElements.clear();
       unbindAll();
       blocks.length = 0;
+      pendingAddedNodes = [];
+      if (mutationRafHandle !== null) {
+        cancelAnimationFrame(mutationRafHandle);
+        mutationRafHandle = null;
+      }
+      if (mutationTimer) {
+        clearTimeout(mutationTimer);
+        mutationTimer = null;
+      }
+      mutationWindowStart = 0;
     }
   }
 
@@ -259,6 +276,7 @@ export async function createWebTokenizeController(
   // disconnected during page load avoids conflicts with Cloudflare Rocket
   // Loader / Angular hydration while scripts are still being injected.
   let mutationTimer: ReturnType<typeof setTimeout> | null = null;
+  let mutationRafHandle: number | null = null;
   // First-pending timestamp: when the current debounce window opened. Used to
   // enforce MAX_MUTATION_SCAN_DELAY_MS — without it, continuous mutations
   // (Facebook re-renders, polling) reset the trailing debounce forever and the
@@ -268,45 +286,81 @@ export async function createWebTokenizeController(
   // Accumulate added nodes across multiple rapid MutationObserver callbacks so
   // the debounced re-scan does not lose nodes that arrived between resets.
   let pendingAddedNodes: Node[] = [];
+
+  function processAddedNodes(added: readonly Node[]): void {
+    if (!stateStore.getState().enabled) return;
+    if (added.length === 0) return;
+    const scanId = dynIdCounter;
+    dynIdCounter += 1000; // reserve a range for this scan
+    const newBlocks = findTextBlocksInNodes(added, { langCode, idPrefix: `dyn-${scanId}-` });
+    for (const block of newBlocks) {
+      // Skip if source node is already bound by another block
+      const existing = cache.getByElement(block.element);
+      if (existing.some((b) => b.sourceNodes[0] === block.sourceNodes[0])) continue;
+      cache.set(block);
+      blocks.push(block);
+      observeBlock(block);
+    }
+  }
+
+  function handleCharacterDataMutation(textNode: Text): void {
+    const parent = textNode.parentElement;
+    if (!parent) return;
+    const existing = cache.getByElement(parent);
+    for (const block of existing) {
+      if (block.sourceNodes[0] === textNode) {
+        block.tokens = undefined;
+        block.isBound = false;
+        if (visibleElements.has(parent)) {
+          bindVisibleBlock(block);
+        }
+        break;
+      }
+    }
+  }
+
+  function processPendingAddedNodes(): void {
+    mutationRafHandle = null;
+    if (!stateStore.getState().enabled) {
+      pendingAddedNodes = [];
+      return;
+    }
+    const added = pendingAddedNodes;
+    pendingAddedNodes = [];
+    processAddedNodes(added);
+  }
+
   mutationObserver = new MutationObserver((mutations) => {
+    const now = Date.now();
     for (const m of mutations) {
+      if (m.type === 'characterData' && m.target instanceof Text) {
+        handleCharacterDataMutation(m.target);
+        continue;
+      }
       for (const n of m.addedNodes) {
         pendingAddedNodes.push(n);
       }
     }
-    const now = Date.now();
-    if (!mutationTimer) mutationWindowStart = now;
+    if (pendingAddedNodes.length === 0) return;
+    if (!mutationWindowStart) mutationWindowStart = now;
+    // Fast path: schedule a scan on the next animation frame so new content
+    // starts tokenizing immediately instead of waiting for the trailing debounce.
+    if (mutationRafHandle === null) {
+      mutationRafHandle = requestAnimationFrame(processPendingAddedNodes);
+    }
+    // Fallback: if rAF is throttled (background tab, very slow device), still
+    // process after the debounce/max-delay cap so we never starve.
     if (mutationTimer) clearTimeout(mutationTimer);
-    // Force a re-scan if mutations have been pending longer than the max delay,
-    // even if the page keeps mutating (trailing debounce would otherwise starve).
-    // remaining = how long until the max-delay cap is hit; clamp to >=0.
     const remaining = MAX_MUTATION_SCAN_DELAY_MS - (now - mutationWindowStart);
     const delay = Math.min(MUTATION_DEBOUNCE_MS, Math.max(0, remaining));
     mutationTimer = setTimeout(() => {
       mutationTimer = null;
       mutationWindowStart = 0;
-      if (!stateStore.getState().enabled) return;
-      // Incremental re-scan: only walk the nodes that were added since the last
-      // scan. This is much cheaper than walking the entire body on every
-      // Facebook re-render or lazy-loaded content batch.
-      const added = pendingAddedNodes;
-      pendingAddedNodes = [];
-      if (added.length === 0) return;
-      const scanId = dynIdCounter;
-      dynIdCounter += 1000; // reserve a range for this scan
-      const newBlocks = findTextBlocksInNodes(added, { langCode, idPrefix: `dyn-${scanId}-` });
-      for (const block of newBlocks) {
-        // Skip if source node is already bound by another block
-        const existing = cache.getByElement(block.element);
-        if (existing.some((b) => b.sourceNodes[0] === block.sourceNodes[0])) continue;
-        cache.set(block);
-        blocks.push(block);
-        observeBlock(block);
-        // If element is already visible, schedule immediately
-        if (visibleElements.has(block.element)) {
-          scheduler.schedule(() => prepareAndBind(block), PRIORITY_VIEWPORT);
-        }
+      if (mutationRafHandle !== null) {
+        cancelAnimationFrame(mutationRafHandle);
+        mutationRafHandle = null;
       }
+      processPendingAddedNodes();
     }, delay);
   });
 
@@ -395,24 +449,44 @@ export async function createWebTokenizeController(
     bindTokenBlock(block, getDisplayOptions());
   }
 
-  function prepareAndBind(block: TokenBlock): void {
+  function bindVisibleBlock(block: TokenBlock): void {
     prepareBlock(block);
-    if (stateStore.getState().enabled && visibleElements.has(block.element)) {
-      // Bind tokens immediately so the user sees tokenized text right away.
-      // Status/frequency metadata is resolved asynchronously and the block is
-      // re-bound once the metadata arrives, giving a smooth visual update.
-      rebindBlock(block);
-      cache.touch(block);
-      scheduleMetadataResolve(block);
+    if (!stateStore.getState().enabled || !visibleElements.has(block.element)) return;
+    if (!block.isBound) {
+      bindTokenBlock(block, getDisplayOptions());
     }
+    cache.touch(block);
+    scheduleMetadataResolve(block);
+  }
+
+  function rebindVisibleBlock(block: TokenBlock): void {
+    prepareBlock(block);
+    if (!stateStore.getState().enabled || !visibleElements.has(block.element)) return;
+    rebindBlock(block);
+    cache.touch(block);
+    scheduleMetadataResolve(block);
   }
 
   function scheduleVisible(): void {
     for (const element of visibleElements) {
       const elementBlocks = cache.getByElement(element);
       for (const block of elementBlocks) {
-        scheduler.schedule(() => prepareAndBind(block), PRIORITY_VIEWPORT);
+        scheduler.schedule(() => rebindVisibleBlock(block), PRIORITY_VIEWPORT);
       }
+    }
+  }
+
+  function isElementInViewport(element: Element): boolean {
+    const rect = element.getBoundingClientRect();
+    if (rect.height === 0) return false;
+    const margin = 300;
+    return rect.bottom >= -margin && rect.top <= window.innerHeight + margin;
+  }
+
+  function tryBindVisible(block: TokenBlock): void {
+    if (isElementInViewport(block.element)) {
+      visibleElements.add(block.element);
+      bindVisibleBlock(block);
     }
   }
 
