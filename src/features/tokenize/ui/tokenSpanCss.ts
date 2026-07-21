@@ -169,22 +169,22 @@ ${buildVariables()}
 .js-cell-token--status-unknown {
   box-shadow:
     inset 0 -1px 0 0 var(--cell-token-status-unknown),
-    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 .js-cell-token--status-tracking {
   box-shadow:
     inset 0 -1px 0 0 var(--cell-token-status-tracking),
-    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 .js-cell-token--status-known {
   box-shadow:
     inset 0 -1px 0 0 var(--cell-token-status-known),
-    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 .js-cell-token--status-ignore {
   box-shadow:
     inset 0 -1px 0 0 var(--cell-token-status-ignore),
-    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 
 /* Known words keep full pill+status. Ignored words are de-emphasized but still
