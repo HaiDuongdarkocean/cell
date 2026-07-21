@@ -125,6 +125,10 @@ ${buildVariables()}
   text-decoration: none !important;
   -webkit-box-decoration-break: clone !important;
   box-decoration-break: clone !important;
+  /* Guard color used by text-shadow on status tokens to keep the text legible
+     over the inset status underline. Default follows the text color; frequency
+     bands override it to the pill background so the halo is invisible. */
+  --cell-token-guard: currentColor;
 }
 
 .js-cell-token--word {
@@ -153,11 +157,11 @@ ${buildVariables()}
 }
 
 /* Frequency bands: solid pill background + contrasting text. */
-.js-cell-token--frequency-core { background-color: var(--cell-token-freq-core-bg) !important; color: var(--cell-token-freq-core-fg) !important; }
-.js-cell-token--frequency-common { background-color: var(--cell-token-freq-common-bg) !important; color: var(--cell-token-freq-common-fg) !important; }
-.js-cell-token--frequency-general { background-color: var(--cell-token-freq-general-bg) !important; color: var(--cell-token-freq-general-fg) !important; }
-.js-cell-token--frequency-advanced { background-color: var(--cell-token-freq-advanced-bg) !important; color: var(--cell-token-freq-advanced-fg) !important; }
-.js-cell-token--frequency-rare { background-color: var(--cell-token-freq-rare-bg) !important; color: var(--cell-token-freq-rare-fg) !important; }
+.js-cell-token--frequency-core { --cell-token-guard: var(--cell-token-freq-core-bg); background-color: var(--cell-token-freq-core-bg) !important; color: var(--cell-token-freq-core-fg) !important; }
+.js-cell-token--frequency-common { --cell-token-guard: var(--cell-token-freq-common-bg); background-color: var(--cell-token-freq-common-bg) !important; color: var(--cell-token-freq-common-fg) !important; }
+.js-cell-token--frequency-general { --cell-token-guard: var(--cell-token-freq-general-bg); background-color: var(--cell-token-freq-general-bg) !important; color: var(--cell-token-freq-general-fg) !important; }
+.js-cell-token--frequency-advanced { --cell-token-guard: var(--cell-token-freq-advanced-bg); background-color: var(--cell-token-freq-advanced-bg) !important; color: var(--cell-token-freq-advanced-fg) !important; }
+.js-cell-token--frequency-rare { --cell-token-guard: var(--cell-token-freq-rare-bg); background-color: var(--cell-token-freq-rare-bg) !important; color: var(--cell-token-freq-rare-fg) !important; }
 
 /* Status bar: 2px inset underline in the semantic color plus a 2px white
    highlight at the same offset. The highlight lightens the underline when the
@@ -183,17 +187,37 @@ ${buildVariables()}
     inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 
+/* Text guard: a soft halo in the guard color keeps the glyph legible over the
+   2px inset status underline. Frequency bands use the pill background so the
+   halo is invisible; known/ignore use the inherited text color. The guard is
+   hidden when the status bar is hidden (status-off, known/ignore not hovered). */
+.js-cell-token--status-unknown,
+.js-cell-token--status-tracking,
+.js-cell-token--status-known:hover,
+.js-cell-token--status-known.js-cell-token--popup-open,
+.js-cell-token--status-ignore:hover,
+.js-cell-token--status-ignore.js-cell-token--popup-open {
+  text-shadow:
+    0 0 1px var(--cell-token-guard),
+    0 1px 1px var(--cell-token-guard),
+    0 -1px 1px var(--cell-token-guard),
+    1px 0 1px var(--cell-token-guard),
+    -1px 0 1px var(--cell-token-guard) !important;
+}
+
 /* known/ignore hide frequency and status by default; hover reveals status when
    the status layer is on. A popup-open pin keeps status visible while the popup
    is open. Frequency reappears for unknown/tracking. */
 .js-cell-token--status-known,
 .js-cell-token--status-ignore {
+  --cell-token-guard: currentColor;
   background-color: transparent !important;
   color: inherit !important;
 }
 .js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
 .js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
   box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 /* Ignore is rendered the same as known: no frequency, no status by default,
@@ -202,8 +226,10 @@ ${buildVariables()}
 /* Global layer toggles (applied per token) */
 .js-cell-token--status-off {
   box-shadow: none !important;
+  text-shadow: none !important;
 }
 .js-cell-token--frequency-off {
+  --cell-token-guard: currentColor;
   background-color: transparent !important;
   color: inherit !important;
 }
