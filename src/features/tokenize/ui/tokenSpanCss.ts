@@ -188,14 +188,15 @@ ${buildVariables()}
 }
 
 /* known/ignore hide frequency and status by default; hover reveals status when
-   the status layer is on. Frequency reappears for unknown/tracking. */
+   the status layer is on. A popup-open pin keeps status visible while the popup
+   is open. Frequency reappears for unknown/tracking. */
 .js-cell-token--status-known,
 .js-cell-token--status-ignore {
   background-color: transparent !important;
   color: inherit !important;
 }
-.js-cell-token--status-known:not(:hover),
-.js-cell-token--status-ignore:not(:hover) {
+.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
+.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
   box-shadow: none !important;
 }
 
