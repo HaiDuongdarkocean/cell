@@ -162,6 +162,34 @@ describe('createWebTextDictionaryController', () => {
     ctrl.destroy();
   });
 
+  it('handleLookup propagates popup status cycle to deps.onStatusChange', async () => {
+    const result = makeResult();
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
+
+    const onStatusChange = jest.fn();
+    const ctrl = createWebTextDictionaryController(makeDeps({ onStatusChange }));
+    const request = makeRequest();
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    ctrl.handleLookup(request, 'req-status', new DOMRect(0, 0, 0, 0), range);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Click the status badge inside the popup to cycle unknown → tracking.
+    const popupHost = document.querySelector('.js-cell-popup-host') as Element & { shadowRoot?: ShadowRoot };
+    const shadow = popupHost?.shadowRoot ?? document;
+    const statusBadge = shadow.querySelector('.js-cell-status') as HTMLButtonElement | null;
+    expect(statusBadge).not.toBeNull();
+    statusBadge!.click();
+
+    expect(onStatusChange).toHaveBeenCalledWith('take off', 'en', 'tracking');
+    ctrl.destroy();
+  });
+
   it('handleLookup logs warning on lookup failure', async () => {
     mockSendMessage.mockResolvedValueOnce({ success: false, error: 'not found' } as unknown as never);
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});

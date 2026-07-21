@@ -307,4 +307,43 @@ describe('createWebTokenizeController', () => {
 
     controller.destroy();
   });
+
+  it('applyStatusForTerm rebinds visible tokens with the new status without persisting', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world. Hello again.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const helloSpansBefore = paragraph.querySelectorAll('[data-cell-term="hello"]');
+    expect(helloSpansBefore.length).toBe(2);
+    expect(Array.from(helloSpansBefore[0]!.classList).some((c) => c === 'js-cell-token--status-unknown')).toBe(true);
+
+    // Simulate popup status cycle: applyStatusForTerm must NOT call setWordStatus
+    // (popup already persisted) but must rebind visible tokens with new status.
+    setWordStatus.mockClear();
+    controller.applyStatusForTerm('hello', 'known');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(setWordStatus).not.toHaveBeenCalled();
+    const helloSpansAfter = paragraph.querySelectorAll('[data-cell-term="hello"]');
+    expect(helloSpansAfter.length).toBe(2);
+    for (const span of helloSpansAfter) {
+      expect(span.classList.contains('js-cell-token--status-known')).toBe(true);
+      expect(span.classList.contains('js-cell-token--status-unknown')).toBe(false);
+      // known/ignore must hide frequency layer on rebind
+      expect(span.classList.contains('js-cell-token--frequency-off')).toBe(true);
+    }
+
+    controller.destroy();
+  });
 });

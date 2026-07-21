@@ -49,6 +49,12 @@ export interface WebTextDictionaryControllerDeps {
   readonly video?: HTMLVideoElement;
   /** Callback to get current target cues for sentence audio capture (subtitle path). */
   readonly getTargetCues?: () => readonly CueRange[];
+  /** Called when the user cycles the word status inside the popup. The popup
+   *  already persists the new status via its own WORD_STATUS_SET message; this
+   *  callback lets external systems (tokenize controller) update their cached
+   *  token metadata and rebind affected token spans so the new status sticks
+   *  instead of reverting on the next scroll/toggle rebind. */
+  readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
 }
 
 /** Video/cue configuration for subtitle path. Can be set after construction. */
@@ -230,10 +236,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
               },
               contextSentence: request.contextSentence,
               onDismiss: onPopupDismiss,
-              onStatusChange: (_term, _langCode, status) => {
+              onStatusChange: (term, langCode, status) => {
                 if (currentHighlightTarget) {
                   applyTokenStatus(currentHighlightTarget, status);
                 }
+                deps.onStatusChange?.(term, langCode, status);
               },
             },
           );
