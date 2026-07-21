@@ -997,6 +997,14 @@
       "category": ["async", "rendering"],
       "tags": ["content-script", "hydration", "angular", "rocket-loader", "cloudflare", "all-frames", "mutation-observer", "dom-quiescence", "tokenize"],
       "trigger": "Content script/extension phải scan/mutate text DOM trên SPA hydration chậm (Angular + Cloudflare Rocket Loader) và content script còn chạy trong challenge iframe do manifest all_frames: true"
+    },
+    {
+      "type": "experience",
+      "id": "tokenize-language-surface-filter",
+      "title": "Language-aware token surface filter prevents wrong-language popup lookups",
+      "category": ["data", "detection"],
+      "tags": ["tokenize", "language-filter", "i18n", "ascii", "vietnamese", "popup", "lookup"],
+      "trigger": "Tokenizer emits words from multiple languages on a mixed-language page; users can click and look up Vietnamese/French/etc. words while the extension is set to English."
     }
   ]
 }

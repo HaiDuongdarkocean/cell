@@ -50,6 +50,35 @@ describe('tokenizeTextBlock', () => {
     expect(tokens[3]).toMatchObject({ text: 'Yes', sentenceIndex: 1 });
     expect(tokens[5]).toMatchObject({ text: 'am', sentenceIndex: 1 });
   });
+
+  it('filters out Vietnamese words with diacritics when tokenizing English', () => {
+    // Most Vietnamese words carry tone marks/diacritics and are filtered.
+    const tokens = tokenizeTextBlock('Tôi rất thích bài viết này.', 'en');
+    expect(tokens.map((t) => t.text)).toEqual([]);
+  });
+
+  it('lets unmarked Latin words through (ASCII-only heuristic limitation)', () => {
+    // "gia" has no Vietnamese tone marks so it shares the basic Latin alphabet
+    // with English. Per-token filtering cannot distinguish it without context
+    // or a dictionary. This is the known ceiling of the fast ASCII heuristic.
+    const tokens = tokenizeTextBlock('Hello đại gia đình.', 'en');
+    expect(tokens.map((t) => t.text)).toEqual(['Hello', 'gia']);
+  });
+
+  it('keeps English contractions, hyphenated words, and possessives', () => {
+    const tokens = tokenizeTextBlock("don't go well-known dogs'", 'en');
+    expect(tokens.map((t) => t.text)).toEqual(["don't", 'go', 'well-known', "dogs'"]);
+  });
+
+  it('filters non-English words for en-US subtag', () => {
+    const tokens = tokenizeTextBlock('Hello thế giới.', 'en-US');
+    expect(tokens.map((t) => t.text)).toEqual(['Hello']);
+  });
+
+  it('does not filter Chinese tokens when langCode is zh', () => {
+    const tokens = tokenizeTextBlock('我喜欢你', 'zh');
+    expect(tokens.map((t) => t.text)).toEqual(['我', '喜', '欢', '你']);
+  });
 });
 
 describe('getSentenceText', () => {
@@ -99,10 +128,10 @@ describe('resolveTokenMetadata', () => {
     await resolveTokenMetadata(
       tokens,
       async (term) => (term === 'hello' ? 'known' : 'unknown'),
-      async (term) => (term === 'hello' ? 'high' : 'none'),
+      async (term) => (term === 'hello' ? 'core' : 'none'),
     );
-    expect(tokens[0]).toMatchObject({ status: 'known', frequencyBand: 'high' });
-    expect(tokens[1]).toMatchObject({ status: 'known', frequencyBand: 'high' });
+    expect(tokens[0]).toMatchObject({ status: 'known', frequencyBand: 'core' });
+    expect(tokens[1]).toMatchObject({ status: 'known', frequencyBand: 'core' });
     expect(tokens[2]).toMatchObject({ status: undefined, frequencyBand: undefined });
   });
 });
