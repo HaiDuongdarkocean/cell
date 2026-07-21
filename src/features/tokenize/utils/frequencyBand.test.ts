@@ -23,7 +23,7 @@ describe('frequencyBand', () => {
     expect(entriesToBand(entries)).toBe('medium');
   });
 
-  it('returns none for empty entries', () => {
-    expect(entriesToBand([])).toBe('none');
+  it('falls back to very-low for missing entries so every token is colored', () => {
+    expect(entriesToBand([])).toBe('very-low');
   });
 });

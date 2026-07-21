@@ -4,12 +4,17 @@
   "category": ["ux", "data"],
   "tags": ["tokenize", "frequency", "rank", "fallback", "css", "band", "coverage"],
   "trigger": "Token được tokenize nhưng hầu hết không có frequency color; chỉ rare words hoặc common words được hiển thị, còn lại plain text. Đặc biệt trên trang kỹ thuật/corpus lớn nhiều từ có rank cao.",
-  "principle": "Khi phân loại frequency band theo rank, đừng để các rank nằm ngoài top thresholds trở thành 'none' (uncolored). Thêm một band 'very-low' cho mọi rank dương hữu hạn còn lại. Đồng thời, toggle showFrequency nên là single source of truth cho việc ẩn/hiện frequency layer; không ép ẩn frequency cho status known/ignore.",
+  "principle": "Khi phân loại frequency band theo rank, đừng để các rank nằm ngoài top thresholds trở thành 'none' (uncolored). Thêm một band 'very-low' cho mọi rank dương hữu hạn còn lại. Ngoài ra, nếu term được tokenize nhưng không có frequency entry nào trong dictionary, fallback về 'very-low' thay vì 'none' để 100% token đều có frequency class. Toggle showFrequency nên là single source of truth cho việc ẩn/hiện frequency layer; không ép ẩn frequency cho status known/ignore.",
   "cases": [
     {
       "context": "rankToBand chỉ phân loại high/medium/low; rank > 20000 trả về 'none', nên token không có frequency class.",
       "bad": "export function rankToBand(rank: number): TokenFrequencyBand {\n  if (rank <= 0 || !Number.isFinite(rank)) return 'none';\n  if (rank <= 1000) return 'high';\n  if (rank <= 5000) return 'medium';\n  if (rank <= 20000) return 'low';\n  return 'none';\n}",
-      "good": "export function rankToBand(rank: number): TokenFrequencyBand {\n  if (rank <= 0 || !Number.isFinite(rank)) return 'none';\n  if (rank <= 1000) return 'high';\n  if (rank <= 5000) return 'medium';\n  if (rank <= 20000) return 'low';\n  // Any remaining positive rank still has frequency data.\n  return 'very-low';\n}\n\n// Also extend the union type and CSS:\nexport type TokenFrequencyBand = 'high' | 'medium' | 'low' | 'very-low' | 'none';\n\n// tokenSpanRenderer\nif (token.frequencyBand && token.frequencyBand !== 'none') {\n  span.classList.add(`js-cell-token--frequency-${token.frequencyBand}`);\n}\nif (!options.showFrequency) {\n  span.classList.add('js-cell-token--frequency-off');\n}\n\n// tokenSpanCss\n.js-cell-token--frequency-very-low { background-color: var(--cell-token-freq-very-low-bg) !important; color: var(--cell-token-freq-very-low-fg) !important; }"
+      "good": "export function rankToBand(rank: number): TokenFrequencyBand {\n  if (rank <= 0 || !Number.isFinite(rank)) return 'none';\n  if (rank <= 1000) return 'high';\n  if (rank <= 5000) return 'medium';\n  if (rank <= 20000) return 'low';\n  // Any remaining positive rank still has frequency data.\n  return 'very-low';\n}"
+    },
+    {
+      "context": "entriesToBand trả về 'none' khi term không có frequency entry, khiến token không được tô màu dù đã được parse.",
+      "bad": "export function entriesToBand(entries: readonly FrequencyEntry[]): TokenFrequencyBand {\n  if (entries.length === 0) return 'none';\n  const best = Math.min(...entries.map((e) => e.frequency));\n  return rankToBand(best);\n}",
+      "good": "export function entriesToBand(entries: readonly FrequencyEntry[]): TokenFrequencyBand {\n  if (entries.length === 0) {\n    // Tokenized but no frequency data → color as rarest instead of leaving plain.\n    return 'very-low';\n  }\n  const best = Math.min(...entries.map((e) => e.frequency));\n  return rankToBand(best);\n}"
     }
   ],
   "applyFor": [

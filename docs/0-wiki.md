@@ -61,7 +61,6 @@ docs/           # Tài liệu dự án
 │   └── 048-tokenize-spa-activation-starvation.md # ADR-048: Fix activation/re-scan starvation trên heavy SPA (Facebook/Twitter) — max-delay cap + ViewportTracker re-observe onEnter
 │   └── 049-tokenize-smooth-fast-spa.md # ADR-049: Tokenize mượt hơn, toàn diện hơn, nhanh hơn trên heavy SPA — early bind + batched metadata + incremental scan + defensive renderer
 │   └── 050-tokenize-raf-fast-path.md # ADR-050: MutationObserver fast path qua requestAnimationFrame để tokenize ngay lập tức khi DOM xuất hiện
-│   └── 051-tokenize-frequency-very-low-band.md # ADR-051: Thêm very-low frequency band để 100% token có frequency data được parse và hiển thị
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── overlay-appearance-settings.md
 │   ├── subtitle-panel-outside-video.md
@@ -201,6 +200,8 @@ docs/           # Tài liệu dự án
 │   └── nav-cluster-frontend-design.md # Frontend UI engineering nav cluster (G3 build HOW: DOM tree, state machines, ARIA toolbar, responsive touch target, perf, anti-AI-aesthetic)
 │   └── review-youtube-subtitle-detection.md # Spec review: YouTube subtitle detection (APPROVED_WITH_CONDITIONS → revised → APPROVED, Opus 4.8, 3 CRITICAL + 4 HIGH resolved)
 ├── (design-system/ đã xóa — codebase là nguồn duy nhất: src/shared/styles/tokens.json + src/shared/ui/)
+├── shortcut-for-tw/                    # Cheatsheet phím tắt Devin Terminal workflow
+│   └── cheatsheet.md                   # Win+Shift+Q launcher + WT pane nav/swap/resize + workflow giao việc
 ├── mockups/                           # HTML mockups (design-driven-development output, G0.5)
 │   ├── subtitle-selector-mockup.html  # Subtitle selector mockup v4 (ADR-014 enhancement)
 │   ├── mockup-settings-grouped.html   # Settings dialog grouped layout v1 (sidebar + cards)
@@ -221,8 +222,6 @@ docs/           # Tài liệu dự án
 │   ├── software-production-process-research.md # Software production process research
 │   └── software-org-roles.md          # Software organization roles
 │   └── youtube-subtitle-format-research.md # YouTube subtitle format research (timedtext API, captionTracks structure, fmt=vtt/json3, PO Token, InnerTube fallback)
-├── shortcut-for-tw/                   # Cheatsheet terminal workflow (Windows Terminal + tmux-windows + Git Bash + devin CLI)
-│   └── cheatsheet.md                  # Phím tắt WT + tmux + workflow "giao việc cho devin" (Win+Shift+Q, Ctrl+b prefix, swap/resize pane, detach/attach session)
 └── reading-summaries/                 # Reading summaries
 
 src/            # Source code (chi tiết trong 2-architechture-system.md)
