@@ -164,7 +164,7 @@ ${buildVariables()}
 .js-cell-token--frequency-rare { background-color: var(--cell-token-freq-rare-bg) !important; color: var(--cell-token-freq-rare-fg) !important; }
 
 /* Status bar: 1px inset underline in the semantic color plus a 1px white
-   highlight above it. The highlight keeps the underline visible even when the
+   highlight at the same offset. The highlight lightens the underline when the
    status color matches the pill background (e.g. known on a core green token). */
 .js-cell-token--status-unknown {
   box-shadow:
@@ -187,14 +187,20 @@ ${buildVariables()}
     inset 0 -1px 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 
-/* Known words keep full pill+status. Ignored words are de-emphasized but still
-   keep their frequency pill so the visual layer is consistent. */
+/* known/ignore hide frequency and status by default; hover reveals status when
+   the status layer is on. Frequency reappears for unknown/tracking. */
+.js-cell-token--status-known,
 .js-cell-token--status-ignore {
-  opacity: 0.65 !important;
+  background-color: transparent !important;
+  color: inherit !important;
 }
-.js-cell-token--status-ignore .js-cell-token-word {
-  text-decoration: line-through !important;
+.js-cell-token--status-known:not(:hover),
+.js-cell-token--status-ignore:not(:hover) {
+  box-shadow: none !important;
 }
+
+/* Ignore is rendered the same as known: no frequency, no status by default,
+   status appears on hover. No extra de-emphasis styling is applied. */
 
 /* Global layer toggles (applied per token) */
 .js-cell-token--status-off {
