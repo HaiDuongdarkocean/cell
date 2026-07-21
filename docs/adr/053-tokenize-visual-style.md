@@ -18,8 +18,8 @@ Use a **solid color pill** for frequency and a **2px inset status bar** rendered
 - No `padding`, `margin`, or `line-height` added; the host text metrics are preserved.
 - `border-radius: 0.15em` gives the pill a slight rounding without expanding the box.
 - `box-decoration-break: clone` ensures a word that wraps across lines renders as separate pill fragments per line.
-- Status is a `box-shadow: inset 0 -2px 0 0 <status-color>, inset 0 -3px 0 0 rgba(255,255,255,0.45)`. The second shadow is a 1px white highlight so the bar remains visible even when the status color matches the pill background (e.g. a "known" green bar on a core green pill).
-- Known words keep the full pill + status. Ignored words keep the pill and add `opacity: 0.65` plus a `line-through` on the inner word span.
+- Status is a `box-shadow: inset 0 -1px 0 0 <status-color>, inset 0 -1px 0 0 rgba(255,255,255,0.45)`. The 1px colored underline is paired with a 1px white highlight at the same offset so the underline remains visible when the status color matches the pill background.
+- Known and ignored words hide the frequency pill and the status underline by default; the status underline reappears on hover. No extra de-emphasis (opacity/line-through) is applied to ignored words so they render like known words.
 - Dark/light support uses `:root` defaults, `@media (prefers-color-scheme: dark)`, and `[data-theme="light"]` / `[data-theme="dark"]` overrides so the extension theme setting wins over the OS preference.
 - Rare text uses `--color-text-muted` instead of `--color-muted-foreground` for better contrast on the muted pill.
 
