@@ -141,6 +141,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let currentAttachedMode: TriggerMode | null = null;
   let cardCreatorMount: CardCreatorMountController | null = null;
   let currentHighlightTarget: HighlightTarget | null = null;
+  let currentPopupTokenId: { term: string; start: string; blockId: string } | null = null;
 
   function showHighlight(target: HighlightTarget): void {
     wordHighlight.show(target);
@@ -151,6 +152,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   const ALL_STATUSES: WordStatus[] = ['unknown', 'tracking', 'known', 'ignore'];
+  const POPUP_OPEN_CLASS = 'js-cell-token--popup-open';
 
   function getTokenElement(target: HighlightTarget): HTMLElement | null {
     if (target instanceof HTMLElement) {
@@ -164,8 +166,30 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return null;
   }
 
-  function applyTokenStatus(target: HighlightTarget, status: WordStatus): void {
-    const token = getTokenElement(target);
+  function getTokenById(id: { term: string; start: string; blockId: string }): HTMLElement | null {
+    return document.querySelector(
+      `[data-cell-term="${CSS.escape(id.term)}"][data-cell-start="${id.start}"][data-cell-block-id="${id.blockId}"]`,
+    );
+  }
+
+  function setPopupTokenId(token: HTMLElement): void {
+    currentPopupTokenId = {
+      term: token.getAttribute('data-cell-term') ?? '',
+      start: token.getAttribute('data-cell-start') ?? '',
+      blockId: token.getAttribute('data-cell-block-id') ?? '',
+    };
+    token.classList.add(POPUP_OPEN_CLASS);
+  }
+
+  function clearPopupTokenId(): void {
+    if (currentPopupTokenId) {
+      getTokenById(currentPopupTokenId)?.classList.remove(POPUP_OPEN_CLASS);
+      currentPopupTokenId = null;
+    }
+  }
+
+  function applyTokenStatus(target: HighlightTarget | HTMLElement, status: WordStatus): void {
+    const token = target instanceof HTMLElement ? target : getTokenElement(target);
     if (!token) return;
     for (const s of ALL_STATUSES) {
       token.classList.remove(`js-cell-token--status-${s}`);
@@ -201,6 +225,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   function onPopupDismiss(dismissedState: PopupDictionaryState): void {
     popupDictState = dismissedState;
     popupDictWasPlaying = false;
+    clearPopupTokenId();
     currentHighlightTarget = null;
     wordHighlight.clear();
     resumeVideoIfNeeded();
@@ -214,6 +239,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   ): void {
     currentHighlightTarget = highlightTarget;
     wordHighlight.show(highlightTarget);
+
+    const token = getTokenElement(highlightTarget);
+    if (token) {
+      setPopupTokenId(token);
+    }
 
     void sendMessage({
       type: MESSAGE_TYPES.LOOKUP_REQUEST,
@@ -237,10 +267,17 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
               contextSentence: request.contextSentence,
               onDismiss: onPopupDismiss,
               onStatusChange: (term, langCode, status) => {
-                if (currentHighlightTarget) {
+                deps.onStatusChange?.(term, langCode, status);
+                // If a visible block was rebound, re-apply the status and the
+                // popup-open pin to the same token so the status bar stays
+                // visible while the popup is still open.
+                const token = currentPopupTokenId ? getTokenById(currentPopupTokenId) : null;
+                if (token) {
+                  applyTokenStatus(token, status);
+                  token.classList.add(POPUP_OPEN_CLASS);
+                } else if (currentHighlightTarget) {
                   applyTokenStatus(currentHighlightTarget, status);
                 }
-                deps.onStatusChange?.(term, langCode, status);
               },
             },
           );
