@@ -60,6 +60,7 @@ docs/           # Tài liệu dự án
 │   └── 047-viewport-lazy-tokenization.md # ADR-047: Viewport-driven lazy tokenization for 1GB RAM (text + subtitle)
 │   └── 048-tokenize-spa-activation-starvation.md # ADR-048: Fix activation/re-scan starvation trên heavy SPA (Facebook/Twitter) — max-delay cap + ViewportTracker re-observe onEnter
 │   └── 049-tokenize-smooth-fast-spa.md # ADR-049: Tokenize mượt hơn, toàn diện hơn, nhanh hơn trên heavy SPA — early bind + batched metadata + incremental scan + defensive renderer
+│   └── 050-tokenize-raf-fast-path.md # ADR-050: MutationObserver fast path qua requestAnimationFrame để tokenize ngay lập tức khi DOM xuất hiện
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── overlay-appearance-settings.md
 │   ├── subtitle-panel-outside-video.md

@@ -47,7 +47,10 @@ export class TokenizeCache {
       }
     }
     this.cache.set(block.id, block);
-    if (evicted) this.onEvict?.(evicted);
+    if (evicted) {
+      this.onEvict?.(evicted);
+      this.removeFromDomMap(evicted);
+    }
     let set = this.domMap.get(block.element);
     if (!set) {
       set = new Set();
@@ -56,9 +59,21 @@ export class TokenizeCache {
     set.add(block);
   }
 
+  /** Remove a block from the DOM-to-block WeakMap. */
+  private removeFromDomMap(block: TokenBlock): void {
+    const set = this.domMap.get(block.element);
+    if (set) {
+      set.delete(block);
+      if (set.size === 0) this.domMap.delete(block.element);
+    }
+  }
+
   /** Remove a block by id. */
   delete(id: string): boolean {
-    return this.cache.delete(id);
+    const block = this.cache.peek(id);
+    const removed = this.cache.delete(id);
+    if (removed && block) this.removeFromDomMap(block);
+    return removed;
   }
 
   /** Mark a resident block as recently used (prevents visible blocks from being evicted). */
