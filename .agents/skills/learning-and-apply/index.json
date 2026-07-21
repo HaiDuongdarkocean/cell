@@ -31,6 +31,14 @@
       "trigger": "Feature intermittent trên SPA nặng (FB/Twitter): có lúc work có lúc không; count decline sau re-render không recover; activation gate 0 token nhiều giây"
     },
     {
+      "type": "experience",
+      "id": "raf-mutation-fast-path-incremental-tokenize",
+      "title": "MutationObserver fast path qua requestAnimationFrame cho incremental tokenize trên SPA nặng",
+      "category": ["async", "rendering", "state"],
+      "tags": ["mutationobserver", "requestanimationframe", "spa", "facebook", "tokenize", "incremental", "eager-bind", "memory", "domMap"],
+      "trigger": "Khi scroll/lazy-load trên SPA nặng, content mới xuất hiện nhưng phải chờ debounce mới được tokenize; memory tăng khi blocks array/domMap không được dọn"
+    },
+    {
       "type": "knowledge",
       "topic": "htmlcss",
       "source": "https://google.github.io/styleguide/htmlcssguide.html + https://cssguidelin.es/#bem-like-naming",
