@@ -447,6 +447,33 @@ describe('phraseMatcher', () => {
     });
   });
 
+  describe('matchPhrase — multi-slash shared suffix (parser balance)', () => {
+    it('does not let be/come/arrive late to the party match "is" alone', () => {
+      const index = buildIndex(['be/come/arrive late to the party']);
+      const m = matchPhrase(req('That party is really something.', 'is'), index);
+      expect(m).toBeNull();
+    });
+
+    it('matches be/come/arrive late to the party when the full suffix is present', () => {
+      const index = buildIndex(['be/come/arrive late to the party']);
+      const m = matchPhrase(req('That student is late to the party.', 'is'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('be/come/arrive late to the party');
+      expect(m!.surface).toBe('is late to the party');
+      expect(m!.quality).toBe('inflected');
+    });
+
+    it('prefers be (really) something over be/come/arrive late to the party in the right context', () => {
+      const index = buildIndex([
+        'be (really) something',
+        'be/come/arrive late to the party',
+      ]);
+      const m = matchPhrase(req('That party is really something.', 'is'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('be (really) something');
+    });
+  });
+
   describe('matchPhrase — edge cases', () => {
     it('returns null when cursor is outside any word token', () => {
       const index = buildIndex(['kick the bucket']);
