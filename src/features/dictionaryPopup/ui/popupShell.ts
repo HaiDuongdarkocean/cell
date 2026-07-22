@@ -45,6 +45,24 @@ export interface PopupAnchor {
   readonly bottom: number;
 }
 
+/** Optional pointer hint so the popup can avoid covering the pointer/badge. */
+export interface PopupPointerHint {
+  readonly tip: { readonly x: number; readonly y: number };
+  readonly badgeCenter?: { readonly x: number; readonly y: number };
+  readonly badgeRadius?: number;
+  readonly pointerRadius?: number;
+}
+
+/** Bounding box of the line containing the looked-up token.
+ *  The popup must NEVER overlap this rect (hard constraint — "không che chữ
+ *  cùng hàng"). If absent, falls back to the anchor rect itself. */
+export interface PopupLineRect {
+  readonly top: number;
+  readonly left: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
 /** Popup size (sticky — persisted to chrome.storage.local). */
 export interface PopupSize {
   readonly width: number;
@@ -74,103 +92,16 @@ export function clampPopupSize(size: PopupSize, viewportWidth: number, viewportH
   return { width: Math.max(320, width), maxHeight: Math.max(200, maxHeight) };
 }
 
-/**
- * Compute popup position anchored to a token's bounding box.
- *
- * Strategy (spec: anchor theo cạnh token, không center; không che sentence):
- * 1. Horizontal: align popup's **left edge** with token's left edge by default.
- *    If popup would overflow right, align popup's **right edge** with token's
- *    right edge instead. If token is wider than popup or both alignments
- *    overflow, clamp to viewport margin.
- * 2. Vertical: prefer **below** the token. If not enough space, flip **above**
- *    the token (using anchorTop so the popup never overlaps the token).
- * 3. If neither vertical direction fits, try **right** then **left** side of the
- *    token while keeping the popup aligned to the edge with more vertical space.
- * 4. Final fallback: clamp to viewport, still trying to keep the popup edge near
- *    the token.
- *
- * @param anchorTop    - Pixel Y of the token's top edge.
- * @param anchorLeft   - Pixel X of the token's left edge.
- * @param anchorRight  - Pixel X of the token's right edge.
- * @param anchorBottom - Pixel Y of the token's bottom edge.
- * @param popupWidth   - Popup width in px.
- * @param viewportWidth  - Window inner width.
- * @param viewportHeight - Window inner height.
- * @param popupHeight    - Estimated popup height (for flip logic). Defaults to 300.
- */
-export function computePopupPosition(
-  anchorTop: number,
-  anchorLeft: number,
-  anchorRight: number,
-  anchorBottom: number,
+/** Final clamp to keep the popup inside the viewport. */
+function finalizePosition(
+  left: number,
+  top: number,
   popupWidth: number,
+  popupHeight: number,
   viewportWidth: number,
   viewportHeight: number,
-  popupHeight: number = 300,
 ): PopupPosition {
-  const GAP = 4;
-
-  // ── Horizontal base alignment: align to token left edge, flip if overflow ──
   const maxFitWidth = viewportWidth - VIEWPORT_MARGIN * 2;
-  let left = anchorLeft;
-  if (left + popupWidth > viewportWidth - VIEWPORT_MARGIN) {
-    left = anchorRight - popupWidth;
-  }
-  if (left < VIEWPORT_MARGIN) {
-    left = VIEWPORT_MARGIN;
-  }
-  // Only clamp right if popup can fit within viewport; otherwise left-align at margin.
-  if (popupWidth <= maxFitWidth && left + popupWidth > viewportWidth - VIEWPORT_MARGIN) {
-    left = viewportWidth - popupWidth - VIEWPORT_MARGIN;
-  }
-
-  // ── Vertical: prefer below, then above, never overlap token ──
-  const spaceBelow = viewportHeight - anchorBottom - VIEWPORT_MARGIN;
-  const spaceAbove = anchorTop - VIEWPORT_MARGIN;
-
-  let top: number;
-
-  if (spaceBelow >= popupHeight) {
-    // Enough space below.
-    top = anchorBottom + GAP;
-  } else if (spaceAbove >= popupHeight) {
-    // Flip above: popup bottom sits GAP px above token's top edge.
-    top = anchorTop - popupHeight - GAP;
-  } else {
-    // Neither vertical direction fits fully. Try side positioning (right, then left)
-    // while keeping the popup vertically aligned to the direction with more space.
-    const preferBelow = spaceBelow >= spaceAbove;
-    const verticalBaseTop = preferBelow
-      ? anchorBottom + GAP
-      : anchorTop - popupHeight - GAP;
-
-    if (anchorRight + GAP + popupWidth <= viewportWidth - VIEWPORT_MARGIN) {
-      // Right side of token fits.
-      left = anchorRight + GAP;
-      top = verticalBaseTop;
-    } else if (anchorLeft - GAP - popupWidth >= VIEWPORT_MARGIN) {
-      // Left side of token fits.
-      left = anchorLeft - popupWidth - GAP;
-      top = verticalBaseTop;
-    } else {
-      // No side space either — clamp vertically, preferring the direction with more room.
-      if (preferBelow) {
-        top = anchorBottom + GAP;
-        if (top + popupHeight > viewportHeight - VIEWPORT_MARGIN) {
-          top = viewportHeight - popupHeight - VIEWPORT_MARGIN;
-        }
-      } else {
-        top = anchorTop - popupHeight - GAP;
-        if (top < VIEWPORT_MARGIN) {
-          top = VIEWPORT_MARGIN;
-        }
-      }
-    }
-  }
-
-  // Final clamp to ensure popup stays inside viewport.
-  // When popup is larger than viewport (minus margins), left/top-align at margin
-  // and accept the overflow — the two clamps would otherwise conflict.
   const maxFitHeight = viewportHeight - VIEWPORT_MARGIN * 2;
   if (popupWidth <= maxFitWidth) {
     if (left < VIEWPORT_MARGIN) left = VIEWPORT_MARGIN;
@@ -188,8 +119,264 @@ export function computePopupPosition(
   } else {
     top = VIEWPORT_MARGIN;
   }
-
   return { left: Math.round(left), top: Math.round(top) };
+}
+
+type PreferredPlacement = 'top' | 'bottom' | 'left' | 'right';
+
+function derivePreferredPlacement(
+  pointer: PopupPointerHint,
+  anchor: PopupAnchor,
+): PreferredPlacement | null {
+  const originX = pointer.badgeCenter?.x ?? (anchor.left + anchor.right) / 2;
+  const originY = pointer.badgeCenter?.y ?? (anchor.top + anchor.bottom) / 2;
+  const dx = pointer.tip.x - originX;
+  const dy = pointer.tip.y - originY;
+  if (Math.hypot(dx, dy) < 4) return null;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    return dx > 0 ? 'right' : 'left';
+  }
+  return dy > 0 ? 'bottom' : 'top';
+}
+
+function rectContainsPoint(rx: number, ry: number, rw: number, rh: number, px: number, py: number): boolean {
+  return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
+}
+
+function rectIntersectsCircle(rx: number, ry: number, rw: number, rh: number, cx: number, cy: number, r: number): boolean {
+  const closestX = Math.max(rx, Math.min(cx, rx + rw));
+  const closestY = Math.max(ry, Math.min(cy, ry + rh));
+  return Math.hypot(closestX - cx, closestY - cy) < r;
+}
+
+function rectanglesOverlap(
+  ax: number, ay: number, aw: number, ah: number,
+  bx: number, by: number, bw: number, bh: number,
+): boolean {
+  return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+}
+
+interface ScoredPlacement {
+  readonly name: PreferredPlacement;
+  readonly left: number;
+  readonly top: number;
+  readonly rawLeft: number;
+  readonly rawTop: number;
+  readonly score: number;
+}
+
+/** Cross-axis alignment variants for shift (Floating UI "shift" inspired).
+ *  For bottom/top: shifts horizontally (left↔right).
+ *  For left/right: shifts vertically (up↔down). */
+type ShiftVariant = 'start' | 'center' | 'end';
+
+function rawPlacementFits(
+  name: PreferredPlacement,
+  rawLeft: number,
+  rawTop: number,
+  popupWidth: number,
+  popupHeight: number,
+  viewportWidth: number,
+  viewportHeight: number,
+): boolean {
+  if (name === 'bottom' || name === 'top') {
+    const verticalFits = name === 'bottom'
+      ? rawTop + popupHeight <= viewportHeight - VIEWPORT_MARGIN
+      : rawTop >= VIEWPORT_MARGIN;
+    return verticalFits;
+  }
+  // Side placements must fit horizontally; vertical clamping is allowed.
+  return rawLeft >= VIEWPORT_MARGIN && rawLeft + popupWidth <= viewportWidth - VIEWPORT_MARGIN;
+}
+
+function scorePlacement(
+  name: PreferredPlacement,
+  pos: { left: number; top: number },
+  rawLeft: number,
+  rawTop: number,
+  popupWidth: number,
+  popupHeight: number,
+  preferred: PreferredPlacement | null,
+  pointer: PopupPointerHint | undefined,
+  anchor: PopupAnchor,
+  lineRect: PopupLineRect | null,
+): number {
+  const GAP = 4;
+  let score = 0;
+
+  if (name === preferred) score -= 50;
+  // Prefer below the token/cue when no pointer preference (image-2: hang under the line).
+  if (!preferred && name === 'bottom') score -= 20;
+  score += (Math.abs(pos.left - rawLeft) + Math.abs(pos.top - rawTop)) * 0.5;
+
+  // Avoid covering the pointer (treat the tip as a circle with a small gap).
+  if (pointer) {
+    const pr = Number.isFinite(pointer.pointerRadius) ? pointer.pointerRadius! : 6;
+    const pointerMargin = pr + GAP;
+    if (rectContainsPoint(pos.left - pointerMargin, pos.top - pointerMargin, popupWidth + pointerMargin * 2, popupHeight + pointerMargin * 2, pointer.tip.x, pointer.tip.y)) {
+      score += 1000;
+    }
+  }
+
+  // Avoid covering the orbital badge (treated as a circle with a small gap).
+  if (pointer?.badgeCenter && pointer.badgeRadius != null && pointer.badgeRadius > 0) {
+    const r = pointer.badgeRadius + GAP;
+    if (rectIntersectsCircle(pos.left - GAP, pos.top - GAP, popupWidth + GAP * 2, popupHeight + GAP * 2, pointer.badgeCenter.x, pointer.badgeCenter.y, r)) {
+      score += 500;
+    }
+  }
+
+  // HARD: Never overlap the looked-up token itself (LUÔN LUÔN không che chữ đang lookup).
+  const anchorW = anchor.right - anchor.left;
+  const anchorH = anchor.bottom - anchor.top;
+  if (rectanglesOverlap(pos.left, pos.top, popupWidth, popupHeight, anchor.left, anchor.top, anchorW, anchorH)) {
+    score += 2000;
+  }
+
+  // HARD: Never overlap the line/cue band (không che chữ cùng hàng / neighbors).
+  // Band is full viewport width so left/right placements cannot cover same-row text.
+  if (lineRect) {
+    const bandTop = lineRect.top;
+    const bandBottom = lineRect.bottom;
+    if (pos.top < bandBottom && pos.top + popupHeight > bandTop) {
+      score += 1500;
+    }
+  }
+
+  return score;
+}
+
+/** Compute the raw left for a horizontal shift variant (bottom/top sides).
+ *  start: align popup left with anchor left
+ *  center: center popup over anchor
+ *  end: align popup right with anchor right */
+function shiftHorizontal(shift: ShiftVariant, anchor: PopupAnchor, popupWidth: number): number {
+  const anchorCenter = (anchor.left + anchor.right) / 2;
+  if (shift === 'start') return anchor.left;
+  if (shift === 'end') return anchor.right - popupWidth;
+  return anchorCenter - popupWidth / 2;
+}
+
+/** Compute the raw top for a vertical shift variant (left/right sides).
+ *  start: align popup top with anchor top
+ *  center: center popup over anchor
+ *  end: align popup bottom with anchor bottom */
+function shiftVertical(shift: ShiftVariant, anchor: PopupAnchor, popupHeight: number): number {
+  const anchorCenter = (anchor.top + anchor.bottom) / 2;
+  if (shift === 'start') return anchor.top;
+  if (shift === 'end') return anchor.bottom - popupHeight;
+  return anchorCenter - popupHeight / 2;
+}
+
+/**
+ * Compute popup position anchored to a token's bounding box.
+ *
+ * Strategy (flip + shift + score-based, inspired by Floating UI):
+ * 1. If a pointer hint is provided, derive the side the pointer is coming from
+ *    (away from the badge) so the popup does not cover the pointer or badge.
+ * 2. For each of 4 sides × 3 shift variants (start/center/end) = 12 candidates:
+ *    - Compute raw position (anchored to token edge + shift offset)
+ *    - Clamp to viewport
+ *    - Score by: HARD (overlap anchor +2000, overlap lineRect +1500),
+ *      SOFT (overlap pointer +1000, overlap badge +500, distance from raw)
+ *    - Strongly prefer placements that fit without clamping (+500 penalty)
+ * 3. The lowest score wins. This naturally:
+ *    - Avoids covering the looked-up token (HARD)
+ *    - Avoids covering the line containing the token (HARD, "không che chữ cùng hàng")
+ *    - Avoids covering the pointer and orbital badge (SOFT)
+ *    - Stays close to the token ("bám sát")
+ * 4. Fallback: if all candidates violate HARD constraints, the least-bad one
+ *    is still chosen (clamped to viewport).
+ *
+ * @param anchorTop    - Pixel Y of the token's top edge.
+ * @param anchorLeft   - Pixel X of the token's left edge.
+ * @param anchorRight  - Pixel X of the token's right edge.
+ * @param anchorBottom - Pixel Y of the token's bottom edge.
+ * @param popupWidth   - Popup width in px.
+ * @param viewportWidth  - Window inner width.
+ * @param viewportHeight - Window inner height.
+ * @param popupHeight    - Estimated popup height (for flip logic). Defaults to 300.
+ * @param pointer        - Optional pointer tip + badge center + badge radius + pointer radius to avoid covering them.
+ * @param lineRect       - Optional bounding box of the line containing the token. The popup avoids overlapping it.
+ */
+export function computePopupPosition(
+  anchorTop: number,
+  anchorLeft: number,
+  anchorRight: number,
+  anchorBottom: number,
+  popupWidth: number,
+  viewportWidth: number,
+  viewportHeight: number,
+  popupHeight: number = 300,
+  pointer?: PopupPointerHint,
+  lineRect?: PopupLineRect | null,
+): PopupPosition {
+  const GAP = 4;
+  const anchor: PopupAnchor = { top: anchorTop, left: anchorLeft, right: anchorRight, bottom: anchorBottom };
+  const line = lineRect ?? null;
+
+  const preferred = pointer ? derivePreferredPlacement(pointer, anchor) : null;
+  const order: PreferredPlacement[] = ['bottom', 'top', 'right', 'left'];
+  if (preferred) {
+    const idx = order.indexOf(preferred);
+    if (idx >= 0) {
+      order.splice(idx, 1);
+      order.unshift(preferred);
+    }
+  }
+
+  let best: ScoredPlacement | null = null;
+  const shifts: ShiftVariant[] = ['start', 'center', 'end'];
+
+  for (const name of order) {
+    for (const shift of shifts) {
+      let rawLeft = 0;
+      let rawTop = 0;
+
+      if (name === 'bottom') {
+        rawLeft = shiftHorizontal(shift, anchor, popupWidth);
+        // Clear the whole line/cue band (not just the word).
+        rawTop = line ? Math.max(anchor.bottom + GAP, line.bottom + GAP) : anchor.bottom + GAP;
+      } else if (name === 'top') {
+        rawLeft = shiftHorizontal(shift, anchor, popupWidth);
+        const bandTop = line ? Math.min(anchor.top, line.top) : anchor.top;
+        rawTop = bandTop - popupHeight - GAP;
+      } else if (name === 'right') {
+        // Keep horizontal beside the word, but park vertically off the line band
+        // so same-row neighbors stay clickable.
+        rawLeft = anchor.right + GAP;
+        if (line) {
+          rawTop = shift === 'end'
+            ? line.top - popupHeight - GAP
+            : line.bottom + GAP;
+        } else {
+          rawTop = shiftVertical(shift, anchor, popupHeight);
+        }
+      } else if (name === 'left') {
+        rawLeft = anchor.left - popupWidth - GAP;
+        if (line) {
+          rawTop = shift === 'end'
+            ? line.top - popupHeight - GAP
+            : line.bottom + GAP;
+        } else {
+          rawTop = shiftVertical(shift, anchor, popupHeight);
+        }
+      }
+
+      const fits = rawPlacementFits(name, rawLeft, rawTop, popupWidth, popupHeight, viewportWidth, viewportHeight);
+      const clamped = finalizePosition(rawLeft, rawTop, popupWidth, popupHeight, viewportWidth, viewportHeight);
+      const pos = fits ? { left: clamped.left, top: clamped.top } : clamped;
+      const score = scorePlacement(name, pos, rawLeft, rawTop, popupWidth, popupHeight, preferred, pointer, anchor, line);
+      // Strongly prefer a placement that fits without clamping.
+      const finalScore = fits ? score : score + 500;
+
+      if (!best || finalScore < best.score) {
+        best = { name, left: pos.left, top: pos.top, rawLeft, rawTop, score: finalScore };
+      }
+    }
+  }
+
+  return { left: best!.left, top: best!.top };
 }
 
 /** Popup shell — manages Shadow DOM root, positioning, resize, dismiss. */
@@ -206,6 +393,8 @@ export class PopupShell {
   private resizeStartWidth = 0;
   private resizeStartHeight = 0;
   private lastAnchor: { top: number; left: number; right: number; bottom: number } | null = null;
+  private lastLineRect: PopupLineRect | null = null;
+  private lastPointer: PopupPointerHint | null = null;
   private dragOffset: { x: number; y: number } = { x: 0, y: 0 };
   private dragStart: { x: number; y: number } | null = null;
   private dragOffsetStart: { x: number; y: number } = { x: 0, y: 0 };
@@ -333,10 +522,14 @@ export class PopupShell {
     return this.shadow;
   }
 
-  /** Position the popup anchored to a token's bounding box. */
-  setPosition(anchor: PopupAnchor): void {
+  /** Position the popup anchored to a token's bounding box.
+   *  lineRect: bounding box of the line containing the token — the popup avoids
+   *  overlapping it ("không che chữ cùng hàng"). If omitted, falls back to anchor. */
+  setPosition(anchor: PopupAnchor, pointer?: PopupPointerHint, lineRect?: PopupLineRect | null): void {
     if (!this.container) return;
     this.lastAnchor = { top: anchor.top, left: anchor.left, right: anchor.right, bottom: anchor.bottom };
+    this.lastLineRect = lineRect ?? null;
+    this.lastPointer = pointer ?? null;
     // New lookup → start from the anchored position, not the previous drag offset.
     this.dragOffset = { x: 0, y: 0 };
     this.applyPosition();
@@ -353,13 +546,16 @@ export class PopupShell {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     // If container is hidden (display:none), offsetHeight=0 → use maxHeight fallback.
-    // The caller should call show() before setPosition to get accurate height.
+    // setPosition is now called before show() so the initial position is set
+    // without animating; visibility:hidden still contributes to layout.
     const estHeight = this.container.offsetHeight > 0
       ? Math.min(this.container.offsetHeight, this.size.maxHeight)
       : Math.min(this.size.maxHeight, 300);
     const pos = computePopupPosition(
       this.lastAnchor.top, this.lastAnchor.left, this.lastAnchor.right, this.lastAnchor.bottom,
       this.size.width, vw, vh, estHeight,
+      this.lastPointer ?? undefined,
+      this.lastLineRect,
     );
     // Apply any user drag offset and keep the popup inside the viewport.
     const width = this.container.offsetWidth || this.size.width;
@@ -380,11 +576,17 @@ export class PopupShell {
     return this.shadow;
   }
 
-  /** Get the content element (for content rendering). This is the inner
+  /** Get the content element (for rendering). This is the inner
    *  scroll wrapper, NOT the outer shell — the resize handle lives on the
    *  shell as a sibling, so clearing this element leaves the handle intact. */
   getContainer(): HTMLDivElement | null {
     return this.contentEl;
+  }
+
+  /** Get the outer popup's bounding rect, useful for hit-testing against
+   *  the orbital pointer while the popup is visible. */
+  getPopupRect(): DOMRect | null {
+    return this.container?.getBoundingClientRect() ?? null;
   }
 
   /** Update popup size. */
@@ -407,12 +609,12 @@ export class PopupShell {
     (this as unknown as { onResizeComplete: (size: PopupSize) => void }).onResizeComplete = onResizeEnd;
   }
 
-  /** Show the popup. Locks Escape key via Keyboard Lock API when in
-   *  fullscreen so Chromium's browser process doesn't intercept Esc
-   *  (which exits fullscreen before our keydown handler can close the popup). */
+  /** Show the popup. Adds the visible class so CSS transitions opacity + transform
+   *  and enables left/top/width/height transitions for subsequent moves.
+   *  Locks Escape key via Keyboard Lock API when in fullscreen. */
   show(): void {
     if (this.container) {
-      this.container.style.display = 'flex';
+      this.container.classList.add('cell-popup--visible');
       // Point aria-labelledby at the winner term when rendered.
       const term = this.shadow?.getElementById('cell-popup-term');
       if (term) {
@@ -433,17 +635,23 @@ export class PopupShell {
     }
   }
 
-  /** Hide the popup. Unlocks Escape key so browser default Esc
-   *  (exit fullscreen) works again after popup closes. */
+  /** Hide the popup. Removing the visible class triggers the CSS fade-out
+   *  (opacity + transform) and hides the popup from the a11y tree via visibility.
+   *  Unlocks Escape key so browser default Esc (exit fullscreen) works again. */
   hide(): void {
     if (this.container) {
-      this.container.style.display = 'none';
+      this.container.classList.remove('cell-popup--visible');
     }
     this.restoreFocus();
     const kb = (navigator as { keyboard?: { lock: (keys: string[]) => Promise<void>; unlock: () => void } }).keyboard;
     if (kb) {
       try { kb.unlock(); } catch { /* not locked */ }
     }
+  }
+
+  /** Whether the popup is currently visible to the user. */
+  isVisible(): boolean {
+    return this.container?.classList.contains('cell-popup--visible') ?? false;
   }
 
   /** Initialize theme detection + listeners. Called once in mount(). */
@@ -523,7 +731,7 @@ export class PopupShell {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
-    if (this.container?.style.display === 'none') return;
+    if (!this.container?.classList.contains('cell-popup--visible')) return;
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
@@ -550,7 +758,7 @@ export class PopupShell {
   }
 
   private onClickOutside(e: MouseEvent): void {
-    if (this.container?.style.display === 'none') return;
+    if (!this.container?.classList.contains('cell-popup--visible')) return;
     // Check if the click target is inside the popup's Shadow DOM.
     // In Shadow DOM, event.target is the host element for outside listeners.
     // We check if the composed path includes our host.

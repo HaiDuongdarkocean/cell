@@ -5,7 +5,7 @@
 // 1. Token-wrap subtitle text span into per-word (EN) or per-segment (ZH)
 //    token spans with data attributes (offset, term).
 // 2. Attach click/hover event listeners based on TriggerMode setting.
-// 3. Debounce: 150ms hover, 50ms click (internal, no user setting — spec D9).
+// 3. Hover debounce: 80ms (internal, no user setting — spec D9). Click is instant.
 // 4. On trigger: build LookupRequest, assign requestId, send LOOKUP to worker.
 // 5. On new trigger while in-flight: send LOOKUP_CANCEL for previous requestId.
 // 6. Route LOOKUP_RESULT by requestId — only the latest requestId's result
@@ -19,22 +19,30 @@ import type { Token } from '../plugins/languagePlugin';
 import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
 import { segmentFMM } from '../plugins/chinesePlugin';
 
-/** Debounce delays (spec §9.4, D9 — internal, no user setting). */
-export const HOVER_DEBOUNCE_MS = 150;
-export const CLICK_DEBOUNCE_MS = 50;
+/** Hover debounce: only lookup after the cursor has stayed on the token for this long. */
+export const HOVER_DEBOUNCE_MS = 80;
 
 /** Data attributes on token spans. */
 const DATA_TERM = 'data-cell-term';
 const DATA_START = 'data-cell-start';
 const DATA_END = 'data-cell-end';
 
-/** Check if a modifier key matches the trigger mode. */
+/** Check if a modifier key matches the trigger mode.
+ *  - click: no modifier (any click triggers).
+ *  - hover: no modifier (any hover triggers).
+ *  - orbital: no modifier (hover-only; pointer hover triggers).
+ *  - hover-ctrl/shift/alt: matching modifier must be held.
+ */
 function modifierMatches(mode: TriggerMode, e: MouseEvent): boolean {
   switch (mode) {
     case 'hover-ctrl': return e.ctrlKey;
     case 'hover-shift': return e.shiftKey;
     case 'hover-alt': return e.altKey;
-    default: return true; // 'click' and 'hover' — no modifier needed
+    case 'orbital':
+    case 'hover':
+    case 'click':
+    default:
+      return true;
   }
 }
 
@@ -133,6 +141,48 @@ export function nextRequestId(): string {
   return `dp-${Date.now()}-${requestCounter}`;
 }
 
+/** Tolerance (px) for hit-testing a Range against a pointer. */
+const POINTER_HIT_TOLERANCE = 1;
+
+/** Return true if (x,y) lies inside any non-empty client rect of `range`.
+ *  If the range has no layout rects (e.g. jsdom or hidden text), we allow
+ *  the lookup because we cannot verify geometry. */
+export function isPointOverRange(x: number, y: number, range: Range, tolerance = POINTER_HIT_TOLERANCE): boolean {
+  // jsdom (and some test environments) do not implement getClientRects —
+  // allow the lookup because we cannot verify geometry in those contexts.
+  if (typeof range.getClientRects !== 'function') return true;
+  const rects = range.getClientRects();
+  const len = rects.length;
+  if (len === 0) return true;
+  let hasLayoutRect = false;
+  for (let i = 0; i < len; i++) {
+    const r = rects[i]!;
+    if (r.width <= 0 || r.height <= 0) continue;
+    hasLayoutRect = true;
+    if (
+      x >= r.left - tolerance &&
+      x <= r.right + tolerance &&
+      y >= r.top - tolerance &&
+      y <= r.bottom + tolerance
+    ) {
+      return true;
+    }
+  }
+  return !hasLayoutRect;
+}
+
+/** Return true if (x,y) lies inside the visible text rects of `span`.
+ *  Falls back to true when the range cannot be measured. */
+function isPointOverSpan(x: number, y: number, span: HTMLSpanElement, tolerance = POINTER_HIT_TOLERANCE): boolean {
+  const range = document.createRange();
+  try {
+    range.selectNodeContents(span);
+  } catch {
+    return true;
+  }
+  return isPointOverRange(x, y, range, tolerance);
+}
+
 /**
  * Subtitle trigger controller — manages debounce, cancellation, and
  * dispatches LOOKUP requests to a callback (the caller wires this to the
@@ -148,10 +198,12 @@ export function nextRequestId(): string {
  *   ctrl.detach(); // remove all listeners
  */
 export interface SubtitleTriggerDeps {
-  readonly triggerMode: TriggerMode;
+  triggerMode: TriggerMode;
   /** onLookup receives the token span so the consumer can highlight it. */
   readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => void;
   readonly onCancel: (requestId: string) => void;
+  /** onClear is called when the cursor leaves a valid token target so the consumer can hide the popup. */
+  readonly onClear?: () => void;
 }
 
 interface AttachedSpan {
@@ -161,9 +213,9 @@ interface AttachedSpan {
 }
 
 export class SubtitleTriggerController {
-  private readonly deps: SubtitleTriggerDeps;
+  private deps: SubtitleTriggerDeps;
   private hoverTimer: ReturnType<typeof setTimeout> | null = null;
-  private clickTimer: ReturnType<typeof setTimeout> | null = null;
+  private leaveClearTimer: ReturnType<typeof setTimeout> | null = null;
   private inFlightRequestId: string | null = null;
   private readonly attached: AttachedSpan[] = [];
   private readonly boundHoverEnter: (e: MouseEvent) => void;
@@ -177,27 +229,38 @@ export class SubtitleTriggerController {
     this.boundClick = this.onClick.bind(this);
   }
 
-  /** Attach trigger listeners to a set of token spans. */
+  /** Attach trigger listeners to a set of token spans.
+   *  Modes:
+   *    - click: click only.
+   *    - hover / hover-ctrl/shift/alt: hover (with optional modifier) + click fallback.
+   *    - orbital: hover only (no click — spec forbids click popup in orbital).
+   */
   attach(tokenSpans: readonly HTMLSpanElement[], sentence: string, langCode: string): void {
     for (const span of tokenSpans) {
       const entry: AttachedSpan = { span, sentence, langCode };
       this.attached.push(entry);
-      if (this.deps.triggerMode === 'click') {
-        span.addEventListener('click', this.boundClick);
-      } else {
-        // hover / hover-ctrl / hover-shift / hover-alt
-        span.addEventListener('mouseenter', this.boundHoverEnter);
-        span.addEventListener('mouseleave', this.boundHoverLeave);
-        // Also allow click in hover modes (for touch fallback).
-        span.addEventListener('click', this.boundClick);
-      }
+      this.bindSpanForMode(span, this.deps.triggerMode);
     }
   }
 
-  /** Remove all listeners and clear timers (does NOT cancel in-flight lookup). */
+  private bindSpanForMode(span: HTMLSpanElement, mode: TriggerMode): void {
+    if (mode === 'click') {
+      span.addEventListener('click', this.boundClick);
+      return;
+    }
+    span.addEventListener('mouseenter', this.boundHoverEnter);
+    span.addEventListener('mouseleave', this.boundHoverLeave);
+    // Click fallback for hover modifier modes (touch/accessibility).
+    // Orbital is hover-only: no click listener per spec.
+    if (mode !== 'orbital') {
+      span.addEventListener('click', this.boundClick);
+    }
+  }
+
+  /** Remove all listeners and clear timers (does NOT cancel in-flight lookup or hide popup). */
   detach(): void {
     if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
-    if (this.clickTimer) { clearTimeout(this.clickTimer); this.clickTimer = null; }
+    if (this.leaveClearTimer) { clearTimeout(this.leaveClearTimer); this.leaveClearTimer = null; }
     for (const { span } of this.attached) {
       span.removeEventListener('mouseenter', this.boundHoverEnter);
       span.removeEventListener('mouseleave', this.boundHoverLeave);
@@ -220,6 +283,9 @@ export class SubtitleTriggerController {
 
   /** Update trigger mode (re-attaches listeners). */
   setTriggerMode(mode: TriggerMode): void {
+    // Persist the new mode so modifier checks inside the event handlers
+    // reflect the current setting, not the original one.
+    this.deps.triggerMode = mode;
     // Detach + re-attach with new mode.
     const entries = [...this.attached];
     this.detach();
@@ -227,46 +293,55 @@ export class SubtitleTriggerController {
     for (const { span, sentence, langCode } of entries) {
       const entry: AttachedSpan = { span, sentence, langCode };
       this.attached.push(entry);
-      if (mode === 'click') {
-        span.addEventListener('click', this.boundClick);
-      } else {
-        span.addEventListener('mouseenter', this.boundHoverEnter);
-        span.addEventListener('mouseleave', this.boundHoverLeave);
-        span.addEventListener('click', this.boundClick);
-      }
+      this.bindSpanForMode(span, mode);
     }
   }
 
   private onHoverEnter(e: MouseEvent): void {
+    // Cancel any pending clear when the cursor re-enters a token (even if it
+    // isn't directly over the text geometry).
+    if (this.leaveClearTimer) { clearTimeout(this.leaveClearTimer); this.leaveClearTimer = null; }
     if (!modifierMatches(this.deps.triggerMode, e)) return;
-    if (this.hoverTimer) clearTimeout(this.hoverTimer);
+    if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
     const span = e.currentTarget as HTMLSpanElement;
     const entry = this.attached.find((a) => a.span === span);
     if (!entry) return;
+    // Only trigger when the pointer is actually over the token text,
+    // not just within the line/padding/shadow around it.
+    if (!isPointOverSpan(e.clientX, e.clientY, span)) return;
     this.hoverTimer = setTimeout(() => {
       this.hoverTimer = null;
       this.dispatchLookup(span, entry.sentence, entry.langCode);
     }, HOVER_DEBOUNCE_MS);
   }
 
-  private onHoverLeave(): void {
-    if (this.hoverTimer) {
-      clearTimeout(this.hoverTimer);
-      this.hoverTimer = null;
-    }
+  private onHoverLeave(e: MouseEvent): void {
+    if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
+
+    // If the cursor is moving to another token, the popup host, or the orbital
+    // badge, do NOT clear. Otherwise schedule a clear so empty space dismisses
+    // the popup immediately (next tick) while still allowing token-to-token.
+    const rt = e.relatedTarget as Element | null;
+    const movingToValidTarget = rt !== null && rt.closest('.js-cell-token, .js-cell-popup-host, [data-cell-orbital-badge]') !== null;
+    if (movingToValidTarget) return;
+
+    if (this.leaveClearTimer) clearTimeout(this.leaveClearTimer);
+    this.leaveClearTimer = setTimeout(() => {
+      this.leaveClearTimer = null;
+      this.deps.onClear?.();
+    }, 0);
   }
 
   private onClick(e: MouseEvent): void {
     // In hover modes, click is a fallback (touch). In click mode, it's primary.
+    // Click is intentionally instant (no debounce) for an immediate lookup feel.
     if (this.deps.triggerMode !== 'click' && !modifierMatches(this.deps.triggerMode, e)) return;
     const span = e.currentTarget as HTMLSpanElement;
     const entry = this.attached.find((a) => a.span === span);
     if (!entry) return;
-    if (this.clickTimer) clearTimeout(this.clickTimer);
-    this.clickTimer = setTimeout(() => {
-      this.clickTimer = null;
-      this.dispatchLookup(span, entry.sentence, entry.langCode);
-    }, CLICK_DEBOUNCE_MS);
+    // Only trigger when the pointer is actually over the token text.
+    if (!isPointOverSpan(e.clientX, e.clientY, span)) return;
+    this.dispatchLookup(span, entry.sentence, entry.langCode);
   }
 
   private dispatchLookup(span: HTMLSpanElement, sentence: string, langCode: string): void {
@@ -275,18 +350,11 @@ export class SubtitleTriggerController {
     const request = buildLookupRequest(span, sentence, langCode);
     const requestId = nextRequestId();
     this.inFlightRequestId = requestId;
-    // Anchor rect: vertical bounds from the subtitle line (parent element)
-    // so the popup avoids the entire line, not just the clicked token.
-    // Horizontal bounds from the token so the popup aligns to the word.
+    // Anchor = token only. Line/cue avoidance is applied later as PopupLineRect
+    // from the highlight target's parent (computeLineRect) so the popup stays
+    // near the word without covering same-line neighbors.
     const tokenRect = span.getBoundingClientRect();
-    const lineRect = span.parentElement?.getBoundingClientRect() ?? tokenRect;
-    const anchorRect = new DOMRect(
-      tokenRect.left,
-      lineRect.top,
-      tokenRect.width,
-      lineRect.height,
-    );
-    this.deps.onLookup(request, requestId, anchorRect, span);
+    this.deps.onLookup(request, requestId, tokenRect, span);
   }
 
   /** Check if a LOOKUP_RESULT's requestId matches the in-flight request. */

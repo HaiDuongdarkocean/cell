@@ -9,15 +9,57 @@
 // Same LookupRequest contract — just different source (page DOM vs subtitle span).
 
 import type { LookupRequest, TriggerMode } from '../types';
-import { detectLangCode, nextRequestId } from './subtitleTriggerController';
+import { detectLangCode, nextRequestId, isPointOverRange } from './subtitleTriggerController';
 
-/** Hover debounce for web text (same as subtitle: 150ms). */
-const WEB_HOVER_DEBOUNCE_MS = 150;
+/** Hover debounce for web text — only fire after the cursor has been still for this long. */
+const WEB_HOVER_DEBOUNCE_MS = 80;
+/** Cursor must stay within this radius (px) for the debounce duration to count as a stop. */
+const WEB_HOVER_STABILITY_PX = 6;
 
+/** Quick word-character check used before deferring the expensive hover path. */
+const WORD_CHAR_RE = /[\w\u4e00-\u9fff\u3400-\u4dbf]/;
 /** Minimum selection length to trigger lookup. */
 const MIN_SELECTION_LENGTH = 1;
 /** Maximum selection length (avoid looking up whole paragraphs). */
 const MAX_SELECTION_LENGTH = 100;
+
+/** UI hosts that float above page text and can block `caretRangeFromPoint`. */
+const UI_HOST_SELECTORS = '.js-cell-popup-host, .js-cell-orbital-badge-host';
+
+/** Temporarily disable pointer-events on our own floating UI (host + its shadow children)
+ *  so caretRangeFromPoint can resolve the page text underneath instead of the popup/pointer. */
+function withUiHostsPointerEventsDisabled<T>(fn: () => T): T {
+  const hosts = Array.from(document.querySelectorAll(UI_HOST_SELECTORS)) as HTMLElement[];
+  interface NodePointerStyle { element: HTMLElement; original: string; }
+  const nodes: NodePointerStyle[] = [];
+
+  function collect(element: HTMLElement): void {
+    nodes.push({ element, original: element.style.getPropertyValue('pointer-events') });
+    if (element.shadowRoot) {
+      element.shadowRoot.querySelectorAll('*').forEach((child) => {
+        if (child instanceof HTMLElement) collect(child);
+      });
+    }
+  }
+  hosts.forEach((host) => collect(host));
+
+  nodes.forEach(({ element }) => element.style.setProperty('pointer-events', 'none', 'important'));
+  try {
+    return fn();
+  } finally {
+    nodes.forEach(({ element, original }) => {
+      if (original) element.style.setProperty('pointer-events', original, 'important');
+      else element.style.removeProperty('pointer-events');
+    });
+  }
+}
+
+/** Check whether a range is inside our own popup/orbital badge host. */
+function rangeInUiHost(range: Range): boolean {
+  const node = range.commonAncestorContainer;
+  const el = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+  return el ? el.closest(UI_HOST_SELECTORS) !== null : false;
+}
 
 /**
  * Extract the sentence containing a text node + offset.
@@ -165,11 +207,21 @@ function modifierMatches(mode: TriggerMode, e: MouseEvent): boolean {
   }
 }
 
+export interface WebTriggerPointer {
+  readonly x: number;
+  readonly y: number;
+  readonly badgeCenter?: { readonly x: number; readonly y: number };
+  readonly badgeRadius?: number;
+  readonly pointerRadius?: number;
+}
+
 export interface WebTriggerDeps {
-  readonly triggerMode: TriggerMode;
+  triggerMode: TriggerMode;
   /** onLookup receives the cloned Range so the consumer can highlight the target word. */
-  readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, range: Range) => void;
+  readonly onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, range: Range, pointer?: WebTriggerPointer) => void;
   readonly onCancel: (requestId: string) => void;
+  /** onClear is called when the cursor leaves a valid word/selection target so the consumer can hide the popup. */
+  readonly onClear?: () => void;
 }
 
 /**
@@ -181,13 +233,19 @@ export interface WebTriggerDeps {
  * Same debounce + cancellation as SubtitleTriggerController.
  */
 export class WebTriggerController {
-  private readonly deps: WebTriggerDeps;
+  private deps: WebTriggerDeps;
   private hoverTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingMouseMove: MouseEvent | null = null;
+  private scheduledMouseMove: MouseEvent | null = null;
   private inFlightRequestId: string | null = null;
   private readonly boundMouseUp: (e: MouseEvent) => void;
   private readonly boundMouseMove: (e: MouseEvent) => void;
   private readonly boundSelectionChange: () => void;
   private lastHoveredTerm: string | null = null;
+  private lastHoveredStartContainer: Node | null = null;
+  private lastHoveredStartOffset = -1;
+  private lastHoveredPointerX = NaN;
+  private lastHoveredPointerY = NaN;
 
   constructor(deps: WebTriggerDeps) {
     this.deps = deps;
@@ -210,26 +268,23 @@ export class WebTriggerController {
 
   /** Remove all listeners + clear timers. */
   detach(): void {
-    if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
+    this.cancelPendingHover();
     document.removeEventListener('mouseup', this.boundMouseUp);
     document.removeEventListener('mousemove', this.boundMouseMove);
     document.removeEventListener('selectionchange', this.boundSelectionChange);
+    this.lastHoveredTerm = null;
+    this.lastHoveredStartContainer = null;
+    this.lastHoveredStartOffset = -1;
+    this.lastHoveredPointerX = NaN;
+    this.lastHoveredPointerY = NaN;
     this.cancelInFlight();
   }
 
   /** Update trigger mode. */
   setTriggerMode(mode: TriggerMode): void {
+    this.deps.triggerMode = mode;
     this.detach();
-    // Re-attach with new mode (hack: reassign deps.triggerMode not possible,
-    // so caller should create a new controller. For now, just re-attach.)
-    // ponytail: upgrade — accept mode in constructor only, caller recreates.
-    if (mode === 'click') {
-      document.addEventListener('mouseup', this.boundMouseUp);
-      document.addEventListener('selectionchange', this.boundSelectionChange);
-    } else {
-      document.addEventListener('mousemove', this.boundMouseMove);
-      document.addEventListener('mouseup', this.boundMouseUp);
-    }
+    this.attach();
   }
 
   cancelInFlight(): void {
@@ -249,7 +304,44 @@ export class WebTriggerController {
     }
   }
 
+  private cancelPendingHover(): void {
+    if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
+    this.pendingMouseMove = null;
+    this.scheduledMouseMove = null;
+  }
+
+  private resetHover(): void {
+    this.cancelPendingHover();
+    this.lastHoveredTerm = null;
+    this.lastHoveredStartContainer = null;
+    this.lastHoveredStartOffset = -1;
+    this.lastHoveredPointerX = NaN;
+    this.lastHoveredPointerY = NaN;
+    this.deps.onClear?.();
+  }
+
   private onMouseUp(e: MouseEvent): void {
+    // In hover modes (hover-ctrl/shift/alt), a click/fallback must hold the
+    // matching modifier key. 'click' and plain 'hover' modes allow any click.
+    if (!modifierMatches(this.deps.triggerMode, e)) {
+      this.resetHover();
+      return;
+    }
+
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('.js-cell-popup-host, .js-cell-orbital-badge-host')) {
+      // The user clicked on our own popup / badge; do not fall through to a lookup.
+      return;
+    }
+    // Skip subtitle/tokenize tokens — handled by SubtitleTriggerController or
+    // tokenize controller via shared controller. Without this, mouseup on a
+    // token with no selection falls through to caretRangeFromPoint → resetHover
+    // → dismissLookup, which kills the popup the token handler just opened
+    // (inverted dp.enabled behavior: checked=no popup, unchecked=popup).
+    if (target?.closest('.js-cell-token')) {
+      return;
+    }
+
     // Selection-based lookup (click mode or fallback in hover mode).
     const selection = window.getSelection();
     const text = selection?.toString().trim() ?? '';
@@ -258,84 +350,212 @@ export class WebTriggerController {
       const request = buildSelectionLookupRequest(selection!);
       if (!request) return;
       const range = selection!.getRangeAt(0);
-      const rect = safeGetRangeRect(range);
+      const rect = getLineAwareAnchorRect(range);
       this.dispatchLookup(request, rect, range);
       return;
     }
 
     // No selection: fallback to caret range (helps on user-select:none sites).
-    if (!document.caretRangeFromPoint) return;
-    const caretRange = document.caretRangeFromPoint(e.clientX, e.clientY);
-    if (!caretRange) return;
+    // If the click is on empty space, dismiss any open popup.
+    if (!document.caretRangeFromPoint) {
+      this.resetHover();
+      return;
+    }
+    const caretRange = withUiHostsPointerEventsDisabled(() => document.caretRangeFromPoint(e.clientX, e.clientY));
+    if (!caretRange) {
+      this.resetHover();
+      return;
+    }
     const textNode = caretRange.startContainer as Text;
-    if (textNode.nodeType !== Node.TEXT_NODE) return;
+    if (textNode.nodeType !== Node.TEXT_NODE || rangeInUiHost(caretRange)) {
+      this.resetHover();
+      return;
+    }
     const ctx = extractSentenceContext(textNode, caretRange.startOffset);
-    if (!ctx) return;
+    if (!ctx) {
+      this.resetHover();
+      return;
+    }
     const wordRange = createWordRange(textNode, caretRange.startOffset, ctx);
-    if (!wordRange) return;
+    if (!wordRange) {
+      this.resetHover();
+      return;
+    }
+    if (!isPointOverRange(e.clientX, e.clientY, wordRange)) {
+      this.resetHover();
+      return;
+    }
     const request = buildHoverLookupRequestFromContext(ctx);
-    if (!request) return;
-    const rect = safeGetRangeRect(wordRange);
-    this.dispatchLookup(request, rect, wordRange);
+    if (!request) {
+      this.resetHover();
+      return;
+    }
+    const rect = getLineAwareAnchorRect(wordRange);
+    this.dispatchLookup(request, rect, wordRange, { x: e.clientX, y: e.clientY });
   }
 
   private onSelectionChange(): void {
-    // Clear hover timer when selection changes (user is selecting text).
-    if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
+    // Cancel any pending hover when selection changes (user is selecting text).
+    // Do NOT call resetHover/onClear — selectionchange fires AFTER mouseup in
+    // click mode, so onClear would dismissLookup the popup just opened by the
+    // subtitle/web trigger (symptom: "click, flash, then popup disappears").
+    this.cancelPendingHover();
+    this.lastHoveredTerm = null;
+    this.lastHoveredStartContainer = null;
+    this.lastHoveredStartOffset = -1;
   }
 
   private onMouseMove(e: MouseEvent): void {
-    if (!modifierMatches(this.deps.triggerMode, e)) return;
-    // Get the text node under the cursor.
+    if (!modifierMatches(this.deps.triggerMode, e)) {
+      this.resetHover();
+      return;
+    }
     const target = e.target as HTMLElement | null;
     if (!target) return;
-    // Skip our own popup.
-    if (target.closest('.js-cell-popup-host')) return;
+    // Skip our own popup / orbital badge — don't dismiss while the user is interacting with it.
+    if (target.closest('.js-cell-popup-host, .js-cell-orbital-badge-host')) {
+      this.cancelPendingHover();
+      return;
+    }
     // Skip subtitle tokens (handled by SubtitleTriggerController via shared controller).
-    if (target.closest('.js-cell-token')) return;
+    if (target.closest('.js-cell-token')) {
+      this.cancelPendingHover();
+      return;
+    }
 
-    // Get the text node + offset at the cursor position.
+    if (!document.caretRangeFromPoint) return;
     const caretRange = document.caretRangeFromPoint(e.clientX, e.clientY);
     if (!caretRange) {
-      // Cursor over non-text (image, canvas, etc.) — cancel pending hover.
-      if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
-      this.lastHoveredTerm = null;
+      this.resetHover();
       return;
     }
     const textNode = caretRange.startContainer as Text;
     if (textNode.nodeType !== Node.TEXT_NODE) {
-      if (this.hoverTimer) { clearTimeout(this.hoverTimer); this.hoverTimer = null; }
-      this.lastHoveredTerm = null;
+      this.resetHover();
+      return;
+    }
+    const ch = textNode.data[caretRange.startOffset];
+    if (!ch || !WORD_CHAR_RE.test(ch)) {
+      this.resetHover();
+      return;
+    }
+
+    // Defer the expensive sentence/word-geometry work to the timer callback
+    // so we only pay for it once per hover burst, not on every mousemove.
+    this.pendingMouseMove = e;
+    this.scheduleHoverProcess();
+  }
+
+  private scheduleHoverProcess(): void {
+    if (this.hoverTimer) clearTimeout(this.hoverTimer);
+    // Remember the exact event this timer is waiting on. When the timer fires
+    // we compare against the latest mouse position: if the cursor moved more
+    // than WEB_HOVER_STABILITY_PX, the user hasn't stopped yet, so we reset.
+    this.scheduledMouseMove = this.pendingMouseMove;
+    this.hoverTimer = setTimeout(() => this.onHoverTimer(), WEB_HOVER_DEBOUNCE_MS);
+  }
+
+  private onHoverTimer(): void {
+    this.hoverTimer = null;
+    const e = this.pendingMouseMove;
+    const scheduled = this.scheduledMouseMove;
+    this.scheduledMouseMove = null;
+    if (!e) return;
+
+    // Guard: fast movement → do not lookup yet. Wait until the cursor is still.
+    if (scheduled && this.mouseDistancePx(e, scheduled) > WEB_HOVER_STABILITY_PX) {
+      this.scheduledMouseMove = e;
+      this.hoverTimer = setTimeout(() => this.onHoverTimer(), WEB_HOVER_DEBOUNCE_MS);
+      return;
+    }
+
+    this.pendingMouseMove = null;
+    this.processHoverMove(e.clientX, e.clientY);
+  }
+
+  private mouseDistancePx(a: MouseEvent, b: MouseEvent): number {
+    const dx = a.clientX - b.clientX;
+    const dy = a.clientY - b.clientY;
+    return Math.hypot(dx, dy);
+  }
+
+  /** Process a hover at an explicit (x, y) point, e.g. from the orbital pointer. */
+  processPoint(x: number, y: number, badgeCenter?: { x: number; y: number }, badgeRadius?: number, pointerRadius?: number): void {
+    this.processHoverMove(x, y, badgeCenter, badgeRadius, pointerRadius);
+  }
+
+  private processHoverMove(x: number, y: number, badgeCenter?: { x: number; y: number }, badgeRadius?: number, pointerRadius?: number): void {
+    const caretRange = withUiHostsPointerEventsDisabled(() => document.caretRangeFromPoint(x, y));
+    if (!caretRange) {
+      this.resetHover();
+      return;
+    }
+    const textNode = caretRange.startContainer as Text;
+    if (textNode.nodeType !== Node.TEXT_NODE || rangeInUiHost(caretRange)) {
+      this.resetHover();
       return;
     }
     const offset = caretRange.startOffset;
 
-    // Extract word context + build a DOM range covering the word for highlight.
     const ctx = extractSentenceContext(textNode, offset);
-    if (!ctx) return;
+    if (!ctx) {
+      this.resetHover();
+      return;
+    }
     const wordRange = createWordRange(textNode, offset, ctx);
-    if (!wordRange) return;
+    if (!wordRange) {
+      this.resetHover();
+      return;
+    }
+    // Only trigger when the pointer is actually over the word's geometry,
+    // not just within the line/padding/shadow around it.
+    if (!isPointOverRange(x, y, wordRange)) {
+      this.resetHover();
+      return;
+    }
     const request = buildHoverLookupRequestFromContext(ctx);
-    if (!request) return;
-    // Skip if same term as last hover (avoid re-triggering).
-    if (request.term === this.lastHoveredTerm) return;
+    if (!request) {
+      this.resetHover();
+      return;
+    }
+    // Skip if we're still over the exact same word occurrence and the pointer
+    // has barely moved (prevents re-triggering while hovering a single word).
+    // Reposition when the same term appears elsewhere so the popup follows the pointer.
+    const pointerDelta = Math.hypot(x - this.lastHoveredPointerX, y - this.lastHoveredPointerY);
+    if (
+      request.term === this.lastHoveredTerm &&
+      wordRange.startContainer === this.lastHoveredStartContainer &&
+      wordRange.startOffset === this.lastHoveredStartOffset &&
+      pointerDelta < 6
+    ) {
+      return;
+    }
     this.lastHoveredTerm = request.term;
+    this.lastHoveredStartContainer = wordRange.startContainer;
+    this.lastHoveredStartOffset = wordRange.startOffset;
+    this.lastHoveredPointerX = x;
+    this.lastHoveredPointerY = y;
 
-    if (this.hoverTimer) clearTimeout(this.hoverTimer);
-    this.hoverTimer = setTimeout(() => {
-      this.hoverTimer = null;
-      const rect = safeGetRangeRect(wordRange);
-      this.dispatchLookup(request, rect, wordRange);
-    }, WEB_HOVER_DEBOUNCE_MS);
+    const rect = getLineAwareAnchorRect(wordRange);
+    this.dispatchLookup(request, rect, wordRange, { x, y, badgeCenter, badgeRadius, pointerRadius });
   }
 
-  private dispatchLookup(request: LookupRequest, anchorRect: DOMRect, range?: Range): void {
+  private dispatchLookup(request: LookupRequest, anchorRect: DOMRect, range?: Range, pointer?: WebTriggerPointer): void {
     this.cancelInFlight();
     const requestId = nextRequestId();
     this.inFlightRequestId = requestId;
     // Clone range so the consumer gets a stable snapshot for highlight.
-    this.deps.onLookup(request, requestId, anchorRect, range ? range.cloneRange() : new Range());
+    this.deps.onLookup(request, requestId, anchorRect, range ? range.cloneRange() : new Range(), pointer);
   }
+}
+
+/**
+ * Anchor rect for popup = looked-up word only.
+ * Line/cue avoidance is applied separately as PopupLineRect so the popup stays
+ * near the word and does not cover same-row neighbors via side placement.
+ */
+function getLineAwareAnchorRect(range: Range): DOMRect {
+  return safeGetRangeRect(range);
 }
 
 /** Safely get a DOMRect from a Range (jsdom fallback). */
