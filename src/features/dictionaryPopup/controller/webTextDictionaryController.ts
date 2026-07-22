@@ -504,6 +504,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     highlightTarget: HighlightTarget,
     pointer?: WebTriggerPointer,
   ): void {
+    // A new lookup is starting — cancel any pending delayed dismiss so the
+    // popup doesn't vanish while the async SW round-trip is in flight.
+    cancelPendingDismiss();
     currentRequestId = requestId;
     currentHighlightTarget = highlightTarget;
     wordHighlight.show(highlightTarget);
