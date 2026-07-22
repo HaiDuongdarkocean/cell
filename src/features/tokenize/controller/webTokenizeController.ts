@@ -87,6 +87,8 @@ export interface WebTokenizeController extends TokenizeController {
    *  Used by the popup dictionary status cycle so token blocks rebind with the new
    *  status instead of reverting to the stale cached value on the next rebind. */
   readonly applyStatusForTerm: (term: string, status: WordStatus) => void;
+  /** Get the locally cached word status for a term. */
+  readonly getStatusForTerm: (term: string) => WordStatus;
 }
 
 /**
@@ -703,6 +705,16 @@ export async function createWebTokenizeController(
     }
   }
 
+  function getStatusForTerm(term: string): WordStatus {
+    for (const block of blocks) {
+      if (!block.tokens) continue;
+      for (const token of block.tokens) {
+        if (token.term === term) return token.status ?? 'unknown';
+      }
+    }
+    return 'unknown';
+  }
+
   function handleKeydown(e: KeyboardEvent): void {
     if (isEditableTarget(e.target)) return;
     if (e.key === 'Escape') {
@@ -744,6 +756,7 @@ export async function createWebTokenizeController(
     setShowFrequency: (show) => stateStore.setShowFrequency(show),
 
     applyStatusForTerm,
+    getStatusForTerm,
 
     destroy: () => {
       document.removeEventListener('keydown', handleKeydown);

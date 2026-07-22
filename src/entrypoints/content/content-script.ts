@@ -254,6 +254,7 @@ function ensureWebTextCtrl(): WebTextDictionaryController {
       onStatusChange: (term, _langCode, status) => {
         webTokenizeCtrl?.applyStatusForTerm(term, status);
       },
+      getTokenStatus: (term) => webTokenizeCtrl?.getStatusForTerm(term) ?? 'unknown',
     });
   }
   return webTextCtrl;

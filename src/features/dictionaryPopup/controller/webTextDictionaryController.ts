@@ -72,6 +72,9 @@ export interface WebTextDictionaryControllerDeps {
    *  token metadata and rebind affected token spans so the new status sticks
    *  instead of reverting on the next scroll/toggle rebind. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
+  /** Get the locally cached word status from the tokenize controller, used as a
+   *  fallback when the background DB read races or fails. */
+  readonly getTokenStatus?: (term: string) => WordStatus;
 }
 
 /** Video/cue configuration for subtitle path. Can be set after construction. */
@@ -509,6 +512,13 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     prefetchAdjacentTerms(request);
   }
 
+  function applyLocalStatusFallback(result: LookupResult, term: string): LookupResult {
+    if (result.status !== 'unknown') return result;
+    const localStatus = deps.getTokenStatus?.(term);
+    if (!localStatus || localStatus === 'unknown') return result;
+    return { ...result, status: localStatus };
+  }
+
   function handleLookup(
     request: LookupRequest,
     requestId: string,
@@ -567,7 +577,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // without paying for a background round-trip.
     const cached = getCachedResult(request.term, request.langCode);
     if (cached) {
-      renderLookupResult(cached, [], anchorRect, request, pointer);
+      const finalCached = applyLocalStatusFallback(cached, request.term);
+      if (finalCached !== cached) setCachedResult(request.term, request.langCode, finalCached);
+      renderLookupResult(finalCached, [], anchorRect, request, pointer);
       return;
     }
 
@@ -581,8 +593,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         const { success, data, error } = response as { success: boolean; data?: LookupResult[]; error?: string };
         if (success && data && data.length > 0) {
           const [winner, ...rest] = data;
-          setCachedResult(request.term, request.langCode, winner!);
-          renderLookupResult(winner!, rest, anchorRect, request, pointer);
+          const finalWinner = applyLocalStatusFallback(winner!, request.term);
+          setCachedResult(request.term, request.langCode, finalWinner);
+          renderLookupResult(finalWinner, rest, anchorRect, request, pointer);
         } else {
           console.warn('[web-text-dict] lookup failed', error);
         }
