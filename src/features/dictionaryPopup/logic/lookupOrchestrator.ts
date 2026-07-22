@@ -194,9 +194,16 @@ export async function lookupOrchestratorMulti(
     plugin = registry.get(langCode); // returns fallback
   }
 
-  // 2. Determine the lookup term: phrase match (EN), FMM segment (ZH),
-  //    or hovered token (fallback).
-  let lookupTerm = term;
+  // 2. Determine the surface token at the cursor and any phrase matches.
+  //    The popup always shows the hovered surface token as a candidate, plus
+  //    its origin lemma and any matched phrases (order: phrase → hover → origin).
+  let surfaceTerm = term;
+  if (!fallback) {
+    const tokens = plugin.tokenize(contextSentence);
+    const target = findTokenAtOffset(tokens, cursorOffset);
+    surfaceTerm = target?.text ?? term;
+  }
+
   let detectedPhrase: PhraseMatch | null = null;
   let matchSource: MatchSource = 'dictionary';
   let additionalPhraseMatches: PhraseMatch[] = [];
@@ -209,14 +216,8 @@ export async function lookupOrchestratorMulti(
     const allMatches = await tryEnglishPhraseMatchAll(langCode, contextSentence, cursorOffset, deps, signal);
     if (allMatches.length > 0) {
       detectedPhrase = allMatches[0]!;
-      lookupTerm = detectedPhrase.dictionaryTerm;
       matchSource = 'plugin';
       additionalPhraseMatches = allMatches.slice(1);
-    } else {
-      // Word fallback: find the hovered token.
-      const tokens = plugin.tokenize(contextSentence);
-      const target = findTokenAtOffset(tokens, cursorOffset);
-      lookupTerm = target?.text ?? term;
     }
   } else if (langCode === 'zh') {
     // Chinese: FMM segmentation to find the segment at the cursor.
@@ -224,67 +225,75 @@ export async function lookupOrchestratorMulti(
     checkAbort(signal);
     const tokens = plugin.segment!(contextSentence, probe);
     const target = findTokenAtOffset(tokens, cursorOffset);
-    lookupTerm = target?.text ?? term;
+    surfaceTerm = target?.text ?? term;
     matchSource = 'plugin';
   } else {
     // Fallback plugin: use the hovered token.
     const tokens = plugin.tokenize(contextSentence);
     const target = findTokenAtOffset(tokens, cursorOffset);
-    lookupTerm = target?.text ?? term;
+    surfaceTerm = target?.text ?? term;
   }
 
   checkAbort(signal);
 
-  // 3. Build winner result (phrase match or word fallback).
-  const winnerResult = await assembleLookupResult(
-    langCode, lookupTerm, detectedPhrase, matchSource, plugin, signal,
-  );
+  // 3. Build winner result: phrase match wins when valid; otherwise the surface
+  //    token (with lemma fallback for definitions).
+  const winnerResult = detectedPhrase
+    ? await assembleLookupResult(langCode, detectedPhrase.dictionaryTerm, detectedPhrase, 'plugin', plugin, signal)
+    : await assembleLookupResult(langCode, surfaceTerm, null, matchSource, plugin, signal, surfaceTerm);
 
-  // 4. Build additional candidate results for remaining phrase matches.
   const additionalResults: LookupResult[] = [];
-  for (const match of additionalPhraseMatches) {
-    checkAbort(signal);
-    const result = await assembleLookupResult(
-      langCode, match.dictionaryTerm, match, 'plugin', plugin, signal,
+  const seen = new Set([winnerResult.term.toLowerCase()]);
+
+  // 4. Add the hovered surface token as a candidate whenever it differs from
+  //    the winner (e.g. phrase winner → hover word candidate, or origin winner
+  //    already resolved to surfaceTerm).
+  if (surfaceTerm.toLowerCase() !== winnerResult.term.toLowerCase()) {
+    const surfaceResult = await assembleLookupResult(
+      langCode, surfaceTerm, null, 'dictionary', plugin, signal, surfaceTerm,
     );
-    additionalResults.push(result);
+    if ((surfaceResult.definitions.length > 0 || surfaceResult.frequency) && !seen.has(surfaceResult.term.toLowerCase())) {
+      seen.add(surfaceResult.term.toLowerCase());
+      additionalResults.push(surfaceResult);
+    }
   }
 
-  // 5. Inflectional morphology (ADR-041): if winner is a word fallback (not
-  //    a phrase match) and has definitions, also add lemma candidates as
-  //    additional results. This lets the user see both "easiest" and "easy"
-  //    when the dictionary has entries for both. If the raw term wasn't in
-  //    the dictionary, assembleLookupResult already fell back to a lemma
-  //    internally — in that case winnerResult.term IS a lemma, so we skip
-  //    candidates that match it to avoid duplicates.
-  if (!detectedPhrase && winnerResult.definitions.length > 0 && plugin.lemmaCandidates) {
-    const candidates = plugin.lemmaCandidates(lookupTerm);
-    const seen = new Set([winnerResult.term.toLowerCase()]);
-    for (const candidate of candidates) {
+  // 5. Add origin/lemma candidates (ADR-041).
+  if (plugin.lemmaCandidates) {
+    for (const candidate of plugin.lemmaCandidates(surfaceTerm)) {
       if (seen.has(candidate.toLowerCase())) continue;
       checkAbort(signal);
       const lemmaResult = await assembleLookupResult(
         langCode, candidate, null, 'dictionary', plugin, signal,
       );
-      // Dedup by the EFFECTIVE term (after internal lemma fallback), not the
-      // candidate string — assembleLookupResult may resolve "easier" → "easy"
-      // internally, which would duplicate the winner.
-      if (lemmaResult.definitions.length > 0 && !seen.has(lemmaResult.term.toLowerCase())) {
+      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequency) && !seen.has(lemmaResult.term.toLowerCase())) {
         seen.add(lemmaResult.term.toLowerCase());
         additionalResults.push(lemmaResult);
       }
     }
-  } else if (!detectedPhrase && winnerResult.definitions.length > 0 && plugin.lemma) {
-    // Backward compat: single-lemma fallback for plugins without lemmaCandidates.
-    const lemma = plugin.lemma(lookupTerm);
-    if (lemma && lemma.toLowerCase() !== winnerResult.term.toLowerCase()) {
+  } else if (plugin.lemma) {
+    const lemma = plugin.lemma(surfaceTerm);
+    if (lemma && !seen.has(lemma.toLowerCase())) {
       checkAbort(signal);
       const lemmaResult = await assembleLookupResult(
         langCode, lemma, null, 'dictionary', plugin, signal,
       );
-      if (lemmaResult.definitions.length > 0 && lemmaResult.term.toLowerCase() !== winnerResult.term.toLowerCase()) {
+      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequency) && !seen.has(lemmaResult.term.toLowerCase())) {
         additionalResults.push(lemmaResult);
       }
+    }
+  }
+
+  // 6. Add remaining phrase matches after surface/origin candidates.
+  for (const match of additionalPhraseMatches) {
+    if (seen.has(match.dictionaryTerm.toLowerCase())) continue;
+    checkAbort(signal);
+    const result = await assembleLookupResult(
+      langCode, match.dictionaryTerm, match, 'plugin', plugin, signal,
+    );
+    if (!seen.has(result.term.toLowerCase())) {
+      seen.add(result.term.toLowerCase());
+      additionalResults.push(result);
     }
   }
 
@@ -306,6 +315,9 @@ async function assembleLookupResult(
   matchSource: MatchSource,
   plugin: LanguagePlugin,
   signal?: AbortSignal,
+  /** If provided, the result header shows this surface term (e.g. the hovered
+   *  token "is") while definitions are resolved from lookupTerm/its lemma. */
+  displayTerm?: string,
 ): Promise<LookupResult> {
   checkAbort(signal);
 
@@ -340,7 +352,11 @@ async function assembleLookupResult(
     }
   }
 
-  const freqEntries = await findFrequencyByTerm(langCode, effectiveTerm);
+  const surfaceTerm = displayTerm ?? effectiveTerm;
+  let freqEntries = await findFrequencyByTerm(langCode, surfaceTerm);
+  if (freqEntries.length === 0 && surfaceTerm !== effectiveTerm) {
+    freqEntries = await findFrequencyByTerm(langCode, effectiveTerm);
+  }
   checkAbort(signal);
 
   const definitions: DefinitionEntry[] = [];
@@ -376,7 +392,7 @@ async function assembleLookupResult(
   const status = 'unknown' as const;
 
   return {
-    term: effectiveTerm,
+    term: surfaceTerm,
     langCode,
     reading,
     readingKind: plugin.readingKind,

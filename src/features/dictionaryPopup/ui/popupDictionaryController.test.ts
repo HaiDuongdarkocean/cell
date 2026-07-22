@@ -15,6 +15,7 @@ import {
   appendCandidate,
   setActiveCandidate,
   getInitialPopupSize,
+  updatePopupSettings,
 } from './popupDictionaryController';
 import type { PopupDictionaryState } from './popupDictionaryController';
 import type { LookupResult, WordStatus } from '../types';
@@ -82,6 +83,7 @@ function makePopupSettings(overrides: Partial<DictionaryPopupSettings> = {}): Di
     popupWidthPx: 560,
     popupMaxHeightPx: 480,
     externalDictLinks: [],
+    badgePointerTrigger: { position: 'center', size: 36, pointerScale: 0.25 },
     ...overrides,
   };
 }
@@ -204,6 +206,17 @@ describe('showPopup', () => {
     expect(materialsSlot!.querySelector('.js-cell-toolbar')).not.toBeNull();
   });
 
+  it('renders the default active tab panel (image)', () => {
+    state = makePopupState({ defaultActiveTab: 'image' });
+    const result = makeResult();
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
+    expect(newState.activeTab).toBe('image');
+    const container = newState.shell?.getContainer();
+    const activeBtn = container!.querySelector('.js-cell-tab[data-cell-tab="image"]');
+    expect(activeBtn?.classList.contains('btn--primary')).toBe(true);
+    expect(container!.querySelector('.js-cell-panel[data-cell-panel="image"]')).not.toBeNull();
+  });
+
   it('renders active entry + candidates + footer', () => {
     const result = makeResult();
     const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
@@ -315,15 +328,15 @@ describe('appendCandidate', () => {
     expect(s.additionalResults[0]!.term).toBe('get over');
   });
 
-  it('renders candidates chips after append (only when > 2 candidates)', () => {
+  it('renders candidates chips after append (only when >= 2 candidates)', () => {
     const winner = makeResult({ term: 'get out' });
     const c1 = makeResult({ term: 'get over' });
     const c2 = makeResult({ term: 'get by' });
     let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     s = appendCandidate(s, c1, 'sentence');
-    // 2 candidates → no chips rendered
+    // 2 candidates → chips rendered
     let container = s.shell?.getContainer();
-    expect(container!.querySelectorAll('.js-cell-chip').length).toBe(0);
+    expect(container!.querySelectorAll('.js-cell-chip').length).toBe(2);
     s = appendCandidate(s, c2, 'sentence');
     // 3 candidates → chips rendered
     container = s.shell?.getContainer();
@@ -500,7 +513,7 @@ describe('setActiveCandidate', () => {
     expect(activeTerm).toBe('get out');
   });
 
-  it('highlights the active chip (only when > 2 candidates)', () => {
+  it('highlights the active chip (when >= 2 candidates)', () => {
     const winner = makeResult({ term: 'get out' });
     const c1 = makeResult({ term: 'get over' });
     const c2 = makeResult({ term: 'get by' });
@@ -589,5 +602,24 @@ describe('header audio', () => {
     const fetchCalls = mockSendMessage.mock.calls.filter((c) => (c[0] as { type?: string })?.type === 'FETCH_COMMUNITY_AUDIO');
     expect(fetchCalls.length).toBe(0);
     expect(shown.headerAudioId).toBe('wiktionary-US-0');
+  });
+
+  it('updatePopupSettings resets active tab and hides panel when defaultActiveTab becomes null', () => {
+    state = makePopupState({ defaultActiveTab: 'image' });
+    const shown = showPopup(state, makeResult(), {
+      anchor: { top: 170, left: 100, right: 150, bottom: 200 },
+      contextSentence: 'Take off your shoes.',
+    });
+    const container = shown.shell?.getContainer();
+    expect(container?.querySelector('.js-cell-tab.btn--primary')).not.toBeNull();
+    expect(container?.querySelector('.js-cell-panel[data-cell-panel="image"]')).not.toBeNull();
+
+    const newSettings = makePopupSettings({ defaultActiveTab: null });
+    const updated = updatePopupSettings(shown, newSettings);
+
+    expect(updated.activeTab).toBeNull();
+    const updatedContainer = updated.shell?.getContainer();
+    expect(updatedContainer?.querySelector('.js-cell-tab.btn--primary')).toBeNull();
+    expect(updatedContainer?.querySelector('.js-cell-panel')).toBeNull();
   });
 });
