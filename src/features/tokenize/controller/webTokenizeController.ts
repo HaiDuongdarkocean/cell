@@ -2,6 +2,7 @@ import { findTextBlocks, findTextBlocksInNodes } from '@/features/tokenize/logic
 import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
 import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
+import { resolveScrollPredictMargin, type ScrollDirection } from '@/features/tokenize/logic/scrollDirection';
 import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { createTokenBadge } from '@/features/tokenize/ui/tokenBadge';
@@ -118,8 +119,16 @@ export async function createWebTokenizeController(
   });
 
   const scheduler = new TokenizeScheduler();
-  let viewport = createViewport();
+  let viewport = createViewport(VIEWPORT_ROOT_MARGIN);
   const visibleElements = new Set<Element>();
+
+  // VDLT-Predict Phase B: scroll direction tracking for asymmetric overscan.
+  // The listener is passive + rAF-coalesced so it never blocks scroll. On a
+  // direction change the ViewportTracker is recreated with a deep-ahead /
+  // shallow-behind rootMargin and all connected blocks are re-observed.
+  let lastScrollY = 0;
+  let scrollDirection: ScrollDirection = 'none';
+  let scrollRafId: number | undefined;
 
   // Batch metadata resolver: gather terms from all blocks that become visible in
   // the same microtask, then send a single message pair (status + frequency) to
@@ -130,8 +139,41 @@ export async function createWebTokenizeController(
   const metadataResolved = new WeakSet<TokenBlock>();
   const metadataPending = new WeakSet<TokenBlock>();
 
-  function createViewport(): ViewportTracker {
-    return new ViewportTracker({ rootMargin: VIEWPORT_ROOT_MARGIN });
+  function createViewport(rootMargin: string): ViewportTracker {
+    return new ViewportTracker({ rootMargin });
+  }
+
+  /** Recreate the ViewportTracker with a new rootMargin and re-observe all connected blocks. */
+  function recreateViewportWithMargin(rootMargin: string): void {
+    viewport.destroy();
+    viewport = createViewport(rootMargin);
+    // Re-observe every block whose element is still connected. ADR-055: the
+    // synchronous onEnter path in ViewportTracker.observe fires for blocks that
+    // are already intersecting, so visibleElements + bind scheduling resumes
+    // without waiting for a new IO callback.
+    for (const block of blocks) {
+      if (block.element.isConnected) observeBlock(block);
+    }
+  }
+
+  /** rAF-coalesced scroll handler: update direction + recreate tracker on change. */
+  function onScroll(): void {
+    if (scrollRafId !== undefined) return;
+    scrollRafId = window.requestAnimationFrame(() => {
+      scrollRafId = undefined;
+      const scrollY = window.scrollY;
+      const result = resolveScrollPredictMargin({
+        scrollY,
+        lastScrollY,
+        viewportHeight: window.innerHeight,
+        lastDirection: scrollDirection,
+      });
+      lastScrollY = scrollY;
+      if (result.direction !== scrollDirection && result.direction !== 'none') {
+        scrollDirection = result.direction;
+        recreateViewportWithMargin(result.rootMargin);
+      }
+    });
   }
 
   async function flushMetadataQueue(): Promise<void> {
@@ -264,11 +306,19 @@ export async function createWebTokenizeController(
     if (active === isActive) return;
     isActive = active;
     if (active) {
-      viewport = createViewport();
+      viewport = createViewport(VIEWPORT_ROOT_MARGIN);
+      lastScrollY = window.scrollY;
+      scrollDirection = 'none';
+      window.addEventListener('scroll', onScroll, { passive: true });
       scanAndObserveBlocks();
       updateMutationObservation(true);
     } else {
       updateMutationObservation(false);
+      window.removeEventListener('scroll', onScroll);
+      if (scrollRafId !== undefined) {
+        cancelAnimationFrame(scrollRafId);
+        scrollRafId = undefined;
+      }
       viewport.destroy();
       visibleElements.clear();
       unbindAll();

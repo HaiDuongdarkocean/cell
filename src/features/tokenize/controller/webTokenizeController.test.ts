@@ -522,4 +522,43 @@ describe('createWebTokenizeController', () => {
 
     controller.destroy();
   });
+
+  it('recreates ViewportTracker with asymmetric margin when scroll direction changes (VDLT-Predict B2/B3)', async () => {
+    // rAF must run synchronously in jsdom for this test. Mock requestAnimationFrame
+    // to invoke the callback immediately so the scroll handler updates direction
+    // in the same tick.
+    const rafSpy = jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
+    try {
+      const root = document.createElement('div');
+      const paragraph = document.createElement('p');
+      paragraph.textContent = 'Hello world.';
+      root.appendChild(paragraph);
+      document.body.appendChild(root);
+
+      const controller = await createWebTokenizeController({ url: 'https://example.com/', root });
+      controller.enable();
+      // Initial: paragraph observed with isotropic margin
+      expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(true);
+
+      // Simulate scroll down: window.scrollY increases past hysteresis (16px)
+      Object.defineProperty(window, 'scrollY', { value: 500, writable: true, configurable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 800, writable: true, configurable: true });
+      window.dispatchEvent(new Event('scroll'));
+
+      // After direction change, tracker recreated and paragraph re-observed
+      expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(true);
+
+      controller.destroy();
+      // destroy must remove the scroll listener — dispatching scroll after
+      // destroy must not throw or recreate the tracker.
+      expect(() => window.dispatchEvent(new Event('scroll'))).not.toThrow();
+    } finally {
+      rafSpy.mockRestore();
+      Object.defineProperty(window, 'scrollY', { value: 0, writable: true, configurable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true, configurable: true });
+    }
+  });
 });
