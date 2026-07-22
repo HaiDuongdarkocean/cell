@@ -10,6 +10,13 @@
 
 import type { LookupRequest, TriggerMode } from '../types';
 import { detectLangCode, nextRequestId, isPointOverRange } from './subtitleTriggerController';
+import {
+  extractSentenceContext,
+  extractWordAtOffset,
+  createWordRange,
+  WORD_CHAR_RE,
+  type SentenceContext,
+} from '../sentence/sentenceModule';
 
 /** Hover debounce for web text — only fire after the cursor has been still for this long. */
 const WEB_HOVER_DEBOUNCE_MS = 80;
@@ -17,7 +24,6 @@ const WEB_HOVER_DEBOUNCE_MS = 80;
 const WEB_HOVER_STABILITY_PX = 6;
 
 /** Quick word-character check used before deferring the expensive hover path. */
-const WORD_CHAR_RE = /[\w\u4e00-\u9fff\u3400-\u4dbf]/;
 /** Minimum selection length to trigger lookup. */
 const MIN_SELECTION_LENGTH = 1;
 /** Maximum selection length (avoid looking up whole paragraphs). */
@@ -66,72 +72,8 @@ function rangeInUiHost(range: Range): boolean {
  * Walks up to the nearest block element, gets its text content,
  * and computes the cursor offset within that text.
  */
-export function extractSentenceContext(
-  textNode: Text,
-  offsetInNode: number,
-): { sentence: string; cursorOffset: number; blockOffset: number; term: string; word: { text: string; start: number } } | null {
-  // Walk up to nearest block-level element.
-  let block: HTMLElement | null = textNode.parentElement;
-  while (block) {
-    const display = getComputedStyle(block).display;
-    if (display === 'block' || display === 'list-item' || display === 'table-cell' || block.tagName === 'P' || block.tagName === 'DIV' || block.tagName === 'LI' || block.tagName === 'H1' || block.tagName === 'H2' || block.tagName === 'H3' || block.tagName === 'H4' || block.tagName === 'H5' || block.tagName === 'H6') {
-      break;
-    }
-    block = block.parentElement;
-  }
-  if (!block) return null;
-
-  // Get the full text content of the block element.
-  const fullText = block.textContent ?? '';
-  if (!fullText.trim()) return null;
-
-  // Compute the cursor offset within the block's text content.
-  // We need to find where textNode's text starts within the block's textContent.
-  // This is approximate — textContent concatenates all descendant text.
-  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
-  let cursorOffset = 0;
-  let currentText: Text | null;
-  while ((currentText = walker.nextNode() as Text | null)) {
-    if (currentText === textNode) {
-      cursorOffset += offsetInNode;
-      break;
-    }
-    cursorOffset += currentText.textContent?.length ?? 0;
-  }
-
-  // Extract the word at the cursor position.
-  const word = extractWordAtOffset(fullText, cursorOffset);
-  if (!word) return null;
-
-  return {
-    sentence: fullText,
-    cursorOffset: word.start,
-    blockOffset: cursorOffset,
-    term: word.text,
-    word,
-  };
-}
-
-/** Extract the word at a given UTF-16 offset in a string. */
-export function extractWordAtOffset(text: string, offset: number): { text: string; start: number } | null {
-  if (offset < 0 || offset >= text.length) return null;
-  const ch = text[offset];
-  if (!ch) return null;
-  // Whitespace/punctuation at offset → no word.
-  if (!/[\w\u4e00-\u9fff\u3400-\u4dbf]/.test(ch)) return null;
-  // For CJK: single char is a "word" for triggering.
-  if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(ch)) {
-    return { text: ch, start: offset };
-  }
-  // For Latin: walk left + right to find word boundaries.
-  let start = offset;
-  while (start > 0 && /[\w]/.test(text[start - 1]!)) start--;
-  let end = offset;
-  while (end < text.length && /[\w]/.test(text[end]!)) end++;
-  const word = text.slice(start, end);
-  if (!word) return null;
-  return { text: word, start };
-}
+// Re-export from SSOT sentence module for backward compatibility.
+export { extractSentenceContext, extractWordAtOffset, createWordRange, type SentenceContext };
 
 /** Build a LookupRequest from a text selection. */
 export function buildSelectionLookupRequest(selection: Selection): LookupRequest | null {
@@ -155,13 +97,6 @@ export function buildSelectionLookupRequest(selection: Selection): LookupRequest
   };
 }
 
-/** Build a LookupRequest from a hover event on a text node. */
-export function buildHoverLookupRequest(textNode: Text, offset: number): LookupRequest | null {
-  const ctx = extractSentenceContext(textNode, offset);
-  if (!ctx) return null;
-  return buildHoverLookupRequestFromContext(ctx);
-}
-
 /** Build a LookupRequest from an already-extracted sentence context. */
 function buildHoverLookupRequestFromContext(
   ctx: NonNullable<ReturnType<typeof extractSentenceContext>>,
@@ -174,27 +109,6 @@ function buildHoverLookupRequestFromContext(
     cursorOffset: ctx.cursorOffset,
     fallback: false,
   };
-}
-
-/** Build a DOM Range covering the word returned by extractSentenceContext.
- *  This lets the consumer highlight the exact word even for hover/caret lookups. */
-function createWordRange(
-  textNode: Text,
-  offsetInNode: number,
-  ctx: NonNullable<ReturnType<typeof extractSentenceContext>>,
-): Range | null {
-  const nodeStart = ctx.word.start - (ctx.blockOffset - offsetInNode);
-  const nodeEnd = nodeStart + ctx.word.text.length;
-  const nodeText = textNode.textContent ?? '';
-  if (nodeStart < 0 || nodeEnd > nodeText.length || nodeStart >= nodeEnd) return null;
-  const range = document.createRange();
-  try {
-    range.setStart(textNode, nodeStart);
-    range.setEnd(textNode, nodeEnd);
-    return range;
-  } catch {
-    return null;
-  }
 }
 
 /** Check if a modifier key matches the trigger mode. */
