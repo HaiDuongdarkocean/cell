@@ -18,6 +18,7 @@ import {
   hidePopup,
   appendCandidate,
   updatePopupSettings,
+  updateStatus,
   destroyPopup,
 } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import { WebTriggerController, type WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
@@ -107,6 +108,8 @@ export interface WebTextDictionaryController {
   readonly showHighlight: (target: HighlightTarget) => void;
   /** Clear active highlight. */
   readonly clearHighlight: () => void;
+  /** Sync the popup status with an external status change (e.g. keyboard shortcut). */
+  readonly syncStatus: (term: string, status: WordStatus) => void;
   /** Update card creator settings (lazy-updates the dialog mount if it exists). */
   readonly updateCardCreatorSettings: (settings: CardCreatorSettings) => void;
   /** Open the Card Creator dialog with the given context + optional action. */
@@ -892,6 +895,14 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     syncOrbitalBadge(dpSettings);
   }
 
+  function syncStatus(term: string, status: WordStatus): void {
+    const active = popupDictState?.currentResult;
+    if (!active || popupDictState?.shell?.getContainer() == null) return;
+    const activeTerm = active.hoverTerm ?? active.term;
+    if (activeTerm.toLowerCase() !== term.toLowerCase()) return;
+    popupDictState = updateStatus(popupDictState, status);
+  }
+
   return {
     attach,
     detach,
@@ -903,6 +914,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     dismissLookup,
     showHighlight,
     clearHighlight,
+    syncStatus,
     updateCardCreatorSettings,
     openCardCreator,
     isCardCreatorOpen,

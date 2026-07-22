@@ -25,6 +25,7 @@ import {
   renderPopupContent,
   renderActiveEntry,
   renderCandidateChips,
+  renderCandidateList,
   getOrCreateCandidatesContainer,
   initDefinitionSelection,
   getSelectedDefinitions,
@@ -597,9 +598,19 @@ export function cycleStatus(state: PopupDictionaryState): PopupDictionaryState {
   const active = getActiveResult(state);
   if (!active) return state;
   const newStatus = nextStatus(getActiveSnapshot(state).status);
-  void persistStatus(active.term, active.langCode, newStatus);
+  // Persist status for the hovered word, not a matched phrase.
+  const statusTerm = active.hoverTerm ?? active.term;
+  void persistStatus(statusTerm, active.langCode, newStatus);
   setActiveSnapshot(state, { status: newStatus });
-  state.onStatusChange?.(active.term, active.langCode, newStatus);
+  state.onStatusChange?.(statusTerm, active.langCode, newStatus);
+  rerender(state);
+  return state;
+}
+
+/** Update the active candidate's status without persisting (e.g. external sync). */
+export function updateStatus(state: PopupDictionaryState, status: WordStatus): PopupDictionaryState {
+  if (!state.currentResult) return state;
+  setActiveSnapshot(state, { status });
   rerender(state);
   return state;
 }
@@ -787,15 +798,24 @@ function renderCandidateChipsAndList(state: PopupDictionaryState, container: HTM
     candidates.push({ idx: i + 1, result: r, status: cs?.status ?? r.status });
   }
 
-  // Chips render when there are 2+ candidates so the user can switch between
-  // phrase, surface, and origin forms.
+  // Candidate chips + list render when there are 2+ candidates so the user can
+  // switch between phrase, surface, and origin forms.
   if (candidates.length <= 1) return;
+
+  const onSelect = (idx: number) => { state = setActiveCandidate(state, idx); };
 
   renderCandidateChips(
     candidatesEl,
     candidates,
     state.activeCandidateIndex,
-    (idx) => { state = setActiveCandidate(state, idx); },
+    onSelect,
+  );
+
+  renderCandidateList(
+    candidatesEl,
+    candidates,
+    state.activeCandidateIndex,
+    onSelect,
   );
 }
 

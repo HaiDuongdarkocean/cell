@@ -304,6 +304,9 @@ async function initTokenize(): Promise<void> {
           range,
         );
       },
+      onStatusChange: (term, _langCode, status) => {
+        ensureWebTextCtrl().syncStatus(term, status);
+      },
     });
   } catch (err) {
     // Storage may be unavailable in some test/sandbox contexts — safe fallback.
