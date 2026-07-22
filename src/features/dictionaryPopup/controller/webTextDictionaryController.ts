@@ -914,7 +914,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   function syncStatus(term: string, status: WordStatus): void {
     const active = popupDictState?.currentResult;
     if (!active || popupDictState?.shell?.getContainer() == null) return;
-    const activeTerm = active.hoverTerm ?? active.term;
+    const activeTerm = active.term;
     if (activeTerm.toLowerCase() !== term.toLowerCase()) return;
     popupDictState = updateStatus(popupDictState, status);
   }
