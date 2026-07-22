@@ -1,8 +1,8 @@
-// devMode — single source of truth for Vite dev mode detection.
+// devMode — single source of truth for dev mode detection.
 //
-// import.meta.env.DEV is a Vite-injected compile-time constant. It cannot be
-// used directly in entrypoint files that Jest imports (CJS parse error), so
-// this module isolates it. Tests mock this module via jest.mock.
+// import.meta.env.DEV is true only in `vite` (serve), always false in `vite build`.
+// For dev-seed to work with `vite build --mode development`, we check MODE instead.
+// Tests mock this module via jest.mock.
 
-/** True when running under `vite` (serve). False in production build. */
-export const isDevMode: boolean = import.meta.env.DEV;
+/** True when running in development mode (vite serve OR vite build --mode development). */
+export const isDevMode: boolean = import.meta.env.DEV || import.meta.env.MODE === 'development';
