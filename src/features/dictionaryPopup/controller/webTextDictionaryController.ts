@@ -4,7 +4,7 @@
 // - Lives in content-script top-level and inside subtitle overlay controller.
 // - Owns one WebTriggerController for web-text (document-level hover/click).
 // - Receives SubtitleTriggerController callbacks for subtitle token lookup.
-// - Owns WordHighlight to mark the target word/token.
+// - Owns WordHighlight to mark the target word/token and its sentence.
 // - Delegates popup rendering to popupDictionaryController.
 // - Handles Card Creator / Quick Add actions from the popup.
 
@@ -21,9 +21,14 @@ import {
   destroyPopup,
 } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import { WebTriggerController, type WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
-import { extractWordAtOffset, WORD_CHAR_RE } from '@/features/dictionaryPopup/sentence/sentenceModule';
+import {
+  extractSentenceContext,
+  extractWordAtOffset,
+  createSentenceRange,
+  WORD_CHAR_RE,
+} from '@/features/dictionaryPopup/sentence/sentenceModule';
 import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
-import { createWordHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
+import { createWordHighlight, createSentenceHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
 import { createOrbitalBadge, type OrbitalBadge, type PointerPreset } from '@/features/dictionaryPopup/badgePointer';
 
 import { sendMessage } from '@/shared/lib/chrome-apis';
@@ -207,6 +212,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   );
   let popupDictWasPlaying = false;
   const wordHighlight = createWordHighlight();
+  const sentenceHighlight = createSentenceHighlight();
 
   // Bounded in-memory lookup cache. Key = `${langCode}:${term.toLowerCase()}`.
   // Capacity scales with device memory (low-end: 50, high-end: 250) to avoid
@@ -309,6 +315,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   function clearHighlight(): void {
     wordHighlight.clear();
+    sentenceHighlight.clear();
   }
 
   /** Schedule a delayed popup dismiss. Cancel in-flight immediately but
@@ -325,6 +332,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       popupDismissTimer = null;
       popupDictState = hidePopup(popupDictState);
       wordHighlight.clear();
+      sentenceHighlight.clear();
       currentHighlightTarget = null;
       currentPopupTokenId = null;
     }, POPUP_DISMISS_DELAY_MS);
@@ -438,6 +446,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     clearPopupTokenId();
     currentHighlightTarget = null;
     wordHighlight.clear();
+    sentenceHighlight.clear();
     resumeVideoIfNeeded();
   }
 
@@ -510,6 +519,41 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     currentRequestId = requestId;
     currentHighlightTarget = highlightTarget;
     wordHighlight.show(highlightTarget);
+
+    // Show the sentence containing the looked-up word. For web text the
+    // highlight target is a Range anchored in a Text node. For tokenized page
+    // text the range may be anchored in the token's word element, so we find
+    // the first Text child. Subtitle element targets have no page DOM sentence
+    // to highlight and are skipped.
+    let sentenceTextNode: Text | null = null;
+    let sentenceTextOffset = 0;
+    if (highlightTarget instanceof Range) {
+      if (highlightTarget.startContainer instanceof Text) {
+        sentenceTextNode = highlightTarget.startContainer;
+        sentenceTextOffset = highlightTarget.startOffset;
+      } else {
+        const child = highlightTarget.startContainer.childNodes[highlightTarget.startOffset];
+        if (child?.firstChild instanceof Text) {
+          sentenceTextNode = child.firstChild;
+          sentenceTextOffset = 0;
+        }
+      }
+    }
+    if (sentenceTextNode) {
+      const ctx = extractSentenceContext(sentenceTextNode, sentenceTextOffset);
+      if (ctx) {
+        const sentenceRange = createSentenceRange(sentenceTextNode, sentenceTextOffset, ctx);
+        if (sentenceRange) {
+          sentenceHighlight.show(sentenceRange);
+        } else {
+          sentenceHighlight.clear();
+        }
+      } else {
+        sentenceHighlight.clear();
+      }
+    } else {
+      sentenceHighlight.clear();
+    }
 
     const token = getTokenElement(highlightTarget);
     if (token) {
@@ -768,6 +812,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     cardCreatorMount?.unmount();
     cardCreatorMount = null;
     wordHighlight.destroy();
+    sentenceHighlight.destroy();
     lookupCache.clear();
   }
 
