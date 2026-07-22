@@ -523,6 +523,79 @@ describe('createWebTokenizeController', () => {
     controller.destroy();
   });
 
+  it('binds viewport blocks immediately on enable without waiting for IO callback (VDLT-Predict C1)', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+    // jsdom does not layout, so getBoundingClientRect returns height=0 and
+    // isElementInViewport would reject. Mock a non-zero rect so bindViewportNow
+    // treats the paragraph as inside the viewport.
+    paragraph.getBoundingClientRect = jest.fn(() => ({
+      top: 0, bottom: 100, height: 100, left: 0, right: 100, width: 100, x: 0, y: 0,
+      toJSON: () => {},
+    })) as unknown as typeof paragraph.getBoundingClientRect;
+
+    const controller = await createWebTokenizeController({ url: 'https://example.com/', root });
+
+    controller.enable();
+    // Cold-start viewport-first: viewport blocks bind synchronously via
+    // bindViewportNow, before any IntersectionObserver callback fires.
+    const spans = paragraph.querySelectorAll('.js-cell-token');
+    expect(spans.length).toBeGreaterThan(0);
+
+    controller.destroy();
+  });
+
+  it('binds viewport blocks before the hydration quiet window for persisted sessions (VDLT-Predict C2)', async () => {
+    jest.useFakeTimers();
+    const readyState = jest.spyOn(document, 'readyState', 'get').mockReturnValue('interactive');
+    loadTokenizeSettings.mockResolvedValue({
+      schemaVersion: 1,
+      origins: {},
+      urls: { 'https://example.com/': true },
+    });
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Challenge content';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+    paragraph.getBoundingClientRect = jest.fn(() => ({
+      top: 0, bottom: 100, height: 100, left: 0, right: 100, width: 100, x: 0, y: 0,
+      toJSON: () => {},
+    })) as unknown as typeof paragraph.getBoundingClientRect;
+
+    try {
+      const controller = await createWebTokenizeController({
+        url: 'https://example.com/',
+        root,
+      });
+
+      // Before load: nothing bound yet.
+      expect(paragraph.querySelectorAll('.js-cell-token').length).toBe(0);
+
+      window.dispatchEvent(new Event('load'));
+
+      // FR4: viewport blocks bind immediately after load, before the 500ms
+      // hydration quiet window fires the full activate (observe + mutation).
+      const spansAfterLoad = paragraph.querySelectorAll('.js-cell-token');
+      expect(spansAfterLoad.length).toBeGreaterThan(0);
+
+      // Observer is NOT connected yet (quiet window has not elapsed).
+      expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(false);
+
+      await jest.advanceTimersByTimeAsync(500);
+
+      // After quiet: full activate → observe connected.
+      expect(MockIntersectionObserver.callbacks.has(paragraph)).toBe(true);
+      controller.destroy();
+    } finally {
+      readyState.mockRestore();
+      jest.useRealTimers();
+    }
+  });
+
   it('recreates ViewportTracker with asymmetric margin when scroll direction changes (VDLT-Predict B2/B3)', async () => {
     // rAF must run synchronously in jsdom for this test. Mock requestAnimationFrame
     // to invoke the callback immediately so the scroll handler updates direction
