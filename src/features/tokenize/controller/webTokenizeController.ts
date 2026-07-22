@@ -74,6 +74,8 @@ export interface WebTokenizeControllerOptions {
   /** Callback when the user asks to open the Popup Dictionary.
    *  Provides the clicked token element and the original sentence for context. */
   readonly onOpenDictionary?: (term: string, element: HTMLElement, contextSentence: string) => void;
+  /** Callback when a word status changes via keyboard shortcut or other action. */
+  readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
 }
 
 export interface WebTokenizeController extends TokenizeController {
@@ -675,6 +677,9 @@ export async function createWebTokenizeController(
       if (changed && visibleElements.has(block.element)) {
         rebindBlock(block);
       }
+    }
+    for (const term of terms) {
+      options.onStatusChange?.(term, langCode, status);
     }
   }
 

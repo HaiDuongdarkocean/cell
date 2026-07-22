@@ -399,7 +399,10 @@ async function assembleLookupResult(
       ? { rank: freqEntries[0]!.frequency, source: 'frequency' }
       : null;
 
-  const status = await getWordStatus(langCode, surfaceTerm);
+  // Status is a property of the hovered word, not a phrase. When a phrase
+  // matched, surfaceTerm is the phrase surface; use hoverTerm for status lookup.
+  const statusTerm = hoverTerm ?? surfaceTerm;
+  const status = await getWordStatus(langCode, statusTerm);
 
   return {
     term: surfaceTerm,
