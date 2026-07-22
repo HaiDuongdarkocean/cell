@@ -288,6 +288,14 @@ export async function createWebTokenizeController(
   function scanAndObserveBlocks(): void {
     const scanned = findTextBlocks(root, { langCode });
     for (const block of scanned) {
+      // VDLT-Predict FR4: bindViewportNow may have already scanned + cached
+      // this block during cold-start. Re-observe the cached block object (not
+      // the fresh one) so onEnter/onExit closures reference the bound instance.
+      if (cache.has(block.id)) {
+        const existing = cache.get(block.id);
+        if (existing) observeBlock(existing);
+        continue;
+      }
       cache.set(block);
       blocks.push(block);
       observeBlock(block);
@@ -302,6 +310,32 @@ export async function createWebTokenizeController(
     }
   }
 
+  /**
+   * VDLT-Predict FR4 (cold-start viewport-first): scan + eagerly bind only the
+   * blocks currently inside the visual viewport, without connecting observers
+   * or the mutation listener. This makes toggle feel instant — viewport tokens
+   * appear in the same turn — while the heavy offscreen hydrate (observe +
+   * mutation + prepare) runs after the hydration quiet gate for SPA safety.
+   * Returns true if at least one block was found and bound.
+   */
+  function bindViewportNow(): boolean {
+    if (blocks.length === 0) {
+      const scanned = findTextBlocks(root, { langCode });
+      for (const block of scanned) {
+        cache.set(block);
+        blocks.push(block);
+      }
+    }
+    let bound = false;
+    for (const block of blocks) {
+      if (!block.isBound && block.element.isConnected) {
+        tryBindVisible(block);
+        if (block.isBound) bound = true;
+      }
+    }
+    return bound;
+  }
+
   function setActive(active: boolean): void {
     if (active === isActive) return;
     isActive = active;
@@ -310,6 +344,11 @@ export async function createWebTokenizeController(
       lastScrollY = window.scrollY;
       scrollDirection = 'none';
       window.addEventListener('scroll', onScroll, { passive: true });
+      // VDLT-Predict FR4: bind viewport blocks first so toggle feels instant,
+      // then observe + prepare the rest. bindViewportNow scans if needed and
+      // only touches blocks whose getBoundingClientRect is inside the viewport
+      // (one batched layout pass), so it does not force a reflow per block.
+      bindViewportNow();
       scanAndObserveBlocks();
       updateMutationObservation(true);
     } else {
@@ -475,6 +514,9 @@ export async function createWebTokenizeController(
   // Activate only when tokenize is already enabled for this URL. By default the
   // controller starts inactive, so no heavy DOM scanning/observation happens
   // during page load and Rocket Loader / Angular hydration can finish safely.
+  // VDLT-Predict FR4: viewport tokens bind immediately after load (no quiet
+  // wait); the quiet gate only delays the offscreen hydrate (observe + mutation
+  // listener) so SPA hydration is not disturbed.
   if (initialEnabled) {
     const activateAfterStability = (): void => {
       let stabilityTimer: ReturnType<typeof setTimeout> | null = null;
@@ -498,6 +540,11 @@ export async function createWebTokenizeController(
         if (stabilityTimer) clearTimeout(stabilityTimer);
         stabilityTimer = setTimeout(activate, HYDRATION_QUIET_MS);
       };
+      // FR4: bind viewport blocks immediately so the user sees tokens without
+      // waiting for the hydration quiet period. This only scans + binds blocks
+      // whose getBoundingClientRect is inside the viewport — no observers, no
+      // mutation listener — so it does not conflict with SPA hydration.
+      if (stateStore.getState().enabled) bindViewportNow();
       stabilityObserver.observe(document.documentElement, { childList: true, subtree: true });
       scheduleStabilityCheck();
       maxDelayTimer = setTimeout(activate, MAX_ACTIVATION_DELAY_MS);
