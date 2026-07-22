@@ -225,21 +225,21 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   // bloat on 1GB machines while still giving repeat-hover instant popups.
   const deviceMemory = Number((navigator as { deviceMemory?: number }).deviceMemory ?? 4);
   const MAX_LOOKUP_CACHE_SIZE = Math.min(250, Math.max(50, Math.round(deviceMemory * 25)));
-  const lookupCache = new Map<string, LookupResult>();
+  const lookupCache = new Map<string, LookupResult[]>();
 
   function cacheKeyFor(term: string, langCode: string): string {
     return `${langCode}:${term.toLowerCase()}`;
   }
 
-  function getCachedResult(term: string, langCode: string): LookupResult | undefined {
+  function getCachedResult(term: string, langCode: string): LookupResult[] | undefined {
     return lookupCache.get(cacheKeyFor(term, langCode));
   }
 
-  function setCachedResult(term: string, langCode: string, result: LookupResult): void {
+  function setCachedResult(term: string, langCode: string, results: LookupResult[]): void {
     const key = cacheKeyFor(term, langCode);
     // Move to most-recent position on access.
     if (lookupCache.has(key)) lookupCache.delete(key);
-    lookupCache.set(key, result);
+    lookupCache.set(key, results);
     // Evict oldest if over capacity.
     if (lookupCache.size > MAX_LOOKUP_CACHE_SIZE) {
       const first = lookupCache.keys().next().value;
@@ -296,7 +296,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         .then((response: unknown) => {
           const { success, data } = response as { success: boolean; data?: LookupResult[] };
           if (success && data && data.length > 0) {
-            setCachedResult(term, request.langCode, data[0]!);
+            setCachedResult(term, request.langCode, data);
           }
         })
         .catch(() => { /* prefetch failures are best-effort */ });
@@ -500,8 +500,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           // Keep the in-memory cache in sync with status changes.
           const key = cacheKeyFor(term, langCode);
           const cached = lookupCache.get(key);
-          if (cached && cached.status !== status) {
-            lookupCache.set(key, { ...cached, status });
+          if (cached && cached[0].status !== status) {
+            lookupCache.set(key, [{ ...cached[0], status }, ...cached.slice(1)]);
           }
         },
       },
@@ -574,12 +574,14 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     }
 
     // Fast path: if we already looked this term up, show the popup immediately
-    // without paying for a background round-trip.
+    // without paying for a background round-trip. Cache stores the full
+    // LookupResult[] so candidates survive repeat lookups (ADR-xxx).
     const cached = getCachedResult(request.term, request.langCode);
     if (cached) {
-      const finalCached = applyLocalStatusFallback(cached, request.term);
+      const finalWinner = applyLocalStatusFallback(cached[0]!, request.term);
+      const finalCached = finalWinner === cached[0] ? cached : [finalWinner, ...cached.slice(1)];
       if (finalCached !== cached) setCachedResult(request.term, request.langCode, finalCached);
-      renderLookupResult(finalCached, [], anchorRect, request, pointer);
+      renderLookupResult(finalCached[0]!, finalCached.slice(1), anchorRect, request, pointer);
       return;
     }
 
@@ -594,8 +596,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         if (success && data && data.length > 0) {
           const [winner, ...rest] = data;
           const finalWinner = applyLocalStatusFallback(winner!, request.term);
-          setCachedResult(request.term, request.langCode, finalWinner);
-          renderLookupResult(finalWinner, rest, anchorRect, request, pointer);
+          const finalData = finalWinner === winner ? data : [finalWinner, ...rest];
+          setCachedResult(request.term, request.langCode, finalData);
+          renderLookupResult(finalWinner, finalWinner === winner ? rest : finalData.slice(1), anchorRect, request, pointer);
         } else {
           console.warn('[web-text-dict] lookup failed', error);
         }
