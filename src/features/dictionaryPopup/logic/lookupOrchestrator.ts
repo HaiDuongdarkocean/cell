@@ -25,6 +25,7 @@ import { pluginRegistry } from '../plugins/pluginRegistry';
 import { findDictionaryByTerm } from '@/features/dictionary/repositories/dictionaryRepository';
 import { findFrequencyByTerm } from '@/features/dictionary/repositories/frequencyRepository';
 import { getAllResources } from '@/features/dictionary/repositories/resourceRepository';
+import { getWordStatus } from '@/features/dictionaryPopup/services/wordStatusStore';
 import {
   getAllPhraseIndexes,
 } from '@/features/dictionary/repositories/phraseIndexRepository';
@@ -236,11 +237,16 @@ export async function lookupOrchestratorMulti(
 
   checkAbort(signal);
 
+  // 2b. Determine origin/lemma of the hovered surface token for header display.
+  const originTerm = (plugin.lemma && surfaceTerm !== plugin.lemma(surfaceTerm))
+    ? plugin.lemma(surfaceTerm)
+    : undefined;
+
   // 3. Build winner result: phrase match wins when valid; otherwise the surface
   //    token (with lemma fallback for definitions).
   const winnerResult = detectedPhrase
-    ? await assembleLookupResult(langCode, detectedPhrase.dictionaryTerm, detectedPhrase, 'plugin', plugin, signal)
-    : await assembleLookupResult(langCode, surfaceTerm, null, matchSource, plugin, signal, surfaceTerm);
+    ? await assembleLookupResult(langCode, detectedPhrase.dictionaryTerm, detectedPhrase, 'plugin', plugin, signal, undefined, surfaceTerm, originTerm)
+    : await assembleLookupResult(langCode, surfaceTerm, null, matchSource, plugin, signal, surfaceTerm, surfaceTerm, originTerm);
 
   const additionalResults: LookupResult[] = [];
   const seen = new Set([winnerResult.term.toLowerCase()]);
@@ -318,6 +324,10 @@ async function assembleLookupResult(
   /** If provided, the result header shows this surface term (e.g. the hovered
    *  token "is") while definitions are resolved from lookupTerm/its lemma. */
   displayTerm?: string,
+  /** Exact token the user hovered over (for header display when phrase matched). */
+  hoverTerm?: string,
+  /** Resolved lemma/origin of the hovered token (for header display). */
+  originTerm?: string,
 ): Promise<LookupResult> {
   checkAbort(signal);
 
@@ -389,7 +399,7 @@ async function assembleLookupResult(
       ? { rank: freqEntries[0]!.frequency, source: 'frequency' }
       : null;
 
-  const status = 'unknown' as const;
+  const status = await getWordStatus(langCode, surfaceTerm);
 
   return {
     term: surfaceTerm,
@@ -402,6 +412,8 @@ async function assembleLookupResult(
     definitions,
     detectedPhrase,
     matchSource,
+    hoverTerm,
+    originTerm,
   };
 }
 
