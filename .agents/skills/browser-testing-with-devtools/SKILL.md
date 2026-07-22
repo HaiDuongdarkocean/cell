@@ -599,7 +599,35 @@ Không cần tách click và verify thành 2 calls.
 
 ---
 
-## Router boomerang
+## Recovery from Hangs (browser/MCP bị treo)
 
-Task đổi hoặc không rõ skill nào phù hợp? Invoke /using-agent-skills để re-route. Router protocol trong AGENTS.md (always-on).
+### Triệu chứng
+- `mcp_call_tool` không trả về (spinner vô tận)
+- Browser restart giữa phiên → page/SW IDs đổi
+
+### Nguyên nhân
+1. **IndexedDB transaction trong evaluate_script** — `IDBRequest.onsuccess` không fire → Promise treo vĩnh viễn
+2. **`chrome.storage.local.get(null)`** — serialize toàn bộ DB (43MB) → treo
+3. **`fetch()` file lớn** trong evaluate_script — quá nặng cho MCP channel
+4. **`serviceWorkerId` cũ** sau restart → gọi SW không tồn tại
+
+### Recovery protocol
+```
+TREO → list_pages (browser còn sống?)
+     → navigate_page (mở lại test page, lấy SW ID mới)
+     → list_extensions + reload_extension (extension còn installed?)
+     → KHÔNG retry cùng lệnh gây treo
+```
+
+### Tránh treo — dùng key cụ thể, không mở DB
+
+| ✗ Treo | ✓ An toàn |
+|--------|-----------|
+| `indexedDB.open()` + transaction | `chrome.storage.local.get(['dictionaryMeta'])` (key cụ thể) |
+| `chrome.storage.local.get(null)` | `chrome.storage.local.get(['settings'])` |
+| `fetch(seedUrl)` 43MB | Kiểm tra `hasDictMeta` từ storage key |
+| `serviceWorkerId` cũ | `list_pages` trước, lấy SW ID mới |
+
+### Verify logic không cần dictionary data
+Popup không hiện khi DB rỗng. Để verify positioning, trả rects từ page rồi assert bằng unit test — không cần popup hiện, không cần seed.
 

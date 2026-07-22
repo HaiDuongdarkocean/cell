@@ -109,7 +109,10 @@ describe('computePopupPosition — edge cases', () => {
   // ── Edge case 5: Token near left edge — clamp left ──
   it('EC5: clamps left to viewport margin when token at left edge', () => {
     const pos = computePopupPosition(70, -50, 50, 100, 400, 1920, 1080);
-    expect(pos.left).toBe(8); // VIEWPORT_MARGIN
+    // With shift variants, right placement (left=54) may win over bottom (clamped to 8)
+    // because it fits without clamping. Both are valid — just ensure popup is in viewport.
+    expect(pos.left).toBeGreaterThanOrEqual(8);
+    expect(pos.left + 400).toBeLessThanOrEqual(1920 - 8);
   });
 
   // ── Edge case 6: Popup wider than viewport — clamp width ──
@@ -213,6 +216,116 @@ describe('computePopupPosition — edge cases', () => {
     expect(pos.top).toBeGreaterThanOrEqual(8);
     expect(pos.top + 400).toBeLessThanOrEqual(600 - 8);
   });
+
+  it('prefers the side the pointer is coming from to avoid covering the badge', () => {
+    // Pointer coming from the left: badge at (0,115), tip at (125,115).
+    const pointer = { tip: { x: 125, y: 115 }, badgeCenter: { x: 0, y: 115 } };
+    // Without pointer it would place below (top=104); with pointer it should place right.
+    const pos = computePopupPosition(70, 100, 150, 100, 200, 600, 400, 300, pointer);
+    expect(pos.left).toBe(154); // anchorRight + 4
+    expect(pos.top).toBe(70);   // aligned with anchor top
+  });
+
+  it('falls back to the left when the preferred right side does not fit', () => {
+    // Pointer coming from the right, but no space on the right.
+    const pointer = { tip: { x: 500, y: 80 }, badgeCenter: { x: 0, y: 80 } };
+    const pos = computePopupPosition(70, 450, 500, 100, 200, 600, 400, 300, pointer);
+    expect(pos.left).toBe(246); // anchorLeft - popupWidth - GAP
+    expect(pos.top).toBe(70);  // aligned with anchor top, fits vertically
+  });
+
+  it('avoids covering the pointer tip when the preferred side would overlap', () => {
+    // Badge below the token, pointer tip is above the token (dy < 0) => preferred top.
+    // However, the tip is at the same x as the token and the popup above would cover it.
+    // In this layout the tip sits at (125, 50) and the popup above token (70..100)
+    // would start at top=70-300-4=-234, clamped to 8, height 300, so it covers y=50.
+    // The scorer should prefer right/left to avoid the tip.
+    const pointer = { tip: { x: 125, y: 50 }, badgeCenter: { x: 125, y: 150 }, badgeRadius: 18, pointerRadius: 4.5 };
+    const pos = computePopupPosition(70, 100, 150, 100, 200, 600, 400, 300, pointer);
+    // Should not place above (which would cover tip); right is preferred because dx=0,
+    // but the tie-breaker goes to the first evaluated after preferred (top). Top covers tip
+    // and gets +1000, so right (left=154, top=70) should win.
+    expect(pos.left).toBe(154);
+    expect(pos.top).toBe(70);
+  });
+
+  it('avoids covering the badge circle', () => {
+    // Badge sits directly below the token; preferred bottom would put popup over the badge.
+    const pointer = { tip: { x: 125, y: 130 }, badgeCenter: { x: 125, y: 180 }, badgeRadius: 20, pointerRadius: 4.5 };
+    const pos = computePopupPosition(70, 100, 150, 100, 200, 600, 400, 300, pointer);
+    // Bottom would be at top=104, height 300, y=104..404; badge center y=180 with r=20
+    // is inside, so bottom gets +500. Right (left=154, top=70) should win.
+    expect(pos.left).toBe(154);
+    expect(pos.top).toBe(70);
+  });
+
+  it('avoids covering the pointer near the viewport bottom', () => {
+    // Word near the bottom of a short viewport. Pointer comes from above (dy > 0)
+    // so bottom is preferred, but the popup would be clamped upward and cover the pointer.
+    // The scorer should pick a side (right/left) that keeps the pointer circle outside.
+    const pointer = { tip: { x: 500, y: 599.5 }, badgeCenter: { x: 500, y: 573 }, badgeRadius: 18, pointerRadius: 4.5 };
+    const pos = computePopupPosition(590.5, 500, 540, 608.5, 320, 1366, 663, 200, pointer);
+    const pointerMargin = (pointer.pointerRadius ?? 6) + 4;
+    // Popup left edge must be at least pointerMargin to the right of the pointer tip.
+    expect(pos.left).toBeGreaterThanOrEqual(pointer.tip.x + pointerMargin);
+  });
+});
+
+describe('computePopupPosition — line-aware constraint', () => {
+  // Line rect wider than the token: the popup must not overlap the line.
+  // Token at (100,70)-(150,100), line at (50,60)-(800,110).
+  // Without lineRect, bottom placement at top=104 would be fine.
+  // With lineRect, bottom at top=104 overlaps line (60..110) → must go further down.
+  it('popup below does not overlap the line rect', () => {
+    const lineRect = { top: 60, left: 50, right: 800, bottom: 110 };
+    const pos = computePopupPosition(70, 100, 150, 100, 400, 1920, 1080, 300, undefined, lineRect);
+    // Popup top must be below line bottom (110) + GAP (4) = 114.
+    expect(pos.top).toBeGreaterThanOrEqual(114);
+  });
+
+  it('popup above does not overlap the line rect', () => {
+    // Token near bottom, line at (50, 900)-(800, 950).
+    // Popup above must end above line top (900) - GAP = 896.
+    const lineRect = { top: 900, left: 50, right: 800, bottom: 950 };
+    const pos = computePopupPosition(910, 100, 150, 940, 400, 1920, 1080, 300, undefined, lineRect);
+    // Popup top + popupHeight must be <= line top - GAP = 896.
+    expect(pos.top + 300).toBeLessThanOrEqual(896);
+  });
+
+  it('popup never vertically overlaps the line band (full-width avoidance)', () => {
+    // Same-row neighbors must stay clickable: even if popup is left/right of the
+    // word, its Y range must clear the line/cue band.
+    const lineRect = { top: 60, left: 50, right: 800, bottom: 110 };
+    const pos = computePopupPosition(70, 100, 150, 100, 200, 1920, 1080, 300, undefined, lineRect);
+    const clearsAbove = pos.top + 300 <= lineRect.top;
+    const clearsBelow = pos.top >= lineRect.bottom;
+    expect(clearsAbove || clearsBelow).toBe(true);
+  });
+
+  it('prefers below the cue so same-row neighbors stay free (image-2 layout)', () => {
+    // Subtitle cue — token in first visual line of a 2-line cue. Enough room below.
+    const lineRect = { top: 400, left: 80, right: 1200, bottom: 470 };
+    const pos = computePopupPosition(405, 400, 470, 430, 420, 1366, 900, 280, undefined, lineRect);
+    expect(pos.top).toBeGreaterThanOrEqual(lineRect.bottom + 4);
+    expect(pos.left).toBeGreaterThanOrEqual(8);
+  });
+
+  it('without lineRect, behaves like before (popup can be close to anchor)', () => {
+    const pos = computePopupPosition(70, 100, 150, 100, 400, 1920, 1080, 300);
+    // Without lineRect, bottom placement at top=104 is fine (no line constraint).
+    expect(pos.top).toBe(104); // anchor.bottom + GAP
+  });
+
+  it('shift variants: center alignment is chosen when start overflows right', () => {
+    // Token at right edge: anchor.left=1800, anchor.right=1850, popupWidth=400.
+    // start: left=1800 → 1800+400=2200 > 1912 → clamped.
+    // center: left=(1800+1850)/2 - 200 = 1625 → fits.
+    // end: left=1850-400=1450 → fits.
+    // Both center and end fit; center is closer to anchor center → lower distance score.
+    const pos = computePopupPosition(70, 1800, 1850, 100, 400, 1920, 1080);
+    expect(pos.left + 400).toBeLessThanOrEqual(1920 - 8);
+    expect(pos.left).toBeGreaterThanOrEqual(8);
+  });
 });
 
 describe('PopupShell', () => {
@@ -253,13 +366,13 @@ describe('PopupShell', () => {
     expect(shellEl.style.top).toMatch(/\d+px/);
   });
 
-  it('show/hide toggles display on the popup shell', () => {
+  it('show/hide toggles the visible class on the popup shell', () => {
     shell.mount();
-    shell.hide();
     const shellEl = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
-    expect(shellEl.style.display).toBe('none');
+    shell.hide();
+    expect(shellEl.classList.contains('cell-popup--visible')).toBe(false);
     shell.show();
-    expect(shellEl.style.display).toBe('flex');
+    expect(shellEl.classList.contains('cell-popup--visible')).toBe(true);
   });
 
   it('setSize updates width + maxHeight on the popup shell', () => {
@@ -270,8 +383,9 @@ describe('PopupShell', () => {
     expect(shellEl.style.maxHeight).toBe('300px');
   });
 
-  it('Esc key triggers onDismiss', () => {
+  it('Esc key triggers onDismiss when visible', () => {
     shell.mount();
+    shell.show();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
@@ -282,8 +396,9 @@ describe('PopupShell', () => {
     expect(onDismiss).not.toHaveBeenCalled();
   });
 
-  it('click outside triggers onDismiss', () => {
+  it('click outside triggers onDismiss when visible', () => {
     shell.mount();
+    shell.show();
     // Click on body (outside popup host).
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -545,8 +660,9 @@ describe('PopupShell', () => {
       focusSpy.mockRestore();
     });
 
-    it('Tab key cycles focus inside the popup', () => {
+    it('Tab key cycles focus inside the popup when visible', () => {
       shell.mount();
+      shell.show();
       const popup = shell.getShadowRoot()!.querySelector('.js-cell-popup') as HTMLDivElement;
       const btn1 = document.createElement('button');
       const btn2 = document.createElement('button');

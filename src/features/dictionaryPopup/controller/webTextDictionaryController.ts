@@ -11,16 +11,20 @@
 
 import type { LookupRequest, LookupResult, TriggerMode, WordStatus } from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
-import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAction } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAction, PopupLineRect } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import {
   createPopupDictionaryState,
   showPopup,
+  hidePopup,
   appendCandidate,
   updatePopupSettings,
   destroyPopup,
 } from '@/features/dictionaryPopup/ui/popupDictionaryController';
-import { WebTriggerController } from '@/features/dictionaryPopup/trigger/webTriggerController';
+import { WebTriggerController, extractWordAtOffset, type WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
+import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { createWordHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
+import { createOrbitalBadge, type OrbitalBadge, type PointerPreset } from '@/features/dictionaryPopup/badgePointer';
+
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
@@ -81,9 +85,12 @@ export interface WebTextDictionaryController {
     requestId: string,
     anchorRect: DOMRect,
     highlightTarget: HighlightTarget,
+    pointer?: WebTriggerPointer,
   ) => void;
   /** Cancel an in-flight lookup. */
   readonly cancelLookup: (requestId: string) => void;
+  /** Hide the popup, clear highlight, and cancel the current lookup. */
+  readonly dismissLookup: () => void;
   /** Highlight a token span (subtitle) or a Range (web text). */
   readonly showHighlight: (target: HighlightTarget) => void;
   /** Clear active highlight. */
@@ -116,6 +123,63 @@ async function waitForVideoReady(video: HTMLVideoElement, timeoutMs = 2000): Pro
   });
 }
 
+/**
+ * Avoidance band for the line/cue containing the looked-up word.
+ *
+ * Subtitle path (HTMLElement token): parent cue box — often 1–2 visual lines.
+ *   Popup must clear the whole cue so neighbors on the same row stay clickable.
+ * Web text path (Range): single visual line via getClientRects (not whole <p>).
+ *
+ * Horizontal span is expanded to full viewport width later in computePopupPosition
+ * so side placements cannot cover same-row neighbors.
+ */
+function computeLineRect(target: HighlightTarget): PopupLineRect | null {
+  if (target instanceof HTMLElement) {
+    const parent = target.parentElement;
+    const box = (parent ?? target).getBoundingClientRect();
+    if (box.width === 0 || box.height === 0) return null;
+    return { top: box.top, left: box.left, right: box.right, bottom: box.bottom };
+  }
+
+  // Web text: pick the visual line box closest to the word center.
+  const wordRect = typeof target.getBoundingClientRect === 'function'
+    ? target.getBoundingClientRect()
+    : null;
+  if (!wordRect) return null;
+  const anchorCenterY = (wordRect.top + wordRect.bottom) / 2;
+
+  let el: HTMLElement | null =
+    target.startContainer.nodeType === Node.ELEMENT_NODE
+      ? (target.startContainer as HTMLElement)
+      : target.startContainer.parentElement;
+  while (el && !isBlockContainer(el)) el = el.parentElement;
+  if (!el) {
+    return { top: wordRect.top, left: wordRect.left, right: wordRect.right, bottom: wordRect.bottom };
+  }
+
+  const blockRange = document.createRange();
+  blockRange.selectNodeContents(el);
+  const rects = typeof blockRange.getClientRects === 'function' ? blockRange.getClientRects() : [];
+  if (rects.length === 0) {
+    return { top: wordRect.top, left: wordRect.left, right: wordRect.right, bottom: wordRect.bottom };
+  }
+
+  let best = rects[0];
+  let bestDist = Infinity;
+  for (let i = 0; i < rects.length; i++) {
+    const rc = rects[i];
+    const dist = Math.abs((rc.top + rc.bottom) / 2 - anchorCenterY);
+    if (dist < bestDist) { bestDist = dist; best = rc; }
+  }
+  return { top: best.top, left: best.left, right: best.right, bottom: best.bottom };
+}
+
+function isBlockContainer(el: HTMLElement): boolean {
+  const display = getComputedStyle(el).display;
+  if (display === 'block' || display === 'list-item' || display === 'table-cell') return true;
+  return ['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'TD'].includes(el.tagName);
+}
+
 /** Create a top-level web-text dictionary controller. */
 export function createWebTextDictionaryController(deps: WebTextDictionaryControllerDeps): WebTextDictionaryController {
   let dpSettings = deps.dictionaryPopupSettings;
@@ -137,11 +201,101 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let popupDictWasPlaying = false;
   const wordHighlight = createWordHighlight();
 
+  // Bounded in-memory lookup cache. Key = `${langCode}:${term.toLowerCase()}`.
+  // Capacity scales with device memory (low-end: 50, high-end: 250) to avoid
+  // bloat on 1GB machines while still giving repeat-hover instant popups.
+  const deviceMemory = Number((navigator as { deviceMemory?: number }).deviceMemory ?? 4);
+  const MAX_LOOKUP_CACHE_SIZE = Math.min(250, Math.max(50, Math.round(deviceMemory * 25)));
+  const lookupCache = new Map<string, LookupResult>();
+
+  function cacheKeyFor(term: string, langCode: string): string {
+    return `${langCode}:${term.toLowerCase()}`;
+  }
+
+  function getCachedResult(term: string, langCode: string): LookupResult | undefined {
+    return lookupCache.get(cacheKeyFor(term, langCode));
+  }
+
+  function setCachedResult(term: string, langCode: string, result: LookupResult): void {
+    const key = cacheKeyFor(term, langCode);
+    // Move to most-recent position on access.
+    if (lookupCache.has(key)) lookupCache.delete(key);
+    lookupCache.set(key, result);
+    // Evict oldest if over capacity.
+    if (lookupCache.size > MAX_LOOKUP_CACHE_SIZE) {
+      const first = lookupCache.keys().next().value;
+      if (first) lookupCache.delete(first);
+    }
+  }
+
+  const WORD_CHAR_RE = /[\w\u4e00-\u9fff\u3400-\u4dbf]/;
+
+  /** Return the previous/next word in `sentence` relative to the current term. */
+  function getAdjacentTerms(
+    sentence: string,
+    cursorOffset: number,
+    currentTerm: string,
+  ): { term: string; start: number }[] {
+    const terms: { term: string; start: number }[] = [];
+
+    // Previous word: scan left from cursorOffset - 1 over non-word chars.
+    let i = cursorOffset - 1;
+    while (i >= 0 && !WORD_CHAR_RE.test(sentence[i]!)) i--;
+    if (i >= 0) {
+      const prev = extractWordAtOffset(sentence, i);
+      if (prev && prev.text !== currentTerm) terms.push({ term: prev.text, start: prev.start });
+    }
+
+    // Next word: scan right from the end of the current term.
+    i = cursorOffset + currentTerm.length;
+    while (i < sentence.length && !WORD_CHAR_RE.test(sentence[i]!)) i++;
+    if (i < sentence.length) {
+      const next = extractWordAtOffset(sentence, i);
+      if (next && next.text !== currentTerm && !terms.some((t) => t.term === next.text)) {
+        terms.push({ term: next.text, start: next.start });
+      }
+    }
+
+    return terms;
+  }
+
+  /** Quietly lookup previous/next words so the popup is already cached when the user moves. */
+  function prefetchAdjacentTerms(request: LookupRequest): void {
+    if (!request.contextSentence) return;
+    const adjacent = getAdjacentTerms(request.contextSentence, request.cursorOffset, request.term);
+    for (const { term, start } of adjacent) {
+      const key = cacheKeyFor(term, request.langCode);
+      if (lookupCache.has(key)) continue;
+      const prefetchRequest: LookupRequest = {
+        term,
+        langCode: request.langCode,
+        contextSentence: request.contextSentence,
+        cursorOffset: start,
+      };
+      void Promise.resolve(sendMessage({
+        type: MESSAGE_TYPES.LOOKUP_REQUEST,
+        payload: { requestId: nextRequestId(), request: prefetchRequest },
+      }))
+        .then((response: unknown) => {
+          const { success, data } = response as { success: boolean; data?: LookupResult[] };
+          if (success && data && data.length > 0) {
+            setCachedResult(term, request.langCode, data[0]!);
+          }
+        })
+        .catch(() => { /* prefetch failures are best-effort */ });
+    }
+  }
+
   let webTrigger: WebTriggerController | null = null;
   let currentAttachedMode: TriggerMode | null = null;
+  let orbitalBadge: OrbitalBadge | null = null;
+  let orbitalHoverTrigger: WebTriggerController | null = null;
+  let orbitalBadgeSize: number | null = null;
+  let orbitalBadgeScale: number | null = null;
   let cardCreatorMount: CardCreatorMountController | null = null;
   let currentHighlightTarget: HighlightTarget | null = null;
   let currentPopupTokenId: { term: string; start: string; blockId: string } | null = null;
+  let currentRequestId: string | null = null;
 
   function showHighlight(target: HighlightTarget): void {
     wordHighlight.show(target);
@@ -149,6 +303,37 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   function clearHighlight(): void {
     wordHighlight.clear();
+  }
+
+  function dismissLookup(): void {
+    if (currentRequestId) {
+      cancelLookup(currentRequestId);
+      currentRequestId = null;
+    }
+    popupDictState = hidePopup(popupDictState);
+    wordHighlight.clear();
+    currentHighlightTarget = null;
+    currentPopupTokenId = null;
+  }
+
+  /** While the orbital pointer is moving, hide the popup if it would cover
+   *  the pointer tip or the badge so the target text stays readable. */
+  function hidePopupIfObscured(tip: { x: number; y: number }, badgeCenter: { x: number; y: number }, badgeRadius: number, pointerRadius: number): void {
+    if (!popupDictState.shell?.isVisible()) return;
+    const rect = popupDictState.shell.getPopupRect();
+    if (!rect) return;
+    const margin = pointerRadius + 4;
+    const pointerOverlap = tip.x >= rect.left - margin && tip.x <= rect.right + margin && tip.y >= rect.top - margin && tip.y <= rect.bottom + margin;
+    if (pointerOverlap) {
+      popupDictState = hidePopup(popupDictState);
+      return;
+    }
+    const badgeMargin = badgeRadius + 4;
+    const closestX = Math.max(rect.left, Math.min(badgeCenter.x, rect.right));
+    const closestY = Math.max(rect.top, Math.min(badgeCenter.y, rect.bottom));
+    if (Math.hypot(closestX - badgeCenter.x, closestY - badgeCenter.y) <= badgeMargin) {
+      popupDictState = hidePopup(popupDictState);
+    }
   }
 
   const ALL_STATUSES: WordStatus[] = ['unknown', 'tracking', 'known', 'ignore'];
@@ -231,12 +416,68 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     resumeVideoIfNeeded();
   }
 
+  function renderLookupResult(
+    result: LookupResult,
+    additional: readonly LookupResult[],
+    anchorRect: DOMRect,
+    request: LookupRequest,
+    pointer?: WebTriggerPointer,
+  ): void {
+    pauseVideoIfNeeded();
+    // Compute line rect from the current highlight target for line-aware
+    // popup positioning ("không che chữ cùng hàng").
+    const lineRect: PopupLineRect | null = currentHighlightTarget
+      ? computeLineRect(currentHighlightTarget)
+      : null;
+    popupDictState = showPopup(
+      popupDictState,
+      result,
+      {
+        anchor: {
+          top: anchorRect.top,
+          left: anchorRect.left,
+          right: anchorRect.right,
+          bottom: anchorRect.bottom + 4,
+        },
+        pointer: pointer ? { tip: { x: pointer.x, y: pointer.y }, badgeCenter: pointer.badgeCenter, badgeRadius: pointer.badgeRadius, pointerRadius: pointer.pointerRadius } : undefined,
+        lineRect,
+        contextSentence: request.contextSentence,
+        onDismiss: onPopupDismiss,
+        onStatusChange: (term, langCode, status) => {
+          deps.onStatusChange?.(term, langCode, status);
+          // If a visible block was rebound, re-apply the status and the
+          // popup-open pin to the same token so the status bar stays
+          // visible while the popup is still open.
+          const token = currentPopupTokenId ? getTokenById(currentPopupTokenId) : null;
+          if (token) {
+            applyTokenStatus(token, status);
+            token.classList.add(POPUP_OPEN_CLASS);
+          } else if (currentHighlightTarget) {
+            applyTokenStatus(currentHighlightTarget, status);
+          }
+          // Keep the in-memory cache in sync with status changes.
+          const key = cacheKeyFor(term, langCode);
+          const cached = lookupCache.get(key);
+          if (cached && cached.status !== status) {
+            lookupCache.set(key, { ...cached, status });
+          }
+        },
+      },
+    );
+    for (const candidate of additional) {
+      popupDictState = appendCandidate(popupDictState, candidate, request.contextSentence);
+    }
+    prefetchAdjacentTerms(request);
+  }
+
   function handleLookup(
     request: LookupRequest,
     requestId: string,
     anchorRect: DOMRect,
     highlightTarget: HighlightTarget,
+    pointer?: WebTriggerPointer,
   ): void {
+    currentRequestId = requestId;
     currentHighlightTarget = highlightTarget;
     wordHighlight.show(highlightTarget);
 
@@ -245,45 +486,26 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       setPopupTokenId(token);
     }
 
-    void sendMessage({
+    // Fast path: if we already looked this term up, show the popup immediately
+    // without paying for a background round-trip.
+    const cached = getCachedResult(request.term, request.langCode);
+    if (cached) {
+      renderLookupResult(cached, [], anchorRect, request, pointer);
+      return;
+    }
+
+    void Promise.resolve(sendMessage({
       type: MESSAGE_TYPES.LOOKUP_REQUEST,
       payload: { requestId, request },
-    })
+    }))
       .then((response: unknown) => {
+        // If the user already moved away and dismissed the popup, ignore stale result.
+        if (currentRequestId !== requestId) return;
         const { success, data, error } = response as { success: boolean; data?: LookupResult[]; error?: string };
         if (success && data && data.length > 0) {
-          pauseVideoIfNeeded();
           const [winner, ...rest] = data;
-          popupDictState = showPopup(
-            popupDictState,
-            winner!,
-            {
-              anchor: {
-                top: anchorRect.top,
-                left: anchorRect.left,
-                right: anchorRect.right,
-                bottom: anchorRect.bottom + 4,
-              },
-              contextSentence: request.contextSentence,
-              onDismiss: onPopupDismiss,
-              onStatusChange: (term, langCode, status) => {
-                deps.onStatusChange?.(term, langCode, status);
-                // If a visible block was rebound, re-apply the status and the
-                // popup-open pin to the same token so the status bar stays
-                // visible while the popup is still open.
-                const token = currentPopupTokenId ? getTokenById(currentPopupTokenId) : null;
-                if (token) {
-                  applyTokenStatus(token, status);
-                  token.classList.add(POPUP_OPEN_CLASS);
-                } else if (currentHighlightTarget) {
-                  applyTokenStatus(currentHighlightTarget, status);
-                }
-              },
-            },
-          );
-          for (const candidate of rest) {
-            popupDictState = appendCandidate(popupDictState, candidate, request.contextSentence);
-          }
+          setCachedResult(request.term, request.langCode, winner!);
+          renderLookupResult(winner!, rest, anchorRect, request, pointer);
         } else {
           console.warn('[web-text-dict] lookup failed', error);
         }
@@ -481,15 +703,17 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function attach(mode: TriggerMode): void {
-    if (currentAttachedMode === mode && webTrigger) return;
+    if (currentAttachedMode === mode) return;
     detach();
     currentAttachedMode = mode;
+    if (mode === 'orbital') return;
     webTrigger = new WebTriggerController({
       triggerMode: mode,
-      onLookup: (request, requestId, anchorRect, range) => {
-        void handleLookup(request, requestId, anchorRect, range);
+      onLookup: (request, requestId, anchorRect, range, pointer) => {
+        void handleLookup(request, requestId, anchorRect, range, pointer);
       },
       onCancel: (requestId) => { cancelLookup(requestId); },
+      onClear: () => { dismissLookup(); },
     });
     webTrigger.attach();
   }
@@ -498,6 +722,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     webTrigger?.detach();
     webTrigger = null;
     currentAttachedMode = null;
+    orbitalBadge?.destroy();
+    orbitalBadge = null;
+    orbitalHoverTrigger?.detach();
+    orbitalHoverTrigger = null;
   }
 
   function destroy(): void {
@@ -506,6 +734,64 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     cardCreatorMount?.unmount();
     cardCreatorMount = null;
     wordHighlight.destroy();
+    lookupCache.clear();
+  }
+
+  function persistBadgePointerPreset(preset: PointerPreset): void {
+    dpSettings = { ...dpSettings, badgePointerTrigger: { ...dpSettings.badgePointerTrigger, position: preset } };
+    void sendMessage({
+      type: MESSAGE_TYPES.UPDATE_SETTINGS,
+      payload: { settings: { dictionaryPopup: dpSettings } },
+    });
+  }
+
+  function syncOrbitalBadge(dp: DictionaryPopupSettings): void {
+    if (!dp.enabled) {
+      orbitalBadge?.destroy();
+      orbitalBadge = null;
+      orbitalBadgeSize = null;
+      orbitalBadgeScale = null;
+      orbitalHoverTrigger?.detach();
+      orbitalHoverTrigger = null;
+      return;
+    }
+    const trigger = dp.badgePointerTrigger;
+    if (dp.triggerMode === 'orbital') {
+      if (!orbitalHoverTrigger) {
+        orbitalHoverTrigger = new WebTriggerController({
+          triggerMode: 'hover',
+          onLookup: (request, requestId, anchorRect, range, pointer) => {
+            void handleLookup(request, requestId, anchorRect, range, pointer);
+          },
+          onCancel: (requestId) => { cancelLookup(requestId); },
+          onClear: () => { dismissLookup(); },
+        });
+      }
+      const sameDimensions = orbitalBadgeSize === trigger.size && orbitalBadgeScale === trigger.pointerScale;
+      if (orbitalBadge && sameDimensions) {
+        orbitalBadge.setPreset(trigger.position);
+      } else {
+        orbitalBadge?.destroy();
+        orbitalBadge = createOrbitalBadge({
+          badgeSize: trigger.size,
+          pointerScale: trigger.pointerScale,
+          initialPreset: trigger.position,
+          onPresetChange: (preset) => { persistBadgePointerPreset(preset); },
+          onTipReady: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
+          onTipHover: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
+          onTipMoving: (tip, _preset, badgeCenter) => { hidePopupIfObscured(tip, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
+        });
+        orbitalBadgeSize = trigger.size;
+        orbitalBadgeScale = trigger.pointerScale;
+      }
+    } else {
+      orbitalBadge?.destroy();
+      orbitalBadge = null;
+      orbitalBadgeSize = null;
+      orbitalBadgeScale = null;
+      orbitalHoverTrigger?.detach();
+      orbitalHoverTrigger = null;
+    }
   }
 
   function updateSettings(settings: {
@@ -524,6 +810,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     } else {
       detach();
     }
+    syncOrbitalBadge(dpSettings);
   }
 
   return {
@@ -534,6 +821,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     destroy,
     handleLookup,
     cancelLookup,
+    dismissLookup,
     showHighlight,
     clearHighlight,
     updateCardCreatorSettings,

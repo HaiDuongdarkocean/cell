@@ -35,14 +35,26 @@ import { nextStatus } from '../services/wordStatusStore';
 import { fillExternalDictLinks } from './popupToolbar';
 import { createTtsEngine, getTtsVoiceRows } from '../services/ttsEngineService';
 import { FALLBACK_VIEWPORT_WIDTH, FALLBACK_VIEWPORT_HEIGHT } from '@/shared/config/config';
-import type { PopupAnchor } from './popupShell';
+import type { PopupAnchor, PopupLineRect } from './popupShell';
 
-export type { PopupAnchor };
+export type { PopupAnchor, PopupLineRect };
+
+export interface PopupPointer {
+  readonly tip: { readonly x: number; readonly y: number };
+  readonly badgeCenter?: { readonly x: number; readonly y: number };
+  readonly badgeRadius?: number;
+  readonly pointerRadius?: number;
+}
 
 /** Options for {@link showPopup}. */
 export interface ShowPopupOptions {
   /** Token's bounding rect for anchoring the popup. */
   readonly anchor: PopupAnchor;
+  /** Pointer tip + badge center so the popup can avoid covering the pointer. */
+  readonly pointer?: PopupPointer;
+  /** Bounding box of the line containing the token — popup avoids overlapping it
+   *  ("không che chữ cùng hàng"). If omitted, falls back to anchor. */
+  readonly lineRect?: PopupLineRect | null;
   /** Surrounding sentence for context display + Card Creator prefill. */
   readonly contextSentence: string;
   /** Called when popup is dismissed (Esc / click outside). */
@@ -256,7 +268,7 @@ export function showPopup(
   result: LookupResult,
   options: ShowPopupOptions,
 ): PopupDictionaryState {
-  const { anchor, contextSentence, onDismiss, onStatusChange } = options;
+  const { anchor, pointer, contextSentence, onDismiss, onStatusChange } = options;
   // Create shell if needed.
   let shell = state.shell;
   if (!shell) {
@@ -382,11 +394,12 @@ export function showPopup(
     }
   }
 
-  // Show first so offsetHeight is correct (display:none → offsetHeight=0).
-  // Then position using actual rendered height. No visible flash because
-  // setPosition runs synchronously in the same frame.
+  // Position first while the shell is still visually hidden (visibility:hidden).
+  // This sets the initial left/top without animation. show() then fades in
+  // opacity + transform. visibility:hidden still contributes to layout, so
+  // offsetHeight is accurate in real browsers.
+  shell.setPosition(anchor, pointer, options.lineRect);
   shell.show();
-  shell.setPosition(anchor);
 
   return state;
 }
@@ -554,7 +567,29 @@ export function updatePopupSettings(
   settings: DictionaryPopupSettings,
   nativeLang?: string,
 ): PopupDictionaryState {
-  return { ...state, settings, ...(nativeLang !== undefined ? { nativeLang } : {}) };
+  const nextState: PopupDictionaryState = {
+    ...state,
+    settings,
+    ...(nativeLang !== undefined ? { nativeLang } : {}),
+  };
+
+  // Re-apply the default active tab so a settings change (e.g. None) is
+  // reflected in an already-open popup. showPopup already recomputes this for
+  // new lookups; without the recompute here, stale activeTab would stick.
+  const active = getActiveResult(nextState);
+  const langCode = active?.langCode;
+  const perLang = langCode ? settings.defaultActiveTabPerLang?.[langCode] : undefined;
+  const newActiveTab = perLang !== undefined
+    ? perLang
+    : (settings.defaultActiveTab ?? null);
+
+  if (nextState.shell?.getContainer()) {
+    rerender(nextState, newActiveTab);
+  } else {
+    nextState.activeTab = newActiveTab;
+  }
+
+  return nextState;
 }
 
 /** Cycle word status for the active candidate. */
@@ -752,9 +787,9 @@ function renderCandidateChipsAndList(state: PopupDictionaryState, container: HTM
     candidates.push({ idx: i + 1, result: r, status: cs?.status ?? r.status });
   }
 
-  // Chips only render when there are more than 2 candidates — with 1 or 2,
-  // the header word + reading already conveys the choice and chips add noise.
-  if (candidates.length <= 2) return;
+  // Chips render when there are 2+ candidates so the user can switch between
+  // phrase, surface, and origin forms.
+  if (candidates.length <= 1) return;
 
   renderCandidateChips(
     candidatesEl,

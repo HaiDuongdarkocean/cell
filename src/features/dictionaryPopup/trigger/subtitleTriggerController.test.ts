@@ -9,11 +9,26 @@ import {
   tokenizeSubtitleText,
   nextRequestId,
   HOVER_DEBOUNCE_MS,
-  CLICK_DEBOUNCE_MS,
 } from './subtitleTriggerController';
 import type { LookupRequest, TriggerMode } from '../types';
 
 // jsdom is available via jest-environment-jsdom (default for unit project).
+
+// jsdom does not implement Range.getClientRects. Provide a default mock so
+// existing tests (which dispatch events at 0,0) continue to register as
+// "over text". Tests that need an "outside" geometry override it locally.
+let originalGetClientRects: typeof Range.prototype.getClientRects;
+
+beforeEach(() => {
+  originalGetClientRects = Range.prototype.getClientRects;
+  Range.prototype.getClientRects = function() {
+    return [new DOMRect(0, 0, 200, 50)] as unknown as DOMRectList;
+  } as typeof Range.prototype.getClientRects;
+});
+
+afterEach(() => {
+  Range.prototype.getClientRects = originalGetClientRects;
+});
 
 describe('detectLangCode', () => {
   it('detects Chinese from CJK text', () => {
@@ -120,6 +135,7 @@ describe('nextRequestId', () => {
 describe('SubtitleTriggerController', () => {
   let onLookup: jest.Mock<(req: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => void>;
   let onCancel: jest.Mock<(requestId: string) => void>;
+  let onClear: jest.Mock<() => void>;
   let parent: HTMLSpanElement;
   let spans: HTMLSpanElement[];
 
@@ -128,12 +144,14 @@ describe('SubtitleTriggerController', () => {
       triggerMode: mode,
       onLookup,
       onCancel,
+      onClear,
     });
   }
 
   beforeEach(() => {
     onLookup = jest.fn<(req: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => void>();
     onCancel = jest.fn<(requestId: string) => void>();
+    onClear = jest.fn<() => void>();
     parent = document.createElement('span');
     spans = wrapTokenSpans(parent, 'Hello world.', 'en');
   });
@@ -143,14 +161,11 @@ describe('SubtitleTriggerController', () => {
   });
 
   describe('click mode', () => {
-    it('dispatches LOOKUP after click debounce', () => {
-      jest.useFakeTimers();
+    it('dispatches LOOKUP immediately on click', () => {
       const ctrl = makeController('click');
       ctrl.attach(spans, 'Hello world.', 'en');
 
       spans[0]!.click();
-      expect(onLookup).not.toHaveBeenCalled();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
       expect(onLookup).toHaveBeenCalledTimes(1);
       expect(onLookup.mock.calls[0]![0].term).toBe('hello');
 
@@ -158,33 +173,44 @@ describe('SubtitleTriggerController', () => {
     });
 
     it('cancels previous in-flight on new click', () => {
-      jest.useFakeTimers();
       const ctrl = makeController('click');
       ctrl.attach(spans, 'Hello world.', 'en');
 
       spans[0]!.click();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
       const firstRequestId = onLookup.mock.calls[0]![1];
 
       spans[1]!.click();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
       expect(onCancel).toHaveBeenCalledWith(firstRequestId);
+      expect(onLookup).toHaveBeenCalledTimes(2);
 
       ctrl.detach();
     });
 
-    it('debounces rapid clicks on same token', () => {
-      jest.useFakeTimers();
+    it('dispatches each rapid click and cancels previous in-flight', () => {
       const ctrl = makeController('click');
       ctrl.attach(spans, 'Hello world.', 'en');
 
       spans[0]!.click();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS - 1);
       spans[0]!.click();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS - 1);
       spans[0]!.click();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
-      expect(onLookup).toHaveBeenCalledTimes(1);
+      // Each click cancels the previous one and dispatches a new lookup.
+      expect(onLookup).toHaveBeenCalledTimes(3);
+      expect(onCancel).toHaveBeenCalledTimes(2);
+
+      ctrl.detach();
+    });
+
+    it('does not dispatch click when pointer is outside token geometry', () => {
+      const ctrl = makeController('click');
+      ctrl.attach(spans, 'Hello world.', 'en');
+
+      // Simulate the token being laid out far from the click.
+      Range.prototype.getClientRects = function() {
+        return [new DOMRect(500, 500, 50, 20)] as unknown as DOMRectList;
+      } as typeof Range.prototype.getClientRects;
+
+      spans[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 0, clientY: 0 }));
+      expect(onLookup).not.toHaveBeenCalled();
 
       ctrl.detach();
     });
@@ -216,6 +242,67 @@ describe('SubtitleTriggerController', () => {
 
       ctrl.detach();
     });
+
+    it('does not dispatch hover when pointer is outside token geometry', () => {
+      jest.useFakeTimers();
+      const ctrl = makeController('hover');
+      ctrl.attach(spans, 'Hello world.', 'en');
+
+      // Simulate the token being laid out far from the cursor.
+      Range.prototype.getClientRects = function() {
+        return [new DOMRect(500, 500, 50, 20)] as unknown as DOMRectList;
+      } as typeof Range.prototype.getClientRects;
+
+      spans[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, clientX: 0, clientY: 0 }));
+      jest.advanceTimersByTime(HOVER_DEBOUNCE_MS);
+      expect(onLookup).not.toHaveBeenCalled();
+
+      ctrl.detach();
+    });
+
+    it('calls onClear when mouse leaves a token for empty space', () => {
+      jest.useFakeTimers();
+      const ctrl = makeController('hover');
+      ctrl.attach(spans, 'Hello world.', 'en');
+
+      spans[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      spans[0]!.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true, relatedTarget: null }));
+      jest.advanceTimersByTime(0);
+      expect(onClear).toHaveBeenCalled();
+
+      ctrl.detach();
+    });
+
+    it('does not call onClear when moving between tokens', () => {
+      jest.useFakeTimers();
+      const ctrl = makeController('hover');
+      ctrl.attach(spans, 'Hello world.', 'en');
+
+      spans[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      spans[0]!.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true, relatedTarget: spans[1] }));
+      jest.advanceTimersByTime(0);
+      expect(onClear).not.toHaveBeenCalled();
+
+      ctrl.detach();
+    });
+
+    it('does not call onClear when moving into the popup host', () => {
+      jest.useFakeTimers();
+      const ctrl = makeController('hover');
+      ctrl.attach(spans, 'Hello world.', 'en');
+
+      const popupHost = document.createElement('div');
+      popupHost.className = 'js-cell-popup-host';
+      document.body.appendChild(popupHost);
+
+      spans[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      spans[0]!.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true, relatedTarget: popupHost }));
+      jest.advanceTimersByTime(0);
+      expect(onClear).not.toHaveBeenCalled();
+
+      ctrl.detach();
+      document.body.removeChild(popupHost);
+    });
   });
 
   describe('hover-ctrl mode', () => {
@@ -244,14 +331,31 @@ describe('SubtitleTriggerController', () => {
     });
   });
 
+  describe('orbital mode', () => {
+    it('triggers on hover, not on click', () => {
+      jest.useFakeTimers();
+      const ctrl = makeController('orbital');
+      ctrl.attach(spans, 'Hello world.', 'en');
+
+      // Hover should trigger after debounce.
+      spans[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      jest.advanceTimersByTime(HOVER_DEBOUNCE_MS);
+      expect(onLookup).toHaveBeenCalledTimes(1);
+
+      // Click should not trigger (no click listener attached).
+      spans[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(onLookup).toHaveBeenCalledTimes(1);
+
+      ctrl.detach();
+    });
+  });
+
   describe('requestId routing', () => {
     it('isCurrentRequestId matches the latest dispatched request', () => {
-      jest.useFakeTimers();
       const ctrl = makeController('click');
       ctrl.attach(spans, 'Hello world.', 'en');
 
       spans[0]!.click();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
       const requestId = onLookup.mock.calls[0]![1];
       expect(ctrl.isCurrentRequestId(requestId)).toBe(true);
       expect(ctrl.isCurrentRequestId('wrong-id')).toBe(false);
@@ -260,12 +364,10 @@ describe('SubtitleTriggerController', () => {
     });
 
     it('clearRequestId clears the in-flight ID', () => {
-      jest.useFakeTimers();
       const ctrl = makeController('click');
       ctrl.attach(spans, 'Hello world.', 'en');
 
       spans[0]!.click();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
       const requestId = onLookup.mock.calls[0]![1];
       ctrl.clearRequestId(requestId);
       expect(ctrl.isCurrentRequestId(requestId)).toBe(false);
@@ -276,23 +378,19 @@ describe('SubtitleTriggerController', () => {
 
   describe('detach', () => {
     it('removes all listeners', () => {
-      jest.useFakeTimers();
       const ctrl = makeController('click');
       ctrl.attach(spans, 'Hello world.', 'en');
       ctrl.detach();
 
       spans[0]!.click();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
       expect(onLookup).not.toHaveBeenCalled();
     });
 
     it('does NOT cancel in-flight request on detach (cue change safety)', () => {
-      jest.useFakeTimers();
       const ctrl = makeController('click');
       ctrl.attach(spans, 'Hello world.', 'en');
 
       spans[0]!.click();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
       const requestId = onLookup.mock.calls[0]![1];
       ctrl.detach();
       // detach() removes listeners but does NOT cancel in-flight lookup —
@@ -318,15 +416,33 @@ describe('SubtitleTriggerController', () => {
 
       ctrl.detach();
     });
+
+    it('updates deps.triggerMode so modifier-aware hover modes enforce the modifier', () => {
+      jest.useFakeTimers();
+      const ctrl = makeController('click');
+      ctrl.attach(spans, 'Hello world.', 'en');
+
+      ctrl.setTriggerMode('hover-ctrl');
+
+      // Without ctrl key, hover should not trigger.
+      spans[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, ctrlKey: false }));
+      jest.advanceTimersByTime(HOVER_DEBOUNCE_MS);
+      expect(onLookup).not.toHaveBeenCalled();
+
+      // With ctrl key, hover should trigger.
+      spans[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, ctrlKey: true }));
+      jest.advanceTimersByTime(HOVER_DEBOUNCE_MS);
+      expect(onLookup).toHaveBeenCalledTimes(1);
+
+      ctrl.detach();
+    });
   });
 
-  describe('anchor rect (subtitle line avoidance)', () => {
-    it('passes parent element vertical bounds, token horizontal bounds', () => {
+  describe('anchor rect (token only)', () => {
+    it('passes token bounds only (line avoidance is separate via lineRect)', () => {
       jest.useFakeTimers();
-      // Mock getBoundingClientRect: token span is small, parent (subtitle
-      // line) is wider and taller. The anchor rect must use the parent's
-      // top/bottom so the popup avoids the entire subtitle line, not just
-      // the clicked token.
+      // Anchor stays on the token; cue/line avoidance is applied later as
+      // PopupLineRect from the parent (computeLineRect in webText controller).
       const tokenRect = { top: 50, bottom: 70, left: 100, right: 130, width: 30, height: 20, x: 100, y: 50, toJSON: () => ({}) };
       const lineRect  = { top: 40, bottom: 80, left: 10, right: 500, width: 490, height: 40, x: 10, y: 40, toJSON: () => ({}) };
       spans[0]!.getBoundingClientRect = () => tokenRect as DOMRect;
@@ -336,14 +452,11 @@ describe('SubtitleTriggerController', () => {
       ctrl.attach(spans, 'Hello world.', 'en');
 
       spans[0]!.click();
-      jest.advanceTimersByTime(CLICK_DEBOUNCE_MS);
 
       expect(onLookup).toHaveBeenCalledTimes(1);
       const anchorRect = onLookup.mock.calls[0]![2];
-      // Vertical: from subtitle line (parent), not token.
-      expect(anchorRect.top).toBe(40);
-      expect(anchorRect.bottom).toBe(80);
-      // Horizontal: from token, not subtitle line.
+      expect(anchorRect.top).toBe(50);
+      expect(anchorRect.bottom).toBe(70);
       expect(anchorRect.left).toBe(100);
       expect(anchorRect.right).toBe(130);
 
