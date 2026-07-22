@@ -112,6 +112,33 @@ cold-start toggle waited for first IO tick → 300ms–9s plain viewport.
 **After (VDLT-Predict)**: 0 article plain text in viewport across all scenarios.
 Only plain text is UI metadata (<3 chars, below tokenize threshold).
 
+### Discord scroll-up stress test (nested scroll container)
+
+Verified on Discord channel (#announcements, Migaku server) — SPA with a
+**custom scroll container** (not `window.scroll`), virtualized message list
+that unmounts offscreen messages, heavy React re-renders.
+
+| Scenario | Metric | Result |
+|----------|--------|--------|
+| Scroll up 3775px (tokenize ON) | Frame timing | avg 18.2ms, 26 slow frames (>20ms), 0 very slow (>50ms), max 46.5ms |
+| Scroll up 3775px (tokenize OFF) | Frame timing | avg 16.6ms, 0 slow frames, 0 very slow, max 18ms |
+| Scroll up 10050px fast (tokenize ON) | Frame timing | avg 24.7ms, 90 slow frames, 20 very slow, max 213ms |
+| Scroll up 10050px fast (tokenize OFF) | Frame timing | avg 16.7ms, 5 slow frames, 0 very slow, max 30ms |
+| Tokens after re-enable at mid-scroll | Coverage | 254 in viewport, 2 plain ("Click to react" — Discord UI label) |
+| Console errors from extension | None | Only Discord's own logs |
+
+**Observation**: fast scroll-up on Discord shows ~2ms avg overhead from tokenize
+(18.2 vs 16.6ms) with no very-slow frames. At aggressive scroll speed (50px/frame,
+10050px total) the overhead grows to ~8ms avg with 20 very-slow frames — this is
+the prepare-ahead + rebind cost hitting the 16ms budget. Discord's virtualized
+list unmounts messages outside its own buffer, so our `IntersectionObserver`
+fires for messages re-entering Discord's render window, not just our overscan.
+
+**Mitigation already in place**: soft-unbind preserves tokens so reverse scroll
+rebind is cheap (no re-tokenize). The 20 very-slow frames are prepare-ahead for
+newly-mounted Discord messages, not rebind of cached ones. Acceptable for the
+"0 plain in viewport" trade-off the user approved.
+
 ## References
 
 - Spec: `docs/specs/spec-predictive-viewport-tokenize.md`
