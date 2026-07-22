@@ -20,7 +20,8 @@ import {
   updatePopupSettings,
   destroyPopup,
 } from '@/features/dictionaryPopup/ui/popupDictionaryController';
-import { WebTriggerController, extractWordAtOffset, type WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
+import { WebTriggerController, type WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
+import { extractWordAtOffset, WORD_CHAR_RE } from '@/features/dictionaryPopup/sentence/sentenceModule';
 import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { createWordHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
 import { createOrbitalBadge, type OrbitalBadge, type PointerPreset } from '@/features/dictionaryPopup/badgePointer';
@@ -233,8 +234,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       if (first) lookupCache.delete(first);
     }
   }
-
-  const WORD_CHAR_RE = /[\w\u4e00-\u9fff\u3400-\u4dbf]/;
 
   /** Return the previous/next word in `sentence` relative to the current term. */
   function getAdjacentTerms(
