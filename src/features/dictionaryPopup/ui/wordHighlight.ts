@@ -11,8 +11,9 @@
 // 2. DOM wrap mode (primary for Range): wrap the range contents in
 //    `<mark class="js-cell-word-highlight">`. Restores original DOM on clear.
 // 3. Overlay mode (fallback for Range): when surroundContents throws
-//    (word split by inline tags), create absolute-positioned overlay divs
-//    based on Range.getClientRects(). No DOM text mutation.
+//    (word split by inline tags or sentence spans multiple elements),
+//    create absolute-positioned overlay divs based on Range.getClientRects().
+//    No DOM text mutation — safe for host pages with hidden responsive copies.
 //
 // Knowledge applied:
 // - host-css-overrides-injected-elements: !important on background-color +
@@ -211,18 +212,10 @@ function createTextHighlight(config: HighlightConfig): TextHighlight {
       activeMark = mark;
     } catch {
       // surroundContents throws if range spans element boundaries.
-      // Fallback: try extractContents + insertNode (handles partial wraps).
-      try {
-        const contents = range.extractContents();
-        const mark = document.createElement('mark');
-        mark.className = config.highlightClass;
-        mark.appendChild(contents);
-        range.insertNode(mark);
-        activeMark = mark;
-      } catch {
-        // Final fallback: overlay divs based on getClientRects.
-        showOverlay(range);
-      }
+      // Use overlay mode (non-destructive): extractContents + insertNode
+      // is destructive and can break host page CSS (e.g. hidden responsive
+      // copies become visible inside the mark, causing duplicate text).
+      showOverlay(range);
     }
   }
 
