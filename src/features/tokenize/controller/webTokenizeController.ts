@@ -1,6 +1,6 @@
 import { findTextBlocks, findTextBlocksInNodes } from '@/features/tokenize/logic/tokenizeBlock';
 import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
-import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_BUFFER, PRIORITY_IDLE } from '@/features/tokenize/logic/tokenizeScheduler';
+import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
@@ -23,13 +23,14 @@ import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
 const DEFAULT_LANG = 'en';
 // ponytail: tune cache capacity to the device's reported RAM. The
 // navigator.deviceMemory API returns approximate GiB (0.25, 0.5, 1, 2, 4, 8).
-// On low-end devices (<=0.5 GiB) we keep the cache tiny to stay usable on
-// 500MB RAM machines; on 1 GiB machines we use a medium cap; otherwise the
-// default 250 blocks is enough for a full viewport plus a couple of screens of
-// buffer without eviction churn.
-const BASE_CACHE_CAPACITY = 250;
-const LOW_MEMORY_CACHE_CAPACITY = 100;
-const MID_MEMORY_CACHE_CAPACITY = 150;
+// VDLT-Predict (spec-predictive-viewport-tokenize) raises tiers to buy
+// "0 plain in viewport" UX. Trade-off: more resident DOM spans on 1GB devices.
+// Soft-unbind behind scroll direction (Phase B) + LRU eviction keep the
+// ceiling bounded. Tune after measure; if low-RAM sessions regress, lower
+// these before shrinking overscan.
+const BASE_CACHE_CAPACITY = 500;
+const LOW_MEMORY_CACHE_CAPACITY = 150;
+const MID_MEMORY_CACHE_CAPACITY = 300;
 function resolveCacheCapacity(): number {
   const mem = (globalThis.navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   if (typeof mem !== 'number') return BASE_CACHE_CAPACITY;
@@ -38,7 +39,11 @@ function resolveCacheCapacity(): number {
   return BASE_CACHE_CAPACITY;
 }
 const CACHE_CAPACITY = resolveCacheCapacity();
-const VIEWPORT_ROOT_MARGIN = '200px';
+// ponytail: Phase A starts isotropic large overscan as a baseline to measure
+// "0 plain in viewport". Phase B replaces this with direction-aware asymmetric
+// margin via resolveScrollPredictMargin (deep ahead, shallow behind). Min floor
+// 600px covers short mobile viewports where 1× innerHeight < 600.
+const VIEWPORT_ROOT_MARGIN = '600px';
 const MUTATION_DEBOUNCE_MS = 300;
 const PENDING_MUTATION_LIMIT = 1000;
 const HYDRATION_QUIET_MS = 500;
@@ -245,8 +250,13 @@ export async function createWebTokenizeController(
       blocks.push(block);
       observeBlock(block);
     }
+    // VDLT-Predict FR2: prepare-ahead at BUFFER priority so tokens are ready
+    // before bind. Phase B will scope this to the expanded overscan zone by
+    // direction; Phase A prepares the whole cache (bounded by CACHE_CAPACITY)
+    // so the first viewport bind never waits on tokenize. BUFFER runs after
+    // VIEWPORT bind but before IDLE, keeping scroll-responsive bind first.
     for (const block of blocks.slice(0, CACHE_CAPACITY)) {
-      scheduler.schedule(() => prepareBlock(block), PRIORITY_IDLE);
+      scheduler.schedule(() => prepareBlock(block), PRIORITY_BUFFER);
     }
   }
 
