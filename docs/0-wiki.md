@@ -65,12 +65,17 @@ docs/           # Tài liệu dự án
 │   └── 052-frequency-five-bands.md # ADR-052: 5 band frequency (core/common/general/advanced/rare) cho tokenize
 │   └── 053-tokenize-visual-style.md # ADR-053: tokenize dùng solid pill + status bar, giữ nguyên box model host, hỗ trợ multi-line + dark mode
 │   └── 054-soft-tonal-frequency-colors.md # ADR-054: bảng màu Soft Tonal cho 5 frequency band, chế độ light/dark
+│   └── 055-orbital-dictionary-pointer.md # ADR-055: orbital dictionary pointer badge cho mobile/tablet/fullscreen video lookup
+│   └── 056-instant-dictionary-popup-hover.md # ADR-056: instant dictionary popup hover — 16ms hover debounce + geometry guard + lookup cache + prefetch adjacent words
+│   └── 057-popup-smooth-transitions.md # ADR-057: CSS transitions for dictionary popup show/hide, position moves, size changes, and content swaps
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
+│   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup
 │   ├── overlay-appearance-settings.md
 │   ├── subtitle-panel-outside-video.md
 │   ├── subtitle-text-selection.md
 │   ├── sync-all-icon-buttons-to-ds.md
-│   └── tokenize-on-media.md           # Simplified native tokenize on media
+│   ├── tokenize-on-media.md           # Simplified native tokenize on media
+│   └── predictive-viewport-tokenize.md # VDLT-Predict: prepare ahead of scroll + cold-start viewport-first
 ├── intent/                            # Output interview-me — "what user wants"
 │   ├── intent-bilingual-subtitle-auto-load.md # Bilingual subtitle auto-load (target + native)
 │   ├── intent-side-panel-subtitle.md  # Side Panel subtitle (thay thế inject-DOM panel)
@@ -106,6 +111,7 @@ docs/           # Tài liệu dự án
 │   └── spec-settings-controls-restyle.md
 │   └── spec-settings-dialog-rearrange.md # Settings dialog rearrange spec (pair/indent/divider, fix Nav Cluster position) # Settings controls restyle PRD (Toggle/Slider/ShortcutInput/SubtitlePreview atoms, preserve behavior)
 │   └── spec-translate-subtitle-target-to-native.md # Translate subtitle target→native PRD (background prefill, Google unofficial, ShortcutInput combo, general mọi site)
+│   └── spec-badge-pointer-dictionary-trigger.md # Orbital dictionary pointer PRD (mobile/tablet + fullscreen video dictionary trigger)
 │   └── spec-generate-native-subtitle.md # Generate native bằng button/shortcut, feed overlay + overwrite active manager entry, in-memory đến SPA nav
 │   └── spec-port-theocean-dict-and-theme.md # Port theocean-dict reference: theme system (runtime configurable, 9 core tokens, WCAG, import/export, system mode) + dict import 5 format → IndexedDB. Options page mới. Theme trước, dict sau.
 │   └── spec-subtitle-block-unified.md # Unified subtitle block PRD: gộp target + native + nav cluster, auto-scale, settings rearrange
@@ -119,7 +125,9 @@ docs/           # Tài liệu dự án
 │   └── design/popup-dictionary-tab-ui-design.md # Popup Dictionary tab UI design variants: audio, image, translate, links (selected variants + CSS)
 │   └── design/popup-dictionary-ux-improvements.md # Popup Dictionary UX improvement spec: Socratic audit, selected improvements, implementation notes
 │   ├── web-text-dictionary-popup.md   # Web-text dictionary popup PRD (decouple from video + word highlight)
-│   └── spec-tokenize-on-media.md      # Tokenize on media PRD (text page + subtitle, VDLT hybrid, 1GB RAM)
+│   ├── spec-tokenize-on-media.md      # Tokenize on media PRD (text page + subtitle, VDLT hybrid, 1GB RAM)
+│   ├── spec-predictive-viewport-tokenize.md # VDLT-Predict: 0 plain in viewport, direction overscan, cold-start
+│   └── spec-badge-pointer-dictionary-trigger.md # Orbital badge + moon pointer lookup trigger for mobile/tablet/fullscreen
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md
