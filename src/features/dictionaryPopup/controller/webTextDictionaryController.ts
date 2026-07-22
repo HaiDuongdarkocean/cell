@@ -44,6 +44,12 @@ export interface CueRange {
   readonly end: number;
 }
 
+/** Delay before actually hiding the popup when a trigger fires onClear
+ *  (hover over space, mouse leaves text). If a new lookup arrives within
+ *  this window, the dismiss is canceled and the popup repositions seamlessly.
+ *  Applies to all trigger modes — hover, click, subtitle, orbital. */
+const POPUP_DISMISS_DELAY_MS = 500;
+
 export interface WebTextDictionaryControllerDeps {
   readonly container: HTMLElement; // document.body or subtitle overlay container
   readonly dictionaryPopupSettings: DictionaryPopupSettings;
@@ -296,6 +302,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let currentHighlightTarget: HighlightTarget | null = null;
   let currentPopupTokenId: { term: string; start: string; blockId: string } | null = null;
   let currentRequestId: string | null = null;
+  let popupDismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   function showHighlight(target: HighlightTarget): void {
     wordHighlight.show(target);
@@ -305,15 +312,31 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     wordHighlight.clear();
   }
 
+  /** Schedule a delayed popup dismiss. Cancel in-flight immediately but
+   *  keep the popup + highlight alive for POPUP_DISMISS_DELAY_MS so a new
+   *  lookup (hover to another word in the same sentence) can reposition
+   *  seamlessly without dismiss flicker. */
   function dismissLookup(): void {
     if (currentRequestId) {
       cancelLookup(currentRequestId);
       currentRequestId = null;
     }
-    popupDictState = hidePopup(popupDictState);
-    wordHighlight.clear();
-    currentHighlightTarget = null;
-    currentPopupTokenId = null;
+    if (popupDismissTimer) return; // already pending
+    popupDismissTimer = setTimeout(() => {
+      popupDismissTimer = null;
+      popupDictState = hidePopup(popupDictState);
+      wordHighlight.clear();
+      currentHighlightTarget = null;
+      currentPopupTokenId = null;
+    }, POPUP_DISMISS_DELAY_MS);
+  }
+
+  /** Cancel a pending delayed dismiss — called when a new lookup renders. */
+  function cancelPendingDismiss(): void {
+    if (popupDismissTimer) {
+      clearTimeout(popupDismissTimer);
+      popupDismissTimer = null;
+    }
   }
 
   /** While the orbital pointer is moving, hide the popup if it would cover
@@ -408,6 +431,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function onPopupDismiss(dismissedState: PopupDictionaryState): void {
+    // User intentionally dismissed (Esc / click outside) — cancel any pending
+    // delayed dismiss and clear immediately.
+    cancelPendingDismiss();
     popupDictState = dismissedState;
     popupDictWasPlaying = false;
     clearPopupTokenId();
@@ -424,6 +450,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     pointer?: WebTriggerPointer,
   ): void {
     pauseVideoIfNeeded();
+    // A new lookup is taking over — cancel any pending delayed dismiss.
+    cancelPendingDismiss();
     // Compute line rect from the current highlight target for line-aware
     // popup positioning ("không che chữ cùng hàng").
     const lineRect: PopupLineRect | null = currentHighlightTarget
@@ -719,6 +747,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function detach(): void {
+    // Detach is intentional teardown (mode switch, settings update) — cancel
+    // any pending delayed dismiss so it doesn't fire after re-attach.
+    cancelPendingDismiss();
     webTrigger?.detach();
     webTrigger = null;
     currentAttachedMode = null;
@@ -730,6 +761,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   function destroy(): void {
     detach();
+    cancelPendingDismiss();
     popupDictState = destroyPopup(popupDictState);
     cardCreatorMount?.unmount();
     cardCreatorMount = null;
