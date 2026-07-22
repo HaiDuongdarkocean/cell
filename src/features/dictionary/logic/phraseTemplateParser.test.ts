@@ -183,4 +183,23 @@ describe('phraseTemplateParser', () => {
       literal('fall'),
     ]);
   });
+
+  it('parses multi-slash alternatives where the final segment shares a suffix', () => {
+    const result = parsePhraseTemplate('be/come/arrive late to the party', {
+      inflectableLiterals: new Set(['be', 'come', 'arrive']),
+    });
+
+    expect(result.status).toBe('supported');
+    expect(result.nodes).toEqual([
+      alternative(
+        [literal('be', true)],
+        [literal('come', true)],
+        [literal('arrive', true)],
+      ),
+      literal('late'),
+      literal('to'),
+      literal('the'),
+      literal('party'),
+    ]);
+  });
 });

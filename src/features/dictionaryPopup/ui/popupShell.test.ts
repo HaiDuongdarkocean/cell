@@ -423,7 +423,7 @@ describe('PopupShell', () => {
     document.caretRangeFromPoint = jest.fn(() => mockRange as unknown as Range);
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 50, clientY: 50 }));
     expect(onDismiss).not.toHaveBeenCalled();
-    delete document.caretRangeFromPoint;
+    delete (document as any).caretRangeFromPoint;
     document.body.removeChild(textNode);
   });
 

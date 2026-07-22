@@ -287,6 +287,26 @@ function parseSlashGroup(
       suffix: split.suffix,
     };
   }
+
+  // Multi-slash alternatives with a shared trailing suffix.
+  // E.g. "be/come/arrive late to the party" should become
+  // alternative([be], [come], [arrive]) + suffix [late, to, the, party],
+  // not a degenerate [be] branch that can match "is" by itself.
+  // ponytail: we only split when all preceding segments are single literals
+  // of the same type as the first token of the final segment. This avoids
+  // accidentally splitting slot groups like "sb/sth through something".
+  if (
+    final.length > 1 &&
+    segments.length >= 1 &&
+    final[0].type === 'literal' &&
+    segments.every((segment) => segment.length === 1 && segment[0]!.type === 'literal')
+  ) {
+    const lastAlternative = final[0];
+    const sharedSuffix = final.slice(1);
+    segments.push([lastAlternative]);
+    return { alternative: { type: 'alternative', branches: segments }, suffix: sharedSuffix };
+  }
+
   segments.push(final);
   return { alternative: { type: 'alternative', branches: segments }, suffix: [] };
 }
