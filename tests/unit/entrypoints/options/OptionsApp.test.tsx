@@ -1,7 +1,15 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { OptionsApp } from '@/entrypoints/options/OptionsApp';
 
-// Mock ResourcesPanel + ThemePanel + SettingsPanel để test shell only
+// Mock devMode (import.meta.env not available in Jest CJS)
+jest.mock('@/shared/lib/env/devMode', () => ({ isDevMode: false }));
+// Mock devSeed to avoid IDB/fetch in Options shell test
+jest.mock('@/features/dictionary/logic/devSeed', () => ({
+  seedDevDataIfEmpty: jest.fn(),
+  setDevSeedEnabled: jest.fn(),
+}));
+
+// Mock ResourcesPanel + ThemePanel + TtsVoiceManagerPanel to test shell only
 jest.mock('@/features/dictionary/ui/ResourcesPanel', () => ({
   ResourcesPanel: () => <div data-testid="resources-panel">Resources</div>,
 }));
@@ -30,13 +38,15 @@ describe('OptionsApp shell — sidebar nav (UI-UX-Contract)', () => {
     expect(screen.getByText('Cell — Tùy chọn')).toBeInTheDocument();
   });
 
-  it('renders sidebar navigation with 3 items', () => {
+  it('renders sidebar navigation with 4 items', () => {
     render(<OptionsApp />);
     const nav = screen.getByRole('tablist', { name: /tùy chọn sections/i });
     expect(nav).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /tài nguyên/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /giao diện/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /cài đặt/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /tts voices/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
   });
 
   it('defaults to resources tab active', () => {
@@ -74,9 +84,9 @@ describe('OptionsApp shell — sidebar nav (UI-UX-Contract)', () => {
     expect(tab).toHaveAttribute('role', 'tab');
   });
 
-  it('ARIA: all 3 tabpanels exist with correct linkage', () => {
+  it('ARIA: all 4 tabpanels exist with correct linkage', () => {
     render(<OptionsApp />);
-    ['resources', 'theme', 'settings'].forEach((id) => {
+    ['resources', 'theme', 'settings', 'tts'].forEach((id) => {
       const panel = document.getElementById(`panel-${id}`);
       expect(panel).not.toBeNull();
       expect(panel).toHaveAttribute('role', 'tabpanel');
