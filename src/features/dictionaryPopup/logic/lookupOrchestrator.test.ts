@@ -578,6 +578,23 @@ describe('lookupOrchestratorMulti — multi-candidate', () => {
     expect(results[0]!.frequency?.rank).toBe(13);
     expect(results[1]!.term).toBe('be');
   });
+
+  it('keeps surface and lemma candidates that only have reading', async () => {
+    await seedEnglishDictionary(
+      [{ term: 'learn', definition: '', reading: '/lɝːn/' }],
+      ['machine learning'],
+    );
+
+    const results = await lookupOrchestratorMulti({
+      term: 'learning',
+      langCode: 'en',
+      contextSentence: 'Machine Learning Algorithms',
+      cursorOffset: 8,
+    });
+
+    const terms = results.map((r) => r.term);
+    expect(terms).toEqual(['machine learning', 'learning', 'learn']);
+  });
 });
 
 describe('lookupOrchestrator — Chinese', () => {

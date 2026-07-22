@@ -237,16 +237,11 @@ export async function lookupOrchestratorMulti(
 
   checkAbort(signal);
 
-  // 2b. Determine origin/lemma of the hovered surface token for header display.
-  const originTerm = (plugin.lemma && surfaceTerm !== plugin.lemma(surfaceTerm))
-    ? plugin.lemma(surfaceTerm)
-    : undefined;
-
   // 3. Build winner result: phrase match wins when valid; otherwise the surface
   //    token (with lemma fallback for definitions).
   const winnerResult = detectedPhrase
-    ? await assembleLookupResult(langCode, detectedPhrase.dictionaryTerm, detectedPhrase, 'plugin', plugin, signal, undefined, surfaceTerm, originTerm)
-    : await assembleLookupResult(langCode, surfaceTerm, null, matchSource, plugin, signal, surfaceTerm, surfaceTerm, originTerm);
+    ? await assembleLookupResult(langCode, detectedPhrase.dictionaryTerm, detectedPhrase, 'plugin', plugin, signal)
+    : await assembleLookupResult(langCode, surfaceTerm, null, matchSource, plugin, signal, surfaceTerm);
 
   const additionalResults: LookupResult[] = [];
   const seen = new Set([winnerResult.term.toLowerCase()]);
@@ -258,7 +253,7 @@ export async function lookupOrchestratorMulti(
     const surfaceResult = await assembleLookupResult(
       langCode, surfaceTerm, null, 'dictionary', plugin, signal, surfaceTerm,
     );
-    if ((surfaceResult.definitions.length > 0 || surfaceResult.frequency) && !seen.has(surfaceResult.term.toLowerCase())) {
+    if ((surfaceResult.definitions.length > 0 || surfaceResult.frequency || surfaceResult.reading) && !seen.has(surfaceResult.term.toLowerCase())) {
       seen.add(surfaceResult.term.toLowerCase());
       additionalResults.push(surfaceResult);
     }
@@ -272,7 +267,7 @@ export async function lookupOrchestratorMulti(
       const lemmaResult = await assembleLookupResult(
         langCode, candidate, null, 'dictionary', plugin, signal,
       );
-      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequency) && !seen.has(lemmaResult.term.toLowerCase())) {
+      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequency || lemmaResult.reading) && !seen.has(lemmaResult.term.toLowerCase())) {
         seen.add(lemmaResult.term.toLowerCase());
         additionalResults.push(lemmaResult);
       }
@@ -284,7 +279,7 @@ export async function lookupOrchestratorMulti(
       const lemmaResult = await assembleLookupResult(
         langCode, lemma, null, 'dictionary', plugin, signal,
       );
-      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequency) && !seen.has(lemmaResult.term.toLowerCase())) {
+      if ((lemmaResult.definitions.length > 0 || lemmaResult.frequency || lemmaResult.reading) && !seen.has(lemmaResult.term.toLowerCase())) {
         additionalResults.push(lemmaResult);
       }
     }
@@ -324,10 +319,6 @@ async function assembleLookupResult(
   /** If provided, the result header shows this surface term (e.g. the hovered
    *  token "is") while definitions are resolved from lookupTerm/its lemma. */
   displayTerm?: string,
-  /** Exact token the user hovered over (for header display when phrase matched). */
-  hoverTerm?: string,
-  /** Resolved lemma/origin of the hovered token (for header display). */
-  originTerm?: string,
 ): Promise<LookupResult> {
   checkAbort(signal);
 
@@ -399,10 +390,8 @@ async function assembleLookupResult(
       ? { rank: freqEntries[0]!.frequency, source: 'frequency' }
       : null;
 
-  // Status is a property of the hovered word, not a phrase. When a phrase
-  // matched, surfaceTerm is the phrase surface; use hoverTerm for status lookup.
-  const statusTerm = hoverTerm ?? surfaceTerm;
-  const status = await getWordStatus(langCode, statusTerm);
+  // Status is looked up for the displayed surface term (phrase or hover word).
+  const status = await getWordStatus(langCode, surfaceTerm);
 
   return {
     term: surfaceTerm,
@@ -415,8 +404,6 @@ async function assembleLookupResult(
     definitions,
     detectedPhrase,
     matchSource,
-    hoverTerm,
-    originTerm,
   };
 }
 
