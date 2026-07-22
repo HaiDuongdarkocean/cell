@@ -1,10 +1,11 @@
-// wordHighlight — spec §3: temporary word highlight in page DOM.
+// wordHighlight — spec §3: temporary word/sentence highlight in page DOM.
 //
-// Marks the target word/token visually when a lookup is triggered, so the
-// user sees which word the popup is about. Lives in host page DOM (not
-// Shadow DOM) because it highlights the page's own text.
+// Marks the target word/token and its containing sentence visually when a lookup
+// is triggered, so the user sees which word the popup is about and the surrounding
+// context. Lives in host page DOM (not Shadow DOM) because it highlights the page's
+// own text.
 //
-// Three modes:
+// Three modes for each highlighter:
 // 1. Element mode: add `.js-cell-word-highlight` class to an existing element
 //    (subtitle token span). No DOM structure change.
 // 2. DOM wrap mode (primary for Range): wrap the range contents in
@@ -21,32 +22,38 @@
 
 import tokensJson from '@/shared/styles/tokens.json';
 
-const HIGHLIGHT_STYLE_ID = 'cell-word-highlight-style';
-const HIGHLIGHT_CLASS = 'js-cell-word-highlight';
-const OVERLAY_CLASS = 'js-cell-word-highlight-overlay';
+type HighlightConfig = {
+  readonly styleId: string;
+  readonly highlightClass: string;
+  readonly overlayClass: string;
+  readonly buildCss: () => string;
+};
 
-/** Build the CSS string from tokens.json (host page has no tokens.css). */
-function buildHighlightCss(): string {
-  const lightSubtle = tokensJson.derived.light['color-primary-subtle'] ?? 'rgba(37, 99, 235, 0.1)';
-  const darkSubtle = tokensJson.derived.dark['color-primary-subtle'] ?? 'rgba(96, 165, 250, 0.15)';
-  const radiusXs = tokensJson.static.radius.xs ?? '2px';
-  const duration100 = tokensJson.static.motion['duration-100'] ?? '100ms';
-  return `
-.${HIGHLIGHT_CLASS} {
+const WORD_CONFIG: HighlightConfig = {
+  styleId: 'cell-word-highlight-style',
+  highlightClass: 'js-cell-word-highlight',
+  overlayClass: 'js-cell-word-highlight-overlay',
+  buildCss(): string {
+    const lightSubtle = tokensJson.derived.light['color-primary-subtle'] ?? 'rgba(37, 99, 235, 0.1)';
+    const darkSubtle = tokensJson.derived.dark['color-primary-subtle'] ?? 'rgba(96, 165, 250, 0.15)';
+    const radiusXs = tokensJson.static.radius.xs ?? '2px';
+    const duration100 = tokensJson.static.motion['duration-100'] ?? '100ms';
+    return `
+.${WORD_CONFIG.highlightClass} {
   background-color: ${lightSubtle} !important;
   color: inherit !important;
   border-radius: ${radiusXs} !important;
-  padding: 0 1px !important;
+  padding: 0 !important;
   margin: 0 !important;
   box-sizing: border-box !important;
   transition: background-color ${duration100} ease !important;
 }
 @media (prefers-color-scheme: dark) {
-  .${HIGHLIGHT_CLASS} {
+  .${WORD_CONFIG.highlightClass} {
     background-color: ${darkSubtle} !important;
   }
 }
-.${OVERLAY_CLASS} {
+.${WORD_CONFIG.overlayClass} {
   position: absolute !important;
   background-color: ${lightSubtle} !important;
   border-radius: ${radiusXs} !important;
@@ -58,31 +65,78 @@ function buildHighlightCss(): string {
   transition: background-color ${duration100} ease !important;
 }
 @media (prefers-color-scheme: dark) {
-  .${OVERLAY_CLASS} {
+  .${WORD_CONFIG.overlayClass} {
     background-color: ${darkSubtle} !important;
   }
 }
 `.trim();
+  },
+};
+
+const SENTENCE_CONFIG: HighlightConfig = {
+  styleId: 'cell-sentence-highlight-style',
+  highlightClass: 'js-cell-sentence-highlight',
+  overlayClass: 'js-cell-sentence-highlight-overlay',
+  buildCss(): string {
+    // Derived from color-primary-subtle at roughly half opacity so the word
+    // highlight stays visually dominant and the sentence is a subtle halo.
+    const lightSubtle = 'rgba(37, 99, 235, 0.05)';
+    const darkSubtle = 'rgba(96, 165, 250, 0.08)';
+    const radiusXs = tokensJson.static.radius.xs ?? '2px';
+    const duration100 = tokensJson.static.motion['duration-100'] ?? '100ms';
+    return `
+.${SENTENCE_CONFIG.highlightClass} {
+  background-color: ${lightSubtle} !important;
+  color: inherit !important;
+  border-radius: ${radiusXs} !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  transition: background-color ${duration100} ease !important;
 }
+@media (prefers-color-scheme: dark) {
+  .${SENTENCE_CONFIG.highlightClass} {
+    background-color: ${darkSubtle} !important;
+  }
+}
+.${SENTENCE_CONFIG.overlayClass} {
+  position: absolute !important;
+  background-color: ${lightSubtle} !important;
+  border-radius: ${radiusXs} !important;
+  pointer-events: none !important;
+  z-index: 2147483646 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  transition: background-color ${duration100} ease !important;
+}
+@media (prefers-color-scheme: dark) {
+  .${SENTENCE_CONFIG.overlayClass} {
+    background-color: ${darkSubtle} !important;
+  }
+}
+`.trim();
+  },
+};
 
 /** Inject the highlight <style> into document.head (idempotent). */
-function injectHighlightStyle(): void {
-  if (document.getElementById(HIGHLIGHT_STYLE_ID)) return;
+function injectStyle(config: HighlightConfig): void {
+  if (document.getElementById(config.styleId)) return;
   const style = document.createElement('style');
-  style.id = HIGHLIGHT_STYLE_ID;
-  style.textContent = buildHighlightCss();
+  style.id = config.styleId;
+  style.textContent = config.buildCss();
   (document.head ?? document.documentElement).appendChild(style);
 }
 
 /** Remove the highlight <style> from document.head (idempotent). */
-function removeHighlightStyle(): void {
-  document.getElementById(HIGHLIGHT_STYLE_ID)?.remove();
+function removeStyle(config: HighlightConfig): void {
+  document.getElementById(config.styleId)?.remove();
 }
 
 /** Highlight target: either a DOM Range (web text) or an HTMLElement (subtitle token). */
 export type HighlightTarget = Range | HTMLElement;
 
-export interface WordHighlight {
+export interface TextHighlight {
   /** Highlight a DOM element (subtitle token span) or a Range (web text). */
   show(target: HighlightTarget): void;
   /** Clear active highlight and restore original DOM. */
@@ -91,8 +145,8 @@ export interface WordHighlight {
   destroy(): void;
 }
 
-/** Create a WordHighlight instance. Call show/clear to toggle highlight. */
-export function createWordHighlight(): WordHighlight {
+/** Internal highlight factory shared by word and sentence highlighters. */
+function createTextHighlight(config: HighlightConfig): TextHighlight {
   let activeMark: HTMLElement | null = null;
   let activeElement: HTMLElement | null = null;
   let activeOverlays: HTMLElement[] = [];
@@ -112,7 +166,7 @@ export function createWordHighlight(): WordHighlight {
     }
     // Clear element mode (remove class).
     if (activeElement) {
-      activeElement.classList.remove(HIGHLIGHT_CLASS);
+      activeElement.classList.remove(config.highlightClass);
       activeElement = null;
     }
     // Clear overlay divs.
@@ -122,13 +176,28 @@ export function createWordHighlight(): WordHighlight {
     activeOverlays = [];
   }
 
+  function showOverlay(range: Range): void {
+    if (!document.body) return; // guard: content scripts may fire before </body>
+    const rects = range.getClientRects();
+    for (const rect of rects) {
+      const overlay = document.createElement('div');
+      overlay.className = config.overlayClass;
+      overlay.style.setProperty('left', `${rect.left + window.scrollX}px`, 'important');
+      overlay.style.setProperty('top', `${rect.top + window.scrollY}px`, 'important');
+      overlay.style.setProperty('width', `${rect.width}px`, 'important');
+      overlay.style.setProperty('height', `${rect.height}px`, 'important');
+      document.body.appendChild(overlay);
+      activeOverlays.push(overlay);
+    }
+  }
+
   function show(target: HighlightTarget): void {
-    injectHighlightStyle();
+    injectStyle(config);
     clear();
 
     if (target instanceof HTMLElement) {
       // Element mode: just add the class.
-      target.classList.add(HIGHLIGHT_CLASS);
+      target.classList.add(config.highlightClass);
       activeElement = target;
       return;
     }
@@ -137,7 +206,7 @@ export function createWordHighlight(): WordHighlight {
     const range = target as Range;
     try {
       const mark = document.createElement('mark');
-      mark.className = HIGHLIGHT_CLASS;
+      mark.className = config.highlightClass;
       range.surroundContents(mark);
       activeMark = mark;
     } catch {
@@ -146,7 +215,7 @@ export function createWordHighlight(): WordHighlight {
       try {
         const contents = range.extractContents();
         const mark = document.createElement('mark');
-        mark.className = HIGHLIGHT_CLASS;
+        mark.className = config.highlightClass;
         mark.appendChild(contents);
         range.insertNode(mark);
         activeMark = mark;
@@ -157,25 +226,22 @@ export function createWordHighlight(): WordHighlight {
     }
   }
 
-  function showOverlay(range: Range): void {
-    if (!document.body) return; // guard: content scripts may fire before </body>
-    const rects = range.getClientRects();
-    for (const rect of rects) {
-      const overlay = document.createElement('div');
-      overlay.className = OVERLAY_CLASS;
-      overlay.style.setProperty('left', `${rect.left + window.scrollX}px`, 'important');
-      overlay.style.setProperty('top', `${rect.top + window.scrollY}px`, 'important');
-      overlay.style.setProperty('width', `${rect.width}px`, 'important');
-      overlay.style.setProperty('height', `${rect.height}px`, 'important');
-      document.body.appendChild(overlay);
-      activeOverlays.push(overlay);
-    }
-  }
-
   function destroy(): void {
     clear();
-    removeHighlightStyle();
+    removeStyle(config);
   }
 
   return { show, clear, destroy };
+}
+
+/** Create a WordHighlight instance. Call show/clear to toggle highlight. */
+export interface WordHighlight extends TextHighlight {}
+export function createWordHighlight(): WordHighlight {
+  return createTextHighlight(WORD_CONFIG);
+}
+
+/** Create a SentenceHighlight instance. Call show/clear to toggle highlight. */
+export interface SentenceHighlight extends TextHighlight {}
+export function createSentenceHighlight(): SentenceHighlight {
+  return createTextHighlight(SENTENCE_CONFIG);
 }

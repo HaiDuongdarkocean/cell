@@ -215,3 +215,68 @@ export function createWordRange(
     return null;
   }
 }
+
+/** Build a DOM Range covering the entire sentence returned by extractSentenceContext.
+ *  Walks the block's text nodes and maps block-level sentenceStart/sentenceEnd
+ *  back to the original text node endpoints. Returns null if the mapping fails. */
+export function createSentenceRange(
+  textNode: Text,
+  offsetInNode: number,
+  ctx: SentenceContext,
+): Range | null {
+  // Validate that the cursor still maps to the same block/word used to build ctx.
+  // ctx was computed from textNode + offsetInNode; if the DOM changed since then
+  // the offsets may be stale, so guard before building the Range.
+  const block = findBlockContainer(textNode);
+  if (!block || block !== ctx.blockEl) return null;
+
+  const nodeOffset = ctx.blockOffset - offsetInNode;
+  if (nodeOffset < 0) return null;
+
+  const range = document.createRange();
+  try {
+    // Start: map the sentence's start (relative to full block text) into the
+    // text node that contains the cursor. Because ctx.sentenceStart and
+    // nodeOffset are both offsets within the block's textContent, the cursor
+    // node's local start is just the difference.
+    const startInCursorNode = ctx.sentenceStart - nodeOffset;
+    const endInCursorNode = ctx.sentenceEnd - nodeOffset;
+    const nodeText = textNode.textContent ?? '';
+
+    if (
+      startInCursorNode >= 0 &&
+      endInCursorNode <= nodeText.length &&
+      startInCursorNode < endInCursorNode
+    ) {
+      range.setStart(textNode, startInCursorNode);
+      range.setEnd(textNode, endInCursorNode);
+      return range;
+    }
+
+    // Sentence spans multiple text nodes (e.g. inline <b>/<a> tags). Walk the
+    // block and find the exact nodes that contain sentenceStart and sentenceEnd.
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+    let offset = 0;
+    let current: Text | null;
+    let startSet = false;
+    while ((current = walker.nextNode() as Text | null)) {
+      const length = current.textContent?.length ?? 0;
+      if (!startSet && ctx.sentenceStart >= offset && ctx.sentenceStart < offset + length) {
+        range.setStart(current, ctx.sentenceStart - offset);
+        startSet = true;
+      }
+      if (ctx.sentenceEnd > offset && ctx.sentenceEnd <= offset + length) {
+        if (!startSet) {
+          // sentenceEnd is in a node before the start would be — invalid.
+          return null;
+        }
+        range.setEnd(current, ctx.sentenceEnd - offset);
+        return range;
+      }
+      offset += length;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
