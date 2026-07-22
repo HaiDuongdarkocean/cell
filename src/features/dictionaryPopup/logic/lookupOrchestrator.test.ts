@@ -7,6 +7,7 @@ import { addResource } from '@/features/dictionary/repositories/resourceReposito
 import { addDictionaryEntry } from '@/features/dictionary/repositories/dictionaryRepository';
 import { addFrequencyEntry } from '@/features/dictionary/repositories/frequencyRepository';
 import { putPhraseIndex } from '@/features/dictionary/repositories/phraseIndexRepository';
+import { setWordStatus } from '@/features/dictionaryPopup/services/wordStatusStore';
 import {
   compilePhraseIndex,
   serializePhraseIndex,
@@ -144,6 +145,23 @@ describe('lookupOrchestrator — English', () => {
     expect(result.definitions[0]!.text).toBe('to die (informal)');
     expect(result.partsOfSpeech).toContain('idiom');
     expect(result.readingKind).toBe('ipa');
+  });
+
+  it('reads the persisted word status for the surface term', async () => {
+    await seedEnglishDictionary(
+      [{ term: 'ocean', definition: 'a large body of salt water', pos: 'noun' }],
+    );
+    await setWordStatus('en', 'ocean', 'known');
+
+    const result = await lookupOrchestrator({
+      term: 'ocean',
+      langCode: 'en',
+      contextSentence: 'The ocean is vast.',
+      cursorOffset: 4,
+    });
+
+    expect(result.term).toBe('ocean');
+    expect(result.status).toBe('known');
   });
 
   it('falls back to single-word lookup when no phrase matches', async () => {
