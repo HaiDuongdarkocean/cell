@@ -24,6 +24,12 @@ const MAX_SLOT_TOKENS = 6;
 const MAX_SURFACE_SPAN = 32;
 const MAX_CANDIDATES = 4096;
 
+// Object-slot templates whose final node is a slot need at least this many fixed
+// literals matched to avoid matching arbitrary sentence fragments (e.g. "is the body"
+// wrongly matching "be (really) something"). Person/possessive slots keep the looser
+// default because they are more constrained by the kind of word they consume.
+const MIN_OBJECT_SLOT_FIXED_LITERALS = 2;
+
 // --- Types (ADR §8.1) ---
 
 export interface PhraseMatchRequest {
@@ -61,6 +67,11 @@ const CLAUSE_PUNCT = new Set([',', ';', ':', '-']);
 
 /** Tokenize a sentence into normalized word tokens with UTF-16 offsets. */
 export function tokenizeSentence(sentence: string): SentenceToken[] {
+  // Normalize curly apostrophe (U+2019) to straight (U+0027) so contractions,
+  // possessives, and clitics are treated as a single English token and later
+  // lookup can expand them. Both characters are one UTF-16 code unit, so
+  // cursor offsets from the DOM stay valid.
+  sentence = sentence.replaceAll('’', "'");
   const tokens: SentenceToken[] = [];
   const len = sentence.length;
   let i = 0;
@@ -186,6 +197,8 @@ interface MatchState {
   readonly possessive: boolean;
   readonly slotUsed: boolean;
   readonly optionalUsed: boolean;
+  /** Number of fixed (non-slot, non-optional) literals actually matched. */
+  readonly fixedMatched: number;
 }
 
 /**
@@ -201,7 +214,7 @@ function matchSequence(
   memo: Map<string, MatchState[]>,
 ): MatchState[] {
   if (nodeIndex === nodes.length) {
-    return [{ endTokenIndex: tokenIndex, inflected: false, possessive: false, slotUsed: false, optionalUsed: false }];
+    return [{ endTokenIndex: tokenIndex, inflected: false, possessive: false, slotUsed: false, optionalUsed: false, fixedMatched: 0 }];
   }
 
   const memoKey = `${nodeIndex}:${tokenIndex}`;
@@ -235,6 +248,7 @@ function matchSequence(
             possessive: cr.possessive || r.possessive,
             slotUsed: cr.slotUsed,
             optionalUsed: cr.optionalUsed,
+            fixedMatched: cr.fixedMatched + 1,
           });
         }
       }
@@ -243,7 +257,7 @@ function matchSequence(
     // Branch 1: skip the optional group.
     const skipResults = matchSequence(nodes, nodeIndex + 1, tokens, tokenIndex, memo);
     for (const sr of skipResults) {
-      results.push({ ...sr, optionalUsed: sr.optionalUsed });
+      results.push({ ...sr, optionalUsed: sr.optionalUsed, fixedMatched: sr.fixedMatched });
     }
     // Branch 2: consume the optional children, then continue.
     // But only if the current token doesn't follow sentence-ending punctuation
@@ -259,6 +273,7 @@ function matchSequence(
             possessive: cont.possessive || cr.possessive,
             slotUsed: cont.slotUsed || cr.slotUsed,
             optionalUsed: true,
+            fixedMatched: cont.fixedMatched + cr.fixedMatched,
           });
         }
       }
@@ -275,6 +290,7 @@ function matchSequence(
             possessive: cont.possessive || br.possessive,
             slotUsed: cont.slotUsed || br.slotUsed,
             optionalUsed: cont.optionalUsed || br.optionalUsed,
+            fixedMatched: cont.fixedMatched + br.fixedMatched,
           });
         }
       }
@@ -303,6 +319,7 @@ function matchSequence(
           possessive: cont.possessive || isPossessiveSlot,
           slotUsed: true,
           optionalUsed: cont.optionalUsed,
+          fixedMatched: cont.fixedMatched,
         });
       }
     }
@@ -338,10 +355,11 @@ function deduplicateStates(states: MatchState[]): MatchState[] {
     if (!existing) {
       map.set(s.endTokenIndex, s);
     } else {
-      // Merge: prefer states with fewer transformations (more precise).
+      // Merge: prefer states with fewer transformations (more precise); tie-break
+      // by more fixed literals matched (more concrete).
       const existingScore = (existing.inflected ? 1 : 0) + (existing.possessive ? 1 : 0) + (existing.slotUsed ? 1 : 0);
       const newScore = (s.inflected ? 1 : 0) + (s.possessive ? 1 : 0) + (s.slotUsed ? 1 : 0);
-      if (newScore < existingScore) {
+      if (newScore < existingScore || (newScore === existingScore && s.fixedMatched > existing.fixedMatched)) {
         map.set(s.endTokenIndex, s);
       }
     }
@@ -367,6 +385,29 @@ function classifyQuality(state: MatchState): Quality {
   if (state.possessive) return 'possessive-template';
   if (state.inflected) return 'inflected';
   return 'fixed';
+}
+
+/** Check whether the last concrete (non-optional) node of a template is an object slot.
+ *  Optional groups at the end are unwrapped.
+ */
+function finalNodeIsObjectSlot(nodes: readonly PhraseNode[]): boolean {
+  if (nodes.length === 0) return false;
+  const last = nodes[nodes.length - 1]!;
+  if (last.type === 'slot') return last.kind === 'object';
+  if (last.type === 'optional' && last.children.length > 0) {
+    return finalNodeIsObjectSlot(last.children);
+  }
+  return false;
+}
+
+/** Reject low-precision object-slot matches: a template ending in an object slot
+ *  must have at least MIN_OBJECT_SLOT_FIXED_LITERALS fixed literals matched.
+ *  This stops idioms like "be (really) something" from swallowing arbitrary objects
+ *  when the optional is skipped (e.g. "is the body").
+ */
+function isValidObjectSlotMatch(template: CompiledTemplate, state: MatchState): boolean {
+  if (!finalNodeIsObjectSlot(template.nodes)) return true;
+  return state.fixedMatched >= MIN_OBJECT_SLOT_FIXED_LITERALS;
 }
 
 // --- Candidate matching ---
@@ -476,6 +517,9 @@ export function matchPhrase(
         const endTokenIndex = state.endTokenIndex;
         // Target must be inside [startTokenIndex, endTokenIndex).
         if (targetTokenIndex < startTokenIndex || targetTokenIndex >= endTokenIndex) continue;
+
+        // Tighten object-slot templates: require enough fixed literals matched.
+        if (!isValidObjectSlotMatch(template, state)) continue;
 
         const quality = classifyQuality(state);
         matches.push({ template, startTokenIndex, endTokenIndex, state, quality });
@@ -592,6 +636,10 @@ export function matchPhraseAll(
       for (const state of results) {
         const endTokenIndex = state.endTokenIndex;
         if (targetTokenIndex < startTokenIndex || targetTokenIndex >= endTokenIndex) continue;
+
+        // Tighten object-slot templates: require enough fixed literals matched.
+        if (!isValidObjectSlotMatch(template, state)) continue;
+
         const quality = classifyQuality(state);
         matches.push({ template, startTokenIndex, endTokenIndex, state, quality });
       }
@@ -661,11 +709,15 @@ function compareMatches(a: CandidateMatch, b: CandidateMatch): number {
   const fixedDiff = b.template.fixedTokenCount - a.template.fixedTokenCount;
   if (fixedDiff !== 0) return fixedDiff;
 
-  // 3. matched surface span length, descending
+  // 3. actual fixed literals matched, descending (tightens low-precision slots)
+  const fixedMatchedDiff = b.state.fixedMatched - a.state.fixedMatched;
+  if (fixedMatchedDiff !== 0) return fixedMatchedDiff;
+
+  // 4. matched surface span length, descending
   const spanDiff = (b.endTokenIndex - b.startTokenIndex) - (a.endTokenIndex - a.startTokenIndex);
   if (spanDiff !== 0) return spanDiff;
 
-  // 4. wildcard/slot token count, ascending (fewer slots = more precise)
+  // 5. wildcard/slot token count, ascending (fewer slots = more precise)
   const slotDiff = (a.state.slotUsed ? 1 : 0) - (b.state.slotUsed ? 1 : 0);
   if (slotDiff !== 0) return slotDiff;
 

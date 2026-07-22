@@ -306,6 +306,16 @@ describe('phraseMatcher', () => {
       expect(m!.surface).toBe('took off');
     });
 
+    it('P37: put down sth — separable object order (object between verb and particle)', () => {
+      // Dictionary only has "put down sth"; the compiler auto-generates the
+      // "put sth down" variant so "Put the gun down." still matches.
+      const index = buildIndex(['put down sth']);
+      const m = matchPhrase(req('Put the gun down.', 'put'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('put down sth');
+      expect(m!.surface).toBe('Put the gun down');
+    });
+
     // P34: verb NOT in the curated inflectable set must still match inflected
     // forms. "burn" is not in TEST_VERBS, but "burned" must lemmatize to "burn"
     // and match "burn sth off/up". This tests the auto-inflect approach:
@@ -416,6 +426,24 @@ describe('phraseMatcher', () => {
       const m = matchPhrase(req('He kicked the bucket.', 'kicked'), index);
       expect(m!.dictionaryTerm).toBe('kick the bucket');
       expect(m!.quality).toBe('inflected');
+    });
+  });
+
+  describe('matchPhrase — tightening object-slot templates (ADR-037 §15)', () => {
+    it('N???: be (really) something does not match arbitrary object when really is skipped', () => {
+      const index = buildIndex(['be (really) something']);
+      const sentence = 'The ocean is the body of salt water that covers approximately 70.8% of Earth.[8]';
+      const m = matchPhrase(req(sentence, 'is'), index);
+      expect(m).toBeNull();
+    });
+
+    it('P??: be (really) something still matches the idiom when really is present', () => {
+      const index = buildIndex(['be (really) something']);
+      const m = matchPhrase(req('That party is really something.', 'is'), index);
+      expect(m).not.toBeNull();
+      expect(m!.dictionaryTerm).toBe('be (really) something');
+      expect(m!.surface).toBe('is really something');
+      expect(m!.quality).toBe('slot-template');
     });
   });
 

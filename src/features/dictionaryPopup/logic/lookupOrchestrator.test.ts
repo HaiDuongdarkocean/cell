@@ -275,8 +275,8 @@ describe('lookupOrchestrator — English', () => {
       cursorOffset: 12,
     });
 
-    // Should fall back to lemma "easy" and find the definition.
-    expect(result.term).toBe('easy');
+    // Surface term is displayed, definitions come from the lemma "easy".
+    expect(result.term).toBe('easiest');
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('not difficult');
   });
@@ -293,7 +293,7 @@ describe('lookupOrchestrator — English', () => {
       cursorOffset: 22,
     });
 
-    expect(result.term).toBe('easy');
+    expect(result.term).toBe('easier');
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('not difficult');
   });
@@ -310,7 +310,7 @@ describe('lookupOrchestrator — English', () => {
       cursorOffset: 10,
     });
 
-    expect(result.term).toBe('good');
+    expect(result.term).toBe('better');
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('of high quality');
   });
@@ -327,7 +327,7 @@ describe('lookupOrchestrator — English', () => {
       cursorOffset: 10,
     });
 
-    expect(result.term).toBe('big');
+    expect(result.term).toBe('bigger');
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('of large size');
   });
@@ -344,7 +344,7 @@ describe('lookupOrchestrator — English', () => {
       cursorOffset: 12,
     });
 
-    expect(result.term).toBe('nice');
+    expect(result.term).toBe('nicest');
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('pleasant');
   });
@@ -361,7 +361,7 @@ describe('lookupOrchestrator — English', () => {
       cursorOffset: 4,
     });
 
-    expect(result.term).toBe('child');
+    expect(result.term).toBe('children');
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('a young human');
   });
@@ -378,7 +378,7 @@ describe('lookupOrchestrator — English', () => {
       cursorOffset: 6,
     });
 
-    expect(result.term).toBe('knife');
+    expect(result.term).toBe('knives');
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('a cutting tool');
   });
@@ -395,7 +395,7 @@ describe('lookupOrchestrator — English', () => {
       cursorOffset: 4,
     });
 
-    expect(result.term).toBe('box');
+    expect(result.term).toBe('boxes');
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('a container');
   });
@@ -412,7 +412,7 @@ describe('lookupOrchestrator — English', () => {
       cursorOffset: 4,
     });
 
-    expect(result.term).toBe('cat');
+    expect(result.term).toBe("cat's");
     expect(result.definitions).toHaveLength(1);
     expect(result.definitions[0]!.text).toBe('a feline animal');
   });
@@ -533,10 +533,32 @@ describe('lookupOrchestratorMulti — multi-candidate', () => {
       cursorOffset: 8,
     });
 
-    // Raw "easier" not in dict → lemma "easy" becomes winner. No duplicate.
-    expect(results).toHaveLength(1);
-    expect(results[0]!.term).toBe('easy');
+    // Raw "easier" not in dict → surface "easier" wins with definitions from "easy";
+    // "easy" appears as an origin candidate.
+    expect(results).toHaveLength(2);
+    expect(results[0]!.term).toBe('easier');
     expect(results[0]!.definitions[0]!.text).toBe('not difficult');
+    expect(results[1]!.term).toBe('easy');
+  });
+
+  it('rejects loose object-slot phrase and shows surface + origin for "is"', async () => {
+    const resourceId = await seedEnglishDictionary(
+      [{ term: 'be', definition: 'to exist', pos: 'verb' }],
+      ['be (really) something'],
+    );
+    await addFrequencyEntry('en', { resourceId, term: 'is', reading: '', frequency: 13 });
+
+    const results = await lookupOrchestratorMulti({
+      term: 'is',
+      langCode: 'en',
+      contextSentence: 'The ocean is the body of salt water that covers approximately 70.8% of Earth.[8]',
+      cursorOffset: 10,
+    });
+
+    expect(results[0]!.term).toBe('is');
+    expect(results[0]!.definitions[0]!.text).toBe('to exist');
+    expect(results[0]!.frequency?.rank).toBe(13);
+    expect(results[1]!.term).toBe('be');
   });
 });
 
