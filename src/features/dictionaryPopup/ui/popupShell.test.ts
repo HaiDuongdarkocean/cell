@@ -396,30 +396,35 @@ describe('PopupShell', () => {
     expect(onDismiss).not.toHaveBeenCalled();
   });
 
-  it('click outside triggers onDismiss when visible', () => {
-    jest.useFakeTimers();
+  it('click outside on empty space triggers onDismiss', () => {
     shell.mount();
     shell.show();
-    // Click on body (outside popup host).
+    // jsdom doesn't implement caretRangeFromPoint → isPointOnText returns false
+    // → click on body is treated as empty space → dismiss.
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    // Dismiss is deferred — flush the timer.
-    jest.runAllTimers();
     expect(onDismiss).toHaveBeenCalledTimes(1);
-    jest.useRealTimers();
   });
 
-  it('show() cancels a pending dismiss (seamless word-to-word transition)', () => {
-    jest.useFakeTimers();
+  it('click outside on text does NOT dismiss (seamless word switch)', () => {
     shell.mount();
     shell.show();
-    // mousedown outside → schedules dismiss.
-    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    expect(onDismiss).not.toHaveBeenCalled(); // deferred, not immediate
-    // mouseup triggers a new lookup → show() cancels the pending dismiss.
-    shell.show();
-    jest.runAllTimers();
-    expect(onDismiss).not.toHaveBeenCalled(); // canceled by show()
-    jest.useRealTimers();
+    // Mock caretRangeFromPoint to return a text node → isPointOnText returns true
+    // → click on text is treated as a potential lookup → no dismiss.
+    const textNode = document.createTextNode('hello');
+    document.body.appendChild(textNode);
+    const mockRange = {
+      startContainer: textNode,
+      startOffset: 0,
+      endContainer: textNode,
+      endOffset: 5,
+      getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0, right: 0, bottom: 0 }),
+      getClientRects: () => [],
+    };
+    document.caretRangeFromPoint = jest.fn(() => mockRange as unknown as Range);
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 50, clientY: 50 }));
+    expect(onDismiss).not.toHaveBeenCalled();
+    delete document.caretRangeFromPoint;
+    document.body.removeChild(textNode);
   });
 
   it('destroy removes host from DOM', () => {

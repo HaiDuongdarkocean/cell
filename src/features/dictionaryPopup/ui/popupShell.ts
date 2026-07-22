@@ -400,7 +400,6 @@ export class PopupShell {
   private dragOffsetStart: { x: number; y: number } = { x: 0, y: 0 };
   private previouslyFocused: Element | null = null;
   private themeCleanup: (() => void) | null = null;
-  private pendingDismissTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly onDismiss: () => void;
   private readonly onResizeComplete: (size: PopupSize) => void;
   private readonly boundKeyDown: (e: KeyboardEvent) => void;
@@ -614,9 +613,6 @@ export class PopupShell {
    *  and enables left/top/width/height transitions for subsequent moves.
    *  Locks Escape key via Keyboard Lock API when in fullscreen. */
   show(): void {
-    // Cancel any pending dismiss — a new lookup is taking over the popup
-    // (clicking another word while popup is open → reposition, not dismiss).
-    this.cancelPendingDismiss();
     if (this.container) {
       this.container.classList.add('cell-popup--visible');
       // Point aria-labelledby at the winner term when rendered.
@@ -701,7 +697,6 @@ export class PopupShell {
 
   /** Unmount the popup + remove all listeners. */
   destroy(): void {
-    this.cancelPendingDismiss();
     document.removeEventListener('keydown', this.boundKeyDown, true);
     document.removeEventListener('mousedown', this.boundClickOutside, true);
     document.removeEventListener('fullscreenchange', this.boundFullscreenChange);
@@ -771,28 +766,25 @@ export class PopupShell {
       // that triggers a new lookup, not a dismiss.
       const target = e.target as HTMLElement | null;
       if (target?.closest?.('.js-cell-token')) return;
-      // Defer dismiss — if mouseup triggers a new lookup (showPopup → show),
-      // the pending dismiss is canceled so the popup repositions without flicker.
-      this.scheduleDismiss();
+      // Don't dismiss if the click lands on text — a new lookup will fire on
+      // mouseup and reposition the popup. Only dismiss on truly empty space.
+      // (Lookup is async, so we can't wait for showPopup to cancel a timer.)
+      if (this.isPointOnText(e.clientX, e.clientY)) return;
+      this.onDismiss();
     }
   }
 
-  /** Defer onDismiss by one tick so a concurrent lookup (mouseup → showPopup)
-   *  can cancel it via show() → cancelPendingDismiss(). */
-  private scheduleDismiss(): void {
-    if (this.pendingDismissTimer !== null) return;
-    this.pendingDismissTimer = setTimeout(() => {
-      this.pendingDismissTimer = null;
-      this.onDismiss();
-    }, 0);
-  }
-
-  /** Cancel a pending deferred dismiss — called by show() when a new lookup
-   *  reuses the popup instead of dismissing + recreating it. */
-  private cancelPendingDismiss(): void {
-    if (this.pendingDismissTimer !== null) {
-      clearTimeout(this.pendingDismissTimer);
-      this.pendingDismissTimer = null;
+  /** Check if the given coordinates land on a text node (potential lookup target). */
+  private isPointOnText(x: number, y: number): boolean {
+    if (!document.caretRangeFromPoint) return false;
+    try {
+      const range = document.caretRangeFromPoint(x, y);
+      if (!range) return false;
+      // Ignore ranges inside our own popup host.
+      if (this.host?.contains(range.startContainer)) return false;
+      return range.startContainer.nodeType === Node.TEXT_NODE;
+    } catch {
+      return false;
     }
   }
 
