@@ -68,6 +68,7 @@ docs/           # Tài liệu dự án
 │   └── 055-orbital-dictionary-pointer.md # ADR-055: orbital dictionary pointer badge cho mobile/tablet/fullscreen video lookup
 │   └── 056-instant-dictionary-popup-hover.md # ADR-056: instant dictionary popup hover — 16ms hover debounce + geometry guard + lookup cache + prefetch adjacent words
 │   └── 057-popup-smooth-transitions.md # ADR-057: CSS transitions for dictionary popup show/hide, position moves, size changes, and content swaps
+│   └── 058-predictive-viewport-tokenize.md # ADR-058: VDLT-Predict — direction-aware overscan + prepare-ahead + cold-start viewport-first bind
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup
 │   ├── overlay-appearance-settings.md
