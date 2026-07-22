@@ -23,6 +23,14 @@ jest.mock('@/shared/lib/storage/opfsStorage', () => ({
   isOpfsAvailable: jest.fn().mockReturnValue(false),
 }));
 
+// Mock devMode (import.meta.env not available in Jest CJS)
+jest.mock('@/shared/lib/env/devMode', () => ({ isDevMode: false }));
+// Mock devSeed to avoid IDB/fetch in background integration test
+jest.mock('@/features/dictionary/logic/devSeed', () => ({
+  seedDevDataIfEmpty: jest.fn(),
+  setDevSeedEnabled: jest.fn(),
+}));
+
 // --- Types for mocked chrome APIs ---
 
 interface MockListener {
@@ -646,12 +654,12 @@ describe('Background integration', () => {
     })) as MessageResponse<Settings>;
 
     expect(response.success).toBe(true);
-    // loadSettings() runs migration v0→v1→...→v14→v15 which stamps schemaVersion: 15
-    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px, V9 unified subtitle block, V10 Card Creator, V11 Card Creator shortcuts, V12 generate-native shortcut, V13 overlay appearance refactor, V14 Dictionary Popup settings, V15 strip orphaned translateTargetLang).
+    // loadSettings() runs migration v0→v1→...→v15→v16 which stamps schemaVersion: 16
+    // (ADR-017 D8, ADR-018 D2, ADR-019, V4 overlay defaults, V5 theme/buttonSize, V6 ASR toggle, V7 auto-translate, V8 cluster x unit px, V9 unified subtitle block, V10 Card Creator, V11 Card Creator shortcuts, V12 generate-native shortcut, V13 overlay appearance refactor, V14 Dictionary Popup settings, V15 strip orphaned translateTargetLang, V16 orbital badge pointer trigger).
     // V9 migration rebuilds subtitleBlockSettings from legacy layer yOffsetPercent (defaults 18/6 → 12).
     expect(response.data).toEqual({
       ...storedSettings,
-      schemaVersion: 15,
+      schemaVersion: 16,
       subtitleBlockSettings: { yOffsetPercent: 12, globalScale: 1, bgOpacity: 0.7 },
     });
   });

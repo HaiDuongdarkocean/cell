@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
 import * as orchestrator from '@/features/dictionary/logic/importOrchestrator';
-import type { ResourceInfo } from '@/entities/dictionary';
+import type { ResourceInfo, ImportResult } from '@/entities/dictionary';
 
 // Mock importOrchestrator
 jest.mock('@/features/dictionary/logic/importOrchestrator', () => ({
@@ -75,8 +75,8 @@ describe('ResourcesPanel', () => {
     const freqInput = inputs[1] as HTMLInputElement;
     const file = new File(['hello\nworld\n'], 'test.txt', { type: 'text/plain' });
     fireEvent.change(freqInput, { target: { files: [file] } });
-    await waitFor(() => expect(screen.getByTestId('import-success')).toBeInTheDocument());
-    expect(screen.getByTestId('import-success').textContent).toContain('test.txt');
+    await waitFor(() => expect(screen.getByTestId('import-success-frequency')).toBeInTheDocument());
+    expect(screen.getByTestId('import-success-frequency').textContent).toContain('test.txt');
   });
 
   it('shows error message on import failure', async () => {
@@ -87,7 +87,37 @@ describe('ResourcesPanel', () => {
     const freqInput = inputs[1] as HTMLInputElement;
     const file = new File(['bad'], 'test.txt', { type: 'text/plain' });
     fireEvent.change(freqInput, { target: { files: [file] } });
-    await waitFor(() => expect(screen.getByTestId('import-error')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('import-error-frequency')).toBeInTheDocument());
+  });
+
+  it('allows concurrent dictionary + frequency import (independent dropzones)', async () => {
+    // Dictionary import hangs (never resolves) while frequency import completes.
+    let resolveDict: (v: ImportResult) => void = () => {};
+    const dictPromise = new Promise<ImportResult>((r) => {
+      resolveDict = r;
+    });
+    importFile.mockImplementation((_file, type) => {
+      if (type === 'DICTIONARY') return dictPromise;
+      return Promise.resolve({ resourceId: 2, wordCount: 5, format: 'txt' });
+    });
+
+    render(<ResourcesPanel langCode="en" />);
+    await waitFor(() => expect(screen.getByText('Danh sách tần suất')).toBeInTheDocument());
+    const inputs = screen.getAllByTestId('dropzone-input');
+    const dictInput = inputs[0] as HTMLInputElement;
+    const freqInput = inputs[1] as HTMLInputElement;
+
+    // Start dictionary import (will hang)
+    fireEvent.change(dictInput, { target: { files: [new File(['[]'], 'dict.json', { type: 'application/json' })] } });
+    // Start frequency import while dictionary is still running
+    fireEvent.change(freqInput, { target: { files: [new File(['a\nb\n'], 'freq.txt', { type: 'text/plain' })] } });
+
+    // Frequency import should complete even though dictionary is still running
+    await waitFor(() => expect(screen.getByTestId('import-success-frequency')).toBeInTheDocument());
+    // Dictionary dropzone should still be disabled (importing), frequency dropzone enabled
+    // Resolve dictionary import to clean up
+    resolveDict({ resourceId: 1, wordCount: 3, format: 'cambridge-json' });
+    await waitFor(() => expect(screen.getByTestId('import-success-dictionary')).toBeInTheDocument());
   });
 
   it('opens delete confirm modal when delete clicked', async () => {

@@ -130,15 +130,6 @@ export async function createWebTokenizeController(
   let scrollDirection: ScrollDirection = 'none';
   let scrollRafId: number | undefined;
 
-  // VDLT-Predict jank fix: detect rapid mutation bursts (virtualized list scroll
-  // like Discord, SPA re-render). During a burst, all mutation processing is
-  // deferred until 200ms after the last large mutation batch — this ensures
-  // zero main-thread contention while the SPA is actively scrolling/re-rendering.
-  // When the burst ends, visible blocks are re-scheduled at VIEWPORT priority.
-  let mutationBurstActive = false;
-  let burstResetTimer: ReturnType<typeof setTimeout> | null = null;
-  let pauseProcessingUntil = 0;
-
   // Batch metadata resolver: gather terms from all blocks that become visible in
   // the same microtask, then send a single message pair (status + frequency) to
   // the background. Per-block messages are the main bottleneck on pages like
@@ -280,10 +271,7 @@ export async function createWebTokenizeController(
         // mutation batch), skip scheduling a no-op bind task to keep the queue
         // short on low-end devices.
         if (stateStore.getState().enabled && !block.isBound) {
-          // VDLT-Predict jank fix: during mutation bursts (virtualized scroll),
-          // defer bind to idle so it doesn't compete with the SPA's rendering.
-          const priority = mutationBurstActive ? PRIORITY_IDLE : PRIORITY_VIEWPORT;
-          scheduler.schedule(() => bindVisibleBlock(block), priority);
+          scheduler.schedule(() => bindVisibleBlock(block), PRIORITY_VIEWPORT);
         }
       },
       onExit: () => {
@@ -415,7 +403,7 @@ export async function createWebTokenizeController(
   // the debounced re-scan does not lose nodes that arrived between resets.
   let pendingAddedNodes: Node[] = [];
 
-  function processAddedNodes(added: readonly Node[], _eager: boolean): void {
+  function processAddedNodes(added: readonly Node[], eager: boolean): void {
     if (!stateStore.getState().enabled) return;
     if (added.length === 0) return;
     const scanId = dynIdCounter;
@@ -427,17 +415,10 @@ export async function createWebTokenizeController(
       if (existing.some((b) => b.sourceNodes[0] === block.sourceNodes[0])) continue;
       cache.set(block);
       blocks.push(block);
-      // VDLT-Predict fix: never eager-bind mutation-added nodes. The eager path
-      // called tryBindVisible synchronously per block, forcing a layout reflow
-      // (getBoundingClientRect) + tokenize + DOM bind per block — all in one
-      // microtask. On virtualized lists (Discord) that remount 20-50 messages
-      // per scroll frame, this caused 213ms jank. Instead, let the IO onEnter
-      // callback schedule bind at PRIORITY_VIEWPORT; the scheduler processes
-      // with a 16ms budget and yields between blocks. For reused elements
-      // (Facebook re-render), ADR-055 fires onEnter synchronously so bind is
-      // still scheduled immediately. For new elements (Discord remount), IO
-      // fires on the next frame — ~1 frame of plain text, but 0 jank.
-      observeBlock(block, false);
+      // Only eager-bind small mutation batches. Large batches (e.g. hydration,
+      // re-rendering a whole subtree) can produce hundreds of blocks; doing a
+      // synchronous getBoundingClientRect for each one forces repeated layout.
+      observeBlock(block, eager && added.length <= 50);
     }
   }
 
@@ -471,29 +452,8 @@ export async function createWebTokenizeController(
     }
   }
 
-  // VDLT-Predict jank fix: accumulate removed nodes during burst mode to defer
-  // the expensive IO unobserve + cache cleanup. IntersectionObserver.unobserve
-  // on a detached element is a no-op, and WeakMap entries for detached elements
-  // are GC'd automatically, so deferring is safe.
-  let pendingRemovedNodes: Node[] = [];
-
-  function flushPendingRemovedNodes(): void {
-    const nodes = pendingRemovedNodes;
-    pendingRemovedNodes = [];
-    for (const n of nodes) handleRemovedNode(n);
-  }
-
   function flushPendingAddedNodes(): void {
-    // VDLT-Predict jank fix: if still in pause window, re-schedule for later.
-    // This coalesces all mutations during a scroll burst into one flush that
-    // fires 200ms after the last large mutation batch.
-    if (Date.now() < pauseProcessingUntil) {
-      setTimeout(flushPendingAddedNodes, pauseProcessingUntil - Date.now());
-      return;
-    }
     mutationFlushPending = false;
-    // Flush deferred removed nodes first so cache is clean before processing adds
-    flushPendingRemovedNodes();
     if (!stateStore.getState().enabled) {
       pendingAddedNodes = [];
       return;
@@ -516,17 +476,7 @@ export async function createWebTokenizeController(
   function scheduleMutationFlush(): void {
     if (mutationFlushPending) return;
     mutationFlushPending = true;
-    // VDLT-Predict jank fix: during mutation bursts, defer processing to 200ms
-    // after the last large mutation batch. setTimeout is used (not microtask or
-    // requestIdleCallback) because it reliably fires after the specified delay,
-    // regardless of browser idle state. requestIdleCallback can fire between
-    // rAF callbacks during JS-driven scroll, re-introducing jank.
-    const now = Date.now();
-    if (now < pauseProcessingUntil) {
-      setTimeout(flushPendingAddedNodes, pauseProcessingUntil - now);
-    } else {
-      queueMicrotask(flushPendingAddedNodes);
-    }
+    queueMicrotask(flushPendingAddedNodes);
   }
 
   mutationObserver = new MutationObserver((mutations) => {
@@ -540,36 +490,11 @@ export async function createWebTokenizeController(
         pendingAddedNodes.push(n);
       }
       for (const n of m.removedNodes ?? []) {
-        // VDLT-Predict jank fix: defer removed node cleanup during burst mode
-        if (mutationBurstActive) pendingRemovedNodes.push(n);
-        else handleRemovedNode(n);
+        handleRemovedNode(n);
       }
     }
     if (pendingAddedNodes.length === 0) return;
     if (!mutationWindowStart) mutationWindowStart = now;
-    // VDLT-Predict jank fix: detect mutation burst (virtualized list remount).
-    // When many nodes arrive at once, the SPA is likely scrolling a virtualized
-    // list (Discord) or re-rendering a large subtree. Activate burst mode + set
-    // a 200ms pause window so all mutation processing is deferred until after
-    // the SPA settles. Each subsequent large batch extends the pause window.
-    if (pendingAddedNodes.length > 20) {
-      mutationBurstActive = true;
-      pauseProcessingUntil = now + 200;
-      if (burstResetTimer) clearTimeout(burstResetTimer);
-      burstResetTimer = setTimeout(() => {
-        burstResetTimer = null;
-        mutationBurstActive = false;
-        // After burst: re-schedule visible unbound blocks at VIEWPORT priority
-        // so tokens appear immediately when the SPA settles.
-        for (const el of visibleElements) {
-          for (const b of cache.getByElement(el)) {
-            if (!b.isBound) {
-              scheduler.schedule(() => bindVisibleBlock(b), PRIORITY_VIEWPORT);
-            }
-          }
-        }
-      }, 200);
-    }
     // Fast path: flush in the next microtask, before the browser paints, so new
     // content is tokenized immediately instead of waiting for a 16ms animation
     // frame or the trailing debounce.
