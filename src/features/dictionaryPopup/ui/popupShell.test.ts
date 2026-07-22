@@ -397,11 +397,29 @@ describe('PopupShell', () => {
   });
 
   it('click outside triggers onDismiss when visible', () => {
+    jest.useFakeTimers();
     shell.mount();
     shell.show();
     // Click on body (outside popup host).
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    // Dismiss is deferred — flush the timer.
+    jest.runAllTimers();
     expect(onDismiss).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
+  });
+
+  it('show() cancels a pending dismiss (seamless word-to-word transition)', () => {
+    jest.useFakeTimers();
+    shell.mount();
+    shell.show();
+    // mousedown outside → schedules dismiss.
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    expect(onDismiss).not.toHaveBeenCalled(); // deferred, not immediate
+    // mouseup triggers a new lookup → show() cancels the pending dismiss.
+    shell.show();
+    jest.runAllTimers();
+    expect(onDismiss).not.toHaveBeenCalled(); // canceled by show()
+    jest.useRealTimers();
   });
 
   it('destroy removes host from DOM', () => {

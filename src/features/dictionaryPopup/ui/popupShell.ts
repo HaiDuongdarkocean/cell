@@ -400,6 +400,7 @@ export class PopupShell {
   private dragOffsetStart: { x: number; y: number } = { x: 0, y: 0 };
   private previouslyFocused: Element | null = null;
   private themeCleanup: (() => void) | null = null;
+  private pendingDismissTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly onDismiss: () => void;
   private readonly onResizeComplete: (size: PopupSize) => void;
   private readonly boundKeyDown: (e: KeyboardEvent) => void;
@@ -613,6 +614,9 @@ export class PopupShell {
    *  and enables left/top/width/height transitions for subsequent moves.
    *  Locks Escape key via Keyboard Lock API when in fullscreen. */
   show(): void {
+    // Cancel any pending dismiss — a new lookup is taking over the popup
+    // (clicking another word while popup is open → reposition, not dismiss).
+    this.cancelPendingDismiss();
     if (this.container) {
       this.container.classList.add('cell-popup--visible');
       // Point aria-labelledby at the winner term when rendered.
@@ -697,6 +701,7 @@ export class PopupShell {
 
   /** Unmount the popup + remove all listeners. */
   destroy(): void {
+    this.cancelPendingDismiss();
     document.removeEventListener('keydown', this.boundKeyDown, true);
     document.removeEventListener('mousedown', this.boundClickOutside, true);
     document.removeEventListener('fullscreenchange', this.boundFullscreenChange);
@@ -759,9 +764,6 @@ export class PopupShell {
 
   private onClickOutside(e: MouseEvent): void {
     if (!this.container?.classList.contains('cell-popup--visible')) return;
-    // Check if the click target is inside the popup's Shadow DOM.
-    // In Shadow DOM, event.target is the host element for outside listeners.
-    // We check if the composed path includes our host.
     if (!this.host) return;
     const composedPath = e.composedPath();
     if (!composedPath.includes(this.host)) {
@@ -769,8 +771,28 @@ export class PopupShell {
       // that triggers a new lookup, not a dismiss.
       const target = e.target as HTMLElement | null;
       if (target?.closest?.('.js-cell-token')) return;
-      // Click outside — dismiss.
+      // Defer dismiss — if mouseup triggers a new lookup (showPopup → show),
+      // the pending dismiss is canceled so the popup repositions without flicker.
+      this.scheduleDismiss();
+    }
+  }
+
+  /** Defer onDismiss by one tick so a concurrent lookup (mouseup → showPopup)
+   *  can cancel it via show() → cancelPendingDismiss(). */
+  private scheduleDismiss(): void {
+    if (this.pendingDismissTimer !== null) return;
+    this.pendingDismissTimer = setTimeout(() => {
+      this.pendingDismissTimer = null;
       this.onDismiss();
+    }, 0);
+  }
+
+  /** Cancel a pending deferred dismiss — called by show() when a new lookup
+   *  reuses the popup instead of dismissing + recreating it. */
+  private cancelPendingDismiss(): void {
+    if (this.pendingDismissTimer !== null) {
+      clearTimeout(this.pendingDismissTimer);
+      this.pendingDismissTimer = null;
     }
   }
 
