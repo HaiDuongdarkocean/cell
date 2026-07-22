@@ -1,50 +1,50 @@
 import { defineConfig, type Plugin } from 'vite';
 import { crx } from '@crxjs/vite-plugin';
 import { resolve } from 'node:path';
-import { readFileSync, existsSync } from 'node:fs';
+import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'node:fs';
 import manifest from './public/manifest.json' with { type: 'json' };
 
 /**
- * Dev-only seed assets — serves test dictionary + frequency files from
- * `tests/data-test/resource/` at `/seed/<lang>/<relPath>` during `vite` dev.
- * Production build does NOT include these (43MB Cambridge file stays out of bundle).
- * Extension fetches via `http://localhost:5173/seed/...` (host_permissions: <all_urls>).
+ * Dev-only seed assets — copies test dictionary + frequency files from
+ * `tests/data-test/resource/` into `dist/seed/` during `vite build --mode development`.
+ * Production build does NOT copy (43MB Cambridge stays out of bundle).
+ * Extension fetches via `chrome.runtime.getURL('seed/...')` — same origin, no CSP needed.
  */
 function devSeedAssets(): Plugin {
   const seedRoot = resolve(__dirname, 'tests', 'data-test', 'resource');
+  let buildMode = 'production';
   return {
     name: 'dev-seed-assets',
-    apply: 'serve',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const url = req.url ?? '';
-        if (!url.startsWith('/seed/')) return next();
-        // /seed/en/dictionary/foo.json → tests/data-test/resource/en/dictionary/foo.json
-        const relPath = decodeURIComponent(url.slice('/seed/'.length).split('?')[0]!);
-        const fullPath = resolve(seedRoot, relPath);
-        // Prevent path traversal outside seedRoot
-        if (!fullPath.startsWith(seedRoot)) {
-          res.statusCode = 403;
-          res.end('Forbidden');
-          return;
-        }
-        if (!existsSync(fullPath)) {
-          res.statusCode = 404;
-          res.end('Not found');
-          return;
-        }
-        try {
-          const data = readFileSync(fullPath);
-          res.setHeader('Content-Type', 'application/json; charset=utf-8');
-          res.setHeader('Access-Control-Allow-Origin', '*');
-          res.end(data);
-        } catch {
-          res.statusCode = 500;
-          res.end('Read error');
-        }
-      });
+    apply: 'build',
+    configResolved(config) {
+      buildMode = config.mode;
+    },
+    closeBundle() {
+      if (buildMode === 'production') return;
+      const destRoot = resolve(__dirname, 'dist', 'seed');
+      if (!existsSync(seedRoot)) return;
+      try {
+        copyDirRecursive(seedRoot, destRoot);
+        console.log(`[dev-seed-assets] Copied seed data to ${destRoot} (mode=${buildMode})`);
+      } catch (err) {
+        console.warn(`[dev-seed-assets] Failed to copy seed data:`, err);
+      }
     },
   };
+}
+
+/** Recursively copy a directory. */
+function copyDirRecursive(src: string, dest: string): void {
+  if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
+  for (const entry of readdirSync(src)) {
+    const srcPath = resolve(src, entry);
+    const destPath = resolve(dest, entry);
+    if (statSync(srcPath).isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
 }
 
 export default defineConfig({
