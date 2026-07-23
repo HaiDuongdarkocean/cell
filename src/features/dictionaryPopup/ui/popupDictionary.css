@@ -316,7 +316,6 @@
   height: var(--space-5, 20px);
   min-width: 10ch;
   justify-content: center;
-  text-transform: capitalize;
 }
 
 /* Status badges — solid badges. Maps directly to WordStatus values. */
