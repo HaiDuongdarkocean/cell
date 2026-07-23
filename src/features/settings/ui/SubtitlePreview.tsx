@@ -33,6 +33,7 @@ export function SubtitlePreview({ style, role }: SubtitlePreviewProps): React.JS
     background: bgRgba,
     opacity: style.textOpacity,
     fontFamily: style.fontFamily,
+    fontWeight: style.fontWeight ?? 600,
     textShadow: buildTextShadow(style.textShadow),
   };
 

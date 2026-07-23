@@ -139,6 +139,7 @@ export const DEFAULT_OVERLAY_STYLE_TARGET: OverlayStyleConfig = {
   textOpacity: 1,
   textShadow: DEFAULT_TEXT_SHADOW,
   fontFamily: 'sans-serif',
+  fontWeight: 600,
   horizontalAlign: 'center',
   visible: true,
 };
@@ -152,6 +153,7 @@ export const DEFAULT_OVERLAY_STYLE_NATIVE: OverlayStyleConfig = {
   textOpacity: 0.85,
   textShadow: DEFAULT_TEXT_SHADOW,
   fontFamily: 'sans-serif',
+  fontWeight: 600,
   horizontalAlign: 'center',
   visible: true,
 };

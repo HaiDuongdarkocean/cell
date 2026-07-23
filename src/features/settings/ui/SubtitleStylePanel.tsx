@@ -98,6 +98,25 @@ export function SubtitleStylePanel({
         />
       </div>
 
+      {/* Font weight — adjustable 100-900, default 600 (semibold) */}
+      <div className={styles.field}>
+        <label className={styles.label} htmlFor={`style-${role}-font-weight`}>
+          Font weight
+          <span className={styles.valueBadge}>{style.fontWeight ?? defaultStyle.fontWeight}</span>
+        </label>
+        <input
+          id={`style-${role}-font-weight`}
+          type="range"
+          min={100}
+          max={900}
+          step={100}
+          value={style.fontWeight ?? defaultStyle.fontWeight}
+          onChange={(e) => onChange({ fontWeight: Number(e.target.value) })}
+          className={styles.slider}
+          aria-label={`Font weight ${style.fontWeight ?? defaultStyle.fontWeight}`}
+        />
+      </div>
+
       {/* Font family */}
       <div className={styles.field}>
         <label className={styles.label} htmlFor={`style-${role}-font-family`}>Font family</label>
