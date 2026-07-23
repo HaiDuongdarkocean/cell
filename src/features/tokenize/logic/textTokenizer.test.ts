@@ -70,6 +70,12 @@ describe('tokenizeTextBlock', () => {
     expect(tokens.map((t) => t.text)).toEqual(["don't", 'go', 'well-known', "dogs'"]);
   });
 
+  it('normalizes curly apostrophe to straight so contractions are not filtered', () => {
+    const tokens = tokenizeTextBlock('don\u2019t go', 'en');
+    expect(tokens.map((t) => t.text)).toEqual(["don't", 'go']);
+    expect(tokens[1]).toMatchObject({ start: 6, end: 8 });
+  });
+
   it('filters non-English words for en-US subtag', () => {
     const tokens = tokenizeTextBlock('Hello thế giới.', 'en-US');
     expect(tokens.map((t) => t.text)).toEqual(['Hello']);

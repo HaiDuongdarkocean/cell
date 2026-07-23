@@ -348,6 +348,83 @@ describe('createWebTokenizeController', () => {
     controller.destroy();
   });
 
+  it('off→on→off removes ALL token spans (no orphans after re-toggle)', async () => {
+    const root = document.createElement('div');
+    const p1 = document.createElement('p');
+    p1.textContent = 'Hello world.';
+    const p2 = document.createElement('p');
+    p2.textContent = 'Foo bar baz.';
+    root.appendChild(p1);
+    root.appendChild(p2);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    // ON
+    controller.enable();
+    MockIntersectionObserver.trigger(p1);
+    MockIntersectionObserver.trigger(p2);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(p1.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+    expect(p2.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+
+    // OFF
+    controller.disable();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(p1.querySelectorAll('.js-cell-token').length).toBe(0);
+    expect(p2.querySelectorAll('.js-cell-token').length).toBe(0);
+
+    // ON again
+    controller.enable();
+    MockIntersectionObserver.trigger(p1);
+    MockIntersectionObserver.trigger(p2);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(p1.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+    expect(p2.querySelectorAll('.js-cell-token').length).toBeGreaterThan(0);
+
+    // OFF again — ALL spans must be gone (no orphans)
+    controller.disable();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const remainingSpans = root.querySelectorAll('.js-cell-token');
+    expect(remainingSpans.length).toBe(0);
+    expect(p1.textContent).toBe('Hello world.');
+    expect(p2.textContent).toBe('Foo bar baz.');
+
+    controller.destroy();
+  });
+
+  it('disable sweeps orphan token spans that are not in the block list', async () => {
+    const root = document.createElement('div');
+    const p1 = document.createElement('p');
+    p1.textContent = 'Orphan span here.';
+    const injected = document.createElement('span');
+    injected.className = 'js-cell-token';
+    injected.textContent = 'orphan';
+    p1.appendChild(injected);
+    root.appendChild(p1);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    controller.enable();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // OFF must remove the injected orphan span too.
+    controller.disable();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const remainingSpans = root.querySelectorAll('.js-cell-token');
+    expect(remainingSpans.length).toBe(0);
+    expect(p1.textContent).toBe('Orphan span here.orphan');
+
+    controller.destroy();
+  });
+
   it('changes hovered token status with 1-4 keys', async () => {
     const root = document.createElement('div');
     const paragraph = document.createElement('p');
@@ -374,6 +451,94 @@ describe('createWebTokenizeController', () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+    controller.destroy();
+  });
+
+  it('changes status of every token inside a native text selection with 1-4 keys', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const hello = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    const world = paragraph.querySelector('[data-cell-term="world"]') as HTMLElement;
+    expect(hello).not.toBeNull();
+    expect(world).not.toBeNull();
+
+    // Native selection spanning both tokens (no Ctrl+Click, no hover).
+    const range = document.createRange();
+    range.setStartBefore(hello);
+    range.setEndAfter(world);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    setWordStatus.mockClear();
+    const event = new KeyboardEvent('keydown', { key: '3', bubbles: true });
+    document.dispatchEvent(event);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'known');
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'world', 'known');
+    // Selection is cleared after applying.
+    expect(window.getSelection()!.isCollapsed).toBe(true);
+
+    controller.destroy();
+  });
+
+  it('keyboard status change is not clobbered by an in-flight metadata flush (race guard)', async () => {
+    const root = document.createElement('div');
+    const paragraph = document.createElement('p');
+    paragraph.textContent = 'Hello world.';
+    root.appendChild(paragraph);
+    document.body.appendChild(root);
+
+    // Background read resolves after a real delay so the flush is mid-await
+    // when the shortcut key fires. Returns the OLD status ('unknown') to
+    // simulate a snapshot taken before the user pressed the key.
+    getWordStatuses.mockImplementation(() => new Promise<Map<string, string>>((resolve) => {
+      setTimeout(() => resolve(new Map<string, string>([['hello', 'unknown'], ['world', 'unknown']])), 80);
+    }));
+
+    const controller = await createWebTokenizeController({
+      url: 'https://example.com/',
+      root,
+    });
+
+    controller.enable();
+    MockIntersectionObserver.trigger(paragraph);
+    // Let the metadata flush schedule + start awaiting getWordStatuses.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    // Flush is now blocked on the 80ms background read.
+
+    const hello = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    expect(hello).not.toBeNull();
+    hello!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+
+    // Press 2 (tracking) WHILE the flush is still awaiting the background.
+    setWordStatus.mockClear();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '2', bubbles: true }));
+
+    // Wait for the stale background snapshot to resolve + flush to rebind.
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // rebind recreates the span, so re-query by term after the flush settles.
+    const helloAfter = paragraph.querySelector('[data-cell-term="hello"]') as HTMLElement;
+    expect(helloAfter.classList.contains('js-cell-token--status-tracking')).toBe(true);
+    expect(helloAfter.classList.contains('js-cell-token--status-unknown')).toBe(false);
+    expect(setWordStatus).toHaveBeenCalledWith('en', 'hello', 'tracking');
+
     controller.destroy();
   });
 

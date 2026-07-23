@@ -109,7 +109,12 @@ ${buildVariables()}
 .js-cell-token {
   display: inline !important;
   vertical-align: baseline !important;
-  white-space: normal !important;
+  /* Inherit the host page's white-space instead of forcing "normal". Forcing
+     "normal" breaks hosts that use white-space:nowrap to keep text on one line
+     (e.g. GeeksforGeeks #secondarySubHeader nav links) — the token spans would
+     wrap and expand the container height. Inherit matches the original text
+     node behavior exactly. */
+  white-space: inherit !important;
   overflow-wrap: break-word !important;
   word-break: normal !important;
   cursor: pointer !important;

@@ -1,4 +1,5 @@
 import type { TokenBlock } from '@/features/tokenize/types';
+import { languageMatches } from '@/shared/config/languageRegistry';
 
 const FORBIDDEN_TAGS = new Set([
   'SCRIPT',
@@ -24,6 +25,7 @@ const FORBIDDEN_TAGS = new Set([
 ]);
 
 const SUBTITLE_LINE_CLASS = 'subtitle-line';
+const SUBTITLE_NATIVE_CLASS = 'native';
 
 // 'link' is intentionally NOT forbidden: <a href> is already implicit link and
 // is tokenized (see test). Many sites (Facebook, Twitter) add explicit
@@ -38,23 +40,40 @@ export interface FindTextBlocksOptions {
   readonly langCode?: string;
   /** Prefix for block IDs. Defaults to 'block-'. */
   readonly idPrefix?: string;
+  /** Optional predicate to reject blocks by parent element (e.g. visible viewport only).
+   *  Results are cached per parent within the walk so the predicate is called once per element. */
+  readonly filter?: (element: Element) => boolean;
 }
 
-/** Skip text nodes inside subtitle overlay elements. Both target and native
- *  subtitle lines are already tokenized by the subtitle controller — tokenize
- *  page must not re-tokenize them or it creates duplicate token spans. */
-function isSubtitleLine(element: Element): boolean {
-  return element.classList.contains(SUBTITLE_LINE_CLASS);
+/** Skip text nodes inside the native subtitle translation line. The target line
+ *  is tokenized by this controller; the native line is a translation and must
+ *  not be tokenized to avoid wrong-language lookups. */
+function isNativeSubtitleLine(element: Element): boolean {
+  return element.classList.contains(SUBTITLE_LINE_CLASS) && element.classList.contains(SUBTITLE_NATIVE_CLASS);
 }
 
 function isForbiddenElement(element: Element): boolean {
   if (FORBIDDEN_TAGS.has(element.tagName)) return true;
-  if (isSubtitleLine(element)) return true;
+  if (isNativeSubtitleLine(element)) return true;
   const role = element.getAttribute('role');
   if (role && FORBIDDEN_ROLE_ATTRS.includes(role)) return true;
   const contenteditable = element.getAttribute('contenteditable');
   if (contenteditable === 'true' || contenteditable === '') return true;
   return false;
+}
+
+/** Reject text nodes that cannot produce a word in the target language.
+ *  This avoids creating empty/separator-only blocks (e.g. "[1]", "3,000",
+ *  pure whitespace) and lowers per-block overhead on pages with many inline tags.
+ */
+function hasPotentialWord(text: string, langCode?: string): boolean {
+  if (!langCode || languageMatches('zh', langCode)) {
+    return /[\p{Script=Han}\p{L}]/u.test(text);
+  }
+  if (languageMatches('en', langCode)) {
+    return /[A-Za-z]/.test(text);
+  }
+  return /\p{L}/u.test(text);
 }
 
 /** Check whether `element` or any ancestor up to (but not including) `root` is forbidden. */
@@ -97,8 +116,9 @@ function insideTokenSpan(element: Element | null): boolean {
  * multiple source nodes.
  */
 export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}): TokenBlock[] {
-  const { maxLength = 2000, idPrefix = 'block-' } = options;
+  const { maxLength = 2000, idPrefix = 'block-', filter, langCode } = options;
   const blocks: TokenBlock[] = [];
+  const filterCache = filter ? new Map<Element, boolean>() : null;
   let idCounter = 0;
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
@@ -106,9 +126,20 @@ export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}):
 
   while (textNode) {
     const text = textNode.textContent ?? '';
-    if (text.trim().length > 0 && text.length <= maxLength) {
+    if (text.trim().length > 0 && text.length <= maxLength && hasPotentialWord(text, langCode)) {
       const parent = textNode.parentElement;
-      if (parent && !hasForbiddenContext(parent, root)) {
+      if (parent && !hasForbiddenContext(parent, root) && !insideTokenSpan(parent)) {
+        if (filterCache) {
+          let passes = filterCache.get(parent);
+          if (passes === undefined) {
+            passes = filter!(parent);
+            filterCache.set(parent, passes);
+          }
+          if (!passes) {
+            textNode = walker.nextNode() as Text | null;
+            continue;
+          }
+        }
         blocks.push(createBlock(textNode, `${idPrefix}${idCounter++}`, text));
       }
     }
@@ -128,13 +159,13 @@ export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}):
  * spans are skipped.
  */
 export function findTextBlocksInNodes(nodes: readonly Node[], options: FindTextBlocksOptions = {}): TokenBlock[] {
-  const { maxLength = 2000, idPrefix = 'block-' } = options;
+  const { maxLength = 2000, idPrefix = 'block-', langCode } = options;
   const blocks: TokenBlock[] = [];
   let idCounter = 0;
 
   function addTextNode(textNode: Text, root: Node): void {
     const text = textNode.textContent ?? '';
-    if (text.trim().length === 0 || text.length > maxLength) return;
+    if (text.trim().length === 0 || text.length > maxLength || !hasPotentialWord(text, langCode)) return;
     const parent = textNode.parentElement;
     if (!parent || insideTokenSpan(parent) || hasForbiddenContext(parent, root)) return;
     blocks.push(createBlock(textNode, `${idPrefix}${idCounter++}`, text));
