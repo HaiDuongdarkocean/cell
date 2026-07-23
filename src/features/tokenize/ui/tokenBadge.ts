@@ -75,29 +75,39 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
   let collapsed = true;
   let collapsedEdge: CollapsedEdge = 'right';
 
-  /** Viewport rect for the shared collapse helpers (pure functions, no DOM reads). */
+  /** Viewport rect for the shared collapse helpers (pure functions, no DOM reads).
+   *  Uses documentElement.clientWidth/Height which EXCLUDES the scrollbar —
+   *  window.innerWidth/Height includes it, so a badge on the right edge would
+   *  sit under the scrollbar and be hidden. */
   function viewportRect(): { width: number; height: number } {
-    return { width: window.innerWidth, height: window.innerHeight };
+    return {
+      width: document.documentElement?.clientWidth || window.innerWidth,
+      height: document.documentElement?.clientHeight || window.innerHeight,
+    };
   }
 
   /** Position the FAB center exactly on an edge so the viewport clips half of it
-   *  → visible half-moon. Switches from right/bottom CSS to left/top inline. */
+   *  → visible half-moon. Switches from right/bottom CSS to left/top inline.
+   *  Sets data-collapse-edge so CSS can shift the icon into the visible half. */
   function collapseToEdge(edge: CollapsedEdge): void {
     collapsed = true;
     collapsedEdge = edge;
-    const center = getEdgeCenter(edge, { x: window.innerWidth / 2, y: window.innerHeight / 2 }, FAB_SIZE, viewportRect());
+    const vp = viewportRect();
+    const center = getEdgeCenter(edge, { x: vp.width / 2, y: vp.height / 2 }, FAB_SIZE, vp);
     fab.style.setProperty('right', 'auto', 'important');
     fab.style.setProperty('bottom', 'auto', 'important');
     fab.style.setProperty('left', `${center.x - FAB_SIZE / 2}px`, 'important');
     fab.style.setProperty('top', `${center.y - FAB_SIZE / 2}px`, 'important');
     fab.style.removeProperty('transform');
     fab.classList.add('cell-token-fab--collapsed');
+    fab.setAttribute('data-collapse-edge', edge);
   }
 
   /** Expand to a full circle at the current center position. */
   function expand(): void {
     collapsed = false;
     fab.classList.remove('cell-token-fab--collapsed');
+    fab.removeAttribute('data-collapse-edge');
   }
 
   /** Apply the cached drag delta as a compositor-only translate3d. Called from
@@ -325,10 +335,11 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
       collapseToEdge(pos.collapsedEdge);
       return;
     }
+    const vp = viewportRect();
     const w = fab.offsetWidth;
     const h = fab.offsetHeight;
-    const left = Math.max(0, Math.min(window.innerWidth - w, pos.left));
-    const top = Math.max(0, Math.min(window.innerHeight - h, pos.top));
+    const left = Math.max(0, Math.min(vp.width - w, pos.left));
+    const top = Math.max(0, Math.min(vp.height - h, pos.top));
     fab.style.setProperty('right', 'auto', 'important');
     fab.style.setProperty('bottom', 'auto', 'important');
     fab.style.setProperty('left', `${left}px`, 'important');
@@ -355,15 +366,16 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
     // Baking into the valid range before drag starts eliminates that jump.
     if (collapsed) {
       expand();
-      const clampedLeft = Math.max(0, Math.min(window.innerWidth - rect.width, rect.left));
-      const clampedTop = Math.max(0, Math.min(window.innerHeight - rect.height, rect.top));
+      const vp = viewportRect();
+      const clampedLeft = Math.max(0, Math.min(vp.width - rect.width, rect.left));
+      const clampedTop = Math.max(0, Math.min(vp.height - rect.height, rect.top));
       fab.style.setProperty('left', `${clampedLeft}px`, 'important');
       fab.style.setProperty('top', `${clampedTop}px`, 'important');
       dragStart = {
         x: e.clientX, y: e.clientY,
         baseLeft: clampedLeft, baseTop: clampedTop,
         fabW: rect.width, fabH: rect.height,
-        vw: window.innerWidth, vh: window.innerHeight,
+        vw: vp.width, vh: vp.height,
       };
     } else {
       // Bake the current visual position into left/top as the drag base, then
@@ -372,11 +384,12 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
       // would jump the FAB to (0,0).
       fab.style.setProperty('left', `${rect.left}px`, 'important');
       fab.style.setProperty('top', `${rect.top}px`, 'important');
+      const vp = viewportRect();
       dragStart = {
         x: e.clientX, y: e.clientY,
         baseLeft: rect.left, baseTop: rect.top,
         fabW: rect.width, fabH: rect.height,
-        vw: window.innerWidth, vh: window.innerHeight,
+        vw: vp.width, vh: vp.height,
       };
     }
     dragging = false;
@@ -425,13 +438,12 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
       // cursor past the viewport boundary to collapse. The drag clamp keeps
       // the FAB fully on-screen, so the FAB can be at the edge while the
       // cursor continues past it — that's the "dí chạm cạnh" gesture.
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
+      const vp = viewportRect();
       let snapEdge: CollapsedEdge | null = null;
       if (e.clientX <= 0) snapEdge = 'left';
-      else if (e.clientX >= vw) snapEdge = 'right';
+      else if (e.clientX >= vp.width) snapEdge = 'right';
       else if (e.clientY <= 0) snapEdge = 'top';
-      else if (e.clientY >= vh) snapEdge = 'bottom';
+      else if (e.clientY >= vp.height) snapEdge = 'bottom';
       if (snapEdge) {
         collapseToEdge(snapEdge);
       } else {

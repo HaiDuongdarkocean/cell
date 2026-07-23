@@ -59,12 +59,26 @@ export function buildTokenBadgeCss(): string {
 
 /* Collapsed state — the FAB center sits on a viewport edge so the viewport
    clips half of it → visible half-moon (kế thừa orbital badge). The class is
-   a visual hook only; the half-moon shape comes from the viewport clipping the
-   position:fixed button whose center is exactly on the edge. No extra CSS
-   needed for the shape — this rule only signals the collapsed state for
-   future styling (e.g. a different cursor or subtle scale). */
+   a visual hook; the half-moon shape comes from the viewport clipping the
+   position:fixed button whose center is exactly on the edge. data-collapse-edge
+   shifts the icon into the visible half so it is not clipped. */
 .cell-token-fab--collapsed {
   cursor: grab !important;
+}
+
+/* Shift the icon inward by 1/4 badge-size (half of the visible half) so it
+   sits centered in the visible half-moon, not on the clipped edge. */
+.cell-token-fab--collapsed[data-collapse-edge="right"] svg {
+  transform: translateX(calc(var(--badge-size, 36px) / -4)) !important;
+}
+.cell-token-fab--collapsed[data-collapse-edge="left"] svg {
+  transform: translateX(calc(var(--badge-size, 36px) / 4)) !important;
+}
+.cell-token-fab--collapsed[data-collapse-edge="bottom"] svg {
+  transform: translateY(calc(var(--badge-size, 36px) / -4)) !important;
+}
+.cell-token-fab--collapsed[data-collapse-edge="top"] svg {
+  transform: translateY(calc(var(--badge-size, 36px) / 4)) !important;
 }
 
 /* Panel — popover container. data-theme is set on this element so dark-mode
