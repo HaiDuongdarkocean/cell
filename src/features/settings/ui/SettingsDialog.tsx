@@ -168,8 +168,9 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
   // ADR-013, ADR-025: partial update cho overlay style (target or native)
   const updateOverlayStyle = (role: 'target' | 'native', partial: Partial<OverlayStyleConfig>): void => {
     const key = role === 'target' ? 'subtitleOverlayTargetStyle' : 'subtitleOverlayNativeStyle';
-    const current = settings[key] ?? (role === 'target' ? DEFAULT_OVERLAY_STYLE_TARGET : DEFAULT_OVERLAY_STYLE_NATIVE);
-    onChange({ ...settings, [key]: { ...current, ...partial } });
+    const defaultStyle = role === 'target' ? DEFAULT_OVERLAY_STYLE_TARGET : DEFAULT_OVERLAY_STYLE_NATIVE;
+    const current = settings[key] ?? defaultStyle;
+    onChange({ ...settings, [key]: { ...defaultStyle, ...current, ...partial } });
   };
 
   const resetOverlayStyle = (role: 'target' | 'native'): void => {

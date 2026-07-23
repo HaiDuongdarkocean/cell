@@ -12,7 +12,7 @@
  * V1 reads on every call (settings are small + infrequent — no perf concern).
  */
 import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
-import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
+import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
@@ -62,6 +62,19 @@ function validateNavClusterFields(s: Record<string, unknown>): void {
   } else {
     s.subtitleBlockSettings = DEFAULT_SETTINGS.subtitleBlockSettings;
   }
+}
+
+/** Forward-compat normalization: ensure overlay style objects have fontWeight. */
+function normalizeOverlayStyle(
+  value: unknown,
+  fallback: { fontWeight: number },
+): Record<string, unknown> {
+  if (!value || typeof value !== 'object') return { ...fallback } as Record<string, unknown>;
+  const style = { ...value } as Record<string, unknown>;
+  if (typeof style.fontWeight !== 'number' || !Number.isFinite(style.fontWeight)) {
+    style.fontWeight = fallback.fontWeight;
+  }
+  return style;
 }
 
 /**
@@ -320,6 +333,8 @@ export async function loadSettings(): Promise<Settings> {
     // fields in case storage was edited externally with invalid values.
     const merged = { ...DEFAULT_SETTINGS, ...raw } as Record<string, unknown>;
     validateNavClusterFields(merged);
+    merged.subtitleOverlayTargetStyle = normalizeOverlayStyle(merged.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
+    merged.subtitleOverlayNativeStyle = normalizeOverlayStyle(merged.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);
     return merged as unknown as Settings;
   }
 
@@ -334,6 +349,10 @@ export async function loadSettings(): Promise<Settings> {
       migrated = { ...DEFAULT_SETTINGS, ...migrated, schemaVersion: v + 1 };
     }
   }
+
+  // Forward-compat: ensure nested overlay style objects carry fontWeight.
+  migrated.subtitleOverlayTargetStyle = normalizeOverlayStyle(migrated.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
+  migrated.subtitleOverlayNativeStyle = normalizeOverlayStyle(migrated.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);
 
   // Persist migrated settings back to storage. Write directly via setStorage
   // (NOT via saveSettings) — saveSettings now does read-modify-write and calls
