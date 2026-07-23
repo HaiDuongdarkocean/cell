@@ -904,6 +904,14 @@
     },
     {
       "type": "experience",
+      "id": "ux-touch-action-none-for-pointer-drag",
+      "title": "Pointer-event drag trên touch screen cần touch-action:none — không thì browser chiếm gesture",
+      "category": ["ux", "css"],
+      "tags": ["touch-action", "pointer-events", "drag", "touch-screen", "pointercancel", "mobile", "tablet", "scroll-hijack"],
+      "trigger": "Khi element dùng pointerdown/pointermove/pointerup để drag và phải mượt trên touch screen (mobile/tablet)"
+    },
+    {
+      "type": "experience",
       "id": "css-shadow-dom-scrollbar-scope",
       "title": "Shadow DOM utility CSS must be scoped — global * leaks to host page",
       "category": ["css", "rendering"],
