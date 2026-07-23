@@ -166,6 +166,9 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
   // .btn--primary provides bg/color/hover/active; .cell-token-fab adds floating layout.
   fab.className = 'btn btn--primary cell-token-fab js-cell-token-fab';
   fab.setAttribute('aria-label', 'Tokenize');
+  // Set --badge-size explicitly so the FAB matches the orbital badge's
+  // half-moon protrusion (SSOT — both use the same token, same value).
+  fab.style.setProperty('--badge-size', `${FAB_SIZE}px`);
   fab.innerHTML = ICON_CATALOG.settings.svg;
   shadow.appendChild(fab);
 
