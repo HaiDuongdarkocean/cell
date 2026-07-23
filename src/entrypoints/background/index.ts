@@ -72,6 +72,7 @@ import { registerFrequencyHandlers } from './handlers/frequency';
 import { registerTtsHandlers } from './handlers/tts';
 import { registerForvoAudioHandlers } from './handlers/forvoAudio';
 import { registerImageSearchHandlers } from './handlers/images';
+import { registerScreenshotHandlers } from './handlers/screenshot';
 import { seedDevDataIfEmpty, setDevSeedEnabled } from '@/features/dictionary/logic/devSeed';
 import { isDevMode } from '@/shared/lib/env/devMode';
 import type { MessageHandler } from '@/entities/message';
@@ -234,6 +235,7 @@ export class BackgroundService implements BackgroundContext {
     registerTtsHandlers(this);
     registerForvoAudioHandlers(this);
     registerImageSearchHandlers(this);
+    registerScreenshotHandlers(this);
   }
 
   /** Type-safe wrapper around messageBus.on. */
