@@ -399,31 +399,22 @@ describe('PopupShell', () => {
   it('click outside on empty space triggers onDismiss', () => {
     shell.mount();
     shell.show();
-    // jsdom doesn't implement caretRangeFromPoint → isPointOnText returns false
-    // → click on body is treated as empty space → dismiss.
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it('click outside on text does NOT dismiss (seamless word switch)', () => {
+  it('click outside on text also triggers onDismiss (isPointOnText guard removed)', () => {
     shell.mount();
     shell.show();
-    // Mock caretRangeFromPoint to return a text node → isPointOnText returns true
-    // → click on text is treated as a potential lookup → no dismiss.
+    // Previously, isPointOnText blocked dismiss on any text node. This was
+    // too aggressive — YouTube UI, comments, titles all have text, making
+    // the popup impossible to close by clicking "empty" space. Now all
+    // outside clicks dismiss (except .js-cell-token which triggers a new
+    // lookup). Web text lookups re-show the popup on mouseup if needed.
     const textNode = document.createTextNode('hello');
     document.body.appendChild(textNode);
-    const mockRange = {
-      startContainer: textNode,
-      startOffset: 0,
-      endContainer: textNode,
-      endOffset: 5,
-      getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0, right: 0, bottom: 0 }),
-      getClientRects: () => [],
-    };
-    document.caretRangeFromPoint = jest.fn(() => mockRange as unknown as Range);
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 50, clientY: 50 }));
-    expect(onDismiss).not.toHaveBeenCalled();
-    delete (document as any).caretRangeFromPoint;
+    expect(onDismiss).toHaveBeenCalledTimes(1);
     document.body.removeChild(textNode);
   });
 

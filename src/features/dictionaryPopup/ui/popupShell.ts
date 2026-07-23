@@ -766,6 +766,12 @@ export class PopupShell {
       // that triggers a new lookup, not a dismiss.
       const target = e.target as HTMLElement | null;
       if (target?.closest?.('.js-cell-token')) return;
+      // Dismiss on any other outside click. Web text lookups that fire on
+      // mouseup will re-show the popup (minimal 1-frame flicker, acceptable
+      // trade-off vs. the previous isPointOnText guard which blocked dismiss
+      // on any text node — including YouTube UI, comments, titles — making
+      // the popup impossible to close by clicking "empty" space that still
+      // had text behind it).
       this.onDismiss();
     }
   }
