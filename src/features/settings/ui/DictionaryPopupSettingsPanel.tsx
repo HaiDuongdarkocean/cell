@@ -17,14 +17,13 @@ interface DictionaryPopupSettingsPanelProps {
 
 const DEFAULT_BADGE_POINTER_TRIGGER: BadgePointerTriggerSettings = { position: 'center', size: 36, pointerScale: 0.25 };
 
-const TRIGGER_MODES = ['click', 'hover', 'hover-ctrl', 'hover-shift', 'hover-alt', 'orbital'] as const;
+const TRIGGER_MODES = ['click', 'hover', 'hover-ctrl', 'hover-shift', 'hover-alt'] as const;
 const TRIGGER_LABELS: Record<string, string> = {
   click: 'Click',
   hover: 'Hover',
   'hover-ctrl': 'Hover + Ctrl',
   'hover-shift': 'Hover + Shift',
   'hover-alt': 'Hover + Alt',
-  orbital: 'Orbital badge',
 };
 
 const TAB_OPTIONS = ['audio', 'image', 'translate', 'links'] as const;
@@ -84,56 +83,53 @@ export function DictionaryPopupSettingsPanel({
         </select>
       </div>
 
-      {settings.triggerMode === 'orbital' && (
-        <>
-          <div className={styles.field}>
-            <label htmlFor="dp-badge-pointer-position">Pointer position</label>
-            <select
-              id="dp-badge-pointer-position"
-              value={settings.badgePointerTrigger?.position ?? DEFAULT_BADGE_POINTER_TRIGGER.position}
-              onChange={(e) => {
-                const base = settings.badgePointerTrigger ?? DEFAULT_BADGE_POINTER_TRIGGER;
-                update({
-                  badgePointerTrigger: {
-                    ...base,
-                    position: e.target.value as BadgePointerTriggerSettings['position'],
-                  },
-                });
-              }}
-            >
-              <option value="top">Top</option>
-              <option value="bottom">Bottom</option>
-              <option value="left">Left</option>
-              <option value="right">Right</option>
-              <option value="center">Center</option>
-            </select>
-          </div>
-          <div className={styles.field}>
-            <div className={styles.sliderHeader}>
-              <label className={styles.label} htmlFor="dp-badge-pointer-size">Badge size</label>
-              <span className={styles.value}>{settings.badgePointerTrigger?.size ?? DEFAULT_BADGE_POINTER_TRIGGER.size}px</span>
-            </div>
-            <Slider
-              id="dp-badge-pointer-size"
-              value={settings.badgePointerTrigger?.size ?? DEFAULT_BADGE_POINTER_TRIGGER.size}
-              min={10}
-              max={200}
-              step={1}
-              aria-label="Orbital badge size"
-              data-testid="dp-badge-pointer-size"
-              onChange={(value) => {
-                const base = settings.badgePointerTrigger ?? DEFAULT_BADGE_POINTER_TRIGGER;
-                update({
-                  badgePointerTrigger: {
-                    ...base,
-                    size: value,
-                  },
-                });
-              }}
-            />
-          </div>
-        </>
-      )}
+      {/* Orbital badge pointer settings — always visible (orbital is always on). */}
+      <div className={styles.field}>
+        <label htmlFor="dp-badge-pointer-position">Pointer position</label>
+        <select
+          id="dp-badge-pointer-position"
+          value={settings.badgePointerTrigger?.position ?? DEFAULT_BADGE_POINTER_TRIGGER.position}
+          onChange={(e) => {
+            const base = settings.badgePointerTrigger ?? DEFAULT_BADGE_POINTER_TRIGGER;
+            update({
+              badgePointerTrigger: {
+                ...base,
+                position: e.target.value as BadgePointerTriggerSettings['position'],
+              },
+            });
+          }}
+        >
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+          <option value="center">Center</option>
+        </select>
+      </div>
+      <div className={styles.field}>
+        <div className={styles.sliderHeader}>
+          <label className={styles.label} htmlFor="dp-badge-pointer-size">Badge size</label>
+          <span className={styles.value}>{settings.badgePointerTrigger?.size ?? DEFAULT_BADGE_POINTER_TRIGGER.size}px</span>
+        </div>
+        <Slider
+          id="dp-badge-pointer-size"
+          value={settings.badgePointerTrigger?.size ?? DEFAULT_BADGE_POINTER_TRIGGER.size}
+          min={10}
+          max={200}
+          step={1}
+          aria-label="Orbital badge size"
+          data-testid="dp-badge-pointer-size"
+          onChange={(value) => {
+            const base = settings.badgePointerTrigger ?? DEFAULT_BADGE_POINTER_TRIGGER;
+            update({
+              badgePointerTrigger: {
+                ...base,
+                size: value,
+              },
+            });
+          }}
+        />
+      </div>
 
       {/* Default active tab */}
       <div className={styles.field}>

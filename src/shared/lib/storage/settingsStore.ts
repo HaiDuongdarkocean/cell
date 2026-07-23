@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFA
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 16;
+export const CURRENT_SCHEMA_VERSION = 17;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -307,6 +307,17 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
       }
     } else {
       merged.dictionaryPopup = DEFAULT_DICTIONARY_POPUP_SETTINGS;
+    }
+    return merged;
+  },
+  // v16 → v17: remove 'orbital' from triggerMode. The orbital badge is now
+  // always mounted when the dictionary popup is enabled, so 'orbital' is no
+  // longer a trigger mode option. Migrate any stored 'orbital' → 'click'.
+  16: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 17 } as Record<string, unknown>;
+    const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
+    if (dp && dp.triggerMode === 'orbital') {
+      dp.triggerMode = 'click';
     }
     return merged;
   },

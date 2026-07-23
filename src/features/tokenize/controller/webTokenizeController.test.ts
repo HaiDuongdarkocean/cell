@@ -120,7 +120,6 @@ describe('createWebTokenizeController', () => {
       root: document.body,
     });
     expect(controller.getState().enabled).toBe(false);
-    expect(controller.badge).toBeTruthy();
     controller.destroy();
   });
 

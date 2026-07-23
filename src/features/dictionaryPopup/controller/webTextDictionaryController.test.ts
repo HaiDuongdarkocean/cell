@@ -427,10 +427,10 @@ describe('createWebTextDictionaryController', () => {
     ctrl.destroy();
   });
 
-  it('updateSettings creates orbital badge when triggerMode is orbital', () => {
+  it('updateSettings creates orbital badge when enabled', () => {
     const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
     const settings = {
-      dictionaryPopup: makePopupSettings({ enabled: true, triggerMode: 'orbital' }),
+      dictionaryPopup: makePopupSettings({ enabled: true }),
       cardCreator: makeCardCreatorSettings(),
       subtitleOverlayNativeLanguage: 'vi',
     };
@@ -442,10 +442,10 @@ describe('createWebTextDictionaryController', () => {
     ctrl.destroy();
   });
 
-  it('repeated updateSettings in orbital mode does not recreate the badge', () => {
+  it('repeated updateSettings does not recreate the badge', () => {
     const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
     const settings = {
-      dictionaryPopup: makePopupSettings({ enabled: true, triggerMode: 'orbital' }),
+      dictionaryPopup: makePopupSettings({ enabled: true }),
       cardCreator: makeCardCreatorSettings(),
       subtitleOverlayNativeLanguage: 'vi',
     };
@@ -455,7 +455,7 @@ describe('createWebTextDictionaryController', () => {
 
     ctrl.updateSettings({
       ...settings,
-      dictionaryPopup: makePopupSettings({ enabled: true, triggerMode: 'orbital', badgePointerTrigger: { position: 'top', size: 36, pointerScale: 0.25 } }),
+      dictionaryPopup: makePopupSettings({ enabled: true, badgePointerTrigger: { position: 'top', size: 36, pointerScale: 0.25 } }),
     });
 
     const hosts = document.querySelectorAll('.js-cell-orbital-badge-host');

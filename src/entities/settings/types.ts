@@ -133,8 +133,9 @@ export interface TtsSettings {
 export interface DictionaryPopupSettings {
   /** Feature flag. Default false. */
   readonly enabled: boolean;
-  /** Trigger mode. Default 'click'. */
-  readonly triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt' | 'orbital';
+  /** Trigger mode. Default 'click'. 'orbital' was removed — the orbital badge
+   *  is now always mounted when the dictionary popup is enabled. */
+  readonly triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
   /** Default active tab (null = chỉ dictionary). Default null. */
   readonly defaultActiveTab: 'audio' | 'image' | 'translate' | 'links' | null;
   /** Per-language override for default active tab. */
