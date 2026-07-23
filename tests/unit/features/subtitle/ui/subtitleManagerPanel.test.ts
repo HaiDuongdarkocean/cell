@@ -29,13 +29,6 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     ...overrides,
   });
 
-  const createImportButton = (): HTMLButtonElement => {
-    const btn = document.createElement('button');
-    btn.setAttribute('data-testid', 'subtitle-import-button');
-    btn.setAttribute('aria-label', 'Import subtitle file');
-    return btn;
-  };
-
   beforeEach(() => {
     container = document.createElement('div');
     container.className = 'test-theme-root';
@@ -47,22 +40,22 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     container.remove();
   });
 
-  it('renders manager icon in toolbar', () => {
-    const { icon } = createSubtitleManagerPanel(container, createImportButton());
+  it('renders manager icon', () => {
+    const { icon } = createSubtitleManagerPanel(container);
     expect(icon.getAttribute('data-testid')).toBe('subtitle-manager-icon');
     expect(icon.getAttribute('aria-label')).toBe('Subtitle manager');
     expect(icon.getAttribute('title')).toBeTruthy();
   });
 
   it('opens panel when manager icon clicked', () => {
-    const { icon, panel } = createSubtitleManagerPanel(container, createImportButton());
+    const { icon, panel } = createSubtitleManagerPanel(container);
     expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(false);
     icon.click();
     expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(true);
   });
 
   it('uses the overlay appearance and active class for SVG color', () => {
-    const { icon } = createSubtitleManagerPanel(container, createImportButton());
+    const { icon } = createSubtitleManagerPanel(container);
     expect(icon.className).toContain('subtitle-manager-icon');
     expect(icon.classList.contains('subtitle-manager-icon--active')).toBe(false);
     icon.click();
@@ -70,7 +63,7 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
   });
 
   it('has bouncy transform transition via CSS class', () => {
-    const { icon } = createSubtitleManagerPanel(container, createImportButton());
+    const { icon } = createSubtitleManagerPanel(container);
     expect(icon.className).toContain('subtitle-manager-icon');
   });
 
@@ -79,12 +72,12 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
     // Our panel is injected inside that container, so it inherits the shadow
     // and text looks slightly blurred. We explicitly reset it via CSS.
     container.style.textShadow = '0 0 2px rgba(0,0,0,0.5)';
-    const { panel } = createSubtitleManagerPanel(container, createImportButton());
+    const { panel } = createSubtitleManagerPanel(container);
     expect(panel.className).toContain('subtitle-manager-panel');
   });
 
   it('panel has 2 sections (Target + Native)', () => {
-    const { panel } = createSubtitleManagerPanel(container, createImportButton());
+    const { panel } = createSubtitleManagerPanel(container);
     const headers = panel.querySelectorAll('[data-testid="manager-section-header"]');
     expect(headers.length).toBe(2);
     expect(headers[0].getAttribute('data-role')).toBe('target');
@@ -92,7 +85,7 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
   });
 
   it('renders target items and highlights active', () => {
-    const { panel, updateTarget } = createSubtitleManagerPanel(container, createImportButton(), {
+    const { panel, updateTarget } = createSubtitleManagerPanel(container, {
       onSelect: (r: 'target' | 'native', i: number) => { selected = { role: r, index: i }; },
     });
     updateTarget([makeItem('target', 0), makeItem('target', 1)], 1);
@@ -103,7 +96,7 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
   });
 
   it('clicking item calls onSelect and keeps panel open', () => {
-    const { panel, updateTarget, icon } = createSubtitleManagerPanel(container, createImportButton(), {
+    const { panel, updateTarget, icon } = createSubtitleManagerPanel(container, {
       onSelect: (r: 'target' | 'native', i: number) => { selected = { role: r, index: i }; },
     });
     icon.click();
@@ -115,7 +108,7 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
   });
 
   it('closes panel via close button', () => {
-    const { icon, panel, close } = createSubtitleManagerPanel(container, createImportButton());
+    const { icon, panel, close } = createSubtitleManagerPanel(container);
     icon.click();
     expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(true);
     close();
@@ -123,21 +116,21 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
   });
 
   it('closes panel on Esc', () => {
-    const { icon, panel } = createSubtitleManagerPanel(container, createImportButton());
+    const { icon, panel } = createSubtitleManagerPanel(container);
     icon.click();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(false);
   });
 
   it('closes panel on click outside', () => {
-    const { icon, panel } = createSubtitleManagerPanel(container, createImportButton());
+    const { icon, panel } = createSubtitleManagerPanel(container);
     icon.click();
     document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
     expect(panel.classList.contains('subtitle-manager-panel--open')).toBe(false);
   });
 
   it('sections are collapsible', () => {
-    const { panel, updateTarget } = createSubtitleManagerPanel(container, createImportButton());
+    const { panel, updateTarget } = createSubtitleManagerPanel(container);
     updateTarget([makeItem('target', 0)], 0);
     const header = panel.querySelector('[data-testid="manager-section-header"][data-role="target"]') as HTMLElement;
     const body = panel.querySelector('[data-testid="manager-section-body"][data-role="target"]') as HTMLElement;
@@ -149,14 +142,13 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
   });
 
   it('panel uses CSS theme tokens via class', () => {
-    const { panel } = createSubtitleManagerPanel(container, createImportButton());
+    const { panel } = createSubtitleManagerPanel(container);
     expect(panel.className).toContain('subtitle-manager-panel');
   });
 
-  it('destroy removes all elements', () => {
-    const { toolbar, panel, destroy } = createSubtitleManagerPanel(container, createImportButton());
+  it('destroy removes panel from container', () => {
+    const { panel, destroy } = createSubtitleManagerPanel(container);
     destroy();
-    expect(container.contains(toolbar)).toBe(false);
     expect(container.contains(panel)).toBe(false);
   });
 
@@ -165,7 +157,7 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
   // to updateTarget/updateNative. The panel must render BOTH and distinguish them
   // via the "Imported" badge on imported items.
   it('renders merged auto + imported items together (import does not wipe auto)', () => {
-    const { panel, updateTarget } = createSubtitleManagerPanel(container, createImportButton());
+    const { panel, updateTarget } = createSubtitleManagerPanel(container);
     const autoItems = [
       makeItem('target', 0, { id: 'auto-target-0', name: 'English #1', source: 'auto' }),
       makeItem('target', 1, { id: 'auto-target-1', name: 'English #2', source: 'auto' }),
@@ -194,7 +186,7 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
   });
 
   it('renders translated source with TRANSLATED badge and no Imported badge', () => {
-    const { panel, updateNative } = createSubtitleManagerPanel(container, createImportButton());
+    const { panel, updateNative } = createSubtitleManagerPanel(container);
     const translatedItem = makeItem('native', 0, {
       id: 'translated-native',
       name: 'Vietnamese (translated)',
@@ -213,7 +205,7 @@ describe('createSubtitleManagerPanel (ADR-015 — unified subtitle manager)', ()
   });
 
   it('clicking an auto item in a merged list calls onSelect with the correct index', () => {
-    const { panel, updateTarget, icon } = createSubtitleManagerPanel(container, createImportButton(), {
+    const { panel, updateTarget, icon } = createSubtitleManagerPanel(container, {
       onSelect: (r: 'target' | 'native', i: number) => { selected = { role: r, index: i }; },
     });
     icon.click();

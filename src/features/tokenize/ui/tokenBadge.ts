@@ -5,9 +5,14 @@ import { buildTokenBadgeCss } from './tokenBadgeCss';
 import { onStorageChanged, removeOnStorageChangedListener, getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { ThemeMode } from '@/entities/theme';
+import {
+  type CollapsedEdge,
+  getEdgeCenter,
+} from '@/features/dictionaryPopup/badgePointer/badgeCollapse';
 
 const HOST_CLASS = 'js-cell-token-badge-host';
 const BADGE_Z_INDEX = '2147483646';
+const FAB_SIZE = 48;
 
 export interface TokenBadgeState {
   enabled: boolean;
@@ -49,10 +54,77 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
   // Drag-to-reposition state. dragStart null = not dragging; dragging true once
   // movement exceeds DRAG_THRESHOLD (distinguishes click vs drag on the FAB).
   // suppressClick swallows the synthetic click that follows a drag pointerup.
-  let dragStart: { x: number; y: number; fabLeft: number; fabTop: number } | null = null;
+  // Dims (fabW/H, vw/vh) are cached at pointerdown so pointermove never reads
+  // layout (offsetWidth/Height forces reflow) — only writes transform, which is
+  // compositor-only and stays smooth on low-RAM devices.
+  let dragStart: { x: number; y: number; baseLeft: number; baseTop: number; fabW: number; fabH: number; vw: number; vh: number } | null = null;
   let dragging = false;
   let suppressClick = false;
   const DRAG_THRESHOLD = 4;
+  // rAF-throttle the transform update: pointermove can fire >100Hz; coalescing
+  // to one apply per animation frame aligns movement to the display refresh and
+  // cuts main-thread style recalcs from N-per-frame to 1. pendingMove holds the
+  // latest pointer delta until the next rAF flushes it.
+  let pendingMove: { dx: number; dy: number } | null = null;
+  let moveRaf = 0;
+
+  // Collapse state — the FAB defaults to a half-moon on the right viewport edge
+  // (like the orbital badge). Clicking expands it to a full circle + opens the
+  // panel. Dragging repositions it; releasing near an edge snaps + collapses it.
+  // `collapsed` true = half-moon on `collapsedEdge`; false = full circle.
+  let collapsed = true;
+  let collapsedEdge: CollapsedEdge = 'right';
+
+  /** Viewport rect for the shared collapse helpers (pure functions, no DOM reads). */
+  function viewportRect(): { width: number; height: number } {
+    return { width: window.innerWidth, height: window.innerHeight };
+  }
+
+  /** Position the FAB center exactly on an edge so the viewport clips half of it
+   *  → visible half-moon. Switches from right/bottom CSS to left/top inline. */
+  function collapseToEdge(edge: CollapsedEdge): void {
+    collapsed = true;
+    collapsedEdge = edge;
+    const center = getEdgeCenter(edge, { x: window.innerWidth / 2, y: window.innerHeight / 2 }, FAB_SIZE, viewportRect());
+    fab.style.setProperty('right', 'auto', 'important');
+    fab.style.setProperty('bottom', 'auto', 'important');
+    fab.style.setProperty('left', `${center.x - FAB_SIZE / 2}px`, 'important');
+    fab.style.setProperty('top', `${center.y - FAB_SIZE / 2}px`, 'important');
+    fab.style.removeProperty('transform');
+    fab.classList.add('cell-token-fab--collapsed');
+  }
+
+  /** Expand to a full circle at the current center position. */
+  function expand(): void {
+    collapsed = false;
+    fab.classList.remove('cell-token-fab--collapsed');
+  }
+
+  /** Apply the cached drag delta as a compositor-only translate3d. Called from
+   *  the rAF flush or synchronously on pointerup (to bake the final position). */
+  function applyDragTransform(dx: number, dy: number): void {
+    if (!dragStart) return;
+    if (!dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    dragging = true;
+    // Clamp using cached dims — no layout reads here, so no forced reflow.
+    const maxX = dragStart.vw - dragStart.fabW;
+    const maxY = dragStart.vh - dragStart.fabH;
+    const tx = Math.max(0, Math.min(maxX, dragStart.baseLeft + dx)) - dragStart.baseLeft;
+    const ty = Math.max(0, Math.min(maxY, dragStart.baseTop + dy)) - dragStart.baseTop;
+    // !important guarantees this wins over .btn:active's transform: scale(0.98)
+    // while the pointer is held down. translate3d is compositor-only.
+    fab.style.setProperty('transform', `translate3d(${tx}px, ${ty}px, 0)`, 'important');
+    if (isOpen) anchorPanelToFAB();
+  }
+
+  function flushDragTransform(): void {
+    if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
+    if (pendingMove) {
+      const m = pendingMove;
+      pendingMove = null;
+      applyDragTransform(m.dx, m.dy);
+    }
+  }
 
   const host = document.createElement('div');
   host.className = HOST_CLASS;
@@ -235,14 +307,24 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
   async function persistPosition(): Promise<void> {
     const rect = fab.getBoundingClientRect();
     if (rect.left === 0 && rect.top === 0) return; // uninit layout
-    await setStorage({ [STORAGE_KEYS.TOKEN_BADGE_POSITION]: { left: rect.left, top: rect.top } });
+    await setStorage({ [STORAGE_KEYS.TOKEN_BADGE_POSITION]: { left: rect.left, top: rect.top, collapsed, collapsedEdge } });
   }
 
-  /** Restore FAB position from storage, clamped to current viewport. */
+  /** Restore FAB position from storage, clamped to current viewport. If the
+   *  saved state was collapsed, re-collapse to the saved edge; otherwise expand
+   *  at the saved position. Falls back to collapsed-right when no saved state. */
   async function restorePosition(): Promise<void> {
     const data = await getStorage<Record<string, unknown>>(STORAGE_KEYS.TOKEN_BADGE_POSITION);
-    const pos = data[STORAGE_KEYS.TOKEN_BADGE_POSITION] as { left: number; top: number } | undefined;
-    if (!pos || typeof pos.left !== 'number' || typeof pos.top !== 'number') return;
+    const pos = data[STORAGE_KEYS.TOKEN_BADGE_POSITION] as { left: number; top: number; collapsed?: boolean; collapsedEdge?: CollapsedEdge } | undefined;
+    if (!pos || typeof pos.left !== 'number' || typeof pos.top !== 'number') {
+      // No saved state → default collapsed half-moon on the right edge.
+      collapseToEdge('right');
+      return;
+    }
+    if (pos.collapsed && pos.collapsedEdge) {
+      collapseToEdge(pos.collapsedEdge);
+      return;
+    }
     const w = fab.offsetWidth;
     const h = fab.offsetHeight;
     const left = Math.max(0, Math.min(window.innerWidth - w, pos.left));
@@ -251,6 +333,7 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
     fab.style.setProperty('bottom', 'auto', 'important');
     fab.style.setProperty('left', `${left}px`, 'important');
     fab.style.setProperty('top', `${top}px`, 'important');
+    expand();
   }
 
   /** Click-outside: close the panel when a pointerdown lands outside the host. */
@@ -265,45 +348,105 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
   fab.addEventListener('pointerdown', (e: PointerEvent) => {
     if (e.button !== 0) return;
     const rect = fab.getBoundingClientRect();
-    dragStart = { x: e.clientX, y: e.clientY, fabLeft: rect.left, fabTop: rect.top };
+    // If the FAB is collapsed (half-moon on an edge), expand it first and bake
+    // the position into the valid clamp range. When collapsed, baseLeft can be
+    // outside 0..vw-fabW (e.g. vw-24 for the right edge), which would cause the
+    // first drag delta to clamp and produce a 24px jump ("giật về phía cạnh").
+    // Baking into the valid range before drag starts eliminates that jump.
+    if (collapsed) {
+      expand();
+      const clampedLeft = Math.max(0, Math.min(window.innerWidth - rect.width, rect.left));
+      const clampedTop = Math.max(0, Math.min(window.innerHeight - rect.height, rect.top));
+      fab.style.setProperty('left', `${clampedLeft}px`, 'important');
+      fab.style.setProperty('top', `${clampedTop}px`, 'important');
+      dragStart = {
+        x: e.clientX, y: e.clientY,
+        baseLeft: clampedLeft, baseTop: clampedTop,
+        fabW: rect.width, fabH: rect.height,
+        vw: window.innerWidth, vh: window.innerHeight,
+      };
+    } else {
+      dragStart = {
+        x: e.clientX, y: e.clientY,
+        baseLeft: rect.left, baseTop: rect.top,
+        fabW: rect.width, fabH: rect.height,
+        vw: window.innerWidth, vh: window.innerHeight,
+      };
+    }
     dragging = false;
+    // Bake the current visual position into left/top as the drag base, then
+    // move via transform only. Disable .btn's `transition: transform` so the
+    // FAB tracks the cursor instantly instead of easing 150ms behind it.
+    fab.style.setProperty('right', 'auto', 'important');
+    fab.style.setProperty('bottom', 'auto', 'important');
+    fab.style.setProperty('transition', 'none', 'important');
     try { fab.setPointerCapture(e.pointerId); } catch { /* ponytail: capture throws on some platforms */ }
   });
 
   fab.addEventListener('pointermove', (e: PointerEvent) => {
     if (!dragStart) return;
-    const dx = e.clientX - dragStart.x;
-    const dy = e.clientY - dragStart.y;
-    if (!dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-    if (!dragging) {
-      dragging = true;
-      // Switch FAB from right/bottom-anchored to left/top-anchored once we
-      // start dragging, so left/top inline values take effect.
-      fab.style.setProperty('right', 'auto', 'important');
-      fab.style.setProperty('bottom', 'auto', 'important');
+    // Stash the latest delta and schedule a single rAF to apply it — never
+    // touch style on the pointermove hot path itself.
+    pendingMove = { dx: e.clientX - dragStart.x, dy: e.clientY - dragStart.y };
+    if (!moveRaf) {
+      moveRaf = requestAnimationFrame(() => {
+        moveRaf = 0;
+        if (pendingMove) {
+          const m = pendingMove;
+          pendingMove = null;
+          applyDragTransform(m.dx, m.dy);
+        }
+      });
     }
-    const w = fab.offsetWidth;
-    const h = fab.offsetHeight;
-    const nx = Math.max(0, Math.min(window.innerWidth - w, dragStart.fabLeft + dx));
-    const ny = Math.max(0, Math.min(window.innerHeight - h, dragStart.fabTop + dy));
-    fab.style.setProperty('left', `${nx}px`, 'important');
-    fab.style.setProperty('top', `${ny}px`, 'important');
-    if (isOpen) anchorPanelToFAB();
   });
 
   fab.addEventListener('pointerup', (e: PointerEvent) => {
+    // Apply any pending move synchronously so the baked position is current.
+    flushDragTransform();
     if (dragging) {
+      // Commit: read the transformed rect once, bake it into left/top, then
+      // clear transform so the final position is stable and transition-free.
+      const rect = fab.getBoundingClientRect();
+      fab.style.removeProperty('transform');
+      fab.style.setProperty('left', `${rect.left}px`, 'important');
+      fab.style.setProperty('top', `${rect.top}px`, 'important');
+      fab.style.removeProperty('transition');
       suppressClick = true;
+      // Edge-snap: only collapse when the FAB physically touches a viewport
+      // edge (rect.left/right/top/bottom within EDGE_TOUCH_PX of the edge).
+      // Using center distance would snap too early — the FAB center is always
+      // >= FAB_SIZE/2 from an edge due to the drag clamp, so a center-based
+      // threshold fires even when the user just wants to move near the edge.
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const EDGE_TOUCH_PX = 4;
+      let snapEdge: CollapsedEdge | null = null;
+      if (rect.left <= EDGE_TOUCH_PX) snapEdge = 'left';
+      else if (rect.right >= vw - EDGE_TOUCH_PX) snapEdge = 'right';
+      else if (rect.top <= EDGE_TOUCH_PX) snapEdge = 'top';
+      else if (rect.bottom >= vh - EDGE_TOUCH_PX) snapEdge = 'bottom';
+      if (snapEdge) {
+        collapseToEdge(snapEdge);
+      } else {
+        expand();
+      }
       void persistPosition();
     }
     dragging = false;
     dragStart = null;
+    pendingMove = null;
     try { fab.releasePointerCapture(e.pointerId); } catch { /* noop */ }
   });
 
   fab.addEventListener('pointercancel', () => {
+    if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
+    if (dragging) {
+      fab.style.removeProperty('transform');
+      fab.style.removeProperty('transition');
+    }
     dragging = false;
     dragStart = null;
+    pendingMove = null;
   });
 
   fab.addEventListener('click', () => {
@@ -311,23 +454,45 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
       suppressClick = false;
       return;
     }
-    setOpen(!isOpen);
+    // When collapsed (half-moon), the first click expands to a full circle and
+    // opens the panel. When already expanded, click toggles the panel.
+    if (collapsed) {
+      expand();
+      setOpen(true);
+    } else {
+      setOpen(!isOpen);
+    }
   });
 
   // Append the badge host after the page (and Angular/Cloudflare hydration)
   // has finished loading. Appending during hydration can cause DOM
   // mismatches that break script injection and leave the page stuck.
+  // Fullscreen-safe: attach to the fullscreen element (or body) so the FAB
+  // shows inside fullscreen video — kế thừa orbital badge onFullscreenChange.
+  function getMountParent(): Element {
+    return document.fullscreenElement ?? (document.body ?? document.documentElement);
+  }
+
   function appendHost(): void {
-    (document.body ?? document.documentElement).appendChild(host);
+    getMountParent().appendChild(host);
     initTheme();
     void restorePosition();
     document.addEventListener('pointerdown', onDocPointerDown, true);
   }
+
+  function onFullscreenChange(): void {
+    const parent = getMountParent();
+    if (host.parentElement !== parent) {
+      parent.appendChild(host);
+    }
+  }
+
   if (document.readyState === 'complete') {
     appendHost();
   } else {
     window.addEventListener('load', () => appendHost(), { once: true });
   }
+  document.addEventListener('fullscreenchange', onFullscreenChange);
   buildPanel();
 
   return {
@@ -336,9 +501,11 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
       buildPanel();
     },
     destroy() {
+      if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
       themeCleanup?.();
       themeCleanup = null;
       document.removeEventListener('pointerdown', onDocPointerDown, true);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
       host.remove();
     },
   };

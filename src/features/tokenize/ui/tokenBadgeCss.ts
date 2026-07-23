@@ -40,6 +40,10 @@ export function buildTokenBadgeCss(): string {
      jitters the drag on touch screens. Tap (click) still fires — touch-action
      only gates pan/zoom, not clicks. */
   touch-action: none !important;
+  /* will-change promotes the FAB to its own compositor layer so drag transforms
+     bypass main-thread layout/paint entirely. One 48x48 layer is negligible
+     memory; keeping it permanent avoids layer-creation jank at drag start. */
+  will-change: transform !important;
   box-shadow: none !important;
   outline: none !important;
 }
@@ -50,6 +54,16 @@ export function buildTokenBadgeCss(): string {
   fill: none !important;
   stroke: currentColor !important;
   stroke-width: 2 !important;
+}
+
+/* Collapsed state — the FAB center sits on a viewport edge so the viewport
+   clips half of it → visible half-moon (kế thừa orbital badge). The class is
+   a visual hook only; the half-moon shape comes from the viewport clipping the
+   position:fixed button whose center is exactly on the edge. No extra CSS
+   needed for the shape — this rule only signals the collapsed state for
+   future styling (e.g. a different cursor or subtle scale). */
+.cell-token-fab--collapsed {
+  cursor: grab !important;
 }
 
 /* Panel — popover container. data-theme is set on this element so dark-mode

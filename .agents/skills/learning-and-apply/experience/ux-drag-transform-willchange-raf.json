@@ -1,0 +1,27 @@
+{
+  "id": "ux-drag-transform-willchange-raf",
+  "title": "Smooth pointer drag: transform + will-change + rAF throttle — never left/top on the hot path",
+  "category": ["ux", "rendering", "css"],
+  "tags": ["drag", "transform", "translate3d", "will-change", "requestanimationframe", "pointer-events", "layout-thrashing", "compositor", "left-top", "transition", "jitter", "performance"],
+  "trigger": "Khi element draggable bằng Pointer Events và drag bị giật/jitter, đặc biệt trên thiết bị low-RAM/mobile/tablet",
+  "principle": "Di chuyển element bằng left/top mỗi pointermove trigger layout+paint trên main thread; đọc offsetWidth/offsetHeight/getBoundingClientRect ngay sau write → forced reflow mỗi event (layout thrashing). Fix theo 3 lớp: (1) Dùng transform: translate3d() thay left/top — compositor-only, main thread không layout/paint. (2) will-change: transform (hoặc translate3d) promote element lên compositor layer riêng để transform bypass main thread hoàn toàn; set permanent cho 1 element nhỏ là OK, set chỉ khi .dragging cho element lớn. (3) rAF-throttle pointermove: stash delta, apply 1 lần/frame aligned vsync — giảm style recalc từ N/frame xuống 1. Bonus: cache dims (fabW/H, vw/vh, offsetWidth/Height) lúc pointerdown để pointermove không đọc layout; disable transition: transform trong lúc drag (nếu element có transition transform từ design system, vd .btn:active scale) để FAB track cursor tức thì thay vì ease 150ms sau; dùng !important cho transform inline để thắng :active scale. Bake transform vào left/top 1 lần lúc pointerup (đọc getBoundingClientRect khi transform còn applied, set left/top, clear transform). Ponytail: khi element đã có will-change:transform (vd popup đã có cho show/hide animation) hoặc drag logic quá phức tạp (edge-snap, anchor recompute, pointer đi theo), will-change + rAF throttle + cache dims là đủ mượt mà không cần transform refactor — left/top trên position:fixed + compositor layer + 1 style recalc/frame là chấp nhận được.",
+  "cases": [
+    {
+      "context": "FAB (.cell-token-fab, class btn btn--primary) drag-to-reposition bằng pointerdown/move/up. Drag giật lag trên desktop và mobile.",
+      "bad": "// pointermove: ghi left/top mỗi event + đọc offsetWidth/offsetHeight → forced reflow mỗi move\nfab.style.setProperty('left', `${nx}px`, 'important');\nfab.style.setProperty('top', `${ny}px`, 'important');\nconst w = fab.offsetWidth;  // layout read sau layout write = reflow\nconst h = fab.offsetHeight;\n// .btn có transition: transform 150ms + .btn:active { transform: scale(0.98) }\n// thiếu will-change → không có compositor layer riêng",
+      "good": "// pointerdown: cache dims, bake base left/top 1 lần, disable transition\nconst rect = fab.getBoundingClientRect();\ndragStart = { x, y, baseLeft: rect.left, baseTop: rect.top, fabW: rect.width, fabH: rect.height, vw, vh };\nfab.style.setProperty('transition', 'none', 'important');\n// pointermove: stash delta, apply trong rAF (1/frame), transform compositor-only\nfab.style.setProperty('transform', `translate3d(${tx}px, ${ty}px, 0)`, 'important');\n// CSS: .cell-token-fab { will-change: transform !important; touch-action: none !important; }\n// pointerup: bake transform → left/top 1 lần, clear transform\nconst r = fab.getBoundingClientRect();\nfab.style.removeProperty('transform');\nfab.style.setProperty('left', `${r.left}px`, 'important');"
+    },
+    {
+      "context": "Subtitle block (.subtitle-block) drag-to-reposition theo trục Y (1D) trên video container. Base CSS: top: var(--sb-top, 75%); transform: translateY(-50%). Drag giật vì set --sb-top (top change = layout) mỗi pointermove + đọc container.getBoundingClientRect() mỗi move.",
+      "bad": "// pointermove: đọc rect mỗi event + set --sb-top (top = layout property) mỗi move\nconst rect = container.getBoundingClientRect();  // layout read mỗi move\nconst deltaPercent = (deltaY / rect.height) * 100;\nconst value = clamp(startOffset + deltaPercent, 0, 95);\noptions.setYOffset(value);  // set --sb-top → top change → layout + paint\n// thiếu will-change → không có compositor layer",
+      "good": "// pointerdown: cache container rect 1 lần\ncontainerRect = container.getBoundingClientRect();\n// pointermove: stash deltaY, apply trong rAF, dùng transform compositor-only\n// base transform là translateY(-50%), add drag delta on top\nconst deltaPx = (value - startOffset) * containerRect.height / 100;\nblock.style.transform = `translateY(calc(-50% + ${deltaPx}px))`;\n// CSS: .subtitle-block.dragging { will-change: transform; } (chỉ khi drag, block lớn)\n// pointerup: bake --sb-top 1 lần, restore transform\nblock.style.transform = '';\noptions.setYOffset(currentOffset);  // set --sb-top 1 lần cuối"
+    }
+  ],
+  "applyFor": [
+    "Mọi element draggable bằng Pointer Events (FAB reposition, slider thumb, resize handle, drag handle)",
+    "Subtitle block drag-to-reposition trên video sites",
+    "Custom drag gestures trên mobile/tablet/low-RAM devices",
+    "Bất kỳ pointer-event gesture nào cần 60fps smooth (swipe, pinch, long-press-drag)",
+    "Element có design-system transition transform (vd .btn:active scale) mà cần drag tức thì"
+  ]
+}

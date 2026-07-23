@@ -47,6 +47,15 @@ beforeAll(() => {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })) as unknown as typeof window.matchMedia;
+  // rAF sync mock: drag + resize handlers throttle pointermove via
+  // requestAnimationFrame. jsdom rAF is async (setTimeout), so tests that
+  // dispatch pointermove and assert synchronously would see no update. Flush
+  // the callback inline so the delta is applied immediately — tests verify
+  // drag/resize behavior, not throttle timing.
+  globalThis.requestAnimationFrame = jest.fn((cb: FrameRequestCallback): number => {
+    cb(0);
+    return 0;
+  }) as unknown as typeof requestAnimationFrame;
 });
 
 describe('clampPopupSize', () => {

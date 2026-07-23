@@ -33,7 +33,7 @@ export interface SubtitleBlockControllerUpdate {
 }
 
 /** Card Creator action triggered by the quick-update / edit buttons or q/e keys. */
-export type CardCreatorAction = 'quick-update' | 'edit-card';
+export type CardCreatorAction = 'quick-update' | 'edit-card' | 'update-current';
 
 /** Generate native subtitle action triggered by the generate-native button or shortcut. */
 export type GenerateNativeAction = 'generate-native';
@@ -63,7 +63,11 @@ export class SubtitleBlockController {
   private loopStart = 0;
   private loopEnd = 0;
   private readonly onCardCreatorAction: (action: CardCreatorAction) => void;
+  private readonly onUpdateCurrentCard: () => void;
   private readonly onGenerateNative: () => void;
+  /** More popover open state + cleanup for outside-click/Esc listeners. */
+  private morePopoverOpen = false;
+  private morePopoverCleanup: (() => void) | null = null;
   /** Popup dictionary state (spec §4.6 — P1.1 wire). */
   private dpEnabled = false;
   private dpTriggerController: SubtitleTriggerController | null = null;
@@ -80,6 +84,7 @@ export class SubtitleBlockController {
     offsetProvider?: () => number,
     onPersist: (settings: Partial<SubtitleBlockSettings>) => void = () => undefined,
     onCardCreatorAction: (action: CardCreatorAction) => void = () => undefined,
+    onUpdateCurrentCard: () => void = () => undefined,
     onGenerateNative: () => void = () => undefined,
   ) {
     this.blockSettings = this.clampBlockSettings(blockSettings);
@@ -89,6 +94,7 @@ export class SubtitleBlockController {
     this.getOffsetMs = offsetProvider ?? (() => 0);
     this.onPersist = onPersist;
     this.onCardCreatorAction = onCardCreatorAction;
+    this.onUpdateCurrentCard = onUpdateCurrentCard;
     this.onGenerateNative = onGenerateNative;
     this.init();
   }
@@ -341,8 +347,69 @@ export class SubtitleBlockController {
     // ADR-026: Card Creator entry buttons.
     this.dom.quickUpdateBtn.addEventListener('click', () => this.onCardCreatorAction('quick-update'));
     this.dom.editCardBtn.addEventListener('click', () => this.onCardCreatorAction('edit-card'));
+    // ADR-027: Update current card (secondary column).
+    this.dom.updateCurrentCardBtn.addEventListener('click', () => this.onUpdateCurrentCard());
     // Generate native subtitle action.
     this.dom.generateNativeBtn.addEventListener('click', () => this.onGenerateNative());
+    // ADR-027: More button toggles the overflow popover.
+    this.dom.moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleMorePopover();
+    });
+  }
+
+  /** ADR-027: Toggle the more-popover open/closed. */
+  private toggleMorePopover(): void {
+    if (!this.dom) return;
+    if (this.morePopoverOpen) this.closeMorePopover();
+    else this.openMorePopover();
+  }
+
+  private openMorePopover(): void {
+    if (!this.dom || this.morePopoverOpen) return;
+    this.morePopoverOpen = true;
+    this.dom.morePopover.classList.add('more-popover--open');
+    this.dom.moreBtn.setAttribute('aria-expanded', 'true');
+
+    // Click-outside + Esc close — bound once, cleaned up on close.
+    const onOutside = (e: MouseEvent): void => {
+      if (!this.dom) return;
+      const t = e.target as Node | null;
+      if (t && (this.dom.morePopover.contains(t) || this.dom.moreBtn.contains(t))) return;
+      this.closeMorePopover();
+    };
+    const onEsc = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') this.closeMorePopover();
+    };
+    document.addEventListener('mousedown', onOutside);
+    document.addEventListener('keydown', onEsc);
+    this.morePopoverCleanup = (): void => {
+      document.removeEventListener('mousedown', onOutside);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }
+
+  private closeMorePopover(): void {
+    if (!this.dom || !this.morePopoverOpen) return;
+    this.morePopoverOpen = false;
+    this.dom.morePopover.classList.remove('more-popover--open');
+    this.dom.moreBtn.setAttribute('aria-expanded', 'false');
+    this.morePopoverCleanup?.();
+    this.morePopoverCleanup = null;
+  }
+
+  /** ADR-027: Attach overflow buttons (panel-toggle, import-button) and the
+   *  subtitle-manager-icon into the right column slots. Called by
+   *  contentScriptController after creating those elements externally. */
+  attachOverflowButtons(buttons: {
+    panelToggle?: HTMLElement;
+    importButton?: HTMLElement;
+    managerIcon?: HTMLElement;
+  }): void {
+    if (!this.dom) return;
+    if (buttons.panelToggle) this.dom.panelToggleSlot.appendChild(buttons.panelToggle);
+    if (buttons.importButton) this.dom.importButtonSlot.appendChild(buttons.importButton);
+    if (buttons.managerIcon) this.dom.managerIconSlot.appendChild(buttons.managerIcon);
   }
 
   private handleRepeatClick(): void {
@@ -534,6 +601,7 @@ export class SubtitleBlockController {
     this.resizeObserver = null;
     this.dragCleanup?.();
     this.dragCleanup = null;
+    this.closeMorePopover();
     if (this.onFullscreenChange) {
       document.removeEventListener('fullscreenchange', this.onFullscreenChange);
       this.onFullscreenChange = null;

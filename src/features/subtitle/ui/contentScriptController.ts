@@ -311,6 +311,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     },
     // ADR-026: Card Creator entry buttons (quick update + edit) + q/e keyboard.
     (action) => { handleCardCreatorAction(action); },
+    // ADR-027: Update current card — open dialog focused on Update button.
+    () => { void handleCardCreatorAction('update-current'); },
     // Generate native subtitle button/shortcut.
     () => { void handleGenerateNative(); },
   );
@@ -359,7 +361,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       await handleClusterQuickAdd();
       return;
     }
-    // edit-card: open dialog (original flow below).
+    // edit-card + update-current: open dialog (flow below).
+    // ADR-027: update-current → initialAction='quick-update' (focus Update button).
+    // edit-card → initialAction='edit-card' (neutral).
+    const initialAction = action === 'update-current' ? 'quick-update' : 'edit-card';
     // Load settings fresh (URL/deck/noteType/lang may have changed since init).
     const settings = await loadSettingsOrToast(container);
     if (!settings) return;
@@ -421,7 +426,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     const queue = await buildSubtitleQueue(targetText, sourceLang);
     const queueArg = queue.length >= 2 ? queue : undefined;
 
-    sharedWebTextCtrl.openCardCreator({ ...ctx, initialMedia, queue: queueArg }, action);
+    sharedWebTextCtrl.openCardCreator({ ...ctx, initialMedia, queue: queueArg }, initialAction);
   }
 
   /** Batch quick-add: find all unknown/tracking words in the current subtitle
@@ -716,12 +721,20 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // Tokenize on media: enable if configured for this URL (T14/T15).
     await syncSubtitleTokenize();
 
-    // ADR-015 UI v4: create import button + manager panel.
-    // Legacy target/native dropdowns are removed; the manager panel handles selection
-    // for both auto-detected and imported subtitles via a unified onSelect handler.
+    // ADR-015 UI v4 / ADR-027: create import button + manager panel.
+    // ADR-027: No toolbar — import button goes into more-popover slot,
+    // manager icon goes into secondary column slot. Both via attachOverflowButtons.
     const importButton = createImportButton(container, DEFAULT_OVERLAY_CONFIG);
-    managerPanel = createSubtitleManagerPanel(container, importButton, {
+    managerPanel = createSubtitleManagerPanel(container, {
       onSelect: (role, index) => { void onManagerSelect(role, index); },
+    });
+
+    // ADR-027: Attach overflow buttons (panel-toggle, import-button, manager-icon)
+    // into the subtitle block's right column slots.
+    blockController.attachOverflowButtons({
+      panelToggle: toggleBtn ?? undefined,
+      importButton,
+      managerIcon: managerPanel.icon,
     });
 
     // ADR-019: init offset controller — offset section nested trong manager panel.
@@ -748,7 +761,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // controller/panel (async). Wiring at top-level would query a non-existent
     // button and silently skip — bug: import button did nothing while drag-drop
     // worked (drag-drop wires on `container` which already exists).
-    const importButtonEl = managerPanel.importButton;
+    const importButtonEl = importButton;
     const fileInput = importButtonEl.querySelector('input[type="file"]') as HTMLInputElement | null;
     if (fileInput) {
       fileInput.addEventListener('change', async () => {
@@ -994,8 +1007,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   // Load shortcuts from storage
   loadShortcuts().then((s) => { shortcuts = s; }).catch((err) => console.warn('[content-script] Failed to load shortcuts:', err));
 
-  // Create toggle button (overlay) — click → open Side Panel
-  toggleBtn = createToggleButton(container);
+  // Create toggle button (overlay) — click → open Side Panel.
+  // ADR-027: Button is appended to the subtitle block's more-popover slot
+  // via attachOverflowButtons (no longer top-right of video).
+  toggleBtn = createToggleButton();
 
   // Toggle Side Panel open/close (ADR-008 D1). Shared by button click + 't'
   // keyboard shortcut. sidePanelOpen tracks best-effort state (see ceiling
@@ -1785,7 +1800,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     document.removeEventListener('__NF_SEEK', onNfSeek);
     removeOnMessageListener(onRuntimeMessage);
     removeOnMessageListener(onRuntimeMessage2);
-    toggleBtn?.remove();
+    // ADR-027: toggleBtn + importButton are now children of the subtitle block
+    // (via attachOverflowButtons) — removed when blockController.destroy()
+    // removes the block DOM. No separate removal needed.
     managerPanel?.destroy();
     offsetController?.destroy();
     blockController?.destroy();
