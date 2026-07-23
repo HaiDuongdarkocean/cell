@@ -96,9 +96,11 @@ export function createSubtitleBlockDOM(): SubtitleBlockDOM {
   const rightColumn = document.createElement('div');
   rightColumn.className = 'block-right-column';
 
-  // Card Creator entry buttons (quick update + edit) — spec §4.1.
-  const quickUpdateBtn = makeButton('card-creator-quick', 'Quick update card', CARD_CREATOR_ICONS.quick);
-  quickUpdateBtn.title = 'Quick update (Q)';
+  // Card Creator entry buttons (quick add + edit) — spec §4.1.
+  // quick-add: batch add all unknown/tracking words in the current subtitle
+  // line directly to Anki (I+1 = 1 card, I+N = N cards). No dialog.
+  const quickUpdateBtn = makeButton('card-creator-quick', 'Quick add card', CARD_CREATOR_ICONS.quick);
+  quickUpdateBtn.title = 'Quick add (Q)';
   const editCardBtn = makeButton('card-creator-edit', 'Edit card', CARD_CREATOR_ICONS.edit);
   editCardBtn.title = 'Edit card (E)';
   // Generate native subtitle button — placed below card creator buttons.
