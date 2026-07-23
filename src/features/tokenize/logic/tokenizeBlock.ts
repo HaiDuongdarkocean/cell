@@ -24,7 +24,6 @@ const FORBIDDEN_TAGS = new Set([
 ]);
 
 const SUBTITLE_LINE_CLASS = 'subtitle-line';
-const NATIVE_CLASS = 'native';
 
 // 'link' is intentionally NOT forbidden: <a href> is already implicit link and
 // is tokenized (see test). Many sites (Facebook, Twitter) add explicit
@@ -41,14 +40,16 @@ export interface FindTextBlocksOptions {
   readonly idPrefix?: string;
 }
 
-/** Skip text nodes inside elements that are not meant for reading. */
-function isNativeLine(element: Element): boolean {
-  return element.classList.contains(SUBTITLE_LINE_CLASS) && element.classList.contains(NATIVE_CLASS);
+/** Skip text nodes inside subtitle overlay elements. Both target and native
+ *  subtitle lines are already tokenized by the subtitle controller — tokenize
+ *  page must not re-tokenize them or it creates duplicate token spans. */
+function isSubtitleLine(element: Element): boolean {
+  return element.classList.contains(SUBTITLE_LINE_CLASS);
 }
 
 function isForbiddenElement(element: Element): boolean {
   if (FORBIDDEN_TAGS.has(element.tagName)) return true;
-  if (isNativeLine(element)) return true;
+  if (isSubtitleLine(element)) return true;
   const role = element.getAttribute('role');
   if (role && FORBIDDEN_ROLE_ATTRS.includes(role)) return true;
   const contenteditable = element.getAttribute('contenteditable');
