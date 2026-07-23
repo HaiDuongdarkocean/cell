@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } fro
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 15;
+export const CURRENT_SCHEMA_VERSION = 16;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -273,6 +273,27 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
     if (dp) {
       delete dp.translateTargetLang;
+    }
+    return merged;
+  },
+  // v15 → v16: add orbital badge pointer trigger as a trigger mode.
+  // 'orbital' is now a value of triggerMode; badgePointerTrigger only holds
+  // position/size/scale. If an older v16 object has enabled=true, migrate
+  // triggerMode to 'orbital' and drop the enabled field.
+  15: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 16 } as Record<string, unknown>;
+    const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
+    if (dp) {
+      const trigger = (dp.badgePointerTrigger as Record<string, unknown> | undefined) ?? {};
+      const wasEnabled = trigger.enabled === true;
+      const { enabled: _enabled, ...triggerWithoutEnabled } = trigger;
+      const defaultTrigger = DEFAULT_DICTIONARY_POPUP_SETTINGS.badgePointerTrigger;
+      dp.badgePointerTrigger = { ...defaultTrigger, ...triggerWithoutEnabled };
+      if (wasEnabled && typeof dp.triggerMode === 'string' && dp.triggerMode !== 'orbital') {
+        dp.triggerMode = 'orbital';
+      }
+    } else {
+      merged.dictionaryPopup = DEFAULT_DICTIONARY_POPUP_SETTINGS;
     }
     return merged;
   },

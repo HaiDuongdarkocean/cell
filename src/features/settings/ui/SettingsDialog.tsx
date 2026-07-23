@@ -9,6 +9,7 @@ import {
   DEFAULT_OVERLAY_STYLE_TARGET,
   DEFAULT_OVERLAY_STYLE_NATIVE,
   DEFAULT_SUBTITLE_BLOCK_SETTINGS,
+  DEFAULT_DICTIONARY_POPUP_SETTINGS,
 } from '@/shared/config/config';
 // ADR-029: language dropdown lists now come from the single-source-of-truth
 // registry. The hardcoded SUBTITLE_LANGUAGES + OVERLAY_LANGUAGE_OPTIONS arrays
@@ -653,7 +654,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
               </p>
               <div className={styles.sectionBody}>
                 <DictionaryPopupSettingsPanel
-                  settings={settings.dictionaryPopup ?? { enabled: false, triggerMode: 'click', defaultActiveTab: null, srsDestination: 'anki', popupWidthPx: 560, popupMaxHeightPx: 480, externalDictLinks: [] }}
+                  settings={settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS}
                   onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
                 />
               </div>

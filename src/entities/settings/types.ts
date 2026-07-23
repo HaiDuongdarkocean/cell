@@ -95,6 +95,16 @@ export interface ExternalDictLinkTemplate {
   readonly langCodes: readonly string[];
 }
 
+/** Orbital badge pointer trigger settings (spec badge-pointer-dictionary-trigger). */
+export interface BadgePointerTriggerSettings {
+  /** Pointer position preset relative to the badge. */
+  readonly position: 'top' | 'left' | 'right' | 'bottom' | 'center';
+  /** Badge diameter in px (configurable for one-handed use). Default 36. */
+  readonly size: number;
+  /** Pointer diameter as a ratio of the badge size. Default 0.25. */
+  readonly pointerScale: number;
+}
+
 /** A saved TTS voice row — user chọn + sắp xếp trong options page. */
 export interface TtsVoiceRow {
   readonly voiceName: string;
@@ -124,7 +134,7 @@ export interface DictionaryPopupSettings {
   /** Feature flag. Default false. */
   readonly enabled: boolean;
   /** Trigger mode. Default 'click'. */
-  readonly triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
+  readonly triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt' | 'orbital';
   /** Default active tab (null = chỉ dictionary). Default null. */
   readonly defaultActiveTab: 'audio' | 'image' | 'translate' | 'links' | null;
   /** Per-language override for default active tab. */
@@ -139,6 +149,8 @@ export interface DictionaryPopupSettings {
   readonly externalDictLinks: readonly ExternalDictLinkTemplate[];
   /** TTS voice settings (audio tab + options page manager). */
   readonly tts?: TtsSettings;
+  /** Orbital badge pointer trigger (spec badge-pointer-dictionary-trigger). */
+  readonly badgePointerTrigger: BadgePointerTriggerSettings;
 }
 
 // === Settings Types ===
