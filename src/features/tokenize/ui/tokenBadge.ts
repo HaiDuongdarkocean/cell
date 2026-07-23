@@ -12,7 +12,7 @@ import {
 
 const HOST_CLASS = 'js-cell-token-badge-host';
 const BADGE_Z_INDEX = '2147483646';
-const FAB_SIZE = 48;
+const FAB_SIZE = 36;
 
 export interface TokenBadgeState {
   enabled: boolean;
@@ -144,7 +144,7 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
   // .btn--primary provides bg/color/hover/active; .cell-token-fab adds floating layout.
   fab.className = 'btn btn--primary cell-token-fab js-cell-token-fab';
   fab.setAttribute('aria-label', 'Tokenize');
-  fab.innerHTML = ICON_CATALOG.messageSquare.svg;
+  fab.innerHTML = ICON_CATALOG.settings.svg;
   shadow.appendChild(fab);
 
   const panel = document.createElement('div');
@@ -366,6 +366,12 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
         vw: window.innerWidth, vh: window.innerHeight,
       };
     } else {
+      // Bake the current visual position into left/top as the drag base, then
+      // move via transform only. This also handles the case where restorePosition
+      // (async) hasn't completed yet — without baking, clearing right/bottom
+      // would jump the FAB to (0,0).
+      fab.style.setProperty('left', `${rect.left}px`, 'important');
+      fab.style.setProperty('top', `${rect.top}px`, 'important');
       dragStart = {
         x: e.clientX, y: e.clientY,
         baseLeft: rect.left, baseTop: rect.top,
@@ -374,9 +380,9 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
       };
     }
     dragging = false;
-    // Bake the current visual position into left/top as the drag base, then
-    // move via transform only. Disable .btn's `transition: transform` so the
-    // FAB tracks the cursor instantly instead of easing 150ms behind it.
+    // Switch from CSS right/bottom to inline left/top positioning, then move
+    // via transform only. Disable .btn's `transition: transform` so the FAB
+    // tracks the cursor instantly instead of easing 150ms behind it.
     fab.style.setProperty('right', 'auto', 'important');
     fab.style.setProperty('bottom', 'auto', 'important');
     fab.style.setProperty('transition', 'none', 'important');
@@ -412,19 +418,20 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
       fab.style.setProperty('top', `${rect.top}px`, 'important');
       fab.style.removeProperty('transition');
       suppressClick = true;
-      // Edge-snap: only collapse when the FAB physically touches a viewport
-      // edge (rect.left/right/top/bottom within EDGE_TOUCH_PX of the edge).
-      // Using center distance would snap too early — the FAB center is always
-      // >= FAB_SIZE/2 from an edge due to the drag clamp, so a center-based
-      // threshold fires even when the user just wants to move near the edge.
+      // Edge-snap: only collapse when the user deliberately pushed the FAB
+      // past a viewport edge — detected by the CURSOR going past the edge,
+      // not the FAB rect. This lets the user position the FAB flush against
+      // an edge without triggering collapse; they have to "dí" (push) the
+      // cursor past the viewport boundary to collapse. The drag clamp keeps
+      // the FAB fully on-screen, so the FAB can be at the edge while the
+      // cursor continues past it — that's the "dí chạm cạnh" gesture.
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const EDGE_TOUCH_PX = 4;
       let snapEdge: CollapsedEdge | null = null;
-      if (rect.left <= EDGE_TOUCH_PX) snapEdge = 'left';
-      else if (rect.right >= vw - EDGE_TOUCH_PX) snapEdge = 'right';
-      else if (rect.top <= EDGE_TOUCH_PX) snapEdge = 'top';
-      else if (rect.bottom >= vh - EDGE_TOUCH_PX) snapEdge = 'bottom';
+      if (e.clientX <= 0) snapEdge = 'left';
+      else if (e.clientX >= vw) snapEdge = 'right';
+      else if (e.clientY <= 0) snapEdge = 'top';
+      else if (e.clientY >= vh) snapEdge = 'bottom';
       if (snapEdge) {
         collapseToEdge(snapEdge);
       } else {

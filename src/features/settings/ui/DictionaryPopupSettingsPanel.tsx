@@ -7,6 +7,7 @@
 import type React from 'react';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import type { DictionaryPopupSettings, BadgePointerTriggerSettings } from '@/entities/settings/types';
+import { Slider } from '@/shared/ui/Slider';
 import styles from './DictionaryPopupSettingsPanel.module.css';
 
 interface DictionaryPopupSettingsPanelProps {
@@ -108,20 +109,24 @@ export function DictionaryPopupSettingsPanel({
             </select>
           </div>
           <div className={styles.field}>
-            <label htmlFor="dp-badge-pointer-size">Badge size (px)</label>
-            <input
+            <div className={styles.sliderHeader}>
+              <label className={styles.label} htmlFor="dp-badge-pointer-size">Badge size</label>
+              <span className={styles.value}>{settings.badgePointerTrigger?.size ?? DEFAULT_BADGE_POINTER_TRIGGER.size}px</span>
+            </div>
+            <Slider
               id="dp-badge-pointer-size"
-              type="number"
-              min={24}
-              max={96}
               value={settings.badgePointerTrigger?.size ?? DEFAULT_BADGE_POINTER_TRIGGER.size}
-              onChange={(e) => {
+              min={10}
+              max={200}
+              step={1}
+              aria-label="Orbital badge size"
+              data-testid="dp-badge-pointer-size"
+              onChange={(value) => {
                 const base = settings.badgePointerTrigger ?? DEFAULT_BADGE_POINTER_TRIGGER;
-                const size = Math.max(24, Math.min(96, Number(e.target.value) || 36));
                 update({
                   badgePointerTrigger: {
                     ...base,
-                    size,
+                    size: value,
                   },
                 });
               }}
