@@ -495,7 +495,7 @@ function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill
     reading: result.reading,
     definitions: defs.map((d) => ({ pos: d.pos, text: d.text })),
     contextSentence: state.contextSentence,
-    translation: snapshot.translationSelected ? snapshot.translation : undefined,
+    translation: snapshot.translation || undefined,
     wordAudioUrls: wordAudios.length > 0 ? wordAudios : undefined,
     sentenceAudioUrls: sentenceAudios.length > 0 ? sentenceAudios : undefined,
     imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
