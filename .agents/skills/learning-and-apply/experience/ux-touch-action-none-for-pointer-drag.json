@@ -1,0 +1,27 @@
+{
+  "id": "ux-touch-action-none-for-pointer-drag",
+  "title": "Pointer-event drag trên touch screen cần touch-action:none — không thì browser chiếm gesture",
+  "category": ["ux", "css"],
+  "tags": ["touch-action", "pointer-events", "drag", "touch-screen", "pointercancel", "mobile", "tablet", "scroll-hijack"],
+  "trigger": "Khi element dùng pointerdown/pointermove/pointerup để drag và phải mượt trên touch screen (mobile/tablet)",
+  "principle": "Pointer Events unify mouse + touch, nhưng browser vẫn xử lý touch gesture mặc định (scroll/pan/zoom) trước khi delegate cho JS. Khi user chạm + kéo, browser bắt đầu scroll trang → bắn pointercancel → drag bị abort/jitter. Set touch-action:none (CSS) trên draggable element để browser biết 'không scroll/zoom ở đây, delegate gesture cho JS'. Click/tap vẫn fire bình thường — touch-action chỉ gate pan/zoom, không gate click. Đây là convention bắt buộc cho mọi draggable element, không phải tối ưu.",
+  "cases": [
+    {
+      "context": "Subtitle block (.subtitle-block) drag-to-reposition bằng pointerdown/move/up trên YouTube. Trên tablet/mobile, kéo giật và bị abort giữa chừng.",
+      "bad": ".subtitle-block {\n  cursor: grab;\n  pointer-events: auto;\n  /* thiếu touch-action — browser scroll trang YouTube khi chạm+kéo */\n}",
+      "good": ".subtitle-block {\n  cursor: grab;\n  pointer-events: auto;\n  touch-action: none; /* browser không scroll/zoom ở đây, JS nhận trọn gesture */\n}"
+    },
+    {
+      "context": "Floating Action Button (.cell-token-fab) drag-to-reposition. Shadow DOM, pointer events, setPointerCapture. Trên touch screen drag giật.",
+      "bad": ".cell-token-fab {\n  position: fixed !important;\n  cursor: pointer !important;\n  /* thiếu touch-action — pointercancel bắn khi browser bắt đầu scroll */\n}",
+      "good": ".cell-token-fab {\n  position: fixed !important;\n  cursor: pointer !important;\n  touch-action: none !important; /* !important vì .btn--primary có thể override */\n}"
+    }
+  ],
+  "applyFor": [
+    "Mọi element draggable bằng Pointer Events (pointerdown/move/up)",
+    "Custom drag handles, FAB reposition, slider thumbs, resize handles",
+    "Touch-friendly overlay UI trên video sites (YouTube, Netflix, Vimeo)",
+    "Shadow DOM draggable widgets (touch-action穿透 shadow boundary)",
+    "Any pointer-event-based gesture: swipe, pinch, long-press-drag"
+  ]
+}
