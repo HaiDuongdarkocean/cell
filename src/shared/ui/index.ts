@@ -32,5 +32,6 @@ export { Tooltip } from './Tooltip';
 export { Slider } from './Slider';
 export { SearchableSelect } from './SearchableSelect';
 export { HintIcon } from './HintIcon';
+export { useFocusTrap } from './useFocusTrap';
 export { Tabs } from './Tabs';
 export { ShortcutInput } from './ShortcutInput';

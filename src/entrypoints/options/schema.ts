@@ -30,7 +30,7 @@ export const ResourcesPanelStateSchema = z.object({
   success: z.string().nullable(),
 });
 
-export const TabSchema = z.enum(['resources', 'theme', 'settings']);
+export const TabSchema = z.enum(['resources', 'theme', 'settings', 'tts']);
 
 export const SidebarItemSchema = z.object({
   id: TabSchema,
