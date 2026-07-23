@@ -31,7 +31,7 @@ export interface TokenBlock {
   /** Source text node(s) that make up the block. */
   sourceNodes: Text[];
   /** Original text content before tokenization. */
-  readonly originalText: string;
+  originalText: string;
   /** Prepared token metadata; undefined if not prepared yet. */
   tokens: Token[] | undefined;
   /** True if spans are currently mounted. */

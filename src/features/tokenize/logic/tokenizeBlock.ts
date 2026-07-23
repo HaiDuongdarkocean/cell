@@ -87,9 +87,41 @@ function hasForbiddenContext(element: Element, root: Node): boolean {
   return false;
 }
 
-function createBlock(textNode: Text, id: string, text: string): TokenBlock {
-  return {
-    id,
+// Stable IDs across findTextBlocks/findTextBlocksInNodes calls, so the cache
+// can deduplicate the same text node whether it was discovered during the
+// cold-start viewport scan or the full-page scan.
+const blockIdMap = new WeakMap<Text, string>();
+let nextBlockId = 0;
+
+function getBlockId(textNode: Text, idPrefix: string): string {
+  let id = blockIdMap.get(textNode);
+  if (id === undefined) {
+    id = `${idPrefix}${nextBlockId++}`;
+    blockIdMap.set(textNode, id);
+  }
+  return id;
+}
+
+// Stable block objects per text node so the controller never observes two
+// different TokenBlock instances for the same source text. This is required
+// now that offscreen blocks are observed without being cached: a mutation
+// re-scan must find the same block object the main scan already registered.
+const blockByTextNode = new WeakMap<Text, TokenBlock>();
+
+function createBlock(textNode: Text, idPrefix: string, text: string): TokenBlock {
+  const existing = blockByTextNode.get(textNode);
+  if (existing) {
+    // Text may have changed while the controller was disabled or between scans;
+    // invalidate tokens so the next bind uses the current text.
+    if (existing.originalText !== text) {
+      existing.originalText = text;
+      existing.tokens = undefined;
+      existing.isBound = false;
+    }
+    return existing;
+  }
+  const block: TokenBlock = {
+    id: getBlockId(textNode, idPrefix),
     element: textNode.parentElement!,
     sourceNodes: [textNode],
     originalText: text,
@@ -97,6 +129,8 @@ function createBlock(textNode: Text, id: string, text: string): TokenBlock {
     isBound: false,
     lastAccessedAt: 0,
   };
+  blockByTextNode.set(textNode, block);
+  return block;
 }
 
 function insideTokenSpan(element: Element | null): boolean {
@@ -119,7 +153,6 @@ export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}):
   const { maxLength = 2000, idPrefix = 'block-', filter, langCode } = options;
   const blocks: TokenBlock[] = [];
   const filterCache = filter ? new Map<Element, boolean>() : null;
-  let idCounter = 0;
 
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
   let textNode: Text | null = walker.nextNode() as Text | null;
@@ -140,7 +173,7 @@ export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}):
             continue;
           }
         }
-        blocks.push(createBlock(textNode, `${idPrefix}${idCounter++}`, text));
+        blocks.push(createBlock(textNode, idPrefix, text));
       }
     }
     textNode = walker.nextNode() as Text | null;
@@ -161,14 +194,13 @@ export function findTextBlocks(root: Node, options: FindTextBlocksOptions = {}):
 export function findTextBlocksInNodes(nodes: readonly Node[], options: FindTextBlocksOptions = {}): TokenBlock[] {
   const { maxLength = 2000, idPrefix = 'block-', langCode } = options;
   const blocks: TokenBlock[] = [];
-  let idCounter = 0;
 
   function addTextNode(textNode: Text, root: Node): void {
     const text = textNode.textContent ?? '';
     if (text.trim().length === 0 || text.length > maxLength || !hasPotentialWord(text, langCode)) return;
     const parent = textNode.parentElement;
     if (!parent || insideTokenSpan(parent) || hasForbiddenContext(parent, root)) return;
-    blocks.push(createBlock(textNode, `${idPrefix}${idCounter++}`, text));
+    blocks.push(createBlock(textNode, idPrefix, text));
   }
 
   function walkRoot(root: Node): void {
