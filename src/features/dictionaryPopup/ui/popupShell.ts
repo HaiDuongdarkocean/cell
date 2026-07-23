@@ -766,25 +766,7 @@ export class PopupShell {
       // that triggers a new lookup, not a dismiss.
       const target = e.target as HTMLElement | null;
       if (target?.closest?.('.js-cell-token')) return;
-      // Don't dismiss if the click lands on text — a new lookup will fire on
-      // mouseup and reposition the popup. Only dismiss on truly empty space.
-      // (Lookup is async, so we can't wait for showPopup to cancel a timer.)
-      if (this.isPointOnText(e.clientX, e.clientY)) return;
       this.onDismiss();
-    }
-  }
-
-  /** Check if the given coordinates land on a text node (potential lookup target). */
-  private isPointOnText(x: number, y: number): boolean {
-    if (!document.caretRangeFromPoint) return false;
-    try {
-      const range = document.caretRangeFromPoint(x, y);
-      if (!range) return false;
-      // Ignore ranges inside our own popup host.
-      if (this.host?.contains(range.startContainer)) return false;
-      return range.startContainer.nodeType === Node.TEXT_NODE;
-    } catch {
-      return false;
     }
   }
 
