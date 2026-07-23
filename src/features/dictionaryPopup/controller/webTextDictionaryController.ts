@@ -83,6 +83,17 @@ export interface WebTextDictionaryControllerDeps {
   /** Get the locally cached word status from the tokenize controller, used as a
    *  fallback when the background DB read races or fails. */
   readonly getTokenStatus?: (term: string) => WordStatus;
+  /** Settings panel state + callbacks for the orbital badge's integrated panel
+   *  (merged from the former token FAB). When provided, the orbital badge
+   *  shows a center-screen settings panel on single click. */
+  readonly panel?: {
+    readonly getInitialState: () => { enabled: boolean; showStatus: boolean; showFrequency: boolean };
+    readonly onToggleEnabled: () => void;
+    readonly onToggleStatus: () => void;
+    readonly onToggleFrequency: () => void;
+    readonly onOpenDictionary: () => void;
+    readonly onStateChange: (cb: (state: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void) => () => void;
+  };
 }
 
 /** Video/cue configuration for subtitle path. Can be set after construction. */
@@ -320,6 +331,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let orbitalHoverTrigger: WebTriggerController | null = null;
   let orbitalBadgeSize: number | null = null;
   let orbitalBadgeScale: number | null = null;
+  let panelUnsubscribe: (() => void) | null = null;
   let cardCreatorMount: CardCreatorMountController | null = null;
   let currentHighlightTarget: HighlightTarget | null = null;
   /** Original highlight target from the trigger (single word). Stored so we
@@ -1035,6 +1047,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     orbitalBadge = null;
     orbitalHoverTrigger?.detach();
     orbitalHoverTrigger = null;
+    panelUnsubscribe?.();
+    panelUnsubscribe = null;
   }
 
   function destroy(): void {
@@ -1064,46 +1078,50 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       orbitalBadgeScale = null;
       orbitalHoverTrigger?.detach();
       orbitalHoverTrigger = null;
+      panelUnsubscribe?.();
+      panelUnsubscribe = null;
       return;
     }
     const trigger = dp.badgePointerTrigger;
-    if (dp.triggerMode === 'orbital') {
-      if (!orbitalHoverTrigger) {
-        orbitalHoverTrigger = new WebTriggerController({
-          triggerMode: 'hover',
-          onLookup: (request, requestId, anchorRect, range, pointer) => {
-            void handleLookup(request, requestId, anchorRect, range, pointer);
-          },
-          onCancel: (requestId) => { cancelLookup(requestId); },
-          // Auto-dismiss on hover-leave removed: popup only closes on explicit
-          // user action (click outside / Esc / close button).
-        });
-      }
-      const sameDimensions = orbitalBadgeSize === trigger.size && orbitalBadgeScale === trigger.pointerScale;
-      if (orbitalBadge && sameDimensions) {
-        orbitalBadge.setPreset(trigger.position);
-      } else {
-        orbitalBadge?.destroy();
-        orbitalBadge = createOrbitalBadge({
-          badgeSize: trigger.size,
-          pointerScale: trigger.pointerScale,
-          initialPreset: trigger.position,
-          onPresetChange: (preset) => { persistBadgePointerPreset(preset); },
-          onTipReady: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
-          onTipHover: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
-          // Auto-hide when the orbital pointer covers the popup removed: popup
-          // only closes on explicit user action (click outside / Esc / close).
-        });
-        orbitalBadgeSize = trigger.size;
-        orbitalBadgeScale = trigger.pointerScale;
-      }
+    // Orbital badge is always mounted when the dictionary popup is enabled
+    // (no longer conditional on triggerMode === 'orbital'). The hover trigger
+    // handles pointer-tip lookups regardless of the page-level trigger mode.
+    if (!orbitalHoverTrigger) {
+      orbitalHoverTrigger = new WebTriggerController({
+        triggerMode: 'hover',
+        onLookup: (request, requestId, anchorRect, range, pointer) => {
+          void handleLookup(request, requestId, anchorRect, range, pointer);
+        },
+        onCancel: (requestId) => { cancelLookup(requestId); },
+      });
+    }
+    const sameDimensions = orbitalBadgeSize === trigger.size && orbitalBadgeScale === trigger.pointerScale;
+    if (orbitalBadge && sameDimensions) {
+      orbitalBadge.setPreset(trigger.position);
     } else {
       orbitalBadge?.destroy();
-      orbitalBadge = null;
-      orbitalBadgeSize = null;
-      orbitalBadgeScale = null;
-      orbitalHoverTrigger?.detach();
-      orbitalHoverTrigger = null;
+      orbitalBadge = createOrbitalBadge({
+        badgeSize: trigger.size,
+        pointerScale: trigger.pointerScale,
+        initialPreset: trigger.position,
+        onPresetChange: (preset) => { persistBadgePointerPreset(preset); },
+        onTipReady: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
+        onTipHover: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
+        panel: deps.panel ? {
+          initialState: deps.panel.getInitialState(),
+          onToggleEnabled: () => deps.panel!.onToggleEnabled(),
+          onToggleStatus: () => deps.panel!.onToggleStatus(),
+          onToggleFrequency: () => deps.panel!.onToggleFrequency(),
+          onOpenDictionary: () => deps.panel!.onOpenDictionary(),
+        } : undefined,
+      });
+      orbitalBadgeSize = trigger.size;
+      orbitalBadgeScale = trigger.pointerScale;
+      // Subscribe to tokenize state changes so the panel toggles stay in sync.
+      panelUnsubscribe?.();
+      panelUnsubscribe = deps.panel
+        ? deps.panel.onStateChange((s) => orbitalBadge?.setPanelState(s))
+        : null;
     }
   }
 

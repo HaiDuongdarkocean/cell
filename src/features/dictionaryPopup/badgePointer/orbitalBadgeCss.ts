@@ -106,5 +106,66 @@ export function buildOrbitalBadgeCss(): string {
   opacity: 0 !important;
   transform: translate(-50%, -50%) scale(1e-5) !important;
 }
+
+/* === Settings panel (mobile-first center screen) ===
+   Shown on single click. Mobile-first: 280px width on 320px screens with
+   16px margin, expanding to 320px on larger screens. Vertically centered
+   with a max-height clamp so it scrolls if content overflows. data-theme
+   is set on the panel element so dark-mode tokens cascade. */
+.cell-orbital-panel {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: calc(100vw - var(--space-8, 32px)) !important;
+  max-width: 320px !important;
+  max-height: calc(100vh - var(--space-8, 32px)) !important;
+  overflow-y: auto !important;
+  background: var(--color-popover, #ffffff) !important;
+  color: var(--color-popover-foreground, #0f172a) !important;
+  border: 1px solid var(--color-border, #e2e8f0) !important;
+  border-radius: var(--radius-lg, 12px) !important;
+  padding: var(--space-4, 16px) !important;
+  z-index: 2147483647 !important;
+  pointer-events: auto !important;
+  display: none;
+  flex-direction: column !important;
+  gap: var(--space-3, 12px) !important;
+  box-shadow: none !important;
+}
+
+.cell-orbital-panel--open {
+  display: flex !important;
+}
+
+.cell-orbital-panel__header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: var(--font-size-sm, 13px) !important;
+  font-weight: var(--font-weight-semibold, 600) !important;
+}
+
+.cell-orbital-panel__row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: var(--font-size-sm, 13px) !important;
+}
+
+.cell-orbital-panel__label {
+  color: var(--color-foreground, #0f172a) !important;
+}
+
+.cell-orbital-panel__action {
+  width: 100% !important;
+}
+
+/* Larger screens (≥768px): fixed 320px width, no longer viewport-relative. */
+@media (min-width: 768px) {
+  .cell-orbital-panel {
+    width: 320px !important;
+  }
+}
 `.trim();
 }

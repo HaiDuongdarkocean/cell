@@ -256,6 +256,46 @@ function ensureWebTextCtrl(): WebTextDictionaryController {
         webTokenizeCtrl?.applyStatusForTerm(term, status);
       },
       getTokenStatus: (term) => webTokenizeCtrl?.getStatusForTerm(term) ?? 'unknown',
+      // Orbital badge settings panel — merged from the former token FAB.
+      // The panel reads/writes tokenize state via these callbacks. Lazily
+      // reads `webTokenizeCtrl` at click time (may be null on first render).
+      panel: {
+        getInitialState: () => {
+          const s = webTokenizeCtrl?.getState();
+          return {
+            enabled: s?.enabled ?? false,
+            showStatus: s?.showStatus ?? false,
+            showFrequency: s?.showFrequency ?? false,
+          };
+        },
+        onToggleEnabled: () => webTokenizeCtrl?.toggleEnabled(),
+        onToggleStatus: () => webTokenizeCtrl?.toggleShowStatus(),
+        onToggleFrequency: () => webTokenizeCtrl?.toggleShowFrequency(),
+        onOpenDictionary: () => {
+          const term = webTokenizeCtrl?.pickDictionaryTerm();
+          if (term) {
+            // Delegate to the tokenize controller's onOpenDictionary callback
+            // (wired in initTokenize) by dispatching a click on a synthetic
+            // element — but simpler: call the content-script-level handler.
+            // Since onOpenDictionary is a constructor option, we replicate the
+            // lookup here via the webTextCtrl.
+            const ctrl = ensureWebTextCtrl();
+            ctrl.handleLookup(
+              { term, langCode: 'en', contextSentence: '', cursorOffset: 0 },
+              `tokenize-panel-${term}`,
+              document.body.getBoundingClientRect(),
+              (() => { const r = document.createRange(); r.selectNodeContents(document.body); return r; })(),
+            );
+          }
+        },
+        onStateChange: (cb) => {
+          // Subscribe to tokenize state changes; returns unsubscribe.
+          if (!webTokenizeCtrl) return () => {};
+          return webTokenizeCtrl.subscribe((s) => {
+            cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency });
+          });
+        },
+      },
     });
   }
   return webTextCtrl;

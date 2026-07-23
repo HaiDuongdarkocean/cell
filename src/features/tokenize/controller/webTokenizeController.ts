@@ -5,8 +5,7 @@ import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { resolveScrollPredictMargin, type ScrollDirection } from '@/features/tokenize/logic/scrollDirection';
 import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, TOKEN_CLASS, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
-import { createTokenBadge } from '@/features/tokenize/ui/tokenBadge';
-import type { TokenBadge } from '@/features/tokenize/ui/tokenBadge';
+import { stateStore as _stateStore } from '@/features/tokenize/state/tokenStateStore';
 import { createTokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import type { TokenizeState, TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import {
@@ -89,8 +88,14 @@ export interface WebTokenizeControllerOptions {
 export interface WebTokenizeController extends TokenizeController {
   /** Expose the live state for tests/inspectors. */
   readonly getState: () => TokenizeState;
-  /** Expose the badge for tests. */
-  readonly badge: TokenBadge;
+  /** Subscribe to tokenize state changes (for orbital panel sync). */
+  readonly subscribe: (cb: (state: TokenizeState) => void) => () => void;
+  /** Toggle helpers exposed for the orbital badge panel. */
+  readonly toggleEnabled: () => void;
+  readonly toggleShowStatus: () => void;
+  readonly toggleShowFrequency: () => void;
+  /** Pick a dictionary term from current state (for "Open Dictionary" btn). */
+  readonly pickDictionaryTerm: () => string | null;
   /** Apply a status change to all cached tokens matching `term` without persisting.
    *  Used by the popup dictionary status cycle so token blocks rebind with the new
    *  status instead of reverting to the stale cached value on the next rebind. */
@@ -265,20 +270,9 @@ export async function createWebTokenizeController(
     }
   }
 
-  const badge = createTokenBadge({
-    initialState: {
-      enabled: stateStore.getState().enabled,
-      showStatus: stateStore.getState().showStatus,
-      showFrequency: stateStore.getState().showFrequency,
-    },
-    onToggleEnabled: () => toggleEnabled(),
-    onToggleStatus: () => stateStore.setShowStatus(!stateStore.getState().showStatus),
-    onToggleFrequency: () => stateStore.setShowFrequency(!stateStore.getState().showFrequency),
-    onOpenDictionary: () => {
-      const term = pickDictionaryTerm(stateStore.getState());
-      if (term) options.onOpenDictionary?.(term, document.body, '');
-    },
-  });
+  // Token FAB removed — settings panel is now integrated into the orbital
+  // badge (see webTextDictionaryController). The tokenize controller exposes
+  // state + callbacks via the panel deps wired in content-script.ts.
 
   // MutationObserver is created lazily below and toggled via state. Keeping it
   // disconnected during page load prevents conflicts with Cloudflare Rocket
@@ -454,11 +448,6 @@ export async function createWebTokenizeController(
   }
 
   const unsubscribe = stateStore.subscribe((state) => {
-    badge.setState({
-      enabled: state.enabled,
-      showStatus: state.showStatus,
-      showFrequency: state.showFrequency,
-    });
     const wasActive = isActive;
     setActive(state.enabled);
     if (state.enabled && wasActive) scheduleVisible();
@@ -848,7 +837,6 @@ export async function createWebTokenizeController(
 
   return {
     getState: () => stateStore.getState(),
-    badge,
 
     enable: () => {
       if (!stateStore.getState().enabled) toggleEnabled();
@@ -861,6 +849,17 @@ export async function createWebTokenizeController(
     setShowStatus: (show) => stateStore.setShowStatus(show),
     setShowFrequency: (show) => stateStore.setShowFrequency(show),
 
+    /** Subscribe to tokenize state changes (for orbital panel sync). */
+    subscribe: (cb: (state: TokenizeState) => void) => stateStore.subscribe(cb),
+
+    /** Toggle helpers exposed for the orbital badge panel. */
+    toggleEnabled: () => toggleEnabled(),
+    toggleShowStatus: () => stateStore.setShowStatus(!stateStore.getState().showStatus),
+    toggleShowFrequency: () => stateStore.setShowFrequency(!stateStore.getState().showFrequency),
+
+    /** Pick a dictionary term from current state (for "Open Dictionary" btn). */
+    pickDictionaryTerm: () => pickDictionaryTerm(stateStore.getState()),
+
     applyStatusForTerm,
     getStatusForTerm,
 
@@ -871,7 +870,6 @@ export async function createWebTokenizeController(
       setActive(false);
       cancelPendingActivation?.();
       if (mutationTimer) clearTimeout(mutationTimer);
-      badge.destroy();
     },
   };
 }
