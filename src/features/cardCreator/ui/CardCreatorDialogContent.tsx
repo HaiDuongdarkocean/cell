@@ -19,6 +19,7 @@ import { Select } from '@/shared/ui/Select';
 import { FieldRow, FieldAutoGrowInput } from './FieldRow';
 import { MediaList } from './MediaList';
 import { PreviewBlock } from './PreviewBlock';
+import { QueueSidebar } from './QueueSidebar';
 import type { useCardCreatorState } from './useCardCreatorState';
 import styles from './CardCreatorDialog.module.css';
 
@@ -43,6 +44,8 @@ export function CardCreatorDialogContent({
     loadError,
     submitting,
     capturingMedia,
+    queueItems,
+    queueSidebarOpen,
     updateField,
     updateMapping,
     changeNoteType,
@@ -55,6 +58,8 @@ export function CardCreatorDialogContent({
     translateSentenceField,
     submit,
   } = state;
+
+  const hasQueue = queueItems.length >= 2;
 
   const containerClass =
     variant === 'mobile'
@@ -70,7 +75,8 @@ export function CardCreatorDialogContent({
   const showNoRecentAlert = loadStatus === 'ready' && recentNoteId === null;
 
   return (
-    <div className={containerClass} data-testid="card-creator-content">
+    <div className={hasQueue ? styles['cc-dialog__with-queue'] : undefined} data-testid="card-creator-content">
+    <div className={containerClass}>
       {/* Alert: no recent card */}
       {showNoRecentAlert && (
         <div className={styles['cc-dialog__alert']} role="status" data-testid="cc-alert-no-recent">
@@ -339,6 +345,8 @@ export function CardCreatorDialogContent({
           </Button>
         </div>
       </div>
+    </div>
+    {hasQueue && queueSidebarOpen && <QueueSidebar state={state} />}
     </div>
   );
 }

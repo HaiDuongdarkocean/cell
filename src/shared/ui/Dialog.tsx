@@ -18,6 +18,9 @@ interface DialogProps {
   footer?: ReactNode;
   /** Show a default close button in the header. */
   showCloseButton?: boolean;
+  /** Extra content rendered in the header, next to the close button (left of
+   *  close). Used for the queue sidebar toggle icon. */
+  headerExtra?: ReactNode;
   /** Center the title in the header (close button stays right via absolute
    *  positioning). Default: left-aligned with space-between. */
   centerTitle?: boolean;
@@ -38,6 +41,7 @@ export function Dialog({
   children,
   footer,
   showCloseButton,
+  headerExtra,
   centerTitle,
   'data-testid': dataTestId,
 }: DialogProps): React.JSX.Element | null {
@@ -80,24 +84,29 @@ export function Dialog({
         {(title || showCloseButton) && (
           <div className={centerTitle ? `${styles.header} ${styles.headerCenterTitle}` : styles.header}>
             {showCloseButton && centerTitle && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onOpenChange?.(false)}
-                aria-label="Close"
-                className={styles.closeButtonAbsolute}
-              >
-                ×
-              </Button>
+              <div className={styles.headerRightGroup}>
+                {headerExtra}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onOpenChange?.(false)}
+                  aria-label="Close"
+                >
+                  ×
+                </Button>
+              </div>
             )}
             <div className={styles.headerText}>
               {title && <h2 id="dialog-title" className={styles.title}>{title}</h2>}
               {description && <p id="dialog-description" className={styles.description}>{description}</p>}
             </div>
             {showCloseButton && !centerTitle && (
-              <Button variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
-                ×
-              </Button>
+              <div className={styles.headerRightGroup}>
+                {headerExtra}
+                <Button variant="ghost" size="sm" onClick={() => onOpenChange?.(false)} aria-label="Close">
+                  ×
+                </Button>
+              </div>
             )}
           </div>
         )}

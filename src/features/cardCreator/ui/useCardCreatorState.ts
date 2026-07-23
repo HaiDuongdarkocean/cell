@@ -32,6 +32,7 @@ import { fetchUrlAsMediaFile, type MediaFile, type MediaKind } from '../media/me
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
 import { translateSentence } from '../media/translation';
+import type { CardCreatorQueueItem } from './mountCardCreatorDialog';
 
 /** Toast notification. */
 export interface Toast {
@@ -70,6 +71,9 @@ export interface OpenContext {
     readonly sentenceAudioUrls?: readonly string[];
     readonly imageUrls?: readonly string[];
   };
+  /** Send to Card queue (I+N review flow). When present with ≥2 items, the
+   *  dialog opens with a right sidebar. N=1 → no sidebar. */
+  queue?: readonly CardCreatorQueueItem[];
 }
 
 /** Hook return type. */
@@ -98,6 +102,21 @@ export interface CardCreatorState {
   capturingMedia: boolean;
   /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' = focus Update button, 'edit-card' = neutral). */
   initialAction?: 'quick-add' | 'quick-update' | 'edit-card';
+  /** Queue items (I+N review flow). Empty when no queue (N=1 or popup path). */
+  queueItems: readonly CardCreatorQueueItem[];
+  /** Active queue item index. -1 when no queue. */
+  queueActiveIndex: number;
+  /** Whether the queue sidebar is open (toggle state). Defaults to true when
+   *  N ≥ 2, false when N ≤ 1. Persists across auto-advance. */
+  queueSidebarOpen: boolean;
+  /** Select a queue item by index (switches prefill). */
+  selectQueueItem: (index: number) => void;
+  /** Delete a queue item by index. Shows undo toast for 3s. */
+  deleteQueueItem: (index: number) => void;
+  /** Undo the last queue item deletion (within 3s window). */
+  undoDeleteQueueItem: () => void;
+  /** Toggle the queue sidebar open/closed. */
+  toggleQueueSidebar: () => void;
   /** Update the draft (triggers autosave). */
   updateDraft: (partial: Partial<CardDraft>) => void;
   /** Update a single text field in the draft. */
@@ -149,6 +168,13 @@ export function useCardCreatorState(
   const [submitting, setSubmitting] = useState(false);
   const [capturingMedia, setCapturingMedia] = useState(false);
   const [toasts, setToasts] = useState<readonly Toast[]>([]);
+
+  // Queue state (I+N review flow).
+  const [queueItems, setQueueItems] = useState<readonly CardCreatorQueueItem[]>([]);
+  const [queueActiveIndex, setQueueActiveIndex] = useState(-1);
+  const [queueSidebarOpen, setQueueSidebarOpen] = useState(false);
+  // Undo buffer for deleted queue items: { item, index, timer }.
+  const undoBufferRef = useRef<{ item: CardCreatorQueueItem; index: number; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   // Track toast auto-dismiss timers so we can clear them on unmount
   // (react-timeout-cleanup: setTimeout in component must be cleared on unmount).
@@ -236,6 +262,37 @@ export function useCardCreatorState(
     const initialImages = ctx.initialMedia?.filter((f) => f.kind === 'image') ?? [];
     const initialAudios = ctx.initialMedia?.filter((f) => f.kind === 'audio') ?? [];
     const prefill = ctx.prefill;
+    // Initialize queue from context. N ≥ 2 → sidebar open by default.
+    const ctxQueue = ctx.queue;
+    if (ctxQueue && ctxQueue.length >= 2) {
+      setQueueItems(ctxQueue);
+      setQueueActiveIndex(0);
+      setQueueSidebarOpen(true);
+      // Use first queue item as prefill (overrides cue/prefill).
+      const firstItem = ctxQueue[0]!;
+      setDraft({
+        noteType: restoredDraft?.noteType ?? settings.defaultNoteType,
+        deck: restoredDraft?.deck ?? settings.defaultDeck,
+        fields: {
+          targetWord: firstItem.term,
+          sentence: ctx.cue?.targetText ?? prefill?.sentence ?? '',
+          sentenceTranslation: ctx.cue?.nativeText ?? prefill?.sentenceTranslation ?? '',
+          definitions: firstItem.definitions,
+          images: initialImages,
+          sentenceAudios: initialAudios,
+          wordAudios: [],
+          note: '',
+          moreExample: '',
+        },
+        fieldMapping: restoredDraft?.fieldMapping ?? {},
+        tags: restoredDraft?.tags ?? settings.defaultTags,
+        mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? settings.mediaUpdateMode,
+      });
+    } else {
+      // No queue or N=1 → normal flow.
+      setQueueItems([]);
+      setQueueActiveIndex(-1);
+      setQueueSidebarOpen(false);
     setDraft({
       noteType: restoredDraft?.noteType ?? settings.defaultNoteType,
       deck: restoredDraft?.deck ?? settings.defaultDeck,
@@ -254,6 +311,7 @@ export function useCardCreatorState(
       tags: restoredDraft?.tags ?? settings.defaultTags,
       mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? settings.mediaUpdateMode,
     });
+    }
 
     // Fetch prefill media URLs (word audio, sentence audio + images from popup
     // dictionary) asynchronously and append to the correct draft fields. Best-effort
@@ -418,6 +476,7 @@ export function useCardCreatorState(
       for (const timer of timers) clearTimeout(timer);
       timers.clear();
       void autosaver.flush();
+      if (undoBufferRef.current) clearTimeout(undoBufferRef.current.timer);
     };
   }, []);
 
@@ -699,6 +758,21 @@ export function useCardCreatorState(
             pushToast('success', `Card added to “${draft.deck}” (#${r.value}).`);
             await autosaverRef.current.clear();
           }
+          // Queue auto-next: advance to next item or signal queue exhausted.
+          if (queueItems.length > 0 && queueActiveIndex >= 0) {
+            const nextIndex = queueActiveIndex + 1;
+            if (nextIndex < queueItems.length) {
+              const nextItem = queueItems[nextIndex]!;
+              setQueueActiveIndex(nextIndex);
+              setDraft((prev) => ({
+                ...prev,
+                fields: { ...prev.fields, targetWord: nextItem.term, definitions: nextItem.definitions },
+              }));
+            } else {
+              setQueueItems([]);
+              setQueueActiveIndex(-1);
+            }
+          }
         } else {
           // Update existing note. Re-query the freshest recent note id +
           // info right before updating — the cached recentNoteId may be
@@ -743,6 +817,21 @@ export function useCardCreatorState(
           }
           pushToast('success', `Card updated (#${updateNoteId}).`);
           await autosaverRef.current.clear();
+          // Queue auto-next (same as Add path).
+          if (queueItems.length > 0 && queueActiveIndex >= 0) {
+            const nextIndex = queueActiveIndex + 1;
+            if (nextIndex < queueItems.length) {
+              const nextItem = queueItems[nextIndex]!;
+              setQueueActiveIndex(nextIndex);
+              setDraft((prev) => ({
+                ...prev,
+                fields: { ...prev.fields, targetWord: nextItem.term, definitions: nextItem.definitions },
+              }));
+            } else {
+              setQueueItems([]);
+              setQueueActiveIndex(-1);
+            }
+          }
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -752,8 +841,75 @@ export function useCardCreatorState(
         setSubmitting(false);
       }
     },
-    [submitting, settings.ankiConnectUrl, draft, buildAnkiFieldsCb, refreshRecentNote, pushToast],
+    [submitting, settings.ankiConnectUrl, draft, buildAnkiFieldsCb, refreshRecentNote, pushToast, queueItems, queueActiveIndex],
   );
+
+  /** Select a queue item by index — switches the draft's targetWord +
+   *  definitions to the selected item. Sentence + translation + media stay
+   *  the same (shared across the queue). */
+  const selectQueueItem = useCallback((index: number) => {
+    setQueueItems((items) => {
+      if (index < 0 || index >= items.length) return items;
+      const item = items[index]!;
+      setQueueActiveIndex(index);
+      setDraft((prev) => ({
+        ...prev,
+        fields: {
+          ...prev.fields,
+          targetWord: item.term,
+          definitions: item.definitions,
+        },
+      }));
+      return items;
+    });
+  }, []);
+
+  /** Delete a queue item. Shows an undo toast for 3s. If the deleted item was
+   *  active, auto-advances to the next remaining item. */
+  const deleteQueueItem = useCallback((index: number) => {
+    setQueueItems((items) => {
+      if (index < 0 || index >= items.length) return items;
+      const deleted = items[index]!;
+      const next = items.filter((_, i) => i !== index);
+      if (undoBufferRef.current) clearTimeout(undoBufferRef.current.timer);
+      const timer = setTimeout(() => { undoBufferRef.current = null; }, 3000);
+      undoBufferRef.current = { item: deleted, index, timer };
+      pushToast('warning', `Removed "${deleted.term}" from queue.`);
+      setQueueActiveIndex((prev) => {
+        if (prev === index) return next.length > 0 ? Math.min(index, next.length - 1) : -1;
+        if (prev > index) return prev - 1;
+        return prev;
+      });
+      if (next.length > 0) {
+        const newActive = Math.min(index, next.length - 1);
+        const item = next[newActive]!;
+        setDraft((prev) => ({
+          ...prev,
+          fields: { ...prev.fields, targetWord: item.term, definitions: item.definitions },
+        }));
+      }
+      return next;
+    });
+  }, [pushToast]);
+
+  /** Undo the last queue item deletion (within 3s window). */
+  const undoDeleteQueueItem = useCallback(() => {
+    const buf = undoBufferRef.current;
+    if (!buf) return;
+    clearTimeout(buf.timer);
+    undoBufferRef.current = null;
+    setQueueItems((items) => [...items.slice(0, buf.index), buf.item, ...items.slice(buf.index)]);
+    setQueueActiveIndex(buf.index);
+    setDraft((prev) => ({
+      ...prev,
+      fields: { ...prev.fields, targetWord: buf.item.term, definitions: buf.item.definitions },
+    }));
+  }, []);
+
+  /** Toggle the queue sidebar open/closed. */
+  const toggleQueueSidebar = useCallback(() => {
+    setQueueSidebarOpen((prev) => !prev);
+  }, []);
 
   return {
     draft,
@@ -768,6 +924,13 @@ export function useCardCreatorState(
     capturingMedia,
     toasts,
     initialAction,
+    queueItems,
+    queueActiveIndex,
+    queueSidebarOpen,
+    selectQueueItem,
+    deleteQueueItem,
+    undoDeleteQueueItem,
+    toggleQueueSidebar,
     updateDraft,
     updateField,
     updateMapping,

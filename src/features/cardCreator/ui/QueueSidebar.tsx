@@ -1,0 +1,121 @@
+/**
+ * QueueSidebar — right sidebar for the I+N review flow in Card Creator.
+ *
+ * Shows a list of unknown/tracking words from the current subtitle line.
+ * Each item has a status badge + delete (×) button. Clicking an item
+ * switches the dialog's prefill. The sidebar can be toggled open/closed
+ * via the toggle icon in the dialog header (next to close button).
+ *
+ * BEM block: .cc-queue
+ */
+import type { ReactElement } from 'react';
+import { Icon } from '@/shared/icons/Icon';
+import type { CardCreatorQueueItem } from './mountCardCreatorDialog';
+import type { useCardCreatorState } from './useCardCreatorState';
+import styles from './QueueSidebar.module.css';
+
+interface QueueSidebarProps {
+  state: ReturnType<typeof useCardCreatorState>;
+}
+
+export function QueueSidebar({ state }: QueueSidebarProps): ReactElement {
+  const {
+    queueItems,
+    queueActiveIndex,
+    deleteQueueItem,
+    undoDeleteQueueItem,
+    selectQueueItem,
+  } = state;
+
+  if (queueItems.length === 0) return <></>;
+
+  return (
+    <aside className={styles['cc-queue']} data-testid="cc-queue-sidebar">
+      <div className={styles['cc-queue__header']}>
+        <span className={styles['cc-queue__title']}>
+          Queue ({queueActiveIndex + 1}/{queueItems.length})
+        </span>
+      </div>
+      <ul className={styles['cc-queue__list']}>
+        {queueItems.map((item, i) => (
+          <QueueItemRow
+            key={`${item.term}-${i}`}
+            item={item}
+            index={i}
+            isActive={i === queueActiveIndex}
+            onSelect={() => selectQueueItem(i)}
+            onDelete={() => deleteQueueItem(i)}
+          />
+        ))}
+      </ul>
+      {/* Undo button — shown when there's a pending undo (3s window).
+          Uses the last warning toast as a proxy for "just deleted". */}
+      <UndoButton onUndo={undoDeleteQueueItem} toasts={state.toasts} dismissToast={state.dismissToast} />
+    </aside>
+  );
+}
+
+interface QueueItemRowProps {
+  item: CardCreatorQueueItem;
+  index: number;
+  isActive: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+}
+
+function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRowProps): ReactElement {
+  return (
+    <li
+      className={`${styles['cc-queue__item']} ${isActive ? styles['cc-queue__item--active'] : ''}`}
+      data-testid={`cc-queue-item-${index}`}
+    >
+      <button
+        className={styles['cc-queue__item-btn']}
+        onClick={onSelect}
+        aria-label={`Select ${item.term}`}
+        aria-current={isActive ? 'true' : undefined}
+      >
+        <span className={styles['cc-queue__item-term']}>{item.term}</span>
+        <span
+          className={`${styles['cc-queue__item-badge']} ${styles[`cc-queue__item-badge--${item.status}`]}`}
+        >
+          {item.status}
+        </span>
+      </button>
+      <button
+        className={styles['cc-queue__item-delete']}
+        onClick={onDelete}
+        aria-label={`Remove ${item.term} from queue`}
+        data-testid={`cc-queue-delete-${index}`}
+      >
+        <Icon name="x" className={styles['cc-queue__item-delete-icon']} />
+      </button>
+    </li>
+  );
+}
+
+interface UndoButtonProps {
+  onUndo: () => void;
+  toasts: readonly { id: number; kind: string; message: string }[];
+  dismissToast: (id: number) => void;
+}
+
+/** Shows an undo button when the latest toast is a warning containing "Removed".
+ *  Clicking it calls onUndo + dismisses the toast. */
+function UndoButton({ onUndo, toasts, dismissToast }: UndoButtonProps): ReactElement | null {
+  const lastToast = toasts[toasts.length - 1];
+  if (!lastToast || lastToast.kind !== 'warning' || !lastToast.message.includes('Removed')) return null;
+  return (
+    <button
+      className={styles['cc-queue__undo']}
+      onClick={() => {
+        onUndo();
+        dismissToast(lastToast.id);
+      }}
+      data-testid="cc-queue-undo"
+    >
+      <Icon name="rotateCcw" className={styles['cc-queue__undo-icon']} />
+      Undo
+    </button>
+  );
+}
