@@ -93,3 +93,6 @@ player_state.png
 # Third-party uBlock extension used only as a test helper (AGENTS.md).
 # Install manually from tests/data-test/extension-phụ-trợ/uBlock0.chromium when testing.
 tests/data-test/extension-phụ-trợ/
+
+# Generated benchmark pages (output of tasks/gen-benchmark-page.cjs).
+tasks/benchmark-*.html
