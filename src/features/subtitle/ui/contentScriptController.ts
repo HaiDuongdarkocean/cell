@@ -40,9 +40,13 @@ import { buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCrea
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
+import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
+import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
+import { getWordStatuses } from '@/features/dictionaryPopup/services/wordStatusClient';
 
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
+import type { LookupResult } from '@/features/dictionaryPopup/types';
 import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
 
@@ -170,6 +174,21 @@ async function waitForVideoReady(video: HTMLVideoElement, timeoutMs = 2000): Pro
   });
 }
 
+/** Split a subtitle line into unique lowercase word terms (letters only).
+ *  Used by batch quick-add to find unknown/tracking words. */
+function tokenizeSubtitleWords(text: string): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const raw of text.split(/[^a-zA-Z]+/)) {
+    const w = raw.toLowerCase();
+    if (w.length >= 2 && !seen.has(w)) {
+      seen.add(w);
+      result.push(w);
+    }
+  }
+  return result;
+}
+
 /** Load target/native language codes from settings.
  *  Used by import file role assignment + panel selection. */
 async function loadTargetNativeLangs(): Promise<{ targetLang: string; nativeLang: string }> {
@@ -294,9 +313,18 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
   }
 
-  /** ADR-026: Handle Card Creator action (quick-update or edit-card). */
+  /** ADR-026: Handle Card Creator action (quick-update or edit-card).
+   *  quick-update → batch quick-add all unknown/tracking words in the current
+   *    subtitle line directly to Anki (no dialog). I+1 = 1 word → 1 card,
+   *    I+N = N words → N cards.
+   *  edit-card → open the Card Creator dialog pre-filled. */
   async function handleCardCreatorAction(action: CardCreatorAction): Promise<void> {
     if (!sharedWebTextCtrl) return;
+    if (action === 'quick-update') {
+      await handleClusterQuickAdd();
+      return;
+    }
+    // edit-card: open dialog (original flow below).
     // Load settings fresh (URL/deck/noteType/lang may have changed since init).
     const settings = await loadSettingsOrToast(container);
     if (!settings) return;
@@ -353,6 +381,142 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
 
     sharedWebTextCtrl.openCardCreator({ ...ctx, initialMedia }, action);
+  }
+
+  /** Batch quick-add: find all unknown/tracking words in the current subtitle
+   *  line, look up each in the dictionary, and add a card for each directly to
+   *  Anki (no dialog). I+1 = 1 unknown word → 1 card. I+N = N unknown words →
+   *  N cards. Media (screenshot + sentence audio) is captured once and shared
+   *  across all cards in the same sentence. */
+  async function handleClusterQuickAdd(): Promise<void> {
+    const targetText = blockController.getCurrentTargetText();
+    if (!targetText) {
+      showToast('No active subtitle — play the video and wait for a subtitle line.', container, { variant: 'info' });
+      return;
+    }
+    const nativeText = blockController.getCurrentNativeText();
+
+    // Load settings + draft config.
+    const settings = await loadSettingsOrToast(container);
+    if (!settings) return;
+    const cc = settings.cardCreator;
+    const autosaver = new DraftAutosaver();
+    const restored = await autosaver.load();
+    const deck = restored?.deck ?? cc.defaultDeck;
+    const noteType = restored?.noteType ?? cc.defaultNoteType;
+    const fieldMapping = restored?.fieldMapping ?? {};
+    const tags = restored?.tags ?? cc.defaultTags;
+    if (!deck || !noteType) {
+      showToast('Quick Add needs a deck + note type. Open Card Creator first to configure.', container, { variant: 'error' });
+      return;
+    }
+    if (Object.keys(fieldMapping).length === 0) {
+      showToast('Quick Add needs field mapping. Open Card Creator first to configure.', container, { variant: 'error' });
+      return;
+    }
+
+    const sourceLang = settings.subtitleOverlayTargetLanguage || 'en';
+
+    // Tokenize the subtitle into unique lowercase word terms.
+    const words = tokenizeSubtitleWords(targetText);
+    if (words.length === 0) {
+      showToast('No words found in the current subtitle.', container, { variant: 'info' });
+      return;
+    }
+
+    // Get word statuses and filter to unknown/tracking.
+    const statusMap = await getWordStatuses(sourceLang, words);
+    const learnWords = words.filter((w) => {
+      const s = statusMap.get(w);
+      return s === 'unknown' || s === 'tracking';
+    });
+    if (learnWords.length === 0) {
+      showToast('No unknown/tracking words in this subtitle line.', container, { variant: 'info' });
+      return;
+    }
+
+    showToast(`Quick Add — looking up ${learnWords.length} word${learnWords.length > 1 ? 's' : ''}…`, container, { variant: 'info' });
+
+    // Capture media once (shared across all cards).
+    const images: MediaFile[] = [];
+    const sentenceAudios: MediaFile[] = [];
+    if (video && video.videoWidth > 0) {
+      await waitForVideoReady(video);
+      try {
+        const screenshot = await captureScreenshot(video);
+        images.push(screenshot);
+      } catch { /* non-fatal */ }
+      try {
+        const cues = blockController.getTargetCues();
+        const currentMs = video.currentTime * 1000;
+        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
+        if (matchingCue) {
+          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
+          if (audioR.ok) sentenceAudios.push(audioR.file);
+        }
+      } catch { /* non-fatal */ }
+    }
+
+    // Look up each word + add a card.
+    let added = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+    for (const term of learnWords) {
+      // Dictionary lookup via background service worker.
+      let definitions = '';
+      try {
+        const response = await sendMessage({
+          type: MESSAGE_TYPES.LOOKUP_REQUEST,
+          payload: {
+            requestId: `cluster-qa-${Date.now()}-${term}`,
+            request: { term, langCode: sourceLang, contextSentence: targetText, cursorOffset: 0 },
+          },
+        }) as { success: boolean; data?: LookupResult[] };
+        if (response.success && response.data && response.data.length > 0) {
+          definitions = response.data
+            .flatMap((r) => r.definitions)
+            .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
+            .join('\n');
+        }
+      } catch {
+        // Lookup failure is non-fatal — card is added with empty definitions.
+      }
+
+      const result = await quickAddNote(
+        cc.ankiConnectUrl,
+        deck,
+        noteType,
+        fieldMapping,
+        tags,
+        {
+          targetWord: term,
+          sentence: targetText,
+          sentenceTranslation: nativeText,
+          definitions,
+          note: '',
+          moreExample: '',
+        },
+        { images, sentenceAudios, wordAudios: [] },
+        (msg) => errors.push(`${term}: ${msg}`),
+      );
+
+      if (result.ok && result.noteId !== null) {
+        added++;
+      } else if (result.ok && result.noteId === null) {
+        skipped++;
+      } else if (!result.ok) {
+        errors.push(`${term}: ${result.error}`);
+      }
+    }
+
+    // Summary toast.
+    if (added > 0) {
+      showToast(`Added ${added} card${added > 1 ? 's' : ''} to "${deck}"${skipped > 0 ? `, ${skipped} duplicate${skipped > 1 ? 's' : ''} skipped` : ''}.`, container, { variant: 'success' });
+    } else if (skipped > 0) {
+      showToast(`All ${skipped} card${skipped > 1 ? 's' : ''} already exist (duplicates).`, container, { variant: 'warning' });
+    } else {
+      showToast(`Quick Add failed: ${errors.join('; ')}`, container, { variant: 'error' });
+    }
   }
 
   /** Generate native subtitle by translating the active target cues into the

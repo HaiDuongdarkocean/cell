@@ -18,7 +18,7 @@ import { createBlockScaleObserver, computeScaleSnapshot } from './subtitleBlockS
 import { syncElementTheme } from '@/shared/lib/themeTokens';
 import { mountToWatchVideo } from './netflixPlayback';
 import { wrapTokenSpans, detectLangCode, SubtitleTriggerController } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
-import type { LookupRequest } from '@/features/dictionaryPopup/types';
+import type { LookupRequest, TriggerMode } from '@/features/dictionaryPopup/types';
 import {
   createSubtitleTokenizeController,
   type SubtitleTokenizeController,
@@ -145,6 +145,7 @@ export class SubtitleBlockController {
     target.backgroundColor = hexToRgba(this.targetStyle.backgroundColor, this.targetStyle.backgroundOpacity);
     target.textShadow = buildTextShadow(this.targetStyle.textShadow);
     target.fontFamily = sanitizeFontFamily(this.targetStyle.fontFamily);
+    target.fontWeight = String(this.targetStyle.fontWeight ?? 600);
     target.textAlign = this.targetStyle.horizontalAlign;
     target.opacity = String(this.targetStyle.textOpacity);
 
@@ -153,6 +154,7 @@ export class SubtitleBlockController {
     native.backgroundColor = hexToRgba(this.nativeStyle.backgroundColor, this.nativeStyle.backgroundOpacity);
     native.textShadow = buildTextShadow(this.nativeStyle.textShadow);
     native.fontFamily = sanitizeFontFamily(this.nativeStyle.fontFamily);
+    native.fontWeight = String(this.nativeStyle.fontWeight ?? 600);
     native.textAlign = this.nativeStyle.horizontalAlign;
     native.opacity = String(this.nativeStyle.textOpacity);
   }
@@ -498,6 +500,16 @@ export class SubtitleBlockController {
     return this.nativeCues;
   }
 
+  /** Get the active target subtitle text (current cue). */
+  getCurrentTargetText(): string {
+    return this.lastTargetIndex >= 0 ? this.targetCues[this.lastTargetIndex]?.text ?? '' : '';
+  }
+
+  /** Get the active native subtitle text (current cue). */
+  getCurrentNativeText(): string {
+    return this.lastNativeIndex >= 0 ? this.nativeCues[this.lastNativeIndex]?.text ?? '' : '';
+  }
+
   /** Enable/disable the generate-native button. */
   setGenerateNativeEnabled(enabled: boolean): void {
     if (!this.dom) return;
@@ -554,9 +566,10 @@ export class SubtitleBlockController {
 
   /** Enable popup dictionary on this subtitle block. */
   enableDictionaryPopup(
-    triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt',
+    triggerMode: TriggerMode,
     onLookup: (request: LookupRequest, requestId: string, anchorRect: DOMRect, highlightTarget: HTMLSpanElement) => void,
     onCancel: (requestId: string) => void,
+    onClear?: () => void,
   ): void {
     this.dpEnabled = true;
     if (!this.dpTriggerController) {
@@ -564,7 +577,12 @@ export class SubtitleBlockController {
         triggerMode,
         onLookup,
         onCancel,
+        onClear,
       });
+    } else {
+      // The controller already exists (e.g. settings changed at runtime).
+      // Update its mode instead of leaving the first-selected mode stuck.
+      this.dpTriggerController.setTriggerMode(triggerMode);
     }
     // Re-render to wrap tokens on current cue.
     this.render();
@@ -581,7 +599,7 @@ export class SubtitleBlockController {
   }
 
   /** Update trigger mode (re-attaches listeners). */
-  setDictionaryPopupTriggerMode(mode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt'): void {
+  setDictionaryPopupTriggerMode(mode: TriggerMode): void {
     if (this.dpTriggerController) {
       this.dpTriggerController.setTriggerMode(mode);
     }
