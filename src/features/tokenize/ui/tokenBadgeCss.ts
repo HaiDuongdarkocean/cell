@@ -35,6 +35,11 @@ export function buildTokenBadgeCss(): string {
   margin: 0 !important;
   cursor: pointer !important;
   z-index: 2147483646 !important;
+  /* touch-action:none prevents the browser from hijacking the touch gesture
+     for page scroll/zoom during drag, which fires pointercancel and aborts/
+     jitters the drag on touch screens. Tap (click) still fires — touch-action
+     only gates pan/zoom, not clicks. */
+  touch-action: none !important;
   box-shadow: none !important;
   outline: none !important;
 }
