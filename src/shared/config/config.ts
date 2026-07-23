@@ -187,7 +187,7 @@ export const DEFAULT_CARD_CREATOR_SETTINGS: CardCreatorSettings = {
 
 /** Default Dictionary Popup settings (spec §9.3 — schema v14). */
 export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
-  enabled: false,
+  enabled: true,
   triggerMode: 'click',
   defaultActiveTab: null,
   srsDestination: 'anki',
@@ -199,6 +199,7 @@ export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
     { id: 'gtranslate', name: 'Google Translate', urlTemplate: 'https://translate.google.com/?sl=auto&tl={lang}&text={term}', langCodes: [] },
   ],
   tts: { enabled: true, savedVoices: [], voices: [], maxDisplay: 3, autoplayCount: 0, preferredAccent: 'US' },
+  badgePointerTrigger: { position: 'center', size: 36, pointerScale: 0.25 },
 };
 
 export const DEFAULT_SETTINGS: Settings = {

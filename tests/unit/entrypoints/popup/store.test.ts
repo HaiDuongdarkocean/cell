@@ -1,5 +1,6 @@
 import { usePopupStore, type PopupState } from '@/entrypoints/popup/store/popupStore';
-import { DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
+import { DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFAULT_SETTINGS, STORAGE_KEYS } from '@/shared/config/config';
+import type { DictionaryPopupSettings } from '@/entities/settings';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -254,9 +255,22 @@ describe('usePopupStore', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(storageLocalSetMock).toHaveBeenCalledTimes(1);
     const [arg] = storageLocalSetMock.mock.calls[0];
-    // saveSettings stamps schemaVersion (ADR-017 D8 / ADR-018 D2 / V4 / V5 / V6 / V7 / V8 / V9 / V10 / V11 / V12 / V13 / V14 / V15) — the persisted
-    // payload includes schemaVersion: 15 in addition to the merged settings.
-    expect(arg[STORAGE_KEYS.SETTINGS]).toEqual({ ...settings, schemaVersion: 15 });
+    // saveSettings stamps schemaVersion (ADR-017 D8 / ADR-018 D2 / V4 / V5 / V6 / V7 / V8 / V9 / V10 / V11 / V12 / V13 / V14 / V15 / V16) — the persisted
+    // payload includes schemaVersion: 16 in addition to the merged settings.
+    expect(arg[STORAGE_KEYS.SETTINGS]).toEqual({ ...settings, schemaVersion: 16 });
+  });
+
+  it('updateSettings persists dictionaryPopup.defaultActiveTab to storage', async () => {
+    const dp: DictionaryPopupSettings = { ...DEFAULT_DICTIONARY_POPUP_SETTINGS, defaultActiveTab: 'image' };
+    usePopupStore.getState().updateSettings({ dictionaryPopup: dp });
+
+    expect(usePopupStore.getState().settings.dictionaryPopup?.defaultActiveTab).toBe('image');
+
+    await new Promise((r) => setTimeout(r, 0));
+    expect(storageLocalSetMock).toHaveBeenCalledTimes(1);
+    const [arg] = storageLocalSetMock.mock.calls[0];
+    const stored = arg[STORAGE_KEYS.SETTINGS] as Record<string, unknown>;
+    expect((stored.dictionaryPopup as { defaultActiveTab?: string }).defaultActiveTab).toBe('image');
   });
 
   it('setExtensionActive updates the flag and persists to chrome.storage.local', () => {

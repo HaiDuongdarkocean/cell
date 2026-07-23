@@ -11,7 +11,7 @@
 // intercepts the text update when popup is enabled.
 
 import { wrapTokenSpans, detectLangCode, SubtitleTriggerController } from '../trigger/subtitleTriggerController';
-import type { LookupRequest } from '../types';
+import type { LookupRequest, TriggerMode } from '../types';
 
 export interface TokenWrapState {
   enabled: boolean;
@@ -95,12 +95,14 @@ export function updateOverlayWithTokens(
  * @param triggerMode - Click/hover/hover+modifier.
  * @param onLookup - Callback when a lookup is triggered.
  * @param onCancel - Callback to cancel an in-flight lookup.
+ * @param onClear - Optional callback when the cursor leaves a valid token target.
  */
 export function enableTokenWrap(
   state: TokenWrapState,
-  triggerMode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt',
+  triggerMode: TriggerMode,
   onLookup: (request: LookupRequest, requestId: string) => void,
   onCancel: (requestId: string) => void,
+  onClear?: () => void,
 ): void {
   state.enabled = true;
   if (!state.triggerController) {
@@ -108,6 +110,7 @@ export function enableTokenWrap(
       triggerMode,
       onLookup,
       onCancel,
+      onClear,
     });
   }
 }
@@ -125,7 +128,7 @@ export function disableTokenWrap(state: TokenWrapState): void {
 /** Update the trigger mode (re-attaches listeners on next cue). */
 export function setTriggerMode(
   state: TokenWrapState,
-  mode: 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt',
+  mode: TriggerMode,
 ): void {
   if (state.triggerController) {
     state.triggerController.setTriggerMode(mode);

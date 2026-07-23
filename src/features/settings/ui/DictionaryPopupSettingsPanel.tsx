@@ -5,7 +5,8 @@
 // (debounce internal — spec D9).
 
 import type React from 'react';
-import type { DictionaryPopupSettings } from '@/entities/settings/types';
+import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
+import type { DictionaryPopupSettings, BadgePointerTriggerSettings } from '@/entities/settings/types';
 import styles from './DictionaryPopupSettingsPanel.module.css';
 
 interface DictionaryPopupSettingsPanelProps {
@@ -13,13 +14,16 @@ interface DictionaryPopupSettingsPanelProps {
   readonly onChange: (settings: DictionaryPopupSettings) => void;
 }
 
-const TRIGGER_MODES = ['click', 'hover', 'hover-ctrl', 'hover-shift', 'hover-alt'] as const;
+const DEFAULT_BADGE_POINTER_TRIGGER: BadgePointerTriggerSettings = { position: 'center', size: 36, pointerScale: 0.25 };
+
+const TRIGGER_MODES = ['click', 'hover', 'hover-ctrl', 'hover-shift', 'hover-alt', 'orbital'] as const;
 const TRIGGER_LABELS: Record<string, string> = {
   click: 'Click',
   hover: 'Hover',
   'hover-ctrl': 'Hover + Ctrl',
   'hover-shift': 'Hover + Shift',
   'hover-alt': 'Hover + Alt',
+  orbital: 'Orbital badge',
 };
 
 const TAB_OPTIONS = ['audio', 'image', 'translate', 'links'] as const;
@@ -35,7 +39,18 @@ export function DictionaryPopupSettingsPanel({
   onChange,
 }: DictionaryPopupSettingsPanelProps): React.JSX.Element {
   const update = (partial: Partial<DictionaryPopupSettings>): void => {
-    onChange({ ...settings, ...partial });
+    // Merge with defaults so optional fields (e.g. tts, per-lang overrides)
+    // stay populated. When the user changes the global defaultActiveTab,
+    // clear any stale per-language override — there is no UI to manage it,
+    // and an old/stale per-lang value would silently win over the user's
+    // new global choice (spec D2: per-lang overrides global when present).
+    const next: DictionaryPopupSettings = {
+      ...DEFAULT_DICTIONARY_POPUP_SETTINGS,
+      ...settings,
+      ...partial,
+      defaultActiveTabPerLang: 'defaultActiveTab' in partial ? undefined : settings.defaultActiveTabPerLang,
+    };
+    onChange(next);
   };
 
   return (
@@ -67,6 +82,53 @@ export function DictionaryPopupSettingsPanel({
           ))}
         </select>
       </div>
+
+      {settings.triggerMode === 'orbital' && (
+        <>
+          <div className={styles.field}>
+            <label htmlFor="dp-badge-pointer-position">Pointer position</label>
+            <select
+              id="dp-badge-pointer-position"
+              value={settings.badgePointerTrigger?.position ?? DEFAULT_BADGE_POINTER_TRIGGER.position}
+              onChange={(e) => {
+                const base = settings.badgePointerTrigger ?? DEFAULT_BADGE_POINTER_TRIGGER;
+                update({
+                  badgePointerTrigger: {
+                    ...base,
+                    position: e.target.value as BadgePointerTriggerSettings['position'],
+                  },
+                });
+              }}
+            >
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+              <option value="center">Center</option>
+            </select>
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="dp-badge-pointer-size">Badge size (px)</label>
+            <input
+              id="dp-badge-pointer-size"
+              type="number"
+              min={24}
+              max={96}
+              value={settings.badgePointerTrigger?.size ?? DEFAULT_BADGE_POINTER_TRIGGER.size}
+              onChange={(e) => {
+                const base = settings.badgePointerTrigger ?? DEFAULT_BADGE_POINTER_TRIGGER;
+                const size = Math.max(24, Math.min(96, Number(e.target.value) || 36));
+                update({
+                  badgePointerTrigger: {
+                    ...base,
+                    size,
+                  },
+                });
+              }}
+            />
+          </div>
+        </>
+      )}
 
       {/* Default active tab */}
       <div className={styles.field}>
