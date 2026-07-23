@@ -73,8 +73,7 @@ import { registerTtsHandlers } from './handlers/tts';
 import { registerForvoAudioHandlers } from './handlers/forvoAudio';
 import { registerImageSearchHandlers } from './handlers/images';
 import { registerScreenshotHandlers } from './handlers/screenshot';
-import { seedDevDataIfEmpty, setDevSeedEnabled } from '@/features/dictionary/logic/devSeed';
-import { isDevMode } from '@/shared/lib/env/devMode';
+import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
 import type { MessageHandler } from '@/entities/message';
 import type {
   DetectedVideo,
@@ -352,9 +351,8 @@ if (typeof chrome !== 'undefined' && getExtensionId()) {
     initBackground().catch((err) => {
       console.error('[Video Downloader] onInstalled init failed:', err);
     });
-    // Dev-only auto-seed: import test dictionary + frequency data if DB empty.
-    // Fire-and-forget — never blocks SW init. No-op in production build.
-    setDevSeedEnabled(isDevMode);
+    // Auto-seed: import default dictionary + frequency data if DB empty.
+    // Fire-and-forget — never blocks SW init. Runs in both dev and production.
     void seedDevDataIfEmpty('en');
   });
 

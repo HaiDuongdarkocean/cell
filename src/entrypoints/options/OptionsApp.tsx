@@ -9,8 +9,7 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { useFocusTrap } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
-import { seedDevDataIfEmpty, setDevSeedEnabled } from '@/features/dictionary/logic/devSeed';
-import { isDevMode } from '@/shared/lib/env/devMode';
+import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
 import type { TtsSettings, DictionaryPopupSettings } from '@/entities/settings/types';
 import { SidebarItem } from './SidebarItem';
 import type { Tab, SidebarItem as SidebarItemType } from './types';
@@ -32,10 +31,9 @@ export function OptionsApp(): ReactElement {
 
   useFocusTrap(mobileShellRef, drawerOpen);
 
-  // Dev-only auto-seed: if DB is empty, import test dictionary + frequency
-  // data in parallel. Fire-and-forget — never blocks render. No-op in prod.
+  // Auto-seed: if DB is empty, import default dictionary + frequency
+  // data in parallel. Fire-and-forget — never blocks render.
   useEffect(() => {
-    setDevSeedEnabled(isDevMode);
     void seedDevDataIfEmpty('en');
   }, []);
 

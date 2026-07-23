@@ -1,8 +1,8 @@
-// devSeed test — verifies dev-only auto-seed logic: no-op in prod, parallel
-// import when DB empty, skip when DB has data, error-tolerant.
+// autoSeed test — verifies auto-seed logic: parallel import when DB empty,
+// skip when DB has data, error-tolerant, concurrent lock.
 
 import 'fake-indexeddb/auto';
-import { seedDevDataIfEmpty, setDevSeedEnabled } from './devSeed';
+import { seedDevDataIfEmpty } from './devSeed';
 import { importFile } from './importOrchestrator';
 import { countResources } from '../repositories/resourceRepository';
 import { closeAllDBs, clearAllStores } from '../repositories/baseRepository';
@@ -40,20 +40,11 @@ beforeEach(async () => {
 });
 
 afterAll(() => {
-  setDevSeedEnabled(false);
   delete (globalThis as { fetch?: unknown }).fetch;
 });
 
 describe('seedDevDataIfEmpty', () => {
-  it('no-ops when dev mode is disabled (production)', async () => {
-    setDevSeedEnabled(false);
-    await seedDevDataIfEmpty('en');
-    expect(countResourcesMock).not.toHaveBeenCalled();
-    expect(importFileMock).not.toHaveBeenCalled();
-  });
-
-  it('imports seed files in parallel when DB is empty (dev mode)', async () => {
-    setDevSeedEnabled(true);
+  it('imports seed files in parallel when DB is empty', async () => {
     await seedDevDataIfEmpty('en');
     expect(countResourcesMock).toHaveBeenCalledWith('en');
     // 2 seed files: dictionary + frequency — both imported
@@ -65,27 +56,23 @@ describe('seedDevDataIfEmpty', () => {
   });
 
   it('skips import when DB already has resources', async () => {
-    setDevSeedEnabled(true);
     countResourcesMock.mockResolvedValue(3);
     await seedDevDataIfEmpty('en');
     expect(importFileMock).not.toHaveBeenCalled();
   });
 
   it('catches fetch errors without throwing (fire-and-forget)', async () => {
-    setDevSeedEnabled(true);
     (globalThis.fetch as unknown as jest.Mock).mockRejectedValueOnce(new Error('network fail'));
     // Should not throw — errors are caught + logged
     await expect(seedDevDataIfEmpty('en')).resolves.not.toThrow();
   });
 
   it('catches import errors without throwing', async () => {
-    setDevSeedEnabled(true);
     importFileMock.mockRejectedValue(new Error('import fail'));
     await expect(seedDevDataIfEmpty('en')).resolves.not.toThrow();
   });
 
   it('prevents concurrent seed runs (in-memory lock)', async () => {
-    setDevSeedEnabled(true);
     // First call hangs on countResources
     let resolveCount: (v: number) => void = () => {};
     countResourcesMock.mockReturnValueOnce(new Promise<number>((r) => { resolveCount = r; }));
