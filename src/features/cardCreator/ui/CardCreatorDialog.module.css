@@ -14,6 +14,25 @@
   background: var(--color-background);
 }
 
+/* === With queue sidebar (I+N review flow) === */
+.cc-dialog__with-queue {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  max-height: calc(100dvh - var(--space-8, 32px));
+}
+
+.cc-dialog__with-queue > .cc-dialog__body {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+/* Mobile: queue becomes horizontal pills at top, not a right sidebar */
+.cc-dialog--mobile .cc-dialog__with-queue {
+  flex-direction: column;
+}
+
 .cc-dialog--mobile .cc-dialog__body {
   padding-top: 0;
 }

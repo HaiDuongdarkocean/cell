@@ -72,6 +72,15 @@
   right: 0;
 }
 
+.headerRightGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
 .headerText {
   min-width: 0;
 }

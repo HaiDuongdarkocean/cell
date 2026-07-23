@@ -15,7 +15,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { createElement, type ReactElement } from 'react';
 import { CardCreatorDialog } from './CardCreatorDialog';
 import { CardCreatorBottomSheet } from './CardCreatorBottomSheet';
-import { syncElementTheme, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
+import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import type { CardCreatorSettings } from '@/entities/settings';
 import type { BilingualCue } from '@/entities/media';
 import type { MediaFile } from '../media/mediaFile';
@@ -41,6 +41,17 @@ export interface CardCreatorPrefill {
   readonly imageUrls?: readonly string[];
 }
 
+/** A single item in the Send to Card queue (I+N review flow).
+ *  Each item represents one unknown/tracking word from the current subtitle
+ *  line, with its dictionary definitions pre-looked-up. Media (screenshot +
+ *  sentence audio) is shared across all items — captured once before the
+ *  dialog opens. */
+export interface CardCreatorQueueItem {
+  readonly term: string;
+  readonly definitions: string;
+  readonly status: 'unknown' | 'tracking';
+}
+
 /** Context for opening the dialog (video + cue + languages).
  *  video + cue are optional — when absent (popup dictionary text-reading case),
  *  media capture (screenshot/audio) is skipped and prefill provides text fields. */
@@ -58,6 +69,10 @@ export interface CardCreatorOpenContext {
   /** Popup dictionary pre-fill (term + definitions + translation).
    *  When present, overrides the empty defaults for these draft fields. */
   readonly prefill?: CardCreatorPrefill;
+  /** Send to Card queue (I+N review flow). When present with ≥2 items, the
+   *  dialog opens with a right sidebar listing all items. N=1 → no sidebar.
+   *  Each item is pre-looked-up in the dictionary. Media is shared. */
+  readonly queue?: readonly CardCreatorQueueItem[];
 }
 
 /** Controller returned by mountCardCreatorDialog. */
@@ -145,6 +160,22 @@ export function mountCardCreatorDialog(
   document.addEventListener('fullscreenchange', onFullscreenChange);
   // Also listen webkit-prefixed events for Safari/older browsers.
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+  // ADR-022: ensure the global theme-tokens <style> exists in document.head.
+  // On subtitle pages, contentScriptController already called injectThemeTokens
+  // (which injects this style). On plain text-reading pages (e.g. a dictionary
+  // lookup on an article with no video), it was never called → the
+  // [data-theme="dark"] { --color-* } rules are absent → the dialog's
+  // var(--color-background) etc. don't resolve → transparent background.
+  // Inject with a detached throwaway container: we only need the global <style>
+  // (with the user's custom palette + realtime storage updates); the host's
+  // data-theme is synced separately below. The throwaway never enters the DOM,
+  // so the host page is unaffected.
+  let tokenStyleCleanup: (() => void) | null = null;
+  if (!document.getElementById(THEME_STYLE_ID)) {
+    const throwaway = document.createElement('div');
+    tokenStyleCleanup = injectThemeTokens(throwaway);
+  }
 
   // ADR-022: sync data-theme from the video container so CSS variables
   // (--color-background, --color-text, etc.) resolve correctly for light/dark.
@@ -238,6 +269,7 @@ export function mountCardCreatorDialog(
       document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
       restoreThemeStyleToHead();
       themeCleanup?.();
+      tokenStyleCleanup?.();
       host.remove();
     },
   };

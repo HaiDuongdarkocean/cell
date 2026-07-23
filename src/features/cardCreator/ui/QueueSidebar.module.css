@@ -1,0 +1,195 @@
+/* === QueueSidebar — right sidebar for I+N review flow ===
+   BEM block: .cc-queue
+   Uses design-system tokens per src/shared/styles/tokens.json.
+*/
+
+.cc-queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--color-card);
+  border-left: 1px solid var(--color-border-subtle);
+  min-width: 160px;
+  max-width: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
+}
+
+.cc-queue__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-1) var(--space-2);
+}
+
+.cc-queue__title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.cc-queue__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.cc-queue__item {
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-md);
+  background: transparent;
+  transition: background var(--duration-fast, 100ms) var(--ease-out, ease-out);
+}
+
+.cc-queue__item:hover {
+  background: var(--color-background-hover, var(--color-surface-hover, transparent));
+}
+
+.cc-queue__item--active {
+  background: var(--color-primary-subtle, var(--color-accent-subtle, transparent));
+}
+
+.cc-queue__item-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.cc-queue__item-term {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cc-queue__item-badge {
+  flex-shrink: 0;
+  font-size: var(--font-size-xs);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-medium);
+}
+
+.cc-queue__item-badge--unknown {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+}
+
+.cc-queue__item-badge--tracking {
+  background: var(--color-info-subtle, var(--color-primary-subtle, transparent));
+  color: var(--color-info, var(--color-primary));
+}
+
+.cc-queue__item-delete {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: opacity var(--duration-fast, 100ms) var(--ease-out, ease-out);
+}
+
+.cc-queue__item:hover .cc-queue__item-delete {
+  opacity: 1;
+}
+
+.cc-queue__item-delete:hover {
+  color: var(--color-error);
+  background: var(--color-error-subtle);
+}
+
+.cc-queue__item-delete-icon {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+
+.cc-queue__undo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-warning-subtle);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  color: var(--color-warning);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  align-self: stretch;
+  justify-content: center;
+  animation: cc-queue-undo-in var(--duration-fast, 100ms) var(--ease-out, ease-out);
+}
+
+.cc-queue__undo:hover {
+  background: var(--color-warning);
+  color: var(--color-background);
+}
+
+.cc-queue__undo-icon {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+
+@keyframes cc-queue-undo-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* === Mobile: pills row (horizontal scroll) === */
+.cc-queue--mobile {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-left: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  min-width: 0;
+  max-width: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.cc-queue--mobile .cc-queue__header {
+  flex-shrink: 0;
+  padding: 0 var(--space-1);
+}
+
+.cc-queue--mobile .cc-queue__list {
+  flex-direction: row;
+  gap: var(--space-1);
+  overflow-x: auto;
+}
+
+.cc-queue--mobile .cc-queue__item {
+  flex-shrink: 0;
+}
+
+.cc-queue--mobile .cc-queue__item-delete {
+  opacity: 1;
+  width: var(--space-4);
+  height: var(--space-4);
+}

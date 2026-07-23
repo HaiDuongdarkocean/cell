@@ -36,7 +36,7 @@ import { loadTokenizeSettings, isTokenizeEnabledForUrl } from '@/features/tokeni
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
 import type { TokenizeSettings } from '@/features/tokenize/types';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
-import { buildCardCreatorContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
+import { buildCardCreatorContext, type CardCreatorQueueItem } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
@@ -187,6 +187,41 @@ function tokenizeSubtitleWords(text: string): string[] {
     }
   }
   return result;
+}
+
+/** Build a Card Creator queue from the current subtitle line: tokenize →
+ *  filter unknown/tracking → lookup each in dictionary → return queue items.
+ *  Used by edit-card action for the I+N review flow. */
+async function buildSubtitleQueue(targetText: string, sourceLang: string): Promise<CardCreatorQueueItem[]> {
+  const words = tokenizeSubtitleWords(targetText);
+  if (words.length === 0) return [];
+  const statusMap = await getWordStatuses(sourceLang, words);
+  const learnWords = words.filter((w) => {
+    const s = statusMap.get(w);
+    return s === 'unknown' || s === 'tracking';
+  });
+  if (learnWords.length === 0) return [];
+  // Look up each word in the dictionary (parallel for speed).
+  const results = await Promise.all(learnWords.map(async (term) => {
+    try {
+      const response = await sendMessage({
+        type: MESSAGE_TYPES.LOOKUP_REQUEST,
+        payload: {
+          requestId: `queue-${Date.now()}-${term}`,
+          request: { term, langCode: sourceLang, contextSentence: targetText, cursorOffset: 0 },
+        },
+      }) as { success: boolean; data?: LookupResult[] };
+      const definitions = response.success && response.data && response.data.length > 0
+        ? response.data.flatMap((r) => r.definitions).map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text)).join('\n')
+        : '';
+      const status = statusMap.get(term) ?? 'unknown';
+      return { term, definitions, status: status === 'tracking' ? 'tracking' : 'unknown' } as CardCreatorQueueItem;
+    } catch {
+      const status = statusMap.get(term) ?? 'unknown';
+      return { term, definitions: '', status: status === 'tracking' ? 'tracking' : 'unknown' } as CardCreatorQueueItem;
+    }
+  }));
+  return results;
 }
 
 /** Load target/native language codes from settings.
@@ -380,7 +415,13 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       // Audio failure is non-fatal — screenshot + text fields still work.
     }
 
-    sharedWebTextCtrl.openCardCreator({ ...ctx, initialMedia }, action);
+    // Build queue: find unknown/tracking words in the current subtitle line,
+    // look up each in the dictionary. N ≥ 2 → sidebar opens. N = 1 → no queue.
+    const targetText = ctx.cue?.targetText ?? '';
+    const queue = await buildSubtitleQueue(targetText, sourceLang);
+    const queueArg = queue.length >= 2 ? queue : undefined;
+
+    sharedWebTextCtrl.openCardCreator({ ...ctx, initialMedia, queue: queueArg }, action);
   }
 
   /** Batch quick-add: find all unknown/tracking words in the current subtitle
