@@ -52,10 +52,12 @@ export interface CueRange {
   readonly text?: string;
 }
 
-/** Delay before actually hiding the popup when a trigger fires onClear
- *  (hover over space, mouse leaves text). If a new lookup arrives within
- *  this window, the dismiss is canceled and the popup repositions seamlessly.
- *  Applies to all trigger modes — hover, click, subtitle, orbital. */
+/** Delay before actually hiding the popup when {@link dismissLookup} is called
+ *  explicitly. If a new lookup arrives within this window, the dismiss is
+ *  canceled and the popup repositions seamlessly.
+ *  NOTE: auto-dismiss on hover-leave (onClear) was removed — the popup now
+ *  only closes on explicit user action (click outside / Esc / close button).
+ *  dismissLookup remains as a public API for explicit/programmatic dismiss. */
 const POPUP_DISMISS_DELAY_MS = 500;
 
 export interface WebTextDictionaryControllerDeps {
@@ -317,6 +319,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let orbitalBadgeScale: number | null = null;
   let cardCreatorMount: CardCreatorMountController | null = null;
   let currentHighlightTarget: HighlightTarget | null = null;
+  /** Original highlight target from the trigger (single word). Stored so we
+   *  can restore it when switching from a phrase candidate back to a single
+   *  word candidate. */
+  let originalHighlightTarget: HighlightTarget | null = null;
   let currentPopupTokenId: { term: string; start: string; blockId: string } | null = null;
   let currentRequestId: string | null = null;
   let popupDismissTimer: ReturnType<typeof setTimeout> | null = null;
@@ -328,6 +334,109 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   function clearHighlight(): void {
     wordHighlight.clear();
     sentenceHighlight.clear();
+  }
+
+  /** Expand or restore the word highlight to match the given term.
+   *  - Single word (no spaces): restore the original highlight target (the
+   *    single word the user hovered/clicked).
+   *  - Phrase (contains spaces): create a new Range covering the full phrase
+   *    in the DOM. For web text, search the text node for the phrase starting
+   *    from the original word's position. For subtitle tokens, find adjacent
+   *    .js-cell-token spans that together form the phrase.
+   *  Called after renderLookupResult (winner) and on candidate switch. */
+  function expandHighlightForTerm(term: string): void {
+    if (!originalHighlightTarget) return;
+    const isPhrase = term.includes(' ');
+    if (!isPhrase) {
+      // Single word — restore original highlight.
+      currentHighlightTarget = originalHighlightTarget;
+      wordHighlight.show(originalHighlightTarget);
+      return;
+    }
+    // Phrase — try to create a Range covering the full phrase.
+    const phraseRange = createPhraseRange(originalHighlightTarget, term);
+    if (phraseRange) {
+      currentHighlightTarget = phraseRange;
+      wordHighlight.show(phraseRange);
+    } else {
+      // Fallback: keep original single-word highlight.
+      currentHighlightTarget = originalHighlightTarget;
+      wordHighlight.show(originalHighlightTarget);
+    }
+  }
+
+  /** Create a DOM Range covering the given phrase term, starting from the
+   *  original highlight target (single word). Returns null if the phrase
+   *  cannot be found in the DOM near the original word. */
+  function createPhraseRange(original: HighlightTarget, phrase: string): Range | null {
+    if (original instanceof Range) {
+      return createPhraseRangeFromTextRange(original, phrase);
+    }
+    if (original instanceof HTMLElement) {
+      return createPhraseRangeFromToken(original, phrase);
+    }
+    return null;
+  }
+
+  /** Web text path: the original Range covers a single word in a Text node.
+   *  Search for the phrase starting from the word's position. */
+  function createPhraseRangeFromTextRange(original: Range, phrase: string): Range | null {
+    const textNode = original.startContainer;
+    if (!(textNode instanceof Text)) return null;
+    const nodeText = textNode.textContent ?? '';
+    const wordStart = original.startOffset;
+    const lowerPhrase = phrase.toLowerCase();
+    const lowerNodeText = nodeText.toLowerCase();
+    // Try: phrase starts at the same position as the hovered word.
+    if (lowerNodeText.startsWith(lowerPhrase, wordStart)) {
+      const range = document.createRange();
+      try {
+        range.setStart(textNode, wordStart);
+        range.setEnd(textNode, wordStart + phrase.length);
+        return range;
+      } catch { return null; }
+    }
+    // Try: phrase starts before the hovered word (user hovered the 2nd word
+    // of the phrase, e.g. hovered "up" → result "pick up").
+    const maxBack = Math.min(wordStart, phrase.length * 2);
+    for (let back = 1; back <= maxBack; back++) {
+      const start = wordStart - back;
+      if (lowerNodeText.startsWith(lowerPhrase, start)) {
+        const range = document.createRange();
+        try {
+          range.setStart(textNode, start);
+          range.setEnd(textNode, start + phrase.length);
+          return range;
+        } catch { return null; }
+      }
+    }
+    return null;
+  }
+
+  /** Subtitle token path: the original target is a .js-cell-token span (one
+   *  word). Find adjacent .js-cell-token spans that together form the phrase. */
+  function createPhraseRangeFromToken(token: HTMLElement, phrase: string): Range | null {
+    const line = token.closest('.subtitle-line');
+    if (!line) return null;
+    const tokens = Array.from(line.querySelectorAll('.js-cell-token--word'));
+    const tokenIdx = tokens.indexOf(token as HTMLElement);
+    if (tokenIdx === -1) return null;
+    const phraseWords = phrase.toLowerCase().split(/\s+/);
+    // Try: phrase starts at the hovered token.
+    for (let startIdx = Math.max(0, tokenIdx - phraseWords.length + 1); startIdx <= tokenIdx; startIdx++) {
+      const endIdx = startIdx + phraseWords.length;
+      if (endIdx > tokens.length) continue;
+      const candidateWords = tokens.slice(startIdx, endIdx).map((t) => (t.getAttribute('data-cell-term') ?? '').toLowerCase());
+      if (candidateWords.join(' ') === phraseWords.join(' ')) {
+        const range = document.createRange();
+        try {
+          range.setStartBefore(tokens[startIdx]!);
+          range.setEndAfter(tokens[endIdx - 1]!);
+          return range;
+        } catch { return null; }
+      }
+    }
+    return null;
   }
 
   /** Schedule a delayed popup dismiss. Cancel in-flight immediately but
@@ -346,6 +455,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       wordHighlight.clear();
       sentenceHighlight.clear();
       currentHighlightTarget = null;
+      originalHighlightTarget = null;
       currentPopupTokenId = null;
     }, POPUP_DISMISS_DELAY_MS);
   }
@@ -355,26 +465,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     if (popupDismissTimer) {
       clearTimeout(popupDismissTimer);
       popupDismissTimer = null;
-    }
-  }
-
-  /** While the orbital pointer is moving, hide the popup if it would cover
-   *  the pointer tip or the badge so the target text stays readable. */
-  function hidePopupIfObscured(tip: { x: number; y: number }, badgeCenter: { x: number; y: number }, badgeRadius: number, pointerRadius: number): void {
-    if (!popupDictState.shell?.isVisible()) return;
-    const rect = popupDictState.shell.getPopupRect();
-    if (!rect) return;
-    const margin = pointerRadius + 4;
-    const pointerOverlap = tip.x >= rect.left - margin && tip.x <= rect.right + margin && tip.y >= rect.top - margin && tip.y <= rect.bottom + margin;
-    if (pointerOverlap) {
-      popupDictState = hidePopup(popupDictState);
-      return;
-    }
-    const badgeMargin = badgeRadius + 4;
-    const closestX = Math.max(rect.left, Math.min(badgeCenter.x, rect.right));
-    const closestY = Math.max(rect.top, Math.min(badgeCenter.y, rect.bottom));
-    if (Math.hypot(closestX - badgeCenter.x, closestY - badgeCenter.y) <= badgeMargin) {
-      popupDictState = hidePopup(popupDictState);
     }
   }
 
@@ -490,6 +580,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     popupDictWasPlaying = false;
     clearPopupTokenId();
     currentHighlightTarget = null;
+    originalHighlightTarget = null;
     wordHighlight.clear();
     sentenceHighlight.clear();
     resumeVideoIfNeeded();
@@ -543,11 +634,18 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
             lookupCache.set(key, [{ ...cached[0], status }, ...cached.slice(1)]);
           }
         },
+        onCandidateChange: (term: string) => {
+          expandHighlightForTerm(term);
+        },
       },
     );
     for (const candidate of additional) {
       popupDictState = appendCandidate(popupDictState, candidate, request.contextSentence);
     }
+    // Expand highlight if the winner is a phrase (e.g. "pick up"). The
+    // original highlight covers only the single word the user hovered;
+    // this extends it to cover the full matched phrase.
+    expandHighlightForTerm(result.term);
     prefetchAdjacentTerms(request);
   }
 
@@ -570,6 +668,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     cancelPendingDismiss();
     currentRequestId = requestId;
     currentHighlightTarget = highlightTarget;
+    originalHighlightTarget = highlightTarget;
     wordHighlight.show(highlightTarget);
 
     // Show the sentence containing the looked-up word. For web text the
@@ -851,7 +950,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         void handleLookup(request, requestId, anchorRect, range, pointer);
       },
       onCancel: (requestId) => { cancelLookup(requestId); },
-      onClear: () => { dismissLookup(); },
+      // Auto-dismiss on hover-leave removed: popup only closes on explicit
+      // user action (click outside / Esc / close button).
     });
     webTrigger.attach();
   }
@@ -907,7 +1007,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
             void handleLookup(request, requestId, anchorRect, range, pointer);
           },
           onCancel: (requestId) => { cancelLookup(requestId); },
-          onClear: () => { dismissLookup(); },
+          // Auto-dismiss on hover-leave removed: popup only closes on explicit
+          // user action (click outside / Esc / close button).
         });
       }
       const sameDimensions = orbitalBadgeSize === trigger.size && orbitalBadgeScale === trigger.pointerScale;
@@ -922,7 +1023,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           onPresetChange: (preset) => { persistBadgePointerPreset(preset); },
           onTipReady: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
           onTipHover: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
-          onTipMoving: (tip, _preset, badgeCenter) => { hidePopupIfObscured(tip, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
+          // Auto-hide when the orbital pointer covers the popup removed: popup
+          // only closes on explicit user action (click outside / Esc / close).
         });
         orbitalBadgeSize = trigger.size;
         orbitalBadgeScale = trigger.pointerScale;

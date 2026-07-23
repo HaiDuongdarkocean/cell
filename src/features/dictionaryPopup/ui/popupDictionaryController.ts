@@ -25,7 +25,6 @@ import {
   renderPopupContent,
   renderActiveEntry,
   renderCandidateChips,
-  renderCandidateList,
   getOrCreateCandidatesContainer,
   initDefinitionSelection,
   getSelectedDefinitions,
@@ -62,6 +61,10 @@ export interface ShowPopupOptions {
   readonly onDismiss?: (newState: PopupDictionaryState) => void;
   /** Called when the user cycles the word status inside the popup. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
+  /** Called when the active candidate changes (winner or appended candidate).
+   *  The controller uses this to expand/shrink the word highlight to match
+   *  the active candidate's term (phrase vs single word). */
+  readonly onCandidateChange?: (term: string) => void;
 }
 
 /** Pre-fill data extracted from the popup dictionary for the Card Creator.
@@ -269,7 +272,7 @@ export function showPopup(
   result: LookupResult,
   options: ShowPopupOptions,
 ): PopupDictionaryState {
-  const { anchor, pointer, contextSentence, onDismiss, onStatusChange } = options;
+  const { anchor, pointer, contextSentence, onDismiss, onStatusChange, onCandidateChange } = options;
   // Create shell if needed.
   let shell = state.shell;
   if (!shell) {
@@ -373,7 +376,11 @@ export function showPopup(
         if (!active) return;
         void playSentenceAudio(state.contextSentence, active.langCode, getActiveSnapshot(state).audioItems);
       },
-      onCandidateSelect: (idx) => { state = setActiveCandidate(state, idx); },
+      onCandidateSelect: (idx) => {
+        state = setActiveCandidate(state, idx);
+        const active = getActiveResult(state);
+        if (active) onCandidateChange?.(active.term);
+      },
     });
 
     // Render toolbar (1 per popup, context = active candidate).
@@ -598,8 +605,8 @@ export function cycleStatus(state: PopupDictionaryState): PopupDictionaryState {
   const active = getActiveResult(state);
   if (!active) return state;
   const newStatus = nextStatus(getActiveSnapshot(state).status);
-  // Persist status for the hovered word, not a matched phrase.
-  const statusTerm = active.hoverTerm ?? active.term;
+  // Persist status for the active candidate term.
+  const statusTerm = active.term;
   void persistStatus(statusTerm, active.langCode, newStatus);
   setActiveSnapshot(state, { status: newStatus });
   state.onStatusChange?.(statusTerm, active.langCode, newStatus);
@@ -798,24 +805,15 @@ function renderCandidateChipsAndList(state: PopupDictionaryState, container: HTM
     candidates.push({ idx: i + 1, result: r, status: cs?.status ?? r.status });
   }
 
-  // Candidate chips + list render when there are 2+ candidates so the user can
-  // switch between phrase, surface, and origin forms.
+  // Candidate pills render when there are 2+ candidates so the user can
+  // scroll horizontally and switch between phrase, surface, and origin forms.
   if (candidates.length <= 1) return;
-
-  const onSelect = (idx: number) => { state = setActiveCandidate(state, idx); };
 
   renderCandidateChips(
     candidatesEl,
     candidates,
     state.activeCandidateIndex,
-    onSelect,
-  );
-
-  renderCandidateList(
-    candidatesEl,
-    candidates,
-    state.activeCandidateIndex,
-    onSelect,
+    (idx) => { state = setActiveCandidate(state, idx); },
   );
 }
 
