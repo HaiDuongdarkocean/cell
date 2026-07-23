@@ -1,7 +1,4 @@
-// SidebarItem — atom cho OptionsApp sidebar nav (UI-UX-Contract section 6, 11).
-// Active: 2px primary left border + text color.
-// Inactive: text-secondary color, no border.
-// Icon: ICON_CATALOG key (renders SVG via <Icon>) or fallback string glyph.
+// SidebarItem — options page sidebar nav item (BEM + design-system tokens).
 
 import { type ReactElement } from 'react';
 import { Icon } from '@/shared/icons/Icon';
@@ -17,23 +14,29 @@ interface SidebarItemProps {
   readonly onClick: (tab: Tab) => void;
 }
 
+function isIconName(name: string): name is keyof typeof ICON_CATALOG {
+  return name in ICON_CATALOG;
+}
+
 export function SidebarItem({ id, label, icon, active, onClick }: SidebarItemProps): ReactElement {
-  const isCatalogIcon = icon in ICON_CATALOG;
+  const rootClass = [styles['sidebar-item'], active ? styles['sidebar-item--active'] : ''].filter(Boolean).join(' ');
+
   return (
     <button
       type="button"
-      className={`${styles.item} ${active ? styles.itemActive : ''}`}
+      className={rootClass}
       onClick={() => onClick(id)}
       aria-selected={active}
       role="tab"
       id={`nav-${id}`}
       aria-controls={`panel-${id}`}
+      tabIndex={active ? 0 : -1}
       data-testid={`sidebar-item-${id}`}
     >
-      <span className={styles.icon} aria-hidden="true">
-        {isCatalogIcon ? <Icon name={icon as keyof typeof ICON_CATALOG} size={20} /> : icon}
+      <span className={styles['sidebar-item__icon']} aria-hidden="true">
+        {isIconName(icon) ? <Icon name={icon} size={20} /> : icon}
       </span>
-      <span className={styles.label}>{label}</span>
+      <span className={styles['sidebar-item__label']}>{label}</span>
     </button>
   );
 }
