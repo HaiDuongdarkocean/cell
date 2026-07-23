@@ -79,9 +79,7 @@
   }
 }
 
-/* Ensure buttons with hidden labels still size correctly. */
-.cell-header__quick-add svg,
-.cell-header__send svg,
+/* Toolbar tab icons — header buttons now use .icon-btn--sm (20px icon). */
 .cell-toolbar__tab svg {
   width: 18px;
   height: 18px;
