@@ -705,7 +705,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
             sharedWebTextCtrl?.handleLookup(request, requestId, anchorRect, tokenSpan);
           },
           (requestId) => { sharedWebTextCtrl?.cancelLookup(requestId); },
-          () => { sharedWebTextCtrl?.dismissLookup(); },
+          // Auto-dismiss on hover-leave removed: popup only closes on explicit
+          // user action (click outside / Esc / close button).
         );
       } else {
         blockController.disableDictionaryPopup();
@@ -826,7 +827,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
               sharedWebTextCtrl?.handleLookup(request, requestId, anchorRect, tokenSpan);
             },
             (requestId) => { sharedWebTextCtrl?.cancelLookup(requestId); },
-            () => { sharedWebTextCtrl?.dismissLookup(); },
+            // Auto-dismiss on hover-leave removed: popup only closes on explicit
+            // user action (click outside / Esc / close button).
           );
         } else {
           blockController.disableDictionaryPopup();
