@@ -186,7 +186,9 @@ describe('phraseIndexCompiler', () => {
       const buffer = serializePhraseIndex(index);
 
       expect(buffer.byteLength).toBeLessThanOrEqual(8 * 1024 * 1024);
-      expect(index.templates.length).toBe(inputs.length);
+      // compilePhraseIndex may generate separable phrasal-verb variants, so
+      // the compiled template count can be greater than the input count.
+      expect(index.templates.length).toBeGreaterThanOrEqual(inputs.length);
       expect(index.anchorCount).toBeGreaterThan(10000);
 
       const postingSizes = Array.from({ length: index.anchorCount }, (_, i) =>

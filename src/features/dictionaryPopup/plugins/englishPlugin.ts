@@ -21,7 +21,10 @@ import {
   type SentenceToken,
 } from '@/features/dictionary/logic/phraseMatcher';
 import type { PhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
-import { englishLemmaCandidates, englishLemma as sharedEnglishLemma } from '../logic/englishLemma';
+import {
+  englishLookupCandidates,
+  englishLemma as sharedEnglishLemma,
+} from '../logic/englishLemma';
 
 /** English accents for audio priority (spec §4.6.3). */
 export const ENGLISH_ACCENTS: readonly Accent[] = [
@@ -64,7 +67,7 @@ export function createEnglishPlugin(
       return sharedEnglishLemma(word);
     },
     lemmaCandidates(word: string): string[] {
-      return englishLemmaCandidates(word);
+      return englishLookupCandidates(word);
     },
     normalizePossessive(text: string): string {
       const lower = text.toLowerCase();
