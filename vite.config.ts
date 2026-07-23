@@ -1,54 +1,51 @@
 import { defineConfig, type Plugin } from 'vite';
 import { crx } from '@crxjs/vite-plugin';
 import { resolve } from 'node:path';
-import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { copyFileSync, mkdirSync, existsSync } from 'node:fs';
 import manifest from './public/manifest.json' with { type: 'json' };
 
 /**
- * Dev-only seed assets — copies test dictionary + frequency files from
- * `tests/data-test/resource/` into `dist/seed/` during `vite build --mode development`.
- * Production build does NOT copy (43MB Cambridge stays out of bundle).
+ * Auto-seed assets — copies the default dictionary + frequency files from
+ * `tests/data-test/resource/` into `dist/seed/` during every `vite build`.
+ * Only the 2 files referenced by SEED_FILES in devSeed.ts are copied (~42.7MB)
+ * so the extension works out-of-the-box without requiring user import.
  * Extension fetches via `chrome.runtime.getURL('seed/...')` — same origin, no CSP needed.
+ *
+ * SSOT: the file list below MUST match SEED_FILES in src/features/dictionary/logic/devSeed.ts.
  */
-function devSeedAssets(): Plugin {
+const SEED_ASSET_FILES: readonly string[] = [
+  'en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
+  'en/frequency_list/standard.json',
+] as const;
+
+function autoSeedAssets(): Plugin {
   const seedRoot = resolve(__dirname, 'tests', 'data-test', 'resource');
-  let buildMode = 'production';
   return {
-    name: 'dev-seed-assets',
+    name: 'auto-seed-assets',
     apply: 'build',
-    configResolved(config) {
-      buildMode = config.mode;
-    },
     closeBundle() {
-      if (buildMode === 'production') return;
       const destRoot = resolve(__dirname, 'dist', 'seed');
-      if (!existsSync(seedRoot)) return;
       try {
-        copyDirRecursive(seedRoot, destRoot);
-        console.log(`[dev-seed-assets] Copied seed data to ${destRoot} (mode=${buildMode})`);
+        for (const relPath of SEED_ASSET_FILES) {
+          const src = resolve(seedRoot, relPath);
+          const dest = resolve(destRoot, relPath);
+          if (!existsSync(src)) {
+            console.warn(`[auto-seed-assets] Seed file not found: ${src}`);
+            continue;
+          }
+          mkdirSync(resolve(dest, '..'), { recursive: true });
+          copyFileSync(src, dest);
+        }
+        console.log(`[auto-seed-assets] Copied ${SEED_ASSET_FILES.length} seed files to ${destRoot}`);
       } catch (err) {
-        console.warn(`[dev-seed-assets] Failed to copy seed data:`, err);
+        console.warn(`[auto-seed-assets] Failed to copy seed data:`, err);
       }
     },
   };
 }
 
-/** Recursively copy a directory. */
-function copyDirRecursive(src: string, dest: string): void {
-  if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
-  for (const entry of readdirSync(src)) {
-    const srcPath = resolve(src, entry);
-    const destPath = resolve(dest, entry);
-    if (statSync(srcPath).isDirectory()) {
-      copyDirRecursive(srcPath, destPath);
-    } else {
-      copyFileSync(srcPath, destPath);
-    }
-  }
-}
-
 export default defineConfig({
-  plugins: [crx({ manifest }), devSeedAssets()],
+  plugins: [crx({ manifest }), autoSeedAssets()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
