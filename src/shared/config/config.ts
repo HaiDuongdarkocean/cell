@@ -171,8 +171,8 @@ export const DEFAULT_SUBTITLE_BLOCK_SETTINGS: SubtitleBlockSettings = {
 /** Default Card Creator settings (Anki integration, schema v10). */
 export const DEFAULT_CARD_CREATOR_SETTINGS: CardCreatorSettings = {
   ankiConnectUrl: 'http://localhost:8765',
-  defaultDeck: 'Default',
-  defaultNoteType: 'Cell Video Card',
+  defaultDeck: 'English: Vocab',
+  defaultNoteType: '0.Ocean_Vocab_v4.0.0',
   defaultTags: '',
   mediaUpdateMode: 'overwrite',
   // schema v14: auto-complete toggles (spec §9.3.1, D7) — default all true.
