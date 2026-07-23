@@ -10,6 +10,7 @@
 
 
 import type { LookupRequest, LookupResult, TriggerMode, WordStatus } from '../types';
+import type { FetchCommunityAudioResponse, FetchImagesResponse, AudioItem, ImageItem } from '@/features/dictionaryPopup/types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAction, PopupLineRect } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import {
@@ -34,6 +35,8 @@ import { createOrbitalBadge, type OrbitalBadge, type PointerPreset } from '@/fea
 
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
+import type { MessageResponse } from '@/entities/message/types';
+
 import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
@@ -819,6 +822,71 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       }
     }
 
+    // Auto-fetch missing media (audio, images, translation) from the popup
+    // dictionary's data sources. The popup lazily fetches these when the user
+    // opens the Audio/Images/Translate tabs. If the user clicks "Send to Card"
+    // without opening those tabs, the media is not yet available — fetch it
+    // here so the Card Creator opens with all fields populated.
+    let wordAudioUrls = prefill.wordAudioUrls;
+    let imageUrls = prefill.imageUrls;
+    let sentenceTranslation = prefill.translation ?? (fromSubtitle ? getCurrentNativeSubtitleText() : undefined);
+
+    const needsAudio = !wordAudioUrls?.length;
+    const needsImages = !imageUrls?.length;
+    const needsTranslation = !sentenceTranslation && !!prefill.contextSentence;
+
+    if (needsAudio || needsImages || needsTranslation) {
+      showToast('Fetching media…', deps.container, { variant: 'info' });
+      const tasks: Promise<void>[] = [];
+
+      if (needsAudio) {
+        tasks.push((async () => {
+          try {
+            const res = await sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
+              type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
+              payload: { tabId: 0, term: prefill.term, langCode: prefill.langCode, kind: 'word' },
+            });
+            const items = res?.data?.items ?? [];
+            const wordItems = items.filter((a: AudioItem) => a.url && a.kind === 'word').slice(0, 1);
+            if (wordItems.length > 0) {
+              wordAudioUrls = wordItems.map((a: AudioItem) => a.url!);
+            }
+          } catch { /* non-fatal */ }
+        })());
+      }
+
+      if (needsImages) {
+        tasks.push((async () => {
+          try {
+            const res = await sendMessage<MessageResponse<FetchImagesResponse>>({
+              type: MESSAGE_TYPES.FETCH_IMAGES,
+              payload: { tabId: 0, term: prefill.term, langCode: prefill.langCode, maxResults: 8 },
+            });
+            const items = res?.data?.items ?? [];
+            if (items.length > 0) {
+              imageUrls = items.slice(0, 1).map((img: ImageItem) => img.src);
+            }
+          } catch { /* non-fatal */ }
+        })());
+      }
+
+      if (needsTranslation) {
+        tasks.push((async () => {
+          try {
+            const res = await sendMessage<MessageResponse<{ translated: string[] }>>({
+              type: MESSAGE_TYPES.TRANSLATE,
+              payload: { tabId: 0, text: prefill.contextSentence, sl: sourceLang, tl: targetLang },
+            });
+            if (res?.success && res.data?.translated?.length) {
+              sentenceTranslation = res.data.translated.join(' ');
+            }
+          } catch { /* non-fatal */ }
+        })());
+      }
+
+      await Promise.all(tasks);
+    }
+
     openCardCreator({
       video: video && video.videoWidth > 0 && fromSubtitle ? video : undefined,
       sourceLang,
@@ -827,11 +895,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       prefill: {
         targetWord: prefill.term,
         definitions: definitionsText,
-        sentenceTranslation: prefill.translation ?? (fromSubtitle ? getCurrentNativeSubtitleText() : undefined),
+        sentenceTranslation,
         sentence: prefill.contextSentence,
-        wordAudioUrls: prefill.wordAudioUrls,
+        wordAudioUrls,
         sentenceAudioUrls: prefill.sentenceAudioUrls,
-        imageUrls: prefill.imageUrls,
+        imageUrls,
       },
     }, action);
   }
