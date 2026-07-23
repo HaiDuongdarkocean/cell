@@ -21,6 +21,11 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: auto;
   user-select: none;
   cursor: grab;
+  /* touch-action:none prevents the browser from hijacking the touch gesture
+     for page scroll/zoom, which fires pointercancel and aborts/jitters the
+     drag on touch screens. Tap on cluster-btn + long-press text selection on
+     subtitle-line still work — touch-action only gates pan/zoom, not clicks. */
+  touch-action: none;
   transition: border-color var(--transition, 150ms ease);
 }
 
