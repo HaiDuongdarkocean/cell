@@ -1,0 +1,1 @@
+(function(){(()=>{if(window.self!==window.top)return;let e=/\.srt(\?|$)|\.vtt(\?|$)|\.ass(\?|$)|\/(subtitles|subs|caption|cc)\//i,t=window.fetch;window.fetch=function(n,r){try{let t=typeof n==`string`?n:n instanceof URL?n.href:n.url;e.test(t)&&window.postMessage({type:`__DETECTED_SUBTITLE_FETCH`,url:t},`*`)}catch{}return t.call(this,n,r)}})()})();
