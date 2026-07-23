@@ -53,7 +53,7 @@ export interface PopupContentCallbacks {
 }
 
 /** Render the popup header: 2-row layout (spec redesign v3).
- *  Row 1: word + reading-row(IPA + audio-group) + actions (QuickAdd + Close)
+ *  Row 1: word + reading-row(IPA + audio-group) + actions (QuickAdd + SendToCard + 3-dot menu + Close)
  *  Row 2: second header (badges + status, scroll main axis if overflow)
  */
 export function renderHeader(
@@ -62,8 +62,8 @@ export function renderHeader(
   currentStatus: WordStatus,
   onStatusCycle: () => void,
   onQuickAdd: () => void,
-  _onSendToCreator: () => void,
-  _onSettings: () => void,
+  onSendToCreator: () => void,
+  onSettings: () => void,
   onClose?: () => void,
   onPlayTerm?: () => void,
   onPlaySentence?: () => void,
@@ -79,7 +79,7 @@ export function renderHeader(
   const main = document.createElement('div');
   main.className = 'cell-header__main';
 
-  // word-row: word only, truncates with ellipsis
+  // word-row: word only, truncates with ellipsis.
   const wordRow = document.createElement('div');
   wordRow.className = 'cell-header__word-row';
 
@@ -145,7 +145,7 @@ export function renderHeader(
 
   row.appendChild(main);
 
-  // Actions: Quick Add + Close
+  // Actions: Quick Add (icon only) + Send to Card (icon only) + 3-dot menu + Close
   const actions = document.createElement('div');
   actions.className = 'cell-header__actions';
 
@@ -153,9 +153,58 @@ export function renderHeader(
   quickAdd.className = 'btn btn--primary cell-header__quick-add js-cell-quick-add';
   quickAdd.setAttribute('aria-label', 'Quick Add to Anki');
   quickAdd.title = 'Quick Add to Anki';
-  quickAdd.innerHTML = `${ICON_CATALOG.zap.svg}<span class="cell-header__quick-add-label cell-label">Quick Add</span>`;
+  quickAdd.innerHTML = ICON_CATALOG.zap.svg;
   quickAdd.addEventListener('click', onQuickAdd);
   actions.appendChild(quickAdd);
+
+  // Send to Card — icon only, after Quick Add.
+  const sendBtn = document.createElement('button');
+  sendBtn.className = 'btn btn--outline cell-header__send js-cell-send-to-creator';
+  sendBtn.setAttribute('aria-label', 'Send to Card Creator');
+  sendBtn.title = 'Send to Card Creator';
+  sendBtn.innerHTML = ICON_CATALOG.pencil.svg;
+  sendBtn.addEventListener('click', onSendToCreator);
+  actions.appendChild(sendBtn);
+
+  // 3-dot menu (kebab) — dropdown with Settings.
+  const menuWrapper = document.createElement('div');
+  menuWrapper.className = 'cell-header__menu-wrapper js-cell-menu-wrapper';
+
+  const menuBtn = document.createElement('button');
+  menuBtn.className = 'icon-btn icon-btn--sm cell-header__menu-btn js-cell-menu-btn';
+  menuBtn.setAttribute('aria-label', 'More options');
+  menuBtn.title = 'More options';
+  menuBtn.innerHTML = ICON_CATALOG.ellipsisVertical.svg;
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dropdown = menuWrapper.querySelector('.js-cell-menu-dropdown');
+    if (dropdown) {
+      dropdown.classList.toggle('cell-menu-dropdown--open');
+    }
+  });
+  menuWrapper.appendChild(menuBtn);
+
+  // Dropdown menu.
+  const dropdown = document.createElement('div');
+  dropdown.className = 'cell-menu-dropdown js-cell-menu-dropdown';
+  const settingsItem = document.createElement('button');
+  settingsItem.className = 'cell-menu-dropdown__item js-cell-settings';
+  settingsItem.setAttribute('aria-label', 'Popup dictionary settings');
+  settingsItem.innerHTML = `${ICON_CATALOG.settings.svg}<span>Settings</span>`;
+  settingsItem.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.remove('cell-menu-dropdown--open');
+    onSettings();
+  });
+  dropdown.appendChild(settingsItem);
+  menuWrapper.appendChild(dropdown);
+
+  // Close dropdown on outside click.
+  document.addEventListener('click', () => {
+    dropdown.classList.remove('cell-menu-dropdown--open');
+  }, { once: true });
+
+  actions.appendChild(menuWrapper);
 
   if (onClose) {
     const closeBtn = document.createElement('button');
@@ -325,37 +374,14 @@ export function renderActiveEntry(
   return entry;
 }
 
-/** Render the footer: Send to Creator + Settings (status moved to header row 2). */
+/** Render the footer — now empty (Send to Card + Settings moved to header).
+ *  Kept as a no-op for backward compatibility with callers that expect it. */
 export function renderFooter(
-  container: HTMLElement,
-  onSendToCreator: () => void,
-  onSettings: () => void,
+  _container: HTMLElement,
+  _onSendToCreator: () => void,
+  _onSettings: () => void,
 ): void {
-  const footer = document.createElement('div');
-  footer.className = 'cell-footer js-cell-footer';
-
-  // Actions: Send to Creator + Settings
-  const actions = document.createElement('div');
-  actions.className = 'cell-footer__actions';
-
-  const sendBtn = document.createElement('button');
-  sendBtn.className = 'btn btn--outline cell-footer__send js-cell-send-to-creator';
-  sendBtn.setAttribute('aria-label', 'Send to Card Creator');
-  sendBtn.title = 'Send to Card Creator';
-  sendBtn.innerHTML = `${ICON_CATALOG.pencil.svg}<span class="cell-footer__send-label cell-label">Send to Creator</span>`;
-  sendBtn.addEventListener('click', onSendToCreator);
-  actions.appendChild(sendBtn);
-
-  const settingsBtn = document.createElement('button');
-  settingsBtn.className = 'icon-btn icon-btn--sm js-cell-settings';
-  settingsBtn.setAttribute('aria-label', 'Popup dictionary settings');
-  settingsBtn.title = 'Settings';
-  settingsBtn.innerHTML = ICON_CATALOG.settings.svg;
-  settingsBtn.addEventListener('click', onSettings);
-  actions.appendChild(settingsBtn);
-
-  footer.appendChild(actions);
-  container.appendChild(footer);
+  // No-op: Send to Card and Settings are now in the header.
 }
 
 /** Candidate info for chips + list rendering. */
@@ -492,11 +518,14 @@ export function renderPopupContent(
   selection: DefinitionSelection,
   callbacks: PopupContentCallbacks,
 ): void {
+  // Fade the content out, swap it, then fade back in for a smooth data change.
+  container.style.opacity = '0';
   clearContainer(container);
   // Active entry (header + toolbar slot + definitions)
   renderActiveEntry(container, result, currentStatus, selection, callbacks);
-  // Candidates container — chips injected by controller
-  getOrCreateCandidatesContainer(container);
   // Footer — Send + Settings (status moved to header row 2)
   renderFooter(container, callbacks.onSendToCreator, callbacks.onSettings);
+  // Candidates container — scrollable pills injected by controller, below footer
+  getOrCreateCandidatesContainer(container);
+  requestAnimationFrame(() => { container.style.opacity = '1'; });
 }

@@ -246,27 +246,11 @@ describe('renderFooter', () => {
     container = document.createElement('div');
   });
 
-  it('renders Send to Creator, Settings (no status — moved to header)', () => {
+  it('is a no-op (Send to Card + Settings moved to header)', () => {
     renderFooter(container, jest.fn(), jest.fn());
-    expect(container.querySelector('.js-cell-status')).toBeNull();
-    expect(container.querySelector('.js-cell-send-to-creator')).not.toBeNull();
-    expect(container.querySelector('.js-cell-settings')).not.toBeNull();
-  });
-
-  it('Send to Card click triggers onSendToCreator', () => {
-    const onSend = jest.fn();
-    renderFooter(container, onSend, jest.fn());
-    const btn = container.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
-    btn.click();
-    expect(onSend).toHaveBeenCalledTimes(1);
-  });
-
-  it('Settings click triggers onSettings', () => {
-    const onSettings = jest.fn();
-    renderFooter(container, jest.fn(), onSettings);
-    const btn = container.querySelector('.js-cell-settings') as HTMLButtonElement;
-    btn.click();
-    expect(onSettings).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('.js-cell-footer')).toBeNull();
+    expect(container.querySelector('.js-cell-send-to-creator')).toBeNull();
+    expect(container.querySelector('.js-cell-settings')).toBeNull();
   });
 });
 
@@ -366,10 +350,11 @@ describe('renderPopupContent', () => {
     });
     expect(container.querySelector('.js-cell-active-entry')).not.toBeNull();
     expect(container.querySelector('.js-cell-candidates')).not.toBeNull();
-    expect(container.querySelector('.js-cell-footer')).not.toBeNull();
+    // Footer is now a no-op (Send to Card + Settings moved to header).
+    expect(container.querySelector('.js-cell-footer')).toBeNull();
   });
 
-  it('active entry is before candidates, candidates before footer', () => {
+  it('active entry is before candidates (footer removed)', () => {
     const result = makeResult();
     const selection = initDefinitionSelection(result);
     renderPopupContent(container, result, 'unknown', selection, {
@@ -384,9 +369,7 @@ describe('renderPopupContent', () => {
     const children = Array.from(container.children);
     const activeEntryIdx = children.findIndex((c) => c.classList.contains('js-cell-active-entry'));
     const candidatesIdx = children.findIndex((c) => c.classList.contains('js-cell-candidates'));
-    const footerIdx = children.findIndex((c) => c.classList.contains('js-cell-footer'));
     expect(activeEntryIdx).toBeLessThan(candidatesIdx);
-    expect(candidatesIdx).toBeLessThan(footerIdx);
   });
 });
 

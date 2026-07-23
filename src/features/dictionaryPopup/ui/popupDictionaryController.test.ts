@@ -223,7 +223,8 @@ describe('showPopup', () => {
     const container = newState.shell?.getContainer();
     expect(container!.querySelector('.js-cell-active-entry')).not.toBeNull();
     expect(container!.querySelector('.js-cell-candidates')).not.toBeNull();
-    expect(container!.querySelector('.js-cell-footer')).not.toBeNull();
+    // Footer is now a no-op (Send to Card + Settings moved to header).
+    expect(container!.querySelector('.js-cell-footer')).toBeNull();
   });
 
   it('auto-translates sentence when translate tab is opened', async () => {
