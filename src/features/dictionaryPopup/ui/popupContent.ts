@@ -150,7 +150,7 @@ export function renderHeader(
   actions.className = 'cell-header__actions';
 
   const quickAdd = document.createElement('button');
-  quickAdd.className = 'btn btn--primary cell-header__quick-add js-cell-quick-add';
+  quickAdd.className = 'icon-btn icon-btn--sm icon-btn--filled cell-header__quick-add js-cell-quick-add';
   quickAdd.setAttribute('aria-label', 'Quick Add to Anki');
   quickAdd.title = 'Quick Add to Anki';
   quickAdd.innerHTML = ICON_CATALOG.zap.svg;
@@ -159,7 +159,7 @@ export function renderHeader(
 
   // Send to Card — icon only, after Quick Add.
   const sendBtn = document.createElement('button');
-  sendBtn.className = 'btn btn--outline cell-header__send js-cell-send-to-creator';
+  sendBtn.className = 'icon-btn icon-btn--sm icon-btn--outlined cell-header__send js-cell-send-to-creator';
   sendBtn.setAttribute('aria-label', 'Send to Card Creator');
   sendBtn.title = 'Send to Card Creator';
   sendBtn.innerHTML = ICON_CATALOG.pencil.svg;
