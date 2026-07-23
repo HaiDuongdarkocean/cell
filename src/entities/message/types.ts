@@ -79,7 +79,8 @@ export type MessageType =
   | 'QUICK_ADD'
   | 'LOOKUP_REQUEST'
   | 'LOOKUP_RESULT'
-  | 'LOOKUP_CANCEL';
+  | 'LOOKUP_CANCEL'
+  | 'CAPTURE_TAB_SCREENSHOT';
 
 // === Message Request ===
 
