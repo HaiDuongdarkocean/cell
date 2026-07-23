@@ -48,6 +48,7 @@ import trashSvg from './svg/trash.svg?raw';
 import copySvg from './svg/copy.svg?raw';
 import clockSvg from './svg/clock.svg?raw';
 import menuSvg from './svg/menu.svg?raw';
+import ellipsisVerticalSvg from './svg/ellipsis-vertical.svg?raw';
 import videoSvg from './svg/video.svg?raw';
 import flagSvg from './svg/flag.svg?raw';
 import rotateCcwSvg from './svg/rotate-ccw.svg?raw';
@@ -106,6 +107,7 @@ export { default as trashIcon } from './svg/trash.svg?raw';
 export { default as copyIcon } from './svg/copy.svg?raw';
 export { default as clockIcon } from './svg/clock.svg?raw';
 export { default as menuIcon } from './svg/menu.svg?raw';
+export { default as ellipsisVerticalIcon } from './svg/ellipsis-vertical.svg?raw';
 export { default as videoIcon } from './svg/video.svg?raw';
 export { default as flagIcon } from './svg/flag.svg?raw';
 export { default as rotateCcwIcon } from './svg/rotate-ccw.svg?raw';
@@ -188,6 +190,7 @@ export const ICON_CATALOG = {
   copy:        { svg: copySvg,        source: 'lucide/copy',        tags: ['copy','clipboard','duplicate'] } as IconEntry,
   clock:       { svg: clockSvg,       source: 'lucide/clock',       tags: ['clock','time','duration','queued','timer'] } as IconEntry,
   menu:        { svg: menuSvg,        source: 'lucide/menu',        tags: ['menu','hamburger','sidebar','toggle'] } as IconEntry,
+  ellipsisVertical: { svg: ellipsisVerticalSvg, source: 'lucide/ellipsis-vertical', tags: ['ellipsis','vertical','kebab','more','dots','three-dots','menu'] } as IconEntry,
   video:       { svg: videoSvg,       source: 'lucide/video',       tags: ['video','media','player','film'] } as IconEntry,
   flag:        { svg: flagSvg,        source: 'lucide/flag',        tags: ['flag','subtitle','caption','mark'] } as IconEntry,
   rotateCcw:   { svg: rotateCcwSvg,   source: 'lucide/rotate-ccw',  tags: ['rotate','retry','reset','undo','refresh'] } as IconEntry,
