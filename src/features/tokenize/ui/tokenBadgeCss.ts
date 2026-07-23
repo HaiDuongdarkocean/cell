@@ -20,13 +20,14 @@ export function buildTokenBadgeCss(): string {
 }
 
 /* FAB — floating action button. .btn--primary provides bg/color/hover/active.
-   .cell-token-fab only adds floating layout (position, size, z-index). */
+   .cell-token-fab only adds floating layout (position, size, z-index).
+   --badge-size is SSOT with the orbital badge (default 36px). */
 .cell-token-fab {
   position: fixed !important;
   right: var(--space-4, 16px) !important;
   bottom: var(--space-4, 16px) !important;
-  width: var(--space-12, 48px) !important;
-  height: var(--space-12, 48px) !important;
+  width: var(--badge-size, 36px) !important;
+  height: var(--badge-size, 36px) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -41,7 +42,7 @@ export function buildTokenBadgeCss(): string {
      only gates pan/zoom, not clicks. */
   touch-action: none !important;
   /* will-change promotes the FAB to its own compositor layer so drag transforms
-     bypass main-thread layout/paint entirely. One 48x48 layer is negligible
+     bypass main-thread layout/paint entirely. One 36x36 layer is negligible
      memory; keeping it permanent avoids layer-creation jank at drag start. */
   will-change: transform !important;
   box-shadow: none !important;
@@ -49,8 +50,8 @@ export function buildTokenBadgeCss(): string {
 }
 
 .cell-token-fab svg {
-  width: var(--iconbutton-icon-md, 24px) !important;
-  height: var(--iconbutton-icon-md, 24px) !important;
+  width: var(--iconbutton-icon-sm, 18px) !important;
+  height: var(--iconbutton-icon-sm, 18px) !important;
   fill: none !important;
   stroke: currentColor !important;
   stroke-width: 2 !important;
@@ -75,8 +76,8 @@ export function buildTokenBadgeCss(): string {
      hardcoded with fallback until a --panel-width token is introduced. */
   width: 260px !important;
   max-width: calc(100vw - var(--space-8, 32px)) !important;
-  /* bottom = FAB height (var(--space-12)) + gap (var(--space-2)) + base offset (var(--space-4)) */
-  bottom: calc(var(--space-4, 16px) + var(--space-12, 48px) + var(--space-2, 8px)) !important;
+  /* bottom = FAB height (var(--badge-size)) + gap (var(--space-2)) + base offset (var(--space-4)) */
+  bottom: calc(var(--space-4, 16px) + var(--badge-size, 36px) + var(--space-2, 8px)) !important;
   background: var(--color-popover, #ffffff) !important;
   color: var(--color-popover-foreground, #0f172a) !important;
   border: 1px solid var(--color-border, #e2e8f0) !important;

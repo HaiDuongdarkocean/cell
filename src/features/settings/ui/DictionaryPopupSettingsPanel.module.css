@@ -17,7 +17,7 @@
   color: var(--color-text-secondary);
 }
 
-.field input,
+.field input:not([type="range"]),
 .field select {
   padding: var(--space-1-5) var(--space-2);
   border: 1px solid var(--color-border);
@@ -28,7 +28,7 @@
   font-family: inherit;
 }
 
-.field input:focus-visible,
+.field input:not([type="range"]):focus-visible,
 .field select:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
@@ -44,4 +44,26 @@
   color: var(--color-text-muted);
   margin-top: var(--space-1);
   font-size: var(--font-size-xs);
+}
+
+/* === Slider header — label + value row (matches NavClusterSettingsPanel pattern) === */
+.sliderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.01em;
+  user-select: none;
+}
+
+.value {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
