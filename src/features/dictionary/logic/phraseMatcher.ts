@@ -59,13 +59,19 @@ export interface SentenceToken {
   readonly precededByClausePunct: boolean;
 }
 
-const WORD_CHAR = /[\p{L}\p{N}'-]/u;
+const WORD_RUN_RE = /[\p{L}\p{N}'-]+/gu;
 const SENTENCE_PUNCT = /[.!?,;:]/;
 
-const SENTENCE_END_PUNCT = new Set(['.', '!', '?']);
-const CLAUSE_PUNCT = new Set([',', ';', ':', '-']);
+const SENTENCE_END_PUNCT_RE = /[.!?]/;
+const CLAUSE_PUNCT_RE = /[,;:\-]/;
 
-/** Tokenize a sentence into normalized word tokens with UTF-16 offsets. */
+/** Tokenize a sentence into normalized word tokens with UTF-16 offsets.
+ *
+ *  Uses a single regex pass over the sentence instead of a per-character loop,
+ *  then strips leading hyphens (SRT dialogue markers) and classifies the gap
+ *  before each token. The Unicode-aware run still lets language-specific
+ *  filtering drop non-target words (e.g. Vietnamese diacritics) downstream.
+ */
 export function tokenizeSentence(sentence: string): SentenceToken[] {
   // Normalize curly apostrophe (U+2019) to straight (U+0027) so contractions,
   // possessives, and clitics are treated as a single English token and later
@@ -73,49 +79,35 @@ export function tokenizeSentence(sentence: string): SentenceToken[] {
   // cursor offsets from the DOM stay valid.
   sentence = sentence.replaceAll('’', "'");
   const tokens: SentenceToken[] = [];
-  const len = sentence.length;
-  let i = 0;
-  let prevEnd = -1;
-  while (i < len) {
-    // Skip whitespace + non-word punctuation.
-    const gapStart = i;
-    while (i < len && !isWordChar(sentence, i)) i++;
-    if (i >= len) break;
-    // Check if sentence-ending or clause punctuation appeared in the gap before this token.
-    let precededBySentencePunct = false;
-    let precededByClausePunct = false;
-    if (prevEnd >= 0) {
-      for (let j = gapStart; j < i; j++) {
-        const ch = sentence[j]!;
-        if (SENTENCE_END_PUNCT.has(ch)) {
-          precededBySentencePunct = true;
-          break;
-        }
-        if (CLAUSE_PUNCT.has(ch)) {
-          precededByClausePunct = true;
-        }
-      }
-    }
+  let lastEnd = -1;
+  WORD_RUN_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = WORD_RUN_RE.exec(sentence)) !== null) {
+    const matchStart = match.index;
+    let start = matchStart;
+    let raw = match[0];
     // Strip leading hyphens (SRT dialogue markers like "-Where'd").
     // Intra-word hyphens ("scaredy-cat", "self-defense") are preserved
-    // because `-` is in WORD_CHAR — only LEADING hyphens are skipped here.
-    while (i < len && sentence[i] === '-') i++;
-    if (i >= len) break;
-    const start = i;
-    // Consume word characters (including apostrophes in contractions).
-    while (i < len && isWordChar(sentence, i)) i++;
-    const raw = sentence.slice(start, i);
+    // because `-` is in WORD_RUN_RE — only LEADING hyphens are skipped here.
+    while (raw.length > 0 && raw[0] === '-') {
+      start++;
+      raw = raw.slice(1);
+    }
+    if (raw.length === 0) continue;
+
+    let precededBySentencePunct = false;
+    let precededByClausePunct = false;
+    if (lastEnd >= 0) {
+      const gap = sentence.slice(lastEnd, start);
+      if (SENTENCE_END_PUNCT_RE.test(gap)) precededBySentencePunct = true;
+      if (CLAUSE_PUNCT_RE.test(gap)) precededByClausePunct = true;
+    }
+
     const text = raw.toLowerCase().normalize('NFC');
-    tokens.push({ text, raw, start, end: i, precededBySentencePunct, precededByClausePunct });
-    prevEnd = i;
+    tokens.push({ text, raw, start, end: start + raw.length, precededBySentencePunct, precededByClausePunct });
+    lastEnd = start + raw.length;
   }
   return tokens;
-}
-
-/** Check if character at offset is a word character (handles surrogate pairs). */
-function isWordChar(s: string, offset: number): boolean {
-  const ch = s[offset]!;
-  return WORD_CHAR.test(ch);
 }
 
 // --- Lemma (ADR §6 / ADR-041) ---

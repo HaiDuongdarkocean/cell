@@ -50,10 +50,10 @@ describe('findTextBlocks', () => {
     expect(blocks.map((b) => b.originalText)).toEqual(['Short.']);
   });
 
-  it('skips all subtitle-line elements (target and native) to avoid duplicates', () => {
+  it('skips native subtitle-line elements but tokenizes target subtitle-line elements', () => {
     const root = document.createElement('div');
     root.innerHTML = '<div class="subtitle-block"><div class="subtitle-line target">Hello world.</div><div class="subtitle-line native">Xin chào.</div></div>';
     const blocks = findTextBlocks(root);
-    expect(blocks).toHaveLength(0);
+    expect(blocks.map((b) => b.originalText)).toEqual(['Hello world.']);
   });
 });

@@ -8,6 +8,7 @@ import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/f
 import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusClient';
 import { getFrequencyEntries } from '@/features/dictionaryPopup/services/frequencyClient';
 import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
+import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
 
 const DEFAULT_WINDOW = 1;
 
@@ -213,11 +214,20 @@ export function createSubtitleTokenizeController(
     const status = STATUS_BY_KEY[e.key];
     if (!status) return;
     const state = stateStore.getState();
-    const terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : state.hoveredTerm ? [state.hoveredTerm] : [];
+    // Priority: Ctrl+Click selection > hovered token > native text selection.
+    // Native selection lets the user select a passage and batch-change the
+    // status of every token inside it (spec: select đoạn + 1/2/3/4).
+    let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : state.hoveredTerm ? [state.hoveredTerm] : [];
+    let usedNativeSelection = false;
+    if (terms.length === 0) {
+      terms = extractTermsFromSelection(window.getSelection());
+      usedNativeSelection = terms.length > 0;
+    }
     if (terms.length === 0) return;
     e.preventDefault();
     applyStatusToTerms(terms, status);
     if (state.selectedTerms.size > 0) stateStore.clearSelection();
+    if (usedNativeSelection) window.getSelection()?.removeAllRanges();
   }
 
   document.addEventListener('keydown', handleKeydown);

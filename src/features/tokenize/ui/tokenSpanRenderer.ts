@@ -16,7 +16,7 @@ export interface TokenSpanBindOptions {
   readonly onTokenCtrlClick?: (term: string, block: TokenBlock, element: HTMLElement) => void;
 }
 
-const TOKEN_CLASS = 'js-cell-token';
+export const TOKEN_CLASS = 'js-cell-token';
 const WORD_CLASS = 'js-cell-token--word';
 const SEPARATOR_CLASS = 'js-cell-token--separator';
 const WORD_INNER_CLASS = 'js-cell-token-word';

@@ -1,4 +1,5 @@
 export const PRIORITY_VIEWPORT = 0;
+export const PRIORITY_PREPARE = 5; // tokenization before bind; must not be gated on idle
 export const PRIORITY_BUFFER = 10;
 export const PRIORITY_IDLE = 20;
 
@@ -43,11 +44,15 @@ export class TokenizeScheduler {
   stop(): void {
     this.running = false;
     if (this.scheduledFrameId !== undefined) {
+      cancelAnimationFrameSafe(this.scheduledFrameId);
       cancelIdleCallbackSafe(this.scheduledFrameId);
       clearTimeout(this.scheduledFrameId);
       this.scheduledFrameId = undefined;
     }
   }
+
+  /** Drop all pending tasks without running them. Used during disable to prevent stale binds. */
+  clear(): void { this.queue = []; }
 
   /** Process all pending tasks synchronously until the queue is empty. Test helper. */
   async flush(): Promise<void> {
@@ -68,21 +73,21 @@ export class TokenizeScheduler {
       return;
     }
     const frontPriority = this.queue[0]!.priority;
-    // Viewport-priority tasks must run in the next frame, NOT gated on browser
+    // Viewport + prepare tasks must run in the next frame, NOT gated on browser
     // idle. requestIdleCallback only fires when the browser is idle, which
     // during fast scrolling can be delayed by seconds — making tokenize feel
     // frozen until the user stops scrolling. Buffer/idle tasks stay on the
     // idle callback so they don't compete with scroll/paint.
     if (frontPriority < PRIORITY_BUFFER) {
-      this.scheduledFrameId = window.setTimeout(() => {
-        // Only drain viewport-priority tasks here; buffer/idle tasks must wait
-        // for their own idle callback so they don't piggyback on the fast path.
-        // Use a real time budget so a long queue does not block the main thread
-        // for multiple frames on low-end devices.
+      // Use requestAnimationFrame for viewport/prepare work so each chunk is
+      // tied to a display frame. This keeps the UI responsive (one frame per
+      // ~16ms budget) and avoids starving timers the way a setTimeout(0) loop
+      // can on a long queue of synchronous DOM binds.
+      this.scheduledFrameId = window.requestAnimationFrame(() => {
         const start = performance.now();
-        const viewportBudget = 16;
-        void this.runLoop({ timeRemaining: () => viewportBudget - (performance.now() - start) }, PRIORITY_BUFFER);
-      }, 0);
+        const fastBudget = 16; // ms per viewport/prepare chunk
+        void this.runLoop({ timeRemaining: () => fastBudget - (performance.now() - start) }, PRIORITY_BUFFER);
+      });
     } else if (typeof requestIdleCallback === 'function') {
       this.scheduledFrameId = requestIdleCallback((deadline) => {
         void this.runLoop({ timeRemaining: () => deadline.timeRemaining() }, Number.MAX_SAFE_INTEGER);
@@ -119,6 +124,12 @@ export class TokenizeScheduler {
     } else {
       this.running = false;
     }
+  }
+}
+
+function cancelAnimationFrameSafe(handle: number): void {
+  if (typeof cancelAnimationFrame === 'function') {
+    cancelAnimationFrame(handle);
   }
 }
 

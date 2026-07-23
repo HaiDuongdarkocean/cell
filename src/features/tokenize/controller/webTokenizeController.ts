@@ -1,10 +1,10 @@
 import { findTextBlocks, findTextBlocksInNodes } from '@/features/tokenize/logic/tokenizeBlock';
 import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
-import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
+import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { resolveScrollPredictMargin, type ScrollDirection } from '@/features/tokenize/logic/scrollDirection';
 import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
-import { bindTokenBlock, unbindTokenBlock, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
+import { bindTokenBlock, unbindTokenBlock, TOKEN_CLASS, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
 import { createTokenBadge } from '@/features/tokenize/ui/tokenBadge';
 import type { TokenBadge } from '@/features/tokenize/ui/tokenBadge';
 import { createTokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
@@ -19,32 +19,39 @@ import { getFrequencyEntries } from '@/features/dictionaryPopup/services/frequen
 import { getWordStatuses, setWordStatus } from '@/features/dictionaryPopup/services/wordStatusClient';
 import type { WordStatus } from '@/features/dictionaryPopup/types';
 import { entriesToBand } from '@/features/tokenize/utils/frequencyBand';
+import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTerms';
 import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
-// ponytail: tune cache capacity to the device's reported RAM. The
-// navigator.deviceMemory API returns approximate GiB (0.25, 0.5, 1, 2, 4, 8).
-// VDLT-Predict (spec-predictive-viewport-tokenize) raises tiers to buy
-// "0 plain in viewport" UX. Trade-off: more resident DOM spans on 1GB devices.
-// Soft-unbind behind scroll direction (Phase B) + LRU eviction keep the
-// ceiling bounded. Tune after measure; if low-RAM sessions regress, lower
-// these before shrinking overscan.
-const BASE_CACHE_CAPACITY = 500;
-const LOW_MEMORY_CACHE_CAPACITY = 150;
-const MID_MEMORY_CACHE_CAPACITY = 300;
+// ponytail: cache capacity is derived from a 500MB tokenize budget and the
+// device's reported total RAM (navigator.deviceMemory in approximate GiB).
+// We reserve at most 1/8 of total RAM for tokenize resident blocks, capped at
+// 500MB. Per-block cost is estimated at 500KB worst-case (maxLength 2000 chars,
+// ~1000 DOM nodes when bound). Tune BYTES_PER_BLOCK_ESTIMATE after real RAM
+// profiling; the ceiling is intentionally conservative to avoid jank on low-end
+// devices. Soft-unbind behind scroll direction (Phase B) + LRU eviction keep
+// resident DOM spans bounded.
+const MEMORY_BUDGET_BYTES = 500 * 1024 * 1024; // 500 MB hard ceiling
+const BYTES_PER_BLOCK_ESTIMATE = 500 * 1024; // 500 KB worst-case per bound block
+const MIN_CACHE_CAPACITY = 150;
 function resolveCacheCapacity(): number {
   const mem = (globalThis.navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-  if (typeof mem !== 'number') return BASE_CACHE_CAPACITY;
-  if (mem <= 0.5) return LOW_MEMORY_CACHE_CAPACITY;
-  if (mem < 2) return MID_MEMORY_CACHE_CAPACITY;
-  return BASE_CACHE_CAPACITY;
+  const totalBytes = typeof mem === 'number' && mem > 0 ? mem * 1024 * 1024 * 1024 : 0;
+  // Use 1/8 of reported RAM, but never exceed the 500MB tokenize budget.
+  const budgetBytes = totalBytes > 0 ? Math.min(MEMORY_BUDGET_BYTES, totalBytes / 8) : MEMORY_BUDGET_BYTES;
+  const byBudget = Math.floor(budgetBytes / BYTES_PER_BLOCK_ESTIMATE);
+  return Math.max(MIN_CACHE_CAPACITY, byBudget);
 }
 const CACHE_CAPACITY = resolveCacheCapacity();
-// ponytail: Phase A starts isotropic large overscan as a baseline to measure
-// "0 plain in viewport". Phase B replaces this with direction-aware asymmetric
-// margin via resolveScrollPredictMargin (deep ahead, shallow behind). Min floor
-// 600px covers short mobile viewports where 1× innerHeight < 600.
-const VIEWPORT_ROOT_MARGIN = '600px';
+// Phase A uses isotropic 0.5-viewport overscan (above + below). This keeps the
+// initial resident set to ~2 viewports, satisfying the "0 plain text in
+// viewport" fast-start goal while staying lean on 500MB RAM devices. Phase B
+// switches to resolveScrollPredictMargin for deeper scroll-aware buffers.
+function resolveViewportRootMargin(): string {
+  const vh = window.innerHeight;
+  const margin = Math.round(vh / 2);
+  return `${margin}px 0px ${margin}px 0px`;
+}
 const MUTATION_DEBOUNCE_MS = 300;
 const PENDING_MUTATION_LIMIT = 1000;
 const HYDRATION_QUIET_MS = 500;
@@ -123,7 +130,7 @@ export async function createWebTokenizeController(
   });
 
   const scheduler = new TokenizeScheduler();
-  let viewport = createViewport(VIEWPORT_ROOT_MARGIN);
+  let viewport = createViewport(resolveViewportRootMargin());
   const visibleElements = new Set<Element>();
 
   // VDLT-Predict Phase B: scroll direction tracking for asymmetric overscan.
@@ -142,6 +149,15 @@ export async function createWebTokenizeController(
   let metadataFlushTimer: ReturnType<typeof setTimeout> | null = null;
   const metadataResolved = new WeakSet<TokenBlock>();
   const metadataPending = new WeakSet<TokenBlock>();
+  // Race guard: keyboard / popup status changes that happen while a metadata
+  // flush is mid-await must win over the stale background snapshot. Each local
+  // override records the status and a monotonic version; the flush captures the
+  // version at the moment it is scheduled so a stale background snapshot cannot
+  // clobber a user change made while the flush was in flight.
+  let statusVersionCounter = 0;
+  let nextFlushVersion = 0;
+  const termStatusVersion = new Map<string, number>();
+  const localStatusOverrides = new Map<string, { status: WordStatus; version: number }>();
 
   function createViewport(rootMargin: string): ViewportTracker {
     return new ViewportTracker({ rootMargin });
@@ -182,6 +198,7 @@ export async function createWebTokenizeController(
 
   async function flushMetadataQueue(): Promise<void> {
     metadataFlushTimer = null;
+    const flushVersion = nextFlushVersion;
     const batch = metadataQueue;
     metadataQueue = [];
     const terms = new Set<string>();
@@ -213,6 +230,16 @@ export async function createWebTokenizeController(
         (term) => Promise.resolve(statusMap.get(term) ?? 'unknown'),
         (term) => Promise.resolve(entriesToBand(freqMaps.get(term) ?? [])),
       );
+      // Race guard: re-apply any status override with a version newer than the
+      // one this flush started with, so a stale background snapshot cannot
+      // clobber a user change made while the flush was in flight.
+      for (const token of block.tokens) {
+        if (token.isSeparator) continue;
+        const override = localStatusOverrides.get(token.term);
+        if (override && override.version > flushVersion) {
+          token.status = override.status;
+        }
+      }
       metadataPending.delete(block);
       metadataResolved.add(block);
       if (visibleElements.has(block.element)) {
@@ -227,7 +254,10 @@ export async function createWebTokenizeController(
     metadataQueue.push(block);
     if (!metadataFlushTimer) {
       // Flush in the next microtask so multiple visible blocks arriving in the
-      // same scheduler tick are batched into one background request.
+      // same scheduler tick are batched into one background request. Capture the
+      // status version at scheduling time so a stale in-flight snapshot can be
+      // detected and overruled by any user change that happens before it runs.
+      nextFlushVersion = statusVersionCounter;
       metadataFlushTimer = setTimeout(() => void flushMetadataQueue(), 0);
     }
   }
@@ -304,13 +334,19 @@ export async function createWebTokenizeController(
       blocks.push(block);
       observeBlock(block);
     }
-    // VDLT-Predict FR2: prepare-ahead at BUFFER priority so tokens are ready
-    // before bind. Phase B will scope this to the expanded overscan zone by
-    // direction; Phase A prepares the whole cache (bounded by CACHE_CAPACITY)
-    // so the first viewport bind never waits on tokenize. BUFFER runs after
-    // VIEWPORT bind but before IDLE, keeping scroll-responsive bind first.
+    // bindViewportNow may have bound viewport blocks whose source nodes are no
+    // longer discoverable by findTextBlocks (they became token spans). Make sure
+    // those existing blocks are observed so scroll enter/exit keeps them in sync.
+    for (const block of blocks) {
+      if (block.element.isConnected) observeBlock(block);
+    }
+    // VDLT-Predict FR2: prepare-ahead at PREPARE priority so tokens are ready
+    // before bind, but still after any pending viewport binds. The fast path
+    // uses a real 16ms budget so it does not block the main thread, while not
+    // waiting for requestIdleCallback (which can be delayed for seconds on a
+    // busy page). Buffer/idle work is reserved for low-priority unbind/evict.
     for (const block of blocks.slice(0, CACHE_CAPACITY)) {
-      scheduler.schedule(() => prepareBlock(block), PRIORITY_BUFFER);
+      scheduler.schedule(() => prepareBlock(block), PRIORITY_PREPARE);
     }
   }
 
@@ -324,18 +360,28 @@ export async function createWebTokenizeController(
    */
   function bindViewportNow(): boolean {
     if (blocks.length === 0) {
-      const scanned = findTextBlocks(root, { langCode });
+      // FR4: only scan parents that are inside the visual viewport. This avoids
+      // building TokenBlock objects for the entire page during cold-start.
+      const scanned = findTextBlocks(root, { langCode, filter: isElementInViewport });
       for (const block of scanned) {
         cache.set(block);
         blocks.push(block);
+        visibleElements.add(block.element);
+        try {
+          bindVisibleBlock(block);
+        } catch (err) {
+          // ponytail: one malformed block must not abort the cold-start scan;
+          // activateAfterStability (off-screen observe) is needed for scroll.
+          console.error('[webTokenize] bindVisibleBlock failed during cold-start for', block.id, err);
+        }
       }
     }
     let bound = false;
     for (const block of blocks) {
-      if (!block.isBound && block.element.isConnected) {
-        tryBindVisible(block);
-        if (block.isBound) bound = true;
+      if (!block.isBound && block.element.isConnected && visibleElements.has(block.element)) {
+        bindVisibleBlock(block);
       }
+      if (block.isBound) bound = true;
     }
     return bound;
   }
@@ -344,7 +390,7 @@ export async function createWebTokenizeController(
     if (active === isActive) return;
     isActive = active;
     if (active) {
-      viewport = createViewport(VIEWPORT_ROOT_MARGIN);
+      viewport = createViewport(resolveViewportRootMargin());
       lastScrollY = window.scrollY;
       scrollDirection = 'none';
       window.addEventListener('scroll', onScroll, { passive: true });
@@ -362,16 +408,24 @@ export async function createWebTokenizeController(
         cancelAnimationFrame(scrollRafId);
         scrollRafId = undefined;
       }
+      scheduler.stop();
+      scheduler.clear();
       viewport.destroy();
       visibleElements.clear();
       unbindAll();
       blocks.length = 0;
+      cache.clear();
       pendingAddedNodes = [];
       mutationFlushPending = false;
       if (mutationTimer) {
         clearTimeout(mutationTimer);
         mutationTimer = null;
       }
+      if (metadataFlushTimer) {
+        clearTimeout(metadataFlushTimer);
+        metadataFlushTimer = null;
+      }
+      metadataQueue = [];
       mutationWindowStart = 0;
     }
   }
@@ -647,7 +701,10 @@ export async function createWebTokenizeController(
   function isElementInViewport(element: Element): boolean {
     const rect = element.getBoundingClientRect();
     if (rect.height === 0) return false;
-    const margin = 300;
+    // Tight margin: the cold-start fast path should only bind text that is
+    // actually inside (or barely touching) the viewport. The IntersectionObserver
+    // with its overscan rootMargin handles blocks just outside.
+    const margin = 50;
     return rect.bottom >= -margin && rect.top <= window.innerHeight + margin;
   }
 
@@ -666,12 +723,19 @@ export async function createWebTokenizeController(
   }
 
   async function applyStatusToTerms(terms: readonly string[], status: WordStatus): Promise<void> {
+    statusVersionCounter++;
+    const version = statusVersionCounter;
+    for (const term of terms) {
+      termStatusVersion.set(term, version);
+      localStatusOverrides.set(term, { status, version });
+    }
     await Promise.all(terms.map((term) => setWordStatus(langCode, term, status).catch(() => { /* best-effort */ })));
+    const termSet = new Set(terms);
     for (const block of blocks) {
       if (!block.tokens) continue;
       let changed = false;
       for (const token of block.tokens) {
-        if (terms.includes(token.term)) {
+        if (!token.isSeparator && termSet.has(token.term)) {
           token.status = status;
           changed = true;
         }
@@ -690,11 +754,14 @@ export async function createWebTokenizeController(
    *  WORD_STATUS_SET message) so token blocks rebind with the new status instead of
    *  reverting to the stale cached value on the next scroll/toggle rebind. */
   function applyStatusForTerm(term: string, status: WordStatus): void {
+    statusVersionCounter++;
+    termStatusVersion.set(term, statusVersionCounter);
+    localStatusOverrides.set(term, { status, version: statusVersionCounter });
     for (const block of blocks) {
       if (!block.tokens) continue;
       let changed = false;
       for (const token of block.tokens) {
-        if (token.term === term) {
+        if (!token.isSeparator && token.term === term) {
           token.status = status;
           changed = true;
         }
@@ -725,11 +792,18 @@ export async function createWebTokenizeController(
     const status = STATUS_BY_KEY[e.key];
     if (!status) return;
     const state = stateStore.getState();
-    const terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : state.hoveredTerm ? [state.hoveredTerm] : [];
+    // Priority: Ctrl+Click selection > hovered token > native text selection.
+    let terms = state.selectedTerms.size > 0 ? [...state.selectedTerms] : state.hoveredTerm ? [state.hoveredTerm] : [];
+    let usedNativeSelection = false;
+    if (terms.length === 0) {
+      terms = extractTermsFromSelection(window.getSelection());
+      usedNativeSelection = terms.length > 0;
+    }
     if (terms.length === 0) return;
     e.preventDefault();
     void applyStatusToTerms(terms, status);
     if (state.selectedTerms.size > 0) stateStore.clearSelection();
+    if (usedNativeSelection) window.getSelection()?.removeAllRanges();
   }
 
   document.addEventListener('keydown', handleKeydown);
@@ -737,6 +811,11 @@ export async function createWebTokenizeController(
   function unbindAll(): void {
     for (const block of blocks) {
       unbindTokenBlock(block);
+    }
+    // Fallback: any token span that escaped the known block list is restored to plain text.
+    for (const span of root.querySelectorAll('.' + TOKEN_CLASS)) {
+      const text = span.textContent ?? '';
+      span.replaceWith(document.createTextNode(text));
     }
   }
 
