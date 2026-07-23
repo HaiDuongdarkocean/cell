@@ -13,6 +13,10 @@ import {
 const HOST_CLASS = 'js-cell-token-badge-host';
 const BADGE_Z_INDEX = '2147483646';
 const FAB_SIZE = 36;
+/** Gap (px) between the FAB and the orbital badge when both sit on the right
+ *  edge at their default positions. Orbital is at vh/2; FAB is at
+ *  vh/2 + FAB_SIZE + FAB_GAP_PX so they don't overlap. */
+const FAB_GAP_PX = 16;
 
 export interface TokenBadgeState {
   enabled: boolean;
@@ -74,6 +78,9 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
   // `collapsed` true = half-moon on `collapsedEdge`; false = full circle.
   let collapsed = true;
   let collapsedEdge: CollapsedEdge = 'right';
+  // Y position of the FAB center on the edge — remembered so resize/fullscreen
+  // can re-collapse at the same Y instead of resetting to default.
+  let collapsedY = 0;
 
   /** Viewport rect for the shared collapse helpers (pure functions, no DOM reads).
    *  Uses documentElement.clientWidth/Height which EXCLUDES the scrollbar —
@@ -88,12 +95,17 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
 
   /** Position the FAB center exactly on an edge so the viewport clips half of it
    *  → visible half-moon. Switches from right/bottom CSS to left/top inline.
-   *  Sets data-collapse-edge so CSS can shift the icon into the visible half. */
-  function collapseToEdge(edge: CollapsedEdge): void {
+   *  Sets data-collapse-edge so CSS can shift the icon into the visible half.
+   *  `y` overrides the default Y (below the orbital badge with a gap); used by
+   *  drag-snap to preserve the dragged Y and by resize to preserve position. */
+  function collapseToEdge(edge: CollapsedEdge, y?: number): void {
     collapsed = true;
     collapsedEdge = edge;
     const vp = viewportRect();
-    const center = getEdgeCenter(edge, { x: vp.width / 2, y: vp.height / 2 }, FAB_SIZE, vp);
+    // Default Y: below the orbital badge (at vh/2) with FAB_SIZE + gap.
+    // getEdgeCenter clamps Y to half..maxY so it stays on-screen.
+    collapsedY = y ?? (vp.height / 2 + FAB_SIZE + FAB_GAP_PX);
+    const center = getEdgeCenter(edge, { x: vp.width / 2, y: collapsedY }, FAB_SIZE, vp);
     fab.style.setProperty('right', 'auto', 'important');
     fab.style.setProperty('bottom', 'auto', 'important');
     fab.style.setProperty('left', `${center.x - FAB_SIZE / 2}px`, 'important');
@@ -317,7 +329,7 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
   async function persistPosition(): Promise<void> {
     const rect = fab.getBoundingClientRect();
     if (rect.left === 0 && rect.top === 0) return; // uninit layout
-    await setStorage({ [STORAGE_KEYS.TOKEN_BADGE_POSITION]: { left: rect.left, top: rect.top, collapsed, collapsedEdge } });
+    await setStorage({ [STORAGE_KEYS.TOKEN_BADGE_POSITION]: { left: rect.left, top: rect.top, collapsed, collapsedEdge, collapsedY } });
   }
 
   /** Restore FAB position from storage, clamped to current viewport. If the
@@ -325,14 +337,15 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
    *  at the saved position. Falls back to collapsed-right when no saved state. */
   async function restorePosition(): Promise<void> {
     const data = await getStorage<Record<string, unknown>>(STORAGE_KEYS.TOKEN_BADGE_POSITION);
-    const pos = data[STORAGE_KEYS.TOKEN_BADGE_POSITION] as { left: number; top: number; collapsed?: boolean; collapsedEdge?: CollapsedEdge } | undefined;
+    const pos = data[STORAGE_KEYS.TOKEN_BADGE_POSITION] as { left: number; top: number; collapsed?: boolean; collapsedEdge?: CollapsedEdge; collapsedY?: number } | undefined;
     if (!pos || typeof pos.left !== 'number' || typeof pos.top !== 'number') {
-      // No saved state → default collapsed half-moon on the right edge.
+      // No saved state → default collapsed half-moon on the right edge, below
+      // the orbital badge.
       collapseToEdge('right');
       return;
     }
     if (pos.collapsed && pos.collapsedEdge) {
-      collapseToEdge(pos.collapsedEdge);
+      collapseToEdge(pos.collapsedEdge, pos.collapsedY);
       return;
     }
     const vp = viewportRect();
@@ -445,7 +458,10 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
       else if (e.clientY <= 0) snapEdge = 'top';
       else if (e.clientY >= vp.height) snapEdge = 'bottom';
       if (snapEdge) {
-        collapseToEdge(snapEdge);
+        // Preserve the dragged Y so the badge collapses where the user dropped
+        // it, not at the default center.
+        const centerY = rect.top + rect.height / 2;
+        collapseToEdge(snapEdge, centerY);
       } else {
         expand();
       }
@@ -499,11 +515,41 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
     document.addEventListener('pointerdown', onDocPointerDown, true);
   }
 
+  /** Reposition the FAB into the current viewport — called on resize and
+   *  fullscreen change. If collapsed, re-collapse to the same edge at the same
+   *  Y (getEdgeCenter clamps to the new viewport). If expanded, clamp left/top. */
+  function reposition(): void {
+    const vp = viewportRect();
+    if (collapsed) {
+      collapseToEdge(collapsedEdge, collapsedY);
+    } else {
+      const rect = fab.getBoundingClientRect();
+      const left = Math.max(0, Math.min(vp.width - rect.width, rect.left));
+      const top = Math.max(0, Math.min(vp.height - rect.height, rect.top));
+      fab.style.setProperty('left', `${left}px`, 'important');
+      fab.style.setProperty('top', `${top}px`, 'important');
+    }
+  }
+
+  /** rAF-throttled resize handler — coalesce multiple resize events into one
+   *  reposition per frame to avoid layout thrashing during drag-resize. */
+  let resizeRaf = 0;
+  function onResize(): void {
+    if (resizeRaf) return;
+    resizeRaf = requestAnimationFrame(() => {
+      resizeRaf = 0;
+      reposition();
+    });
+  }
+
   function onFullscreenChange(): void {
     const parent = getMountParent();
     if (host.parentElement !== parent) {
       parent.appendChild(host);
     }
+    // Reposition after re-parenting — fullscreen may have different viewport
+    // dims. rAF ensures the new parent is laid out before reading viewportRect.
+    requestAnimationFrame(reposition);
   }
 
   if (document.readyState === 'complete') {
@@ -512,6 +558,7 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
     window.addEventListener('load', () => appendHost(), { once: true });
   }
   document.addEventListener('fullscreenchange', onFullscreenChange);
+  window.addEventListener('resize', onResize);
   buildPanel();
 
   return {
@@ -521,10 +568,12 @@ export function createTokenBadge(options: CreateTokenBadgeOptions): TokenBadge {
     },
     destroy() {
       if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
+      if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
       themeCleanup?.();
       themeCleanup = null;
       document.removeEventListener('pointerdown', onDocPointerDown, true);
       document.removeEventListener('fullscreenchange', onFullscreenChange);
+      window.removeEventListener('resize', onResize);
       host.remove();
     },
   };
