@@ -73,10 +73,7 @@ Goodbye world`;
     // === Step 1: create panel + controller ===
     let selectedRole: 'target' | 'native' | null = null;
     let selectedIndex = -1;
-    const importButton = document.createElement('button');
-    importButton.setAttribute('data-testid', 'subtitle-import-button');
-    importButton.setAttribute('aria-label', 'Import subtitle file');
-    const panel = createSubtitleManagerPanel(container, importButton, {
+    const panel = createSubtitleManagerPanel(container, {
       onSelect: (role: 'target' | 'native', index: number) => {
         selectedRole = role;
         selectedIndex = index;
@@ -131,7 +128,7 @@ Goodbye world`;
 
     // === Step 6: open panel + click target item ===
     panel.icon.click();
-    expect(panel.panel.style.display).toBe('block');
+    expect(panel.panel.classList.contains('subtitle-manager-panel--open')).toBe(true);
     const targetItem = document.querySelector('[data-testid="manager-item-target-0"]') as HTMLElement;
     expect(targetItem).toBeTruthy();
     targetItem.click();
@@ -147,7 +144,7 @@ Goodbye world`;
     // === Step 8: close panel via close button ===
     const closeBtn = document.querySelector('[data-testid="subtitle-manager-close"]') as HTMLButtonElement;
     closeBtn.click();
-    expect(panel.panel.style.display).toBe('none');
+    expect(panel.panel.classList.contains('subtitle-manager-panel--open')).toBe(false);
 
     panel.destroy();
     controller.destroy();
@@ -182,9 +179,7 @@ Goodbye world`;
   });
 
   it('panel sections collapsible when no subs', () => {
-    const importButton = document.createElement('button');
-    importButton.setAttribute('data-testid', 'subtitle-import-button');
-    const panel = createSubtitleManagerPanel(container, importButton);
+    const panel = createSubtitleManagerPanel(container);
     // Open panel
     panel.icon.click();
     // Collapse target section
@@ -197,13 +192,11 @@ Goodbye world`;
   });
 
   it('Esc closes panel', () => {
-    const importButton = document.createElement('button');
-    importButton.setAttribute('data-testid', 'subtitle-import-button');
-    const panel = createSubtitleManagerPanel(container, importButton);
+    const panel = createSubtitleManagerPanel(container);
     panel.icon.click();
-    expect(panel.panel.style.display).toBe('block');
+    expect(panel.panel.classList.contains('subtitle-manager-panel--open')).toBe(true);
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    expect(panel.panel.style.display).toBe('none');
+    expect(panel.panel.classList.contains('subtitle-manager-panel--open')).toBe(false);
     panel.destroy();
   });
 });

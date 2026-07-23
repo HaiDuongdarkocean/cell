@@ -59,6 +59,11 @@ export function buildOrbitalBadgeCss(): string {
   z-index: 2147483647 !important;
   transform: translate(-50%, -50%) !important;
   transition: transform 200ms ease, background-color 200ms ease, width 200ms ease, height 200ms ease, left 0ms, top 0ms !important;
+  /* will-change promotes the badge to its own compositor layer so repositioning
+     (left/top on a position:fixed element) is cheaper — the layer is moved on
+     the compositor instead of re-laying out the host page. One 36px layer is
+     negligible memory. */
+  will-change: transform !important;
 }
 
 .cell-orbital-badge:active {

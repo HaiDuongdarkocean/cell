@@ -11,6 +11,13 @@ import {
   computePointerOffset,
   POINTER_EDGE_GAP_PX,
 } from './pointerPosition';
+import {
+  type CollapsedEdge,
+  type Point as CollapsePoint,
+  getNearestEdge as sharedGetNearestEdge,
+  getEdgeCenter as sharedGetEdgeCenter,
+  getCollapsedCenter as sharedGetCollapsedCenter,
+} from './badgeCollapse';
 
 const HOST_CLASS = 'js-cell-orbital-badge-host';
 const BADGE_Z_INDEX = '2147483647';
@@ -75,53 +82,24 @@ function getClientHeight(): number {
   return document.documentElement?.clientHeight || window.innerHeight;
 }
 
-type CollapsedEdge = 'left' | 'right' | 'top' | 'bottom';
+/** Viewport rect for the shared collapse helpers (pure functions, no DOM reads). */
+function viewportRect(): { width: number; height: number } {
+  return { width: getClientWidth(), height: getClientHeight() };
+}
 
 /** Find the nearest viewport edge and the perpendicular distance to it. */
 function getNearestEdge(point: Point): { edge: CollapsedEdge; distance: number } {
-  const w = getClientWidth();
-  const h = getClientHeight();
-  const distances = {
-    left: point.x,
-    right: w - point.x,
-    top: point.y,
-    bottom: h - point.y,
-  } as const;
-  let nearest: CollapsedEdge = 'right';
-  let min = distances.right;
-  for (const edge of (Object.keys(distances) as CollapsedEdge[])) {
-    if (distances[edge] < min) {
-      min = distances[edge];
-      nearest = edge;
-    }
-  }
-  return { edge: nearest, distance: min };
+  return sharedGetNearestEdge(point, viewportRect());
 }
 
 /** Snap a point to a viewport edge while keeping the tangential coordinate visible. */
 function getEdgeCenter(edge: CollapsedEdge, point: Point, badgeSize: number): Point {
-  const half = badgeSize / 2;
-  const maxX = getClientWidth() - half;
-  const maxY = getClientHeight() - half;
-  switch (edge) {
-    case 'left': return { x: 0, y: Math.max(half, Math.min(maxY, point.y)) };
-    case 'right': return { x: getClientWidth(), y: Math.max(half, Math.min(maxY, point.y)) };
-    case 'top': return { x: Math.max(half, Math.min(maxX, point.x)), y: 0 };
-    case 'bottom': return { x: Math.max(half, Math.min(maxX, point.x)), y: getClientHeight() };
-  }
+  return sharedGetEdgeCenter(edge, point, badgeSize, viewportRect());
 }
 
-/** Center of the visible half-moon when the badge is collapsed on an edge.
- *  Offset inward by 1/4 of the badge size so the pointer sits fully inside
- *  the visible half and is not clipped by the viewport. */
-function getCollapsedPointerCenter(badgeCenter: Point, edge: CollapsedEdge, badgeSize: number): Point {
-  const inset = badgeSize / 4;
-  switch (edge) {
-    case 'left': return { x: badgeCenter.x + inset, y: badgeCenter.y };
-    case 'right': return { x: badgeCenter.x - inset, y: badgeCenter.y };
-    case 'top': return { x: badgeCenter.x, y: badgeCenter.y + inset };
-    case 'bottom': return { x: badgeCenter.x, y: badgeCenter.y - inset };
-  }
+/** Center of the visible half-moon when the badge is collapsed on an edge. */
+function getCollapsedPointerCenter(badgeCenter: Point, edge: CollapsedEdge, badgeSize: number): CollapsePoint {
+  return sharedGetCollapsedCenter(badgeCenter, edge, badgeSize);
 }
 
 /** Return the preset that points inward from a collapsed edge. */
@@ -171,12 +149,18 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
   let badgeCenter: Point = { x: rightEdge, y: bottomEdge / 2 };
   let pointerTip: Point = { ...badgeCenter };
 
-  let dragStart: { x: number; y: number; center: Point } | null = null;
+  let dragStart: { x: number; y: number; center: Point; vw: number; vh: number } | null = null;
   let dragging = false;
   let suppressClick = false;
   let visible = true;
   let hoverTimer: ReturnType<typeof setTimeout> | null = null;
   let themeCleanup: (() => void) | null = null;
+  // rAF throttle: stash the latest pointer delta and apply once per animation
+  // frame, aligning movement to the display refresh. pointermove can fire
+  // >100Hz on high-rate devices; this cuts setBadgeCenter calls from N-per-frame
+  // to 1. vw/vh are cached at pointerdown so pointermove never reads layout.
+  let pendingMove: { dx: number; dy: number } | null = null;
+  let moveRaf = 0;
 
   const host = document.createElement('div');
   host.className = HOST_CLASS;
@@ -329,17 +313,10 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     },
   });
 
-  function onBadgePointerDown(e: PointerEvent): void {
-    if (e.button !== 0) return;
-    dragStart = { x: e.clientX, y: e.clientY, center: { ...badgeCenter } };
-    dragging = false;
-    try { badge.setPointerCapture(e.pointerId); } catch { /* capture may throw on some platforms */ }
-  }
-
-  function onBadgePointerMove(e: PointerEvent): void {
+  /** Apply the cached drag delta. Called from the rAF flush or synchronously on
+   *  pointerup. Uses cached vw/vh so no layout reads happen on the hot path. */
+  function applyDragMove(dx: number, dy: number): void {
     if (!dragStart) return;
-    const dx = e.clientX - dragStart.x;
-    const dy = e.clientY - dragStart.y;
     if (!dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
 
     if (!expanded) {
@@ -361,16 +338,51 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       setExpanded(true, false);
     }
 
-    // Clamp to the content viewport so the badge cannot be dragged under a
-    // scrollbar or off the visible page.
-    const maxX = getClientWidth() - badgeSize / 2;
-    const maxY = getClientHeight() - badgeSize / 2;
+    // Clamp to the content viewport using cached dims — no layout reads here.
+    const maxX = dragStart.vw - badgeSize / 2;
+    const maxY = dragStart.vh - badgeSize / 2;
     const nx = Math.max(badgeSize / 2, Math.min(maxX, dragStart.center.x + dx));
     const ny = Math.max(badgeSize / 2, Math.min(maxY, dragStart.center.y + dy));
     setBadgeCenter({ x: nx, y: ny });
   }
 
+  function flushDragMove(): void {
+    if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
+    if (pendingMove) {
+      const m = pendingMove;
+      pendingMove = null;
+      applyDragMove(m.dx, m.dy);
+    }
+  }
+
+  function onBadgePointerDown(e: PointerEvent): void {
+    if (e.button !== 0) return;
+    dragStart = { x: e.clientX, y: e.clientY, center: { ...badgeCenter }, vw: getClientWidth(), vh: getClientHeight() };
+    dragging = false;
+    pendingMove = null;
+    try { badge.setPointerCapture(e.pointerId); } catch { /* capture may throw on some platforms */ }
+  }
+
+  function onBadgePointerMove(e: PointerEvent): void {
+    if (!dragStart) return;
+    // Stash the latest delta and schedule a single rAF to apply it — never
+    // call setBadgeCenter on the pointermove hot path itself.
+    pendingMove = { dx: e.clientX - dragStart.x, dy: e.clientY - dragStart.y };
+    if (!moveRaf) {
+      moveRaf = requestAnimationFrame(() => {
+        moveRaf = 0;
+        if (pendingMove) {
+          const m = pendingMove;
+          pendingMove = null;
+          applyDragMove(m.dx, m.dy);
+        }
+      });
+    }
+  }
+
   function onBadgePointerUp(e: PointerEvent): void {
+    // Apply any pending move synchronously so the final position is current.
+    flushDragMove();
     if (dragging) {
       suppressClick = true;
       if (hoverTimer) {
@@ -399,12 +411,15 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     }
     dragging = false;
     dragStart = null;
+    pendingMove = null;
     try { badge.releasePointerCapture(e.pointerId); } catch { /* noop */ }
   }
 
   function onBadgePointerCancel(): void {
+    if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
     dragging = false;
     dragStart = null;
+    pendingMove = null;
   }
 
   function onBadgeClick(): void {
@@ -492,6 +507,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       host.style.display = 'none';
     },
     destroy() {
+      if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
       themeCleanup?.();
       themeCleanup = null;
       document.removeEventListener('fullscreenchange', onFullscreenChange);

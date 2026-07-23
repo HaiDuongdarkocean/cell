@@ -398,6 +398,20 @@ export class PopupShell {
   private dragOffset: { x: number; y: number } = { x: 0, y: 0 };
   private dragStart: { x: number; y: number } | null = null;
   private dragOffsetStart: { x: number; y: number } = { x: 0, y: 0 };
+  // Cached at drag start so applyPosition (called each pointermove) never reads
+  // offsetWidth/offsetHeight (forced reflow). The popup size is stable during a
+  // drag — only its position changes.
+  private dragCachedWidth = 0;
+  private dragCachedHeight = 0;
+  private dragCachedVw = 0;
+  private dragCachedVh = 0;
+  // rAF throttle for drag + resize: stash the latest pointer delta and apply
+  // once per animation frame, aligning to the display refresh. pointermove can
+  // fire >100Hz; this cuts style recalcs from N-per-frame to 1.
+  private dragPending: { dx: number; dy: number } | null = null;
+  private dragRaf = 0;
+  private resizePending: { dx: number; dy: number } | null = null;
+  private resizeRaf = 0;
   private previouslyFocused: Element | null = null;
   private themeCleanup: (() => void) | null = null;
   private readonly onDismiss: () => void;
@@ -571,6 +585,30 @@ export class PopupShell {
     this.container.style.height = `${clampedHeight}px`;
   }
 
+  /** Fast-path position update during drag — uses cached dims (vw/vh/width/height)
+   *  captured at pointerdown so no layout reads happen on the pointermove hot
+   *  path. Only the drag offset changes between calls; the anchor-based base
+   *  position is computed once at drag start and reused. */
+  private applyDragPosition(): void {
+    if (!this.container || !this.lastAnchor) return;
+    // Recompute the base position with cached dims + cached anchor — the anchor
+    // does not change mid-drag, and using cached vw/vh avoids reading
+    // window.innerWidth each move.
+    const pos = computePopupPosition(
+      this.lastAnchor.top, this.lastAnchor.left, this.lastAnchor.right, this.lastAnchor.bottom,
+      this.size.width, this.dragCachedVw, this.dragCachedVh, this.dragCachedHeight,
+      this.lastPointer ?? undefined,
+      this.lastLineRect,
+    );
+    const left = Math.max(VIEWPORT_MARGIN, Math.min(this.dragCachedVw - this.dragCachedWidth - VIEWPORT_MARGIN, pos.left + this.dragOffset.x));
+    const top = Math.max(VIEWPORT_MARGIN, Math.min(this.dragCachedVh - this.dragCachedHeight - VIEWPORT_MARGIN, pos.top + this.dragOffset.y));
+    this.container.style.left = `${left}px`;
+    this.container.style.top = `${top}px`;
+    const availableHeight = this.dragCachedVh - top - VIEWPORT_MARGIN;
+    const clampedHeight = Math.max(200, Math.min(this.size.maxHeight, availableHeight));
+    this.container.style.height = `${clampedHeight}px`;
+  }
+
   /** Get the Shadow DOM root (for content rendering). */
   getShadowRoot(): ShadowRoot | null {
     return this.shadow;
@@ -697,6 +735,8 @@ export class PopupShell {
 
   /** Unmount the popup + remove all listeners. */
   destroy(): void {
+    if (this.dragRaf) { cancelAnimationFrame(this.dragRaf); this.dragRaf = 0; }
+    if (this.resizeRaf) { cancelAnimationFrame(this.resizeRaf); this.resizeRaf = 0; }
     document.removeEventListener('keydown', this.boundKeyDown, true);
     document.removeEventListener('mousedown', this.boundClickOutside, true);
     document.removeEventListener('fullscreenchange', this.boundFullscreenChange);
@@ -785,14 +825,33 @@ export class PopupShell {
     this.resizeStartWidth = this.size.width;
     // Capture actual rendered height — container may be shorter than maxHeight.
     this.resizeStartHeight = this.container?.offsetHeight ?? this.size.maxHeight;
+    this.resizePending = null;
     document.addEventListener('pointermove', this.boundResizeMove);
     document.addEventListener('pointerup', this.boundResizeEnd);
   }
 
   private onResizeMove(e: PointerEvent): void {
     if (!this.isResizing || !this.container) return;
-    const dx = e.clientX - this.resizeStartX;
-    const dy = e.clientY - this.resizeStartY;
+    // Stash the latest delta and schedule a single rAF to apply it — never
+    // touch style on the pointermove hot path itself.
+    this.resizePending = { dx: e.clientX - this.resizeStartX, dy: e.clientY - this.resizeStartY };
+    if (!this.resizeRaf) {
+      this.resizeRaf = requestAnimationFrame(() => {
+        this.resizeRaf = 0;
+        if (this.resizePending && this.container) {
+          const p = this.resizePending;
+          this.resizePending = null;
+          this.applyResize(p.dx, p.dy);
+        }
+      });
+    }
+  }
+
+  /** Apply the cached resize delta using live window dims (resize changes the
+   *  popup size, so the viewport clamp must use current innerWidth/Height — but
+   *  only once per frame, not per pointermove). */
+  private applyResize(dx: number, dy: number): void {
+    if (!this.container) return;
     const newWidth = Math.max(320, this.resizeStartWidth + dx);
     const newHeight = Math.max(200, this.resizeStartHeight + dy);
     const clamped = clampPopupSize(
@@ -809,7 +868,15 @@ export class PopupShell {
 
   private onResizeEnd(_e: PointerEvent): void {
     if (!this.isResizing) return;
+    // Apply any pending resize synchronously so the final size is current.
+    if (this.resizeRaf) { cancelAnimationFrame(this.resizeRaf); this.resizeRaf = 0; }
+    if (this.resizePending) {
+      const p = this.resizePending;
+      this.resizePending = null;
+      this.applyResize(p.dx, p.dy);
+    }
     this.isResizing = false;
+    this.resizePending = null;
     document.removeEventListener('pointermove', this.boundResizeMove);
     document.removeEventListener('pointerup', this.boundResizeEnd);
     this.onResizeComplete(this.size);
@@ -860,6 +927,13 @@ export class PopupShell {
     e.preventDefault();
     this.dragStart = { x: e.clientX, y: e.clientY };
     this.dragOffsetStart = { ...this.dragOffset };
+    // Cache dims so the pointermove hot path never reads layout (offsetWidth/
+    // offsetHeight force reflow). The popup size + viewport are stable mid-drag.
+    this.dragCachedWidth = this.container.offsetWidth || this.size.width;
+    this.dragCachedHeight = this.container.offsetHeight || this.size.maxHeight;
+    this.dragCachedVw = window.innerWidth;
+    this.dragCachedVh = window.innerHeight;
+    this.dragPending = null;
     this.container.classList.add('cell-popup--dragging');
     this.container.setPointerCapture(e.pointerId);
     this.container.addEventListener('pointermove', this.boundPointerMove);
@@ -868,15 +942,34 @@ export class PopupShell {
 
   private onPointerMove(e: PointerEvent): void {
     if (!this.container || !this.dragStart) return;
-    const dx = e.clientX - this.dragStart.x;
-    const dy = e.clientY - this.dragStart.y;
-    this.dragOffset = { x: this.dragOffsetStart.x + dx, y: this.dragOffsetStart.y + dy };
-    this.applyPosition();
+    // Stash the latest delta and schedule a single rAF to apply it — never
+    // touch style on the pointermove hot path itself.
+    this.dragPending = { dx: e.clientX - this.dragStart.x, dy: e.clientY - this.dragStart.y };
+    if (!this.dragRaf) {
+      this.dragRaf = requestAnimationFrame(() => {
+        this.dragRaf = 0;
+        if (this.dragPending) {
+          const p = this.dragPending;
+          this.dragPending = null;
+          this.dragOffset = { x: this.dragOffsetStart.x + p.dx, y: this.dragOffsetStart.y + p.dy };
+          this.applyDragPosition();
+        }
+      });
+    }
   }
 
   private onPointerUp(e: PointerEvent): void {
     if (!this.container) return;
+    // Apply any pending move synchronously so the final position is current.
+    if (this.dragRaf) { cancelAnimationFrame(this.dragRaf); this.dragRaf = 0; }
+    if (this.dragPending) {
+      const p = this.dragPending;
+      this.dragPending = null;
+      this.dragOffset = { x: this.dragOffsetStart.x + p.dx, y: this.dragOffsetStart.y + p.dy };
+      this.applyDragPosition();
+    }
     this.dragStart = null;
+    this.dragPending = null;
     this.container.classList.remove('cell-popup--dragging');
     this.container.releasePointerCapture(e.pointerId);
     this.container.removeEventListener('pointermove', this.boundPointerMove);

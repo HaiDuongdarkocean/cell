@@ -10,13 +10,14 @@
 // Reference: src/shared/ui/IconButton.tsx + src/shared/styles/components.css.
 
 import { ICON_CATALOG } from '@/shared/icons';
-import { seekVideo, mountToWatchVideo } from './netflixPlayback';
+import { seekVideo } from './netflixPlayback';
 
 /**
  * Create toggle button to show/hide panel (now opens Side Panel).
- * Appended to container, positioned at top-right corner.
+ * ADR-027: No longer appends to container — caller appends it to the
+ * subtitle block's more-popover slot via attachOverflowButtons.
  */
-export function createToggleButton(container: HTMLElement): HTMLButtonElement {
+export function createToggleButton(): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.setAttribute('type', 'button');
   btn.setAttribute('data-testid', 'panel-toggle');
@@ -34,10 +35,6 @@ export function createToggleButton(container: HTMLElement): HTMLButtonElement {
   btn.appendChild(feather);
 
   // Hover + focus handled by CSS :hover and :focus-visible (WCAG 2.4.7) — no JS handlers.
-
-  container.appendChild(btn);
-  // ADR-031: Netflix z-index fix — toggle button must sit above Netflix overlays.
-  mountToWatchVideo(btn, container);
   return btn;
 }
 

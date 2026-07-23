@@ -45,6 +45,11 @@ export const SUBTITLE_BLOCK_CSS = `
   border-color: var(--color-border);
   box-shadow: none;
   cursor: grabbing;
+  /* Promote to a compositor layer only while dragging so the translateY drag
+     transform bypasses main-thread layout/paint. Set on .dragging (not the base
+     rule) because the block is large (full video width) and a permanent layer
+     would waste memory. The layer is created at drag start, before movement. */
+  will-change: transform;
 }
 
 .subtitle-block.dragging::before {
@@ -57,6 +62,7 @@ export const SUBTITLE_BLOCK_CSS = `
   gap: var(--space-1, 4px);
   align-items: center;
   min-height: 0;
+  padding: var(--space-1, 4px) var(--space-2, 8px);
 }
 
 .cluster-columns {
@@ -211,12 +217,22 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 /* === Card Creator entry buttons (spec §4.1) ===
-   ADR-026: Card Creator buttons are part of the cluster — they follow the
-   same enabled/buttonSize/textOpacity/bgOpacity settings. They live in the right
-   column (grid-column 3) but inherit --sb-btn-size + --sb-text-opacity +
-   --sb-bg-opacity from the block (set in applyScale), so they scale + fade
-   with the cluster. When cluster is off, applyClusterLayout hides this column. */
+   ADR-026/ADR-027: Right column has 2 sub-columns.
+   Cột 1 (primary): quick add, send to card, more button (overflow popover).
+   Cột 2 (secondary): update current card, translate, subtitle manager icon.
+   Both sub-columns inherit --sb-btn-size + --sb-text-opacity + --sb-bg-opacity
+   from the block (set in applyScale), so they scale + fade with the cluster.
+   When cluster is off, applyClusterLayout hides this column. */
 .block-right-column {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1, 4px);
+  align-items: center;
+  justify-content: center;
+}
+
+.right-col-primary,
+.right-col-secondary {
   display: flex;
   flex-direction: column;
   gap: var(--space-1, 4px);
@@ -224,10 +240,87 @@ export const SUBTITLE_BLOCK_CSS = `
   justify-content: center;
 }
 
-/* Card Creator buttons inherit the cluster button size + opacity — no
-   separate --sb-cluster-btn-size override (ADR-026: "two buttons ARE the
-   cluster"). The base .cluster-btn rule already uses --sb-btn-size +
-   --sb-text-opacity + --sb-bg-opacity, so no override is needed here. */
+/* Primary column is the anchor for the more-popover (absolute positioned). */
+.right-col-primary {
+  position: relative;
+}
+
+/* More popover — horizontal row of overflow buttons, opens to the LEFT of
+   the more button with a slide+fade animation. Absolute positioned relative
+   to .right-col-primary, aligned to the more button's row (bottom: 0).
+   No padding — buttons sit flush like cluster buttons. Gap between popover
+   and moreBtn = cluster gap (var(--space-1, 4px)) via margin-right.
+   Uses the same feathered backdrop as cluster-btn. */
+.more-popover {
+  position: absolute;
+  right: 100%;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1, 4px);
+  align-items: center;
+  margin-right: var(--space-1, 4px);
+  border-radius: var(--radius-full, 9999px);
+  isolation: isolate;
+  /* Hidden state — animate from here to --open */
+  opacity: 0;
+  transform: translateX(8px);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--duration-normal, 200ms) ease,
+    transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    visibility 0s linear var(--duration-normal, 200ms);
+}
+
+/* Open state — slide in from right + fade in */
+.more-popover--open {
+  opacity: 1;
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity var(--duration-normal, 200ms) ease,
+    transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    visibility 0s linear 0s;
+}
+
+/* Feathered backdrop — same technique as .cluster-btn::before */
+.more-popover::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius-full, 9999px);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  background: rgba(15, 23, 42, 0.1);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
+  z-index: -1;
+}
+
+.more-popover__slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Manager icon slot — wraps the subtitle-manager-icon in the secondary column.
+   The icon itself is created by subtitleManagerPanel and appended here. */
+.manager-icon-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* More button chevron rotates when popover is open (visual feedback) */
+.right-col-more[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.right-col-more svg {
+  transition: transform var(--duration-fast, 150ms) ease;
+}
 
 /* Hide Card Creator buttons on mobile width < 768px (mobile uses floating cluster) */
 @media (max-width: 767px) {
@@ -481,19 +574,12 @@ export const SUBTITLE_BLOCK_CSS = `
   display: block;
 }
 
-/* === Subtitle Manager Panel (ADR-015 V2) ===
+/* === Subtitle Manager Panel (ADR-015 V2 / ADR-027) ===
    Panel uses design tokens (theme-aware). Manager icon uses overlay colors
-   (sits on video). Item active state uses role-colored border + bg. */
-.subtitle-toolbar {
-  position: absolute;
-  top: var(--space-2, 8px);
-  left: var(--space-2, 8px);
-  display: flex;
-  gap: var(--space-2, 8px);
-  z-index: 1000001;
-  pointer-events: none;
-}
-
+   (sits on video in the secondary column slot). Item active state uses
+   role-colored border + bg.
+   ADR-027: .subtitle-toolbar removed — manager icon is now in the subtitle
+   block's secondary column, not a separate top-left toolbar. */
 .subtitle-manager-icon {
   width: var(--sb-btn-size, 40px);
   height: var(--sb-btn-size, 40px);
@@ -844,12 +930,10 @@ export const SUBTITLE_BLOCK_CSS = `
   color: var(--color-warning);
 }
 
-/* === Panel toggle button (ADR-008 D1) ===
-   Overlay appearance — sits on video, not theme-aware. */
+/* === Panel toggle button (ADR-008 D1 / ADR-027) ===
+   Overlay appearance — sits in more-popover slot, not theme-aware.
+   ADR-027: No longer position:absolute top-right — now inline in popover. */
 .panel-toggle {
-  position: absolute;
-  right: var(--space-2, 8px);
-  top: var(--space-2, 8px);
   width: var(--sb-btn-size, 40px);
   height: var(--sb-btn-size, 40px);
   border: none;
@@ -863,7 +947,6 @@ export const SUBTITLE_BLOCK_CSS = `
   padding: 0;
   box-sizing: border-box;
   isolation: isolate;
-  z-index: 1000000;
   user-select: none;
   pointer-events: auto;
   transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1020,5 +1103,10 @@ export const SUBTITLE_BLOCK_CSS = `
 @keyframes subtitle-toast-in {
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* YouTube: app-drawer swipe-open overlay che cluster buttons — set width 0 */
+#contentContainer.tp-yt-app-drawer[swipe-open]::after {
+  width: 0 !important;
 }
 `;

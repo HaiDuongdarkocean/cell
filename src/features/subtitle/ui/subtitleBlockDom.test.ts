@@ -16,14 +16,60 @@ describe('createSubtitleBlockDOM', () => {
     expect(dom.rightColumn.classList.contains('block-right-column')).toBe(true);
   });
 
-  it('places generate-native button last in right column', () => {
+  it('right column has 2 sub-columns with correct buttons (ADR-027)', () => {
     const dom = createSubtitleBlockDOM();
 
+    // Right column contains: primary column + secondary column (popover is
+    // inside primary — absolute positioned to the left of it)
     const children = Array.from(dom.rightColumn.children);
-    expect(children.length).toBe(3);
-    expect(children[0]).toBe(dom.quickUpdateBtn);
-    expect(children[1]).toBe(dom.editCardBtn);
-    expect(children[2]).toBe(dom.generateNativeBtn);
+    expect(children.length).toBe(2);
+    expect(children[0]).toBe(dom.rightColPrimary);
+    expect(children[1]).toBe(dom.rightColSecondary);
+
+    // Primary column: quick add, edit card, more button, more popover
+    const primaryChildren = Array.from(dom.rightColPrimary.children);
+    expect(primaryChildren.length).toBe(4);
+    expect(primaryChildren[0]).toBe(dom.quickUpdateBtn);
+    expect(primaryChildren[1]).toBe(dom.editCardBtn);
+    expect(primaryChildren[2]).toBe(dom.moreBtn);
+    expect(primaryChildren[3]).toBe(dom.morePopover);
+
+    // Secondary column: update current card, generate native, manager icon slot
+    const secondaryChildren = Array.from(dom.rightColSecondary.children);
+    expect(secondaryChildren.length).toBe(3);
+    expect(secondaryChildren[0]).toBe(dom.updateCurrentCardBtn);
+    expect(secondaryChildren[1]).toBe(dom.generateNativeBtn);
+    expect(secondaryChildren[2]).toBe(dom.managerIconSlot);
+  });
+
+  it('more button has chevron-left icon, testid and accessible label', () => {
+    const dom = createSubtitleBlockDOM();
+
+    expect(dom.moreBtn.classList.contains('cluster-btn')).toBe(true);
+    expect(dom.moreBtn.getAttribute('data-testid')).toBe('right-col-more');
+    expect(dom.moreBtn.getAttribute('aria-label')).toBe('More tools');
+    expect(dom.moreBtn.getAttribute('aria-expanded')).toBe('false');
+    expect(dom.moreBtn.getAttribute('aria-haspopup')).toBe('true');
+    expect(dom.moreBtn.type).toBe('button');
+  });
+
+  it('more popover has slots for panel-toggle and import-button', () => {
+    const dom = createSubtitleBlockDOM();
+
+    expect(dom.morePopover.classList.contains('more-popover')).toBe(true);
+    const slots = Array.from(dom.morePopover.children);
+    expect(slots.length).toBe(2);
+    expect(slots[0]).toBe(dom.panelToggleSlot);
+    expect(slots[1]).toBe(dom.importButtonSlot);
+  });
+
+  it('update current card button uses cluster-btn class, testid and accessible label', () => {
+    const dom = createSubtitleBlockDOM();
+
+    expect(dom.updateCurrentCardBtn.classList.contains('cluster-btn')).toBe(true);
+    expect(dom.updateCurrentCardBtn.getAttribute('data-testid')).toBe('card-creator-update-current');
+    expect(dom.updateCurrentCardBtn.getAttribute('aria-label')).toBe('Update current card');
+    expect(dom.updateCurrentCardBtn.type).toBe('button');
   });
 
   it('generate-native button uses cluster-btn class, testid and accessible label', () => {

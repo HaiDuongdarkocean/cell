@@ -17,12 +17,12 @@ export interface SubtitlePanelItem {
 }
 
 /**
- * Subtitle Manager Panel API (ADR-015).
+ * Subtitle Manager Panel API (ADR-015 / ADR-027).
+ * ADR-027: toolbar removed — icon is appended to the subtitle block's
+ * secondary column slot by the caller. Panel dialog stays in container.
  */
 export interface SubtitleManagerPanel {
-  readonly toolbar: HTMLDivElement;
   readonly icon: HTMLButtonElement;
-  readonly importButton: HTMLElement;
   readonly panel: HTMLDivElement;
   readonly open: () => void;
   readonly close: () => void;
@@ -37,23 +37,18 @@ const CLOSE_SVG = ICON_CATALOG.x.svg.replace('<svg ', '<svg style="width:12px !i
 const CHEVRON_SVG = ICON_CATALOG.chevronDown.svg.replace('<svg ', '<svg style="width:16px !important;height:16px !important;display:block;fill:none !important" ');
 
 /**
- * Create the unified Subtitle Manager Panel (ADR-015 V2 / UI v4).
+ * Create the unified Subtitle Manager Panel (ADR-015 V2 / UI v4 / ADR-027).
  *
- * Replaces ADR-014 V1 separate dropdown icons with a single panel opened from a
- * manager icon. Panel has two collapsible sections (Target + Native), shows
- * active subtitle via radio highlight, and keeps the panel open after selection
- * so users can switch multiple times quickly.
+ * ADR-027: No longer creates a top-left toolbar. The manager icon is returned
+ * for the caller to append into the subtitle block's secondary column slot.
+ * The panel dialog is appended to container (above Netflix overlays).
  *
- * Matches docs/mockups/subtitle-selector-mockup.html.
- *
- * @param container - Video wrapper (toolbar + panel appended here)
- * @param importButton - Existing import button element (moved into toolbar)
+ * @param container - Video wrapper (panel appended here)
  * @param options - onSelect callback, section labels
- * @returns Panel API
+ * @returns Panel API (icon + panel, NO toolbar/importButton)
  */
 export function createSubtitleManagerPanel(
   container: HTMLElement,
-  importButton: HTMLElement,
   options: {
     targetLabel?: string;
     nativeLabel?: string;
@@ -64,20 +59,7 @@ export function createSubtitleManagerPanel(
   const nativeLabel = options.nativeLabel ?? 'Native';
   const onSelect = options.onSelect;
 
-  // === Top-left toolbar ===
-  const toolbar = document.createElement('div');
-  toolbar.setAttribute('data-testid', 'subtitle-toolbar');
-  toolbar.className = 'subtitle-toolbar';
-  container.appendChild(toolbar);
-  // ADR-031: Netflix z-index fix — toolbar + panel both move to .watch-video.
-  mountToWatchVideo(toolbar, container);
-
-  // Move import button into toolbar (it was created elsewhere for lifecycle reasons).
-  // Keep its relative positioning + overflow: hidden so the hidden file input stays
-  // clipped inside the 32x32 button and does not overlap the manager icon.
-  toolbar.appendChild(importButton);
-
-  // === Manager icon ===
+  // === Manager icon (returned to caller — appended to subtitle block slot) ===
   const icon = document.createElement('button');
   icon.setAttribute('type', 'button');
   icon.setAttribute('data-testid', 'subtitle-manager-icon');
@@ -90,9 +72,8 @@ export function createSubtitleManagerPanel(
   const iconFeather = document.createElement('span');
   iconFeather.className = 'subtitle-manager-icon-feather';
   icon.appendChild(iconFeather);
-  toolbar.appendChild(icon);
 
-  // === Panel ===
+  // === Panel (dialog) ===
   const panel = document.createElement('div');
   panel.setAttribute('data-testid', 'subtitle-manager-panel');
   panel.setAttribute('role', 'dialog');
@@ -283,7 +264,7 @@ export function createSubtitleManagerPanel(
     outsideClickHandler = (e: MouseEvent) => {
       if (!panel.classList.contains('subtitle-manager-panel--open')) return;
       const target = e.target as Node;
-      if (!panel.contains(target) && !icon.contains(target) && !importButton.contains(target)) {
+      if (!panel.contains(target) && !icon.contains(target)) {
         close();
       }
     };
@@ -300,14 +281,11 @@ export function createSubtitleManagerPanel(
     close();
     document.removeEventListener('keydown', escHandler);
     unbindOutsideClick();
-    toolbar.remove();
     panel.remove();
   };
 
   return {
-    toolbar,
     icon,
-    importButton,
     panel,
     open,
     close,

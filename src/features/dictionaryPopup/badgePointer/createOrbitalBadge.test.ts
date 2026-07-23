@@ -27,6 +27,15 @@ beforeAll(() => {
     addListener: jest.fn(),
     removeListener: jest.fn(),
   };
+  // rAF sync mock: drag handlers throttle pointermove via requestAnimationFrame.
+  // jsdom rAF is async (setTimeout), so tests that dispatch pointermove and
+  // assert synchronously would see no update. Flush the callback inline so the
+  // drag delta is applied immediately — tests verify drag behavior, not throttle
+  // timing.
+  globalThis.requestAnimationFrame = jest.fn((cb: FrameRequestCallback): number => {
+    cb(0);
+    return 0;
+  }) as unknown as typeof requestAnimationFrame;
 });
 
 function getShadow(host: HTMLElement): ShadowRoot {

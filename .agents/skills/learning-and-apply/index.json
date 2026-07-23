@@ -1029,6 +1029,14 @@
       "category": ["css", "ux"],
       "tags": ["fixed", "viewport", "scrollbar", "clientWidth", "innerWidth", "content-edge", "position-fixed", "badge"],
       "trigger": "Phần tử position:fixed đặt ở mép phải dùng window.innerWidth thì bị thanh cuộn dọc che mất một nửa hoặc toàn bộ (đặc biệt khi width/2 < scrollbar width)."
+    },
+    {
+      "type": "experience",
+      "id": "ux-drag-transform-willchange-raf",
+      "title": "Smooth pointer drag: transform + will-change + rAF throttle — never left/top on the hot path",
+      "category": ["ux", "rendering", "css"],
+      "tags": ["drag", "transform", "translate3d", "will-change", "requestanimationframe", "pointer-events", "layout-thrashing", "compositor", "left-top", "transition", "jitter", "performance"],
+      "trigger": "Khi element draggable bằng Pointer Events và drag bị giật/jitter, đặc biệt trên thiết bị low-RAM/mobile/tablet"
     }
   ]
 }

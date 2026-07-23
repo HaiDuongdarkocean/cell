@@ -19,30 +19,31 @@ describe('subtitlePanel', () => {
   });
 
   describe('createToggleButton', () => {
-    it('creates toggle button appended to container', () => {
-      const toggleBtn = createToggleButton(video);
+    it('creates toggle button element (not appended to container)', () => {
+      const toggleBtn = createToggleButton();
       expect(toggleBtn).toBeTruthy();
       expect(toggleBtn.tagName).toBe('BUTTON');
-      expect(video.parentElement?.contains(toggleBtn)).toBe(true);
+      // ADR-027: button is returned without appending — caller appends to popover slot.
+      expect(toggleBtn.parentElement).toBeNull();
     });
 
     it('has data-testid for testing', () => {
-      const toggleBtn = createToggleButton(video);
+      const toggleBtn = createToggleButton();
       expect(toggleBtn.getAttribute('data-testid')).toBe('panel-toggle');
     });
 
     it('has ARIA label', () => {
-      const toggleBtn = createToggleButton(video);
+      const toggleBtn = createToggleButton();
       expect(toggleBtn.getAttribute('aria-label')).toBe('Toggle subtitle panel');
     });
 
     it('has panel-toggle class for CSS-based styling', () => {
-      const toggleBtn = createToggleButton(video);
+      const toggleBtn = createToggleButton();
       expect(toggleBtn.className).toContain('panel-toggle');
     });
 
     it('has bouncy transform transition via CSS class', () => {
-      const toggleBtn = createToggleButton(video);
+      const toggleBtn = createToggleButton();
       expect(toggleBtn.className).toContain('panel-toggle');
     });
   });

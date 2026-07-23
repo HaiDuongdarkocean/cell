@@ -32,9 +32,17 @@ export interface SubtitleBlockDOM {
   readonly targetLine: HTMLDivElement;
   readonly nativeLine: HTMLDivElement;
   readonly rightColumn: HTMLDivElement;
+  readonly rightColPrimary: HTMLDivElement;
+  readonly rightColSecondary: HTMLDivElement;
   readonly quickUpdateBtn: HTMLButtonElement;
   readonly editCardBtn: HTMLButtonElement;
+  readonly moreBtn: HTMLButtonElement;
+  readonly morePopover: HTMLDivElement;
+  readonly panelToggleSlot: HTMLDivElement;
+  readonly importButtonSlot: HTMLDivElement;
+  readonly updateCurrentCardBtn: HTMLButtonElement;
   readonly generateNativeBtn: HTMLButtonElement;
+  readonly managerIconSlot: HTMLDivElement;
 }
 
 function makeButton(testId: string, ariaLabel: string, iconHtml: string): HTMLButtonElement {
@@ -96,6 +104,15 @@ export function createSubtitleBlockDOM(): SubtitleBlockDOM {
   const rightColumn = document.createElement('div');
   rightColumn.className = 'block-right-column';
 
+  // === Right column: 2 sub-columns (ADR-027) ===
+  // Cột 1 (primary): quick add, send to card, more button (overflow popover).
+  // Cột 2 (secondary): update current card, translate, subtitle manager icon.
+  const rightColPrimary = document.createElement('div');
+  rightColPrimary.className = 'right-col-primary';
+
+  const rightColSecondary = document.createElement('div');
+  rightColSecondary.className = 'right-col-secondary';
+
   // Card Creator entry buttons (quick add + edit) — spec §4.1.
   // quick-add: batch add all unknown/tracking words in the current subtitle
   // line directly to Anki (I+1 = 1 card, I+N = N cards). No dialog.
@@ -103,10 +120,41 @@ export function createSubtitleBlockDOM(): SubtitleBlockDOM {
   quickUpdateBtn.title = 'Quick add (Q)';
   const editCardBtn = makeButton('card-creator-edit', 'Edit card', CARD_CREATOR_ICONS.edit);
   editCardBtn.title = 'Edit card (E)';
-  // Generate native subtitle button — placed below card creator buttons.
+
+  // More button — chevron-left, opens a horizontal popover with overflow
+  // buttons (panel-toggle, import-button). Keeps the video surface clean.
+  const moreBtn = makeButton('right-col-more', 'More tools', ICON_CATALOG.chevronLeft.svg);
+  moreBtn.title = 'More tools';
+  moreBtn.setAttribute('aria-expanded', 'false');
+  moreBtn.setAttribute('aria-haspopup', 'true');
+
+  // Popover — horizontal row of overflow buttons, opens to the left of moreBtn.
+  const morePopover = document.createElement('div');
+  morePopover.className = 'more-popover';
+  morePopover.setAttribute('role', 'group');
+  morePopover.setAttribute('aria-label', 'More tools');
+  // Slots — external buttons (panel-toggle, import-button) are appended here
+  // by the controller, keeping creation lifecycle in contentScriptController.
+  const panelToggleSlot = document.createElement('div');
+  panelToggleSlot.className = 'more-popover__slot';
+  const importButtonSlot = document.createElement('div');
+  importButtonSlot.className = 'more-popover__slot';
+  morePopover.append(panelToggleSlot, importButtonSlot);
+
+  rightColPrimary.append(quickUpdateBtn, editCardBtn, moreBtn, morePopover);
+  rightColumn.append(rightColPrimary, rightColSecondary);
+
+  // Cột 2: update current card, translate (generate native), manager icon slot.
+  // Update current card — rotate-ccw icon (refresh/update semantics).
+  const updateCurrentCardBtn = makeButton('card-creator-update-current', 'Update current card', ICON_CATALOG.rotateCcw.svg);
+  updateCurrentCardBtn.title = 'Update current card';
+  // Generate native subtitle button — placed below update current card.
   const generateNativeBtn = makeButton('generate-native', 'Generate native subtitle', GENERATE_NATIVE_ICON);
   generateNativeBtn.title = 'Generate native subtitle (G)';
-  rightColumn.append(quickUpdateBtn, editCardBtn, generateNativeBtn);
+  // Manager icon slot — subtitle-manager-icon is appended here by the controller.
+  const managerIconSlot = document.createElement('div');
+  managerIconSlot.className = 'manager-icon-slot';
+  rightColSecondary.append(updateCurrentCardBtn, generateNativeBtn, managerIconSlot);
 
   body.append(clusterColumns, subtitleColumn, rightColumn);
   block.appendChild(body);
@@ -127,8 +175,16 @@ export function createSubtitleBlockDOM(): SubtitleBlockDOM {
     targetLine,
     nativeLine,
     rightColumn,
+    rightColPrimary,
+    rightColSecondary,
     quickUpdateBtn,
     editCardBtn,
+    moreBtn,
+    morePopover,
+    panelToggleSlot,
+    importButtonSlot,
+    updateCurrentCardBtn,
     generateNativeBtn,
+    managerIconSlot,
   };
 }
