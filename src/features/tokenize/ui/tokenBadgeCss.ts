@@ -66,19 +66,23 @@ export function buildTokenBadgeCss(): string {
   cursor: grab !important;
 }
 
-/* Shift the icon inward by 1/4 badge-size (half of the visible half) so it
-   sits centered in the visible half-moon, not on the clipped edge. */
+/* Shift the icon inward by 1/4 badge-size (center of the visible half-moon)
+   and scale it down to fit comfortably with padding. The visible half is
+   badge-size/2 = 18px; the icon is 18px, so without scaling it fills the
+   half entirely with zero padding. scale(0.7) → ~12.6px, leaving ~2.7px
+   padding on each side. Transform order: scale first (shrink around center),
+   then translate (move to visible-half center). */
 .cell-token-fab--collapsed[data-collapse-edge="right"] svg {
-  transform: translateX(calc(var(--badge-size, 36px) / -4)) !important;
+  transform: translateX(calc(var(--badge-size, 36px) / -4)) scale(0.7) !important;
 }
 .cell-token-fab--collapsed[data-collapse-edge="left"] svg {
-  transform: translateX(calc(var(--badge-size, 36px) / 4)) !important;
+  transform: translateX(calc(var(--badge-size, 36px) / 4)) scale(0.7) !important;
 }
 .cell-token-fab--collapsed[data-collapse-edge="bottom"] svg {
-  transform: translateY(calc(var(--badge-size, 36px) / -4)) !important;
+  transform: translateY(calc(var(--badge-size, 36px) / -4)) scale(0.7) !important;
 }
 .cell-token-fab--collapsed[data-collapse-edge="top"] svg {
-  transform: translateY(calc(var(--badge-size, 36px) / 4)) !important;
+  transform: translateY(calc(var(--badge-size, 36px) / 4)) scale(0.7) !important;
 }
 
 /* Panel — popover container. data-theme is set on this element so dark-mode
