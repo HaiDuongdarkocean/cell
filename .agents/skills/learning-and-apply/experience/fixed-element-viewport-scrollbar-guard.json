@@ -1,0 +1,21 @@
+{
+  "id": "fixed-element-viewport-scrollbar-guard",
+  "title": "Fixed UI element at window.innerWidth may be hidden behind the vertical scrollbar",
+  "category": ["css", "ux"],
+  "tags": ["fixed", "viewport", "scrollbar", "clientWidth", "innerWidth", "content-edge", "position-fixed", "badge"],
+  "trigger": "Phần tử position:fixed đặt ở mép phải dùng window.innerWidth thì bị thanh cuộn dọc che mất một nửa hoặc toàn bộ (đặc biệt khi width/2 < scrollbar width).",
+  "principle": "window.innerWidth bao gồm thanh cuộn, còn document.documentElement.clientWidth là vùng nội dung thực sự. Đặt phần tử fixed ở mép phải nên dùng clientWidth (với fallback innerWidth) để nửa hình tròn hiển thị nằm trong vùn content, không bị thanh cuộn che. Tương tự dùng clientHeight cho mép dưới. Khi thu nhỏ/collapse nên snap lại content edge như một guard.",
+  "cases": [
+    {
+      "context": "Orbital badge crescent centered at window.innerWidth; on pages with a vertical scrollbar the visible crescent is under the scrollbar or only 1–2 px wide.",
+      "bad": "const rightEdge = window.innerWidth;\nconst center = { x: rightEdge, y: window.innerHeight / 2 };",
+      "good": "function getClientWidth() {\n  return document.documentElement?.clientWidth || window.innerWidth;\n}\nfunction getClientHeight() {\n  return document.documentElement?.clientHeight || window.innerHeight;\n}\nconst center = { x: getClientWidth(), y: getClientHeight() / 2 };"
+    },
+    {
+      "context": "Badge collapsed after being dragged; it may stay in the middle of the page or under the scrollbar.",
+      "bad": "setExpanded(false); // leaves badge wherever it was dragged",
+      "good": "setExpanded(false);\nif (!expanded) {\n  setBadgeCenter({ x: getClientWidth(), y: getClientHeight() / 2 });\n}"
+    }
+  ],
+  "applyFor": ["Fixed overlay badges/buttons at viewport edges", "Content-script UI that must stay visible beside scrollbars", "Any position:fixed element anchored to right/bottom viewport edges"]
+}

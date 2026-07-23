@@ -30,7 +30,27 @@ Dùng với mọi máy mobile, tablet, desktop
     - Step 1: Tìm internet (báo cáo khoa học) 3 thuật toán phù hợp với context.
     - Step 2: Chọn hoặc kết hợp thuật toán phù hợp nhất
 
-## Quy ước mã
+## Quy ước chung
+
+- idea-refine yêu cầu không đoán silent.
+
+## Quy ước viết mã
+
+### Algorithm
+
+- thiết kế algorithm với độ ưu tiên chính xác của thuật toán > performance > maintainance > scale.
+
+- thiết Algorithmic complexity lý tưởng là O(1) -> O(log n).
+
+    - Không còn cách nào khác O(n). 
+
+    - Cấm dùng tới: O(n log n) -> O(n^2)
+
+### Code style
+
+- Chỉ viết commmonmand khi liên quan tới business thực sự phức tạp.
+
+- Viết code dễ hiểu thay vì command
 
 - MUST NOT hardcoded
 
@@ -135,3 +155,26 @@ Trước khi viết code:
 Sau mỗi lần sửa code (file `.ts`/`.tsx`/`.css`/`.json` trong `src/`):
 - ALWAYS chạy `npm run build` để verify build pass + regenerate `tokens.css`/`tokens.ts` (qua hook `prebuild`) nếu có thay đổi token.
     - DON'T chỉ chạy `typecheck`/`test` rồi dừng — build bắt được lỗi Vite/rollup mà tsc không thấy.
+
+```bash
+npm run typecheck
+npm run test:unit
+# npm run build
+npx vite build --mode development
+```
+
+- Dev auto-seed: `npx vite build --mode development` → copy `tests/data-test/resource/` vào `dist/seed/` + `isDevMode=true` → extension tự import 2 file test (Cambridge + frequency) khi DB rỗng, song song, không block UI. Production build (`npm run build`) không copy seed.
+- `import.meta.env.DEV` = true chỉ trong `vite serve`, luôn false trong `vite build` — dùng `import.meta.env.MODE === 'development'` cho dev-seed (xem `src/shared/lib/env/devMode.ts`).
+
+ALWAYS verify: dùng mcp `chrome-devtool` để verify kết quả dùng skill `browser-testing-with-devtools` hoặc debug với `debugging-and-error-recovery`
+
+ALWAYS commit: chỉ commit khi build pass và verify pass dùng skill `git-workflow-and-versioning`
+
+### khi test bằng mcp
+
+Test bằng mcp chrome-devtools hoặc edge-devtools cài thêm: [ublock extension](tests/data-test/extension-phụ-trợ/uBlock0.chromium) để chặn quảng cáo.
+
+### trang web để test
+
+text
+- https://www.geeksforgeeks.org/machine-learning/machine-learning-algorithms/

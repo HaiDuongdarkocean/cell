@@ -1,0 +1,20 @@
+{
+  "id": "nested-partial-update-clear-stale-overrides",
+  "title": "Nested partial update must merge with defaults and clear stale derived fields",
+  "category": ["data", "state"],
+  "tags": ["settings", "nested-partial", "default-merge", "stale-override", "per-lang", "derived-field"],
+  "trigger": "A UI panel emits a nested Partial<T> object that is saved into a parent object; sibling fields in the nested object can be reset to defaults or stale overrides can persist silently.",
+  "principle": "When a UI panel builds a nested settings object from a Partial<T>, merge with defaults first so optional fields are not dropped, and explicitly clear derived/stale override fields when the primary field changes. Otherwise a stale override (e.g. per-language defaultActiveTabPerLang) will silently win over the user's new global value and the UI change appears to have no effect.",
+  "cases": [
+    {
+      "context": "DictionaryPopupSettingsPanel updates defaultActiveTab but keeps a stale defaultActiveTabPerLang; per-lang audio overrides the new global image",
+      "bad": "const update = (partial: Partial<DictionaryPopupSettings>) => {\n  onChange({ ...settings, ...partial });\n};\n// settings has defaultActiveTabPerLang: { en: 'audio' }\n// partial sets defaultActiveTab: 'image'\n// result still carries { en: 'audio' } → popup opens audio for en",
+      "good": "const update = (partial: Partial<DictionaryPopupSettings>) => {\n  const next: DictionaryPopupSettings = {\n    ...DEFAULT_DICTIONARY_POPUP_SETTINGS,\n    ...settings,\n    ...partial,\n    defaultActiveTabPerLang: 'defaultActiveTab' in partial ? undefined : settings.defaultActiveTabPerLang,\n  };\n  onChange(next);\n};\n// defaults fill missing optional fields (tts), and stale per-lang override is cleared\n// when the user changes the global defaultActiveTab"
+    }
+  ],
+  "applyFor": [
+    "Nested settings forms that emit Partial<T> for a sub-object stored in parent state",
+    "UIs that manage a global setting with hidden/unsupported per-language or per-context overrides",
+    "Any partial update where a derived/override field can become stale and override the primary value"
+  ]
+}
