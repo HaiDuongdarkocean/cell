@@ -246,6 +246,11 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     if (persist) userPreset = next;
     updatePointerVisual(animate);
     badge.setAttribute('aria-pressed', String(expanded));
+    // Peek mode: when the pointer preset is 'center', the pointer tip sits
+    // inside the badge. Make the badge translucent + faint border so the user
+    // can see the text under it for easier lookup. Restored to solid when the
+    // preset moves away from center.
+    badge.classList.toggle('cell-orbital-badge--peek', expanded && preset === 'center');
   }
 
   function setExpanded(next: boolean, animate = true, edge?: CollapsedEdge): void {
@@ -257,6 +262,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       collapsedEdge = edge;
     }
     badge.classList.toggle('cell-orbital-badge--expanded', expanded);
+    badge.classList.toggle('cell-orbital-badge--peek', expanded && preset === 'center');
     badge.setAttribute('aria-pressed', String(expanded));
     updatePointerVisual(animate);
     if (!expanded) {
