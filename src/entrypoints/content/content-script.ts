@@ -39,6 +39,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       csInjectTime: (window as unknown as Record<string, unknown>).__YT_CS_INJECT_TIME,
       msgListenerRegistered: true,
       lastRelayedVideoId: (window as unknown as Record<string, unknown>).__YT_LAST_RELAYED_VIDEO_ID,
+      scanInfo: (window as unknown as Record<string, unknown>).__CELL_SCAN_INFO,
     });
     return false;
   }

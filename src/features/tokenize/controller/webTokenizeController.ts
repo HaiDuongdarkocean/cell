@@ -1,6 +1,6 @@
 import { findTextBlocks, findTextBlocksInNodes } from '@/features/tokenize/logic/tokenizeBlock';
 import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
-import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
+import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { resolveScrollPredictMargin, type ScrollDirection } from '@/features/tokenize/logic/scrollDirection';
 import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
@@ -43,13 +43,14 @@ function resolveCacheCapacity(): number {
   return Math.max(MIN_CACHE_CAPACITY, byBudget);
 }
 const CACHE_CAPACITY = resolveCacheCapacity();
-// Phase A uses isotropic 0.5-viewport overscan (above + below). This keeps the
-// initial resident set to ~2 viewports, satisfying the "0 plain text in
-// viewport" fast-start goal while staying lean on 500MB RAM devices. Phase B
-// switches to resolveScrollPredictMargin for deeper scroll-aware buffers.
+// Phase A uses isotropic 1-viewport overscan (above + below). This guarantees
+// the viewport immediately above and below the current view is already parsed
+// and bound, so a one-viewport scroll in either direction shows no plain text.
+// The resident set is ~3 viewports, which is still within the 500MB RAM budget
+// because soft-unbind behind the scroll direction (Phase B) reclaims spans.
 function resolveViewportRootMargin(): string {
   const vh = window.innerHeight;
-  const margin = Math.round(vh / 2);
+  const margin = Math.round(vh);
   return `${margin}px 0px ${margin}px 0px`;
 }
 const MUTATION_DEBOUNCE_MS = 300;
@@ -123,9 +124,11 @@ export async function createWebTokenizeController(
   const cache = new TokenizeCache({
     capacity: CACHE_CAPACITY,
     onEvict: (block) => {
+      // Soft-unbind: remove DOM spans, but keep the block in the observed list
+      // so recreateViewportWithMargin can re-observe it when it re-enters the
+      // viewport/overscan. Splicing here would drop blocks that are about to
+      // become visible again (e.g. after scroll), breaking 100% parse.
       unbindTokenBlock(block);
-      const idx = blocks.indexOf(block);
-      if (idx >= 0) blocks.splice(idx, 1);
     },
   });
 
@@ -301,16 +304,31 @@ export async function createWebTokenizeController(
     viewport.observe(block.element, {
       onEnter: () => {
         visibleElements.add(block.element);
+        // Keep the block resident so metadata + rebinds can find it. Adding it
+        // here (rather than in scanAndObserveBlocks) prevents the LRU cache from
+        // evicting distant offscreen blocks over the viewport blocks we are
+        // actively binding.
+        cache.set(block);
         // If the block is already bound (e.g. by eager tryBindVisible during a
         // mutation batch), skip scheduling a no-op bind task to keep the queue
         // short on low-end devices.
+        // eslint-disable-next-line no-console
+        console.log('[onEnter]', block.id, 'isBound', block.isBound, 'enabled', stateStore.getState().enabled);
         if (stateStore.getState().enabled && !block.isBound) {
+          // bindVisibleBlock calls prepareBlock internally, so one task is
+          // enough; scheduling a separate prepare task causes it to run *after*
+          // bind because PRIORITY_VIEWPORT (0) sorts before PRIORITY_PREPARE (5).
           scheduler.schedule(() => bindVisibleBlock(block), PRIORITY_VIEWPORT);
         }
       },
       onExit: () => {
         visibleElements.delete(block.element);
-        scheduler.schedule(() => unbindTokenBlock(block), PRIORITY_BUFFER);
+        // Soft-unbind and release the cache slot for blocks that leave the
+        // observed range. The block stays in `blocks` so it can be re-observed.
+        scheduler.schedule(() => {
+          unbindTokenBlock(block);
+          cache.delete(block.id);
+        }, PRIORITY_BUFFER);
       },
     });
     // Eager bind only for dynamically added nodes during scroll. The initial
@@ -323,31 +341,36 @@ export async function createWebTokenizeController(
     const scanned = findTextBlocks(root, { langCode });
     for (const block of scanned) {
       // VDLT-Predict FR4: bindViewportNow may have already scanned + cached
-      // this block during cold-start. Re-observe the cached block object (not
-      // the fresh one) so onEnter/onExit closures reference the bound instance.
-      if (cache.has(block.id)) {
-        const existing = cache.get(block.id);
-        if (existing) observeBlock(existing);
-        continue;
-      }
-      cache.set(block);
+      // this block during cold-start. The same text node reuses one TokenBlock
+      // object, so membership in `blocks` is the duplicate guard.
+      if (blocks.includes(block)) continue;
+      // Do not cache offscreen blocks yet. Adding them to the LRU cache now
+      // would evict the viewport blocks we just bound during cold-start,
+      // breaking scroll parse. The cache is populated lazily in onEnter when
+      // the block enters the viewport/overscan.
       blocks.push(block);
+      // Observe the new block immediately. Disconnected nodes are harmless to
+      // observe (the callback simply won't fire) and match the original test
+      // expectation that a root-only node is registered.
       observeBlock(block);
     }
     // bindViewportNow may have bound viewport blocks whose source nodes are no
-    // longer discoverable by findTextBlocks (they became token spans). Make sure
-    // those existing blocks are observed so scroll enter/exit keeps them in sync.
+    // longer discoverable by findTextBlocks (they became token spans). Make
+    // sure those existing blocks are observed so scroll enter/exit keeps them
+    // in sync.
     for (const block of blocks) {
       if (block.element.isConnected) observeBlock(block);
     }
-    // VDLT-Predict FR2: prepare-ahead at PREPARE priority so tokens are ready
-    // before bind, but still after any pending viewport binds. The fast path
-    // uses a real 16ms budget so it does not block the main thread, while not
-    // waiting for requestIdleCallback (which can be delayed for seconds on a
-    // busy page). Buffer/idle work is reserved for low-priority unbind/evict.
-    for (const block of blocks.slice(0, CACHE_CAPACITY)) {
-      scheduler.schedule(() => prepareBlock(block), PRIORITY_PREPARE);
+    const tagDistribution: Record<string, number> = {};
+    for (const block of scanned) {
+      const tag = block.element.tagName;
+      tagDistribution[tag] = (tagDistribution[tag] ?? 0) + 1;
     }
+    (window as unknown as Record<string, unknown>).__CELL_SCAN_INFO = {
+      scanned: scanned.length,
+      blocks: blocks.length,
+      tags: tagDistribution,
+    };
   }
 
   /**
@@ -468,10 +491,9 @@ export async function createWebTokenizeController(
     dynIdCounter += 1000; // reserve a range for this scan
     const newBlocks = findTextBlocksInNodes(added, { langCode, idPrefix: `dyn-${scanId}-` });
     for (const block of newBlocks) {
-      // Skip if source node is already bound by another block
-      const existing = cache.getByElement(block.element);
-      if (existing.some((b) => b.sourceNodes[0] === block.sourceNodes[0])) continue;
-      cache.set(block);
+      // The same text node now reuses a single TokenBlock object across scans,
+      // so membership in the observed list is the duplicate guard.
+      if (blocks.includes(block)) continue;
       blocks.push(block);
       // Only eager-bind small mutation batches. Large batches (e.g. hydration,
       // re-rendering a whole subtree) can produce hundreds of blocks; doing a
@@ -664,7 +686,11 @@ export async function createWebTokenizeController(
 
   function bindVisibleBlock(block: TokenBlock): void {
     prepareBlock(block);
-    if (!stateStore.getState().enabled || !visibleElements.has(block.element)) return;
+    if (!stateStore.getState().enabled || !visibleElements.has(block.element)) {
+      // eslint-disable-next-line no-console
+      console.log('[bindVisibleBlock skip]', block.id, 'enabled', stateStore.getState().enabled, 'visible', visibleElements.has(block.element));
+      return;
+    }
     if (!block.isBound) {
       bindTokenBlock(block, getDisplayOptions());
     }
@@ -711,6 +737,7 @@ export async function createWebTokenizeController(
   function tryBindVisible(block: TokenBlock): void {
     if (isElementInViewport(block.element)) {
       visibleElements.add(block.element);
+      cache.set(block);
       bindVisibleBlock(block);
     }
   }
