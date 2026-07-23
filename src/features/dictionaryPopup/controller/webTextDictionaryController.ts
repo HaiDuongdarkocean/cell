@@ -49,6 +49,7 @@ import { showToast } from '@/features/subtitle/ui/subtitleUI';
 export interface CueRange {
   readonly start: number;
   readonly end: number;
+  readonly text?: string;
 }
 
 /** Delay before actually hiding the popup when a trigger fires onClear
@@ -66,6 +67,8 @@ export interface WebTextDictionaryControllerDeps {
   readonly video?: HTMLVideoElement;
   /** Callback to get current target cues for sentence audio capture (subtitle path). */
   readonly getTargetCues?: () => readonly CueRange[];
+  /** Callback to get current native cues for sentence translation fallback. */
+  readonly getNativeCues?: () => readonly CueRange[];
   /** Called when the user cycles the word status inside the popup. The popup
    *  already persists the new status via its own WORD_STATUS_SET message; this
    *  callback lets external systems (tokenize controller) update their cached
@@ -82,6 +85,8 @@ export interface WebTextDictionaryVideoConfig {
   readonly hasVideo: boolean;
   readonly video?: HTMLVideoElement;
   readonly getTargetCues?: () => readonly CueRange[];
+  /** Callback to get current native cues for sentence translation fallback. */
+  readonly getNativeCues?: () => readonly CueRange[];
 }
 
 export interface WebTextDictionaryController {
@@ -208,6 +213,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let hasVideo = deps.hasVideo;
   let video: HTMLVideoElement | undefined = deps.video;
   let getTargetCues: (() => readonly CueRange[]) | undefined = deps.getTargetCues;
+  let getNativeCues: (() => readonly CueRange[]) | undefined = deps.getNativeCues;
 
   let popupDictState: PopupDictionaryState = createPopupDictionaryState(
     dpSettings,
@@ -387,6 +393,38 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return null;
   }
 
+  /** Check if the current lookup target is inside a subtitle-line element.
+   *  Media recording (screenshot + sentence audio) is only allowed when the
+   *  user looked up a word inside the subtitle overlay, not from web text. */
+  function isLookupFromSubtitle(): boolean {
+    const target = currentHighlightTarget;
+    if (!target) return false;
+    const token = getTokenElement(target);
+    if (!token) return false;
+    return token.closest('.subtitle-line') !== null;
+  }
+
+  /** Get the native subtitle text matching the current video time.
+   *  Used as sentence translation fallback when the user didn't manually
+   *  select a translation in the popup. Priority: popup translation > native
+   *  subtitle text > empty. */
+  function getCurrentNativeSubtitleText(): string {
+    if (!video || !getNativeCues) return '';
+    const nativeCues = getNativeCues();
+    if (nativeCues.length === 0) return '';
+    const currentMs = video.currentTime * 1000;
+    const matching = nativeCues.find((c) => currentMs >= c.start && currentMs <= c.end);
+    if (matching?.text) return matching.text;
+    // Fallback: nearest native cue within 5s.
+    let nearest = nativeCues[0];
+    let minDiff = Math.abs(currentMs - nearest.start);
+    for (const c of nativeCues) {
+      const diff = Math.abs(currentMs - c.start);
+      if (diff < minDiff) { minDiff = diff; nearest = c; }
+    }
+    return minDiff <= 5000 ? (nearest.text ?? '') : '';
+  }
+
   function getTokenById(id: { term: string; start: string; blockId: string }): HTMLElement | null {
     return document.querySelector(
       `[data-cell-term="${CSS.escape(id.term)}"][data-cell-start="${id.start}"][data-cell-block-id="${id.blockId}"]`,
@@ -441,6 +479,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     hasVideo = config.hasVideo;
     video = config.video;
     getTargetCues = config.getTargetCues;
+    getNativeCues = config.getNativeCues;
   }
 
   function onPopupDismiss(dismissedState: PopupDictionaryState): void {
@@ -640,6 +679,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     action: PopupCardCreatorAction,
     prefill: PopupCardCreatorPrefill,
   ): Promise<void> {
+    // Capture subtitle context BEFORE any await — onPopupDismiss clears
+    // currentHighlightTarget synchronously after this function is called.
+    const fromSubtitle = isLookupFromSubtitle();
     const settings = await loadSettingsOrToast(deps.container);
     if (!settings) return;
     updateCardCreatorSettings(settings.cardCreator);
@@ -656,7 +698,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     const targetLang = settings.subtitleOverlayNativeLanguage || nativeLang || 'vi';
 
     const initialMedia: MediaFile[] = [];
-    if (video && video.videoWidth > 0) {
+    if (video && video.videoWidth > 0 && fromSubtitle) {
       showToast('Capturing media…', deps.container, { variant: 'info' });
       await waitForVideoReady(video);
       try {
@@ -679,14 +721,14 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     }
 
     openCardCreator({
-      video: video && video.videoWidth > 0 ? video : undefined,
+      video: video && video.videoWidth > 0 && fromSubtitle ? video : undefined,
       sourceLang,
       targetLang,
       initialMedia: initialMedia.length > 0 ? initialMedia : undefined,
       prefill: {
         targetWord: prefill.term,
         definitions: definitionsText,
-        sentenceTranslation: prefill.translation,
+        sentenceTranslation: prefill.translation ?? (fromSubtitle ? getCurrentNativeSubtitleText() : undefined),
         sentence: prefill.contextSentence,
         wordAudioUrls: prefill.wordAudioUrls,
         sentenceAudioUrls: prefill.sentenceAudioUrls,
@@ -696,6 +738,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   async function handlePopupQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {
+    // Capture subtitle context BEFORE any await — onPopupDismiss clears
+    // currentHighlightTarget synchronously after this function is called.
+    const fromSubtitle = isLookupFromSubtitle();
     const settings = await loadSettingsOrToast(deps.container);
     if (!settings) return;
     const freshCcSettings = settings.cardCreator;
@@ -742,7 +787,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       else warnings.push(`image: ${prefill.imageUrls![i]}`);
     });
 
-    if (video && video.videoWidth > 0) {
+    if (video && video.videoWidth > 0 && fromSubtitle) {
       await waitForVideoReady(video);
       try {
         const screenshot = await captureScreenshot(video);
@@ -772,7 +817,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       {
         targetWord: prefill.term,
         sentence: prefill.contextSentence,
-        sentenceTranslation: prefill.translation ?? '',
+        sentenceTranslation: prefill.translation ?? (fromSubtitle ? getCurrentNativeSubtitleText() : ''),
         definitions: definitionsText,
         note: '',
         moreExample: '',

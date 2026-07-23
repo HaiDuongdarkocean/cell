@@ -482,18 +482,25 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         cardCreator: settings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
         subtitleOverlayNativeLanguage: settings.subtitleOverlayNativeLanguage,
       });
+      // Always configure video reference — the popup can be triggered via
+      // tokenize controller (which bypasses dp.enabled), and Quick Add needs
+      // the video for screenshot + sentence audio recording. Without this,
+      // dp.enabled=false → configureVideo skipped → video null → no pause,
+      // no screenshot, no recording (even though popup still opens via tokenize).
+      sharedWebTextCtrl.configureVideo({
+        hasVideo: true,
+        video,
+        getTargetCues: () => blockController.getTargetCues(),
+        getNativeCues: () => blockController.getNativeCues(),
+      });
       if (dpSettings?.enabled) {
-        sharedWebTextCtrl.configureVideo({
-          hasVideo: true,
-          video,
-          getTargetCues: () => blockController.getTargetCues(),
-        });
         blockController.enableDictionaryPopup(
           dpSettings.triggerMode,
           (request, requestId, anchorRect, tokenSpan) => {
             sharedWebTextCtrl?.handleLookup(request, requestId, anchorRect, tokenSpan);
           },
           (requestId) => { sharedWebTextCtrl?.cancelLookup(requestId); },
+          () => { sharedWebTextCtrl?.dismissLookup(); },
         );
       } else {
         blockController.disableDictionaryPopup();
@@ -600,18 +607,21 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           cardCreator: newSettings.cardCreator ?? DEFAULT_CARD_CREATOR_SETTINGS,
           subtitleOverlayNativeLanguage: newSettings.subtitleOverlayNativeLanguage,
         });
+        // Always configure video reference — popup can be triggered via tokenize
+        // even when dp.enabled=false. See init() block above for full rationale.
+        sharedWebTextCtrl.configureVideo({
+          hasVideo: true,
+          video,
+          getTargetCues: () => blockController.getTargetCues(),
+        });
         if (newSettings.dictionaryPopup.enabled) {
-          sharedWebTextCtrl.configureVideo({
-            hasVideo: true,
-            video,
-            getTargetCues: () => blockController.getTargetCues(),
-          });
           blockController.enableDictionaryPopup(
             newSettings.dictionaryPopup.triggerMode,
             (request, requestId, anchorRect, tokenSpan) => {
               sharedWebTextCtrl?.handleLookup(request, requestId, anchorRect, tokenSpan);
             },
             (requestId) => { sharedWebTextCtrl?.cancelLookup(requestId); },
+            () => { sharedWebTextCtrl?.dismissLookup(); },
           );
         } else {
           blockController.disableDictionaryPopup();

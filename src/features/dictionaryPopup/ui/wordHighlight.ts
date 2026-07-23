@@ -179,6 +179,8 @@ function createTextHighlight(config: HighlightConfig): TextHighlight {
 
   function showOverlay(range: Range): void {
     if (!document.body) return; // guard: content scripts may fire before </body>
+    // jsdom doesn't implement getClientRects — guard against non-function.
+    if (typeof range.getClientRects !== 'function') return;
     const rects = range.getClientRects();
     for (const rect of rects) {
       const overlay = document.createElement('div');
