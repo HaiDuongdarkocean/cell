@@ -27,6 +27,19 @@ const SLOT_OBJECT = 0;
 const SLOT_PERSON = 1;
 const SLOT_POSSESSIVE = 2;
 
+/**
+ * Particles that frequently participate in separable phrasal verbs.
+ * When a dictionary template is "verb + particle + sth/sb" (object after
+ * particle), we also compile "verb + sth/sb + particle" so the matcher can
+ * catch sentences like "put the gun down" from an entry "put down sth".
+ * This is safe over-generation: the variant only matches when the particle
+ * appears later in the sentence, and ranking prefers longer spans.
+ */
+const SEPARABLE_PARTICLES = new Set<string>([
+  'up', 'down', 'off', 'on', 'out', 'away', 'back', 'in', 'over', 'through',
+  'around', 'along', 'by', 'forward', 'ahead', 'apart', 'together', 'aside',
+]);
+
 /** Stopwords excluded from anchor preference (kept conservative). */
 export const STOPWORDS = new Set<string>([
   'a', 'an', 'the', 'of', 'in', 'on', 'for', 'to', 'with', 'from', 'by', 'at',
@@ -76,9 +89,45 @@ export interface PhraseIndex {
   readonly byteSize: number;
 }
 
+/**
+ * Generate the separable-object variant for a phrasal-verb template.
+ *
+ * Input pattern: [literal verb, literal particle, slot] (e.g. put down sth).
+ * Output pattern: [literal verb, slot, literal particle] (e.g. put sth down).
+ * Returns null when the template does not match the pattern.
+ */
+function makeSeparableVariant(input: PhraseIndexInput): PhraseIndexInput | null {
+  const nodes = input.nodes;
+  if (nodes.length !== 3) return null;
+  const [verb, particle, slot] = nodes;
+  if (verb.type !== 'literal' || particle.type !== 'literal' || slot.type !== 'slot') {
+    return null;
+  }
+  if (!SEPARABLE_PARTICLES.has(particle.value)) return null;
+  const slotLabel = slot.kind === 'person' ? 'sb' : 'sth';
+  const variantNodes: readonly PhraseNode[] = [verb, slot, particle];
+  return {
+    ...input,
+    normalizedTerm: `${verb.value} ${slotLabel} ${particle.value}`,
+    nodes: variantNodes,
+  };
+}
+
+/** Expand inputs with separable phrasal-verb variants and renumber IDs. */
+function expandInputs(inputs: readonly PhraseIndexInput[]): PhraseIndexInput[] {
+  const expanded: PhraseIndexInput[] = [];
+  for (const input of inputs) {
+    expanded.push(input);
+    const variant = makeSeparableVariant(input);
+    if (variant) expanded.push(variant);
+  }
+  return expanded.map((input, i) => ({ ...input, templateId: i }));
+}
+
 /** Compile parsed templates into an in-memory phrase index. */
 export function compilePhraseIndex(inputs: readonly PhraseIndexInput[]): PhraseIndex {
-  const templates: CompiledTemplate[] = inputs.map((input, i) => ({
+  const expanded = expandInputs(inputs);
+  const templates: CompiledTemplate[] = expanded.map((input, i) => ({
     templateId: input.templateId === 0 && i > 0 ? i : input.templateId,
     sourceTerm: input.sourceTerm,
     normalizedTerm: input.normalizedTerm,

@@ -203,8 +203,11 @@ const IRREGULAR_COMPARISON: ReadonlyMap<string, string> = new Map([
   ['elder', 'old'], ['eldest', 'old'],
 ]);
 
-/** Irregular plural nouns (plural → singular). */
+/** Irregular plural nouns (plural → singular). Includes native English,
+ * Latin, and Greek borrowings that retain foreign plural endings.
+ */
 const IRREGULAR_PLURALS: ReadonlyMap<string, string> = new Map([
+  // Native English
   ['children', 'child'],
   ['men', 'man'],
   ['women', 'woman'],
@@ -216,6 +219,56 @@ const IRREGULAR_PLURALS: ReadonlyMap<string, string> = new Map([
   ['oxen', 'ox'],
   ['brethren', 'brother'],
   ['people', 'person'],
+  // Latin / Greek -a plural → -um
+  ['data', 'datum'],
+  ['bacteria', 'bacterium'],
+  ['media', 'medium'],
+  ['curricula', 'curriculum'],
+  ['strata', 'stratum'],
+  ['memoranda', 'memorandum'],
+  ['millennia', 'millennium'],
+  ['symposia', 'symposium'],
+  ['phenomena', 'phenomenon'],
+  ['criteria', 'criterion'],
+  // Latin -i plural → -us
+  ['fungi', 'fungus'],
+  ['cacti', 'cactus'],
+  ['stimuli', 'stimulus'],
+  ['nuclei', 'nucleus'],
+  ['radii', 'radius'],
+  ['alumni', 'alumnus'],
+  ['syllabi', 'syllabus'],
+  ['octopi', 'octopus'],
+  ['termini', 'terminus'],
+  ['genii', 'genius'],
+  ['bacilli', 'bacillus'],
+  // Latin -ae plural → -a
+  ['larvae', 'larva'],
+  ['vertebrae', 'vertebra'],
+  ['antennae', 'antenna'],
+  ['formulae', 'formula'],
+  ['alumnae', 'alumna'],
+  ['vertebrae', 'vertebra'],
+  ['minutiae', 'minutia'],
+  // Latin/Greek -ices / -es plural → -ex / -ix / -is
+  ['indices', 'index'],
+  ['appendices', 'appendix'],
+  ['matrices', 'matrix'],
+  ['vertices', 'vertex'],
+  ['vortices', 'vortex'],
+  ['cervices', 'cervix'],
+  ['crises', 'crisis'],
+  ['analyses', 'analysis'],
+  ['theses', 'thesis'],
+  ['diagnoses', 'diagnosis'],
+  ['oases', 'oasis'],
+  ['hypotheses', 'hypothesis'],
+  ['neuroses', 'neurosis'],
+  ['prognoses', 'prognosis'],
+  ['psychoses', 'psychosis'],
+  ['syntheses', 'synthesis'],
+  ['axes', 'axis'],
+  ['bases', 'basis'],
 ]);
 
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
@@ -275,6 +328,13 @@ export function englishLemmaCandidates(word: string): string[] {
     const stem = lower.slice(0, -2);
     const stemCandidates = englishLemmaCandidates(stem);
     // Stem first, then stem's lemma candidates (e.g. "children's" → "child").
+    return dedupe([stem, ...stemCandidates]);
+  }
+
+  // 4b. Possessive plural ending in bare apostrophe: dogs' → dog, friends' → friend.
+  if (lower.endsWith("'") && lower.length > 2) {
+    const stem = lower.slice(0, -1);
+    const stemCandidates = englishLemmaCandidates(stem);
     return dedupe([stem, ...stemCandidates]);
   }
 
@@ -392,11 +452,276 @@ export function englishLemmaCandidates(word: string): string[] {
 }
 
 /**
+ * Expand common English contractions into their base-word candidates.
+ *
+ * Subtitles and informal text are full of contractions (don't, can't, won't,
+ * it's, I've, etc.). The inflectional lemmatizer treats these as opaque tokens,
+ * so a lookup of "can't" misses the dictionary entry for "can". This helper
+ * returns the base auxiliary/modal/verb for a contraction, keeping the lookup
+ * accurate without introducing false-positive phrase matches (phrase matching
+ * continues to use `englishLemmaCandidates`, which does NOT expand contractions).
+ *
+ * Sources:
+ * - Cambridge Dictionary: contractions (n't, 'm, 're, 's, 've, 'll, 'd).
+ * - Wikipedia: Contraction (grammar).
+ */
+function normalizeApostrophe(word: string): string {
+  return word.replaceAll('’', "'").normalize('NFC').toLowerCase();
+}
+
+/** Contraction -> base form(s), ordered by likelihood. */
+const CONTRACTION_BASES: ReadonlyMap<string, string[]> = new Map([
+  // Negative contractions (verb/modal + not)
+  ["aren't", ['are', 'be']],
+  ["can't", ['can']],
+  ["couldn't", ['could']],
+  ["didn't", ['did', 'do']],
+  ["doesn't", ['does', 'do']],
+  ["don't", ['do']],
+  ["hadn't", ['had', 'have']],
+  ["hasn't", ['has', 'have']],
+  ["haven't", ['have']],
+  ["isn't", ['is', 'be']],
+  ["mightn't", ['might']],
+  ["mustn't", ['must']],
+  ["needn't", ['need']],
+  ["oughtn't", ['ought']],
+  ["shan't", ['shall']],
+  ["shouldn't", ['should']],
+  ["wasn't", ['was', 'be']],
+  ["weren't", ['were', 'be']],
+  ["won't", ['will']],
+  ["wouldn't", ['would']],
+]);
+
+function expandContractions(word: string): string[] {
+  const lower = normalizeApostrophe(word);
+  const bases = CONTRACTION_BASES.get(lower);
+  if (bases) return [...bases];
+
+  // Subject/auxiliary clitics: he'd, he'll, he's, I'd, I'm, I've, they'd, etc.
+  // The clitic attaches after a pronoun/noun; we extract the base auxiliary.
+  if (lower.endsWith("'d")) {
+    return ['would', 'had'];
+  }
+  if (lower.endsWith("'ll")) {
+    return ['will', 'shall'];
+  }
+  if (lower.endsWith("'re")) {
+    return ['are', 'be'];
+  }
+  if (lower.endsWith("'ve")) {
+    return ['have'];
+  }
+  if (lower.endsWith("'m")) {
+    return ['am', 'be'];
+  }
+  if (lower.endsWith("'s")) {
+    // 's is ambiguous: is/has/does (and possessive, handled by englishLemmaCandidates).
+    return ['is', 'has', 'does', 'be', 'have'];
+  }
+
+  // Informal spoken/written contractions.
+  if (lower === 'gonna') return ['go'];
+  if (lower === 'wanna') return ['want'];
+  if (lower === 'gotta') return ['get'];
+  if (lower === 'kinda') return ['kind'];
+  if (lower === 'sorta') return ['sort'];
+  if (lower === "'em" || lower === 'em') return ['them'];
+  if (lower === "'cause" || lower === 'cause') return ['because'];
+  if (lower === "o'") return ['of'];
+  if (lower === "'tis") return ['is', 'be'];
+  if (lower === "'twas") return ['was', 'be'];
+  if (lower === "ain't") return ['be', 'have', 'do'];
+  if (lower === "let's") return ['let'];
+  if (lower === 'yall' || lower === "y'all") return ['you'];
+
+  return [];
+}
+
+/**
+ * Derivation-aware candidates.
+ *
+ * Inflectional lemmatization intentionally stops at inflections (ADR-041), but
+ * dictionary lookup also fails on derived forms: "happiness" is not the same
+ * grammatical category as "happy", yet a learner hovering "happiness" will
+ * benefit from seeing the base adjective. These rules are intentionally
+ * separate from `englishLemmaCandidates` so phrase matching (which runs on
+ * inflections only) does not false-match "happy birthday" from the token
+ * "happiness".
+ */
+function derivationalCandidates(word: string): string[] {
+  const lower = normalizeApostrophe(word);
+  if (lower.length < 4) return [];
+
+  // Irregular forms already have a canonical base from englishLemmaCandidates.
+  // Applying suffix heuristics to them produces noise (e.g. "better" -> "bett").
+  if (IRREGULAR_VERBS.has(lower) || IRREGULAR_COMPARISON.has(lower) || IRREGULAR_PLURALS.has(lower)) {
+    return [];
+  }
+
+  const candidates: string[] = [];
+
+  // -ness: happiness -> happy, kindness -> kind, sadness -> sad
+  if (lower.endsWith('ness') && lower.length > 5) {
+    const stem = lower.slice(0, -4);
+    if (stem.endsWith('i')) {
+      candidates.push(stem.slice(0, -1) + 'y');
+    }
+    candidates.push(stem);
+    candidates.push(...englishLemmaCandidates(stem));
+  }
+
+  // -ment: employment -> employ, development -> develop, movement -> move
+  if (lower.endsWith('ment') && lower.length > 5) {
+    const stem = lower.slice(0, -4);
+    candidates.push(stem);
+    candidates.push(stem + 'e');
+    candidates.push(...englishLemmaCandidates(stem));
+  }
+
+  // -ful / -less: helpful -> help, homeless -> home, careful -> care,
+  // beautiful -> beauty
+  if (lower.endsWith('ful') && lower.length > 4) {
+    const stem = lower.slice(0, -3);
+    if (stem.endsWith('i')) {
+      candidates.push(stem.slice(0, -1) + 'y');
+    }
+    candidates.push(stem);
+    candidates.push(stem + 'e');
+    candidates.push(...englishLemmaCandidates(stem));
+  }
+  if (lower.endsWith('less') && lower.length > 5) {
+    const stem = lower.slice(0, -4);
+    candidates.push(stem);
+    candidates.push(stem + 'e');
+    candidates.push(...englishLemmaCandidates(stem));
+  }
+
+  // -ly adverbs: quickly -> quick, happily -> happy, carefully -> careful
+  if (lower.endsWith('ly') && lower.length > 3) {
+    const stem = lower.slice(0, -2);
+    if (lower.endsWith('ily')) {
+      // happily -> happy, easily -> easy
+      candidates.push(stem.slice(0, -1) + 'y');
+    }
+    candidates.push(stem);
+    candidates.push(...englishLemmaCandidates(stem));
+  }
+
+  // -ion / -ation / -ution / -sion: action -> act, decision -> decide,
+  // creation -> create, contribution -> contribute, nation -> nation
+  if (lower.endsWith('ation') && lower.length > 6) {
+    const stem = lower.slice(0, -5);
+    candidates.push(stem);              // presentation -> present
+    candidates.push(stem + 'e');        // imagination -> imagine
+    candidates.push(stem + 'te');       // creation -> create
+    candidates.push(stem + 'ate');      // education -> educate
+    candidates.push(...englishLemmaCandidates(stem));
+  } else if (lower.endsWith('ution') && lower.length > 6) {
+    const stem = lower.slice(0, -5);
+    candidates.push(stem + 'ute');      // contribution -> contribute
+    candidates.push(...englishLemmaCandidates(stem));
+  } else if (lower.endsWith('sion') && lower.length > 5) {
+    const stem = lower.slice(0, -4);
+    candidates.push(stem + 'de');       // decision -> decide
+    candidates.push(stem + 'se');       // confusion -> confuse
+    candidates.push(...englishLemmaCandidates(stem));
+  } else if (lower.endsWith('ion') && lower.length > 4) {
+    // action -> act, connection -> connect, relation -> relate
+    const stem = lower.slice(0, -3);
+    candidates.push(stem);
+    candidates.push(stem + 'e');
+    candidates.push(stem + 'te');
+    candidates.push(stem + 'ate');
+    candidates.push(...englishLemmaCandidates(stem));
+  }
+
+  // -ity: reality -> real, ability -> able, capability -> capable
+  if (lower.endsWith('ity') && lower.length > 5) {
+    const stem = lower.slice(0, -3);
+    if (lower.endsWith('ility')) {
+      // capability -> capable (capabil -> capable), ability -> able
+      candidates.push(stem.slice(0, -2) + 'le');
+    } else {
+      candidates.push(stem);            // reality -> real
+      candidates.push(stem + 'e');
+    }
+    candidates.push(...englishLemmaCandidates(stem));
+  }
+
+  // -ty: cruelty -> cruel, safety -> safe, loyalty -> loyal
+  if (lower.endsWith('ty') && !lower.endsWith('ity') && lower.length > 4) {
+    const stem = lower.slice(0, -2);
+    candidates.push(stem);
+    candidates.push(stem + 'e');
+    candidates.push(...englishLemmaCandidates(stem));
+  }
+
+  // -er / -or agent nouns: teacher -> teach, actor -> act, worker -> work
+  if ((lower.endsWith('er') || lower.endsWith('or')) && lower.length > 4) {
+    const stem = lower.slice(0, -2);
+    candidates.push(stem);
+    candidates.push(stem + 'e');
+    candidates.push(...englishLemmaCandidates(stem));
+  }
+
+  // -ist: artist -> art, scientist -> science, pianist -> piano,
+  // patient -> patience (ent -> ence)
+  if (lower.endsWith('ist') && lower.length > 5) {
+    const stem = lower.slice(0, -3);
+    candidates.push(stem);              // artist -> art
+    candidates.push(stem + 'e');        // scientist -> science
+    candidates.push(stem + 'o');        // pianist -> piano (best-effort)
+    if (stem.endsWith('ent')) {
+      candidates.push(stem.slice(0, -3) + 'ence'); // scientist -> science
+    }
+    candidates.push(...englishLemmaCandidates(stem));
+  }
+
+  return dedupe(candidates.filter((c) => c.length > 1));
+}
+
+/**
+ * Lookup-oriented multi-candidate lemmatization.
+ *
+ * Combines inflectional morphology (`englishLemmaCandidates`) with contraction
+ * expansion and derivational awareness, so that lookups of "can't", "won't",
+ * "it's", "I've", "happiness", "quickly", etc. resolve to a dictionary entry.
+ * The original word is always included as a fallback.
+ *
+ * This function is intentionally separate from `englishLemmaCandidates` because
+ * phrase matching must NOT expand contractions or derivational forms — doing so
+ * would let "do sth" match "I don't do it" or "happy birthday" match "happiness".
+ */
+export function englishLookupCandidates(word: string): string[] {
+  const lower = normalizeApostrophe(word);
+  const expanded = expandContractions(word);
+  const deriv = derivationalCandidates(word);
+
+  // Hyphenated compounds: well-known -> well, known, well-known, well known.
+  if (lower.includes('-')) {
+    const parts = lower.split('-').filter((p) => p.length > 0);
+    const partCandidates = parts.flatMap((p) => englishLemmaCandidates(p));
+    const joined = parts.join(' ');
+    return dedupe([lower, joined, ...parts, ...partCandidates, ...deriv]);
+  }
+
+  if (expanded.length > 0) {
+    // For clitic contractions, also lemmatize the stem (e.g. "he's" -> "he").
+    const stem = lower.includes("'") ? lower.split("'")[0] : lower;
+    const stemCandidates = stem && stem !== lower ? englishLemmaCandidates(stem) : [];
+    return dedupe([...expanded, ...stemCandidates, ...deriv, lower]);
+  }
+  return dedupe([...englishLemmaCandidates(word), ...deriv]);
+}
+
+/**
  * Single-candidate lemmatization (backward compatibility).
  * Returns the most likely base form. For ambiguous cases (CVC doubling,
  * silent-e), this may not be the correct one — prefer `englishLemmaCandidates`
  * when the caller can try multiple candidates against a dictionary.
  */
 export function englishLemma(word: string): string {
-  return englishLemmaCandidates(word)[0] ?? word.toLowerCase();
+  return englishLookupCandidates(word)[0] ?? word.toLowerCase();
 }
