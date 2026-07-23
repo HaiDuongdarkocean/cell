@@ -2,15 +2,21 @@
 
 ## Ideal Screen Size
 
+Design Mobile-First
+
+- Good: Bắt đầu từ màn hình nhỏ (320px → 480px → 768px → 1024px → 1280px), đảm bảo tính tối ưu cho người dùng di động trước -> màn hình to.
+
+- Bad: Thiết kế cho màn hình lớn trước rồi thu nhỏ xuống mobile (1280px → 1024px → 768px → 480px → 320px), dễ gây lỗi hiển thị.
+
 Responsive in Web Design Know Your Breakpoints
 
-- Good: Xác định rõ các điểm dừng (breakpoints) như 320px, 480px, 768px, 1024px, 1280px để giao diện tự động thích ứng, tránh tình trạng nội dung bị lệch hoặc vỡ.
+- Good: 320px, 480px, 768px, 1024px, 1280px.
 
 - Bad: Không đặt breakpoint hợp lý khiến layout bị méo mó khi hiển thị trên các thiết bị khác nhau.
 
 Create Fluid Designs
 
-- Good: Sử dụng đơn vị % và max-width để layout co giãn linh hoạt theo viewport, đảm bảo hiển thị đẹp trên cả mobile và desktop.
+- Good: Sử dụng đơn vị % và max-width để layout co giãn linh hoạt theo viewport.
 
 - Bad: Dùng fixed layout (px cố định) khiến nội dung bị bó cứng, dễ vỡ khi chuyển sang màn hình khác.
 
@@ -18,13 +24,9 @@ Decrease Friction
 
 - Good: Thiết kế đơn giản, dễ thao tác trên màn hình nhỏ; các thành phần UI được sắp xếp gọn gàng để tránh chồng chéo.
 
+câu hỏi: tiêu chuẩn nào là sắp xếp gọn gàng khi thiết kế giao diện hệ thống từ mobile -> desktop?
+
 - Bad: Nhồi nhét quá nhiều yếu tố trên màn hình nhỏ, gây khó khăn cho người dùng khi thao tác.
-
-Design Mobile-First
-
-- Good: Bắt đầu từ màn hình nhỏ (320px → 480px → 768px → 1024px → 1280px), đảm bảo tính tối ưu cho người dùng di động trước.
-
-- Bad: Thiết kế cho màn hình lớn trước rồi thu nhỏ xuống mobile (1280px → 1024px → 768px → 480px → 320px), dễ gây lỗi hiển thị.
 
 More Functionality, Less Typing
 

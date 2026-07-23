@@ -1005,6 +1005,22 @@
       "category": ["data", "detection"],
       "tags": ["tokenize", "language-filter", "i18n", "ascii", "vietnamese", "popup", "lookup"],
       "trigger": "Tokenizer emits words from multiple languages on a mixed-language page; users can click and look up Vietnamese/French/etc. words while the extension is set to English."
+    },
+    {
+      "type": "experience",
+      "id": "nested-partial-update-clear-stale-overrides",
+      "title": "Nested partial update must merge with defaults and clear stale derived fields",
+      "category": ["data", "state"],
+      "tags": ["settings", "nested-partial", "default-merge", "stale-override", "per-lang", "derived-field"],
+      "trigger": "A UI panel emits a nested Partial<T> object that is saved into a parent object; sibling fields in the nested object can be reset to defaults or stale overrides can persist silently."
+    },
+    {
+      "type": "experience",
+      "id": "fixed-element-viewport-scrollbar-guard",
+      "title": "Fixed UI element at window.innerWidth may be hidden behind the vertical scrollbar",
+      "category": ["css", "ux"],
+      "tags": ["fixed", "viewport", "scrollbar", "clientWidth", "innerWidth", "content-edge", "position-fixed", "badge"],
+      "trigger": "Phần tử position:fixed đặt ở mép phải dùng window.innerWidth thì bị thanh cuộn dọc che mất một nửa hoặc toàn bộ (đặc biệt khi width/2 < scrollbar width)."
     }
   ]
 }
