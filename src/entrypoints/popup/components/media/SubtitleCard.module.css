@@ -57,10 +57,10 @@
   cursor: default;
 }
 
-/* === Icon — 40px circular === */
+/* === Icon — 32px circular === */
 .icon {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,8 +69,8 @@
 }
 
 .icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .subtitleIcon {
@@ -235,25 +235,5 @@
   .mainRow {
     gap: var(--space-2);
     padding: var(--space-2);
-  }
-
-  .icon {
-    width: 32px;
-    height: 32px;
-  }
-
-  .icon svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .downloadBtn {
-    width: 28px;
-    height: 28px;
-  }
-
-  .downloadBtn svg {
-    width: 14px;
-    height: 14px;
   }
 }

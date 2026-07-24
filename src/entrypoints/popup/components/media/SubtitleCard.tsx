@@ -86,7 +86,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
       >
         {/* Icon — subtitle (amber) */}
         <div className={`${styles.icon} ${styles.subtitleIcon}`} aria-hidden="true">
-          <Icon name="flag" size={18} />
+          <Icon name="flag" size={16} />
         </div>
 
         {/* Body */}

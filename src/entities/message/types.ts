@@ -72,6 +72,7 @@ export type MessageType =
   | 'FETCH_COMMUNITY_AUDIO'
   | 'FETCH_IMAGES'
   | 'TTS_SPEAK'
+  | 'TTS_FETCH_AUDIO'
   | 'WORD_STATUS_GET'
   | 'WORD_STATUSES_GET'
   | 'WORD_STATUS_SET'

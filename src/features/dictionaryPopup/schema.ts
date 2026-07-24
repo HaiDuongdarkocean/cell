@@ -204,6 +204,18 @@ export const FetchCommunityAudioResponseSchema = z.object({
   items: z.array(AudioItemSchema),
 });
 
+// === TTS audio fetch (TTS_FETCH_AUDIO) — returns a blob URL for the spoken text ===
+
+export const TtsFetchAudioPayloadSchema = z.object({
+  tabId: z.number().int(),
+  text: z.string().min(1).max(200),
+  langCode: z.string().length(2),
+});
+
+export const TtsFetchAudioResponseSchema = z.object({
+  url: z.string().url(),
+});
+
 // === Image fetch (spec §9.4 B — FETCH_IMAGES) ===
 
 export const FetchImagesPayloadSchema = z.object({

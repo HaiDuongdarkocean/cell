@@ -70,6 +70,7 @@ import { registerLookupHandlers } from './handlers/lookup';
 import { registerWordStatusHandlers } from './handlers/wordStatus';
 import { registerFrequencyHandlers } from './handlers/frequency';
 import { registerTtsHandlers } from './handlers/tts';
+import { registerTtsFetchAudioHandlers } from './handlers/ttsFetchAudio';
 import { registerForvoAudioHandlers } from './handlers/forvoAudio';
 import { registerImageSearchHandlers } from './handlers/images';
 import { registerScreenshotHandlers } from './handlers/screenshot';
@@ -232,6 +233,7 @@ export class BackgroundService implements BackgroundContext {
     registerWordStatusHandlers(this);
     registerFrequencyHandlers(this);
     registerTtsHandlers(this);
+    registerTtsFetchAudioHandlers(this);
     registerForvoAudioHandlers(this);
     registerImageSearchHandlers(this);
     registerScreenshotHandlers(this);

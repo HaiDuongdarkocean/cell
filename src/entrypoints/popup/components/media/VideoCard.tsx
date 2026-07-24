@@ -112,7 +112,7 @@ export function VideoCard({
       >
         {/* Icon */}
         <div className={`${styles.icon} ${styles.videoIcon}`} aria-hidden="true">
-          <Icon name="play" size={18} />
+          <Icon name="play" size={16} />
         </div>
 
         {/* Body */}

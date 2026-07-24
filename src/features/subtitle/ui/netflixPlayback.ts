@@ -69,9 +69,10 @@ export function pauseVideo(video: HTMLVideoElement): void {
  * `default-ltr-iqcdef-cache-fntwn3`). On hover, Netflix activates the
  * `active` wrapper which covers the `inactive` one — blocking clicks on
  * Cell UI appended into the `inactive` branch. Moving UI to their common
- * parent (`.watch-video`, position:fixed) + z-index 2147483645 puts Cell
+ * parent (`.watch-video`, position:fixed) + z-index 2147483640 puts Cell
  * UI above both wrappers in the same stacking context, but below the
- * dictionary popup (2147483647) and Card Creator (2147483646).
+ * settings dialog (2147483645), dictionary popup (2147483647) and Card
+ * Creator (2147483646) so those float above the subtitle block.
  *
  * Theme tokens (`--color-surface` etc.) are scoped to `[data-theme]`
  * boundaries (themeTokens.ts). The original container carries
@@ -90,5 +91,5 @@ export function mountToWatchVideo(el: HTMLElement, container: HTMLElement): void
   const theme = container.getAttribute('data-theme') ?? 'dark';
   el.setAttribute('data-theme', theme);
   watchVideo.appendChild(el);
-  el.style.zIndex = '2147483645';
+  el.style.zIndex = '2147483640';
 }

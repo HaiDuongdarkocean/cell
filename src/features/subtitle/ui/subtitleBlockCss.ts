@@ -3,28 +3,30 @@
 
 export const SUBTITLE_BLOCK_CSS = `
 .subtitle-block {
-  position: absolute;
-  left: 0;
-  /* --sb-top controls the CENTER of the block (not the top edge), because the
-   * block is translated up by 50% of its own height. Default 75% places the
-   * block center at 3/4 of the video height. */
-  top: var(--sb-top, 75%);
+  /* position:fixed escapes the video container's stacking context so the
+     block is never covered by site overlays (YouTube gradients, ad layers,
+     player chrome). The controller syncs left/top/width from the container's
+     getBoundingClientRect() on scroll/resize/fullscreen. In fullscreen mode,
+     the controller switches to position:absolute inside the fullscreen element.
+     z-index tier: above YouTube overlays (<1000000), below settings dialog
+     (2147483645) and dictionary popup (2147483647) so those float above. */
+  position: fixed;
+  /* left, top, width set by controller syncPosition() — no CSS defaults. */
   transform: translateY(-50%);
-  width: 100%;
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-md, 8px);
   border: 1px solid transparent;
   background: transparent;
-  overflow: hidden;
-  z-index: 1000001;
+  /* overflow:visible — NOT hidden — so popup panels (subtitle-manager-panel,
+     more-popover, subtitle-selector-popover) positioned absolute inside the
+     block can extend beyond its bounds without being clipped. The ::before
+     backdrop is clipped by its own border-radius + inset:0, not by overflow. */
+  overflow: visible;
+  z-index: 2147483640;
   pointer-events: auto;
   user-select: none;
   cursor: grab;
-  /* touch-action:none prevents the browser from hijacking the touch gesture
-     for page scroll/zoom, which fires pointercancel and aborts/jitters the
-     drag on touch screens. Tap on cluster-btn + long-press text selection on
-     subtitle-line still work — touch-action only gates pan/zoom, not clicks. */
   touch-action: none;
   transition: border-color var(--transition, 150ms ease);
 }
@@ -102,6 +104,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: relative;
   isolation: isolate;
   -webkit-tap-highlight-color: transparent;
+  outline: none;
   transition: transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275), background var(--transition, 150ms ease), color var(--transition, 150ms ease);
 }
 
@@ -121,21 +124,21 @@ export const SUBTITLE_BLOCK_CSS = `
   transition: background var(--duration-fast, 150ms) ease;
 }
 
-.cluster-btn:hover {
-  color: var(--color-primary);
-}
+/* Hover chỉ áp dụng trên thiết bị có hover thật (mouse/trackpad).
+   Trên touch screen, :hover bị browser "dính" sau tap → icon xanh không tự tắt.
+   @media (hover:hover) loại bỏ hoàn toàn hover trên touch. */
+@media (hover: hover) {
+  .cluster-btn:hover {
+    color: var(--color-primary);
+  }
 
-.cluster-btn:hover::before {
-  background: rgba(15, 23, 42, 0.25);
+  .cluster-btn:hover::before {
+    background: rgba(15, 23, 42, 0.25);
+  }
 }
 
 .cluster-btn:active {
   transform: scale(0.88);
-}
-
-.cluster-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 
 /* Overlay icon buttons (panel-toggle, subtitle-manager-icon, subtitle-import-button)
@@ -147,15 +150,6 @@ export const SUBTITLE_BLOCK_CSS = `
 [data-testid="subtitle-manager-icon"]:active,
 [data-testid="subtitle-import-button"]:active {
   transform: scale(0.88);
-}
-
-/* Focus ring — keyboard only (WCAG 2.4.7). Mouse click does not trigger
-   :focus-visible, so no outline appears on click — only the scale animation. */
-[data-testid="panel-toggle"]:focus-visible,
-[data-testid="subtitle-manager-icon"]:focus-visible,
-[data-testid="subtitle-import-button"]:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 
 .cluster-btn svg {
@@ -255,6 +249,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   right: 100%;
   bottom: 0;
+  z-index: 2147483641;
   display: flex;
   flex-direction: row;
   gap: var(--space-1, 4px);
@@ -335,7 +330,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   top: var(--space-2, 8px);
   right: var(--space-2, 8px);
-  z-index: 1000001;
+  z-index: 2147483641;
   width: var(--space-7, 28px);
   height: var(--space-7, 28px);
   padding: 0;
@@ -354,7 +349,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   top: 40px;
   right: var(--space-2, 8px);
-  z-index: 1000002;
+  z-index: 2147483641;
   max-height: 200px;
   overflow-y: auto;
   background: rgba(0, 0, 0, 0.85);
@@ -614,22 +609,22 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: none;
 }
 
-.subtitle-manager-icon--active,
-.subtitle-manager-icon:hover:not(.subtitle-manager-icon--active) {
+.subtitle-manager-icon--active {
   color: var(--color-primary);
 }
 
-.subtitle-manager-icon:hover:not(.subtitle-manager-icon--active) .subtitle-manager-icon-feather {
-  background: rgba(15, 23, 42, 0.25);
+@media (hover: hover) {
+  .subtitle-manager-icon:hover:not(.subtitle-manager-icon--active) {
+    color: var(--color-primary);
+  }
+
+  .subtitle-manager-icon:hover:not(.subtitle-manager-icon--active) .subtitle-manager-icon-feather {
+    background: rgba(15, 23, 42, 0.25);
+  }
 }
 
 .subtitle-manager-icon:active {
   transform: scale(0.88);
-}
-
-.subtitle-manager-icon:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 
 .subtitle-manager-panel {
@@ -637,7 +632,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   top: 44px;
   left: var(--space-2, 8px);
-  z-index: 1000002;
+  z-index: 2147483641;
   width: 320px;
   max-height: 360px;
   overflow-y: auto;
@@ -952,17 +947,18 @@ export const SUBTITLE_BLOCK_CSS = `
   transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.panel-toggle:hover {
-  color: var(--color-primary);
+@media (hover: hover) {
+  .panel-toggle:hover {
+    color: var(--color-primary);
+  }
+
+  .panel-toggle:hover .panel-toggle-feather {
+    background: rgba(15, 23, 42, 0.25);
+  }
 }
 
 .panel-toggle:active {
   transform: scale(0.88);
-}
-
-.panel-toggle:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
 }
 
 .panel-toggle-feather {
@@ -979,17 +975,13 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: none;
 }
 
-.panel-toggle:hover .panel-toggle-feather {
-  background: rgba(15, 23, 42, 0.25);
-}
-
 /* === Subtitle track dropdown (overlay) ===
    Dark overlay colors intentional — sits on top of video. */
 .subtitle-track-dropdown {
   position: absolute;
   top: var(--space-2, 8px);
   left: var(--space-2, 8px);
-  z-index: 999999;
+  z-index: 2147483641;
   font-size: var(--font-size-xs, 12px);
   padding: var(--space-0-5, 2px) var(--space-1, 4px);
   background-color: rgba(0, 0, 0, 0.7);
@@ -1069,7 +1061,7 @@ export const SUBTITLE_BLOCK_CSS = `
   bottom: 30%;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 1000003;
+  z-index: 2147483641;
   background: var(--color-background);
   color: var(--color-text);
   border: 1px solid var(--color-border);

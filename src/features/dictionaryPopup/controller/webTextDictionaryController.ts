@@ -10,7 +10,7 @@
 
 
 import type { LookupRequest, LookupResult, TriggerMode, WordStatus } from '../types';
-import type { FetchCommunityAudioResponse, FetchImagesResponse, AudioItem, ImageItem } from '@/features/dictionaryPopup/types';
+import type { FetchCommunityAudioResponse, FetchImagesResponse, AudioItem, ImageItem, TtsFetchAudioResponse } from '@/features/dictionaryPopup/types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAction, PopupLineRect } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import {
@@ -838,13 +838,15 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // here so the Card Creator opens with all fields populated.
     let wordAudioUrls = prefill.wordAudioUrls;
     let imageUrls = prefill.imageUrls;
+    let sentenceAudioUrls = prefill.sentenceAudioUrls;
     let sentenceTranslation = prefill.translation ?? (fromSubtitle ? getCurrentNativeSubtitleText() : undefined);
 
     const needsAudio = !wordAudioUrls?.length;
     const needsImages = !imageUrls?.length;
+    const needsSentenceAudio = !sentenceAudioUrls?.length && !!prefill.contextSentence;
     const needsTranslation = !sentenceTranslation && !!prefill.contextSentence;
 
-    if (needsAudio || needsImages || needsTranslation) {
+    if (needsAudio || needsImages || needsSentenceAudio || needsTranslation) {
       showToast('Fetching media…', deps.container, { variant: 'info' });
       const tasks: Promise<void>[] = [];
 
@@ -879,6 +881,20 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         })());
       }
 
+      if (needsSentenceAudio) {
+        tasks.push((async () => {
+          try {
+            const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+              type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+              payload: { tabId: 0, text: prefill.contextSentence!, langCode: sourceLang },
+            });
+            if (res?.success && res.data?.url) {
+              sentenceAudioUrls = [res.data.url];
+            }
+          } catch { /* non-fatal */ }
+        })());
+      }
+
       if (needsTranslation) {
         tasks.push((async () => {
           try {
@@ -907,7 +923,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         sentenceTranslation,
         sentence: prefill.contextSentence,
         wordAudioUrls,
-        sentenceAudioUrls: prefill.sentenceAudioUrls,
+        sentenceAudioUrls,
         imageUrls,
       },
     }, action);
@@ -940,27 +956,91 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
     showToast('Quick Add — collecting media…', deps.container, { variant: 'info' });
 
+    // Auto-fetch missing media from data sources (same as Card Creator path).
+    // For raw text (no video/subtitle), prefill.*Urls are empty unless the
+    // user opened the popup's Audio/Images tabs. Fetch them here so Quick Add
+    // always has media without requiring the user to open those tabs first.
+    let wordAudioUrls = prefill.wordAudioUrls;
+    let imageUrls = prefill.imageUrls;
+    let sentenceAudioUrls = prefill.sentenceAudioUrls;
+    const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
+
+    const needsWordAudio = !wordAudioUrls?.length;
+    const needsImages = !imageUrls?.length;
+    const needsSentenceAudio = !sentenceAudioUrls?.length && !!prefill.contextSentence;
+
+    if (needsWordAudio || needsImages || needsSentenceAudio) {
+      const tasks: Promise<void>[] = [];
+
+      if (needsWordAudio) {
+        tasks.push((async () => {
+          try {
+            const res = await sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
+              type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
+              payload: { tabId: 0, term: prefill.term, langCode: prefill.langCode, kind: 'word' },
+            });
+            const items = res?.data?.items ?? [];
+            const wordItems = items.filter((a: AudioItem) => a.url && a.kind === 'word').slice(0, 1);
+            if (wordItems.length > 0) {
+              wordAudioUrls = wordItems.map((a: AudioItem) => a.url!);
+            }
+          } catch { /* non-fatal */ }
+        })());
+      }
+
+      if (needsImages) {
+        tasks.push((async () => {
+          try {
+            const res = await sendMessage<MessageResponse<FetchImagesResponse>>({
+              type: MESSAGE_TYPES.FETCH_IMAGES,
+              payload: { tabId: 0, term: prefill.term, langCode: prefill.langCode, maxResults: 8 },
+            });
+            const items = res?.data?.items ?? [];
+            if (items.length > 0) {
+              imageUrls = items.slice(0, 1).map((img: ImageItem) => img.src);
+            }
+          } catch { /* non-fatal */ }
+        })());
+      }
+
+      if (needsSentenceAudio) {
+        tasks.push((async () => {
+          try {
+            const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+              type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+              payload: { tabId: 0, text: prefill.contextSentence!, langCode: sourceLang },
+            });
+            if (res?.success && res.data?.url) {
+              sentenceAudioUrls = [res.data.url];
+            }
+          } catch { /* non-fatal */ }
+        })());
+      }
+
+      await Promise.all(tasks);
+    }
+
     const wordAudios: MediaFile[] = [];
     const sentenceAudios: MediaFile[] = [];
     const images: MediaFile[] = [];
     const warnings: string[] = [];
 
     const [wordResults, sentenceResults, imageResults] = await Promise.all([
-      Promise.allSettled((prefill.wordAudioUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'audio'))),
-      Promise.allSettled((prefill.sentenceAudioUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'audio'))),
-      Promise.allSettled((prefill.imageUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'image'))),
+      Promise.allSettled((wordAudioUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'audio'))),
+      Promise.allSettled((sentenceAudioUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'audio'))),
+      Promise.allSettled((imageUrls ?? []).map((u) => fetchUrlAsMediaFile(u, 'image'))),
     ]);
     wordResults.forEach((r, i) => {
       if (r.status === 'fulfilled') wordAudios.push(r.value);
-      else warnings.push(`word audio: ${prefill.wordAudioUrls![i]}`);
+      else warnings.push(`word audio: ${wordAudioUrls![i]}`);
     });
     sentenceResults.forEach((r, i) => {
       if (r.status === 'fulfilled') sentenceAudios.push(r.value);
-      else warnings.push(`sentence audio: ${prefill.sentenceAudioUrls![i]}`);
+      else warnings.push(`sentence audio: ${sentenceAudioUrls![i]}`);
     });
     imageResults.forEach((r, i) => {
       if (r.status === 'fulfilled') images.push(r.value);
-      else warnings.push(`image: ${prefill.imageUrls![i]}`);
+      else warnings.push(`image: ${imageUrls![i]}`);
     });
 
     if (video && video.videoWidth > 0 && fromSubtitle) {

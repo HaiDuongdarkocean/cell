@@ -19,6 +19,8 @@ Build production-quality user interfaces that are accessible, performant, and vi
 
 ## Convention
 
+Luôn luôn tuân thủ các convention của `ui-ux-knowledge.md`
+
 Luôn luôn tuân thủ các convention htmlcss và typescript của skill /learning-and-apply
 
 luôn luôn tuân thủ design system trong src reuse hơn là tự sáng tạo

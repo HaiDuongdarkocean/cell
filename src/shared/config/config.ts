@@ -280,6 +280,9 @@ export const STORAGE_KEYS = {
   TOKENIZE_SETTINGS: 'tokenizeSettings',
   /** Tokenize badge FAB position { left, top } in viewport px (survives reload). */
   TOKEN_BADGE_POSITION: 'tokenBadgePosition',
+  /** Orbital badge collapsed position { edge, tangential } — edge: 'left'|'right'|'top'|'bottom',
+   *  tangential: px along that edge (survives reload). */
+  ORBITAL_BADGE_POSITION: 'orbitalBadgePosition',
 } as const;
 
 // === Popup Dimensions ===

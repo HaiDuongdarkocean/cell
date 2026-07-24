@@ -95,4 +95,27 @@ describe('createSubtitleBlockDOM', () => {
     // stroke is on the <svg> root (ICON_CATALOG convention) — inherited by children
     expect(svg?.getAttribute('stroke')).toBe('currentColor');
   });
+
+  it('cluster column B has rewind, play-pause, forward buttons in order', () => {
+    const dom = createSubtitleBlockDOM();
+    const children = Array.from(dom.clusterColumnB.children);
+
+    expect(children.length).toBe(3);
+    expect(children[0]).toBe(dom.rewindBtn);
+    expect(children[1]).toBe(dom.playPauseBtn);
+    expect(children[2]).toBe(dom.forwardBtn);
+  });
+
+  it('play-pause button has correct testid, label and play icon', () => {
+    const dom = createSubtitleBlockDOM();
+
+    expect(dom.playPauseBtn.classList.contains('cluster-btn')).toBe(true);
+    expect(dom.playPauseBtn.getAttribute('data-testid')).toBe('cluster-play-pause');
+    expect(dom.playPauseBtn.getAttribute('aria-label')).toBe('Play or pause video');
+    expect(dom.playPauseBtn.type).toBe('button');
+
+    const svg = dom.playPauseBtn.querySelector('svg');
+    expect(svg).toBeTruthy();
+    expect(svg?.getAttribute('viewBox')).toBe('0 0 24 24');
+  });
 });

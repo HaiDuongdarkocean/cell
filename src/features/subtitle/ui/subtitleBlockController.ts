@@ -57,6 +57,10 @@ export class SubtitleBlockController {
   private resizeObserver: ResizeObserver | null = null;
   private dragCleanup: (() => void) | null = null;
   private onFullscreenChange: (() => void) | null = null;
+  private onVideoPlay: (() => void) | null = null;
+  private onVideoPause: (() => void) | null = null;
+  private onScroll: (() => void) | null = null;
+  private positionRaf = 0;
   private themeSyncCleanup: (() => void) | null = null;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private loopState: 'idle' | 'a' | 'looping' = 'idle';
@@ -104,11 +108,12 @@ export class SubtitleBlockController {
     this.injectCSS();
     const dom = createSubtitleBlockDOM();
     this.dom = dom;
-    this.container.appendChild(dom.block);
+    // Mount on document.body with position:fixed so the block escapes the
+    // video container's stacking context and is never covered by site overlays.
+    // Exception: Netflix needs .watch-video parenting (ADR-031), and fullscreen
+    // needs the block inside the fullscreen element.
+    document.body.appendChild(dom.block);
     this.themeSyncCleanup = syncElementTheme(dom.block, this.container);
-    // ADR-031: Netflix z-index fix — move block to .watch-video so it sits
-    // above Netflix's active/inactive wrappers. syncElementTheme already set
-    // data-theme on the block, so CSS vars resolve after re-parenting.
     mountToWatchVideo(dom.block, this.container);
     this.applyBlockPosition();
     this.applyLineStyles();
@@ -119,6 +124,8 @@ export class SubtitleBlockController {
     this.wireFullscreen();
     this.wireTimeUpdate();
     this.startResizeObserver();
+    this.wirePositionSync();
+    this.syncPosition();
   }
 
   private injectCSS(): void {
@@ -142,6 +149,43 @@ export class SubtitleBlockController {
     this.blockSettings = this.clampBlockSettings(this.blockSettings);
     this.dom.block.style.setProperty('--sb-top', `${this.blockSettings.yOffsetPercent}%`);
     this.dom.block.style.setProperty('--sb-bg-opacity', String(this.blockSettings.bgOpacity));
+    this.syncPosition();
+  }
+
+  /** Sync the block's fixed position from the video container's rect.
+   *  In fullscreen mode, the block is position:absolute inside the fullscreen
+   *  element, so no sync is needed. */
+  private syncPosition(): void {
+    if (!this.dom) return;
+    const fs = document.fullscreenElement;
+    if (fs && fs.contains(this.dom.block)) {
+      // Fullscreen: position:absolute relative to fullscreen element.
+      this.dom.block.style.position = 'absolute';
+      this.dom.block.style.left = '0';
+      this.dom.block.style.top = `${this.blockSettings.yOffsetPercent}%`;
+      this.dom.block.style.width = '100%';
+      return;
+    }
+    // Non-fullscreen: position:fixed relative to viewport, synced from container.
+    const rect = this.container.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    this.dom.block.style.position = 'fixed';
+    this.dom.block.style.left = `${rect.left}px`;
+    this.dom.block.style.top = `${rect.top + rect.height * (this.blockSettings.yOffsetPercent / 100)}px`;
+    this.dom.block.style.width = `${rect.width}px`;
+  }
+
+  /** rAF-throttled scroll/resize listener for position sync. */
+  private wirePositionSync(): void {
+    this.onScroll = (): void => {
+      if (this.positionRaf) return;
+      this.positionRaf = requestAnimationFrame(() => {
+        this.positionRaf = 0;
+        this.syncPosition();
+      });
+    };
+    window.addEventListener('scroll', this.onScroll, { capture: true, passive: true });
+    window.addEventListener('resize', this.onScroll, { passive: true });
   }
 
   private applyLineStyles(): void {
@@ -187,14 +231,17 @@ export class SubtitleBlockController {
       this.dom.clusterColumnB.style.display = 'flex';
       this.dom.noSubColumn.style.display = 'none';
       this.dom.clusterColumnA.append(this.dom.prevBtn, this.dom.repeatBtn, this.dom.nextBtn);
-      this.dom.clusterColumnB.append(this.dom.rewindBtn, this.dom.forwardBtn);
+      this.dom.clusterColumnB.append(this.dom.rewindBtn, this.dom.playPauseBtn, this.dom.forwardBtn);
       this.setRepeatIcon('repeat', 'Repeat current sentence');
       this.loopState = 'idle';
     } else {
+      // No subtitles: hide column A (prev/repeat/next need subtitle cues),
+      // but keep column B (rewind/play-pause/forward) visible so the user
+      // can still control video playback without subtitle navigation.
       this.dom.clusterColumnA.style.display = 'none';
-      this.dom.clusterColumnB.style.display = 'none';
-      this.dom.noSubColumn.style.display = 'flex';
-      this.dom.noSubColumn.append(this.dom.rewindBtn, this.dom.repeatBtn, this.dom.forwardBtn);
+      this.dom.clusterColumnB.style.display = 'flex';
+      this.dom.noSubColumn.style.display = 'none';
+      this.dom.clusterColumnB.append(this.dom.rewindBtn, this.dom.playPauseBtn, this.dom.forwardBtn);
       this.setRepeatIcon('repeatA', 'Repeat A');
       this.loopState = 'idle';
     }
@@ -343,6 +390,14 @@ export class SubtitleBlockController {
     this.dom.nextBtn.addEventListener('click', () => nextSentence(this.video, this.targetCues, this.nativeCues, this.getOffsetMs()));
     this.dom.rewindBtn.addEventListener('click', () => seekBy(this.video, -5));
     this.dom.forwardBtn.addEventListener('click', () => seekBy(this.video, 10));
+    this.dom.playPauseBtn.addEventListener('click', () => this.handlePlayPause());
+    this.syncPlayPauseIcon();
+    // Sync icon when video play/pause state changes externally (e.g. user
+    // clicks the native video controls).
+    this.onVideoPlay = () => this.syncPlayPauseIcon();
+    this.onVideoPause = () => this.syncPlayPauseIcon();
+    this.video.addEventListener('play', this.onVideoPlay);
+    this.video.addEventListener('pause', this.onVideoPause);
     this.dom.repeatBtn.addEventListener('click', () => this.handleRepeatClick());
     // ADR-026: Card Creator entry buttons.
     this.dom.quickUpdateBtn.addEventListener('click', () => this.onCardCreatorAction('quick-update'));
@@ -470,26 +525,41 @@ export class SubtitleBlockController {
     if (label) this.dom.repeatBtn.setAttribute('aria-label', label);
   }
 
+  /** Toggle video play/pause. */
+  private handlePlayPause(): void {
+    if (this.video.paused) {
+      void this.video.play();
+    } else {
+      this.video.pause();
+    }
+  }
+
+  /** Sync play/pause button icon + aria-label with video state. */
+  private syncPlayPauseIcon(): void {
+    if (!this.dom) return;
+    const isPaused = this.video.paused;
+    this.dom.playPauseBtn.innerHTML = isPaused ? NAV_CLUSTER_ICONS.play : NAV_CLUSTER_ICONS.pause;
+    this.dom.playPauseBtn.setAttribute('aria-label', isPaused ? 'Play video' : 'Pause video');
+    this.dom.playPauseBtn.setAttribute('aria-pressed', String(!isPaused));
+  }
+
   private wireFullscreen(): void {
     this.onFullscreenChange = () => {
       if (!this.dom) return;
       const fsElement = document.fullscreenElement as HTMLElement | null;
-      // ADR-031: Netflix — block already mounted to .watch-video by
-      // mountToWatchVideo. Do NOT re-parent into fsElement (which may be
-      // <video> on Netflix — a replaced element that does not render DOM
-      // children, making the block invisible). .watch-video is the common
-      // parent of Netflix's active/inactive wrappers and works in both
-      // non-fullscreen and fullscreen (Netflix uses DIV.watch-video for
-      // its own fullscreen, not <video>).
       if (isNetflixPage()) {
         this.applyScale();
+        this.syncPosition();
         return;
       }
-      const targetParent = fsElement ?? this.container;
+      // Fullscreen: move block inside fullscreen element so it's visible.
+      // Non-fullscreen: move to document.body (position:fixed escapes stacking).
+      const targetParent = fsElement ?? document.body;
       if (this.dom.block.parentElement !== targetParent) {
         targetParent.appendChild(this.dom.block);
       }
       this.applyScale();
+      this.syncPosition();
     };
     document.addEventListener('fullscreenchange', this.onFullscreenChange);
   }
@@ -501,6 +571,7 @@ export class SubtitleBlockController {
   private startResizeObserver(): void {
     this.resizeObserver = createBlockScaleObserver(this.container, () => {
       this.applyScale();
+      this.syncPosition();
     });
   }
 
@@ -597,6 +668,23 @@ export class SubtitleBlockController {
 
   destroy(): void {
     this.video.removeEventListener('timeupdate', this.onTimeUpdate);
+    if (this.onVideoPlay) {
+      this.video.removeEventListener('play', this.onVideoPlay);
+      this.onVideoPlay = null;
+    }
+    if (this.onVideoPause) {
+      this.video.removeEventListener('pause', this.onVideoPause);
+      this.onVideoPause = null;
+    }
+    if (this.onScroll) {
+      window.removeEventListener('scroll', this.onScroll, { capture: true } as EventListenerOptions);
+      window.removeEventListener('resize', this.onScroll);
+      this.onScroll = null;
+    }
+    if (this.positionRaf) {
+      cancelAnimationFrame(this.positionRaf);
+      this.positionRaf = 0;
+    }
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.dragCleanup?.();

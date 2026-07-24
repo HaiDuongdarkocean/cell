@@ -25,11 +25,12 @@ export function Header({
     <header className={styles.header}>
       <div className={styles.headerLeft}>
         <Icon name="play" className={styles.headerIcon} />
-        <h1 className={styles.headerTitle}>Video Downloader</h1>
+        <h1 className={styles.headerTitle}>Cell</h1>
       </div>
       <div className={styles.headerRight}>
         {/* Extension on/off toggle — ghost when ON, danger-active when OFF */}
         <IconButton
+          size="sm"
           variant={isActive ? 'ghost' : 'danger'}
           active={!isActive}
           onClick={onToggleExtension}
@@ -46,6 +47,7 @@ export function Header({
 
         {/* Auto Download toggle — primary active when ON */}
         <IconButton
+          size="sm"
           active={isAutoDownloadActive}
           onClick={onToggleAutoDownload}
           aria-label="Toggle auto download for this site"
@@ -57,6 +59,7 @@ export function Header({
 
         {/* Theme toggle */}
         <IconButton
+          size="sm"
           onClick={onToggleTheme}
           aria-label="Toggle theme"
           title="Toggle theme"
@@ -70,6 +73,7 @@ export function Header({
 
         {/* Settings */}
         <IconButton
+          size="sm"
           onClick={onOpenSettings}
           aria-label="Settings"
           title="Settings"
