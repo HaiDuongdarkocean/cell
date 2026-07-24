@@ -29,8 +29,12 @@ const MIN_SELECTION_LENGTH = 1;
 /** Maximum selection length (avoid looking up whole paragraphs). */
 const MAX_SELECTION_LENGTH = 100;
 
-/** UI hosts that float above page text and can block `caretRangeFromPoint`. */
-const UI_HOST_SELECTORS = '.js-cell-popup-host, .js-cell-orbital-badge-host';
+/** UI hosts that float above page text and can block `caretRangeFromPoint`.
+ *  Text inside these hosts is extension UI — must not trigger dictionary lookup.
+ *  Kept in sync with EXTENSION_UI_HOST_SELECTORS in tokenizeBlock.ts. */
+const UI_HOST_SELECTORS =
+  '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
+  '#cell-settings-dialog-host, #cell-card-creator-host';
 
 /** Temporarily disable pointer-events on our own floating UI (host + its shadow children)
  *  so caretRangeFromPoint can resolve the page text underneath instead of the popup/pointer. */
@@ -243,8 +247,8 @@ export class WebTriggerController {
     }
 
     const target = e.target as HTMLElement | null;
-    if (target?.closest('.js-cell-popup-host, .js-cell-orbital-badge-host')) {
-      // The user clicked on our own popup / badge; do not fall through to a lookup.
+    if (target?.closest(UI_HOST_SELECTORS)) {
+      // The user clicked on our own UI; do not fall through to a lookup.
       return;
     }
     // Skip subtitle/tokenize tokens — handled by SubtitleTriggerController or
@@ -326,8 +330,8 @@ export class WebTriggerController {
     }
     const target = e.target as HTMLElement | null;
     if (!target) return;
-    // Skip our own popup / orbital badge — don't dismiss while the user is interacting with it.
-    if (target.closest('.js-cell-popup-host, .js-cell-orbital-badge-host')) {
+    // Skip our own UI — don't dismiss while the user is interacting with it.
+    if (target.closest(UI_HOST_SELECTORS)) {
       this.cancelPendingHover();
       return;
     }
