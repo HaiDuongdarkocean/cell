@@ -13,7 +13,8 @@ describe('createGestureDetector', () => {
     const onSingle = jest.fn();
     const onDouble = jest.fn();
     const onTriple = jest.fn();
-    const detector = createGestureDetector({ onSingleTap: onSingle, onDoubleTap: onDouble, onTripleTap: onTriple });
+    const onQuad = jest.fn();
+    const detector = createGestureDetector({ onSingleTap: onSingle, onDoubleTap: onDouble, onTripleTap: onTriple, onQuadrupleTap: onQuad });
 
     detector.onPointerUp(0);
     expect(onSingle).not.toHaveBeenCalled();
@@ -22,6 +23,7 @@ describe('createGestureDetector', () => {
     expect(onSingle).toHaveBeenCalledTimes(1);
     expect(onDouble).not.toHaveBeenCalled();
     expect(onTriple).not.toHaveBeenCalled();
+    expect(onQuad).not.toHaveBeenCalled();
 
     detector.destroy();
   });
@@ -30,7 +32,8 @@ describe('createGestureDetector', () => {
     const onSingle = jest.fn();
     const onDouble = jest.fn();
     const onTriple = jest.fn();
-    const detector = createGestureDetector({ onSingleTap: onSingle, onDoubleTap: onDouble, onTripleTap: onTriple });
+    const onQuad = jest.fn();
+    const detector = createGestureDetector({ onSingleTap: onSingle, onDoubleTap: onDouble, onTripleTap: onTriple, onQuadrupleTap: onQuad });
 
     detector.onPointerUp(0);
     detector.onPointerUp(100);
@@ -41,6 +44,7 @@ describe('createGestureDetector', () => {
     expect(onDouble).toHaveBeenCalledTimes(1);
     expect(onSingle).not.toHaveBeenCalled();
     expect(onTriple).not.toHaveBeenCalled();
+    expect(onQuad).not.toHaveBeenCalled();
 
     detector.destroy();
   });
@@ -49,18 +53,46 @@ describe('createGestureDetector', () => {
     const onSingle = jest.fn();
     const onDouble = jest.fn();
     const onTriple = jest.fn();
-    const detector = createGestureDetector({ onSingleTap: onSingle, onDoubleTap: onDouble, onTripleTap: onTriple });
+    const onQuad = jest.fn();
+    const detector = createGestureDetector({ onSingleTap: onSingle, onDoubleTap: onDouble, onTripleTap: onTriple, onQuadrupleTap: onQuad });
 
     detector.onPointerUp(0);
     detector.onPointerUp(100);
     detector.onPointerUp(200);
 
+    expect(onTriple).not.toHaveBeenCalled();
+    expect(onDouble).not.toHaveBeenCalled();
+    expect(onSingle).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(300);
     expect(onTriple).toHaveBeenCalledTimes(1);
+    expect(onDouble).not.toHaveBeenCalled();
+    expect(onSingle).not.toHaveBeenCalled();
+    expect(onQuad).not.toHaveBeenCalled();
+
+    detector.destroy();
+  });
+
+  it('emits quadruple tap after four quick taps and cancels triple tap', () => {
+    const onSingle = jest.fn();
+    const onDouble = jest.fn();
+    const onTriple = jest.fn();
+    const onQuad = jest.fn();
+    const detector = createGestureDetector({ onSingleTap: onSingle, onDoubleTap: onDouble, onTripleTap: onTriple, onQuadrupleTap: onQuad });
+
+    detector.onPointerUp(0);
+    detector.onPointerUp(100);
+    detector.onPointerUp(200);
+    detector.onPointerUp(300);
+
+    expect(onQuad).toHaveBeenCalledTimes(1);
+    expect(onTriple).not.toHaveBeenCalled();
     expect(onDouble).not.toHaveBeenCalled();
     expect(onSingle).not.toHaveBeenCalled();
 
     // No pending timers should fire.
     jest.advanceTimersByTime(300);
+    expect(onTriple).not.toHaveBeenCalled();
     expect(onDouble).not.toHaveBeenCalled();
     expect(onSingle).not.toHaveBeenCalled();
 
@@ -70,7 +102,8 @@ describe('createGestureDetector', () => {
   it('ignores taps spaced far apart (each fires single tap)', () => {
     const onSingle = jest.fn();
     const onDouble = jest.fn();
-    const detector = createGestureDetector({ onSingleTap: onSingle, onDoubleTap: onDouble, onTripleTap: jest.fn() });
+    const onQuad = jest.fn();
+    const detector = createGestureDetector({ onSingleTap: onSingle, onDoubleTap: onDouble, onTripleTap: jest.fn(), onQuadrupleTap: onQuad });
 
     detector.onPointerUp(0);
     jest.advanceTimersByTime(300);
@@ -80,27 +113,27 @@ describe('createGestureDetector', () => {
     jest.advanceTimersByTime(300);
     expect(onSingle).toHaveBeenCalledTimes(2);
     expect(onDouble).not.toHaveBeenCalled();
+    expect(onQuad).not.toHaveBeenCalled();
 
     detector.destroy();
   });
 
-  it('resets after a double tap fires and allows a new double tap', () => {
-    const onSingle = jest.fn();
-    const onDouble = jest.fn();
-    const detector = createGestureDetector({ onSingleTap: onSingle, onDoubleTap: onDouble, onTripleTap: jest.fn() });
+  it('resets after a quadruple tap fires and allows a new quadruple tap', () => {
+    const onQuad = jest.fn();
+    const detector = createGestureDetector({ onSingleTap: jest.fn(), onDoubleTap: jest.fn(), onTripleTap: jest.fn(), onQuadrupleTap: onQuad });
 
     detector.onPointerUp(0);
     detector.onPointerUp(100);
-    jest.advanceTimersByTime(300);
-    expect(onDouble).toHaveBeenCalledTimes(1);
-    expect(onSingle).not.toHaveBeenCalled();
+    detector.onPointerUp(200);
+    detector.onPointerUp(300);
+    expect(onQuad).toHaveBeenCalledTimes(1);
 
-    // A new two-tap sequence after reset.
+    // A new four-tap sequence after reset.
     detector.onPointerUp(500);
     detector.onPointerUp(600);
-    jest.advanceTimersByTime(300);
-    expect(onDouble).toHaveBeenCalledTimes(2);
-    expect(onSingle).not.toHaveBeenCalled();
+    detector.onPointerUp(700);
+    detector.onPointerUp(800);
+    expect(onQuad).toHaveBeenCalledTimes(2);
 
     detector.destroy();
   });
