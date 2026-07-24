@@ -27,6 +27,7 @@ export interface SubtitleBlockDOM {
   readonly repeatBtn: HTMLButtonElement;
   readonly nextBtn: HTMLButtonElement;
   readonly rewindBtn: HTMLButtonElement;
+  readonly playPauseBtn: HTMLButtonElement;
   readonly forwardBtn: HTMLButtonElement;
   readonly subtitleColumn: HTMLDivElement;
   readonly targetLine: HTMLDivElement;
@@ -80,10 +81,11 @@ export function createSubtitleBlockDOM(): SubtitleBlockDOM {
   const repeatBtn = makeButton('cluster-repeat', 'Repeat current sentence', NAV_CLUSTER_ICONS.repeat);
   const nextBtn = makeButton('cluster-next', 'Next sentence', NAV_CLUSTER_ICONS.next);
   const rewindBtn = makeButton('cluster-rewind', 'Rewind 5 seconds', NAV_CLUSTER_ICONS.rewind);
+  const playPauseBtn = makeButton('cluster-play-pause', 'Play or pause video', NAV_CLUSTER_ICONS.play);
   const forwardBtn = makeButton('cluster-forward', 'Forward 10 seconds', NAV_CLUSTER_ICONS.forward);
 
   clusterColumnA.append(prevBtn, repeatBtn, nextBtn);
-  clusterColumnB.append(rewindBtn, forwardBtn);
+  clusterColumnB.append(rewindBtn, playPauseBtn, forwardBtn);
 
   clusterColumns.append(clusterColumnA, clusterColumnB, noSubColumn);
 
@@ -170,6 +172,7 @@ export function createSubtitleBlockDOM(): SubtitleBlockDOM {
     repeatBtn,
     nextBtn,
     rewindBtn,
+    playPauseBtn,
     forwardBtn,
     subtitleColumn,
     targetLine,

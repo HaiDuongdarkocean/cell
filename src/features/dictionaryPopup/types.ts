@@ -242,6 +242,16 @@ export interface TtsSpeakPayload {
   readonly voiceName?: string;
 }
 
+export interface TtsFetchAudioPayload {
+  readonly tabId: number;
+  readonly text: string;
+  readonly langCode: string;
+}
+
+export interface TtsFetchAudioResponse {
+  readonly url: string;
+}
+
 export interface QuickAddPayloadMessage extends QuickAddPayload {
   readonly tabId: number;
 }

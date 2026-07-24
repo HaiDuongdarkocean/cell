@@ -1,4 +1,4 @@
-/* === Popup Container — 480×600, matches prototype === */
+/* === Popup Container — 480×600 === */
 .popup {
   width: 480px;
   height: 600px;
@@ -11,42 +11,120 @@
   position: relative;
 }
 
-/* === Content (scrollable) === */
+/* === Content — scrollable but scrollbar hidden === */
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 var(--space-4) var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  min-height: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* === Section === */
-.section {
+.content::-webkit-scrollbar {
+  display: none;
+}
+
+/* === Tabs — full-width, flush to header, no rounded container ===
+   Overrides Tabs.module.css .list (which has inline-flex + padding + muted bg).
+   Tab bar sits flush under the header, content flows directly below. */
+.tabList {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  gap: 0;
+  flex-shrink: 0;
 }
 
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sectionTitle {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+/* Tab triggers — equal width, flat, borderless.
+   Active tab gets a bottom accent bar (primary) instead of a pill bg. */
+.tabTrigger {
+  flex: 1;
+  padding: var(--space-2-5, 10px) var(--space-3, 12px);
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0;
-}
-
-.sectionActions {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  justify-content: center;
+  gap: var(--space-1, 4px);
+  position: relative;
+  transition: color var(--duration-fast, 150ms) var(--ease-in-out, ease);
+}
+
+.tabTrigger:hover {
+  color: var(--color-text);
+  background: transparent;
+}
+
+/* Active tab — primary color text + bottom accent bar */
+.tabTrigger[aria-selected="true"] {
+  color: var(--color-primary);
+  background: transparent;
+}
+
+.tabTrigger[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary);
+}
+
+.tabTrigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* === Tab content — padding, scrollable but scrollbar hidden === */
+.tabContent {
+  padding: var(--space-3, 12px) var(--space-4, 16px) var(--space-4, 16px);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tabContent::-webkit-scrollbar {
+  display: none;
+}
+
+/* === Actions row — Select All / Download, right-aligned === */
+.actionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1, 4px);
+  margin-bottom: var(--space-2, 8px);
+}
+
+/* === Download count badge in tab trigger === */
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--space-4, 16px);
+  height: var(--space-4, 16px);
+  padding: 0 var(--space-1, 4px);
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-primary);
+  color: var(--color-primary-foreground-soft);
+  font-size: var(--font-size-2xs, 10px);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 /* === Lists === */
@@ -54,32 +132,29 @@
 .downloadsList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-2, 8px);
 }
 
-/* === Responsive — narrow popup viewport (tablet/edge snap) === */
+/* === Responsive — narrow popup viewport === */
 @media (max-width: 400px) {
   .popup {
     width: 100%;
     border-radius: 0;
   }
 
-  .content {
-    padding: 0 var(--space-2) var(--space-3);
-    gap: var(--space-4);
+  .tabContent {
+    padding: var(--space-2, 8px) var(--space-2, 8px) var(--space-3, 12px);
   }
 
-  .sectionHeader {
+  .actionsRow {
     flex-wrap: wrap;
-    gap: var(--space-1);
+    gap: var(--space-1, 4px);
   }
 }
 
-/* === Responsive — short viewport (height-constrained) === */
+/* === Responsive — short viewport === */
 @media (max-height: 500px) {
-  .content {
-    gap: var(--space-3);
+  .tabTrigger {
+    padding: var(--space-1-5, 6px) var(--space-3, 12px);
   }
 }
-
-

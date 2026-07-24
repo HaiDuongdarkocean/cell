@@ -27,7 +27,9 @@ export const NAV_CLUSTER_ICONS: Record<NavClusterIconName, string> = {
   repeatCancel: navIcon(ICON_CATALOG.navRepeatCancel.svg),
   rewind: navIcon(ICON_CATALOG.navRewind.svg),
   forward: navIcon(ICON_CATALOG.navForward.svg),
+  play: navIcon(ICON_CATALOG.play.svg),
+  pause: navIcon(ICON_CATALOG.pause.svg),
 };
 
 /** Icon names that have SVG markup. */
-export type NavClusterIconName = 'prev' | 'next' | 'repeat' | 'repeatA' | 'repeatB' | 'repeatCancel' | 'rewind' | 'forward';
+export type NavClusterIconName = 'prev' | 'next' | 'repeat' | 'repeatA' | 'repeatB' | 'repeatCancel' | 'rewind' | 'forward' | 'play' | 'pause';

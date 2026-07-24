@@ -35,6 +35,13 @@ beforeAll(() => {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })) as unknown as typeof window.matchMedia;
+  // jsdom lacks ResizeObserver — orbital badge uses it to detect scrollbar
+  // appearance. Mock with a no-op implementation.
+  globalThis.ResizeObserver = jest.fn(() => ({
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
+  })) as unknown as typeof ResizeObserver;
 });
 
 function makePopupSettings(overrides: Partial<DictionaryPopupSettings> = {}): DictionaryPopupSettings {

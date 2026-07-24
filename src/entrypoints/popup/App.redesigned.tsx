@@ -7,7 +7,7 @@ import { useDownloadProgress } from '@/entrypoints/popup/hooks/useDownloadProgre
 import { useExtensionStatus } from '@/entrypoints/popup/hooks/useExtensionStatus';
 import { useMediaDisplayTitle } from '@/entrypoints/popup/hooks/useMediaDisplayTitle';
 import { useSubtitleLanguage } from '@/entrypoints/popup/hooks/useSubtitleLanguage';
-import { Button } from '@/shared/ui';
+import { Button, Tabs } from '@/shared/ui';
 import { Header } from './components/layout/Header';
 import { VideoCard } from './components/media/VideoCard';
 import { SubtitleCard } from './components/media/SubtitleCard';
@@ -307,12 +307,18 @@ export function AppRedesigned(): React.JSX.Element {
       />
 
       <main className={styles.content}>
-        {/* Media section */}
-        <section className={styles.section} data-testid="media-section">
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Media</h2>
+        <Tabs defaultValue="media">
+          <Tabs.List className={styles.tabList}>
+            <Tabs.Trigger value="media" data-testid="tab-media" className={styles.tabTrigger}>Media</Tabs.Trigger>
+            <Tabs.Trigger value="downloads" data-testid="tab-downloads" className={styles.tabTrigger}>
+              Downloads
+              {downloads.length > 0 && <span className={styles.tabBadge}>{downloads.length}</span>}
+            </Tabs.Trigger>
+          </Tabs.List>
+
+          <Tabs.Content value="media" className={styles.tabContent}>
             {hasMedia && (
-              <div className={styles.sectionActions}>
+              <div className={styles.actionsRow}>
                 <Button variant="link" size="sm" onClick={handleSelectAll} data-testid="select-all-btn">
                   {allSelected ? 'Deselect All' : 'Select All'}
                 </Button>
@@ -321,64 +327,60 @@ export function AppRedesigned(): React.JSX.Element {
                 </Button>
               </div>
             )}
-          </div>
-          <div className={styles.mediaList} role="list">
-            {hasMedia ? (
-              <>
-                {videos.map((video) => (
-                  <VideoCard
-                    key={video.id}
-                    video={video}
-                    displayTitle={resolveDisplayTitle(video)}
-                    selected={selectedIds.has(video.id)}
-                    downloading={downloadingIds.has(video.id)}
-                    onToggleSelect={handleToggleSelect}
-                    onDownload={handleVideoDownload}
-                    onSelectQuality={handleQualitySelect}
-                  />
-                ))}
-                {subtitles.map((subtitle) => (
-                  <SubtitleCard
-                    key={subtitle.id}
-                    subtitle={subtitle}
-                    displayTitle={resolveDisplayTitle(subtitle)}
-                    languageLabel={subtitleLanguages.get(subtitle.id)}
-                    selected={selectedIds.has(subtitle.id)}
-                    downloading={downloadingIds.has(subtitle.id)}
-                    onToggleSelect={handleToggleSelect}
-                    onDownload={handleSubtitleDownload}
-                  />
-                ))}
-              </>
-            ) : (
-              <MediaEmpty type="videos" />
-            )}
-          </div>
-        </section>
+            <div className={styles.mediaList} role="list" data-testid="media-section">
+              {hasMedia ? (
+                <>
+                  {videos.map((video) => (
+                    <VideoCard
+                      key={video.id}
+                      video={video}
+                      displayTitle={resolveDisplayTitle(video)}
+                      selected={selectedIds.has(video.id)}
+                      downloading={downloadingIds.has(video.id)}
+                      onToggleSelect={handleToggleSelect}
+                      onDownload={handleVideoDownload}
+                      onSelectQuality={handleQualitySelect}
+                    />
+                  ))}
+                  {subtitles.map((subtitle) => (
+                    <SubtitleCard
+                      key={subtitle.id}
+                      subtitle={subtitle}
+                      displayTitle={resolveDisplayTitle(subtitle)}
+                      languageLabel={subtitleLanguages.get(subtitle.id)}
+                      selected={selectedIds.has(subtitle.id)}
+                      downloading={downloadingIds.has(subtitle.id)}
+                      onToggleSelect={handleToggleSelect}
+                      onDownload={handleSubtitleDownload}
+                    />
+                  ))}
+                </>
+              ) : (
+                <MediaEmpty type="videos" />
+              )}
+            </div>
+          </Tabs.Content>
 
-        {/* Downloads section */}
-        <section className={styles.section} data-testid="downloads-section">
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>Downloads</h2>
-          </div>
-          <div className={styles.downloadsList} role="list">
-            {downloads.length > 0 ? (
-              downloads.map((download) => (
-                <DownloadCard
-                  key={download.id}
-                  download={download}
-                  onPause={handlePauseDownload}
-                  onResume={handleResumeDownload}
-                  onCancel={handleCancelDownload}
-                  onRetry={handleRetryDownload}
-                  onRemove={handleRemoveDownload}
-                />
-              ))
-            ) : (
-              <MediaEmpty type="downloads" />
-            )}
-          </div>
-        </section>
+          <Tabs.Content value="downloads" className={styles.tabContent}>
+            <div className={styles.downloadsList} role="list" data-testid="downloads-section">
+              {downloads.length > 0 ? (
+                downloads.map((download) => (
+                  <DownloadCard
+                    key={download.id}
+                    download={download}
+                    onPause={handlePauseDownload}
+                    onResume={handleResumeDownload}
+                    onCancel={handleCancelDownload}
+                    onRetry={handleRetryDownload}
+                    onRemove={handleRemoveDownload}
+                  />
+                ))
+              ) : (
+                <MediaEmpty type="downloads" />
+              )}
+            </div>
+          </Tabs.Content>
+        </Tabs>
       </main>
 
       <SettingsDialog

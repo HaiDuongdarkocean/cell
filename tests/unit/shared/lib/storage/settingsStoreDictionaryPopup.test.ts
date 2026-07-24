@@ -40,7 +40,7 @@ describe('settingsStore dictionaryPopup roundtrip', () => {
     expect(loaded.dictionaryPopup?.defaultActiveTab).toBe('image');
   });
 
-  it('migrates old badgePointerTrigger.enabled to triggerMode orbital and drops enabled', async () => {
+  it('migrates old badgePointerTrigger.enabled through v16 (orbital) then v17 (orbital→click) and drops enabled', async () => {
     const v15: Settings = {
       ...DEFAULT_SETTINGS,
       schemaVersion: 15,
@@ -52,7 +52,9 @@ describe('settingsStore dictionaryPopup roundtrip', () => {
     };
     storage[STORAGE_KEYS.SETTINGS] = v15;
     const loaded = await loadSettings();
-    expect(loaded.dictionaryPopup?.triggerMode).toBe('orbital');
+    // v16 migration sets triggerMode to 'orbital' if enabled, then v17 migration
+    // converts 'orbital' → 'click' (orbital badge is now always mounted when enabled).
+    expect(loaded.dictionaryPopup?.triggerMode).toBe('click');
     expect(loaded.dictionaryPopup?.badgePointerTrigger).toEqual(
       expect.objectContaining({ position: 'right', size: 48, pointerScale: 0.3 }),
     );
