@@ -239,6 +239,12 @@ let currentVideo: HTMLVideoElement | null = null;
 // Shared with subtitle overlay controller for token lookup + highlight.
 let webTextCtrl: WebTextDictionaryController | null = null;
 let webTokenizeCtrl: WebTokenizeController | null = null;
+/** ADR-061: Pending tokenize subscribers — collected before
+ *  webTokenizeCtrl is initialized (initTokenize is async and may complete
+ *  after mountSettingsDialog subscribes). Flushed when webTokenizeCtrl is
+ *  created. Without this, the orbital badge's SettingsDialog never receives
+ *  tokenize state updates → toggles don't visually switch. */
+let pendingTokenizeSubs: Array<(s: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void> = [];
 
 function ensureWebTextCtrl(): WebTextDictionaryController {
   if (!webTextCtrl) {
@@ -286,7 +292,14 @@ function ensureWebTextCtrl(): WebTextDictionaryController {
           }
         },
         subscribe: (cb) => {
-          if (!webTokenizeCtrl) return () => {};
+          if (!webTokenizeCtrl) {
+            // ADR-061: webTokenizeCtrl not yet initialized — queue the
+            // subscriber. It will be registered when initTokenize completes.
+            pendingTokenizeSubs.push(cb);
+            return () => {
+              pendingTokenizeSubs = pendingTokenizeSubs.filter((c) => c !== cb);
+            };
+          }
           return webTokenizeCtrl.subscribe((s) => {
             cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency });
           });
@@ -346,6 +359,15 @@ async function initTokenize(): Promise<void> {
         ensureWebTextCtrl().syncStatus(term, status);
       },
     });
+    // ADR-061: Flush pending subscribers that were queued before
+    // webTokenizeCtrl was initialized (mountSettingsDialog subscribes at
+    // orbital badge creation time, which may race with initTokenize).
+    for (const cb of pendingTokenizeSubs) {
+      webTokenizeCtrl.subscribe((s) => {
+        cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency });
+      });
+    }
+    pendingTokenizeSubs = [];
   } catch (err) {
     // Storage may be unavailable in some test/sandbox contexts — safe fallback.
     console.warn('[content-script] initTokenize failed', err);
