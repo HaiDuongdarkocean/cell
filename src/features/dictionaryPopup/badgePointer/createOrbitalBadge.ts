@@ -1,6 +1,5 @@
 import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?raw';
-import { ICON_CATALOG } from '@/shared/icons';
 import { onStorageChanged, removeOnStorageChangedListener, getStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { ThemeMode } from '@/entities/theme';
@@ -20,6 +19,7 @@ import {
   getEdgeCenter as sharedGetEdgeCenter,
   getCollapsedCenter as sharedGetCollapsedCenter,
 } from './badgeCollapse';
+import { mountSettingsDialog, type SettingsDialogMountController } from '@/features/settings/ui/mountSettingsDialog';
 
 const HOST_CLASS = 'js-cell-orbital-badge-host';
 const BADGE_Z_INDEX = '2147483647';
@@ -64,20 +64,19 @@ export interface OrbitalBadgeOptions {
   /** Called when the badge is triple-tapped while expanded. */
   readonly onTripleTap?: () => void;
   /** Settings panel state + callbacks. When provided, a single click on the
-   *  badge opens a center-screen settings panel (mobile-first responsive). */
+   *  badge opens the full SettingsDialog (React) inline. Tokenize state +
+   *  callbacks are bridged into the dialog's Tokenize section (ADR-061). */
   readonly panel?: {
-    readonly initialState: OrbitalBadgePanelState;
-    readonly onToggleEnabled: () => void;
-    readonly onToggleStatus: () => void;
-    readonly onToggleFrequency: () => void;
+    readonly getState: () => OrbitalBadgePanelState;
+    readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
     readonly onOpenDictionary: () => void;
+    readonly subscribe: (cb: (state: OrbitalBadgePanelState) => void) => () => void;
   };
 }
 
 export interface OrbitalBadge {
   readonly setPreset: (preset: PointerPreset) => void;
   readonly getState: () => OrbitalBadgeState;
-  readonly setPanelState: (state: Partial<OrbitalBadgePanelState>) => void;
   readonly show: () => void;
   readonly hide: () => void;
   readonly destroy: () => void;
@@ -216,20 +215,23 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
   pointer.setAttribute('aria-hidden', 'true');
   root.appendChild(pointer);
 
-  // Settings panel — rendered in the shadow DOM so it inherits theme tokens.
-  // Shown center-screen on single click (mobile-first responsive). Click-outside
-  // or close button dismisses it. The panel reuses .btn / .icon-btn / .cell-toggle
-  // from components.css (SSOT — no redefinition here).
-  const panel = document.createElement('div');
-  panel.className = 'cell-orbital-panel js-cell-orbital-panel';
-  panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', 'Tokenize settings');
-  panel.setAttribute('data-theme', 'dark');
-  shadow.appendChild(panel);
+  // ADR-061: Settings dialog — mounted as a React root on document.body (not
+  // in Shadow DOM — CSS module styles only apply in the light DOM). Single
+  // click on the badge toggles it open/close. Tokenize state + callbacks are
+  // bridged from options.panel.
+  let settingsMount: SettingsDialogMountController | null = null;
   let panelOpen = false;
-  let panelState: OrbitalBadgePanelState = options.panel
-    ? { ...options.panel.initialState }
-    : { enabled: false, showStatus: false, showFrequency: false };
+  if (options.panel) {
+    settingsMount = mountSettingsDialog({
+      tokenize: {
+        getState: () => options.panel!.getState(),
+        onToggle: (key) => options.panel!.onToggle(key),
+        onOpenDictionary: () => options.panel!.onOpenDictionary(),
+        subscribe: (cb) => options.panel!.subscribe(cb),
+      },
+      onClose: () => { panelOpen = false; },
+    });
+  }
 
   function setBadgeCenter(center: Point): void {
     badgeCenter = center;
@@ -461,70 +463,21 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     pendingMove = null;
   }
 
-  /** Build the settings panel content (header + toggle rows + dictionary btn). */
-  function buildPanel(): void {
-    panel.innerHTML = '';
-    const header = document.createElement('div');
-    header.className = 'cell-orbital-panel__header';
-    header.textContent = 'Tokenize';
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'icon-btn icon-btn--xs cell-orbital-panel__close js-cell-orbital-panel-close';
-    closeBtn.setAttribute('aria-label', 'Close');
-    closeBtn.innerHTML = ICON_CATALOG.x.svg;
-    closeBtn.addEventListener('click', () => setPanelOpen(false));
-    header.appendChild(closeBtn);
-    panel.appendChild(header);
-    panel.appendChild(createToggleRow('Tokenize page', panelState.enabled, () => options.panel?.onToggleEnabled()));
-    panel.appendChild(createToggleRow('Status', panelState.showStatus, () => options.panel?.onToggleStatus()));
-    panel.appendChild(createToggleRow('Frequency', panelState.showFrequency, () => options.panel?.onToggleFrequency()));
-    const dictBtn = document.createElement('button');
-    dictBtn.className = 'btn btn--primary cell-orbital-panel__action js-cell-orbital-open-dict';
-    dictBtn.textContent = 'Open Dictionary';
-    dictBtn.addEventListener('click', () => options.panel?.onOpenDictionary());
-    panel.appendChild(dictBtn);
-  }
-
-  function createToggleRow(label: string, pressed: boolean, onChange: () => void): HTMLDivElement {
-    const row = document.createElement('div');
-    row.className = 'cell-orbital-panel__row';
-    const labelEl = document.createElement('span');
-    labelEl.className = 'cell-orbital-panel__label';
-    labelEl.textContent = label;
-    row.appendChild(labelEl);
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'cell-toggle js-cell-orbital-toggle';
-    toggle.setAttribute('aria-pressed', String(pressed));
-    toggle.setAttribute('role', 'switch');
-    toggle.setAttribute('aria-label', label);
-    const thumb = document.createElement('span');
-    thumb.className = 'cell-toggle__thumb';
-    toggle.appendChild(thumb);
-    toggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const next = toggle.getAttribute('aria-pressed') !== 'true';
-      toggle.setAttribute('aria-pressed', String(next));
-      onChange();
-    });
-    row.appendChild(toggle);
-    return row;
-  }
-
   function setPanelOpen(open: boolean): void {
     panelOpen = open;
-    if (open) {
-      buildPanel();
-      panel.classList.add('cell-orbital-panel--open');
-    } else {
-      panel.classList.remove('cell-orbital-panel--open');
-    }
+    if (open) settingsMount?.open();
+    else settingsMount?.close();
   }
 
-  /** Click-outside: close the panel when a pointerdown lands outside the host. */
+  /** Click-outside: close the dialog when a pointerdown lands outside both
+   *  the badge host and the settings dialog host (ADR-061). */
   function onDocPointerDown(e: PointerEvent): void {
     if (!panelOpen) return;
     const t = e.target as Node | null;
-    if (t && host.contains(t)) return;
+    if (!t) return;
+    if (host.contains(t)) return;
+    const settingsHost = document.getElementById('cell-settings-dialog-host');
+    if (settingsHost && settingsHost.contains(t)) return;
     setPanelOpen(false);
   }
 
@@ -618,13 +571,11 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     const mode = data[STORAGE_KEYS.THEME_MODE] as ThemeMode | undefined;
     const resolved = resolveTheme(mode);
     root.setAttribute('data-theme', resolved);
-    panel.setAttribute('data-theme', resolved);
   }
 
   function initTheme(): void {
     const syncDefault = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     root.setAttribute('data-theme', syncDefault);
-    panel.setAttribute('data-theme', syncDefault);
     void refreshTheme();
 
     const onThemeChange = (changes: Record<string, chrome.storage.StorageChange>, area: string): void => {
@@ -663,10 +614,6 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     getState() {
       return { expanded, preset: userPreset };
     },
-    setPanelState(next: Partial<OrbitalBadgePanelState>) {
-      panelState = { ...panelState, ...next };
-      if (panelOpen) buildPanel();
-    },
     show() {
       if (visible) return;
       visible = true;
@@ -679,6 +626,8 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     destroy() {
       if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
       if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
+      settingsMount?.unmount();
+      settingsMount = null;
       themeCleanup?.();
       themeCleanup = null;
       document.removeEventListener('fullscreenchange', onFullscreenChange);

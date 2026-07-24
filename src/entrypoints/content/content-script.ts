@@ -260,7 +260,7 @@ function ensureWebTextCtrl(): WebTextDictionaryController {
       // The panel reads/writes tokenize state via these callbacks. Lazily
       // reads `webTokenizeCtrl` at click time (may be null on first render).
       panel: {
-        getInitialState: () => {
+        getState: () => {
           const s = webTokenizeCtrl?.getState();
           return {
             enabled: s?.enabled ?? false,
@@ -268,17 +268,14 @@ function ensureWebTextCtrl(): WebTextDictionaryController {
             showFrequency: s?.showFrequency ?? false,
           };
         },
-        onToggleEnabled: () => webTokenizeCtrl?.toggleEnabled(),
-        onToggleStatus: () => webTokenizeCtrl?.toggleShowStatus(),
-        onToggleFrequency: () => webTokenizeCtrl?.toggleShowFrequency(),
+        onToggle: (key) => {
+          if (key === 'enabled') webTokenizeCtrl?.toggleEnabled();
+          else if (key === 'showStatus') webTokenizeCtrl?.toggleShowStatus();
+          else if (key === 'showFrequency') webTokenizeCtrl?.toggleShowFrequency();
+        },
         onOpenDictionary: () => {
           const term = webTokenizeCtrl?.pickDictionaryTerm();
           if (term) {
-            // Delegate to the tokenize controller's onOpenDictionary callback
-            // (wired in initTokenize) by dispatching a click on a synthetic
-            // element — but simpler: call the content-script-level handler.
-            // Since onOpenDictionary is a constructor option, we replicate the
-            // lookup here via the webTextCtrl.
             const ctrl = ensureWebTextCtrl();
             ctrl.handleLookup(
               { term, langCode: 'en', contextSentence: '', cursorOffset: 0 },
@@ -288,8 +285,7 @@ function ensureWebTextCtrl(): WebTextDictionaryController {
             );
           }
         },
-        onStateChange: (cb) => {
-          // Subscribe to tokenize state changes; returns unsubscribe.
+        subscribe: (cb) => {
           if (!webTokenizeCtrl) return () => {};
           return webTokenizeCtrl.subscribe((s) => {
             cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency });
