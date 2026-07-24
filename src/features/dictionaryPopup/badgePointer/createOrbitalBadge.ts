@@ -1,6 +1,6 @@
 import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?raw';
-import { onStorageChanged, removeOnStorageChangedListener, getStorage } from '@/shared/lib/chrome-apis';
+import { onStorageChanged, removeOnStorageChangedListener, getStorage, setStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { ThemeMode } from '@/entities/theme';
 import { buildOrbitalBadgeCss } from './orbitalBadgeCss';
@@ -157,7 +157,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
   let preset: PointerPreset = userPreset;
   let expanded = false;
   let collapsedEdge: CollapsedEdge = 'right';
-  // Center the badge on the right content edge. The viewport clips the right
+  // Default: center on the right content edge. The viewport clips the right
   // half, so the visible part is a clean half-moon/crescent. Using clientWidth
   // (not innerWidth) keeps the badge on the content side of the scrollbar so
   // it is not hidden when collapsed.
@@ -165,6 +165,24 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
   const bottomEdge = getClientHeight();
   let badgeCenter: Point = { x: rightEdge, y: bottomEdge / 2 };
   let pointerTip: Point = { ...badgeCenter };
+
+  /** Persist the collapsed edge + tangential position so the badge restores
+   *  to the user's last edge-snap on reload. Throttled via rAF to coalesce
+   *  rapid edge-slides into one storage write. */
+  let persistRaf = 0;
+  function persistPosition(): void {
+    if (persistRaf) return;
+    persistRaf = requestAnimationFrame(() => {
+      persistRaf = 0;
+      const tangential = (collapsedEdge === 'left' || collapsedEdge === 'right')
+        ? badgeCenter.y
+        : badgeCenter.x;
+      void setStorage(STORAGE_KEYS.ORBITAL_BADGE_POSITION, {
+        edge: collapsedEdge,
+        tangential,
+      });
+    });
+  }
 
   let dragStart: { x: number; y: number; center: Point; vw: number; vh: number } | null = null;
   let dragging = false;
@@ -344,6 +362,11 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
   }
 
   const gestureDetector = createGestureDetector({
+    onSingleTap: () => {
+      if (!dragging && options.panel) {
+        setPanelOpen(!panelOpen);
+      }
+    },
     onDoubleTap: () => {
       if (!expanded) return;
       toggleVerticalPreset();
@@ -370,6 +393,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
         // Otherwise slide along the collapsed edge.
         dragging = true;
         setBadgeCenter(getSlideCenter(collapsedEdge, dragStart.center, dx, dy, badgeSize));
+        persistPosition();
         return;
       }
     }
@@ -446,6 +470,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
           applyPreset(getInwardPreset(nearest.edge), false, false);
           setBadgeCenter(snapped);
           setExpanded(false, true, nearest.edge);
+          persistPosition();
         }
       }
       // Collapsed-edge slides do not trigger a lookup; the badge stays on the edge.
@@ -486,14 +511,11 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       suppressClick = false;
       return;
     }
+    // gestureDetector handles single/double/triple tap disambiguation.
+    // onSingleTap (panel toggle) is delayed by TAP_WINDOW_MS so that a
+    // double or triple tap can cancel it — prevents open-then-close on
+    // touch screens where each tap fires a click event immediately.
     gestureDetector.onPointerUp(performance.now());
-    // Single click opens the settings panel (gestureDetector handles double/
-    // triple tap separately; a single tap that isn't part of a multi-tap
-    // gesture fires onBadgeClick after gestureDetector.onPointerUp resolves).
-    // Only open panel if the click wasn't consumed by a double/triple tap.
-    if (!dragging && options.panel) {
-      setPanelOpen(!panelOpen);
-    }
   }
 
   badge.addEventListener('pointerdown', onBadgePointerDown);
@@ -602,10 +624,40 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('pointerdown', onDocPointerDown, true);
   window.addEventListener('resize', onResize);
+  // ResizeObserver on <html> detects scrollbar appearance/disappearance —
+  // window 'resize' does NOT fire when a scrollbar appears (content grows
+  // past viewport height). The content-box of <html> shrinks when a classic
+  // scrollbar takes space, firing the observer. reposition() then re-snaps
+  // the badge to the new clientWidth so it is never hidden under the scrollbar.
+  const viewportResizeObserver = new ResizeObserver(() => onResize());
+  viewportResizeObserver.observe(document.documentElement, { box: 'content-box' });
 
-  // Initial render.
-  setBadgeCenter(badgeCenter);
-  setExpanded(false, false, 'right');
+  // Initial render — restore persisted collapsed position if any.
+  void (async () => {
+    try {
+      const saved = await getStorage<Record<string, unknown>>(STORAGE_KEYS.ORBITAL_BADGE_POSITION);
+      const pos = saved[STORAGE_KEYS.ORBITAL_BADGE_POSITION] as { edge: CollapsedEdge; tangential: number } | undefined;
+      if (pos && typeof pos.edge === 'string' && typeof pos.tangential === 'number') {
+        const vp = viewportRect();
+        const half = badgeSize / 2;
+        const maxT = (pos.edge === 'left' || pos.edge === 'right')
+          ? vp.height - half
+          : vp.width - half;
+        const tangential = Math.max(half, Math.min(maxT, pos.tangential));
+        collapsedEdge = pos.edge;
+        if (pos.edge === 'left' || pos.edge === 'right') {
+          badgeCenter = { x: pos.edge === 'left' ? 0 : vp.width, y: tangential };
+        } else {
+          badgeCenter = { x: tangential, y: pos.edge === 'top' ? 0 : vp.height };
+        }
+        setBadgeCenter(badgeCenter);
+        setExpanded(false, false, pos.edge);
+        return;
+      }
+    } catch { /* storage unavailable — use default */ }
+    setBadgeCenter(badgeCenter);
+    setExpanded(false, false, 'right');
+  })();
 
   return {
     setPreset(next: PointerPreset) {
@@ -626,6 +678,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     destroy() {
       if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
       if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
+      if (persistRaf) { cancelAnimationFrame(persistRaf); persistRaf = 0; }
       settingsMount?.unmount();
       settingsMount = null;
       themeCleanup?.();
@@ -633,6 +686,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       document.removeEventListener('fullscreenchange', onFullscreenChange);
       document.removeEventListener('pointerdown', onDocPointerDown, true);
       window.removeEventListener('resize', onResize);
+      viewportResizeObserver.disconnect();
       gestureDetector.destroy();
       host.remove();
     },

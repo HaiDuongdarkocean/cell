@@ -36,6 +36,16 @@ beforeAll(() => {
     cb(0);
     return 0;
   }) as unknown as typeof requestAnimationFrame;
+
+  // Polyfill ResizeObserver — jsdom doesn't provide it. createOrbitalBadge
+  // uses it to re-snap the badge when the viewport shrinks (scrollbar guard).
+  if (typeof globalThis.ResizeObserver === 'undefined') {
+    globalThis.ResizeObserver = jest.fn().mockImplementation(() => ({
+      observe: jest.fn(),
+      unobserve: jest.fn(),
+      disconnect: jest.fn(),
+    })) as unknown as typeof ResizeObserver;
+  }
 });
 
 function getShadow(host: HTMLElement): ShadowRoot {
