@@ -24,6 +24,7 @@ import { SubtitleBlockSettingsPanel } from './SubtitleBlockSettingsPanel';
 import { NavClusterSettingsPanel } from './NavClusterSettingsPanel';
 import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
+import { TokenizeSettingsPanel, type TokenizePanelState } from './TokenizeSettingsPanel';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Toggle } from '@/shared/ui/Toggle';
@@ -42,7 +43,7 @@ interface SettingsDialogProps {
   /** ADR-061: Tokenize section — only provided when mounted in the orbital
    *  badge panel (content-script). Popup/sidepanel/options don't have
    *  tokenize runtime state, so these stay undefined there. */
-  readonly tokenizeState?: { readonly enabled: boolean; readonly showStatus: boolean; readonly showFrequency: boolean };
+  readonly tokenizeState?: TokenizePanelState;
   readonly onToggleTokenize?: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
   readonly onOpenDictionary?: () => void;
 }
@@ -268,51 +269,11 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeSt
               </div>
               <p className={styles.sectionDescription}>Tokenize the current page for vocabulary lookup.</p>
               <div className={styles.sectionBody}>
-                <div className={styles.field}>
-                  <div className={styles.asRow}>
-                    <span className={styles.asLabel}>
-                      Status badges
-                      <HintIcon
-                        hint="Hiển thị trạng thái từ (known/tracking/unknown) trên token badges."
-                        ariaLabel="Show hint for Status badges"
-                      />
-                    </span>
-                    <Toggle
-                      checked={tokenizeState.showStatus}
-                      onChange={() => onToggleTokenize?.('showStatus')}
-                      ariaLabel="Toggle status badges"
-                      title={`Status: ${tokenizeState.showStatus ? 'ON' : 'OFF'}`}
-                      disabled={!tokenizeState.enabled}
-                    />
-                  </div>
-                </div>
-                <div className={styles.field}>
-                  <div className={styles.asRow}>
-                    <span className={styles.asLabel}>
-                      Frequency bands
-                      <HintIcon
-                        hint="Hiển thị băng tần tần suất từ (hot/common/rare) trên token badges."
-                        ariaLabel="Show hint for Frequency bands"
-                      />
-                    </span>
-                    <Toggle
-                      checked={tokenizeState.showFrequency}
-                      onChange={() => onToggleTokenize?.('showFrequency')}
-                      ariaLabel="Toggle frequency bands"
-                      title={`Frequency: ${tokenizeState.showFrequency ? 'ON' : 'OFF'}`}
-                      disabled={!tokenizeState.enabled}
-                    />
-                  </div>
-                </div>
-                {onOpenDictionary && (
-                  <button
-                    type="button"
-                    className="btn btn--primary"
-                    onClick={onOpenDictionary}
-                  >
-                    Open Dictionary
-                  </button>
-                )}
+                <TokenizeSettingsPanel
+                  state={tokenizeState}
+                  onToggle={(key) => onToggleTokenize?.(key)}
+                  onOpenDictionary={onOpenDictionary}
+                />
               </div>
             </section>
           )}
