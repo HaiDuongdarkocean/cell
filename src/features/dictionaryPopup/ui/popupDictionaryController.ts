@@ -354,7 +354,7 @@ export function showPopup(
       onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
       onQuickAdd: () => { state = triggerCardCreatorAction(state, 'quick-add'); onDismiss?.(state); },
       onSendToCreator: () => { state = triggerCardCreatorAction(state, 'edit-card'); onDismiss?.(state); },
-      onSettings: () => openSettings(state),
+      onSettings: () => { /* options page removed — settings now in orbital badge SettingsDialog */ },
       onClose: () => {
         state = hidePopup(state);
         onDismiss?.(state);
@@ -760,7 +760,7 @@ function renderActiveEntryFromState(state: PopupDictionaryState, container: HTML
     onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
     onQuickAdd: () => { state = triggerCardCreatorAction(state, 'quick-add'); },
     onSendToCreator: () => { state = triggerCardCreatorAction(state, 'edit-card'); },
-    onSettings: () => openSettings(state),
+    onSettings: () => { /* options page removed — settings now in orbital badge SettingsDialog */ },
     onClose: () => { state = hidePopup(state); },
     onPlayTerm: () => {
       const r = getActiveResult(state);
@@ -1225,18 +1225,6 @@ function rerender(state: PopupDictionaryState, activeTab?: PopupTab | null): voi
   renderPopupToolbar(state, container);
   renderCandidateChipsAndList(state, container);
   state.shell?.rePosition();
-}
-
-/** Open extension settings page (Dictionary Popup section). */
-function openSettings(_state: PopupDictionaryState): void {
-  // ponytail: open extension options page — chrome.runtime.openOptionsPage
-  // focuses the Dictionary Popup settings section.
-  try {
-    void chrome.runtime.openOptionsPage();
-  } catch {
-    // Fallback: open options URL directly.
-    void window.open(chrome.runtime.getURL('src/entrypoints/options/index.html'));
-  }
 }
 
 async function persistStatus(term: string, langCode: string, status: WordStatus): Promise<void> {
