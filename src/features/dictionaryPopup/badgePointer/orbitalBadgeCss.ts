@@ -73,11 +73,18 @@ export function buildOrbitalBadgeCss(): string {
 
 /* Peek mode — when the pointer preset is 'center', the tip sits inside the
    badge. Make the badge translucent + faint border so the user can see the
-   text under it for easier lookup. The pointer (9px) remains solid white so
-   the tip is still visible against the page. */
+   text under it for easier lookup. The pointer also becomes translucent so
+   the text under the tip is visible for lookup. */
 .cell-orbital-badge--peek {
   background: transparent !important;
   border: 1px solid color-mix(in srgb, var(--color-primary, #3b82f6) 40%, transparent) !important;
+}
+
+/* Pointer in peek mode: translucent so text under the tip is visible.
+   Badge and pointer are siblings inside .cell-orbital-badge-root. */
+.cell-orbital-badge--peek + .cell-orbital-pointer {
+  background: color-mix(in srgb, var(--color-text-inverse, #ffffff) 20%, transparent) !important;
+  border-color: color-mix(in srgb, var(--color-primary, #3b82f6) 40%, transparent) !important;
 }
 
 /* The "moon" pointer orbiting the badge. pointer-events: none so it never
