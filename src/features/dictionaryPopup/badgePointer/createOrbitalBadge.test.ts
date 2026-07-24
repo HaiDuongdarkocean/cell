@@ -217,4 +217,32 @@ describe('createOrbitalBadge', () => {
 
     badge.destroy();
   });
+
+  it('repositions the badge when the viewport shrinks via resize event', () => {
+    const badge = createOrbitalBadge({});
+    const { badge: btn } = getBadgeAndPointer();
+
+    // Default: collapsed on right edge at vh/2. jsdom defaults: innerWidth=1024, innerHeight=768.
+    const originalLeft = btn.style.left;
+    const originalTop = btn.style.top;
+
+    // Shrink viewport to half size. jsdom doesn't do layout so clientWidth=0;
+    // getClientWidth falls back to window.innerWidth — mock that.
+    Object.defineProperty(window, 'innerWidth', { value: 512, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 384, configurable: true });
+
+    window.dispatchEvent(new Event('resize'));
+
+    // Badge should reposition to the new right edge (x = new width = 512).
+    expect(btn.style.left).not.toBe(originalLeft);
+    expect(parseFloat(btn.style.left)).toBe(512);
+    // Y should be clamped to the new viewport (was 384 = 768/2, now should be 192 = 384/2).
+    expect(parseFloat(btn.style.top)).toBeLessThanOrEqual(384);
+
+    // Restore.
+    Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 768, configurable: true });
+
+    badge.destroy();
+  });
 });
