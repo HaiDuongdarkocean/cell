@@ -70,6 +70,7 @@ docs/           # Tài liệu dự án
 │   └── 057-popup-smooth-transitions.md # ADR-057: CSS transitions for dictionary popup show/hide, position moves, size changes, and content swaps
 │   └── 058-predictive-viewport-tokenize.md # ADR-058: VDLT-Predict — direction-aware overscan + prepare-ahead + cold-start viewport-first bind
 │   └── 059-tokenize-gold-performance.md # ADR-059: < 500 ms viewport + scroll, 500 MB RAM — rAF scheduler, PRIORITY_PREPARE, 0.5-viewport overscan, version race guard
+│   └── 061-orbital-settings-dialog.md # ADR-061: orbital badge integrates SettingsDialog (React mount) — thay vanilla panel bằng mountSettingsDialog, tokenize thành 1 section
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup
 │   ├── overlay-appearance-settings.md

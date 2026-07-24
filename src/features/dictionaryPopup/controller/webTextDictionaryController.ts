@@ -83,16 +83,14 @@ export interface WebTextDictionaryControllerDeps {
   /** Get the locally cached word status from the tokenize controller, used as a
    *  fallback when the background DB read races or fails. */
   readonly getTokenStatus?: (term: string) => WordStatus;
-  /** Settings panel state + callbacks for the orbital badge's integrated panel
-   *  (merged from the former token FAB). When provided, the orbital badge
-   *  shows a center-screen settings panel on single click. */
+  /** Settings panel state + callbacks for the orbital badge's integrated
+   *  SettingsDialog (ADR-061). When provided, single click on the badge opens
+   *  the full settings dialog with a Tokenize section. */
   readonly panel?: {
-    readonly getInitialState: () => { enabled: boolean; showStatus: boolean; showFrequency: boolean };
-    readonly onToggleEnabled: () => void;
-    readonly onToggleStatus: () => void;
-    readonly onToggleFrequency: () => void;
+    readonly getState: () => { enabled: boolean; showStatus: boolean; showFrequency: boolean };
+    readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
     readonly onOpenDictionary: () => void;
-    readonly onStateChange: (cb: (state: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void) => () => void;
+    readonly subscribe: (cb: (state: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void) => () => void;
   };
 }
 
@@ -331,7 +329,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let orbitalHoverTrigger: WebTriggerController | null = null;
   let orbitalBadgeSize: number | null = null;
   let orbitalBadgeScale: number | null = null;
-  let panelUnsubscribe: (() => void) | null = null;
   let cardCreatorMount: CardCreatorMountController | null = null;
   let currentHighlightTarget: HighlightTarget | null = null;
   /** Original highlight target from the trigger (single word). Stored so we
@@ -1047,8 +1044,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     orbitalBadge = null;
     orbitalHoverTrigger?.detach();
     orbitalHoverTrigger = null;
-    panelUnsubscribe?.();
-    panelUnsubscribe = null;
   }
 
   function destroy(): void {
@@ -1078,8 +1073,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       orbitalBadgeScale = null;
       orbitalHoverTrigger?.detach();
       orbitalHoverTrigger = null;
-      panelUnsubscribe?.();
-      panelUnsubscribe = null;
       return;
     }
     const trigger = dp.badgePointerTrigger;
@@ -1108,20 +1101,17 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onTipReady: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
         onTipHover: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
         panel: deps.panel ? {
-          initialState: deps.panel.getInitialState(),
-          onToggleEnabled: () => deps.panel!.onToggleEnabled(),
-          onToggleStatus: () => deps.panel!.onToggleStatus(),
-          onToggleFrequency: () => deps.panel!.onToggleFrequency(),
+          getState: () => deps.panel!.getState(),
+          onToggle: (key) => deps.panel!.onToggle(key),
           onOpenDictionary: () => deps.panel!.onOpenDictionary(),
+          subscribe: (cb) => deps.panel!.subscribe(cb),
         } : undefined,
       });
       orbitalBadgeSize = trigger.size;
       orbitalBadgeScale = trigger.pointerScale;
-      // Subscribe to tokenize state changes so the panel toggles stay in sync.
-      panelUnsubscribe?.();
-      panelUnsubscribe = deps.panel
-        ? deps.panel.onStateChange((s) => orbitalBadge?.setPanelState(s))
-        : null;
+      // ADR-061: tokenize state subscription is handled inside
+      // mountSettingsDialog (via options.tokenize.subscribe) — no need for
+      // an external panelUnsubscribe here.
     }
   }
 

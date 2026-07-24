@@ -39,6 +39,12 @@ interface SettingsDialogProps {
   settings: Settings;
   onChange: (settings: Settings) => void;
   onClose: () => void;
+  /** ADR-061: Tokenize section — only provided when mounted in the orbital
+   *  badge panel (content-script). Popup/sidepanel/options don't have
+   *  tokenize runtime state, so these stay undefined there. */
+  readonly tokenizeState?: { readonly enabled: boolean; readonly showStatus: boolean; readonly showFrequency: boolean };
+  readonly onToggleTokenize?: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
+  readonly onOpenDictionary?: () => void;
 }
 
 const QUALITY_OPTIONS: readonly VideoQuality[] = ['highest', '1080p', '720p', '480p', '360p', 'lowest', 'auto'];
@@ -92,7 +98,7 @@ const SHORTCUT_ACTION_ORDER: readonly ShortcutAction[] = [
  * have been removed. SUBTITLE_LANGUAGES includes "all"; OVERLAY_LANGUAGE_OPTIONS
  * includes "None" + BCP 47 variants (zh-hans, zh-hant).
  */
-export function SettingsDialog({ isOpen, settings, onChange, onClose }: SettingsDialogProps): React.JSX.Element {
+export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeState, onToggleTokenize, onOpenDictionary }: SettingsDialogProps): React.JSX.Element {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   // ADR-013: tab state for Target/Native style panel (kept here so tab switch
   // preserves state — panel unmounts/remounts would lose unsaved slider drag)
@@ -188,6 +194,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
   };
 
   const sidebarItems: { id: string; label: string }[] = [
+    ...(tokenizeState ? [{ id: 'tokenize', label: 'Tokenize' }] : []),
     { id: 'media', label: 'Media' },
     { id: 'block', label: 'Block' },
     { id: 'target', label: 'Target' },
@@ -243,7 +250,74 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose }: Settings
           {/* === Main column (cards, scrollable) === */}
           <div className={styles.mainCol} ref={mainColRef}>
 
-            {/* === Card 1: Media Selection === */}
+            {/* === Card 0: Tokenize (ADR-061 — orbital panel only) === */}
+          {tokenizeState && (
+            <section
+              ref={(el) => { sectionRefs.current.tokenize = el; }}
+              className={styles.section}
+              data-section="tokenize"
+            >
+              <div className={styles.sectionHeader}>
+                <h4 className={styles.sectionTitle}>Tokenize</h4>
+                <Toggle
+                  checked={tokenizeState.enabled}
+                  onChange={() => onToggleTokenize?.('enabled')}
+                  ariaLabel="Toggle tokenize page"
+                  title={`Tokenize page: ${tokenizeState.enabled ? 'ON' : 'OFF'}`}
+                />
+              </div>
+              <p className={styles.sectionDescription}>Tokenize the current page for vocabulary lookup.</p>
+              <div className={styles.sectionBody}>
+                <div className={styles.field}>
+                  <div className={styles.asRow}>
+                    <span className={styles.asLabel}>
+                      Status badges
+                      <HintIcon
+                        hint="Hiển thị trạng thái từ (known/tracking/unknown) trên token badges."
+                        ariaLabel="Show hint for Status badges"
+                      />
+                    </span>
+                    <Toggle
+                      checked={tokenizeState.showStatus}
+                      onChange={() => onToggleTokenize?.('showStatus')}
+                      ariaLabel="Toggle status badges"
+                      title={`Status: ${tokenizeState.showStatus ? 'ON' : 'OFF'}`}
+                      disabled={!tokenizeState.enabled}
+                    />
+                  </div>
+                </div>
+                <div className={styles.field}>
+                  <div className={styles.asRow}>
+                    <span className={styles.asLabel}>
+                      Frequency bands
+                      <HintIcon
+                        hint="Hiển thị băng tần tần suất từ (hot/common/rare) trên token badges."
+                        ariaLabel="Show hint for Frequency bands"
+                      />
+                    </span>
+                    <Toggle
+                      checked={tokenizeState.showFrequency}
+                      onChange={() => onToggleTokenize?.('showFrequency')}
+                      ariaLabel="Toggle frequency bands"
+                      title={`Frequency: ${tokenizeState.showFrequency ? 'ON' : 'OFF'}`}
+                      disabled={!tokenizeState.enabled}
+                    />
+                  </div>
+                </div>
+                {onOpenDictionary && (
+                  <button
+                    type="button"
+                    className="btn btn--primary"
+                    onClick={onOpenDictionary}
+                  >
+                    Open Dictionary
+                  </button>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* === Card 1: Media Selection === */}
             <section
               ref={(el) => { sectionRefs.current.media = el; }}
               className={styles.section}
