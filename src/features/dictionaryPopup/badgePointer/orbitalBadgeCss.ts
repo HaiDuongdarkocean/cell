@@ -68,7 +68,6 @@ export function buildOrbitalBadgeCss(): string {
 
 .cell-orbital-badge:active {
   cursor: grabbing !important;
-  background: var(--color-primary-active, #2563eb) !important;
 }
 
 /* Peek mode — when the pointer preset is 'center', the tip sits inside the
