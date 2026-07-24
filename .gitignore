@@ -96,3 +96,4 @@ tests/data-test/extension-phụ-trợ/
 
 # Generated benchmark pages (output of tasks/gen-benchmark-page.cjs).
 tasks/benchmark-*.html
+dist.zip
