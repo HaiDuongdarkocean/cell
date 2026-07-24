@@ -863,6 +863,18 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
               wordAudioUrls = wordItems.map((a: AudioItem) => a.url!);
             }
           } catch { /* non-fatal */ }
+          // Fallback: if community audio has no URL for this word, use TTS.
+          if (!wordAudioUrls?.length) {
+            try {
+              const ttsRes = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+                type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+                payload: { tabId: 0, text: prefill.term, langCode: prefill.langCode },
+              });
+              if (ttsRes?.success && ttsRes.data?.url) {
+                wordAudioUrls = [ttsRes.data.url];
+              }
+            } catch { /* non-fatal */ }
+          }
         })());
       }
 
@@ -985,6 +997,18 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
               wordAudioUrls = wordItems.map((a: AudioItem) => a.url!);
             }
           } catch { /* non-fatal */ }
+          // Fallback: if community audio has no URL for this word, use TTS.
+          if (!wordAudioUrls?.length) {
+            try {
+              const ttsRes = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+                type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+                payload: { tabId: 0, text: prefill.term, langCode: prefill.langCode },
+              });
+              if (ttsRes?.success && ttsRes.data?.url) {
+                wordAudioUrls = [ttsRes.data.url];
+              }
+            } catch { /* non-fatal */ }
+          }
         })());
       }
 
