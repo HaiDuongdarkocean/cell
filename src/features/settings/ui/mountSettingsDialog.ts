@@ -15,27 +15,21 @@
 import { createRoot, type Root } from 'react-dom/client';
 import { createElement, type ReactElement } from 'react';
 import { SettingsDialog } from './SettingsDialog';
+import type { TokenizePanelState } from './TokenizeSettingsPanel';
 import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { Settings } from '@/entities/media';
 
-/** Tokenize state bridged from the orbital badge's tokenize controller. */
-export interface TokenizeBridgeState {
-  readonly enabled: boolean;
-  readonly showStatus: boolean;
-  readonly showFrequency: boolean;
-}
-
 export interface SettingsDialogMountOptions {
   /** Tokenize state + callbacks. When provided, a Tokenize section appears
    *  at the top of the settings sidebar. */
   readonly tokenize?: {
-    readonly getState: () => TokenizeBridgeState;
+    readonly getState: () => TokenizePanelState;
     readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
     readonly onOpenDictionary: () => void;
-    readonly subscribe: (cb: (state: TokenizeBridgeState) => void) => () => void;
+    readonly subscribe: (cb: (state: TokenizePanelState) => void) => () => void;
   };
   /** Called when the dialog closes (badge click-outside / Escape / close btn). */
   readonly onClose: () => void;
@@ -97,7 +91,7 @@ export function mountSettingsDialog(
 
   let open = false;
   let settings: Settings | null = null;
-  let tokenizeState: TokenizeBridgeState | null = options.tokenize?.getState() ?? null;
+  let tokenizeState: TokenizePanelState | null = options.tokenize?.getState() ?? null;
   let root: Root | null = createRoot(rootEl);
 
   // Load settings asynchronously + listen for external changes.
