@@ -563,6 +563,54 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     if (host.parentElement !== container) {
       container.appendChild(host);
     }
+    // Reposition after re-parenting — fullscreen may have different viewport
+    // dims. rAF ensures the new parent is laid out before reading viewport.
+    requestAnimationFrame(reposition);
+  }
+
+  /** Reposition the badge into the current viewport — called on resize and
+   *  fullscreen change. If collapsed on an edge, re-snap to that edge at the
+   *  same tangential position (clamped to new viewport). If expanded, clamp
+   *  the center into the new viewport. This preserves the user's relative
+   *  position when switching between normal and fullscreen modes. */
+  function reposition(): void {
+    const vp = viewportRect();
+    if (!expanded) {
+      // Collapsed: re-snap to the same edge at the same tangential position.
+      // badgeCenter sits ON the edge (x=0/vp.width or y=0/vp.height); the
+      // tangential coord is the other axis. Clamp it into the new viewport.
+      const half = badgeSize / 2;
+      const maxTangential = (collapsedEdge === 'left' || collapsedEdge === 'right')
+        ? vp.height - half
+        : vp.width - half;
+      const minTangential = half;
+      if (collapsedEdge === 'left' || collapsedEdge === 'right') {
+        const y = Math.max(minTangential, Math.min(maxTangential, badgeCenter.y));
+        const x = collapsedEdge === 'left' ? 0 : vp.width;
+        setBadgeCenter({ x, y });
+      } else {
+        const x = Math.max(minTangential, Math.min(maxTangential, badgeCenter.x));
+        const y = collapsedEdge === 'top' ? 0 : vp.height;
+        setBadgeCenter({ x, y });
+      }
+    } else {
+      // Expanded: clamp center into viewport, keeping the badge fully visible.
+      const half = badgeSize / 2;
+      const x = Math.max(half, Math.min(vp.width - half, badgeCenter.x));
+      const y = Math.max(half, Math.min(vp.height - half, badgeCenter.y));
+      setBadgeCenter({ x, y });
+    }
+  }
+
+  /** rAF-throttled resize handler — coalesce multiple resize events into one
+   *  reposition per frame to avoid layout thrashing. */
+  let resizeRaf = 0;
+  function onResize(): void {
+    if (resizeRaf) return;
+    resizeRaf = requestAnimationFrame(() => {
+      resizeRaf = 0;
+      reposition();
+    });
   }
 
   async function refreshTheme(): Promise<void> {
@@ -602,6 +650,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
   }
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('pointerdown', onDocPointerDown, true);
+  window.addEventListener('resize', onResize);
 
   // Initial render.
   setBadgeCenter(badgeCenter);
@@ -629,10 +678,12 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     },
     destroy() {
       if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
+      if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
       themeCleanup?.();
       themeCleanup = null;
       document.removeEventListener('fullscreenchange', onFullscreenChange);
       document.removeEventListener('pointerdown', onDocPointerDown, true);
+      window.removeEventListener('resize', onResize);
       gestureDetector.destroy();
       host.remove();
     },
