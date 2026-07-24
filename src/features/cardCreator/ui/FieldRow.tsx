@@ -144,15 +144,24 @@ export function FieldAutoGrowInput({
 
   return (
     <div className={styles.fieldInput} data-testid={dataId ? `${dataId}-input` : undefined}>
-      <input
-        ref={controlRef}
-        className={controlClass}
-        value={value}
-        onChange={handleChange}
-        // Multi-line input: allow wrapping + rows. Single-line: default.
-        {...(isMultiLine ? { rows: lineCount } : {})}
-        {...rest}
-      />
+      {isMultiLine ? (
+        <textarea
+          ref={controlRef as unknown as React.RefObject<HTMLTextAreaElement>}
+          className={controlClass}
+          value={value}
+          onChange={handleChange as unknown as React.ChangeEventHandler<HTMLTextAreaElement>}
+          rows={lineCount}
+          {...rest}
+        />
+      ) : (
+        <input
+          ref={controlRef}
+          className={controlClass}
+          value={value}
+          onChange={handleChange}
+          {...rest}
+        />
+      )}
       {clearable && value.length > 0 && (
         <button
           type="button"

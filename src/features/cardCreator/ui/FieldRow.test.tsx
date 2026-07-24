@@ -121,15 +121,17 @@ describe('FieldAutoGrowInput', () => {
     expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
   });
 
-  it('sets rows attribute for multi-line content (JS fallback for field-sizing)', () => {
+  it('renders a textarea with rows for multi-line content', () => {
     const { container } = render(<FieldAutoGrowInput value={'line1\nline2\nline3'} onChange={jest.fn()} aria-label="Test" />);
-    const input = container.querySelector('input') as HTMLInputElement;
-    expect(input.getAttribute('rows')).toBe('3');
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    expect(textarea).not.toBeNull();
+    expect(textarea.getAttribute('rows')).toBe('3');
   });
 
-  it('does not set rows for single-line content', () => {
+  it('renders an input without rows for single-line content', () => {
     const { container } = render(<FieldAutoGrowInput value="single line" onChange={jest.fn()} aria-label="Test" />);
     const input = container.querySelector('input') as HTMLInputElement;
+    expect(input).not.toBeNull();
     expect(input.hasAttribute('rows')).toBe(false);
   });
 });

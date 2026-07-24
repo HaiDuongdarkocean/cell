@@ -13,6 +13,7 @@ import type { LookupRequest, LookupResult, TriggerMode, WordStatus } from '../ty
 import type { FetchCommunityAudioResponse, FetchImagesResponse, AudioItem, ImageItem, TtsFetchAudioResponse } from '@/features/dictionaryPopup/types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAction, PopupLineRect } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import { splitNumberedSenses } from '@/features/dictionaryPopup/ui/popupContent';
 import {
   createPopupDictionaryState,
   showPopup,
@@ -218,6 +219,28 @@ function isBlockContainer(el: HTMLElement): boolean {
 }
 
 /** Create a top-level web-text dictionary controller. */
+/** Format definitions for Card Creator / Quick Add — matches popup style:
+ *  group by POS, show POS once per group, each sense on its own line.
+ *  Uses splitNumberedSenses (same as popup) to split multi-sense entries. */
+function formatDefinitions(definitions: readonly { readonly pos?: string; readonly text: string }[]): string {
+  const lines: string[] = [];
+  let lastPos: string | undefined;
+  for (const def of definitions) {
+    const senses = splitNumberedSenses(def.text);
+    for (let i = 0; i < senses.length; i++) {
+      const pos = def.pos?.trim();
+      // Show POS only when it changes (group by POS, like popup).
+      if (pos && pos !== lastPos) {
+        lines.push(`${pos}. ${senses[i]}`);
+        lastPos = pos;
+      } else {
+        lines.push(senses[i]);
+      }
+    }
+  }
+  return lines.join('\n');
+}
+
 export function createWebTextDictionaryController(deps: WebTextDictionaryControllerDeps): WebTextDictionaryController {
   let dpSettings = deps.dictionaryPopupSettings;
   let ccSettings = deps.cardCreatorSettings;
@@ -801,9 +824,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       // Prefetch failure is non-fatal — loadData will retry.
     });
 
-    const definitionsText = prefill.definitions
-      .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
-      .join('\n');
+    const definitionsText = formatDefinitions(prefill.definitions);
 
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
     const targetLang = settings.subtitleOverlayNativeLanguage || nativeLang || 'vi';
@@ -1084,9 +1105,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       } catch { warnings.push('sentence audio capture'); }
     }
 
-    const definitionsText = prefill.definitions
-      .map((d) => (d.pos ? `(${d.pos}) ${d.text}` : d.text))
-      .join('\n');
+    const definitionsText = formatDefinitions(prefill.definitions);
 
     const result = await quickAddNote(
       url,

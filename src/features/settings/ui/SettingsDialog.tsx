@@ -111,6 +111,16 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeSt
   const [activeSection, setActiveSection] = useState<string>('media');
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainColRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const activeItemRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-scroll sidebar to keep active item visible when activeSection changes
+  // (from IntersectionObserver on scroll or from sidebar click).
+  useEffect(() => {
+    const item = activeItemRef.current;
+    if (!item) return;
+    item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [activeSection]);
 
   useEffect(() => {
     if (isOpen) {
@@ -239,11 +249,12 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeSt
 
         <div className={styles.popoverBody}>
           {/* === Sidebar (left, 120px) — YouTube/Google style pill active === */}
-          <nav className={styles.sidebar} aria-label="Settings sections">
+          <nav className={styles.sidebar} aria-label="Settings sections" ref={sidebarRef}>
             <div className={styles.sidebarLabel}>Sections</div>
             {sidebarItems.map((item) => (
               <button
                 key={item.id}
+                ref={activeSection === item.id ? activeItemRef : undefined}
                 type="button"
                 className={`${styles.sidebarItem} ${activeSection === item.id ? styles.active : ''}`}
                 onClick={() => handleSidebarClick(item.id)}
