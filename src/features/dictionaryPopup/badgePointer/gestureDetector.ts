@@ -1,11 +1,17 @@
 /**
- * Single / double / triple tap detector for the orbital badge.
+ * Multi-tap detector for the orbital badge.
  *
  * Uses pointer timestamps. A tap window of 300 ms is used to group consecutive
- * taps. Single, double, and triple taps are all emitted after the tap window
- * expires — the single-tap action is delayed so that a double or triple tap
- * can cancel it. This prevents a double-tap from firing the single-tap action
- * twice (open then close) on touch screens.
+ * taps. Single, double, triple, and quadruple taps are all emitted after the
+ * tap window expires — each action is delayed so that a higher tap count can
+ * cancel it. This prevents a multi-tap from firing lower-count actions on
+ * touch screens where each tap fires a click event immediately.
+ *
+ * Tap mapping:
+ * - 1 tap: onSingleTap (no-op for panel — used for future single-tap actions)
+ * - 2 taps: onDoubleTap (cycle vertical presets)
+ * - 3 taps: onTripleTap (cycle horizontal presets)
+ * - 4 taps: onQuadrupleTap (open settings panel)
  */
 
 const TAP_WINDOW_MS = 300;
@@ -24,8 +30,10 @@ export interface GestureDetectorDeps {
   readonly onSingleTap: () => void;
   /** Fired after TAP_WINDOW_MS if no third tap arrives. */
   readonly onDoubleTap: () => void;
-  /** Fired immediately on the third tap. */
+  /** Fired after TAP_WINDOW_MS if no fourth tap arrives. */
   readonly onTripleTap: () => void;
+  /** Fired immediately on the fourth tap. */
+  readonly onQuadrupleTap: () => void;
 }
 
 export function createGestureDetector(deps: GestureDetectorDeps): GestureDetector {
@@ -64,7 +72,6 @@ export function createGestureDetector(deps: GestureDetectorDeps): GestureDetecto
       lastTapTime = now;
 
       if (tapCount === 1) {
-        // Wait briefly to see if a second tap arrives.
         timer = setTimeout(() => {
           timer = null;
           tapCount = 0;
@@ -74,7 +81,6 @@ export function createGestureDetector(deps: GestureDetectorDeps): GestureDetecto
       }
 
       if (tapCount === 2) {
-        // Wait briefly to see if a third tap arrives.
         timer = setTimeout(() => {
           timer = null;
           tapCount = 0;
@@ -83,10 +89,19 @@ export function createGestureDetector(deps: GestureDetectorDeps): GestureDetecto
         return false;
       }
 
-      // Triple tap confirmed; reset immediately.
+      if (tapCount === 3) {
+        timer = setTimeout(() => {
+          timer = null;
+          tapCount = 0;
+          deps.onTripleTap();
+        }, TAP_WINDOW_MS);
+        return false;
+      }
+
+      // Quadruple tap confirmed; reset immediately.
       tapCount = 0;
       lastTapTime = 0;
-      deps.onTripleTap();
+      deps.onQuadrupleTap();
       return true;
     },
 

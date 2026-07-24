@@ -363,9 +363,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
 
   const gestureDetector = createGestureDetector({
     onSingleTap: () => {
-      if (!dragging && options.panel) {
-        setPanelOpen(!panelOpen);
-      }
+      // No-op: single tap does not open panel (requires 4 taps).
     },
     onDoubleTap: () => {
       if (!expanded) return;
@@ -374,6 +372,11 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     onTripleTap: () => {
       if (!expanded) return;
       toggleHorizontalPreset();
+    },
+    onQuadrupleTap: () => {
+      if (!dragging && options.panel) {
+        setPanelOpen(true);
+      }
     },
   });
 
@@ -511,10 +514,15 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       suppressClick = false;
       return;
     }
-    // gestureDetector handles single/double/triple tap disambiguation.
-    // onSingleTap (panel toggle) is delayed by TAP_WINDOW_MS so that a
-    // double or triple tap can cancel it — prevents open-then-close on
-    // touch screens where each tap fires a click event immediately.
+    // If panel is open, any tap on the badge closes it immediately —
+    // no need to wait for gesture disambiguation.
+    if (panelOpen) {
+      setPanelOpen(false);
+      return;
+    }
+    // Panel is closed: gestureDetector handles multi-tap disambiguation.
+    // onQuadrupleTap (4 taps) opens the panel; lower tap counts are
+    // delayed by TAP_WINDOW_MS so higher counts can cancel them.
     gestureDetector.onPointerUp(performance.now());
   }
 
