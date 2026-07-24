@@ -25,6 +25,9 @@ import { NavClusterSettingsPanel } from './NavClusterSettingsPanel';
 import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
 import { TokenizeSettingsPanel, type TokenizePanelState } from './TokenizeSettingsPanel';
+import { ThemePanel } from '@/features/theme/ui/ThemePanel';
+import { TtsVoiceManagerPanel, DEFAULT_TTS_SETTINGS } from '@/features/tts/ui/TtsVoiceManagerPanel';
+import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Toggle } from '@/shared/ui/Toggle';
@@ -205,6 +208,9 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeSt
     { id: 'download', label: 'Download' },
     { id: 'cardCreator', label: 'Card Creator' },
     { id: 'dictionaryPopup', label: 'Dictionary Popup' },
+    { id: 'theme', label: 'Theme' },
+    { id: 'tts', label: 'TTS Voices' },
+    { id: 'resources', label: 'Resources' },
   ];
 
   return (
@@ -693,6 +699,54 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeSt
                   settings={settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS}
                   onChange={(dp) => onChange({ ...settings, dictionaryPopup: dp })}
                 />
+              </div>
+            </section>
+
+            {/* === Theme (migrated from options page) === */}
+            <section
+              ref={(el) => { sectionRefs.current.theme = el; }}
+              className={styles.section}
+              data-section="theme"
+            >
+              <div className={styles.sectionHeader}>
+                <h4 className={styles.sectionTitle}>Theme</h4>
+              </div>
+              <p className={styles.sectionDescription}>Light/dark/system mode, color customization, backup, and reset.</p>
+              <div className={styles.sectionBody}>
+                <ThemePanel />
+              </div>
+            </section>
+
+            {/* === TTS Voices (migrated from options page) === */}
+            <section
+              ref={(el) => { sectionRefs.current.tts = el; }}
+              className={styles.section}
+              data-section="tts"
+            >
+              <div className={styles.sectionHeader}>
+                <h4 className={styles.sectionTitle}>TTS Voices</h4>
+              </div>
+              <p className={styles.sectionDescription}>Enable TTS, select voices, and configure autoplay count.</p>
+              <div className={styles.sectionBody}>
+                <TtsVoiceManagerPanel
+                  settings={settings.dictionaryPopup?.tts ?? DEFAULT_TTS_SETTINGS}
+                  onSave={(tts) => onChange({ ...settings, dictionaryPopup: { ...(settings.dictionaryPopup ?? DEFAULT_DICTIONARY_POPUP_SETTINGS), tts } })}
+                />
+              </div>
+            </section>
+
+            {/* === Resources (migrated from options page) === */}
+            <section
+              ref={(el) => { sectionRefs.current.resources = el; }}
+              className={styles.section}
+              data-section="resources"
+            >
+              <div className={styles.sectionHeader}>
+                <h4 className={styles.sectionTitle}>Resources</h4>
+              </div>
+              <p className={styles.sectionDescription}>Import and manage dictionaries and frequency lists.</p>
+              <div className={styles.sectionBody}>
+                <ResourcesPanel langCode={settings.subtitleOverlayTargetLanguage || 'en'} />
               </div>
             </section>
 
