@@ -84,6 +84,18 @@ export function mountSettingsDialog(
   // its shadow root; for the light-DOM host we read the stored theme mode).
   const themeSyncCleanup = syncElementTheme(host, document.body);
 
+  // ADR-061: Disable focus outlines + tap highlight + :active color changes
+  // inside the dialog host. User requested no blue focus ring / blue icon
+  // color on touch/click. Scoped to this host only — popup/sidepanel keep
+  // their focus styles for keyboard accessibility.
+  const focusOverride = document.createElement('style');
+  focusOverride.textContent = [
+    `#${host.id} * { -webkit-tap-highlight-color: transparent; }`,
+    `#${host.id} *:focus, #${host.id} *:focus-visible { outline: none !important; }`,
+    `#${host.id} button:active, #${host.id} [role="switch"]:active { color: inherit !important; }`,
+  ].join('\n');
+  host.appendChild(focusOverride);
+
   const rootEl = document.createElement('div');
   rootEl.style.cssText =
     'width:100%;height:100%;pointer-events:none;margin:0;padding:0;border:none;background:transparent;color:currentColor;font-size:medium;line-height:normal;';
