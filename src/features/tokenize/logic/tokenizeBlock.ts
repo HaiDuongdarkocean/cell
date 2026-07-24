@@ -27,6 +27,14 @@ const FORBIDDEN_TAGS = new Set([
 const SUBTITLE_LINE_CLASS = 'subtitle-line';
 const SUBTITLE_NATIVE_CLASS = 'native';
 
+/** Extension UI host selectors — text inside these must NOT be tokenized.
+ *  Light-DOM hosts (#cell-settings-dialog-host, #cell-card-creator-host,
+ *  .js-cell-popup-host) contain React-rendered text that TreeWalker can reach.
+ *  Shadow-DOM hosts (.js-cell-orbital-badge-host, .js-cell-token-badge-host)
+ *  are included for safety even though TreeWalker doesn't cross shadow boundaries. */
+const EXTENSION_UI_HOST_SELECTORS =
+  '#cell-settings-dialog-host, #cell-card-creator-host, .js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host';
+
 // 'link' is intentionally NOT forbidden: <a href> is already implicit link and
 // is tokenized (see test). Many sites (Facebook, Twitter) add explicit
 // role="link" to anchors for ARIA redundancy — that must not disable tokenize
@@ -55,6 +63,7 @@ function isNativeSubtitleLine(element: Element): boolean {
 function isForbiddenElement(element: Element): boolean {
   if (FORBIDDEN_TAGS.has(element.tagName)) return true;
   if (isNativeSubtitleLine(element)) return true;
+  if (element.closest(EXTENSION_UI_HOST_SELECTORS)) return true;
   const role = element.getAttribute('role');
   if (role && FORBIDDEN_ROLE_ATTRS.includes(role)) return true;
   const contenteditable = element.getAttribute('contenteditable');
