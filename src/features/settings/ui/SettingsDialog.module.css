@@ -1,4 +1,9 @@
-/* === Settings Popover — 480px, sidebar + cards (YouTube/M3 style) === */
+/* === SettingsDialog — responsive mobile-first (320→1280px+) ===
+   ADR-061: Complete responsive refactor. Mobile-first base styles, then
+   progressive enhancement at 480/768/1024/1280px breakpoints.
+   Knowledge atoms: css-flex-min-width-zero-shrink, css-hardcoded-px-to-token. */
+
+/* === Overlay === */
 .overlay {
   position: absolute;
   inset: 0;
@@ -14,12 +19,14 @@
   pointer-events: auto;
 }
 
+/* === Popover — mobile-first: full width minus margins === */
 .popover {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 480px;
-  max-height: calc(100% - var(--space-8, 32px));
+  width: calc(100vw - var(--space-4, 16px));
+  max-width: 480px;
+  max-height: calc(100% - var(--space-4, 16px));
   transform: translate(-50%, -48%);
   background: var(--color-background);
   border: 1px solid var(--color-border);
@@ -44,7 +51,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
 }
@@ -57,7 +64,7 @@
   margin: 0;
 }
 
-/* === Icon sizing (svg children of IconButton atom) === */
+/* === Icon sizing === */
 .icon {
   width: 18px;
   height: 18px;
@@ -65,26 +72,36 @@
   stroke-linejoin: round;
 }
 
-/* === Popover body — 2-column: sidebar (left) + main (cards) === */
+/* === Popover body — mobile: column (tabs on top, content below) === */
 .popoverBody {
   flex: 1;
   display: flex;
+  flex-direction: column;
   min-height: 0;
 }
 
-/* === Sidebar (left, 120px) — YouTube/Google style pill active === */
+/* === Sidebar — mobile: horizontal scrollable tab bar === */
 .sidebar {
-  width: 120px;
-  flex-shrink: 0;
-  padding: var(--space-3) var(--space-2);
-  border-right: 1px solid var(--color-border-subtle);
-  background: var(--color-surface);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
   gap: var(--space-0-5, 2px);
+  flex-shrink: 0;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .sidebarLabel {
+  display: none;
   font-size: var(--font-size-2xs, 10px);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
@@ -92,11 +109,15 @@
   text-transform: uppercase;
   padding: var(--space-1) var(--space-2);
   margin-bottom: var(--space-1);
+  white-space: nowrap;
 }
 
 .sidebarItem {
   display: block;
-  width: 100%;
+  flex-shrink: 0;
+  white-space: nowrap;
+  /* WCAG 2.5.5: 44px touch target on mobile */
+  min-height: 44px;
   padding: var(--space-2, 8px) var(--space-3, 12px);
   border: none;
   border-radius: var(--radius-md);
@@ -121,14 +142,15 @@
   font-weight: var(--font-weight-semibold);
 }
 
-/* === Main column (cards, scrollable) === */
+/* === Main column — mobile: compact padding === */
 .mainCol {
   flex: 1;
-  padding: var(--space-4);
+  padding: var(--space-2);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-2);
+  min-width: 0;
   scrollbar-width: thin;
   scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
@@ -140,14 +162,14 @@
 }
 .mainCol::-webkit-scrollbar-thumb:hover { background: var(--color-scrollbar-thumb-hover); }
 
-/* === Section card — YouTube style: 1px hairline border, surface header + body === */
+/* === Section card === */
 .section {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   overflow: hidden;
-  scroll-margin-top: var(--space-3);
-  flex-shrink: 0; /* prevent flex-shrink when mainCol overflows — let mainCol scroll instead */
+  scroll-margin-top: var(--space-2);
+  flex-shrink: 0;
 }
 
 .section.highlight {
@@ -157,17 +179,16 @@
 }
 
 .sectionHeader {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--color-border-subtle);
-  background: var(--color-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 0;
+  padding: var(--space-1-5, 6px) var(--space-2);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
 }
 
 .sectionTitle {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   margin: 0;
@@ -194,25 +215,26 @@
 }
 
 .sectionBody {
-  padding: var(--space-3);
+  padding: var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
   background: var(--color-background);
 }
 
-/* === Setting field — full-width stacked === */
+/* === Setting field === */
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1);
+  min-width: 0;
 }
 
-/* === Pair row — 2 fields side-by-side (settings-dialog-rearrange) === */
+/* === Pair row — mobile: 1 column (stack) === */
 .pairRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
   align-items: start;
 }
 
@@ -220,21 +242,21 @@
   min-width: 0;
 }
 
-/* === Divider — group separator within section body === */
+/* === Divider === */
 .divider {
   height: 1px;
   background: var(--color-border-subtle);
   margin: var(--space-1) 0;
 }
 
-/* === Shortcut grid — 2-column compact (settings-dialog-rearrange) === */
+/* === Shortcut grid — mobile: 1 column === */
 .shortcutGrid {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-1);
 }
 
-/* === Text input — for short code fields (e.g. language code) === */
+/* === Text input === */
 .textInput {
   width: 100%;
   padding: var(--space-1-5, 6px) var(--space-2, 8px);
@@ -256,12 +278,10 @@
   user-select: none;
 }
 
-/* === Label in shortcut field — not full width === */
 .shortcutField .label {
   flex: 0 0 auto;
 }
 
-/* === Hint === */
 .hint {
   margin: 0;
   font-size: var(--font-size-xs);
@@ -275,6 +295,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  min-width: 0;
 }
 
 .asLabel {
@@ -286,6 +307,7 @@
   color: var(--color-text-secondary);
   letter-spacing: 0.01em;
   user-select: none;
+  min-width: 0;
 }
 
 .asHint {
@@ -295,7 +317,7 @@
   line-height: var(--leading-normal, 1.5);
 }
 
-/* === Shortcut field — horizontal layout for keyboard shortcuts === */
+/* === Shortcut field === */
 .shortcutField {
   display: flex;
   flex-direction: row;
@@ -309,4 +331,113 @@
 
 .shortcutField:hover {
   background: var(--color-surface-hover);
+}
+
+/* === 480px+: pair row becomes 2 columns === */
+@media (min-width: 480px) {
+  .popover {
+    width: calc(100vw - var(--space-6, 24px));
+    max-width: 480px;
+    max-height: calc(100% - var(--space-6, 24px));
+  }
+
+  .popoverHeader {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .mainCol {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .sectionBody {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .sectionHeader {
+    padding: var(--space-2);
+  }
+
+  .sectionTitle {
+    font-size: var(--font-size-base);
+  }
+
+  .pairRow {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+}
+
+/* === 768px+: sidebar switches to vertical left, body becomes row === */
+@media (min-width: 768px) {
+  .popover {
+    width: 600px;
+    max-width: calc(100vw - var(--space-8, 32px));
+    max-height: calc(100% - var(--space-8, 32px));
+  }
+
+  .popoverBody {
+    flex-direction: row;
+  }
+
+  .sidebar {
+    flex-direction: column;
+    overflow-x: visible;
+    overflow-y: auto;
+    touch-action: auto;
+    width: 120px;
+    flex-shrink: 0;
+    padding: var(--space-3) var(--space-2);
+    border-bottom: none;
+    border-right: 1px solid var(--color-border-subtle);
+    gap: var(--space-0-5, 2px);
+  }
+
+  .sidebarLabel {
+    display: block;
+  }
+
+  .sidebarItem {
+    width: 100%;
+    padding: var(--space-2, 8px) var(--space-3, 12px);
+    white-space: normal;
+  }
+
+  .mainCol {
+    padding: var(--space-4);
+    gap: var(--space-4);
+  }
+
+  .sectionBody {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .shortcutGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-1);
+  }
+}
+
+/* === 1024px+: wider popover + sidebar === */
+@media (min-width: 1024px) {
+  .popover {
+    width: 720px;
+  }
+
+  .sidebar {
+    width: 140px;
+  }
+}
+
+/* === 1280px+: widest popover + sidebar === */
+@media (min-width: 1280px) {
+  .popover {
+    width: 800px;
+  }
+
+  .sidebar {
+    width: 160px;
+  }
 }
