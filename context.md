@@ -97,5 +97,10 @@ Summary: User directed agent to stop asking and run loop autonomously. Focus exp
 - Slice 1 (performance + maintainability): remove production console.log debug statements from content-script.ts, youtube-main-world.iife.ts, netflix-main-world.iife.ts, iqiyi-main-world.iife.ts, offscreen/ffmpegRunner.ts. Keep console.warn/error for real failures.
 - Slice 2 (safety): audit setTimeout/setInterval cleanup in high-usage controllers.
 
+### Completed Tasks (this session)
+- Slice 1: removed production console.log from iqiyi-main-world.iife.ts and offscreen/ffmpegRunner.ts. Content-script.ts, youtube-main-world.iife.ts, and netflix-main-world.iife.ts were already clean in commit 6250037.
+- Quality gates: typecheck pass, lint pass, build pass.
+- Commit: 1103a9c refactor: remove production console.log debug from iqiyi + offscreen runner.
+
 ### Active Tasks
-- Slice 1: remove console.log debug from content entrypoints and offscreen runner
+- Slice 2: scan remaining production console.log (downloader.ts, parallelTransmuxer.ts, youtubeInnertube.ts, webTokenizeController.ts, autoEnablement.ts, parallelFallback.ts, conversionTimer.ts, parallelCancellation.ts) and remove hot-path debug noise
