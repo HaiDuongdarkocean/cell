@@ -84,10 +84,10 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
   // shows the previously-saved tester selection instead of a blank list.
   useEffect(() => {
     let cancelled = false;
-    setVoicesLoading(true);
-    createTtsEngine()
-      .getVoices()
-      .then((list) => {
+    async function load() {
+      setVoicesLoading(true);
+      try {
+        const list = await createTtsEngine().getVoices();
         if (cancelled) return;
         setVoices([...list]);
         const savedVoiceMap = new Map(
@@ -101,13 +101,15 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
             selected: savedVoiceMap.has(v.voiceName),
           })),
         );
-        setVoicesLoading(false);
-      })
-      .catch((e: unknown) => {
+      } catch (e: unknown) {
         if (cancelled) return;
         setLoadError(`Không thể tải danh sách giọng đọc: ${String(e)}`);
-        setVoicesLoading(false);
-      });
+        setVoices([]);
+      } finally {
+        if (!cancelled) setVoicesLoading(false);
+      }
+    }
+    void load();
     return () => {
       cancelled = true;
     };

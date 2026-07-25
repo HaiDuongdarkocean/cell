@@ -63,7 +63,7 @@ const WORD_RUN_RE = /[\p{L}\p{N}'-]+/gu;
 const SENTENCE_PUNCT = /[.!?,;:]/;
 
 const SENTENCE_END_PUNCT_RE = /[.!?]/;
-const CLAUSE_PUNCT_RE = /[,;:\-]/;
+const CLAUSE_PUNCT_RE = /[,;:-]/;
 
 /** Tokenize a sentence into normalized word tokens with UTF-16 offsets.
  *

@@ -9,7 +9,6 @@ docs/           # Tài liệu dự án
 ├── 0-wiki.md                          # File này — mục lục tổng quan
 ├── 1-share-language.md                # Glossary human ↔ system language
 ├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows; overlay button appearance/host-CSS defenses; top-frame guard cho Cloudflare challenge iframe)
-├── technical-debt-audit.md            # Tổng hợp nợ kỹ thuật hiện có của codebase
 ├── interview_ui-ux-tokenize-on-media.md # Interview UI/UX phân tích từ trên media (đã hoàn thành 2026-07-20: wireframe + prototype verified Edge DevTools; 7 IA groups, token inline-block + status float absolute không nhảy dòng, status underline 2px, không viền outline hover/active, bỏ hiển thị IPA trên token, FAB draggable, desktop anchored dialog, known/ignore ẩn phân tích mặc định hover hiện status, văn bản dài multi-line test)
 ├── adr/                               # Architecture Decision Records (mỗi quyết định 1 file)
 │   ├── 001-zustand-not-redux.md

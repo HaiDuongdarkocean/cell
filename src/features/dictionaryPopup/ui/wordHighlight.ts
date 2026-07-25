@@ -230,13 +230,13 @@ function createTextHighlight(config: HighlightConfig): TextHighlight {
 }
 
 /** Create a WordHighlight instance. Call show/clear to toggle highlight. */
-export interface WordHighlight extends TextHighlight {}
+export type WordHighlight = TextHighlight;
 export function createWordHighlight(): WordHighlight {
   return createTextHighlight(WORD_CONFIG);
 }
 
 /** Create a SentenceHighlight instance. Call show/clear to toggle highlight. */
-export interface SentenceHighlight extends TextHighlight {}
+export type SentenceHighlight = TextHighlight;
 export function createSentenceHighlight(): SentenceHighlight {
   return createTextHighlight(SENTENCE_CONFIG);
 }

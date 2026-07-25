@@ -7,7 +7,7 @@
  */
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { BackgroundContext } from '../context';
-import type { MessageResponse, FetchMediaUrlPayload, FetchMediaUrlResponse } from '@/entities/message/types';
+import type { MessageResponse, FetchMediaUrlResponse } from '@/entities/message/types';
 import { FetchMediaUrlPayloadSchema } from '@/features/dictionaryPopup/schema';
 
 /** Convert an ArrayBuffer to a base64 string. */

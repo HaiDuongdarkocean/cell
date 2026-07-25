@@ -1,0 +1,21 @@
+{
+  "id": "api-arity-mismatch-runtime-silent-fail",
+  "title": "API arity mismatch → silent runtime failure even when typecheck flags it",
+  "category": ["data", "state"],
+  "tags": ["storage", "api", "arity", "setStorage", "typescript", "runtime", "chrome-storage"],
+  "trigger": "Refactor storage/API helper từ `(key, value)` sang single `Record` argument hoặc ngược lại",
+  "principle": "Khi thay đổi signature của API đã có call site (đặc biệt storage wrapper), JavaScript không enforce arity. TypeScript TS2554 sẽ catch lỗi gọi sai số arg, nhưng nếu project chưa typecheck hoặc `any` lọt qua, runtime sẽ silently fail. Phải grep toàn bộ call site và migrate cùng lúc với signature change.",
+  "cases": [
+    {
+      "context": "setStorage(items: Record<string, unknown>) được gọi với 2 args legacy key-value; chrome.storage.local.set(string) no-op hoặc throw nhưng không rõ ràng",
+      "bad": "void setStorage(STORAGE_KEYS.ORBITAL_BADGE_POSITION, { edge: collapsedEdge, tangential });",
+      "good": "void setStorage({ [STORAGE_KEYS.ORBITAL_BADGE_POSITION]: { edge: collapsedEdge, tangential } });"
+    }
+  ],
+  "applyFor": [
+    "chrome.storage.local wrapper migration",
+    "EventEmitter/API signature change",
+    "Any function changing from positional args to single config object",
+    "Codebase có cả JS và TS — JS call sites dễ lọt"
+  ]
+}

@@ -326,7 +326,7 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
   17: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 18 } as Record<string, unknown>;
     const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
-    const defaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as Record<string, unknown>;
+    const defaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as unknown as Record<string, unknown>;
     merged.dictionaryPopup = { ...defaults, ...(dp ?? {}), popupSheetHeightVh: (dp?.popupSheetHeightVh as number) ?? 72 };
     return merged;
   },
@@ -355,7 +355,7 @@ export async function loadSettings(): Promise<Settings> {
     // Deep-merge dictionaryPopup so new nested fields (e.g. popupSheetHeightVh)
     // get their defaults even when stored settings replace the top-level object.
     const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
-    const dpDefaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as Record<string, unknown>;
+    const dpDefaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as unknown as Record<string, unknown>;
     merged.dictionaryPopup = { ...dpDefaults, ...(dp ?? {}) };
     validateNavClusterFields(merged);
     merged.subtitleOverlayTargetStyle = normalizeOverlayStyle(merged.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);

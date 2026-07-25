@@ -43,7 +43,7 @@ import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
 import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
-import { fetchMediaFile, type MediaFile, type MediaKind } from '@/features/cardCreator/media/mediaFile';
+import { fetchMediaFile, type MediaFile } from '@/features/cardCreator/media/mediaFile';
 import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
 import { showToast } from '@/features/subtitle/ui/subtitleUI';
@@ -237,7 +237,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let hasVideo = deps.hasVideo;
   let video: HTMLVideoElement | undefined = deps.video;
   let getTargetCues: (() => readonly CueRange[]) | undefined = deps.getTargetCues;
-  let getNativeCues: (() => readonly CueRange[]) | undefined = deps.getNativeCues;
 
   let popupDictState: PopupDictionaryState = createPopupDictionaryState(
     dpSettings,
@@ -516,27 +515,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return token.closest('.subtitle-line') !== null;
   }
 
-  /** Get the native subtitle text matching the current video time.
-   *  Used as sentence translation fallback when the user didn't manually
-   *  select a translation in the popup. Priority: popup translation > native
-   *  subtitle text > empty. */
-  function getCurrentNativeSubtitleText(): string {
-    if (!video || !getNativeCues) return '';
-    const nativeCues = getNativeCues();
-    if (nativeCues.length === 0) return '';
-    const currentMs = video.currentTime * 1000;
-    const matching = nativeCues.find((c) => currentMs >= c.start && currentMs <= c.end);
-    if (matching?.text) return matching.text;
-    // Fallback: nearest native cue within 5s.
-    let nearest = nativeCues[0];
-    let minDiff = Math.abs(currentMs - nearest.start);
-    for (const c of nativeCues) {
-      const diff = Math.abs(currentMs - c.start);
-      if (diff < minDiff) { minDiff = diff; nearest = c; }
-    }
-    return minDiff <= 5000 ? (nearest.text ?? '') : '';
-  }
-
   function getTokenById(id: { term: string; start: string; blockId: string }): HTMLElement | null {
     return document.querySelector(
       `[data-cell-term="${CSS.escape(id.term)}"][data-cell-start="${id.start}"][data-cell-block-id="${id.blockId}"]`,
@@ -591,7 +569,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     hasVideo = config.hasVideo;
     video = config.video;
     getTargetCues = config.getTargetCues;
-    getNativeCues = config.getNativeCues;
   }
 
   function onPopupDismiss(dismissedState: PopupDictionaryState): void {

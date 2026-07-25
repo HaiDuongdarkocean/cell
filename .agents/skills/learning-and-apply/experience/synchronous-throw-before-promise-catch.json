@@ -1,0 +1,21 @@
+{
+  "id": "synchronous-throw-before-promise-catch",
+  "title": "Synchronous factory throw trước khi promise tạo → .catch() không bắt được",
+  "category": ["async"],
+  "tags": ["promise", "try-catch", "synchronous", "factory", "error-handling", "useEffect", "tts"],
+  "trigger": "Gọi factory/constructor trả về promise, nhưng factory throw đồng bộ; `.catch()` chỉ gắn sau promise đã tồn tại",
+  "principle": "`.catch()` chỉ bắt rejection của promise đã tạo. Nếu factory throw trước khi trả về promise, exception thoát ra ngoài useEffect/hàm gọi. Bọc toàn bộ `factory().promise()` trong `try/catch` của async function hoặc `try/catch` đồng bộ riêng trước khi await/gọi `.then`.",
+  "cases": [
+    {
+      "context": "TtsVoiceManagerPanel useEffect gọi `createTtsEngine().getVoices().then(...).catch(...)`. `createTtsEngine` throw khi cả chrome.tts và speechSynthesis đều missing (jsdom/headless). `.catch()` không bao giờ chạy.",
+      "bad": "createTtsEngine()\n  .getVoices()\n  .then((list) => { ... })\n  .catch((e) => { setLoadError(...); });",
+      "good": "async function load() {\n  try {\n    const list = await createTtsEngine().getVoices();\n    setVoices([...list]);\n  } catch (e) {\n    setLoadError(`Không thể tải danh sách giọng đọc: ${String(e)}`);\n    setVoices([]);\n  }\n}\nvoid load();"
+    }
+  ],
+  "applyFor": [
+    "Factory functions tạo engine/API client có thể throw đồng bộ",
+    "useEffect khởi tạo resource (TTS, DB, indexedDB, media recorder)",
+    "Promise chain `fn().then().catch()` trong test environment thiếu API",
+    "Any `constructor()` or `create*()` call trước `.then()`"
+  ]
+}

@@ -19,8 +19,7 @@
     {
       "context": "ViewportTracker.observe thêm handler set mới cho element đã intersecting (SPA re-render reuse parent). IntersectionObserver không fire callback mới vì state không đổi → onEnter không fire → block mới không bind",
       "bad": "observe(element, handlers) {\n  let set = this.handlers.get(element);\n  if (!set) { set = new Set(); this.handlers.set(element, set); this.state.set(element, false); this.observer?.observe(element); }\n  set.add(handlers); // new handlers for already-intersecting element — onEnter never fires\n}",
-      "good": "observe(element, handlers) {\n  let set = this.handlers.get(element);\n  if (!set) { set = new Set(); this.handlers.set(element, set); this.state.set(element, false); this.observer?.observe(element); }\n  set.add(handlers);\n  if (this.state.get(element) === true) handlers.onEnter?.(); // sync fire for already-intersecting — IO won't re-callback"
-}"
+      "good": "observe(element, handlers) {\n  let set = this.handlers.get(element);\n  if (!set) { set = new Set(); this.handlers.set(element, set); this.state.set(element, false); this.observer?.observe(element); }\n  set.add(handlers);\n  if (this.state.get(element) === true) handlers.onEnter?.(); // sync fire for already-intersecting — IO won't re-callback\n}"
     }
   ],
   "applyFor": [
