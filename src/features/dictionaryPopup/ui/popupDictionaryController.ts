@@ -468,26 +468,27 @@ function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill
   if (!result) return null;
   const snapshot = getActiveSnapshot(state);
 
-  // Definitions: use selected; if none selected, use all.
+  // Definitions: use selected (respect defaultSelected from initDefinitionSelection).
   const selectedDefs = getSelectedDefinitions(result, snapshot.definitionSelection);
   const defs = selectedDefs.length > 0
     ? selectedDefs
     : result.definitions;
-  // Mandatory word audio: selected word audios, or first available word audio.
+  // Word audio: items user checked (selection map ?? defaultSelected — map starts
+  // empty, defaultSelected:true items appear checked but aren't in the map).
   const selectedWordAudios = snapshot.audioItems
-    .filter((a) => a.url && a.kind === 'word' && snapshot.audioSelection.get(a.id) === true);
+    .filter((a) => a.url && a.kind === 'word' && (snapshot.audioSelection.get(a.id) ?? a.defaultSelected));
   const wordAudios = selectedWordAudios.length > 0
     ? selectedWordAudios.map((a) => a.url!)
     : snapshot.audioItems.filter((a) => a.url && a.kind === 'word').slice(0, 1).map((a) => a.url!);
-  // Mandatory sentence audio: selected sentence audios, or first available sentence audio.
+  // Sentence audio: same pattern — ?? defaultSelected.
   const selectedSentenceAudios = snapshot.audioItems
-    .filter((a) => a.url && a.kind === 'sentence' && snapshot.audioSelection.get(a.id) === true);
+    .filter((a) => a.url && a.kind === 'sentence' && (snapshot.audioSelection.get(a.id) ?? a.defaultSelected));
   const sentenceAudios = selectedSentenceAudios.length > 0
     ? selectedSentenceAudios.map((a) => a.url!)
     : snapshot.audioItems.filter((a) => a.url && a.kind === 'sentence').slice(0, 1).map((a) => a.url!);
-  // Mandatory image: selected images, or first available image.
+  // Images: same pattern — ?? defaultSelected.
   const selectedImages = snapshot.imageItems
-    .filter((img) => snapshot.imageSelection.get(img.id) === true);
+    .filter((img) => snapshot.imageSelection.get(img.id) ?? img.defaultSelected);
   const imageUrls = selectedImages.length > 0
     ? selectedImages.map((img) => img.src)
     : snapshot.imageItems.slice(0, 1).map((img) => img.src);
@@ -498,7 +499,7 @@ function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill
     definitions: defs.map((d) => ({ pos: d.pos, text: d.text })),
     rawDefinitions: result.rawDefinitions,
     contextSentence: state.contextSentence,
-    translation: snapshot.translation || undefined,
+    translation: snapshot.translationSelected ? (snapshot.translation || undefined) : undefined,
     wordAudioUrls: wordAudios.length > 0 ? wordAudios : undefined,
     sentenceAudioUrls: sentenceAudios.length > 0 ? sentenceAudios : undefined,
     imageUrls: imageUrls.length > 0 ? imageUrls : undefined,

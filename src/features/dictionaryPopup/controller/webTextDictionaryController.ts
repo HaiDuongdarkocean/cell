@@ -217,18 +217,14 @@ function isBlockContainer(el: HTMLElement): boolean {
   return ['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'TD'].includes(el.tagName);
 }
 
-/** Format raw definition strings for Card Creator / Quick Add:
- *  - <br> → \n (line breaks; <br><br> → \n\n = blank line between senses)
- *  - N. (numbered sense markers) → • (bullet, with decimal lookahead)
- *  - Each definition separated by exactly one blank line (\n\n)
- *  - No trailing whitespace at the end
- *  No POS splitting — raw text stays intact, compatible with any dictionary format. */
-export function formatDefinitions(rawDefinitions: readonly string[]): string {
-  return rawDefinitions
-    .map((d) => d.replace(/<br\s*\/?>/gi, '\n').trim())
+/** Format selected definitions for Card Creator / Quick Add:
+ *  - Each definition: `• {pos} {text}` (or `• {text}` if no pos)
+ *  - Definitions separated by exactly one blank line (\n\n)
+ *  Respects user selection — only checked definitions are included. */
+export function formatDefinitions(defs: readonly { readonly pos?: string; readonly text: string }[]): string {
+  return defs
+    .map((d) => `• ${d.pos ? `${d.pos} ` : ''}${d.text}`.trim())
     .join('\n\n')
-    .replace(/^[ \t]*(\d+)\.(?!\d)[ \t]*/gm, '• ')
-    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
@@ -815,7 +811,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       // Prefetch failure is non-fatal — loadData will retry.
     });
 
-    const definitionsText = formatDefinitions(prefill.rawDefinitions);
+    const definitionsText = formatDefinitions(prefill.definitions);
 
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
     const targetLang = settings.subtitleOverlayNativeLanguage || nativeLang || 'vi';
@@ -1096,7 +1092,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       } catch { warnings.push('sentence audio capture'); }
     }
 
-    const definitionsText = formatDefinitions(prefill.rawDefinitions);
+    const definitionsText = formatDefinitions(prefill.definitions);
 
     const result = await quickAddNote(
       url,

@@ -941,14 +941,14 @@
 }
 
 .cell-translate__target {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .cell-translate__native {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
 }
 
 /* Checkbox at far right — hidden when unchecked, visible when checked */
