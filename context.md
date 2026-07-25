@@ -82,3 +82,20 @@ Summary: User confirmed redesign batch is a separate task and grants full decisi
 ### Backlog for Next Loop
 - console.log / console.warn debug noise in production code
 - revisit any remaining lint/type/test issues after current slice
+
+## Session 2026-01-26 (autonomous)
+Status: IN PROGRESS
+Summary: User directed agent to stop asking and run loop autonomously. Focus expanded to safety, speed, maintainability, extensibility, and UI/system bottlenecks/blockers.
+
+### Discover Findings
+- console.log debug noise found in content-script entrypoints and offscreen runner (diagnostic messages on every page load/subtitle detection/conversion step).
+- 95 setTimeout/setInterval usages across src; some may leak if not cleared on detach/unmount (to be audited later).
+- Several files >1000 lines (contentScriptController.ts 1810, popupDictionaryController.ts 1491, downloader.ts 1233, popupShell.ts 1162, subtitleBlockCss.ts 1104) — maintainability risk but large refactor.
+- 158 `.catch(` instances in src; unhandled promise risk requires per-case audit.
+
+### Plan
+- Slice 1 (performance + maintainability): remove production console.log debug statements from content-script.ts, youtube-main-world.iife.ts, netflix-main-world.iife.ts, iqiyi-main-world.iife.ts, offscreen/ffmpegRunner.ts. Keep console.warn/error for real failures.
+- Slice 2 (safety): audit setTimeout/setInterval cleanup in high-usage controllers.
+
+### Active Tasks
+- Slice 1: remove console.log debug from content entrypoints and offscreen runner

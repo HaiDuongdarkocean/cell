@@ -72,7 +72,7 @@ export function setParallelSettings(
   settings: Pick<Settings, 'parallelConversion' | 'manualWorkerCount' | 'parallelFallback'>,
 ): void {
   parallelSettings = settings;
-  console.log(`[offscreen-runner] Parallel settings updated: mode=${settings.parallelConversion}, workers=${settings.manualWorkerCount}`);
+  
 }
 
 /**
@@ -125,20 +125,13 @@ export async function convertTsToMp4V2(
   downloadId: string,
 ): Promise<ConvertTsToMp4V2ResultPayload> {
   const startedAt = performance.now();
-  console.log(`[offscreen-runner] Starting V2 conversion for ${downloadId}`);
 
   const dirHandle = await ensureDownloadSubdir(downloadId);
   const inputFile = await opfsReadFile(dirHandle, 'input.ts');
   const fileSize = inputFile.size;
-  const readMs = Math.round(performance.now() - startedAt);
-  console.log(
-    `[offscreen-runner] Read input.ts (${fileSize} bytes) for ${downloadId} in ${readMs}ms`,
-  );
 
   // Try parallel conversion if enabled
   if (parallelSettings.parallelConversion !== 'off') {
-    console.log(`[offscreen-runner] Parallel mode: ${parallelSettings.parallelConversion}`);
-
     // Read segment ranges from OPFS
     const segmentRanges = await readSegmentRanges(downloadId);
     if (segmentRanges && segmentRanges.length > 0) {
@@ -173,9 +166,7 @@ export async function convertTsToMp4V2(
             true,
           );
 
-          console.log(
-            `[offscreen-runner] Parallel progress for ${downloadId}: ${phase} ${percent}%`,
-          );
+          
         },
       );
 
@@ -183,9 +174,7 @@ export async function convertTsToMp4V2(
       currentWorkerCount = parallelResult.workerCount ?? 0;
 
       const totalMs = Math.round(performance.now() - startedAt);
-      console.log(
-        `[offscreen-runner] Conversion ${parallelResult.success ? 'completed' : 'failed'} for ${downloadId} in ${totalMs}ms (parallel=${parallelResult.usedParallel}, workers=${parallelResult.workerCount ?? 0})`,
-      );
+      
 
       if (!parallelResult.success) {
         console.error(
@@ -215,7 +204,7 @@ export async function convertTsToMp4V2(
     }
 
     // No segment ranges — fall back to sequential
-    console.log(`[offscreen-runner] No segment ranges, falling back to sequential for ${downloadId}`);
+    
   }
 
   // Sequential conversion (default or fallback)
@@ -235,15 +224,11 @@ export async function convertTsToMp4V2(
         0,
         false,
       );
-      console.log(
-        `[offscreen-runner] Convert progress for ${downloadId}: ${pct}% (${processedBytes}/${totalBytes})`,
-      );
+      
     },
   );
   const transmuxMs = Math.round(performance.now() - transmuxStartedAt);
-  console.log(
-    `[offscreen-runner] Sequential transmux ${result.success ? 'completed' : 'failed'} for ${downloadId} in ${transmuxMs}ms`,
-  );
+  
 
   if (!result.success) {
     console.error(
@@ -261,7 +246,7 @@ export async function convertTsToMp4V2(
     };
   }
 
-  console.log(`[offscreen-runner] Transmux succeeded for ${downloadId}`);
+  
   return {
     downloadId,
     outputName: result.outputName,
@@ -302,9 +287,7 @@ export async function createOpfsBlobUrl(
 
   const url = URL.createObjectURL(blob);
   activeBlobUrls.set(url, true);
-  console.log(
-    `[offscreen-runner] Created Blob URL for ${downloadId}/${opfsFilename} (${file.size} bytes)`,
-  );
+  
   return { url };
 }
 
@@ -316,7 +299,7 @@ export function revokeOpfsBlobUrl(url: string): void {
   if (activeBlobUrls.has(url)) {
     URL.revokeObjectURL(url);
     activeBlobUrls.delete(url);
-    console.log('[offscreen-runner] Revoked Blob URL');
+    
   }
 }
 
@@ -521,7 +504,7 @@ function bootstrapOffscreenListener(): void {
 
   bootstrapped = true;
   void startMessageListener().then(() => {
-    console.log('[offscreen-runner] Message listener bootstrapped');
+    
   });
 }
 
