@@ -221,12 +221,15 @@ function isBlockContainer(el: HTMLElement): boolean {
 /** Format raw definition strings for Card Creator / Quick Add:
  *  - <br> → \n (line breaks; <br><br> → \n\n = blank line between senses)
  *  - N. (numbered sense markers) → • (bullet)
+ *  - Each definition separated by exactly one blank line (\n\n)
+ *  - No trailing whitespace at the end
  *  No POS splitting — raw text stays intact, compatible with any dictionary format. */
-function formatDefinitions(rawDefinitions: readonly string[]): string {
+export function formatDefinitions(rawDefinitions: readonly string[]): string {
   return rawDefinitions
+    .map((d) => d.replace(/<br\s*\/?>/gi, '\n').trim())
     .join('\n\n')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/^\s*(\d+)\.\s*/gm, '• ');
+    .replace(/^[ \t]*(\d+)\.[ \t]*/gm, '• ')
+    .trim();
 }
 
 export function createWebTextDictionaryController(deps: WebTextDictionaryControllerDeps): WebTextDictionaryController {
@@ -812,7 +815,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       // Prefetch failure is non-fatal — loadData will retry.
     });
 
-    const definitionsText = formatDefinitions(prefill.rawDefinitions ?? prefill.definitions.map((d) => d.text));
+    const definitionsText = formatDefinitions(prefill.rawDefinitions);
 
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
     const targetLang = settings.subtitleOverlayNativeLanguage || nativeLang || 'vi';
@@ -1093,7 +1096,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       } catch { warnings.push('sentence audio capture'); }
     }
 
-    const definitionsText = formatDefinitions(prefill.rawDefinitions ?? prefill.definitions.map((d) => d.text));
+    const definitionsText = formatDefinitions(prefill.rawDefinitions);
 
     const result = await quickAddNote(
       url,
@@ -1131,7 +1134,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     if (currentAttachedMode === mode) return;
     detach();
     currentAttachedMode = mode;
-    if (mode === 'orbital') return;
     webTrigger = new WebTriggerController({
       triggerMode: mode,
       onLookup: (request, requestId, anchorRect, range, pointer) => {
