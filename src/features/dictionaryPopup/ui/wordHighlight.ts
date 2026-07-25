@@ -30,15 +30,20 @@ type HighlightConfig = {
   readonly buildCss: () => string;
 };
 
+/** Build a translucent variant of a token color using the alpha channel only. */
+function alphaVariant(baseColor: string, alpha: number): string {
+  return `rgba(from ${baseColor} r g b / ${alpha})`;
+}
+
 const WORD_CONFIG: HighlightConfig = {
   styleId: 'cell-word-highlight-style',
   highlightClass: 'js-cell-word-highlight',
   overlayClass: 'js-cell-word-highlight-overlay',
   buildCss(): string {
-    const lightSubtle = tokensJson.derived.light['color-primary-subtle'] ?? 'rgba(37, 99, 235, 0.1)';
-    const darkSubtle = tokensJson.derived.dark['color-primary-subtle'] ?? 'rgba(96, 165, 250, 0.15)';
-    const radiusXs = tokensJson.static.radius.xs ?? '2px';
-    const duration100 = tokensJson.static.motion['duration-100'] ?? '100ms';
+    const lightSubtle = tokensJson.derived.light['color-primary-subtle'];
+    const darkSubtle = tokensJson.derived.dark['color-primary-subtle'];
+    const radiusXs = tokensJson.static.radius.xs;
+    const duration100 = tokensJson.static.motion['duration-100'];
     return `
 .${WORD_CONFIG.highlightClass} {
   background-color: ${lightSubtle} !important;
@@ -53,6 +58,9 @@ const WORD_CONFIG: HighlightConfig = {
   .${WORD_CONFIG.highlightClass} {
     background-color: ${darkSubtle} !important;
   }
+}
+[data-theme="dark"] .${WORD_CONFIG.highlightClass} {
+  background-color: ${darkSubtle} !important;
 }
 .${WORD_CONFIG.overlayClass} {
   position: absolute !important;
@@ -70,6 +78,15 @@ const WORD_CONFIG: HighlightConfig = {
     background-color: ${darkSubtle} !important;
   }
 }
+[data-theme="dark"] .${WORD_CONFIG.overlayClass} {
+  background-color: ${darkSubtle} !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .${WORD_CONFIG.highlightClass},
+  .${WORD_CONFIG.overlayClass} {
+    transition: none !important;
+  }
+}
 `.trim();
   },
 };
@@ -81,10 +98,12 @@ const SENTENCE_CONFIG: HighlightConfig = {
   buildCss(): string {
     // Derived from color-primary-subtle at roughly half opacity so the word
     // highlight stays visually dominant and the sentence is a subtle halo.
-    const lightSubtle = 'rgba(37, 99, 235, 0.05)';
-    const darkSubtle = 'rgba(96, 165, 250, 0.08)';
-    const radiusXs = tokensJson.static.radius.xs ?? '2px';
-    const duration100 = tokensJson.static.motion['duration-100'] ?? '100ms';
+    const lightBase = tokensJson.derived.light['color-primary-subtle'];
+    const darkBase = tokensJson.derived.dark['color-primary-subtle'];
+    const lightSubtle = alphaVariant(lightBase, 0.05);
+    const darkSubtle = alphaVariant(darkBase, 0.08);
+    const radiusXs = tokensJson.static.radius.xs;
+    const duration100 = tokensJson.static.motion['duration-100'];
     return `
 .${SENTENCE_CONFIG.highlightClass} {
   background-color: ${lightSubtle} !important;
@@ -100,6 +119,9 @@ const SENTENCE_CONFIG: HighlightConfig = {
     background-color: ${darkSubtle} !important;
   }
 }
+[data-theme="dark"] .${SENTENCE_CONFIG.highlightClass} {
+  background-color: ${darkSubtle} !important;
+}
 .${SENTENCE_CONFIG.overlayClass} {
   position: absolute !important;
   background-color: ${lightSubtle} !important;
@@ -114,6 +136,15 @@ const SENTENCE_CONFIG: HighlightConfig = {
 @media (prefers-color-scheme: dark) {
   .${SENTENCE_CONFIG.overlayClass} {
     background-color: ${darkSubtle} !important;
+  }
+}
+[data-theme="dark"] .${SENTENCE_CONFIG.overlayClass} {
+  background-color: ${darkSubtle} !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .${SENTENCE_CONFIG.highlightClass},
+  .${SENTENCE_CONFIG.overlayClass} {
+    transition: none !important;
   }
 }
 `.trim();

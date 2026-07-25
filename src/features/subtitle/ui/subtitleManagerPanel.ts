@@ -31,10 +31,10 @@ export interface SubtitleManagerPanel {
   readonly destroy: () => void;
 }
 
-// SVG path data from ICON_CATALOG. Sizing style injected per-use (65% / 12px / 16px).
+// SVG path data from ICON_CATALOG. Sizing style injected per-use (65% / space-3 / space-4).
 const ICON_SVG = ICON_CATALOG.subtitleManager.svg.replace('<svg ', '<svg style="width:65% !important;height:65% !important;display:block;fill:none !important" ');
-const CLOSE_SVG = ICON_CATALOG.x.svg.replace('<svg ', '<svg style="width:12px !important;height:12px !important;display:block;fill:none !important" ');
-const CHEVRON_SVG = ICON_CATALOG.chevronDown.svg.replace('<svg ', '<svg style="width:16px !important;height:16px !important;display:block;fill:none !important" ');
+const CLOSE_SVG = ICON_CATALOG.x.svg.replace('<svg ', '<svg style="width:var(--space-3) !important;height:var(--space-3) !important;display:block;fill:none !important" ');
+const CHEVRON_SVG = ICON_CATALOG.chevronDown.svg.replace('<svg ', '<svg style="width:var(--space-4) !important;height:var(--space-4) !important;display:block;fill:none !important" ');
 
 /**
  * Create the unified Subtitle Manager Panel (ADR-015 V2 / UI v4 / ADR-027).

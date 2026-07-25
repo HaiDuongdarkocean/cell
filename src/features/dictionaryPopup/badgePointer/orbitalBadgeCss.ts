@@ -42,15 +42,15 @@ export function buildOrbitalBadgeCss(): string {
    reveals the full circle. pointer-events: auto so it can receive drag/tap events. */
 .cell-orbital-badge {
   position: fixed !important;
-  width: var(--badge-size, 36px) !important;
-  height: var(--badge-size, 36px) !important;
+  width: var(--badge-size, var(--space-9)) !important;
+  height: var(--badge-size, var(--space-9)) !important;
   box-sizing: border-box !important;
   border: none !important;
   padding: 0 !important;
   margin: 0 !important;
   border-radius: 50% !important;
-  background: var(--color-primary, #3b82f6) !important;
-  color: var(--color-primary-foreground, #ffffff) !important;
+  background: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
   cursor: grab !important;
   pointer-events: auto !important;
   touch-action: none !important;
@@ -58,7 +58,7 @@ export function buildOrbitalBadgeCss(): string {
   box-shadow: none !important;
   z-index: 2147483647 !important;
   transform: translate(-50%, -50%) !important;
-  transition: transform 200ms ease, background-color 200ms ease, width 200ms ease, height 200ms ease, left 0ms, top 0ms !important;
+  transition: transform var(--duration-normal) ease, background-color var(--duration-normal) ease, width var(--duration-normal) ease, height var(--duration-normal) ease, left 0ms, top 0ms !important;
   /* will-change promotes the badge to its own compositor layer so repositioning
      (left/top on a position:fixed element) is cheaper — the layer is moved on
      the compositor instead of re-laying out the host page. One 36px layer is
@@ -76,14 +76,14 @@ export function buildOrbitalBadgeCss(): string {
    the text under the tip is visible for lookup. */
 .cell-orbital-badge--peek {
   background: transparent !important;
-  border: 1px solid color-mix(in srgb, var(--color-primary, #3b82f6) 40%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent) !important;
 }
 
 /* Pointer in peek mode: translucent so text under the tip is visible.
    Badge and pointer are siblings inside .cell-orbital-badge-root. */
 .cell-orbital-badge--peek + .cell-orbital-pointer {
-  background: color-mix(in srgb, var(--color-text-inverse, #ffffff) 20%, transparent) !important;
-  border-color: color-mix(in srgb, var(--color-primary, #3b82f6) 40%, transparent) !important;
+  background: color-mix(in srgb, var(--color-text-inverse) 20%, transparent) !important;
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent) !important;
 }
 
 /* The "moon" pointer orbiting the badge. pointer-events: none so it never
@@ -91,12 +91,12 @@ export function buildOrbitalBadgeCss(): string {
    inside the visible half-moon so it is not clipped by the viewport edge. */
 .cell-orbital-pointer {
   position: fixed !important;
-  width: var(--pointer-size, 9px) !important;
-  height: var(--pointer-size, 9px) !important;
+  width: var(--pointer-size, calc(var(--badge-size, var(--space-9)) * 0.25)) !important;
+  height: var(--pointer-size, calc(var(--badge-size, var(--space-9)) * 0.25)) !important;
   box-sizing: border-box !important;
   border-radius: 50% !important;
-  background: var(--color-text-inverse, #ffffff) !important;
-  border: var(--space-0-5) solid var(--color-primary, #3b82f6) !important;
+  background: var(--color-text-inverse) !important;
+  border: var(--space-0-5) solid var(--color-primary) !important;
   padding: 0 !important;
   margin: 0 !important;
   pointer-events: none !important;
@@ -105,12 +105,19 @@ export function buildOrbitalBadgeCss(): string {
   z-index: 2147483647 !important;
   opacity: 1 !important;
   transform: translate(-50%, -50%) scale(1) !important;
-  transition: opacity 200ms ease, transform 200ms ease, left 0ms, top 0ms;
+  transition: opacity var(--duration-normal) ease, transform var(--duration-normal) ease, left 0ms, top 0ms;
 }
 
 .cell-orbital-pointer--hidden {
   opacity: 0 !important;
   transform: translate(-50%, -50%) scale(1e-5) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell-orbital-badge,
+  .cell-orbital-pointer {
+    transition: none !important;
+  }
 }
 `.trim();
 }
