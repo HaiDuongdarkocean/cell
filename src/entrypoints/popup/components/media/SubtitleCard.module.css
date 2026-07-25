@@ -5,7 +5,7 @@
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   transition: all var(--transition);
-  border: 2px solid transparent;
+  border: var(--space-0-5) solid transparent;
   animation: fade-in 300ms ease;
   overflow: hidden;
 }
@@ -40,7 +40,7 @@
 
 /* === Fade-in animation === */
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(var(--space-1)); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -59,8 +59,8 @@
 
 /* === Icon — 32px circular === */
 .icon {
-  width: 32px;
-  height: 32px;
+  width: var(--space-8);
+  height: var(--space-8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,8 +69,8 @@
 }
 
 .icon svg {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4);
+  height: var(--space-4);
 }
 
 .subtitleIcon {
@@ -127,8 +127,8 @@
 }
 
 .expandChevron {
-  width: 14px;
-  height: 14px;
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   transition: transform var(--duration-normal, 200ms) ease;
 }
 
@@ -151,8 +151,8 @@
 }
 
 .downloadingIndicator svg {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4);
+  height: var(--space-4);
   animation: spin 1s linear infinite;
 }
 
@@ -173,7 +173,7 @@
 
 @keyframes slide-down {
   from { opacity: 0; max-height: 0; }
-  to { opacity: 1; max-height: 60px; }
+  to { opacity: 1; max-height: calc(var(--space-5) * 3); }
 }
 
 .copyBtn {
@@ -192,8 +192,8 @@
 }
 
 .copyBtn svg {
-  width: 14px;
-  height: 14px;
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   color: var(--color-text-muted);
   flex-shrink: 0;
   transition: color var(--transition);

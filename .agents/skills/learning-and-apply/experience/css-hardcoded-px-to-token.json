@@ -8,8 +8,13 @@
   "cases": [
     {
       "context": "MediaList.module.css dùng hardcoded px cho thumbnail sizes",
-      "bad": ".imageThumb { height: 120px; }\n.imageImg { height: 120px; max-width: 200px; }\n.imageAddButton { width: 80px; height: 120px; }\n.mediaThumb { width: 28px; height: 28px; }\n.removeButton { width: 20px; height: 20px; font-size: 16px; }",
-      "good": ".imageThumb { height: calc(var(--space-5) * 6); }\n.imageImg { height: calc(var(--space-5) * 6); max-width: calc(var(--space-5) * 10); }\n.imageAddButton { width: calc(var(--space-5) * 4); height: calc(var(--space-5) * 6); }\n.mediaThumb { width: calc(var(--space-5) + var(--space-2)); height: calc(var(--space-5) + var(--space-2)); }\n.removeButton { width: var(--space-5); height: var(--space-5); font-size: var(--space-4); }"
+      "bad": ".imageThumb { height: 120px; }\n.imageImg { height: 120px; max-width: 200px; }\n.imageAddButton { width: 80px; height: 120px; }\n.mediaThumb { width: 28px; height: 28px; }\n.removeButton { width: 20px; height: 20px; border-radius: 4px; }",
+      "good": ".imageThumb { height: calc(var(--space-5) * 6); }\n.imageImg { height: calc(var(--space-5) * 6); max-width: calc(var(--space-5) * 10); }\n.imageAddButton { width: calc(var(--space-5) * 4); height: calc(var(--space-5) * 6); }\n.mediaThumb { width: calc(var(--space-5) + var(--space-2)); height: calc(var(--space-5) + var(--space-2)); }\n.removeButton { width: var(--space-5); height: var(--space-5); border-radius: var(--radius-2xs); }"
+    },
+    {
+      "context": "Negative offset hoặc inset shadow không thể viết -var(--token)",
+      "bad": ".popover::before { inset: -2px; }\n.token { box-shadow: inset 0 -2px 0 0 var(--color-primary); }",
+      "good": ".popover::before { inset: calc(var(--space-0-5) * -1); }\n.token { box-shadow: inset 0 calc(var(--space-0-5) * -1) 0 0 var(--color-primary); }"
     }
   ],
   "applyFor": [

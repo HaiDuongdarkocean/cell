@@ -58,8 +58,8 @@
 }
 
 .input:focus-visible + .box {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .input:disabled + .box {

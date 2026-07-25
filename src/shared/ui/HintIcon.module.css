@@ -31,8 +31,8 @@
 }
 
 .hintBtn:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .hintBtn[aria-expanded="true"] {
@@ -50,7 +50,7 @@
   bottom: calc(100% + var(--space-1-5, 6px));
   left: 0;
   width: max-content;
-  max-width: 280px;
+  max-width: calc(var(--space-1) * 70);
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text);
@@ -133,7 +133,7 @@
 @keyframes hintPop {
   from {
     opacity: 0;
-    transform: translateY(4px) scale(0.96);
+    transform: translateY(var(--space-1)) scale(0.96);
   }
   to {
     opacity: 1;

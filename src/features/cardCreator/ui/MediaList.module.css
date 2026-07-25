@@ -76,7 +76,7 @@
 }
 
 .cc-media__thumb--drag-over {
-  box-shadow: 0 0 0 2px var(--color-border-focus);
+  box-shadow: 0 0 0 var(--space-0-5) var(--color-border-focus);
 }
 
 .cc-media__img {
@@ -119,8 +119,8 @@
 }
 
 .cc-media__thumb-remove:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .cc-media__gallery-add {
@@ -150,8 +150,8 @@
 }
 
 .cc-media__gallery-add:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 /* Image icon has more continuous strokes (rect frame + mountain + sun) than the
@@ -213,8 +213,8 @@
 }
 
 .cc-media__preview-close:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 /* === Audio list === */
@@ -239,7 +239,7 @@
 }
 
 .cc-media__row--drag-over {
-  box-shadow: 0 0 0 2px var(--color-border-focus);
+  box-shadow: 0 0 0 var(--space-0-5) var(--color-border-focus);
 }
 
 .cc-media__play {
@@ -264,8 +264,8 @@
 }
 
 .cc-media__play:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .cc-media__name {
@@ -307,8 +307,8 @@
 }
 
 .cc-media__row-remove:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .cc-media__list-add {

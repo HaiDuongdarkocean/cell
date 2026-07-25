@@ -29,7 +29,7 @@
 }
 
 .description {
-  max-width: 320px;
+  max-width: calc(var(--space-5) * 16);
   line-height: var(--leading-normal);
 }
 

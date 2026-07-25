@@ -27,7 +27,7 @@
   user-select: text;
   container-type: inline-size;
   opacity: 0;
-  transform: scale(0.96) translateY(8px);
+  transform: scale(0.96) translateY(var(--space-2));
   visibility: hidden;
   transition:
     opacity var(--duration-normal, 200ms) var(--ease-out, ease-out),
@@ -473,7 +473,7 @@
   width: var(--space-4, 16px);
   height: var(--space-4, 16px);
   border-radius: var(--radius-sm);
-  border: 1.5px solid var(--color-primary);
+  border: var(--space-0-5) solid var(--color-primary);
   background: transparent;
   display: none;
   align-items: center;
@@ -486,8 +486,8 @@
 }
 
 .cell-def__check-tick svg {
-  width: 14px;
-  height: 14px;
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   display: block;
   color: inherit;
 }
@@ -531,8 +531,8 @@
 }
 
 .cell-def__check-input:focus-visible + .cell-def__check-box {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .cell-def__text {
@@ -588,7 +588,7 @@
   font-size: var(--font-size-xs, 12px);
   font-weight: var(--font-weight-semibold);
   pointer-events: none;
-  box-shadow: 0 0 0 1.5px var(--color-background);
+  box-shadow: 0 0 0 var(--space-0-5) var(--color-background);
   z-index: 1;
 }
 
@@ -599,7 +599,7 @@
   flex: 1 1 auto;
   /* min-height matches skeleton: subtabs (24px) + 1 row (52px) = 76px.
      Prevents layout shift when skeleton → real content shrinks below this. */
-  min-height: calc(var(--space-0-5, 2px) + 18px + var(--space-1, 4px) + var(--space-1, 4px) * 2 + var(--touch-target-mobile, 44px));
+  min-height: calc(var(--space-0-5, 2px) + var(--space-4-5) + var(--space-1, 4px) + var(--space-1, 4px) * 2 + var(--touch-target-mobile, 44px));
 }
 
 .cell-audio__subtabs {
@@ -619,7 +619,7 @@
   letter-spacing: 0.04em;
   color: var(--color-text-muted);
   cursor: pointer;
-  border-bottom: 1.5px solid transparent;
+  border-bottom: var(--space-0-5) solid transparent;
   padding-bottom: var(--space-0-5);
   transition: color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
     border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
@@ -714,7 +714,7 @@
   width: var(--space-4, 16px);
   height: var(--space-4, 16px);
   border-radius: var(--radius-sm);
-  border: 1.5px solid var(--color-primary);
+  border: var(--space-0-5) solid var(--color-primary);
   background: transparent;
   display: none;
   align-items: center;
@@ -729,15 +729,15 @@
 }
 
 .cell-audio__check-tick {
-  width: 10px;
-  height: 10px;
+  width: var(--space-2-5);
+  height: var(--space-2-5);
   display: none;
   color: var(--color-text-inverse);
 }
 
 .cell-audio__check-tick svg {
-  width: 10px;
-  height: 10px;
+  width: var(--space-2-5);
+  height: var(--space-2-5);
   display: block;
 }
 
@@ -794,7 +794,7 @@
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  min-height: calc(var(--space-1, 4px) * 2 + 80px);
+  min-height: calc(var(--space-1, 4px) * 2 + var(--space-20));
 }
 
 /* Horizontal scroll strip — single row, 8 cards.
@@ -815,7 +815,7 @@
   scrollbar-color: var(--color-border-strong, var(--color-border)) transparent;
 }
 .cell-image__strip::-webkit-scrollbar {
-  height: 6px;
+  height: var(--space-1-5);
 }
 .cell-image__strip::-webkit-scrollbar-track {
   background: transparent;
@@ -836,7 +836,7 @@
   box-sizing: border-box;
   flex: 0 0 auto;
   width: calc((100% - var(--space-1) * 7) / 8);
-  min-width: 80px;
+  min-width: var(--space-20);
   aspect-ratio: 1 / 1;
   padding: 0;
   background: var(--color-card);
@@ -865,7 +865,7 @@
 
 .cell-image__card--selected {
   background: var(--color-primary-subtle);
-  border: 1.5px solid var(--color-primary);
+  border: var(--space-0-5) solid var(--color-primary);
 }
 
 .cell-image__card--selected .cell-image__check {
@@ -901,8 +901,8 @@
 }
 
 .cell-image__check svg {
-  width: 12px;
-  height: 12px;
+  width: var(--space-3);
+  height: var(--space-3);
 }
 
 /* Empty state — minimal text-only: "No images · Search Google →" on one line.
@@ -966,7 +966,7 @@
   flex: 1 1 auto;
   /* Keep panel at least as tall as the skeleton so real content never
      shrinks below it — prevents layout shift when skeleton → content. */
-  min-height: calc(var(--space-1, 4px) * 2 + 1px * 2 + 21px + var(--space-0-5, 2px) + 18px + var(--space-0-5, 2px));
+  min-height: calc(var(--space-1, 4px) * 2 + 1px * 2 + calc(var(--space-5) + var(--space-0-5)) + var(--space-0-5, 2px) + var(--space-4-5) + var(--space-0-5, 2px));
   overflow-y: auto;
 }
 
@@ -1023,12 +1023,12 @@
   width: var(--space-4, 16px);
   height: var(--space-4, 16px);
   border-radius: var(--radius-sm);
-  border: 1.5px solid var(--color-primary);
+  border: var(--space-0-5) solid var(--color-primary);
   background: transparent;
   display: none;
   align-items: center;
   justify-content: center;
-  margin-top: 2px;
+  margin-top: var(--space-0-5);
 }
 
 .cell-translate__check--checked {
@@ -1038,15 +1038,15 @@
 }
 
 .cell-translate__check-tick {
-  width: 10px;
-  height: 10px;
+  width: var(--space-2-5);
+  height: var(--space-2-5);
   display: none;
   color: var(--color-text-inverse);
 }
 
 .cell-translate__check-tick svg {
-  width: 10px;
-  height: 10px;
+  width: var(--space-2-5);
+  height: var(--space-2-5);
   display: block;
 }
 
@@ -1144,8 +1144,8 @@
 }
 
 .cell-links__item svg {
-  width: 14px;
-  height: 14px;
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   flex-shrink: 0;
   color: var(--color-text-muted);
 }
@@ -1368,7 +1368,7 @@
   box-sizing: border-box;
   flex: 0 0 auto;
   width: calc((100% - var(--space-1) * 7) / 8);
-  min-width: 80px;
+  min-width: var(--space-20);
   aspect-ratio: 1 / 1;
 }
 
@@ -1398,11 +1398,11 @@
 }
 
 .cell-translate__skeleton-line--native {
-  height: 21px;
+  height: calc(var(--space-5) + var(--space-0-5));
 }
 
 .cell-translate__skeleton-line--target {
-  height: 18px;
+  height: var(--space-4-5);
   opacity: 0.7;
   margin-top: var(--space-0-5, 2px);
 }
@@ -1419,7 +1419,7 @@
   position: absolute;
   bottom: var(--space-2);
   left: 50%;
-  transform: translateX(-50%) translateY(20px);
+  transform: translateX(-50%) translateY(var(--space-5));
   max-width: calc(100% - var(--space-4));
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-md);
@@ -1749,7 +1749,7 @@
 /* IPA placeholder — grey bar matching the real IPA row height. */
 .cell-header__ipa--skeleton {
   display: inline-block;
-  width: 80px;
+  width: var(--space-20);
   height: 1em;
   border-radius: var(--radius-xs, 4px);
   background: var(--color-surface-hover, rgba(128, 128, 128, 0.15));
@@ -1765,7 +1765,7 @@
 }
 
 .cell-definition-skeleton-line {
-  height: 14px;
+  height: var(--space-3-5);
   border-radius: var(--radius-xs, 4px);
   background: var(--color-surface-hover, rgba(128, 128, 128, 0.15));
   animation: cell-skeleton-shimmer 1.2s ease-in-out infinite;

@@ -41,7 +41,7 @@ export const NAV_CLUSTER_CSS = `
   inset: 0;
   border-radius: var(--radius-md, 8px);
   background: var(--color-surface);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(var(--space-2));
   opacity: var(--nav-cluster-bg-opacity, 0.7);
   z-index: -1;
 }
@@ -53,11 +53,11 @@ export const NAV_CLUSTER_CSS = `
    Attached to top edge of cluster, centered. Collapsed hides it. */
 .nav-cluster-grip {
   position: absolute;
-  top: -22px;
+  top: calc((var(--space-5) + var(--space-0-5)) * -1);
   left: 50%;
   transform: translateX(-50%);
-  width: 44px;
-  height: 24px;
+  width: var(--touch-target-mobile);
+  height: var(--space-6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,8 +68,8 @@ export const NAV_CLUSTER_CSS = `
 }
 .nav-cluster-grip::before {
   content: '';
-  width: 28px;
-  height: 4px;
+  width: var(--space-7);
+  height: var(--space-1);
   border-radius: var(--radius-full, 9999px);
   background: var(--color-text-muted);
   opacity: 0.35;
@@ -79,8 +79,8 @@ export const NAV_CLUSTER_CSS = `
   opacity: 0.7;
 }
 .nav-cluster-grip:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
   border-radius: var(--radius-sm, 6px);
 }
 .nav-cluster.dragging .nav-cluster-grip::before {
@@ -103,10 +103,10 @@ export const NAV_CLUSTER_CSS = `
    is the event target instead of cluster, so gap clicks don't hit grip logic. */
 .nav-cluster-gap-cover {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  top: var(--space-1);
+  bottom: var(--space-1);
   left: 50%;
-  width: 4px;
+  width: var(--space-1);
   transform: translateX(-50%);
   pointer-events: auto;
   cursor: default !important;
@@ -145,8 +145,8 @@ export const NAV_CLUSTER_CSS = `
   color: var(--color-text);
 }
 .nav-cluster-btn:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
 }
 .nav-cluster-btn:active,
 .nav-cluster-btn--active {

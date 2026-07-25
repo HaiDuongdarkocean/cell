@@ -232,23 +232,23 @@ ${buildVariables()}
    Double-class specificity so host box-shadow rules don't override. */
 .js-cell-token.js-cell-token--status-unknown {
   box-shadow:
-    inset 0 -2px 0 0 var(--cell-token-status-unknown),
-    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 calc(var(--space-0-5) * -1) 0 0 var(--cell-token-status-unknown),
+    inset 0 calc(var(--space-0-5) * -1) 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 .js-cell-token.js-cell-token--status-tracking {
   box-shadow:
-    inset 0 -2px 0 0 var(--cell-token-status-tracking),
-    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 calc(var(--space-0-5) * -1) 0 0 var(--cell-token-status-tracking),
+    inset 0 calc(var(--space-0-5) * -1) 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 .js-cell-token.js-cell-token--status-known {
   box-shadow:
-    inset 0 -2px 0 0 var(--cell-token-status-known),
-    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 calc(var(--space-0-5) * -1) 0 0 var(--cell-token-status-known),
+    inset 0 calc(var(--space-0-5) * -1) 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 .js-cell-token.js-cell-token--status-ignore {
   box-shadow:
-    inset 0 -2px 0 0 var(--cell-token-status-ignore),
-    inset 0 -2px 0 0 rgba(255, 255, 255, 0.45) !important;
+    inset 0 calc(var(--space-0-5) * -1) 0 0 var(--cell-token-status-ignore),
+    inset 0 calc(var(--space-0-5) * -1) 0 0 rgba(255, 255, 255, 0.45) !important;
 }
 
 /* Text guard removed: the 2px inset status underline no longer needs a halo

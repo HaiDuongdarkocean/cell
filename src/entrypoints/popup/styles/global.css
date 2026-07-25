@@ -34,8 +34,8 @@ body {
 }
 
 #root {
-  width: 480px;
-  min-height: 600px;
+  width: calc(var(--space-5) * 24);
+  min-height: calc(var(--space-5) * 30);
   margin: 0 auto;
 }
 
@@ -43,7 +43,7 @@ body {
    Focus Visible
    ============================================================ */
 :focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
   border-radius: var(--radius-sm);
 }
