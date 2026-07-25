@@ -5,6 +5,7 @@
  * Esc to close) with the Card Creator body inside.
  */
 import type { ReactElement } from 'react';
+import { useEffect } from 'react';
 import { Dialog } from '@/shared/ui/Dialog';
 import { Icon } from '@/shared/icons/Icon';
 import { Button } from '@/shared/ui/Button';
@@ -27,6 +28,10 @@ interface CardCreatorDialogProps {
   openContext: { video?: HTMLVideoElement; cue?: BilingualCue; sourceLang: string; targetLang: string; initialMedia?: readonly MediaFile[]; prefill?: { readonly targetWord?: string; readonly definitions?: string; readonly sentenceTranslation?: string; readonly sentence?: string; readonly wordAudioUrls?: readonly string[]; readonly sentenceAudioUrls?: readonly string[]; readonly imageUrls?: readonly string[] }; queue?: readonly CardCreatorQueueItem[] } | null;
   /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' pre-selects Update, 'edit-card' is neutral). */
   initialAction?: 'quick-add' | 'quick-update' | 'edit-card';
+  /** Register a callback to push media files into the open dialog (background fetch). */
+  registerAddMedia?: (cb: ((kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[]) => void) | null) => void;
+  /** Register a callback to push text field updates into the open dialog (background fetch). */
+  registerUpdateText?: (cb: ((key: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample', value: string) => void) | null) => void;
 }
 
 export function CardCreatorDialog({
@@ -35,11 +40,27 @@ export function CardCreatorDialog({
   settings,
   openContext,
   initialAction,
+  registerAddMedia,
+  registerUpdateText,
 }: CardCreatorDialogProps): ReactElement | null {
   // Always call the hook (rules of hooks). When closed, openContext is null
   // and the hook no-ops its data loading.
   const ctx: OpenContext | null = open ? openContext : null;
   const state = useCardCreatorState(settings, ctx, initialAction);
+
+  // Register callbacks so the mount controller can push background-fetched
+  // media + text into the open dialog without re-rendering from scratch.
+  useEffect(() => {
+    if (!open || !registerAddMedia) return;
+    registerAddMedia(state.addFiles);
+    return () => registerAddMedia(null);
+  }, [open, registerAddMedia, state.addFiles]);
+
+  useEffect(() => {
+    if (!open || !registerUpdateText) return;
+    registerUpdateText(state.updateField);
+    return () => registerUpdateText(null);
+  }, [open, registerUpdateText, state.updateField]);
 
   if (!open) return null;
 

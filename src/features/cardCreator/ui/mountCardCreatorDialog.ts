@@ -85,6 +85,11 @@ export interface CardCreatorMountController {
   isOpen: () => boolean;
   /** Update settings (e.g. when AnkiConnect URL changes). */
   updateSettings: (settings: CardCreatorSettings) => void;
+  /** Add media files to the open dialog (background fetch support —
+   *  lets the dialog show immediately while media is fetched async). */
+  addMediaFiles: (kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[]) => void;
+  /** Update a text field in the open dialog (e.g. translation fetched in background). */
+  updateTextField: (key: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample', value: string) => void;
   /** Unmount + remove host element. */
   unmount: () => void;
 }
@@ -196,6 +201,11 @@ export function mountCardCreatorDialog(
   let initialAction: CardCreatorAction | undefined;
   let root: Root | null = createRoot(rootEl);
 
+  // Callbacks registered by the React component — let the controller push
+  // media + text updates into the open dialog without re-rendering from scratch.
+  let addMediaCb: ((kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[]) => void) | null = null;
+  let updateTextCb: ((key: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample', value: string) => void) | null = null;
+
   /** Determine whether to render the bottom sheet variant based on viewport width. */
   const isMobile = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -217,12 +227,16 @@ export function mountCardCreatorDialog(
         if (!next) {
           context = null;
           initialAction = undefined;
+          addMediaCb = null;
+          updateTextCb = null;
         }
         render();
       },
       settings,
       openContext: context,
       initialAction,
+      registerAddMedia: (cb: typeof addMediaCb) => { addMediaCb = cb; },
+      registerUpdateText: (cb: typeof updateTextCb) => { updateTextCb = cb; },
     };
     root.render(
       createElement(isMobile() ? CardCreatorBottomSheet : CardCreatorDialog, commonProps) as ReactElement,
@@ -260,6 +274,8 @@ export function mountCardCreatorDialog(
       settings = next;
       render();
     },
+    addMediaFiles: (kind, files) => { addMediaCb?.(kind, files); },
+    updateTextField: (key, value) => { updateTextCb?.(key, value); },
     unmount: () => {
       if (root) {
         root.unmount();
