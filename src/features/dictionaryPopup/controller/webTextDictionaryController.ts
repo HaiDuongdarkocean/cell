@@ -35,14 +35,14 @@ import { createOrbitalBadge, type OrbitalBadge, type PointerPreset } from '@/fea
 
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import type { MessageResponse, FetchMediaUrlResponse } from '@/entities/message/types';
+import type { MessageResponse } from '@/entities/message/types';
 
 import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
 import { prefetchAnkiConnectData } from '@/features/cardCreator/service/cardCreatorPrefetch';
 import { quickAddNote } from '@/features/cardCreator/service/quickAddNote';
-import { fetchUrlAsMediaFile, generateMediaFilename, type MediaFile, type MediaKind } from '@/features/cardCreator/media/mediaFile';
+import { fetchMediaFile, type MediaFile, type MediaKind } from '@/features/cardCreator/media/mediaFile';
 import { DraftAutosaver } from '@/features/cardCreator/state/cardDraft';
 import { loadSettingsOrToast } from '@/features/subtitle/ui/subtitleControllerHelpers';
 import { showToast } from '@/features/subtitle/ui/subtitleUI';
@@ -225,45 +225,6 @@ export function formatDefinitions(defs: readonly { readonly pos?: string; readon
     .map((d) => `• ${d.pos ? `${d.pos} ` : ''}${d.text}`.trim())
     .join('\n\n')
     .trim();
-}
-
-/** Fetch a media URL via the background SW (bypasses page CSP).
- *  Returns a MediaFile on success, throws on failure. */
-async function fetchMediaViaBackground(url: string, kind: MediaKind): Promise<MediaFile> {
-  const res = await sendMessage<MessageResponse<FetchMediaUrlResponse>>({
-    type: MESSAGE_TYPES.FETCH_MEDIA_URL,
-    payload: { tabId: 0, url, kind },
-  });
-  if (!res?.success || !res.data?.url) {
-    throw new Error(`Background fetch failed for ${url}`);
-  }
-  const dataUrl = res.data.url;
-  const mimeType = dataUrl.slice(5, dataUrl.indexOf(';'));
-  const ext = mimeType === 'image/png' ? 'png'
-    : mimeType === 'image/jpeg' ? 'jpg'
-    : mimeType === 'image/gif' ? 'gif'
-    : mimeType === 'image/webp' ? 'webp'
-    : mimeType === 'audio/mpeg' ? 'mp3'
-    : mimeType === 'audio/mp4' ? 'm4a'
-    : kind === 'image' ? 'png' : 'mp3';
-  const prefix = kind === 'image' ? 'img' : 'audio';
-  return {
-    kind,
-    filename: generateMediaFilename(prefix, ext),
-    mimeType,
-    data: await (await fetch(dataUrl)).arrayBuffer(),
-  };
-}
-
-/** Fetch a media URL as a MediaFile. Tries content-script fetch first (fast,
- *  works for same-origin + permissive CSP), falls back to background fetch
- *  (bypasses strict CSP). */
-async function fetchMediaFile(url: string, kind: MediaKind): Promise<MediaFile> {
-  try {
-    return await fetchUrlAsMediaFile(url, kind);
-  } catch {
-    return fetchMediaViaBackground(url, kind);
-  }
 }
 
 export function createWebTextDictionaryController(deps: WebTextDictionaryControllerDeps): WebTextDictionaryController {
@@ -882,42 +843,14 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     // opens the Audio/Images/Translate tabs. If the user clicks "Send to Card"
     // without opening those tabs, the media is not yet available — fetch it
     // here so the Card Creator opens with all fields populated.
+    // Media URLs (selected by user) are passed through prefill — useCardCreatorState
+    // fetches them via fetchMediaFile (CSP-safe: content fetch → background fallback).
     let wordAudioUrls = prefill.wordAudioUrls;
     let imageUrls = prefill.imageUrls;
     let sentenceAudioUrls = prefill.sentenceAudioUrls;
-    let sentenceTranslation = prefill.translation ?? (fromSubtitle ? getCurrentNativeSubtitleText() : undefined);
+    let sentenceTranslation = prefill.translation;
 
-    // Fetch selected images via background (CSP-safe) → add to initialMedia
-    // so the Card Creator doesn't try to fetch them from the content script.
-    if (imageUrls && imageUrls.length > 0) {
-      const imageResults = await Promise.allSettled(
-        imageUrls.map((u) => fetchMediaFile(u, 'image')),
-      );
-      for (const r of imageResults) {
-        if (r.status === 'fulfilled') initialMedia.push(r.value);
-      }
-      imageUrls = undefined; // already in initialMedia
-    }
-    // Same for selected word/sentence audio.
-    if (wordAudioUrls && wordAudioUrls.length > 0) {
-      const audioResults = await Promise.allSettled(
-        wordAudioUrls.map((u) => fetchMediaFile(u, 'audio')),
-      );
-      for (const r of audioResults) {
-        if (r.status === 'fulfilled') initialMedia.push(r.value);
-      }
-      wordAudioUrls = undefined;
-    }
-    if (sentenceAudioUrls && sentenceAudioUrls.length > 0) {
-      const audioResults = await Promise.allSettled(
-        sentenceAudioUrls.map((u) => fetchMediaFile(u, 'audio')),
-      );
-      for (const r of audioResults) {
-        if (r.status === 'fulfilled') initialMedia.push(r.value);
-      }
-      sentenceAudioUrls = undefined;
-    }
-
+    // Compute needs-* flags from the ORIGINAL prefill URLs (before any fetch).
     const needsAudio = !wordAudioUrls?.length;
     const needsImages = !imageUrls?.length;
     const needsSentenceAudio = !sentenceAudioUrls?.length && !!prefill.contextSentence;
@@ -1172,7 +1105,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       {
         targetWord: prefill.term,
         sentence: prefill.contextSentence,
-        sentenceTranslation: prefill.translation ?? (fromSubtitle ? getCurrentNativeSubtitleText() : ''),
+        sentenceTranslation: prefill.translation ?? '',
         definitions: definitionsText,
         note: '',
         moreExample: '',

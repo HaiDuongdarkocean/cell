@@ -315,16 +315,19 @@ export function renderDefinitions(
   container.appendChild(panel);
 }
 
-/** Render the active entry: header + toolbar slot + definitions, wrapped as a flex column. */
+/** Render the active entry: header + toolbar slot + definitions, wrapped as a flex column.
+ *  Sets data-cell-candidate-idx so the controller can locate per-candidate slots. */
 export function renderActiveEntry(
   container: HTMLElement,
   result: LookupResult,
   currentStatus: WordStatus,
   selection: DefinitionSelection,
   callbacks: PopupContentCallbacks,
+  candidateIdx = 0,
 ): HTMLElement {
   const entry = document.createElement('div');
   entry.className = 'cell-active-entry js-cell-active-entry';
+  entry.setAttribute('data-cell-candidate-idx', String(candidateIdx));
   renderHeader(
     entry,
     result,

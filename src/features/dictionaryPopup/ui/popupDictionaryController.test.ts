@@ -330,19 +330,19 @@ describe('appendCandidate', () => {
     expect(s.additionalResults[0]!.term).toBe('get over');
   });
 
-  it('renders candidates chips after append (only when >= 2 candidates)', () => {
+  it('renders stacked active entries after append (all candidates visible)', () => {
     const winner = makeResult({ term: 'get out' });
     const c1 = makeResult({ term: 'get over' });
     const c2 = makeResult({ term: 'get by' });
     let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
     s = appendCandidate(s, c1, 'sentence');
-    // 2 candidates → chips rendered
+    // 2 candidates → 2 stacked active entries
     let container = s.shell?.getContainer();
-    expect(container!.querySelectorAll('.js-cell-chip').length).toBe(2);
+    expect(container!.querySelectorAll('.js-cell-active-entry').length).toBe(2);
     s = appendCandidate(s, c2, 'sentence');
-    // 3 candidates → chips rendered
+    // 3 candidates → 3 stacked active entries
     container = s.shell?.getContainer();
-    expect(container!.querySelectorAll('.js-cell-chip').length).toBe(3);
+    expect(container!.querySelectorAll('.js-cell-active-entry').length).toBe(3);
   });
 
   it('no-ops when shell is null', () => {
@@ -498,8 +498,8 @@ describe('setActiveCandidate', () => {
     s = appendCandidate(s, candidate, 'sentence');
     s = setActiveCandidate(s, 1);
     const container = s.shell?.getContainer();
-    const activeTerm = container!.querySelector('.js-cell-active-entry .js-cell-term')?.textContent;
-    expect(activeTerm).toBe('get over');
+    const activeEntry = container!.querySelector('.cell-active-entry--active .js-cell-term')?.textContent;
+    expect(activeEntry).toBe('get over');
   });
 
   it('switches back to winner (index 0)', () => {
@@ -511,11 +511,11 @@ describe('setActiveCandidate', () => {
     s = setActiveCandidate(s, 0);
     expect(s.activeCandidateIndex).toBe(0);
     const container = s.shell?.getContainer();
-    const activeTerm = container!.querySelector('.js-cell-active-entry .js-cell-term')?.textContent;
-    expect(activeTerm).toBe('get out');
+    const activeEntry = container!.querySelector('.cell-active-entry--active .js-cell-term')?.textContent;
+    expect(activeEntry).toBe('get out');
   });
 
-  it('highlights the active chip (when >= 2 candidates)', () => {
+  it('highlights the active entry (when >= 2 candidates)', () => {
     const winner = makeResult({ term: 'get out' });
     const c1 = makeResult({ term: 'get over' });
     const c2 = makeResult({ term: 'get by' });
@@ -524,8 +524,8 @@ describe('setActiveCandidate', () => {
     s = appendCandidate(s, c2, 'sentence');
     s = setActiveCandidate(s, 1);
     const container = s.shell?.getContainer();
-    const activeChip = container!.querySelector('.js-cell-chip.btn--primary');
-    expect(activeChip?.getAttribute('data-cell-candidate-idx')).toBe('1');
+    const activeEntry = container!.querySelector('.cell-active-entry--active');
+    expect(activeEntry?.getAttribute('data-cell-candidate-idx')).toBe('1');
   });
 
   it('no-ops for out-of-range index', () => {

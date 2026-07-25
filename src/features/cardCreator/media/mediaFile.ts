@@ -106,3 +106,50 @@ export async function fetchUrlAsMediaFile(
     data,
   };
 }
+
+/** Parse a data: URL (base64) into an ArrayBuffer without using fetch()
+ *  (avoids CSP issues with data: URLs on strict pages). */
+function dataUrlToArrayBuffer(dataUrl: string): ArrayBuffer {
+  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+/** Fetch a media URL via the background SW (bypasses page CSP).
+ *  Returns a MediaFile on success, throws on failure. */
+async function fetchMediaViaBackground(url: string, kind: MediaKind): Promise<MediaFile> {
+  const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
+  const { MESSAGE_TYPES } = await import('@/shared/config/messages');
+  const res = await sendMessage<{ success: boolean; data?: { url: string }; error?: string }>({
+    type: MESSAGE_TYPES.FETCH_MEDIA_URL,
+    payload: { tabId: 0, url, kind },
+  });
+  if (!res?.success || !res.data?.url) {
+    throw new Error(res?.error ?? `Background fetch failed for ${url}`);
+  }
+  const dataUrl = res.data.url;
+  const mimeType = dataUrl.slice(5, dataUrl.indexOf(';'));
+  const ext = MIME_TO_EXT[mimeType] ?? (kind === 'image' ? 'png' : 'mp3');
+  const prefix = kind === 'image' ? 'img' : 'audio';
+  return {
+    kind,
+    filename: generateMediaFilename(prefix, ext),
+    mimeType,
+    data: dataUrlToArrayBuffer(dataUrl),
+  };
+}
+
+/** Fetch a media URL as a MediaFile. Tries content-script fetch first (fast,
+ *  works for same-origin + permissive CSP), falls back to background fetch
+ *  (bypasses strict CSP via FETCH_MEDIA_URL message). */
+export async function fetchMediaFile(url: string, kind: MediaKind): Promise<MediaFile> {
+  try {
+    return await fetchUrlAsMediaFile(url, kind);
+  } catch {
+    return fetchMediaViaBackground(url, kind);
+  }
+}

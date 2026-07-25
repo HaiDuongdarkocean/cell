@@ -19,13 +19,11 @@ import type { LookupResult, WordStatus, PopupTab, AudioItem, ImageItem, FetchCom
 import type { DictionaryPopupSettings, CardCreatorSettings, TtsVoiceRow } from '@/entities/settings/types';
 import type { TokenWrapState } from '../trigger/subtitleTokenWrap';
 import type { PopupShell, PopupSize } from './popupShell';
-import type { DefinitionSelection, CandidateInfo, PopupContentCallbacks } from './popupContent';
+import type { DefinitionSelection, PopupContentCallbacks } from './popupContent';
 import { PopupShell as PopupShellClass, clampPopupSize } from './popupShell';
 import {
   renderPopupContent,
   renderActiveEntry,
-  renderCandidateChips,
-  getOrCreateCandidatesContainer,
   initDefinitionSelection,
   getSelectedDefinitions,
 } from './popupContent';
@@ -385,10 +383,8 @@ export function showPopup(
       },
     });
 
-    // Render toolbar (1 per popup, context = active candidate).
+    // Render toolbar for the winner (initial render — only 1 candidate).
     renderPopupToolbar(state, container);
-    // Render candidates chips + list.
-    renderCandidateChipsAndList(state, container);
 
     // Auto-translate when translate tab is the default and no cached translation.
     // onTabOpen (which triggers auto-translate on click) never fires for the
@@ -416,7 +412,7 @@ export function showPopup(
 
 /**
  * Append an additional candidate to the existing popup.
- * Spec redesign: candidates shown as chips; active entry stays on winner.
+ * Multi-candidate: all candidates rendered as stacked active entries.
  */
 export function appendCandidate(
   state: PopupDictionaryState,
@@ -432,8 +428,9 @@ export function appendCandidate(
   state.candidateStates.set(index, candidateState);
   state.additionalResults = [...state.additionalResults, result];
 
-  // Re-render candidates chips + list (active entry and toolbar stay unchanged).
-  renderCandidateChipsAndList(state, container);
+  // Re-render all active entries + toolbars (new candidate appears stacked).
+  renderAllActiveEntries(state, container);
+  renderAllToolbars(state, container);
   state.shell?.rePosition();
 
   // Persist candidate status when it changes (async).
@@ -442,7 +439,7 @@ export function appendCandidate(
   return state;
 }
 
-/** Switch the active candidate shown in the active entry + toolbar. */
+/** Switch the active candidate — scrolls to the candidate entry in the popup. */
 export function setActiveCandidate(
   state: PopupDictionaryState,
   idx: number,
@@ -454,11 +451,14 @@ export function setActiveCandidate(
   const container = state.shell.getContainer();
   if (!container) return state;
 
-  // Re-render active entry + toolbar + candidates (chips active highlight).
-  renderActiveEntryFromState(state, container);
-  renderPopupToolbar(state, container);
-  renderCandidateChipsAndList(state, container);
+  // Re-render all entries (updates active highlight) + toolbars.
+  renderAllActiveEntries(state, container);
+  renderAllToolbars(state, container);
   state.shell?.rePosition();
+
+  // Scroll the active entry into view within the popup.
+  const activeEntry = container.querySelector(`.js-cell-active-entry[data-cell-candidate-idx="${idx}"]`);
+  activeEntry?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
   return state;
 }
 
@@ -664,19 +664,24 @@ function countActiveSelections(snapshot: ActiveCandidateSnapshot): SelectionCoun
   return counts;
 }
 
-/** Get the active candidate result (0 = winner). */
-function getActiveResult(state: PopupDictionaryState): LookupResult | null {
-  if (state.activeCandidateIndex === 0) return state.currentResult;
-  return state.additionalResults[state.activeCandidateIndex - 1] ?? null;
+/** Get a candidate result by index (0 = winner). */
+function getResultByIndex(state: PopupDictionaryState, idx: number): LookupResult | null {
+  if (idx === 0) return state.currentResult;
+  return state.additionalResults[idx - 1] ?? null;
 }
 
-/** Build a snapshot of the active candidate's mutable state. */
-function getActiveSnapshot(state: PopupDictionaryState): ActiveCandidateSnapshot {
-  const result = getActiveResult(state);
+/** Get the active candidate result (0 = winner). */
+function getActiveResult(state: PopupDictionaryState): LookupResult | null {
+  return getResultByIndex(state, state.activeCandidateIndex);
+}
+
+/** Build a snapshot of a candidate's mutable state by index. */
+function getSnapshotByIndex(state: PopupDictionaryState, idx: number): ActiveCandidateSnapshot {
+  const result = getResultByIndex(state, idx);
   if (!result) {
-    throw new Error('No active candidate result');
+    throw new Error(`No candidate result at index ${idx}`);
   }
-  if (state.activeCandidateIndex === 0) {
+  if (idx === 0) {
     return {
       result,
       status: state.currentStatus,
@@ -693,7 +698,7 @@ function getActiveSnapshot(state: PopupDictionaryState): ActiveCandidateSnapshot
       activeTab: state.activeTab,
     };
   }
-  const cs = state.candidateStates.get(state.activeCandidateIndex) ?? createCandidateState(result);
+  const cs = state.candidateStates.get(idx) ?? createCandidateState(result);
   return {
     result,
     status: cs.status,
@@ -711,9 +716,14 @@ function getActiveSnapshot(state: PopupDictionaryState): ActiveCandidateSnapshot
   };
 }
 
-/** Apply a partial snapshot update to the active candidate in state (mutates in place). */
-function setActiveSnapshot(state: PopupDictionaryState, patch: Partial<ActiveCandidateSnapshot>): PopupDictionaryState {
-  if (state.activeCandidateIndex === 0) {
+/** Build a snapshot of the active candidate's mutable state. */
+function getActiveSnapshot(state: PopupDictionaryState): ActiveCandidateSnapshot {
+  return getSnapshotByIndex(state, state.activeCandidateIndex);
+}
+
+/** Apply a partial snapshot update to a candidate by index (mutates in place). */
+function setSnapshotByIndex(state: PopupDictionaryState, idx: number, patch: Partial<ActiveCandidateSnapshot>): PopupDictionaryState {
+  if (idx === 0) {
     state.currentStatus = patch.status ?? state.currentStatus;
     state.definitionSelection = patch.definitionSelection ?? state.definitionSelection;
     state.audioSelection = patch.audioSelection ?? state.audioSelection;
@@ -728,9 +738,9 @@ function setActiveSnapshot(state: PopupDictionaryState, patch: Partial<ActiveCan
     state.activeTab = patch.activeTab ?? state.activeTab;
     return state;
   }
-  const result = getActiveResult(state);
+  const result = getResultByIndex(state, idx);
   if (!result) return state;
-  const old = state.candidateStates.get(state.activeCandidateIndex) ?? createCandidateState(result);
+  const old = state.candidateStates.get(idx) ?? createCandidateState(result);
   const updated: CandidateState = {
     status: patch.status ?? old.status,
     definitionSelection: patch.definitionSelection ?? old.definitionSelection,
@@ -745,89 +755,77 @@ function setActiveSnapshot(state: PopupDictionaryState, patch: Partial<ActiveCan
     translationLoading: patch.translationLoading ?? old.translationLoading,
     activeTab: patch.activeTab ?? old.activeTab,
   };
-  state.candidateStates.set(state.activeCandidateIndex, updated);
+  state.candidateStates.set(idx, updated);
   return state;
 }
 
-/** Render the active entry (header + definitions) from state. */
-function renderActiveEntryFromState(state: PopupDictionaryState, container: HTMLElement): void {
-  const active = getActiveResult(state);
-  if (!active) return;
-  const snapshot = getActiveSnapshot(state);
+/** Apply a partial snapshot update to the active candidate in state (mutates in place). */
+function setActiveSnapshot(state: PopupDictionaryState, patch: Partial<ActiveCandidateSnapshot>): PopupDictionaryState {
+  return setSnapshotByIndex(state, state.activeCandidateIndex, patch);
+}
 
-  // Replace existing active entry if any.
-  const existing = container.querySelector('.js-cell-active-entry');
-  if (existing) existing.remove();
+/** Render ALL candidates as stacked active entries (header + definitions each).
+ *  Each entry gets data-cell-candidate-idx; callbacks capture idx and set
+ *  activeCandidateIndex before dispatching so existing per-candidate logic works. */
+function renderAllActiveEntries(state: PopupDictionaryState, container: HTMLElement): void {
+  // Remove all existing active entries.
+  container.querySelectorAll('.js-cell-active-entry').forEach((el) => el.remove());
 
-  const callbacks: PopupContentCallbacks = {
-    onStatusCycle: () => { state = cycleStatus(state); },
-    onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
-    onQuickAdd: () => { state = triggerCardCreatorAction(state, 'quick-add'); },
-    onSendToCreator: () => { state = triggerCardCreatorAction(state, 'edit-card'); },
-    onSettings: () => { /* options page removed — settings now in orbital badge SettingsDialog */ },
-    onClose: () => { state = hidePopup(state); },
-    onPlayTerm: () => {
-      const r = getActiveResult(state);
-      if (!r) return;
-      void playTermAudio(r.term, r.langCode, getActiveSnapshot(state).audioItems).then(({ playedItem, fetchedItems }) => {
-        if (playedItem) {
-          const patch: Partial<ActiveCandidateSnapshot> = { headerAudioId: playedItem.id };
-          if (fetchedItems.length > 0) patch.audioItems = fetchedItems;
-          setActiveSnapshot(state, patch);
-        }
-      });
-    },
-    onPlaySentence: () => {
-      const r = getActiveResult(state);
-      if (!r) return;
-      void playSentenceAudio(state.contextSentence, r.langCode, getActiveSnapshot(state).audioItems);
-    },
-    onCandidateSelect: (idx) => { state = setActiveCandidate(state, idx); },
-  };
+  const total = 1 + state.additionalResults.length; // winner + appended
+  for (let idx = 0; idx < total; idx++) {
+    const result = getResultByIndex(state, idx);
+    if (!result) continue;
+    const snapshot = getSnapshotByIndex(state, idx);
 
-  renderActiveEntry(container, active, snapshot.status, snapshot.definitionSelection, callbacks);
+    const callbacks: PopupContentCallbacks = {
+      onStatusCycle: () => { state.activeCandidateIndex = idx; state = cycleStatus(state); },
+      onDefinitionToggle: (id, selected) => { state.activeCandidateIndex = idx; state = toggleDefinition(state, id, selected); },
+      onQuickAdd: () => { state.activeCandidateIndex = idx; state = triggerCardCreatorAction(state, 'quick-add'); },
+      onSendToCreator: () => { state.activeCandidateIndex = idx; state = triggerCardCreatorAction(state, 'edit-card'); },
+      onSettings: () => { /* options page removed — settings now in orbital badge SettingsDialog */ },
+      onClose: () => { state = hidePopup(state); },
+      onPlayTerm: () => {
+        state.activeCandidateIndex = idx;
+        const r = getResultByIndex(state, idx);
+        if (!r) return;
+        void playTermAudio(r.term, r.langCode, getSnapshotByIndex(state, idx).audioItems).then(({ playedItem, fetchedItems }) => {
+          if (playedItem) {
+            const patch: Partial<ActiveCandidateSnapshot> = { headerAudioId: playedItem.id };
+            if (fetchedItems.length > 0) patch.audioItems = fetchedItems;
+            setSnapshotByIndex(state, idx, patch);
+          }
+        });
+      },
+      onPlaySentence: () => {
+        state.activeCandidateIndex = idx;
+        const r = getResultByIndex(state, idx);
+        if (!r) return;
+        void playSentenceAudio(state.contextSentence, r.langCode, getSnapshotByIndex(state, idx).audioItems);
+      },
+      onCandidateSelect: (newIdx) => { state = setActiveCandidate(state, newIdx); },
+    };
 
-  // Keep the active entry as the first child (candidates + footer follow it).
-  const newEntry = container.querySelector('.js-cell-active-entry');
-  if (newEntry && container.firstChild !== newEntry) {
-    container.insertBefore(newEntry, container.firstChild);
+    const entry = renderActiveEntry(container, result, snapshot.status, snapshot.definitionSelection, callbacks, idx);
+    // Highlight the active candidate.
+    if (idx === state.activeCandidateIndex) {
+      entry.classList.add('cell-active-entry--active');
+    }
+  }
+
+  // Ensure entries stay before the candidates container (if any).
+  const candidatesEl = container.querySelector('.js-cell-candidates');
+  if (candidatesEl) {
+    container.querySelectorAll('.js-cell-active-entry').forEach((el) => {
+      container.insertBefore(el, candidatesEl);
+    });
   }
 }
 
-/** Render candidates as a single horizontal scrollable chips row. */
-function renderCandidateChipsAndList(state: PopupDictionaryState, container: HTMLElement): void {
-  const candidatesEl = getOrCreateCandidatesContainer(container);
-  candidatesEl.innerHTML = '';
-
-  const candidates: CandidateInfo[] = [];
-  if (state.currentResult) {
-    candidates.push({ idx: 0, result: state.currentResult, status: state.currentStatus });
-  }
-  for (let i = 0; i < state.additionalResults.length; i++) {
-    const r = state.additionalResults[i]!;
-    const cs = state.candidateStates.get(i + 1);
-    candidates.push({ idx: i + 1, result: r, status: cs?.status ?? r.status });
-  }
-
-  // Candidate pills render when there are 2+ candidates so the user can
-  // scroll horizontally and switch between phrase, surface, and origin forms.
-  if (candidates.length <= 1) return;
-
-  renderCandidateChips(
-    candidatesEl,
-    candidates,
-    state.activeCandidateIndex,
-    (idx) => { state = setActiveCandidate(state, idx); },
-  );
-}
-
-function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement): void {
-  const slot = container.querySelector('.js-cell-materials-slot') as HTMLElement | null;
-  if (!slot) return;
-
-  const active = getActiveResult(state);
-  if (!active) return;
-  const snapshot = getActiveSnapshot(state);
+/** Render toolbar (tab bar + panel) for a single candidate by index. */
+function renderToolbarForCandidate(state: PopupDictionaryState, slot: HTMLElement, idx: number): void {
+  const result = getResultByIndex(state, idx);
+  if (!result) return;
+  const snapshot = getSnapshotByIndex(state, idx);
   slot.innerHTML = '';
 
   const bar = document.createElement('div');
@@ -842,21 +840,24 @@ function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement)
   let toolbarEl: HTMLElement | null = null;
 
   const renderToolbarOnly = (): void => {
-    const s = getActiveSnapshot(state);
+    const s = getSnapshotByIndex(state, idx);
     const newToolbar = renderToolbar(bar, s.activeTab, (t) => {
       const newTab = s.activeTab === t ? null : t;
-      setActiveSnapshot(state, { activeTab: newTab });
+      setSnapshotByIndex(state, idx, { activeTab: newTab });
+      state.activeCandidateIndex = idx;
       rerender(state, newTab);
     }, countActiveSelections(s), (tab) => {
       if (tab === 'translate') {
-        const s2 = getActiveSnapshot(state);
+        const s2 = getSnapshotByIndex(state, idx);
         if (!s2.translation && !s2.translationLoading) {
-          const r = getActiveResult(state);
+          const r = getResultByIndex(state, idx);
           if (!r) return;
-          setActiveSnapshot(state, { translationLoading: true, activeTab: 'translate' });
+          setSnapshotByIndex(state, idx, { translationLoading: true, activeTab: 'translate' });
+          state.activeCandidateIndex = idx;
           rerender(state, 'translate');
           translateSentence(r, state.contextSentence, state.nativeLang, (text) => {
-            setActiveSnapshot(state, { translation: text, translationLoading: false, activeTab: 'translate' });
+            setSnapshotByIndex(state, idx, { translation: text, translationLoading: false, activeTab: 'translate' });
+            state.activeCandidateIndex = idx;
             rerender(state, 'translate');
           });
         }
@@ -871,7 +872,7 @@ function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement)
   renderToolbarOnly();
   if (!snapshot.activeTab) return;
 
-  renderTabPanel(body, snapshot.activeTab, active, {
+  renderTabPanel(body, snapshot.activeTab, result, {
     contextSentence: state.contextSentence,
     settings: state.settings,
     nativeLang: state.nativeLang,
@@ -886,24 +887,45 @@ function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement)
     imageItems: snapshot.imageItems,
   }, {
     onTranslationDone: (text: string) => {
-      setActiveSnapshot(state, { translation: text });
+      setSnapshotByIndex(state, idx, { translation: text });
+      state.activeCandidateIndex = idx;
       rerender(state);
     },
     onTranslationLoading: (loading: boolean) => {
-      setActiveSnapshot(state, { translationLoading: loading });
+      setSnapshotByIndex(state, idx, { translationLoading: loading });
+      state.activeCandidateIndex = idx;
       rerender(state);
     },
     onToggleTranslate: () => {
-      setActiveSnapshot(state, { translationSelected: !snapshot.translationSelected });
+      setSnapshotByIndex(state, idx, { translationSelected: !snapshot.translationSelected });
+      state.activeCandidateIndex = idx;
       rerender(state);
     },
     onPlayTts: (item, term, sentence, langCode) => playTts(item, term, sentence, langCode),
     onSelectionChange: renderToolbarOnly,
     onAudioSubTabChange: (group) => {
-      setActiveSnapshot(state, { audioSubTab: group });
+      setSnapshotByIndex(state, idx, { audioSubTab: group });
+      state.activeCandidateIndex = idx;
       rerender(state);
     },
   });
+}
+
+/** Render toolbars for ALL candidates — each entry's materials slot gets its own toolbar. */
+function renderAllToolbars(state: PopupDictionaryState, container: HTMLElement): void {
+  const slots = container.querySelectorAll<HTMLElement>('.js-cell-materials-slot');
+  slots.forEach((slot) => {
+    const entry = slot.closest('.js-cell-active-entry');
+    const idx = entry ? Number(entry.getAttribute('data-cell-candidate-idx') ?? '0') : 0;
+    renderToolbarForCandidate(state, slot, idx);
+  });
+}
+
+/** Render toolbar for the active candidate only (used by showPopup initial render). */
+function renderPopupToolbar(state: PopupDictionaryState, container: HTMLElement): void {
+  const slot = container.querySelector('.js-cell-materials-slot') as HTMLElement | null;
+  if (!slot) return;
+  renderToolbarForCandidate(state, slot, state.activeCandidateIndex);
 }
 
 /** Count true values in a Map. */
@@ -1225,9 +1247,8 @@ function rerender(state: PopupDictionaryState, activeTab?: PopupTab | null): voi
     state.activeTab = activeTab;
   }
   const container = state.shell.getContainer()!;
-  renderActiveEntryFromState(state, container);
-  renderPopupToolbar(state, container);
-  renderCandidateChipsAndList(state, container);
+  renderAllActiveEntries(state, container);
+  renderAllToolbars(state, container);
   state.shell?.rePosition();
 }
 
