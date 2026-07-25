@@ -126,6 +126,14 @@ function finalizePosition(
   return { left: Math.round(left), top: Math.round(top) };
 }
 
+/** Diagonal corner placement (image-1 ideal).
+ *  SE = right+below, SW = left+below, NE = right+above, NW = left+above.
+ *  Each corner anchors the popup to a diagonal of the word box so the popup
+ *  clears BOTH the horizontal band (no left/right cover) AND the vertical
+ *  column (no above/below cover) of the looked-up word. */
+type CornerPlacement = 'se' | 'sw' | 'ne' | 'nw';
+
+/** Pointer-derived axis preference, mapped to corner candidates below. */
 type PreferredPlacement = 'top' | 'bottom' | 'left' | 'right';
 
 function derivePreferredPlacement(
@@ -141,6 +149,17 @@ function derivePreferredPlacement(
     return dx > 0 ? 'right' : 'left';
   }
   return dy > 0 ? 'bottom' : 'top';
+}
+
+/** Map an axis preference to the two corners that satisfy it. */
+function cornersForPreference(pref: PreferredPlacement | null): readonly CornerPlacement[] {
+  switch (pref) {
+    case 'right': return ['se', 'ne'];
+    case 'left': return ['sw', 'nw'];
+    case 'bottom': return ['se', 'sw'];
+    case 'top': return ['ne', 'nw'];
+    default: return ['se'];
+  }
 }
 
 function rectContainsPoint(rx: number, ry: number, rw: number, rh: number, px: number, py: number): boolean {
@@ -161,7 +180,7 @@ function rectanglesOverlap(
 }
 
 interface ScoredPlacement {
-  readonly name: PreferredPlacement;
+  readonly name: CornerPlacement;
   readonly left: number;
   readonly top: number;
   readonly rawLeft: number;
@@ -169,13 +188,34 @@ interface ScoredPlacement {
   readonly score: number;
 }
 
-/** Cross-axis alignment variants for shift (Floating UI "shift" inspired).
- *  For bottom/top: shifts horizontally (left↔right).
- *  For left/right: shifts vertically (up↔down). */
-type ShiftVariant = 'start' | 'center' | 'end';
+/** Raw (unclamped) position for a diagonal corner. The popup sits in one of
+ *  the four quadrants around the word box, never on its axes:
+ *    SE: right of word + below word
+ *    SW: left  of word + below word
+ *    NE: right of word + above word
+ *    NW: left  of word + above word
+ *  When a line rect is supplied, the vertical offset clears the whole line
+ *  band (not just the word) so same-row neighbors stay uncovered. */
+function rawCornerPosition(
+  name: CornerPlacement,
+  anchor: PopupAnchor,
+  popupWidth: number,
+  popupHeight: number,
+  line: PopupLineRect | null,
+): { left: number; top: number } {
+  const GAP = 4;
+  const belowTop = line ? Math.max(anchor.bottom + GAP, line.bottom + GAP) : anchor.bottom + GAP;
+  const aboveBottom = line ? Math.min(anchor.top - GAP, line.top - GAP) : anchor.top - GAP;
+  switch (name) {
+    case 'se': return { left: anchor.right + GAP, top: belowTop };
+    case 'sw': return { left: anchor.left - popupWidth - GAP, top: belowTop };
+    case 'ne': return { left: anchor.right + GAP, top: aboveBottom - popupHeight };
+    case 'nw': return { left: anchor.left - popupWidth - GAP, top: aboveBottom - popupHeight };
+  }
+}
 
-function rawPlacementFits(
-  name: PreferredPlacement,
+/** True when the raw corner fits inside the viewport without any clamping. */
+function rawCornerFits(
   rawLeft: number,
   rawTop: number,
   popupWidth: number,
@@ -183,37 +223,35 @@ function rawPlacementFits(
   viewportWidth: number,
   viewportHeight: number,
 ): boolean {
-  if (name === 'bottom' || name === 'top') {
-    const verticalFits = name === 'bottom'
-      ? rawTop + popupHeight <= viewportHeight - VIEWPORT_MARGIN
-      : rawTop >= VIEWPORT_MARGIN;
-    return verticalFits;
-  }
-  // Side placements must fit horizontally; vertical clamping is allowed.
-  return rawLeft >= VIEWPORT_MARGIN && rawLeft + popupWidth <= viewportWidth - VIEWPORT_MARGIN;
+  return rawLeft >= VIEWPORT_MARGIN
+    && rawLeft + popupWidth <= viewportWidth - VIEWPORT_MARGIN
+    && rawTop >= VIEWPORT_MARGIN
+    && rawTop + popupHeight <= viewportHeight - VIEWPORT_MARGIN;
 }
 
-function scorePlacement(
-  name: PreferredPlacement,
+function scoreCorner(
+  name: CornerPlacement,
   pos: { left: number; top: number },
   rawLeft: number,
   rawTop: number,
   popupWidth: number,
   popupHeight: number,
-  preferred: PreferredPlacement | null,
+  preferredCorners: readonly CornerPlacement[],
   pointer: PopupPointerHint | undefined,
   anchor: PopupAnchor,
-  lineRect: PopupLineRect | null,
+  line: PopupLineRect | null,
 ): number {
   const GAP = 4;
   let score = 0;
 
-  if (name === preferred) score -= 50;
-  // Prefer below the token/cue when no pointer preference (image-2: hang under the line).
-  if (!preferred && name === 'bottom') score -= 20;
+  // Honour pointer-derived preference (mapped to the two matching corners).
+  if (preferredCorners.includes(name)) score -= 50;
+  // Default (image-1): SE is the ideal anchor — right+below the word.
+  if (preferredCorners.length === 0 && name === 'se') score -= 20;
+  // Distance from the raw (unclamped) corner — closer is better.
   score += (Math.abs(pos.left - rawLeft) + Math.abs(pos.top - rawTop)) * 0.5;
 
-  // Avoid covering the pointer (treat the tip as a circle with a small gap).
+  // SOFT: avoid covering the pointer tip (treated as a circle with a small gap).
   if (pointer) {
     const pr = Number.isFinite(pointer.pointerRadius) ? pointer.pointerRadius! : 6;
     const pointerMargin = pr + GAP;
@@ -222,7 +260,7 @@ function scorePlacement(
     }
   }
 
-  // Avoid covering the orbital badge (treated as a circle with a small gap).
+  // SOFT: avoid covering the orbital badge (circle with a small gap).
   if (pointer?.badgeCenter && pointer.badgeRadius != null && pointer.badgeRadius > 0) {
     const r = pointer.badgeRadius + GAP;
     if (rectIntersectsCircle(pos.left - GAP, pos.top - GAP, popupWidth + GAP * 2, popupHeight + GAP * 2, pointer.badgeCenter.x, pointer.badgeCenter.y, r)) {
@@ -230,19 +268,24 @@ function scorePlacement(
     }
   }
 
-  // HARD: Never overlap the looked-up token itself (LUÔN LUÔN không che chữ đang lookup).
+  // HARD: never overlap the looked-up word itself.
   const anchorW = anchor.right - anchor.left;
   const anchorH = anchor.bottom - anchor.top;
   if (rectanglesOverlap(pos.left, pos.top, popupWidth, popupHeight, anchor.left, anchor.top, anchorW, anchorH)) {
     score += 2000;
   }
 
-  // HARD: Never overlap the line/cue band (không che chữ cùng hàng / neighbors).
-  // Band is full viewport width so left/right placements cannot cover same-row text.
-  if (lineRect) {
-    const bandTop = lineRect.top;
-    const bandBottom = lineRect.bottom;
-    if (pos.top < bandBottom && pos.top + popupHeight > bandTop) {
+  // HARD: never cover the word's horizontal band (left/right) or vertical
+  // column (above/below). A true diagonal clears both; clamping that pushes
+  // the popup back onto an axis is penalized so a fitting corner wins.
+  const clearsHorizontal = pos.left + popupWidth <= anchor.left || pos.left >= anchor.right;
+  const clearsVertical = pos.top + popupHeight <= anchor.top || pos.top >= anchor.bottom;
+  if (!clearsHorizontal || !clearsVertical) score += 1500;
+
+  // HARD: never overlap the line/cue band (same-row neighbors). A diagonal
+  // corner already clears the line vertically; this guards clamped fallbacks.
+  if (line) {
+    if (pos.top < line.bottom && pos.top + popupHeight > line.top) {
       score += 1500;
     }
   }
@@ -250,47 +293,28 @@ function scorePlacement(
   return score;
 }
 
-/** Compute the raw left for a horizontal shift variant (bottom/top sides).
- *  start: align popup left with anchor left
- *  center: center popup over anchor
- *  end: align popup right with anchor right */
-function shiftHorizontal(shift: ShiftVariant, anchor: PopupAnchor, popupWidth: number): number {
-  const anchorCenter = (anchor.left + anchor.right) / 2;
-  if (shift === 'start') return anchor.left;
-  if (shift === 'end') return anchor.right - popupWidth;
-  return anchorCenter - popupWidth / 2;
-}
-
-/** Compute the raw top for a vertical shift variant (left/right sides).
- *  start: align popup top with anchor top
- *  center: center popup over anchor
- *  end: align popup bottom with anchor bottom */
-function shiftVertical(shift: ShiftVariant, anchor: PopupAnchor, popupHeight: number): number {
-  const anchorCenter = (anchor.top + anchor.bottom) / 2;
-  if (shift === 'start') return anchor.top;
-  if (shift === 'end') return anchor.bottom - popupHeight;
-  return anchorCenter - popupHeight / 2;
-}
-
 /**
  * Compute popup position anchored to a token's bounding box.
  *
- * Strategy (flip + shift + score-based, inspired by Floating UI):
- * 1. If a pointer hint is provided, derive the side the pointer is coming from
- *    (away from the badge) so the popup does not cover the pointer or badge.
- * 2. For each of 4 sides × 3 shift variants (start/center/end) = 12 candidates:
- *    - Compute raw position (anchored to token edge + shift offset)
- *    - Clamp to viewport
- *    - Score by: HARD (overlap anchor +2000, overlap lineRect +1500),
- *      SOFT (overlap pointer +1000, overlap badge +500, distance from raw)
- *    - Strongly prefer placements that fit without clamping (+500 penalty)
+ * Strategy (4 diagonal corners, image-1 ideal):
+ * 1. If a pointer hint is supplied, derive the axis the pointer is coming
+ *    from (away from the badge) and map it to the two matching corners.
+ * 2. For each of the 4 corners (SE/SW/NE/NW):
+ *    - Compute the raw diagonal position (right+below, left+below,
+ *      right+above, left+above the word).
+ *    - Clamp to the viewport via {@link finalizePosition}.
+ *    - Score by: HARD (overlap word +2000, cover a word axis +1500,
+ *      overlap line band +1500), SOFT (overlap pointer +1000, overlap
+ *      badge +500, distance from raw), and preference (pointer/default SE).
+ *    - Strongly prefer corners that fit without clamping (+500 penalty).
  * 3. The lowest score wins. This naturally:
- *    - Avoids covering the looked-up token (HARD)
- *    - Avoids covering the line containing the token (HARD, "không che chữ cùng hàng")
- *    - Avoids covering the pointer and orbital badge (SOFT)
- *    - Stays close to the token ("bám sát")
- * 4. Fallback: if all candidates violate HARD constraints, the least-bad one
- *    is still chosen (clamped to viewport).
+ *    - Never covers the looked-up word (HARD).
+ *    - Never covers the word's left/right band or above/below column (HARD)
+ *      when any corner fits — i.e. the popup sits in a true diagonal.
+ *    - Avoids covering the pointer and orbital badge (SOFT).
+ *    - Stays close to the word ("bám sát").
+ * 4. Fallback: if every corner violates a HARD constraint (tiny viewport),
+ *    the least-bad clamped corner is still chosen.
  *
  * @param anchorTop    - Pixel Y of the token's top edge.
  * @param anchorLeft   - Pixel X of the token's left edge.
@@ -315,68 +339,35 @@ export function computePopupPosition(
   pointer?: PopupPointerHint,
   lineRect?: PopupLineRect | null,
 ): PopupPosition {
-  const GAP = 4;
   const anchor: PopupAnchor = { top: anchorTop, left: anchorLeft, right: anchorRight, bottom: anchorBottom };
   const line = lineRect ?? null;
 
   const preferred = pointer ? derivePreferredPlacement(pointer, anchor) : null;
-  const order: PreferredPlacement[] = ['bottom', 'top', 'right', 'left'];
-  if (preferred) {
-    const idx = order.indexOf(preferred);
-    if (idx >= 0) {
-      order.splice(idx, 1);
-      order.unshift(preferred);
-    }
-  }
+  const preferredCorners = cornersForPreference(preferred);
+
+  // Candidate order: preferred corners first, then the rest with SE prioritized
+  // (image-1 default). Deterministic tie-breaking for stable output.
+  const allCorners: CornerPlacement[] = ['se', 'sw', 'ne', 'nw'];
+  const order: CornerPlacement[] = [
+    ...preferredCorners,
+    ...allCorners.filter(c => !preferredCorners.includes(c)),
+  ];
 
   let best: ScoredPlacement | null = null;
-  const shifts: ShiftVariant[] = ['start', 'center', 'end'];
 
   for (const name of order) {
-    for (const shift of shifts) {
-      let rawLeft = 0;
-      let rawTop = 0;
+    const raw = rawCornerPosition(name, anchor, popupWidth, popupHeight, line);
+    const fits = rawCornerFits(raw.left, raw.top, popupWidth, popupHeight, viewportWidth, viewportHeight);
+    const clamped = finalizePosition(raw.left, raw.top, popupWidth, popupHeight, viewportWidth, viewportHeight);
+    const pos = fits ? { left: clamped.left, top: clamped.top } : clamped;
+    const score = scoreCorner(
+      name, pos, raw.left, raw.top, popupWidth, popupHeight,
+      preferredCorners, pointer, anchor, line,
+    );
+    const finalScore = fits ? score : score + 500;
 
-      if (name === 'bottom') {
-        rawLeft = shiftHorizontal(shift, anchor, popupWidth);
-        // Clear the whole line/cue band (not just the word).
-        rawTop = line ? Math.max(anchor.bottom + GAP, line.bottom + GAP) : anchor.bottom + GAP;
-      } else if (name === 'top') {
-        rawLeft = shiftHorizontal(shift, anchor, popupWidth);
-        const bandTop = line ? Math.min(anchor.top, line.top) : anchor.top;
-        rawTop = bandTop - popupHeight - GAP;
-      } else if (name === 'right') {
-        // Keep horizontal beside the word, but park vertically off the line band
-        // so same-row neighbors stay clickable.
-        rawLeft = anchor.right + GAP;
-        if (line) {
-          rawTop = shift === 'end'
-            ? line.top - popupHeight - GAP
-            : line.bottom + GAP;
-        } else {
-          rawTop = shiftVertical(shift, anchor, popupHeight);
-        }
-      } else if (name === 'left') {
-        rawLeft = anchor.left - popupWidth - GAP;
-        if (line) {
-          rawTop = shift === 'end'
-            ? line.top - popupHeight - GAP
-            : line.bottom + GAP;
-        } else {
-          rawTop = shiftVertical(shift, anchor, popupHeight);
-        }
-      }
-
-      const fits = rawPlacementFits(name, rawLeft, rawTop, popupWidth, popupHeight, viewportWidth, viewportHeight);
-      const clamped = finalizePosition(rawLeft, rawTop, popupWidth, popupHeight, viewportWidth, viewportHeight);
-      const pos = fits ? { left: clamped.left, top: clamped.top } : clamped;
-      const score = scorePlacement(name, pos, rawLeft, rawTop, popupWidth, popupHeight, preferred, pointer, anchor, line);
-      // Strongly prefer a placement that fits without clamping.
-      const finalScore = fits ? score : score + 500;
-
-      if (!best || finalScore < best.score) {
-        best = { name, left: pos.left, top: pos.top, rawLeft, rawTop, score: finalScore };
-      }
+    if (!best || finalScore < best.score) {
+      best = { name, left: pos.left, top: pos.top, rawLeft: raw.left, rawTop: raw.top, score: finalScore };
     }
   }
 
