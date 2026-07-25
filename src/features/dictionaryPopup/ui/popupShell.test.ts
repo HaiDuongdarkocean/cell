@@ -500,9 +500,8 @@ describe('PopupShell', () => {
 
     beforeEach(() => {
       // jsdom doesn't have Keyboard Lock API — stub it.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const nav = navigator as any;
-      if (!nav.keyboard) {
+      const kb = (navigator as { keyboard?: { lock: () => Promise<void>; unlock: () => void } }).keyboard;
+      if (!kb) {
         Object.defineProperty(navigator, 'keyboard', {
           configurable: true,
           value: {
@@ -511,8 +510,9 @@ describe('PopupShell', () => {
           },
         });
       }
-      keyboardLockSpy = jest.spyOn(nav.keyboard, 'lock').mockResolvedValue(undefined as void);
-      keyboardUnlockSpy = jest.spyOn(nav.keyboard, 'unlock').mockImplementation(() => {});
+      const keyboard = (navigator as { keyboard?: { lock: () => Promise<void>; unlock: () => void } }).keyboard!;
+      keyboardLockSpy = jest.spyOn(keyboard, 'lock').mockResolvedValue(undefined as void);
+      keyboardUnlockSpy = jest.spyOn(keyboard, 'unlock').mockImplementation(() => {});
     });
 
     afterEach(() => {
