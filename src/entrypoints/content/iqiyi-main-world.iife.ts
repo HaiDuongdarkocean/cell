@@ -160,10 +160,6 @@
   ): void {
     const postTime = performance.now();
     debug.postTime = postTime;
-    console.log(
-      `[iqiyi-main-world] posting __IQ_DETECTED_SUBTITLES at ${postTime}`,
-      { tvid, trackCount: tracks.length, origin },
-    );
     window.postMessage(
       { type: '__IQ_DETECTED_SUBTITLES', tracks, tvid, origin, postTime },
       '*',
@@ -266,10 +262,6 @@
       debug.repostCount++;
       const playerObject = getPlayerObject();
       const origin = getOrigin(playerObject);
-      console.log(
-        '[iqiyi-main-world] __IQ_CS_READY received, re-posting last tracks',
-        { tvid: lastDetectedTvid, trackCount: lastDetectedTracks.length },
-      );
       postDetectedSubtitles(lastDetectedTracks, lastDetectedTvid, origin);
     }
   });
