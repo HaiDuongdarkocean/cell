@@ -1,47 +1,44 @@
 // formatDefinitions test — smallest check that fails if definition formatting breaks.
-// Verifies: <br> → \n, numbered senses → bullets, \n\n between defs, no trailing \n.
+// Verifies: • prefix, pos + text, \n\n between defs, no trailing \n.
 
 import { describe, it, expect } from '@jest/globals';
 import { formatDefinitions } from './webTextDictionaryController';
 
 describe('formatDefinitions', () => {
-  it('joins multiple definitions with exactly \\n\\n (no trailing)', () => {
+  it('formats multiple definitions with bullet + pos + \\n\\n', () => {
     const result = formatDefinitions([
-      '1.(noun) the way in which two things are connected',
-      '2.(noun) the way in which two or more people feel and behave towards each other',
+      { pos: 'noun', text: 'the way in which two things are connected' },
+      { pos: 'noun', text: 'the way in which two or more people feel and behave towards each other' },
     ]);
     expect(result).toBe(
-      '• (noun) the way in which two things are connected\n\n' +
-      '• (noun) the way in which two or more people feel and behave towards each other',
+      '• noun the way in which two things are connected\n\n' +
+      '• noun the way in which two or more people feel and behave towards each other',
     );
   });
 
-  it('strips trailing <br><br> from raw definitions (no trailing \\n\\n)', () => {
+  it('handles definition without pos', () => {
     const result = formatDefinitions([
-      '1.(phrasal verb) to remove something<br><br>',
-      '2.(phrasal verb) to leave the ground<br><br>',
+      { text: 'lasting a very short time' },
     ]);
-    // Must NOT end with \n or \n\n
-    expect(result.endsWith('\n')).toBe(false);
-    expect(result).toBe(
-      '• (phrasal verb) to remove something\n\n' +
-      '• (phrasal verb) to leave the ground',
-    );
-  });
-
-  it('preserves internal <br><br> as \\n\\n within a single definition', () => {
-    const result = formatDefinitions([
-      '1.(noun) sense one<br><br>2.(noun) sense two',
-    ]);
-    expect(result).toBe('• (noun) sense one\n\n• (noun) sense two');
+    expect(result).toBe('• lasting a very short time');
   });
 
   it('handles empty array', () => {
     expect(formatDefinitions([])).toBe('');
   });
 
-  it('handles single definition without trailing whitespace', () => {
-    const result = formatDefinitions(['(adj) lasting a very short time<br>']);
-    expect(result).toBe('(adj) lasting a very short time');
+  it('handles single definition', () => {
+    const result = formatDefinitions([
+      { pos: 'phrasal verb', text: 'to remove something' },
+    ]);
+    expect(result).toBe('• phrasal verb to remove something');
+  });
+
+  it('respects selection — only passed defs are included', () => {
+    const result = formatDefinitions([
+      { pos: 'noun', text: 'first sense' },
+      { pos: 'noun', text: 'third sense' },
+    ]);
+    expect(result).toBe('• noun first sense\n\n• noun third sense');
   });
 });
