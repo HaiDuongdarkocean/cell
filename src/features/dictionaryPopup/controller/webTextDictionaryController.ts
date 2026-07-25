@@ -220,14 +220,14 @@ function isBlockContainer(el: HTMLElement): boolean {
 /** Create a top-level web-text dictionary controller. */
 /** Format definitions for Card Creator / Quick Add:
  *  - <br> → \n (line breaks)
- *  - N. (numbered sense markers) → • (bullet)
- *  Each sense on its own line, matching the popup's visual layout. */
+ *  - N. (numbered sense markers) stripped
+ *  Each sense on its own line, no bullet. */
 function formatDefinitions(definitions: readonly { readonly pos?: string; readonly text: string }[]): string {
   return definitions
     .map((d) => d.text)
     .join('\n')
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/^\s*(\d+)\.\s*/gm, '• ');
+    .replace(/^\s*(\d+)\.\s*/gm, '');
 }
 
 export function createWebTextDictionaryController(deps: WebTextDictionaryControllerDeps): WebTextDictionaryController {
