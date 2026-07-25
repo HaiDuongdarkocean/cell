@@ -8,6 +8,7 @@
  */
 import { useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@/shared/styles/tokens.css';
 import { CardCreatorDialog } from '@/features/cardCreator/ui/CardCreatorDialog';
 import { CardCreatorBottomSheet } from '@/features/cardCreator/ui/CardCreatorBottomSheet';
 import { CardCreatorSettingsPanel } from '@/features/settings/ui/CardCreatorSettingsPanel';
@@ -74,7 +75,7 @@ function TestApp(): React.JSX.Element {
 
       {/* Settings panel (Card Creator section only) */}
       {settingsOpen && (
-        <div style={{ maxWidth: 480, margin: '0 auto', padding: 16 }}>
+        <div style={{ maxWidth: 'calc(var(--space-5) * 24)', margin: '0 auto', padding: 'var(--space-4)' }}>
           <CardCreatorSettingsPanel
             settings={settings}
             onChange={(partial) => setSettings({ ...settings, ...partial })}
