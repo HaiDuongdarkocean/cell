@@ -248,23 +248,10 @@ export class WebTriggerController {
 
     const target = e.target as HTMLElement | null;
     if (target?.closest(UI_HOST_SELECTORS)) {
-      // Non-popup UI hosts (badge, settings, card creator) — never lookup.
-      if (!target.closest('.js-cell-popup-host')) return;
-      // Click inside the popup. e.target is retargeted to the host element
-      // (Shadow DOM retargeting), so use composedPath()[0] to check the
-      // actual clicked element. Interactive elements (buttons, links, drag
-      // handle, resize handle) handle their own clicks — don't fall through.
-      // Non-interactive areas fall through to caretRangeFromPoint (which uses
-      // withUiHostsPointerEventsDisabled to see through the popup) so the
-      // user can look up page text behind the popup — this was the root cause
-      // of "chập chờn" recognition where clicks on text covered by the popup
-      // were silently swallowed.
-      const actual = e.composedPath()[0] as HTMLElement | null;
-      if (actual?.closest?.(
-        'button, a, input, select, textarea, [role="button"], [role="tab"], ' +
-        '[contenteditable="true"], .cell-header, .cell-popup__resize, .cell-sheet-handle',
-      )) return;
-      // Non-interactive popup area: fall through to caretRangeFromPoint below.
+      // Click inside extension UI (popup, badge, settings, card creator).
+      // All clicks inside these hosts are consumed by the UI itself —
+      // never fall through to lookup host page text behind the popup.
+      return;
     }
     // Skip subtitle/tokenize tokens — handled by SubtitleTriggerController or
     // tokenize controller via shared controller. Without this, mouseup on a
