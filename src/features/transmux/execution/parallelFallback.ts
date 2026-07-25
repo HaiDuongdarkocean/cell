@@ -119,14 +119,11 @@ export async function executeWithFallback<T>(
       const errorMsg = err instanceof Error ? err.message : String(err);
       const decision = decideFallback(strategy, workerCount, attempt, errorMsg, minWorkers);
 
-      console.log(`[fallback] Attempt ${attempt} failed: ${decision.reason}`);
-
       if (decision.action === 'fail') {
         throw err;
       }
 
       if (decision.action === 'sequential') {
-        console.log('[fallback] Falling back to sequential conversion');
         return await sequentialFn();
       }
 

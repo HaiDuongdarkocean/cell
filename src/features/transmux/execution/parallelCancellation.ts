@@ -131,12 +131,6 @@ export async function cleanupParallelTempFiles(
     // Directory doesn't exist — nothing to clean.
   }
 
-  if (cleaned > 0 || errors > 0) {
-    console.log(
-      `[parallel-cleanup] Cleaned ${cleaned} part files (${errors} errors) for ${downloadId}`,
-    );
-  }
-
   return { cleaned, errors };
 }
 

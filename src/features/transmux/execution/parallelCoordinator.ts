@@ -103,11 +103,8 @@ export async function executeParallelConversion(
     activeWorkerBudget,
   );
 
-  console.log(plan.summary);
-
   // If parallel is not viable, run sequential directly.
   if (!plan.shouldUseParallel || !plan.safety.groups) {
-    console.log('[parallel-coordinator] Running sequential conversion');
     const result = await runSequential(downloadId, progressTracker);
     return {
       ...result,
@@ -182,7 +179,6 @@ export async function executeParallelConversion(
     };
   } catch (err: unknown) {
     if (err instanceof ParallelConversionCancelledError) {
-      console.log(`[parallel-coordinator] Cancelled: ${downloadId}`);
       return {
         success: false,
         outputName: 'output.mp4',

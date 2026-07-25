@@ -305,7 +305,6 @@ export async function createWebTokenizeController(
         // If the block is already bound (e.g. by eager tryBindVisible during a
         // mutation batch), skip scheduling a no-op bind task to keep the queue
         // short on low-end devices.
-        console.log('[onEnter]', block.id, 'isBound', block.isBound, 'enabled', stateStore.getState().enabled);
         if (stateStore.getState().enabled && !block.isBound) {
           // bindVisibleBlock calls prepareBlock internally, so one task is
           // enough; scheduling a separate prepare task causes it to run *after*
@@ -674,7 +673,6 @@ export async function createWebTokenizeController(
   function bindVisibleBlock(block: TokenBlock): void {
     prepareBlock(block);
     if (!stateStore.getState().enabled || !visibleElements.has(block.element)) {
-      console.log('[bindVisibleBlock skip]', block.id, 'enabled', stateStore.getState().enabled, 'visible', visibleElements.has(block.element));
       return;
     }
     if (!block.isBound) {
