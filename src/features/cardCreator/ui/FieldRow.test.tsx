@@ -128,10 +128,12 @@ describe('FieldAutoGrowInput', () => {
     expect(textarea.getAttribute('rows')).toBe('3');
   });
 
-  it('renders an input without rows for single-line content', () => {
+  it('renders a textarea (not input) for single-line content so it wraps and grows', () => {
     const { container } = render(<FieldAutoGrowInput value="single line" onChange={jest.fn()} aria-label="Test" />);
-    const input = container.querySelector('input') as HTMLInputElement;
-    expect(input).not.toBeNull();
-    expect(input.hasAttribute('rows')).toBe(false);
+    const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+    const input = container.querySelector('input');
+    expect(textarea).not.toBeNull();
+    expect(input).toBeNull();
+    expect(textarea.getAttribute('rows')).toBe('1');
   });
 });
