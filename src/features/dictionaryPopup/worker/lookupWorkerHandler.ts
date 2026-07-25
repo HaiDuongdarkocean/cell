@@ -182,6 +182,7 @@ function runLookup(state: LookupWorkerState, msg: WorkerLookupMessage): LookupRe
       status: 'unknown',
       partsOfSpeech: [],
       definitions: [],
+      rawDefinitions: [],
       detectedPhrase: {
         dictionaryTerm: match.dictionaryTerm,
         surface: match.surface,
@@ -208,6 +209,7 @@ function runLookup(state: LookupWorkerState, msg: WorkerLookupMessage): LookupRe
     status: 'unknown',
     partsOfSpeech: [],
     definitions: cached ?? [],
+    rawDefinitions: [],
     detectedPhrase: null,
     matchSource: 'dictionary',
   };

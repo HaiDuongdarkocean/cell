@@ -87,6 +87,7 @@ export const LookupResultSchema = z.object({
   status: WordStatusSchema,
   partsOfSpeech: z.array(z.string()),
   definitions: z.array(DefinitionEntrySchema),
+  rawDefinitions: z.array(z.string()),
   detectedPhrase: PhraseMatchSchema.nullable(),
   matchSource: MatchSourceSchema,
 });

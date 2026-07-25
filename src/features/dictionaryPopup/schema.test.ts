@@ -167,6 +167,7 @@ describe('LookupResultSchema', () => {
         defaultSelected: true,
       },
     ],
+    rawDefinitions: ['1.(phrasal verb) to remove something<br><br>'],
     detectedPhrase: {
       dictionaryTerm: 'take off',
       surface: 'take off',

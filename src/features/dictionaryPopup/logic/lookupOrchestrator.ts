@@ -402,6 +402,7 @@ async function assembleLookupResult(
     status,
     partsOfSpeech,
     definitions,
+    rawDefinitions: dictEntries.map((e) => e.definition),
     detectedPhrase,
     matchSource,
   };
