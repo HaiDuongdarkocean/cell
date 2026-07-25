@@ -114,6 +114,8 @@ Summary: User directed agent to stop asking and run loop autonomously. Focus exp
 - Slice 7: full audit of remaining 122 setTimeout/setInterval matches — all production timers have proper cleanup (clearTimeout/clearInterval in finally, detach, destroy, or unmount useEffect). No leaks found.
 - Slice 7b: removed 3 dead exports: `BADGE_STYLE_ID` (tokenBadgeCss.ts), `removeTokenSpanStyle` (tokenSpanCss.ts), `storeMediaFile`+`StoreMediaFileParams` (ankiConnectClient.ts — production uses cardCreatorService.ts). Updated stale `ConversionTimer` references in 3 doc files (feature-inventory.md, spec-refactor-system-architecture.md, phase-4-cell-src.md).
 - Quality gates: typecheck pass, lint pass, unit tests pass (236 suites, 3612 tests), build pass.
+- Slice 8: consolidated duplicate `fetchWithTimeout` in `images.ts` to use shared `@/shared/lib/fetchWithTimeout` (DRY — 3 other files already use it). Fixed trailing whitespace in `ffmpegRunner.ts` `setParallelSettings`.
+- Quality gates: typecheck pass, lint pass, unit tests pass, build pass.
 
 ### Active Tasks
-- Slice 8: next backlog item (TBD).
+- Slice 9: next backlog item (TBD).
