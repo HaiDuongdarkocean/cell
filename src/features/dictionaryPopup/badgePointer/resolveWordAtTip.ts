@@ -13,12 +13,12 @@ export interface Point {
 }
 
 /**
- * Resolve the word under the pointer tip via the SSOT hybrid lookup algorithm
- * (caret fast-path + nearest-word char-scan + geometry fallback). See
- * `resolveWordAtPoint` in sentenceModule for the algorithm.
+ * Resolve the word under the pointer tip via the SSOT lookup algorithm
+ * (`resolveWordAtPoint` in sentenceModule). Only resolves when the tip is
+ * directly over a word character — whitespace/punctuation returns null.
  *
  * The orbital badge floats above the page; `resolveWordAtPoint`'s default
- * caret resolver uses `elementsFromPoint`-aware fallback so the badge's own
+ * caret resolver disables pointer-events on floating UI so the badge's own
  * shadow DOM does not block resolution. For sites where the badge covers the
  * tip, callers should pass a `getCaretRange` that disables the badge's
  * pointer-events first.

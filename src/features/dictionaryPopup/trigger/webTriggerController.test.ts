@@ -315,21 +315,17 @@ describe('WebTriggerController', () => {
       document.body.removeChild(p);
     });
 
-    it('hover outside word geometry does not dispatch lookup', () => {
+    it('hover on whitespace does not dispatch lookup', () => {
       const p = document.createElement('p');
       p.textContent = 'The quick brown fox';
       document.body.appendChild(p);
 
       const textNode = p.firstChild as Text;
+      // Caret on the space between 'The' and 'quick' (offset 3).
       const mockRange = document.createRange();
-      mockRange.setStart(textNode, 4);
-      mockRange.setEnd(textNode, 9);
+      mockRange.setStart(textNode, 3);
+      mockRange.setEnd(textNode, 3);
       document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
-
-      // Simulate the word being laid out far from the cursor.
-      Range.prototype.getClientRects = function() {
-        return [new DOMRect(500, 500, 50, 20)] as unknown as DOMRectList;
-      } as typeof Range.prototype.getClientRects;
 
       let lookupCount = 0;
       const ctrl = new WebTriggerController({
@@ -339,7 +335,7 @@ describe('WebTriggerController', () => {
       });
       ctrl.attach();
 
-      const event = new MouseEvent('mousemove', { bubbles: true, clientX: 0, clientY: 0 });
+      const event = new MouseEvent('mousemove', { bubbles: true, clientX: 20, clientY: 10 });
       Object.defineProperty(event, 'target', { value: p });
       document.dispatchEvent(event);
 
@@ -814,12 +810,7 @@ describe('WebTriggerController', () => {
       p.textContent = 'The quick brown fox';
       document.body.appendChild(p);
 
-      // Realistic empty-space case: caretRangeFromPoint returns null (no text
-      // at the click point — the click is in the page margin / block padding).
-      // The new hybrid lookup trusts the caret for clicks (100% success goal),
-      // so a null caret means "no text here" → no lookup. The previous test
-      // mocked a word-char caret with a mismatched far rect, which encoded the
-      // old hard geometry gate that caused "lúc được lúc không".
+      // Strict lookup: caret null means no text under the click → no lookup.
       document.caretRangeFromPoint = jest.fn(() => null) as typeof document.caretRangeFromPoint;
 
       let lookupCount = 0;
@@ -839,22 +830,22 @@ describe('WebTriggerController', () => {
       document.body.removeChild(p);
     });
 
-    it('click fallback resolves the nearest word when the click lands on whitespace between words', () => {
+    it('click on whitespace between words does not dispatch lookup', () => {
       const p = document.createElement('p');
       p.textContent = 'The quick brown fox';
       document.body.appendChild(p);
       const textNode = p.firstChild as Text;
       // Caret lands on the space between 'The' and 'quick' (offset 3).
-      // The char-scan fallback resolves the nearest word ('The', tie → left).
+      // Strict lookup: only word-char clicks trigger — whitespace → null.
       const mockRange = document.createRange();
       mockRange.setStart(textNode, 3);
       mockRange.setEnd(textNode, 3);
       document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
 
-      let capturedTerm: string | null = null;
+      let lookupCount = 0;
       const ctrl = new WebTriggerController({
         triggerMode: 'click',
-        onLookup: (req) => { capturedTerm = req.term; },
+        onLookup: () => { lookupCount++; },
         onCancel: () => {},
       });
       ctrl.attach();
@@ -862,7 +853,7 @@ describe('WebTriggerController', () => {
       const event = new MouseEvent('mouseup', { bubbles: true, clientX: 20, clientY: 10 });
       Object.defineProperty(event, 'target', { value: p });
       document.dispatchEvent(event);
-      expect(capturedTerm).toBe('The');
+      expect(lookupCount).toBe(0);
 
       ctrl.detach();
       document.body.removeChild(p);

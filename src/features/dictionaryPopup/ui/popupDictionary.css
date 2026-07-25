@@ -1738,3 +1738,45 @@
     font-size: var(--font-size-base, 14px);
   }
 }
+
+/* ── Skeleton loading state ──────────────────────────────────────
+   Shown immediately on click/hover while dictionary data is fetched
+   from the background worker. Replaced by real content when data arrives. */
+.cell-active-entry--loading {
+  padding: var(--space-md, 12px);
+}
+
+/* IPA placeholder — grey bar matching the real IPA row height. */
+.cell-header__ipa--skeleton {
+  display: inline-block;
+  width: 80px;
+  height: 1em;
+  border-radius: var(--radius-xs, 4px);
+  background: var(--color-surface-hover, rgba(128, 128, 128, 0.15));
+  animation: cell-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+/* Definition skeleton lines — 3 shimmer bars mimicking definition rows. */
+.cell-definitions--skeleton {
+  margin-top: var(--space-md, 12px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 8px);
+}
+
+.cell-definition-skeleton-line {
+  height: 14px;
+  border-radius: var(--radius-xs, 4px);
+  background: var(--color-surface-hover, rgba(128, 128, 128, 0.15));
+  animation: cell-skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+.cell-definition-skeleton-line:nth-child(1) { width: 90%; }
+.cell-definition-skeleton-line:nth-child(2) { width: 75%; }
+.cell-definition-skeleton-line:nth-child(3) { width: 60%; }
+
+@keyframes cell-skeleton-shimmer {
+  0%   { opacity: 0.4; }
+  50%  { opacity: 0.8; }
+  100% { opacity: 0.4; }
+}

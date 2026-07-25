@@ -244,28 +244,18 @@ describe('extractSentenceContext — edge cases', () => {
   });
 });
 
-// resolveWordAtPoint — hybrid lookup algorithm (ADR: lookup 100% success).
-// Goal: clicking anywhere inside a sentence that contains text MUST resolve
-// to the nearest word. Only genuine empty space (beyond proximity gate) returns null.
-describe('resolveWordAtPoint — 100% lookup success', () => {
+// resolveWordAtPoint — strict lookup: only resolves when the caret lands
+// directly on a word character. Click on whitespace/punctuation/outside text
+// returns null (no lookup). "Click đúng vào từ mới tra cứu."
+describe('resolveWordAtPoint — strict word-char lookup', () => {
   let originalCaretRange: typeof document.caretRangeFromPoint;
-  let originalGetClientRects: typeof Range.prototype.getClientRects;
-  let originalElementsFromPoint: typeof document.elementsFromPoint;
 
   beforeEach(() => {
     originalCaretRange = document.caretRangeFromPoint;
-    originalGetClientRects = Range.prototype.getClientRects;
-    originalElementsFromPoint = document.elementsFromPoint;
-    // Default: every range is "over the point" so fast-path proximity passes.
-    Range.prototype.getClientRects = function () {
-      return [new DOMRect(0, 0, 200, 20)] as unknown as DOMRectList;
-    } as typeof Range.prototype.getClientRects;
   });
 
   afterEach(() => {
     document.caretRangeFromPoint = originalCaretRange;
-    Range.prototype.getClientRects = originalGetClientRects;
-    document.elementsFromPoint = originalElementsFromPoint;
   });
 
   /** Helper: mock caretRangeFromPoint to return a collapsed range at (node, offset). */
@@ -276,7 +266,7 @@ describe('resolveWordAtPoint — 100% lookup success', () => {
     document.caretRangeFromPoint = jest.fn(() => r) as typeof document.caretRangeFromPoint;
   }
 
-  it('fast path: click on a word char resolves that word', () => {
+  it('click on a word char resolves that word', () => {
     const p = document.createElement('p');
     p.textContent = 'The ocean is vast.';
     document.body.appendChild(p);
@@ -288,108 +278,65 @@ describe('resolveWordAtPoint — 100% lookup success', () => {
     expect(got!.range.toString()).toBe('ocean');
   });
 
-  it('AC1: click on whitespace between two words resolves the nearest word (left on tie)', () => {
+  it('click on whitespace between words returns null (no lookup)', () => {
     const p = document.createElement('p');
     p.textContent = 'hello world';
     document.body.appendChild(p);
     const textNode = p.firstChild as Text;
-    // offset 5 = space between 'hello' and 'world'. Tie (dist 1 each) → prefer left.
-    mockCaretAt(textNode, 5);
+    mockCaretAt(textNode, 5); // space between 'hello' and 'world'
     const got = resolveWordAtPoint(28, 10);
-    expect(got).not.toBeNull();
-    expect(got!.ctx.term).toBe('hello');
+    expect(got).toBeNull();
   });
 
-  it('AC1: click on whitespace closer to the right word resolves the right word', () => {
-    const p = document.createElement('p');
-    p.textContent = 'hello   world';
-    document.body.appendChild(p);
-    const textNode = p.firstChild as Text;
-    // offsets: h0 e1 l2 l3 o4 space5 space6 space7 w8...
-    // click at offset 7 (3rd space): dist to 'o'(4)=3, dist to 'w'(8)=1 → right wins.
-    mockCaretAt(textNode, 7);
-    const got = resolveWordAtPoint(40, 10);
-    expect(got).not.toBeNull();
-    expect(got!.ctx.term).toBe('world');
-  });
-
-  it('AC1: click on punctuation resolves the nearest word to the left', () => {
+  it('click on punctuation returns null (no lookup)', () => {
     const p = document.createElement('p');
     p.textContent = 'The ocean is vast.';
     document.body.appendChild(p);
     const textNode = p.firstChild as Text;
-    // offset 16 = '.' after 'vast'. Nearest word char is 't' at 15 (dist 1, left).
-    mockCaretAt(textNode, 16);
+    // offset 17 = '.' after 'vast' (T=0..t=16, .=17).
+    mockCaretAt(textNode, 17);
     const got = resolveWordAtPoint(70, 10);
-    expect(got).not.toBeNull();
-    expect(got!.ctx.term).toBe('vast');
+    expect(got).toBeNull();
   });
 
-  it('AC1: CJK — click between ideographs resolves the nearest CJK char', () => {
-    const p = document.createElement('p');
-    p.textContent = '我 爱 你';
-    document.body.appendChild(p);
-    const tn2 = p.firstChild as Text;
-    mockCaretAt(tn2, 1); // space between 我 and 爱
-    const got = resolveWordAtPoint(15, 10);
-    expect(got).not.toBeNull();
-    expect(got!.ctx.term).toBe('我'); // tie → left
-  });
-
-  it('AC2: click in genuine empty space (beyond proximity gate) returns null', () => {
-    const p = document.createElement('p');
-    p.textContent = 'hello world';
-    document.body.appendChild(p);
-    // Realistic empty-space case: caretRangeFromPoint returns null (no text at
-    // the click point — the click is in the page margin / block padding), but
-    // elementsFromPoint still returns the <p> (the block is under the click).
+  it('caret returns null (outside text) → returns null', () => {
     document.caretRangeFromPoint = jest.fn(() => null) as typeof document.caretRangeFromPoint;
-    document.elementsFromPoint = jest.fn(() => [p] as Element[]) as typeof document.elementsFromPoint;
-    // Place the word rects far from the click point so the proximity gate rejects.
-    Range.prototype.getClientRects = function () {
-      return [new DOMRect(0, 0, 50, 20)] as unknown as DOMRectList;
-    } as typeof Range.prototype.getClientRects;
-    // Click at (500, 500): nearest word rect edge ~ (50, 20). Distance >> gate
-    // (1.5 × 20 = 30px). → null.
     const got = resolveWordAtPoint(500, 500);
     expect(got).toBeNull();
   });
 
-  it('AC3 / fallback 2: caret returns null → geometry fallback resolves nearest word', () => {
+  it('click on CJK ideograph resolves that ideograph', () => {
     const p = document.createElement('p');
-    p.textContent = 'alpha beta gamma';
+    p.textContent = '我爱你';
     document.body.appendChild(p);
-    // caretRangeFromPoint returns null (e.g. user-select:none or obscured).
-    document.caretRangeFromPoint = jest.fn(() => null) as typeof document.caretRangeFromPoint;
-    // elementsFromPoint returns the block element.
-    document.elementsFromPoint = jest.fn(() => [p] as Element[]) as typeof document.elementsFromPoint;
-    // Geometry: lay words out left-to-right, 40px each. Word rects returned by
-    // getClientRects depend on the range's text content.
-    const words: string[] = ['alpha', 'beta', 'gamma'];
-    Range.prototype.getClientRects = function (this: Range) {
-      const txt = this.toString().trim();
-      const idx = words.indexOf(txt);
-      if (idx === -1) return [new DOMRect(0, 0, 0, 0)] as unknown as DOMRectList;
-      return [new DOMRect(idx * 40, 0, 35, 20)] as unknown as DOMRectList;
-    } as typeof Range.prototype.getClientRects;
-    // Click at x=45 → nearest word is 'beta' (rect 40..75, center 57.5). 'alpha' center 17.5.
-    const got = resolveWordAtPoint(45, 10);
+    const textNode = p.firstChild as Text;
+    mockCaretAt(textNode, 1); // '爱'
+    const got = resolveWordAtPoint(15, 10);
     expect(got).not.toBeNull();
-    expect(got!.ctx.term).toBe('beta');
+    expect(got!.ctx.term).toBe('爱');
   });
 
-  it('AC1: click in inline element boundary resolves across inline tags', () => {
-    // 'The <b>ocean</b> is vast.' — click on the space between 'The' and 'ocean'
-    // (which lives in the parent text node, offset 3).
+  it('click on space between CJK ideographs returns null', () => {
+    const p = document.createElement('p');
+    p.textContent = '我 爱 你';
+    document.body.appendChild(p);
+    const textNode = p.firstChild as Text;
+    mockCaretAt(textNode, 1); // space between 我 and 爱
+    const got = resolveWordAtPoint(15, 10);
+    expect(got).toBeNull();
+  });
+
+  it('click in inline element on a word char resolves across inline tags', () => {
+    // 'The <b>ocean</b> is vast.' — click on 'o' inside <b>
     const p = document.createElement('p');
     p.innerHTML = 'The <b>ocean</b> is vast.';
     document.body.appendChild(p);
-    const textNode = p.firstChild as Text; // "The " (offset 3 = space)
-    mockCaretAt(textNode, 3);
+    const b = p.querySelector('b')!;
+    const textNode = b.firstChild as Text;
+    mockCaretAt(textNode, 0); // 'o' in 'ocean'
     const got = resolveWordAtPoint(20, 10);
     expect(got).not.toBeNull();
-    // Tie between 'The' (left, dist 1) and 'ocean' (right, dist 1) → prefer left.
-    expect(got!.ctx.term).toBe('The');
+    expect(got!.ctx.term).toBe('ocean');
   });
 
   it('returns null when block has no word characters at all', () => {

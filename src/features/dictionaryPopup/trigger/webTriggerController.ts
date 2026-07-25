@@ -276,12 +276,10 @@ export class WebTriggerController {
       return;
     }
 
-    // No selection: resolve the word at the click point via the hybrid lookup
-    // algorithm (caret fast-path + nearest-word char-scan + geometry fallback).
-    // Succeeds even when the click lands on whitespace/punctuation between
-    // words — the previous "lúc được lúc không" root cause. The caret resolver
-    // disables pointer-events on our floating UI so it sees page text behind
-    // any popup/badge covering the click.
+    // No selection: resolve the word at the click point. Only word-char carets
+    // resolve — whitespace/punctuation/outside-text clicks return null (no
+    // lookup). The caret resolver disables pointer-events on our floating UI
+    // so it sees page text behind any popup/badge covering the click.
     if (!document.caretRangeFromPoint && !(document as Document & { caretPositionFromPoint?: unknown }).caretPositionFromPoint) {
       this.resetHover();
       return;
@@ -333,9 +331,8 @@ export class WebTriggerController {
 
     // Quick null-only caret check: if there's no text at all at the cursor
     // (genuine empty space), dismiss immediately without waiting for the
-    // debounce. We do NOT reject whitespace/punctuation chars here —
-    // resolveWordAtPoint's char-scan fallback handles those, and pre-filtering
-    // them would reintroduce the "lúc được lúc không" bug for hover.
+    // debounce. resolveWordAtPoint only resolves word-char carets, so
+    // whitespace/punctuation clicks naturally return null (no lookup).
     if (!defaultGetCaretRange(e.clientX, e.clientY)) {
       this.resetHover();
       return;

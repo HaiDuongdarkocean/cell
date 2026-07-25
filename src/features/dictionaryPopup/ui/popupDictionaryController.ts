@@ -23,6 +23,7 @@ import type { DefinitionSelection, PopupContentCallbacks } from './popupContent'
 import { PopupShell as PopupShellClass, clampPopupSize } from './popupShell';
 import {
   renderPopupContent,
+  renderPopupLoading,
   renderActiveEntry,
   initDefinitionSelection,
   getSelectedDefinitions,
@@ -266,7 +267,54 @@ export function createPopupDictionaryState(
   };
 }
 
-/** Show popup with a lookup result. */
+/** Show the popup shell immediately with a skeleton loading state (term +
+ *  shimmer placeholder lines) while dictionary data is fetched from the
+ *  background worker. When data arrives, call `showPopup` to replace the
+ *  skeleton with real content. The shell is positioned at the same anchor
+ *  so there is no layout jump when data fills in.
+ *
+ *  This gives the user instant feedback (<1ms) on click/hover instead of
+ *  waiting for the IDB round-trip. */
+export function showPopupLoading(
+  state: PopupDictionaryState,
+  term: string,
+  options: ShowPopupOptions,
+): PopupDictionaryState {
+  const { anchor, pointer, onDismiss } = options;
+  // Create shell if needed (same logic as showPopup).
+  let shell = state.shell;
+  if (!shell) {
+    const popoverSize = clampPopupSize(
+      { width: state.settings.popupWidthPx, maxHeight: state.settings.popupMaxHeightPx },
+      window.innerWidth,
+      window.innerHeight,
+    );
+    const sheetHeightVh = state.settings.popupSheetHeightVh ?? 72;
+    const sheetHeight = Math.round(window.innerHeight * (sheetHeightVh / 100));
+    shell = new PopupShellClass(
+      popoverSize,
+      sheetHeight,
+      () => { state = hidePopup(state); onDismiss?.(state); },
+      (newSize: PopupSize, newSheetHeight: number) => onResizeEnd(state, newSize, newSheetHeight),
+    );
+    shell.mount();
+  }
+  state = { ...state, shell };
+  shell.setOnDismiss(() => { state = hidePopup(state); onDismiss?.(state); });
+  shell.setOnResizeEnd((newSize, newSheetHeight) => onResizeEnd(state, newSize, newSheetHeight));
+
+  // Render skeleton content (term + shimmer lines).
+  const container = shell.getContainer();
+  if (container) {
+    renderPopupLoading(container, term);
+  }
+
+  // Position + show immediately — no waiting for data.
+  shell.setPosition(anchor, pointer, options.lineRect);
+  shell.show();
+  return state;
+}
+
 export function showPopup(
   state: PopupDictionaryState,
   result: LookupResult,
