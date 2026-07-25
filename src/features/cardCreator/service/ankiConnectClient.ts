@@ -68,24 +68,25 @@ export async function invokeAnkiConnect(
   let response: { ok: boolean; status: number; json: () => Promise<unknown> };
 
   // Race fetch against timeout. AbortController is the clean way, but to keep
-  // the FetchFn signature minimal we use Promise.race + a never-resolving
-  // timeout promise that rejects.
+  // the FetchFn signature minimal we use Promise.race + a timeout promise that
+  // rejects. The fetch promise clears the timeout in finally so the timer does
+  // not remain in the event loop after the request completes.
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const fetchPromise = fetchFn(baseUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).finally(() => { if (timer) clearTimeout(timer); });
+
   const timeout = new Promise<never>((_, reject) => {
-    setTimeout(
+    timer = setTimeout(
       () => reject(new AnkiConnectError(`Request timed out after ${timeoutMs}ms`, action)),
       timeoutMs,
     );
   });
 
   try {
-    response = await Promise.race([
-      fetchFn(baseUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      }),
-      timeout,
-    ]);
+    response = await Promise.race([fetchPromise, timeout]);
   } catch (err) {
     if (err instanceof AnkiConnectError) throw err;
     const msg = err instanceof Error ? err.message : String(err);
