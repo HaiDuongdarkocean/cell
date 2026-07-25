@@ -4,7 +4,6 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import {
   renderHeader,
   renderDefinitions,
-  renderFooter,
   renderActiveEntry,
   renderCandidateChips,
   renderPopupContent,
@@ -53,7 +52,7 @@ describe('renderHeader', () => {
   });
 
   function callHeader(result: LookupResult, status: string, onCycle = jest.fn(), onQuickAdd = jest.fn()) {
-    renderHeader(container, result, status as WordStatus, onCycle, onQuickAdd, jest.fn(), jest.fn());
+    renderHeader(container, result, status as WordStatus, onCycle, onQuickAdd, jest.fn());
   }
 
   it('renders term + reading in word-row', () => {
@@ -115,7 +114,7 @@ describe('renderHeader', () => {
 
   it('status badge click triggers onStatusCycle', () => {
     const onCycle = jest.fn();
-    renderHeader(container, makeResult(), 'unknown', onCycle, jest.fn(), jest.fn(), jest.fn());
+    renderHeader(container, makeResult(), 'unknown', onCycle, jest.fn(), jest.fn());
     const badge = container.querySelector('.js-cell-status') as HTMLButtonElement;
     badge.click();
     expect(onCycle).toHaveBeenCalledTimes(1);
@@ -135,24 +134,20 @@ describe('renderHeader', () => {
 
   it('Quick Add click triggers onQuickAdd', () => {
     const onQuickAdd = jest.fn();
-    renderHeader(container, makeResult(), 'unknown', jest.fn(), onQuickAdd, jest.fn(), jest.fn());
+    renderHeader(container, makeResult(), 'unknown', jest.fn(), onQuickAdd, jest.fn());
     const btn = container.querySelector('.js-cell-quick-add') as HTMLButtonElement;
     btn.click();
     expect(onQuickAdd).toHaveBeenCalledTimes(1);
   });
 
-  it('Close button is rendered and triggers onClose', () => {
-    const onClose = jest.fn();
-    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), jest.fn(), onClose);
-    const btn = container.querySelector('.js-cell-close') as HTMLButtonElement;
-    expect(btn).not.toBeNull();
-    btn.click();
-    expect(onClose).toHaveBeenCalledTimes(1);
+  it('does not render a close button (removed — dismiss via Esc/click-outside/swipe)', () => {
+    callHeader(makeResult(), 'unknown');
+    expect(container.querySelector('.js-cell-close')).toBeNull();
   });
 
   it('Play term button is rendered and triggers onPlayTerm', () => {
     const onPlayTerm = jest.fn();
-    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), jest.fn(), undefined, onPlayTerm);
+    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), onPlayTerm);
     const btn = container.querySelector('.js-cell-play-term') as HTMLButtonElement;
     expect(btn).not.toBeNull();
     btn.click();
@@ -161,7 +156,7 @@ describe('renderHeader', () => {
 
   it('Play sentence button is rendered and triggers onPlaySentence', () => {
     const onPlaySentence = jest.fn();
-    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), jest.fn(), undefined, undefined, onPlaySentence);
+    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), undefined, onPlaySentence);
     const btn = container.querySelector('.js-cell-play-sentence') as HTMLButtonElement;
     expect(btn).not.toBeNull();
     btn.click();
@@ -169,7 +164,7 @@ describe('renderHeader', () => {
   });
 
   it('audio group contains word + sentence buttons close together', () => {
-    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), jest.fn(), undefined, jest.fn(), jest.fn());
+    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), jest.fn(), jest.fn());
     const group = container.querySelector('.cell-header__audio-group');
     expect(group).not.toBeNull();
     expect(group!.querySelector('.js-cell-play-term')).not.toBeNull();
@@ -177,7 +172,7 @@ describe('renderHeader', () => {
   });
 
   it('term gets id for active entry', () => {
-    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), jest.fn(), undefined, jest.fn());
+    renderHeader(container, makeResult(), 'unknown', jest.fn(), jest.fn(), jest.fn(), jest.fn());
     const term = container.querySelector('.js-cell-term') as HTMLElement;
     expect(term.id).toBe('cell-popup-term');
   });
@@ -243,21 +238,6 @@ describe('renderDefinitions', () => {
   });
 });
 
-describe('renderFooter', () => {
-  let container: HTMLDivElement;
-
-  beforeEach(() => {
-    container = document.createElement('div');
-  });
-
-  it('is a no-op (Send to Card + Settings moved to header)', () => {
-    renderFooter(container, jest.fn(), jest.fn());
-    expect(container.querySelector('.js-cell-footer')).toBeNull();
-    expect(container.querySelector('.js-cell-send-to-creator')).toBeNull();
-    expect(container.querySelector('.js-cell-settings')).toBeNull();
-  });
-});
-
 describe('renderActiveEntry', () => {
   let container: HTMLDivElement;
 
@@ -273,7 +253,6 @@ describe('renderActiveEntry', () => {
       onDefinitionToggle: jest.fn(),
       onQuickAdd: jest.fn(),
       onSendToCreator: jest.fn(),
-      onSettings: jest.fn(),
     });
     const entry = container.querySelector('.js-cell-active-entry');
     expect(entry).not.toBeNull();
@@ -290,7 +269,6 @@ describe('renderActiveEntry', () => {
       onDefinitionToggle: jest.fn(),
       onQuickAdd: jest.fn(),
       onSendToCreator: jest.fn(),
-      onSettings: jest.fn(),
     });
     const entry = container.querySelector('.js-cell-active-entry') as HTMLElement;
     const children = Array.from(entry.children);
@@ -340,7 +318,7 @@ describe('renderPopupContent', () => {
     container = document.createElement('div');
   });
 
-  it('renders active entry + candidates container + footer', () => {
+  it('renders active entry + candidates container', () => {
     const result = makeResult();
     const selection = initDefinitionSelection(result);
     renderPopupContent(container, result, 'unknown', selection, {
@@ -348,17 +326,13 @@ describe('renderPopupContent', () => {
       onDefinitionToggle: jest.fn(),
       onQuickAdd: jest.fn(),
       onSendToCreator: jest.fn(),
-      onSettings: jest.fn(),
-      onClose: jest.fn(),
       onCandidateSelect: jest.fn(),
     });
     expect(container.querySelector('.js-cell-active-entry')).not.toBeNull();
     expect(container.querySelector('.js-cell-candidates')).not.toBeNull();
-    // Footer is now a no-op (Send to Card + Settings moved to header).
-    expect(container.querySelector('.js-cell-footer')).toBeNull();
   });
 
-  it('active entry is before candidates (footer removed)', () => {
+  it('active entry is before candidates', () => {
     const result = makeResult();
     const selection = initDefinitionSelection(result);
     renderPopupContent(container, result, 'unknown', selection, {
@@ -366,8 +340,6 @@ describe('renderPopupContent', () => {
       onDefinitionToggle: jest.fn(),
       onQuickAdd: jest.fn(),
       onSendToCreator: jest.fn(),
-      onSettings: jest.fn(),
-      onClose: jest.fn(),
       onCandidateSelect: jest.fn(),
     });
     const children = Array.from(container.children);

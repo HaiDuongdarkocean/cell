@@ -83,6 +83,7 @@ function makePopupSettings(overrides: Partial<DictionaryPopupSettings> = {}): Di
     srsDestination: 'anki',
     popupWidthPx: 560,
     popupMaxHeightPx: 480,
+    popupSheetHeightVh: 72,
     externalDictLinks: [],
     badgePointerTrigger: { position: 'center', size: 36, pointerScale: 0.25 },
     ...overrides,
@@ -463,6 +464,70 @@ describe('toggleTab', () => {
     const container = toggled.shell?.getContainer();
     const body = container!.querySelector('.js-cell-materials-slot .cell-materials__body');
     expect(body?.children.length).toBeGreaterThan(0);
+  });
+});
+
+describe('tab independence (multi-candidate)', () => {
+  let state: ReturnType<typeof createPopupDictionaryState>;
+
+  beforeEach(() => {
+    state = makePopupState({ defaultActiveTab: null });
+  });
+
+  it('each candidate keeps its own activeTab after rerender', () => {
+    const winner = makeResult({ term: 'get out' });
+    const c1 = makeResult({ term: 'get over' });
+    let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
+    s = appendCandidate(s, c1, 'sentence');
+
+    // Open 'audio' on winner (index 0), 'links' on candidate 1.
+    s = setActiveCandidate(s, 0);
+    s = toggleTab(s, 'audio');
+    s = setActiveCandidate(s, 1);
+    s = toggleTab(s, 'links');
+
+    // After switching back to winner, winner's tab should still be 'audio'.
+    s = setActiveCandidate(s, 0);
+    expect(s.activeTab).toBe('audio');
+
+    // Candidate 1's tab should still be 'links'.
+    s = setActiveCandidate(s, 1);
+    const container = s.shell?.getContainer();
+    const candidate1Entry = container!.querySelector('.js-cell-active-entry[data-cell-candidate-idx="1"]');
+    const candidate1Panel = candidate1Entry!.querySelector('.js-cell-panel[data-cell-panel="links"]');
+    expect(candidate1Panel).not.toBeNull();
+  });
+
+  it('closing a tab sets activeTab to null (not overwritten by ?? fallback)', () => {
+    const state2 = makePopupState({ defaultActiveTab: 'audio' });
+    const shown = showPopup(state2, makeResult(), { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
+    // Tab starts as 'audio' (from defaultActiveTab).
+    expect(shown.activeTab).toBe('audio');
+    // Toggle same tab → should close (set to null).
+    const toggled = toggleTab(shown, 'audio');
+    expect(toggled.activeTab).toBeNull();
+    // Re-render should NOT resurrect the old tab via ?? fallback.
+    const container = toggled.shell?.getContainer();
+    const panel = container!.querySelector('.js-cell-panel');
+    expect(panel).toBeNull();
+  });
+
+  it('rerender preserves scrollTop when switching tab on non-first candidate', () => {
+    const winner = makeResult({ term: 'get out' });
+    const c1 = makeResult({ term: 'get over' });
+    let s = showPopup(state, winner, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'sentence' });
+    s = appendCandidate(s, c1, 'sentence');
+
+    // Scroll to candidate 2.
+    s = setActiveCandidate(s, 1);
+    const container = s.shell?.getContainer()!;
+    container.scrollTop = 200;
+
+    // Toggle a tab on candidate 2 — triggers rerender internally.
+    s = toggleTab(s, 'image');
+
+    // scrollTop should be preserved, not reset to 0.
+    expect(container.scrollTop).toBe(200);
   });
 });
 

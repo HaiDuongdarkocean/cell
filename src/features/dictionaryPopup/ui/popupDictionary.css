@@ -54,35 +54,61 @@
 /* Labels are hidden by default on narrow popups; revealed when the popup is wide. */
 .cell-label { display: none; }
 
-@container (min-width: 440px) {
-  .cell-label { display: inline; }
+/* === Bottom sheet mode (mobile <768px) ===
+ * Full-width sheet sliding up from bottom edge.
+ * JS adds .cell-popup--sheet when viewport < 768px. */
+.cell-popup--sheet {
+  border-radius: var(--radius-xl, 12px) var(--radius-xl, 12px) 0 0;
+  border-bottom: none;
+  transform: translateY(100%);
 }
 
-/* SSOT: When labels are hidden (narrow popup < 440px), every button
- * containing a .cell-label becomes a circular icon-only button.
- * Applies to: Quick Add, Send to Card, cell-chip, toolbar tabs, etc.
- * One rule for all — no per-button overrides needed.
- * Badges (e.g. .cell-toolbar__badge) are position:absolute so they
- * automatically reposition on the circle — no extra rule needed. */
-@container (max-width: 439px) {
-  .btn:has(.cell-label) {
-    border-radius: var(--radius-full);
-    padding: 0;
-    width: var(--space-8, 32px);
-    height: var(--space-8, 32px);
-    gap: 0;
-  }
-  /* Badge on circle button — nudge to top-right edge of the circle. */
-  .btn:has(.cell-label) .cell-toolbar__badge {
-    top: -2px;
-    right: -2px;
-  }
+.cell-popup--sheet.cell-popup--visible {
+  transform: translateY(0);
+}
+
+/* Popover mode (desktop ≥768px) — hide sheet-specific elements. */
+.cell-popup--popover .cell-sheet-handle {
+  display: none;
+}
+
+/* Sheet grab handle — visible only in sheet mode. */
+.cell-sheet-handle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2, 8px) 0 var(--space-1, 4px);
+  cursor: grab;
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.cell-sheet-handle::after {
+  content: '';
+  width: var(--space-9, 36px);
+  height: var(--space-1, 4px);
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-border, #e2e8f0);
+}
+
+.cell-sheet-handle:active {
+  cursor: grabbing;
+}
+
+/* Show grab handle only in sheet mode. */
+.cell-popup--sheet .cell-sheet-handle {
+  display: flex;
+}
+
+/* Hide resize handle in sheet mode — grab handle handles both resize + dismiss. */
+.cell-popup--sheet .cell-popup__resize {
+  display: none;
 }
 
 /* Toolbar tab icons — header buttons now use .icon-btn--sm (20px icon). */
 .cell-toolbar__tab svg {
-  width: 18px;
-  height: 18px;
+  width: var(--iconbutton-icon-sm, 20px);
+  height: var(--iconbutton-icon-sm, 20px);
   flex-shrink: 0;
 }
 
@@ -90,10 +116,12 @@
   flex: 1 1 auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
+  gap: var(--space-1);
   min-height: 0;
-  transition: opacity var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: opacity var(--duration-normal, 200ms) var(--ease-in-out, ease-in-out);
 }
 
 /* Resize handle — pinned to bottom-right edge of popup.
@@ -128,17 +156,13 @@
   height: var(--space-3, 12px);
 }
 
-/* === Block: cell-header (2-row layout — spec redesign v2) === */
+/* === Block: cell-header (2-row layout — spec redesign v2) ===
+ *  Base = compact (<380px). @container (min-width: 480px) expands to comfortable spacing. */
 .cell-header {
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  position: -webkit-sticky;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--color-background);
+  gap: var(--space-0-5);
   cursor: grab;
   touch-action: none;
   user-select: none;
@@ -150,7 +174,7 @@
   display: flex;
   align-items: start;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 /* Main group — word + reading-row (IPA + audio), wraps on narrow headers. */
@@ -158,7 +182,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-1) var(--space-2);
+  gap: var(--space-0-5) var(--space-1);
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -171,28 +195,29 @@
 }
 
 .cell-header__word {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.2;
+  line-height: var(--leading-tight, 1.25);
 }
 
 .cell-header__ipa {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
   flex-shrink: 0;
-  line-height: 1.3;
+  line-height: var(--leading-snug, 1.375);
 }
 
-/* Reading row: IPA + audio buttons, wraps under the word when narrow. */
+/* Reading row: IPA + audio buttons, always below word-row (full-width wrap). */
 .cell-header__reading {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   flex-shrink: 0;
+  flex-basis: 100%;
   min-width: 0;
 }
 
@@ -219,7 +244,7 @@
 .cell-header__second {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -231,7 +256,7 @@
 .cell-header__badges {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   flex-shrink: 0;
 }
 
@@ -239,64 +264,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  flex-shrink: 0;
-}
-
-/* === 3-dot kebab menu === */
-.cell-header__menu-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.cell-header__menu-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cell-menu-dropdown {
-  display: none;
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: var(--space-1);
-  background: var(--color-card, var(--color-background));
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.15));
-  z-index: 100;
-  min-width: 140px;
-  padding: var(--space-1);
-}
-
-.cell-menu-dropdown--open {
-  display: flex;
-  flex-direction: column;
-}
-
-.cell-menu-dropdown__item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1-5) var(--space-2);
-  border: none;
-  background: none;
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  text-align: left;
-  width: 100%;
-}
-
-.cell-menu-dropdown__item:hover {
-  background: var(--color-surface-hover, rgba(0,0,0,0.05));
-}
-
-.cell-menu-dropdown__item svg {
-  width: 16px;
-  height: 16px;
   flex-shrink: 0;
 }
 
@@ -309,35 +276,50 @@
   outline: none;
 }
 
-/* Status badge extends .btn; only override size + color variants. */
+/* Status pill — same height as freq badge (20px desktop / 24px mobile).
+ * Not a .btn — standalone pill with subtle background per WordStatus.
+ * Touch target expanded via padding (WCAG 2.5.5) without forcing 44px min-height. */
 .cell-header__status {
+  display: inline-flex;
+  align-items: center;
   box-sizing: border-box;
-  font-size: var(--font-size-xs);
-  padding: var(--space-1) var(--space-2-5);
   height: var(--space-5, 20px);
-  min-width: 10ch;
-  justify-content: center;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-none, 1);
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out);
+  /* Touch target: padding-based — the visual pill is 20px but the clickable
+   * area extends via padding. Exempted from .btn 44px min-height override. */
 }
 
-/* Status badges — solid badges. Maps directly to WordStatus values. */
+.cell-header__status:hover {
+  filter: brightness(0.95);
+}
+
+/* Status pill — subtle backgrounds per WordStatus. */
 .cell-header__status--unknown {
-  background: var(--color-error);
-  color: var(--color-fill-foreground-white);
+  background: var(--color-error-subtle);
+  color: var(--color-error);
 }
 
 .cell-header__status--tracking {
-  background: var(--color-warning);
-  color: var(--color-text-inverse);
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
 }
 
 .cell-header__status--known {
-  background: var(--color-success);
-  color: var(--color-text-inverse);
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .cell-header__status--ignore {
-  background: var(--color-secondary);
-  color: var(--color-secondary-foreground);
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
 }
 
 .cell-header__frequency {
@@ -416,7 +398,7 @@
 
 /* === Block: cell-def (definitions) — inside active entry, flex:1 === */
 .cell-def {
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-2);
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -425,7 +407,7 @@
 .cell-def__empty {
   color: var(--color-text-muted);
   font-style: italic;
-  padding: var(--space-3) 0;
+  padding: var(--space-1) 0;
 }
 
 .cell-def__item {
@@ -527,7 +509,7 @@
 }
 
 .cell-def__text {
-  padding: var(--space-2) 0 var(--space-2) 34px;
+  padding: var(--space-1) 0 var(--space-1) var(--space-7);
 }
 
 .cell-def__pos {
@@ -536,7 +518,7 @@
 }
 
 .cell-def__examples {
-  margin-top: var(--space-1);
+  margin-top: var(--space-0-5);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
@@ -544,8 +526,8 @@
 /* === Block: cell-toolbar === */
 .cell-toolbar {
   display: flex;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-3);
+  gap: var(--space-0-5);
+  padding: 0 var(--space-2);
   align-items: center;
 }
 
@@ -557,8 +539,7 @@
 }
 
 /* Toolbar tab badge — selection count
-   Positioned at top-right corner INSIDE the button (top:0) to avoid
-   being obscured by .cell-header's sticky z-index:10 background.
+   Positioned at top-right corner INSIDE the button.
    right:-2px protrudes slightly into the 4px gap between buttons.
    box-shadow ring = background-color halo for visibility against icon. */
 .cell-toolbar__badge {
@@ -574,7 +555,7 @@
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-text-inverse);
-  font-size: 8px;
+  font-size: var(--font-size-2xs, 10px);
   font-weight: var(--font-weight-semibold);
   pointer-events: none;
   box-shadow: 0 0 0 1.5px var(--color-background);
@@ -583,7 +564,7 @@
 
 /* === Block: cell-audio === */
 .cell-audio {
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-2);
   overflow-y: auto;
   flex: 1 1 auto;
   min-height: 0;
@@ -591,8 +572,8 @@
 
 .cell-audio__subtabs {
   display: flex;
-  gap: var(--space-3);
-  padding: var(--space-1) 0 var(--space-2);
+  gap: var(--space-2);
+  padding: var(--space-0-5) 0 var(--space-1);
 }
 
 .cell-audio__subtab {
@@ -600,14 +581,14 @@
   border: none;
   padding: 0;
   font: inherit;
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-muted);
   cursor: pointer;
   border-bottom: 1.5px solid transparent;
-  padding-bottom: var(--space-1);
+  padding-bottom: var(--space-0-5);
   transition: color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
     border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
 }
@@ -625,8 +606,8 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-2-5);
-  padding: var(--space-2) var(--space-2-5);
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-lg);
   transition: background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
   cursor: default;
@@ -669,7 +650,7 @@
 /* Label is clickable to toggle selection */
 .cell-audio__label {
   flex: 1;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-text);
   min-width: 0;
   overflow: hidden;
@@ -737,15 +718,15 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
 
 .cell-audio__empty-icon {
-  width: var(--iconbutton-size-md, 40px);
-  height: var(--iconbutton-size-md, 40px);
+  width: var(--iconbutton-size-sm, 32px);
+  height: var(--iconbutton-size-sm, 32px);
   color: var(--color-text-muted);
 }
 
@@ -765,47 +746,88 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-error);
   font-size: var(--font-size-sm);
 }
 
-/* === Block: cell-image === */
+/* === Block: cell-image ===
+   Horizontal scroll strip — 8 images in a single row, no padding around
+   images. Custom DS-styled scrollbar. Bounce on click (same elastic easing
+   as audio play/pause button: cubic-bezier(0.34, 1.56, 0.64, 1)). */
 .cell-image {
-  padding: var(--space-2) var(--space-3);
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
   flex: 1 1 auto;
   min-height: 0;
 }
 
+/* Horizontal scroll strip — single row, 8 cards.
+   overflow-x:auto enables horizontal scroll; overflow-y:hidden clips vertical.
+   scroll-snap-x mandatory for smooth flick-style scrolling on touch. */
 .cell-image__strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: var(--space-2);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
   min-height: 0;
-  padding-bottom: var(--space-1);
+  padding: var(--space-1);
+  /* DS-styled scrollbar — thin, rounded, theme-aware. Works across
+     320px→1280px+. WebKit (Chrome/Edge/Safari) + Firefox (scrollbar-width). */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong, var(--color-border)) transparent;
+}
+.cell-image__strip::-webkit-scrollbar {
+  height: 6px;
+}
+.cell-image__strip::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cell-image__strip::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong, var(--color-border));
+  border-radius: var(--radius-full, 9999px);
+}
+.cell-image__strip::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
+/* Image card — fixed width so 8 cards fill the strip, no padding around
+   image. aspect-ratio keeps consistent height. scroll-snap-align:center
+   makes each card snap to center during horizontal scroll. */
 .cell-image__card {
   position: relative;
   box-sizing: border-box;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  padding: var(--space-1);
+  flex: 0 0 auto;
+  width: calc((100% - var(--space-1) * 7) / 8);
+  min-width: 80px;
+  aspect-ratio: 1 / 1;
+  padding: 0;
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
+  scroll-snap-align: center;
+  overflow: hidden;
+  /* Bounce on click — same elastic easing as audio play/pause button. */
+  transition: transform var(--duration-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
               border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  will-change: transform;
 }
 
-.cell-image__card:hover {
-  background: var(--color-surface-hover);
+@media (hover: hover) {
+  .cell-image__card:hover {
+    background: var(--color-surface-hover);
+    transform: scale(1.03);
+  }
+}
+
+.cell-image__card:active {
+  transform: scale(0.92);
 }
 
 .cell-image__card--selected {
@@ -818,19 +840,21 @@
   transform: scale(1);
 }
 
+/* Image fills the card edge-to-edge — no padding, no border-radius gap. */
 .cell-image__thumb {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: 0;
+  display: block;
 }
 
 .cell-image__check {
   position: absolute;
-  top: var(--space-1);
-  right: var(--space-1);
-  width: var(--space-5, 20px);
-  height: var(--space-5, 20px);
+  top: var(--space-0-5);
+  right: var(--space-0-5);
+  width: var(--space-4, 16px);
+  height: var(--space-4, 16px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -854,15 +878,15 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
 
 .cell-image__empty-icon {
-  width: var(--iconbutton-size-md, 40px);
-  height: var(--iconbutton-size-md, 40px);
+  width: var(--iconbutton-size-sm, 32px);
+  height: var(--iconbutton-size-sm, 32px);
   color: var(--color-text-muted);
 }
 
@@ -891,7 +915,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-error);
   font-size: var(--font-size-sm);
@@ -899,7 +923,7 @@
 
 /* === Block: cell-translate === */
 .cell-translate {
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-2);
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -910,8 +934,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -995,16 +1019,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-6) var(--space-4);
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
 
 .cell-translate__empty-icon {
-  width: var(--iconbutton-size-md, 40px);
-  height: var(--iconbutton-size-md, 40px);
+  width: var(--iconbutton-size-sm, 32px);
+  height: var(--iconbutton-size-sm, 32px);
   color: var(--color-text-muted);
 }
 
@@ -1023,8 +1047,8 @@
 .cell-links {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1-5);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   min-height: 0;
   overflow-y: auto;
 }
@@ -1034,17 +1058,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   width: 100%;
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-sm);
 }
 
 .cell-links__empty-icon {
-  width: var(--iconbutton-size-md, 40px);
-  height: var(--iconbutton-size-md, 40px);
+  width: var(--iconbutton-size-sm, 32px);
+  height: var(--iconbutton-size-sm, 32px);
   color: var(--color-text-muted);
 }
 
@@ -1090,6 +1114,7 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
+  gap: var(--space-1);
 }
 
 /* Separator between stacked candidates — border on all but the first. */
@@ -1097,9 +1122,9 @@
   border-top: 1px solid var(--color-border);
 }
 
-/* Active candidate gets a subtle left accent. */
+/* Active candidate — no left accent border (user requested removal). */
 .cell-active-entry--active {
-  box-shadow: inset 2px 0 0 var(--color-primary);
+  box-shadow: none;
 }
 
 /* === Block: cell-materials (toolbar slot inside active entry) === */
@@ -1107,30 +1132,17 @@
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  /* background: var(--color-surface); */
-}
-
-.cell-materials--open {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.cell-materials--open ~ .cell-def { display: none; }
-
-.cell-materials__bar {
-  flex: 0 0 auto;
+  gap: var(--space-0-5);
 }
 
 .cell-materials__body {
   display: none;
-  overflow-y: auto;
 }
 
+/* When open, toolbar + panel size to content — no flex grow, no scroll. */
 .cell-materials--open .cell-materials__body {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
 }
 
 /* === Block: cell-candidates (spec redesign v3 — chips only, scroll-x) === */
@@ -1142,8 +1154,8 @@
 .cell-candidates__chips {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
 }
 
 .cell-candidates__chips-scroll {
@@ -1215,23 +1227,6 @@
   white-space: nowrap;
 }
 
-
-/* === Block: cell-footer (spec redesign v2 — Send + Settings, status in header) === */
-.cell-footer {
-  padding: var(--space-2) var(--space-3);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  background: var(--color-background);
-  flex-shrink: 0;
-}
-
-.cell-footer__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
 
 /* === Block: cell-candidate (legacy — giữ cho backward compat) === */
 .cell-candidate {
@@ -1305,19 +1300,21 @@
   border-radius: var(--radius-sm);
 }
 
-/* Image skeleton strip */
+/* Image skeleton strip — horizontal, matches the strip layout. */
 .cell-image__skeleton {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: var(--space-2);
-  overflow-y: auto;
-  max-height: 240px;
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  overflow: hidden;
 }
 
 .cell-image__skeleton-card {
   box-sizing: border-box;
-  width: 100%;
-  aspect-ratio: 4 / 3;
+  flex: 0 0 auto;
+  width: 80px;
+  min-width: 80px;
+  aspect-ratio: 1 / 1;
 }
 
 /* Translate skeleton block — inherits padding from parent .cell-translate
@@ -1327,8 +1324,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -1338,12 +1335,20 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-0-5, 2px);
 }
 
 .cell-translate__skeleton-line {
   width: 100%;
+}
+
+.cell-translate__skeleton-line--native {
+  height: var(--space-5, 20px);
+}
+
+.cell-translate__skeleton-line--target {
   height: var(--space-4, 16px);
+  opacity: 0.7;
 }
 
 .cell-translate__skeleton-check {
@@ -1356,11 +1361,11 @@
 /* === Block: cell-toast (Quick Add feedback) === */
 .cell-toast {
   position: absolute;
-  bottom: var(--space-3);
+  bottom: var(--space-2);
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  max-width: calc(100% - var(--space-6));
-  padding: var(--space-2) var(--space-4);
+  max-width: calc(100% - var(--space-4));
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-md);
   background: var(--color-text);
   color: var(--color-background);
@@ -1377,4 +1382,291 @@
 .cell-toast--visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================================
+   Responsive compact breakpoints — MUST be at end of file.
+   Container query rules override base rules via CSS cascade order.
+   Base rules = compact (<380px). @container expands for wider popups.
+   4 tiers: compact (<380px, base), narrow (380-479px), default (480-767px), wide (≥768px).
+   Spacing tier (≥480px) is shared by default + wide — font/touch tiers are tier-specific.
+   ============================================================ */
+
+/* --- Narrow (380-479px): balanced density for 480px screens --- */
+@container (min-width: 380px) and (max-width: 479px) {
+  .cell-popup__content,
+  .cell-active-entry {
+    gap: var(--space-1-5);
+  }
+  .cell-header {
+    padding: 0 var(--space-2-5);
+    gap: var(--space-0-5);
+  }
+  .cell-header__word {
+    font-size: var(--font-size-lg);
+  }
+  .cell-toolbar {
+    padding: 0 var(--space-2-5);
+  }
+  .cell-def {
+    padding: 0 var(--space-2-5);
+  }
+  .cell-audio__item {
+    gap: var(--space-2);
+    padding: var(--space-1-5) var(--space-2);
+  }
+  .cell-image__card {
+    min-width: var(--popup-image-card-min-width-compact, 90px);
+  }
+  .cell-audio__empty,
+  .cell-audio__error,
+  .cell-image__empty,
+  .cell-image__error {
+    padding: var(--space-5) var(--space-3);
+  }
+}
+
+/* --- Default (≥480px): comfortable spacing — applies to default + wide tiers --- */
+@container (min-width: 480px) {
+  .cell-label { display: inline; }
+  .cell-popup__content,
+  .cell-active-entry {
+    gap: var(--space-2);
+  }
+  .cell-header {
+    padding: 0 var(--space-3);
+    gap: var(--space-1);
+  }
+  .cell-header__word {
+    font-size: var(--font-size-xl);
+  }
+  .cell-header__ipa {
+    font-size: var(--font-size-sm);
+  }
+  .cell-header__row {
+    gap: var(--space-2);
+  }
+  .cell-header__main {
+    gap: var(--space-1) var(--space-2);
+  }
+  .cell-header__second {
+    gap: var(--space-2);
+  }
+  .cell-header__badges {
+    gap: var(--space-2);
+  }
+  .cell-toolbar {
+    padding: 0 var(--space-3);
+    gap: var(--space-1);
+  }
+  .cell-def {
+    padding: 0 var(--space-3);
+  }
+  .cell-def__text {
+    padding: var(--space-2) 0 var(--space-2) calc(var(--space-7, 28px) + var(--space-1-5, 6px));
+  }
+  .cell-def__examples {
+    margin-top: var(--space-1);
+  }
+  .cell-audio {
+    padding: 0 var(--space-3);
+  }
+  .cell-audio__item {
+    gap: var(--space-2-5);
+    padding: var(--space-2) var(--space-2-5);
+  }
+  .cell-audio__subtabs {
+    gap: var(--space-3);
+    padding: var(--space-1) 0 var(--space-2);
+  }
+  .cell-audio__empty,
+  .cell-audio__error {
+    padding: var(--space-6) var(--space-4);
+  }
+  .cell-audio__empty-icon,
+  .cell-image__empty-icon {
+    width: var(--iconbutton-size-md, 40px);
+    height: var(--iconbutton-size-md, 40px);
+  }
+  .cell-image__card {
+    min-width: var(--popup-image-card-min-width-default, 100px);
+  }
+  .cell-image__empty,
+  .cell-image__error {
+    padding: var(--space-6) var(--space-4);
+  }
+  .cell-translate {
+    padding: var(--space-2) var(--space-3);
+  }
+  .cell-translate__block {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+  }
+  .cell-translate__empty {
+    padding: var(--space-6) var(--space-4);
+    gap: var(--space-2);
+  }
+  .cell-translate__skeleton-block {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+  }
+  .cell-def__empty {
+    padding: var(--space-3) 0;
+  }
+  .cell-links {
+    gap: var(--space-1-5);
+    padding: var(--space-2) var(--space-3);
+  }
+  .cell-links__empty {
+    gap: var(--space-2);
+    padding: var(--space-6) var(--space-4);
+  }
+  .cell-links__empty-icon {
+    width: var(--iconbutton-size-md, 40px);
+    height: var(--iconbutton-size-md, 40px);
+  }
+  .cell-candidates__chips {
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+  }
+  .cell-toast {
+    bottom: var(--space-3);
+    max-width: calc(100% - var(--space-6));
+    padding: var(--space-2) var(--space-4);
+  }
+  .cell-audio__subtab {
+    font-size: var(--font-size-xs);
+    padding-bottom: var(--space-1);
+  }
+  .cell-audio__label {
+    font-size: var(--font-size-sm);
+  }
+  .cell-image__check {
+    top: var(--space-1);
+    right: var(--space-1);
+    width: var(--space-5, 20px);
+    height: var(--space-5, 20px);
+  }
+}
+
+/* SSOT: When labels are hidden (narrow popup < 480px), every button
+ * containing a .cell-label becomes a circular icon-only button.
+ * Applies to: Quick Add, Send to Card, cell-chip, toolbar tabs, etc.
+ * One rule for all — no per-button overrides needed.
+ * Badges (e.g. .cell-toolbar__badge) are position:absolute so they
+ * automatically reposition on the circle — no extra rule needed. */
+@container (max-width: 479px) {
+  .btn:has(.cell-label) {
+    border-radius: var(--radius-full);
+    padding: 0;
+    width: var(--touch-target-mobile, 44px);
+    height: var(--touch-target-mobile, 44px);
+    gap: 0;
+  }
+  /* Badge on circle button — nudge to top-right edge of the circle. */
+  .btn:has(.cell-label) .cell-toolbar__badge {
+    top: calc(-1 * var(--space-0-5, 2px));
+    right: calc(-1 * var(--space-0-5, 2px));
+  }
+  /* Touch target expansion (WCAG 2.5.5 AAA: 44×44px).
+   * Applies to icon buttons + text buttons on compact/narrow popups.
+   * Header audio buttons are exempt — they stay compact (28px) to avoid
+   * crowding the term row; the touch target is adequate for their function. */
+  .icon-btn--xs,
+  .icon-btn--sm {
+    min-width: var(--touch-target-mobile, 44px);
+    min-height: var(--touch-target-mobile, 44px);
+  }
+  .cell-header__audio {
+    min-width: var(--iconbutton-size-xs, 28px);
+    min-height: var(--iconbutton-size-xs, 28px);
+  }
+  /* Status pill: 24px on mobile (slightly larger for readability), not 44px. */
+  .cell-header__status {
+    height: var(--space-6, 24px);
+    font-size: var(--font-size-sm, 13px);
+    padding: 0 var(--space-2-5, 10px);
+  }
+  .btn {
+    min-height: var(--touch-target-mobile, 44px);
+    min-width: var(--touch-target-mobile, 44px);
+  }
+}
+
+/* --- Default (480-767px): touch target 44px, base font 15px --- */
+@container (min-width: 480px) and (max-width: 767px) {
+  .cell-popup {
+    font-size: var(--font-size-md, 15px);
+  }
+  .icon-btn--xs,
+  .icon-btn--sm {
+    min-width: var(--touch-target-mobile, 44px);
+    min-height: var(--touch-target-mobile, 44px);
+  }
+  .cell-header__audio {
+    min-width: var(--iconbutton-size-xs, 28px);
+    min-height: var(--iconbutton-size-xs, 28px);
+  }
+  /* Status pill: 24px on mobile (slightly larger for readability), not 44px. */
+  .cell-header__status {
+    height: var(--space-6, 24px);
+    font-size: var(--font-size-sm, 13px);
+    padding: 0 var(--space-2-5, 10px);
+  }
+  .btn {
+    min-height: var(--touch-target-mobile, 44px);
+    min-width: var(--touch-target-mobile, 44px);
+  }
+}
+
+/* --- Wide (≥768px): desktop — mouse precision, 40px touch target, base font 16px --- */
+@container (min-width: 768px) {
+  .cell-popup {
+    font-size: var(--font-size-lg, 16px);
+  }
+  .cell-header__word {
+    font-size: var(--font-size-xl, 18px);
+  }
+  .cell-def__text {
+    font-size: var(--font-size-lg, 16px);
+  }
+  .cell-def__examples {
+    font-size: var(--font-size-sm, 13px);
+  }
+  /* Desktop: mouse precision allows smaller touch targets (40px).
+   * Header audio buttons stay compact (28px). */
+  .icon-btn--xs,
+  .icon-btn--sm {
+    min-width: var(--touch-target-desktop, 40px);
+    min-height: var(--touch-target-desktop, 40px);
+  }
+  .cell-header__audio {
+    min-width: var(--iconbutton-size-xs, 28px);
+    min-height: var(--iconbutton-size-xs, 28px);
+  }
+  .btn {
+    min-height: var(--touch-target-desktop, 40px);
+    min-width: var(--touch-target-desktop, 40px);
+  }
+  .cell-audio__subtab {
+    font-size: var(--font-size-sm, 13px);
+  }
+  .cell-audio__label {
+    font-size: var(--font-size-base, 14px);
+  }
+  .cell-translate__native {
+    font-size: var(--font-size-base, 14px);
+  }
+  .cell-translate__target {
+    font-size: var(--font-size-sm, 13px);
+  }
+  .cell-links__item {
+    font-size: var(--font-size-base, 14px);
+  }
+  .cell-candidates__list-reading {
+    font-size: var(--font-size-base, 14px);
+  }
+  .cell-toast {
+    font-size: var(--font-size-base, 14px);
+  }
 }

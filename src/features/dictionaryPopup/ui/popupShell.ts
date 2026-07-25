@@ -386,7 +386,11 @@ export class PopupShell {
   private container: HTMLDivElement | null = null;
   private contentEl: HTMLDivElement | null = null;
   private resizeHandle: HTMLDivElement | null = null;
-  private size: PopupSize;
+  private sheetHandle: HTMLDivElement | null = null;
+  /** Popover size (width + maxHeight in px) — persisted separately from sheet. */
+  private popoverSize: PopupSize;
+  /** Sheet height in px — persisted separately from popover. */
+  private sheetHeight: number;
   private isResizing = false;
   private resizeStartX = 0;
   private resizeStartY = 0;
@@ -412,10 +416,16 @@ export class PopupShell {
   private dragRaf = 0;
   private resizePending: { dx: number; dy: number } | null = null;
   private resizeRaf = 0;
+  // Sheet swipe-to-dismiss state.
+  private sheetDragStartY = 0;
+  private sheetDragActive = false;
+  // Viewport resize → re-position (rAF throttled). Morphs between sheet/popover
+  // when crossing the 768px breakpoint, and keeps the popup clamped to viewport.
+  private viewportResizeRaf = 0;
   private previouslyFocused: Element | null = null;
   private themeCleanup: (() => void) | null = null;
   private readonly onDismiss: () => void;
-  private readonly onResizeComplete: (size: PopupSize) => void;
+  private readonly onResizeComplete: (size: PopupSize, sheetHeight: number) => void;
   private readonly boundKeyDown: (e: KeyboardEvent) => void;
   private readonly boundClickOutside: (e: MouseEvent) => void;
   private readonly boundResizeStart: (e: PointerEvent) => void;
@@ -425,13 +435,19 @@ export class PopupShell {
   private readonly boundPointerDown: (e: PointerEvent) => void;
   private readonly boundPointerMove: (e: PointerEvent) => void;
   private readonly boundPointerUp: (e: PointerEvent) => void;
+  private readonly boundSheetPointerDown: (e: PointerEvent) => void;
+  private readonly boundSheetPointerMove: (e: PointerEvent) => void;
+  private readonly boundSheetPointerUp: (e: PointerEvent) => void;
+  private readonly boundViewportResize: () => void;
 
   constructor(
-    initialSize: PopupSize,
+    initialPopoverSize: PopupSize,
+    initialSheetHeight: number,
     onDismiss: () => void,
-    onResizeEnd: (size: PopupSize) => void,
+    onResizeEnd: (size: PopupSize, sheetHeight: number) => void,
   ) {
-    this.size = initialSize;
+    this.popoverSize = initialPopoverSize;
+    this.sheetHeight = initialSheetHeight;
     this.onDismiss = onDismiss;
     this.onResizeComplete = onResizeEnd;
     this.boundKeyDown = this.onKeyDown.bind(this);
@@ -443,6 +459,10 @@ export class PopupShell {
     this.boundPointerDown = this.onPointerDown.bind(this);
     this.boundPointerMove = this.onPointerMove.bind(this);
     this.boundPointerUp = this.onPointerUp.bind(this);
+    this.boundSheetPointerDown = this.onSheetPointerDown.bind(this);
+    this.boundSheetPointerMove = this.onSheetPointerMove.bind(this);
+    this.boundSheetPointerUp = this.onSheetPointerUp.bind(this);
+    this.boundViewportResize = this.onViewportResize.bind(this);
   }
 
   /** Mount the popup shell into the document body (or fullscreen element) with Shadow DOM. */
@@ -492,8 +512,8 @@ export class PopupShell {
     this.container.setAttribute('aria-label', 'Dictionary popup');
     this.container.style.position = 'fixed';
     this.container.style.pointerEvents = 'auto';
-    this.container.style.width = `${this.size.width}px`;
-    this.container.style.height = `${this.size.maxHeight}px`;
+    this.container.style.width = `${this.popoverSize.width}px`;
+    this.container.style.height = `${this.popoverSize.maxHeight}px`;
     this.container.style.display = 'flex';
     // user-select is inherited — fullscreen video containers often set
     // user-select:none, which Shadow DOM inherits. Force text so definitions
@@ -508,9 +528,20 @@ export class PopupShell {
     // to avoid FOUC; async-correct from chrome.storage.local.themeMode.
     // Listens to storage.onChanged + prefers-color-scheme for real-time switching.
     this.initTheme();
+
+    // Sheet grab handle (mobile bottom sheet) — first child of container,
+    // above the scroll wrapper. Only visible when .cell-popup--sheet is active.
+    this.sheetHandle = document.createElement('div');
+    this.sheetHandle.className = 'cell-sheet-handle js-cell-sheet-handle';
+    this.sheetHandle.style.touchAction = 'none';
+    this.sheetHandle.addEventListener('pointerdown', this.boundSheetPointerDown);
+    this.container.appendChild(this.sheetHandle);
+
     // Inner scroll wrapper — content renders here, this is what scrolls.
     this.contentEl = document.createElement('div');
     this.contentEl.className = 'cell-popup__content js-cell-content';
+    // In sheet mode, swipe-down at scrollTop=0 drags the sheet (dismiss gesture).
+    this.contentEl.addEventListener('pointerdown', this.boundSheetPointerDown);
     this.container.appendChild(this.contentEl);
 
     // Resize handle (bottom-right corner) — sibling of contentEl, NOT inside
@@ -532,6 +563,9 @@ export class PopupShell {
     document.addEventListener('mousedown', this.boundClickOutside, true); // capture — check before target
     // Re-parent host when fullscreen changes (host must live inside fullscreen element).
     document.addEventListener('fullscreenchange', this.boundFullscreenChange);
+    // Viewport resize → morph between sheet/popover + re-clamp position.
+    // rAF throttled so we only reposition once per frame, not per resize event.
+    window.addEventListener('resize', this.boundViewportResize);
 
     return this.shadow;
   }
@@ -555,33 +589,59 @@ export class PopupShell {
     this.applyPosition();
   }
 
+  /** Detect mobile bottom-sheet mode: viewport < 768px. */
+  private isSheetMode(): boolean {
+    return window.innerWidth < 768;
+  }
+
   private applyPosition(): void {
     if (!this.container || !this.lastAnchor) return;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+
+    // Mobile bottom sheet: full width, anchored to bottom, remembered height.
+    if (this.isSheetMode()) {
+      this.container.classList.add('cell-popup--sheet');
+      this.container.classList.remove('cell-popup--popover');
+      this.container.style.left = '0px';
+      this.container.style.top = 'auto';
+      this.container.style.bottom = '0px';
+      this.container.style.width = `${vw}px`;
+      // Clamp remembered sheet height to viewport (leave 8px margin at top).
+      const clampedSheetHeight = Math.max(200, Math.min(this.sheetHeight, vh - VIEWPORT_MARGIN));
+      this.container.style.height = `${clampedSheetHeight}px`;
+      this.container.style.transform = '';
+      return;
+    }
+
+    // Desktop popover mode — existing anchor-based positioning.
+    this.container.classList.add('cell-popup--popover');
+    this.container.classList.remove('cell-popup--sheet');
+    this.container.style.bottom = 'auto';
+    // Reset width — sheet mode set it to 100vw; popover uses remembered width.
+    this.container.style.width = `${this.popoverSize.width}px`;
     // If container is hidden (display:none), offsetHeight=0 → use maxHeight fallback.
     // setPosition is now called before show() so the initial position is set
     // without animating; visibility:hidden still contributes to layout.
     const estHeight = this.container.offsetHeight > 0
-      ? Math.min(this.container.offsetHeight, this.size.maxHeight)
-      : Math.min(this.size.maxHeight, 300);
+      ? Math.min(this.container.offsetHeight, this.popoverSize.maxHeight)
+      : Math.min(this.popoverSize.maxHeight, 300);
     const pos = computePopupPosition(
       this.lastAnchor.top, this.lastAnchor.left, this.lastAnchor.right, this.lastAnchor.bottom,
-      this.size.width, vw, vh, estHeight,
+      this.popoverSize.width, vw, vh, estHeight,
       this.lastPointer ?? undefined,
       this.lastLineRect,
     );
     // Apply any user drag offset and keep the popup inside the viewport.
-    const width = this.container.offsetWidth || this.size.width;
+    const width = this.container.offsetWidth || this.popoverSize.width;
     const height = this.container.offsetHeight || estHeight;
     const left = Math.max(VIEWPORT_MARGIN, Math.min(vw - width - VIEWPORT_MARGIN, pos.left + this.dragOffset.x));
     const top = Math.max(VIEWPORT_MARGIN, Math.min(vh - height - VIEWPORT_MARGIN, pos.top + this.dragOffset.y));
     this.container.style.left = `${left}px`;
     this.container.style.top = `${top}px`;
     // Shrink popup height to fit the viewport so it never overflows.
-    // The user wants the popup to "thu nhỏ lại" when there isn't enough space.
     const availableHeight = vh - top - VIEWPORT_MARGIN;
-    const clampedHeight = Math.max(200, Math.min(this.size.maxHeight, availableHeight));
+    const clampedHeight = Math.max(200, Math.min(this.popoverSize.maxHeight, availableHeight));
     this.container.style.height = `${clampedHeight}px`;
   }
 
@@ -591,12 +651,14 @@ export class PopupShell {
    *  position is computed once at drag start and reused. */
   private applyDragPosition(): void {
     if (!this.container || !this.lastAnchor) return;
+    // Bottom sheet mode: no anchor-based drag repositioning (sheet is fixed to bottom).
+    if (this.isSheetMode()) return;
     // Recompute the base position with cached dims + cached anchor — the anchor
     // does not change mid-drag, and using cached vw/vh avoids reading
     // window.innerWidth each move.
     const pos = computePopupPosition(
       this.lastAnchor.top, this.lastAnchor.left, this.lastAnchor.right, this.lastAnchor.bottom,
-      this.size.width, this.dragCachedVw, this.dragCachedVh, this.dragCachedHeight,
+      this.popoverSize.width, this.dragCachedVw, this.dragCachedVh, this.dragCachedHeight,
       this.lastPointer ?? undefined,
       this.lastLineRect,
     );
@@ -605,7 +667,7 @@ export class PopupShell {
     this.container.style.left = `${left}px`;
     this.container.style.top = `${top}px`;
     const availableHeight = this.dragCachedVh - top - VIEWPORT_MARGIN;
-    const clampedHeight = Math.max(200, Math.min(this.size.maxHeight, availableHeight));
+    const clampedHeight = Math.max(200, Math.min(this.popoverSize.maxHeight, availableHeight));
     this.container.style.height = `${clampedHeight}px`;
   }
 
@@ -627,12 +689,20 @@ export class PopupShell {
     return this.container?.getBoundingClientRect() ?? null;
   }
 
-  /** Update popup size. */
+  /** Update popover size (from settings). */
   setSize(size: PopupSize): void {
-    this.size = size;
-    if (this.container) {
+    this.popoverSize = size;
+    if (this.container && !this.isSheetMode()) {
       this.container.style.width = `${size.width}px`;
       this.container.style.maxHeight = `${size.maxHeight}px`;
+    }
+  }
+
+  /** Update sheet height (from settings). */
+  setSheetHeight(height: number): void {
+    this.sheetHeight = height;
+    if (this.container && this.isSheetMode()) {
+      this.container.style.height = `${height}px`;
     }
   }
 
@@ -643,8 +713,8 @@ export class PopupShell {
   }
 
   /** Update the resize-complete callback. */
-  setOnResizeEnd(onResizeEnd: (size: PopupSize) => void): void {
-    (this as unknown as { onResizeComplete: (size: PopupSize) => void }).onResizeComplete = onResizeEnd;
+  setOnResizeEnd(onResizeEnd: (size: PopupSize, sheetHeight: number) => void): void {
+    (this as unknown as { onResizeComplete: (size: PopupSize, sheetHeight: number) => void }).onResizeComplete = onResizeEnd;
   }
 
   /** Show the popup. Adds the visible class so CSS transitions opacity + transform
@@ -737,9 +807,11 @@ export class PopupShell {
   destroy(): void {
     if (this.dragRaf) { cancelAnimationFrame(this.dragRaf); this.dragRaf = 0; }
     if (this.resizeRaf) { cancelAnimationFrame(this.resizeRaf); this.resizeRaf = 0; }
+    if (this.viewportResizeRaf) { cancelAnimationFrame(this.viewportResizeRaf); this.viewportResizeRaf = 0; }
     document.removeEventListener('keydown', this.boundKeyDown, true);
     document.removeEventListener('mousedown', this.boundClickOutside, true);
     document.removeEventListener('fullscreenchange', this.boundFullscreenChange);
+    window.removeEventListener('resize', this.boundViewportResize);
     if (this.resizeHandle) {
       this.resizeHandle.removeEventListener('pointerdown', this.boundResizeStart);
     }
@@ -748,6 +820,12 @@ export class PopupShell {
     this.container?.removeEventListener('pointerdown', this.boundPointerDown);
     this.container?.removeEventListener('pointermove', this.boundPointerMove);
     this.container?.removeEventListener('pointerup', this.boundPointerUp);
+    if (this.sheetHandle) {
+      this.sheetHandle.removeEventListener('pointerdown', this.boundSheetPointerDown);
+      this.sheetHandle.removeEventListener('pointermove', this.boundSheetPointerMove);
+      this.sheetHandle.removeEventListener('pointerup', this.boundSheetPointerUp);
+    }
+    this.contentEl?.removeEventListener('pointerdown', this.boundSheetPointerDown);
     this.themeCleanup?.();
     this.themeCleanup = null;
     this.restoreFocus();
@@ -759,6 +837,7 @@ export class PopupShell {
     this.container = null;
     this.contentEl = null;
     this.resizeHandle = null;
+    this.sheetHandle = null;
   }
 
   /** Re-parent host into fullscreen element (or back to body) on fullscreen change. */
@@ -822,9 +901,15 @@ export class PopupShell {
     this.isResizing = true;
     this.resizeStartX = e.clientX;
     this.resizeStartY = e.clientY;
-    this.resizeStartWidth = this.size.width;
-    // Capture actual rendered height — container may be shorter than maxHeight.
-    this.resizeStartHeight = this.container?.offsetHeight ?? this.size.maxHeight;
+    if (this.isSheetMode()) {
+      // Sheet resize: only height changes (width is always 100vw).
+      this.resizeStartWidth = window.innerWidth;
+      this.resizeStartHeight = this.container?.offsetHeight ?? this.sheetHeight;
+    } else {
+      this.resizeStartWidth = this.popoverSize.width;
+      // Capture actual rendered height — container may be shorter than maxHeight.
+      this.resizeStartHeight = this.container?.offsetHeight ?? this.popoverSize.maxHeight;
+    }
     this.resizePending = null;
     document.addEventListener('pointermove', this.boundResizeMove);
     document.addEventListener('pointerup', this.boundResizeEnd);
@@ -847,23 +932,28 @@ export class PopupShell {
     }
   }
 
-  /** Apply the cached resize delta using live window dims (resize changes the
-   *  popup size, so the viewport clamp must use current innerWidth/Height — but
-   *  only once per frame, not per pointermove). */
+  /** Apply the cached resize delta using live window dims.
+   *  Popover: width + height both change. Sheet: only height changes (width=100vw). */
   private applyResize(dx: number, dy: number): void {
     if (!this.container) return;
-    const newWidth = Math.max(320, this.resizeStartWidth + dx);
-    const newHeight = Math.max(200, this.resizeStartHeight + dy);
-    const clamped = clampPopupSize(
-      { width: newWidth, maxHeight: newHeight },
-      window.innerWidth,
-      window.innerHeight,
-    );
-    this.size = clamped;
-    this.container.style.width = `${clamped.width}px`;
-    // Set height directly so popup visually grows/shrinks, not just maxHeight.
-    this.container.style.height = `${clamped.maxHeight}px`;
-    this.container.style.maxHeight = `${clamped.maxHeight}px`;
+    if (this.isSheetMode()) {
+      // Sheet: drag up to increase height (dy negative = drag up = taller).
+      const newHeight = Math.max(200, Math.min(this.resizeStartHeight - dy, window.innerHeight - VIEWPORT_MARGIN));
+      this.sheetHeight = newHeight;
+      this.container.style.height = `${newHeight}px`;
+    } else {
+      const newWidth = Math.max(320, this.resizeStartWidth + dx);
+      const newHeight = Math.max(200, this.resizeStartHeight + dy);
+      const clamped = clampPopupSize(
+        { width: newWidth, maxHeight: newHeight },
+        window.innerWidth,
+        window.innerHeight,
+      );
+      this.popoverSize = clamped;
+      this.container.style.width = `${clamped.width}px`;
+      this.container.style.height = `${clamped.maxHeight}px`;
+      this.container.style.maxHeight = `${clamped.maxHeight}px`;
+    }
   }
 
   private onResizeEnd(_e: PointerEvent): void {
@@ -879,7 +969,7 @@ export class PopupShell {
     this.resizePending = null;
     document.removeEventListener('pointermove', this.boundResizeMove);
     document.removeEventListener('pointerup', this.boundResizeEnd);
-    this.onResizeComplete(this.size);
+    this.onResizeComplete(this.popoverSize, this.sheetHeight);
   }
 
   /** Show a transient toast inside the popup shell. */
@@ -920,6 +1010,8 @@ export class PopupShell {
   /** Pointer down on the header starts a drag move. */
   private onPointerDown(e: PointerEvent): void {
     if (!this.container) return;
+    // In sheet mode, header drag is disabled — use grab handle for swipe-to-dismiss.
+    if (this.isSheetMode()) return;
     const target = e.target as HTMLElement | null;
     // Only drag from the header, and never from interactive controls.
     if (!target?.closest('.cell-header')) return;
@@ -929,8 +1021,8 @@ export class PopupShell {
     this.dragOffsetStart = { ...this.dragOffset };
     // Cache dims so the pointermove hot path never reads layout (offsetWidth/
     // offsetHeight force reflow). The popup size + viewport are stable mid-drag.
-    this.dragCachedWidth = this.container.offsetWidth || this.size.width;
-    this.dragCachedHeight = this.container.offsetHeight || this.size.maxHeight;
+    this.dragCachedWidth = this.container.offsetWidth || this.popoverSize.width;
+    this.dragCachedHeight = this.container.offsetHeight || this.popoverSize.maxHeight;
     this.dragCachedVw = window.innerWidth;
     this.dragCachedVh = window.innerHeight;
     this.dragPending = null;
@@ -974,5 +1066,64 @@ export class PopupShell {
     this.container.releasePointerCapture(e.pointerId);
     this.container.removeEventListener('pointermove', this.boundPointerMove);
     this.container.removeEventListener('pointerup', this.boundPointerUp);
+  }
+
+  // === Bottom sheet swipe-to-dismiss ===
+
+  /** Viewport resize → re-position (rAF throttled). Morphs sheet↔popover
+   *  when crossing 768px, and re-clamps position/size to the new viewport.
+   *  Only fires while the popup is visible — hidden popups reposition on next show. */
+  private onViewportResize(): void {
+    if (!this.container?.classList.contains('cell-popup--visible')) return;
+    if (this.viewportResizeRaf) return;
+    this.viewportResizeRaf = requestAnimationFrame(() => {
+      this.viewportResizeRaf = 0;
+      this.applyPosition();
+    });
+  }
+
+  private onSheetPointerDown(e: PointerEvent): void {
+    if (!this.container || !this.isSheetMode()) return;
+    // Grab handle: always starts drag. Content area: only when scrolled to top.
+    const isHandle = e.target === this.sheetHandle || (e.target as HTMLElement)?.closest('.cell-sheet-handle');
+    if (!isHandle) {
+      if (this.contentEl && this.contentEl.scrollTop > 0) return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    this.sheetDragActive = true;
+    this.sheetDragStartY = e.clientY;
+    // Capture pointer on the target element so pointermove/up fire even if
+    // the finger leaves the original element during the swipe.
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    target.addEventListener('pointermove', this.boundSheetPointerMove);
+    target.addEventListener('pointerup', this.boundSheetPointerUp);
+  }
+
+  private onSheetPointerMove(e: PointerEvent): void {
+    if (!this.container || !this.sheetDragActive) return;
+    const dy = e.clientY - this.sheetDragStartY;
+    if (dy > 0) {
+      // Swipe down → dismiss gesture: translate sheet down.
+      this.container.style.transform = `translateY(${dy}px)`;
+      this.container.style.transition = 'none';
+    }
+  }
+
+  private onSheetPointerUp(e: PointerEvent): void {
+    if (!this.container) return;
+    const dy = e.clientY - this.sheetDragStartY;
+    this.sheetDragActive = false;
+    this.container.style.transition = '';
+    this.container.style.transform = '';
+    const target = e.currentTarget as HTMLElement;
+    target.releasePointerCapture(e.pointerId);
+    target.removeEventListener('pointermove', this.boundSheetPointerMove);
+    target.removeEventListener('pointerup', this.boundSheetPointerUp);
+    // Swipe down > 100px → dismiss. Otherwise snap back (hoàn tác).
+    if (dy > 100) {
+      this.onDismiss();
+    }
   }
 }
