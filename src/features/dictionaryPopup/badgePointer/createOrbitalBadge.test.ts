@@ -408,6 +408,27 @@ describe('createOrbitalBadge', () => {
     jest.useRealTimers();
   });
 
+  it('a pointerdown on the badge while the panel is open does NOT close it (shadow DOM retarget)', () => {
+    jest.useFakeTimers();
+    const badge = createOrbitalBadge({ panel: panelStub() });
+    const { badge: btn } = getBadgeAndPointer();
+
+    // Open the panel from collapsed (instant).
+    btn.click();
+    expect(mockSettings.__getOpenState()).toBe(true);
+
+    // Fire a pointerdown directly on the badge — the document-level
+    // onDocPointerDown listener must see the target as the host (shadow DOM
+    // retargeting) and skip the close. This guards against a regression where
+    // a tap on the badge accidentally closes the panel.
+    btn.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 10, clientY: 10 }));
+    expect(mockSettings.__getOpenState()).toBe(true);
+    expect(mockSettings.__getCloseCalls()).toBe(0);
+
+    badge.destroy();
+    jest.useRealTimers();
+  });
+
   it('triple tap cycles horizontal presets immediately when expanded', () => {
     jest.useFakeTimers();
     const onPresetChange = jest.fn();

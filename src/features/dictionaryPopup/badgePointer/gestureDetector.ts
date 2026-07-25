@@ -1,17 +1,17 @@
 /**
  * Multi-tap detector for the orbital badge.
  *
- * Uses pointer timestamps. A tap window of 300 ms is used to group consecutive
- * taps. Single, double, triple, and quadruple taps are all emitted after the
- * tap window expires — each action is delayed so that a higher tap count can
- * cancel it. This prevents a multi-tap from firing lower-count actions on
- * touch screens where each tap fires a click event immediately.
+ * Uses pointer timestamps. A tap window of 300 ms groups consecutive taps.
+ * Single and double taps are emitted after the window expires — delayed so a
+ * higher tap count can cancel them. Triple tap fires immediately on the third
+ * tap (there is no higher count to wait for). This prevents a multi-tap from
+ * firing lower-count actions on touch screens where each tap fires a click
+ * event instantly.
  *
- * Tap mapping:
- * - 1 tap: onSingleTap (no-op for panel — used for future single-tap actions)
+ * Tap mapping (see createOrbitalBadge for the actions bound to each):
+ * - 1 tap: onSingleTap (open settings panel — open-only, never toggles)
  * - 2 taps: onDoubleTap (cycle vertical presets)
  * - 3 taps: onTripleTap (cycle horizontal presets)
- * - 4 taps: onQuadrupleTap (open settings panel)
  */
 
 const TAP_WINDOW_MS = 300;
@@ -21,6 +21,10 @@ export interface GestureDetector {
   onPointerDown(timestamp?: number): void;
   /** Call on pointerup. Returns true if the event was consumed (reset happened). */
   onPointerUp(timestamp?: number): boolean;
+  /** Reset any pending tap sequence (clears the timer + tap count). Used when
+   *  a tap is handled out-of-band (e.g. instant open when collapsed) so a
+   *  later tap does not count as a continuation. */
+  reset(): void;
   /** Destroy clears any pending timer. */
   destroy(): void;
 }
@@ -30,10 +34,8 @@ export interface GestureDetectorDeps {
   readonly onSingleTap: () => void;
   /** Fired after TAP_WINDOW_MS if no third tap arrives. */
   readonly onDoubleTap: () => void;
-  /** Fired after TAP_WINDOW_MS if no fourth tap arrives. */
+  /** Fired immediately on the third tap. */
   readonly onTripleTap: () => void;
-  /** Fired immediately on the fourth tap. */
-  readonly onQuadrupleTap: () => void;
 }
 
 export function createGestureDetector(deps: GestureDetectorDeps): GestureDetector {
@@ -89,21 +91,14 @@ export function createGestureDetector(deps: GestureDetectorDeps): GestureDetecto
         return false;
       }
 
-      if (tapCount === 3) {
-        timer = setTimeout(() => {
-          timer = null;
-          tapCount = 0;
-          deps.onTripleTap();
-        }, TAP_WINDOW_MS);
-        return false;
-      }
-
-      // Quadruple tap confirmed; reset immediately.
+      // Triple tap confirmed (no higher count to wait for); reset immediately.
       tapCount = 0;
       lastTapTime = 0;
-      deps.onQuadrupleTap();
+      deps.onTripleTap();
       return true;
     },
+
+    reset,
 
     destroy(): void {
       reset();
