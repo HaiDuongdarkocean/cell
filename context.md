@@ -107,6 +107,8 @@ Summary: User directed agent to stop asking and run loop autonomously. Focus exp
 - Quality gates: typecheck pass, lint pass, unit tests pass (236 suites), build pass.
 - Slice 4: audit setTimeout/setInterval cleanup. Fixed leaks in `createOrbitalBadge.ts` (hoverTimer not cleared on destroy), `tsTransmuxer.ts` (waitForDone timeout not cleared on 'done'), and `transmuxWorker.ts` (worker timeout not cleared on 'done').
 - Quality gates: typecheck pass, lint pass, unit tests pass (236 suites), build pass.
+- Slice 5: fixed `ankiConnectClient.ts` Promise.race timeout leak by clearing the timeout in `fetchPromise.finally`.
+- Quality gates: typecheck pass, lint pass, unit tests pass (236 suites), build pass.
 
 ### Active Tasks
-- Slice 5: next backlog item (TBD).
+- Slice 6: next backlog item (TBD).
