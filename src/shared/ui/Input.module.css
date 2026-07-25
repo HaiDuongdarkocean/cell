@@ -5,7 +5,7 @@
   border: 1px solid var(--input-border, var(--color-border));
   border-radius: var(--input-radius, var(--radius-md, 18px));
   font-family: var(--font-family);
-  font-size: var(--input-font-size, var(--font-size-sm, 13px));
+  font-size: var(--input-font-size, var(--font-size-base, 14px));
   transition: border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
 }
 
@@ -48,7 +48,7 @@
 .md {
   height: var(--input-height, 32px);
   padding: var(--input-padding-y, 8px) var(--input-padding-x, 12px);
-  font-size: var(--input-font-size, var(--font-size-sm, 13px));
+  font-size: var(--input-font-size, var(--font-size-base, 14px));
 }
 
 .lg {

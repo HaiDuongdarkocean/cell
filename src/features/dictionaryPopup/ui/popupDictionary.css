@@ -585,7 +585,7 @@
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-text-inverse);
-  font-size: var(--font-size-2xs, 10px);
+  font-size: var(--font-size-xs, 12px);
   font-weight: var(--font-weight-semibold);
   pointer-events: none;
   box-shadow: 0 0 0 1.5px var(--color-background);
@@ -613,7 +613,7 @@
   border: none;
   padding: 0;
   font: inherit;
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1459,7 +1459,7 @@
     gap: var(--space-0-5);
   }
   .cell-header__word {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-base);
   }
   .cell-toolbar {
     padding: 0 var(--space-2-5);
@@ -1494,7 +1494,7 @@
     gap: var(--space-1);
   }
   .cell-header__word {
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-base);
   }
   .cell-header__ipa {
     font-size: var(--font-size-xs);
@@ -1652,7 +1652,7 @@
 /* --- Default (480-767px): touch target 44px, base font 15px --- */
 @container (min-width: 480px) and (max-width: 767px) {
   .cell-popup {
-    font-size: var(--font-size-md, 15px);
+    font-size: var(--font-size-base, 14px);
   }
   .icon-btn--xs,
   .icon-btn--sm {
@@ -1678,10 +1678,10 @@
 /* --- Wide (≥768px): desktop — mouse precision, 40px touch target, base font 16px --- */
 @container (min-width: 768px) {
   .cell-popup {
-    font-size: var(--font-size-lg, 16px);
+    font-size: var(--font-size-base, 14px);
   }
   .cell-header__word {
-    font-size: var(--font-size-xl, 18px);
+    font-size: var(--font-size-base, 14px);
     line-height: calc(var(--touch-target-desktop, 40px) * 0.6);
   }
   .cell-header__ipa {
@@ -1692,7 +1692,7 @@
     line-height: calc(var(--touch-target-desktop, 40px) * 0.4);
   }
   .cell-def__text {
-    font-size: var(--font-size-lg, 16px);
+    font-size: var(--font-size-base, 14px);
   }
   .cell-def__examples {
     font-size: var(--font-size-xs, 12px);

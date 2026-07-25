@@ -47,7 +47,7 @@
 }
 
 .title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
   white-space: nowrap;

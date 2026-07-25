@@ -16,12 +16,12 @@ body {
   transition: background var(--transition), color var(--transition);
 }
 header { max-width: 1200px; margin: 0 auto var(--space-6); }
-h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); margin: 0 0 var(--space-1); }
-.subtitle { font-size: var(--font-size-sm); color: var(--color-text-muted); margin: 0; line-height: 1.5; }
+h1 { font-size: var(--font-size-base); font-weight: var(--font-weight-bold); margin: 0 0 var(--space-1); }
+.subtitle { font-size: var(--font-size-base); color: var(--color-text-muted); margin: 0; line-height: 1.5; }
 .subtitle code {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: var(--font-size-xs);
-  background: var(--color-surface-hover); padding: 1px 6px; border-radius: var(--radius-sm);
+  background: var(--color-surface-hover); padding: var(--space-0-5) var(--space-1-5); border-radius: var(--radius-sm);
 }
 .controls {
   display: flex; gap: var(--space-3); align-items: center; margin-top: var(--space-4);
@@ -29,7 +29,7 @@ h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); marg
 }
 /* Search input — design-system §3 Input (pill 18px, hairline, focus ring) */
 .search-box {
-  flex: 1; min-width: 200px; padding: var(--space-2) 14px;
+  flex: 1; min-width: 200px; padding: var(--space-2) var(--space-3-5);
   border: 1px solid var(--color-border); border-radius: var(--radius-md);
   background: transparent; color: var(--color-text); font-size: var(--font-size-base);
   font-family: var(--font-family); outline: none;
@@ -41,7 +41,7 @@ h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); marg
 .size-select, .theme-toggle {
   padding: var(--space-2) var(--space-4); border: 1px solid var(--color-border);
   border-radius: var(--radius-md); background: transparent; color: var(--color-text);
-  cursor: pointer; font-size: var(--font-size-sm); font-family: var(--font-family);
+  cursor: pointer; font-size: var(--font-size-base); font-family: var(--font-family);
   transition: background var(--transition), border-color var(--transition);
 }
 .size-select:hover, .theme-toggle:hover {
@@ -62,7 +62,7 @@ h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); marg
 }
 .card {
   display: flex; flex-direction: column; align-items: center;
-  padding: var(--space-4) var(--space-2) 10px;
+  padding: var(--space-4) var(--space-2) var(--space-2-5);
   border: 1px solid var(--color-border); border-radius: var(--radius-lg);
   background: transparent; cursor: pointer;
   transition: background var(--transition), border-color var(--transition);
@@ -75,23 +75,23 @@ h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); marg
 .card-name {
   font-size: var(--font-size-xs); font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
-  margin-top: 10px; text-align: center; word-break: break-all;
+  margin-top: var(--space-2-5); text-align: center; word-break: break-all;
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
 }
 .card-tags {
-  font-size: 9px; color: var(--color-text-muted); margin-top: var(--space-1);
+  font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-1);
   text-align: center; line-height: 1.4;
 }
 .empty {
-  text-align: center; padding: 48px; color: var(--color-text-muted);
+  text-align: center; padding: var(--space-12); color: var(--color-text-muted);
   font-size: var(--font-size-base);
 }
 /* Toast — design-system §32 Toast */
 .toast {
   position: fixed; bottom: var(--space-6); left: 50%; transform: translateX(-50%);
-  padding: 10px var(--space-5); border-radius: var(--radius-md);
+  padding: var(--space-2-5) var(--space-5); border-radius: var(--radius-md);
   background: var(--color-primary); color: var(--color-text-inverse);
-  font-size: var(--font-size-sm); font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base); font-weight: var(--font-weight-medium);
   opacity: 0; transition: opacity var(--transition); pointer-events: none;
 }
 .toast.show { opacity: 1; }

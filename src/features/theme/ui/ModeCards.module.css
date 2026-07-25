@@ -29,12 +29,12 @@
 }
 
 .icon {
-  font-size: var(--font-size-3xl, 24px);
+  font-size: var(--space-6);
   line-height: var(--leading-none, 1);
 }
 
 .label {
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--font-size-base, 14px);
   font-weight: var(--font-weight-medium, 500);
   color: var(--color-text);
 }

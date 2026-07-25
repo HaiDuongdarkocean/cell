@@ -87,7 +87,7 @@
 
 .title {
   margin: 0;
-  font-size: var(--font-size-xl, 18px);
+  font-size: var(--font-size-base, 14px);
   font-weight: var(--font-weight-semibold, 600);
   color: var(--color-text);
   line-height: var(--leading-tight, 1.25);
@@ -95,13 +95,13 @@
 
 .description {
   margin: var(--space-1, 4px) 0 0 0;
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--font-size-base, 14px);
   color: var(--color-text-secondary);
   line-height: var(--leading-normal, 1.5);
 }
 
 .content {
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--font-size-base, 14px);
   color: var(--color-text);
 }
 

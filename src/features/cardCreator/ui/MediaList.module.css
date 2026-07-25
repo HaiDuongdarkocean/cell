@@ -31,7 +31,7 @@
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-family: inherit;
   cursor: pointer;
   transition: border-color var(--duration-fast) var(--ease-in-out),
@@ -100,7 +100,7 @@
   border-radius: var(--radius-full);
   background: var(--color-surface-hover);
   color: var(--color-text);
-  font-size: var(--font-size-base);
+  font-size: var(--space-3-5);
   line-height: var(--leading-none, 1);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-in-out),
@@ -202,7 +202,7 @@
   border-radius: var(--radius-full);
   background: var(--color-surface-hover);
   color: var(--color-text-inverse);
-  font-size: var(--font-size-2xl);
+  font-size: var(--space-6);
   line-height: var(--leading-none, 1);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-in-out);
@@ -270,7 +270,7 @@
 
 .cc-media__name {
   flex: 1;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -288,7 +288,7 @@
   color: var(--color-text-muted);
   cursor: pointer;
   border-radius: var(--radius-full);
-  font-size: var(--font-size-base);
+  font-size: var(--space-3-5);
   line-height: var(--leading-none, 1);
   flex-shrink: 0;
   transition: background var(--duration-fast) var(--ease-in-out),

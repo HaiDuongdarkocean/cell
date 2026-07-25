@@ -18,7 +18,7 @@
 }
 
 .title {
-  font-size: var(--font-size-xl, 18px);
+  font-size: var(--font-size-base, 14px);
   font-weight: var(--font-weight-semibold, 600);
   margin: 0 0 var(--space-3, 12px) 0;
   color: var(--color-text);

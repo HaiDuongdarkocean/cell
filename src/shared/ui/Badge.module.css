@@ -18,7 +18,7 @@
 
 .md {
   padding: var(--space-1, 4px) var(--space-2-5, 10px);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
 }
 
 .default {

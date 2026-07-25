@@ -22,7 +22,7 @@
   background: var(--input-bg, var(--color-background));
   color: var(--input-fg, var(--color-text));
   font-family: var(--font-family);
-  font-size: var(--input-font-size, var(--font-size-sm));
+  font-size: var(--input-font-size, var(--font-size-base));
   cursor: pointer;
   text-align: left;
   outline: none;
@@ -148,7 +148,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   color: var(--color-text);
 }
 

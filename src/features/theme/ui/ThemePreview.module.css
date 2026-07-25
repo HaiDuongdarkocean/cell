@@ -33,10 +33,10 @@
 }
 
 .textPrimary { color: var(--color-text); font-size: var(--font-size-base, 14px); }
-.textSecondary { color: var(--color-text-secondary); font-size: var(--font-size-sm, 13px); }
-.textSuccess { color: var(--color-success); font-size: var(--font-size-sm, 13px); }
-.textWarning { color: var(--color-warning); font-size: var(--font-size-sm, 13px); }
-.textError { color: var(--color-error); font-size: var(--font-size-sm, 13px); }
+.textSecondary { color: var(--color-text-secondary); font-size: var(--font-size-base, 14px); }
+.textSuccess { color: var(--color-success); font-size: var(--font-size-base, 14px); }
+.textWarning { color: var(--color-warning); font-size: var(--font-size-base, 14px); }
+.textError { color: var(--color-error); font-size: var(--font-size-base, 14px); }
 
 .card {
   padding: var(--space-3, 12px);
@@ -52,7 +52,7 @@
   border-radius: var(--radius-sm, 6px);
   background: var(--color-background);
   color: var(--color-text);
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--font-size-base, 14px);
 }
 
 .input:focus-visible {
@@ -67,13 +67,13 @@
   border-radius: var(--radius-md, 8px);
   text-align: center;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--font-size-base, 14px);
 }
 
 .toast {
   padding: var(--space-1, 4px) var(--space-2, 8px);
   border-radius: var(--radius-sm, 6px);
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--font-size-base, 14px);
 }
 
 .toastSuccess { background: var(--color-success); color: var(--color-text-inverse); }
