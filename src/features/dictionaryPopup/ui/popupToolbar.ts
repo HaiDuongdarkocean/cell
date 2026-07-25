@@ -376,9 +376,9 @@ export function renderImagePanel(
   container.appendChild(panel);
 }
 
-/** Render the translate panel — single clickable block with target + native.
+/** Render the translate panel — single clickable block with native + target.
  *  - Empty: icon + title + "Translate sentence" button.
- *  - Loaded: single block with target sentence (top) + native translation (bottom).
+ *  - Loaded: single block with native translation (top) + target sentence (bottom).
  *  - Click block to toggle selection; checkbox at far right when selected.
  *  - Native language is set in Settings > Popup > Native language. */
 export function renderTranslatePanel(
@@ -463,7 +463,7 @@ export function renderTranslatePanel(
     return;
   }
 
-  // Loaded — single clickable block with target (top) + native (bottom).
+  // Loaded — single clickable block with native (top) + target (bottom).
   const selected = isSelected ?? false;
   const block = document.createElement('div');
   block.className = 'cell-translate__block js-cell-translate-block' + (selected ? ' cell-translate__block--selected' : '');
@@ -474,16 +474,16 @@ export function renderTranslatePanel(
 
   const textEl = document.createElement('div');
   textEl.className = 'cell-translate__text';
-  // Target sentence (top) — the original sentence being read.
-  const targetEl = document.createElement('div');
-  targetEl.className = 'cell-translate__target';
-  targetEl.textContent = sourceSentence || translation;
-  textEl.appendChild(targetEl);
-  // Native translation (bottom) — translated to user's native language.
+  // Native translation (top) — translated to user's native language.
   const nativeEl = document.createElement('div');
   nativeEl.className = 'cell-translate__native';
   nativeEl.textContent = sourceSentence ? translation : '';
   textEl.appendChild(nativeEl);
+  // Target sentence (bottom) — the original sentence being read.
+  const targetEl = document.createElement('div');
+  targetEl.className = 'cell-translate__target';
+  targetEl.textContent = sourceSentence || translation;
+  textEl.appendChild(targetEl);
   block.appendChild(textEl);
 
   // Checkbox at far right — hidden when unchecked, visible when checked.

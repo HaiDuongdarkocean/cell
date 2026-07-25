@@ -15,25 +15,6 @@ import { rankToBand } from '@/shared/lib/frequencyBand';
 // BEM modifier classes: .cell-header__status--<status>
 //   unknown=error, tracking=warning, known=success, ignore=neutral
 
-/** Generate a stable ID for a sense within a definition. */
-export function makeSenseId(definitionId: string, senseIndex: number): string {
-  return `${definitionId}::sense::${senseIndex}`;
-}
-
-/**
- * Split a definition text that contains numbered senses into separate parts.
- * Example: "to think about... 2.to consider... 3.to read..." → 5 items.
- * If there is only one sense, returns a single-element array.
- */
-export function splitNumberedSenses(text: string): string[] {
-  // Split at positions followed by a digit + dot, e.g. "2.", "3.".
-  // Keep the delimiters with the following sense.
-  const parts = text.split(/(?=\d+\.)/).map((s) => s.trim()).filter(Boolean);
-  // Guard against false positives like "1.5 kg" — only split if 2+ numeric markers exist.
-  const numericMarkers = parts.filter((p) => /^\d+\./.test(p));
-  return numericMarkers.length >= 2 ? parts : [text.trim()];
-}
-
 /** Selection state for definitions (checkboxes). */
 export type DefinitionSelection = Map<string, boolean>;
 
@@ -415,14 +396,7 @@ export function renderCandidateChips(
 export function initDefinitionSelection(result: LookupResult): DefinitionSelection {
   const map = new Map<string, boolean>();
   for (const def of result.definitions) {
-    const senses = splitNumberedSenses(def.text);
-    if (senses.length <= 1) {
-      map.set(def.id, def.defaultSelected);
-    } else {
-      for (let i = 0; i < senses.length; i++) {
-        map.set(makeSenseId(def.id, i), def.defaultSelected);
-      }
-    }
+    map.set(def.id, def.defaultSelected);
   }
   return map;
 }
@@ -432,40 +406,7 @@ export function getSelectedDefinitions(
   result: LookupResult,
   selection: DefinitionSelection,
 ): DefinitionEntry[] {
-  const selected: DefinitionEntry[] = [];
-  for (const def of result.definitions) {
-    const senses = splitNumberedSenses(def.text);
-    if (senses.length <= 1) {
-      if (selection.get(def.id) ?? def.defaultSelected) {
-        selected.push(def);
-      }
-      continue;
-    }
-
-    const selectedIndexes: number[] = [];
-    for (let i = 0; i < senses.length; i++) {
-      if (selection.get(makeSenseId(def.id, i)) ?? def.defaultSelected) {
-        selectedIndexes.push(i);
-      }
-    }
-
-    if (selectedIndexes.length === 0) continue;
-
-    if (selectedIndexes.length === senses.length) {
-      selected.push(def);
-      continue;
-    }
-
-    for (const idx of selectedIndexes) {
-      selected.push({
-        ...def,
-        id: makeSenseId(def.id, idx),
-        text: senses[idx]!,
-        examples: idx === 0 ? def.examples : [],
-      });
-    }
-  }
-  return selected;
+  return result.definitions.filter((def) => selection.get(def.id) ?? def.defaultSelected);
 }
 
 /** Clear all children of a container. */
