@@ -16,7 +16,7 @@ export function buildTokenBadgeCss(): string {
   return `
 :host {
   font-family: var(--font-family, sans-serif);
-  color: var(--color-foreground, #0f172a);
+  color: var(--color-foreground);
 }
 
 /* FAB — floating action button. .btn--primary provides bg/color/hover/active.
@@ -96,9 +96,9 @@ export function buildTokenBadgeCss(): string {
   max-width: calc(100vw - var(--space-8, 32px)) !important;
   /* bottom = FAB height (var(--badge-size)) + gap (var(--space-2)) + base offset (var(--space-4)) */
   bottom: calc(var(--space-4, 16px) + var(--badge-size, 36px) + var(--space-2, 8px)) !important;
-  background: var(--color-popover, #ffffff) !important;
-  color: var(--color-popover-foreground, #0f172a) !important;
-  border: 1px solid var(--color-border, #e2e8f0) !important;
+  background: var(--color-popover) !important;
+  color: var(--color-popover-foreground) !important;
+  border: 1px solid var(--color-border) !important;
   border-radius: var(--radius-lg, 12px) !important;
   padding: var(--space-4, 16px) !important;
   z-index: 2147483646 !important;
@@ -132,7 +132,7 @@ export function buildTokenBadgeCss(): string {
 }
 
 .cell-token-row__label {
-  color: var(--color-foreground, #0f172a) !important;
+  color: var(--color-foreground) !important;
 }
 
 /* Toggle block — matches DS Toggle.tsx pattern (button + aria-pressed + thumb).

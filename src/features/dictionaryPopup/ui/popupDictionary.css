@@ -92,7 +92,7 @@
   width: var(--space-9, 36px);
   height: var(--space-1, 4px);
   border-radius: var(--radius-full, 9999px);
-  background: var(--color-border, #e2e8f0);
+  background: var(--color-border);
 }
 
 .cell-sheet-handle:active {
@@ -1752,7 +1752,7 @@
   width: var(--space-20);
   height: 1em;
   border-radius: var(--radius-xs, 4px);
-  background: var(--color-surface-hover, rgba(128, 128, 128, 0.15));
+  background: var(--color-surface-hover);
   animation: cell-skeleton-shimmer 1.2s ease-in-out infinite;
 }
 
@@ -1767,7 +1767,7 @@
 .cell-definition-skeleton-line {
   height: var(--space-3-5);
   border-radius: var(--radius-xs, 4px);
-  background: var(--color-surface-hover, rgba(128, 128, 128, 0.15));
+  background: var(--color-surface-hover);
   animation: cell-skeleton-shimmer 1.2s ease-in-out infinite;
 }
 
