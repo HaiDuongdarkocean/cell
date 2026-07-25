@@ -103,6 +103,8 @@ Summary: User directed agent to stop asking and run loop autonomously. Focus exp
 - Commit: 1103a9c refactor: remove production console.log debug from iqiyi + offscreen runner.
 - Slice 2: removed production console.log from youtubeInnertube.ts, webTokenizeController.ts, autoEnablement.ts, parallelFallback.ts, parallelCoordinator.ts, parallelCancellation.ts, parallelTransmuxer.ts, tsTransmuxer.ts.
 - Quality gates: typecheck pass, lint pass, unit tests pass (237 suites), build pass.
+- Slice 3: removed production console.log from downloader.ts (15 logs), removed dead `parallelSettings`/`setParallelSettings` wiring, and deleted `ConversionTimer` class + tests (all production usage was logging-only).
+- Quality gates: typecheck pass, lint pass, unit tests pass (236 suites), build pass.
 
 ### Active Tasks
-- Slice 3: remove production console.log from downloader.ts (15 logs) and conversionTimer.ts (logSummary method/test cleanup)
+- Slice 4: audit setTimeout/setInterval cleanup in high-usage controllers.

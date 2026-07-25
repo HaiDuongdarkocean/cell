@@ -158,10 +158,6 @@ export class BackgroundService implements BackgroundContext {
     this.downloader.setConvertMode(settings.convertToMp4);
     this.downloader.setSegmentConcurrency(settings.segmentConcurrency);
     this.downloader.setFilenameSource(settings.filenameSource);
-    this.downloader.setParallelSettings({
-      parallelConversion: settings.parallelConversion,
-      manualWorkerCount: settings.manualWorkerCount,
-    });
 
     // 3. Load persisted extension active state.
     this.extensionActive = await loadExtensionStatus();

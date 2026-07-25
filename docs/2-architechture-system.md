@@ -251,7 +251,6 @@ src/
 │   │   ├── segmentGrouping.ts        # Group segments cho parallel workers
 │   │   ├── segmentMerger.ts          # Merge fMP4 fragments
 │   │   ├── mp4Validator.ts           # Validate MP4 output
-│   │   ├── conversionTimer.ts        # Measure conversion time
 │   │   ├── autoEnablement.ts         # Auto-enable parallel logic
 │   │   ├── benchmarkHarness.ts       # Benchmark conversion
 │   │   └── workerFactory.ts          # Tạo Web Worker cho transmux
@@ -405,7 +404,7 @@ tests/
 | `background/handlers/translate.ts` | messages, translateService, types | `background/index.ts` (via registerTranslateHandlers) | **ADR-021**: 1 translate handler: TRANSLATE (content-script → background SW fetch Google Translate unofficial endpoint, CORS bypass, return parsed string[]) |
 | `background/handlers/cardCreator.ts` | messages, **message/schema**, ankiConnectClient, types | `background/index.ts` (via registerCardCreatorHandlers) | **ADR-026**: 1 Card Creator handler: CARD_CREATOR_REQUEST (content-script → background SW fetch AnkiConnect HTTP, CORS bypass, return `{ result }` or `{ error }`). Single generic action; action name + params in payload. **Runtime Zod validation** for payload |
 | `background/networkInterceptor.ts` | videoDetector, subtitleDetector, types | `background/index.ts`, `background/wireEvents.ts` | Media detection, dedup, clearTab; **ADR-036: onListingDetected callback** — fires when Stremio addon listing URL captured → async resolveStremioSubtitleListing extracts real subtitle URLs from JSON |
-| `background/downloader.ts` | m3u8Parser, assToSrt, vttToSrt, srtNormalizer, conversionTimer, parallelPlanner, **fileUtils**, opfsStorage, types, config | `background/index.ts` | Download + convert + filename, **pause/resume/retry** (cancel flag pattern), **two-phase progress** (downloadProgress + convertProgress), **AES-128 decrypt** (fetchKey, decryptSegment, WebCrypto AES-CBC), **fMP4 concat** (init segment + .m4s → .mp4, no transmux), **byte-range** (Range header, 206/200), **ad skip** (section-based, even=content/odd=ad), **nested master** (max depth 3) |
+| `background/downloader.ts` | m3u8Parser, assToSrt, vttToSrt, srtNormalizer, **fileUtils**, opfsStorage, types, config | `background/index.ts` | Download + convert + filename, **pause/resume/retry** (cancel flag pattern), **two-phase progress** (downloadProgress + convertProgress), **AES-128 decrypt** (fetchKey, decryptSegment, WebCrypto AES-CBC), **fMP4 concat** (init segment + .m4s → .mp4, no transmux), **byte-range** (Range header, 206/200), **ad skip** (section-based, even=content/odd=ad), **nested master** (max depth 3) |
 | `background/downloadQueue.ts` | types | `background/index.ts` | Queue concurrency, pause/resume, **retry** (reset+requeue), **remove** (delete item) |
 | `background/messageBus.ts` | — | `background/index.ts` | Message routing |
 | `background/offscreenManager.ts` | — | `background/index.ts` | Offscreen document lifecycle |

@@ -48,15 +48,6 @@ export function registerSettingsHandlers(ctx: BackgroundContext): void {
     if (payload.settings.filenameSource !== undefined) {
       ctx.downloader.setFilenameSource(payload.settings.filenameSource);
     }
-    if (
-      payload.settings.parallelConversion !== undefined ||
-      payload.settings.manualWorkerCount !== undefined
-    ) {
-      ctx.downloader.setParallelSettings({
-        parallelConversion: merged.parallelConversion,
-        manualWorkerCount: merged.manualWorkerCount,
-      });
-    }
     // parallelFallback is read by the offscreen conversion path when a
     // conversion starts; no immediate side-effect to apply here.
 
