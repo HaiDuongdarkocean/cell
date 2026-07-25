@@ -63,7 +63,23 @@ Session COMPLETED.
 ### Backlog for Next Loop
 - 6 any warnings in tests/integration/subtitleManagerPanel.integration.test.ts
 - console.log / console.warn debug noise in webTokenizeController.ts, downloader.ts, parallelCoordinator.ts, subtitleAutoLoad.ts, youtubeInnertube.ts, etc.
-- Decide fate of uncommitted redesign implementation and skill directories
 
 ### Active Tasks
 - None
+
+## Session 2026-01-26 (next)
+Status: IN PROGRESS
+Summary: User confirmed redesign batch is a separate task and grants full decision authority; ignore it and continue debt loop.
+
+### Completed Tasks (this session)
+- Re-typed global.chrome mock in tests/integration/subtitleManagerPanel.integration.test.ts to remove 6 any warnings; corrected mock shape (onChanged at storage level, not local level) after test failure.
+- Lint: pass, 0 errors, 0 warnings.
+- Integration tests: pass (6 suites, 22 tests).
+- Unit tests + build: running.
+
+### Active Tasks
+- VERIFY unit tests + build, then commit
+
+### Backlog
+- console.log / console.warn debug noise in production code
+- revisit any remaining lint/type/test issues after current slice
