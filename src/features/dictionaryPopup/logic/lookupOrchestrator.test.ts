@@ -254,7 +254,7 @@ describe('lookupOrchestrator — English', () => {
     ).rejects.toThrow(/aborted/i);
   });
 
-  it('splits all Cambridge senses including idiom markers without POS', async () => {
+  it('splits all Cambridge senses — only strips N. markers, keeps (POS) in text', async () => {
     // Real Cambridge JSON shape for "question": 23 senses, some idioms have no
     // POS in parentheses right after the number (e.g. 17.bring/call...).
     const questionDefinition = `1.(noun) a sentence or phrase used to find out information<br><br>2.(noun) in an exam, a problem that tests a person's knowledge or ability<br><br>3.(noun) any matter that needs to be dealt with or considered<br><br>4.(noun) doubt or confusion<br><br>5.sb/sth in question<br>(noun) the person or thing that is being discussed<br><br>6.(verb [ T ]) to ask a person about something, especially officially<br><br>7.(verb [ T ]) to express doubts about the value or truth of something<br><br>8.(noun) a word or words used to find out information<br><br>9.(noun) a matter to be dealt with or discussed, or a problem to be solved<br><br>10.(noun) In an exam, a question is a problem that tests a person's knowledge<br><br>11.(noun) doubt or uncertainty<br><br>12.(verb [ T ]) to use a word or words to find out information<br><br>13.(verb [ T ]) If you question something, you express doubt or uncertainty about it<br><br>14.(noun) a sentence or phrase that asks for information<br><br>15.(noun) a subject or problem<br><br>16.(noun) a feeling of doubt about something<br><br>17.bring/call sth into question<br>(noun) to express doubt about something<br><br>18.(noun) to make people feel doubt about something<br><br>19.in question<br>(noun) that is being discussed<br><br>20.(noun) if something is in question, no-one knows what is going to happen to it<br><br>21.out of the question<br>(noun) if something is out of the question, it definitely will not or cannot happen<br><br>22.(verb [ T ]) to ask someone questions about something<br><br>23.(verb [ T ]) to express doubts about something<br><br>`;
@@ -268,16 +268,17 @@ describe('lookupOrchestrator — English', () => {
     });
 
     expect(result.definitions).toHaveLength(23);
-    // Idiom markers are split into their own senses and stripped of numbers.
-    expect(result.definitions[15]!.text).toBe('a feeling of doubt about something');
+    // Only N. markers are stripped; (POS) stays in text, pos field is empty.
+    expect(result.definitions[15]!.text).toBe('(noun) a feeling of doubt about something');
+    expect(result.definitions[15]!.pos).toBeUndefined();
     expect(result.definitions[16]!.text).toContain('bring/call sth into question');
-    expect(result.definitions[16]!.pos).toBe('noun');
+    expect(result.definitions[16]!.pos).toBeUndefined();
     expect(result.definitions[16]!.text).not.toMatch(/^\d+\./);
     expect(result.definitions[18]!.text).toContain('in question');
-    expect(result.definitions[18]!.pos).toBe('noun');
+    expect(result.definitions[18]!.pos).toBeUndefined();
     expect(result.definitions[20]!.text).toContain('out of the question');
-    expect(result.definitions[20]!.pos).toBe('noun');
-    expect(result.definitions[22]!.text).toBe('to express doubts about something');
+    expect(result.definitions[20]!.pos).toBeUndefined();
+    expect(result.definitions[22]!.text).toBe('(verb [ T ]) to express doubts about something');
   });
 
   it('falls back to lemma when raw inflected term not in dictionary (easiest → easy)', async () => {

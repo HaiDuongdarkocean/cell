@@ -55,6 +55,11 @@ function checkAbort(signal?: AbortSignal): void {
  * This function splits them so each sense becomes a separate DefinitionEntry
  * with its own checkbox in the popup.
  *
+ * Only splits on numbered markers (N.) — does NOT extract POS from
+ * parentheses. The text after each marker stays intact, including "(noun)",
+ * "(verb [ T ])", idiom markers, etc. POS extraction was overengineering
+ * that stripped formatting the user expects to see.
+ *
  * Returns the original text as a single entry if no numbered senses are found.
  */
 function splitSenses(definition: string): { pos: string; text: string }[] {
@@ -63,38 +68,18 @@ function splitSenses(definition: string): { pos: string; text: string }[] {
   const clean = definition.replace(/<br\s*\/?>/gi, '\n').replace(/\r\n/g, '\n').trim();
   if (!clean) return [];
 
-  // Match each sense boundary. Cambridge uses markers like:
-  //   1.(noun) ...        — POS in parentheses immediately after the number.
-  //   17.bring/call...    — idiom marker without parentheses, no whitespace.
-  //   19.in question      — idiom marker with whitespace after the dot.
-  // Boundaries are: start of string, or after a blank line (\n{2,}), and the
-  // character after the dot must be "(" or a non-digit, non-whitespace char
-  // to avoid false positives like "1.5 kg".
-  const senseRegex = /(?:^|\n{2,})\s*(\d+)\.\s*(?:\(([^)]+)\)\s*)?([\s\S]*?)(?=(?:\n{2,}\s*\d+\.\s*(?:\(|[^\d\s])|$))/g;
+  // Match each sense boundary: start of string or after a blank line (\n{2,}),
+  // followed by N. and then any non-digit, non-whitespace char (to avoid
+  // false positives like "1.5 kg"). The text after N. stays intact.
+  const senseRegex = /(?:^|\n{2,})\s*(\d+)\.\s*([\s\S]*?)(?=(?:\n{2,}\s*\d+\.|$))/g;
 
   const senses: { pos: string; text: string }[] = [];
   let match: RegExpExecArray | null;
   while ((match = senseRegex.exec(clean)) !== null) {
-    let pos = match[2]?.trim() ?? '';
-    let text = match[3]?.trim() ?? '';
+    const text = match[2]?.trim() ?? '';
     if (!text) continue;
-
-    // Cambridge idioms sometimes put the POS on the next line:
-    //   "bring/call sth into question\n(noun) to express doubt..."
-    // If we didn't find a leading POS, check for that pattern.
-    if (!pos) {
-      const linePos = text.match(/^([^\n]+)\n\s*\(([^)]+)\)\s*(.*)$/s);
-      if (linePos) {
-        pos = linePos[2]!.trim();
-        text = `${linePos[1]!.trim()}\n\n${linePos[3]!.trim()}`;
-      }
-    }
-
-    // Clean up: collapse runs of newlines and trim.
-    text = text.replace(/\n{3,}/g, '\n\n').trim();
-    if (!text) continue;
-
-    senses.push({ pos, text });
+    // Collapse runs of newlines and trim — no POS extraction, text stays intact.
+    senses.push({ pos: '', text: text.replace(/\n{3,}/g, '\n\n').trim() });
   }
 
   // If the text contained no numeric markers, return the whole thing as one sense.
