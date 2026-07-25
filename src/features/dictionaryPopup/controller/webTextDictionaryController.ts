@@ -13,7 +13,6 @@ import type { LookupRequest, LookupResult, TriggerMode, WordStatus } from '../ty
 import type { FetchCommunityAudioResponse, FetchImagesResponse, AudioItem, ImageItem, TtsFetchAudioResponse } from '@/features/dictionaryPopup/types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAction, PopupLineRect } from '@/features/dictionaryPopup/ui/popupDictionaryController';
-import { splitNumberedSenses } from '@/features/dictionaryPopup/ui/popupContent';
 import {
   createPopupDictionaryState,
   showPopup,
@@ -219,26 +218,16 @@ function isBlockContainer(el: HTMLElement): boolean {
 }
 
 /** Create a top-level web-text dictionary controller. */
-/** Format definitions for Card Creator / Quick Add — matches popup style:
- *  group by POS, show POS once per group, each sense on its own line.
- *  Uses splitNumberedSenses (same as popup) to split multi-sense entries. */
+/** Format definitions for Card Creator / Quick Add:
+ *  - <br> → \n (line breaks)
+ *  - N. (numbered sense markers) → • (bullet)
+ *  Each sense on its own line, matching the popup's visual layout. */
 function formatDefinitions(definitions: readonly { readonly pos?: string; readonly text: string }[]): string {
-  const lines: string[] = [];
-  let lastPos: string | undefined;
-  for (const def of definitions) {
-    const senses = splitNumberedSenses(def.text);
-    for (let i = 0; i < senses.length; i++) {
-      const pos = def.pos?.trim();
-      // Show POS only when it changes (group by POS, like popup).
-      if (pos && pos !== lastPos) {
-        lines.push(`${pos}. ${senses[i]}`);
-        lastPos = pos;
-      } else {
-        lines.push(senses[i]);
-      }
-    }
-  }
-  return lines.join('\n');
+  return definitions
+    .map((d) => d.text)
+    .join('\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/^\s*(\d+)\.\s*/gm, '• ');
 }
 
 export function createWebTextDictionaryController(deps: WebTextDictionaryControllerDeps): WebTextDictionaryController {

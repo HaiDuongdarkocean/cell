@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Settings, VideoQuality, ConvertToMp4Mode, ParallelConversionMode, FilenameSource, ShortcutAction, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { CardCreatorSettings } from '@/entities/settings';
@@ -112,15 +112,31 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeSt
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const mainColRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
-  const activeItemRef = useRef<HTMLButtonElement>(null);
 
-  // Auto-scroll sidebar to keep active item visible when activeSection changes
-  // (from IntersectionObserver on scroll or from sidebar click).
-  useEffect(() => {
-    const item = activeItemRef.current;
+  // Auto-scroll sidebar to keep active item visible when activeSection changes.
+  // scrollSidebarToId takes a section ID and scrolls the sidebar to the
+  // corresponding button. Called from IntersectionObserver callback and
+  // handleSidebarClick — avoids depending on React re-render timing.
+  const scrollSidebarToId = useCallback((sectionId: string) => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+    const item = sidebar.querySelector(`[data-section-id="${sectionId}"]`) as HTMLElement | null;
     if (!item) return;
-    item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [activeSection]);
+    const itemTop = item.offsetTop - sidebar.offsetTop;
+    const itemBottom = itemTop + item.offsetHeight;
+    const viewTop = sidebar.scrollTop;
+    const viewBottom = viewTop + sidebar.clientHeight;
+    if (itemTop < viewTop) {
+      sidebar.scrollTop = itemTop;
+    } else if (itemBottom > viewBottom) {
+      sidebar.scrollTop = itemBottom - sidebar.clientHeight;
+    }
+  }, []);
+
+  // Also scroll on activeSection change (covers programmatic state changes).
+  useLayoutEffect(() => {
+    scrollSidebarToId(activeSection);
+  }, [activeSection, scrollSidebarToId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -145,7 +161,11 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeSt
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const id = entry.target.getAttribute('data-section');
-            if (id) setActiveSection(id);
+            if (id) {
+              setActiveSection(id);
+              // Scroll sidebar immediately — don't wait for React re-render.
+              scrollSidebarToId(id);
+            }
           }
         });
       },
@@ -204,6 +224,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeSt
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setActiveSection(sectionId);
+      scrollSidebarToId(sectionId);
     }
   };
 
@@ -254,8 +275,8 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeSt
             {sidebarItems.map((item) => (
               <button
                 key={item.id}
-                ref={activeSection === item.id ? activeItemRef : undefined}
                 type="button"
+                data-section-id={item.id}
                 className={`${styles.sidebarItem} ${activeSection === item.id ? styles.active : ''}`}
                 onClick={() => handleSidebarClick(item.id)}
                 aria-current={activeSection === item.id ? 'true' : undefined}
