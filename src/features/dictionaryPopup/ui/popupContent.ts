@@ -397,3 +397,48 @@ export function renderPopupContent(
   getOrCreateCandidatesContainer(container);
   requestAnimationFrame(() => { container.style.opacity = '1'; });
 }
+
+/** Render a skeleton loading state — shows the term + a spinner immediately
+ *  while dictionary data is still being fetched from the background worker.
+ *  The controller calls `renderPopupContent` to replace this once data arrives.
+ *  Keeps the popup shell at a stable size so there's no layout jump. */
+export function renderPopupLoading(container: HTMLElement, term: string): void {
+  clearContainer(container);
+  const entry = document.createElement('div');
+  entry.className = 'cell-active-entry cell-active-entry--loading';
+
+  // Header skeleton: term word + placeholder IPA + placeholder status pill.
+  const header = document.createElement('div');
+  header.className = 'cell-header js-cell-header';
+  const wordRow = document.createElement('div');
+  wordRow.className = 'cell-header__word-row';
+  const termSpan = document.createElement('span');
+  termSpan.className = 'cell-header__word js-cell-term';
+  termSpan.id = 'cell-popup-term';
+  termSpan.textContent = term;
+  wordRow.appendChild(termSpan);
+  header.appendChild(wordRow);
+
+  // Placeholder IPA row (grey bar) so the header height matches the loaded state.
+  const readingRow = document.createElement('div');
+  readingRow.className = 'cell-header__reading';
+  const ipaPlaceholder = document.createElement('span');
+  ipaPlaceholder.className = 'cell-header__ipa cell-header__ipa--skeleton';
+  readingRow.appendChild(ipaPlaceholder);
+  header.appendChild(readingRow);
+
+  entry.appendChild(header);
+
+  // Loading indicator: 3 shimmer definition lines.
+  const defs = document.createElement('div');
+  defs.className = 'cell-definitions cell-definitions--skeleton';
+  for (let i = 0; i < 3; i++) {
+    const line = document.createElement('div');
+    line.className = 'cell-definition-skeleton-line';
+    defs.appendChild(line);
+  }
+  entry.appendChild(defs);
+
+  container.appendChild(entry);
+  container.style.opacity = '1';
+}

@@ -256,8 +256,17 @@ describe('createWebTextDictionaryController', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    // Popup should not have been rendered from the stale response.
-    expect(document.querySelector('.js-cell-popup-host')).toBeNull();
+    // Popup shell may exist (showPopupLoading creates it immediately for
+    // instant feedback), but it must be hidden after dismiss — the stale
+    // response must not re-show it.
+    const host = document.querySelector('.js-cell-popup-host');
+    if (host && host.shadowRoot) {
+      const popup = host.shadowRoot.querySelector('.cell-popup');
+      expect(popup?.classList.contains('cell-popup--visible')).toBe(false);
+    }
+    // No term rendered from the stale response.
+    const termEl = host && host.shadowRoot ? host.shadowRoot.querySelector('.js-cell-term') : null;
+    expect(termEl?.textContent).not.toBe(result.term);
 
     ctrl.destroy();
     jest.useRealTimers();

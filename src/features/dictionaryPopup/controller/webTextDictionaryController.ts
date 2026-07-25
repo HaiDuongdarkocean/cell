@@ -16,6 +16,7 @@ import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAct
 import {
   createPopupDictionaryState,
   showPopup,
+  showPopupLoading,
   hidePopup,
   appendCandidate,
   updatePopupSettings,
@@ -743,6 +744,26 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       renderLookupResult(finalCached[0]!, finalCached.slice(1), anchorRect, request, pointer);
       return;
     }
+
+    // Show the popup shell immediately with a skeleton loading state (term +
+    // shimmer lines) so the user gets instant feedback on click/hover — no
+    // waiting for the IDB round-trip. When data arrives, renderLookupResult
+    // replaces the skeleton with real content at the same anchor (no jump).
+    const lineRect: PopupLineRect | null = currentHighlightTarget
+      ? computeLineRect(currentHighlightTarget)
+      : null;
+    popupDictState = showPopupLoading(popupDictState, request.term, {
+      anchor: {
+        top: anchorRect.top,
+        left: anchorRect.left,
+        right: anchorRect.right,
+        bottom: anchorRect.bottom + 4,
+      },
+      pointer: pointer ? { tip: { x: pointer.x, y: pointer.y }, badgeCenter: pointer.badgeCenter, badgeRadius: pointer.badgeRadius, pointerRadius: pointer.pointerRadius } : undefined,
+      lineRect,
+      contextSentence: request.contextSentence,
+      onDismiss: onPopupDismiss,
+    });
 
     void Promise.resolve(sendMessage({
       type: MESSAGE_TYPES.LOOKUP_REQUEST,
