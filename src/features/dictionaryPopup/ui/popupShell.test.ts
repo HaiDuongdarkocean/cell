@@ -80,11 +80,62 @@ describe('clampPopupSize', () => {
   });
 });
 
+describe('computePopupPosition — diagonal corners', () => {
+  /** Popup must clear both word axes (true diagonal) when space allows. */
+  function assertDiagonalClear(
+    pos: { left: number; top: number },
+    anchor: { top: number; left: number; right: number; bottom: number },
+    popupWidth: number,
+    popupHeight: number,
+  ): void {
+    const clearH = pos.left + popupWidth <= anchor.left || pos.left >= anchor.right;
+    const clearV = pos.top + popupHeight <= anchor.top || pos.top >= anchor.bottom;
+    expect(clearH && clearV).toBe(true);
+    // No geometric overlap with the looked-up word.
+    const overlap = pos.left < anchor.right && pos.left + popupWidth > anchor.left
+      && pos.top < anchor.bottom && pos.top + popupHeight > anchor.top;
+    expect(overlap).toBe(false);
+  }
+
+  // Ideal (image-1): SE corner — right of word AND below word.
+  it('default: SE diagonal corner (right+below word) when space allows', () => {
+    // GFG runtime: word algorithms ~ (468,216)-(556,240), popup ~322×226, vw=1366 vh=663
+    const pos = computePopupPosition(215.55, 468, 556, 240, 322, 1366, 663, 226);
+    expect(pos.left).toBe(560); // anchorRight + GAP
+    expect(pos.top).toBe(244); // anchorBottom + GAP
+    assertDiagonalClear(pos, { top: 215.55, left: 468, right: 556, bottom: 240 }, 322, 226);
+  });
+
+  it('picks SW when SE does not fit horizontally', () => {
+    // Word near right edge — SE overflows right, SW fits below-left.
+    const pos = computePopupPosition(70, 1800, 1850, 100, 400, 1920, 1080, 300);
+    expect(pos.left).toBe(1800 - 400 - 4); // SW: anchorLeft - width - GAP
+    expect(pos.top).toBe(104); // below
+    assertDiagonalClear(pos, { top: 70, left: 1800, right: 1850, bottom: 100 }, 400, 300);
+  });
+
+  it('picks NE when below does not fit', () => {
+    // Word near bottom — SE/SW overflow bottom → flip above-right (NE).
+    const pos = computePopupPosition(870, 940, 990, 900, 400, 1920, 1080, 300);
+    expect(pos.left).toBe(994); // anchorRight + GAP
+    expect(pos.top + 300).toBeLessThanOrEqual(870 - 4);
+    assertDiagonalClear(pos, { top: 870, left: 940, right: 990, bottom: 900 }, 400, 300);
+  });
+
+  it('never covers left/right band of word when a clear diagonal exists', () => {
+    const pos = computePopupPosition(70, 100, 150, 100, 400, 1920, 1080, 300);
+    // Must not sit on the same vertical column as the word (axis-aligned bottom was wrong).
+    const intersectsWordCol = pos.left < 150 && pos.left + 400 > 100;
+    expect(intersectsWordCol).toBe(false);
+    expect(pos.top).toBeGreaterThanOrEqual(104);
+  });
+});
+
 describe('computePopupPosition — edge cases', () => {
-  // ── Edge case 1: Normal — token center, popup fits below ──
-  it('EC1: popup below token when space below is sufficient', () => {
+  // ── Edge case 1: Normal — SE diagonal when space below+right is sufficient ──
+  it('EC1: popup SE diagonal of token when space is sufficient', () => {
     const pos = computePopupPosition(70, 100, 150, 100, 400, 1920, 1080);
-    expect(pos.left).toBe(100);
+    expect(pos.left).toBe(154); // anchorRight + GAP (SE), not left-aligned under word
     expect(pos.top).toBe(104); // anchorBottom + 4
     expect(pos.top + 300).toBeLessThanOrEqual(1080 - 8); // no overflow
   });
@@ -108,11 +159,12 @@ describe('computePopupPosition — edge cases', () => {
     expect(pos.top + 500).toBeLessThanOrEqual(600 - 8); // no overflow
   });
 
-  // ── Edge case 4: Token near right edge — right-align popup ──
-  it('EC4: right-aligns popup when token near right edge', () => {
+  // ── Edge case 4: Token near right edge — SW diagonal (left+below) ──
+  it('EC4: SW diagonal when token near right edge (SE overflows right)', () => {
     const pos = computePopupPosition(70, 1800, 1850, 100, 400, 1920, 1080);
     expect(pos.left + 400).toBeLessThanOrEqual(1920 - 8); // no right overflow
-    expect(pos.left).toBe(1450); // anchorRight - popupWidth
+    expect(pos.left).toBe(1396); // SW: anchorLeft - popupWidth - GAP
+    expect(pos.top).toBe(104); // below word
   });
 
   // ── Edge case 5: Token near left edge — clamp left ──
@@ -229,18 +281,18 @@ describe('computePopupPosition — edge cases', () => {
   it('prefers the side the pointer is coming from to avoid covering the badge', () => {
     // Pointer coming from the left: badge at (0,115), tip at (125,115).
     const pointer = { tip: { x: 125, y: 115 }, badgeCenter: { x: 0, y: 115 } };
-    // Without pointer it would place below (top=104); with pointer it should place right.
+    // Preferred 'right' → SE corner (right+below). top clamped by short viewport.
     const pos = computePopupPosition(70, 100, 150, 100, 200, 600, 400, 300, pointer);
     expect(pos.left).toBe(154); // anchorRight + 4
-    expect(pos.top).toBe(70);   // aligned with anchor top
+    expect(pos.top).toBe(92);   // anchorBottom + 4 = 104, clamped to 400-300-8=92
   });
 
   it('falls back to the left when the preferred right side does not fit', () => {
-    // Pointer coming from the right, but no space on the right.
+    // Pointer coming from the right, but no space on the right → SW corner.
     const pointer = { tip: { x: 500, y: 80 }, badgeCenter: { x: 0, y: 80 } };
     const pos = computePopupPosition(70, 450, 500, 100, 200, 600, 400, 300, pointer);
     expect(pos.left).toBe(246); // anchorLeft - popupWidth - GAP
-    expect(pos.top).toBe(70);  // aligned with anchor top, fits vertically
+    expect(pos.top).toBe(92);  // below word, clamped to viewport
   });
 
   it('avoids covering the pointer tip when the preferred side would overlap', () => {
@@ -251,21 +303,20 @@ describe('computePopupPosition — edge cases', () => {
     // The scorer should prefer right/left to avoid the tip.
     const pointer = { tip: { x: 125, y: 50 }, badgeCenter: { x: 125, y: 150 }, badgeRadius: 18, pointerRadius: 4.5 };
     const pos = computePopupPosition(70, 100, 150, 100, 200, 600, 400, 300, pointer);
-    // Should not place above (which would cover tip); right is preferred because dx=0,
-    // but the tie-breaker goes to the first evaluated after preferred (top). Top covers tip
-    // and gets +1000, so right (left=154, top=70) should win.
+    // Should not place above (which would cover tip); SE corner wins (right+below).
     expect(pos.left).toBe(154);
-    expect(pos.top).toBe(70);
+    expect(pos.top).toBe(92);
   });
 
-  it('avoids covering the badge circle', () => {
-    // Badge sits directly below the token; preferred bottom would put popup over the badge.
+  it('avoids covering the badge circle when space allows', () => {
+    // Badge sits directly below the token at x=125; SE corner (right+below) starts at
+    // left=154, so the badge (cx=125, r=20 → rightmost x=145) sits left of the popup.
     const pointer = { tip: { x: 125, y: 130 }, badgeCenter: { x: 125, y: 180 }, badgeRadius: 20, pointerRadius: 4.5 };
-    const pos = computePopupPosition(70, 100, 150, 100, 200, 600, 400, 300, pointer);
-    // Bottom would be at top=104, height 300, y=104..404; badge center y=180 with r=20
-    // is inside, so bottom gets +500. Right (left=154, top=70) should win.
-    expect(pos.left).toBe(154);
-    expect(pos.top).toBe(70);
+    const pos = computePopupPosition(70, 100, 150, 100, 200, 600, 1080, 300, pointer);
+    // Popup must not intersect the badge circle (cx=125, cy=180, r=20).
+    const closestX = Math.max(pos.left, Math.min(125, pos.left + 200));
+    const closestY = Math.max(pos.top, Math.min(180, pos.top + 300));
+    expect(Math.hypot(closestX - 125, closestY - 180)).toBeGreaterThan(20);
   });
 
   it('avoids covering the pointer near the viewport bottom', () => {
