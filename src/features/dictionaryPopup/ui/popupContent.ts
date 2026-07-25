@@ -310,10 +310,10 @@ export function renderDefinitions(
     const textWrap = document.createElement('div');
     textWrap.className = 'cell-def__text';
 
-    // Combined text: "• {pos} {text}" — no separate POS styling, one line per sense.
+    // Combined text: "{pos} {text}" — no separate POS styling, no bullet.
     const fullText = def.pos ? `${def.pos} ${def.text}` : def.text;
     const text = document.createElement('span');
-    text.textContent = `• ${fullText}`;
+    text.textContent = fullText;
     textWrap.appendChild(text);
 
     if (def.examples.length > 0) {
