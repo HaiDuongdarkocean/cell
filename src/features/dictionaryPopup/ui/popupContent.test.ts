@@ -200,11 +200,14 @@ describe('renderDefinitions', () => {
     expect((checkboxes[0] as HTMLInputElement).checked).toBe(true);
   });
 
-  it('renders pos label', () => {
+  it('renders pos combined with text (no separate pos span)', () => {
     const result = makeResult();
     renderDefinitions(container, result, new Map(), jest.fn());
+    // POS is now combined into the text: "• verb to run"
     const pos = container.querySelector('.cell-def__pos');
-    expect(pos?.textContent).toBe('verb. ');
+    expect(pos).toBeNull();
+    const text = container.querySelector('.cell-def__text span');
+    expect(text?.textContent).toContain('verb');
   });
 
   it('renders examples', () => {

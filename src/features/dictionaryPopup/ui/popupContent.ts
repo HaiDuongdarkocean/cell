@@ -278,69 +278,57 @@ export function renderDefinitions(
   }
 
   for (const def of result.definitions) {
-    const senses = splitNumberedSenses(def.text);
-    const isMultiSense = senses.length > 1;
-    for (let i = 0; i < senses.length; i++) {
-      // Single-sense definitions keep the original def.id for backward compatibility.
-      // Multi-sense definitions use per-sense IDs so each meaning can be selected.
-      const itemId = isMultiSense ? makeSenseId(def.id, i) : def.id;
-      const item = document.createElement('div');
-      item.className = 'cell-def__item js-cell-definition';
-      item.setAttribute('data-cell-def-id', itemId);
+    const item = document.createElement('div');
+    item.className = 'cell-def__item js-cell-definition';
+    item.setAttribute('data-cell-def-id', def.id);
 
-      // Checkbox gutter — dot by default, checkbox on hover or when checked.
-      const isChecked = selection.get(itemId) ?? def.defaultSelected;
-      const checkLabel = document.createElement('label');
-      checkLabel.className = 'cell-def__check js-cell-def-check' + (isChecked ? ' cell-def__check--checked' : '');
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = isChecked;
-      checkbox.className = 'cell-def__check-input js-cell-def-checkbox';
-      checkbox.addEventListener('change', () => {
-        onToggle(itemId, checkbox.checked);
-        checkLabel.classList.toggle('cell-def__check--checked', checkbox.checked);
-      });
-      checkLabel.appendChild(checkbox);
-      const dot = document.createElement('span');
-      dot.className = 'cell-def__check-dot';
-      checkLabel.appendChild(dot);
-      const box = document.createElement('span');
-      box.className = 'cell-def__check-box';
-      const tick = document.createElement('span');
-      tick.className = 'cell-def__check-tick';
-      tick.innerHTML = ICON_CATALOG.check.svg;
-      box.appendChild(tick);
-      checkLabel.appendChild(box);
-      item.appendChild(checkLabel);
+    // Checkbox gutter — dot by default, checkbox on hover or when checked.
+    const isChecked = selection.get(def.id) ?? def.defaultSelected;
+    const checkLabel = document.createElement('label');
+    checkLabel.className = 'cell-def__check js-cell-def-check' + (isChecked ? ' cell-def__check--checked' : '');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = isChecked;
+    checkbox.className = 'cell-def__check-input js-cell-def-checkbox';
+    checkbox.addEventListener('change', () => {
+      onToggle(def.id, checkbox.checked);
+      checkLabel.classList.toggle('cell-def__check--checked', checkbox.checked);
+    });
+    checkLabel.appendChild(checkbox);
+    const dot = document.createElement('span');
+    dot.className = 'cell-def__check-dot';
+    checkLabel.appendChild(dot);
+    const box = document.createElement('span');
+    box.className = 'cell-def__check-box';
+    const tick = document.createElement('span');
+    tick.className = 'cell-def__check-tick';
+    tick.innerHTML = ICON_CATALOG.check.svg;
+    box.appendChild(tick);
+    checkLabel.appendChild(box);
+    item.appendChild(checkLabel);
 
-      const textWrap = document.createElement('div');
-      textWrap.className = 'cell-def__text';
+    const textWrap = document.createElement('div');
+    textWrap.className = 'cell-def__text';
 
-      if (i === 0 && def.pos) {
-        const pos = document.createElement('span');
-        pos.className = 'cell-def__pos';
-        pos.textContent = `${def.pos}. `;
-        textWrap.appendChild(pos);
+    // Combined text: "• {pos} {text}" — no separate POS styling, one line per sense.
+    const fullText = def.pos ? `${def.pos} ${def.text}` : def.text;
+    const text = document.createElement('span');
+    text.textContent = `• ${fullText}`;
+    textWrap.appendChild(text);
+
+    if (def.examples.length > 0) {
+      const examples = document.createElement('div');
+      examples.className = 'cell-def__examples';
+      for (const ex of def.examples) {
+        const exEl = document.createElement('div');
+        exEl.textContent = `• ${ex}`;
+        examples.appendChild(exEl);
       }
-
-      const text = document.createElement('span');
-      text.textContent = senses[i];
-      textWrap.appendChild(text);
-
-      if (i === 0 && def.examples.length > 0) {
-        const examples = document.createElement('div');
-        examples.className = 'cell-def__examples';
-        for (const ex of def.examples) {
-          const exEl = document.createElement('div');
-          exEl.textContent = `• ${ex}`;
-          examples.appendChild(exEl);
-        }
-        textWrap.appendChild(examples);
-      }
-
-      item.appendChild(textWrap);
-      panel.appendChild(item);
+      textWrap.appendChild(examples);
     }
+
+    item.appendChild(textWrap);
+    panel.appendChild(item);
   }
 
   container.appendChild(panel);
