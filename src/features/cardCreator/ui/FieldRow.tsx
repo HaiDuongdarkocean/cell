@@ -21,7 +21,7 @@
  *  - .field-row (this component's wrapper)
  *  - .field-input (the auto-grow input — also exported standalone)
  */
-import { useRef, type ChangeEvent, type InputHTMLAttributes, type ReactElement, type ReactNode } from 'react';
+import { useRef, type ChangeEvent, type TextareaHTMLAttributes, type ReactElement, type ReactNode } from 'react';
 import { Select, type SelectOption } from '@/shared/ui/Select';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './FieldRow.module.css';
@@ -83,7 +83,7 @@ export function FieldRow({
   );
 }
 
-interface FieldAutoGrowInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value' | 'size'> {
+interface FieldAutoGrowInputProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange' | 'value' | 'size'> {
   /** Current value (controlled). */
   readonly value: string;
   /** Called with the new value when the input changes. */
@@ -97,14 +97,15 @@ interface FieldAutoGrowInputProps extends Omit<InputHTMLAttributes<HTMLInputElem
 }
 
 /**
- * FieldAutoGrowInput — auto-growing single-line input with a clear (x) button.
+ * FieldAutoGrowInput — auto-growing textarea with a clear (x) button.
  *
- * Replaces both FieldInput (single-line) and FieldTextarea (multi-line):
- *  - `field-sizing: content` (CSS) grows the input vertically to fit content.
+ * Always renders a `<textarea>` (not `<input>`) so text wraps and the field
+ * grows vertically with content — both for multi-line (explicit \n) and for
+ * single-line text that wraps at the field width.
+ *  - `field-sizing: content` (CSS) grows the textarea to fit content.
  *  - JS fallback: when `field-sizing` is unsupported, a `rows` attribute is
- *    derived from the value's line count so the input still grows.
- *  - Clear button (x icon) sits top-right inside the input box; one click
- *    empties the field.
+ *    derived from the value's line count so the textarea still grows.
+ *  - Clear button (x icon) sits top-right inside the box; one click empties.
  *  - Background matches the old textarea look (`--color-surface`).
  *
  * BEM block: `.field-input` (`.field-input__control`, `.field-input__clear`).
@@ -118,9 +119,9 @@ export function FieldAutoGrowInput({
   className,
   ...rest
 }: FieldAutoGrowInputProps): ReactElement {
-  const controlRef = useRef<HTMLInputElement>(null);
+  const controlRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
+  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>): void => {
     onChange(e.target.value);
   };
 
@@ -130,38 +131,26 @@ export function FieldAutoGrowInput({
     } else {
       onChange('');
     }
-    // Return focus to the input after clearing so the user can keep typing.
+    // Return focus to the textarea after clearing so the user can keep typing.
     controlRef.current?.focus();
   };
 
   // JS fallback for browsers without `field-sizing: content` support:
-  // derive `rows` from line count so the input grows vertically. Multi-line
-  // input uses `rows` to size itself; single-line stays at the min-height.
+  // derive `rows` from line count so the textarea grows vertically.
   const lineCount = Math.max(1, value.split('\n').length);
-  const isMultiLine = value.includes('\n') || lineCount > 1;
 
   const controlClass = [styles.fieldInput__control, className ?? ''].filter(Boolean).join(' ');
 
   return (
     <div className={styles.fieldInput} data-testid={dataId ? `${dataId}-input` : undefined}>
-      {isMultiLine ? (
-        <textarea
-          ref={controlRef as unknown as React.RefObject<HTMLTextAreaElement>}
-          className={controlClass}
-          value={value}
-          onChange={handleChange as unknown as React.ChangeEventHandler<HTMLTextAreaElement>}
-          rows={lineCount}
-          {...rest}
-        />
-      ) : (
-        <input
-          ref={controlRef}
-          className={controlClass}
-          value={value}
-          onChange={handleChange}
-          {...rest}
-        />
-      )}
+      <textarea
+        ref={controlRef}
+        className={controlClass}
+        value={value}
+        onChange={handleChange}
+        rows={lineCount}
+        {...rest}
+      />
       {clearable && value.length > 0 && (
         <button
           type="button"
