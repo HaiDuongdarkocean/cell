@@ -68,18 +68,17 @@ Session COMPLETED.
 - None
 
 ## Session 2026-01-26 (next)
-Status: IN PROGRESS
+Status: COMPLETED
 Summary: User confirmed redesign batch is a separate task and grants full decision authority; ignore it and continue debt loop.
 
 ### Completed Tasks (this session)
 - Re-typed global.chrome mock in tests/integration/subtitleManagerPanel.integration.test.ts to remove 6 any warnings; corrected mock shape (onChanged at storage level, not local level) after test failure.
 - Lint: pass, 0 errors, 0 warnings.
 - Integration tests: pass (6 suites, 22 tests).
-- Unit tests + build: running.
+- Unit tests: pass (237 suites, 3618 tests).
+- Build: pass (dist/manifest.json produced).
+- Commit: 0a50d32 Clear technical debt: type integration-test chrome mock.
 
-### Active Tasks
-- VERIFY unit tests + build, then commit
-
-### Backlog
+### Backlog for Next Loop
 - console.log / console.warn debug noise in production code
 - revisit any remaining lint/type/test issues after current slice
