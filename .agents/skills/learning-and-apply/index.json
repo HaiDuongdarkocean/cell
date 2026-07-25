@@ -1040,11 +1040,43 @@
     },
     {
       "type": "experience",
+      "id": "caret-point-hit-testing-hybrid-fallback",
+      "title": "caretRangeFromPoint hit-testing — hybrid caret + char-scan + geometry fallback for 100% resolution",
+      "category": ["ux", "detection"],
+      "tags": ["caretRangeFromPoint", "hit-testing", "word-lookup", "whitespace-click", "geometry-fallback", "elementsFromPoint", "proximity-gate", "line-height"],
+      "trigger": "Click/hover word lookup using caretRangeFromPoint where clicks on whitespace/punctuation between words intermittently fail, or a 1px geometry gate rejects valid words"
+    },
+    {
+      "type": "experience",
       "id": "shadow-dom-retargeting-pointer-events-click-through",
       "title": "Shadow DOM retargeting + pointer-events:auto → e.target lies; use composedPath()[0] + disable pointer-events for caretRangeFromPoint",
       "category": ["detection", "ux"],
       "tags": ["shadow-dom", "pointer-events", "caretrangefrompoint", "retargeting", "composedPath"],
       "trigger": "Floating Shadow DOM popup with pointer-events:auto intercepts clicks on page text behind it"
+    },
+    {
+      "type": "experience",
+      "id": "api-arity-mismatch-runtime-silent-fail",
+      "title": "API arity mismatch → silent runtime failure even when typecheck flags it",
+      "category": ["data", "state"],
+      "tags": ["storage", "api", "arity", "setStorage", "typescript", "runtime", "chrome-storage"],
+      "trigger": "Refactor storage/API helper từ `(key, value)` sang single `Record` argument hoặc ngược lại"
+    },
+    {
+      "type": "experience",
+      "id": "synchronous-throw-before-promise-catch",
+      "title": "Synchronous factory throw trước khi promise tạo → .catch() không bắt được",
+      "category": ["async"],
+      "tags": ["promise", "try-catch", "synchronous", "factory", "error-handling", "useEffect", "tts"],
+      "trigger": "Gọi factory/constructor trả về promise, nhưng factory throw đồng bộ; `.catch()` chỉ gắn sau promise đã tồn tại"
+    },
+    {
+      "type": "experience",
+      "id": "schema-version-bump-sync-test-assertions",
+      "title": "Schema version bump → đồng bộ tất cả test assertions và comments",
+      "category": ["testing", "state"],
+      "tags": ["schema", "migration", "version", "tests", "constants", "settings", "storage"],
+      "trigger": "Thay đổi `CURRENT_SCHEMA_VERSION` hoặc thêm migration mới"
     }
   ]
 }

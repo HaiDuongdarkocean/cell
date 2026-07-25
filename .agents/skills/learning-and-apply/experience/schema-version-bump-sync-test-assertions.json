@@ -1,0 +1,21 @@
+{
+  "id": "schema-version-bump-sync-test-assertions",
+  "title": "Schema version bump → đồng bộ tất cả test assertions và comments",
+  "category": ["testing", "state"],
+  "tags": ["schema", "migration", "version", "tests", "constants", "settings", "storage"],
+  "trigger": "Thay đổi `CURRENT_SCHEMA_VERSION` hoặc thêm migration mới",
+  "principle": "`CURRENT_SCHEMA_VERSION` là constant cross-cutting. Bất kỳ test nào assert schemaVersion (hoặc comment mô tả version) đều sẽ fail sau khi bump. Phải grep toàn codebase cho cả hard-coded value, string description, và migration comment rồi cập nhật. Nếu có thể, dùng `CURRENT_SCHEMA_VERSION` trong test thay vì hard-coded.",
+  "cases": [
+    {
+      "context": "Settings schema tăng từ 17 lên 18 (thêm popupSheetHeightVh). Nhiều test vẫn `.toBe(17)` và description 'CURRENT_SCHEMA_VERSION is 17'.",
+      "bad": "it('saveSettings stamps schemaVersion 17', async () => {\n  ...\n  expect(stored.schemaVersion).toBe(17);\n});",
+      "good": "it('saveSettings stamps schemaVersion 18 (V18 adds popupSheetHeightVh)', async () => {\n  ...\n  expect(stored.schemaVersion).toBe(18);\n});\n// Hoặc tốt hơn: expect(CURRENT_SCHEMA_VERSION).toBe(18) trong test chuyên dụng; các test khác import + dùng CURRENT_SCHEMA_VERSION."
+    }
+  ],
+  "applyFor": [
+    "Settings/config schema migration tests",
+    "Database schema version assertions",
+    "API version negotiation tests",
+    "Any test asserting a global version constant"
+  ]
+}

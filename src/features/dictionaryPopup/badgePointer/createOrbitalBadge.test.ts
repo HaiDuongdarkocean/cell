@@ -1,6 +1,60 @@
-import { describe, expect, it, jest, beforeAll } from '@jest/globals';
+import { describe, expect, it, jest, beforeAll, beforeEach } from '@jest/globals';
 import { createOrbitalBadge } from './createOrbitalBadge';
 import type { PointerPreset } from './pointerPosition';
+
+// Mock mountSettingsDialog so panel tests don't render the real React dialog.
+// The factory holds open/close state + spy fns; tests read state via the
+// `mockSettings` handle below. Variable names are `mock`-prefixed so jest's
+// mock-hoisting rule permits referencing them.
+jest.mock('@/features/settings/ui/mountSettingsDialog', () => {
+  let openState = false;
+  const openFn = jest.fn(() => { openState = true; });
+  const closeFn = jest.fn(() => { openState = false; });
+  return {
+    mountSettingsDialog: jest.fn(() => ({
+      open: openFn,
+      close: closeFn,
+      isOpen: () => openState,
+      unmount: jest.fn(),
+    })),
+    __getOpenState: () => openState,
+    __getOpenCalls: () => openFn.mock.calls.length,
+    __getCloseCalls: () => closeFn.mock.calls.length,
+    __reset: () => { openState = false; openFn.mockClear(); closeFn.mockClear(); },
+  };
+});
+
+// Typed handle to the mock's internal state helpers (not part of the real module).
+const mockSettings = jest.requireMock('@/features/settings/ui/mountSettingsDialog') as {
+  __getOpenState: () => boolean;
+  __getOpenCalls: () => number;
+  __getCloseCalls: () => number;
+  __reset: () => void;
+};
+
+/** Minimal panel option stub so createOrbitalBadge wires up the settings mount. */
+function panelStub() {
+  return {
+    getState: () => ({ enabled: true, showStatus: true, showFrequency: false }),
+    onToggle: jest.fn(),
+    onOpenDictionary: jest.fn(),
+    subscribe: jest.fn(() => () => {}),
+  };
+}
+
+/** Flush the async initial-render microtask (createOrbitalBadge reads the
+ *  persisted collapsed position via getStorage before positioning the badge). */
+function flushMicrotasks(): Promise<void> {
+  return Promise.resolve();
+}
+
+/** Remove any badge/settings hosts left behind by a test that threw before
+ *  calling destroy() — prevents querySelector in getBadgeAndPointer from
+ *  picking up a stale host (cascade failures). */
+function cleanDom(): void {
+  document.querySelectorAll('.js-cell-orbital-badge-host').forEach((el) => el.remove());
+  document.getElementById('cell-settings-dialog-host')?.remove();
+}
 
 beforeAll(() => {
   if (!window.matchMedia) {
@@ -61,6 +115,11 @@ function getBadgeAndPointer() {
 }
 
 describe('createOrbitalBadge', () => {
+  beforeEach(() => {
+    mockSettings.__reset();
+    cleanDom();
+  });
+
   it('renders the badge host, shadow root, and pointer', () => {
     const badge = createOrbitalBadge({});
 
@@ -75,8 +134,10 @@ describe('createOrbitalBadge', () => {
     expect(document.querySelector('.js-cell-orbital-badge-host')).toBeNull();
   });
 
-  it('starts collapsed as a half-moon with its center on the right viewport edge and pointer centered inside it', () => {
+  it('starts collapsed as a half-moon with its center on the right viewport edge and pointer centered inside it', async () => {
     const badge = createOrbitalBadge({ initialPreset: 'center' });
+    // The badge positions itself after the async getStorage microtask resolves.
+    await flushMicrotasks();
     const { badge: btn, pointer } = getBadgeAndPointer();
 
     expect(btn.classList.contains('cell-orbital-badge--expanded')).toBe(false);
@@ -234,7 +295,6 @@ describe('createOrbitalBadge', () => {
 
     // Default: collapsed on right edge at vh/2. jsdom defaults: innerWidth=1024, innerHeight=768.
     const originalLeft = btn.style.left;
-    const originalTop = btn.style.top;
 
     // Shrink viewport to half size. jsdom doesn't do layout so clientWidth=0;
     // getClientWidth falls back to window.innerWidth — mock that.
@@ -254,5 +314,122 @@ describe('createOrbitalBadge', () => {
     Object.defineProperty(window, 'innerHeight', { value: 768, configurable: true });
 
     badge.destroy();
+  });
+
+  // === Settings panel integration (1-tap opens settings) ===
+
+  it('opens the settings panel instantly on a single tap when collapsed', () => {
+    const badge = createOrbitalBadge({ panel: panelStub() });
+    const { badge: btn } = getBadgeAndPointer();
+
+    // Collapsed by default. A single click opens settings with no delay —
+    // 2/3-tap are no-op when collapsed, so no disambiguation is needed.
+    btn.click();
+    expect(mockSettings.__getOpenState()).toBe(true);
+    expect(mockSettings.__getOpenCalls()).toBe(1);
+
+    badge.destroy();
+  });
+
+  it('opens the settings panel after the tap window on a single tap when expanded', () => {
+    jest.useFakeTimers();
+    const badge = createOrbitalBadge({ panel: panelStub() });
+    const { badge: btn } = getBadgeAndPointer();
+
+    // Expand by dragging inward and release away from the edge.
+    btn.dispatchEvent(new MouseEvent('pointerdown', { button: 0, clientX: window.innerWidth - 18, clientY: window.innerHeight / 2, bubbles: true }));
+    btn.dispatchEvent(new MouseEvent('pointermove', { clientX: window.innerWidth - 60, clientY: window.innerHeight / 2, bubbles: true }));
+    btn.dispatchEvent(new MouseEvent('pointerup', { clientX: window.innerWidth - 60, clientY: window.innerHeight / 2, bubbles: true }));
+
+    // First click after drag is swallowed by suppressClick; second is tap 1.
+    btn.click();
+    btn.click();
+    expect(mockSettings.__getOpenState()).toBe(false);
+
+    // Single-tap fires only after the disambiguation window expires.
+    jest.advanceTimersByTime(300);
+    expect(mockSettings.__getOpenState()).toBe(true);
+    expect(mockSettings.__getOpenCalls()).toBe(1);
+
+    badge.destroy();
+    jest.useRealTimers();
+  });
+
+  it('does NOT open-then-close on a slow double tap when expanded (no flicker)', () => {
+    jest.useFakeTimers();
+    const onPresetChange = jest.fn();
+    const badge = createOrbitalBadge({ initialPreset: 'left', panel: panelStub(), onPresetChange });
+    const { badge: btn } = getBadgeAndPointer();
+
+    // Expand.
+    btn.dispatchEvent(new MouseEvent('pointerdown', { button: 0, clientX: window.innerWidth - 18, clientY: window.innerHeight / 2, bubbles: true }));
+    btn.dispatchEvent(new MouseEvent('pointermove', { clientX: window.innerWidth - 60, clientY: window.innerHeight / 2, bubbles: true }));
+    btn.dispatchEvent(new MouseEvent('pointerup', { clientX: window.innerWidth - 60, clientY: window.innerHeight / 2, bubbles: true }));
+
+    // Tap 1 (after the swallowed drag click) — schedule single-tap.
+    btn.click();
+    btn.click();
+    // Let the single-tap window expire: panel opens (open-only, not a toggle).
+    jest.advanceTimersByTime(300);
+    expect(mockSettings.__getOpenState()).toBe(true);
+    expect(mockSettings.__getOpenCalls()).toBe(1);
+
+    // The second tap of the (too-slow) double arrives after the window — it
+    // starts a fresh single-tap sequence. Single-tap is open-only, so it must
+    // NOT close the panel (no flicker). The preset must not change either.
+    btn.click();
+    jest.advanceTimersByTime(300);
+    expect(mockSettings.__getOpenState()).toBe(true);
+    expect(mockSettings.__getCloseCalls()).toBe(0);
+    expect(onPresetChange).not.toHaveBeenCalled();
+
+    badge.destroy();
+    jest.useRealTimers();
+  });
+
+  it('a tap on the badge while the panel is open is a no-op (panel stays open)', () => {
+    jest.useFakeTimers();
+    const badge = createOrbitalBadge({ panel: panelStub() });
+    const { badge: btn } = getBadgeAndPointer();
+
+    // Open the panel from collapsed (instant).
+    btn.click();
+    expect(mockSettings.__getOpenState()).toBe(true);
+
+    // Tap the badge again while open — must not close (close via click-outside/
+    // Esc/close-button only). Collapsed + panelOpen skips the instant-open
+    // branch and feeds the gesture detector; single-tap is open-only → no-op.
+    btn.click();
+    jest.advanceTimersByTime(300);
+    expect(mockSettings.__getOpenState()).toBe(true);
+    expect(mockSettings.__getCloseCalls()).toBe(0);
+
+    badge.destroy();
+    jest.useRealTimers();
+  });
+
+  it('triple tap cycles horizontal presets immediately when expanded', () => {
+    jest.useFakeTimers();
+    const onPresetChange = jest.fn();
+    const badge = createOrbitalBadge({ initialPreset: 'top', panel: panelStub(), onPresetChange });
+    const { badge: btn } = getBadgeAndPointer();
+
+    // Expand.
+    btn.dispatchEvent(new MouseEvent('pointerdown', { button: 0, clientX: window.innerWidth - 18, clientY: window.innerHeight / 2, bubbles: true }));
+    btn.dispatchEvent(new MouseEvent('pointermove', { clientX: window.innerWidth - 60, clientY: window.innerHeight / 2, bubbles: true }));
+    btn.dispatchEvent(new MouseEvent('pointerup', { clientX: window.innerWidth - 60, clientY: window.innerHeight / 2, bubbles: true }));
+
+    // First click swallowed by suppressClick; next three form a triple tap.
+    btn.click();
+    btn.click();
+    btn.click();
+    btn.click();
+    // Triple fires synchronously on the third effective tap — no timer wait.
+    const calls = onPresetChange.mock.calls.map((c) => c[0] as PointerPreset);
+    expect(calls).toContain('left');
+    expect(mockSettings.__getOpenState()).toBe(false);
+
+    badge.destroy();
+    jest.useRealTimers();
   });
 });

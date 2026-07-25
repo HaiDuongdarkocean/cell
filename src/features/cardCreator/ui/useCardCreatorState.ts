@@ -28,7 +28,7 @@ import {
   DraftAutosaver,
   type CardDraft,
 } from '../state/cardDraft';
-import { fetchUrlAsMediaFile, fetchMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
+import { fetchMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
 import { translateSentence } from '../media/translation';

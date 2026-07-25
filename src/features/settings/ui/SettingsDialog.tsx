@@ -175,7 +175,7 @@ export function SettingsDialog({ isOpen, settings, onChange, onClose, tokenizeSt
       if (el) observer.observe(el);
     });
     return () => observer.disconnect();
-  }, [isOpen]);
+  }, [isOpen, scrollSidebarToId]);
 
   if (!isOpen) return <div />;
 

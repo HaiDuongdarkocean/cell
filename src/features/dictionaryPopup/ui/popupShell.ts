@@ -1082,7 +1082,7 @@ export class PopupShell {
   private onSheetPointerDown(e: PointerEvent): void {
     if (!this.container || !this.isSheetMode()) return;
     // Grab handle: always starts drag. Content area: only when scrolled to top.
-    const isHandle = e.target === this.sheetHandle || (e.target as HTMLElement)?.closest('.cell-sheet-handle');
+    const isHandle = e.target === this.sheetHandle || !!(e.target as HTMLElement)?.closest('.cell-sheet-handle');
     if (!isHandle) {
       if (this.contentEl && this.contentEl.scrollTop > 0) return;
     }

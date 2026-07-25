@@ -177,10 +177,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       const tangential = (collapsedEdge === 'left' || collapsedEdge === 'right')
         ? badgeCenter.y
         : badgeCenter.x;
-      void setStorage(STORAGE_KEYS.ORBITAL_BADGE_POSITION, {
-        edge: collapsedEdge,
-        tangential,
-      });
+      void setStorage({ [STORAGE_KEYS.ORBITAL_BADGE_POSITION]: { edge: collapsedEdge, tangential } });
     });
   }
 
@@ -363,7 +360,13 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
 
   const gestureDetector = createGestureDetector({
     onSingleTap: () => {
-      // No-op: single tap does not open panel (requires 4 taps).
+      // Open-only (never toggles): a stray single-tap during a slow multi-tap
+      // can only open the panel once — never the open/close flicker. When the
+      // panel is already open this is a no-op (close via click-outside / Esc /
+      // close-button, not via a badge tap).
+      if (!dragging && options.panel && !panelOpen) {
+        setPanelOpen(true);
+      }
     },
     onDoubleTap: () => {
       if (!expanded) return;
@@ -372,11 +375,6 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     onTripleTap: () => {
       if (!expanded) return;
       toggleHorizontalPreset();
-    },
-    onQuadrupleTap: () => {
-      if (!dragging && options.panel) {
-        setPanelOpen(true);
-      }
     },
   });
 
@@ -514,15 +512,19 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       suppressClick = false;
       return;
     }
-    // If panel is open, any tap on the badge closes it immediately —
-    // no need to wait for gesture disambiguation.
-    if (panelOpen) {
-      setPanelOpen(false);
+    // Collapsed + panel closed: 2/3-tap are no-op (preset guards require
+    // expanded), so a single tap unambiguously opens settings — fire
+    // instantly with no disambiguation delay. Reset the detector so a later
+    // tap does not count as a continuation of any pending sequence.
+    if (!expanded && !panelOpen && options.panel) {
+      gestureDetector.reset();
+      setPanelOpen(true);
       return;
     }
-    // Panel is closed: gestureDetector handles multi-tap disambiguation.
-    // onQuadrupleTap (4 taps) opens the panel; lower tap counts are
-    // delayed by TAP_WINDOW_MS so higher counts can cancel them.
+    // Expanded or panel open: disambiguate via the gesture detector. Single-tap
+    // is open-only (never toggles), so a slow multi-tap can at most open the
+    // panel once — never the open-then-close flicker. The panel closes via
+    // click-outside / Esc / close button, not via a badge tap.
     gestureDetector.onPointerUp(performance.now());
   }
 

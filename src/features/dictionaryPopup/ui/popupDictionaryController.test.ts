@@ -520,7 +520,7 @@ describe('tab independence (multi-candidate)', () => {
 
     // Scroll to candidate 2.
     s = setActiveCandidate(s, 1);
-    const container = s.shell?.getContainer()!;
+    const container = s.shell!.getContainer()!;
     container.scrollTop = 200;
 
     // Toggle a tab on candidate 2 — triggers rerender internally.

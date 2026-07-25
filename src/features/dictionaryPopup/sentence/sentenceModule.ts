@@ -140,7 +140,7 @@ function findSentenceRange(fullText: string, cursorOffset: number): { start: num
   // Merge forward if the current sentence is too short. Keep the original
   // segment's start (so cursorOffset stays within the range) and extend the
   // end to cover merged sentences.
-  let start = segments[idx].start;
+  const start = segments[idx].start;
   let end = segments[idx].end;
   let mergeIdx = idx;
   while (mergeIdx < segments.length - 1 && wordCount(fullText.slice(start, end)) < MIN_SENTENCE_WORDS) {

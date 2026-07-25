@@ -7,7 +7,28 @@ import globals from 'globals';
 export default tseslint.config(
   // Global ignores
   {
-    ignores: ['dist/', 'node_modules/', 'coverage/', 'bin/', 'tests/integration/.cache/', 'project-reference/', 'public/ffmpeg/', '.windsurf/'],
+    ignores: [
+      'dist/',
+      'node_modules/',
+      'coverage/',
+      'bin/',
+      'tests/integration/.cache/',
+      'project-reference/',
+      'public/ffmpeg/',
+      '.windsurf/',
+      // Build artifacts leaked to repo root (gitignored, not source).
+      'assets/',
+      'ffmpeg/',
+      'icons/',
+      'manifest.json',
+      'service-worker-loader.js',
+      'sql-wasm.wasm',
+      // Third-party uBlock extension used only as a browser-test helper (AGENTS.md).
+      'tests/data-test/extension-phụ-trợ/',
+      // Local-only prototype/seed scratch dirs (not committed).
+      'prototype/',
+      'seed/',
+    ],
   },
 
   // Base JS recommended
@@ -91,6 +112,25 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+
+  // MAIN-world IIFE injection scripts (ADR-020/028/029) — browser-global by
+  // design: they run in the page's MAIN world and reference window/document/
+  // console/setTimeout directly. Minified comma-expressions and empty catch
+  // blocks are legitimate in these inlined scripts, not production debt.
+  {
+    files: ['**/*.iife.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.es2022,
+      },
+    },
+    rules: {
+      'no-unused-expressions': 'off',
+      '@typescript-eslint/no-unused-expressions': 'off',
+      'no-empty': 'off',
     },
   },
 );

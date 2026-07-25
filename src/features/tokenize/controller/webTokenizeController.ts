@@ -5,7 +5,6 @@ import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { resolveScrollPredictMargin, type ScrollDirection } from '@/features/tokenize/logic/scrollDirection';
 import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
 import { bindTokenBlock, unbindTokenBlock, TOKEN_CLASS, type TokenSpanBindOptions } from '@/features/tokenize/ui/tokenSpanRenderer';
-import { stateStore as _stateStore } from '@/features/tokenize/state/tokenStateStore';
 import { createTokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import type { TokenizeState, TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import {
@@ -306,7 +305,6 @@ export async function createWebTokenizeController(
         // If the block is already bound (e.g. by eager tryBindVisible during a
         // mutation batch), skip scheduling a no-op bind task to keep the queue
         // short on low-end devices.
-        // eslint-disable-next-line no-console
         console.log('[onEnter]', block.id, 'isBound', block.isBound, 'enabled', stateStore.getState().enabled);
         if (stateStore.getState().enabled && !block.isBound) {
           // bindVisibleBlock calls prepareBlock internally, so one task is
@@ -676,7 +674,6 @@ export async function createWebTokenizeController(
   function bindVisibleBlock(block: TokenBlock): void {
     prepareBlock(block);
     if (!stateStore.getState().enabled || !visibleElements.has(block.element)) {
-      // eslint-disable-next-line no-console
       console.log('[bindVisibleBlock skip]', block.id, 'enabled', stateStore.getState().enabled, 'visible', visibleElements.has(block.element));
       return;
     }
