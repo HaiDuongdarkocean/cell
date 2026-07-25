@@ -15,7 +15,6 @@ import type { VideoEpisodeChangedPayload } from '@/entities/message';
 (window as unknown as Record<string, unknown>).__YT_CS_INJECTED = true;
 const csInjectTime = performance.now();
 (window as unknown as Record<string, unknown>).__YT_CS_INJECT_TIME = csInjectTime;
-console.log('[content-script] injected at', document.readyState, 'time:', csInjectTime);
 
 // ADR-020 race fix: notify the MAIN-world YouTube script that our message
 // listener is registered. CRXJS async dynamic-import loader delays ISOLATED
@@ -72,11 +71,6 @@ window.addEventListener('message', (event) => {
     const lastRelayedVideoId = (window as unknown as Record<string, unknown>).__YT_LAST_RELAYED_VIDEO_ID as string | undefined;
     if (videoId && lastRelayedVideoId === videoId) return;
     (window as unknown as Record<string, unknown>).__YT_LAST_RELAYED_VIDEO_ID = videoId;
-    console.log('[content-script] __YT_DETECTED_SUBTITLES received', {
-      trackCount: (data as { tracks?: unknown[] }).tracks?.length,
-      videoId,
-      postTime: data.postTime,
-    });
     void sendMessage({
       type: MESSAGE_TYPES.DETECTED_SUBTITLES,
       payload: {
@@ -84,10 +78,7 @@ window.addEventListener('message', (event) => {
         tracks: (data as { tracks?: unknown[] }).tracks ?? [],
         videoId,
       },
-    }).then(
-      (r) => console.log('[content-script] DETECTED_SUBTITLES bg response', r),
-      (e) => console.error('[content-script] DETECTED_SUBTITLES bg error', e),
-    );
+    }).catch((e) => console.error('[content-script] DETECTED_SUBTITLES bg error', e));
     return;
   }
   if (data?.type === '__YT_INNERTUBE_FALLBACK') {
@@ -114,11 +105,6 @@ window.addEventListener('message', (event) => {
     const lastRelayedTvid = (window as unknown as Record<string, unknown>).__IQ_LAST_RELAYED_TVID as string | undefined;
     if (tvid && lastRelayedTvid === tvid) return;
     (window as unknown as Record<string, unknown>).__IQ_LAST_RELAYED_TVID = tvid;
-    console.log('[content-script] __IQ_DETECTED_SUBTITLES received', {
-      trackCount: (data as { tracks?: unknown[] }).tracks?.length,
-      tvid,
-      postTime: (data as { postTime?: number }).postTime,
-    });
     void sendMessage({
       type: MESSAGE_TYPES.DETECTED_SUBTITLES,
       payload: {
@@ -128,10 +114,7 @@ window.addEventListener('message', (event) => {
         source: 'iqiyi',
         origin: (data as { origin?: string }).origin,
       },
-    }).then(
-      (r) => console.log('[content-script] IQ DETECTED_SUBTITLES bg response', r),
-      (e) => console.error('[content-script] IQ DETECTED_SUBTITLES bg error', e),
-    );
+    }).catch((e) => console.error('[content-script] IQ DETECTED_SUBTITLES bg error', e));
   }
   // === Netflix MAIN-world bridge (ADR-029) ===
   // netflix-main-world.iife.ts hooks JSON.parse and posts raw timedtexttracks.
@@ -145,11 +128,6 @@ window.addEventListener('message', (event) => {
     const lastRelayedMovieId = (window as unknown as Record<string, unknown>).__NF_LAST_RELAYED_MOVIE_ID as string | undefined;
     if (movieId !== '' && lastRelayedMovieId === movieId) return;
     (window as unknown as Record<string, unknown>).__NF_LAST_RELAYED_MOVIE_ID = movieId;
-    console.log('[content-script] __NF_DETECTED_SUBTITLES received', {
-      trackCount: (data as { tracks?: unknown[] }).tracks?.length,
-      movieId,
-      postTime: (data as { postTime?: number }).postTime,
-    });
     void sendMessage({
       type: MESSAGE_TYPES.DETECTED_SUBTITLES,
       payload: {
@@ -158,10 +136,7 @@ window.addEventListener('message', (event) => {
         movieId,
         source: 'netflix',
       },
-    }).then(
-      (r) => console.log('[content-script] NF DETECTED_SUBTITLES bg response', r),
-      (e) => console.error('[content-script] NF DETECTED_SUBTITLES bg error', e),
-    );
+    }).catch((e) => console.error('[content-script] NF DETECTED_SUBTITLES bg error', e));
   }
 });
 

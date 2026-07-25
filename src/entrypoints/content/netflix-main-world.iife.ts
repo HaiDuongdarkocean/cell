@@ -252,11 +252,6 @@
     movieId: number | string,
   ): void {
     const postTime = performance.now();
-    console.log('[netflix-main-world] posting __NF_DETECTED_SUBTITLES', {
-      movieId,
-      trackCount: tracks.length,
-      postTime,
-    });
     const message: DetectedMessage = {
       type: '__NF_DETECTED_SUBTITLES',
       tracks,
@@ -388,10 +383,6 @@
       lastDetectedTracks.length > 0 &&
       lastDetectedMovieId !== null
     ) {
-      console.log(
-        '[netflix-main-world] __NF_CS_READY received, re-posting last tracks',
-        { movieId: lastDetectedMovieId, trackCount: lastDetectedTracks.length },
-      );
       postDetectedSubtitles(lastDetectedTracks, lastDetectedMovieId);
     }
   });

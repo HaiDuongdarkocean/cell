@@ -130,10 +130,6 @@
   function postDetectedSubtitles(tracks: unknown[], videoId: string): void {
     const postTime = performance.now();
     debug.postTime = postTime;
-    console.log(`[youtube-main-world] posting __YT_DETECTED_SUBTITLES at ${postTime}`, {
-      videoId,
-      trackCount: tracks.length,
-    });
     window.postMessage(
       { type: '__YT_DETECTED_SUBTITLES', tracks, videoId, postTime },
       '*',
@@ -172,10 +168,6 @@
       // WEB client tracks all require PO Token (exp=xpe, ephemeral).
       const tracks = await fetchCaptionTracksViaInnerTube(videoId, apiKey, visitorData);
       debug.lastTrackCount = tracks.length;
-      console.log(`[youtube-main-world] ANDROID InnerTube returned ${tracks.length} tracks`, {
-        videoId,
-        hasVisitorData: !!visitorData,
-      });
 
       if (tracks.length > 0) {
         lastDetectedTracks = tracks;
@@ -228,10 +220,6 @@
     const data = event.data as { type?: string } | null;
     if (data?.type === '__YT_CS_READY' && lastDetectedTracks.length > 0 && lastDetectedVideoId) {
       debug.repostCount++;
-      console.log('[youtube-main-world] __YT_CS_READY received, re-posting last tracks', {
-        videoId: lastDetectedVideoId,
-        trackCount: lastDetectedTracks.length,
-      });
       postDetectedSubtitles(lastDetectedTracks, lastDetectedVideoId);
     }
   });
