@@ -129,7 +129,7 @@
 .expandChevron {
   width: var(--space-3-5);
   height: var(--space-3-5);
-  transition: transform var(--duration-normal, 200ms) ease;
+  transition: transform var(--duration-normal) ease;
 }
 
 .expandChevronOpen {
@@ -145,8 +145,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-8, 32px);
-  height: var(--space-8, 32px);
+  width: var(--space-8);
+  height: var(--space-8);
   color: var(--color-text-muted);
 }
 
@@ -223,7 +223,7 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-inverse);
   background: var(--color-success);
-  padding: var(--space-0-5, 2px) var(--space-2);
+  padding: var(--space-0-5) var(--space-2);
   border-radius: var(--radius-sm);
   white-space: nowrap;
   flex-shrink: 0;

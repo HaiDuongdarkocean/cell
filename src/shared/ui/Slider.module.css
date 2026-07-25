@@ -4,14 +4,14 @@
 
 .slider {
   width: 100%;
-  height: var(--space-1, 4px);
+  height: var(--space-1);
   -webkit-appearance: none;
   appearance: none;
   background: var(--color-border);
-  border-radius: var(--space-0-5, 2px);
+  border-radius: var(--space-0-5);
   outline: none;
   cursor: pointer;
-  margin: var(--space-1-5, 6px) 0;
+  margin: var(--space-1-5) 0;
 }
 
 .slider:focus-visible {
@@ -22,19 +22,19 @@
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: var(--space-3-5, 14px);
-  height: var(--space-3-5, 14px);
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   border-radius: var(--radius-full);
   background: var(--color-primary);
   cursor: pointer;
-  border: var(--space-0-5, 2px) solid var(--color-background);
+  border: var(--space-0-5) solid var(--color-background);
 }
 
 .slider::-moz-range-thumb {
-  width: var(--space-3-5, 14px);
-  height: var(--space-3-5, 14px);
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   border-radius: var(--radius-full);
   background: var(--color-primary);
   cursor: pointer;
-  border: var(--space-0-5, 2px) solid var(--color-background);
+  border: var(--space-0-5) solid var(--color-background);
 }

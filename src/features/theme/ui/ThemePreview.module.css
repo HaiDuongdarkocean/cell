@@ -1,27 +1,27 @@
 /* ThemePreview — live preview of theme tokens */
 .preview {
-  margin-top: var(--space-3, 12px);
-  padding: var(--space-3, 12px);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
 .section {
-  margin-bottom: var(--space-3, 12px);
+  margin-bottom: var(--space-3);
 }
 
 .sectionLabel {
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  margin-bottom: var(--space-1, 4px);
+  margin-bottom: var(--space-1);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--tracking-wide);
 }
 
 .row {
   display: flex;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
   flex-wrap: wrap;
   align-items: center;
 }
@@ -29,30 +29,30 @@
 .typography {
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5, 2px);
+  gap: var(--space-0-5);
 }
 
-.textPrimary { color: var(--color-text); font-size: var(--font-size-base, 14px); }
-.textSecondary { color: var(--color-text-secondary); font-size: var(--font-size-base, 14px); }
-.textSuccess { color: var(--color-success); font-size: var(--font-size-base, 14px); }
-.textWarning { color: var(--color-warning); font-size: var(--font-size-base, 14px); }
-.textError { color: var(--color-error); font-size: var(--font-size-base, 14px); }
+.textPrimary { color: var(--color-text); font-size: var(--font-size-base); }
+.textSecondary { color: var(--color-text-secondary); font-size: var(--font-size-base); }
+.textSuccess { color: var(--color-success); font-size: var(--font-size-base); }
+.textWarning { color: var(--color-warning); font-size: var(--font-size-base); }
+.textError { color: var(--color-error); font-size: var(--font-size-base); }
 
 .card {
-  padding: var(--space-3, 12px);
+  padding: var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   background: var(--color-background);
   color: var(--color-text);
 }
 
 .input {
-  padding: var(--space-1, 4px) var(--space-2, 8px);
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   background: var(--color-background);
   color: var(--color-text);
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
 }
 
 .input:focus-visible {
@@ -62,18 +62,18 @@
 }
 
 .dropzone {
-  padding: var(--space-3, 12px);
+  padding: var(--space-3);
   border: var(--space-0-5) dashed var(--color-border);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   text-align: center;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
 }
 
 .toast {
-  padding: var(--space-1, 4px) var(--space-2, 8px);
-  border-radius: var(--radius-sm, 6px);
-  font-size: var(--font-size-base, 14px);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
 }
 
 .toastSuccess { background: var(--color-success); color: var(--color-text-inverse); }

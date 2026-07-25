@@ -44,7 +44,7 @@
    Active tab gets a bottom accent bar (primary) instead of a pill bg. */
 .tabTrigger {
   flex: 1;
-  padding: var(--space-2-5, 10px) var(--space-3, 12px);
+  padding: var(--space-2-5) var(--space-3);
   border: none;
   border-radius: 0;
   background: transparent;
@@ -54,9 +54,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   position: relative;
-  transition: color var(--duration-fast, 150ms) var(--ease-in-out, ease);
+  transition: color var(--duration-fast) var(--ease-in-out);
 }
 
 .tabTrigger:hover {
@@ -73,7 +73,7 @@
 .tabTrigger[aria-selected="true"]::after {
   content: '';
   position: absolute;
-  bottom: -1px;
+  bottom: calc(var(--space-0-5) * -0.5);
   left: 0;
   right: 0;
   height: var(--space-0-5);
@@ -87,7 +87,7 @@
 
 /* === Tab content — padding, scrollable but scrollbar hidden === */
 .tabContent {
-  padding: var(--space-3, 12px) var(--space-4, 16px) var(--space-4, 16px);
+  padding: var(--space-3) var(--space-4) var(--space-4);
   flex: 1;
   overflow-y: auto;
   min-height: 0;
@@ -106,8 +106,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--space-1, 4px);
-  margin-bottom: var(--space-2, 8px);
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
 }
 
 /* === Download count badge in tab trigger === */
@@ -115,14 +115,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
-  padding: 0 var(--space-1, 4px);
-  border-radius: var(--radius-full, 9999px);
+  min-width: var(--space-4);
+  height: var(--space-4);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-primary-foreground-soft);
-  font-size: var(--font-size-xs, 12px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -132,7 +132,7 @@
 .downloadsList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
 }
 
 /* === Responsive — narrow popup viewport === */
@@ -143,18 +143,18 @@
   }
 
   .tabContent {
-    padding: var(--space-2, 8px) var(--space-2, 8px) var(--space-3, 12px);
+    padding: var(--space-2) var(--space-2) var(--space-3);
   }
 
   .actionsRow {
     flex-wrap: wrap;
-    gap: var(--space-1, 4px);
+    gap: var(--space-1);
   }
 }
 
 /* === Responsive — short viewport === */
 @media (max-height: 500px) {
   .tabTrigger {
-    padding: var(--space-1-5, 6px) var(--space-3, 12px);
+    padding: var(--space-1-5) var(--space-3);
   }
 }

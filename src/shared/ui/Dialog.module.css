@@ -3,25 +3,25 @@
   inset: 0;
   display: grid;
   place-items: center;
-  padding: var(--space-4, 16px);
+  padding: var(--space-4);
   background: var(--dialog-overlay-bg);
-  z-index: var(--z-modal, 1200);
+  z-index: var(--z-modal);
   box-sizing: border-box;
 }
 
 .panel {
   width: 100%;
-  max-width: var(--dialog-max-width, 512px);
+  max-width: var(--dialog-max-width);
   min-width: 0;
-  max-height: calc(100dvh - var(--space-8, 32px));
+  max-height: calc(100dvh - var(--space-8));
   overflow: auto;
-  background: var(--dialog-bg, var(--color-background));
-  color: var(--dialog-fg, var(--color-foreground));
-  border: 1px solid var(--dialog-border, var(--color-border));
-  border-radius: var(--dialog-radius, var(--radius-xl, 12px));
-  padding: var(--dialog-padding, var(--space-6, 24px));
-  box-shadow: var(--dialog-shadow, none);
-  animation: dialog-in var(--duration-normal, 200ms) var(--ease-out, ease-out);
+  background: var(--dialog-bg);
+  color: var(--dialog-fg);
+  border: 1px solid var(--dialog-border);
+  border-radius: var(--dialog-radius);
+  padding: var(--dialog-padding);
+  box-shadow: var(--dialog-shadow);
+  animation: dialog-in var(--duration-normal) var(--ease-out);
   box-sizing: border-box;
   /* Design-system scrollbar (themeTokens §scrollbar) — replaces the browser
    * default scrollbar with a thin themed one matching the dialog's surface. */
@@ -30,8 +30,8 @@
 }
 
 .panel::-webkit-scrollbar {
-  width: var(--space-2, 8px);
-  height: var(--space-2, 8px);
+  width: var(--space-2);
+  height: var(--space-2);
 }
 
 .panel::-webkit-scrollbar-track {
@@ -40,7 +40,7 @@
 
 .panel::-webkit-scrollbar-thumb {
   background: var(--color-scrollbar-thumb);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
 }
 
 .panel::-webkit-scrollbar-thumb:hover {
@@ -51,8 +51,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-3, 12px);
-  margin-bottom: var(--space-3, 12px);
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
 /* Centered title variant — close button positioned absolutely so the
@@ -75,7 +75,7 @@
 .headerRightGroup {
   display: flex;
   align-items: center;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   position: absolute;
   top: 0;
   right: 0;
@@ -87,32 +87,42 @@
 
 .title {
   margin: 0;
-  font-size: var(--font-size-base, 14px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
-  line-height: var(--leading-tight, 1.25);
+  line-height: var(--leading-tight);
 }
 
 .description {
-  margin: var(--space-1, 4px) 0 0 0;
-  font-size: var(--font-size-base, 14px);
+  margin: var(--space-1) 0 0 0;
+  font-size: var(--font-size-base);
   color: var(--color-text-secondary);
-  line-height: var(--leading-normal, 1.5);
+  line-height: var(--leading-normal);
 }
 
 .content {
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
   color: var(--color-text);
 }
 
 .footer {
   display: flex;
   justify-content: flex-end;
-  gap: var(--space-3, 12px);
-  margin-top: var(--space-6, 24px);
+  gap: var(--space-3);
+  margin-top: var(--space-6);
 }
 
 @keyframes dialog-in {
   from { opacity: 0; transform: scale(0.97) translateY(var(--space-1)); }
   to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay *,
+  .overlay *::before,
+  .overlay *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

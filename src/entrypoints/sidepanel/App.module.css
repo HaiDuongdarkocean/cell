@@ -48,6 +48,6 @@
   }
 
   .meta {
-    font-size: var(--font-size-xs, 12px);
+    font-size: var(--font-size-xs);
   }
 }

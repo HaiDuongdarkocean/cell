@@ -3,7 +3,7 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6, 24px);
+  gap: var(--space-6);
   max-width: calc(var(--space-5) * 44);
   margin: 0 auto;
   font-family: var(--font-family);
@@ -11,62 +11,62 @@
 }
 
 .error {
-  padding: var(--space-3, 12px) var(--space-4, 16px);
+  padding: var(--space-3) var(--space-4);
   background: var(--color-error-subtle);
   border: 1px solid var(--color-error);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   color: var(--color-error);
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
 }
 
 .status {
-  padding: var(--space-3, 12px) var(--space-4, 16px);
+  padding: var(--space-3) var(--space-4);
   background: var(--color-success-subtle);
   border: 1px solid var(--color-success);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   color: var(--color-success);
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
 }
 
 .muted {
   color: var(--color-text-muted);
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
   margin: 0;
 }
 
 /* === Card === */
 .card {
-  background: var(--color-card, var(--color-surface));
+  background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl, 24px);
+  border-radius: var(--radius-2xl);
   overflow: hidden;
 }
 
 .card__header {
-  padding: var(--space-4, 16px) var(--space-6, 24px);
+  padding: var(--space-4) var(--space-6);
   border-bottom: 1px solid var(--color-border);
 }
 
 .card__title {
   margin: 0;
-  font-size: var(--font-size-base, 14px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   letter-spacing: -0.01em;
 }
 
 .card__body {
-  padding: var(--space-6, 24px);
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
-  gap: var(--space-4, 16px);
+  gap: var(--space-4);
 }
 
 /* === Row === */
 .row {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-4, 16px);
+  gap: var(--space-4);
 }
 
 .rowFlex {
@@ -75,9 +75,9 @@
 
 .row__label {
   flex: 0 0 calc(var(--space-5) * 7);
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
   color: var(--color-text-secondary);
-  padding-top: var(--space-1, 4px);
+  padding-top: var(--space-1);
 }
 
 .row__control {
@@ -85,20 +85,20 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
 }
 
 .row__control select,
 .row__control textarea {
   width: 100%;
   max-width: calc(var(--space-5) * 16);
-  padding: var(--space-2, 8px) var(--space-3, 12px);
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   background: var(--color-background);
   color: var(--color-text);
   font-family: var(--font-family);
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
 }
 
 .row__control textarea {
@@ -109,18 +109,18 @@
 .row__control select:focus-visible,
 .row__control textarea:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: -1px;
+  outline-offset: calc(var(--space-0-5) * -0.5);
 }
 
 .row__control input[type='checkbox'] {
-  margin-right: var(--space-2, 8px);
+  margin-right: var(--space-2);
 }
 
 /* === Voice selection list (Card 1) === */
 .voiceSelectionList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   max-height: calc(var(--space-5) * 16);
   overflow-y: auto;
 }
@@ -128,9 +128,9 @@
 .voiceSelectionItem {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
-  padding: var(--space-2, 8px) var(--space-3, 12px);
-  border-radius: var(--radius-sm, 6px);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
   background: var(--color-background);
   border: 1px solid var(--color-border-subtle);
 }
@@ -141,14 +141,14 @@
 
 .voiceSelectionSlots {
   display: flex;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
 }
 
 .slotRadio {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1, 4px);
-  font-size: var(--font-size-xs, 12px);
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   cursor: pointer;
 }
@@ -157,22 +157,22 @@
 .ttsHeader {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3, 12px);
+  gap: var(--space-3);
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-3, 12px);
+  margin-bottom: var(--space-3);
 }
 
 .ttsHeader__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
 }
 
 .voiceList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   max-height: calc(var(--space-5) * 21);
   overflow-y: auto;
 }
@@ -180,9 +180,9 @@
 .voiceItem {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
-  padding: var(--space-2, 8px) var(--space-3, 12px);
-  border-radius: var(--radius-sm, 6px);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
   background: var(--color-background);
   border: 1px solid var(--color-border-subtle);
   cursor: grab;
@@ -205,32 +205,32 @@
 
 .orderInput {
   width: var(--space-12);
-  padding: var(--space-1, 4px) var(--space-2, 8px);
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   background: var(--color-background);
   color: var(--color-text);
   font-family: var(--font-family);
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
   text-align: center;
 }
 
 .orderInput:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: -1px;
+  outline-offset: calc(var(--space-0-5) * -0.5);
 }
 
 /* === Shared voice row bits === */
 .voiceCheckbox {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
   cursor: pointer;
   min-width: 0;
 }
 
 .voiceName {
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
   color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -238,7 +238,7 @@
 }
 
 .voiceLang {
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
@@ -246,15 +246,15 @@
 /* === Actions === */
 .actions {
   display: flex;
-  gap: var(--space-3, 12px);
-  margin-top: var(--space-2, 8px);
+  gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 
 /* === Responsive === */
 @media (max-width: 767px) {
   .row {
     flex-direction: column;
-    gap: var(--space-2, 8px);
+    gap: var(--space-2);
   }
   .row__label {
     flex: none;

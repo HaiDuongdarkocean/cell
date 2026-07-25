@@ -14,10 +14,10 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
-  padding: var(--space-2-5, 10px) var(--space-3-5, 14px);
+  gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-3-5);
   border-bottom: 1px solid var(--color-border-subtle);
-  transition: border-color var(--duration-fast, 150ms) ease;
+  transition: border-color var(--duration-fast) ease;
 }
 
 .searchWrap:focus-within {
@@ -30,7 +30,7 @@
   color: var(--color-text-muted);
   flex-shrink: 0;
   pointer-events: none;
-  transition: color var(--duration-fast, 150ms) ease;
+  transition: color var(--duration-fast) ease;
 }
 
 .searchWrap:focus-within .searchIcon {
@@ -57,11 +57,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--space-5, 20px);
-  height: var(--space-5, 20px);
-  padding: 0 var(--space-1-5, 6px);
-  font-size: var(--font-size-xs, 12px);
-  font-weight: var(--font-weight-semibold, 600);
+  min-width: var(--space-5);
+  height: var(--space-5);
+  padding: 0 var(--space-1-5);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-inverse);
   background: var(--color-primary);
   border-radius: var(--radius-full);
@@ -81,13 +81,13 @@
   overflow-y: auto;
   list-style: none;
   margin: 0;
-  padding: var(--space-1-5, 6px);
+  padding: var(--space-1-5);
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
 }
 
 .list::-webkit-scrollbar {
-  width: var(--space-1-5, 6px);
+  width: var(--space-1-5);
 }
 
 .list::-webkit-scrollbar-track {
@@ -108,9 +108,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-2, 8px) var(--space-2-5, 10px) var(--space-1-5, 6px);
-  font-size: var(--font-size-xs, 12px);
-  font-weight: var(--font-weight-semibold, 600);
+  padding: var(--space-2) var(--space-2-5) var(--space-1-5);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -118,20 +118,20 @@
 }
 
 .sectionCount {
-  font-size: var(--font-size-xs, 12px);
-  font-weight: var(--font-weight-medium, 500);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
   background: var(--color-surface-hover);
-  padding: var(--space-0-5, 2px) 7px;
+  padding: var(--space-0-5) var(--space-1-5);
   border-radius: var(--radius-sm);
-  letter-spacing: var(--tracking-normal, 0);
+  letter-spacing: var(--tracking-normal);
   text-transform: none;
 }
 
 /* === Divider between selected and unselected === */
 .divider {
   height: 1px;
-  margin: var(--space-1-5, 6px) var(--space-2-5, 10px);
+  margin: var(--space-1-5) var(--space-2-5);
   background: var(--color-border-subtle);
   list-style: none;
 }
@@ -141,15 +141,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3, 12px);
-  padding: var(--space-2-5, 10px) var(--space-3, 12px);
-  margin-bottom: var(--space-0-5, 2px);
+  gap: var(--space-3);
+  padding: var(--space-2-5) var(--space-3);
+  margin-bottom: var(--space-0-5);
   border-radius: var(--radius-md);
   cursor: pointer;
   user-select: none;
   font-size: var(--font-size-base);
   color: var(--color-text);
-  transition: background var(--duration-fast, 150ms) ease;
+  transition: background var(--duration-fast) ease;
   outline: none;
 }
 
@@ -179,18 +179,18 @@
   background: var(--color-border);
   border-radius: var(--radius-lg);
   flex-shrink: 0;
-  transition: background var(--duration-normal, 200ms) ease;
+  transition: background var(--duration-normal) ease;
 }
 
 .toggleKnob {
   position: absolute;
-  top: var(--space-0-5, 2px);
-  left: var(--space-0-5, 2px);
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  top: var(--space-0-5);
+  left: var(--space-0-5);
+  width: var(--space-4);
+  height: var(--space-4);
   background: var(--color-text-inverse);
   border-radius: var(--radius-full);
-  transition: transform var(--duration-normal, 200ms) var(--ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
+  transition: transform var(--duration-normal) var(--ease-in-out);
 }
 
 /* Selected state */
@@ -204,7 +204,7 @@
 
 .optionSelected .optionLabel {
   color: var(--color-primary);
-  font-weight: var(--font-weight-medium, 500);
+  font-weight: var(--font-weight-medium);
 }
 
 .optionSelected .toggleSwitch {
@@ -212,12 +212,12 @@
 }
 
 .optionSelected .toggleKnob {
-  transform: translateX(var(--space-4, 16px));
+  transform: translateX(var(--space-4));
 }
 
 /* === Empty state === */
 .emptyState {
-  padding: var(--space-6, 24px) var(--space-2-5, 10px);
+  padding: var(--space-6) var(--space-2-5);
   text-align: center;
   font-size: var(--font-size-base);
   color: var(--color-text-muted);

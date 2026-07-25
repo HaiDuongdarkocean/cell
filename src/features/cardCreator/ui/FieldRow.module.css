@@ -100,7 +100,7 @@
   background: var(--color-surface);
   border: 1px solid var(--input-border);
   border-radius: var(--input-radius);
-  transition: border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: border-color var(--duration-fast) var(--ease-in-out);
 }
 
 .fieldInput:hover {
@@ -158,9 +158,9 @@
   color: var(--color-text-muted);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              transform var(--duration-fast, 150ms) var(--ease-out, ease-out);
+  transition: background-color var(--duration-fast) var(--ease-in-out),
+              color var(--duration-fast) var(--ease-in-out),
+              transform var(--duration-fast) var(--ease-out);
 }
 
 .fieldInput__clear:hover {

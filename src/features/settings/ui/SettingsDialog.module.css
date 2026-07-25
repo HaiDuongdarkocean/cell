@@ -24,9 +24,9 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(100vw - var(--space-4, 16px));
-  max-width: min(calc(var(--space-5) * 24), calc(100vw - var(--space-4, 16px)));
-  max-height: calc(100% - var(--space-4, 16px));
+  width: calc(100vw - var(--space-4));
+  max-width: min(calc(var(--space-5) * 24), calc(100vw - var(--space-4)));
+  max-height: calc(100% - var(--space-4));
   transform: translate(-50%, -48%);
   background: var(--color-background);
   border: 1px solid var(--color-border);
@@ -75,16 +75,16 @@
 
 /* === Icon sizing === */
 .icon {
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  width: var(--space-4);
+  height: var(--space-4);
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 @media (min-width: 480px) {
   .icon {
-    width: var(--space-5, 20px);
-    height: var(--space-5, 20px);
+    width: var(--space-5);
+    height: var(--space-5);
   }
 }
 
@@ -108,7 +108,7 @@
   padding: var(--space-1) var(--space-2);
   border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-surface);
-  gap: var(--space-0-5, 2px);
+  gap: var(--space-0-5);
   flex-shrink: 0;
 }
 
@@ -118,7 +118,7 @@
 
 .sidebarLabel {
   display: none;
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
   letter-spacing: 0.06em;
@@ -134,7 +134,7 @@
   white-space: nowrap;
   /* WCAG 2.5.5: 44px touch target on mobile */
   min-height: var(--touch-target-mobile);
-  padding: var(--space-2, 8px) var(--space-3, 12px);
+  padding: var(--space-2) var(--space-3);
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -171,7 +171,7 @@
   scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 
-.mainCol::-webkit-scrollbar { width: var(--space-1-5, 6px); }
+.mainCol::-webkit-scrollbar { width: var(--space-1-5); }
 .mainCol::-webkit-scrollbar-thumb {
   background: var(--color-scrollbar-thumb);
   border-radius: var(--radius-full);
@@ -198,7 +198,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-1-5, 6px) var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
   border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-surface);
 }
@@ -212,11 +212,11 @@
 }
 
 .sectionCount {
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
   background: var(--color-background);
-  padding: var(--space-0-5, 2px) var(--space-1-5, 6px);
+  padding: var(--space-0-5) var(--space-1-5);
   border-radius: var(--radius-full);
   border: 1px solid var(--color-border);
 }
@@ -295,7 +295,7 @@
 /* === Text input === */
 .textInput {
   width: 100%;
-  padding: var(--space-1-5, 6px) var(--space-2, 8px);
+  padding: var(--space-1-5) var(--space-2);
   font-size: var(--font-size-base);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -322,7 +322,7 @@
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: var(--leading-normal, 1.5);
+  line-height: var(--leading-normal);
 }
 
 /* === Auto select toggle row === */
@@ -347,10 +347,10 @@
 }
 
 .asHint {
-  margin: var(--space-1, 4px) 0 0;
+  margin: var(--space-1) 0 0;
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: var(--leading-normal, 1.5);
+  line-height: var(--leading-normal);
 }
 
 /* === Shortcut field === */
@@ -372,9 +372,9 @@
 /* === 480px+: pair row becomes 2 columns === */
 @media (min-width: 480px) {
   .popover {
-    width: calc(100vw - var(--space-6, 24px));
+    width: calc(100vw - var(--space-6));
     max-width: calc(var(--space-5) * 24);
-    max-height: calc(100% - var(--space-6, 24px));
+    max-height: calc(100% - var(--space-6));
   }
 
   .popoverHeader {
@@ -409,8 +409,8 @@
 @media (min-width: 768px) {
   .popover {
     width: calc(var(--space-5) * 30);
-    max-width: calc(100vw - var(--space-8, 32px));
-    max-height: calc(100% - var(--space-8, 32px));
+    max-width: calc(100vw - var(--space-8));
+    max-height: calc(100% - var(--space-8));
   }
 
   .popoverBody {
@@ -427,7 +427,7 @@
     padding: var(--space-3) var(--space-2);
     border-bottom: none;
     border-right: 1px solid var(--color-border-subtle);
-    gap: var(--space-0-5, 2px);
+    gap: var(--space-0-5);
   }
 
   .sidebarLabel {
@@ -436,7 +436,7 @@
 
   .sidebarItem {
     width: 100%;
-    padding: var(--space-2, 8px) var(--space-3, 12px);
+    padding: var(--space-2) var(--space-3);
     white-space: normal;
   }
 

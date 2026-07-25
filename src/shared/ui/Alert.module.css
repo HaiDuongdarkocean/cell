@@ -2,32 +2,32 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  padding: var(--alert-padding, var(--space-3)) var(--space-4);
-  border-radius: var(--alert-radius, var(--radius-lg));
+  padding: var(--alert-padding) var(--space-4);
+  border-radius: var(--alert-radius);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   line-height: var(--leading-normal);
 }
 
 .default {
-  background: var(--alert-bg, var(--color-background));
-  color: var(--alert-fg, var(--color-text));
-  border: 1px solid var(--alert-border, var(--color-border));
+  background: var(--alert-bg);
+  color: var(--alert-fg);
+  border: 1px solid var(--alert-border);
 }
 
 .success {
-  background: var(--alert-success-bg, var(--color-success));
-  color: var(--alert-success-fg, var(--color-text-inverse));
+  background: var(--alert-success-bg);
+  color: var(--alert-success-fg);
 }
 
 .warning {
-  background: var(--alert-warning-bg, var(--color-warning));
-  color: var(--alert-warning-fg, var(--color-foreground));
+  background: var(--alert-warning-bg);
+  color: var(--alert-warning-fg);
 }
 
 .error {
-  background: var(--alert-error-bg, var(--color-error));
-  color: var(--alert-error-fg, var(--color-text-inverse));
+  background: var(--alert-error-bg);
+  color: var(--alert-error-fg);
 }
 
 .content {

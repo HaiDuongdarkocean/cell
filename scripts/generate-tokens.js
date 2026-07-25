@@ -147,6 +147,10 @@ ${componentBlock}
 ${darkColorBlock}
 ${componentBlock}
 }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
 `;
 
   await writeFile(cssPath, css, 'utf8');

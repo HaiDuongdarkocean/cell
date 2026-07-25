@@ -7,9 +7,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   min-width: calc(var(--space-5) * 7);
-  padding: var(--space-1, 4px) var(--space-2-5, 10px);
+  padding: var(--space-1) var(--space-2-5);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
@@ -40,16 +40,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--space-5, 20px);
-  height: var(--space-5, 20px);
-  padding: 0 var(--space-1-5, 6px);
+  min-width: var(--space-5);
+  height: var(--space-5);
+  padding: 0 var(--space-1-5);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   border-radius: var(--radius-full);
   background: var(--color-surface-hover);
   color: var(--color-text);
-  line-height: var(--leading-none, 1);
+  line-height: var(--leading-none);
 }
 
 /* Combo: key chip — solid bg primary */
@@ -57,14 +57,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--space-5, 20px);
-  height: var(--space-5, 20px);
-  padding: 0 var(--space-1-5, 6px);
+  min-width: var(--space-5);
+  height: var(--space-5);
+  padding: 0 var(--space-1-5);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-text-inverse);
-  line-height: var(--leading-none, 1);
+  line-height: var(--leading-none);
 }

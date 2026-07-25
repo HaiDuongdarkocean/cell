@@ -17,12 +17,12 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-lg, 10px);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   background: var(--color-background);
   box-shadow: none;
-  font-family: var(--font-family, system-ui, -apple-system, sans-serif);
-  font-size: var(--font-size-base, 14px);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
   color: var(--color-text);
   user-select: text;
   container-type: inline-size;
@@ -30,9 +30,9 @@
   transform: scale(0.96) translateY(var(--space-2));
   visibility: hidden;
   transition:
-    opacity var(--duration-normal, 200ms) var(--ease-out, ease-out),
-    transform var(--duration-normal, 200ms) var(--ease-out, ease-out),
-    visibility 0s linear var(--duration-normal, 200ms);
+    opacity var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out),
+    visibility 0s linear var(--duration-normal);
   will-change: transform, opacity;
 }
 
@@ -42,26 +42,26 @@
   transform: none;
   visibility: visible;
   transition:
-    opacity var(--duration-normal, 200ms) var(--ease-out, ease-out),
-    transform var(--duration-normal, 200ms) var(--ease-out, ease-out),
+    opacity var(--duration-normal) var(--ease-out),
+    transform var(--duration-normal) var(--ease-out),
     visibility 0s,
-    left var(--duration-normal, 200ms) var(--ease-out, ease-out),
-    top var(--duration-normal, 200ms) var(--ease-out, ease-out),
-    width var(--duration-normal, 200ms) var(--ease-out, ease-out),
-    height var(--duration-normal, 200ms) var(--ease-out, ease-out);
+    left var(--duration-normal) var(--ease-out),
+    top var(--duration-normal) var(--ease-out),
+    width var(--duration-normal) var(--ease-out),
+    height var(--duration-normal) var(--ease-out);
 }
 
 /* Labels are hidden by default on narrow popups; revealed when the popup is wide. */
 .cell-label {
   display: none;
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
 }
 
 /* === Bottom sheet mode (mobile <768px) ===
  * Full-width sheet sliding up from bottom edge.
  * JS adds .cell-popup--sheet when viewport < 768px. */
 .cell-popup--sheet {
-  border-radius: var(--radius-xl, 12px) var(--radius-xl, 12px) 0 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   border-bottom: none;
   transform: translateY(100%);
 }
@@ -81,7 +81,7 @@
   display: none;
   align-items: center;
   justify-content: center;
-  padding: var(--space-2, 8px) 0 var(--space-1, 4px);
+  padding: var(--space-2) 0 var(--space-1);
   cursor: ns-resize;
   touch-action: none;
   flex-shrink: 0;
@@ -89,9 +89,9 @@
 
 .cell-sheet-handle::after {
   content: '';
-  width: var(--space-9, 36px);
-  height: var(--space-1, 4px);
-  border-radius: var(--radius-full, 9999px);
+  width: var(--space-9);
+  height: var(--space-1);
+  border-radius: var(--radius-full);
   background: var(--color-border);
 }
 
@@ -111,8 +111,8 @@
 
 /* Toolbar tab icons — header buttons now use .icon-btn--sm (20px icon). */
 .cell-toolbar__tab svg {
-  width: var(--iconbutton-icon-sm, 20px);
-  height: var(--iconbutton-icon-sm, 20px);
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
   flex-shrink: 0;
 }
 
@@ -125,7 +125,7 @@
   flex-direction: column;
   gap: var(--space-1);
   min-height: 0;
-  transition: opacity var(--duration-normal, 200ms) var(--ease-in-out, ease-in-out);
+  transition: opacity var(--duration-normal) var(--ease-in-out);
 }
 
 /* Resize handle — pinned to bottom-right edge of popup.
@@ -135,10 +135,10 @@
  * prevents scroll/zoom interference during drag. */
 .cell-popup__resize {
   position: absolute;
-  bottom: calc(-1 * var(--space-2, 8px));
-  right: calc(-1 * var(--space-2, 8px));
-  width: var(--space-6, 24px);
-  height: var(--space-6, 24px);
+  bottom: calc(-1 * var(--space-2));
+  right: calc(-1 * var(--space-2));
+  width: var(--space-6);
+  height: var(--space-6);
   cursor: nwse-resize;
   pointer-events: auto;
   z-index: var(--popup-z-base);
@@ -147,7 +147,7 @@
   justify-content: center;
   color: var(--color-text-muted);
   opacity: 0.35;
-  transition: opacity var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: opacity var(--duration-fast) var(--ease-in-out);
 }
 
 .cell-popup__resize:hover,
@@ -156,8 +156,8 @@
 }
 
 .cell-popup__resize svg {
-  width: var(--space-3, 12px);
-  height: var(--space-3, 12px);
+  width: var(--space-3);
+  height: var(--space-3);
 }
 
 /* === Block: cell-header (2-row layout — spec redesign v2) ===
@@ -309,17 +309,17 @@
   /* Fixed min-width fits the longest status label ("tracking") so the pill
    * doesn't thò thụt (jitter) when cycling between statuses of different lengths. */
   min-width: 6em;
-  height: var(--space-5, 20px);
+  height: var(--space-5);
   padding: 0 var(--space-2);
   border-radius: var(--radius-full);
-  font-family: var(--font-family, system-ui, -apple-system, sans-serif);
+  font-family: var(--font-family);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-none, 1);
+  line-height: var(--leading-none);
   white-space: nowrap;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: background var(--duration-fast, 150ms) var(--ease-out, ease-out);
+  transition: background var(--duration-fast) var(--ease-out);
   /* Touch target: padding-based — the visual pill is 20px but the clickable
    * area extends via padding. Exempted from .btn 44px min-height override. */
 }
@@ -353,12 +353,12 @@
   display: inline-flex;
   align-items: center;
   box-sizing: border-box;
-  height: var(--space-5, 20px);
+  height: var(--space-5);
   border-radius: var(--radius-full);
   overflow: hidden;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-none, 1);
+  line-height: var(--leading-none);
 }
 
 .cell-header__frequency-source {
@@ -440,7 +440,7 @@
 .cell-def__item {
   position: relative;
   border-radius: var(--radius-lg);
-  transition: background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: background-color var(--duration-fast) var(--ease-in-out);
 }
 
 .cell-def__item:hover {
@@ -452,7 +452,7 @@
   top: 0;
   left: 0;
   bottom: 0;
-  width: var(--iconbutton-size-xs, 28px);
+  width: var(--iconbutton-size-xs);
   cursor: pointer;
   box-sizing: border-box;
   display: flex;
@@ -461,17 +461,17 @@
 }
 
 .cell-def__check-dot {
-  width: var(--space-1-5, 6px);
-  height: var(--space-1-5, 6px);
+  width: var(--space-1-5);
+  height: var(--space-1-5);
   border-radius: 50%;
   background: var(--color-border);
   display: inline-block;
-  transition: opacity var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: opacity var(--duration-fast) var(--ease-in-out);
 }
 
 .cell-def__check-box {
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  width: var(--space-4);
+  height: var(--space-4);
   border-radius: var(--radius-sm);
   border: var(--space-0-5) solid var(--color-primary);
   background: transparent;
@@ -574,18 +574,18 @@
    box-shadow ring = background-color halo for visibility against icon. */
 .cell-toolbar__badge {
   position: absolute;
-  top: calc(-1 * var(--space-0-5, 2px));
-  right: calc(-1 * var(--space-0-5, 2px));
+  top: calc(-1 * var(--space-0-5));
+  right: calc(-1 * var(--space-0-5));
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--space-3, 12px);
+  min-width: var(--space-3);
   aspect-ratio: 1;
-  padding: 0 var(--space-0-5, 2px);
+  padding: 0 var(--space-0-5);
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-text-inverse);
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   pointer-events: none;
   box-shadow: 0 0 0 var(--space-0-5) var(--color-background);
@@ -599,7 +599,7 @@
   flex: 1 1 auto;
   /* min-height matches skeleton: subtabs (24px) + 1 row (52px) = 76px.
      Prevents layout shift when skeleton → real content shrinks below this. */
-  min-height: calc(var(--space-0-5, 2px) + var(--space-4-5) + var(--space-1, 4px) + var(--space-1, 4px) * 2 + var(--touch-target-mobile, 44px));
+  min-height: calc(var(--space-0-5) + var(--space-4-5) + var(--space-1) + var(--space-1) * 2 + var(--touch-target-mobile, 44px));
 }
 
 .cell-audio__subtabs {
@@ -621,8 +621,8 @@
   cursor: pointer;
   border-bottom: var(--space-0-5) solid transparent;
   padding-bottom: var(--space-0-5);
-  transition: color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-    border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: color var(--duration-fast) var(--ease-in-out),
+    border-color var(--duration-fast) var(--ease-in-out);
 }
 
 .cell-audio__subtab:hover {
@@ -641,7 +641,7 @@
   gap: var(--space-1-5);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-lg);
-  transition: background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: background-color var(--duration-fast) var(--ease-in-out);
   cursor: default;
 }
 
@@ -662,8 +662,8 @@
  * Override base .icon-btn--outlined hover/active color+background so only
  * the transform scale feedback remains. */
 .cell-audio__item .icon-btn {
-  transition: transform var(--duration-slow, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1),
-    color var(--duration-slow, 300ms) var(--ease-in-out, ease-in-out);
+  transition: transform var(--duration-slow) cubic-bezier(0.34, 1.56, 0.64, 1),
+    color var(--duration-slow) var(--ease-in-out);
   will-change: transform;
 }
 
@@ -693,7 +693,7 @@
 }
 
 .cell-audio__label-name {
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -711,8 +711,8 @@
 /* Checkbox — hidden when unchecked, visible when checked */
 .cell-audio__check {
   flex-shrink: 0;
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  width: var(--space-4);
+  height: var(--space-4);
   border-radius: var(--radius-sm);
   border: var(--space-0-5) solid var(--color-primary);
   background: transparent;
@@ -758,8 +758,8 @@
 }
 
 .cell-audio__empty-icon {
-  width: var(--iconbutton-size-sm, 32px);
-  height: var(--iconbutton-size-sm, 32px);
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -794,7 +794,7 @@
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  min-height: calc(var(--space-1, 4px) * 2 + var(--space-20));
+  min-height: calc(var(--space-1) * 2 + var(--space-20));
 }
 
 /* Horizontal scroll strip — single row, 8 cards.
@@ -822,7 +822,7 @@
 }
 .cell-image__strip::-webkit-scrollbar-thumb {
   background: var(--color-border-strong, var(--color-border));
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
 }
 .cell-image__strip::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
@@ -846,9 +846,9 @@
   scroll-snap-align: center;
   overflow: hidden;
   /* Bounce on click — same elastic easing as audio play/pause button. */
-  transition: transform var(--duration-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1),
-              background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: transform var(--duration-normal) cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color var(--duration-fast) var(--ease-in-out),
+              border-color var(--duration-fast) var(--ease-in-out);
   will-change: transform;
 }
 
@@ -886,8 +886,8 @@
   position: absolute;
   top: var(--space-0-5);
   right: var(--space-0-5);
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  width: var(--space-4);
+  height: var(--space-4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -896,8 +896,8 @@
   border-radius: var(--radius-full);
   opacity: 0;
   transform: scale(0.8);
-  transition: opacity var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              transform var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: opacity var(--duration-fast) var(--ease-in-out),
+              transform var(--duration-fast) var(--ease-in-out);
 }
 
 .cell-image__check svg {
@@ -966,7 +966,7 @@
   flex: 1 1 auto;
   /* Keep panel at least as tall as the skeleton so real content never
      shrinks below it — prevents layout shift when skeleton → content. */
-  min-height: calc(var(--space-1, 4px) * 2 + 1px * 2 + calc(var(--space-5) + var(--space-0-5)) + var(--space-0-5, 2px) + var(--space-4-5) + var(--space-0-5, 2px));
+  min-height: calc(var(--space-1) * 2 + 1px * 2 + calc(var(--space-5) + var(--space-0-5)) + var(--space-0-5) + var(--space-4-5) + var(--space-0-5));
   overflow-y: auto;
 }
 
@@ -981,8 +981,8 @@
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   cursor: pointer;
-  transition: background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: background-color var(--duration-fast) var(--ease-in-out),
+              border-color var(--duration-fast) var(--ease-in-out);
 }
 
 .cell-translate__block:hover {
@@ -1003,7 +1003,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5, 2px);
+  gap: var(--space-0-5);
 }
 
 .cell-translate__target {
@@ -1012,7 +1012,7 @@
 }
 
 .cell-translate__native {
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
 }
@@ -1020,8 +1020,8 @@
 /* Checkbox at far right — hidden when unchecked, visible when checked */
 .cell-translate__check {
   flex-shrink: 0;
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  width: var(--space-4);
+  height: var(--space-4);
   border-radius: var(--radius-sm);
   border: var(--space-0-5) solid var(--color-primary);
   background: transparent;
@@ -1068,8 +1068,8 @@
 }
 
 .cell-translate__empty-icon {
-  width: var(--iconbutton-size-sm, 32px);
-  height: var(--iconbutton-size-sm, 32px);
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -1108,8 +1108,8 @@
 }
 
 .cell-links__empty-icon {
-  width: var(--iconbutton-size-sm, 32px);
-  height: var(--iconbutton-size-sm, 32px);
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -1390,7 +1390,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5, 2px);
+  gap: var(--space-0-5);
 }
 
 .cell-translate__skeleton-line {
@@ -1404,14 +1404,14 @@
 .cell-translate__skeleton-line--target {
   height: var(--space-4-5);
   opacity: 0.7;
-  margin-top: var(--space-0-5, 2px);
+  margin-top: var(--space-0-5);
 }
 
 .cell-translate__skeleton-check {
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  width: var(--space-4);
+  height: var(--space-4);
   flex-shrink: 0;
-  margin-top: var(--space-0-5, 2px);
+  margin-top: var(--space-0-5);
 }
 
 /* === Block: cell-toast (Quick Add feedback) === */
@@ -1430,8 +1430,8 @@
   text-align: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              transform var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  transition: opacity var(--duration-fast) var(--ease-in-out),
+              transform var(--duration-fast) var(--ease-in-out);
   z-index: var(--popup-z-top);
 }
 
@@ -1519,7 +1519,7 @@
     padding: 0 var(--space-3);
   }
   .cell-def__text {
-    padding: var(--space-2) 0 var(--space-2) calc(var(--space-7, 28px) + var(--space-1-5, 6px));
+    padding: var(--space-2) 0 var(--space-2) calc(var(--space-7) + var(--space-1-5));
   }
   .cell-def__examples {
     margin-top: var(--space-1);
@@ -1541,8 +1541,8 @@
   }
   .cell-audio__empty-icon,
   .cell-image__empty-icon {
-    width: var(--iconbutton-size-md, 40px);
-    height: var(--iconbutton-size-md, 40px);
+    width: var(--iconbutton-size-md);
+    height: var(--iconbutton-size-md);
   }
   .cell-image__card {
     min-width: var(--popup-image-card-min-width-default, 100px);
@@ -1578,8 +1578,8 @@
     padding: var(--space-6) var(--space-4);
   }
   .cell-links__empty-icon {
-    width: var(--iconbutton-size-md, 40px);
-    height: var(--iconbutton-size-md, 40px);
+    width: var(--iconbutton-size-md);
+    height: var(--iconbutton-size-md);
   }
   .cell-candidates__chips {
     gap: var(--space-2);
@@ -1600,8 +1600,8 @@
   .cell-image__check {
     top: var(--space-1);
     right: var(--space-1);
-    width: var(--space-5, 20px);
-    height: var(--space-5, 20px);
+    width: var(--space-5);
+    height: var(--space-5);
   }
 }
 
@@ -1621,8 +1621,8 @@
   }
   /* Badge on circle button — nudge to top-right edge of the circle. */
   .btn:has(.cell-label) .cell-toolbar__badge {
-    top: calc(-1 * var(--space-0-5, 2px));
-    right: calc(-1 * var(--space-0-5, 2px));
+    top: calc(-1 * var(--space-0-5));
+    right: calc(-1 * var(--space-0-5));
   }
   /* Touch target expansion (WCAG 2.5.5 AAA: 44×44px).
    * Applies to icon buttons + text buttons on compact/narrow popups.
@@ -1639,9 +1639,9 @@
   }
   /* Status pill: 24px on mobile (slightly larger for readability), not 44px. */
   .cell-header__status {
-    height: var(--space-6, 24px);
-    font-size: var(--font-size-xs, 12px);
-    padding: 0 var(--space-2-5, 10px);
+    height: var(--space-6);
+    font-size: var(--font-size-xs);
+    padding: 0 var(--space-2-5);
   }
   .btn {
     min-height: var(--touch-target-mobile, 44px);
@@ -1652,7 +1652,7 @@
 /* --- Default (480-767px): touch target 44px, base font 15px --- */
 @container (min-width: 480px) and (max-width: 767px) {
   .cell-popup {
-    font-size: var(--font-size-base, 14px);
+    font-size: var(--font-size-base);
   }
   .icon-btn--xs,
   .icon-btn--sm {
@@ -1665,9 +1665,9 @@
   }
   /* Status pill: 24px on mobile (slightly larger for readability), not 44px. */
   .cell-header__status {
-    height: var(--space-6, 24px);
-    font-size: var(--font-size-xs, 12px);
-    padding: 0 var(--space-2-5, 10px);
+    height: var(--space-6);
+    font-size: var(--font-size-xs);
+    padding: 0 var(--space-2-5);
   }
   .btn {
     min-height: var(--touch-target-mobile, 44px);
@@ -1678,10 +1678,10 @@
 /* --- Wide (≥768px): desktop — mouse precision, 40px touch target, base font 16px --- */
 @container (min-width: 768px) {
   .cell-popup {
-    font-size: var(--font-size-base, 14px);
+    font-size: var(--font-size-base);
   }
   .cell-header__word {
-    font-size: var(--font-size-base, 14px);
+    font-size: var(--font-size-base);
     line-height: calc(var(--touch-target-desktop, 40px) * 0.6);
   }
   .cell-header__ipa {
@@ -1692,10 +1692,10 @@
     line-height: calc(var(--touch-target-desktop, 40px) * 0.4);
   }
   .cell-def__text {
-    font-size: var(--font-size-base, 14px);
+    font-size: var(--font-size-base);
   }
   .cell-def__examples {
-    font-size: var(--font-size-xs, 12px);
+    font-size: var(--font-size-xs);
   }
   /* Desktop: mouse precision allows smaller touch targets (40px).
    * Header audio buttons match reading-row height (40% of touch-target). */
@@ -1717,25 +1717,25 @@
     min-width: var(--touch-target-desktop, 40px);
   }
   .cell-audio__subtab {
-    font-size: var(--font-size-xs, 12px);
+    font-size: var(--font-size-xs);
   }
   .cell-audio__label {
-    font-size: var(--font-size-base, 14px);
+    font-size: var(--font-size-base);
   }
   .cell-translate__native {
-    font-size: var(--font-size-base, 14px);
+    font-size: var(--font-size-base);
   }
   .cell-translate__target {
-    font-size: var(--font-size-xs, 12px);
+    font-size: var(--font-size-xs);
   }
   .cell-links__item {
-    font-size: var(--font-size-base, 14px);
+    font-size: var(--font-size-base);
   }
   .cell-candidates__list-reading {
-    font-size: var(--font-size-base, 14px);
+    font-size: var(--font-size-base);
   }
   .cell-toast {
-    font-size: var(--font-size-base, 14px);
+    font-size: var(--font-size-base);
   }
 }
 
@@ -1743,7 +1743,7 @@
    Shown immediately on click/hover while dictionary data is fetched
    from the background worker. Replaced by real content when data arrives. */
 .cell-active-entry--loading {
-  padding: var(--space-md, 12px);
+  padding: var(--space-md);
 }
 
 /* IPA placeholder — grey bar matching the real IPA row height. */
@@ -1751,22 +1751,22 @@
   display: inline-block;
   width: var(--space-20);
   height: 1em;
-  border-radius: var(--radius-xs, 4px);
+  border-radius: var(--radius-xs);
   background: var(--color-surface-hover);
   animation: cell-skeleton-shimmer 1.2s ease-in-out infinite;
 }
 
 /* Definition skeleton lines — 3 shimmer bars mimicking definition rows. */
 .cell-definitions--skeleton {
-  margin-top: var(--space-md, 12px);
+  margin-top: var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm, 8px);
+  gap: var(--space-sm);
 }
 
 .cell-definition-skeleton-line {
   height: var(--space-3-5);
-  border-radius: var(--radius-xs, 4px);
+  border-radius: var(--radius-xs);
   background: var(--color-surface-hover);
   animation: cell-skeleton-shimmer 1.2s ease-in-out infinite;
 }
@@ -1779,4 +1779,14 @@
   0%   { opacity: 0.4; }
   50%  { opacity: 0.8; }
   100% { opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell-popup,
+  .cell-popup *,
+  .cell-popup *::before,
+  .cell-popup *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

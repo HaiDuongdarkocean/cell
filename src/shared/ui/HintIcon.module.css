@@ -13,8 +13,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-5, 20px);
-  height: var(--space-5, 20px);
+  width: var(--space-5);
+  height: var(--space-5);
   padding: 0;
   border: none;
   background: transparent;
@@ -40,27 +40,27 @@
 }
 
 .hintBtn svg {
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  width: var(--space-4);
+  height: var(--space-4);
 }
 
 /* === Floating hint popover (nổi lên trên icon) === */
 .hintText {
   position: absolute;
-  bottom: calc(100% + var(--space-1-5, 6px));
+  bottom: calc(100% + var(--space-1-5));
   left: 0;
   width: max-content;
   max-width: calc(var(--space-1) * 70);
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-text);
-  line-height: var(--leading-normal, 1.5);
+  line-height: var(--leading-normal);
   padding: var(--space-2) var(--space-3);
   background: var(--color-surface-hover);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   z-index: 30;
-  animation: hintPop var(--duration-fast, 150ms) var(--ease-standard, ease);
+  animation: hintPop var(--duration-fast) var(--ease-standard);
   pointer-events: none;
 }
 
@@ -69,8 +69,8 @@
   content: '';
   position: absolute;
   top: 100%;
-  left: var(--space-2, 8px);
-  border: var(--space-1-5, 6px) solid transparent;
+  left: var(--space-2);
+  border: var(--space-1-5) solid transparent;
   border-top-color: var(--color-border);
 }
 
@@ -79,7 +79,7 @@
 /* Flip vertical: popover below icon (when near top viewport edge) */
 .hintText.flip-top {
   bottom: auto;
-  top: calc(100% + var(--space-1-5, 6px));
+  top: calc(100% + var(--space-1-5));
 }
 
 .hintText.flip-top::after {
@@ -97,7 +97,7 @@
 
 .hintText.align-right::after {
   left: auto;
-  right: var(--space-2, 8px);
+  right: var(--space-2);
 }
 
 /* Center horizontal: when centered in viewport */
@@ -118,7 +118,7 @@
   border-top-color: transparent;
   border-bottom-color: var(--color-border);
   left: auto;
-  right: var(--space-2, 8px);
+  right: var(--space-2);
 }
 
 .hintText.flip-top.align-center::after {
