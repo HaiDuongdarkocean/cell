@@ -1,5 +1,3 @@
-export const BADGE_STYLE_ID = 'cell-token-badge-style';
-
 /**
  * CSS for the Shadow DOM mini badge + panel.
  *
@@ -15,7 +13,7 @@ export const BADGE_STYLE_ID = 'cell-token-badge-style';
 export function buildTokenBadgeCss(): string {
   return `
 :host {
-  font-family: var(--font-family, sans-serif);
+  font-family: var(--font-family);
   color: var(--color-foreground);
 }
 
@@ -24,14 +22,14 @@ export function buildTokenBadgeCss(): string {
    --badge-size is SSOT with the orbital badge (default 36px). */
 .cell-token-fab {
   position: fixed !important;
-  right: var(--space-4, 16px) !important;
-  bottom: var(--space-4, 16px) !important;
-  width: var(--badge-size, 36px) !important;
-  height: var(--badge-size, 36px) !important;
+  right: var(--space-4) !important;
+  bottom: var(--space-4) !important;
+  width: var(--badge-size) !important;
+  height: var(--badge-size) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: var(--radius-full, 9999px) !important;
+  border-radius: var(--radius-full) !important;
   padding: 0 !important;
   margin: 0 !important;
   cursor: pointer !important;
@@ -50,8 +48,8 @@ export function buildTokenBadgeCss(): string {
 }
 
 .cell-token-fab svg {
-  width: var(--iconbutton-icon-sm, 18px) !important;
-  height: var(--iconbutton-icon-sm, 18px) !important;
+  width: var(--iconbutton-icon-sm) !important;
+  height: var(--iconbutton-icon-sm) !important;
   fill: none !important;
   stroke: currentColor !important;
   stroke-width: 2 !important;
@@ -73,38 +71,38 @@ export function buildTokenBadgeCss(): string {
    padding on each side. Transform order: scale first (shrink around center),
    then translate (move to visible-half center). */
 .cell-token-fab--collapsed[data-collapse-edge="right"] svg {
-  transform: translateX(calc(var(--badge-size, 36px) / -4)) scale(0.7) !important;
+  transform: translateX(calc(var(--badge-size) / -4)) scale(0.7) !important;
 }
 .cell-token-fab--collapsed[data-collapse-edge="left"] svg {
-  transform: translateX(calc(var(--badge-size, 36px) / 4)) scale(0.7) !important;
+  transform: translateX(calc(var(--badge-size) / 4)) scale(0.7) !important;
 }
 .cell-token-fab--collapsed[data-collapse-edge="bottom"] svg {
-  transform: translateY(calc(var(--badge-size, 36px) / -4)) scale(0.7) !important;
+  transform: translateY(calc(var(--badge-size) / -4)) scale(0.7) !important;
 }
 .cell-token-fab--collapsed[data-collapse-edge="top"] svg {
-  transform: translateY(calc(var(--badge-size, 36px) / 4)) scale(0.7) !important;
+  transform: translateY(calc(var(--badge-size) / 4)) scale(0.7) !important;
 }
 
 /* Panel — popover container. data-theme is set on this element so dark-mode
    tokens cascade to all children. */
 .cell-token-panel {
   position: fixed !important;
-  right: var(--space-4, 16px) !important;
+  right: var(--space-4) !important;
   /* ponytail: 260px panel width is a design choice — no exact token; keep
      hardcoded with fallback until a --panel-width token is introduced. */
   width: calc(var(--space-5) * 13) !important;
-  max-width: calc(100vw - var(--space-8, 32px)) !important;
+  max-width: calc(100vw - var(--space-8)) !important;
   /* bottom = FAB height (var(--badge-size)) + gap (var(--space-2)) + base offset (var(--space-4)) */
-  bottom: calc(var(--space-4, 16px) + var(--badge-size, 36px) + var(--space-2, 8px)) !important;
+  bottom: calc(var(--space-4) + var(--badge-size) + var(--space-2)) !important;
   background: var(--color-popover) !important;
   color: var(--color-popover-foreground) !important;
   border: 1px solid var(--color-border) !important;
-  border-radius: var(--radius-lg, 12px) !important;
-  padding: var(--space-4, 16px) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: var(--space-4) !important;
   z-index: 2147483646 !important;
   display: none;
   flex-direction: column !important;
-  gap: var(--space-3, 12px) !important;
+  gap: var(--space-3) !important;
   box-shadow: none !important;
 }
 
@@ -116,8 +114,8 @@ export function buildTokenBadgeCss(): string {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  font-size: var(--font-size-base, 14px) !important;
-  font-weight: var(--font-weight-semibold, 600) !important;
+  font-size: var(--font-size-base) !important;
+  font-weight: var(--font-weight-semibold) !important;
 }
 
 /* Close button — .icon-btn--xs provides size/hover/active. .cell-token-panel__close
@@ -128,7 +126,7 @@ export function buildTokenBadgeCss(): string {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  font-size: var(--font-size-base, 14px) !important;
+  font-size: var(--font-size-base) !important;
 }
 
 .cell-token-row__label {
@@ -138,7 +136,7 @@ export function buildTokenBadgeCss(): string {
 /* Toggle block — matches DS Toggle.tsx pattern (button + aria-pressed + thumb).
    Mirrors Toggle.module.css so vanilla DOM and React share the same look. */
 .cell-toggle {
-  width: var(--space-8, 32px);
+  width: var(--space-8);
   height: var(--space-4-5);
   border-radius: var(--radius-full);
   background: var(--color-border);
@@ -169,23 +167,30 @@ export function buildTokenBadgeCss(): string {
 
 .cell-toggle__thumb {
   position: absolute;
-  top: var(--space-0-5, 2px);
-  left: var(--space-0-5, 2px);
-  width: var(--space-3-5, 14px);
-  height: var(--space-3-5, 14px);
+  top: var(--space-0-5);
+  left: var(--space-0-5);
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   border-radius: var(--radius-full);
   background: var(--color-text-inverse);
   transition: transform var(--transition);
 }
 
 .cell-toggle[aria-pressed="true"] .cell-toggle__thumb {
-  transform: translateX(var(--space-3-5, 14px));
+  transform: translateX(var(--space-3-5));
 }
 
 /* Dictionary action button — .btn--primary provides bg/color/hover/active.
    .cell-token-action only adds full-width layout. */
 .cell-token-action {
   width: 100% !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell-toggle,
+  .cell-toggle__thumb {
+    transition: none !important;
+  }
 }
 `.trim();
 }

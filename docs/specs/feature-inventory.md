@@ -54,7 +54,7 @@
 |---|---------|-------------|-------------|-----------|
 | F25 | Download progress | Percentage, current/total segments, bytes downloaded, file size, **two-phase (downloadProgress + convertProgress)** | Yes (progress bar + detail) | `downloader.ts`, `useDownloadProgress.ts`, `DownloadCard.tsx` |
 | F26 | Conversion progress | Phase (planning/transmuxing/merging/validating/done), percent, bytes processed, worker count, usedWorkers, **phase labels in DownloadCard** | Yes (DownloadCard phase labels + detail items) | `parallelProgress.ts`, `ffmpegRunner.ts`, `DownloadCard.tsx` |
-| F27 | Conversion timer | Records phase durations (download, write, convert, save, cleanup) | No (console.debug) | `conversionTimer.ts` |
+| F27 | _Removed_ | _ConversionTimer deleted — all production usage was console.log-only_ | — | — |
 | F28 | Benchmark harness | Measures sequential vs parallel performance | No (CLI scripts) | `benchmarkHarness.ts` |
 
 ### Settings & Configuration

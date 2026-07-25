@@ -204,7 +204,6 @@ src/
 │   │   ├── merging/                # fMP4 merge + validate
 │   │   │   ├── merger.ts           # segmentMerger, mergePartFiles
 │   │   │   ├── validator.ts        # mp4Validator
-│   │   │   ├── timer.ts            # conversionTimer
 │   │   │   └── transmuxer.ts       # tsTransmuxer (sequential)
 │   │   ├── ports/
 │   │   │   ├── ITransmuxWorker.ts  # port cho Web Worker
@@ -395,7 +394,7 @@ app → tất cả (wiring)
 
 **Move (refactor structure, preserve content)**:
 - `src/content/subtitle*.ts` (20 file) → `src/features/subtitle/{ui,logic,service}/`
-- `src/lib/converters/parallel*.ts` + `segment*.ts` + `mp4Validator.ts` + `conversionTimer.ts` + `autoEnablement.ts` + `benchmarkHarness.ts` + `workerFactory.ts` + `tsTransmuxer.ts` (15 file) → `src/features/transmux/{planning,execution,merging}/`
+- `src/lib/converters/parallel*.ts` + `segment*.ts` + `mp4Validator.ts` + `autoEnablement.ts` + `benchmarkHarness.ts` + `workerFactory.ts` + `tsTransmuxer.ts` (14 file; `conversionTimer.ts` deleted — all usage was console.log-only) → `src/features/transmux/{planning,execution,merging}/`
 - `src/background/{downloader,downloadQueue,autoDownload,networkInterceptor}.ts` → `src/features/download/service/`
 - `src/background/{index,messageBus,offscreenManager}.ts` → `src/entrypoints/background/`
 - `src/background/subtitleService.ts` → `src/features/subtitle/service/`
@@ -588,7 +587,7 @@ export interface ISubtitleStorage {
 - Tạo barrel. Update imports. Test pass.
 
 **Milestone 6 — transmux/ feature** (1 commit):
-- Move ~16 file transmux cluster: `src/lib/converters/{parallel*,segment*,mp4Validator,conversionTimer,autoEnablement,benchmarkHarness,workerFactory,tsTransmuxer}.ts` → `src/features/transmux/{planning,execution,merging}/`. (8 `parallel*.ts` + 8 file kia = ~16; assToSrt/vttToSrt/srtNormalizer đã move ở M2.)
+- Move ~15 file transmux cluster: `src/lib/converters/{parallel*,segment*,mp4Validator,autoEnablement,benchmarkHarness,workerFactory,tsTransmuxer}.ts` → `src/features/transmux/{planning,execution,merging}/`. (8 `parallel*.ts` + 7 file kia = ~15; `conversionTimer.ts` đã delete; assToSrt/vttToSrt/srtNormalizer đã move ở M2.)
 - Tạo barrel. Update imports. Test pass + integration test (parallel/sequential).
 
 **Milestone 7 — subtitle/ feature** (1 commit — largest):
