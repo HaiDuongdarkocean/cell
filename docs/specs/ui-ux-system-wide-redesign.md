@@ -1,6 +1,6 @@
 # Spec: UI-UX system-wide redesign (SSOT + 14/12px type scale)
 
-> Status: Draft — pending human review before implementation.
+> Status: Slice 1 & 2 implemented; Slices 3 & 4 pending.
 > Date: 2026-07-21
 
 ## 1. Objective
@@ -88,13 +88,19 @@ Kết quả mong muốn: toàn bộ extension dùng một design language duy nh
 - Build pass.
 - Targeted unit tests pass.
 
-### Slice 2: Hardcoded px → design tokens (React/entrypoint)
-**Goal:** Không còn hardcoded `px` cho sizing/spacing trong `.module.css`.
+### Slice 2: Hardcoded px → design tokens (React/entrypoint + content-script CSS)
+**Goal:** Không còn hardcoded `px` cho sizing/spacing trong `.module.css`, `.css`, và content-script CSS strings.
 
 **Actions:**
-- Thay `22px`, `18px`, `140px`, `60px`, `48px`, `880px`, `320px`, `420px`, `260px` bằng token tương đương hoặc thêm token mới vào `tokens.json`.
-- Sử dụng `var(--space-*)`, `var(--touch-target-mobile)`, `var(--dialog-max-width-*)`, v.v.
-- Áp dụng cho `shared/ui`, `features/*`, `entrypoints/*`.
+- Thay `22px`, `18px`, `140px`, `60px`, `48px`, `880px`, `320px`, `420px`, `260px`, `1.5px`, `2px`, v.v. bằng token tương đương (`var(--space-*)`, `var(--radius-*)`, `var(--touch-target-mobile)`, `var(--touch-target-desktop)`, `calc(...)`).
+- Áp dụng cho `shared/ui`, `shared/styles/components.css`, `entrypoints/*/styles/global.css`, `features/*`, `entrypoints/popup`, `entrypoints/sidepanel`.
+- Giữ lại `1px` hairline border và `@media`/`@container` breakpoints.
+- Xử lý negative offset bằng `calc(var(--token) * -1)`, không dùng `-var(--token)`.
+
+**Verification:**
+- `grep -R ":\s*[0-9]\+px" src --include="*.module.css" --include="*.css" --include="*.ts" --include="*.tsx" --include="*.html" | grep -v "tokens.css"` chỉ còn `1px` hairline, media/container queries, comments, và inline SVG style injections (Slice 3).
+- `npm run build`, `npm run typecheck`, `npm run test:unit` pass.
+- Cập nhật experience atom `css-hardcoded-px-to-token.json`.
 
 ### Slice 3: Content-script SSOT + a11y
 **Goal:** Content-script UI dùng cùng tokens với React UI.

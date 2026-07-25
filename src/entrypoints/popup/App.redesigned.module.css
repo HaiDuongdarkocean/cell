@@ -1,7 +1,7 @@
 /* === Popup Container — 480×600 === */
 .popup {
-  width: 480px;
-  height: 600px;
+  width: calc(var(--space-5) * 24);
+  height: calc(var(--space-5) * 30);
   background: var(--color-background);
   color: var(--color-text);
   display: flex;
@@ -76,13 +76,13 @@
   bottom: -1px;
   left: 0;
   right: 0;
-  height: 2px;
+  height: var(--space-0-5);
   background: var(--color-primary);
 }
 
 .tabTrigger:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: calc(var(--space-0-5) * -1);
 }
 
 /* === Tab content — padding, scrollable but scrollbar hidden === */

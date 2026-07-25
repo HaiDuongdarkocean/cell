@@ -5,7 +5,7 @@
   background: var(--color-surface);
   border-radius: var(--radius-lg);
   transition: all var(--transition);
-  border: 2px solid transparent;
+  border: var(--space-0-5) solid transparent;
   animation: fade-in 300ms ease;
   overflow: hidden;
 }
@@ -40,7 +40,7 @@
 
 /* === Fade-in animation === */
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(var(--space-1)); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -59,8 +59,8 @@
 
 /* === Icon — 32px circular === */
 .icon {
-  width: 32px;
-  height: 32px;
+  width: var(--space-8);
+  height: var(--space-8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,8 +69,8 @@
 }
 
 .icon svg {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4);
+  height: var(--space-4);
 }
 
 .videoIcon {
@@ -128,7 +128,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 3px var(--space-2);
+  padding: var(--space-1) var(--space-2);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   font-size: var(--font-size-xs);
@@ -138,7 +138,7 @@
   font-family: var(--font-family);
   cursor: pointer;
   transition: color var(--transition), background var(--transition), border-color var(--transition);
-  height: 22px;
+  height: calc(var(--space-5) + var(--space-0-5));
   line-height: var(--leading-none, 1);
   white-space: nowrap;
 }
@@ -150,8 +150,8 @@
 }
 
 .qualityTrigger:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
   color: var(--color-primary);
   border-color: var(--color-primary);
 }
@@ -163,8 +163,8 @@
 }
 
 .chevron {
-  width: 12px;
-  height: 12px;
+  width: var(--space-3);
+  height: var(--space-3);
   color: inherit;
   transition: transform var(--duration-normal, 200ms) ease;
   flex-shrink: 0;
@@ -178,7 +178,7 @@
   position: absolute;
   top: calc(100% + var(--space-1, 4px));
   left: 0;
-  min-width: 140px;
+  min-width: calc(var(--space-5) * 7);
   background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -234,8 +234,8 @@
 }
 
 .expandChevron {
-  width: 14px;
-  height: 14px;
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   transition: transform var(--duration-normal, 200ms) ease;
 }
 
@@ -258,8 +258,8 @@
 }
 
 .downloadingIndicator svg {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4);
+  height: var(--space-4);
   animation: spin 1s linear infinite;
 }
 
@@ -280,7 +280,7 @@
 
 @keyframes slide-down {
   from { opacity: 0; max-height: 0; }
-  to { opacity: 1; max-height: 60px; }
+  to { opacity: 1; max-height: calc(var(--space-5) * 3); }
 }
 
 .copyBtn {
@@ -299,8 +299,8 @@
 }
 
 .copyBtn svg {
-  width: 14px;
-  height: 14px;
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   color: var(--color-text-muted);
   flex-shrink: 0;
   transition: color var(--transition);

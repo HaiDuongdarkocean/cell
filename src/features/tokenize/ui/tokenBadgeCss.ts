@@ -92,7 +92,7 @@ export function buildTokenBadgeCss(): string {
   right: var(--space-4, 16px) !important;
   /* ponytail: 260px panel width is a design choice — no exact token; keep
      hardcoded with fallback until a --panel-width token is introduced. */
-  width: 260px !important;
+  width: calc(var(--space-5) * 13) !important;
   max-width: calc(100vw - var(--space-8, 32px)) !important;
   /* bottom = FAB height (var(--badge-size)) + gap (var(--space-2)) + base offset (var(--space-4)) */
   bottom: calc(var(--space-4, 16px) + var(--badge-size, 36px) + var(--space-2, 8px)) !important;
@@ -139,7 +139,7 @@ export function buildTokenBadgeCss(): string {
    Mirrors Toggle.module.css so vanilla DOM and React share the same look. */
 .cell-toggle {
   width: var(--space-8, 32px);
-  height: 18px;
+  height: var(--space-4-5);
   border-radius: var(--radius-full);
   background: var(--color-border);
   position: relative;
@@ -163,8 +163,8 @@ export function buildTokenBadgeCss(): string {
 }
 
 .cell-toggle:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .cell-toggle__thumb {

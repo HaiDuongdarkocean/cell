@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1, 4px);
-  min-width: 140px;
+  min-width: calc(var(--space-5) * 7);
   padding: var(--space-1, 4px) var(--space-2-5, 10px);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
@@ -23,8 +23,8 @@
 }
 
 .shortcutPill:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
   border-color: var(--color-primary);
 }
 

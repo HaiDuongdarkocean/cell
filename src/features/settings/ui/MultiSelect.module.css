@@ -25,8 +25,8 @@
 }
 
 .searchIcon {
-  width: 16px;
-  height: 16px;
+  width: var(--space-4);
+  height: var(--space-4);
   color: var(--color-text-muted);
   flex-shrink: 0;
   pointer-events: none;
@@ -158,8 +158,8 @@
 }
 
 .option:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .optionLabel {
@@ -174,8 +174,8 @@
 /* === iOS-style toggle switch === */
 .toggleSwitch {
   position: relative;
-  width: 36px;
-  height: 20px;
+  width: var(--space-9);
+  height: var(--space-5);
   background: var(--color-border);
   border-radius: var(--radius-lg);
   flex-shrink: 0;

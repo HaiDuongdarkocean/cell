@@ -72,6 +72,7 @@ docs/           # Tài liệu dự án
 │   └── 061-orbital-settings-dialog.md # ADR-061: orbital badge integrates SettingsDialog (React mount) — thay vanilla panel bằng mountSettingsDialog, tokenize thành 1 section
 │   └── 062-settings-panel-responsive-redesign.md # ADR-062: Settings dialog responsive redesign + strict 14/12px type scale
 │   └── 063-system-wide-type-scale-14-12.md # ADR-063: System-wide 14/12px type scale (SSOT)
+│   └── 064-hardcoded-px-to-tokens.md # ADR-064: Hardcoded px → design tokens (Slice 2)
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup
 │   ├── overlay-appearance-settings.md

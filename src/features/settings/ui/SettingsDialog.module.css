@@ -25,7 +25,7 @@
   top: 50%;
   left: 50%;
   width: calc(100vw - var(--space-4, 16px));
-  max-width: min(480px, calc(100vw - var(--space-4, 16px)));
+  max-width: min(calc(var(--space-5) * 24), calc(100vw - var(--space-4, 16px)));
   max-height: calc(100% - var(--space-4, 16px));
   transform: translate(-50%, -48%);
   background: var(--color-background);
@@ -133,7 +133,7 @@
   flex-shrink: 0;
   white-space: nowrap;
   /* WCAG 2.5.5: 44px touch target on mobile */
-  min-height: 44px;
+  min-height: var(--touch-target-mobile);
   padding: var(--space-2, 8px) var(--space-3, 12px);
   border: none;
   border-radius: var(--radius-md);
@@ -189,8 +189,8 @@
 }
 
 .section.highlight {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
   border-color: var(--color-primary);
 }
 
@@ -262,7 +262,7 @@
 .childField {
   margin-left: var(--space-4);
   padding-left: var(--space-3);
-  border-left: 2px solid var(--color-border-subtle);
+  border-left: var(--space-0-5) solid var(--color-border-subtle);
 }
 
 @media (max-width: 479px) {
@@ -373,7 +373,7 @@
 @media (min-width: 480px) {
   .popover {
     width: calc(100vw - var(--space-6, 24px));
-    max-width: 480px;
+    max-width: calc(var(--space-5) * 24);
     max-height: calc(100% - var(--space-6, 24px));
   }
 
@@ -408,7 +408,7 @@
 /* === 768px+: sidebar switches to vertical left, body becomes row === */
 @media (min-width: 768px) {
   .popover {
-    width: 600px;
+    width: calc(var(--space-5) * 30);
     max-width: calc(100vw - var(--space-8, 32px));
     max-height: calc(100% - var(--space-8, 32px));
   }
@@ -422,7 +422,7 @@
     overflow-x: visible;
     overflow-y: auto;
     touch-action: auto;
-    width: 120px;
+    width: calc(var(--space-5) * 6);
     flex-shrink: 0;
     padding: var(--space-3) var(--space-2);
     border-bottom: none;
@@ -459,21 +459,21 @@
 /* === 1024px+: wider popover + sidebar === */
 @media (min-width: 1024px) {
   .popover {
-    width: 720px;
+    width: calc(var(--space-5) * 36);
   }
 
   .sidebar {
-    width: 140px;
+    width: calc(var(--space-5) * 7);
   }
 }
 
 /* === 1280px+: widest popover + sidebar === */
 @media (min-width: 1280px) {
   .popover {
-    width: 800px;
+    width: calc(var(--space-5) * 40);
   }
 
   .sidebar {
-    width: 160px;
+    width: calc(var(--space-5) * 8);
   }
 }

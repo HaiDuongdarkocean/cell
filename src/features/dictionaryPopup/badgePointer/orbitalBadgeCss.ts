@@ -96,7 +96,7 @@ export function buildOrbitalBadgeCss(): string {
   box-sizing: border-box !important;
   border-radius: 50% !important;
   background: var(--color-text-inverse, #ffffff) !important;
-  border: 2px solid var(--color-primary, #3b82f6) !important;
+  border: var(--space-0-5) solid var(--color-primary, #3b82f6) !important;
   padding: 0 !important;
   margin: 0 !important;
   pointer-events: none !important;

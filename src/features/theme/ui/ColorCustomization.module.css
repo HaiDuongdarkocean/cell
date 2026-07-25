@@ -27,7 +27,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-5) * 7), 1fr));
   gap: var(--space-2, 8px);
 }
 
@@ -48,11 +48,11 @@
 }
 
 .swatch::-webkit-color-swatch-wrapper {
-  padding: 2px;
+  padding: var(--space-0-5);
 }
 .swatch::-webkit-color-swatch {
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-2xs);
 }
 
 .label {

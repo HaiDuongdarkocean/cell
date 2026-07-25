@@ -11,7 +11,7 @@
 
 .bar {
   flex: 1;
-  min-width: 80px;
+  min-width: var(--space-20);
   height: var(--space-1-5, 6px);
   background: var(--color-border);
   border-radius: var(--radius-full, 9999px);

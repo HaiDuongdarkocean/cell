@@ -14,8 +14,8 @@
 }
 
 .headerIcon {
-  width: 22px;
-  height: 22px;
+  width: calc(var(--space-5) + var(--space-0-5));
+  height: calc(var(--space-5) + var(--space-0-5));
   color: var(--color-primary);
   flex-shrink: 0;
 }
@@ -38,16 +38,16 @@
 
 /* === Icon sizing (svg children of IconButton atom) === */
 .icon {
-  width: 18px;
-  height: 18px;
+  width: var(--space-4-5);
+  height: var(--space-4-5);
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .iconSun,
 .iconMoon {
-  width: 18px;
-  height: 18px;
+  width: var(--space-4-5);
+  height: var(--space-4-5);
   stroke-linecap: round;
   stroke-linejoin: round;
 }

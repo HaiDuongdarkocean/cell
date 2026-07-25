@@ -12,7 +12,7 @@
   align-items: center;
   gap: var(--space-1, 4px);
   padding: var(--space-3, 12px);
-  border: 2px solid var(--color-border);
+  border: var(--space-0-5) solid var(--color-border);
   border-radius: var(--radius-md, 8px);
   background: var(--color-surface);
   cursor: pointer;
@@ -40,6 +40,6 @@
 }
 
 .card:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }

@@ -34,8 +34,8 @@
 
 .trigger:focus-visible,
 .triggerOpen {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
   background: var(--color-background);
 }
 
@@ -75,7 +75,7 @@
   top: calc(100% + var(--space-1, 4px));
   width: max-content;
   min-width: 100%;
-  max-width: min(320px, calc(100vw - var(--space-8, 32px)));
+  max-width: min(calc(var(--space-5) * 16), calc(100vw - var(--space-8, 32px)));
   display: flex;
   flex-direction: column;
   background: var(--color-background);
