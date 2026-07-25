@@ -15,14 +15,14 @@
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  height: var(--input-height, 32px);
-  padding: var(--input-padding-y, 8px) var(--space-8, 32px) var(--input-padding-y, 8px) var(--input-padding-x, 12px);
-  border: 1px solid var(--input-border, var(--color-border));
-  border-radius: var(--input-radius, var(--radius-md));
-  background: var(--input-bg, var(--color-background));
-  color: var(--input-fg, var(--color-text));
+  height: var(--input-height);
+  padding: var(--input-padding-y) var(--space-8) var(--input-padding-y) var(--input-padding-x);
+  border: 1px solid var(--input-border);
+  border-radius: var(--input-radius);
+  background: var(--input-bg);
+  color: var(--input-fg);
   font-family: var(--font-family);
-  font-size: var(--input-font-size, var(--font-size-base));
+  font-size: var(--input-font-size);
   cursor: pointer;
   text-align: left;
   outline: none;
@@ -55,9 +55,9 @@
 .chevron {
   position: absolute;
   top: 50%;
-  right: var(--space-3, 12px);
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  right: var(--space-3);
+  width: var(--space-4);
+  height: var(--space-4);
   transform: translateY(-50%);
   color: var(--color-text-muted);
   pointer-events: none;
@@ -71,7 +71,7 @@
 /* === Menu === */
 .menu {
   position: absolute;
-  top: calc(100% + var(--space-1, 4px));
+  top: calc(100% + var(--space-1));
   /* Width follows content so a narrow trigger doesn't clip long options,
      but never shrinks below the trigger and is capped to guard very long
      items. */
@@ -102,7 +102,7 @@
 }
 
 .menu::-webkit-scrollbar {
-  width: var(--space-1-5, 6px);
+  width: var(--space-1-5);
 }
 
 .menu::-webkit-scrollbar-track {
@@ -111,7 +111,7 @@
 
 .menu::-webkit-scrollbar-thumb {
   background: var(--color-scrollbar-thumb);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
 }
 
 .menu::-webkit-scrollbar-thumb:hover {
@@ -153,8 +153,8 @@
 }
 
 .checkMark {
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  width: var(--space-4);
+  height: var(--space-4);
   color: var(--color-primary);
   flex-shrink: 0;
 }

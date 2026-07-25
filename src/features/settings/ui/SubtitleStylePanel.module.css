@@ -88,7 +88,7 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   font-weight: var(--font-weight-regular);
-  padding: 1px var(--space-1-5, 6px);
+  padding: 1px var(--space-1-5);
   border-radius: var(--radius-sm);
 }
 
@@ -98,15 +98,15 @@
   -webkit-appearance: none;
   appearance: none;
   background: var(--color-border);
-  border-radius: var(--radius-xs, 2px);
+  border-radius: var(--radius-xs);
   outline: none;
 }
 
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: var(--space-3-5, 14px);
-  height: var(--space-3-5, 14px);
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   border-radius: var(--radius-full);
   background: var(--color-primary);
   cursor: pointer;
@@ -114,8 +114,8 @@
 }
 
 .slider::-moz-range-thumb {
-  width: var(--space-3-5, 14px);
-  height: var(--space-3-5, 14px);
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   border-radius: var(--radius-full);
   background: var(--color-primary);
   cursor: pointer;
@@ -124,8 +124,8 @@
 
 .colorInput {
   width: 100%;
-  height: var(--space-8, 32px);
-  padding: var(--space-0-5, 2px);
+  height: var(--space-8);
+  padding: var(--space-0-5);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -138,14 +138,14 @@
 
 .colorInput::-webkit-color-swatch {
   border: none;
-  border-radius: var(--radius-xs, 2px);
+  border-radius: var(--radius-xs);
 }
 
 .numberInput,
 .textInput,
 .select {
   width: 100%;
-  padding: var(--space-1-5, 6px) var(--space-2, 8px);
+  padding: var(--space-1-5) var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -177,7 +177,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   flex: 1 1 auto;
   min-width: min-content;
   font-size: var(--font-size-xs);

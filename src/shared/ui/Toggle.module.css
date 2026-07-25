@@ -1,5 +1,5 @@
 .toggle {
-  width: var(--space-8, 32px);
+  width: var(--space-8);
   height: var(--space-4-5);
   border-radius: var(--radius-full);
   background: var(--color-border);
@@ -30,17 +30,17 @@
 
 .thumb {
   position: absolute;
-  top: var(--space-0-5, 2px);
-  left: var(--space-0-5, 2px);
-  width: var(--space-3-5, 14px);
-  height: var(--space-3-5, 14px);
+  top: var(--space-0-5);
+  left: var(--space-0-5);
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   border-radius: var(--radius-full);
   background: var(--color-text-inverse);
   transition: transform var(--transition);
 }
 
 .toggle[aria-pressed="true"] .thumb {
-  transform: translateX(var(--space-3-5, 14px));
+  transform: translateX(var(--space-3-5));
 }
 
 .toggle:disabled {

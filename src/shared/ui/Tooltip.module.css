@@ -5,7 +5,7 @@
 
 .tooltip {
   position: absolute;
-  z-index: var(--z-tooltip, 1400);
+  z-index: var(--z-tooltip);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   background: var(--color-text);

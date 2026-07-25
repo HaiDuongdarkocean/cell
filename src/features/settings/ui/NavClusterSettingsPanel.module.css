@@ -43,7 +43,7 @@
 /* === Number input — for position X/Y percent === */
 .numberInput {
   width: 100%;
-  padding: var(--space-1-5, 6px) var(--space-2, 8px);
+  padding: var(--space-1-5) var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);

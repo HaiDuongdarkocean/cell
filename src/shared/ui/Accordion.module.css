@@ -30,8 +30,8 @@
 }
 
 .chevron {
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  width: var(--space-4);
+  height: var(--space-4);
   color: var(--color-text-muted);
   transition: transform var(--duration-fast) var(--ease-in-out);
 }

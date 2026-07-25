@@ -1,22 +1,22 @@
 /* ColorCustomization — 9 color pickers per mode, light/dark tabs */
 .wrapper {
-  margin-top: var(--space-3, 12px);
+  margin-top: var(--space-3);
 }
 
 .tabs {
   display: flex;
-  gap: var(--space-1, 4px);
-  margin-bottom: var(--space-2, 8px);
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
 }
 
 .tab {
-  padding: var(--space-1, 4px) var(--space-3, 12px);
+  padding: var(--space-1) var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
 }
 
 .tab.active {
@@ -28,20 +28,20 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-5) * 7), 1fr));
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
 }
 
 .field {
   display: flex;
   align-items: center;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
 }
 
 .swatch {
-  width: var(--space-8, 32px);
-  height: var(--space-8, 32px);
+  width: var(--space-8);
+  height: var(--space-8);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   padding: 0;
   background: none;
@@ -56,7 +56,7 @@
 }
 
 .label {
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   flex: 1;
 }

@@ -139,7 +139,7 @@
   cursor: pointer;
   transition: color var(--transition), background var(--transition), border-color var(--transition);
   height: calc(var(--space-5) + var(--space-0-5));
-  line-height: var(--leading-none, 1);
+  line-height: var(--leading-none);
   white-space: nowrap;
 }
 
@@ -166,7 +166,7 @@
   width: var(--space-3);
   height: var(--space-3);
   color: inherit;
-  transition: transform var(--duration-normal, 200ms) ease;
+  transition: transform var(--duration-normal) ease;
   flex-shrink: 0;
 }
 
@@ -176,7 +176,7 @@
 
 .qualityMenu {
   position: absolute;
-  top: calc(100% + var(--space-1, 4px));
+  top: calc(100% + var(--space-1));
   left: 0;
   min-width: calc(var(--space-5) * 7);
   background: var(--color-background);
@@ -185,7 +185,7 @@
   padding: var(--space-1);
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5, 2px);
+  gap: var(--space-0-5);
   z-index: 5;
 }
 
@@ -236,7 +236,7 @@
 .expandChevron {
   width: var(--space-3-5);
   height: var(--space-3-5);
-  transition: transform var(--duration-normal, 200ms) ease;
+  transition: transform var(--duration-normal) ease;
 }
 
 .expandChevronOpen {
@@ -252,8 +252,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-8, 32px);
-  height: var(--space-8, 32px);
+  width: var(--space-8);
+  height: var(--space-8);
   color: var(--color-text-muted);
 }
 
@@ -330,7 +330,7 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-inverse);
   background: var(--color-success);
-  padding: var(--space-0-5, 2px) var(--space-2);
+  padding: var(--space-0-5) var(--space-2);
   border-radius: var(--radius-sm);
   white-space: nowrap;
   flex-shrink: 0;

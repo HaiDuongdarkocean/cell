@@ -2,18 +2,18 @@
 .badges {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1, 4px);
-  margin-top: var(--space-2, 8px);
+  gap: var(--space-1);
+  margin-top: var(--space-2);
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1, 4px);
-  padding: var(--space-0-5, 2px) var(--space-2, 8px);
-  border-radius: var(--radius-full, 9999px);
-  font-size: var(--font-size-xs, 12px);
-  font-weight: var(--font-weight-semibold, 600);
+  gap: var(--space-1);
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   cursor: help;
   border: 1px solid transparent;
 }
@@ -37,6 +37,6 @@
 }
 
 .ratio {
-  font-weight: var(--font-weight-regular, 400);
+  font-weight: var(--font-weight-regular);
   opacity: 0.8;
 }

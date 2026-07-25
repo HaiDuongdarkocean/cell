@@ -1,12 +1,12 @@
 .card {
-  background: var(--card-bg, var(--color-card, var(--color-surface)));
-  color: var(--card-fg, var(--color-card-foreground, var(--color-text)));
-  border: 1px solid var(--card-border, var(--color-border));
-  border-radius: var(--card-radius, var(--radius-lg, 10px));
-  padding: var(--card-padding, var(--space-4, 16px));
-  box-shadow: var(--card-shadow, none);
-  transition: background-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out),
-              border-color var(--duration-fast, 150ms) var(--ease-in-out, ease-in-out);
+  background: var(--card-bg);
+  color: var(--card-fg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
+  box-shadow: var(--card-shadow);
+  transition: background-color var(--duration-fast) var(--ease-in-out),
+              border-color var(--duration-fast) var(--ease-in-out);
 }
 
 .interactive {

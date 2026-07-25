@@ -15,7 +15,7 @@ export const SUBTITLE_BLOCK_CSS = `
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   background: transparent;
   /* overflow:visible — NOT hidden — so popup panels (subtitle-manager-panel,
@@ -28,19 +28,19 @@ export const SUBTITLE_BLOCK_CSS = `
   user-select: none;
   cursor: grab;
   touch-action: none;
-  transition: border-color var(--transition, 150ms ease);
+  transition: border-color var(--transition);
 }
 
 .subtitle-block::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   backdrop-filter: blur(var(--space-2));
   opacity: 0;
   z-index: -1;
-  transition: opacity var(--transition, 150ms ease);
+  transition: opacity var(--transition);
 }
 
 .subtitle-block.dragging {
@@ -61,10 +61,10 @@ export const SUBTITLE_BLOCK_CSS = `
 .block-body {
   display: grid;
   grid-template-columns: var(--sb-cluster-width, 84px) 1fr var(--sb-cluster-width, 84px);
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   align-items: center;
   min-height: 0;
-  padding: var(--space-1, 4px) var(--space-2, 8px);
+  padding: var(--space-1) var(--space-2);
 }
 
 .cluster-columns {
@@ -73,14 +73,14 @@ export const SUBTITLE_BLOCK_CSS = `
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: var(--space-1, 4px);
-  padding: var(--space-1, 4px);
+  gap: var(--space-1);
+  padding: var(--space-1);
 }
 
 .cluster-column {
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5, 2px);
+  gap: var(--space-0-5);
   align-items: center;
 }
 
@@ -92,20 +92,20 @@ export const SUBTITLE_BLOCK_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--sb-btn-size, 40px);
-  height: var(--sb-btn-size, 40px);
+  width: var(--sb-btn-size, var(--space-10));
+  height: var(--sb-btn-size, var(--space-10));
   /* Overlay appearance: no border, feathered backdrop blur, bg opacity from setting. */
   border: none;
-  border-radius: var(--radius-full, 9999px);
-  background: rgba(30, 41, 59, var(--sb-bg-opacity, 0.2));
-  color: rgba(241, 245, 249, var(--sb-text-opacity, 1));
+  border-radius: var(--radius-full);
+  background: rgba(from var(--color-surface) r g b / var(--sb-bg-opacity, 0.2));
+  color: rgba(from var(--color-foreground) r g b / var(--sb-text-opacity, 1));
   cursor: pointer;
   padding: 0;
   position: relative;
   isolation: isolate;
   -webkit-tap-highlight-color: transparent;
   outline: none;
-  transition: transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275), background var(--transition, 150ms ease), color var(--transition, 150ms ease);
+  transition: transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275), background var(--transition), color var(--transition);
 }
 
 /* Feathered backdrop — ::before mở rộng + backdrop-filter blur 1px + mask radial fade.
@@ -114,14 +114,14 @@ export const SUBTITLE_BLOCK_CSS = `
   content: '';
   position: absolute;
   inset: calc(var(--space-0-5) * -1);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
-  background: rgba(15, 23, 42, 0.1);
+  background: rgba(from var(--color-background) r g b / 0.1);
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   z-index: -1;
-  transition: background var(--duration-fast, 150ms) ease;
+  transition: background var(--duration-fast) ease;
 }
 
 /* Hover chỉ áp dụng trên thiết bị có hover thật (mouse/trackpad).
@@ -133,7 +133,7 @@ export const SUBTITLE_BLOCK_CSS = `
   }
 
   .cluster-btn:hover::before {
-    background: rgba(15, 23, 42, 0.25);
+    background: rgba(from var(--color-background) r g b / 0.25);
   }
 }
 
@@ -175,15 +175,15 @@ export const SUBTITLE_BLOCK_CSS = `
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: var(--space-1, 4px);
-  gap: var(--space-0-5, 2px);
+  padding: var(--space-1);
+  gap: var(--space-0-5);
   text-align: center;
 }
 
 .subtitle-line {
   display: block;
-  padding: var(--space-0-5, 2px) var(--space-2, 8px);
-  border-radius: var(--radius-2xs, 4px);
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-2xs);
   line-height: 1.4;
   text-align: center;
   white-space: pre-wrap;
@@ -195,11 +195,11 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-line.target {
-  font-size: var(--sb-target-font, 18px);
+  font-size: var(--sb-target-font, var(--space-4-5));
 }
 
 .subtitle-line.native {
-  font-size: var(--sb-native-font, 14px);
+  font-size: var(--sb-native-font, var(--font-size-sm));
 }
 
 .subtitle-block.cluster-off .cluster-columns {
@@ -220,7 +220,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .block-right-column {
   display: flex;
   flex-direction: row;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   align-items: center;
   justify-content: center;
 }
@@ -229,7 +229,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .right-col-secondary {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   align-items: center;
   justify-content: center;
 }
@@ -243,7 +243,7 @@ export const SUBTITLE_BLOCK_CSS = `
    the more button with a slide+fade animation. Absolute positioned relative
    to .right-col-primary, aligned to the more button's row (bottom: 0).
    No padding — buttons sit flush like cluster buttons. Gap between popover
-   and moreBtn = cluster gap (var(--space-1, 4px)) via margin-right.
+   and moreBtn = cluster gap (var(--space-1)) via margin-right.
    Uses the same feathered backdrop as cluster-btn. */
 .more-popover {
   position: absolute;
@@ -252,10 +252,10 @@ export const SUBTITLE_BLOCK_CSS = `
   z-index: 2147483641;
   display: flex;
   flex-direction: row;
-  gap: var(--space-1, 4px);
+  gap: var(--space-1);
   align-items: center;
-  margin-right: var(--space-1, 4px);
-  border-radius: var(--radius-full, 9999px);
+  margin-right: var(--space-1);
+  border-radius: var(--radius-full);
   isolation: isolate;
   /* Hidden state — animate from here to --open */
   opacity: 0;
@@ -263,9 +263,9 @@ export const SUBTITLE_BLOCK_CSS = `
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity var(--duration-normal, 200ms) ease,
-    transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    visibility 0s linear var(--duration-normal, 200ms);
+    opacity var(--duration-normal) ease,
+    transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    visibility 0s linear var(--duration-normal);
 }
 
 /* Open state — slide in from right + fade in */
@@ -275,8 +275,8 @@ export const SUBTITLE_BLOCK_CSS = `
   visibility: visible;
   pointer-events: auto;
   transition:
-    opacity var(--duration-normal, 200ms) ease,
-    transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    opacity var(--duration-normal) ease,
+    transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275),
     visibility 0s linear 0s;
 }
 
@@ -285,10 +285,10 @@ export const SUBTITLE_BLOCK_CSS = `
   content: '';
   position: absolute;
   inset: calc(var(--space-0-5) * -1);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
-  background: rgba(15, 23, 42, 0.1);
+  background: rgba(from var(--color-background) r g b / 0.1);
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   z-index: -1;
@@ -314,7 +314,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .right-col-more svg {
-  transition: transform var(--duration-fast, 150ms) ease;
+  transition: transform var(--duration-fast) ease;
 }
 
 /* Hide Card Creator buttons on mobile width < 768px (mobile uses floating cluster) */
@@ -328,16 +328,16 @@ export const SUBTITLE_BLOCK_CSS = `
    Dark overlay colors intentional — sits on top of video, not theme-aware. */
 .subtitle-selector-icon {
   position: absolute;
-  top: var(--space-2, 8px);
-  right: var(--space-2, 8px);
+  top: var(--space-2);
+  right: var(--space-2);
   z-index: 2147483641;
-  width: var(--space-7, 28px);
-  height: var(--space-7, 28px);
+  width: var(--space-7);
+  height: var(--space-7);
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: var(--radius-2xs, 4px);
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
+  border: 1px solid rgba(from var(--overlay-text) r g b / 0.3);
+  border-radius: var(--radius-2xs);
+  background: rgba(from var(--overlay-background) r g b / 0.6);
+  color: var(--overlay-text);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -348,35 +348,35 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-selector-popover {
   position: absolute;
   top: var(--touch-target-desktop);
-  right: var(--space-2, 8px);
+  right: var(--space-2);
   z-index: 2147483641;
   max-height: calc(var(--space-5) * 10);
   overflow-y: auto;
-  background: rgba(0, 0, 0, 0.85);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-sm, 6px);
-  padding: var(--space-1, 4px);
+  background: rgba(from var(--overlay-background) r g b / 0.85);
+  color: var(--overlay-text);
+  border: 1px solid rgba(from var(--overlay-text) r g b / 0.2);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1);
   min-width: calc(var(--space-5) * 9);
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
 }
 
 .subtitle-selector-item {
-  padding: var(--space-1-5, 6px) var(--space-2, 8px);
+  padding: var(--space-1-5) var(--space-2);
   cursor: pointer;
-  border-radius: var(--radius-2xs, 4px);
+  border-radius: var(--radius-2xs);
   display: flex;
   justify-content: space-between;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
 }
 
 .subtitle-selector-item--active {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(from var(--overlay-text) r g b / 0.15);
   font-weight: bold;
 }
 
 .subtitle-selector-item:hover:not(.subtitle-selector-item--active) {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(from var(--overlay-text) r g b / 0.1);
 }
 
 .subtitle-selector-asr-badge {
@@ -386,9 +386,9 @@ export const SUBTITLE_BLOCK_CSS = `
   letter-spacing: 0.5px;
   padding: 1px var(--space-1-5);
   border-radius: var(--space-1);
-  background: rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.85);
-  margin-left: var(--space-1, 4px);
+  background: rgba(from var(--overlay-text) r g b / 0.18);
+  color: rgba(from var(--overlay-text) r g b / 0.85);
+  margin-left: var(--space-1);
 }
 
 .subtitle-selector-meta {
@@ -401,10 +401,10 @@ export const SUBTITLE_BLOCK_CSS = `
 .offset-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
-  padding: var(--space-2, 8px) var(--space-3, 12px);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   cursor: pointer;
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   user-select: none;
   width: 100%;
   border: none;
@@ -412,7 +412,7 @@ export const SUBTITLE_BLOCK_CSS = `
   color: var(--color-text);
   font: inherit;
   text-align: left;
-  transition: background var(--duration-fast, 150ms) ease;
+  transition: background var(--duration-fast) ease;
 }
 
 .offset-header:hover {
@@ -422,11 +422,11 @@ export const SUBTITLE_BLOCK_CSS = `
 .offset-header-chevron {
   display: inline-flex;
   color: var(--color-text-muted);
-  transition: transform var(--duration-fast, 150ms) ease;
+  transition: transform var(--duration-fast) ease;
 }
 
 .offset-header-label {
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -435,7 +435,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .offset-body {
-  padding: var(--space-1, 4px) var(--space-1, 4px) var(--space-2, 8px);
+  padding: var(--space-1) var(--space-1) var(--space-2);
   display: block;
 }
 
@@ -445,10 +445,10 @@ export const SUBTITLE_BLOCK_CSS = `
   align-items: stretch;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   padding: var(--space-1);
   gap: 0;
-  margin-bottom: var(--space-2, 8px);
+  margin-bottom: var(--space-2);
   isolation: isolate;
 }
 
@@ -458,13 +458,13 @@ export const SUBTITLE_BLOCK_CSS = `
   border: none;
   background: transparent;
   cursor: pointer;
-  font-family: var(--font-family, sans-serif);
-  font-size: var(--font-size-xs, 12px);
-  font-weight: var(--font-weight-medium, 500);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
-  padding: var(--space-2, 8px) var(--space-1, 4px);
+  padding: var(--space-2) var(--space-1);
   min-height: var(--touch-target-desktop);
-  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   display: flex;
@@ -490,19 +490,19 @@ export const SUBTITLE_BLOCK_CSS = `
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+  background: rgba(from var(--color-primary) r g b / 0.1);
   color: var(--color-primary);
-  font-family: var(--font-family, sans-serif);
-  font-size: var(--font-size-base, 14px);
-  font-weight: var(--font-weight-semibold, 600);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
-  border-radius: var(--radius-sm, 6px);
-  padding: var(--space-1, 4px) var(--space-2, 8px);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
   min-height: var(--touch-target-desktop);
   min-width: 0;
   width: 100%;
   border: none;
-  transition: color var(--duration-fast, 150ms) ease, background var(--duration-fast, 150ms) ease, box-shadow var(--duration-fast, 150ms) ease;
+  transition: color var(--duration-fast) ease, background var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
   text-align: center;
   outline: none;
 }
@@ -520,35 +520,35 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .offset-value--positive {
   color: var(--color-success);
-  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+  background: rgba(from var(--color-primary) r g b / 0.1);
 }
 
 .offset-value--negative {
   color: var(--color-info);
-  background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
+  background: rgba(from var(--color-primary) r g b / 0.1);
 }
 
 .offset-reset-btn {
   width: 100%;
-  padding: var(--space-2, 8px);
+  padding: var(--space-2);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1-5, 6px);
-  font-family: var(--font-family, sans-serif);
-  font-size: var(--font-size-xs, 12px);
-  font-weight: var(--font-weight-medium, 500);
-  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
+  gap: var(--space-1-5);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, border-color var(--duration-fast) ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .offset-reset-btn:hover:not(:disabled) {
-  background: var(--color-error-subtle, rgba(239, 68, 68, 0.08));
+  background: rgba(from var(--color-error) r g b / 0.08);
   color: var(--color-error);
   border-color: var(--color-error);
 }
@@ -558,10 +558,10 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .offset-disabled-hint {
-  padding: var(--space-2, 8px) 0 0;
+  padding: var(--space-2) 0 0;
   text-align: center;
   color: var(--color-text-muted);
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   display: none;
 }
 
@@ -576,12 +576,12 @@ export const SUBTITLE_BLOCK_CSS = `
    ADR-027: .subtitle-toolbar removed — manager icon is now in the subtitle
    block's secondary column, not a separate top-left toolbar. */
 .subtitle-manager-icon {
-  width: var(--sb-btn-size, 40px);
-  height: var(--sb-btn-size, 40px);
+  width: var(--sb-btn-size, var(--space-10));
+  height: var(--sb-btn-size, var(--space-10));
   border: none;
-  border-radius: var(--radius-full, 9999px);
-  background: rgba(30, 41, 59, var(--sb-bg-opacity, 0.2));
-  color: rgba(241, 245, 249, var(--sb-text-opacity, 1));
+  border-radius: var(--radius-full);
+  background: rgba(from var(--color-surface) r g b / var(--sb-bg-opacity, 0.2));
+  color: rgba(from var(--color-foreground) r g b / var(--sb-text-opacity, 1));
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -592,20 +592,20 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: auto;
   user-select: none;
   position: relative;
-  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .subtitle-manager-icon-feather {
   position: absolute;
   inset: calc(var(--space-0-5) * -1);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
-  background: rgba(15, 23, 42, 0.1);
+  background: rgba(from var(--color-background) r g b / 0.1);
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   z-index: -1;
-  transition: background var(--duration-fast, 150ms) ease;
+  transition: background var(--duration-fast) ease;
   pointer-events: none;
 }
 
@@ -619,7 +619,7 @@ export const SUBTITLE_BLOCK_CSS = `
   }
 
   .subtitle-manager-icon:hover:not(.subtitle-manager-icon--active) .subtitle-manager-icon-feather {
-    background: rgba(15, 23, 42, 0.25);
+    background: rgba(from var(--color-background) r g b / 0.25);
   }
 }
 
@@ -631,7 +631,7 @@ export const SUBTITLE_BLOCK_CSS = `
   display: none;
   position: absolute;
   top: var(--touch-target-mobile);
-  left: var(--space-2, 8px);
+  left: var(--space-2);
   z-index: 2147483641;
   width: calc(var(--space-5) * 16);
   max-height: calc(var(--space-5) * 18);
@@ -639,11 +639,11 @@ export const SUBTITLE_BLOCK_CSS = `
   background-color: var(--color-background);
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl, 12px);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md, none);
-  padding: var(--space-1, 4px);
-  font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
-  font-size: var(--font-size-base, 14px);
+  padding: var(--space-1);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
   font-weight: 400;
   line-height: 1.5;
   letter-spacing: normal;
@@ -672,17 +672,17 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-panel::-webkit-scrollbar {
-  width: var(--space-2, 8px);
+  width: var(--space-2);
 }
 
 .subtitle-manager-panel::-webkit-scrollbar-track {
   background: var(--color-surface-hover);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
 }
 
 .subtitle-manager-panel::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   border: var(--space-0-5) solid var(--color-surface-hover);
 }
 
@@ -696,20 +696,20 @@ export const SUBTITLE_BLOCK_CSS = `
   justify-content: space-between;
   min-height: var(--touch-target-desktop);
   margin: 0;
-  padding: var(--space-2, 8px) var(--space-3, 12px);
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-border-subtle);
   box-sizing: border-box;
 }
 
 .subtitle-manager-title {
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
   font-weight: 600;
   color: var(--color-text);
 }
 
 .subtitle-manager-close {
-  width: var(--space-5, 20px);
-  height: var(--space-5, 20px);
+  width: var(--space-5);
+  height: var(--space-5);
   border: none;
   background: transparent;
   color: var(--color-text-muted);
@@ -719,8 +719,8 @@ export const SUBTITLE_BLOCK_CSS = `
   justify-content: center;
   padding: 0;
   box-sizing: border-box;
-  border-radius: var(--radius-sm, 6px);
-  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .subtitle-manager-close:hover {
@@ -735,10 +735,10 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-manager-section-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
-  padding: var(--space-2, 8px) var(--space-3, 12px);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   cursor: pointer;
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   user-select: none;
   width: 100%;
   min-height: var(--touch-target-desktop);
@@ -750,7 +750,7 @@ export const SUBTITLE_BLOCK_CSS = `
   line-height: 1.5;
   text-align: left;
   box-sizing: border-box;
-  transition: background var(--duration-fast, 150ms) ease;
+  transition: background var(--duration-fast) ease;
 }
 
 .subtitle-manager-section-header:hover {
@@ -761,16 +761,16 @@ export const SUBTITLE_BLOCK_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 var(--space-4, 16px);
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  flex: 0 0 var(--space-4);
+  width: var(--space-4);
+  height: var(--space-4);
   margin: 0;
   color: var(--color-text-muted);
-  transition: transform var(--duration-fast, 150ms) ease;
+  transition: transform var(--duration-fast) ease;
 }
 
 .subtitle-manager-section-label {
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -786,25 +786,25 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-section-count {
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
 .subtitle-manager-section-body {
-  padding: 0 var(--space-1, 4px);
+  padding: 0 var(--space-1);
   display: block;
 }
 
 .subtitle-manager-item {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
-  padding: var(--space-2, 8px) var(--space-3, 12px);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   cursor: pointer;
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: transparent;
-  transition: background var(--duration-fast, 150ms) ease;
+  transition: background var(--duration-fast) ease;
 }
 
 .subtitle-manager-item:hover:not(.subtitle-manager-item--active) {
@@ -812,7 +812,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-item--active {
-  padding: calc(var(--space-2, 8px) - 1px) calc(var(--space-3, 12px) - 1px);
+  padding: calc(var(--space-2) - 1px) calc(var(--space-3) - 1px);
 }
 
 .subtitle-manager-item--active.subtitle-manager-item--target {
@@ -822,12 +822,12 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-manager-item--active.subtitle-manager-item--native {
   border-color: var(--color-warning);
-  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.1));
+  background: rgba(from var(--color-warning) r g b / 0.1);
 }
 
 .subtitle-manager-radio {
-  width: var(--space-3-5, 14px);
-  height: var(--space-3-5, 14px);
+  width: var(--space-3-5);
+  height: var(--space-3-5);
   border-radius: 50%;
   border: var(--space-0-5) solid var(--color-text-muted);
   background: transparent;
@@ -848,8 +848,8 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-radio-dot {
-  width: var(--space-1, 4px);
-  height: var(--space-1, 4px);
+  width: var(--space-1);
+  height: var(--space-1);
   border-radius: 50%;
   background: var(--color-text-inverse, white);
 }
@@ -857,13 +857,13 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-manager-item-text {
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5, 2px);
+  gap: var(--space-0-5);
   min-width: 0;
   flex: 1;
 }
 
 .subtitle-manager-item-name {
-  font-size: var(--font-size-base, 14px);
+  font-size: var(--font-size-base);
   font-weight: 500;
   color: var(--color-text);
   white-space: nowrap;
@@ -873,15 +873,15 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-manager-item-meta {
   display: flex;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
   align-items: center;
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
 .subtitle-manager-format-badge {
   padding: 1px var(--space-1-5);
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   background: var(--color-surface-hover);
   font-weight: 600;
   font-size: var(--font-size-xs);
@@ -890,8 +890,8 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-manager-asr-badge {
   padding: 1px var(--space-1-5);
-  border-radius: var(--radius-sm, 6px);
-  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
+  border-radius: var(--radius-sm);
+  background: rgba(from var(--color-warning) r g b / 0.15);
   color: var(--color-warning);
   font-weight: 600;
   font-size: var(--font-size-xs);
@@ -905,8 +905,8 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-manager-translated-badge {
   padding: 1px var(--space-1-5);
-  border-radius: var(--radius-sm, 6px);
-  background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
+  border-radius: var(--radius-sm);
+  background: rgba(from var(--color-warning) r g b / 0.15);
   color: var(--color-warning);
   font-weight: 600;
   font-size: var(--font-size-xs);
@@ -929,12 +929,12 @@ export const SUBTITLE_BLOCK_CSS = `
    Overlay appearance — sits in more-popover slot, not theme-aware.
    ADR-027: No longer position:absolute top-right — now inline in popover. */
 .panel-toggle {
-  width: var(--sb-btn-size, 40px);
-  height: var(--sb-btn-size, 40px);
+  width: var(--sb-btn-size, var(--space-10));
+  height: var(--sb-btn-size, var(--space-10));
   border: none;
-  border-radius: var(--radius-full, 9999px);
-  background: rgba(30, 41, 59, var(--sb-bg-opacity, 0.2));
-  color: rgba(241, 245, 249, var(--sb-text-opacity, 1));
+  border-radius: var(--radius-full);
+  background: rgba(from var(--color-surface) r g b / var(--sb-bg-opacity, 0.2));
+  color: rgba(from var(--color-foreground) r g b / var(--sb-text-opacity, 1));
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -944,7 +944,7 @@ export const SUBTITLE_BLOCK_CSS = `
   isolation: isolate;
   user-select: none;
   pointer-events: auto;
-  transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @media (hover: hover) {
@@ -953,7 +953,7 @@ export const SUBTITLE_BLOCK_CSS = `
   }
 
   .panel-toggle:hover .panel-toggle-feather {
-    background: rgba(15, 23, 42, 0.25);
+    background: rgba(from var(--color-background) r g b / 0.25);
   }
 }
 
@@ -964,14 +964,14 @@ export const SUBTITLE_BLOCK_CSS = `
 .panel-toggle-feather {
   position: absolute;
   inset: calc(var(--space-0-5) * -1);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
-  background: rgba(15, 23, 42, 0.1);
+  background: rgba(from var(--color-background) r g b / 0.1);
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   z-index: -1;
-  transition: background var(--duration-fast, 150ms) ease;
+  transition: background var(--duration-fast) ease;
   pointer-events: none;
 }
 
@@ -979,15 +979,15 @@ export const SUBTITLE_BLOCK_CSS = `
    Dark overlay colors intentional — sits on top of video. */
 .subtitle-track-dropdown {
   position: absolute;
-  top: var(--space-2, 8px);
-  left: var(--space-2, 8px);
+  top: var(--space-2);
+  left: var(--space-2);
   z-index: 2147483641;
-  font-size: var(--font-size-xs, 12px);
-  padding: var(--space-0-5, 2px) var(--space-1, 4px);
-  background-color: rgba(0, 0, 0, 0.7);
-  color: rgba(255, 255, 255, 0.95);
+  font-size: var(--font-size-xs);
+  padding: var(--space-0-5) var(--space-1);
+  background-color: rgba(from var(--overlay-background) r g b / 0.7);
+  color: rgba(from var(--overlay-text) r g b / 0.95);
   border: none;
-  border-radius: var(--radius-2xs, 4px);
+  border-radius: var(--radius-2xs);
   display: none;
 }
 
@@ -1002,8 +1002,8 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  padding: var(--space-1, 4px) var(--space-3, 12px);
-  border-radius: var(--radius-2xs, 4px);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-2xs);
   pointer-events: auto;
   cursor: ns-resize;
   white-space: pre-wrap !important;
@@ -1035,8 +1035,8 @@ export const SUBTITLE_BLOCK_CSS = `
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 150, 255, 0.2);
-  border: var(--space-1) dashed rgba(0, 150, 255, 0.8);
+  background-color: rgba(from var(--subtitle-drag-hint) r g b / 0.2);
+  border: var(--space-1) dashed rgba(from var(--subtitle-drag-hint) r g b / 0.8);
   border-radius: var(--space-2);
   display: none;
   align-items: center;
@@ -1044,10 +1044,10 @@ export const SUBTITLE_BLOCK_CSS = `
   z-index: 999998;
   pointer-events: none;
   user-select: none;
-  font-size: var(--font-size-base, 14px);
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px var(--space-1) rgba(0, 0, 0, 0.8);
-  font-family: var(--font-family, sans-serif);
+  font-size: var(--font-size-base);
+  color: rgba(from var(--overlay-text) r g b / 0.95);
+  text-shadow: 0 1px var(--space-1) rgba(from var(--overlay-background) r g b / 0.8);
+  font-family: var(--font-family);
 }
 
 .subtitle-drag-hint--visible {
@@ -1066,15 +1066,15 @@ export const SUBTITLE_BLOCK_CSS = `
   color: var(--color-text);
   border: 1px solid var(--color-border);
   border-left: var(--space-1) solid var(--toast-variant-color, var(--color-info));
-  border-radius: var(--radius-md, 8px);
-  padding: var(--space-2, 8px) var(--space-3, 12px);
-  font-size: var(--font-size-base, 14px);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-base);
   font-weight: 500;
-  font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-family: var(--font-family);
   box-shadow: var(--shadow-md, none);
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
   pointer-events: none;
   user-select: none;
   white-space: nowrap;
@@ -1089,7 +1089,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-toast--fade-out {
   opacity: 0;
-  transition: opacity var(--duration-slow, 300ms) ease;
+  transition: opacity var(--duration-slow) ease;
 }
 
 @keyframes subtitle-toast-in {
@@ -1101,4 +1101,16 @@ export const SUBTITLE_BLOCK_CSS = `
 #contentContainer.tp-yt-app-drawer[swipe-open]::after {
   width: 0 !important;
 }
+
+/* Respect user preference for reduced motion inside the subtitle overlay. */
+@media (prefers-reduced-motion: reduce) {
+  .subtitle-block *,
+  .subtitle-block *::before,
+  .subtitle-block *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 `;

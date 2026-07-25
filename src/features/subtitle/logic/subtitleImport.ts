@@ -101,13 +101,13 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   label.style.cssText = `
     position: relative;
     overflow: hidden;
-    width: var(--sb-btn-size, 40px);
-    height: var(--sb-btn-size, 40px);
+    width: var(--sb-btn-size, var(--space-10));
+    height: var(--sb-btn-size, var(--space-10));
     /* Overlay appearance: no border, feathered backdrop, bg + text opacity from settings. */
     border: none;
-    border-radius: var(--radius-full, 9999px);
-    background: rgba(30, 41, 59, var(--sb-bg-opacity, 0.2));
-    color: rgba(241, 245, 249, var(--sb-text-opacity, 1));
+    border-radius: var(--radius-full);
+    background: rgba(from var(--color-surface) r g b / var(--sb-bg-opacity, 0.2));
+    color: rgba(from var(--color-foreground) r g b / var(--sb-text-opacity, 1));
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -117,7 +117,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     isolation: isolate;
     pointer-events: auto;
     user-select: none;
-    transition: background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease, transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
   `;
   label.style.setProperty('border', 'none', 'important');
   label.style.setProperty('opacity', '1', 'important');
@@ -127,15 +127,15 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   const labelFeather = document.createElement('span');
   labelFeather.style.cssText = `
     position: absolute;
-    inset: -1.5px;
-    border-radius: var(--radius-full, 9999px);
+    inset: calc(var(--space-0-5) * -0.75);
+    border-radius: var(--radius-full);
     backdrop-filter: blur(1px);
     -webkit-backdrop-filter: blur(1px);
-    background: rgba(15, 23, 42, 0.1);
+    background: rgba(from var(--color-background) r g b / 0.1);
     -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
     mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
     z-index: -1;
-    transition: background var(--duration-fast, 150ms) ease;
+    transition: background var(--duration-fast) ease;
     pointer-events: none;
   `;
   label.appendChild(labelFeather);
@@ -158,11 +158,11 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   // Hover — icon đổi màu primary (no border feedback)
   label.addEventListener('mouseenter', () => {
     label.style.color = 'var(--color-primary)';
-    labelFeather.style.background = 'rgba(15, 23, 42, 0.25)';
+    labelFeather.style.background = 'rgba(from var(--color-background) r g b / 0.25)';
   });
   label.addEventListener('mouseleave', () => {
-    label.style.color = 'rgba(241, 245, 249, var(--sb-text-opacity, 1))';
-    labelFeather.style.background = 'rgba(15, 23, 42, 0.1)';
+    label.style.color = 'rgba(from var(--color-foreground) r g b / var(--sb-text-opacity, 1))';
+    labelFeather.style.background = 'rgba(from var(--color-background) r g b / 0.1)';
   });
   // Focus ring handled by CSS :focus-visible (WCAG 2.4.7) — no JS outline.
 

@@ -46,15 +46,15 @@
   align-items: center;
   border-radius: var(--radius-md);
   background: transparent;
-  transition: background var(--duration-fast, 100ms) var(--ease-out, ease-out);
+  transition: background var(--duration-fast) var(--ease-out);
 }
 
 .cc-queue__item:hover {
-  background: var(--color-background-hover, var(--color-surface-hover, transparent));
+  background: var(--color-background-hover);
 }
 
 .cc-queue__item--active {
-  background: var(--color-primary-subtle, var(--color-accent-subtle, transparent));
+  background: var(--color-primary-subtle);
 }
 
 .cc-queue__item-btn {
@@ -93,8 +93,8 @@
 }
 
 .cc-queue__item-badge--tracking {
-  background: var(--color-info-subtle, var(--color-primary-subtle, transparent));
-  color: var(--color-info, var(--color-primary));
+  background: var(--color-info-subtle);
+  color: var(--color-info);
 }
 
 .cc-queue__item-delete {
@@ -110,7 +110,7 @@
   color: var(--color-text-secondary);
   border-radius: var(--radius-sm);
   opacity: 0;
-  transition: opacity var(--duration-fast, 100ms) var(--ease-out, ease-out);
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
 
 .cc-queue__item:hover .cc-queue__item-delete {
@@ -141,7 +141,7 @@
   cursor: pointer;
   align-self: stretch;
   justify-content: center;
-  animation: cc-queue-undo-in var(--duration-fast, 100ms) var(--ease-out, ease-out);
+  animation: cc-queue-undo-in var(--duration-fast) var(--ease-out);
 }
 
 .cc-queue__undo:hover {

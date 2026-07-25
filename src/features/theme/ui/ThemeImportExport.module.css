@@ -1,48 +1,48 @@
 /* ThemeImportExport — export/import theme JSON */
 .wrapper {
-  margin-top: var(--space-3, 12px);
-  padding: var(--space-3, 12px);
+  margin-top: var(--space-3);
+  padding: var(--space-3);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
 }
 
 .row {
   display: flex;
-  gap: var(--space-2, 8px);
+  gap: var(--space-2);
   flex-wrap: wrap;
-  margin-bottom: var(--space-2, 8px);
+  margin-bottom: var(--space-2);
 }
 
 .textarea {
   width: 100%;
   min-height: var(--space-20);
-  padding: var(--space-2, 8px);
+  padding: var(--space-2);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
   background: var(--color-background);
   color: var(--color-text);
   font-family: monospace;
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   resize: vertical;
 }
 
 .error {
   color: var(--color-error);
-  font-size: var(--font-size-xs, 12px);
-  margin-top: var(--space-1, 4px);
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-1);
 }
 
 .success {
   color: var(--color-success);
-  font-size: var(--font-size-xs, 12px);
-  margin-top: var(--space-1, 4px);
+  font-size: var(--font-size-xs);
+  margin-top: var(--space-1);
 }
 
 .label {
-  font-size: var(--font-size-xs, 12px);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  margin-bottom: var(--space-1, 4px);
+  margin-bottom: var(--space-1);
 }
 
 .fileInput {
@@ -50,5 +50,5 @@
 }
 
 .actionRow {
-  margin-top: var(--space-2, 8px);
+  margin-top: var(--space-2);
 }

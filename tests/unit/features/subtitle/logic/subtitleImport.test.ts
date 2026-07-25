@@ -52,8 +52,8 @@ describe('subtitleImport', () => {
 
     it('should be icon button with relative overflow-hidden input container (UI v4 toolbar)', () => {
       const button = createImportButton(video, defaultConfig);
-      expect(button.style.width).toBe('var(--sb-btn-size, 40px)');
-      expect(button.style.height).toBe('var(--sb-btn-size, 40px)');
+      expect(button.style.width).toBe('var(--sb-btn-size, var(--space-10))');
+      expect(button.style.height).toBe('var(--sb-btn-size, var(--space-10))');
       expect(button.style.position).toBe('relative');
       expect(button.style.overflow).toBe('hidden');
     });

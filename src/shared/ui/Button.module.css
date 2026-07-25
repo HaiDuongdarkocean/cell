@@ -2,11 +2,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1-5, 6px);
+  gap: var(--space-1-5);
   border: none;
-  border-radius: var(--button-radius, var(--radius-md, 18px));
+  border-radius: var(--button-radius);
   font-family: var(--font-family);
-  font-weight: var(--button-font-weight, var(--font-weight-semibold, 600));
+  font-weight: var(--button-font-weight);
   text-decoration: none;
   text-align: center;
   cursor: pointer;
@@ -15,65 +15,65 @@
 }
 
 .button:focus-visible {
-  outline: var(--space-0-5) solid var(--button-focus-ring, var(--color-primary));
+  outline: var(--space-0-5) solid var(--button-focus-ring);
   outline-offset: var(--space-0-5);
 }
 
 .button:disabled,
 .button.loading {
-  opacity: var(--button-disabled-opacity, 0.5);
+  opacity: var(--button-disabled-opacity);
   pointer-events: none;
   cursor: not-allowed;
 }
 
 /* === Sizes === */
 .sm {
-  height: var(--button-height-sm, 28px);
-  padding: var(--button-padding-sm-y, 6px) var(--button-padding-sm-x, 12px);
-  font-size: var(--button-font-size-sm, var(--font-size-xs, 12px));
+  height: var(--button-height-sm);
+  padding: var(--button-padding-sm-y) var(--button-padding-sm-x);
+  font-size: var(--button-font-size-sm);
 }
 
 .md {
-  height: var(--button-height, 32px);
-  padding: var(--button-padding-y, 8px) var(--button-padding-x, 16px);
-  font-size: var(--button-font-size, var(--font-size-base, 14px));
+  height: var(--button-height);
+  padding: var(--button-padding-y) var(--button-padding-x);
+  font-size: var(--button-font-size);
 }
 
 .lg {
-  height: var(--button-height-lg, 40px);
-  padding: var(--button-padding-lg-y, 10px) var(--button-padding-lg-x, 20px);
-  font-size: var(--button-font-size-lg, var(--font-size-base, 14px));
+  height: var(--button-height-lg);
+  padding: var(--button-padding-lg-y) var(--button-padding-lg-x);
+  font-size: var(--button-font-size-lg);
 }
 
 /* === Variants === */
 
 /* Primary */
 .primary {
-  background: var(--button-bg, var(--color-primary));
-  color: var(--button-fg, var(--color-primary-foreground-soft, var(--color-primary-foreground, var(--color-text-inverse))));
+  background: var(--button-bg);
+  color: var(--button-fg);
 }
 
 .primary:hover {
-  background: var(--button-hover-bg, var(--color-primary-hover));
+  background: var(--button-hover-bg);
 }
 
 .primary:active {
-  background: var(--button-active-bg, var(--color-primary-active, var(--color-primary-hover)));
+  background: var(--button-active-bg);
   transform: scale(0.98);
 }
 
 /* Secondary */
 .secondary {
-  background: var(--button-secondary-bg, var(--color-secondary));
-  color: var(--button-secondary-fg, var(--color-secondary-foreground));
+  background: var(--button-secondary-bg);
+  color: var(--button-secondary-fg);
 }
 
 .secondary:hover {
-  background: var(--button-secondary-hover-bg, var(--color-secondary-hover));
+  background: var(--button-secondary-hover-bg);
 }
 
 .secondary:active {
-  background: var(--button-secondary-hover-bg, var(--color-secondary-hover));
+  background: var(--button-secondary-hover-bg);
   transform: scale(0.98);
 }
 
@@ -81,7 +81,7 @@
 .outline {
   background: transparent;
   color: var(--color-text);
-  border: 1px solid var(--button-outline-border, var(--color-border));
+  border: 1px solid var(--button-outline-border);
 }
 
 .outline:hover {
@@ -111,16 +111,16 @@
 
 /* Destructive */
 .destructive {
-  background: var(--button-destructive-bg, var(--color-destructive));
-  color: var(--button-destructive-fg, var(--color-destructive-foreground));
+  background: var(--button-destructive-bg);
+  color: var(--button-destructive-fg);
 }
 
 .destructive:hover {
-  background: var(--button-destructive-hover-bg, var(--color-destructive-hover));
+  background: var(--button-destructive-hover-bg);
 }
 
 .destructive:active {
-  background: var(--button-destructive-hover-bg, var(--color-destructive-hover));
+  background: var(--button-destructive-hover-bg);
   transform: scale(0.98);
 }
 
@@ -128,7 +128,7 @@
 .link {
   background: transparent;
   color: var(--color-primary);
-  padding: var(--space-1, 4px) var(--space-2, 8px);
+  padding: var(--space-1) var(--space-2);
   height: auto;
 }
 
@@ -149,8 +149,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: var(--iconbutton-icon-xs, 16px);
-  height: var(--iconbutton-icon-xs, 16px);
+  width: var(--iconbutton-icon-xs);
+  height: var(--iconbutton-icon-xs);
 }
 
 .leadingIcon svg,

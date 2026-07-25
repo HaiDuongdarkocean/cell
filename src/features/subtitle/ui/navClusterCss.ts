@@ -12,15 +12,15 @@ export const NAV_CLUSTER_CSS = `
 .nav-cluster {
   position: absolute;
   display: flex;
-  gap: var(--space-1, 4px);
-  padding: var(--space-1, 4px);
-  border-radius: var(--radius-md, 8px);
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
   background: transparent;
   border: 1px solid var(--color-border);
   z-index: var(--nav-cluster-z-index, 1000001);
-  font-family: var(--font-family, system-ui, -apple-system, sans-serif);
+  font-family: var(--font-family);
   user-select: none;
-  transition: transform var(--duration-fast, 150ms) ease, opacity var(--duration-fast, 150ms) ease;
+  transition: transform var(--duration-fast) ease, opacity var(--duration-fast) ease;
   pointer-events: auto;
   /* ADR-018 D5-rev: drag is via grip tab only — cluster body = default cursor */
   cursor: default;
@@ -39,7 +39,7 @@ export const NAV_CLUSTER_CSS = `
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   backdrop-filter: blur(var(--space-2));
   opacity: var(--nav-cluster-bg-opacity, 0.7);
@@ -70,10 +70,10 @@ export const NAV_CLUSTER_CSS = `
   content: '';
   width: var(--space-7);
   height: var(--space-1);
-  border-radius: var(--radius-full, 9999px);
+  border-radius: var(--radius-full);
   background: var(--color-text-muted);
   opacity: 0.35;
-  transition: opacity var(--duration-fast, 150ms) ease, background var(--duration-fast, 150ms) ease;
+  transition: opacity var(--duration-fast) ease, background var(--duration-fast) ease;
 }
 .nav-cluster-grip:hover::before {
   opacity: 0.7;
@@ -81,7 +81,7 @@ export const NAV_CLUSTER_CSS = `
 .nav-cluster-grip:focus-visible {
   outline: var(--space-0-5) solid var(--color-border-focus);
   outline-offset: var(--space-0-5);
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-sm);
 }
 .nav-cluster.dragging .nav-cluster-grip::before {
   opacity: 0.9;
@@ -94,7 +94,7 @@ export const NAV_CLUSTER_CSS = `
 .nav-cluster-secondary {
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5, 2px);
+  gap: var(--space-0-5);
   align-items: center;
   justify-content: center;
   cursor: default !important;
@@ -118,7 +118,7 @@ export const NAV_CLUSTER_CSS = `
   width: var(--nav-cluster-btn-size, 48px);
   height: var(--nav-cluster-btn-size, 48px);
   border: 1px solid transparent;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-text);
   cursor: pointer !important;
@@ -126,7 +126,7 @@ export const NAV_CLUSTER_CSS = `
   line-height: 1;
   opacity: var(--nav-cluster-btn-opacity, 0.9);
   -webkit-tap-highlight-color: transparent;
-  transition: transform var(--duration-normal, 200ms) cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color var(--duration-fast, 150ms) ease, background var(--duration-fast, 150ms) ease, color var(--duration-fast, 150ms) ease;
+  transition: transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 .nav-cluster-btn .nav-cluster-icon {
   width: 65%;
@@ -163,7 +163,7 @@ export const NAV_CLUSTER_CSS = `
 .nav-cluster.no-sub .nav-cluster-no-sub {
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5, 2px);
+  gap: var(--space-0-5);
   align-items: center;
   justify-content: center;
   cursor: default !important;
@@ -193,4 +193,19 @@ export const NAV_CLUSTER_CSS = `
 .nav-cluster.collapsed .nav-cluster-secondary {
   display: none;
 }
-`;
+
+/* Respect user preference for reduced motion on the nav cluster. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-cluster,
+  .nav-cluster-btn,
+  .nav-cluster-grip::before {
+    transition: none !important;
+  }
+  .nav-cluster.dragging,
+  .nav-cluster-btn:active,
+  .nav-cluster-btn--active,
+  .nav-cluster.collapsed.mirror-right {
+    transform: none !important;
+  }
+}
+`.trim();

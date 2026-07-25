@@ -101,7 +101,7 @@
   background: var(--color-surface-hover);
   color: var(--color-text);
   font-size: var(--space-3-5);
-  line-height: var(--leading-none, 1);
+  line-height: var(--leading-none);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-in-out),
               color var(--duration-fast) var(--ease-in-out),
@@ -203,7 +203,7 @@
   background: var(--color-surface-hover);
   color: var(--color-text-inverse);
   font-size: var(--space-6);
-  line-height: var(--leading-none, 1);
+  line-height: var(--leading-none);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-in-out);
 }
@@ -289,7 +289,7 @@
   cursor: pointer;
   border-radius: var(--radius-full);
   font-size: var(--space-3-5);
-  line-height: var(--leading-none, 1);
+  line-height: var(--leading-none);
   flex-shrink: 0;
   transition: background var(--duration-fast) var(--ease-in-out),
               color var(--duration-fast) var(--ease-in-out),
