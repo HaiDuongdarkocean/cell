@@ -701,7 +701,6 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         hasVideo: true,
         video,
         getTargetCues: () => blockController.getTargetCues(),
-        getNativeCues: () => blockController.getNativeCues(),
       });
       if (dpSettings?.enabled) {
         blockController.enableDictionaryPopup(

@@ -72,8 +72,6 @@ export interface WebTextDictionaryControllerDeps {
   readonly video?: HTMLVideoElement;
   /** Callback to get current target cues for sentence audio capture (subtitle path). */
   readonly getTargetCues?: () => readonly CueRange[];
-  /** Callback to get current native cues for sentence translation fallback. */
-  readonly getNativeCues?: () => readonly CueRange[];
   /** Called when the user cycles the word status inside the popup. The popup
    *  already persists the new status via its own WORD_STATUS_SET message; this
    *  callback lets external systems (tokenize controller) update their cached
@@ -99,8 +97,6 @@ export interface WebTextDictionaryVideoConfig {
   readonly hasVideo: boolean;
   readonly video?: HTMLVideoElement;
   readonly getTargetCues?: () => readonly CueRange[];
-  /** Callback to get current native cues for sentence translation fallback. */
-  readonly getNativeCues?: () => readonly CueRange[];
 }
 
 export interface WebTextDictionaryController {
