@@ -137,24 +137,4 @@ export async function addNote(fetchFn: FetchFn, baseUrl: string, note: AnkiNote)
   return result as number | null;
 }
 
-export interface StoreMediaFileParams {
-  readonly filename: string;
-  /** Base64-encoded file contents (no data: prefix). */
-  readonly data: string;
-}
-
-export async function storeMediaFile(
-  fetchFn: FetchFn,
-  baseUrl: string,
-  params: StoreMediaFileParams,
-): Promise<string> {
-  const result = await invokeAnkiConnect(
-    fetchFn,
-    baseUrl,
-    'storeMediaFile',
-    params as unknown as Record<string, unknown>,
-  );
-  return result as string;
-}
-
 

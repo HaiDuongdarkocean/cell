@@ -79,7 +79,7 @@
 - **assToSrt.ts**: `convertAssToSrt` — parse, sort by start, stripAssStyling (drawing blocks, override tags, \N→newline, \n→space), emit SRT.
 - **vttToSrt.ts**: `convertVttToSrt` — parse VTT, stripVttInlineTags ({\...}, <...>), emit SRT comma timestamps.
 - **srtNormalizer.ts**: `normalizeSrt` — strip BOM, WEBVTT header, inline tags, dot→comma timestamps, pad MM:SS→HH:MM:SS, strip cue settings, re-number.
-- **conversionTimer.ts**: `ConversionTimer` — track phase durations (download, write-input, convert, save, cleanup, fallback), `logSummary`.
+- **conversionTimer.ts**: _Deleted — all production usage was console.log-only._
 - **benchmarkHarness.ts**: `runBenchmark` + `compareBenchmarks` (speedup, verdict parallel-faster/sequential-faster/inconclusive).
 - **autoEnablement.ts**: `evaluateGates` (≥1 benchmark, parallel faster ≥1.1x, failure rate ≤20%) → `resolveEffectiveMode` (auto→auto nếu gates pass, else off).
 - **workerFactory.ts**: `createTransmuxWorker()` — `new Worker(new URL(...transmuxWorker.ts, import.meta.url), {type:module})`. Isolated để Jest không parse `import.meta.url`.

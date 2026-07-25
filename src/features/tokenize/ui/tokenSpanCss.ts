@@ -232,8 +232,3 @@ export function injectTokenSpanStyle(): void {
   style.textContent = buildTokenSpanCss();
   (document.head ?? document.documentElement).appendChild(style);
 }
-
-/** Remove injected token-span style. */
-export function removeTokenSpanStyle(): void {
-  document.getElementById(TOKEN_STYLE_ID)?.remove();
-}
