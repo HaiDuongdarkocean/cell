@@ -130,9 +130,6 @@ export async function fetchCaptionTracksViaInnerTube(
     }
     const json: unknown = await response.json();
     const tracks = extractCaptionTracks(json);
-    console.log(
-      `[youtube-innertube] ANDROID client returned ${tracks.length} tracks for videoId=${videoId}`,
-    );
     return tracks;
   } catch (err) {
     console.warn(

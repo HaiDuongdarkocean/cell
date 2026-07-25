@@ -46,10 +46,6 @@ export async function transmuxTsToFmp4(
     return { success: false, outputName, error: 'Input file is empty' };
   }
 
-  console.log(
-    `[tsTransmuxer] Starting transmux: ${totalBytes} bytes → ${outputName}`,
-  );
-
   const transmuxer = new Transmuxer();
   let processedBytes = 0;
   let initSegmentWritten = false;
@@ -74,9 +70,6 @@ export async function transmuxTsToFmp4(
       if (segment.initSegment && segment.initSegment.length > 0) {
         chunks.push(segment.initSegment);
         initSegmentWritten = true;
-        console.log(
-          `[tsTransmuxer] initSegment: ${segment.initSegment.length} bytes`,
-        );
       }
       if (segment.data && segment.data.length > 0) {
         chunks.push(segment.data);
@@ -155,7 +148,6 @@ export async function transmuxTsToFmp4(
       };
     }
 
-    console.log(`[tsTransmuxer] Done: ${outputName} (${bytesWritten} bytes)`);
     return { success: true, outputName };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

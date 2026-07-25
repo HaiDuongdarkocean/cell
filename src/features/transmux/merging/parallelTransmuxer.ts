@@ -234,10 +234,6 @@ export async function transmuxTsToFmp4ParallelExperimental(
   const totalBytes = inputFile.size;
   const useWorkers = areWorkersAvailable();
 
-  console.log(
-    `[parallel-transmuxer] Starting: ${groups.length} groups, ${totalBytes} bytes, ${useWorkers ? 'Web Workers' : 'inline (fallback)'}`,
-  );
-
   // Track progress across all groups.
   const groupProgress = new Array(groups.length).fill(0);
   const reportProgress = (): void => {
@@ -259,10 +255,6 @@ export async function transmuxTsToFmp4ParallelExperimental(
 
     const results = await Promise.all(
       groups.map(async (group, i) => {
-        console.log(
-          `[parallel-transmuxer] Worker ${i}: bytes [${group.startByte}, ${group.endByte}), ${group.segmentIndices.length} segments`,
-        );
-
         const groupData = inputBuffer.subarray(group.startByte, group.endByte);
         const response = await transmuxGroupInWorker(groupData, i);
 
@@ -278,10 +270,6 @@ export async function transmuxTsToFmp4ParallelExperimental(
         const writer = await createOpfsWriter(dirHandle, partNames[i]);
         await writer.write(response.output!);
         await writer.close();
-
-        console.log(
-          `[parallel-transmuxer] Worker ${i}: ${response.durationMs}ms, ${(response.outputSize / 1024 / 1024).toFixed(1)}MB output`,
-        );
 
         return { success: true, partName: partNames[i] };
       }),
@@ -305,10 +293,6 @@ export async function transmuxTsToFmp4ParallelExperimental(
     const results = await Promise.all(
       groups.map(async (group, i) => {
         const partName = partNames[i];
-        console.log(
-          `[parallel-transmuxer] Inline ${i}: bytes [${group.startByte}, ${group.endByte}), ${group.segmentIndices.length} segments`,
-        );
-
         const result = await transmuxGroupInline(
           inputFile,
           dirHandle,
@@ -344,7 +328,7 @@ export async function transmuxTsToFmp4ParallelExperimental(
   }
 
   // Merge all part files into the final output.
-  console.log(`[parallel-transmuxer] Merging ${partNames.length} parts into ${outputName}`);
+
   const mergeResult = await mergePartFiles(dirHandle, partNames, outputName);
   await cleanupPartFiles(dirHandle, partNames);
 
@@ -358,7 +342,6 @@ export async function transmuxTsToFmp4ParallelExperimental(
     };
   }
 
-  console.log(`[parallel-transmuxer] Done: ${outputName} from ${partNames.length} parts`);
   return {
     success: true,
     outputName,
@@ -462,12 +445,6 @@ async function mergePartFiles(
       const toWrite = buffer.subarray(writeOffset);
       await writer.write(toWrite);
       totalWritten += toWrite.length;
-
-      console.log(
-        `[parallel-transmuxer] Merged ${partNames[i]}: ${toWrite.length} bytes` +
-          (i > 0 ? ` (stripped ${writeOffset} bytes ftyp/moov, tfdt offset applied)` : '') +
-          ` (total: ${totalWritten})`,
-      );
     }
 
     if (totalWritten === 0) {
