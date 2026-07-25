@@ -331,25 +331,6 @@ describe('SubtitleTriggerController', () => {
     });
   });
 
-  describe('orbital mode', () => {
-    it('triggers on hover, not on click', () => {
-      jest.useFakeTimers();
-      const ctrl = makeController('orbital');
-      ctrl.attach(spans, 'Hello world.', 'en');
-
-      // Hover should trigger after debounce.
-      spans[0]!.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
-      jest.advanceTimersByTime(HOVER_DEBOUNCE_MS);
-      expect(onLookup).toHaveBeenCalledTimes(1);
-
-      // Click should not trigger (no click listener attached).
-      spans[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-      expect(onLookup).toHaveBeenCalledTimes(1);
-
-      ctrl.detach();
-    });
-  });
-
   describe('requestId routing', () => {
     it('isCurrentRequestId matches the latest dispatched request', () => {
       const ctrl = makeController('click');

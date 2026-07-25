@@ -11,7 +11,7 @@ import type { PhraseMatch } from '@/features/dictionary/logic/phraseMatcher';
 
 export type ReadingKind = 'ipa' | 'pinyin' | 'none';
 export type WordStatus = 'unknown' | 'known' | 'tracking' | 'ignore';
-export type TriggerMode = 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt' | 'orbital';
+export type TriggerMode = 'click' | 'hover' | 'hover-ctrl' | 'hover-shift' | 'hover-alt';
 export type PopupTab = 'audio' | 'image' | 'translate' | 'links';
 export type SrsDestination = 'anki';
 export type AudioSourceKind = 'community' | 'system-tts' | 'cloud-tts';

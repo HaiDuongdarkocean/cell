@@ -77,7 +77,7 @@ export interface PopupCardCreatorPrefill {
   readonly reading: string;
   readonly definitions: readonly { readonly pos?: string; readonly text: string }[];
   /** Raw definition strings from DB (with <br> + N. markers intact). */
-  readonly rawDefinitions?: readonly string[];
+  readonly rawDefinitions: readonly string[];
   readonly contextSentence: string;
   readonly translation?: string;
   readonly wordAudioUrls?: readonly string[];

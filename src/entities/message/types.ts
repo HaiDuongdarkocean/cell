@@ -567,6 +567,18 @@ export interface TtsSpeakPayload {
   readonly voiceName?: string;
 }
 
+/** Content → background: fetch TTS audio as a data URL (Google Translate TTS). */
+export interface TtsFetchAudioPayload {
+  readonly tabId?: number;
+  readonly text: string;
+  readonly langCode: string;
+}
+
+/** Background → content: TTS audio result. */
+export interface TtsFetchAudioResponse {
+  readonly url: string;
+}
+
 /** Content → background: get word status. */
 export interface WordStatusGetPayload {
   readonly tabId?: number;
