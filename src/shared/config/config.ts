@@ -195,7 +195,7 @@ export const DEFAULT_DICTIONARY_POPUP_SETTINGS: DictionaryPopupSettings = {
   srsDestination: 'anki',
   popupWidthPx: 560,
   popupMaxHeightPx: 480,
-  popupSheetHeightVh: 72,
+  popupSheetHeightVh: 75,
   externalDictLinks: [
     { id: 'cambridge', name: 'Cambridge Dictionary', urlTemplate: 'https://dictionary.cambridge.org/dictionary/english/{term}', langCodes: ['en'] },
     { id: 'wiktionary', name: 'Wiktionary', urlTemplate: 'https://en.wiktionary.org/wiki/{term}', langCodes: ['en'] },

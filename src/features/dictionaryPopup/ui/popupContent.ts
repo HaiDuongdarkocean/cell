@@ -127,9 +127,18 @@ export function renderHeader(
 
   row.appendChild(main);
 
-  // Actions: Quick Add (icon only) + Send to Card (icon only)
+  // Actions: Send to Card (left) + Quick Add (right, outermost).
   const actions = document.createElement('div');
   actions.className = 'cell-header__actions';
+
+  // Send to Card — icon only, before Quick Add.
+  const sendBtn = document.createElement('button');
+  sendBtn.className = 'icon-btn icon-btn--sm icon-btn--outlined cell-header__send js-cell-send-to-creator';
+  sendBtn.setAttribute('aria-label', 'Send to Card Creator');
+  sendBtn.title = 'Send to Card Creator';
+  sendBtn.innerHTML = ICON_CATALOG.pencil.svg;
+  sendBtn.addEventListener('click', onSendToCreator);
+  actions.appendChild(sendBtn);
 
   const quickAdd = document.createElement('button');
   quickAdd.className = 'icon-btn icon-btn--sm icon-btn--filled cell-header__quick-add js-cell-quick-add';
@@ -138,15 +147,6 @@ export function renderHeader(
   quickAdd.innerHTML = ICON_CATALOG.zap.svg;
   quickAdd.addEventListener('click', onQuickAdd);
   actions.appendChild(quickAdd);
-
-  // Send to Card — icon only, after Quick Add.
-  const sendBtn = document.createElement('button');
-  sendBtn.className = 'icon-btn icon-btn--sm icon-btn--outlined cell-header__send js-cell-send-to-creator';
-  sendBtn.setAttribute('aria-label', 'Send to Card Creator');
-  sendBtn.title = 'Send to Card Creator';
-  sendBtn.innerHTML = ICON_CATALOG.pencil.svg;
-  sendBtn.addEventListener('click', onSendToCreator);
-  actions.appendChild(sendBtn);
 
   row.appendChild(actions);
   header.appendChild(row);
