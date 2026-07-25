@@ -3,7 +3,7 @@
   text-align: center;
   padding: var(--space-6) var(--space-3);
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   line-height: var(--leading-normal, 1.5);
   display: flex;
   flex-direction: column;
@@ -32,7 +32,7 @@
 }
 
 .title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }

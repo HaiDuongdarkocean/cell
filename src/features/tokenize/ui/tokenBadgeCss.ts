@@ -116,7 +116,7 @@ export function buildTokenBadgeCss(): string {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  font-size: var(--font-size-sm, 13px) !important;
+  font-size: var(--font-size-base, 14px) !important;
   font-weight: var(--font-weight-semibold, 600) !important;
 }
 
@@ -128,7 +128,7 @@ export function buildTokenBadgeCss(): string {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  font-size: var(--font-size-sm, 13px) !important;
+  font-size: var(--font-size-base, 14px) !important;
 }
 
 .cell-token-row__label {

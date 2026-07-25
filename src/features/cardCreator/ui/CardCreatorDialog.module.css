@@ -48,7 +48,7 @@
   border: none;
   border-left: 3px solid var(--color-warning);
   color: var(--color-foreground);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   line-height: var(--leading-normal);
 }
 
@@ -86,7 +86,7 @@
 }
 
 .cc-dialog__section-title {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   margin: 0;
@@ -175,5 +175,5 @@
   justify-content: center;
   padding: var(--space-4);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
 }

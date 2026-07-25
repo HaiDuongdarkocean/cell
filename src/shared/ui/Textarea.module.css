@@ -7,7 +7,7 @@
   background: var(--color-background);
   color: var(--color-text);
   font-family: var(--font-family);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   line-height: var(--leading-normal);
   transition: border-color var(--duration-fast) var(--ease-in-out);
   resize: vertical;

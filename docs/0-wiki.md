@@ -71,6 +71,7 @@ docs/           # Tài liệu dự án
 │   └── 059-tokenize-gold-performance.md # ADR-059: < 500 ms viewport + scroll, 500 MB RAM — rAF scheduler, PRIORITY_PREPARE, 0.5-viewport overscan, version race guard
 │   └── 061-orbital-settings-dialog.md # ADR-061: orbital badge integrates SettingsDialog (React mount) — thay vanilla panel bằng mountSettingsDialog, tokenize thành 1 section
 │   └── 062-settings-panel-responsive-redesign.md # ADR-062: Settings dialog responsive redesign + strict 14/12px type scale
+│   └── 063-system-wide-type-scale-14-12.md # ADR-063: System-wide 14/12px type scale (SSOT)
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup
 │   ├── overlay-appearance-settings.md
@@ -124,6 +125,7 @@ docs/           # Tài liệu dự án
 │   └── blueprint-cell-learning-platform.md # Blueprint for learning platform
 │   └── spec-shared-ui-components.md # Shared UI component library (Button/Card/Dialog/Input + atoms/molecules + migration of existing feature UI)
 │   └── spec-icon-library.md # SVG icon library (Lucide reference catalog, 1995 icons, ISC license, docs-only not bundled)
+│   └── ui-ux-system-wide-redesign.md # System-wide UI-UX redesign: SSOT type scale 14/12, BEM, hardcoded px, content-script token drift
 │   └── design/dictionary-popup-prototype-handoff.md # Interactive dictionary popup prototype handoff (English/Chinese, tabs, media, card creator, design-system constraints)
 │   └── design/popup-dictionary-tab-ui-design.md # Popup Dictionary tab UI design variants: audio, image, translate, links (selected variants + CSS)
 │   └── design/popup-dictionary-ux-improvements.md # Popup Dictionary UX improvement spec: Socratic audit, selected improvements, implementation notes

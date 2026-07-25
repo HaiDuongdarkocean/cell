@@ -21,7 +21,7 @@
 }
 
 .headerTitle {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   letter-spacing: -0.02em;

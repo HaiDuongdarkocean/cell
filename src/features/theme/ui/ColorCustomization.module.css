@@ -16,7 +16,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--font-size-base, 14px);
 }
 
 .tab.active {

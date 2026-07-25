@@ -6,7 +6,7 @@
   background: transparent;
   color: var(--color-text-muted);
   font-family: var(--font-family);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   transition: color var(--duration-fast) var(--ease-in-out),

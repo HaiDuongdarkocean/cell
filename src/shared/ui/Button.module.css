@@ -36,7 +36,7 @@
 .md {
   height: var(--button-height, 32px);
   padding: var(--button-padding-y, 8px) var(--button-padding-x, 16px);
-  font-size: var(--button-font-size, var(--font-size-sm, 13px));
+  font-size: var(--button-font-size, var(--font-size-base, 14px));
 }
 
 .lg {

@@ -984,6 +984,14 @@
     },
     {
       "type": "experience",
+      "id": "css-canonical-type-scale",
+      "title": "Canonical type scale 14/12px — SSOT qua tokens.json, icon sizing dùng --space-*",
+      "category": ["css", "ux"],
+      "tags": ["type-scale", "font-size", "design-token", "ssot", "tokens.json", "icon-sizing", "space-token", "css-module"],
+      "trigger": "Project yêu cầu chỉ dùng 14px/12px cho text và muốn loại bỏ 13px/15px/16px/18px/20px trong UI; hoặc icon/emoji được size bằng font-size-* thay vì --space-*"
+    },
+    {
+      "type": "experience",
       "id": "button-states-ssot-use-ds-modifiers",
       "title": "Không viết lại hover/active states cho button — dùng .btn + .btn--* modifiers từ design system",
       "category": ["css"],

@@ -380,7 +380,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-selector-asr-badge {
-  font-size: 9px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -393,7 +393,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-selector-meta {
   opacity: 0.7;
-  font-size: 11px;
+  font-size: var(--font-size-xs);
 }
 
 /* === Subtitle offset panel (ADR-019 V3) ===
@@ -493,7 +493,7 @@ export const SUBTITLE_BLOCK_CSS = `
   background: var(--color-primary-subtle, rgba(37, 99, 235, 0.1));
   color: var(--color-primary);
   font-family: var(--font-family, sans-serif);
-  font-size: var(--font-size-lg, 16px);
+  font-size: var(--font-size-base, 14px);
   font-weight: var(--font-weight-semibold, 600);
   font-variant-numeric: tabular-nums;
   border-radius: var(--radius-sm, 6px);
@@ -702,7 +702,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-title {
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--font-size-base, 14px);
   font-weight: 600;
   color: var(--color-text);
 }
@@ -863,7 +863,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-item-name {
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--font-size-base, 14px);
   font-weight: 500;
   color: var(--color-text);
   white-space: nowrap;
@@ -884,7 +884,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border-radius: var(--radius-sm, 6px);
   background: var(--color-surface-hover);
   font-weight: 600;
-  font-size: 9px;
+  font-size: var(--font-size-xs);
   letter-spacing: 0.04em;
 }
 
@@ -894,7 +894,7 @@ export const SUBTITLE_BLOCK_CSS = `
   background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
   color: var(--color-warning);
   font-weight: 600;
-  font-size: 9px;
+  font-size: var(--font-size-xs);
   letter-spacing: 0.04em;
 }
 
@@ -909,7 +909,7 @@ export const SUBTITLE_BLOCK_CSS = `
   background: var(--color-warning-subtle, rgba(245, 158, 11, 0.15));
   color: var(--color-warning);
   font-weight: 600;
-  font-size: 9px;
+  font-size: var(--font-size-xs);
   letter-spacing: 0.04em;
 }
 
@@ -1044,7 +1044,7 @@ export const SUBTITLE_BLOCK_CSS = `
   z-index: 999998;
   pointer-events: none;
   user-select: none;
-  font-size: var(--font-size-xl, 18px);
+  font-size: var(--font-size-base, 14px);
   color: rgba(255, 255, 255, 0.95);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
   font-family: var(--font-family, sans-serif);
@@ -1068,7 +1068,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border-left: 3px solid var(--toast-variant-color, var(--color-info));
   border-radius: var(--radius-md, 8px);
   padding: var(--space-2, 8px) var(--space-3, 12px);
-  font-size: var(--font-size-sm, 13px);
+  font-size: var(--font-size-base, 14px);
   font-weight: 500;
   font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
   box-shadow: var(--shadow-md, none);

@@ -1,0 +1,26 @@
+{
+  "id": "css-canonical-type-scale",
+  "title": "Canonical type scale 14/12px — SSOT qua tokens.json, icon sizing dùng --space-*",
+  "category": ["css", "ux"],
+  "tags": ["type-scale", "font-size", "design-token", "ssot", "tokens.json", "icon-sizing", "space-token", "css-module"],
+  "trigger": "Project yêu cầu chỉ dùng 14px/12px cho text và muốn loại bỏ 13px/15px/16px/18px/20px trong UI; hoặc icon/emoji được size bằng font-size-* thay vì --space-*",
+  "principle": "Nếu product quy định type scale chỉ có 14px (base) và 12px (xs), SSOT là tokens.json. Sửa giá trị static.font.sizes trong tokens.json để mọi --font-size-* token resolve về 14px hoặc 12px, regenerate tokens.css/tokens.ts, rồi thay tất cả font-size trong CSS/TS/HTML thành var(--font-size-base) hoặc var(--font-size-xs). Không để font-size literal (13px, 15px, 16px...) hay fallback 13px/10px còn sót. Icon/emoji (không phải text đọc) phải dùng var(--space-*) cho kích thước, không dùng font-size-lg/xl/3xl để size icon, vì type scale có thể thay đổi mà icon cần giữ nguyên kích thước visual.",
+  "cases": [
+    {
+      "context": "UI có nhiều nơi dùng font-size-sm (13px), font-size-lg (16px), font-size-3xl (24px) cho text và emoji icon",
+      "bad": ".label { font-size: var(--font-size-sm); }\n.title { font-size: var(--font-size-lg); }\n.icon { font-size: var(--font-size-3xl); }",
+      "good": ".label { font-size: var(--font-size-base); }\n.title { font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); }\n.icon { font-size: var(--space-6); }"
+    },
+    {
+      "context": "Type scale token drift trong tokens.json",
+      "bad": "\"sm\": \"13px\", \"md\": \"15px\", \"lg\": \"16px\", \"xl\": \"18px\", \"2xl\": \"20px\", \"3xl\": \"24px\"",
+      "good": "\"sm\": \"14px\", \"base\": \"14px\", \"md\": \"var(--font-size-base)\", \"lg\": \"var(--font-size-base)\", \"xl\": \"var(--font-size-base)\", \"2xl\": \"var(--font-size-base)\", \"3xl\": \"var(--font-size-base)\""
+    }
+  ],
+  "applyFor": [
+    "Thiết kế/làm mới type scale cho toàn bộ UI",
+    "Refactor hardcoded font-size hoặc font-size-* token lạc loài về canonical scale",
+    "Review CSS module trước merge",
+    "Đảm bảo React UI và content-script/Shadow DOM dùng chung type scale"
+  ]
+}

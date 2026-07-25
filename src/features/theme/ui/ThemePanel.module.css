@@ -13,7 +13,7 @@
 }
 
 .heading {
-  font-size: var(--font-size-xl, 18px);
+  font-size: var(--font-size-base, 14px);
   font-weight: var(--font-weight-semibold, 600);
   color: var(--color-text);
   margin: 0 0 var(--space-3, 12px) 0;
@@ -29,6 +29,6 @@
 }
 
 .confirmText {
-  font-size: var(--font-size-sm, 14px);
+  font-size: var(--font-size-base, 14px);
   color: var(--color-text-secondary);
 }
