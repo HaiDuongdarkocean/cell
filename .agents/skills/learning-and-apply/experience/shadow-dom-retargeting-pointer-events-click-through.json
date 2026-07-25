@@ -1,0 +1,21 @@
+{
+  "id": "shadow-dom-retargeting-pointer-events-click-through",
+  "title": "Shadow DOM retargeting + pointer-events:auto → e.target lies; use composedPath()[0] + disable pointer-events for caretRangeFromPoint",
+  "category": ["detection", "ux"],
+  "tags": ["shadow-dom", "pointer-events", "caretrangefrompoint", "retargeting", "composedPath"],
+  "trigger": "Floating Shadow DOM popup with pointer-events:auto intercepts clicks on page text behind it",
+  "principle": "When a visible Shadow DOM popup has pointer-events:auto, it intercepts all clicks within its area. e.target is retargeted to the host element (not the actual clicked shadow child), so target.closest('button') fails. Use e.composedPath()[0] to get the real clicked element. For non-interactive areas, fall through to caretRangeFromPoint wrapped in a helper that temporarily sets pointer-events:none on all UI hosts so the caret can see page text behind the popup.",
+  "cases": [
+    {
+      "context": "Dictionary popup (Shadow DOM, pointer-events:auto when visible) covers page text. User clicks on text behind popup — mouseup target is the popup host, not the page text.",
+      "bad": "if (target?.closest(UI_HOST_SELECTORS)) { return; } // swallows ALL clicks on popup, including non-interactive areas covering page text",
+      "good": "if (target?.closest(UI_HOST_SELECTORS)) {\n  if (!target.closest('.js-cell-popup-host')) return; // non-popup UI hosts: never lookup\n  const actual = e.composedPath()[0] as HTMLElement | null; // retargeted → get real shadow child\n  if (actual?.closest?.('button, a, input, .cell-header, .cell-popup__resize')) return; // interactive: let UI handle\n  // non-interactive: fall through to caretRangeFromPoint with pointer-events disabled\n}\n// ... later: withUiHostsPointerEventsDisabled(() => document.caretRangeFromPoint(cx, cy))"
+    }
+  ],
+  "applyFor": [
+    "Shadow DOM overlays that need click-through to page content",
+    "Floating popups with pointer-events:auto covering interactive page elements",
+    "Any Shadow DOM event handler where e.target is retargeted to host",
+    "caretRangeFromPoint calls that need to see through floating UI"
+  ]
+}

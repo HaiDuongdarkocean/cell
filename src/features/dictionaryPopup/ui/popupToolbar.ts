@@ -132,14 +132,30 @@ export function renderAudioPanel(
   }
 
   // Loading state — skeleton placeholders while fetching audio sources.
+  // Matches minimum typical real panel: subtabs (24px) + 1 item row (52px).
   if (isLoading && wordAudios.length === 0 && sentenceAudios.length === 0) {
     const skeleton = document.createElement('div');
     skeleton.className = 'cell-audio__skeleton';
-    for (let i = 0; i < 6; i += 1) {
+    // Subtab skeleton — 2 placeholders matching "PLAY WORD" / "PLAY SENTENCE"
+    // Height 18px matches rendered subtab text (10px font + uppercase + line-height)
+    const subtabs = document.createElement('div');
+    subtabs.className = 'cell-audio__skeleton-subtabs';
+    subtabs.appendChild(createSkeleton('60px', '18px', 'rect', 'cell-audio__skeleton-subtab'));
+    subtabs.appendChild(createSkeleton('79px', '18px', 'rect', 'cell-audio__skeleton-subtab'));
+    skeleton.appendChild(subtabs);
+    // 1 item row — matches minimum typical audio content (1 item), no gap between rows
+    for (let i = 0; i < 1; i += 1) {
       const row = document.createElement('div');
       row.className = 'cell-audio__skeleton-row';
-      row.appendChild(createSkeleton('var(--space-7, 28px)', 'var(--space-7, 28px)', 'circle', 'cell-audio__skeleton-play'));
-      row.appendChild(createSkeleton('100%', 'var(--space-4, 16px)', 'rect', 'cell-audio__skeleton-label'));
+      // Play button — circle, matches .icon-btn--sm touch target (44px)
+      row.appendChild(createSkeleton('var(--touch-target-mobile, 44px)', 'var(--touch-target-mobile, 44px)', 'circle', 'cell-audio__skeleton-play'));
+      // Label — 2 lines matching rendered heights: name 21px + meta 18px
+      const labelWrap = document.createElement('div');
+      labelWrap.className = 'cell-audio__skeleton-label';
+      labelWrap.appendChild(createSkeleton('60%', '21px', 'rect', 'cell-audio__skeleton-label-name'));
+      labelWrap.appendChild(createSkeleton('40%', '18px', 'rect', 'cell-audio__skeleton-label-meta'));
+      row.appendChild(labelWrap);
+      // Checkbox — square 16px, matches .cell-audio__check
       row.appendChild(createSkeleton('var(--space-4, 16px)', 'var(--space-4, 16px)', 'rect', 'cell-audio__skeleton-check'));
       skeleton.appendChild(row);
     }
@@ -294,9 +310,9 @@ export function renderImagePanel(
   // Loading state — skeleton placeholders while fetching images.
   if (isLoading && images.length === 0) {
     const skeleton = document.createElement('div');
-    skeleton.className = 'cell-image__skeleton';
+    skeleton.className = 'cell-image__skeleton cell-image__strip';
     for (let i = 0; i < 8; i += 1) {
-      skeleton.appendChild(createSkeleton('80px', '80px', 'rounded', 'cell-image__skeleton-card'));
+      skeleton.appendChild(createSkeleton('', '', 'rounded', 'cell-image__skeleton-card'));
     }
     panel.appendChild(skeleton);
     container.appendChild(panel);
@@ -306,22 +322,21 @@ export function renderImagePanel(
   if (images.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'cell-image__empty';
-    const icon = document.createElement('div');
-    icon.className = 'cell-image__empty-icon';
-    icon.innerHTML = ICON_CATALOG.image.svg;
-    empty.appendChild(icon);
-    const title = document.createElement('div');
-    title.className = 'cell-image__empty-title';
-    title.textContent = 'No images';
-    empty.appendChild(title);
+    const text = document.createElement('span');
+    text.textContent = 'No images';
+    empty.appendChild(text);
     // MVP: link to Google Images search (no scrape — ponytail: scrape later).
     if (searchTerm) {
+      const sep = document.createElement('span');
+      sep.textContent = '·';
+      sep.style.color = 'var(--color-border)';
+      empty.appendChild(sep);
       const link = document.createElement('a');
-      link.className = 'cell-image__empty-action btn btn--outline btn--sm';
+      link.className = 'cell-image__empty-action';
       link.href = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(searchTerm)}`;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      link.innerHTML = `${ICON_CATALOG.search.svg}<span>Search Google Images</span>`;
+      link.textContent = 'Search Google →';
       empty.appendChild(link);
     }
     panel.appendChild(empty);
@@ -405,14 +420,20 @@ export function renderTranslatePanel(
     block.className = 'cell-translate__skeleton-block';
     const text = document.createElement('div');
     text.className = 'cell-translate__skeleton-text';
-    // Native line (prominent — taller, matches font-size-sm).
-    const nativeLine = createSkeleton('100%', 'var(--space-5, 20px)', 'rect');
-    nativeLine.className = 'cell-translate__skeleton-line cell-translate__skeleton-line--native';
-    // Target line (subtle — shorter, matches font-size-xs).
-    const targetLine = createSkeleton('80%', 'var(--space-4, 16px)', 'rect');
-    targetLine.className = 'cell-translate__skeleton-line cell-translate__skeleton-line--target';
-    text.appendChild(nativeLine);
-    text.appendChild(targetLine);
+    // Native section — 1 line matching minimum block content.
+    const nativeWidths = ['100%'];
+    for (const w of nativeWidths) {
+      const line = createSkeleton(w, '21px', 'rect');
+      line.className = 'cell-translate__skeleton-line cell-translate__skeleton-line--native';
+      text.appendChild(line);
+    }
+    // Target section — 1 line matching minimum block content.
+    const targetWidths = ['100%'];
+    for (const w of targetWidths) {
+      const line = createSkeleton(w, '18px', 'rect');
+      line.className = 'cell-translate__skeleton-line cell-translate__skeleton-line--target';
+      text.appendChild(line);
+    }
     block.appendChild(text);
     block.appendChild(createSkeleton('var(--space-4, 16px)', 'var(--space-4, 16px)', 'rect', 'cell-translate__skeleton-check'));
     skeleton.appendChild(block);

@@ -243,7 +243,8 @@ describe('renderAudioPanel', () => {
     renderAudioPanel(container, [], [], new Map(), jest.fn(), jest.fn(), true);
     const skeleton = container.querySelector('.cell-audio__skeleton');
     expect(skeleton).not.toBeNull();
-    expect(container.querySelectorAll('.cell-audio__skeleton-row').length).toBe(6);
+    expect(container.querySelectorAll('.cell-audio__skeleton-row').length).toBe(1);
+    expect(container.querySelectorAll('.cell-audio__skeleton-subtab').length).toBe(2);
     expect(container.querySelectorAll('.cell-skeleton').length).toBeGreaterThan(0);
   });
 
@@ -305,7 +306,7 @@ describe('renderImagePanel', () => {
   it('renders empty state when no images', () => {
     renderImagePanel(container, [], new Map(), jest.fn());
     expect(container.textContent).toContain('No images');
-    expect(container.querySelector('.cell-image__empty-icon svg')).not.toBeNull();
+    expect(container.querySelector('.cell-image__empty')).not.toBeNull();
   });
 
   it('sets alt text on images', () => {
@@ -319,7 +320,7 @@ describe('renderImagePanel', () => {
     renderImagePanel(container, [], new Map(), jest.fn(), '', true);
     const skeleton = container.querySelector('.cell-image__skeleton');
     expect(skeleton).not.toBeNull();
-    expect(container.querySelectorAll('.cell-skeleton').length).toBe(4);
+    expect(container.querySelectorAll('.cell-skeleton').length).toBe(8);
   });
 
   it('card click triggers onSelectionChange', () => {

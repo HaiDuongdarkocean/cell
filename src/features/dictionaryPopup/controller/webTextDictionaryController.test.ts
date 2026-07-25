@@ -52,7 +52,7 @@ function makePopupSettings(overrides: Partial<DictionaryPopupSettings> = {}): Di
     srsDestination: 'anki',
     popupWidthPx: 560,
     popupMaxHeightPx: 480,
-    popupSheetHeightVh: 72,
+    popupSheetHeightVh: 75,
     externalDictLinks: [],
     badgePointerTrigger: { position: 'center', size: 36, pointerScale: 0.25 },
     ...overrides,

@@ -28,6 +28,10 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 
 const POPUP_Z_INDEX = '2147483647'; // max int — above everything
 const VIEWPORT_MARGIN = 8;
+/** Sheet snap tiers as fraction of viewport height (high → low). */
+const SHEET_TIERS = [1.0, 0.75, 0.5, 0.25];
+/** Minimum drag distance (px) to snap to next tier. */
+const SHEET_SNAP_THRESHOLD = 40;
 
 
 
@@ -416,9 +420,11 @@ export class PopupShell {
   private dragRaf = 0;
   private resizePending: { dx: number; dy: number } | null = null;
   private resizeRaf = 0;
-  // Sheet swipe-to-dismiss state.
+  // Sheet swipe-to-dismiss + resize state.
   private sheetDragStartY = 0;
+  private sheetDragStartHeight = 0;
   private sheetDragActive = false;
+  private sheetDragFromHandle = false;
   // Viewport resize → re-position (rAF throttled). Morphs between sheet/popover
   // when crossing the 768px breakpoint, and keeps the popup clamped to viewport.
   private viewportResizeRaf = 0;
@@ -822,10 +828,10 @@ export class PopupShell {
     this.container?.removeEventListener('pointerup', this.boundPointerUp);
     if (this.sheetHandle) {
       this.sheetHandle.removeEventListener('pointerdown', this.boundSheetPointerDown);
-      this.sheetHandle.removeEventListener('pointermove', this.boundSheetPointerMove);
-      this.sheetHandle.removeEventListener('pointerup', this.boundSheetPointerUp);
     }
     this.contentEl?.removeEventListener('pointerdown', this.boundSheetPointerDown);
+    document.removeEventListener('pointermove', this.boundSheetPointerMove);
+    document.removeEventListener('pointerup', this.boundSheetPointerUp);
     this.themeCleanup?.();
     this.themeCleanup = null;
     this.restoreFocus();
@@ -1092,20 +1098,31 @@ export class PopupShell {
     e.preventDefault();
     e.stopPropagation();
     this.sheetDragActive = true;
+    this.sheetDragFromHandle = isHandle;
     this.sheetDragStartY = e.clientY;
-    // Capture pointer on the target element so pointermove/up fire even if
-    // the finger leaves the original element during the swipe.
-    const target = e.currentTarget as HTMLElement;
-    target.setPointerCapture(e.pointerId);
-    target.addEventListener('pointermove', this.boundSheetPointerMove);
-    target.addEventListener('pointerup', this.boundSheetPointerUp);
+    this.sheetDragStartHeight = this.container.offsetHeight || this.sheetHeight;
+    // Listen on document so pointermove/up fire regardless of which element
+    // the finger is over during the drag (same pattern as onResizeStart).
+    document.addEventListener('pointermove', this.boundSheetPointerMove);
+    document.addEventListener('pointerup', this.boundSheetPointerUp);
   }
 
   private onSheetPointerMove(e: PointerEvent): void {
     if (!this.container || !this.sheetDragActive) return;
     const dy = e.clientY - this.sheetDragStartY;
-    if (dy > 0) {
-      // Swipe down → dismiss gesture: translate sheet down.
+    if (this.sheetDragFromHandle) {
+      // Handle: live preview — translate sheet, snap happens on pointerup.
+      if (dy > 0) {
+        this.container.style.transform = `translateY(${dy}px)`;
+        this.container.style.transition = 'none';
+      } else {
+        // Drag up: grow height immediately for visual feedback.
+        const newHeight = Math.max(200, Math.min(this.sheetDragStartHeight - dy, window.innerHeight - VIEWPORT_MARGIN));
+        this.container.style.height = `${newHeight}px`;
+        this.container.style.transform = '';
+      }
+    } else if (dy > 0) {
+      // Content: swipe down → dismiss gesture: translate sheet down.
       this.container.style.transform = `translateY(${dy}px)`;
       this.container.style.transition = 'none';
     }
@@ -1117,13 +1134,38 @@ export class PopupShell {
     this.sheetDragActive = false;
     this.container.style.transition = '';
     this.container.style.transform = '';
-    const target = e.currentTarget as HTMLElement;
-    target.releasePointerCapture(e.pointerId);
-    target.removeEventListener('pointermove', this.boundSheetPointerMove);
-    target.removeEventListener('pointerup', this.boundSheetPointerUp);
-    // Swipe down > 100px → dismiss. Otherwise snap back (hoàn tác).
-    if (dy > 100) {
+    document.removeEventListener('pointermove', this.boundSheetPointerMove);
+    document.removeEventListener('pointerup', this.boundSheetPointerUp);
+    if (this.sheetDragFromHandle) {
+      this.snapSheetToTier(dy);
+    } else if (dy > 100) {
+      // Content: swipe down > 100px → dismiss.
       this.onDismiss();
     }
+  }
+
+  /** Snap sheet to nearest tier based on where the drag ended.
+   *  Target height = startHeight - dy. Find closest tier.
+   *  Below 25% tier → dismiss. */
+  private snapSheetToTier(dy: number): void {
+    const vh = window.innerHeight;
+    const tierHeights = SHEET_TIERS.map((t) => Math.round(vh * t));
+    const targetHeight = this.sheetDragStartHeight - dy;
+    // Below 25% tier → dismiss.
+    if (targetHeight < tierHeights[tierHeights.length - 1] - SHEET_SNAP_THRESHOLD) {
+      this.onDismiss();
+      return;
+    }
+    // Find closest tier to target height.
+    let bestIdx = 0;
+    let minDiff = Infinity;
+    for (let i = 0; i < tierHeights.length; i++) {
+      const diff = Math.abs(tierHeights[i] - targetHeight);
+      if (diff < minDiff) { minDiff = diff; bestIdx = i; }
+    }
+    const newHeight = tierHeights[bestIdx];
+    this.sheetHeight = newHeight;
+    this.container!.style.height = `${newHeight}px`;
+    this.onResizeComplete(this.popoverSize, this.sheetHeight);
   }
 }

@@ -1037,6 +1037,14 @@
       "category": ["ux", "rendering", "css"],
       "tags": ["drag", "transform", "translate3d", "will-change", "requestanimationframe", "pointer-events", "layout-thrashing", "compositor", "left-top", "transition", "jitter", "performance"],
       "trigger": "Khi element draggable bằng Pointer Events và drag bị giật/jitter, đặc biệt trên thiết bị low-RAM/mobile/tablet"
+    },
+    {
+      "type": "experience",
+      "id": "shadow-dom-retargeting-pointer-events-click-through",
+      "title": "Shadow DOM retargeting + pointer-events:auto → e.target lies; use composedPath()[0] + disable pointer-events for caretRangeFromPoint",
+      "category": ["detection", "ux"],
+      "tags": ["shadow-dom", "pointer-events", "caretrangefrompoint", "retargeting", "composedPath"],
+      "trigger": "Floating Shadow DOM popup with pointer-events:auto intercepts clicks on page text behind it"
     }
   ]
 }

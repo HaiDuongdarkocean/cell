@@ -52,7 +52,10 @@
 }
 
 /* Labels are hidden by default on narrow popups; revealed when the popup is wide. */
-.cell-label { display: none; }
+.cell-label {
+  display: none;
+  font-size: var(--font-size-xs, 12px);
+}
 
 /* === Bottom sheet mode (mobile <768px) ===
  * Full-width sheet sliding up from bottom edge.
@@ -72,13 +75,14 @@
   display: none;
 }
 
-/* Sheet grab handle — visible only in sheet mode. */
+/* Sheet grab handle — visible only in sheet mode.
+ * ::after is the visual pill; the handle itself is the resize + dismiss target. */
 .cell-sheet-handle {
   display: none;
   align-items: center;
   justify-content: center;
   padding: var(--space-2, 8px) 0 var(--space-1, 4px);
-  cursor: grab;
+  cursor: ns-resize;
   touch-action: none;
   flex-shrink: 0;
 }
@@ -100,7 +104,7 @@
   display: flex;
 }
 
-/* Hide resize handle in sheet mode — grab handle handles both resize + dismiss. */
+/* Hide SVG resize handle in sheet mode — pill handle (::after) handles resize. */
 .cell-popup--sheet .cell-popup__resize {
   display: none;
 }
@@ -159,7 +163,7 @@
 /* === Block: cell-header (2-row layout — spec redesign v2) ===
  *  Base = compact (<380px). @container (min-width: 480px) expands to comfortable spacing. */
 .cell-header {
-  padding: 0 var(--space-2);
+  padding: var(--space-2) var(--space-2) 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-0-5);
@@ -177,20 +181,24 @@
   gap: var(--space-1);
 }
 
-/* Main group — word + reading-row (IPA + audio), wraps on narrow headers. */
+/* Main group — word + reading-row (IPA + audio), wraps on narrow headers.
+ * Row gap = 0 so the two rows' line-heights sum exactly to the actions height
+ * (60% + 40% of touch-target). box-sizing border-box keeps padding/border
+ * inside the line-box so the total never exceeds the actions height. */
 .cell-header__main {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-0-5) var(--space-1);
+  gap: 0;
   min-width: 0;
   flex: 1 1 auto;
 }
 
-/* word-row: word only, truncates with ellipsis. */
+/* word-row: word only, truncates with ellipsis. line-height = 60% of touch-target. */
 .cell-header__word-row {
   display: flex;
   align-items: center;
+  box-sizing: border-box;
   min-width: 0;
 }
 
@@ -200,7 +208,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: var(--leading-tight, 1.25);
+  line-height: calc(var(--touch-target-mobile, 44px) * 0.6);
 }
 
 .cell-header__ipa {
@@ -208,17 +216,24 @@
   color: var(--color-text-muted);
   white-space: nowrap;
   flex-shrink: 0;
-  line-height: var(--leading-snug, 1.375);
+  line-height: calc(var(--touch-target-mobile, 44px) * 0.4);
 }
 
-/* Reading row: IPA + audio buttons, always below word-row (full-width wrap). */
+/* Reading row: IPA + audio buttons, always below word-row (full-width wrap).
+ * height = 40% of touch-target so word-row(60%) + reading(40%) = actions height.
+ * overflow: visible lets the 28px audio button overflow the 17.6px line-box
+ * without growing the row; align-items: center keeps audio visually centered. */
 .cell-header__reading {
   display: flex;
   align-items: center;
+  box-sizing: border-box;
   gap: var(--space-1);
   flex-shrink: 0;
   flex-basis: 100%;
   min-width: 0;
+  height: calc(var(--touch-target-mobile, 44px) * 0.4);
+  line-height: calc(var(--touch-target-mobile, 44px) * 0.4);
+  overflow: visible;
 }
 
 /* Audio group: word audio + sentence audio, close together. */
@@ -230,10 +245,17 @@
 }
 
 .cell-header__audio {
-  width: auto;
-  min-width: var(--iconbutton-size-xs, 28px);
-  padding: 0 var(--space-1);
+  width: calc(var(--touch-target-mobile, 44px) * 0.4);
+  height: calc(var(--touch-target-mobile, 44px) * 0.4);
+  min-width: calc(var(--touch-target-mobile, 44px) * 0.4);
+  min-height: calc(var(--touch-target-mobile, 44px) * 0.4);
+  padding: 0;
   gap: var(--space-0-5);
+}
+
+.cell-header__audio svg {
+  width: calc(var(--touch-target-mobile, 44px) * 0.25);
+  height: calc(var(--touch-target-mobile, 44px) * 0.25);
 }
 
 .cell-header__audio-label {
@@ -282,10 +304,15 @@
 .cell-header__status {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   box-sizing: border-box;
+  /* Fixed min-width fits the longest status label ("tracking") so the pill
+   * doesn't thò thụt (jitter) when cycling between statuses of different lengths. */
+  min-width: 6em;
   height: var(--space-5, 20px);
   padding: 0 var(--space-2);
   border-radius: var(--radius-full);
+  font-family: var(--font-family, system-ui, -apple-system, sans-serif);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-none, 1);
@@ -462,7 +489,7 @@
   width: 14px;
   height: 14px;
   display: block;
-  color: var(--color-text);
+  color: inherit;
 }
 
 /* Hover unchecked: dot hides, empty checkbox border appears */
@@ -532,10 +559,13 @@
 }
 
 /* cell-toolbar__tab extends .btn.btn--ghost (default) or .btn.btn--primary (active).
- * Only add layout-specific styles — don't duplicate button states. */
+ * Only add layout-specific styles — don't duplicate button states.
+ * Pill shape: radius-full makes wide tabs (with label) into pills;
+ * narrow tabs (label hidden) already become circles via .btn:has(.cell-label). */
 .cell-toolbar__tab {
   position: relative;
   flex-shrink: 0;
+  border-radius: var(--radius-full);
 }
 
 /* Toolbar tab badge — selection count
@@ -567,7 +597,9 @@
   padding: 0 var(--space-2);
   overflow-y: auto;
   flex: 1 1 auto;
-  min-height: 0;
+  /* min-height matches skeleton: subtabs (24px) + 1 row (52px) = 76px.
+     Prevents layout shift when skeleton → real content shrinks below this. */
+  min-height: calc(var(--space-0-5, 2px) + 18px + var(--space-1, 4px) + var(--space-1, 4px) * 2 + var(--touch-target-mobile, 44px));
 }
 
 .cell-audio__subtabs {
@@ -661,6 +693,7 @@
 }
 
 .cell-audio__label-name {
+  font-size: var(--font-size-base, 14px);
   font-weight: var(--font-weight-medium);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -721,7 +754,7 @@
   padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
 }
 
 .cell-audio__empty-icon {
@@ -749,7 +782,7 @@
   padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-error);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
 }
 
 /* === Block: cell-image ===
@@ -761,7 +794,7 @@
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: calc(var(--space-1, 4px) * 2 + 80px);
 }
 
 /* Horizontal scroll strip — single row, 8 cards.
@@ -872,42 +905,48 @@
   height: 12px;
 }
 
+/* Empty state — minimal text-only: "No images · Search Google →" on one line.
+ * Compact, no icon, no button — matches popup's minimal aesthetic. */
 .cell-image__empty {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-2);
-  text-align: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
 }
 
-.cell-image__empty-icon {
-  width: var(--iconbutton-size-sm, 32px);
-  height: var(--iconbutton-size-sm, 32px);
-  color: var(--color-text-muted);
-}
-
-.cell-image__empty-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-.cell-image__empty-title {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-  font-size: var(--font-size-base);
-}
-
+.cell-image__empty-icon,
+.cell-image__empty-title,
 .cell-image__empty-description {
-  max-width: 240px;
-  line-height: var(--leading-normal);
+  display: none;
 }
 
 .cell-image__empty-action {
-  margin-top: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  background: none;
+  border: none;
+  padding: 0;
+  height: auto;
+  min-height: 0;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.cell-image__empty-action:hover {
+  text-decoration: underline;
+}
+
+.cell-image__empty-action svg {
+  display: none;
 }
 
 .cell-image__error {
@@ -918,14 +957,16 @@
   padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-error);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
 }
 
 /* === Block: cell-translate === */
 .cell-translate {
   padding: 0 var(--space-2);
   flex: 1 1 auto;
-  min-height: 0;
+  /* Keep panel at least as tall as the skeleton so real content never
+     shrinks below it — prevents layout shift when skeleton → content. */
+  min-height: calc(var(--space-1, 4px) * 2 + 1px * 2 + 21px + var(--space-0-5, 2px) + 18px + var(--space-0-5, 2px));
   overflow-y: auto;
 }
 
@@ -971,7 +1012,7 @@
 }
 
 .cell-translate__native {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base, 14px);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
 }
@@ -1023,7 +1064,7 @@
   padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
 }
 
 .cell-translate__empty-icon {
@@ -1063,7 +1104,7 @@
   padding: var(--space-4) var(--space-2);
   text-align: center;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
 }
 
 .cell-links__empty-icon {
@@ -1094,7 +1135,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   text-decoration: none;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
 }
 
 .cell-links__item:hover {
@@ -1222,7 +1263,7 @@
 
 .cell-candidates__list-reading {
   flex-shrink: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
 }
@@ -1266,53 +1307,67 @@
   50% { opacity: 0.5; }
 }
 
-/* Audio skeleton rows */
+/* Audio skeleton — matches real panel structure:
+ * subtabs (24px, gap 8px) + 3 item rows (52px each, no gap between rows). */
 .cell-audio__skeleton {
   display: flex;
   flex-direction: column;
+  gap: 0;
+}
+
+.cell-audio__skeleton-subtabs {
+  display: flex;
   gap: var(--space-2);
+  padding: var(--space-0-5) 0 var(--space-1);
+}
+
+.cell-audio__skeleton-subtab {
+  flex-shrink: 0;
 }
 
 .cell-audio__skeleton-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-lg);
   background: transparent;
 }
 
 .cell-audio__skeleton-play {
-  width: var(--iconbutton-size-xs, 28px);
-  height: var(--iconbutton-size-xs, 28px);
   flex-shrink: 0;
 }
 
 .cell-audio__skeleton-label {
   flex: 1;
-  height: var(--space-4, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 1px; /* hairline gap — matches .cell-audio__label */
+  min-width: 0;
+}
+
+.cell-audio__skeleton-label-name,
+.cell-audio__skeleton-label-meta {
+  flex-shrink: 0;
 }
 
 .cell-audio__skeleton-check {
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
   flex-shrink: 0;
   border-radius: var(--radius-sm);
 }
 
-/* Image skeleton strip — horizontal, matches the strip layout. */
+/* Image skeleton strip — mirrors .cell-image__strip layout.
+   The container also carries .cell-image__strip so it inherits the real
+   strip flex/gap/padding/overflow; this block only adds overflow:hidden
+   (skeleton doesn't need to scroll). */
 .cell-image__skeleton {
-  display: flex;
-  flex-direction: row;
-  gap: var(--space-1);
-  padding: var(--space-1);
   overflow: hidden;
 }
 
 .cell-image__skeleton-card {
   box-sizing: border-box;
   flex: 0 0 auto;
-  width: 80px;
+  width: calc((100% - var(--space-1) * 7) / 8);
   min-width: 80px;
   aspect-ratio: 1 / 1;
 }
@@ -1343,12 +1398,13 @@
 }
 
 .cell-translate__skeleton-line--native {
-  height: var(--space-5, 20px);
+  height: 21px;
 }
 
 .cell-translate__skeleton-line--target {
-  height: var(--space-4, 16px);
+  height: 18px;
   opacity: 0.7;
+  margin-top: var(--space-0-5, 2px);
 }
 
 .cell-translate__skeleton-check {
@@ -1369,7 +1425,7 @@
   border-radius: var(--radius-md);
   background: var(--color-text);
   color: var(--color-background);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   text-align: center;
   opacity: 0;
@@ -1399,7 +1455,7 @@
     gap: var(--space-1-5);
   }
   .cell-header {
-    padding: 0 var(--space-2-5);
+    padding: var(--space-2-5) var(--space-2-5) 0;
     gap: var(--space-0-5);
   }
   .cell-header__word {
@@ -1434,20 +1490,20 @@
     gap: var(--space-2);
   }
   .cell-header {
-    padding: 0 var(--space-3);
+    padding: var(--space-3) var(--space-3) 0;
     gap: var(--space-1);
   }
   .cell-header__word {
     font-size: var(--font-size-xl);
   }
   .cell-header__ipa {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
   }
   .cell-header__row {
     gap: var(--space-2);
   }
   .cell-header__main {
-    gap: var(--space-1) var(--space-2);
+    gap: 0 var(--space-2);
   }
   .cell-header__second {
     gap: var(--space-2);
@@ -1539,7 +1595,7 @@
     padding-bottom: var(--space-1);
   }
   .cell-audio__label {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
   }
   .cell-image__check {
     top: var(--space-1);
@@ -1570,21 +1626,21 @@
   }
   /* Touch target expansion (WCAG 2.5.5 AAA: 44×44px).
    * Applies to icon buttons + text buttons on compact/narrow popups.
-   * Header audio buttons are exempt — they stay compact (28px) to avoid
-   * crowding the term row; the touch target is adequate for their function. */
+   * Header audio buttons are exempt — they stay compact (40% of touch-target)
+   * to match the reading-row height; the touch target is adequate for their function. */
   .icon-btn--xs,
   .icon-btn--sm {
     min-width: var(--touch-target-mobile, 44px);
     min-height: var(--touch-target-mobile, 44px);
   }
   .cell-header__audio {
-    min-width: var(--iconbutton-size-xs, 28px);
-    min-height: var(--iconbutton-size-xs, 28px);
+    min-width: calc(var(--touch-target-mobile, 44px) * 0.4);
+    min-height: calc(var(--touch-target-mobile, 44px) * 0.4);
   }
   /* Status pill: 24px on mobile (slightly larger for readability), not 44px. */
   .cell-header__status {
     height: var(--space-6, 24px);
-    font-size: var(--font-size-sm, 13px);
+    font-size: var(--font-size-xs, 12px);
     padding: 0 var(--space-2-5, 10px);
   }
   .btn {
@@ -1604,13 +1660,13 @@
     min-height: var(--touch-target-mobile, 44px);
   }
   .cell-header__audio {
-    min-width: var(--iconbutton-size-xs, 28px);
-    min-height: var(--iconbutton-size-xs, 28px);
+    min-width: calc(var(--touch-target-mobile, 44px) * 0.4);
+    min-height: calc(var(--touch-target-mobile, 44px) * 0.4);
   }
   /* Status pill: 24px on mobile (slightly larger for readability), not 44px. */
   .cell-header__status {
     height: var(--space-6, 24px);
-    font-size: var(--font-size-sm, 13px);
+    font-size: var(--font-size-xs, 12px);
     padding: 0 var(--space-2-5, 10px);
   }
   .btn {
@@ -1626,30 +1682,42 @@
   }
   .cell-header__word {
     font-size: var(--font-size-xl, 18px);
+    line-height: calc(var(--touch-target-desktop, 40px) * 0.6);
+  }
+  .cell-header__ipa {
+    line-height: calc(var(--touch-target-desktop, 40px) * 0.4);
+  }
+  .cell-header__reading {
+    height: calc(var(--touch-target-desktop, 40px) * 0.4);
+    line-height: calc(var(--touch-target-desktop, 40px) * 0.4);
   }
   .cell-def__text {
     font-size: var(--font-size-lg, 16px);
   }
   .cell-def__examples {
-    font-size: var(--font-size-sm, 13px);
+    font-size: var(--font-size-xs, 12px);
   }
   /* Desktop: mouse precision allows smaller touch targets (40px).
-   * Header audio buttons stay compact (28px). */
+   * Header audio buttons match reading-row height (40% of touch-target). */
   .icon-btn--xs,
   .icon-btn--sm {
     min-width: var(--touch-target-desktop, 40px);
     min-height: var(--touch-target-desktop, 40px);
   }
   .cell-header__audio {
-    min-width: var(--iconbutton-size-xs, 28px);
-    min-height: var(--iconbutton-size-xs, 28px);
+    min-width: calc(var(--touch-target-desktop, 40px) * 0.4);
+    min-height: calc(var(--touch-target-desktop, 40px) * 0.4);
+  }
+  .cell-header__audio svg {
+    width: calc(var(--touch-target-desktop, 40px) * 0.25);
+    height: calc(var(--touch-target-desktop, 40px) * 0.25);
   }
   .btn {
     min-height: var(--touch-target-desktop, 40px);
     min-width: var(--touch-target-desktop, 40px);
   }
   .cell-audio__subtab {
-    font-size: var(--font-size-sm, 13px);
+    font-size: var(--font-size-xs, 12px);
   }
   .cell-audio__label {
     font-size: var(--font-size-base, 14px);
@@ -1658,7 +1726,7 @@
     font-size: var(--font-size-base, 14px);
   }
   .cell-translate__target {
-    font-size: var(--font-size-sm, 13px);
+    font-size: var(--font-size-xs, 12px);
   }
   .cell-links__item {
     font-size: var(--font-size-base, 14px);
