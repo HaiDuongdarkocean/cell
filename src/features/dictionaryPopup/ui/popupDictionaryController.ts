@@ -276,15 +276,18 @@ export function showPopup(
   // Create shell if needed.
   let shell = state.shell;
   if (!shell) {
-    const size = clampPopupSize(
+    const popoverSize = clampPopupSize(
       { width: state.settings.popupWidthPx, maxHeight: state.settings.popupMaxHeightPx },
       window.innerWidth,
       window.innerHeight,
     );
+    const sheetHeightVh = state.settings.popupSheetHeightVh ?? 72;
+    const sheetHeight = Math.round(window.innerHeight * (sheetHeightVh / 100));
     shell = new PopupShellClass(
-      size,
+      popoverSize,
+      sheetHeight,
       () => { state = hidePopup(state); onDismiss?.(state); }, // onDismiss
-      (newSize: PopupSize) => onResizeEnd(state, newSize), // onResizeEnd
+      (newSize: PopupSize, newSheetHeight: number) => onResizeEnd(state, newSize, newSheetHeight), // onResizeEnd
     );
     shell.mount();
   }
@@ -297,7 +300,7 @@ export function showPopup(
   // Update shell callbacks on every showPopup so stale closures from a
   // previous lookup don't hide the wrong state or call an old onDismiss.
   shell.setOnDismiss(() => { state = hidePopup(state); onDismiss?.(state); });
-  shell.setOnResizeEnd((newSize) => onResizeEnd(state, newSize));
+  shell.setOnResizeEnd((newSize, newSheetHeight) => onResizeEnd(state, newSize, newSheetHeight));
 
   // Initialize state from result.
   const definitionSelection = initDefinitionSelection(result);
@@ -354,11 +357,6 @@ export function showPopup(
       onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
       onQuickAdd: () => { state = triggerCardCreatorAction(state, 'quick-add'); onDismiss?.(state); },
       onSendToCreator: () => { state = triggerCardCreatorAction(state, 'edit-card'); onDismiss?.(state); },
-      onSettings: () => { /* options page removed — settings now in orbital badge SettingsDialog */ },
-      onClose: () => {
-        state = hidePopup(state);
-        onDismiss?.(state);
-      },
       onPlayTerm: () => {
         const active = getActiveResult(state);
         if (!active) return;
@@ -394,8 +392,8 @@ export function showPopup(
       setActiveSnapshot(state, { translationLoading: true, activeTab: 'translate' });
       renderPopupToolbar(state, container);
       translateSentence(result, contextSentence, state.nativeLang, (text) => {
-        setActiveSnapshot(state, { translation: text, translationLoading: false });
-        rerender(state, 'translate');
+        setActiveSnapshot(state, { translation: text, translationLoading: false, activeTab: 'translate' });
+        rerender(state);
       });
     }
   }
@@ -596,7 +594,10 @@ export function updatePopupSettings(
     : (settings.defaultActiveTab ?? null);
 
   if (nextState.shell?.getContainer()) {
-    rerender(nextState, newActiveTab);
+    // Re-apply default active tab for the winner (index 0) without
+    // changing activeCandidateIndex — user may be viewing another candidate.
+    setSnapshotByIndex(nextState, 0, { activeTab: newActiveTab });
+    rerender(nextState);
   } else {
     nextState.activeTab = newActiveTab;
   }
@@ -642,10 +643,9 @@ export function toggleDefinition(
 export function toggleTab(state: PopupDictionaryState, tab: PopupTab): PopupDictionaryState {
   const snapshot = getActiveSnapshot(state);
   const newTab = snapshot.activeTab === tab ? null : tab;
+  setActiveSnapshot(state, { activeTab: newTab });
   if (state.shell?.getContainer()) {
-    rerender(state, newTab);
-  } else {
-    state.activeTab = newTab;
+    rerender(state);
   }
   return state;
 }
@@ -735,7 +735,8 @@ function setSnapshotByIndex(state: PopupDictionaryState, idx: number, patch: Par
     state.translation = patch.translation ?? state.translation;
     state.translationSelected = patch.translationSelected ?? state.translationSelected;
     state.translationLoading = patch.translationLoading ?? state.translationLoading;
-    state.activeTab = patch.activeTab ?? state.activeTab;
+    // activeTab: null is a valid value (means "no tab open"), so use !== undefined check.
+    state.activeTab = patch.activeTab !== undefined ? patch.activeTab : state.activeTab;
     return state;
   }
   const result = getResultByIndex(state, idx);
@@ -753,7 +754,7 @@ function setSnapshotByIndex(state: PopupDictionaryState, idx: number, patch: Par
     translation: patch.translation ?? old.translation,
     translationSelected: patch.translationSelected ?? old.translationSelected,
     translationLoading: patch.translationLoading ?? old.translationLoading,
-    activeTab: patch.activeTab ?? old.activeTab,
+    activeTab: patch.activeTab !== undefined ? patch.activeTab : old.activeTab,
   };
   state.candidateStates.set(idx, updated);
   return state;
@@ -782,8 +783,6 @@ function renderAllActiveEntries(state: PopupDictionaryState, container: HTMLElem
       onDefinitionToggle: (id, selected) => { state.activeCandidateIndex = idx; state = toggleDefinition(state, id, selected); },
       onQuickAdd: () => { state.activeCandidateIndex = idx; state = triggerCardCreatorAction(state, 'quick-add'); },
       onSendToCreator: () => { state.activeCandidateIndex = idx; state = triggerCardCreatorAction(state, 'edit-card'); },
-      onSettings: () => { /* options page removed — settings now in orbital badge SettingsDialog */ },
-      onClose: () => { state = hidePopup(state); },
       onPlayTerm: () => {
         state.activeCandidateIndex = idx;
         const r = getResultByIndex(state, idx);
@@ -845,7 +844,7 @@ function renderToolbarForCandidate(state: PopupDictionaryState, slot: HTMLElemen
       const newTab = s.activeTab === t ? null : t;
       setSnapshotByIndex(state, idx, { activeTab: newTab });
       state.activeCandidateIndex = idx;
-      rerender(state, newTab);
+      rerender(state);
     }, countActiveSelections(s), (tab) => {
       if (tab === 'translate') {
         const s2 = getSnapshotByIndex(state, idx);
@@ -854,11 +853,11 @@ function renderToolbarForCandidate(state: PopupDictionaryState, slot: HTMLElemen
           if (!r) return;
           setSnapshotByIndex(state, idx, { translationLoading: true, activeTab: 'translate' });
           state.activeCandidateIndex = idx;
-          rerender(state, 'translate');
+          rerender(state);
           translateSentence(r, state.contextSentence, state.nativeLang, (text) => {
             setSnapshotByIndex(state, idx, { translation: text, translationLoading: false, activeTab: 'translate' });
             state.activeCandidateIndex = idx;
-            rerender(state, 'translate');
+            rerender(state);
           });
         }
       }
@@ -1241,15 +1240,19 @@ function renderTabPanel(
   }
 }
 
-function rerender(state: PopupDictionaryState, activeTab?: PopupTab | null): void {
+function rerender(state: PopupDictionaryState): void {
   if (!state.shell?.getContainer() || !state.currentResult) return;
-  if (activeTab !== undefined) {
-    state.activeTab = activeTab;
-  }
   const container = state.shell.getContainer()!;
+  // Preserve scroll position — renderAllActiveEntries removes + recreates all
+  // entries, which resets scrollTop to 0 and jumps the view back to candidate 1.
+  const savedScrollTop = container.scrollTop;
+  // Fade out → swap DOM → fade in for smooth transition (no jarring flash).
+  container.style.opacity = '0';
   renderAllActiveEntries(state, container);
   renderAllToolbars(state, container);
   state.shell?.rePosition();
+  container.scrollTop = savedScrollTop;
+  requestAnimationFrame(() => { container.style.opacity = '1'; });
 }
 
 async function persistStatus(term: string, langCode: string, status: WordStatus): Promise<void> {
@@ -1283,8 +1286,10 @@ function showToast(message: string, shell?: PopupShell | null): void {
   }
 }
 
-function onResizeEnd(state: PopupDictionaryState, size: PopupSize): void {
+function onResizeEnd(state: PopupDictionaryState, size: PopupSize, sheetHeight: number): void {
   // Persist sticky size to settings via UPDATE_SETTINGS (spec §9.3).
+  // Both popover size and sheet height are saved — each mode remembers its own size.
+  const sheetHeightVh = Math.round((sheetHeight / window.innerHeight) * 100);
   void (async () => {
     try {
       const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
@@ -1296,6 +1301,7 @@ function onResizeEnd(state: PopupDictionaryState, size: PopupSize): void {
               ...state.settings,
               popupWidthPx: size.width,
               popupMaxHeightPx: size.maxHeight,
+              popupSheetHeightVh: Math.max(20, Math.min(95, sheetHeightVh)),
             },
           },
         },

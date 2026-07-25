@@ -142,10 +142,12 @@ export interface DictionaryPopupSettings {
   readonly defaultActiveTabPerLang?: Record<string, 'audio' | 'image' | 'translate' | 'links' | null>;
   /** SRS destination. Default 'anki'. */
   readonly srsDestination: 'anki';
-  /** Popup width in px. Default 560. */
+  /** Popup width in px (popover mode). Default 560. */
   readonly popupWidthPx: number;
-  /** Popup max height in px. Default 480. */
+  /** Popup max height in px (popover mode). Default 480. */
   readonly popupMaxHeightPx: number;
+  /** Sheet height in vh (bottom sheet mode). Default 72. */
+  readonly popupSheetHeightVh: number;
   /** External dictionary link templates. */
   readonly externalDictLinks: readonly ExternalDictLinkTemplate[];
   /** TTS voice settings (audio tab + options page manager). */

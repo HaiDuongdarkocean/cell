@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFA
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 17;
+export const CURRENT_SCHEMA_VERSION = 18;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -321,6 +321,15 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     }
     return merged;
   },
+  // v17 → v18: add popupSheetHeightVh to dictionaryPopup (per-mode size persistence).
+  // Shallow merge loses nested defaults — deep-merge dictionaryPopup here.
+  17: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 18 } as Record<string, unknown>;
+    const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
+    const defaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as Record<string, unknown>;
+    merged.dictionaryPopup = { ...defaults, ...(dp ?? {}), popupSheetHeightVh: (dp?.popupSheetHeightVh as number) ?? 72 };
+    return merged;
+  },
 };
 
 /**
@@ -343,6 +352,11 @@ export async function loadSettings(): Promise<Settings> {
     // in future versions that the user hasn't saved yet). Validate nav cluster
     // fields in case storage was edited externally with invalid values.
     const merged = { ...DEFAULT_SETTINGS, ...raw } as Record<string, unknown>;
+    // Deep-merge dictionaryPopup so new nested fields (e.g. popupSheetHeightVh)
+    // get their defaults even when stored settings replace the top-level object.
+    const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
+    const dpDefaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as Record<string, unknown>;
+    merged.dictionaryPopup = { ...dpDefaults, ...(dp ?? {}) };
     validateNavClusterFields(merged);
     merged.subtitleOverlayTargetStyle = normalizeOverlayStyle(merged.subtitleOverlayTargetStyle, DEFAULT_OVERLAY_STYLE_TARGET);
     merged.subtitleOverlayNativeStyle = normalizeOverlayStyle(merged.subtitleOverlayNativeStyle, DEFAULT_OVERLAY_STYLE_NATIVE);

@@ -340,12 +340,12 @@ describe('computePopupPosition — line-aware constraint', () => {
 describe('PopupShell', () => {
   let shell: PopupShell;
   let onDismiss: jest.Mock<() => void>;
-  let onResizeEnd: jest.Mock<(size: { width: number; maxHeight: number }) => void>;
+  let onResizeEnd: jest.Mock<(size: { width: number; maxHeight: number }, sheetHeight: number) => void>;
 
   beforeEach(() => {
     onDismiss = jest.fn<() => void>();
-    onResizeEnd = jest.fn<(size: { width: number; maxHeight: number }) => void>();
-    shell = new PopupShell({ width: 560, maxHeight: 480 }, onDismiss, onResizeEnd as unknown as (size: { width: number; maxHeight: number }) => void);
+    onResizeEnd = jest.fn<(size: { width: number; maxHeight: number }, sheetHeight: number) => void>();
+    shell = new PopupShell({ width: 560, maxHeight: 480 }, 500, onDismiss, onResizeEnd as unknown as (size: { width: number; maxHeight: number }, sheetHeight: number) => void);
   });
 
   afterEach(() => {

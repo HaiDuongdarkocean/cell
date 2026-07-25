@@ -295,8 +295,8 @@ export function renderImagePanel(
   if (isLoading && images.length === 0) {
     const skeleton = document.createElement('div');
     skeleton.className = 'cell-image__skeleton';
-    for (let i = 0; i < 4; i += 1) {
-      skeleton.appendChild(createSkeleton('100%', '72px', 'rounded', 'cell-image__skeleton-card'));
+    for (let i = 0; i < 8; i += 1) {
+      skeleton.appendChild(createSkeleton('80px', '80px', 'rounded', 'cell-image__skeleton-card'));
     }
     panel.appendChild(skeleton);
     container.appendChild(panel);
@@ -405,12 +405,14 @@ export function renderTranslatePanel(
     block.className = 'cell-translate__skeleton-block';
     const text = document.createElement('div');
     text.className = 'cell-translate__skeleton-text';
-    const line1 = createSkeleton('100%', 'var(--space-4, 16px)', 'rect');
-    line1.className = 'cell-translate__skeleton-line';
-    const line2 = createSkeleton('100%', 'var(--space-4, 16px)', 'rect');
-    line2.className = 'cell-translate__skeleton-line';
-    text.appendChild(line1);
-    text.appendChild(line2);
+    // Native line (prominent — taller, matches font-size-sm).
+    const nativeLine = createSkeleton('100%', 'var(--space-5, 20px)', 'rect');
+    nativeLine.className = 'cell-translate__skeleton-line cell-translate__skeleton-line--native';
+    // Target line (subtle — shorter, matches font-size-xs).
+    const targetLine = createSkeleton('80%', 'var(--space-4, 16px)', 'rect');
+    targetLine.className = 'cell-translate__skeleton-line cell-translate__skeleton-line--target';
+    text.appendChild(nativeLine);
+    text.appendChild(targetLine);
     block.appendChild(text);
     block.appendChild(createSkeleton('var(--space-4, 16px)', 'var(--space-4, 16px)', 'rect', 'cell-translate__skeleton-check'));
     skeleton.appendChild(block);

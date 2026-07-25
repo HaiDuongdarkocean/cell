@@ -18,14 +18,12 @@ import { rankToBand } from '@/shared/lib/frequencyBand';
 /** Selection state for definitions (checkboxes). */
 export type DefinitionSelection = Map<string, boolean>;
 
-/** Callbacks for popup content (header + footer + candidates). */
+/** Callbacks for popup content (header + candidates). */
 export interface PopupContentCallbacks {
   onStatusCycle: () => void;
   onDefinitionToggle: (id: string, selected: boolean) => void;
   onQuickAdd: () => void;
   onSendToCreator: () => void;
-  onSettings: () => void;
-  onClose?: () => void;
   onPlayTerm?: () => void;
   /** Play sentence audio from header. */
   onPlaySentence?: () => void;
@@ -34,7 +32,7 @@ export interface PopupContentCallbacks {
 }
 
 /** Render the popup header: 2-row layout (spec redesign v3).
- *  Row 1: word + reading-row(IPA + audio-group) + actions (QuickAdd + SendToCard + 3-dot menu + Close)
+ *  Row 1: word + reading-row(IPA + audio-group) + actions (QuickAdd + SendToCard)
  *  Row 2: second header (badges + status, scroll main axis if overflow)
  */
 export function renderHeader(
@@ -44,8 +42,6 @@ export function renderHeader(
   onStatusCycle: () => void,
   onQuickAdd: () => void,
   onSendToCreator: () => void,
-  onSettings: () => void,
-  onClose?: () => void,
   onPlayTerm?: () => void,
   onPlaySentence?: () => void,
 ): void {
@@ -85,6 +81,11 @@ export function renderHeader(
       ipa.textContent = result.reading;
     }
     readingRow.appendChild(ipa);
+  } else {
+    const placeholder = document.createElement('span');
+    placeholder.className = 'cell-header__ipa';
+    placeholder.textContent = '/···/';
+    readingRow.appendChild(placeholder);
   }
 
   // Audio group: word audio + sentence audio, close together
@@ -126,7 +127,7 @@ export function renderHeader(
 
   row.appendChild(main);
 
-  // Actions: Quick Add (icon only) + Send to Card (icon only) + 3-dot menu + Close
+  // Actions: Quick Add (icon only) + Send to Card (icon only)
   const actions = document.createElement('div');
   actions.className = 'cell-header__actions';
 
@@ -147,59 +148,6 @@ export function renderHeader(
   sendBtn.addEventListener('click', onSendToCreator);
   actions.appendChild(sendBtn);
 
-  // 3-dot menu (kebab) — dropdown with Settings.
-  const menuWrapper = document.createElement('div');
-  menuWrapper.className = 'cell-header__menu-wrapper js-cell-menu-wrapper';
-
-  const menuBtn = document.createElement('button');
-  menuBtn.className = 'icon-btn icon-btn--sm cell-header__menu-btn js-cell-menu-btn';
-  menuBtn.setAttribute('aria-label', 'More options');
-  menuBtn.title = 'More options';
-  menuBtn.innerHTML = ICON_CATALOG.ellipsisVertical.svg;
-  menuBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const dropdown = menuWrapper.querySelector('.js-cell-menu-dropdown');
-    if (dropdown) {
-      dropdown.classList.toggle('cell-menu-dropdown--open');
-    }
-  });
-  menuWrapper.appendChild(menuBtn);
-
-  // Dropdown menu.
-  const dropdown = document.createElement('div');
-  dropdown.className = 'cell-menu-dropdown js-cell-menu-dropdown';
-  const settingsItem = document.createElement('button');
-  settingsItem.className = 'cell-menu-dropdown__item js-cell-settings';
-  settingsItem.setAttribute('aria-label', 'Popup dictionary settings');
-  settingsItem.innerHTML = `${ICON_CATALOG.settings.svg}<span>Settings</span>`;
-  settingsItem.addEventListener('click', (e) => {
-    e.stopPropagation();
-    dropdown.classList.remove('cell-menu-dropdown--open');
-    onSettings();
-  });
-  dropdown.appendChild(settingsItem);
-  menuWrapper.appendChild(dropdown);
-
-  // Close dropdown on outside click.
-  document.addEventListener('click', () => {
-    dropdown.classList.remove('cell-menu-dropdown--open');
-  }, { once: true });
-
-  actions.appendChild(menuWrapper);
-
-  if (onClose) {
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'icon-btn icon-btn--sm js-cell-close';
-    closeBtn.setAttribute('aria-label', 'Close popup dictionary');
-    closeBtn.title = 'Close popup dictionary';
-    closeBtn.innerHTML = ICON_CATALOG.x.svg;
-    closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      onClose();
-    });
-    actions.appendChild(closeBtn);
-  }
-
   row.appendChild(actions);
   header.appendChild(row);
 
@@ -207,9 +155,10 @@ export function renderHeader(
   const second = document.createElement('div');
   second.className = 'cell-header__second';
 
-  // Status badge — clickable cycle (LEFT of badges per UX)
+  // Status pill — clickable cycle, same height as freq badge (not a .btn).
+  // Touch target expanded via padding (WCAG 2.5.5) without forcing 44px min-height.
   const statusBadge = document.createElement('button');
-  statusBadge.className = `btn cell-header__status cell-header__status--${currentStatus} js-cell-status`;
+  statusBadge.className = `cell-header__status cell-header__status--${currentStatus} js-cell-status`;
   const next = nextStatus(currentStatus);
   statusBadge.title = `Click to cycle: ${currentStatus} → ${next}`;
   statusBadge.addEventListener('click', onStatusCycle);
@@ -316,6 +265,7 @@ export function renderDefinitions(
 }
 
 /** Render the active entry: header + toolbar slot + definitions, wrapped as a flex column.
+ *  Toolbar sits between header and definitions; tab content appends below toolbar.
  *  Sets data-cell-candidate-idx so the controller can locate per-candidate slots. */
 export function renderActiveEntry(
   container: HTMLElement,
@@ -335,8 +285,6 @@ export function renderActiveEntry(
     callbacks.onStatusCycle,
     callbacks.onQuickAdd,
     callbacks.onSendToCreator,
-    callbacks.onSettings,
-    callbacks.onClose,
     callbacks.onPlayTerm,
     callbacks.onPlaySentence,
   );
@@ -344,16 +292,6 @@ export function renderActiveEntry(
   renderDefinitions(entry, result, selection, callbacks.onDefinitionToggle);
   container.appendChild(entry);
   return entry;
-}
-
-/** Render the footer — now empty (Send to Card + Settings moved to header).
- *  Kept as a no-op for backward compatibility with callers that expect it. */
-export function renderFooter(
-  _container: HTMLElement,
-  _onSendToCreator: () => void,
-  _onSettings: () => void,
-): void {
-  // No-op: Send to Card and Settings are now in the header.
 }
 
 /** Candidate info for chips + list rendering. */
@@ -441,8 +379,8 @@ export function getOrCreateCandidatesContainer(container: HTMLElement): HTMLElem
   return c;
 }
 
-/** Render the full popup content (active entry + candidates + footer).
- *  Spec redesign: materials slot now lives inside active entry (between header and definitions). */
+/** Render the full popup content (active entry + candidates).
+ *  Toolbar lives inside active entry (between header and definitions). */
 export function renderPopupContent(
   container: HTMLElement,
   result: LookupResult,
@@ -455,9 +393,7 @@ export function renderPopupContent(
   clearContainer(container);
   // Active entry (header + toolbar slot + definitions)
   renderActiveEntry(container, result, currentStatus, selection, callbacks);
-  // Footer — Send + Settings (status moved to header row 2)
-  renderFooter(container, callbacks.onSendToCreator, callbacks.onSettings);
-  // Candidates container — scrollable pills injected by controller, below footer
+  // Candidates container — scrollable pills injected by controller
   getOrCreateCandidatesContainer(container);
   requestAnimationFrame(() => { container.style.opacity = '1'; });
 }

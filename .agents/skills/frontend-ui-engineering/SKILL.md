@@ -263,7 +263,74 @@ Design for mobile first, then expand:
 ">
 ```
 
-Test at these breakpoints: 320px, 768px, 1024px, 1440px.
+Test at these breakpoints: 320px, 480px, 768px, 1024px, 1280px.
+
+### Button & Touch Target Size
+
+Mọi interactive element phải đạt touch target tối thiểu theo breakpoint. Touch target = visual size + padding (không phải chỉ visual size). Chi tiết bảng chuẩn + nguyên tắc Fitts's Law + Steven Hoober research trong `ui-ux-knowledge.md`.
+
+**Viewport-based (media queries — cho full-page UI):**
+
+```css
+/* Mobile-first: 48px touch target, 36px visual */
+.btn {
+  min-height: 36px;
+  min-width: 88px;
+  padding: 6px 12px;  /* 36 + 12 = 48px touch target */
+}
+/* Tablet: 44px touch target, 36px visual */
+@media (min-width: 768px) {
+  .btn { padding: 4px 10px; }  /* 36 + 8 = 44px touch target */
+}
+/* Desktop: 40px touch target, 32px visual (mouse precision) */
+@media (min-width: 1024px) {
+  .btn {
+    min-height: 32px;
+    min-width: 64px;
+    padding: 4px 8px;  /* 32 + 8 = 40px touch target */
+  }
+}
+```
+
+**Container-based (container queries — cho popup/overlay UI):**
+
+Popup dictionary dùng container queries (popup width = container width). 4 tiers: compact (<380px), narrow (380–479px), default (480–767px), wide (≥768px). Tokens: `--touch-target-mobile: 44px`, `--touch-target-desktop: 40px`.
+
+```css
+/* Compact/narrow (<480px): 44px touch target */
+@container (max-width: 479px) {
+  .icon-btn--sm { min-width: var(--touch-target-mobile, 44px); min-height: var(--touch-target-mobile, 44px); }
+  .btn { min-height: var(--touch-target-mobile, 44px); min-width: var(--touch-target-mobile, 44px); }
+}
+/* Default (480-767px): 44px touch target, base font 15px */
+@container (min-width: 480px) and (max-width: 767px) {
+  .cell-popup { font-size: var(--font-size-md, 15px); }
+  .btn { min-height: var(--touch-target-mobile, 44px); }
+}
+/* Wide (≥768px): 40px touch target (mouse precision), base font 16px */
+@container (min-width: 768px) {
+  .cell-popup { font-size: var(--font-size-lg, 16px); }
+  .btn { min-height: var(--touch-target-desktop, 40px); }
+}
+```
+
+Icon-only buttons: icon 20px + padding 12px mỗi bên = 44×44px touch target (pass WCAG AAA). Đừng quên `aria-label`.
+
+### Font Size (Typography Scale)
+
+Body text minimum 16px (1rem). Dùng `rem` (không `px`). Type scale ratio 1.25 (major third) cho content sites. Chi tiết bảng type scale + fluid clamp() pattern trong `ui-ux-knowledge.md`.
+
+```css
+/* Fluid typography — scale mượt giữa breakpoints, không jump */
+:root {
+  --font-size-body: clamp(1rem, 0.25vw + 0.9375rem, 1.125rem);
+  /* min 16px (mobile) → max 18px (desktop) */
+  --font-size-h1: clamp(1.9375rem, 1.5vw + 1.5rem, 2.4375rem);
+  /* min 31px (mobile) → max 39px (desktop) */
+}
+```
+
+Button text: 14px (0.875rem) trên mobile/tablet, 15px trên desktop. Caption/small: 14px minimum — không nhỏ hơn.
 
 ## Loading and Transitions
 
