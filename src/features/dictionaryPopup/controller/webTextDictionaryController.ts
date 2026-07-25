@@ -815,140 +815,132 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
     const targetLang = settings.subtitleOverlayNativeLanguage || nativeLang || 'vi';
 
-    const initialMedia: MediaFile[] = [];
+    // Open the dialog IMMEDIATELY with whatever data is already available
+    // (term, definitions, sentence, translation, media URLs selected in popup).
+    // Missing media is fetched in the background and pushed into the open
+    // dialog via addMediaFiles / updateTextField — so the user sees the dialog
+    // right away instead of waiting for network calls to complete.
+    openCardCreator({
+      video: video && video.videoWidth > 0 && fromSubtitle ? video : undefined,
+      sourceLang,
+      targetLang,
+      prefill: {
+        targetWord: prefill.term,
+        definitions: definitionsText,
+        sentenceTranslation: prefill.translation,
+        sentence: prefill.contextSentence,
+        wordAudioUrls: prefill.wordAudioUrls,
+        sentenceAudioUrls: prefill.sentenceAudioUrls,
+        imageUrls: prefill.imageUrls,
+      },
+    }, action);
+
+    // --- Background media fetch (non-blocking) ---
+    // Screenshot + sentence audio (subtitle case only — requires video).
     if (video && video.videoWidth > 0 && fromSubtitle) {
-      showToast('Capturing media…', deps.container, { variant: 'info' });
-      await waitForVideoReady(video);
-      try {
-        const screenshot = await captureScreenshot(video);
-        initialMedia.push(screenshot);
-      } catch {
-        showToast('Screenshot failed — you can capture manually in the dialog.', deps.container, { variant: 'warning' });
-      }
-      try {
-        const cues = getTargetCues?.() ?? [];
-        const currentMs = video.currentTime * 1000;
-        const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
-        if (matchingCue) {
-          const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
-          if (audioR.ok) initialMedia.push(audioR.file);
-        }
-      } catch {
-        // Audio failure is non-fatal.
-      }
+      void (async () => {
+        try {
+          await waitForVideoReady(video);
+          try {
+            const screenshot = await captureScreenshot(video);
+            cardCreatorMount?.addMediaFiles('images', [screenshot]);
+          } catch { /* non-fatal */ }
+          try {
+            const cues = getTargetCues?.() ?? [];
+            const currentMs = video.currentTime * 1000;
+            const matchingCue = cues.find((c) => currentMs >= c.start && currentMs <= c.end);
+            if (matchingCue) {
+              const audioR = await captureSentenceAudio(video, { start: matchingCue.start, end: matchingCue.end });
+              if (audioR.ok) cardCreatorMount?.addMediaFiles('sentenceAudios', [audioR.file]);
+            }
+          } catch { /* non-fatal */ }
+        } catch { /* non-fatal */ }
+      })();
     }
 
     // Auto-fetch missing media (audio, images, translation) from the popup
     // dictionary's data sources. The popup lazily fetches these when the user
     // opens the Audio/Images/Translate tabs. If the user clicks "Send to Card"
     // without opening those tabs, the media is not yet available — fetch it
-    // here so the Card Creator opens with all fields populated.
-    // Media URLs (selected by user) are passed through prefill — useCardCreatorState
-    // fetches them via fetchMediaFile (CSP-safe: content fetch → background fallback).
-    let wordAudioUrls = prefill.wordAudioUrls;
-    let imageUrls = prefill.imageUrls;
-    let sentenceAudioUrls = prefill.sentenceAudioUrls;
-    let sentenceTranslation = prefill.translation;
+    // in the background and push into the open dialog.
+    const needsAudio = !prefill.wordAudioUrls?.length;
+    const needsImages = !prefill.imageUrls?.length;
+    const needsSentenceAudio = !prefill.sentenceAudioUrls?.length && !!prefill.contextSentence;
+    const needsTranslation = !prefill.translation && !!prefill.contextSentence;
 
-    // Compute needs-* flags from the ORIGINAL prefill URLs (before any fetch).
-    const needsAudio = !wordAudioUrls?.length;
-    const needsImages = !imageUrls?.length;
-    const needsSentenceAudio = !sentenceAudioUrls?.length && !!prefill.contextSentence;
-    const needsTranslation = !sentenceTranslation && !!prefill.contextSentence;
-
-    if (needsAudio || needsImages || needsSentenceAudio || needsTranslation) {
-      showToast('Fetching media…', deps.container, { variant: 'info' });
-      const tasks: Promise<void>[] = [];
-
-      if (needsAudio) {
-        tasks.push((async () => {
-          try {
-            const res = await sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
-              type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
-              payload: { tabId: 0, term: prefill.term, langCode: prefill.langCode, kind: 'word' },
-            });
-            const items = res?.data?.items ?? [];
-            const wordItems = items.filter((a: AudioItem) => a.url && a.kind === 'word').slice(0, 1);
-            if (wordItems.length > 0) {
-              wordAudioUrls = wordItems.map((a: AudioItem) => a.url!);
-            }
-          } catch { /* non-fatal */ }
-          // Fallback: if community audio has no URL for this word, use TTS.
-          if (!wordAudioUrls?.length) {
-            try {
-              const ttsRes = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-                type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-                payload: { tabId: 0, text: prefill.term, langCode: prefill.langCode },
-              });
-              if (ttsRes?.success && ttsRes.data?.url) {
-                wordAudioUrls = [ttsRes.data.url];
-              }
-            } catch { /* non-fatal */ }
+    if (needsAudio) {
+      void (async () => {
+        try {
+          const res = await sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
+            type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
+            payload: { tabId: 0, term: prefill.term, langCode: prefill.langCode, kind: 'word' },
+          });
+          const items = res?.data?.items ?? [];
+          const wordItems = items.filter((a: AudioItem) => a.url && a.kind === 'word').slice(0, 1);
+          if (wordItems.length > 0) {
+            const file = await fetchMediaFile(wordItems[0].url!, 'audio');
+            cardCreatorMount?.addMediaFiles('wordAudios', [file]);
+            return;
           }
-        })());
-      }
-
-      if (needsImages) {
-        tasks.push((async () => {
-          try {
-            const res = await sendMessage<MessageResponse<FetchImagesResponse>>({
-              type: MESSAGE_TYPES.FETCH_IMAGES,
-              payload: { tabId: 0, term: prefill.term, langCode: prefill.langCode, maxResults: 8 },
-            });
-            const items = res?.data?.items ?? [];
-            if (items.length > 0) {
-              imageUrls = items.slice(0, 1).map((img: ImageItem) => img.src);
-            }
-          } catch { /* non-fatal */ }
-        })());
-      }
-
-      if (needsSentenceAudio) {
-        tasks.push((async () => {
-          try {
-            const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-              type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-              payload: { tabId: 0, text: prefill.contextSentence!.slice(0, 200), langCode: fromSubtitle ? sourceLang : prefill.langCode },
-            });
-            if (res?.success && res.data?.url) {
-              sentenceAudioUrls = [res.data.url];
-            }
-          } catch { /* non-fatal */ }
-        })());
-      }
-
-      if (needsTranslation) {
-        tasks.push((async () => {
-          try {
-            const res = await sendMessage<MessageResponse<{ translated: string[] }>>({
-              type: MESSAGE_TYPES.TRANSLATE,
-              payload: { tabId: 0, text: prefill.contextSentence, sl: sourceLang, tl: targetLang },
-            });
-            if (res?.success && res.data?.translated?.length) {
-              sentenceTranslation = res.data.translated.join(' ');
-            }
-          } catch { /* non-fatal */ }
-        })());
-      }
-
-      await Promise.all(tasks);
+        } catch { /* non-fatal */ }
+        // Fallback: TTS if community audio has no URL.
+        try {
+          const ttsRes = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+            type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+            payload: { tabId: 0, text: prefill.term, langCode: prefill.langCode },
+          });
+          if (ttsRes?.success && ttsRes.data?.url) {
+            const file = await fetchMediaFile(ttsRes.data.url, 'audio');
+            cardCreatorMount?.addMediaFiles('wordAudios', [file]);
+          }
+        } catch { /* non-fatal */ }
+      })();
     }
 
-    openCardCreator({
-      video: video && video.videoWidth > 0 && fromSubtitle ? video : undefined,
-      sourceLang,
-      targetLang,
-      initialMedia: initialMedia.length > 0 ? initialMedia : undefined,
-      prefill: {
-        targetWord: prefill.term,
-        definitions: definitionsText,
-        sentenceTranslation,
-        sentence: prefill.contextSentence,
-        wordAudioUrls,
-        sentenceAudioUrls,
-        imageUrls,
-      },
-    }, action);
+    if (needsImages) {
+      void (async () => {
+        try {
+          const res = await sendMessage<MessageResponse<FetchImagesResponse>>({
+            type: MESSAGE_TYPES.FETCH_IMAGES,
+            payload: { tabId: 0, term: prefill.term, langCode: prefill.langCode, maxResults: 8 },
+          });
+          const items = res?.data?.items ?? [];
+          if (items.length > 0) {
+            const file = await fetchMediaFile(items[0].src, 'image');
+            cardCreatorMount?.addMediaFiles('images', [file]);
+          }
+        } catch { /* non-fatal */ }
+      })();
+    }
+
+    if (needsSentenceAudio) {
+      void (async () => {
+        try {
+          const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+            type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+            payload: { tabId: 0, text: prefill.contextSentence!.slice(0, 200), langCode: fromSubtitle ? sourceLang : prefill.langCode },
+          });
+          if (res?.success && res.data?.url) {
+            const file = await fetchMediaFile(res.data.url, 'audio');
+            cardCreatorMount?.addMediaFiles('sentenceAudios', [file]);
+          }
+        } catch { /* non-fatal */ }
+      })();
+    }
+
+    if (needsTranslation) {
+      void (async () => {
+        try {
+          const res = await sendMessage<MessageResponse<{ translated: string[] }>>({
+            type: MESSAGE_TYPES.TRANSLATE,
+            payload: { tabId: 0, text: prefill.contextSentence, sl: sourceLang, tl: targetLang },
+          });
+          if (res?.success && res.data?.translated?.length) {
+            cardCreatorMount?.updateTextField('sentenceTranslation', res.data.translated.join(' '));
+          }
+        } catch { /* non-fatal */ }
+      })();
+    }
   }
 
   async function handlePopupQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {

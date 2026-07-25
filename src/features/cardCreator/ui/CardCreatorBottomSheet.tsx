@@ -7,8 +7,10 @@
  * 75vh max height. Content is the same as desktop but with stacked layout.
  */
 import type { ReactElement } from 'react';
+import { useEffect } from 'react';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import type { CardCreatorSettings } from '@/entities/settings';
+import type { MediaFile } from '../media/mediaFile';
 import { CardCreatorDialogContent } from './CardCreatorDialogContent';
 import { useCardCreatorState, type OpenContext } from './useCardCreatorState';
 import { clearAnkiConnectPrefetch } from '../service/cardCreatorPrefetch';
@@ -24,6 +26,10 @@ interface CardCreatorBottomSheetProps {
   openContext: OpenContext | null;
   /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' pre-selects Update, 'edit-card' is neutral). */
   initialAction?: 'quick-add' | 'quick-update' | 'edit-card';
+  /** Register a callback to push media files into the open dialog (background fetch). */
+  registerAddMedia?: (cb: ((kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[]) => void) | null) => void;
+  /** Register a callback to push text field updates into the open dialog (background fetch). */
+  registerUpdateText?: (cb: ((key: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample', value: string) => void) | null) => void;
 }
 
 export function CardCreatorBottomSheet({
@@ -32,9 +38,23 @@ export function CardCreatorBottomSheet({
   settings,
   openContext,
   initialAction,
+  registerAddMedia,
+  registerUpdateText,
 }: CardCreatorBottomSheetProps): ReactElement | null {
   const ctx: OpenContext | null = open ? openContext : null;
   const state = useCardCreatorState(settings, ctx, initialAction);
+
+  useEffect(() => {
+    if (!open || !registerAddMedia) return;
+    registerAddMedia(state.addFiles);
+    return () => registerAddMedia(null);
+  }, [open, registerAddMedia, state.addFiles]);
+
+  useEffect(() => {
+    if (!open || !registerUpdateText) return;
+    registerUpdateText(state.updateField);
+    return () => registerUpdateText(null);
+  }, [open, registerUpdateText, state.updateField]);
 
   if (!open) return null;
 
