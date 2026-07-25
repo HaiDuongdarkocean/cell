@@ -11,14 +11,20 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .fieldRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+}
+
+.fieldRow > * {
+  min-width: 0;
 }
 
 .rowLabel {

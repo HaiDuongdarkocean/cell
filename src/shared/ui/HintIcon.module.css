@@ -13,8 +13,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--space-4, 16px);
-  height: var(--space-4, 16px);
+  width: var(--space-5, 20px);
+  height: var(--space-5, 20px);
   padding: 0;
   border: none;
   background: transparent;
@@ -40,8 +40,8 @@
 }
 
 .hintBtn svg {
-  width: var(--space-3-5, 14px);
-  height: var(--space-3-5, 14px);
+  width: var(--space-4, 16px);
+  height: var(--space-4, 16px);
 }
 
 /* === Floating hint popover (nổi lên trên icon) === */

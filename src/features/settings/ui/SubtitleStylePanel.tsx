@@ -262,7 +262,7 @@ export function SubtitleStylePanel({
 
       {/* Custom shadow fields (only when preset=custom) */}
       {style.textShadow.preset === 'custom' && (
-        <div className={styles.fieldRow}>
+        <div className={`${styles.fieldRow} ${styles.customShadowRow}`}>
           <div className={styles.field}>
             <label className={styles.label} htmlFor={`style-${role}-shadow-color`}>Shadow color</label>
             <input

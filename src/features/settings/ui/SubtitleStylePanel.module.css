@@ -10,30 +10,55 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .fieldRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
   align-items: start;
-  flex-direction: column;
 }
 
 .fieldRow > .field {
   min-width: 0;
 }
 
+@media (min-width: 520px) {
+  .fieldRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Custom shadow has 4 compact fields; allow 2x2 on narrow, 4 across on desktop. */
+.customShadowRow {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .customShadowRow {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 /* === Pair row — 2 fields side-by-side (settings-dialog-rearrange) === */
 .pairRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
   align-items: start;
 }
 
 .pairRow > .field {
   min-width: 0;
+}
+
+@media (min-width: 480px) {
+  .pairRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
 }
 
 /* === Divider — group separator within section body === */
@@ -47,7 +72,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: var(--font-size-sm);
+  gap: var(--space-2);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
 }
@@ -79,8 +105,8 @@
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: var(--space-3-5, 14px);
+  height: var(--space-3-5, 14px);
   border-radius: var(--radius-full);
   background: var(--color-primary);
   cursor: pointer;
@@ -88,8 +114,8 @@
 }
 
 .slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: var(--space-3-5, 14px);
+  height: var(--space-3-5, 14px);
   border-radius: var(--radius-full);
   background: var(--color-primary);
   cursor: pointer;
@@ -124,8 +150,9 @@
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-family: inherit;
+  min-width: 0;
 }
 
 .numberInput:focus-visible,
@@ -138,7 +165,8 @@
 
 .radioRow {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  justify-content: flex-start;
   align-items: center;
   width: 100%;
   gap: var(--space-1);
@@ -150,8 +178,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1, 4px);
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: min-content;
   font-size: var(--font-size-xs);
   color: var(--color-text);
   cursor: pointer;
@@ -162,7 +190,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   color: var(--color-text);
   cursor: pointer;
 }
