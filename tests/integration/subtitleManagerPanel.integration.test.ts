@@ -7,15 +7,30 @@ import type { OverlayConfig } from '@/types/subtitle';
 
 // Mock chrome.storage.local for injectThemeTokens
 beforeAll(() => {
-  (global as any).chrome = (global as any).chrome ?? {};
-  (global as any).chrome.storage = (global as any).chrome.storage ?? {};
-  (global as any).chrome.storage.local = {
-    get: jest.fn(() => Promise.resolve({})),
-    set: jest.fn(() => Promise.resolve()),
-  };
-  (global as any).chrome.storage.onChanged = {
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
+  (global as unknown as {
+    chrome: {
+      storage: {
+        local: {
+          get: jest.MockedFunction<() => Promise<Record<string, unknown>>>;
+          set: jest.MockedFunction<() => Promise<void>>;
+        };
+        onChanged: {
+          addListener: jest.MockedFunction<(callback: () => void) => void>;
+          removeListener: jest.MockedFunction<(callback: () => void) => void>;
+        };
+      };
+    };
+  }).chrome = {
+    storage: {
+      local: {
+        get: jest.fn(() => Promise.resolve({})),
+        set: jest.fn(() => Promise.resolve()),
+      },
+      onChanged: {
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+      },
+    },
   };
 });
 
