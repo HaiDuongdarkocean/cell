@@ -38,6 +38,7 @@ function makeResult(overrides: Partial<LookupResult> = {}): LookupResult {
     status: 'unknown',
     partsOfSpeech: ['verb'],
     definitions: [makeDefinition()],
+    rawDefinitions: [],
     detectedPhrase: null,
     matchSource: 'dictionary',
     ...overrides,

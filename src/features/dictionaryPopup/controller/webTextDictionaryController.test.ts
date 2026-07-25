@@ -95,6 +95,7 @@ function makeResult(overrides: Partial<LookupResult> = {}): LookupResult {
       source: 'Cambridge',
       defaultSelected: true,
     }],
+    rawDefinitions: [],
     detectedPhrase: null,
     matchSource: 'dictionary',
     ...overrides,

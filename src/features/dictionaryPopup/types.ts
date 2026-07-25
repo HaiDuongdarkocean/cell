@@ -80,6 +80,8 @@ export interface LookupResult {
   readonly status: WordStatus;
   readonly partsOfSpeech: readonly string[];
   readonly definitions: readonly DefinitionEntry[];
+  /** Raw definition strings from DB (1 per dictEntry), with <br> + N. markers intact. */
+  readonly rawDefinitions: readonly string[];
   /** Structurally valid match only; null → normal dictionary fallback. */
   readonly detectedPhrase: PhraseMatch | null;
   readonly matchSource: MatchSource;

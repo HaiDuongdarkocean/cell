@@ -218,16 +218,15 @@ function isBlockContainer(el: HTMLElement): boolean {
 }
 
 /** Create a top-level web-text dictionary controller. */
-/** Format definitions for Card Creator / Quick Add:
- *  - <br> → \n (line breaks)
- *  - N. (numbered sense markers) stripped
- *  Each sense on its own line, no bullet. */
-function formatDefinitions(definitions: readonly { readonly pos?: string; readonly text: string }[]): string {
-  return definitions
-    .map((d) => d.text)
-    .join('\n')
+/** Format raw definition strings for Card Creator / Quick Add:
+ *  - <br> → \n (line breaks; <br><br> → \n\n = blank line between senses)
+ *  - N. (numbered sense markers) → • (bullet)
+ *  No POS splitting — raw text stays intact, compatible with any dictionary format. */
+function formatDefinitions(rawDefinitions: readonly string[]): string {
+  return rawDefinitions
+    .join('\n\n')
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/^\s*(\d+)\.\s*/gm, '');
+    .replace(/^\s*(\d+)\.\s*/gm, '• ');
 }
 
 export function createWebTextDictionaryController(deps: WebTextDictionaryControllerDeps): WebTextDictionaryController {
@@ -813,7 +812,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       // Prefetch failure is non-fatal — loadData will retry.
     });
 
-    const definitionsText = formatDefinitions(prefill.definitions);
+    const definitionsText = formatDefinitions(prefill.rawDefinitions ?? prefill.definitions.map((d) => d.text));
 
     const sourceLang = settings.subtitleOverlayTargetLanguage || prefill.langCode || 'en';
     const targetLang = settings.subtitleOverlayNativeLanguage || nativeLang || 'vi';
@@ -1094,7 +1093,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       } catch { warnings.push('sentence audio capture'); }
     }
 
-    const definitionsText = formatDefinitions(prefill.definitions);
+    const definitionsText = formatDefinitions(prefill.rawDefinitions ?? prefill.definitions.map((d) => d.text));
 
     const result = await quickAddNote(
       url,
