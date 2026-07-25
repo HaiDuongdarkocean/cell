@@ -1,0 +1,26 @@
+{
+  "id": "caret-point-hit-testing-hybrid-fallback",
+  "title": "caretRangeFromPoint hit-testing — hybrid caret + char-scan + geometry fallback for 100% resolution",
+  "category": ["ux", "detection"],
+  "tags": ["caretRangeFromPoint", "hit-testing", "word-lookup", "whitespace-click", "geometry-fallback", "elementsFromPoint", "proximity-gate", "line-height"],
+  "trigger": "Click/hover word lookup using caretRangeFromPoint where clicks on whitespace/punctuation between words intermittently fail (\"lúc được lúc không\"), or a 1px geometry gate (isPointOverRange) rejects valid words due to sub-pixel layout / word-wrap",
+  "principle": "caretRangeFromPoint returns the caret position at a point, but the caret can land on a non-word char (space, punctuation) or return null when the point is in padding/margin. A single fast-path that dismisses on null/non-word is fragile. Use a 3-tier hybrid: (1) Fast path — caret on a word char → extract word directly. (2) Char-scan fallback — caret on non-word → scan left/right in the block's text for the nearest word char (tie → left) and resolve that word. (3) Geometry fallback — caret null → elementsFromPoint finds the text block, TreeWalker collects word ranges, nearest word by Euclidean distance gated by 1.5× line-height (default 40px). The geometry gate (isPointOverRange) must be a fallback trigger, NOT a hard dismiss — a 1px tolerance rejects valid words on word-wrap boundaries. For intentional input (click, badge tap) trust the resolution (lenient, no geometry gate); for passive input (hover) keep the geometry gate so a caret quirk doesn't pop a word the cursor isn't over.",
+  "cases": [
+    {
+      "context": "Dictionary popup lookup — click on whitespace between words dismisses the popup because caretRangeFromPoint returns a space offset and extractWordAtOffset returns null",
+      "bad": "const caretRange = document.caretRangeFromPoint(x, y);\nif (!caretRange) { dismiss(); return; }\nconst ctx = extractSentenceContext(caretRange.startContainer, caretRange.startOffset);\nif (!ctx) { dismiss(); return; } // ← space offset → ctx null → dismiss\n// Click on space between 'hello' and 'world' → popup dismissed → \"lúc được lúc không\"",
+      "good": "const resolved = resolveWordAtPoint(x, y, { getCaretRange });\nif (!resolved) { dismiss(); return; }\n// resolveWordAtPoint: (1) caret on word → direct; (2) caret on space → scan left/right for nearest word char; (3) caret null → geometry fallback\n// Click on space between 'hello' and 'world' → char-scan finds 'hello' (tie → left) → popup shows 'hello'"
+    },
+    {
+      "context": "isPointOverRange 1px gate rejects a valid word because the word's client rect is 1px off due to sub-pixel rounding or word-wrap",
+      "bad": "const wordRange = createWordRange(textNode, offset, ctx);\nif (!isPointOverRange(x, y, wordRange)) { dismiss(); return; } // ← 1px off → dismiss\n// Word-wrap boundary: word rect starts 1px left of click → gate fails → popup dismissed",
+      "good": "// For clicks (intentional): trust the resolution, skip the geometry gate\nconst resolved = resolveWordAtPoint(x, y, { getCaretRange });\nif (!resolved) { dismiss(); return; }\n// For hover (passive): keep the gate as a fallback trigger, not a hard dismiss\nif (!lenient && !isPointOverRange(x, y, resolved.range)) { dismiss(); return; }"
+    }
+  ],
+  "applyFor": [
+    "Word lookup on click/hover where clicks on whitespace/punctuation between words must still resolve the nearest word",
+    "Hit-testing with caretRangeFromPoint where null returns are possible (padding, margin, overlapping elements)",
+    "Any point-to-text resolution where a 1px geometry gate causes intermittent failures on word-wrap boundaries",
+    "Badge/pointer-based lookup where a tap is intentional and should trust the resolution (lenient mode)"
+  ]
+}

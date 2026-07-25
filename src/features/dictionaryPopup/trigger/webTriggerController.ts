@@ -14,7 +14,8 @@ import {
   extractSentenceContext,
   extractWordAtOffset,
   createWordRange,
-  WORD_CHAR_RE,
+  resolveWordAtPoint,
+  defaultGetCaretRange,
   type SentenceContext,
 } from '../sentence/sentenceModule';
 
@@ -275,43 +276,30 @@ export class WebTriggerController {
       return;
     }
 
-    // No selection: fallback to caret range (helps on user-select:none sites).
-    // If the click is on empty space, dismiss any open popup.
-    if (!document.caretRangeFromPoint) {
+    // No selection: resolve the word at the click point via the hybrid lookup
+    // algorithm (caret fast-path + nearest-word char-scan + geometry fallback).
+    // Succeeds even when the click lands on whitespace/punctuation between
+    // words — the previous "lúc được lúc không" root cause. The caret resolver
+    // disables pointer-events on our floating UI so it sees page text behind
+    // any popup/badge covering the click.
+    if (!document.caretRangeFromPoint && !(document as Document & { caretPositionFromPoint?: unknown }).caretPositionFromPoint) {
       this.resetHover();
       return;
     }
-    const caretRange = withUiHostsPointerEventsDisabled(() => document.caretRangeFromPoint(e.clientX, e.clientY));
-    if (!caretRange) {
+    const resolved = resolveWordAtPoint(e.clientX, e.clientY, {
+      getCaretRange: (cx, cy) => withUiHostsPointerEventsDisabled(() => defaultGetCaretRange(cx, cy)),
+    });
+    if (!resolved || rangeInUiHost(resolved.range)) {
       this.resetHover();
       return;
     }
-    const textNode = caretRange.startContainer as Text;
-    if (textNode.nodeType !== Node.TEXT_NODE || rangeInUiHost(caretRange)) {
-      this.resetHover();
-      return;
-    }
-    const ctx = extractSentenceContext(textNode, caretRange.startOffset);
-    if (!ctx) {
-      this.resetHover();
-      return;
-    }
-    const wordRange = createWordRange(textNode, caretRange.startOffset, ctx);
-    if (!wordRange) {
-      this.resetHover();
-      return;
-    }
-    if (!isPointOverRange(e.clientX, e.clientY, wordRange)) {
-      this.resetHover();
-      return;
-    }
-    const request = buildHoverLookupRequestFromContext(ctx);
+    const request = buildHoverLookupRequestFromContext(resolved.ctx);
     if (!request) {
       this.resetHover();
       return;
     }
-    const rect = getLineAwareAnchorRect(wordRange);
-    this.dispatchLookup(request, rect, wordRange, { x: e.clientX, y: e.clientY });
+    const rect = getLineAwareAnchorRect(resolved.range);
+    this.dispatchLookup(request, rect, resolved.range, { x: e.clientX, y: e.clientY });
   }
 
   private onSelectionChange(): void {
@@ -343,19 +331,12 @@ export class WebTriggerController {
       return;
     }
 
-    if (!document.caretRangeFromPoint) return;
-    const caretRange = document.caretRangeFromPoint(e.clientX, e.clientY);
-    if (!caretRange) {
-      this.resetHover();
-      return;
-    }
-    const textNode = caretRange.startContainer as Text;
-    if (textNode.nodeType !== Node.TEXT_NODE) {
-      this.resetHover();
-      return;
-    }
-    const ch = textNode.data[caretRange.startOffset];
-    if (!ch || !WORD_CHAR_RE.test(ch)) {
+    // Quick null-only caret check: if there's no text at all at the cursor
+    // (genuine empty space), dismiss immediately without waiting for the
+    // debounce. We do NOT reject whitespace/punctuation chars here —
+    // resolveWordAtPoint's char-scan fallback handles those, and pre-filtering
+    // them would reintroduce the "lúc được lúc không" bug for hover.
+    if (!defaultGetCaretRange(e.clientX, e.clientY)) {
       this.resetHover();
       return;
     }
@@ -399,41 +380,36 @@ export class WebTriggerController {
     return Math.hypot(dx, dy);
   }
 
-  /** Process a hover at an explicit (x, y) point, e.g. from the orbital pointer. */
+  /** Process a hover at an explicit (x, y) point, e.g. from the orbital pointer.
+   *  A badge tap is intentional (like a click) → `lenient` skips the geometry
+   *  gate so the nearest word resolves with 100% success. */
   processPoint(x: number, y: number, badgeCenter?: { x: number; y: number }, badgeRadius?: number, pointerRadius?: number): void {
-    this.processHoverMove(x, y, badgeCenter, badgeRadius, pointerRadius);
+    this.processHoverMove(x, y, badgeCenter, badgeRadius, pointerRadius, /* lenient */ true);
   }
 
-  private processHoverMove(x: number, y: number, badgeCenter?: { x: number; y: number }, badgeRadius?: number, pointerRadius?: number): void {
-    const caretRange = withUiHostsPointerEventsDisabled(() => document.caretRangeFromPoint(x, y));
-    if (!caretRange) {
+  private processHoverMove(
+    x: number,
+    y: number,
+    badgeCenter?: { x: number; y: number },
+    badgeRadius?: number,
+    pointerRadius?: number,
+    lenient = false,
+  ): void {
+    const resolved = resolveWordAtPoint(x, y, {
+      getCaretRange: (cx, cy) => withUiHostsPointerEventsDisabled(() => defaultGetCaretRange(cx, cy)),
+    });
+    if (!resolved || rangeInUiHost(resolved.range)) {
       this.resetHover();
       return;
     }
-    const textNode = caretRange.startContainer as Text;
-    if (textNode.nodeType !== Node.TEXT_NODE || rangeInUiHost(caretRange)) {
+    // For hover (non-lenient), gate on geometry so a caret quirk doesn't pop a
+    // word the cursor isn't actually over. For a badge tap (lenient), trust the
+    // resolution — a tap is intentional, like a click (100% success goal).
+    if (!lenient && !isPointOverRange(x, y, resolved.range)) {
       this.resetHover();
       return;
     }
-    const offset = caretRange.startOffset;
-
-    const ctx = extractSentenceContext(textNode, offset);
-    if (!ctx) {
-      this.resetHover();
-      return;
-    }
-    const wordRange = createWordRange(textNode, offset, ctx);
-    if (!wordRange) {
-      this.resetHover();
-      return;
-    }
-    // Only trigger when the pointer is actually over the word's geometry,
-    // not just within the line/padding/shadow around it.
-    if (!isPointOverRange(x, y, wordRange)) {
-      this.resetHover();
-      return;
-    }
-    const request = buildHoverLookupRequestFromContext(ctx);
+    const request = buildHoverLookupRequestFromContext(resolved.ctx);
     if (!request) {
       this.resetHover();
       return;
@@ -444,20 +420,20 @@ export class WebTriggerController {
     const pointerDelta = Math.hypot(x - this.lastHoveredPointerX, y - this.lastHoveredPointerY);
     if (
       request.term === this.lastHoveredTerm &&
-      wordRange.startContainer === this.lastHoveredStartContainer &&
-      wordRange.startOffset === this.lastHoveredStartOffset &&
+      resolved.range.startContainer === this.lastHoveredStartContainer &&
+      resolved.range.startOffset === this.lastHoveredStartOffset &&
       pointerDelta < 6
     ) {
       return;
     }
     this.lastHoveredTerm = request.term;
-    this.lastHoveredStartContainer = wordRange.startContainer;
-    this.lastHoveredStartOffset = wordRange.startOffset;
+    this.lastHoveredStartContainer = resolved.range.startContainer;
+    this.lastHoveredStartOffset = resolved.range.startOffset;
     this.lastHoveredPointerX = x;
     this.lastHoveredPointerY = y;
 
-    const rect = getLineAwareAnchorRect(wordRange);
-    this.dispatchLookup(request, rect, wordRange, { x, y, badgeCenter, badgeRadius, pointerRadius });
+    const rect = getLineAwareAnchorRect(resolved.range);
+    this.dispatchLookup(request, rect, resolved.range, { x, y, badgeCenter, badgeRadius, pointerRadius });
   }
 
   private dispatchLookup(request: LookupRequest, anchorRect: DOMRect, range?: Range, pointer?: WebTriggerPointer): void {
