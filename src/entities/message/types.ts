@@ -73,6 +73,7 @@ export type MessageType =
   | 'FETCH_IMAGES'
   | 'TTS_SPEAK'
   | 'TTS_FETCH_AUDIO'
+  | 'FETCH_MEDIA_URL'
   | 'WORD_STATUS_GET'
   | 'WORD_STATUSES_GET'
   | 'WORD_STATUS_SET'
@@ -576,6 +577,19 @@ export interface TtsFetchAudioPayload {
 
 /** Background → content: TTS audio result. */
 export interface TtsFetchAudioResponse {
+  readonly url: string;
+}
+
+/** Content → background: fetch a media URL (image/audio) as a data URL.
+ *  Used when the content script can't fetch directly due to page CSP. */
+export interface FetchMediaUrlPayload {
+  readonly tabId?: number;
+  readonly url: string;
+  readonly kind: 'image' | 'audio';
+}
+
+/** Background → content: media fetch result (data URL). */
+export interface FetchMediaUrlResponse {
   readonly url: string;
 }
 
