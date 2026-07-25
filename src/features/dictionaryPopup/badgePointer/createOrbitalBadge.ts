@@ -232,8 +232,8 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
 
   // ADR-061: Settings dialog — mounted as a React root on document.body (not
   // in Shadow DOM — CSS module styles only apply in the light DOM). Single
-  // click on the badge toggles it open/close. Tokenize state + callbacks are
-  // bridged from options.panel.
+  // tap on the badge opens the panel (open-only — never toggles). Tokenize
+  // state + callbacks are bridged from options.panel.
   let settingsMount: SettingsDialogMountController | null = null;
   let panelOpen = false;
   if (options.panel) {
