@@ -14,13 +14,13 @@
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  padding: var(--space-2-5, 9px) var(--space-3, 12px);
+  padding: var(--space-2-5, 10px) var(--space-3, 12px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   color: var(--color-text);
   font-family: var(--font-family);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   text-align: left;
@@ -75,7 +75,7 @@
   top: calc(100% + var(--space-1, 4px));
   width: max-content;
   min-width: 100%;
-  max-width: 320px;
+  max-width: min(320px, calc(100vw - var(--space-8, 32px)));
   display: flex;
   flex-direction: column;
   background: var(--color-background);
@@ -123,7 +123,7 @@
   background: transparent;
   color: var(--color-text);
   font-family: var(--font-family);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   outline: none;
 }
 
@@ -178,7 +178,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   color: var(--color-text);
 }
 
@@ -194,5 +194,5 @@
   padding: var(--space-3);
   text-align: center;
   color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
 }
