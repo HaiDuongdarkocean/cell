@@ -37,6 +37,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
     let bytesWritten = 0;
     let initSegmentWritten = false;
     let doneFired = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
 
     transmuxer.on('data', (segment: { type: string; data: Uint8Array; initSegment?: Uint8Array }) => {
       if (segment.initSegment && segment.initSegment.length > 0) {
@@ -56,6 +57,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
     // times out.
     transmuxer.on('done', () => {
       doneFired = true;
+      if (timeoutId) clearTimeout(timeoutId);
       const durationMs = Math.round(performance.now() - start);
       transmuxer.dispose();
 
@@ -105,7 +107,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
     // Timeout: proportional to input size. Only fires if 'done' was never
     // emitted (should not happen with the fix above, but kept as safety net).
     const timeoutMs = Math.max(30_000, Math.floor(groupData.length / (1024 * 1024) * 1000));
-    setTimeout(() => {
+    timeoutId = setTimeout(() => {
       if (doneFired) return;
       transmuxer.dispose();
       const response: WorkerResponse = {

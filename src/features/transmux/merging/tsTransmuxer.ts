@@ -174,11 +174,14 @@ function waitForDone(
 ): Promise<void> {
   const timeoutMs = Math.max(30_000, Math.floor(totalBytes / (1024 * 1024) * 1000));
   return new Promise<void>((resolve, reject) => {
-    transmuxer.on('done', () => resolve());
-    setTimeout(
+    const timer = setTimeout(
       () => reject(new Error(`Transmux timed out after ${timeoutMs}ms`)),
       timeoutMs,
     );
+    transmuxer.on('done', () => {
+      clearTimeout(timer);
+      resolve();
+    });
   });
 }
 
