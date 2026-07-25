@@ -109,6 +109,8 @@ Summary: User directed agent to stop asking and run loop autonomously. Focus exp
 - Quality gates: typecheck pass, lint pass, unit tests pass (236 suites), build pass.
 - Slice 5: fixed `ankiConnectClient.ts` Promise.race timeout leak by clearing the timeout in `fetchPromise.finally`.
 - Quality gates: typecheck pass, lint pass, unit tests pass (236 suites), build pass.
+- Slice 6: removed stale generated MAIN-world IIFE `.js` files from git tracking (`src/entrypoints/content/*.iife.js`) and added them to `.gitignore`; these were leftover build intermediates containing old `console.log` noise, while the build outputs clean files to `dist/`.
+- Quality gates: typecheck pass, lint pass, unit tests pass (236 suites), build pass.
 
 ### Active Tasks
-- Slice 6: next backlog item (TBD).
+- Slice 7: next backlog item (TBD).

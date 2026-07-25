@@ -56,6 +56,9 @@ _tmp_test_screenshots/
 lint_full.txt
 tests/unit/debug-translate.test.ts
 
+# CRXJS generated MAIN-world IIFE intermediates (source is .iife.ts)
+src/entrypoints/content/*.iife.js
+
 # Logs
 *.log
 npm-debug.log*
