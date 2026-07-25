@@ -16,6 +16,7 @@ import {
   parseGoogleImagesHtml,
   DEFAULT_MAX_IMAGE_RESULTS,
 } from '@/features/dictionaryPopup/services/imageSearchService';
+import { fetchWithTimeout } from '@/shared/lib/fetchWithTimeout';
 
 /** Fetch timeout (ms) — Google Images can be slow on first query. */
 const FETCH_IMAGES_TIMEOUT_MS = 5000;
@@ -23,24 +24,6 @@ const FETCH_IMAGES_TIMEOUT_MS = 5000;
 /** Desktop Chrome User-Agent so Google returns the full HTML (not mobile lite). */
 const DESKTOP_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
-
-/**
- * Fetch with an abort-based timeout. Resolves to the Response, or rejects with
- * a `TimeoutError`-style Error when the deadline elapses.
- */
-async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), ms);
-  try {
-    return await fetch(url, {
-      method: 'GET',
-      headers: { 'User-Agent': DESKTOP_USER_AGENT },
-      signal: ac.signal,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 /** Register the FETCH_IMAGES message handler. */
 export function registerImageSearchHandlers(ctx: BackgroundContext): void {
@@ -56,7 +39,11 @@ export function registerImageSearchHandlers(ctx: BackgroundContext): void {
 
       const url = buildGoogleImagesUrl(term);
       try {
-        const response = await fetchWithTimeout(url, FETCH_IMAGES_TIMEOUT_MS);
+        const response = await fetchWithTimeout(
+          url,
+          { method: 'GET', headers: { 'User-Agent': DESKTOP_USER_AGENT } },
+          FETCH_IMAGES_TIMEOUT_MS,
+        );
         if (!response.ok) {
           return { success: false, error: `Google Images HTTP ${response.status}` };
         }

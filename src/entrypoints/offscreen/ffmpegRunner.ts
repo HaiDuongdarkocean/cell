@@ -72,7 +72,6 @@ export function setParallelSettings(
   settings: Pick<Settings, 'parallelConversion' | 'manualWorkerCount' | 'parallelFallback'>,
 ): void {
   parallelSettings = settings;
-  
 }
 
 /**
