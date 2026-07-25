@@ -88,7 +88,8 @@
 
 .cell-popup__content {
   flex: 1 1 auto;
-  overflow: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1084,13 +1085,21 @@
   color: var(--color-text-muted);
 }
 
-/* === Block: cell-active-entry (spec redesign v3 — flex column) === */
+/* === Block: cell-active-entry (multi-candidate stacked layout) === */
 .cell-active-entry {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
+}
+
+/* Separator between stacked candidates — border on all but the first. */
+.cell-active-entry + .cell-active-entry {
+  border-top: 1px solid var(--color-border);
+}
+
+/* Active candidate gets a subtle left accent. */
+.cell-active-entry--active {
+  box-shadow: inset 2px 0 0 var(--color-primary);
 }
 
 /* === Block: cell-materials (toolbar slot inside active entry) === */

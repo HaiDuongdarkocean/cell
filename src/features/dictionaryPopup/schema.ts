@@ -214,7 +214,7 @@ export const TtsFetchAudioPayloadSchema = z.object({
 });
 
 export const TtsFetchAudioResponseSchema = z.object({
-  url: z.string().url(),
+  url: z.string().min(1),
 });
 
 // === Media URL fetch (FETCH_MEDIA_URL) — fetch external URL via background (CSP bypass) ===

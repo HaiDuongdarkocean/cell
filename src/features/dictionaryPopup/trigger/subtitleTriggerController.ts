@@ -30,7 +30,6 @@ const DATA_END = 'data-cell-end';
 /** Check if a modifier key matches the trigger mode.
  *  - click: no modifier (any click triggers).
  *  - hover: no modifier (any hover triggers).
- *  - orbital: no modifier (hover-only; pointer hover triggers).
  *  - hover-ctrl/shift/alt: matching modifier must be held.
  */
 function modifierMatches(mode: TriggerMode, e: MouseEvent): boolean {

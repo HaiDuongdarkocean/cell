@@ -28,7 +28,7 @@ import {
   DraftAutosaver,
   type CardDraft,
 } from '../state/cardDraft';
-import { fetchUrlAsMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
+import { fetchUrlAsMediaFile, fetchMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
 import { translateSentence } from '../media/translation';
@@ -327,21 +327,21 @@ export function useCardCreatorState(
         const fetchedImages: MediaFile[] = [];
         for (const audioUrl of prefill?.wordAudioUrls ?? []) {
           try {
-            fetchedWordAudios.push(await fetchUrlAsMediaFile(audioUrl, 'audio'));
+            fetchedWordAudios.push(await fetchMediaFile(audioUrl, 'audio'));
           } catch {
             pushToast('warning', `Could not fetch word audio: ${audioUrl}`);
           }
         }
         for (const audioUrl of prefill?.sentenceAudioUrls ?? []) {
           try {
-            fetchedSentenceAudios.push(await fetchUrlAsMediaFile(audioUrl, 'audio'));
+            fetchedSentenceAudios.push(await fetchMediaFile(audioUrl, 'audio'));
           } catch {
             pushToast('warning', `Could not fetch sentence audio: ${audioUrl}`);
           }
         }
         for (const imageUrl of prefill?.imageUrls ?? []) {
           try {
-            fetchedImages.push(await fetchUrlAsMediaFile(imageUrl, 'image'));
+            fetchedImages.push(await fetchMediaFile(imageUrl, 'image'));
           } catch {
             pushToast('warning', `Could not fetch image: ${imageUrl}`);
           }

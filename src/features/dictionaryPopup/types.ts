@@ -254,10 +254,6 @@ export interface TtsFetchAudioResponse {
   readonly url: string;
 }
 
-export interface FetchMediaUrlResponse {
-  readonly url: string;
-}
-
 export interface QuickAddPayloadMessage extends QuickAddPayload {
   readonly tabId: number;
 }
