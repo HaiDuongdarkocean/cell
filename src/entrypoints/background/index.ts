@@ -73,6 +73,7 @@ import { registerTtsHandlers } from './handlers/tts';
 import { registerTtsFetchAudioHandlers } from './handlers/ttsFetchAudio';
 import { registerForvoAudioHandlers } from './handlers/forvoAudio';
 import { registerImageSearchHandlers } from './handlers/images';
+import { registerFetchMediaUrlHandlers } from './handlers/fetchMediaUrl';
 import { registerScreenshotHandlers } from './handlers/screenshot';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
 import type { MessageHandler } from '@/entities/message';
@@ -236,6 +237,7 @@ export class BackgroundService implements BackgroundContext {
     registerTtsFetchAudioHandlers(this);
     registerForvoAudioHandlers(this);
     registerImageSearchHandlers(this);
+    registerFetchMediaUrlHandlers(this);
     registerScreenshotHandlers(this);
   }
 

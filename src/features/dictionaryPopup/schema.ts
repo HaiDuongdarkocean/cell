@@ -217,6 +217,18 @@ export const TtsFetchAudioResponseSchema = z.object({
   url: z.string().url(),
 });
 
+// === Media URL fetch (FETCH_MEDIA_URL) — fetch external URL via background (CSP bypass) ===
+
+export const FetchMediaUrlPayloadSchema = z.object({
+  tabId: z.number().int(),
+  url: z.string().url(),
+  kind: z.enum(['image', 'audio']),
+});
+
+export const FetchMediaUrlResponseSchema = z.object({
+  url: z.string(),
+});
+
 // === Image fetch (spec §9.4 B — FETCH_IMAGES) ===
 
 export const FetchImagesPayloadSchema = z.object({
