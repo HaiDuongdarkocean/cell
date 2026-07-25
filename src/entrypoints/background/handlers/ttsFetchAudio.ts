@@ -5,9 +5,8 @@
  * endpoint. Background SW fetch bypasses CORS (host_permissions <all_urls>).
  * Same pattern as the TRANSLATE handler (ADR-021 D2).
  *
- * The returned URL is a blob: URL created from the fetched audio data. The
- * caller (content script) uses fetchUrlAsMediaFile to convert it to a
- * MediaFile for the Card Creator / Quick Add.
+ * Returns a data: URL (base64) so the content script can consume it
+ * directly — blob: URLs are SW-scoped and not shareable across contexts.
  *
  * Text length limit: Google Translate TTS accepts ~200 chars per request.
  * Longer text is truncated to avoid HTTP 400.
@@ -36,6 +35,16 @@ function buildTtsUrl(text: string, langCode: string): string {
   return `${GOOGLE_TTS_ENDPOINT}?${params.toString()}`;
 }
 
+/** Convert an ArrayBuffer to a base64 string. */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]!);
+  }
+  return btoa(binary);
+}
+
 /** Register the TTS_FETCH_AUDIO message handler. */
 export function registerTtsFetchAudioHandlers(ctx: BackgroundContext): void {
   ctx.on(MESSAGE_TYPES.TTS_FETCH_AUDIO, async (request): Promise<MessageResponse<TtsFetchAudioResponse>> => {
@@ -54,12 +63,13 @@ export function registerTtsFetchAudioHandlers(ctx: BackgroundContext): void {
       if (!response.ok) {
         return { success: false, error: `Google TTS HTTP ${response.status}` };
       }
-      const blob = await response.blob();
-      if (blob.size === 0) {
+      const arrayBuffer = await response.arrayBuffer();
+      if (arrayBuffer.byteLength === 0) {
         return { success: false, error: 'Google TTS returned empty audio' };
       }
-      const blobUrl = URL.createObjectURL(blob);
-      return { success: true, data: { url: blobUrl } };
+      const base64 = arrayBufferToBase64(arrayBuffer);
+      const dataUrl = `data:audio/mpeg;base64,${base64}`;
+      return { success: true, data: { url: dataUrl } };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return { success: false, error: `TTS audio fetch failed: ${msg}` };

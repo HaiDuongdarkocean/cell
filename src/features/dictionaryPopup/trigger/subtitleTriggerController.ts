@@ -38,7 +38,6 @@ function modifierMatches(mode: TriggerMode, e: MouseEvent): boolean {
     case 'hover-ctrl': return e.ctrlKey;
     case 'hover-shift': return e.shiftKey;
     case 'hover-alt': return e.altKey;
-    case 'orbital':
     case 'hover':
     case 'click':
     default:
@@ -251,10 +250,7 @@ export class SubtitleTriggerController {
     span.addEventListener('mouseenter', this.boundHoverEnter);
     span.addEventListener('mouseleave', this.boundHoverLeave);
     // Click fallback for hover modifier modes (touch/accessibility).
-    // Orbital is hover-only: no click listener per spec.
-    if (mode !== 'orbital') {
-      span.addEventListener('click', this.boundClick);
-    }
+    span.addEventListener('click', this.boundClick);
   }
 
   /** Remove all listeners and clear timers (does NOT cancel in-flight lookup or hide popup). */

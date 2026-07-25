@@ -217,10 +217,9 @@ function isBlockContainer(el: HTMLElement): boolean {
   return ['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'TD'].includes(el.tagName);
 }
 
-/** Create a top-level web-text dictionary controller. */
 /** Format raw definition strings for Card Creator / Quick Add:
  *  - <br> → \n (line breaks; <br><br> → \n\n = blank line between senses)
- *  - N. (numbered sense markers) → • (bullet)
+ *  - N. (numbered sense markers) → • (bullet, with decimal lookahead)
  *  - Each definition separated by exactly one blank line (\n\n)
  *  - No trailing whitespace at the end
  *  No POS splitting — raw text stays intact, compatible with any dictionary format. */
@@ -228,7 +227,8 @@ export function formatDefinitions(rawDefinitions: readonly string[]): string {
   return rawDefinitions
     .map((d) => d.replace(/<br\s*\/?>/gi, '\n').trim())
     .join('\n\n')
-    .replace(/^[ \t]*(\d+)\.[ \t]*/gm, '• ')
+    .replace(/^[ \t]*(\d+)\.(?!\d)[ \t]*/gm, '• ')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
@@ -910,7 +910,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           try {
             const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
               type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-              payload: { tabId: 0, text: prefill.contextSentence!, langCode: sourceLang },
+              payload: { tabId: 0, text: prefill.contextSentence!.slice(0, 200), langCode: fromSubtitle ? sourceLang : prefill.langCode },
             });
             if (res?.success && res.data?.url) {
               sentenceAudioUrls = [res.data.url];
@@ -1044,7 +1044,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           try {
             const res = await sendMessage<MessageResponse<TtsFetchAudioResponse>>({
               type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-              payload: { tabId: 0, text: prefill.contextSentence!, langCode: sourceLang },
+              payload: { tabId: 0, text: prefill.contextSentence!.slice(0, 200), langCode: fromSubtitle ? sourceLang : prefill.langCode },
             });
             if (res?.success && res.data?.url) {
               sentenceAudioUrls = [res.data.url];
