@@ -3,8 +3,6 @@ import { convertAssToSrt } from '@/shared/lib/parsers/assToSrt';
 import { convertVttToSrt } from '@/shared/lib/parsers/vttToSrt';
 import { convertTtmlToSrt } from '@/shared/lib/parsers/ttmlToSrt';
 import { normalizeSrt } from '@/shared/lib/parsers/srtNormalizer';
-import { ConversionTimer } from '@/features/transmux/merging/conversionTimer';
-import { planParallelConversion } from '@/features/transmux/planning/parallelPlanner';
 import { generateFileName, resolveFilenameBase, buildSubtitleFileName } from '@/shared/utils/fileUtils';
 import type {
   ByteRange,
@@ -24,7 +22,7 @@ import {
   MIN_SEGMENT_CONCURRENCY,
   MAX_SEGMENT_CONCURRENCY,
 } from '@/shared/config/config';
-import type { ConvertToMp4Mode, Settings, FilenameSource } from '@/entities/media';
+import type { ConvertToMp4Mode, FilenameSource } from '@/entities/media';
 import {
   ensureDownloadSubdir,
   createOpfsWriter,
@@ -168,14 +166,6 @@ export class Downloader {
    */
   private segmentConcurrency: number = DEFAULT_SEGMENT_CONCURRENCY;
   /**
-   * Current settings for parallel conversion planning. Updated via
-   * `setParallelSettings()` when the user changes settings.
-   */
-  private parallelSettings: Pick<Settings, 'parallelConversion' | 'manualWorkerCount'> = {
-    parallelConversion: 'auto',
-    manualWorkerCount: 4,
-  };
-  /**
    * Segment byte ranges for the most recent download. Keyed by downloadId.
    * Used by the parallel conversion engine to split `input.ts` at safe
    * segment boundaries. Populated during `downloadM3u8Streaming`.
@@ -258,16 +248,6 @@ export class Downloader {
       MIN_SEGMENT_CONCURRENCY,
       Math.min(MAX_SEGMENT_CONCURRENCY, count || DEFAULT_SEGMENT_CONCURRENCY),
     );
-  }
-
-  /**
-   * Update parallel conversion settings. Called when the user changes
-   * settings via the popup. Used for dry-run planning (Task 9).
-   */
-  setParallelSettings(
-    settings: Pick<Settings, 'parallelConversion' | 'manualWorkerCount'>,
-  ): void {
-    this.parallelSettings = settings;
   }
 
   /**
@@ -637,7 +617,6 @@ export class Downloader {
    */
   async saveBlob(blob: Blob, filename: string): Promise<void> {
     const url = await blobToDataUrl(blob);
-    console.log(`[downloader] saveBlob: filename="${filename}", blobType="${blob.type}", blobSize=${blob.size}, urlPrefix="${url.slice(0, 50)}..."`);
     // Set pendingFilename BEFORE calling chrome.downloads.download so the
     // onDeterminingFilename listener (registered in background init) can
     // force Edge to use it. Edge ignores the `filename` param for data: URLs.
@@ -648,13 +627,10 @@ export class Downloader {
         filename,
         saveAs: false,
       });
-      console.log(`[downloader] saveBlob: download started id=${downloadId}, requested filename="${filename}"`);
-      // Verify what filename Edge actually used
-      searchDownloads({ id: downloadId }).then((items) => {
-        if (items.length > 0) {
-          console.log(`[downloader] saveBlob: ACTUAL filename="${items[0].filename}", mime="${items[0].mime}"`);
-        }
-      }).catch((err) => console.warn('[downloader] Failed to verify download filename:', err));
+      // Verify what filename Edge actually used.
+      searchDownloads({ id: downloadId }).catch((err) =>
+        console.warn('[downloader] Failed to verify download filename:', err),
+      );
     } catch (err) {
       this.pendingFilename = null;
       console.error(`[downloader] saveBlob FAILED for filename="${filename}":`, err);
@@ -768,13 +744,9 @@ export class Downloader {
     playlist: M3u8Playlist,
   ): Promise<void> {
     const segments = playlist.segments;
-    const totalSegments = segments.length;
     const dirHandle = await ensureDownloadSubdir(downloadId);
     let totalBytes = 0;
     const segmentRanges: SegmentRange[] = [];
-    const timer = new ConversionTimer(downloadId);
-    timer.start('download');
-    const downloadStartedAt = performance.now();
 
     // --- AES-128 decryption setup ---
     // If the playlist is encrypted, fetch the key once before the segment loop.
@@ -782,13 +754,11 @@ export class Downloader {
     let aesKey: CryptoKey | undefined;
     if (playlist.encryption && playlist.encryption.method === 'AES-128') {
       this.throwIfCancelled(downloadId);
-      console.log(`[downloader] Playlist is AES-128 encrypted, fetching key: ${playlist.encryption.keyUri}`);
       aesKey = await this.fetchKey(
         playlist.encryption.keyUri,
         video.tabUrl,
         downloadId,
       );
-      console.log('[downloader] AES-128 key fetched and cached');
     }
 
     // --- fMP4 / CMAF setup ---
@@ -801,7 +771,6 @@ export class Downloader {
 
     if (isFmp4 && playlist.initSegment) {
       this.throwIfCancelled(downloadId);
-      console.log(`[downloader] fMP4 playlist detected, fetching init segment: ${playlist.initSegment.uri}`);
       const initBlob = await this.fetchSegmentWithRange(
         playlist.initSegment.uri,
         video.tabUrl,
@@ -815,7 +784,6 @@ export class Downloader {
       } finally {
         await initWriter.close();
       }
-      console.log(`[downloader] Init segment written (${initBlob.size} bytes)`);
     }
 
     // Phase 1: Fetch segments in parallel batches, write sequentially to OPFS
@@ -837,25 +805,17 @@ export class Downloader {
       if (s.discontinuity) sectionIndex++;
       return sectionIndex % 2 === 0;
     });
-    const skippedAds = totalSegments - contentSegments.length;
-    if (skippedAds > 0) {
-      console.log(`[downloader] Skipping ${skippedAds} ad segments (${Math.floor(sectionIndex / 2)} ad breaks detected)`);
-    }
     if (contentSegments.length === 0) {
       throw new Error('All segments are in ad breaks — no content to download');
     }
     const effectiveTotal = contentSegments.length;
 
-    console.log(
-      `[downloader] Starting parallel download: ${effectiveTotal} segments (${skippedAds} ads skipped), concurrency=${this.segmentConcurrency}`,
-    );
     const writer = await createOpfsWriter(dirHandle, opfsFilename);
     try {
       for (let start = 0; start < effectiveTotal; start += this.segmentConcurrency) {
         this.throwIfCancelled(downloadId);
 
         const batch = contentSegments.slice(start, start + this.segmentConcurrency);
-        const batchStart = performance.now();
 
         // Fetch all segments in the batch concurrently.
         // Use fetchSegmentWithRange for byte-range support.
@@ -864,8 +824,6 @@ export class Downloader {
             this.fetchSegmentWithRange(segment.url, video.tabUrl, segment.byteRange),
           ),
         );
-
-        const fetchMs = Math.round(performance.now() - batchStart);
 
         // Write in original playlist order.
         for (let j = 0; j < blobs.length; j++) {
@@ -920,23 +878,11 @@ export class Downloader {
           this.reportProgress(downloadId, 'downloading', pct, current, effectiveTotal, totalBytes, totalBytes);
         }
 
-        const batchEnd = start + blobs.length;
-        console.log(
-          `[downloader] Fetched+wrote batch ${start}-${batchEnd - 1} in ${fetchMs}ms, total=${totalBytes} bytes`,
-        );
       }
     } finally {
       await writer.close();
     }
 
-    const downloadMs = Math.round(performance.now() - downloadStartedAt);
-    timer.end('download');
-    console.log(
-      `[downloader] Downloaded ${totalSegments} segments (${totalBytes} bytes) in ${downloadMs}ms`,
-    );
-    console.log(
-      `[downloader] Recorded ${segmentRanges.length} segment ranges for ${downloadId}`,
-    );
 
     // Store segment ranges for this download so the conversion phase
     // (and future parallel engine) can access them.
@@ -961,17 +907,6 @@ export class Downloader {
     // Determine whether to attempt conversion based on mode + size.
     const shouldConvert = this.shouldAttemptConversion(totalBytes);
 
-    // Dry-run parallel planning: log what would happen without enabling
-    // parallel. This is diagnostic only — the actual conversion still
-    // uses the sequential transmuxer.
-    const parallelPlan = planParallelConversion(
-      this.parallelSettings,
-      segmentRanges,
-      totalBytes,
-      typeof navigator !== 'undefined' ? navigator.hardwareConcurrency : undefined,
-    );
-    console.log(parallelPlan.summary);
-
     // Phase 2: Save the file.
     //
     // For fMP4 (.m4s) playlists: the concatenated init + segments already form
@@ -989,24 +924,17 @@ export class Downloader {
         'mp4',
       );
       this.throwIfCancelled(downloadId);
-      timer.start('save');
       await this.saveOpfsFile(
         downloadId,
         opfsFilename,
         savedFilename,
         outputMimeType,
       );
-      timer.end('save');
-      console.log(`[downloader] fMP4 saved directly as .mp4 (${totalBytes} bytes, no transmux)`);
     } else if (shouldConvert && this.convertCallback) {
       this.reportProgress(downloadId, 'converting', 85, undefined, undefined, totalBytes, totalBytes);
-      timer.start('convert');
       const convertStartedAt = performance.now();
       try {
         const result = await this.convertCallback(dirHandle, downloadId);
-        const convertMs = Math.round(performance.now() - convertStartedAt);
-        timer.end('convert');
-        console.log(`[downloader] Conversion succeeded in ${convertMs}ms`);
         savedFilename = generateFileName(
           resolveFilenameBase(this.filenameSource, video.title, video.tabUrl || video.url),
           'mp4',
@@ -1014,18 +942,14 @@ export class Downloader {
         this.reportProgress(downloadId, 'converting', 98, undefined, undefined, totalBytes, totalBytes);
 
         this.throwIfCancelled(downloadId);
-        timer.start('save');
         await this.saveOpfsFile(
           downloadId,
           result.outputName,
           savedFilename,
           result.mimeType,
         );
-        timer.end('save');
       } catch (convertError) {
         const convertMs = Math.round(performance.now() - convertStartedAt);
-        timer.end('convert');
-        timer.start('fallback');
         console.warn(
           `[downloader] MP4 conversion failed after ${convertMs}ms for ${downloadId}, saving .ts fallback:`,
           convertError instanceof Error ? convertError.message : convertError,
@@ -1042,7 +966,6 @@ export class Downloader {
           savedFilename,
           'video/mp2t',
         );
-        timer.end('fallback');
       }
     } else {
       // No conversion: save .ts directly from OPFS.
@@ -1062,14 +985,11 @@ export class Downloader {
     this.throwIfCancelled(downloadId);
 
     // Phase 3: Cleanup OPFS temp files.
-    timer.start('cleanup');
     await deleteDownloadSubdir(downloadId).catch((err: unknown) => {
       console.warn(`[downloader] OPFS cleanup failed for ${downloadId}:`, err);
     });
-    timer.end('cleanup');
     this.segmentRangesMap.delete(downloadId);
 
-    timer.logSummary();
     this.reportProgress(downloadId, 'done', 100);
   }
 
