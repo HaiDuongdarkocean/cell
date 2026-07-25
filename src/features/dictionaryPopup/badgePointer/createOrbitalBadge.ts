@@ -689,6 +689,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       if (moveRaf) { cancelAnimationFrame(moveRaf); moveRaf = 0; }
       if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
       if (persistRaf) { cancelAnimationFrame(persistRaf); persistRaf = 0; }
+      if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
       settingsMount?.unmount();
       settingsMount = null;
       themeCleanup?.();
