@@ -107,7 +107,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     border: none;
     border-radius: var(--radius-full);
     background: rgba(var(--color-surface-rgb), var(--sb-bg-opacity, 0.2));
-    color: rgba(var(--color-foreground-rgb), var(--sb-text-opacity, 1));
+    color: rgba(var(--color-text-rgb), var(--sb-text-opacity, 1));
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -161,7 +161,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     labelFeather.style.background = 'rgba(var(--color-background-rgb), 0.25)';
   });
   label.addEventListener('mouseleave', () => {
-    label.style.color = 'rgba(var(--color-foreground-rgb), var(--sb-text-opacity, 1))';
+    label.style.color = 'rgba(var(--color-text-rgb), var(--sb-text-opacity, 1))';
     labelFeather.style.background = 'rgba(var(--color-background-rgb), 0.1)';
   });
   // Focus ring handled by CSS :focus-visible (WCAG 2.4.7) — no JS outline.
