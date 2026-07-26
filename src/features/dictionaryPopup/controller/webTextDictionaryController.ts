@@ -32,7 +32,7 @@ import {
 } from '@/features/dictionaryPopup/sentence/sentenceModule';
 import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { createWordHighlight, createSentenceHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
-import { createOrbitalBadge, type OrbitalBadge, type PointerPreset } from '@/features/dictionaryPopup/badgePointer';
+import { createOrbitalBadge, type OrbitalBadge, type OrbitalBadgeOptions, type PointerPreset } from '@/features/dictionaryPopup/badgePointer';
 
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -81,15 +81,16 @@ export interface WebTextDictionaryControllerDeps {
   /** Get the locally cached word status from the tokenize controller, used as a
    *  fallback when the background DB read races or fails. */
   readonly getTokenStatus?: (term: string) => WordStatus;
-  /** Settings panel state + callbacks for the orbital badge's integrated
-   *  SettingsDialog (ADR-061). When provided, single click on the badge opens
-   *  the full settings dialog with a Tokenize section. */
+  /** Tokenize panel state + callbacks forwarded to the universal panel's
+   *  Settings tab (ADR-061/065). */
   readonly panel?: {
     readonly getState: () => { enabled: boolean; showStatus: boolean; showFrequency: boolean };
     readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
     readonly onOpenDictionary: () => void;
     readonly subscribe: (cb: (state: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void) => () => void;
   };
+  /** Generic panel controller toggled by the orbital badge (ADR-065). */
+  readonly panelController?: OrbitalBadgeOptions['panelController'];
 }
 
 /** Video/cue configuration for subtitle path. Can be set after construction. */
@@ -1203,12 +1204,13 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           onOpenDictionary: () => deps.panel!.onOpenDictionary(),
           subscribe: (cb) => deps.panel!.subscribe(cb),
         } : undefined,
+        panelController: deps.panelController,
       });
       orbitalBadgeSize = trigger.size;
       orbitalBadgeScale = trigger.pointerScale;
-      // ADR-061: tokenize state subscription is handled inside
-      // mountSettingsDialog (via options.tokenize.subscribe) — no need for
-      // an external panelUnsubscribe here.
+      // ADR-061/065: tokenize state is forwarded through `options.panel`; the
+      // generic `panelController` is toggled by the badge and manages its own
+      // subscription lifecycle.
     }
   }
 
