@@ -81,10 +81,8 @@ export function createUniversalPanelController(
       }
       if (!isOpen) {
         isOpen = true;
-        options.onOpen?.(activeTab);
-      } else {
-        options.onOpen?.(activeTab);
       }
+      options.onOpen?.(activeTab);
     },
     close: () => {
       if (unmounted || !isOpen) return;

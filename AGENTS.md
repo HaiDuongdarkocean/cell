@@ -159,7 +159,7 @@ Sau mỗi lần sửa code (file `.ts`/`.tsx`/`.css`/`.json` trong `src/`):
 ```bash
 npm run typecheck
 npm run test:unit
-# npm run build
+npm run build
 npx vite build --mode development
 ```
 

@@ -204,7 +204,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
             subscribe: options.panel.subscribe,
           }
         : undefined,
-      onOpenDictionary: () => { void controller.open('dictionary'); },
+      onOpenDictionary: options.panel?.onOpenDictionary ?? (() => { void controller.open('dictionary'); }),
     },
   ) as ReactElement;
 

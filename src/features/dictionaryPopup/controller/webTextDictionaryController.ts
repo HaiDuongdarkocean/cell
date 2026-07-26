@@ -82,14 +82,7 @@ export interface WebTextDictionaryControllerDeps {
   /** Get the locally cached word status from the tokenize controller, used as a
    *  fallback when the background DB read races or fails. */
   readonly getTokenStatus?: (term: string) => WordStatus;
-  /** Tokenize panel state + callbacks forwarded to the universal panel's
-   *  Settings tab (ADR-061/065). */
-  readonly panel?: {
-    readonly getState: () => { enabled: boolean; showStatus: boolean; showFrequency: boolean };
-    readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
-    readonly onOpenDictionary: () => void;
-    readonly subscribe: (cb: (state: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void) => () => void;
-  };
+
   /** Generic panel controller toggled by the orbital badge (ADR-065).
    *  When present, Send to Card routes to the integrated universal panel
    *  instead of opening a standalone Card Creator dialog. */
@@ -1222,19 +1215,12 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onPresetChange: (preset) => { persistBadgePointerPreset(preset); },
         onTipReady: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
         onTipHover: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
-        panel: deps.panel ? {
-          getState: () => deps.panel!.getState(),
-          onToggle: (key) => deps.panel!.onToggle(key),
-          onOpenDictionary: () => deps.panel!.onOpenDictionary(),
-          subscribe: (cb) => deps.panel!.subscribe(cb),
-        } : undefined,
         panelController: deps.panelController,
       });
       orbitalBadgeSize = trigger.size;
       orbitalBadgeScale = trigger.pointerScale;
-      // ADR-061/065: tokenize state is forwarded through `options.panel`; the
-      // generic `panelController` is toggled by the badge and manages its own
-      // subscription lifecycle.
+      // ADR-065: the generic `panelController` is toggled by the badge and
+      // manages its own subscription lifecycle.
     }
   }
 
