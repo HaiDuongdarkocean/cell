@@ -27,6 +27,7 @@ const CELL_TOKEN_MAP: Record<string, string> = {
   '--cell-token-freq-advanced-fg': '--color-token-freq-advanced-fg',
   '--cell-token-freq-rare-bg': '--color-token-freq-rare-bg',
   '--cell-token-freq-rare-fg': '--color-token-freq-rare-fg',
+  '--cell-token-freq-border': '--color-token-freq-border',
 };
 
 /** Static overlay text token used for the white status-bar highlight. */
@@ -141,22 +142,27 @@ ${buildVariables()}
 .js-cell-token.js-cell-token--frequency-core {
   background-color: var(--cell-token-freq-core-bg) !important;
   color: var(--cell-token-freq-core-fg) !important;
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 .js-cell-token.js-cell-token--frequency-common {
   background-color: var(--cell-token-freq-common-bg) !important;
   color: var(--cell-token-freq-common-fg) !important;
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 .js-cell-token.js-cell-token--frequency-general {
   background-color: var(--cell-token-freq-general-bg) !important;
   color: var(--cell-token-freq-general-fg) !important;
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 .js-cell-token.js-cell-token--frequency-advanced {
   background-color: var(--cell-token-freq-advanced-bg) !important;
   color: var(--cell-token-freq-advanced-fg) !important;
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 .js-cell-token.js-cell-token--frequency-rare {
   background-color: var(--cell-token-freq-rare-bg) !important;
   color: var(--cell-token-freq-rare-fg) !important;
+  box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 
 /* Status bar: 2px inset underline in the semantic color plus a 2px white
