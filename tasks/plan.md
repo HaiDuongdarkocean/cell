@@ -124,8 +124,8 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 8: Frequency pills dark mode visibility
 - **Mô tả**: Bổ sung border/outline cho frequency bands trong dark mode để không bị blend vào host page.
 - **Acceptance criteria**:
-  - [ ] Frequency tokens trong dark mode có border hoặc shadow nhẹ.
-  - [ ] Hiển thị rõ trên nền xám đậm.
+  - [x] Frequency tokens trong dark mode có border hoặc shadow nhẹ.
+  - [x] Hiển thị rõ trên nền xám đậm.
 - **Verification**: `tokenizeBlock` tests, manual dark mode preview.
 - **Files**: `src/shared/styles/tokens.json`, `src/features/tokenize/ui/tokenSpanCss.ts`.
 - **Scope**: S.
@@ -133,8 +133,8 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 9: Theme transition animation
 - **Mô tả**: Thêm `transition` mượt khi chuyển dark/light mode trên root element (color, background-color, border-color), tôn trọng `prefers-reduced-motion`.
 - **Acceptance criteria**:
-  - [ ] Theme switch có transition 150-200ms.
-  - [ ] Giảm motion khi user bật reduced motion.
+  - [x] Theme switch có transition 150-200ms.
+  - [x] Giảm motion khi user bật reduced motion.
 - **Verification**: manual toggle in popup theme panel.
 - **Files**: `src/shared/styles/global.css`, `src/features/theme/ui/ThemeProvider.tsx`.
 - **Scope**: S.
@@ -142,16 +142,16 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 10: Contrast audit & fix for dark mode
 - **Mô tả**: Chạy audit tự động trên tất cả components trong dark mode, sửa các cặp màu không đạt 4.5:1.
 - **Acceptance criteria**:
-  - [ ] Tất cả text/background combinations đạt WCAG AA.
-  - [ ] Các components đặc biệt (Alert, Badge, frequency) cũng pass.
+  - [x] Tất cả text/background combinations đạt WCAG AA.
+  - [x] Các components đặc biệt (Alert, Badge, frequency) cũng pass.
 - **Verification**: contrast validator tests + subagent review.
 - **Files**: `src/shared/styles/tokens.json`, `src/shared/ui/**/*.module.css`.
 - **Scope**: M.
 
 ### Checkpoint 3
-- [ ] Dark mode tests pass
-- [ ] Build pass
-- [ ] Subagent review Phase 3 pass
+- [x] Dark mode tests pass
+- [x] Build pass
+- [x] Subagent review Phase 3 pass
 
 ### Phase 4: Behavior & accessibility
 
