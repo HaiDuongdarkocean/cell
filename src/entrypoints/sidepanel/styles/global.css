@@ -35,6 +35,21 @@ body {
   scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 
+/* Theme transition */
+html.theme-transitioning,
+html.theme-transitioning * {
+  transition: color 150ms var(--ease-in-out),
+              background-color 150ms var(--ease-in-out),
+              border-color 150ms var(--ease-in-out) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transitioning,
+  html.theme-transitioning * {
+    transition: none !important;
+  }
+}
+
 /* Focus visible */
 :focus-visible {
   outline: var(--space-0-5) solid var(--color-border-focus);

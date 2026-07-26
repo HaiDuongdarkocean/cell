@@ -148,8 +148,14 @@ function getContrastRatio(a, b) {
 function validateContrastPairs(mode, core, derived) {
   const pairs = [
     ['Text / Background', core.text, core.background],
+    ['Text / Surface', core.text, core.surface],
     ['Text Secondary / Background', core.textSecondary, core.background],
+    ['Text Muted / Background', derived['color-text-muted'], core.background],
+    ['Text Muted / Surface', derived['color-text-muted'], core.surface],
     ['Primary Foreground / Primary', derived['color-primary-foreground'], core.primary],
+    ['Primary Soft Foreground / Primary', derived['color-primary-foreground-soft'], core.primary],
+    ['Secondary Foreground / Secondary', derived['color-secondary-foreground'], derived['color-secondary']],
+    ['Accent Foreground / Accent', derived['color-accent-foreground'], derived['color-accent']],
     ['Card Foreground / Card', derived['color-card-foreground'], derived['color-card']],
     ['Popover Foreground / Popover', derived['color-popover-foreground'], derived['color-popover']],
     ['Muted Foreground / Muted', derived['color-muted-foreground'], derived['color-muted']],
@@ -157,6 +163,11 @@ function validateContrastPairs(mode, core, derived) {
     ['Foreground / Warning', derived['color-foreground'], core.warning],
     ['Inverse Text / Success', derived['color-text-inverse'], core.success],
     ['Inverse Text / Error', derived['color-text-inverse'], core.error],
+    ['Frequency Core / Core BG', derived['color-token-freq-core-fg'], derived['color-token-freq-core-bg']],
+    ['Frequency Common / Common BG', derived['color-token-freq-common-fg'], derived['color-token-freq-common-bg']],
+    ['Frequency General / General BG', derived['color-token-freq-general-fg'], derived['color-token-freq-general-bg']],
+    ['Frequency Advanced / Advanced BG', derived['color-token-freq-advanced-fg'], derived['color-token-freq-advanced-bg']],
+    ['Frequency Rare / Rare BG', derived['color-token-freq-rare-fg'], derived['color-token-freq-rare-bg']],
   ];
   const failures = [];
   for (const [label, fg, bg] of pairs) {

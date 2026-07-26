@@ -7,7 +7,7 @@
 //
 // Content-script KHÔNG dùng ThemeProvider (isolated world) — dùng themeTokens.ts.
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useThemeStore } from '@/stores/themeStore';
 import { applyTheme, resolveMode, registerSystemModeListener } from '@/features/theme/logic/themeManager';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
@@ -19,11 +19,14 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
+const THEME_TRANSITION_MS = 300;
+
 export function ThemeProvider({ children }: ThemeProviderProps): React.JSX.Element {
   const mode = useThemeStore((s) => s.mode);
   const config = useThemeStore((s) => s.config);
   const isLoaded = useThemeStore((s) => s.isLoaded);
   const init = useThemeStore((s) => s.init);
+  const isFirstApply = useRef(true);
 
   // Boot: init store once.
   useEffect(() => {
@@ -31,9 +34,27 @@ export function ThemeProvider({ children }: ThemeProviderProps): React.JSX.Eleme
   }, [init]);
 
   // Apply theme whenever mode/config changes (after init).
+  // Add a short transition class on subsequent changes so theme colors
+  // animate smoothly while respecting prefers-reduced-motion.
   useEffect(() => {
     if (!isLoaded) return;
+    const root = document.documentElement;
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!isFirstApply.current && !prefersReduced) {
+      root.classList.add('theme-transitioning');
+    }
+
     applyTheme(resolveMode(mode), config);
+
+    if (isFirstApply.current) {
+      isFirstApply.current = false;
+      return;
+    }
+
+    if (prefersReduced) return;
+    const timeout = setTimeout(() => root.classList.remove('theme-transitioning'), THEME_TRANSITION_MS);
+    return () => clearTimeout(timeout);
   }, [mode, config, isLoaded]);
 
   // System mode listener — re-apply when OS theme changes (only matters if mode='system').
