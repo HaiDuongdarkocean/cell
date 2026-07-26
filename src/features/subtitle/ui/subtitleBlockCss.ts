@@ -60,7 +60,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .block-body {
   display: grid;
-  grid-template-columns: var(--sb-cluster-width, 84px) 1fr var(--sb-cluster-width, 84px);
+  grid-template-columns: var(--sb-cluster-width, calc(var(--space-20) + var(--space-1))) 1fr var(--sb-cluster-width, calc(var(--space-20) + var(--space-1)));
   gap: var(--space-1);
   align-items: center;
   min-height: 0;
@@ -383,8 +383,8 @@ export const SUBTITLE_BLOCK_CSS = `
   font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 1px var(--space-1-5);
+  letter-spacing: var(--tracking-wide);
+  padding: calc(var(--space-0-5) / 2) var(--space-1-5);
   border-radius: var(--space-1);
   background: rgba(var(--overlay-text-rgb), 0.18);
   color: rgba(var(--overlay-text-rgb), 0.85);
@@ -812,7 +812,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-item--active {
-  padding: calc(var(--space-2) - 1px) calc(var(--space-3) - 1px);
+  padding: calc(var(--space-2) - var(--space-0-5) / 2) calc(var(--space-3) - var(--space-0-5) / 2);
 }
 
 .subtitle-manager-item--active.subtitle-manager-item--target {
@@ -880,7 +880,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-format-badge {
-  padding: 1px var(--space-1-5);
+  padding: calc(var(--space-0-5) / 2) var(--space-1-5);
   border-radius: var(--radius-sm);
   background: var(--color-surface-hover);
   font-weight: 600;
@@ -889,7 +889,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-asr-badge {
-  padding: 1px var(--space-1-5);
+  padding: calc(var(--space-0-5) / 2) var(--space-1-5);
   border-radius: var(--radius-sm);
   background: rgba(var(--color-warning-rgb), 0.15);
   color: var(--color-warning);
@@ -904,7 +904,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-translated-badge {
-  padding: 1px var(--space-1-5);
+  padding: calc(var(--space-0-5) / 2) var(--space-1-5);
   border-radius: var(--radius-sm);
   background: rgba(var(--color-warning-rgb), 0.15);
   color: var(--color-warning);
@@ -1046,7 +1046,7 @@ export const SUBTITLE_BLOCK_CSS = `
   user-select: none;
   font-size: var(--font-size-base);
   color: rgba(var(--overlay-text-rgb), 0.95);
-  text-shadow: 0 1px var(--space-1) rgba(var(--overlay-background-rgb), 0.8);
+  text-shadow: 0 calc(var(--space-0-5) / 2) var(--space-1) rgba(var(--overlay-background-rgb), 0.8);
   font-family: var(--font-family);
 }
 
