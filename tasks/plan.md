@@ -80,9 +80,9 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 4: Radius semantic rename
 - **Mô tả**: Đổi tên radius tokens: `radius-md` → `radius-pill`, `radius-lg` → `radius-card`, `radius-xl` → `radius-dialog`; cập nhật tất cả consumers và regenerate `tokens.css`.
 - **Acceptance criteria**:
-  - [ ] `tokens.json` có semantic radius mới.
-  - [ ] Tất cả components sử dụng đúng token mới.
-  - [ ] Build + generate tokens pass.
+  - [x] `tokens.json` có semantic radius mới.
+  - [x] Tất cả components sử dụng đúng token mới.
+  - [x] Build + generate tokens pass.
 - **Verification**: `npm run build`, grep `radius-md/lg/xl` không còn kết quả.
 - **Files**: `src/shared/styles/tokens.json`, `src/shared/ui/**/*.module.css`, `src/features/**/*.module.css`.
 - **Scope**: M.
@@ -90,8 +90,8 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 5: Optional shadow tokens
 - **Mô tả**: Bổ sung `shadow-floating`, `shadow-popover`, `shadow-modal` nhỏ gọn (0 1px 2px, v.v.) để dùng cho floating panels, tooltips, dialogs khi cần depth, giữ mặc định flat.
 - **Acceptance criteria**:
-  - [ ] `tokens.json` có shadow mới.
-  - [ ] Dialog / Drawer / BottomSheet / Tooltip có thể dùng shadow token mới (opt-in), mặc định vẫn none.
+  - [x] `tokens.json` có shadow mới.
+  - [x] Dialog / Drawer / BottomSheet / Tooltip có thể dùng shadow token mới (opt-in), mặc định vẫn none.
 - **Verification**: build, theme preview tests.
 - **Files**: `src/shared/styles/tokens.json`, `src/shared/ui/Dialog.module.css`, `src/shared/ui/Tooltip.module.css`, v.v.
 - **Scope**: S.
@@ -99,8 +99,8 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 6: Border hairline token
 - **Mô tả**: Thêm `--border-width-hairline: 1px` và thay mọi `1px solid` hardcode trong CSS bằng token này.
 - **Acceptance criteria**:
-  - [ ] `tokens.json` có `borderWidth.hairline`.
-  - [ ] Không còn hardcode `1px` cho border/divider trong shared CSS (trừ cases đặc biệt được ADR cho phép).
+  - [x] `tokens.json` có `borderWidth.hairline`.
+  - [x] Không còn hardcode `1px` cho border/divider trong shared CSS (trừ cases đặc biệt được ADR cho phép).
 - **Verification**: grep `1px solid` trong `src/shared/ui` giảm đáng kể.
 - **Files**: `src/shared/styles/tokens.json`, `src/shared/ui/**/*.module.css`.
 - **Scope**: M.
@@ -108,16 +108,16 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 7: Automated contrast validation
 - **Mô tả**: Thêm bước validate contrast vào `scripts/generate-tokens.js` hoặc test suite, kiểm tra từng cặp text/bg trong `tokens.json`.
 - **Acceptance criteria**:
-  - [ ] Script báo lỗi khi tổng hợp màu không đạt WCAG AA.
-  - [ ] Bao phủ cả light và dark mode.
+  - [x] Script báo lỗi khi tổng hợp màu không đạt WCAG AA.
+  - [x] Bao phủ cả light và dark mode.
 - **Verification**: `npm run build` hoặc test contrast mới pass.
 - **Files**: `scripts/generate-tokens.js` hoặc `src/features/theme/logic/contrastValidator.ts`.
 - **Scope**: M.
 
 ### Checkpoint 2
-- [ ] All Phase 2 tests pass
-- [ ] Build pass
-- [ ] Subagent review Phase 2 pass
+- [x] All Phase 2 tests pass
+- [x] Build pass
+- [x] Subagent review Phase 2 pass
 
 ### Phase 3: Dark/Light harmony
 
