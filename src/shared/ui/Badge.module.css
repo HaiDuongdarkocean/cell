@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  border: 1px solid transparent;
+  border: var(--border-width-hairline) solid transparent;
   border-radius: var(--badge-radius);
   font-family: var(--font-family);
   font-weight: var(--font-weight-medium);

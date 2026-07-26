@@ -17,7 +17,7 @@
   overflow: auto;
   background: var(--dialog-bg);
   color: var(--dialog-fg);
-  border: 1px solid var(--dialog-border);
+  border: var(--border-width-hairline) solid var(--dialog-border);
   border-radius: var(--dialog-radius);
   padding: var(--dialog-padding);
   box-shadow: var(--dialog-shadow);

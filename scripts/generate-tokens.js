@@ -75,6 +75,11 @@ function flattenStaticTokens(staticObj) {
     push(`shadow-${key}`, value);
   }
 
+  // borderWidth
+  for (const [key, value] of Object.entries(staticObj.borderWidth)) {
+    push(`border-width-${key}`, value);
+  }
+
   // motion
   for (const [key, value] of Object.entries(staticObj.motion)) {
     push(key, value);
@@ -122,6 +127,46 @@ function flattenComponentTokens(componentObj) {
   return lines.join('\n');
 }
 
+function getLuminance(hex) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0;
+  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function getContrastRatio(a, b) {
+  const l1 = getLuminance(a);
+  const l2 = getLuminance(b);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function validateContrastPairs(mode, core, derived) {
+  const pairs = [
+    ['Text / Background', core.text, core.background],
+    ['Text Secondary / Background', core.textSecondary, core.background],
+    ['Primary Foreground / Primary', derived['color-primary-foreground'], core.primary],
+    ['Card Foreground / Card', derived['color-card-foreground'], derived['color-card']],
+    ['Popover Foreground / Popover', derived['color-popover-foreground'], derived['color-popover']],
+    ['Muted Foreground / Muted', derived['color-muted-foreground'], derived['color-muted']],
+    ['Destructive Foreground / Destructive', derived['color-destructive-foreground'], derived['color-destructive']],
+    ['Foreground / Warning', derived['color-foreground'], core.warning],
+    ['Inverse Text / Success', derived['color-text-inverse'], core.success],
+    ['Inverse Text / Error', derived['color-text-inverse'], core.error],
+  ];
+  const failures = [];
+  for (const [label, fg, bg] of pairs) {
+    if (!fg || !bg || !fg.startsWith('#') || !bg.startsWith('#')) continue;
+    const ratio = getContrastRatio(fg, bg);
+    if (ratio < 4.5) failures.push(`${mode} ${label}: ${fg} on ${bg} = ${ratio.toFixed(2)}:1`);
+  }
+  return failures;
+}
+
 function buildColorBlock(core, derived, mode) {
   const lines = [`  color-scheme: ${mode};`];
   for (const key of CORE_COLOR_KEYS) {
@@ -148,6 +193,14 @@ async function main() {
   const componentBlock = flattenComponentTokens(tokens.component);
   const lightColorBlock = buildColorBlock(tokens.core.light, tokens.derived.light, 'light');
   const darkColorBlock = buildColorBlock(tokens.core.dark, tokens.derived.dark, 'dark');
+
+  const contrastFailures = [
+    ...validateContrastPairs('light', tokens.core.light, tokens.derived.light),
+    ...validateContrastPairs('dark', tokens.core.dark, tokens.derived.dark),
+  ];
+  if (contrastFailures.length) {
+    throw new Error(`WCAG AA contrast failures:\n${contrastFailures.join('\n')}`);
+  }
 
   // componentBlock is duplicated in [data-theme="dark"] because CSS custom
   // properties resolve at the element where they are DECLARED, not where they

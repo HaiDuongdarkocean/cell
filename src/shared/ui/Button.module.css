@@ -81,7 +81,7 @@
 .outline {
   background: transparent;
   color: var(--color-text);
-  border: 1px solid var(--button-outline-border);
+  border: var(--border-width-hairline) solid var(--button-outline-border);
 }
 
 .outline:hover {
