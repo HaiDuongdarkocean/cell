@@ -200,7 +200,7 @@ describe('buildStyleContent', () => {
     const css = buildStyleContent(DEFAULT_THEME_CONFIG);
     expect(css).toContain('--font-family');
     expect(css).toContain('--space-3');
-    expect(css).toContain('--radius-md');
+    expect(css).toContain('--radius-pill');
   });
 
   it('includes nav-cluster CSS', () => {

@@ -43,7 +43,7 @@
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: var(--color-warning-subtle);
   border: none;
   border-left: var(--space-1) solid var(--color-warning);

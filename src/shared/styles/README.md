@@ -39,7 +39,7 @@ import '@/shared/styles/tokens.css';
 |-----------|------|-------|
 | P1 Content-first | Flat, no shadow, hairline 1px border | `--shadow-*: none` |
 | P2 Alpha states | Hover=surface-hover, Selected=primary-subtle, Focus=2px ring | `--color-surface-hover`, `--color-primary-subtle` |
-| P3 Shape≠Color | Pill 18px (btn/input), Card 10px, Dialog 12px, Icon-btn full | `--radius-md`, `--radius-lg`, `--radius-xl`, `--radius-full` |
+| P3 Shape≠Color | Pill 18px (btn/input), Card 10px, Dialog 12px, Icon-btn full | `--radius-pill`, `--radius-card`, `--radius-dialog`, `--radius-full` |
 
 ## Hover pattern — UNIVERSAL
 

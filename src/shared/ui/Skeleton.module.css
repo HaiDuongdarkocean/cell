@@ -9,7 +9,7 @@
 }
 
 .rounded {
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-card);
 }
 
 .circle {

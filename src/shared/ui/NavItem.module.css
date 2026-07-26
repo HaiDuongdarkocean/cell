@@ -36,7 +36,7 @@
 .horizontal {
   flex-direction: row;
   padding: var(--space-1-5) var(--space-3);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-card);
 }
 
 .vertical {
@@ -44,7 +44,7 @@
   justify-content: center;
   width: 100%;
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-card);
 }
 
 .icon {

@@ -13,7 +13,7 @@
   gap: var(--space-1);
   padding: var(--space-3);
   border: var(--space-0-5) solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
   cursor: pointer;
   transition: border-color var(--transition-normal) ease, background var(--transition-normal) ease;

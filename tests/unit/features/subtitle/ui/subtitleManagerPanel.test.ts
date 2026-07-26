@@ -5,7 +5,7 @@ import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitleManagerPa
 beforeAll(() => {
   const style = document.createElement('style');
   style.textContent = `
-    .test-theme-root { --color-primary: #2563eb; --color-warning: #f59e0b; --color-background: #ffffff; --color-surface: #f8fafc; --color-surface-hover: #f1f5f9; --color-text: #0f172a; --color-text-secondary: #475569; --color-text-muted: #94a3b8; --color-border: #e2e8f0; --color-border-subtle: #f1f5f9; --font-size-xs: 12px; --font-size-sm: 13px; --font-size-base: 14px; --space-1: 4px; --space-2: 8px; --space-3: 12px; --radius-md: 8px; --radius-lg: 12px; --shadow-md: none; }
+    .test-theme-root { --color-primary: #2563eb; --color-warning: #f59e0b; --color-background: #ffffff; --color-surface: #f8fafc; --color-surface-hover: #f1f5f9; --color-text: #0f172a; --color-text-secondary: #475569; --color-text-muted: #94a3b8; --color-border: #e2e8f0; --color-border-subtle: #f1f5f9; --font-size-xs: 12px; --font-size-sm: 13px; --font-size-base: 14px; --space-1: 4px; --space-2: 8px; --space-3: 12px; --radius-pill: 8px; --radius-card: 12px; --shadow-md: none; }
   `;
   document.head.appendChild(style);
 });
