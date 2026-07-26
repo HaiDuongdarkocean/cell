@@ -49,6 +49,7 @@ const MAX_TAB_PANEL_CACHE_SIZE = 100;
 function pauseAllPopupAudios(): void {
   activePopupAudios.forEach((audio) => { audio.pause(); });
   activePopupAudios.clear();
+  stopCurrentHeaderAudio();
 }
 
 export interface PopupPointer {
@@ -392,10 +393,12 @@ export function showPopup(
     cache.imageSelection = state.imageSelection;
     cache.translations.set(state.cachedContextSentence, { translation: state.translation, selected: state.translationSelected });
     state.tabPanelCache.set(state.cachedResultTerm, cache);
-    if (state.tabPanelCache.size > MAX_TAB_PANEL_CACHE_SIZE) {
-      const firstKey = state.tabPanelCache.keys().next().value;
-      if (firstKey !== undefined) state.tabPanelCache.delete(firstKey);
-    }
+  }
+  // Evict oldest cache entry if over capacity, regardless of whether the
+  // previous term was saved, so the cache stays bounded in every path.
+  if (state.tabPanelCache.size > MAX_TAB_PANEL_CACHE_SIZE) {
+    const firstKey = state.tabPanelCache.keys().next().value;
+    if (firstKey !== undefined) state.tabPanelCache.delete(firstKey);
   }
 
   // Load cached data for the new term (if any). Audio/image are per term;
