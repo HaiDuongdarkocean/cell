@@ -73,6 +73,7 @@ docs/           # Tài liệu dự án
 │   └── 062-settings-panel-responsive-redesign.md # ADR-062: Settings dialog responsive redesign + strict 14/12px type scale
 │   └── 063-system-wide-type-scale-14-12.md # ADR-063: System-wide 14/12px type scale (SSOT)
 │   └── 064-hardcoded-px-to-tokens.md # ADR-064: Hardcoded px → design tokens (Slice 2)
+│   └── 065-universal-orbital-panel.md # ADR-065: Universal orbital panel — Dictionary + Settings tabs
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup
 │   ├── overlay-appearance-settings.md
@@ -134,6 +135,7 @@ docs/           # Tài liệu dự án
 │   ├── spec-tokenize-on-media.md      # Tokenize on media PRD (text page + subtitle, VDLT hybrid, 1GB RAM)
 │   ├── spec-predictive-viewport-tokenize.md # VDLT-Predict: 0 plain in viewport, direction overscan, cold-start
 │   └── spec-badge-pointer-dictionary-trigger.md # Orbital badge + moon pointer lookup trigger for mobile/tablet/fullscreen
+│   └── universal-orbital-panel.md # Universal orbital panel PRD: Dictionary + Settings tabs, integrated lookup + card creator
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md
