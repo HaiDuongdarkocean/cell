@@ -2,20 +2,20 @@
 
 ## Phase 0 — Foundation & Contracts
 
-- [ ] Task 0.1: Add `book-open` icon to `ICON_CATALOG`
-- [ ] Task 0.2: Add `STORAGE_KEYS.UNIVERSAL_PANEL_TAB`
-- [ ] Task 0.3: Create `features/universalPanel/` skeleton and types
-- [ ] Task 0.4: Extract `SettingsDialogContent` from `SettingsDialog`
-- [ ] Task 0.5: Refactor orbital badge click-outside and panel toggle
-- [ ] Checkpoint 0: typecheck + test:unit + build pass; verifier signs off
+- [x] Task 0.1: Add `book-open` icon to `ICON_CATALOG`
+- [x] Task 0.2: Add `STORAGE_KEYS.UNIVERSAL_PANEL_TAB`
+- [x] Task 0.3: Create `features/universalPanel/` skeleton and types
+- [x] Task 0.4: Extract `SettingsDialogContent` from `SettingsDialog`
+- [x] Task 0.5: Refactor orbital badge click-outside and panel toggle
+- [x] Checkpoint 0: typecheck + test:unit + build pass; verifier signs off
 
 ## Phase 1 — Universal Panel Shell
 
-- [ ] Task 1.1: Implement `mountUniversalPanel.ts`
-- [ ] Task 1.2: Implement `UniversalPanel.tsx` + `UniversalPanel.module.css`
-- [ ] Task 1.3: Implement `UniversalPanelController.ts` + tests
-- [ ] Task 1.4: Wire orbital badge to `mountUniversalPanel`
-- [ ] Checkpoint 1: panel opens/closes, tab switching, focus, mobile layout, tests pass
+- [x] Task 1.1: Implement `mountUniversalPanel.ts`
+- [x] Task 1.2: Implement `UniversalPanel.tsx` + `UniversalPanel.module.css`
+- [x] Task 1.3: Implement `UniversalPanelController.ts` + tests
+- [x] Task 1.4: Wire orbital badge to `mountUniversalPanel`
+- [x] Checkpoint 1: panel opens/closes, tab switching, focus, mobile layout, tests pass
 
 ## Phase 2 — Settings Tab
 
@@ -57,5 +57,5 @@
 - [ ] Task 7.2: Manual browser verification with DevTools
 - [ ] Task 7.3: Adversarial spec acceptance review
 - [ ] Task 7.4: Fix gaps and rerun verification until all SA pass
-- [ ] Task 7.5: Update `docs/2-architechture-system.md`
+- [x] Task 7.5: Update `docs/2-architechture-system.md`
 - [ ] Checkpoint 7: all SA pass, docs updated, build green

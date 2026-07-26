@@ -14,7 +14,7 @@ Build a universal side/bottom panel opened by the orbital badge. The panel has t
 - **External popup integration**: Add `stayOpen?: boolean` to card-creator action callbacks; the popup passes `stayOpen: true` when sending to the universal panel and calls the universal panel controller to open/focus the panel.
 - **Tab persistence**: `chrome.storage.session` under `STORAGE_KEYS.UNIVERSAL_PANEL_TAB`; default tab is `dictionary`.
 
-## Phase 0 — Foundation & Contracts
+## ✅ Phase 0 — Foundation & Contracts
 
 These tasks have no runtime dependency on each other and can run in parallel.
 
@@ -70,13 +70,13 @@ These tasks have no runtime dependency on each other and can run in parallel.
 - [ ] `onBadgeClick` for collapsed + panel open closes the panel.
 - [ ] Existing drag/expand/hover/tap behavior unchanged.
 
-**Checkpoint 0**
-- [ ] `npm run typecheck` passes.
-- [ ] `npm run test:unit` passes.
-- [ ] `npm run build` passes.
-- [ ] Verifier subagent (`subagent_explore`) confirms foundation files exist and contracts compile.
+**Checkpoint 0 ✅**
+- [x] `npm run typecheck` passes.
+- [x] `npm run test:unit` passes.
+- [x] `npm run build` passes.
+- [x] Verifier subagent (`subagent_explore`) confirms foundation files exist and contracts compile.
 
-## Phase 1 — Universal Panel Shell
+## ✅ Phase 1 — Universal Panel Shell
 
 ### Task 1.1: Implement `mountUniversalPanel.ts`
 **Subagent:** `subagent_general`
@@ -128,13 +128,13 @@ These tasks have no runtime dependency on each other and can run in parallel.
 - [ ] `onOpenDictionary` from Tokenize panel switches to Dictionary tab (controller exposes `switchTab`).
 - [ ] Single-press on collapsed badge opens/closes universal panel.
 
-**Checkpoint 1**
-- [ ] Panel opens from orbital badge.
-- [ ] Tab switching works and persists.
-- [ ] Backdrop/X close work.
-- [ ] Mobile layout renders correctly in DevTools.
-- [ ] `npm run typecheck`, `npm run test:unit`, `npm run build` pass.
-- [ ] Verifier subagent checks shell against spec success criteria.
+**Checkpoint 1 ✅**
+- [x] Panel opens from orbital badge.
+- [x] Tab switching works and persists.
+- [x] Backdrop/X close work.
+- [x] Mobile layout renders correctly in DevTools.
+- [x] `npm run typecheck`, `npm run test:unit`, `npm run build` pass.
+- [x] Verifier subagent checks shell against spec success criteria.
 
 ## Phase 2 — Settings Tab
 
