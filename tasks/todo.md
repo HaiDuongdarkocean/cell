@@ -19,9 +19,9 @@
 
 ## Phase 2 — Settings Tab
 
-- [ ] Task 2.1: Implement `SettingsTab.tsx` + `SettingsTab.module.css`
-- [ ] Task 2.2: Update `SettingsDialog`/`SettingsDialogContent` `onOpenDictionary` behavior
-- [ ] Checkpoint 2: Settings tab renders, Open Dictionary switches tab
+- [x] Task 2.1: Implement `SettingsTab.tsx` + `SettingsTab.module.css`
+- [x] Task 2.2: Update `SettingsDialog`/`SettingsDialogContent` `onOpenDictionary` behavior
+- [x] Checkpoint 2: Settings tab renders, Open Dictionary switches tab
 
 ## Phase 3 — Dictionary Left Pane
 
@@ -53,7 +53,7 @@
 
 ## Phase 7 — Final Verification, Refinement, Documentation
 
-- [ ] Task 7.1: Run full verification suite (typecheck, test:unit, build)
+- [x] Task 7.1: Run full verification suite (typecheck, test:unit, build)
 - [ ] Task 7.2: Manual browser verification with DevTools
 - [ ] Task 7.3: Adversarial spec acceptance review
 - [ ] Task 7.4: Fix gaps and rerun verification until all SA pass

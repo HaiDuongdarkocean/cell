@@ -9,6 +9,7 @@
 import { createRoot, type Root } from 'react-dom/client';
 import { createElement, type ReactElement } from 'react';
 import { UniversalPanel } from './UniversalPanel';
+import { SettingsTab } from './tabs/SettingsTab';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
@@ -150,10 +151,18 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     'Dictionary',
   ) as ReactElement;
 
-  const placeholderSettings = createElement(
-    'div',
-    { 'data-testid': 'universal-panel-settings-placeholder' },
-    'Settings',
+  const settingsPanel = createElement(
+    SettingsTab,
+    {
+      tokenize: options.panel
+        ? {
+            getState: options.panel.getState,
+            onToggle: options.panel.onToggle,
+            subscribe: options.panel.subscribe,
+          }
+        : undefined,
+      onOpenDictionary: () => { void controller.open('dictionary'); },
+    },
   ) as ReactElement;
 
   const render = (): void => {
@@ -169,7 +178,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
         },
         onClose: () => controller.close(),
         dictionaryPanel: placeholderDictionary,
-        settingsPanel: placeholderSettings,
+        settingsPanel,
       }) as ReactElement,
     );
   };
