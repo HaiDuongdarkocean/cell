@@ -80,6 +80,7 @@ docs/           # Tài liệu dự án
 │   └── 069-touch-target-standardization.md # ADR-069: Touch target standardization (WCAG 2.5.5)
 │   └── 070-focus-visible-standardization.md # ADR-070: Focus-visible standardization
 │   └── 071-motion-standardization-and-reduced-motion.md # ADR-071: Motion standardization and reduced motion support
+│   └── 072-component-reuse-card-dialog-atoms.md # ADR-072: Media cards and SettingsDialog reuse Card/Dialog shared atoms
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup
 │   ├── overlay-appearance-settings.md
