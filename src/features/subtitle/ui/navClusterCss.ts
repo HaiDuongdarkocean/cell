@@ -130,8 +130,8 @@ export const NAV_CLUSTER_CSS = `
   transition: transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 .nav-cluster-btn .nav-cluster-icon {
-  width: 65%;
-  height: 65%;
+  width: var(--nav-cluster-icon-size-ratio);
+  height: var(--nav-cluster-icon-size-ratio);
   display: block;
   fill: none !important;
   background: transparent !important;

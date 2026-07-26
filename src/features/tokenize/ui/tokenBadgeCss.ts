@@ -88,8 +88,8 @@ export function buildTokenBadgeCss(): string {
 .cell-token-panel {
   position: fixed !important;
   right: var(--space-4) !important;
-  /* ponytail: 260px panel width is a design choice — no exact token; keep
-     hardcoded with fallback until a --panel-width token is introduced. */
+  /* 260px panel width is expressed as calc(var(--space-5) * 13) to keep the
+     value derived from the spacing scale instead of a bare pixel value. */
   width: calc(var(--space-5) * 13) !important;
   max-width: calc(100vw - var(--space-8)) !important;
   /* bottom = FAB height (var(--badge-size)) + gap (var(--space-2)) + base offset (var(--space-4)) */
