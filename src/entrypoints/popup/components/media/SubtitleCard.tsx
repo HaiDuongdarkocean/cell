@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { DetectedSubtitle } from '@/entities/media';
+import { Card } from '@/shared/ui/Card';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import { COPY_FEEDBACK_DURATION_MS } from '@/shared/config/config';
@@ -70,8 +71,9 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
   const displayLanguage = languageLabel ?? subtitle.language;
 
   return (
-    <article
-      className={`${styles.card} ${selected ? styles.selected : ''} ${downloading ? styles.downloading : ''}`}
+    <Card
+      variant={selected ? 'selected' : downloading ? 'default' : 'interactive'}
+      className={`${styles.card} ${downloading ? styles.downloading : ''}`}
       data-testid="subtitle-item"
       data-id={subtitle.id}
     >
@@ -150,6 +152,6 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
           {copied && <span className={styles.copiedBadge} data-testid="subtitle-copied-toast">Copied</span>}
         </div>
       )}
-    </article>
+    </Card>
   );
 }

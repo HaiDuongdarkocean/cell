@@ -1,5 +1,6 @@
 import type { DownloadItem } from '@/entities/media';
 import { formatFileSize, formatDuration, phaseToLabel } from '@/entrypoints/popup/utils/format';
+import { Card } from '@/shared/ui/Card';
 import { IconButton } from '@/shared/ui/IconButton';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './DownloadCard.module.css';
@@ -240,7 +241,8 @@ export function DownloadCard({
   }
 
   return (
-    <div
+    <Card
+      variant="default"
       className={`${styles.card} ${isError ? styles.error : ''} ${isQueued ? styles.queued : ''}`}
       data-testid="download-item"
     >
@@ -272,6 +274,6 @@ export function DownloadCard({
       {detailItems.length > 0 && (
         <div className={styles.detailRow}>{detailItems}</div>
       )}
-    </div>
+    </Card>
   );
 }
