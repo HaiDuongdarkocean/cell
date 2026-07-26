@@ -14,6 +14,13 @@ if (typeof globalThis.TextEncoder !== 'function') {
   globalThis.TextDecoder = require('util').TextDecoder;
 }
 
+// Mock HTMLMediaElement.prototype.play for jsdom (used by popupDictionaryController
+// audio playback tests). jsdom throws "Not implemented" synchronously, which
+// clutters test output; the production code already catches play() failures.
+if (typeof HTMLMediaElement !== 'undefined') {
+  HTMLMediaElement.prototype.play = jest.fn(() => Promise.resolve());
+}
+
 // Polyfill crypto.subtle for jsdom (used by signatureGenerator SHA-256).
 // jsdom doesn't expose crypto.subtle — use Node's webcrypto.
 import nodeCrypto from 'node:crypto';

@@ -1394,11 +1394,33 @@ function onResizeEnd(state: PopupDictionaryState, size: PopupSize, sheetHeight: 
   })();
 }
 
-/** Play an audio URL best-effort. Handles both sync throws (jsdom) and async
+// Singleton for header audio playback so rapid clicks don't overlap.
+let currentHeaderAudio: HTMLAudioElement | null = null;
+
+const stopCurrentHeaderAudio = (): void => {
+  if (currentHeaderAudio) {
+    currentHeaderAudio.pause();
+    currentHeaderAudio = null;
+  }
+};
+
+/** Play an audio URL best-effort. Stops any previously-playing header audio
+ *  to avoid overlapping playback. Handles both sync throws (jsdom) and async
  *  rejections (browser autoplay policy) silently. */
 function playUrlBestEffort(url: string): void {
   try {
-    void new Audio(url).play().catch(() => { /* best-effort */ });
+    stopCurrentHeaderAudio();
+    const audio = new Audio(url);
+    currentHeaderAudio = audio;
+    audio.addEventListener('ended', () => {
+      if (currentHeaderAudio === audio) currentHeaderAudio = null;
+    });
+    audio.addEventListener('pause', () => {
+      if (currentHeaderAudio === audio) currentHeaderAudio = null;
+    });
+    void audio.play().catch(() => {
+      if (currentHeaderAudio === audio) currentHeaderAudio = null;
+    });
   } catch { /* best-effort — jsdom throws synchronously */ }
 }
 

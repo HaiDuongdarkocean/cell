@@ -51,8 +51,10 @@ export function createUniversalPanelController(
         activeTab = tab;
       }
       persistedLoaded = true;
+      loadPromise = null;
     }).catch(() => {
       persistedLoaded = true;
+      loadPromise = null;
     });
     return loadPromise;
   };
