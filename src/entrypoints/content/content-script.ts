@@ -220,7 +220,11 @@ let webTokenizeCtrl: WebTokenizeController | null = null;
  *  after mountSettingsDialog subscribes). Flushed when webTokenizeCtrl is
  *  created. Without this, the orbital badge's SettingsDialog never receives
  *  tokenize state updates → toggles don't visually switch. */
-let pendingTokenizeSubs: Array<(s: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void> = [];
+interface PendingTokenizeSub {
+  cb: (s: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void;
+  unsubscribe?: () => void;
+}
+let pendingTokenizeSubs: PendingTokenizeSub[] = [];
 
 let universalPanelMount: UniversalPanelMountController | null = null;
 
@@ -246,9 +250,11 @@ function ensureUniversalPanelMount(): UniversalPanelMountController {
         },
         subscribe: (cb) => {
           if (!webTokenizeCtrl) {
-            pendingTokenizeSubs.push(cb);
+            const item: PendingTokenizeSub = { cb };
+            pendingTokenizeSubs.push(item);
             return () => {
-              pendingTokenizeSubs = pendingTokenizeSubs.filter((c) => c !== cb);
+              item.unsubscribe?.();
+              pendingTokenizeSubs = pendingTokenizeSubs.filter((i) => i !== item);
             };
           }
           return webTokenizeCtrl.subscribe((s) => {
@@ -336,9 +342,11 @@ async function initTokenize(): Promise<void> {
     // ADR-061: Flush pending subscribers that were queued before
     // webTokenizeCtrl was initialized (mountSettingsDialog subscribes at
     // orbital badge creation time, which may race with initTokenize).
-    for (const cb of pendingTokenizeSubs) {
-      webTokenizeCtrl.subscribe((s) => {
-        cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency });
+    // Store the real unsubscribe on the pending item so the cleanup returned
+    // earlier can correctly tear down the subscription on unmount.
+    for (const item of pendingTokenizeSubs) {
+      item.unsubscribe = webTokenizeCtrl.subscribe((s) => {
+        item.cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency });
       });
     }
     pendingTokenizeSubs = [];
@@ -427,6 +435,7 @@ let lastSeenVideo: HTMLVideoElement | null = null;
 // quality switch too — we only fire when the URL path differs (ignore query
 // params + blob: revocation noise by comparing pathname, not full href).
 let lastVideoSrc: string | null = null;
+let videoSrcWatcherInterval: ReturnType<typeof setInterval> | null = null;
 
 function reportEpisodeChanged(reason: 'replacement' | 'src-change'): void {
   if (!hasSeenFirstVideo) return; // first video — baseline, not a switch
@@ -491,7 +500,8 @@ function reportEpisodeChangedIfReplacement(video: HTMLVideoElement): void {
  * + debounce, or hook the site's episode-switch button click.
  */
 function initVideoSrcWatcher(): void {
-  setInterval(() => {
+  if (videoSrcWatcherInterval) return;
+  videoSrcWatcherInterval = setInterval(() => {
     const video = document.querySelector('video');
     if (!video) return;
     const currentSrc = video.src || video.currentSrc || null;
@@ -513,6 +523,12 @@ function initVideoSrcWatcher(): void {
       reportEpisodeChanged('src-change');
     }
   }, 500);
+  window.addEventListener('beforeunload', () => {
+    if (videoSrcWatcherInterval) {
+      clearInterval(videoSrcWatcherInterval);
+      videoSrcWatcherInterval = null;
+    }
+  });
 }
 
 function initEpisodeChangeWatcher(): void {

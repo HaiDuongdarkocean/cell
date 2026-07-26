@@ -76,6 +76,7 @@ import { registerImageSearchHandlers } from './handlers/images';
 import { registerFetchMediaUrlHandlers } from './handlers/fetchMediaUrl';
 import { registerScreenshotHandlers } from './handlers/screenshot';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
+import { isDevMode } from '@/shared/lib/env/devMode';
 import type { MessageHandler } from '@/entities/message';
 import type {
   DetectedVideo,
@@ -352,8 +353,9 @@ if (typeof chrome !== 'undefined' && getExtensionId()) {
       console.error('[Video Downloader] onInstalled init failed:', err);
     });
     // Auto-seed: import default dictionary + frequency data if DB empty.
-    // Fire-and-forget — never blocks SW init. Runs in both dev and production.
-    void seedDevDataIfEmpty('en');
+    // Fire-and-forget — never blocks SW init. Only runs in development builds
+    // because production builds intentionally do not ship the test seed files.
+    if (isDevMode) void seedDevDataIfEmpty('en');
   });
 
   // Top-level: (re)initialise on every SW wake-up (idle eviction restart).
