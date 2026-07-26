@@ -284,6 +284,8 @@ export const STORAGE_KEYS = {
   /** Orbital badge collapsed position { edge, tangential } — edge: 'left'|'right'|'top'|'bottom',
    *  tangential: px along that edge (survives reload). */
   ORBITAL_BADGE_POSITION: 'orbitalBadgePosition',
+  /** Last active universal orbital panel tab per session ('dictionary' | 'settings'). */
+  UNIVERSAL_PANEL_TAB: 'universalPanelTab',
 } as const;
 
 // === Popup Dimensions ===

@@ -240,6 +240,8 @@ function ensureWebTextCtrl(): WebTextDictionaryController {
       // Orbital badge settings panel — merged from the former token FAB.
       // The panel reads/writes tokenize state via these callbacks. Lazily
       // reads `webTokenizeCtrl` at click time (may be null on first render).
+      // Phase 0: panelController is not yet wired; Phase 1.4 will provide it.
+      panelController: undefined,
       panel: {
         getState: () => {
           const s = webTokenizeCtrl?.getState();

@@ -19,7 +19,7 @@ import {
   getEdgeCenter as sharedGetEdgeCenter,
   getCollapsedCenter as sharedGetCollapsedCenter,
 } from './badgeCollapse';
-import { mountSettingsDialog, type SettingsDialogMountController } from '@/features/settings/ui/mountSettingsDialog';
+import type { UniversalPanelController } from '@/features/universalPanel/types';
 
 const HOST_CLASS = 'js-cell-orbital-badge-host';
 const BADGE_Z_INDEX = '2147483647';
@@ -63,15 +63,18 @@ export interface OrbitalBadgeOptions {
   readonly onDoubleTap?: () => void;
   /** Called when the badge is triple-tapped while expanded. */
   readonly onTripleTap?: () => void;
-  /** Settings panel state + callbacks. When provided, a single click on the
-   *  badge opens the full SettingsDialog (React) inline. Tokenize state +
-   *  callbacks are bridged into the dialog's Tokenize section (ADR-061). */
+  /** Tokenize panel state + callbacks. These are forwarded into the universal
+   *  panel's Settings tab so the Tokenize section stays in sync (ADR-061). */
   readonly panel?: {
     readonly getState: () => OrbitalBadgePanelState;
     readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
     readonly onOpenDictionary: () => void;
     readonly subscribe: (cb: (state: OrbitalBadgePanelState) => void) => () => void;
   };
+  /** Generic panel controller. When provided, a single click on the collapsed
+   *  badge toggles the panel open and closed; clicks outside the badge and
+   *  outside `getHosts()` close it. */
+  readonly panelController?: OrbitalBadgePanelController;
 }
 
 export interface OrbitalBadge {
@@ -80,6 +83,11 @@ export interface OrbitalBadge {
   readonly show: () => void;
   readonly hide: () => void;
   readonly destroy: () => void;
+}
+
+export interface OrbitalBadgePanelController
+  extends Pick<UniversalPanelController, 'open' | 'close' | 'isOpen'> {
+  readonly getHosts: () => readonly HTMLElement[] | NodeListOf<HTMLElement>;
 }
 
 function resolveTheme(mode: ThemeMode | undefined): 'light' | 'dark' {
@@ -230,23 +238,9 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
   pointer.setAttribute('aria-hidden', 'true');
   root.appendChild(pointer);
 
-  // ADR-061: Settings dialog — mounted as a React root on document.body (not
-  // in Shadow DOM — CSS module styles only apply in the light DOM). Single
-  // tap on the badge opens the panel (open-only — never toggles). Tokenize
-  // state + callbacks are bridged from options.panel.
-  let settingsMount: SettingsDialogMountController | null = null;
-  let panelOpen = false;
-  if (options.panel) {
-    settingsMount = mountSettingsDialog({
-      tokenize: {
-        getState: () => options.panel!.getState(),
-        onToggle: (key) => options.panel!.onToggle(key),
-        onOpenDictionary: () => options.panel!.onOpenDictionary(),
-        subscribe: (cb) => options.panel!.subscribe(cb),
-      },
-      onClose: () => { panelOpen = false; },
-    });
-  }
+  // ADR-065: Orbital badge toggles a caller-supplied panel controller.
+  // The tokenize state is passed through `options.panel` and consumed by the
+  // universal panel's Settings tab; the badge itself does not mount any UI.
 
   function setBadgeCenter(center: Point): void {
     badgeCenter = center;
@@ -360,12 +354,11 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
 
   const gestureDetector = createGestureDetector({
     onSingleTap: () => {
-      // Open-only (never toggles): a stray single-tap during a slow multi-tap
-      // can only open the panel once — never the open/close flicker. When the
-      // panel is already open this is a no-op (close via click-outside / Esc /
-      // close-button, not via a badge tap).
-      if (!dragging && options.panel && !panelOpen) {
-        setPanelOpen(true);
+      // Single-tap is only handled from the collapsed badge (instant toggle in
+      // onBadgeClick). When reached from an expanded badge, the panel is not
+      // toggled so a slow multi-tap never opens/closes the panel.
+      if (!dragging && !expanded && options.panelController) {
+        setPanelOpen(!options.panelController.isOpen());
       }
     },
     onDoubleTap: () => {
@@ -490,20 +483,26 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
   }
 
   function setPanelOpen(open: boolean): void {
-    panelOpen = open;
-    if (open) settingsMount?.open();
-    else settingsMount?.close();
+    const controller = options.panelController;
+    if (!controller) return;
+    if (open) controller.open();
+    else controller.close();
   }
 
-  /** Click-outside: close the dialog when a pointerdown lands outside both
-   *  the badge host and the settings dialog host (ADR-061). */
+  /** Click-outside: close the panel when a pointerdown lands outside the badge
+   *  host and outside every host reported by `panelController.getHosts()`
+   *  (ADR-065). */
   function onDocPointerDown(e: PointerEvent): void {
-    if (!panelOpen) return;
+    if (!options.panelController?.isOpen()) return;
     const t = e.target as Node | null;
     if (!t) return;
     if (host.contains(t)) return;
-    const settingsHost = document.getElementById('cell-settings-dialog-host');
-    if (settingsHost && settingsHost.contains(t)) return;
+    const hosts = options.panelController?.getHosts();
+    if (hosts) {
+      for (const h of hosts) {
+        if (h.contains(t)) return;
+      }
+    }
     setPanelOpen(false);
   }
 
@@ -512,19 +511,17 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       suppressClick = false;
       return;
     }
-    // Collapsed + panel closed: 2/3-tap are no-op (preset guards require
-    // expanded), so a single tap unambiguously opens settings — fire
-    // instantly with no disambiguation delay. Reset the detector so a later
-    // tap does not count as a continuation of any pending sequence.
-    if (!expanded && !panelOpen && options.panel) {
+    // Collapsed: 2/3-tap are no-op (preset guards require expanded), so a
+    // single tap unambiguously toggles the panel. Reset the detector so a
+    // later tap does not count as a continuation of any pending sequence.
+    if (!expanded && options.panelController) {
       gestureDetector.reset();
-      setPanelOpen(true);
+      setPanelOpen(!options.panelController.isOpen());
       return;
     }
-    // Expanded or panel open: disambiguate via the gesture detector. Single-tap
-    // is open-only (never toggles), so a slow multi-tap can at most open the
-    // panel once — never the open-then-close flicker. The panel closes via
-    // click-outside / Esc / close button, not via a badge tap.
+    // Expanded: disambiguate via the gesture detector. Single-tap
+    // on an expanded badge intentionally does not toggle the panel.
+
     gestureDetector.onPointerUp(performance.now());
   }
 
@@ -690,8 +687,6 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
       if (resizeRaf) { cancelAnimationFrame(resizeRaf); resizeRaf = 0; }
       if (persistRaf) { cancelAnimationFrame(persistRaf); persistRaf = 0; }
       if (hoverTimer) { clearTimeout(hoverTimer); hoverTimer = null; }
-      settingsMount?.unmount();
-      settingsMount = null;
       themeCleanup?.();
       themeCleanup = null;
       document.removeEventListener('fullscreenchange', onFullscreenChange);

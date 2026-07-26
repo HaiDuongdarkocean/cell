@@ -191,7 +191,8 @@ src/
 │       ├── SelectionBar.tsx          # Fixed bottom bar: selection count, clear, download selected
 │       ├── SelectionBar.module.css   # Styles cho SelectionBar
 │       └── settings/
-│           ├── SettingsDialog.tsx    # Settings dialog + CustomSelect dropdowns, Auto Select toggle (Toggle atom), Preferred format dropdown, MultiSelect subtitle languages, Subtitle overlay settings (target language + auto-load Toggle atom), Subtitle appearance (Target/Native tabs + SubtitlePreview + SubtitleStylePanel: font size/family/weight/colors/opacity/align/shadow + reset), Keyboard shortcuts remap (ShortcutInput atom, a/d/s/w/t), Nav cluster panel, Download settings
+│           ├── SettingsDialog.tsx    # Overlay + popover shell + close button + Escape handling; renders SettingsDialogContent
+│           ├── SettingsDialogContent.tsx # Reusable settings body: sidebar navigation + all settings sections (Media, Block, Target/Native subtitles, Shortcuts, Cluster, Download, Card Creator, Dictionary Popup, Theme, TTS, Resources, Tokenize)
 │           ├── SettingsDialog.module.css # Styles cho SettingsDialog (480px popover + sidebar 120px + 5 section cards + pill active)
 │           ├── SubtitlePreview.tsx   # Black bg + white text + apply OverlayStyleConfig realtime incl. fontWeight (settings-controls-restyle F4)
 │           ├── SubtitlePreview.module.css # Styles cho SubtitlePreview
@@ -484,13 +485,14 @@ tests/
 | `popup/components/media/DownloadCard.tsx` | types, **format.ts** | App.redesigned | Download card UI (two-phase progress, pause/resume/cancel/retry/remove, phase labels, quality badge, detail items) |
 | `popup/components/media/MediaEmpty.tsx` | — | App.redesigned | Empty state |
 | `popup/components/SelectionBar.tsx` | — | App.redesigned | Selection bar (clear, count, download selected) |
-| `popup/components/settings/SettingsDialog.tsx` | types, config, messages, **MultiSelect**, **Toggle**, **Slider**, **ShortcutInput**, **SearchableSelect**, **HintIcon** | App.redesigned | Settings UI; regrouped fields (chọn media → download → filename), Auto Select toggle (sparkles SVG), Preferred format dropdown, MultiSelect subtitle languages (replaces CustomSelect), SearchableSelect cho overlay target/native languages, HintIcon cho hints |
-| `popup/components/settings/MultiSelect.tsx` | — | SettingsDialog | Reusable searchable multi-select (search input + checkbox list + footer). Used cho subtitle language selection |
-| `shared/ui/Toggle.tsx` | — | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
+| `features/settings/ui/SettingsDialog.tsx` | Settings, TokenizePanelState, Icon, IconButton, **SettingsDialogContent**, styles | mountSettingsDialog, popup App, OptionsApp | Dialog wrapper: overlay + popover shell + close button + Escape handling; renders `SettingsDialogContent` |
+| `features/settings/ui/SettingsDialogContent.tsx` | Settings, types, config, languageRegistry, MultiSelect, SubtitleStylePanel, SubtitleBlockSettingsPanel, NavClusterSettingsPanel, CardCreatorSettingsPanel, DictionaryPopupSettingsPanel, TokenizeSettingsPanel, ThemePanel, TtsVoiceManagerPanel, ResourcesPanel, Toggle, ShortcutInput, SearchableSelect, Select, HintIcon, styles | SettingsDialog, SettingsTab (planned) | Reusable settings body: sidebar + all settings sections; accepts `className` for embedding in the universal panel |
+| `popup/components/settings/MultiSelect.tsx` | — | SettingsDialogContent | Reusable searchable multi-select (search input + checkbox list + footer). Used cho subtitle language selection |
+| `shared/ui/Toggle.tsx` | — | SettingsDialogContent, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
 | `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
-| `shared/ui/ShortcutInput.tsx` | — | SettingsDialog | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
-| `shared/ui/SearchableSelect.tsx` | — | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
-| `shared/ui/HintIcon.tsx` | — | SettingsDialog, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
+| `shared/ui/ShortcutInput.tsx` | — | SettingsDialogContent | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
+| `shared/ui/SearchableSelect.tsx` | — | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5) |
+| `shared/ui/HintIcon.tsx` | — | SettingsDialogContent, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 
 ### Shared UI layer
 
@@ -528,11 +530,11 @@ tests/
 | `shared/ui/Skeleton.tsx` | — | — | Placeholder loading shape |
 | `shared/ui/Spinner.tsx` | — | Button, Loading surfaces | Animated loading indicator |
 | `shared/ui/Textarea.tsx` | — | ThemeImportExport | Multiline input with resize/error/disabled |
-| `shared/ui/Toggle.tsx` | — | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
+| `shared/ui/Toggle.tsx` | — | SettingsDialogContent, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
 | `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
-| `shared/ui/ShortcutInput.tsx` | — | SettingsDialog | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
-| `shared/ui/SearchableSelect.tsx` | — | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
-| `shared/ui/HintIcon.tsx` | — | SettingsDialog, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
+| `shared/ui/ShortcutInput.tsx` | — | SettingsDialogContent | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
+| `shared/ui/SearchableSelect.tsx` | — | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5) |
+| `shared/ui/HintIcon.tsx` | — | SettingsDialogContent, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
 
 ### Lib layer
 
@@ -554,7 +556,7 @@ tests/
 
 | File | Import từ | Được import bởi | Sửa file này → ảnh hưởng |
 |------|-----------|-----------------|--------------------------|
-| `constants/config.ts` | types | index, downloader, popupStore, fileUtils, SettingsDialog, **whitelist**, **autoDownload** | Defaults, limits, keys; **`DEFAULT_PREFERRED_VIDEO_FORMAT`**, **`DEFAULT_SELECTED_SUBTITLE_LANGUAGES`**, **`DEFAULT_AUTO_SELECT_ENABLED`**, **`STORAGE_KEYS.AUTO_DOWNLOAD_WHITELIST`** |
+| `constants/config.ts` | types | index, downloader, popupStore, fileUtils, SettingsDialogContent, **whitelist**, **autoDownload** | Defaults, limits, keys; **`DEFAULT_PREFERRED_VIDEO_FORMAT`**, **`DEFAULT_SELECTED_SUBTITLE_LANGUAGES`**, **`DEFAULT_AUTO_SELECT_ENABLED`**, **`STORAGE_KEYS.AUTO_DOWNLOAD_WHITELIST`** |
 | `constants/messages.ts` | — | index, useDetectedMedia, useDownloadProgress, ffmpegRunner | Message type strings |
 | `constants/urls.ts` | — | videoDetector, subtitleDetector, pageScanner | URL patterns |
 | `types/media.ts` | — | (deprecated barrel — M19 Strangler Fig) | **DEPRECATED** barrel re-export from `entities/*`. No callers import `@/types/media` directly anymore (M19 complete). New code SHOULD import from `@/entities/video`, `@/entities/settings`, `@/entities/media`. Kept for backward compat only |
@@ -849,7 +851,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `parseTtml` | `lib/parsers/ttmlParser.ts` | string → SrtSubtitle | subtitleParser.ts | **ADR-029**: Parse TTML (IMSC1.1) via DOMParser — tick/clock/seconds time formats, `<br>`→newline, nested `<span>` stripped; Netflix serves IMSC1.1 not WebVTT |
 | `convertTtmlToSrt` | `lib/parsers/ttmlToSrt.ts` | string → string | (download path) | **ADR-029**: Convert TTML content to SRT format (parseTtml → msToSrtTime per cue) |
 | `stripSubtitleTags` | `lib/parsers/srtNormalizer.ts` | string → string | srtParser, vttParser, srtNormalizer | Strip `<i>`/`<b>`/`<c>`/`<v>`/`{\an8}` tags, preserve newlines (display path) |
-| `Toggle` | `shared/ui/Toggle.tsx` | checked, onChange, ariaLabel → ReactElement | SettingsDialog, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
+| `Toggle` | `shared/ui/Toggle.tsx` | checked, onChange, ariaLabel → ReactElement | SettingsDialogContent, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
 | `hexToRgb` | `features/theme/logic/colorGenerator.ts` | string → {r,g,b} | contrastValidator, tokens | **ADR-022**: Parse hex → RGB (3/6 digit, case-insensitive) |
 | `getLuminance` | `features/theme/logic/colorGenerator.ts` | string → number | contrastValidator | **ADR-022**: WCAG 2.1 relative luminance (0-1) |
 | `generateShade` | `features/theme/logic/colorGenerator.ts` | (hex, percent) → hex | tokens | **ADR-022**: Darken hex by percent (0-100) |
@@ -942,9 +944,11 @@ downloader.downloadM3u8Streaming(playlist)
 | `ResourcesPanel` | `features/dictionary/ui/ResourcesPanel.tsx` | { langCode } → JSX | OptionsApp | **ADR-023 F11**: 2 sections (dictionary + frequency) with independent import state per resourceType (parallel import, 2 progress bars, no cross-block) + list + delete confirm |
 | `Dropzone` | `features/dictionary/ui/Dropzone.tsx` | { label, accept, disabled, onFiles } → JSX | ResourcesPanel | **ADR-023 F11**: Drag-drop + click file picker |
 | `Slider` | `shared/ui/Slider.tsx` | value, min, max, step, onChange, ariaLabel → ReactElement | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
-| `ShortcutInput` | `shared/ui/ShortcutInput.tsx` | value: ShortcutValue, onChange: (ShortcutValue) => void, ariaLabel → ReactElement | SettingsDialog | **ADR-021 D7**: Pill-style input — single-char + combo (Ctrl+Shift+T). Captures keydown, supports modifiers. |
-| `SearchableSelect` | `shared/ui/SearchableSelect.tsx` | options, value, onChange, ariaLabel → ReactElement | SettingsDialog | Single-select dropdown with embedded search (settings-controls-restyle F5) |
-| `HintIcon` | `shared/ui/HintIcon.tsx` | hint, ariaLabel → ReactElement | SettingsDialog, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
+| `ShortcutInput` | `shared/ui/ShortcutInput.tsx` | value: ShortcutValue, onChange: (ShortcutValue) => void, ariaLabel → ReactElement | SettingsDialogContent | **ADR-021 D7**: Pill-style input — single-char + combo (Ctrl+Shift+T). Captures keydown, supports modifiers. |
+| `SearchableSelect` | `shared/ui/SearchableSelect.tsx` | options, value, onChange, ariaLabel → ReactElement | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5) |
+| `HintIcon` | `shared/ui/HintIcon.tsx` | hint, ariaLabel → ReactElement | SettingsDialogContent, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
+| `SettingsDialog` | `features/settings/ui/SettingsDialog.tsx` | { isOpen, settings, onChange, onClose, tokenizeState?, onToggleTokenize?, onOpenDictionary? } → JSX | mountSettingsDialog, popup App, OptionsApp | Dialog wrapper: overlay + popover shell + close button + Escape handling; renders `SettingsDialogContent` |
+| `SettingsDialogContent` | `features/settings/ui/SettingsDialogContent.tsx` | { settings, onChange, tokenizeState?, onToggleTokenize?, onOpenDictionary?, className? } → JSX | SettingsDialog, SettingsTab (planned) | Reusable settings body: sidebar + all settings sections; accepts `className` for embedding in the universal panel |
 | `parseSubtitle` | `content/subtitleParser.ts` | (string, format) → ParseResult | subtitleDragDrop, subtitleImport | Adapter: auto-detect format (WEBVTT→vtt, <?xml/<tt→ttml, else srt), parseSrt/parseVtt/parseTtml |
 | `createSubtitleManagerPanel` | `features/subtitle/ui/subtitleManagerPanel.ts` | (container, options?) → SubtitleManagerPanel | contentScriptController.ts | **ADR-015/ADR-027**: Unified subtitle manager panel with auto/imported/translated `source` badges; `updateTarget`, `updateNative`, `open`, `close`, `destroy`. `onSelect(role, index)` routes to controller. **ADR-027**: no longer takes `importButton` arg or creates top-left toolbar — returns `icon` for caller to append into subtitle block secondary column slot |
 | `init` | `features/subtitle/ui/contentScriptController.ts` | (video, webTextCtrl?) → cleanup | content-script.ts | **M20**: Subtitle overlay UI orchestration — loads settings, wires block controller, manager panel, offset controller, shortcuts, drag-drop, import. **ADR-046**: accepts shared `WebTextDictionaryController` to wire subtitle token lookup + popup + highlight + card creator. **ADR-027**: registers `handleGenerateNative` for `generate-native` button/shortcut |
