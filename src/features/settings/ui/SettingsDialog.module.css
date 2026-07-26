@@ -132,8 +132,8 @@
   display: block;
   flex-shrink: 0;
   white-space: nowrap;
-  /* WCAG 2.5.5: 44px touch target on mobile */
-  min-height: var(--touch-target-mobile);
+  /* WCAG 2.5.5: 44px touch target on mobile / 40px desktop */
+  min-height: var(--touch-target);
   padding: var(--space-2) var(--space-3);
   border: none;
   border-radius: var(--radius-pill);

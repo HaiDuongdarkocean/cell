@@ -25,7 +25,6 @@
   font-size: var(--input-font-size);
   cursor: pointer;
   text-align: left;
-  outline: none;
   transition: border-color var(--duration-fast) var(--ease-in-out);
 }
 
