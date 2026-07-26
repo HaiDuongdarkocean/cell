@@ -55,7 +55,8 @@ function seedUrl(path: string): string {
  * Auto-seed: if DB is empty, fetch + import seed files in parallel.
  * Fire-and-forget — returns immediately, logs errors to console.
  * Safe to call from background SW onInstalled or Options page mount.
- * Runs in both dev and production builds.
+ * Callers should gate this with `isDevMode`; production builds do not ship the
+ * test seed files, so the fetch would fail harmlessly but log a warning.
  */
 export async function seedDevDataIfEmpty(langCode = 'en'): Promise<void> {
   // Prevent concurrent seed runs.

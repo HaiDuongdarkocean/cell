@@ -308,6 +308,7 @@ export function showPopupLoading(
     shell.mount();
   }
   state = { ...state, shell };
+  shell.generation += 1;
   shell.setOnDismiss(() => { state = hidePopup(state); onDismiss?.(state); });
   shell.setOnResizeEnd((newSize, newSheetHeight) => onResizeEnd(state, newSize, newSheetHeight));
 
@@ -352,6 +353,7 @@ export function showPopup(
   // capture the original state with shell:null → hidePopup/cycleStatus/
   // rerender all no-op because state.shell is null.
   state = { ...state, shell };
+  shell.generation += 1;
 
   // Update shell callbacks on every showPopup so stale closures from a
   // previous lookup don't hide the wrong state or call an old onDismiss.
@@ -424,7 +426,9 @@ export function showPopup(
       onPlayTerm: () => {
         const active = getActiveResult(state);
         if (!active) return;
+        const shellGeneration = state.shell?.generation;
         void playTermAudio(active.term, active.langCode, getActiveSnapshot(state).audioItems).then(({ playedItem, fetchedItems }) => {
+          if (!state.shell || state.shell.generation !== shellGeneration) return;
           if (playedItem) {
             const patch: Partial<ActiveCandidateSnapshot> = { headerAudioId: playedItem.id };
             // Cache fetched community items so subsequent header clicks + Audio tab can reuse them.
@@ -455,7 +459,9 @@ export function showPopup(
     if (defaultTab === 'translate' && !state.translation && !state.translationLoading) {
       setActiveSnapshot(state, { translationLoading: true, activeTab: 'translate' });
       renderPopupToolbar(state, container);
+      const shellGeneration = state.shell?.generation;
       translateSentence(result, contextSentence, state.nativeLang, (text) => {
+        if (!state.shell || state.shell.generation !== shellGeneration) return;
         setActiveSnapshot(state, { translation: text, translationLoading: false, activeTab: 'translate' });
         rerender(state);
       });
@@ -869,7 +875,9 @@ function renderAllActiveEntries(state: PopupDictionaryState, container: HTMLElem
         state.activeCandidateIndex = idx;
         const r = getResultByIndex(state, idx);
         if (!r) return;
+        const shellGeneration = state.shell?.generation;
         void playTermAudio(r.term, r.langCode, getSnapshotByIndex(state, idx).audioItems).then(({ playedItem, fetchedItems }) => {
+          if (!state.shell || state.shell.generation !== shellGeneration) return;
           if (playedItem) {
             const patch: Partial<ActiveCandidateSnapshot> = { headerAudioId: playedItem.id };
             if (fetchedItems.length > 0) patch.audioItems = fetchedItems;
@@ -904,6 +912,9 @@ function renderAllActiveEntries(state: PopupDictionaryState, container: HTMLElem
 
 /** Render toolbar (tab bar + panel) for a single candidate by index. */
 function renderToolbarForCandidate(state: PopupDictionaryState, slot: HTMLElement, idx: number): void {
+  if (!state.shell) return;
+  const shell = state.shell;
+  const shellGeneration = shell.generation;
   const result = getResultByIndex(state, idx);
   if (!result) return;
   const snapshot = getSnapshotByIndex(state, idx);
@@ -936,7 +947,9 @@ function renderToolbarForCandidate(state: PopupDictionaryState, slot: HTMLElemen
           setSnapshotByIndex(state, idx, { translationLoading: true, activeTab: 'translate' });
           state.activeCandidateIndex = idx;
           rerender(state);
+          const shellGeneration = state.shell?.generation;
           translateSentence(r, state.contextSentence, state.nativeLang, (text) => {
+            if (shell.generation !== shellGeneration) return;
             setSnapshotByIndex(state, idx, { translation: text, translationLoading: false, activeTab: 'translate' });
             state.activeCandidateIndex = idx;
             rerender(state);
@@ -953,7 +966,7 @@ function renderToolbarForCandidate(state: PopupDictionaryState, slot: HTMLElemen
   renderToolbarOnly();
   if (!snapshot.activeTab) return;
 
-  renderTabPanel(body, snapshot.activeTab, result, {
+  renderTabPanel(body, snapshot.activeTab, result, shell, {
     contextSentence: state.contextSentence,
     settings: state.settings,
     nativeLang: state.nativeLang,
@@ -968,23 +981,30 @@ function renderToolbarForCandidate(state: PopupDictionaryState, slot: HTMLElemen
     imageItems: snapshot.imageItems,
   }, {
     onTranslationDone: (text: string) => {
+      if (shell.generation !== shellGeneration) return;
       setSnapshotByIndex(state, idx, { translation: text });
       state.activeCandidateIndex = idx;
       rerender(state);
     },
     onTranslationLoading: (loading: boolean) => {
+      if (shell.generation !== shellGeneration) return;
       setSnapshotByIndex(state, idx, { translationLoading: loading });
       state.activeCandidateIndex = idx;
       rerender(state);
     },
     onToggleTranslate: () => {
+      if (shell.generation !== shellGeneration) return;
       setSnapshotByIndex(state, idx, { translationSelected: !snapshot.translationSelected });
       state.activeCandidateIndex = idx;
       rerender(state);
     },
     onPlayTts: (item, term, sentence, langCode) => playTts(item, term, sentence, langCode),
-    onSelectionChange: renderToolbarOnly,
+    onSelectionChange: () => {
+      if (shell.generation !== shellGeneration) return;
+      renderToolbarOnly();
+    },
     onAudioSubTabChange: (group) => {
+      if (shell.generation !== shellGeneration) return;
       setSnapshotByIndex(state, idx, { audioSubTab: group });
       state.activeCandidateIndex = idx;
       rerender(state);
@@ -1056,6 +1076,7 @@ function renderTabPanel(
   container: HTMLElement,
   tab: PopupTab | null,
   result: LookupResult,
+  shell: PopupShell,
   ctx: {
     contextSentence: string;
     settings: DictionaryPopupSettings;
@@ -1082,6 +1103,7 @@ function renderTabPanel(
   if (!tab) return;
   switch (tab) {
     case 'audio': {
+      const shellGeneration = shell.generation;
       const langCode = result.langCode;
       let currentlyPlayingAudioId: string | null = null;
       let currentlyPlayingAudio: HTMLAudioElement | null = null;
@@ -1152,6 +1174,7 @@ function renderTabPanel(
           // Render existing community items immediately, then fetch TTS in background.
           renderAudioPanel(container, tabWordAudios(), tabSentenceAudios(), ctx.audioSelection, onToggle, onPlay, false, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
           void (async () => {
+            if (shell.generation !== shellGeneration) return;
             const allTtsVoices = await fetchTtsVoiceRows(ctx.settings, langCode);
             const ttsVoices = allTtsVoices.slice(0, maxDisplay);
             const ttsWordItems: AudioItem[] = ttsVoices.map((v) => ({
@@ -1174,6 +1197,7 @@ function renderTabPanel(
               : [];
             wordAudios = [...wordAudios, ...ttsWordItems].slice(0, 3);
             sentenceAudios = [...sentenceAudios, ...ttsSentenceItems].slice(0, 3);
+            if (shell.generation !== shellGeneration) return;
             ctx.audioItems.length = 0;
             ctx.audioItems.push(...wordAudios, ...sentenceAudios);
             const existing = container.querySelector('.js-cell-panel[data-cell-panel="audio"]');
@@ -1189,6 +1213,7 @@ function renderTabPanel(
       // Loading state while fetching Forvo + TTS voices.
       renderAudioPanel(container, [], [], ctx.audioSelection, onToggle, onPlay, true, undefined, currentlyPlayingAudioId ?? undefined, onTts, callbacks?.onSelectionChange, ctx.audioSubTab, callbacks?.onAudioSubTabChange);
       void (async () => {
+        if (shell.generation !== shellGeneration) return;
         // TTS settings: enabled gate + maxDisplay cap.
         // ponytail: autoplayCount skip — autoplay implement sau, cần user-gesture
         // policy check (Chrome blocks autoplay without user interaction).
@@ -1219,6 +1244,7 @@ function renderTabPanel(
           : [];
         wordAudios = [...forvoItems, ...ttsWordItems].slice(0, 3);
         sentenceAudios = ttsSentenceItems.slice(0, 3);
+        if (shell.generation !== shellGeneration) return;
         // Store fetched items in ctx (same array ref as state) for Quick Add payload.
         ctx.audioItems.length = 0;
         ctx.audioItems.push(...wordAudios, ...sentenceAudios);
@@ -1228,6 +1254,7 @@ function renderTabPanel(
         existing.remove();
         // Fallback to hardcoded system TTS when both fetches return empty.
         if (wordAudios.length === 0 && sentenceAudios.length === 0) {
+          if (shell.generation !== shellGeneration) return;
           const fallbackWord: AudioItem[] = [
             { id: `tts-word-${result.term}`, kind: 'word', source: 'system-tts', label: `System TTS · ${langCode.toUpperCase()}`, state: 'idle', defaultSelected: false },
           ];
@@ -1246,6 +1273,7 @@ function renderTabPanel(
       break;
     }
     case 'image': {
+      const shellGeneration = shell.generation;
       const onToggle = (id: string, selected: boolean): void => { ctx.imageSelection.set(id, selected); };
       // Cache hit: image panel data already exists for this term.
       if (ctx.imageItems.length > 0) {
@@ -1255,6 +1283,7 @@ function renderTabPanel(
       // Loading state while fetching images.
       renderImagePanel(container, [], ctx.imageSelection, onToggle, result.term, true, undefined, callbacks?.onSelectionChange);
       void (async () => {
+        if (shell.generation !== shellGeneration) return;
         try {
           const { sendMessage } = await import('@/shared/lib/chrome-apis/runtime');
           const res = await sendMessage<MessageResponse<FetchImagesResponse>>({
@@ -1262,6 +1291,7 @@ function renderTabPanel(
             payload: { tabId: 0, term: result.term, langCode: result.langCode, maxResults: 8 },
           });
           const items = res?.data?.items ?? [];
+          if (shell.generation !== shellGeneration) return;
           // Store fetched items in ctx (same array ref as state) for Quick Add payload.
           ctx.imageItems.length = 0;
           ctx.imageItems.push(...items);
@@ -1270,6 +1300,7 @@ function renderTabPanel(
           existing.remove();
           renderImagePanel(container, items, ctx.imageSelection, onToggle, result.term, false, undefined, callbacks?.onSelectionChange);
         } catch (err) {
+          if (shell.generation !== shellGeneration) return;
           const existing = container.querySelector('.js-cell-panel[data-cell-panel="image"]');
           if (!existing) return;
           existing.remove();

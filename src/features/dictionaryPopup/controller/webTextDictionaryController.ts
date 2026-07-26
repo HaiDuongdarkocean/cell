@@ -458,10 +458,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
    *  lookup (hover to another word in the same sentence) can reposition
    *  seamlessly without dismiss flicker. */
   function dismissLookup(): void {
-    if (currentRequestId) {
-      cancelLookup(currentRequestId);
-      currentRequestId = null;
-    }
+    cancelInFlightLookup();
     if (popupDismissTimer) return; // already pending
     popupDismissTimer = setTimeout(() => {
       popupDismissTimer = null;
@@ -471,6 +468,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       currentHighlightTarget = null;
       originalHighlightTarget = null;
       currentPopupTokenId = null;
+      resumeVideoIfNeeded();
     }, POPUP_DISMISS_DELAY_MS);
   }
 
@@ -566,16 +564,17 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   function onPopupDismiss(dismissedState: PopupDictionaryState): void {
     // User intentionally dismissed (Esc / click outside) — cancel any pending
-    // delayed dismiss and clear immediately.
+    // delayed dismiss, cancel any in-flight lookup, and clear immediately.
     cancelPendingDismiss();
+    cancelInFlightLookup();
     popupDictState = dismissedState;
-    popupDictWasPlaying = false;
     clearPopupTokenId();
     currentHighlightTarget = null;
     originalHighlightTarget = null;
     wordHighlight.clear();
     sentenceHighlight.clear();
     resumeVideoIfNeeded();
+    popupDictWasPlaying = false;
   }
 
   function renderLookupResult(
@@ -655,9 +654,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     highlightTarget: HighlightTarget,
     pointer?: WebTriggerPointer,
   ): void {
-    // A new lookup is starting — cancel any pending delayed dismiss so the
-    // popup doesn't vanish while the async SW round-trip is in flight.
+    // A new lookup is starting — cancel any pending delayed dismiss and any
+    // in-flight lookup so the popup doesn't vanish and the background doesn't
+    // waste work on a stale request.
     cancelPendingDismiss();
+    cancelInFlightLookup();
     currentRequestId = requestId;
     currentHighlightTarget = highlightTarget;
     originalHighlightTarget = highlightTarget;
@@ -763,6 +764,12 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       type: MESSAGE_TYPES.LOOKUP_CANCEL,
       payload: { requestId },
     });
+  }
+
+  function cancelInFlightLookup(): void {
+    if (!currentRequestId) return;
+    cancelLookup(currentRequestId);
+    currentRequestId = null;
   }
 
   function updateCardCreatorSettings(settings: CardCreatorSettings): void {
@@ -1150,8 +1157,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   function detach(): void {
     // Detach is intentional teardown (mode switch, settings update) — cancel
-    // any pending delayed dismiss so it doesn't fire after re-attach.
+    // any pending delayed dismiss and in-flight lookup so they don't fire
+    // after re-attach.
     cancelPendingDismiss();
+    cancelInFlightLookup();
     webTrigger?.detach();
     webTrigger = null;
     currentAttachedMode = null;
@@ -1165,6 +1174,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     detach();
     cancelPendingDismiss();
     popupDictState = destroyPopup(popupDictState);
+    resumeVideoIfNeeded();
+    popupDictWasPlaying = false;
     cardCreatorMount?.unmount();
     cardCreatorMount = null;
     wordHighlight.destroy();

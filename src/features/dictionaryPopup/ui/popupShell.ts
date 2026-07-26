@@ -386,6 +386,10 @@ export class PopupShell {
   private popoverSize: PopupSize;
   /** Sheet height in px — persisted separately from popover. */
   private sheetHeight: number;
+  /** Monotonically incremented every time the popup is shown for a new lookup.
+   *  Async callbacks can capture the shell's generation at start and bail out
+   *  if the shell has since been reused for a newer lookup. */
+  generation = 1;
   private isResizing = false;
   private resizeStartX = 0;
   private resizeStartY = 0;
