@@ -21,8 +21,10 @@ const NAV_CLUSTER_TOKEN_NAMES = [
   '--nav-cluster-size-sm',
   '--nav-cluster-size-md',
   '--nav-cluster-size-lg',
-  '--nav-cluster-bg-opacity-default',
-  '--nav-cluster-btn-opacity-default',
+  '--nav-cluster-icon-size-ratio',
+  '--nav-cluster-btn-size',
+  '--nav-cluster-bg-opacity',
+  '--nav-cluster-btn-opacity',
   '--nav-cluster-collapse-size',
   '--nav-cluster-edge-threshold',
   '--nav-cluster-z-index',
@@ -40,14 +42,14 @@ for (const [key, value] of Object.entries(tokensJson.static.navCluster)) {
 describe('Nav cluster tokens — tokens.css + tokens.json mirror sync (ADR-018, design-system inventory)', () => {
   const themeCss = readFileSync(THEME_CSS_PATH, 'utf8');
 
-  it('tokens.css :root contains all 10 nav-cluster tokens', () => {
+  it('tokens.css :root contains all 12 nav-cluster tokens', () => {
     const rootBlock = themeCss.split(':root')[1]?.split('}')[0] ?? '';
     for (const name of NAV_CLUSTER_TOKEN_NAMES) {
       expect(rootBlock).toContain(name);
     }
   });
 
-  it('tokens.json static.navCluster contains all 10 nav-cluster tokens', () => {
+  it('tokens.json static.navCluster contains all 12 nav-cluster tokens', () => {
     for (const name of NAV_CLUSTER_TOKEN_NAMES) {
       expect(expectedNavClusterValues[name]).toBeDefined();
     }
