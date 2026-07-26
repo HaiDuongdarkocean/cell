@@ -2,7 +2,7 @@
   width: 100%;
   color: var(--input-fg);
   background: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--input-radius);
   font-family: var(--font-family);
   font-size: var(--input-font-size);
