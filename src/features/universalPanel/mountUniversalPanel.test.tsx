@@ -87,7 +87,8 @@ describe('mountUniversalPanel', () => {
     await act(async () => { fireEvent.click(screen.getByTestId('settings-open-dictionary')); });
 
     await waitFor(() => expect(screen.getByTestId('universal-panel-content-dictionary')).toBeInTheDocument());
-    expect(screen.getByTestId('universal-panel-dictionary-placeholder')).toBeInTheDocument();
+    expect(screen.getByTestId('dictionary-tab')).toBeInTheDocument();
+    expect(screen.getByTestId('dictionary-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('universal-panel-content-settings')).not.toBeInTheDocument();
   });
 });
