@@ -9,9 +9,9 @@
   gap: var(--space-2);
   padding: var(--space-2-5) var(--space-4);
   background: var(--color-surface);
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width-hairline) solid var(--color-border);
   z-index: 100;
-  animation: slideUp 200ms ease;
+  animation: slideUp var(--duration-normal) ease;
 }
 
 @keyframes slideUp {
@@ -22,6 +22,12 @@
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selectionBar {
+    animation: none;
   }
 }
 

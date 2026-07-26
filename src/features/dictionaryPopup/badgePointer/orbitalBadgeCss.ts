@@ -58,7 +58,7 @@ export function buildOrbitalBadgeCss(): string {
   box-shadow: none !important;
   z-index: 2147483647 !important;
   transform: translate(-50%, -50%) !important;
-  transition: transform var(--duration-normal) ease, background-color var(--duration-normal) ease, width var(--duration-normal) ease, height var(--duration-normal) ease, left 0ms, top 0ms !important;
+  transition: transform var(--duration-normal) ease, background-color var(--duration-normal) ease, width var(--duration-normal) ease, height var(--duration-normal) ease !important;
   /* will-change promotes the badge to its own compositor layer so repositioning
      (left/top on a position:fixed element) is cheaper — the layer is moved on
      the compositor instead of re-laying out the host page. One 36px layer is
@@ -76,7 +76,7 @@ export function buildOrbitalBadgeCss(): string {
    the text under the tip is visible for lookup. */
 .cell-orbital-badge--peek {
   background: transparent !important;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent) !important;
+  border: var(--border-width-hairline) solid color-mix(in srgb, var(--color-primary) 40%, transparent) !important;
 }
 
 /* Pointer in peek mode: translucent so text under the tip is visible.
@@ -105,7 +105,7 @@ export function buildOrbitalBadgeCss(): string {
   z-index: 2147483647 !important;
   opacity: 1 !important;
   transform: translate(-50%, -50%) scale(1) !important;
-  transition: opacity var(--duration-normal) ease, transform var(--duration-normal) ease, left 0ms, top 0ms;
+  transition: opacity var(--duration-normal) ease, transform var(--duration-normal) ease;
 }
 
 .cell-orbital-pointer--hidden {

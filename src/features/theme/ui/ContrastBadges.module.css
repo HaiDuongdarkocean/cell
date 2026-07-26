@@ -15,7 +15,7 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   cursor: help;
-  border: 1px solid transparent;
+  border: var(--border-width-hairline) solid transparent;
 }
 
 .aa {

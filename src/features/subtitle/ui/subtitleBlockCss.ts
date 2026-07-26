@@ -16,7 +16,7 @@ export const SUBTITLE_BLOCK_CSS = `
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-pill);
-  border: 1px solid transparent;
+  border: var(--border-width-hairline) solid transparent;
   background: transparent;
   /* overflow:visible — NOT hidden — so popup panels (subtitle-manager-panel,
      more-popover, subtitle-selector-popover) positioned absolute inside the
@@ -264,8 +264,7 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: none;
   transition:
     opacity var(--duration-normal) ease,
-    transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    visibility 0s linear var(--duration-normal);
+    transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* Open state — slide in from right + fade in */
@@ -276,8 +275,7 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: auto;
   transition:
     opacity var(--duration-normal) ease,
-    transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    visibility 0s linear 0s;
+    transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* Feathered backdrop — same technique as .cluster-btn::before */
@@ -336,7 +334,7 @@ export const SUBTITLE_BLOCK_CSS = `
   width: var(--space-7);
   height: var(--space-7);
   padding: 0;
-  border: 1px solid rgba(var(--overlay-text-rgb), 0.3);
+  border: var(--border-width-hairline) solid rgba(var(--overlay-text-rgb), 0.3);
   border-radius: var(--radius-2xs);
   background: rgba(var(--overlay-background-rgb), 0.6);
   color: var(--overlay-text);
@@ -356,7 +354,7 @@ export const SUBTITLE_BLOCK_CSS = `
   overflow-y: auto;
   background: rgba(var(--overlay-background-rgb), 0.85);
   color: var(--overlay-text);
-  border: 1px solid rgba(var(--overlay-text-rgb), 0.2);
+  border: var(--border-width-hairline) solid rgba(var(--overlay-text-rgb), 0.2);
   border-radius: var(--radius-sm);
   padding: var(--space-1);
   min-width: calc(var(--space-5) * 9);
@@ -446,7 +444,7 @@ export const SUBTITLE_BLOCK_CSS = `
   grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr;
   align-items: stretch;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-full);
   padding: var(--space-1);
   gap: 0;
@@ -533,7 +531,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .offset-reset-btn {
   width: 100%;
   padding: var(--space-2);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-surface);
   color: var(--color-text-secondary);
@@ -640,7 +638,7 @@ export const SUBTITLE_BLOCK_CSS = `
   overflow-y: auto;
   background-color: var(--color-background);
   color: var(--color-text);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-dialog);
   box-shadow: var(--shadow-md, none);
   padding: var(--space-1);
@@ -699,7 +697,7 @@ export const SUBTITLE_BLOCK_CSS = `
   min-height: var(--touch-target-desktop);
   margin: 0;
   padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   box-sizing: border-box;
 }
 
@@ -804,7 +802,7 @@ export const SUBTITLE_BLOCK_CSS = `
   padding: var(--space-2) var(--space-3);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  border: var(--border-width-hairline) solid transparent;
   background: transparent;
   transition: background var(--duration-fast) ease;
 }
@@ -1066,7 +1064,7 @@ export const SUBTITLE_BLOCK_CSS = `
   z-index: 2147483641;
   background: var(--color-background);
   color: var(--color-text);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-left: var(--space-1) solid var(--toast-variant-color, var(--color-info));
   border-radius: var(--radius-pill);
   padding: var(--space-2) var(--space-3);
@@ -1108,7 +1106,8 @@ export const SUBTITLE_BLOCK_CSS = `
 @media (prefers-reduced-motion: reduce) {
   .subtitle-block *,
   .subtitle-block *::before,
-  .subtitle-block *::after {
+  .subtitle-block *::after,
+  .subtitle-toast {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

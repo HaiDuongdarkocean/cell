@@ -99,7 +99,7 @@ export function wrapTokenSpans(
     span.style.cursor = 'pointer';
     span.style.borderRadius = 'var(--radius-xs, 2px)';
     // Hover highlight (subtle, theme-agnostic).
-    span.style.transition = 'background-color var(--duration-100, 100ms)';
+    span.style.transition = 'background-color var(--duration-100)';
     textSpan.appendChild(span);
     tokenSpans.push(span);
 

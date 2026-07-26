@@ -64,6 +64,10 @@ ${componentTokens}
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .subtitle-toast { animation: none; }
+}
+
 ${NAV_CLUSTER_CSS}
 `;
 }

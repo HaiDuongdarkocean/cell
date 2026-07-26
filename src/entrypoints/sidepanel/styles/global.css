@@ -38,9 +38,9 @@ body {
 /* Theme transition */
 html.theme-transitioning,
 html.theme-transitioning * {
-  transition: color 150ms var(--ease-in-out),
-              background-color 150ms var(--ease-in-out),
-              border-color 150ms var(--ease-in-out) !important;
+  transition: color var(--duration-fast) var(--ease-in-out),
+              background-color var(--duration-fast) var(--ease-in-out),
+              border-color var(--duration-fast) var(--ease-in-out) !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
