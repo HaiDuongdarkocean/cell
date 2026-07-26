@@ -4,6 +4,7 @@
 
 .slider {
   width: 100%;
+  min-width: var(--touch-target);
   height: var(--space-1);
   min-height: var(--touch-target);
   -webkit-appearance: none;

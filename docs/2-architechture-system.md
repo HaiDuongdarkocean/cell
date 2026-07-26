@@ -94,10 +94,10 @@ src/
 │   │   ├── Spinner.tsx + .module.css       # Animated loading indicator
 │   │   ├── Tabs.tsx + .module.css          # Compound tab list/trigger/content
 │   │   ├── Textarea.tsx + .module.css      # Multiline input with resize/error/disabled
-│   │   ├── Toggle.tsx + .module.css        # Switch pill 32x18px (settings-controls-restyle F1)
+│   │   ├── Toggle.tsx + .module.css        # Switch pill; touch-target aware 40/44px (settings-controls-restyle F1)
 │   │   ├── Tooltip.tsx + .module.css       # Accessible hover/focus tooltip
 │   │   ├── Accordion.tsx + .module.css     # Collapsible single/multiple sections
-│   │   ├── Slider.tsx + .module.css        # Styled range 4px track + 14px thumb (settings-controls-restyle F2)
+│   │   ├── Slider.tsx + .module.css        # Styled range; touch-target aware 40/44px (settings-controls-restyle F2)
 │   │   ├── ShortcutInput.tsx + .module.css # Uppercase + center single-char input (settings-controls-restyle F3)
 │   │   ├── SearchableSelect.tsx + .module.css # Single-select dropdown with embedded search (settings-controls-restyle F5)
 │   │   └── HintIcon.tsx + .module.css      # Info-circle button + floating popover with boundary detection (settings-controls-restyle F6)
@@ -489,8 +489,8 @@ tests/
 | `features/settings/ui/SettingsDialog.tsx` | Settings, TokenizePanelState, Icon, IconButton, **SettingsDialogContent**, styles | mountSettingsDialog, popup App, OptionsApp | Dialog wrapper: overlay + popover shell + close button + Escape handling; renders `SettingsDialogContent` |
 | `features/settings/ui/SettingsDialogContent.tsx` | Settings, types, config, languageRegistry, MultiSelect, SubtitleStylePanel, SubtitleBlockSettingsPanel, NavClusterSettingsPanel, CardCreatorSettingsPanel, DictionaryPopupSettingsPanel, TokenizeSettingsPanel, ThemePanel, TtsVoiceManagerPanel, ResourcesPanel, Toggle, ShortcutInput, SearchableSelect, Select, HintIcon, styles | SettingsDialog, SettingsTab | Reusable settings body: sidebar + all settings sections; accepts `className` for embedding in the universal panel |
 | `popup/components/settings/MultiSelect.tsx` | — | SettingsDialogContent | Reusable searchable multi-select (search input + checkbox list + footer). Used cho subtitle language selection |
-| `shared/ui/Toggle.tsx` | — | SettingsDialogContent, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
-| `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
+| `shared/ui/Toggle.tsx` | — | SettingsDialogContent, NavClusterSettingsPanel | Switch pill; touch-target aware 40/44px (settings-controls-restyle F1) |
+| `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range; touch-target aware 40/44px (settings-controls-restyle F2) |
 | `shared/ui/ShortcutInput.tsx` | — | SettingsDialogContent | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
 | `shared/ui/SearchableSelect.tsx` | — | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5) |
 | `shared/ui/HintIcon.tsx` | — | SettingsDialogContent, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
@@ -559,8 +559,8 @@ tests/
 | `shared/ui/Skeleton.tsx` | — | — | Placeholder loading shape |
 | `shared/ui/Spinner.tsx` | — | Button, Loading surfaces | Animated loading indicator |
 | `shared/ui/Textarea.tsx` | — | ThemeImportExport | Multiline input with resize/error/disabled |
-| `shared/ui/Toggle.tsx` | — | SettingsDialogContent, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
-| `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
+| `shared/ui/Toggle.tsx` | — | SettingsDialogContent, NavClusterSettingsPanel | Switch pill; touch-target aware 40/44px (settings-controls-restyle F1) |
+| `shared/ui/Slider.tsx` | — | NavClusterSettingsPanel | Styled range; touch-target aware 40/44px (settings-controls-restyle F2) |
 | `shared/ui/ShortcutInput.tsx` | — | SettingsDialogContent | **ADR-021 D7**: Pill-style input (radius-full, min-width 140px) — single-char pill (uppercase center) + combo pill (Ctrl+Shift+T kbd chips, modifier subtle bg, key solid primary). Captures keydown, supports combo modifiers. Backward compat 5 old shortcuts. |
 | `shared/ui/SearchableSelect.tsx` | — | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5) |
 | `shared/ui/HintIcon.tsx` | — | SettingsDialogContent, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |
@@ -880,7 +880,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `parseTtml` | `lib/parsers/ttmlParser.ts` | string → SrtSubtitle | subtitleParser.ts | **ADR-029**: Parse TTML (IMSC1.1) via DOMParser — tick/clock/seconds time formats, `<br>`→newline, nested `<span>` stripped; Netflix serves IMSC1.1 not WebVTT |
 | `convertTtmlToSrt` | `lib/parsers/ttmlToSrt.ts` | string → string | (download path) | **ADR-029**: Convert TTML content to SRT format (parseTtml → msToSrtTime per cue) |
 | `stripSubtitleTags` | `lib/parsers/srtNormalizer.ts` | string → string | srtParser, vttParser, srtNormalizer | Strip `<i>`/`<b>`/`<c>`/`<v>`/`{\an8}` tags, preserve newlines (display path) |
-| `Toggle` | `shared/ui/Toggle.tsx` | checked, onChange, ariaLabel → ReactElement | SettingsDialogContent, NavClusterSettingsPanel | Switch pill 32x18px (settings-controls-restyle F1) |
+| `Toggle` | `shared/ui/Toggle.tsx` | checked, onChange, ariaLabel → ReactElement | SettingsDialogContent, NavClusterSettingsPanel | Switch pill; touch-target aware 40/44px (settings-controls-restyle F1) |
 | `hexToRgb` | `features/theme/logic/colorGenerator.ts` | string → {r,g,b} | contrastValidator, tokens | **ADR-022**: Parse hex → RGB (3/6 digit, case-insensitive) |
 | `getLuminance` | `features/theme/logic/colorGenerator.ts` | string → number | contrastValidator | **ADR-022**: WCAG 2.1 relative luminance (0-1) |
 | `generateShade` | `features/theme/logic/colorGenerator.ts` | (hex, percent) → hex | tokens | **ADR-022**: Darken hex by percent (0-100) |
@@ -975,7 +975,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `SqliteStrategy` | `features/dictionary/strategies/sqliteStrategy.ts` | extends BaseFrequencyStrategy | strategyFactory | **ADR-023 D5**: gunzip + sql.js lazy-load + exec SQL, DatabaseError on wasm fail |
 | `ResourcesPanel` | `features/dictionary/ui/ResourcesPanel.tsx` | { langCode } → JSX | OptionsApp | **ADR-023 F11**: 2 sections (dictionary + frequency) with independent import state per resourceType (parallel import, 2 progress bars, no cross-block) + list + delete confirm |
 | `Dropzone` | `features/dictionary/ui/Dropzone.tsx` | { label, accept, disabled, onFiles } → JSX | ResourcesPanel | **ADR-023 F11**: Drag-drop + click file picker |
-| `Slider` | `shared/ui/Slider.tsx` | value, min, max, step, onChange, ariaLabel → ReactElement | NavClusterSettingsPanel | Styled range 4px track + 14px thumb (settings-controls-restyle F2) |
+| `Slider` | `shared/ui/Slider.tsx` | value, min, max, step, onChange, ariaLabel → ReactElement | NavClusterSettingsPanel | Styled range; touch-target aware 40/44px (settings-controls-restyle F2) |
 | `ShortcutInput` | `shared/ui/ShortcutInput.tsx` | value: ShortcutValue, onChange: (ShortcutValue) => void, ariaLabel → ReactElement | SettingsDialogContent | **ADR-021 D7**: Pill-style input — single-char + combo (Ctrl+Shift+T). Captures keydown, supports modifiers. |
 | `SearchableSelect` | `shared/ui/SearchableSelect.tsx` | options, value, onChange, ariaLabel → ReactElement | SettingsDialogContent | Single-select dropdown with embedded search (settings-controls-restyle F5) |
 | `HintIcon` | `shared/ui/HintIcon.tsx` | hint, ariaLabel → ReactElement | SettingsDialogContent, SubtitleStylePanel | Info-circle button + floating popover with boundary detection (settings-controls-restyle F6) |

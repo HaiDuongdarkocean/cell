@@ -41,7 +41,6 @@
   flex: 1;
   min-width: 0;
   border: none;
-  outline: none;
   background: transparent;
   font-family: var(--font-family);
   font-size: var(--font-size-base);
@@ -50,6 +49,11 @@
 
 .searchInput::placeholder {
   color: var(--color-text-muted);
+}
+
+.searchInput:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 /* Selection count badge */
@@ -149,8 +153,7 @@
   user-select: none;
   font-size: var(--font-size-base);
   color: var(--color-text);
-  transition: background var(--duration-fast) ease;
-  outline: none;
+  transition: background var(--duration-fast) var(--ease-in-out);
 }
 
 .option:hover {
