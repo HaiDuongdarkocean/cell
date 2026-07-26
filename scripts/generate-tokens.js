@@ -20,6 +20,17 @@ function kebabCase(str) {
   return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 }
 
+function hexToRgb(hex) {
+  const clean = hex.replace('#', '').trim();
+  const isHex = /^[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(clean);
+  if (!isHex) return null;
+  const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return { r, g, b };
+}
+
 function flattenStaticTokens(staticObj) {
   const lines = [];
   const push = (name, value) => {
@@ -27,6 +38,10 @@ function flattenStaticTokens(staticObj) {
       lines.push(`  --${name}: ${value};`);
     } else {
       lines.push(`  --${name}: ${value};`);
+    }
+    const rgb = typeof value === 'string' ? hexToRgb(value) : null;
+    if (rgb) {
+      lines.push(`  --${name}-rgb: ${rgb.r}, ${rgb.g}, ${rgb.b};`);
     }
   };
 
@@ -98,6 +113,10 @@ function flattenComponentTokens(componentObj) {
   for (const [component, tokens] of Object.entries(componentObj)) {
     for (const [key, value] of Object.entries(tokens)) {
       lines.push(`  --${component}-${key}: ${value};`);
+      const rgb = typeof value === 'string' ? hexToRgb(value) : null;
+      if (rgb) {
+        lines.push(`  --${component}-${key}-rgb: ${rgb.r}, ${rgb.g}, ${rgb.b};`);
+      }
     }
   }
   return lines.join('\n');
@@ -106,7 +125,12 @@ function flattenComponentTokens(componentObj) {
 function buildColorBlock(core, derived, mode) {
   const lines = [`  color-scheme: ${mode};`];
   for (const key of CORE_COLOR_KEYS) {
-    lines.push(`  --color-${kebabCase(key)}: ${core[key]};`);
+    const name = kebabCase(key);
+    lines.push(`  --color-${name}: ${core[key]};`);
+    const rgb = hexToRgb(core[key]);
+    if (rgb) {
+      lines.push(`  --color-${name}-rgb: ${rgb.r}, ${rgb.g}, ${rgb.b};`);
+    }
   }
   for (const [key, value] of Object.entries(derived)) {
     lines.push(`  --${key}: ${value};`);

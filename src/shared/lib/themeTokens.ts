@@ -34,9 +34,11 @@ const STYLE_ID = THEME_STYLE_ID;
 
 
 /** Build the full `<style>` text content from a ThemeConfig.
- *  Static + component tokens live on :root; color tokens only apply inside a
- *  [data-theme] boundary. Component tokens reference color vars, so they
- *  resolve to the nearest [data-theme] ancestor at usage time. */
+ *  Static tokens live on :root. Color + component tokens apply inside a
+ *  [data-theme] boundary. Component tokens reference color vars, and CSS
+ *  custom properties resolve where they are DECLARED, not where they are used,
+ *  so the component block must be re-declared in each theme selector to
+ *  re-resolve against the theme's core colors (critical for Shadow DOM). */
 function buildStyleContent(config: ThemeConfig): string {
   const staticTokens = formatStaticTokens();
   const componentTokens = formatComponentTokens();
@@ -45,15 +47,16 @@ function buildStyleContent(config: ThemeConfig): string {
   return `
 :root {
 ${staticTokens}
-${componentTokens}
 }
 
 [data-theme="light"] {
 ${lightTokens}
+${componentTokens}
 }
 
 [data-theme="dark"] {
 ${darkTokens}
+${componentTokens}
 }
 
 @keyframes subtitle-toast-in {
