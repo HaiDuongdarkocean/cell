@@ -63,14 +63,6 @@ export interface OrbitalBadgeOptions {
   readonly onDoubleTap?: () => void;
   /** Called when the badge is triple-tapped while expanded. */
   readonly onTripleTap?: () => void;
-  /** Tokenize panel state + callbacks. These are forwarded into the universal
-   *  panel's Settings tab so the Tokenize section stays in sync (ADR-061). */
-  readonly panel?: {
-    readonly getState: () => OrbitalBadgePanelState;
-    readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
-    readonly onOpenDictionary: () => void;
-    readonly subscribe: (cb: (state: OrbitalBadgePanelState) => void) => () => void;
-  };
   /** Generic panel controller. When provided, a single click on the collapsed
    *  badge toggles the panel open and closed; clicks outside the badge and
    *  outside `getHosts()` close it. */
@@ -239,8 +231,6 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
   root.appendChild(pointer);
 
   // ADR-065: Orbital badge toggles a caller-supplied panel controller.
-  // The tokenize state is passed through `options.panel` and consumed by the
-  // universal panel's Settings tab; the badge itself does not mount any UI.
 
   function setBadgeCenter(center: Point): void {
     badgeCenter = center;

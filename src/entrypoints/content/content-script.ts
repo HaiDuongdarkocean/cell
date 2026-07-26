@@ -277,50 +277,8 @@ function ensureWebTextCtrl(): WebTextDictionaryController {
         webTokenizeCtrl?.applyStatusForTerm(term, status);
       },
       getTokenStatus: (term) => webTokenizeCtrl?.getStatusForTerm(term) ?? 'unknown',
-      // Orbital badge settings panel — merged from the former token FAB.
-      // The panel reads/writes tokenize state via these callbacks. Lazily
-      // reads `webTokenizeCtrl` at click time (may be null on first render).
+      // ADR-065: generic universal panel controller toggled by the orbital badge.
       panelController: ensureUniversalPanelMount(),
-      panel: {
-        getState: () => {
-          const s = webTokenizeCtrl?.getState();
-          return {
-            enabled: s?.enabled ?? false,
-            showStatus: s?.showStatus ?? false,
-            showFrequency: s?.showFrequency ?? false,
-          };
-        },
-        onToggle: (key) => {
-          if (key === 'enabled') webTokenizeCtrl?.toggleEnabled();
-          else if (key === 'showStatus') webTokenizeCtrl?.toggleShowStatus();
-          else if (key === 'showFrequency') webTokenizeCtrl?.toggleShowFrequency();
-        },
-        onOpenDictionary: () => {
-          const term = webTokenizeCtrl?.pickDictionaryTerm();
-          if (term) {
-            const ctrl = ensureWebTextCtrl();
-            ctrl.handleLookup(
-              { term, langCode: 'en', contextSentence: '', cursorOffset: 0 },
-              `tokenize-panel-${term}`,
-              document.body.getBoundingClientRect(),
-              (() => { const r = document.createRange(); r.selectNodeContents(document.body); return r; })(),
-            );
-          }
-        },
-        subscribe: (cb) => {
-          if (!webTokenizeCtrl) {
-            // ADR-061: webTokenizeCtrl not yet initialized — queue the
-            // subscriber. It will be registered when initTokenize completes.
-            pendingTokenizeSubs.push(cb);
-            return () => {
-              pendingTokenizeSubs = pendingTokenizeSubs.filter((c) => c !== cb);
-            };
-          }
-          return webTokenizeCtrl.subscribe((s) => {
-            cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency });
-          });
-        },
-      },
     });
   }
   return webTextCtrl;

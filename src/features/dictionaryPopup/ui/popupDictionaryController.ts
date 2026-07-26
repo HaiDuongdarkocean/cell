@@ -1396,12 +1396,16 @@ function onResizeEnd(state: PopupDictionaryState, size: PopupSize, sheetHeight: 
 
 // Singleton for header audio playback so rapid clicks don't overlap.
 let currentHeaderAudio: HTMLAudioElement | null = null;
+const currentHeaderAudioListeners: { type: string; listener: EventListener }[] = [];
 
 const stopCurrentHeaderAudio = (): void => {
-  if (currentHeaderAudio) {
-    currentHeaderAudio.pause();
-    currentHeaderAudio = null;
-  }
+  if (!currentHeaderAudio) return;
+  currentHeaderAudioListeners.forEach(({ type, listener }) => {
+    currentHeaderAudio?.removeEventListener(type, listener);
+  });
+  currentHeaderAudioListeners.length = 0;
+  currentHeaderAudio.pause();
+  currentHeaderAudio = null;
 };
 
 /** Play an audio URL best-effort. Stops any previously-playing header audio
@@ -1412,15 +1416,12 @@ function playUrlBestEffort(url: string): void {
     stopCurrentHeaderAudio();
     const audio = new Audio(url);
     currentHeaderAudio = audio;
-    audio.addEventListener('ended', () => {
-      if (currentHeaderAudio === audio) currentHeaderAudio = null;
-    });
-    audio.addEventListener('pause', () => {
-      if (currentHeaderAudio === audio) currentHeaderAudio = null;
-    });
-    void audio.play().catch(() => {
-      if (currentHeaderAudio === audio) currentHeaderAudio = null;
-    });
+    const onEnded = (): void => { if (currentHeaderAudio === audio) currentHeaderAudio = null; };
+    const onPause = (): void => { if (currentHeaderAudio === audio) currentHeaderAudio = null; };
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('pause', onPause);
+    currentHeaderAudioListeners.push({ type: 'ended', listener: onEnded }, { type: 'pause', listener: onPause });
+    void audio.play().catch(() => { stopCurrentHeaderAudio(); });
   } catch { /* best-effort — jsdom throws synchronously */ }
 }
 

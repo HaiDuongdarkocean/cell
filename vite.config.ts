@@ -18,7 +18,11 @@ const SEED_ASSET_FILES: readonly string[] = [
   'en/frequency_list/standard.json',
 ] as const;
 
-function autoSeedAssets(): Plugin {
+function autoSeedAssets(mode: string): Plugin {
+  // Production builds should not ship test seed files (~42.7MB).
+  // Dev builds (`npx vite build --mode development`) keep seeds so the
+  // extension works out-of-the-box when loaded from `dist/`.
+  if (mode !== 'development') return { name: 'auto-seed-assets' };
   const seedRoot = resolve(__dirname, 'tests', 'data-test', 'resource');
   return {
     name: 'auto-seed-assets',
@@ -44,8 +48,8 @@ function autoSeedAssets(): Plugin {
   };
 }
 
-export default defineConfig({
-  plugins: [crx({ manifest }), autoSeedAssets()],
+export default defineConfig(({ mode }) => ({
+  plugins: [crx({ manifest }), autoSeedAssets(mode)],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -73,4 +77,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

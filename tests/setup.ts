@@ -19,6 +19,7 @@ if (typeof globalThis.TextEncoder !== 'function') {
 // clutters test output; the production code already catches play() failures.
 if (typeof HTMLMediaElement !== 'undefined') {
   HTMLMediaElement.prototype.play = jest.fn(() => Promise.resolve());
+  HTMLMediaElement.prototype.pause = jest.fn();
 }
 
 // Polyfill crypto.subtle for jsdom (used by signatureGenerator SHA-256).
