@@ -18,7 +18,6 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import type { UniversalPanelTab } from './types';
 import type { OrbitalBadgePanelState } from '@/features/dictionaryPopup/badgePointer/createOrbitalBadge';
-import type { PopupCardCreatorPrefill } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 
 export interface UniversalPanelMountOptions {
   /** Tokenize state + callbacks forwarded to the Settings tab. */
@@ -32,8 +31,6 @@ export interface UniversalPanelMountOptions {
   readonly dictionary?: {
     /** Initial term to search when the Dictionary tab opens. */
     readonly initialTerm?: string;
-    /** Called when the user confirms Send to Card in the right pane. */
-    readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   };
   /** Called when the panel closes. */
   readonly onClose?: () => void;
@@ -174,7 +171,6 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       targetLang: dictionaryTargetLang,
       initialTerm: options.dictionary?.initialTerm,
       isOpen: open,
-      onSendToCard: options.dictionary?.onSendToCard,
     }) as ReactElement;
 
   const settingsPanel = createElement(
