@@ -10,12 +10,15 @@ import { createRoot, type Root } from 'react-dom/client';
 import { createElement, type ReactElement } from 'react';
 import { UniversalPanel } from './UniversalPanel';
 import { SettingsTab } from './tabs/SettingsTab';
+import { DictionaryTab } from './tabs/DictionaryTab';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
 import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
+import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import type { UniversalPanelTab } from './types';
 import type { OrbitalBadgePanelState } from '@/features/dictionaryPopup/badgePointer/createOrbitalBadge';
+import type { PopupCardCreatorPrefill } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 
 export interface UniversalPanelMountOptions {
   /** Tokenize state + callbacks forwarded to the Settings tab. */
@@ -24,6 +27,13 @@ export interface UniversalPanelMountOptions {
     readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
     readonly onOpenDictionary: () => void;
     readonly subscribe: (cb: (state: OrbitalBadgePanelState) => void) => () => void;
+  };
+  /** Dictionary tab configuration. */
+  readonly dictionary?: {
+    /** Initial term to search when the Dictionary tab opens. */
+    readonly initialTerm?: string;
+    /** Called when the user confirms Send to Card in the right pane. */
+    readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   };
   /** Called when the panel closes. */
   readonly onClose?: () => void;
@@ -145,11 +155,27 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     },
   };
 
-  const placeholderDictionary = createElement(
-    'div',
-    { 'data-testid': 'universal-panel-dictionary-placeholder' },
-    'Dictionary',
-  ) as ReactElement;
+  // Default dictionary languages before settings load; updated once loadSettings resolves.
+  let dictionaryLangCode = 'en';
+  let dictionarySourceLang = 'en';
+  let dictionaryTargetLang = 'vi';
+
+  void loadSettings().then((settings) => {
+    dictionarySourceLang = settings.subtitleOverlayTargetLanguage || dictionarySourceLang;
+    dictionaryTargetLang = settings.subtitleOverlayNativeLanguage || dictionaryTargetLang;
+    dictionaryLangCode = dictionarySourceLang;
+    render();
+  });
+
+  const renderDictionaryPanel = (open: boolean): ReactElement =>
+    createElement(DictionaryTab, {
+      langCode: dictionaryLangCode,
+      sourceLang: dictionarySourceLang,
+      targetLang: dictionaryTargetLang,
+      initialTerm: options.dictionary?.initialTerm,
+      isOpen: open,
+      onSendToCard: options.dictionary?.onSendToCard,
+    }) as ReactElement;
 
   const settingsPanel = createElement(
     SettingsTab,
@@ -177,7 +203,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
           void controller.switchTab(tab);
         },
         onClose: () => controller.close(),
-        dictionaryPanel: placeholderDictionary,
+        dictionaryPanel: renderDictionaryPanel(open),
         settingsPanel,
       }) as ReactElement,
     );
