@@ -27,11 +27,24 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 //                          [resize] ↘
 
 const POPUP_Z_INDEX = '2147483647'; // max int — above everything
-const VIEWPORT_MARGIN = 8;
+
+/** Layout constants — extracted from hardcoded px values (Phase 1 SSOT). */
+const POPUP_MARGIN_PX = 8; // equals --space-2
+const POPUP_POINTER_GAP_PX = 4; // equals --space-1
+const POPUP_POINTER_DIRECTION_THRESHOLD_PX = 4; // px
+const POPUP_DEFAULT_POINTER_RADIUS_PX = 6; // px
+const POPUP_MIN_WIDTH_PX = 320;
+const POPUP_MIN_HEIGHT_PX = 200;
+const POPUP_DEFAULT_HEIGHT_PX = 300;
+const POPUP_MAX_HEIGHT_RATIO = 0.7;
+const POPUP_SHEET_BREAKPOINT_PX = 768; // must stay in sync with CSS media queries
+const SHEET_SNAP_THRESHOLD_PX = 40;
+const SHEET_DISMISS_THRESHOLD_PX = 100;
+const TOAST_DISPLAY_MS = 3000;
+const TOAST_CLEANUP_MS = 400;
+
 /** Sheet snap tiers as fraction of viewport height (high → low). */
 const SHEET_TIERS = [1.0, 0.75, 0.5, 0.25];
-/** Minimum drag distance (px) to snap to next tier. */
-const SHEET_SNAP_THRESHOLD = 40;
 
 
 
@@ -91,9 +104,9 @@ function getMountParent(): HTMLElement {
 
 /** Clamp popup size to viewport. */
 export function clampPopupSize(size: PopupSize, viewportWidth: number, viewportHeight: number): PopupSize {
-  const width = Math.min(size.width, viewportWidth - VIEWPORT_MARGIN * 2);
-  const maxHeight = Math.min(size.maxHeight, Math.round(viewportHeight * 0.7));
-  return { width: Math.max(320, width), maxHeight: Math.max(200, maxHeight) };
+  const width = Math.min(size.width, viewportWidth - POPUP_MARGIN_PX * 2);
+  const maxHeight = Math.min(size.maxHeight, Math.round(viewportHeight * POPUP_MAX_HEIGHT_RATIO));
+  return { width: Math.max(POPUP_MIN_WIDTH_PX, width), maxHeight: Math.max(POPUP_MIN_HEIGHT_PX, maxHeight) };
 }
 
 /** Final clamp to keep the popup inside the viewport. */
@@ -105,23 +118,23 @@ function finalizePosition(
   viewportWidth: number,
   viewportHeight: number,
 ): PopupPosition {
-  const maxFitWidth = viewportWidth - VIEWPORT_MARGIN * 2;
-  const maxFitHeight = viewportHeight - VIEWPORT_MARGIN * 2;
+  const maxFitWidth = viewportWidth - POPUP_MARGIN_PX * 2;
+  const maxFitHeight = viewportHeight - POPUP_MARGIN_PX * 2;
   if (popupWidth <= maxFitWidth) {
-    if (left < VIEWPORT_MARGIN) left = VIEWPORT_MARGIN;
-    if (left + popupWidth > viewportWidth - VIEWPORT_MARGIN) {
-      left = viewportWidth - popupWidth - VIEWPORT_MARGIN;
+    if (left < POPUP_MARGIN_PX) left = POPUP_MARGIN_PX;
+    if (left + popupWidth > viewportWidth - POPUP_MARGIN_PX) {
+      left = viewportWidth - popupWidth - POPUP_MARGIN_PX;
     }
   } else {
-    left = VIEWPORT_MARGIN;
+    left = POPUP_MARGIN_PX;
   }
   if (popupHeight <= maxFitHeight) {
-    if (top + popupHeight > viewportHeight - VIEWPORT_MARGIN) {
-      top = viewportHeight - popupHeight - VIEWPORT_MARGIN;
+    if (top + popupHeight > viewportHeight - POPUP_MARGIN_PX) {
+      top = viewportHeight - popupHeight - POPUP_MARGIN_PX;
     }
-    if (top < VIEWPORT_MARGIN) top = VIEWPORT_MARGIN;
+    if (top < POPUP_MARGIN_PX) top = POPUP_MARGIN_PX;
   } else {
-    top = VIEWPORT_MARGIN;
+    top = POPUP_MARGIN_PX;
   }
   return { left: Math.round(left), top: Math.round(top) };
 }
@@ -144,7 +157,7 @@ function derivePreferredPlacement(
   const originY = pointer.badgeCenter?.y ?? (anchor.top + anchor.bottom) / 2;
   const dx = pointer.tip.x - originX;
   const dy = pointer.tip.y - originY;
-  if (Math.hypot(dx, dy) < 4) return null;
+  if (Math.hypot(dx, dy) < POPUP_POINTER_DIRECTION_THRESHOLD_PX) return null;
   if (Math.abs(dx) > Math.abs(dy)) {
     return dx > 0 ? 'right' : 'left';
   }
@@ -203,14 +216,13 @@ function rawCornerPosition(
   popupHeight: number,
   line: PopupLineRect | null,
 ): { left: number; top: number } {
-  const GAP = 4;
-  const belowTop = line ? Math.max(anchor.bottom + GAP, line.bottom + GAP) : anchor.bottom + GAP;
-  const aboveBottom = line ? Math.min(anchor.top - GAP, line.top - GAP) : anchor.top - GAP;
+  const belowTop = line ? Math.max(anchor.bottom + POPUP_POINTER_GAP_PX, line.bottom + POPUP_POINTER_GAP_PX) : anchor.bottom + POPUP_POINTER_GAP_PX;
+  const aboveBottom = line ? Math.min(anchor.top - POPUP_POINTER_GAP_PX, line.top - POPUP_POINTER_GAP_PX) : anchor.top - POPUP_POINTER_GAP_PX;
   switch (name) {
-    case 'se': return { left: anchor.right + GAP, top: belowTop };
-    case 'sw': return { left: anchor.left - popupWidth - GAP, top: belowTop };
-    case 'ne': return { left: anchor.right + GAP, top: aboveBottom - popupHeight };
-    case 'nw': return { left: anchor.left - popupWidth - GAP, top: aboveBottom - popupHeight };
+    case 'se': return { left: anchor.right + POPUP_POINTER_GAP_PX, top: belowTop };
+    case 'sw': return { left: anchor.left - popupWidth - POPUP_POINTER_GAP_PX, top: belowTop };
+    case 'ne': return { left: anchor.right + POPUP_POINTER_GAP_PX, top: aboveBottom - popupHeight };
+    case 'nw': return { left: anchor.left - popupWidth - POPUP_POINTER_GAP_PX, top: aboveBottom - popupHeight };
   }
 }
 
@@ -223,10 +235,10 @@ function rawCornerFits(
   viewportWidth: number,
   viewportHeight: number,
 ): boolean {
-  return rawLeft >= VIEWPORT_MARGIN
-    && rawLeft + popupWidth <= viewportWidth - VIEWPORT_MARGIN
-    && rawTop >= VIEWPORT_MARGIN
-    && rawTop + popupHeight <= viewportHeight - VIEWPORT_MARGIN;
+  return rawLeft >= POPUP_MARGIN_PX
+    && rawLeft + popupWidth <= viewportWidth - POPUP_MARGIN_PX
+    && rawTop >= POPUP_MARGIN_PX
+    && rawTop + popupHeight <= viewportHeight - POPUP_MARGIN_PX;
 }
 
 function scoreCorner(
@@ -241,7 +253,6 @@ function scoreCorner(
   anchor: PopupAnchor,
   line: PopupLineRect | null,
 ): number {
-  const GAP = 4;
   let score = 0;
 
   // Honour pointer-derived preference (mapped to the two matching corners).
@@ -253,8 +264,8 @@ function scoreCorner(
 
   // SOFT: avoid covering the pointer tip (treated as a circle with a small gap).
   if (pointer) {
-    const pr = Number.isFinite(pointer.pointerRadius) ? pointer.pointerRadius! : 6;
-    const pointerMargin = pr + GAP;
+    const pr = Number.isFinite(pointer.pointerRadius) ? pointer.pointerRadius! : POPUP_DEFAULT_POINTER_RADIUS_PX;
+    const pointerMargin = pr + POPUP_POINTER_GAP_PX;
     if (rectContainsPoint(pos.left - pointerMargin, pos.top - pointerMargin, popupWidth + pointerMargin * 2, popupHeight + pointerMargin * 2, pointer.tip.x, pointer.tip.y)) {
       score += 1000;
     }
@@ -262,8 +273,8 @@ function scoreCorner(
 
   // SOFT: avoid covering the orbital badge (circle with a small gap).
   if (pointer?.badgeCenter && pointer.badgeRadius != null && pointer.badgeRadius > 0) {
-    const r = pointer.badgeRadius + GAP;
-    if (rectIntersectsCircle(pos.left - GAP, pos.top - GAP, popupWidth + GAP * 2, popupHeight + GAP * 2, pointer.badgeCenter.x, pointer.badgeCenter.y, r)) {
+    const r = pointer.badgeRadius + POPUP_POINTER_GAP_PX;
+    if (rectIntersectsCircle(pos.left - POPUP_POINTER_GAP_PX, pos.top - POPUP_POINTER_GAP_PX, popupWidth + POPUP_POINTER_GAP_PX * 2, popupHeight + POPUP_POINTER_GAP_PX * 2, pointer.badgeCenter.x, pointer.badgeCenter.y, r)) {
       score += 500;
     }
   }
@@ -323,7 +334,7 @@ function scoreCorner(
  * @param popupWidth   - Popup width in px.
  * @param viewportWidth  - Window inner width.
  * @param viewportHeight - Window inner height.
- * @param popupHeight    - Estimated popup height (for flip logic). Defaults to 300.
+ * @param popupHeight    - Estimated popup height (for flip logic). Defaults to POPUP_DEFAULT_HEIGHT_PX.
  * @param pointer        - Optional pointer tip + badge center + badge radius + pointer radius to avoid covering them.
  * @param lineRect       - Optional bounding box of the line containing the token. The popup avoids overlapping it.
  */
@@ -335,7 +346,7 @@ export function computePopupPosition(
   popupWidth: number,
   viewportWidth: number,
   viewportHeight: number,
-  popupHeight: number = 300,
+  popupHeight: number = POPUP_DEFAULT_HEIGHT_PX,
   pointer?: PopupPointerHint,
   lineRect?: PopupLineRect | null,
 ): PopupPosition {
@@ -421,7 +432,7 @@ export class PopupShell {
   private sheetDragActive = false;
   private sheetDragFromHandle = false;
   // Viewport resize → re-position (rAF throttled). Morphs between sheet/popover
-  // when crossing the 768px breakpoint, and keeps the popup clamped to viewport.
+  // when crossing the POPUP_SHEET_BREAKPOINT_PX breakpoint, and keeps the popup clamped to viewport.
   private viewportResizeRaf = 0;
   private previouslyFocused: Element | null = null;
   private themeCleanup: (() => void) | null = null;
@@ -590,9 +601,9 @@ export class PopupShell {
     this.applyPosition();
   }
 
-  /** Detect mobile bottom-sheet mode: viewport < 768px. */
+  /** Detect mobile bottom-sheet mode: viewport < POPUP_SHEET_BREAKPOINT_PX. */
   private isSheetMode(): boolean {
-    return window.innerWidth < 768;
+    return window.innerWidth < POPUP_SHEET_BREAKPOINT_PX;
   }
 
   private applyPosition(): void {
@@ -604,12 +615,12 @@ export class PopupShell {
     if (this.isSheetMode()) {
       this.container.classList.add('cell-popup--sheet');
       this.container.classList.remove('cell-popup--popover');
-      this.container.style.left = '0px';
+      this.container.style.left = '0';
       this.container.style.top = 'auto';
-      this.container.style.bottom = '0px';
+      this.container.style.bottom = '0';
       this.container.style.width = `${vw}px`;
-      // Clamp remembered sheet height to viewport (leave 8px margin at top).
-      const clampedSheetHeight = Math.max(200, Math.min(this.sheetHeight, vh - VIEWPORT_MARGIN));
+      // Clamp remembered sheet height to viewport (leave POPUP_MARGIN_PX margin at top).
+      const clampedSheetHeight = Math.max(POPUP_MIN_HEIGHT_PX, Math.min(this.sheetHeight, vh - POPUP_MARGIN_PX));
       this.container.style.height = `${clampedSheetHeight}px`;
       this.container.style.transform = '';
       return;
@@ -626,7 +637,7 @@ export class PopupShell {
     // without animating; visibility:hidden still contributes to layout.
     const estHeight = this.container.offsetHeight > 0
       ? Math.min(this.container.offsetHeight, this.popoverSize.maxHeight)
-      : Math.min(this.popoverSize.maxHeight, 300);
+      : Math.min(this.popoverSize.maxHeight, POPUP_DEFAULT_HEIGHT_PX);
     const pos = computePopupPosition(
       this.lastAnchor.top, this.lastAnchor.left, this.lastAnchor.right, this.lastAnchor.bottom,
       this.popoverSize.width, vw, vh, estHeight,
@@ -636,13 +647,13 @@ export class PopupShell {
     // Apply any user drag offset and keep the popup inside the viewport.
     const width = this.container.offsetWidth || this.popoverSize.width;
     const height = this.container.offsetHeight || estHeight;
-    const left = Math.max(VIEWPORT_MARGIN, Math.min(vw - width - VIEWPORT_MARGIN, pos.left + this.dragOffset.x));
-    const top = Math.max(VIEWPORT_MARGIN, Math.min(vh - height - VIEWPORT_MARGIN, pos.top + this.dragOffset.y));
+    const left = Math.max(POPUP_MARGIN_PX, Math.min(vw - width - POPUP_MARGIN_PX, pos.left + this.dragOffset.x));
+    const top = Math.max(POPUP_MARGIN_PX, Math.min(vh - height - POPUP_MARGIN_PX, pos.top + this.dragOffset.y));
     this.container.style.left = `${left}px`;
     this.container.style.top = `${top}px`;
     // Shrink popup height to fit the viewport so it never overflows.
-    const availableHeight = vh - top - VIEWPORT_MARGIN;
-    const clampedHeight = Math.max(200, Math.min(this.popoverSize.maxHeight, availableHeight));
+    const availableHeight = vh - top - POPUP_MARGIN_PX;
+    const clampedHeight = Math.max(POPUP_MIN_HEIGHT_PX, Math.min(this.popoverSize.maxHeight, availableHeight));
     this.container.style.height = `${clampedHeight}px`;
   }
 
@@ -663,12 +674,12 @@ export class PopupShell {
       this.lastPointer ?? undefined,
       this.lastLineRect,
     );
-    const left = Math.max(VIEWPORT_MARGIN, Math.min(this.dragCachedVw - this.dragCachedWidth - VIEWPORT_MARGIN, pos.left + this.dragOffset.x));
-    const top = Math.max(VIEWPORT_MARGIN, Math.min(this.dragCachedVh - this.dragCachedHeight - VIEWPORT_MARGIN, pos.top + this.dragOffset.y));
+    const left = Math.max(POPUP_MARGIN_PX, Math.min(this.dragCachedVw - this.dragCachedWidth - POPUP_MARGIN_PX, pos.left + this.dragOffset.x));
+    const top = Math.max(POPUP_MARGIN_PX, Math.min(this.dragCachedVh - this.dragCachedHeight - POPUP_MARGIN_PX, pos.top + this.dragOffset.y));
     this.container.style.left = `${left}px`;
     this.container.style.top = `${top}px`;
-    const availableHeight = this.dragCachedVh - top - VIEWPORT_MARGIN;
-    const clampedHeight = Math.max(200, Math.min(this.popoverSize.maxHeight, availableHeight));
+    const availableHeight = this.dragCachedVh - top - POPUP_MARGIN_PX;
+    const clampedHeight = Math.max(POPUP_MIN_HEIGHT_PX, Math.min(this.popoverSize.maxHeight, availableHeight));
     this.container.style.height = `${clampedHeight}px`;
   }
 
@@ -939,12 +950,12 @@ export class PopupShell {
     if (!this.container) return;
     if (this.isSheetMode()) {
       // Sheet: drag up to increase height (dy negative = drag up = taller).
-      const newHeight = Math.max(200, Math.min(this.resizeStartHeight - dy, window.innerHeight - VIEWPORT_MARGIN));
+      const newHeight = Math.max(POPUP_MIN_HEIGHT_PX, Math.min(this.resizeStartHeight - dy, window.innerHeight - POPUP_MARGIN_PX));
       this.sheetHeight = newHeight;
       this.container.style.height = `${newHeight}px`;
     } else {
-      const newWidth = Math.max(320, this.resizeStartWidth + dx);
-      const newHeight = Math.max(200, this.resizeStartHeight + dy);
+      const newWidth = Math.max(POPUP_MIN_WIDTH_PX, this.resizeStartWidth + dx);
+      const newHeight = Math.max(POPUP_MIN_HEIGHT_PX, this.resizeStartHeight + dy);
       const clamped = clampPopupSize(
         { width: newWidth, maxHeight: newHeight },
         window.innerWidth,
@@ -989,8 +1000,8 @@ export class PopupShell {
       toast.classList.remove('cell-toast--visible');
       toast.addEventListener('transitionend', () => { toast.remove(); }, { once: true });
       // ponytail: if transitionend doesn't fire (e.g. popup removed), force cleanup.
-      setTimeout(() => { toast.remove(); }, 400);
-    }, 3000);
+      setTimeout(() => { toast.remove(); }, TOAST_CLEANUP_MS);
+    }, TOAST_DISPLAY_MS);
   }
 
   /** Restore focus to the element that was focused before the popup opened. */
@@ -1072,7 +1083,7 @@ export class PopupShell {
   // === Bottom sheet swipe-to-dismiss ===
 
   /** Viewport resize → re-position (rAF throttled). Morphs sheet↔popover
-   *  when crossing 768px, and re-clamps position/size to the new viewport.
+   *  when crossing POPUP_SHEET_BREAKPOINT_PX, and re-clamps position/size to the new viewport.
    *  Only fires while the popup is visible — hidden popups reposition on next show. */
   private onViewportResize(): void {
     if (!this.container?.classList.contains('cell-popup--visible')) return;
@@ -1112,7 +1123,7 @@ export class PopupShell {
         this.container.style.transition = 'none';
       } else {
         // Drag up: grow height immediately for visual feedback.
-        const newHeight = Math.max(200, Math.min(this.sheetDragStartHeight - dy, window.innerHeight - VIEWPORT_MARGIN));
+        const newHeight = Math.max(POPUP_MIN_HEIGHT_PX, Math.min(this.sheetDragStartHeight - dy, window.innerHeight - POPUP_MARGIN_PX));
         this.container.style.height = `${newHeight}px`;
         this.container.style.transform = '';
       }
@@ -1133,8 +1144,8 @@ export class PopupShell {
     document.removeEventListener('pointerup', this.boundSheetPointerUp);
     if (this.sheetDragFromHandle) {
       this.snapSheetToTier(dy);
-    } else if (dy > 100) {
-      // Content: swipe down > 100px → dismiss.
+    } else if (dy > SHEET_DISMISS_THRESHOLD_PX) {
+      // Content: swipe down > SHEET_DISMISS_THRESHOLD_PX → dismiss.
       this.onDismiss();
     }
   }
@@ -1147,7 +1158,7 @@ export class PopupShell {
     const tierHeights = SHEET_TIERS.map((t) => Math.round(vh * t));
     const targetHeight = this.sheetDragStartHeight - dy;
     // Below 25% tier → dismiss.
-    if (targetHeight < tierHeights[tierHeights.length - 1] - SHEET_SNAP_THRESHOLD) {
+    if (targetHeight < tierHeights[tierHeights.length - 1] - SHEET_SNAP_THRESHOLD_PX) {
       this.onDismiss();
       return;
     }

@@ -2,8 +2,9 @@
 // ponytail: content-script cannot access popup's theme.css, so we inject
 // a <style> block with the cluster's component CSS (uses tokens from themeTokens).
 //
-// Design-system sync (2026-07-03): cluster buttons match panel-toggle size
-// (32×32) + color pattern (--color-surface bg, --color-border, --color-text).
+// Design-system sync (2026-07-03): cluster buttons are 48×48 (desktop touch
+// target), collapsed circle is 32×32, using --color-surface / --color-border /
+// --color-text.
 // Light mode → dark border/text on light surface; Dark mode → light border/text
 // on dark surface. Auto-switches via [data-theme] tokens from themeTokens.ts.
 
@@ -115,8 +116,8 @@ export const NAV_CLUSTER_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--nav-cluster-btn-size, 48px);
-  height: var(--nav-cluster-btn-size, 48px);
+  width: var(--nav-cluster-btn-size, var(--space-12));
+  height: var(--nav-cluster-btn-size, var(--space-12));
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
@@ -172,8 +173,8 @@ export const NAV_CLUSTER_CSS = `
   display: none;
 }
 .nav-cluster.collapsed {
-  width: var(--nav-cluster-collapse-size, var(--nav-cluster-btn-size, 48px));
-  height: var(--nav-cluster-collapse-size, var(--nav-cluster-btn-size, 48px));
+  width: var(--nav-cluster-collapse-size, var(--nav-cluster-btn-size, var(--space-12)));
+  height: var(--nav-cluster-collapse-size, var(--nav-cluster-btn-size, var(--space-12)));
   overflow: hidden;
   border-radius: 50% 0 0 50%;
   /* ADR-018 D5-rev: collapsed circle = drag handle (no buttons inside) */
