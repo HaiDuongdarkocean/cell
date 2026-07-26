@@ -8,7 +8,7 @@
 .cc-media {
   padding: var(--space-2);
   background: var(--color-surface);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
   transition: border-color var(--duration-fast) var(--ease-in-out);
 }
@@ -28,7 +28,7 @@
   min-height: calc(var(--space-5) * 6);
   padding: var(--space-4);
   border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-text-muted);
   font-size: var(--font-size-base);
@@ -185,7 +185,7 @@
 .cc-media__preview-img {
   max-width: 90vw;
   max-height: 90vh;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-card);
   cursor: default;
 }
 

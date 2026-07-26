@@ -15,7 +15,7 @@ export const SUBTITLE_BLOCK_CSS = `
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
   background: transparent;
   /* overflow:visible — NOT hidden — so popup panels (subtitle-manager-panel,
@@ -35,7 +35,7 @@ export const SUBTITLE_BLOCK_CSS = `
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
   backdrop-filter: blur(var(--space-2));
   opacity: 0;
@@ -641,7 +641,7 @@ export const SUBTITLE_BLOCK_CSS = `
   background-color: var(--color-background);
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-dialog);
   box-shadow: var(--shadow-md, none);
   padding: var(--space-1);
   font-family: var(--font-family);
@@ -1068,7 +1068,7 @@ export const SUBTITLE_BLOCK_CSS = `
   color: var(--color-text);
   border: 1px solid var(--color-border);
   border-left: var(--space-1) solid var(--toast-variant-color, var(--color-info));
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   padding: var(--space-2) var(--space-3);
   font-size: var(--font-size-base);
   font-weight: 500;

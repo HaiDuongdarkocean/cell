@@ -3,7 +3,7 @@
   gap: var(--space-1);
   padding: var(--space-1);
   background: var(--color-muted);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
 }
 
 .trigger {

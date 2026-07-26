@@ -100,7 +100,7 @@ export function renderToolbar(
  *  - Play button: click to play audio (stopPropagation — does NOT toggle selection).
  *  - Label: click to toggle selection (Speaker → Dialect → Gender).
  *  - Checkbox: hidden when unchecked, visible with ✓ when checked.
- *  - Row: hover=surface-hover fill, radius-lg (10px). */
+ *  - Row: hover=surface-hover fill, radius-card (10px). */
 export function renderAudioPanel(
   container: HTMLElement,
   wordAudios: readonly AudioItem[],

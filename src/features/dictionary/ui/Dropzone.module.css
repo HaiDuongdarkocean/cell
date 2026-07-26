@@ -1,6 +1,6 @@
 .dropzone {
   border: var(--space-0-5) dashed var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-dialog);
   padding: var(--space-6);
   text-align: center;
   cursor: pointer;

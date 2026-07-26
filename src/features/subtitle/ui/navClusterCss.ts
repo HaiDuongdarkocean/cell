@@ -15,7 +15,7 @@ export const NAV_CLUSTER_CSS = `
   display: flex;
   gap: var(--space-1);
   padding: var(--space-1);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: transparent;
   border: 1px solid var(--color-border);
   z-index: var(--nav-cluster-z-index, 1000001);
@@ -40,7 +40,7 @@ export const NAV_CLUSTER_CSS = `
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: var(--color-surface);
   backdrop-filter: blur(var(--space-2));
   opacity: var(--nav-cluster-bg-opacity, 0.7);
@@ -119,7 +119,7 @@ export const NAV_CLUSTER_CSS = `
   width: var(--nav-cluster-btn-size, var(--space-12));
   height: var(--nav-cluster-btn-size, var(--space-12));
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-text);
   cursor: pointer !important;

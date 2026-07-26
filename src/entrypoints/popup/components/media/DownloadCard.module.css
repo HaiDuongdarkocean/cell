@@ -2,7 +2,7 @@
 .card {
   padding: var(--space-3);
   background: var(--color-surface);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-card);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
