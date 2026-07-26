@@ -89,12 +89,20 @@ export interface PopupCardCreatorPrefill {
  *  'edit-card' = Send to Card button (neutral — user picks Add/Update in dialog). */
 export type PopupCardCreatorAction = 'quick-add' | 'edit-card';
 
+/** Result returned by the onCardCreatorAction callback. */
+export interface OnCardCreatorActionResult {
+  /** If true, the popup stays open after the action (e.g. when sending to the
+   *  integrated universal panel). If false/undefined, the popup is dismissed. */
+  readonly stayOpen?: boolean;
+}
+
 /** Callback when the user clicks Quick Add or Send to Card in the popup.
- *  The content script controller opens the Card Creator dialog pre-filled. */
+ *  The content script controller opens the Card Creator dialog or integrated
+ *  panel pre-filled and returns whether the popup should stay open. */
 export type OnCardCreatorAction = (
   action: PopupCardCreatorAction,
   prefill: PopupCardCreatorPrefill,
-) => void;
+) => OnCardCreatorActionResult | void;
 
 /** Callback when the user clicks Quick Add in the popup (bypass dialog).
  *  The content script controller collects media + adds the note directly. */
@@ -403,8 +411,16 @@ export function showPopup(
     renderPopupContent(container, result, status, definitionSelection, {
       onStatusCycle: () => { state = cycleStatus(state); },
       onDefinitionToggle: (id, selected) => { state = toggleDefinition(state, id, selected); },
-      onQuickAdd: () => { state = triggerCardCreatorAction(state, 'quick-add'); onDismiss?.(state); },
-      onSendToCreator: () => { state = triggerCardCreatorAction(state, 'edit-card'); onDismiss?.(state); },
+      onQuickAdd: () => {
+        const result = triggerCardCreatorAction(state, 'quick-add');
+        state = result.state;
+        if (result.didHide) onDismiss?.(state);
+      },
+      onSendToCreator: () => {
+        const result = triggerCardCreatorAction(state, 'edit-card');
+        state = result.state;
+        if (result.didHide) onDismiss?.(state);
+      },
       onPlayTerm: () => {
         const active = getActiveResult(state);
         if (!active) return;
@@ -552,32 +568,42 @@ function buildPopupPrefill(state: PopupDictionaryState): PopupCardCreatorPrefill
   };
 }
 
+interface TriggerCardCreatorResult {
+  state: PopupDictionaryState;
+  didHide: boolean;
+}
+
 /** Trigger Card Creator action for the active candidate.
  *  - 'quick-add' → onQuickAddDirect (bypass dialog, add note directly).
- *  - 'edit-card' → onCardCreatorAction (open dialog pre-filled). */
+ *  - 'edit-card' → onCardCreatorAction (open dialog / integrated panel pre-filled). */
 function triggerCardCreatorAction(
   state: PopupDictionaryState,
   action: PopupCardCreatorAction,
-): PopupDictionaryState {
+): TriggerCardCreatorResult {
   const prefill = buildPopupPrefill(state);
-  if (!prefill) return state;
+  if (!prefill) return { state, didHide: false };
 
   if (action === 'quick-add') {
     if (!state.onQuickAddDirect) {
       showToast('Quick Add not available — open from subtitle cluster.', state.shell);
-      return state;
+      return { state, didHide: false };
     }
     state.onQuickAddDirect(prefill);
-    return hidePopup(state);
+    return { state: hidePopup(state), didHide: true };
   }
 
   if (!state.onCardCreatorAction) {
     showToast('Card Creator not available — open from subtitle cluster.', state.shell);
-    return state;
+    return { state, didHide: false };
   }
-  state.onCardCreatorAction(action, prefill);
-  // Dismiss popup — user no longer needs it after triggering card creation.
-  return hidePopup(state);
+  const result = state.onCardCreatorAction(action, prefill);
+  if (result?.stayOpen) {
+    // Integrated universal-panel flow: popup remains open so the user can
+    // continue reading while the panel is populated.
+    return { state, didHide: false };
+  }
+  // Standalone dialog flow: dismiss popup after triggering card creation.
+  return { state: hidePopup(state), didHide: true };
 }
 
 /** Hide popup (dismiss). Keeps the per-term tab-panel cache so reopening any
@@ -829,8 +855,16 @@ function renderAllActiveEntries(state: PopupDictionaryState, container: HTMLElem
     const callbacks: PopupContentCallbacks = {
       onStatusCycle: () => { state.activeCandidateIndex = idx; state = cycleStatus(state); },
       onDefinitionToggle: (id, selected) => { state.activeCandidateIndex = idx; state = toggleDefinition(state, id, selected); },
-      onQuickAdd: () => { state.activeCandidateIndex = idx; state = triggerCardCreatorAction(state, 'quick-add'); },
-      onSendToCreator: () => { state.activeCandidateIndex = idx; state = triggerCardCreatorAction(state, 'edit-card'); },
+      onQuickAdd: () => {
+        state.activeCandidateIndex = idx;
+        const result = triggerCardCreatorAction(state, 'quick-add');
+        state = result.state;
+      },
+      onSendToCreator: () => {
+        state.activeCandidateIndex = idx;
+        const result = triggerCardCreatorAction(state, 'edit-card');
+        state = result.state;
+      },
       onPlayTerm: () => {
         state.activeCandidateIndex = idx;
         const r = getResultByIndex(state, idx);

@@ -124,6 +124,18 @@ function makeDeps(overrides: Partial<WebTextDictionaryControllerDeps> = {}): Web
   };
 }
 
+function makePanelController(): jest.Mocked<NonNullable<WebTextDictionaryControllerDeps['panelController']>> {
+  return {
+    open: jest.fn(() => Promise.resolve()),
+    close: jest.fn(),
+    switchTab: jest.fn(() => Promise.resolve()),
+    isOpen: jest.fn(() => false),
+    sendToCard: jest.fn(() => Promise.resolve()),
+    unmount: jest.fn(),
+    getHosts: jest.fn(() => []),
+  } as unknown as jest.Mocked<NonNullable<WebTextDictionaryControllerDeps['panelController']>>;
+}
+
 beforeEach(() => {
   mockSendMessage.mockReset();
   document.body.innerHTML = '';
@@ -694,5 +706,60 @@ describe('createWebTextDictionaryController', () => {
     ctrl.destroy();
 
     expect(document.querySelector('mark.js-cell-word-highlight')).toBeNull();
+  });
+
+  it('Send to Card routes to the integrated panel when panelController is present', async () => {
+    const panelController = makePanelController();
+    const ctrl = createWebTextDictionaryController(makeDeps({ panelController }));
+    const result = makeResult();
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
+
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    ctrl.handleLookup(makeRequest(), 'req-send', new DOMRect(0, 0, 0, 0), range);
+    await new Promise((r) => setTimeout(r, 0));
+
+    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const sendBtn = popupHost.shadowRoot!.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
+    sendBtn.click();
+
+    expect(panelController.sendToCard).toHaveBeenCalledTimes(1);
+    const prefill = panelController.sendToCard.mock.calls[0]![0];
+    expect(prefill.term).toBe('take off');
+    expect(prefill.contextSentence).toBe('Take off your shoes.');
+
+    // Popup should remain visible.
+    const popupEl = popupHost.shadowRoot?.querySelector('.js-cell-popup') as HTMLDivElement;
+    expect(popupEl?.classList.contains('cell-popup--visible')).toBe(true);
+
+    ctrl.destroy();
+  });
+
+  it('Send to Card falls back to standalone dialog and hides popup when panelController is absent', async () => {
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    ctrl.handleLookup(makeRequest(), 'req-fallback', new DOMRect(0, 0, 0, 0), range);
+    await new Promise((r) => setTimeout(r, 0));
+
+    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const sendBtn = popupHost.shadowRoot!.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
+    sendBtn.click();
+
+    // Popup should hide immediately.
+    const popupEl = popupHost.shadowRoot?.querySelector('.js-cell-popup') as HTMLDivElement;
+    expect(popupEl?.classList.contains('cell-popup--visible')).toBe(false);
+
+    ctrl.destroy();
   });
 });

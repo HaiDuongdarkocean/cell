@@ -12,7 +12,7 @@
 import type { LookupRequest, LookupResult, TriggerMode, WordStatus } from '../types';
 import type { FetchCommunityAudioResponse, FetchImagesResponse, AudioItem, ImageItem, TtsFetchAudioResponse } from '@/features/dictionaryPopup/types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
-import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAction, PopupLineRect } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAction, PopupLineRect, OnCardCreatorActionResult } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import {
   createPopupDictionaryState,
   showPopup,
@@ -32,12 +32,13 @@ import {
 } from '@/features/dictionaryPopup/sentence/sentenceModule';
 import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { createWordHighlight, createSentenceHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
-import { createOrbitalBadge, type OrbitalBadge, type OrbitalBadgeOptions, type PointerPreset } from '@/features/dictionaryPopup/badgePointer';
+import { createOrbitalBadge, type OrbitalBadge, type PointerPreset } from '@/features/dictionaryPopup/badgePointer';
 
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message/types';
 
+import type { UniversalPanelMountController } from '@/features/universalPanel';
 import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
@@ -89,8 +90,10 @@ export interface WebTextDictionaryControllerDeps {
     readonly onOpenDictionary: () => void;
     readonly subscribe: (cb: (state: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void) => () => void;
   };
-  /** Generic panel controller toggled by the orbital badge (ADR-065). */
-  readonly panelController?: OrbitalBadgeOptions['panelController'];
+  /** Generic panel controller toggled by the orbital badge (ADR-065).
+   *  When present, Send to Card routes to the integrated universal panel
+   *  instead of opening a standalone Card Creator dialog. */
+  readonly panelController?: UniversalPanelMountController;
 }
 
 /** Video/cue configuration for subtitle path. Can be set after construction. */
@@ -790,13 +793,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     return cardCreatorMount?.isOpen() ?? false;
   }
 
-  async function handlePopupCardCreatorAction(
+  async function openStandaloneCardCreator(
     action: PopupCardCreatorAction,
     prefill: PopupCardCreatorPrefill,
+    fromSubtitle: boolean,
   ): Promise<void> {
-    // Capture subtitle context BEFORE any await — onPopupDismiss clears
-    // currentHighlightTarget synchronously after this function is called.
-    const fromSubtitle = isLookupFromSubtitle();
     const settings = await loadSettingsOrToast(deps.container);
     if (!settings) return;
     updateCardCreatorSettings(settings.cardCreator);
@@ -936,6 +937,25 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         } catch { /* non-fatal */ }
       })();
     }
+  }
+
+  function handlePopupCardCreatorAction(
+    action: PopupCardCreatorAction,
+    prefill: PopupCardCreatorPrefill,
+  ): OnCardCreatorActionResult {
+    // Capture subtitle context BEFORE returning — onPopupDismiss clears
+    // currentHighlightTarget synchronously after this function returns.
+    const fromSubtitle = isLookupFromSubtitle();
+
+    if (deps.panelController) {
+      // ADR-065: route to the integrated universal panel and keep the popup open.
+      deps.panelController.sendToCard(prefill);
+      return { stayOpen: true };
+    }
+
+    // Standalone Card Creator dialog fallback.
+    void openStandaloneCardCreator(action, prefill, fromSubtitle);
+    return { stayOpen: false };
   }
 
   async function handlePopupQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {

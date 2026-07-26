@@ -1,4 +1,4 @@
-import type { UniversalPanelController, UniversalPanelTab } from './types';
+import type { UniversalPanelController, UniversalPanelTab, DictionaryPanelPrefill } from './types';
 
 export interface UniversalPanelControllerHost {
   readonly getHosts: () => readonly HTMLElement[];
@@ -19,6 +19,8 @@ export interface CreateUniversalPanelControllerOptions {
   readonly onClose?: () => void;
   /** Called when the active tab changes while the panel is open or closed. */
   readonly onTabChange?: (tab: UniversalPanelTab) => void;
+  /** Called when the user sends a prefill to the integrated card creator. */
+  readonly onSendToCard?: (prefill: DictionaryPanelPrefill) => void;
 }
 
 export interface UniversalPanelControllerHandle {
@@ -94,6 +96,11 @@ export function createUniversalPanelController(
       if (activeTab === tab) return;
       setTab(tab);
       firePersist(tab);
+    },
+    sendToCard: (prefill) => {
+      if (unmounted) return Promise.resolve();
+      options.onSendToCard?.(prefill);
+      return controller.open('dictionary');
     },
     isOpen: () => isOpen,
     unmount: () => {

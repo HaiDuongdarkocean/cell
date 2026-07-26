@@ -71,6 +71,24 @@ describe('DictionaryTab', () => {
     expect(panel).toHaveAttribute('data-target-lang', 'vi');
   });
 
+  it('renders the external prefill in the right pane', async () => {
+    const prefill: PopupCardCreatorPrefill = {
+      term: 'external',
+      langCode: 'en',
+      reading: '',
+      definitions: [{ pos: 'v.', text: 'to test' }],
+      rawDefinitions: ['to test'],
+      contextSentence: 'external test sentence',
+      wordAudioUrls: [],
+      sentenceAudioUrls: [],
+      imageUrls: [],
+    };
+
+    render(<DictionaryTab langCode="en" sourceLang="en" targetLang="vi" prefill={prefill} />);
+
+    await waitFor(() => expect(screen.getByTestId('card-creator-prefill')).toHaveTextContent('external'));
+  });
+
   it('performs an initial search and renders the result', async () => {
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult('hello')] });
 
