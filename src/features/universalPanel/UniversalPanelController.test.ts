@@ -90,7 +90,7 @@ describe('createUniversalPanelController', () => {
     expect(controller.isOpen()).toBe(true);
   });
 
-  it('sendToCard is a no-op if unmounted during open', async () => {
+  it('sendToCard invokes onSendToCard even if unmounted during open', async () => {
     const onSendToCard = jest.fn();
     const onOpen = jest.fn();
     const { controller, unmount } = createUniversalPanelController({
