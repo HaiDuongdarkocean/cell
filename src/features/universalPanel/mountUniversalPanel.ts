@@ -16,7 +16,7 @@ import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/li
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
-import type { UniversalPanelTab } from './types';
+import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
 import type { OrbitalBadgePanelState } from '@/features/dictionaryPopup/badgePointer/createOrbitalBadge';
 
 export interface UniversalPanelMountOptions {
@@ -117,20 +117,37 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   let root: Root | null = createRoot(rootEl);
   let currentTab: UniversalPanelTab = 'dictionary';
 
+  // Prefill pushed from an external popup dictionary via sendToCard().
+  // The prefill persists while the panel is open so the right pane survives
+  // tab switches; the one-shot search term is cleared after the first open.
+  let pendingPrefill: DictionaryPanelPrefill | null = null;
+  let pendingSearchTerm: string | null = null;
+
+  function clearPendingOneShots(): void {
+    pendingSearchTerm = null;
+  }
+
   const { controller, unmount: controllerUnmount } = createUniversalPanelController({
     getPersistedTab: restorePersistedTab,
     persistTab,
     onOpen: (tab) => {
       currentTab = tab;
       render();
+      clearPendingOneShots();
     },
     onClose: () => {
+      pendingPrefill = null;
+      clearPendingOneShots();
       options.onClose?.();
       render();
     },
     onTabChange: (tab) => {
       currentTab = tab;
       render();
+    },
+    onSendToCard: (prefill) => {
+      pendingPrefill = prefill;
+      pendingSearchTerm = prefill.term;
     },
   });
 
@@ -169,8 +186,9 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       langCode: dictionaryLangCode,
       sourceLang: dictionarySourceLang,
       targetLang: dictionaryTargetLang,
-      initialTerm: options.dictionary?.initialTerm,
+      initialTerm: pendingSearchTerm ?? options.dictionary?.initialTerm,
       isOpen: open,
+      prefill: pendingPrefill,
     }) as ReactElement;
 
   const settingsPanel = createElement(

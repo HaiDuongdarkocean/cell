@@ -110,13 +110,20 @@ function makeCardCreatorSettings(overrides: Partial<CardCreatorSettings> = {}): 
   };
 }
 
-/** Create popup state with default settings + nativeLang='vi'. Hides the
- *  two undefined positional args (onCardCreatorAction, onQuickAddDirect). */
+/** Create popup state with default settings + nativeLang='vi'. */
 function makePopupState(
   popupOverrides: Partial<DictionaryPopupSettings> = {},
   nativeLang = 'vi',
+  onCardCreatorAction?: Parameters<typeof createPopupDictionaryState>[2],
+  onQuickAddDirect?: Parameters<typeof createPopupDictionaryState>[3],
 ): PopupDictionaryState {
-  return createPopupDictionaryState(makePopupSettings(popupOverrides), makeCardCreatorSettings(), undefined, undefined, nativeLang);
+  return createPopupDictionaryState(
+    makePopupSettings(popupOverrides),
+    makeCardCreatorSettings(),
+    onCardCreatorAction,
+    onQuickAddDirect,
+    nativeLang,
+  );
 }
 
 describe('createPopupDictionaryState', () => {
@@ -227,6 +234,33 @@ describe('showPopup', () => {
     expect(container!.querySelector('.js-cell-candidates')).not.toBeNull();
     // Footer is now a no-op (Send to Card + Settings moved to header).
     expect(container!.querySelector('.js-cell-footer')).toBeNull();
+  });
+
+  it('keeps popup open when Send to Card callback returns stayOpen=true', () => {
+    const onCardCreatorAction = jest.fn(() => ({ stayOpen: true }));
+    state = makePopupState({}, 'vi', onCardCreatorAction);
+    const result = makeResult();
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
+    const container = newState.shell?.getContainer();
+    const sendBtn = container!.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
+    sendBtn.click();
+
+    expect(onCardCreatorAction).toHaveBeenCalledTimes(1);
+    const popupEl = newState.shell?.getShadowRoot()?.querySelector('.js-cell-popup') as HTMLDivElement;
+    expect(popupEl?.classList.contains('cell-popup--visible')).toBe(true);
+  });
+
+  it('hides popup when Send to Card callback returns stayOpen=false', () => {
+    const onCardCreatorAction = jest.fn(() => ({ stayOpen: false }));
+    state = makePopupState({}, 'vi', onCardCreatorAction);
+    const result = makeResult();
+    const newState = showPopup(state, result, { anchor: { top: 170, left: 100, right: 150, bottom: 200 }, contextSentence: 'Take off your shoes.' });
+    const container = newState.shell?.getContainer();
+    const sendBtn = container!.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
+    sendBtn.click();
+
+    const popupEl = newState.shell?.getShadowRoot()?.querySelector('.js-cell-popup') as HTMLDivElement;
+    expect(popupEl?.classList.contains('cell-popup--visible')).toBe(false);
   });
 
   it('auto-translates sentence when translate tab is opened', async () => {

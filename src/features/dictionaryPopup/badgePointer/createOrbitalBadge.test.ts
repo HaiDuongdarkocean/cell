@@ -3,7 +3,7 @@ import { createOrbitalBadge, type OrbitalBadgePanelController } from './createOr
 import type { PointerPreset } from './pointerPosition';
 
 interface PanelControllerFake extends OrbitalBadgePanelController {
-  readonly open: jest.Mock<() => void>;
+  readonly open: jest.Mock<() => Promise<void>>;
   readonly close: jest.Mock<() => void>;
   readonly __getOpenState: () => boolean;
   readonly __getOpenCalls: () => number;
@@ -14,10 +14,10 @@ interface PanelControllerFake extends OrbitalBadgePanelController {
 /** Minimal panel controller stub for orbital badge toggle tests. */
 function panelControllerStub(hosts: HTMLElement[] = []): PanelControllerFake {
   let openState = false;
-  const openFn = jest.fn(() => { openState = true; });
+  const openFn = jest.fn(() => { openState = true; return Promise.resolve(); });
   const closeFn = jest.fn(() => { openState = false; });
   return {
-    open: openFn as unknown as jest.Mock<() => void>,
+    open: openFn as unknown as jest.Mock<() => Promise<void>>,
     close: closeFn as unknown as jest.Mock<() => void>,
     isOpen: () => openState,
     getHosts: () => hosts,

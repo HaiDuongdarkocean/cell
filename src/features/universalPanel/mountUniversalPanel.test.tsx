@@ -40,6 +40,18 @@ jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
   ),
 }));
 
+jest.mock('./tabs/DictionaryTab', () => ({
+  DictionaryTab: (props: { initialTerm?: string; prefill?: { term?: string } | null }) => (
+    <div
+      data-testid="dictionary-tab"
+      data-initial-term={props.initialTerm ?? ''}
+      data-prefill-term={props.prefill?.term ?? ''}
+    >
+      <div data-testid="dictionary-panel">Dictionary panel</div>
+    </div>
+  ),
+}));
+
 jest.mock('@/shared/lib/storage/settingsStore', () => ({
   loadSettings: jest.fn(),
   saveSettings: jest.fn(),
@@ -90,5 +102,35 @@ describe('mountUniversalPanel', () => {
     expect(screen.getByTestId('dictionary-tab')).toBeInTheDocument();
     expect(screen.getByTestId('dictionary-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('universal-panel-content-settings')).not.toBeInTheDocument();
+  });
+
+  it('sendToCard opens the dictionary tab with initialTerm and prefill, then clears the one-shot term', async () => {
+    const prefill = {
+      term: 'hello',
+      langCode: 'en',
+      reading: '',
+      definitions: [],
+      rawDefinitions: [],
+      contextSentence: 'hello world',
+      wordAudioUrls: [],
+      sentenceAudioUrls: [],
+      imageUrls: [],
+    };
+
+    await act(async () => { await controller.sendToCard(prefill); });
+
+    await waitFor(() => expect(screen.getByTestId('universal-panel')).toBeInTheDocument());
+    const tab = screen.getByTestId('dictionary-tab');
+    expect(tab).toHaveAttribute('data-initial-term', 'hello');
+    expect(tab).toHaveAttribute('data-prefill-term', 'hello');
+
+    // Close and reopen via the orbital badge: the search term should not be
+    // replayed, but the prefill persists while the panel is open.
+    await act(async () => { await controller.close(); });
+    await act(async () => { await controller.open('dictionary'); });
+
+    const reopenedTab = screen.getByTestId('dictionary-tab');
+    expect(reopenedTab).toHaveAttribute('data-initial-term', '');
+    expect(reopenedTab).toHaveAttribute('data-prefill-term', '');
   });
 });

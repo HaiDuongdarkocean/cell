@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { DictionaryPanelView } from '@/features/dictionaryPopup/ui/DictionaryPanelView';
 import type { PopupCardCreatorPrefill } from '@/features/dictionaryPopup/ui/popupDictionaryController';
 import { CardCreatorPanel } from './CardCreatorPanel';
@@ -15,6 +15,8 @@ export interface DictionaryTabProps {
   readonly initialTerm?: string;
   /** Whether the containing panel is currently open — controls search-input auto-focus. */
   readonly isOpen?: boolean;
+  /** Optional prefill pushed from an external popup dictionary. */
+  readonly prefill?: PopupCardCreatorPrefill | null;
 }
 
 export function DictionaryTab({
@@ -23,8 +25,13 @@ export function DictionaryTab({
   targetLang,
   initialTerm,
   isOpen,
+  prefill: externalPrefill,
 }: DictionaryTabProps): React.JSX.Element {
-  const [prefill, setPrefill] = useState<PopupCardCreatorPrefill | null>(null);
+  const [prefill, setPrefill] = useState<PopupCardCreatorPrefill | null>(externalPrefill ?? null);
+
+  useEffect(() => {
+    setPrefill(externalPrefill ?? null);
+  }, [externalPrefill]);
 
   const handlePanelSendToCard = useCallback((next: PopupCardCreatorPrefill): void => {
     setPrefill(next);
