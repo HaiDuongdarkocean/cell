@@ -22,13 +22,19 @@
 
 /* Scanning state: pulsing icon */
 .scanning .emptyIcon {
-  animation: scan-pulse 1.5s ease-in-out infinite;
+  animation: scan-pulse var(--duration-1500) ease-in-out infinite;
   opacity: 0.7;
 }
 
 @keyframes scan-pulse {
   0%, 100% { opacity: 0.3; transform: scale(1); }
   50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanning .emptyIcon {
+    animation: none;
+  }
 }
 
 .title {

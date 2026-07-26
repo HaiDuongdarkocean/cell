@@ -1,7 +1,7 @@
 .spinner {
   display: inline-block;
   flex-shrink: 0;
-  animation: spin 1s linear infinite;
+  animation: spin var(--duration-1000) linear infinite;
 }
 
 .sm {
@@ -21,4 +21,10 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
 }

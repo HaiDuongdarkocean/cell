@@ -5,7 +5,7 @@
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   background: var(--color-card);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-dialog);
 }
 
@@ -37,7 +37,7 @@
   padding: var(--space-2) var(--space-3);
   background: var(--color-error-subtle);
   color: var(--color-error);
-  border: 1px solid var(--color-error);
+  border: var(--border-width-hairline) solid var(--color-error);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-xs);
   margin-top: var(--space-2);

@@ -15,7 +15,7 @@
   max-width: 1280px;
   background: var(--color-background);
   color: var(--color-text);
-  border-left: 1px solid var(--color-border);
+  border-left: var(--border-width-hairline) solid var(--color-border);
   animation: slide-in-right var(--duration-normal) var(--ease-out);
 }
 
@@ -28,7 +28,7 @@
   gap: var(--space-2);
   padding: var(--space-2);
   background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  border-right: var(--border-width-hairline) solid var(--color-border);
 }
 
 .tabGroup {
@@ -58,7 +58,7 @@
     left: 0;
     max-width: none;
     border-left: none;
-    border-top: 1px solid var(--color-border);
+    border-top: var(--border-width-hairline) solid var(--color-border);
     flex-direction: column-reverse;
     animation: slide-in-up var(--duration-normal) var(--ease-out);
   }
@@ -68,7 +68,7 @@
     flex-direction: row;
     justify-content: space-around;
     border-right: none;
-    border-top: 1px solid var(--color-border);
+    border-top: var(--border-width-hairline) solid var(--color-border);
     padding: var(--space-2) 0;
   }
 
@@ -101,4 +101,11 @@
 @keyframes slide-in-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .panel {
+    animation: none;
+  }
 }

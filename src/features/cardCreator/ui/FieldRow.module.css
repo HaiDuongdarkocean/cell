@@ -98,7 +98,7 @@
   gap: var(--space-1);
   width: 100%;
   background: var(--color-surface);
-  border: 1px solid var(--input-border);
+  border: var(--border-width-hairline) solid var(--input-border);
   border-radius: var(--input-radius);
   transition: border-color var(--duration-fast) var(--ease-in-out);
 }

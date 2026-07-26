@@ -96,7 +96,7 @@ export function buildTokenBadgeCss(): string {
   bottom: calc(var(--space-4) + var(--badge-size) + var(--space-2)) !important;
   background: var(--color-popover) !important;
   color: var(--color-popover-foreground) !important;
-  border: 1px solid var(--color-border) !important;
+  border: var(--border-width-hairline) solid var(--color-border) !important;
   border-radius: var(--radius-card) !important;
   padding: var(--space-4) !important;
   z-index: 2147483646 !important;

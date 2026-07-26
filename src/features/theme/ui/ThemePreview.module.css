@@ -2,7 +2,7 @@
 .preview {
   margin-top: var(--space-3);
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-pill);
   background: var(--color-surface);
 }
@@ -40,7 +40,7 @@
 
 .card {
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-pill);
   background: var(--color-background);
   color: var(--color-text);
@@ -48,7 +48,7 @@
 
 .input {
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-background);
   color: var(--color-text);

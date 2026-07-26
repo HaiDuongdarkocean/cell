@@ -63,3 +63,10 @@
   from { opacity: 0; transform: translateX(var(--drawer-start, var(--space-5))); }
   to { opacity: 1; transform: translateX(0); }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .panel {
+    animation: none;
+  }
+}

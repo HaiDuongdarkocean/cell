@@ -160,7 +160,7 @@ function validateContrastPairs(mode, core, derived) {
     ['Popover Foreground / Popover', derived['color-popover-foreground'], derived['color-popover']],
     ['Muted Foreground / Muted', derived['color-muted-foreground'], derived['color-muted']],
     ['Destructive Foreground / Destructive', derived['color-destructive-foreground'], derived['color-destructive']],
-    ['Foreground / Warning', derived['color-foreground'], core.warning],
+    ['Inverse Text / Warning', derived['color-text-inverse'], core.warning],
     ['Inverse Text / Success', derived['color-text-inverse'], core.success],
     ['Inverse Text / Error', derived['color-text-inverse'], core.error],
     ['Frequency Core / Core BG', derived['color-token-freq-core-fg'], derived['color-token-freq-core-bg']],

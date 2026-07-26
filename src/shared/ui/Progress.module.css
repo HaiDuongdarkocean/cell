@@ -15,10 +15,16 @@
 
 .indeterminate .bar {
   width: 40%;
-  animation: progress-indeterminate 1.5s ease-in-out infinite;
+  animation: progress-indeterminate var(--duration-1500) ease-in-out infinite;
 }
 
 @keyframes progress-indeterminate {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(250%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indeterminate .bar {
+    animation: none;
+  }
 }

@@ -96,7 +96,7 @@
 .btn--secondary { background: var(--button-secondary-bg); color: var(--button-secondary-fg); }
 .btn--secondary:hover { background: var(--button-secondary-hover-bg); }
 
-.btn--outline { background: transparent; color: var(--color-text); border: 1px solid var(--button-outline-border); }
+.btn--outline { background: transparent; color: var(--color-text); border: var(--border-width-hairline) solid var(--button-outline-border); }
 .btn--outline:hover { background: var(--color-surface-hover); border-color: var(--color-border-focus); }
 
 .btn--ghost { background: transparent; color: var(--color-text); }

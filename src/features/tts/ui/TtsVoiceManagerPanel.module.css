@@ -13,7 +13,7 @@
 .error {
   padding: var(--space-3) var(--space-4);
   background: var(--color-error-subtle);
-  border: 1px solid var(--color-error);
+  border: var(--border-width-hairline) solid var(--color-error);
   border-radius: var(--radius-pill);
   color: var(--color-error);
   font-size: var(--font-size-base);
@@ -22,7 +22,7 @@
 .status {
   padding: var(--space-3) var(--space-4);
   background: var(--color-success-subtle);
-  border: 1px solid var(--color-success);
+  border: var(--border-width-hairline) solid var(--color-success);
   border-radius: var(--radius-pill);
   color: var(--color-success);
   font-size: var(--font-size-base);
@@ -37,14 +37,14 @@
 /* === Card === */
 .card {
   background: var(--color-card);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-2xl);
   overflow: hidden;
 }
 
 .card__header {
   padding: var(--space-4) var(--space-6);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: var(--border-width-hairline) solid var(--color-border);
 }
 
 .card__title {
@@ -93,7 +93,7 @@
   width: 100%;
   max-width: calc(var(--space-5) * 16);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-background);
   color: var(--color-text);
@@ -132,7 +132,7 @@
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   background: var(--color-background);
-  border: 1px solid var(--color-border-subtle);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
 }
 
 .voiceSelectionItem:hover {
@@ -184,7 +184,7 @@
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
   background: var(--color-background);
-  border: 1px solid var(--color-border-subtle);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
   cursor: grab;
 }
 
@@ -206,7 +206,7 @@
 .orderInput {
   width: var(--space-12);
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-background);
   color: var(--color-text);

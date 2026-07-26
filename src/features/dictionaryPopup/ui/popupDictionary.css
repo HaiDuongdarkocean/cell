@@ -18,7 +18,7 @@
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-card);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   background: var(--color-background);
   box-shadow: none;
   font-family: var(--font-family);
@@ -31,8 +31,7 @@
   visibility: hidden;
   transition:
     opacity var(--duration-normal) var(--ease-out),
-    transform var(--duration-normal) var(--ease-out),
-    visibility 0s linear var(--duration-normal);
+    transform var(--duration-normal) var(--ease-out);
   will-change: transform, opacity;
 }
 
@@ -44,7 +43,6 @@
   transition:
     opacity var(--duration-normal) var(--ease-out),
     transform var(--duration-normal) var(--ease-out),
-    visibility 0s,
     left var(--duration-normal) var(--ease-out),
     top var(--duration-normal) var(--ease-out),
     width var(--duration-normal) var(--ease-out),
@@ -318,7 +316,7 @@
   line-height: var(--leading-none);
   white-space: nowrap;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: var(--border-width-hairline) solid transparent;
   transition: background var(--duration-fast) var(--ease-out);
   /* Touch target: padding-based — the visual pill is 20px but the clickable
    * area extends via padding. Exempted from .btn 44px min-height override. */
@@ -840,7 +838,7 @@
   aspect-ratio: 1 / 1;
   padding: 0;
   background: var(--color-card);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
   scroll-snap-align: center;
@@ -978,7 +976,7 @@
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-card);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   background: var(--color-surface);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-in-out),
@@ -1130,7 +1128,7 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-pill);
   background: var(--color-surface);
   color: var(--color-text);
@@ -1160,7 +1158,7 @@
 
 /* Separator between stacked candidates — border on all but the first. */
 .cell-active-entry + .cell-active-entry {
-  border-top: 1px solid var(--color-border);
+  border-top: var(--border-width-hairline) solid var(--color-border);
 }
 
 /* Active candidate — no left accent border (user requested removal). */
@@ -1238,7 +1236,7 @@
   padding: var(--space-2);
   text-align: left;
   background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-pill);
   cursor: pointer;
   color: var(--color-text);
@@ -1287,7 +1285,7 @@
 .cell-skeleton {
   display: inline-block;
   background: var(--color-muted);
-  animation: cell-skeleton-pulse 2s ease-in-out infinite;
+  animation: cell-skeleton-pulse var(--duration-2000) ease-in-out infinite;
 }
 
 .cell-skeleton--circle {
@@ -1382,7 +1380,7 @@
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-card);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   background: var(--color-surface);
 }
 
@@ -1753,7 +1751,7 @@
   height: 1em;
   border-radius: var(--radius-xs);
   background: var(--color-surface-hover);
-  animation: cell-skeleton-shimmer 1.2s ease-in-out infinite;
+  animation: cell-skeleton-shimmer var(--duration-1200) ease-in-out infinite;
 }
 
 /* Definition skeleton lines — 3 shimmer bars mimicking definition rows. */
@@ -1768,7 +1766,7 @@
   height: var(--space-3-5);
   border-radius: var(--radius-xs);
   background: var(--color-surface-hover);
-  animation: cell-skeleton-shimmer 1.2s ease-in-out infinite;
+  animation: cell-skeleton-shimmer var(--duration-1200) ease-in-out infinite;
 }
 
 .cell-definition-skeleton-line:nth-child(1) { width: 90%; }

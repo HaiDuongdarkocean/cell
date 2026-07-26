@@ -25,7 +25,7 @@
 .urlInput {
   width: 100%;
   padding: var(--space-2) var(--space-2-5);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
@@ -55,7 +55,7 @@
   justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-pill);
   background: var(--color-background);
 }
@@ -93,12 +93,18 @@
   background: var(--color-warning);
   outline: var(--space-0-5) solid var(--color-warning);
   outline-offset: var(--space-0-5);
-  animation: pulse 1s ease-in-out infinite;
+  animation: pulse var(--duration-1000) ease-in-out infinite;
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusIndicator.testing .statusDot {
+    animation: none;
+  }
 }
 
 .statusLabel {
