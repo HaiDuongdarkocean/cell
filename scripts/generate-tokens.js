@@ -231,6 +231,12 @@ ${staticBlock}
 ${componentBlock}
 }
 
+/* Semantic touch target — adapts to primary pointer type. */
+:root { --touch-target: var(--touch-target-desktop); }
+@media (pointer: coarse) {
+  :root { --touch-target: var(--touch-target-mobile); }
+}
+
 [data-theme="dark"] {
 ${darkColorBlock}
 ${componentBlock}

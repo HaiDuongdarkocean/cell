@@ -8,6 +8,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   background: var(--iconbutton-bg);
   border: none;
   border-radius: var(--iconbutton-radius);

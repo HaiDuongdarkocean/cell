@@ -144,7 +144,7 @@
   font-weight: var(--font-weight-medium);
   text-align: left;
   cursor: pointer;
-  transition: all var(--transition);
+  transition: background var(--transition), color var(--transition);
 }
 
 .sidebarItem:hover {

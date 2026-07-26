@@ -131,6 +131,12 @@
   color: var(--color-text-muted);
 }
 
+.searchInput:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+  border-radius: var(--radius-sm);
+}
+
 /* === Options list === */
 .list {
   flex: 1 1 auto;

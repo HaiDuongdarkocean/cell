@@ -5,13 +5,14 @@
 .slider {
   width: 100%;
   height: var(--space-1);
+  min-height: var(--touch-target);
   -webkit-appearance: none;
   appearance: none;
   background: var(--color-border);
   border-radius: var(--space-0-5);
   outline: none;
   cursor: pointer;
-  margin: var(--space-1-5) 0;
+  margin: 0;
 }
 
 .slider:focus-visible {
@@ -28,6 +29,7 @@
   background: var(--color-primary);
   cursor: pointer;
   border: var(--space-0-5) solid var(--color-background);
+  margin-top: calc((var(--touch-target) - var(--space-3-5)) / 2);
 }
 
 .slider::-moz-range-thumb {
