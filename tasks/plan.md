@@ -158,8 +158,8 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 11: Touch target audit
 - **Mô tả**: Kiểm tra mọi interactive element đạt touch target 44px trên mobile/overlay, 40px trên desktop.
 - **Acceptance criteria**:
-  - [ ] Button, IconButton, Checkbox, Radio, Toggle, NavItem, ListItem, Slider đều đạt min touch target.
-  - [ ] Không có interactive element < 24px gần nhau mà không có spacing.
+  - [x] Button, IconButton, Checkbox, Radio, Toggle, NavItem, ListItem, Slider đều đạt min touch target.
+  - [x] Không có interactive element < 24px gần nhau mà không có spacing.
 - **Verification**: tests + DevTools computed box.
 - **Files**: `src/shared/ui/**/*.module.css`, `src/features/**/*.module.css`.
 - **Scope**: M.
@@ -167,8 +167,8 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 12: Motion standardization
 - **Mô tả**: Audit transitions dùng `--duration-*` và easing đúng; thêm `prefers-reduced-motion` nơi còn thiếu.
 - **Acceptance criteria**:
-  - [ ] Mọi `transition` sử dụng token duration/easing.
-  - [ ] `prefers-reduced-motion` được tôn trọng.
+  - [x] Mọi `transition` sử dụng token duration/easing.
+  - [x] `prefers-reduced-motion` được tôn trọng.
 - **Verification**: grep `transition:` trong source, tests.
 - **Files**: toàn bộ CSS.
 - **Scope**: M.
@@ -176,16 +176,16 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 13: Focus states standardization
 - **Mô tả**: Đảm bảo mọi interactive element có focus ring rõ ràng (`2px solid var(--color-primary)` + 2px offset), không chỉ dùng `outline: none`.
 - **Acceptance criteria**:
-  - [ ] Không còn `outline: none` đơn độc mà không có focus replacement.
-  - [ ] Focus ring hiển thị đồng nhất trên light/dark.
+  - [x] Không còn `outline: none` đơn độc mà không có focus replacement.
+  - [x] Focus ring hiển thị đồng nhất trên light/dark.
 - **Verification**: keyboard navigation test.
 - **Files**: `src/shared/ui/**/*.module.css`.
 - **Scope**: M.
 
 ### Checkpoint 4
-- [ ] Accessibility tests pass
-- [ ] Build pass
-- [ ] Subagent review Phase 4 pass
+- [x] Accessibility tests pass
+- [x] Build pass
+- [x] Subagent review Phase 4 pass
 
 ### Phase 5: Verify & refine (Refind loop)
 
