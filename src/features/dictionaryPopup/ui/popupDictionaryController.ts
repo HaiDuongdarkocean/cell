@@ -38,6 +38,19 @@ import type { PopupAnchor, PopupLineRect } from './popupShell';
 
 export type { PopupAnchor, PopupLineRect };
 
+// Track any <audio> elements currently playing inside the popup so we can
+// pause and release them when the popup is hidden or destroyed.
+const activePopupAudios: Set<HTMLAudioElement> = new Set();
+
+// Cap the per-page tab-panel cache so it doesn't grow unbounded on long-lived
+// pages with many unique lookups.
+const MAX_TAB_PANEL_CACHE_SIZE = 100;
+
+function pauseAllPopupAudios(): void {
+  activePopupAudios.forEach((audio) => { audio.pause(); });
+  activePopupAudios.clear();
+}
+
 export interface PopupPointer {
   readonly tip: { readonly x: number; readonly y: number };
   readonly badgeCenter?: { readonly x: number; readonly y: number };
@@ -379,6 +392,10 @@ export function showPopup(
     cache.imageSelection = state.imageSelection;
     cache.translations.set(state.cachedContextSentence, { translation: state.translation, selected: state.translationSelected });
     state.tabPanelCache.set(state.cachedResultTerm, cache);
+    if (state.tabPanelCache.size > MAX_TAB_PANEL_CACHE_SIZE) {
+      const firstKey = state.tabPanelCache.keys().next().value;
+      if (firstKey !== undefined) state.tabPanelCache.delete(firstKey);
+    }
   }
 
   // Load cached data for the new term (if any). Audio/image are per term;
@@ -615,6 +632,7 @@ function triggerCardCreatorAction(
 /** Hide popup (dismiss). Keeps the per-term tab-panel cache so reopening any
  *  previously looked-up term on this page reuses its fetched data. */
 export function hidePopup(state: PopupDictionaryState): PopupDictionaryState {
+  pauseAllPopupAudios();
   if (state.shell) {
     state.shell.hide();
   }
@@ -631,6 +649,7 @@ export function hidePopup(state: PopupDictionaryState): PopupDictionaryState {
 
 /** Destroy popup (full cleanup). */
 export function destroyPopup(state: PopupDictionaryState): PopupDictionaryState {
+  pauseAllPopupAudios();
   if (state.shell) {
     state.shell.destroy();
   }
@@ -1118,6 +1137,7 @@ function renderTabPanel(
       const stopCurrentAudio = (): void => {
         if (currentlyPlayingAudio) {
           currentlyPlayingAudio.pause();
+          activePopupAudios.delete(currentlyPlayingAudio);
           currentlyPlayingAudio = null;
         }
         currentlyPlayingAudioId = null;
@@ -1140,6 +1160,7 @@ function renderTabPanel(
         stopCurrentAudio();
         if (item.url) {
           const audio = new Audio(item.url);
+          activePopupAudios.add(audio);
           currentlyPlayingAudio = audio;
           currentlyPlayingAudioId = item.id;
           audio.addEventListener('ended', () => {

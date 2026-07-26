@@ -762,4 +762,39 @@ describe('createWebTextDictionaryController', () => {
 
     ctrl.destroy();
   });
+
+  it('pauses video on lookup and resumes on dismiss', async () => {
+    jest.useFakeTimers();
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult()] } as unknown as never);
+
+    let paused = false;
+    const mockVideo = {
+      get paused() { return paused; },
+      pause: jest.fn(() => { paused = true; }),
+      play: jest.fn(() => { paused = false; }),
+    } as unknown as HTMLVideoElement;
+
+    const ctrl = createWebTextDictionaryController(makeDeps());
+    ctrl.configureVideo({ hasVideo: true, video: mockVideo, getTargetCues: () => [] });
+
+    const p = document.createElement('p');
+    p.textContent = 'Take off your shoes.';
+    document.body.appendChild(p);
+    const range = document.createRange();
+    range.selectNodeContents(p.firstChild as Text);
+
+    ctrl.handleLookup(makeRequest(), 'req-video', new DOMRect(0, 0, 0, 0), range);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockVideo.pause).toHaveBeenCalledTimes(1);
+
+    ctrl.dismissLookup();
+    jest.advanceTimersByTime(500);
+
+    expect(mockVideo.play).toHaveBeenCalledTimes(1);
+
+    ctrl.destroy();
+    jest.useRealTimers();
+  });
 });
