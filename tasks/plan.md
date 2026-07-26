@@ -1,411 +1,237 @@
-# Implementation Plan: Universal Orbital Panel
+# SSOT Design System UI Redesign Plan
 
 ## Overview
 
-Build a universal side/bottom panel opened by the orbital badge. The panel has two tabs — Dictionary (left vertical tab, default) and Settings (right vertical tab) — and persists the last active tab per session. The Dictionary tab shows an integrated dictionary lookup on the left and the Card Creator on the right. The Settings tab reuses the existing `SettingsDialog` content. The panel must work on desktop (right-side anchored, max-width 1280px), on small screens <= 768px (full-screen bottom sheet with bottom tab bar), and inside fullscreen video players.
+Thực hiện cải thiện toàn diện hệ thống giao diện Cell theo nguyên tắc Single Source of Truth (SSOT), áp dụng cho tất cả components trong `src/shared/ui/` và các feature UI. Mục tiêu: màu sắc hài hòa, hình dáng (shape) nhất quán, hành vi (behavior) dễ tiếp cận, dark/light mode tương phản tốt trên mọi breakpoint và cross-browser.
 
-## Architecture Decisions
+Phát triển theo vòng lặp: **Discover → Plan → Do → Verify (subagent SA-AC/spec review) → Refind → Do → Verify**.
 
-- **React mount**: Follow the same `mountSettingsDialog`/`mountCardCreatorDialog` pattern — a fixed host on `document.body` (or `fullscreenElement`), `createRoot`, theme token injection, fullscreen re-parenting.
-- **Panel shell**: `UniversalPanel.tsx` owns backdrop, tab bar, tab state, focus management, and responsive layout. `mountUniversalPanel.ts` only creates/destroys the host and root.
-- **Settings tab**: Extract a reusable `SettingsDialogContent` component from `SettingsDialog.tsx`; `SettingsTab` renders it inside the panel.
-- **Dictionary tab left pane**: Build a new React dictionary panel (`DictionaryPanelView.tsx` + `useDictionaryPanel.ts`) using `lookupOrchestrator` directly. This avoids the risky vanilla popup wrapper while still reusing lookup logic and matching popup visual style.
-- **Dictionary tab right pane**: Render `CardCreatorDialogContent` directly with `useCardCreatorState`, not `mountCardCreatorDialog`.
-- **External popup integration**: Add `stayOpen?: boolean` to card-creator action callbacks; the popup passes `stayOpen: true` when sending to the universal panel and calls the universal panel controller to open/focus the panel.
-- **Tab persistence**: `chrome.storage.session` under `STORAGE_KEYS.UNIVERSAL_PANEL_TAB`; default tab is `dictionary`.
+## Giả định
 
-## ✅ Phase 0 — Foundation & Contracts
+1. Hệ thống hiện đã có token SSOT (`tokens.json` → `tokens.css`) và design system cơ bản; redesign tập trung vào polish, không viết lại từ đầu.
+2. Mọi thay đổi màu sắc phải duy trì WCAG 2.1 AA (4.5:1 cho body text, 3:1 cho large text / UI components).
+3. Content scripts chạy trong Shadow DOM, cần fallback CSS cross-browser (đặc biệt `rgba(from ...)`).
+4. Shape system tuân theo ADR-063/064: radius rõ nghĩa, không hardcode px ngoài hairline.
+5. Behavior: touch target, motion, focus states đồng bộ theo `ui-ux-knowledge.md`.
 
-These tasks have no runtime dependency on each other and can run in parallel.
+## Component Inventory (Tóm tắt)
 
-### Task 0.1: Add `book-open` icon to `ICON_CATALOG`
-**Subagent:** `subagent_general` (icon/catalog task)
-**Files:**
-- `src/shared/icons/svg/book-open.svg` (new)
-- `src/shared/icons/index.ts`
-**Acceptance:**
-- [ ] `book-open.svg` exists, 24×24, stroke 2, currentColor, matches Lucide style.
-- [ ] `ICON_CATALOG.bookOpen` is exported with tags `['dictionary','book','lexicon']`.
-- [ ] `npm run build` still passes (icon import resolves).
+### Shared UI (`src/shared/ui/`) — 33 components
+Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs, Accordion, Tooltip, IconButton, SearchableSelect, BottomSheet, Drawer, Sidebar, ListItem, NavItem, HintIcon, Progress, Skeleton, Slider, Spinner, Textarea, Label, ShortcutInput, SearchField, EmptyState, Header, InputField, CheckboxGroup, RadioGroup, ErrorBoundary.
 
-### Task 0.2: Add `STORAGE_KEYS.UNIVERSAL_PANEL_TAB`
-**Subagent:** `subagent_general` (config task)
-**Files:**
-- `src/shared/config/config.ts`
-**Acceptance:**
-- [ ] `UNIVERSAL_PANEL_TAB: 'universalPanelTab'` added to `STORAGE_KEYS`.
-- [ ] No schema migration needed (session-only, non-critical).
+### Feature UI chính
+- `src/features/cardCreator/ui/`
+- `src/features/settings/ui/`
+- `src/features/theme/ui/`
+- `src/features/dictionary/ui/`
+- `src/features/universalPanel/`
+- `src/features/dictionaryPopup/ui/`
+- `src/features/tts/ui/`
 
-### Task 0.3: Create `features/universalPanel/` skeleton and types
-**Subagent:** `subagent_general` (scaffold task)
-**Files:**
-- `src/features/universalPanel/index.ts`
-- `src/features/universalPanel/types.ts`
-- `src/features/universalPanel/UniversalPanelController.ts` (stub)
-**Acceptance:**
-- [ ] `UniversalPanelTab`, `UniversalPanelController`, and shared prefill interfaces are exported.
-- [ ] Directory created; barrel file compiles.
+## Kiến trúc quyết định
 
-### Task 0.4: Extract `SettingsDialogContent` from `SettingsDialog`
-**Subagent:** `subagent_general` (settings refactor)
-**Files:**
-- `src/features/settings/ui/SettingsDialog.tsx`
-- `src/features/settings/ui/SettingsDialogContent.tsx` (new)
-- `src/features/settings/ui/SettingsDialog.module.css` (maybe adjust if needed)
-**Acceptance:**
-- [ ] `SettingsDialogContent` contains all settings sections and sidebar logic, accepts `settings`, `onChange`, `tokenizeState`, `onToggleTokenize`, `onOpenDictionary`.
-- [ ] `SettingsDialog` still wraps it with overlay + popover + close button and all existing tests pass.
-- [ ] No behavior change for popup/sidepanel/options usage.
+1. **Token-first**: mọi màu, spacing, radius, shadow, motion, touch target phải xuất phát từ `tokens.json`.
+2. **Dark/Light SSOT**: duy trì `[data-theme="dark"]` + media `prefers-color-scheme` fallback; bổ sung semantic tokens mới thay vì hardcode alpha.
+3. **Shape semantic**: radius tokens dùng tên theo context (`radius-pill`, `radius-card`, `radius-dialog`) thay vì `sm/md/lg/xl` gây nhầm.
+4. **Cross-browser CSS**: thay `rgba(from var(--color) r g b / alpha)` bằng token/color helper tính sẵn hoặc fallback.
+5. **Behavior đồng bộ**: touch target 44px (mobile/overlay) / 40px (desktop), focus ring 2px offset, motion `prefers-reduced-motion`.
 
-### Task 0.5: Refactor orbital badge click-outside and panel toggle
-**Subagent:** `subagent_general` (orbital badge task)
-**Depends on:** 0.3 (types)
-**Files:**
-- `src/features/dictionaryPopup/badgePointer/createOrbitalBadge.ts`
-- `src/features/dictionaryPopup/badgePointer/createOrbitalBadge.test.ts` (if exists)
-**Acceptance:**
-- [ ] `onDocPointerDown` ignores a configurable list of host elements (settings dialog host + universal panel host), not hardcoded `cell-settings-dialog-host`.
-- [ ] Collapsed badge single-press toggles the panel open/closed.
-- [ ] Expanded badge single-press does not affect the panel.
-- [ ] `onBadgeClick` for collapsed + panel open closes the panel.
-- [ ] Existing drag/expand/hover/tap behavior unchanged.
+## Phân pha thực hiện
 
-**Checkpoint 0 ✅**
-- [x] `npm run typecheck` passes.
-- [x] `npm run test:unit` passes.
-- [x] `npm run build` passes.
-- [x] Verifier subagent (`subagent_explore`) confirms foundation files exist and contracts compile.
+### Phase 1: Foundation — Critical fixes
 
-## ✅ Phase 1 — Universal Panel Shell
+#### Task 1: Cross-browser fallback cho `rgba(from ...)` trong content scripts
+- **Mô tả**: Thay thế / cung cấp fallback cho 39 vị trí `rgba(from ...)` ở `subtitleBlockCss.ts`, `tokenSpanCss.ts`, `wordHighlight.ts`.
+- **Acceptance criteria**:
+  - [ ] Không còn `rgba(from var(...)` trong output production build.
+  - [ ] Màu nền/overlay vẫn đúng trong cả light/dark.
+  - [ ] Build pass, test content-script render pass.
+- **Verification**: `npm run build`, `npm run test:unit`, manual check DevTools computed color.
+- **Files**: `src/features/subtitle/ui/subtitleBlockCss.ts`, `src/features/tokenize/ui/tokenSpanCss.ts`, `src/features/dictionaryPopup/ui/wordHighlight.ts`, `src/shared/lib/theme/themeTokens.ts`.
+- **Scope**: M.
 
-### Task 1.1: Implement `mountUniversalPanel.ts`
-**Subagent:** `subagent_general`
-**Depends on:** 0.3
-**Files:**
-- `src/features/universalPanel/mountUniversalPanel.ts`
-**Acceptance:**
-- [ ] Creates a `position: fixed` host appended to `document.body` (or `fullscreenElement`), `z-index: 2147483646`.
-- [ ] Injects theme tokens, syncs `data-theme`.
-- [ ] Listens to `fullscreenchange` and re-parents host + theme style.
-- [ ] Returns controller with `open(tab?)`, `close()`, `switchTab(tab)`, `isOpen()`, `unmount()`.
+#### Task 2: Trích xuất hardcoded px trong TypeScript logic
+- **Mô tả**: Thay các giá trị hardcoded (`0px`, `768px`, `100px`, `84px`, `260px`, ...) bằng token constants hoặc `calc(var(--token) * N)`.
+- **Acceptance criteria**:
+  - [ ] `popupShell.ts`, `subtitleBlockCss.ts`, `tokenBadgeCss.ts`, `navClusterCss.ts` không còn magic px.
+  - [ ] Layout popup / subtitle / nav cluster không regressed trên breakpoints chuẩn.
+- **Verification**: `npm run typecheck`, `npm run test:unit`, build.
+- **Files**: `src/features/dictionaryPopup/ui/popupShell.ts`, `src/features/subtitle/ui/subtitleBlockCss.ts`, `src/features/tokenize/ui/tokenBadgeCss.ts`, `src/features/subtitle/ui/navClusterCss.ts`.
+- **Scope**: L.
 
-### Task 1.2: Implement `UniversalPanel.tsx` + `UniversalPanel.module.css`
-**Subagent:** `subagent_general`
-**Depends on:** 1.1 (use types), 0.1 (icon)
-**Files:**
-- `src/features/universalPanel/UniversalPanel.tsx`
-- `src/features/universalPanel/UniversalPanel.module.css`
-**Acceptance:**
-- [ ] Renders backdrop (click to close) and panel shell.
-- [ ] Left vertical tab bar with Dictionary (`bookOpen`) and Settings (`settings`) icons.
-- [ ] Active tab state; default `dictionary`; calls `onTabChange`.
-- [ ] Panel `width: 100%`, `max-width: 1280px`, full viewport height, right edge.
-- [ ] Mobile `<= 768px`: full-screen layout with bottom tab bar.
-- [ ] X button closes panel.
-- [ ] Uses design tokens; no hardcoded px.
+#### Task 3: Migrate SettingsDialog sang shared Dialog
+- **Mô tả**: Thay `SettingsDialog.tsx` custom overlay/popover bằng `Dialog` component từ `src/shared/ui/Dialog.tsx`, giữ lại style/settings-specific behavior.
+- **Acceptance criteria**:
+  - [ ] Settings dialog vẫn mở/đóng, responsive, giữ tabs và panels.
+  - [ ] Không còn duplicate overlay/focus logic.
+  - [ ] Dark/light mode hoạt động.
+- **Verification**: unit tests, build, manual `npx vite build --mode development` + load extension.
+- **Files**: `src/features/settings/ui/SettingsDialog.tsx`, `SettingsDialog.module.css`.
+- **Scope**: L.
 
-### Task 1.3: Implement `UniversalPanelController.ts` + tests
-**Subagent:** `subagent_general`
-**Depends on:** 1.2, 0.2
-**Files:**
-- `src/features/universalPanel/UniversalPanelController.ts`
-- `src/features/universalPanel/UniversalPanel.test.ts`
-**Acceptance:**
-- [ ] Persists last active tab to `chrome.storage.session` with `STORAGE_KEYS.UNIVERSAL_PANEL_TAB`.
-- [ ] Restores tab on `open()`.
-- [ ] Unit tests cover open/close, tab switch, persistence, backdrop close.
-- [ ] Focus returns to a ref after close.
+### Checkpoint 1
+- [ ] `npm run typecheck` pass
+- [ ] `npm run test:unit` pass
+- [ ] `npm run build` pass
+- [ ] Subagent review Phase 1 pass
 
-### Task 1.4: Wire orbital badge to `mountUniversalPanel`
-**Subagent:** `subagent_general`
-**Depends on:** 1.1, 1.3, 0.5
-**Files:**
-- `src/features/dictionaryPopup/badgePointer/createOrbitalBadge.ts`
-- `src/entrypoints/content/content-script.ts` (where badge is initialized)
-**Acceptance:**
-- [ ] Badge creates/destroys `universalPanelMount` instead of `settingsMount`.
-- [ ] `options.panel` callbacks bridge tokenize state into the universal panel (which passes them to `SettingsDialogContent`).
-- [ ] `onOpenDictionary` from Tokenize panel switches to Dictionary tab (controller exposes `switchTab`).
-- [ ] Single-press on collapsed badge opens/closes universal panel.
+### Phase 2: Token system refinement
 
-**Checkpoint 1 ✅**
-- [x] Panel opens from orbital badge.
-- [x] Tab switching works and persists.
-- [x] Backdrop/X close work.
-- [x] Mobile layout renders correctly in DevTools.
-- [x] `npm run typecheck`, `npm run test:unit`, `npm run build` pass.
-- [x] Verifier subagent checks shell against spec success criteria.
+#### Task 4: Radius semantic rename
+- **Mô tả**: Đổi tên radius tokens: `radius-md` → `radius-pill`, `radius-lg` → `radius-card`, `radius-xl` → `radius-dialog`; cập nhật tất cả consumers và regenerate `tokens.css`.
+- **Acceptance criteria**:
+  - [ ] `tokens.json` có semantic radius mới.
+  - [ ] Tất cả components sử dụng đúng token mới.
+  - [ ] Build + generate tokens pass.
+- **Verification**: `npm run build`, grep `radius-md/lg/xl` không còn kết quả.
+- **Files**: `src/shared/styles/tokens.json`, `src/shared/ui/**/*.module.css`, `src/features/**/*.module.css`.
+- **Scope**: M.
 
-## Phase 2 — Settings Tab
+#### Task 5: Optional shadow tokens
+- **Mô tả**: Bổ sung `shadow-floating`, `shadow-popover`, `shadow-modal` nhỏ gọn (0 1px 2px, v.v.) để dùng cho floating panels, tooltips, dialogs khi cần depth, giữ mặc định flat.
+- **Acceptance criteria**:
+  - [ ] `tokens.json` có shadow mới.
+  - [ ] Dialog / Drawer / BottomSheet / Tooltip có thể dùng shadow token mới (opt-in), mặc định vẫn none.
+- **Verification**: build, theme preview tests.
+- **Files**: `src/shared/styles/tokens.json`, `src/shared/ui/Dialog.module.css`, `src/shared/ui/Tooltip.module.css`, v.v.
+- **Scope**: S.
 
-### Task 2.1: Implement `SettingsTab.tsx` + `SettingsTab.module.css`
-**Subagent:** `subagent_general`
-**Depends on:** 0.4, 1.4
-**Files:**
-- `src/features/universalPanel/tabs/SettingsTab.tsx`
-- `src/features/universalPanel/tabs/SettingsTab.module.css`
-**Acceptance:**
-- [x] Renders `SettingsDialogContent` with `settings` loaded from `loadSettings`.
-- [x] `onChange` saves settings.
-- [x] Settings content is constrained to natural max-width (`<= 1200px`) and not stretched by the 1280px panel.
-- [x] `onOpenDictionary` prop switches tab to `dictionary`.
-- [x] Uses design tokens; BEM classes.
+#### Task 6: Border hairline token
+- **Mô tả**: Thêm `--border-width-hairline: 1px` và thay mọi `1px solid` hardcode trong CSS bằng token này.
+- **Acceptance criteria**:
+  - [ ] `tokens.json` có `borderWidth.hairline`.
+  - [ ] Không còn hardcode `1px` cho border/divider trong shared CSS (trừ cases đặc biệt được ADR cho phép).
+- **Verification**: grep `1px solid` trong `src/shared/ui` giảm đáng kể.
+- **Files**: `src/shared/styles/tokens.json`, `src/shared/ui/**/*.module.css`.
+- **Scope**: M.
 
-### Task 2.2: Update `SettingsDialog` to pass `onOpenDictionary` behavior through `SettingsDialogContent`
-**Subagent:** `subagent_general`
-**Depends on:** 0.4
-**Files:**
-- `src/features/settings/ui/SettingsDialog.tsx`
-- `src/features/settings/ui/SettingsDialogContent.tsx`
-**Acceptance:**
-- [x] `SettingsDialogContent` accepts `onOpenDictionary` and forwards to `TokenizeSettingsPanel`.
-- [x] When used inside `SettingsDialog` (popup/sidepanel), `onOpenDictionary` still triggers external popup dictionary lookup.
-- [x] When used inside `SettingsTab`, `onOpenDictionary` switches to Dictionary tab.
+#### Task 7: Automated contrast validation
+- **Mô tả**: Thêm bước validate contrast vào `scripts/generate-tokens.js` hoặc test suite, kiểm tra từng cặp text/bg trong `tokens.json`.
+- **Acceptance criteria**:
+  - [ ] Script báo lỗi khi tổng hợp màu không đạt WCAG AA.
+  - [ ] Bao phủ cả light và dark mode.
+- **Verification**: `npm run build` hoặc test contrast mới pass.
+- **Files**: `scripts/generate-tokens.js` hoặc `src/features/theme/logic/contrastValidator.ts`.
+- **Scope**: M.
 
-**Checkpoint 2**
-- [x] Settings tab renders all existing sections.
-- [x] Clicking "Open Dictionary" in Tokenize section switches to Dictionary tab.
-- [x] Saving a setting works and persists.
-- [x] `npm run test:unit` and `npm run build` pass.
-- [x] Verifier subagent confirms Settings tab SA.
+### Checkpoint 2
+- [ ] All Phase 2 tests pass
+- [ ] Build pass
+- [ ] Subagent review Phase 2 pass
 
-## Phase 3 — Dictionary Left Pane
+### Phase 3: Dark/Light harmony
 
-### Task 3.1: Implement `useDictionaryPanel.ts`
-**Subagent:** `subagent_general`
-**Files:**
-- `src/features/dictionaryPopup/ui/useDictionaryPanel.ts`
-- `src/features/dictionaryPopup/ui/DictionaryPanelView.tsx` (depends on this)
-**Acceptance:**
-- [ ] Hook accepts `langCode`, `sourceLang`, `targetLang`, `initialTerm?`, `onSendToCard(prefill)`.
-- [ ] Exposes `search(term)`, `currentResult`, `isLoading`, `error`, `activeTab`, `setActiveTab`, `sendToCard()`.
-- [ ] Calls `lookupOrchestrator` with `fallback: true` for typed search.
-- [ ] Loads language plugin/phrase index when needed (reuse existing orchestrator).
-- [ ] Supports cancellation via `AbortSignal`.
+#### Task 8: Frequency pills dark mode visibility
+- **Mô tả**: Bổ sung border/outline cho frequency bands trong dark mode để không bị blend vào host page.
+- **Acceptance criteria**:
+  - [ ] Frequency tokens trong dark mode có border hoặc shadow nhẹ.
+  - [ ] Hiển thị rõ trên nền xám đậm.
+- **Verification**: `tokenizeBlock` tests, manual dark mode preview.
+- **Files**: `src/shared/styles/tokens.json`, `src/features/tokenize/ui/tokenSpanCss.ts`.
+- **Scope**: S.
 
-### Task 3.2: Implement `DictionaryPanelView.tsx` + `DictionaryPanelView.module.css`
-**Subagent:** `subagent_general`
-**Depends on:** 3.1, 0.1
-**Files:**
-- `src/features/dictionaryPopup/ui/DictionaryPanelView.tsx`
-- `src/features/dictionaryPopup/ui/DictionaryPanelView.module.css`
-**Acceptance:**
-- [ ] Header: term, reading/IPA, audio play button, frequency/status badges.
-- [ ] Definitions list (reusing sense-splitting logic or `DefinitionEntry` display).
-- [ ] Tab bar: Audio, Image, Translate, Links (same as popup dictionary tabs).
-- [ ] Footer: status cycle button + "Send to Card" button.
-- [ ] Visual style consistent with popup dictionary and design tokens.
-- [ ] Renders loading/error/empty states.
+#### Task 9: Theme transition animation
+- **Mô tả**: Thêm `transition` mượt khi chuyển dark/light mode trên root element (color, background-color, border-color), tôn trọng `prefers-reduced-motion`.
+- **Acceptance criteria**:
+  - [ ] Theme switch có transition 150-200ms.
+  - [ ] Giảm motion khi user bật reduced motion.
+- **Verification**: manual toggle in popup theme panel.
+- **Files**: `src/shared/styles/global.css`, `src/features/theme/ui/ThemeProvider.tsx`.
+- **Scope**: S.
 
-### Task 3.3: Implement `DictionaryTab.tsx` + `DictionaryTab.module.css`
-**Subagent:** `subagent_general`
-**Depends on:** 3.2
-**Files:**
-- `src/features/universalPanel/tabs/DictionaryTab.tsx`
-- `src/features/universalPanel/tabs/DictionaryTab.module.css`
-**Acceptance:**
-- [ ] Two-pane layout: left `DictionaryPanelView`, right `CardCreatorPanel` (placeholder in this phase).
-- [ ] Left pane width ~50% desktop, stacks vertically on mobile.
-- [ ] Receives `onSendToCard` callback and forwards to right pane.
-- [ ] Receives `initialTerm?` and passes to `DictionaryPanelView`.
+#### Task 10: Contrast audit & fix for dark mode
+- **Mô tả**: Chạy audit tự động trên tất cả components trong dark mode, sửa các cặp màu không đạt 4.5:1.
+- **Acceptance criteria**:
+  - [ ] Tất cả text/background combinations đạt WCAG AA.
+  - [ ] Các components đặc biệt (Alert, Badge, frequency) cũng pass.
+- **Verification**: contrast validator tests + subagent review.
+- **Files**: `src/shared/styles/tokens.json`, `src/shared/ui/**/*.module.css`.
+- **Scope**: M.
 
-### Task 3.4: Focus search input on Dictionary tab open
-**Subagent:** `subagent_general`
-**Depends on:** 3.2
-**Files:**
-- `src/features/dictionaryPopup/ui/DictionaryPanelView.tsx`
-**Acceptance:**
-- [ ] When panel opens at Dictionary tab, focus moves to the search input after enter animation.
-- [ ] If search input already has a term, focus is at end of text.
+### Checkpoint 3
+- [ ] Dark mode tests pass
+- [ ] Build pass
+- [ ] Subagent review Phase 3 pass
 
-**Checkpoint 3**
-- [ ] Typing a word in search performs lookup.
-- [ ] Lookup result renders with definitions and tabs.
-- [ ] Footer buttons visible and clickable.
-- [ ] `npm run test:unit` and `npm run build` pass.
-- [ ] Verifier subagent confirms dictionary left-pane SA.
+### Phase 4: Behavior & accessibility
 
-## Phase 4 — Card Creator Right Pane
+#### Task 11: Touch target audit
+- **Mô tả**: Kiểm tra mọi interactive element đạt touch target 44px trên mobile/overlay, 40px trên desktop.
+- **Acceptance criteria**:
+  - [ ] Button, IconButton, Checkbox, Radio, Toggle, NavItem, ListItem, Slider đều đạt min touch target.
+  - [ ] Không có interactive element < 24px gần nhau mà không có spacing.
+- **Verification**: tests + DevTools computed box.
+- **Files**: `src/shared/ui/**/*.module.css`, `src/features/**/*.module.css`.
+- **Scope**: M.
 
-### Task 4.1: Implement `CardCreatorPanel.tsx`
-**Subagent:** `subagent_general`
-**Files:**
-- `src/features/universalPanel/tabs/CardCreatorPanel.tsx`
-**Acceptance:**
-- [ ] Calls `useCardCreatorState(settings.cardCreator, openContext, 'edit-card')`.
-- [ ] Renders `CardCreatorDialogContent state={state} variant='desktop' onCancel={...}`.
-- [ ] Builds `OpenContext` from optional video/cue and source/target langs.
-- [ ] Captures screenshot + sentence audio when `openContext` changes (same logic as `handlePopupCardCreatorAction`).
-- [ ] Empty/placeholder state when no prefill and not opened.
+#### Task 12: Motion standardization
+- **Mô tả**: Audit transitions dùng `--duration-*` và easing đúng; thêm `prefers-reduced-motion` nơi còn thiếu.
+- **Acceptance criteria**:
+  - [ ] Mọi `transition` sử dụng token duration/easing.
+  - [ ] `prefers-reduced-motion` được tôn trọng.
+- **Verification**: grep `transition:` trong source, tests.
+- **Files**: toàn bộ CSS.
+- **Scope**: M.
 
-### Task 4.2: Wire `DictionaryTab` to `CardCreatorPanel` with prefill
-**Subagent:** `subagent_general`
-**Depends on:** 4.1, 3.3
-**Files:**
-- `src/features/universalPanel/tabs/DictionaryTab.tsx`
-- `src/features/universalPanel/tabs/CardCreatorPanel.tsx`
-**Acceptance:**
-- [ ] `DictionaryTab` manages `prefill` state.
-- [ ] Clicking "Send to Card" in left pane sets prefill and opens/focuses right pane.
-- [ ] Prefill includes term, definitions, sentence, translation, audio/image URLs.
-- [ ] Card creator receives prefill via `openContext.prefill`.
+#### Task 13: Focus states standardization
+- **Mô tả**: Đảm bảo mọi interactive element có focus ring rõ ràng (`2px solid var(--color-primary)` + 2px offset), không chỉ dùng `outline: none`.
+- **Acceptance criteria**:
+  - [ ] Không còn `outline: none` đơn độc mà không có focus replacement.
+  - [ ] Focus ring hiển thị đồng nhất trên light/dark.
+- **Verification**: keyboard navigation test.
+- **Files**: `src/shared/ui/**/*.module.css`.
+- **Scope**: M.
 
-**Checkpoint 4**
-- [ ] Send to Card populates card creator with term and definitions.
-- [ ] Screenshot/audio captured from current video frame/cue.
-- [ ] Add/Update card buttons work.
-- [ ] `npm run test:unit` and `npm run build` pass.
-- [ ] Verifier subagent confirms card-creator SA.
+### Checkpoint 4
+- [ ] Accessibility tests pass
+- [ ] Build pass
+- [ ] Subagent review Phase 4 pass
 
-## Phase 5 — External Popup Integration
+### Phase 5: Verify & refine (Refind loop)
 
-### Task 5.1: Add `stayOpen` flag to popup card-creator action
-**Subagent:** `subagent_general`
-**Files:**
-- `src/features/dictionaryPopup/ui/popupDictionaryController.ts`
-- `src/features/dictionaryPopup/types.ts` (if `OnCardCreatorAction` signature lives there)
-**Acceptance:**
-- [ ] `triggerCardCreatorAction` accepts `stayOpen?: boolean`.
-- [ ] `onSendToCreator`/`onQuickAdd` in popup content default to `stayOpen: false` (preserve current dismiss behavior).
-- [ ] Popup content no longer unconditionally calls `onDismiss(state)` when `stayOpen` is true.
+#### Task 14: Subagent spec/design review
+- **Mô tả**: Chạy subagent review toàn bộ design system sau khi thực hiện các pha trên; lập danh sách remaining issues.
+- **Acceptance criteria**:
+  - [ ] Subagent report không còn high/critical issues.
+  - [ ] Các medium issues được ghi nhận hoặc fixed.
+- **Verification**: subagent output.
+- **Scope**: S.
 
-### Task 5.2: Add external-popup → universal panel bridge
-**Subagent:** `subagent_general`
-**Depends on:** 1.4, 5.1
-**Files:**
-- `src/features/dictionaryPopup/controller/webTextDictionaryController.ts`
-- `src/features/dictionaryPopup/badgePointer/createOrbitalBadge.ts`
-- `src/entrypoints/content/content-script.ts`
-**Acceptance:**
-- [ ] `WebTextDictionaryController` receives a callback `onOpenUniversalPanel(prefill, action)`.
-- [ ] External popup "Send to Card" calls this callback with `stayOpen: true`.
-- [ ] Universal panel opens (if closed) to Dictionary tab and prefill is sent to `CardCreatorPanel`.
-- [ ] External popup remains open.
+#### Task 15: Runtime verification (browser)
+- **Mô tả**: Load extension trong Chrome/Edge, kiểm tra popup, sidepanel, content script, settings, theme toggle, dictionary popup, subtitle overlay trên light/dark.
+- **Acceptance criteria**:
+  - [ ] Không có lỗi visual regression rõ rệt.
+  - [ ] Dark/light mode chuyển mượt.
+  - [ ] Touch targets đạt chuẩn.
+- **Verification**: manual DevTools + browser extension load.
+- **Scope**: M.
 
-### Task 5.3: Handle Quick Add from external popup to universal panel
-**Subagent:** `subagent_general`
-**Depends on:** 5.2
-**Files:**
-- `src/features/dictionaryPopup/controller/webTextDictionaryController.ts`
-**Acceptance:**
-- [ ] "Quick Add" from external popup also sends prefill to universal panel, action `'quick-add'`.
-- [ ] Card creator panel pre-selects Add mode.
+#### Task 16: Update docs & ADRs
+- **Mô tả**: Cập nhật `docs/2-architechture-system.md` (tree + token index), `docs/adr/` cho các quyết định radius/shadow/contrast mới, `docs/0-wiki.md` mục lục.
+- **Acceptance criteria**:
+  - [ ] Docs phản ánh token mới và component inventory.
+  - [ ] ADRs ghi WHY của các thay đổi design system.
+- **Verification**: `npm run build`, subagent docs review.
+- **Files**: `docs/2-architechture-system.md`, `docs/0-wiki.md`, `docs/adr/`.
+- **Scope**: M.
 
-**Checkpoint 5**
-- [ ] Popup Send to Card updates universal panel and popup stays open.
-- [ ] Popup Quick Add updates universal panel and popup stays open.
-- [ ] `npm run test:unit` and `npm run build` pass.
-- [ ] Verifier subagent confirms popup integration SA.
-
-## Phase 6 — Mobile & Responsive Refinement
-
-### Task 6.1: Implement mobile bottom-sheet layout for `UniversalPanel`
-**Subagent:** `subagent_general`
-**Depends on:** 1.2
-**Files:**
-- `src/features/universalPanel/UniversalPanel.module.css`
-- `src/features/universalPanel/UniversalPanel.tsx`
-**Acceptance:**
-- [ ] At `<= 768px` the panel becomes full-screen.
-- [ ] Tab bar moves to bottom with two icon buttons.
-- [ ] Panel animates in/out like a bottom sheet.
-
-### Task 6.2: Implement card creator secondary bottom sheet on mobile
-**Subagent:** `subagent_general`
-**Depends on:** 6.1, 4.2
-**Files:**
-- `src/features/universalPanel/tabs/DictionaryTab.module.css`
-- `src/features/universalPanel/tabs/DictionaryTab.tsx`
-**Acceptance:**
-- [ ] On mobile, right pane (Card Creator) appears below dictionary or as a secondary bottom sheet after "Send to Card".
-- [ ] User can dismiss/expand card creator sheet.
-- [ ] Two-pane desktop layout unaffected.
-
-### Task 6.3: Responsive verification at breakpoints
-**Subagent:** `subagent_general` + `browser-testing-with-devtools` skill
-**Depends on:** 6.2
-**Acceptance:**
-- [ ] 1280px viewport: panel full width, left/right panes visible.
-- [ ] 1920px+ viewport: panel caps at 1280px, video still partially visible.
-- [ ] 768px and below: full-screen/bottom-sheet, bottom tab bar, stacked dictionary/card creator.
-- [ ] 480px and below: same as 768px with comfortable touch targets.
-
-**Checkpoint 6**
-- [ ] Manual DevTools verification at 1920, 1280, 768, 390 widths.
-- [ ] `npm run build` passes.
-- [ ] Verifier subagent confirms responsive SA.
-
-## Phase 7 — Final Verification, Refinement, Documentation
-
-### Task 7.1: Run full verification suite
-**Subagent:** `subagent_general` (orchestrator-assisted)
-**Files:** all touched
-**Acceptance:**
-- [ ] `npm run typecheck` passes.
-- [ ] `npm run test:unit` passes.
-- [ ] `npm run build` passes.
-
-### Task 7.2: Manual browser verification
-**Subagent:** `subagent_general` with `browser-testing-with-devtools` skill
-**Acceptance:**
-- [ ] On YouTube test video: open panel, switch tabs, search dictionary, send to card.
-- [ ] In fullscreen: panel re-parents and remains visible.
-- [ ] Popup dictionary Send to Card keeps popup open and updates panel.
-
-### Task 7.3: Adversarial spec acceptance review
-**Subagent:** `subagent_explore` (read-only verifier)
-**Acceptance:**
-- [ ] Compares implementation against `docs/specs/universal-orbital-panel.md` success criteria.
-- [ ] Reports any missing SA, edge cases, or regressions.
-
-### Task 7.4: Fix gaps and rerun verification until all SA pass
-**Subagent:** `subagent_general` (fix loop)
-**Acceptance:**
-- [ ] Every spec success criterion is marked passing.
-- [ ] After fixes, `npm run typecheck`, `npm run test:unit`, `npm run build` pass again.
-
-### Task 7.5: Update `docs/2-architechture-system.md`
-**Subagent:** `subagent_general`
-**Files:**
-- `docs/2-architechture-system.md`
-**Acceptance:**
-- [ ] New `features/universalPanel/` tree, new files, and dependencies added to the architecture doc.
-- [ ] Modified files (`createOrbitalBadge.ts`, `SettingsDialog.tsx`, `popupDictionaryController.ts`, `webTextDictionaryController.ts`) are updated in the dependency/function index.
-
-**Checkpoint 7 (Final)**
-- [ ] All spec success criteria pass.
-- [ ] Build, typecheck, unit tests green.
-- [ ] Manual browser verification recorded.
-- [ ] Architecture docs updated.
-- [ ] Verifier subagent signs off.
-
-## Parallelization & Subagent Allocation
-
-- **Phase 0**: 5 subagents in parallel (0.1, 0.2, 0.3, 0.4, 0.5). 0.5 may start after 0.3 if imports are needed.
-- **Phase 1**: 3 subagents in parallel (1.1, 1.2, 1.3), then 1.4 sequential.
-- **Phase 2**: 1–2 subagents sequential (2.1 then 2.2).
-- **Phase 3**: 3 subagents in parallel (3.1, 3.2, 3.4), then 3.3 sequential integration.
-- **Phase 4**: 2 subagents sequential (4.1 then 4.2).
-- **Phase 5**: 2–3 subagents sequential (5.1 → 5.2 → 5.3).
-- **Phase 6**: 2 subagents sequential (6.1 → 6.2), then 6.3 verification.
-- **Phase 7**: 4 subagents sequential/loop (7.1 → 7.2 → 7.3 → 7.4 loop → 7.5).
-
-Each phase includes a **do → verify → refine** loop: implementer subagent does the work, verifier subagent (`subagent_explore`) reviews against the spec, and implementer fixes until the checkpoint passes.
+### Checkpoint Final
+- [ ] All tests pass
+- [ ] Production build pass (`npm run build`)
+- [ ] Development build pass + 2 seed files copied
+- [ ] Subagent final review: no production blockers
+- [ ] Docs & ADRs updated
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Extracting `SettingsDialogContent` breaks existing dialog | High | Keep `SettingsDialog` wrapper untouched; only move body into a new component. Run full tests after. |
-| `lookupOrchestrator` needs language context that is hard to get in panel | Medium | Use settings `subtitleOverlayTargetLanguage` as fallback; pass video/cue context from subtitle controller. |
-| Popup `stayOpen` flag touches all popup flows | Medium | Default `stayOpen` to `false`; only universal panel path sets `true`. Unit-test existing popup paths. |
-| Card Creator embedded in panel has layout issues (queue sidebar, Dialog shell) | High | Use `CardCreatorDialogContent` directly, not `mountCardCreatorDialog`; test queue behavior inside a pane. |
-| Mobile bottom-sheet conflicts with existing `BottomSheet` component | Low | Build custom mobile layout in `UniversalPanel.module.css`; reuse tokens but not component. |
-| Fullscreen re-parenting missed | High | Explicit success criterion + manual test on YouTube/Netflix fullscreen. |
-| Z-index conflicts with popup dictionary | Medium | Panel host `z-index: 2147483646` (below popup `2147483647`); popup should still render above. |
+| Đổi tên radius token gây regression rộng | High | Dùng `replace_all` cẩn thận, kiểm tra grep trước/sau, build + tests sau mỗi bước. |
+| `rgba(from ...)` fallback khó áp dụng đúng | Medium | Tạo helper `colorWithAlpha` trong `src/shared/lib/theme/colorUtils.ts`, dùng trong content scripts. |
+| SettingsDialog migration phức tạp | High | Chạy song song cả 2 implementations rồi switch sau khi tests pass. |
+| Contrast validation false positive | Low | Cho phép ghi chú/whitelist cho các token decorative. |
+| Build size tăng do tokens | Low | Dùng CSS variables, không inline nhiều giá trị. |
 
-## Open Questions
+## Open Questions (none — proceeding with assumptions)
 
-1. Should the integrated dictionary search default to `fallback: true` or use phrase matching? (Decision: `fallback: true` for typed search to match exact user input.)
-2. When the user opens Settings tab and changes a setting, should the panel auto-close? (Decision: no, panel stays open; user can continue watching.)
-3. Should the panel auto-pause video when open? (Decision: no, user may want to read while video plays; backdrop is semi-transparent.)
+- Không có câu hỏi cần user xác nhận; em sẽ dựa trên audit và conventions hiện có.
