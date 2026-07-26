@@ -40,7 +40,8 @@ export type { PopupAnchor, PopupLineRect };
 
 // Track any <audio> elements currently playing inside the popup so we can
 // pause and release them when the popup is hidden or destroyed.
-const activePopupAudios: Set<HTMLAudioElement> = new Set();
+// Exported for tests — production code should not mutate directly.
+export const activePopupAudios: Set<HTMLAudioElement> = new Set();
 
 // Cap the per-page tab-panel cache so it doesn't grow unbounded on long-lived
 // pages with many unique lookups.

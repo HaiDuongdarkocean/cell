@@ -374,10 +374,12 @@ function findAndInitOverlay(): void {
   // ponytail: disconnect as soon as a ready video is found to avoid unnecessary
   // mutation work.
   // AC4.4 early-exit: if no video after 10s, disconnect observer (no video on page).
-  const observer = new MutationObserver(() => {
+  findVideoObserver?.disconnect();
+  findVideoObserver = new MutationObserver(() => {
     const v = document.querySelector('video');
     if (v && isVideoReady(v) && v !== currentVideo) {
-      observer.disconnect();
+      findVideoObserver?.disconnect();
+      findVideoObserver = null;
       clearTimeout(disconnectTimer);
       currentOverlayCleanup?.();
       currentVideo = v;
@@ -385,14 +387,17 @@ function findAndInitOverlay(): void {
     }
   });
   const root = document.body ?? document.documentElement;
-  observer.observe(root, {
+  findVideoObserver.observe(root, {
     childList: true,
     subtree: true,
     attributes: true,
     attributeFilter: ['src'],
   });
   // AC4.4: auto-disconnect after 10s if no video appears (early-exit optimization)
-  const disconnectTimer = setTimeout(() => observer.disconnect(), 10000);
+  const disconnectTimer = setTimeout(() => {
+    findVideoObserver?.disconnect();
+    findVideoObserver = null;
+  }, 10000);
 }
 
 // === In-page episode/movie switch detection (ADR-010) ===
@@ -437,6 +442,7 @@ let lastSeenVideo: HTMLVideoElement | null = null;
 let lastVideoSrc: string | null = null;
 let videoSrcWatcherInterval: ReturnType<typeof setInterval> | null = null;
 let episodeChangeObserver: MutationObserver | null = null;
+let findVideoObserver: MutationObserver | null = null;
 
 function reportEpisodeChanged(reason: 'replacement' | 'src-change'): void {
   if (!hasSeenFirstVideo) return; // first video — baseline, not a switch
@@ -524,12 +530,6 @@ function initVideoSrcWatcher(): void {
       reportEpisodeChanged('src-change');
     }
   }, 500);
-  window.addEventListener('beforeunload', () => {
-    if (videoSrcWatcherInterval) {
-      clearInterval(videoSrcWatcherInterval);
-      videoSrcWatcherInterval = null;
-    }
-  });
 }
 
 function initEpisodeChangeWatcher(): void {
@@ -568,6 +568,8 @@ function cleanupContentScript(): void {
     currentOverlayCleanup?.();
     currentOverlayCleanup = null;
     currentVideo = null;
+    findVideoObserver?.disconnect();
+    findVideoObserver = null;
     episodeChangeObserver?.disconnect();
     episodeChangeObserver = null;
     if (videoSrcWatcherInterval) {
