@@ -723,4 +723,29 @@ describe('header audio', () => {
     expect(updatedContainer?.querySelector('.js-cell-tab.btn--primary')).toBeNull();
     expect(updatedContainer?.querySelector('.js-cell-panel')).toBeNull();
   });
+
+  it('evicts oldest tab-panel cache entry when exceeding MAX_TAB_PANEL_CACHE_SIZE', () => {
+    state = makePopupState();
+    for (let i = 0; i < 100; i++) {
+      state.tabPanelCache.set(`term-${i}`, {
+        audioItems: [],
+        audioSelection: new Map(),
+        headerAudioId: null,
+        imageItems: [],
+        imageSelection: new Map(),
+        translations: new Map(),
+      });
+    }
+    // cachedResultTerm is the previously displayed term; saving it on the next
+    // showPopup pushes the cache over the limit and triggers FIFO eviction.
+    state.cachedResultTerm = 'prev-term';
+    const shown = showPopup(state, makeResult({ term: 'new-term' }), {
+      anchor: { top: 170, left: 100, right: 150, bottom: 200 },
+      contextSentence: 'Take off your shoes.',
+    });
+    expect(shown.tabPanelCache.size).toBe(100);
+    expect(shown.tabPanelCache.has('term-0')).toBe(false);
+    expect(shown.tabPanelCache.has('term-1')).toBe(true);
+    expect(shown.tabPanelCache.has('prev-term')).toBe(true);
+  });
 });

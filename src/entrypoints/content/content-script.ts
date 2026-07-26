@@ -436,6 +436,7 @@ let lastSeenVideo: HTMLVideoElement | null = null;
 // params + blob: revocation noise by comparing pathname, not full href).
 let lastVideoSrc: string | null = null;
 let videoSrcWatcherInterval: ReturnType<typeof setInterval> | null = null;
+let episodeChangeObserver: MutationObserver | null = null;
 
 function reportEpisodeChanged(reason: 'replacement' | 'src-change'): void {
   if (!hasSeenFirstVideo) return; // first video — baseline, not a switch
@@ -543,7 +544,8 @@ function initEpisodeChangeWatcher(): void {
   }
   // Persistently observe for new <video> elements. A NEW element appearing
   // after the first one was seen = episode switch (element replacement).
-  const observer = new MutationObserver((mutations) => {
+  if (episodeChangeObserver) episodeChangeObserver.disconnect();
+  episodeChangeObserver = new MutationObserver((mutations) => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         if (node.nodeName === 'VIDEO') {
@@ -556,10 +558,36 @@ function initEpisodeChangeWatcher(): void {
     }
   });
   const root = document.body ?? document.documentElement;
-  observer.observe(root, { childList: true, subtree: true });
+  episodeChangeObserver.observe(root, { childList: true, subtree: true });
   // Also watch for src changes on the same element (aniwatch sub→dub case).
   initVideoSrcWatcher();
 }
+
+function cleanupContentScript(): void {
+  try {
+    currentOverlayCleanup?.();
+    currentOverlayCleanup = null;
+    currentVideo = null;
+    episodeChangeObserver?.disconnect();
+    episodeChangeObserver = null;
+    if (videoSrcWatcherInterval) {
+      clearInterval(videoSrcWatcherInterval);
+      videoSrcWatcherInterval = null;
+    }
+    webTextCtrl?.destroy();
+    webTextCtrl = null;
+    webTokenizeCtrl?.destroy();
+    webTokenizeCtrl = null;
+    universalPanelMount?.unmount?.();
+    universalPanelMount = null;
+    pendingTokenizeSubs = [];
+  } catch {
+    // Best-effort cleanup on content-script teardown.
+  }
+}
+
+window.addEventListener('beforeunload', cleanupContentScript);
+window.addEventListener('pagehide', cleanupContentScript);
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initEpisodeChangeWatcher);
