@@ -16,6 +16,7 @@ import {
   setActiveCandidate,
   getInitialPopupSize,
   updatePopupSettings,
+  activePopupAudios,
 } from './popupDictionaryController';
 import type { PopupDictionaryState } from './popupDictionaryController';
 import type { LookupResult, WordStatus } from '../types';
@@ -148,6 +149,7 @@ describe('showPopup', () => {
 
   beforeEach(() => {
     state = makePopupState();
+    activePopupAudios.clear();
     mockSendMessage.mockReset();
     mockSendMessage.mockResolvedValue({ success: true, data: { translated: ['Bỏ giày ra.'] } });
   });
@@ -747,5 +749,24 @@ describe('header audio', () => {
     expect(shown.tabPanelCache.has('term-0')).toBe(false);
     expect(shown.tabPanelCache.has('term-1')).toBe(true);
     expect(shown.tabPanelCache.has('prev-term')).toBe(true);
+  });
+
+  it('pauses and clears all popup audios on hide and destroy', () => {
+    const mockAudio = { pause: jest.fn() } as unknown as HTMLAudioElement;
+    activePopupAudios.add(mockAudio);
+
+    const shown = showPopup(state, makeResult(), {
+      anchor: { top: 170, left: 100, right: 150, bottom: 200 },
+      contextSentence: 'Take off your shoes.',
+    });
+
+    hidePopup(shown);
+    expect(mockAudio.pause).toHaveBeenCalledTimes(1);
+    expect(activePopupAudios.size).toBe(0);
+
+    activePopupAudios.add(mockAudio);
+    destroyPopup(shown);
+    expect(mockAudio.pause).toHaveBeenCalledTimes(2);
+    expect(activePopupAudios.size).toBe(0);
   });
 });

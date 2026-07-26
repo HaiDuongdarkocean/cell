@@ -181,7 +181,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     dictionarySourceLang = settings.subtitleOverlayTargetLanguage || dictionarySourceLang;
     dictionaryTargetLang = settings.subtitleOverlayNativeLanguage || dictionaryTargetLang;
     dictionaryLangCode = dictionarySourceLang;
-    render();
+    if (!isUnmounted) render();
   });
 
   const renderDictionaryPanel = (open: boolean): ReactElement =>
