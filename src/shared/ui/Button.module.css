@@ -3,6 +3,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1-5);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   border: none;
   border-radius: var(--button-radius);
   font-family: var(--font-family);

@@ -4,7 +4,7 @@
   flex-direction: column;
   background: var(--color-surface);
   border-radius: var(--radius-card);
-  transition: all var(--transition);
+  transition: background var(--transition), border-color var(--transition);
   border: var(--space-0-5) solid transparent;
   animation: fade-in 300ms ease;
   overflow: hidden;
