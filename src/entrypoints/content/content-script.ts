@@ -8,6 +8,7 @@ import { createWebTextDictionaryController } from '@/features/dictionaryPopup/co
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import { createWebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
 import type { WebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
+import { mountUniversalPanel, type UniversalPanelMountController } from '@/features/universalPanel';
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 
 // ISOLATED content-script marker (verify injection from DevTools — MAIN world
@@ -221,6 +222,45 @@ let webTokenizeCtrl: WebTokenizeController | null = null;
  *  tokenize state updates → toggles don't visually switch. */
 let pendingTokenizeSubs: Array<(s: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void> = [];
 
+let universalPanelMount: UniversalPanelMountController | null = null;
+
+function ensureUniversalPanelMount(): UniversalPanelMountController {
+  if (!universalPanelMount) {
+    universalPanelMount = mountUniversalPanel({
+      panel: {
+        getState: () => {
+          const s = webTokenizeCtrl?.getState();
+          return {
+            enabled: s?.enabled ?? false,
+            showStatus: s?.showStatus ?? false,
+            showFrequency: s?.showFrequency ?? false,
+          };
+        },
+        onToggle: (key) => {
+          if (key === 'enabled') webTokenizeCtrl?.toggleEnabled();
+          else if (key === 'showStatus') webTokenizeCtrl?.toggleShowStatus();
+          else if (key === 'showFrequency') webTokenizeCtrl?.toggleShowFrequency();
+        },
+        onOpenDictionary: () => {
+          universalPanelMount?.open('dictionary');
+        },
+        subscribe: (cb) => {
+          if (!webTokenizeCtrl) {
+            pendingTokenizeSubs.push(cb);
+            return () => {
+              pendingTokenizeSubs = pendingTokenizeSubs.filter((c) => c !== cb);
+            };
+          }
+          return webTokenizeCtrl.subscribe((s) => {
+            cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency });
+          });
+        },
+      },
+    });
+  }
+  return universalPanelMount;
+}
+
 function ensureWebTextCtrl(): WebTextDictionaryController {
   if (!webTextCtrl) {
     webTextCtrl = createWebTextDictionaryController({
@@ -240,8 +280,7 @@ function ensureWebTextCtrl(): WebTextDictionaryController {
       // Orbital badge settings panel — merged from the former token FAB.
       // The panel reads/writes tokenize state via these callbacks. Lazily
       // reads `webTokenizeCtrl` at click time (may be null on first render).
-      // Phase 0: panelController is not yet wired; Phase 1.4 will provide it.
-      panelController: undefined,
+      panelController: ensureUniversalPanelMount(),
       panel: {
         getState: () => {
           const s = webTokenizeCtrl?.getState();
