@@ -949,7 +949,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
     if (deps.panelController) {
       // ADR-065: route to the integrated universal panel and keep the popup open.
-      deps.panelController.sendToCard(prefill);
+      // Intentionally not awaited: the popup decision (stayOpen) must be
+      // synchronous so the popup state does not race with user dismissal.
+      deps.panelController.sendToCard(prefill).catch((err: unknown) => {
+        console.warn('[web-text-dict] sendToCard failed:', err);
+      });
       return { stayOpen: true };
     }
 

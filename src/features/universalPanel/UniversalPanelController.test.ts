@@ -50,4 +50,70 @@ describe('createUniversalPanelController', () => {
 
     expect(onSendToCard).not.toHaveBeenCalled();
   });
+
+  it('multiple rapid sendToCard calls preserve the last prefill', async () => {
+    const onSendToCard = jest.fn();
+    const onOpen = jest.fn();
+    const { controller } = createUniversalPanelController({ onSendToCard, onOpen });
+
+    const prefill1: DictionaryPanelPrefill = {
+      term: 'hello',
+      langCode: 'en',
+      reading: '',
+      definitions: [],
+      rawDefinitions: [],
+      contextSentence: '',
+      wordAudioUrls: [],
+      sentenceAudioUrls: [],
+      imageUrls: [],
+    };
+    const prefill2: DictionaryPanelPrefill = {
+      term: 'world',
+      langCode: 'en',
+      reading: '',
+      definitions: [],
+      rawDefinitions: [],
+      contextSentence: '',
+      wordAudioUrls: [],
+      sentenceAudioUrls: [],
+      imageUrls: [],
+    };
+
+    await Promise.all([
+      controller.sendToCard(prefill1),
+      controller.sendToCard(prefill2),
+    ]);
+
+    expect(onSendToCard).toHaveBeenCalledTimes(2);
+    expect(onSendToCard).toHaveBeenLastCalledWith(prefill2);
+    expect(onOpen).toHaveBeenCalledWith('dictionary');
+    expect(controller.isOpen()).toBe(true);
+  });
+
+  it('sendToCard is a no-op if unmounted during open', async () => {
+    const onSendToCard = jest.fn();
+    const onOpen = jest.fn();
+    const { controller, unmount } = createUniversalPanelController({
+      onSendToCard,
+      onOpen,
+      getPersistedTab: () => new Promise((resolve) => { setTimeout(resolve, 0); }),
+    });
+
+    const promise = controller.sendToCard({
+      term: 'test',
+      langCode: 'en',
+      reading: '',
+      definitions: [],
+      rawDefinitions: [],
+      contextSentence: '',
+      wordAudioUrls: [],
+      sentenceAudioUrls: [],
+      imageUrls: [],
+    });
+    unmount();
+    await promise;
+
+    expect(onSendToCard).toHaveBeenCalledTimes(1);
+    expect(controller.isOpen()).toBe(false);
+  });
 });
