@@ -133,4 +133,29 @@ describe('mountUniversalPanel', () => {
     expect(reopenedTab).toHaveAttribute('data-initial-term', '');
     expect(reopenedTab).toHaveAttribute('data-prefill-term', '');
   });
+
+  it('prefill survives tab switches while the panel is open', async () => {
+    const prefill = {
+      term: 'hello',
+      langCode: 'en',
+      reading: '',
+      definitions: [],
+      rawDefinitions: [],
+      contextSentence: 'hello world',
+      wordAudioUrls: [],
+      sentenceAudioUrls: [],
+      imageUrls: [],
+    };
+
+    await act(async () => { await controller.sendToCard(prefill); });
+    await waitFor(() => expect(screen.getByTestId('dictionary-tab')).toBeInTheDocument());
+    expect(screen.getByTestId('dictionary-tab')).toHaveAttribute('data-prefill-term', 'hello');
+
+    await act(async () => { await controller.switchTab('settings'); });
+    await waitFor(() => expect(screen.getByTestId('settings-dialog-content')).toBeInTheDocument());
+
+    await act(async () => { await controller.switchTab('dictionary'); });
+    await waitFor(() => expect(screen.getByTestId('dictionary-tab')).toBeInTheDocument());
+    expect(screen.getByTestId('dictionary-tab')).toHaveAttribute('data-prefill-term', 'hello');
+  });
 });
