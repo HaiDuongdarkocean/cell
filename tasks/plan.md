@@ -145,11 +145,11 @@ These tasks have no runtime dependency on each other and can run in parallel.
 - `src/features/universalPanel/tabs/SettingsTab.tsx`
 - `src/features/universalPanel/tabs/SettingsTab.module.css`
 **Acceptance:**
-- [ ] Renders `SettingsDialogContent` with `settings` loaded from `loadSettings`.
-- [ ] `onChange` saves settings.
-- [ ] Settings content is constrained to natural max-width (`<= 1200px`) and not stretched by the 1280px panel.
-- [ ] `onOpenDictionary` prop switches tab to `dictionary`.
-- [ ] Uses design tokens; BEM classes.
+- [x] Renders `SettingsDialogContent` with `settings` loaded from `loadSettings`.
+- [x] `onChange` saves settings.
+- [x] Settings content is constrained to natural max-width (`<= 1200px`) and not stretched by the 1280px panel.
+- [x] `onOpenDictionary` prop switches tab to `dictionary`.
+- [x] Uses design tokens; BEM classes.
 
 ### Task 2.2: Update `SettingsDialog` to pass `onOpenDictionary` behavior through `SettingsDialogContent`
 **Subagent:** `subagent_general`
@@ -158,16 +158,16 @@ These tasks have no runtime dependency on each other and can run in parallel.
 - `src/features/settings/ui/SettingsDialog.tsx`
 - `src/features/settings/ui/SettingsDialogContent.tsx`
 **Acceptance:**
-- [ ] `SettingsDialogContent` accepts `onOpenDictionary` and forwards to `TokenizeSettingsPanel`.
-- [ ] When used inside `SettingsDialog` (popup/sidepanel), `onOpenDictionary` still triggers external popup dictionary lookup.
-- [ ] When used inside `SettingsTab`, `onOpenDictionary` switches to Dictionary tab.
+- [x] `SettingsDialogContent` accepts `onOpenDictionary` and forwards to `TokenizeSettingsPanel`.
+- [x] When used inside `SettingsDialog` (popup/sidepanel), `onOpenDictionary` still triggers external popup dictionary lookup.
+- [x] When used inside `SettingsTab`, `onOpenDictionary` switches to Dictionary tab.
 
 **Checkpoint 2**
-- [ ] Settings tab renders all existing sections.
-- [ ] Clicking "Open Dictionary" in Tokenize section switches to Dictionary tab.
-- [ ] Saving a setting works and persists.
-- [ ] `npm run test:unit` and `npm run build` pass.
-- [ ] Verifier subagent confirms Settings tab SA.
+- [x] Settings tab renders all existing sections.
+- [x] Clicking "Open Dictionary" in Tokenize section switches to Dictionary tab.
+- [x] Saving a setting works and persists.
+- [x] `npm run test:unit` and `npm run build` pass.
+- [x] Verifier subagent confirms Settings tab SA.
 
 ## Phase 3 — Dictionary Left Pane
 
