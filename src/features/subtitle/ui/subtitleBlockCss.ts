@@ -98,7 +98,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border: none;
   border-radius: var(--radius-full);
   background: rgba(var(--color-surface-rgb), var(--sb-bg-opacity, 0.2));
-  color: rgba(var(--color-foreground-rgb), var(--sb-text-opacity, 1));
+  color: rgba(var(--color-text-rgb), var(--sb-text-opacity, 1));
   cursor: pointer;
   padding: 0;
   position: relative;
@@ -583,7 +583,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border: none;
   border-radius: var(--radius-full);
   background: rgba(var(--color-surface-rgb), var(--sb-bg-opacity, 0.2));
-  color: rgba(var(--color-foreground-rgb), var(--sb-text-opacity, 1));
+  color: rgba(var(--color-text-rgb), var(--sb-text-opacity, 1));
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -936,7 +936,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border: none;
   border-radius: var(--radius-full);
   background: rgba(var(--color-surface-rgb), var(--sb-bg-opacity, 0.2));
-  color: rgba(var(--color-foreground-rgb), var(--sb-text-opacity, 1));
+  color: rgba(var(--color-text-rgb), var(--sb-text-opacity, 1));
   cursor: pointer;
   display: flex;
   align-items: center;
