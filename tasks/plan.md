@@ -43,9 +43,9 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 1: Cross-browser fallback cho `rgba(from ...)` trong content scripts
 - **Mô tả**: Thay thế / cung cấp fallback cho 39 vị trí `rgba(from ...)` ở `subtitleBlockCss.ts`, `tokenSpanCss.ts`, `wordHighlight.ts`.
 - **Acceptance criteria**:
-  - [ ] Không còn `rgba(from var(...)` trong output production build.
-  - [ ] Màu nền/overlay vẫn đúng trong cả light/dark.
-  - [ ] Build pass, test content-script render pass.
+  - [x] Không còn `rgba(from var(...)` trong output production build.
+  - [x] Màu nền/overlay vẫn đúng trong cả light/dark.
+  - [x] Build pass, test content-script render pass.
 - **Verification**: `npm run build`, `npm run test:unit`, manual check DevTools computed color.
 - **Files**: `src/features/subtitle/ui/subtitleBlockCss.ts`, `src/features/tokenize/ui/tokenSpanCss.ts`, `src/features/dictionaryPopup/ui/wordHighlight.ts`, `src/shared/lib/theme/themeTokens.ts`.
 - **Scope**: M.
@@ -53,8 +53,8 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 #### Task 2: Trích xuất hardcoded px trong TypeScript logic
 - **Mô tả**: Thay các giá trị hardcoded (`0px`, `768px`, `100px`, `84px`, `260px`, ...) bằng token constants hoặc `calc(var(--token) * N)`.
 - **Acceptance criteria**:
-  - [ ] `popupShell.ts`, `subtitleBlockCss.ts`, `tokenBadgeCss.ts`, `navClusterCss.ts` không còn magic px.
-  - [ ] Layout popup / subtitle / nav cluster không regressed trên breakpoints chuẩn.
+  - [x] `popupShell.ts`, `subtitleBlockCss.ts`, `tokenBadgeCss.ts`, `navClusterCss.ts` không còn magic px.
+  - [x] Layout popup / subtitle / nav cluster không regressed trên breakpoints chuẩn.
 - **Verification**: `npm run typecheck`, `npm run test:unit`, build.
 - **Files**: `src/features/dictionaryPopup/ui/popupShell.ts`, `src/features/subtitle/ui/subtitleBlockCss.ts`, `src/features/tokenize/ui/tokenBadgeCss.ts`, `src/features/subtitle/ui/navClusterCss.ts`.
 - **Scope**: L.
