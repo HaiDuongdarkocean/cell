@@ -153,8 +153,8 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .cluster-btn svg {
-  width: 65%;
-  height: 65%;
+  width: var(--nav-cluster-icon-size-ratio);
+  height: var(--nav-cluster-icon-size-ratio);
   display: block;
   fill: none !important;
   background: transparent !important;
@@ -184,7 +184,7 @@ export const SUBTITLE_BLOCK_CSS = `
   display: block;
   padding: var(--space-0-5) var(--space-2);
   border-radius: var(--radius-2xs);
-  line-height: 1.4;
+  line-height: var(--subtitle-line-height);
   text-align: center;
   white-space: pre-wrap;
   max-width: 100%;
@@ -317,7 +317,9 @@ export const SUBTITLE_BLOCK_CSS = `
   transition: transform var(--duration-fast) ease;
 }
 
-/* Hide Card Creator buttons on mobile width < 768px (mobile uses floating cluster) */
+/* Hide Card Creator buttons on mobile width < POPUP_SHEET_BREAKPOINT_PX.
+   CSS media queries cannot use CSS variables, so hardcode 767px
+   (one pixel below the 768px breakpoint used in popupShell.ts). */
 @media (max-width: 767px) {
   .block-right-column {
     display: none;
@@ -1007,8 +1009,8 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: auto;
   cursor: ns-resize;
   white-space: pre-wrap !important;
-  line-height: 1.4 !important;
-  max-width: 90%;
+  line-height: var(--subtitle-line-height) !important;
+  max-width: var(--subtitle-overlay-max-width);
 }
 
 .subtitle-overlay[data-role="target"] {
@@ -1024,7 +1026,7 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: auto;
   user-select: text;
   cursor: text;
-  line-height: 1.4 !important;
+  line-height: var(--subtitle-line-height) !important;
 }
 
 /* === Drag hint overlay ===
@@ -1058,7 +1060,7 @@ export const SUBTITLE_BLOCK_CSS = `
    Theme-aware — uses design tokens. Variant color via CSS custom property. */
 .subtitle-toast {
   position: absolute;
-  bottom: 30%;
+  bottom: var(--subtitle-toast-bottom);
   left: 50%;
   transform: translateX(-50%);
   z-index: 2147483641;
@@ -1078,7 +1080,7 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: none;
   user-select: none;
   white-space: nowrap;
-  animation: subtitle-toast-in 0.2s ease;
+  animation: subtitle-toast-in var(--duration-normal) var(--ease-standard);
 }
 
 .subtitle-toast-icon {
