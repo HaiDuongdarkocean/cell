@@ -21,6 +21,7 @@
 }
 
 .root .input {
+  min-height: var(--touch-target);
   padding-left: var(--space-8);
   padding-right: var(--space-8);
 }

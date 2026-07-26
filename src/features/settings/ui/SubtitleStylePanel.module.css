@@ -95,11 +95,16 @@
 .slider {
   width: 100%;
   height: var(--space-1);
+  min-height: var(--touch-target);
   -webkit-appearance: none;
   appearance: none;
   background: var(--color-border);
   border-radius: var(--radius-xs);
-  outline: none;
+}
+
+.slider:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .slider::-webkit-slider-thumb {
@@ -111,6 +116,7 @@
   background: var(--color-primary);
   cursor: pointer;
   border: var(--space-0-5) solid var(--color-background);
+  margin-top: calc((var(--touch-target) - var(--space-3-5)) / 2);
 }
 
 .slider::-moz-range-thumb {

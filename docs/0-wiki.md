@@ -74,6 +74,12 @@ docs/           # Tài liệu dự án
 │   └── 063-system-wide-type-scale-14-12.md # ADR-063: System-wide 14/12px type scale (SSOT)
 │   └── 064-hardcoded-px-to-tokens.md # ADR-064: Hardcoded px → design tokens (Slice 2)
 │   └── 065-universal-orbital-panel.md # ADR-065: Universal orbital panel — Dictionary + Settings tabs
+│   └── 066-semantic-radius-token-rename.md # ADR-066: Semantic radius token rename
+│   └── 067-shadow-and-border-hairline-tokens.md # ADR-067: Shadow and border hairline tokens
+│   └── 068-automated-wcag-contrast-validation.md # ADR-068: Automated WCAG AA contrast validation
+│   └── 069-touch-target-standardization.md # ADR-069: Touch target standardization (WCAG 2.5.5)
+│   └── 070-focus-visible-standardization.md # ADR-070: Focus-visible standardization
+│   └── 071-motion-standardization-and-reduced-motion.md # ADR-071: Motion standardization and reduced motion support
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup
 │   ├── overlay-appearance-settings.md

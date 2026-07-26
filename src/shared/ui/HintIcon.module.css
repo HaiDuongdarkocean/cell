@@ -14,7 +14,9 @@
   align-items: center;
   justify-content: center;
   width: var(--space-5);
+  min-width: var(--touch-target);
   height: var(--space-5);
+  min-height: var(--touch-target);
   padding: 0;
   border: none;
   background: transparent;
