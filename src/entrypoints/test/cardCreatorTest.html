@@ -3,69 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Card Creator — UI Test Page</title>
+  <title>Card Creator — UI Test Page</title>
+  <link rel="stylesheet" href="../popup/styles/global.css" />
   <style>
     body {
       margin: 0;
-      padding: var(--space-6);
-      background: var(--color-background);
-      color: var(--color-text);
+      padding: 24px;
+      background: var(--color-background, #1a1a1a);
+      color: var(--color-text, #e0e0e0);
       font-family: sans-serif;
       min-height: 100vh;
     }
     .test-controls {
-      max-width: calc(var(--space-5) * 40);
-      margin: 0 auto var(--space-6);
-      padding: var(--space-4);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-card);
-      background: var(--color-surface);
+      max-width: 800px;
+      margin: 0 auto 24px;
+      padding: 16px;
+      border: 1px solid var(--color-border, #333);
+      border-radius: 8px;
+      background: var(--color-surface, #222);
     }
     .test-controls h1 {
-      font-size: var(--font-size-base);
-      margin: 0 0 var(--space-3);
+      font-size: 18px;
+      margin: 0 0 12px;
     }
     .test-controls button {
-      padding: var(--space-1-5) var(--space-3);
-      margin: var(--space-1);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-pill);
-      background: var(--color-surface);
-      color: var(--color-text);
+      padding: 6px 12px;
+      margin: 4px;
+      border: 1px solid var(--color-border, #333);
+      border-radius: 4px;
+      background: var(--color-surface, #222);
+      color: var(--color-text, #e0e0e0);
       cursor: pointer;
-      font-size: var(--font-size-base);
+      font-size: 13px;
     }
     .test-controls button:hover {
-      background: var(--color-surface-hover);
+      background: var(--color-surface-hover, #2a2a2a);
     }
     .test-info {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-muted);
-      margin-top: var(--space-3);
+      font-size: 12px;
+      color: var(--color-text-muted, #888);
+      margin-top: 12px;
     }
     #root {
-      max-width: calc(var(--space-5) * 40);
+      max-width: 800px;
       margin: 0 auto;
     }
   </style>
-  <link rel="modulepreload" crossorigin href="data:text/javascript;base64,dmFyIGU9T2JqZWN0LmNyZWF0ZSx0PU9iamVjdC5kZWZpbmVQcm9wZXJ0eSxuPU9iamVjdC5nZXRPd25Qcm9wZXJ0eURlc2NyaXB0b3Iscj1PYmplY3QuZ2V0T3duUHJvcGVydHlOYW1lcyxpPU9iamVjdC5nZXRQcm90b3R5cGVPZixhPU9iamVjdC5wcm90b3R5cGUuaGFzT3duUHJvcGVydHksbz0oZSx0KT0+KCk9Pih0fHwoZSgodD17ZXhwb3J0czp7fX0pLmV4cG9ydHMsdCksZT1udWxsKSx0LmV4cG9ydHMpLHM9KGUsbik9PntsZXQgcj17fTtmb3IodmFyIGkgaW4gZSl0KHIsaSx7Z2V0OmVbaV0sZW51bWVyYWJsZTohMH0pO3JldHVybiBufHx0KHIsU3ltYm9sLnRvU3RyaW5nVGFnLHt2YWx1ZTpgTW9kdWxlYH0pLHJ9LGM9KGUsaSxvLHMpPT57aWYoaSYmdHlwZW9mIGk9PWBvYmplY3RgfHx0eXBlb2YgaT09YGZ1bmN0aW9uYClmb3IodmFyIGM9cihpKSxsPTAsdT1jLmxlbmd0aCxkO2w8dTtsKyspZD1jW2xdLCFhLmNhbGwoZSxkKSYmZCE9PW8mJnQoZSxkLHtnZXQ6KGU9PmlbZV0pLmJpbmQobnVsbCxkKSxlbnVtZXJhYmxlOiEocz1uKGksZCkpfHxzLmVudW1lcmFibGV9KTtyZXR1cm4gZX0sbD0obixyLGEpPT4oYT1uPT1udWxsP3t9OmUoaShuKSksYyhyfHwhbnx8IW4uX19lc01vZHVsZT90KGEsYGRlZmF1bHRgLHt2YWx1ZTpuLGVudW1lcmFibGU6ITB9KTphLG4pKTtleHBvcnR7cyBhcyBuLGwgYXMgcixvIGFzIHR9Ow==">
-  <link rel="modulepreload" crossorigin href="data:text/javascript;base64,KGZ1bmN0aW9uKCl7bGV0IGU9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudChgbGlua2ApLnJlbExpc3Q7aWYoZSYmZS5zdXBwb3J0cyYmZS5zdXBwb3J0cyhgbW9kdWxlcHJlbG9hZGApKXJldHVybjtmb3IobGV0IGUgb2YgZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbChgbGlua1tyZWw9Im1vZHVsZXByZWxvYWQiXWApKW4oZSk7bmV3IE11dGF0aW9uT2JzZXJ2ZXIoZT0+e2ZvcihsZXQgdCBvZiBlKWlmKHQudHlwZT09PWBjaGlsZExpc3RgKWZvcihsZXQgZSBvZiB0LmFkZGVkTm9kZXMpZS50YWdOYW1lPT09YExJTktgJiZlLnJlbD09PWBtb2R1bGVwcmVsb2FkYCYmbihlKX0pLm9ic2VydmUoZG9jdW1lbnQse2NoaWxkTGlzdDohMCxzdWJ0cmVlOiEwfSk7ZnVuY3Rpb24gdChlKXtsZXQgdD17fTtyZXR1cm4gZS5pbnRlZ3JpdHkmJih0LmludGVncml0eT1lLmludGVncml0eSksZS5yZWZlcnJlclBvbGljeSYmKHQucmVmZXJyZXJQb2xpY3k9ZS5yZWZlcnJlclBvbGljeSksZS5jcm9zc09yaWdpbj09PWB1c2UtY3JlZGVudGlhbHNgP3QuY3JlZGVudGlhbHM9YGluY2x1ZGVgOmUuY3Jvc3NPcmlnaW49PT1gYW5vbnltb3VzYD90LmNyZWRlbnRpYWxzPWBvbWl0YDp0LmNyZWRlbnRpYWxzPWBzYW1lLW9yaWdpbmAsdH1mdW5jdGlvbiBuKGUpe2lmKGUuZXApcmV0dXJuO2UuZXA9ITA7bGV0IG49dChlKTtmZXRjaChlLmhyZWYsbil9fSkoKTs=">
-  <link rel="modulepreload" crossorigin href="/assets/react-vendor-N2z0p55G-D9QN4gSe.js">
-  <link rel="modulepreload" crossorigin href="data:text/javascript;base64,aW1wb3J0e24gYXMgZX1mcm9tIi4vcm9sbGRvd24tcnVudGltZS1RVG5mTHdFdi5qcyI7dmFyIHQ9ZSh7TUVTU0FHRV9UWVBFUzooKT0+bn0pLG49e0RFVEVDVF9NRURJQTpgREVURUNUX01FRElBYCxHRVRfREVURUNURURfTUVESUE6YEdFVF9ERVRFQ1RFRF9NRURJQWAsREVURUNURURfTUVESUFfVVBEQVRFOmBERVRFQ1RFRF9NRURJQV9VUERBVEVgLERPV05MT0FEX1ZJREVPOmBET1dOTE9BRF9WSURFT2AsRE9XTkxPQURfU1VCVElUTEU6YERPV05MT0FEX1NVQlRJVExFYCxET1dOTE9BRF9BTEw6YERPV05MT0FEX0FMTGAsQ0FOQ0VMX0RPV05MT0FEOmBDQU5DRUxfRE9XTkxPQURgLFBBVVNFX0RPV05MT0FEOmBQQVVTRV9ET1dOTE9BRGAsUkVTVU1FX0RPV05MT0FEOmBSRVNVTUVfRE9XTkxPQURgLFJFVFJZX0RPV05MT0FEOmBSRVRSWV9ET1dOTE9BRGAsUkVNT1ZFX0RPV05MT0FEOmBSRU1PVkVfRE9XTkxPQURgLEdFVF9ET1dOTE9BRF9QUk9HUkVTUzpgR0VUX0RPV05MT0FEX1BST0dSRVNTYCxET1dOTE9BRF9QUk9HUkVTU19VUERBVEU6YERPV05MT0FEX1BST0dSRVNTX1VQREFURWAsR0VUX1NFVFRJTkdTOmBHRVRfU0VUVElOR1NgLFVQREFURV9TRVRUSU5HUzpgVVBEQVRFX1NFVFRJTkdTYCxHRVRfRVhURU5TSU9OX1NUQVRVUzpgR0VUX0VYVEVOU0lPTl9TVEFUVVNgLFRPR0dMRV9FWFRFTlNJT046YFRPR0dMRV9FWFRFTlNJT05gLEVYVEVOU0lPTl9TVEFUVVNfVVBEQVRFOmBFWFRFTlNJT05fU1RBVFVTX1VQREFURWAsVVBEQVRFX1NVQlRJVExFX0xBTkdVQUdFOmBVUERBVEVfU1VCVElUTEVfTEFOR1VBR0VgLEdFVF9TVUJUSVRMRV9GT1JfT1ZFUkxBWTpgR0VUX1NVQlRJVExFX0ZPUl9PVkVSTEFZYCxDT05WRVJUX1RTX1RPX01QNDpgQ09OVkVSVF9UU19UT19NUDRgLENPTlZFUlRfVFNfVE9fTVA0X1JFU1VMVDpgQ09OVkVSVF9UU19UT19NUDRfUkVTVUxUYCxDT05WRVJUX1RTX1RPX01QNF9WMjpgQ09OVkVSVF9UU19UT19NUDRfVjJgLENPTlZFUlRfVFNfVE9fTVA0X1YyX1JFU1VMVDpgQ09OVkVSVF9UU19UT19NUDRfVjJfUkVTVUxUYCxDT05WRVJTSU9OX1BST0dSRVNTX1VQREFURTpgQ09OVkVSU0lPTl9QUk9HUkVTU19VUERBVEVgLENSRUFURV9PUEZTX0JMT0JfVVJMOmBDUkVBVEVfT1BGU19CTE9CX1VSTGAsUkVWT0tFX09QRlNfQkxPQl9VUkw6YFJFVk9LRV9PUEZTX0JMT0JfVVJMYCxPRkZTQ1JFRU5fUElORzpgT0ZGU0NSRUVOX1BJTkdgLFBBR0VfU0NBTl9SRVNVTFQ6YFBBR0VfU0NBTl9SRVNVTFRgLEFVVE9fTE9BRF9TVUJUSVRMRVM6YEFVVE9fTE9BRF9TVUJUSVRMRVNgLFJFUVVFU1RfQVVUT19MT0FEX1NVQlRJVExFUzpgUkVRVUVTVF9BVVRPX0xPQURfU1VCVElUTEVTYCxGRVRDSF9TVUJUSVRMRV9DT05URU5UOmBGRVRDSF9TVUJUSVRMRV9DT05URU5UYCxPUEVOX1NJREVfUEFORUw6YE9QRU5fU0lERV9QQU5FTGAsQ0xPU0VfU0lERV9QQU5FTDpgQ0xPU0VfU0lERV9QQU5FTGAsU1VCVElUTEVfQ1VFU19MT0FERUQ6YFNVQlRJVExFX0NVRVNfTE9BREVEYCxSRVFVRVNUX1NVQlRJVExFX0NVRVM6YFJFUVVFU1RfU1VCVElUTEVfQ1VFU2AsVklERU9fVElNRV9VUERBVEU6YFZJREVPX1RJTUVfVVBEQVRFYCxWSURFT19QTEFZX1NUQVRFOmBWSURFT19QTEFZX1NUQVRFYCxTRUVLX1RPOmBTRUVLX1RPYCxUT0dHTEVfUExBWTpgVE9HR0xFX1BMQVlgLFNIT1JUQ1VUX0FDVElPTjpgU0hPUlRDVVRfQUNUSU9OYCxWSURFT19FUElTT0RFX0NIQU5HRUQ6YFZJREVPX0VQSVNPREVfQ0hBTkdFRGAsREVURUNURURfU1VCVElUTEVfVVJMOmBERVRFQ1RFRF9TVUJUSVRMRV9VUkxgLERFVEVDVEVEX1NVQlRJVExFUzpgREVURUNURURfU1VCVElUTEVTYCxJTk5FUlRVQkVfRkFMTEJBQ0tfUkVRVUVTVDpgSU5ORVJUVUJFX0ZBTExCQUNLX1JFUVVFU1RgLEZFVENIX1JFUVVFU1Q6YEZFVENIX1JFUVVFU1RgLEZFVENIX1JFU1BPTlNFOmBGRVRDSF9SRVNQT05TRWAsVFJBTlNMQVRFOmBUUkFOU0xBVEVgLENBUkRfQ1JFQVRPUl9SRVFVRVNUOmBDQVJEX0NSRUFUT1JfUkVRVUVTVGAsRkVUQ0hfQ09NTVVOSVRZX0FVRElPOmBGRVRDSF9DT01NVU5JVFlfQVVESU9gLEZFVENIX0lNQUdFUzpgRkVUQ0hfSU1BR0VTYCxUVFNfU1BFQUs6YFRUU19TUEVBS2AsVFRTX0ZFVENIX0FVRElPOmBUVFNfRkVUQ0hfQVVESU9gLEZFVENIX01FRElBX1VSTDpgRkVUQ0hfTUVESUFfVVJMYCxXT1JEX1NUQVRVU19HRVQ6YFdPUkRfU1RBVFVTX0dFVGAsV09SRF9TVEFUVVNFU19HRVQ6YFdPUkRfU1RBVFVTRVNfR0VUYCxXT1JEX1NUQVRVU19TRVQ6YFdPUkRfU1RBVFVTX1NFVGAsRlJFUVVFTkNZX0dFVDpgRlJFUVVFTkNZX0dFVGAsUVVJQ0tfQUREOmBRVUlDS19BRERgLExPT0tVUF9SRVFVRVNUOmBMT09LVVBfUkVRVUVTVGAsTE9PS1VQX1JFU1VMVDpgTE9PS1VQX1JFU1VMVGAsTE9PS1VQX0NBTkNFTDpgTE9PS1VQX0NBTkNFTGAsQ0FQVFVSRV9UQUJfU0NSRUVOU0hPVDpgQ0FQVFVSRV9UQUJfU0NSRUVOU0hPVGB9LHI9YG1vZHVsZXByZWxvYWRgLGk9ZnVuY3Rpb24oZSl7cmV0dXJuYC9gK2V9LGE9e30sbz1mdW5jdGlvbihlLHQsbil7bGV0IG89UHJvbWlzZS5yZXNvbHZlKCk7aWYodCYmdC5sZW5ndGg+MCl7bGV0IGU9ZG9jdW1lbnQuZ2V0RWxlbWVudHNCeVRhZ05hbWUoYGxpbmtgKSxzPWRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoYG1ldGFbcHJvcGVydHk9Y3NwLW5vbmNlXWApLGM9cz8ubm9uY2V8fHM/LmdldEF0dHJpYnV0ZShgbm9uY2VgKTtmdW5jdGlvbiBsKGUpe3JldHVybiBQcm9taXNlLmFsbChlLm1hcChlPT5Qcm9taXNlLnJlc29sdmUoZSkudGhlbihlPT4oe3N0YXR1czpgZnVsZmlsbGVkYCx2YWx1ZTplfSksZT0+KHtzdGF0dXM6YHJlamVjdGVkYCxyZWFzb246ZX0pKSkpfW89bCh0Lm1hcCh0PT57aWYodD1pKHQsbiksdCBpbiBhKXJldHVybjthW3RdPSEwO2xldCBvPXQuZW5kc1dpdGgoYC5jc3NgKSxzPW8/YFtyZWw9InN0eWxlc2hlZXQiXWA6YGA7aWYobilmb3IobGV0IG49ZS5sZW5ndGgtMTtuPj0wO24tLSl7bGV0IHI9ZVtuXTtpZihyLmhyZWY9PT10JiYoIW98fHIucmVsPT09YHN0eWxlc2hlZXRgKSlyZXR1cm59ZWxzZSBpZihkb2N1bWVudC5xdWVyeVNlbGVjdG9yKGBsaW5rW2hyZWY9IiR7dH0iXSR7c31gKSlyZXR1cm47bGV0IGw9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudChgbGlua2ApO2lmKGwucmVsPW8/YHN0eWxlc2hlZXRgOnIsb3x8KGwuYXM9YHNjcmlwdGApLGwuY3Jvc3NPcmlnaW49YGAsbC5ocmVmPXQsYyYmbC5zZXRBdHRyaWJ1dGUoYG5vbmNlYCxjKSxkb2N1bWVudC5oZWFkLmFwcGVuZENoaWxkKGwpLG8pcmV0dXJuIG5ldyBQcm9taXNlKChlLG4pPT57bC5hZGRFdmVudExpc3RlbmVyKGBsb2FkYCxlKSxsLmFkZEV2ZW50TGlzdGVuZXIoYGVycm9yYCwoKT0+bihFcnJvcihgVW5hYmxlIHRvIHByZWxvYWQgQ1NTIGZvciAke3R9YCkpKX0pfSkpfWZ1bmN0aW9uIHMoZSl7bGV0IHQ9bmV3IEV2ZW50KGB2aXRlOnByZWxvYWRFcnJvcmAse2NhbmNlbGFibGU6ITB9KTtpZih0LnBheWxvYWQ9ZSx3aW5kb3cuZGlzcGF0Y2hFdmVudCh0KSwhdC5kZWZhdWx0UHJldmVudGVkKXRocm93IGV9cmV0dXJuIG8udGhlbih0PT57Zm9yKGxldCBlIG9mIHR8fFtdKWUuc3RhdHVzPT09YHJlamVjdGVkYCYmcyhlLnJlYXNvbik7cmV0dXJuIGUoKS5jYXRjaChzKX0pfTtmdW5jdGlvbiBzKGUpe3JldHVybiBjaHJvbWUucnVudGltZS5zZW5kTWVzc2FnZShlKX1mdW5jdGlvbiBjKGUpe2Nocm9tZS5ydW50aW1lLm9uTWVzc2FnZS5hZGRMaXN0ZW5lcihlKX1mdW5jdGlvbiBsKCl7cmV0dXJuIGNocm9tZS5ydW50aW1lLmlkfWZ1bmN0aW9uIHUoZSl7Y2hyb21lLnJ1bnRpbWUub25TdGFydHVwLmFkZExpc3RlbmVyKGUpfWZ1bmN0aW9uIGQoZSl7Y2hyb21lLnJ1bnRpbWUub25JbnN0YWxsZWQuYWRkTGlzdGVuZXIoZSl9ZnVuY3Rpb24gZihlKXtjaHJvbWUucnVudGltZS5vbk1lc3NhZ2UucmVtb3ZlTGlzdGVuZXIoZSl9ZXhwb3J0e2YgYXMgYSxuIGFzIGMsdSBhcyBpLHQgYXMgbCxkIGFzIG4scyBhcyBvLGMgYXMgcixvIGFzIHMsbCBhcyB0fTs=">
-  <link rel="modulepreload" crossorigin href="/assets/IconButton-ClREzWDj-DQd9PlAg.js">
-  <link rel="modulepreload" crossorigin href="/assets/BottomSheet-CwAaE2mg-0b0FuXia.js">
-  <link rel="modulepreload" crossorigin href="data:text/javascript;base64,aW1wb3J0e2MgYXMgZSxvIGFzIHR9ZnJvbSIuL3J1bnRpbWUtRFQzNXJ1dU8uanMiO2FzeW5jIGZ1bmN0aW9uIG4obixyLGksYSl7bGV0IG89e3VybDpuLGFjdGlvbjpyLHBhcmFtczppLHRpbWVvdXRNczphfTt0cnl7bGV0IG49YXdhaXQgdCh7dHlwZTplLkNBUkRfQ1JFQVRPUl9SRVFVRVNULHBheWxvYWQ6b30pO3JldHVybiBuP24uc3VjY2Vzcz97b2s6ITAsdmFsdWU6bi5kYXRhPy5yZXN1bHR9OntvazohMSxlcnJvcjpuLmVycm9yPz9gVW5rbm93biBBbmtpQ29ubmVjdCBlcnJvcmB9OntvazohMSxlcnJvcjpgTm8gcmVzcG9uc2UgZnJvbSBiYWNrZ3JvdW5kYH19Y2F0Y2goZSl7cmV0dXJue29rOiExLGVycm9yOmUgaW5zdGFuY2VvZiBFcnJvcj9lLm1lc3NhZ2U6U3RyaW5nKGUpfX19YXN5bmMgZnVuY3Rpb24gcihlKXtsZXQgdD1hd2FpdCBuKGUsYHZlcnNpb25gKTtyZXR1cm4gdC5vaz97b2s6ITAsdmFsdWU6dC52YWx1ZX06dH12YXIgaT17Y29udGFpbmVyOmBfY29udGFpbmVyXzFsYWR5XzVgLGZpZWxkOmBfZmllbGRfMWxhZHlfMTlgLGZpZWxkTGFiZWw6YF9maWVsZExhYmVsXzFsYWR5XzMxYCx1cmxJbnB1dDpgX3VybElucHV0XzFsYWR5XzQ3YCxoaW50OmBfaGludF8xbGFkeV84MWAsY29ubmVjdGlvblN0YXR1czpgX2Nvbm5lY3Rpb25TdGF0dXNfMWxhZHlfOTdgLHN0YXR1c0luZGljYXRvcjpgX3N0YXR1c0luZGljYXRvcl8xbGFkeV8xMTlgLHN0YXR1c0RvdDpgX3N0YXR1c0RvdF8xbGFkeV8xMzVgLG9ubGluZTpgX29ubGluZV8xbGFkeV8xNTFgLG9mZmxpbmU6YF9vZmZsaW5lXzFsYWR5XzE2M2AsdGVzdGluZzpgX3Rlc3RpbmdfMWxhZHlfMTc1YCxwdWxzZTpgX3B1bHNlXzFsYWR5XzFgLHN0YXR1c0xhYmVsOmBfc3RhdHVzTGFiZWxfMWxhZHlfMTk5YCxzdGF0dXNEZXRhaWw6YF9zdGF0dXNEZXRhaWxfMWxhZHlfMjA5YCx0b2dnbGVMaXN0OmBfdG9nZ2xlTGlzdF8xbGFkeV8yMjVgLHRvZ2dsZVJvdzpgX3RvZ2dsZVJvd18xbGFkeV8yMzlgfTtleHBvcnR7ciBhcyBuLGkgYXMgdH07">
-  <script type="module" crossorigin src="/assets/cardCreatorTest-D8u89ATI.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-QTnfLwEv.js">
-  <link rel="modulepreload" crossorigin href="/assets/runtime-DT35ruuO-McKdHtyi.js">
-  <link rel="modulepreload" crossorigin href="/assets/preload-helper-zJ_50EbN.js">
-  <link rel="modulepreload" crossorigin href="/assets/IconButton-DxYwJNWJ-Cz3_DYpg.js">
-  <link rel="modulepreload" crossorigin href="/assets/BottomSheet-DSUSCrsw-B_fANwN0.js">
-  <link rel="modulepreload" crossorigin href="/assets/CardCreatorSettingsPanel-C9GCJDQ0-BP50kqvY.js">
-  <link rel="stylesheet" crossorigin href="/assets/IconButton-DxYwJNWJ-DxYwJNWJ.css">
-  <link rel="stylesheet" crossorigin href="/assets/BottomSheet-DSUSCrsw-DSUSCrsw.css">
-  <link rel="stylesheet" crossorigin href="/assets/CardCreatorSettingsPanel-C9GCJDQ0-C9GCJDQ0.css">
-  <link rel="stylesheet" crossorigin href="/assets/cardCreatorTest-C49EeKRJ.css">
 </head>
 <body>
   <div class="test-controls">
@@ -82,6 +65,7 @@
       Use edge-devtools MCP to interact + verify.
     </div>
   </div>
-  <div id="root"></div>
+  <div id="root"></div>
+  <script type="module" src="./cardCreatorTestApp.tsx"></script>
 </body>
 </html>
