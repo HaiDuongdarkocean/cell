@@ -1,53 +1,20 @@
+/* === CardCreatorPanel — right pane of the Dictionary tab === */
 .cardCreatorPanel {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  overflow-y: auto;
-}
-
-.title {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-.prefillCard {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-
-.prefillWord {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-.prefillReading {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.prefillDefinitions {
-  margin: 0;
-  padding: var(--space-3);
+  height: 100%;
+  overflow: hidden;
   background: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-normal);
-  color: var(--color-text);
-  white-space: pre-wrap;
+  border-left: 1px solid var(--color-border-subtle);
+}
+
+.scrollArea {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
-  max-height: 200px;
+}
+
+/* Loading / empty state vertical centering */
+.cardCreatorPanel > [data-testid='empty-state'] {
+  justify-content: center;
 }

@@ -15,8 +15,6 @@ export interface DictionaryTabProps {
   readonly initialTerm?: string;
   /** Whether the containing panel is currently open — controls search-input auto-focus. */
   readonly isOpen?: boolean;
-  /** Called by the right CardCreatorPanel when the user confirms creating a card. */
-  readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
 }
 
 export function DictionaryTab({
@@ -25,7 +23,6 @@ export function DictionaryTab({
   targetLang,
   initialTerm,
   isOpen,
-  onSendToCard,
 }: DictionaryTabProps): React.JSX.Element {
   const [prefill, setPrefill] = useState<PopupCardCreatorPrefill | null>(null);
 
@@ -46,7 +43,7 @@ export function DictionaryTab({
         />
       </div>
       <div className={styles.rightPane}>
-        <CardCreatorPanel prefill={prefill} onSendToCard={onSendToCard} />
+        <CardCreatorPanel sourceLang={sourceLang} targetLang={targetLang} prefill={prefill} />
       </div>
     </div>
   );

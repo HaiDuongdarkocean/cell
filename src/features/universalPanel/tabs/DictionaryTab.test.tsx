@@ -15,6 +15,18 @@ jest.mock('@/features/cardCreator/media/translation', () => ({
   translateSentence: jest.fn(),
 }));
 
+jest.mock('./CardCreatorPanel', () => ({
+  CardCreatorPanel: (props: { sourceLang: string; targetLang: string; prefill?: PopupCardCreatorPrefill | null }) => (
+    <div data-testid="card-creator-panel" data-source-lang={props.sourceLang} data-target-lang={props.targetLang}>
+      {props.prefill ? (
+        <div data-testid="card-creator-prefill">{props.prefill.term}</div>
+      ) : (
+        <div>No card selected</div>
+      )}
+    </div>
+  ),
+}));
+
 const mockSendMessage = jest.mocked(sendMessage);
 const mockTranslateSentence = jest.mocked(translateSentence);
 
@@ -42,13 +54,21 @@ describe('DictionaryTab', () => {
     mockTranslateSentence.mockResolvedValue('');
   });
 
-  it('renders the left dictionary pane and right card-creator placeholder', async () => {
+  it('renders the left dictionary pane and right card-creator panel', async () => {
     render(<DictionaryTab langCode="en" sourceLang="en" targetLang="vi" />);
 
     expect(screen.getByTestId('dictionary-tab')).toBeInTheDocument();
     expect(screen.getByTestId('dictionary-panel')).toBeInTheDocument();
     expect(screen.getByTestId('card-creator-panel')).toBeInTheDocument();
     expect(screen.getByText('No card selected')).toBeInTheDocument();
+  });
+
+  it('passes source/target languages to the right pane', async () => {
+    render(<DictionaryTab langCode="en" sourceLang="en" targetLang="vi" />);
+
+    const panel = screen.getByTestId('card-creator-panel');
+    expect(panel).toHaveAttribute('data-source-lang', 'en');
+    expect(panel).toHaveAttribute('data-target-lang', 'vi');
   });
 
   it('performs an initial search and renders the result', async () => {
@@ -63,7 +83,7 @@ describe('DictionaryTab', () => {
     }));
   });
 
-  it('updates the right CardCreatorPanel when Send to Card is pressed', async () => {
+  it('updates the right pane with prefill when Send to Card is pressed', async () => {
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult('hello')] });
 
     render(<DictionaryTab langCode="en" sourceLang="en" targetLang="vi" initialTerm="hello" />);
@@ -72,24 +92,7 @@ describe('DictionaryTab', () => {
 
     fireEvent.click(screen.getByTestId('dictionary-send-to-card'));
 
-    await waitFor(() => expect(screen.getByTestId('card-creator-prefill')).toBeInTheDocument());
-    expect(screen.getByTestId('card-creator-prefill')).toHaveTextContent('hello');
-  });
-
-  it('forwards the right pane confirm to onSendToCard', async () => {
-    const onSendToCard = jest.fn();
-    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult('hello')] });
-
-    render(<DictionaryTab langCode="en" sourceLang="en" targetLang="vi" initialTerm="hello" onSendToCard={onSendToCard} />);
-
-    await waitFor(() => expect(screen.getByTestId('dictionary-term')).toHaveTextContent('hello'));
-
-    fireEvent.click(screen.getByTestId('dictionary-send-to-card'));
-    await waitFor(() => expect(screen.getByTestId('card-creator-confirm')).toBeInTheDocument());
-
-    fireEvent.click(screen.getByTestId('card-creator-confirm'));
-    expect(onSendToCard).toHaveBeenCalledTimes(1);
-    expect((onSendToCard.mock.calls[0][0] as PopupCardCreatorPrefill).term).toBe('hello');
+    await waitFor(() => expect(screen.getByTestId('card-creator-prefill')).toHaveTextContent('hello'));
   });
 
   it('cycles status and reflects in the footer badge', async () => {
