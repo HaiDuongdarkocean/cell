@@ -106,8 +106,8 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     /* Overlay appearance: no border, feathered backdrop, bg + text opacity from settings. */
     border: none;
     border-radius: var(--radius-full);
-    background: rgba(from var(--color-surface) r g b / var(--sb-bg-opacity, 0.2));
-    color: rgba(from var(--color-foreground) r g b / var(--sb-text-opacity, 1));
+    background: rgba(var(--color-surface-rgb), var(--sb-bg-opacity, 0.2));
+    color: rgba(var(--color-foreground-rgb), var(--sb-text-opacity, 1));
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -131,7 +131,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     border-radius: var(--radius-full);
     backdrop-filter: blur(1px);
     -webkit-backdrop-filter: blur(1px);
-    background: rgba(from var(--color-background) r g b / 0.1);
+    background: rgba(var(--color-background-rgb), 0.1);
     -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
     mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
     z-index: -1;
@@ -158,11 +158,11 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   // Hover — icon đổi màu primary (no border feedback)
   label.addEventListener('mouseenter', () => {
     label.style.color = 'var(--color-primary)';
-    labelFeather.style.background = 'rgba(from var(--color-background) r g b / 0.25)';
+    labelFeather.style.background = 'rgba(var(--color-background-rgb), 0.25)';
   });
   label.addEventListener('mouseleave', () => {
-    label.style.color = 'rgba(from var(--color-foreground) r g b / var(--sb-text-opacity, 1))';
-    labelFeather.style.background = 'rgba(from var(--color-background) r g b / 0.1)';
+    label.style.color = 'rgba(var(--color-foreground-rgb), var(--sb-text-opacity, 1))';
+    labelFeather.style.background = 'rgba(var(--color-background-rgb), 0.1)';
   });
   // Focus ring handled by CSS :focus-visible (WCAG 2.4.7) — no JS outline.
 

@@ -1,5 +1,6 @@
 import tokensJson from '@/shared/styles/tokens.json';
 import { DEFAULT_LIGHT_TOKENS, DEFAULT_DARK_TOKENS } from '@/shared/lib/tokens';
+import { hexToRgb } from '@/features/theme/logic/colorGenerator';
 
 const TOKEN_STYLE_ID = 'cell-token-span-style';
 
@@ -30,6 +31,8 @@ const CELL_TOKEN_MAP: Record<string, string> = {
 
 /** Static overlay text token used for the white status-bar highlight. */
 const OVERLAY_TEXT = tokensJson.static.overlay.text;
+const { r: otR, g: otG, b: otB } = hexToRgb(OVERLAY_TEXT);
+const OVERLAY_TEXT_RGBA = `rgba(${otR}, ${otG}, ${otB}, 0.45)`;
 
 function buildVariables(): string {
   const lightDecls = Object.entries(CELL_TOKEN_MAP)
@@ -163,22 +166,22 @@ ${buildVariables()}
 .js-cell-token.js-cell-token--status-unknown {
   box-shadow:
     inset 0 calc(var(--space-0-5) * -1) 0 0 var(--cell-token-status-unknown),
-    inset 0 calc(var(--space-0-5) * -1) 0 0 rgba(from ${OVERLAY_TEXT} r g b / 0.45) !important;
+    inset 0 calc(var(--space-0-5) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
 .js-cell-token.js-cell-token--status-tracking {
   box-shadow:
     inset 0 calc(var(--space-0-5) * -1) 0 0 var(--cell-token-status-tracking),
-    inset 0 calc(var(--space-0-5) * -1) 0 0 rgba(from ${OVERLAY_TEXT} r g b / 0.45) !important;
+    inset 0 calc(var(--space-0-5) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
 .js-cell-token.js-cell-token--status-known {
   box-shadow:
     inset 0 calc(var(--space-0-5) * -1) 0 0 var(--cell-token-status-known),
-    inset 0 calc(var(--space-0-5) * -1) 0 0 rgba(from ${OVERLAY_TEXT} r g b / 0.45) !important;
+    inset 0 calc(var(--space-0-5) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
 .js-cell-token.js-cell-token--status-ignore {
   box-shadow:
     inset 0 calc(var(--space-0-5) * -1) 0 0 var(--cell-token-status-ignore),
-    inset 0 calc(var(--space-0-5) * -1) 0 0 rgba(from ${OVERLAY_TEXT} r g b / 0.45) !important;
+    inset 0 calc(var(--space-0-5) * -1) 0 0 ${OVERLAY_TEXT_RGBA} !important;
 }
 
 /* Text guard removed: the 2px inset status underline no longer needs a halo

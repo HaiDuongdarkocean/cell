@@ -22,6 +22,7 @@
 // - css-js-hook-separate-from-data-attribute: `.js-cell-*` class for JS hooks.
 
 import tokensJson from '@/shared/styles/tokens.json';
+import { hexToRgb } from '@/features/theme/logic/colorGenerator';
 
 type HighlightConfig = {
   readonly styleId: string;
@@ -30,9 +31,23 @@ type HighlightConfig = {
   readonly buildCss: () => string;
 };
 
-/** Build a translucent variant of a token color using the alpha channel only. */
+const RGBA_RE = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/;
+
+/** Build a translucent variant of a color (hex or rgba) at a new alpha. */
 function alphaVariant(baseColor: string, alpha: number): string {
-  return `rgba(from ${baseColor} r g b / ${alpha})`;
+  const hexMatch = baseColor.match(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (hexMatch) {
+    const { r, g, b } = hexToRgb(baseColor);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  const rgbaMatch = RGBA_RE.exec(baseColor);
+  if (rgbaMatch) {
+    const r = parseInt(rgbaMatch[1], 10);
+    const g = parseInt(rgbaMatch[2], 10);
+    const b = parseInt(rgbaMatch[3], 10);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return baseColor;
 }
 
 const WORD_CONFIG: HighlightConfig = {

@@ -207,6 +207,15 @@ describe('buildStyleContent', () => {
     const css = buildStyleContent(DEFAULT_THEME_CONFIG);
     expect(css).toContain('nav-cluster');
   });
+
+  it('re-declares component tokens inside each theme selector for correct var() resolution', () => {
+    const css = buildStyleContent(DEFAULT_THEME_CONFIG);
+    const lightBlock = css.split('[data-theme="light"]')[1].split('[data-theme="dark"]')[0];
+    const darkBlock = css.split('[data-theme="dark"]')[1];
+    expect(lightBlock).toContain('--button-bg');
+    expect(darkBlock).toContain('--button-bg');
+    expect(darkBlock).toContain('--color-primary');
+  });
 });
 
 describe('buildColorTokenCSS', () => {
