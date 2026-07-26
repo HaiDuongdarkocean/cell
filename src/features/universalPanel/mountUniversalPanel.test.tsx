@@ -82,7 +82,11 @@ describe('mountUniversalPanel', () => {
     mockLoadSettings.mockResolvedValue(DEFAULT_SETTINGS);
     mockGetSessionStorage.mockResolvedValue({});
     document.body.innerHTML = '';
-    controller = await act(() => mountUniversalPanel());
+    await act(async () => {
+      controller = mountUniversalPanel();
+      // Yield to the microtask queue so loadSettings().then(render) runs inside act().
+      await Promise.resolve();
+    });
   });
 
   afterEach(() => {

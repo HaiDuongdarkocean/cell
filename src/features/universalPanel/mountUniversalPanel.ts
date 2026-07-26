@@ -115,6 +115,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   host.appendChild(rootEl);
 
   let root: Root | null = createRoot(rootEl);
+  let isUnmounted = false;
   let currentTab: UniversalPanelTab = 'dictionary';
 
   // Prefill pushed from an external popup dictionary via sendToCard().
@@ -155,6 +156,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     ...controller,
     getHosts: () => [host],
     unmount: () => {
+      isUnmounted = true;
       controllerUnmount();
       if (root) {
         root.unmount();
@@ -175,6 +177,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   let dictionaryTargetLang = 'vi';
 
   void loadSettings().then((settings) => {
+    if (isUnmounted) return;
     dictionarySourceLang = settings.subtitleOverlayTargetLanguage || dictionarySourceLang;
     dictionaryTargetLang = settings.subtitleOverlayNativeLanguage || dictionaryTargetLang;
     dictionaryLangCode = dictionarySourceLang;
@@ -206,7 +209,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   ) as ReactElement;
 
   const render = (): void => {
-    if (!root) return;
+    if (isUnmounted || !root) return;
     const open = mountController.isOpen();
     rootEl.style.pointerEvents = open ? 'auto' : 'none';
     root.render(

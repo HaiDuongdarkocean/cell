@@ -163,7 +163,7 @@ npm run test:unit
 npx vite build --mode development
 ```
 
-- Dev auto-seed: `npx vite build --mode development` → copy `tests/data-test/resource/` vào `dist/seed/` + `isDevMode=true` → extension tự import 2 file test (Cambridge + frequency) khi DB rỗng, song song, không block UI. Production build (`npm run build`) không copy seed.
+- Auto-seed: mọi `vite build` (cả development và production) đều copy `tests/data-test/resource/` vào `dist/seed/`; extension tự import 2 file seed (Cambridge + frequency) khi DB rỗng, song song, không block UI. `isDevMode=true` chỉ trong `vite serve` hoặc `npx vite build --mode development` (dùng `import.meta.env.MODE === 'development'`).
 - `import.meta.env.DEV` = true chỉ trong `vite serve`, luôn false trong `vite build` — dùng `import.meta.env.MODE === 'development'` cho dev-seed (xem `src/shared/lib/env/devMode.ts`).
 
 ALWAYS verify: dùng mcp `chrome-devtool` để verify kết quả dùng skill `browser-testing-with-devtools` hoặc debug với `debugging-and-error-recovery`
