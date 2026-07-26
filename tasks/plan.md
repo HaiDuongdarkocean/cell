@@ -70,10 +70,10 @@ Button, Card, Input, Select, Dialog, Checkbox, Radio, Toggle, Badge, Alert, Tabs
 - **Scope**: L.
 
 ### Checkpoint 1
-- [ ] `npm run typecheck` pass
-- [ ] `npm run test:unit` pass
-- [ ] `npm run build` pass
-- [ ] Subagent review Phase 1 pass
+- [x] `npm run typecheck` pass
+- [x] `npm run test:unit` pass
+- [x] `npm run build` pass
+- [x] Subagent review Phase 1 pass
 
 ### Phase 2: Token system refinement
 
