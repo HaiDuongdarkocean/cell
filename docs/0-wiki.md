@@ -143,6 +143,7 @@ docs/           # Tài liệu dự án
 │   ├── spec-predictive-viewport-tokenize.md # VDLT-Predict: 0 plain in viewport, direction overscan, cold-start
 │   └── spec-badge-pointer-dictionary-trigger.md # Orbital badge + moon pointer lookup trigger for mobile/tablet/fullscreen
 │   └── universal-orbital-panel.md # Universal orbital panel PRD: Dictionary + Settings tabs, integrated lookup + card creator
+│   └── spec-dictionary-tab-copy-popup-visual.md # Dictionary tab: copy floating popup visual exactly (header, checkboxes, toolbar, container queries)
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md
@@ -261,6 +262,9 @@ tests/          # Test files (chi tiết trong 2-architechture-system.md)
   skills-deprecated/  # 4 skill cũ đã deprecate (chrome-extension-mv3-architecture-review, conceptualization, mockup-first, skill-creator)
 .devin/        # Devin config (hooks.v1.json; agents/ đã xóa — thay bằng .agents/skills/)
 .windsurf/      # Windsurf config (rules consolidated vào AGENTS.md — cross-tool source of truth)
+tasks/          # Active plan & task checklist (current sprint)
+├── plan.md                          # Implementation plan for current feature
+└── todo.md                          # Ordered task checklist with acceptance criteria
 ```
 
 ## Cách dùng tổng quan
