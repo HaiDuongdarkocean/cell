@@ -3,28 +3,6 @@
   margin-top: var(--space-3);
 }
 
-.tabs {
-  display: flex;
-  gap: var(--space-1);
-  margin-bottom: var(--space-2);
-}
-
-.tab {
-  padding: var(--space-1) var(--space-3);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: var(--font-size-base);
-}
-
-.tab.active {
-  background: var(--color-primary-subtle);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-5) * 7), 1fr));

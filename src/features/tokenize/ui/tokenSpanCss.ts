@@ -105,6 +105,13 @@ ${buildVariables()}
      over the inset status underline. Default follows the text color; frequency
      bands override it to the pill background so the halo is invisible. */
   --cell-token-guard: currentColor;
+  transition: background-color var(--duration-100) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js-cell-token {
+    transition: none !important;
+  }
 }
 
 .js-cell-token--word {

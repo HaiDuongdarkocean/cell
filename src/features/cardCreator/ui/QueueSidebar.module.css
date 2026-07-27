@@ -160,7 +160,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .cc-queue__item,
+  .cc-queue__item-delete,
   .cc-queue__undo {
+    transition: none;
     animation: none;
   }
 }

@@ -61,13 +61,6 @@
   }
 }
 
-/* === Divider — group separator within section body === */
-.divider {
-  height: var(--border-width-hairline);
-  background: var(--color-border-subtle);
-  margin: var(--space-1) 0;
-}
-
 .label {
   display: flex;
   align-items: center;
@@ -184,22 +177,6 @@
   color: var(--color-text);
   cursor: pointer;
   white-space: nowrap;
-}
-
-.toggleRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--font-size-base);
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.hint {
-  margin: 0;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  line-height: var(--leading-snug);
 }
 
 .resetRow {

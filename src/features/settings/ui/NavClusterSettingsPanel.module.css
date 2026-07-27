@@ -14,59 +14,6 @@
   min-width: 0;
 }
 
-/* === Pair row — 2 fields side-by-side (settings-dialog-rearrange) === */
-.pairRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-2);
-  align-items: start;
-}
-
-.pairRow > .field {
-  min-width: 0;
-}
-
-@media (min-width: 480px) {
-  .pairRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
-  }
-}
-
-/* === Divider — group separator (settings-dialog-rearrange) === */
-.divider {
-  height: var(--border-width-hairline);
-  background: var(--color-border-subtle);
-  margin: var(--space-1) 0;
-}
-
-/* === Number input — for position X/Y percent === */
-.numberInput {
-  width: 100%;
-  padding: var(--space-1-5) var(--space-2);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: var(--font-size-base);
-  font-family: inherit;
-  min-width: 0;
-}
-
-.numberInput:focus-visible {
-  outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: var(--space-0-5);
-  border-color: var(--color-primary);
-}
-
-.rowLabel {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  letter-spacing: var(--tracking-normal);
-  user-select: none;
-}
-
 .sliderHeader {
   display: flex;
   align-items: center;

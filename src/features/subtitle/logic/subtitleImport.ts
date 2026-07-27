@@ -117,7 +117,6 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     isolation: isolate;
     pointer-events: auto;
     user-select: none;
-    transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
   `;
   label.style.setProperty('border', 'none', 'important');
   label.style.setProperty('opacity', '1', 'important');
@@ -135,10 +134,26 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
     mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
     z-index: -1;
-    transition: background var(--duration-fast) ease;
     pointer-events: none;
   `;
   label.appendChild(labelFeather);
+
+  // Respect user motion preference for inline transitions.
+  const reducedMotion =
+    typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
+  const applyTransitions = (): void => {
+    if (reducedMotion?.matches) {
+      label.style.transition = 'none';
+      labelFeather.style.transition = 'none';
+    } else {
+      label.style.transition = 'background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      labelFeather.style.transition = 'background var(--duration-fast) ease';
+    }
+  };
+  applyTransitions();
+  reducedMotion?.addEventListener?.('change', applyTransitions);
 
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
