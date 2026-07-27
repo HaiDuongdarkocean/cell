@@ -357,7 +357,12 @@ async function initTokenize(): Promise<void> {
 }
 
 function findAndInitOverlay(): void {
-  if (window.self !== window.top) return;
+  // ADR: allow injection in iframes that host the actual <video> element
+  // (animekai.be / shuttletv.su embed via cross-origin iframe). The top frame
+  // has no <video>; the iframe does. The `document.querySelector('video')` +
+  // `isVideoReady` checks below already gate on a real video, and the
+  // MutationObserver auto-disconnects after 10s when no video appears, so
+  // iframes without a video pay only a short observer cost.
   const video = document.querySelector('video');
   if (video && isVideoReady(video)) {
     if (video === currentVideo) return; // already initialized for this element
