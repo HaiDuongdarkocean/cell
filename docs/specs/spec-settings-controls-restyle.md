@@ -88,7 +88,7 @@ Lint:          npm run lint
 - **F3.6**: No hardcoded color — all colors from theme.css tokens.
 
 ### F4: SubtitlePreview component
-- **F4.1**: Black bg (`#000`), white text (`#fff`), padding `--spacing-md`, radius `--radius-sm`, text-align center, font-size 13px, line-height 1.4.
+- **F4.1**: Black bg (`#000`), white text (`#fff`), padding `--space-md`, radius `--radius-sm`, text-align center, font-size 13px, line-height 1.4.
 - **F4.2**: Text sample: "This is how the {role} subtitle will look." (role = target | native).
 - **F4.3**: Apply style từ `OverlayStyleConfig` (fontSize, textColor, backgroundColor, textShadow, fontFamily, opacity) — realtime reflect SubtitleStylePanel controls.
 - **F4.4**: Props: `style: OverlayStyleConfig`, `role: 'target' | 'native'`.
@@ -107,7 +107,7 @@ Lint:          npm run lint
 ### F6: HintIcon atom
 - **F6.1**: Info-circle icon (14px SVG) next to label, color `--color-text-muted` (light: `#94a3b8`, dark: `#64748b`), hover `--color-primary` (light: `#2563eb`, dark: `#60a5fa`).
 - **F6.2**: Click → reveal hint popover floating above icon (position absolute, bottom: calc(100% + 6px)).
-- **F6.3**: Popover: max-width 280px, padding `--spacing-sm` `--spacing-md`, bg `--color-surface-hover` (light: `#f1f5f9`, dark: `#334155`), border `--color-border` (light: `#e2e8f0`, dark: `#334155`), radius `--radius-md`, shadow `--shadow-md`.
+- **F6.3**: Popover: max-width 280px, padding `--space-sm` `--space-md`, bg `--color-surface-hover` (light: `#f1f5f9`, dark: `#334155`), border `--color-border` (light: `#e2e8f0`, dark: `#334155`), radius `--radius-md`, shadow `--shadow-md`.
 - **F6.4**: Popover text = `--color-text` (light: `#0f172a`, dark: `#f1f5f9`).
 - **F6.5**: Boundary detection: use getBoundingClientRect() on icon → if top < popoverHeight + 8px, add `.flip-top` (popover below icon). If spaceLeft < popoverWidth, add `.align-right`. If both sides insufficient, add `.align-center`.
 - **F6.6**: Arrow pointing to icon (CSS ::after pseudo-element, 5px border, border-top-color = `--color-border`).

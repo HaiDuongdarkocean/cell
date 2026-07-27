@@ -1,17 +1,26 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'src');
 
 const excludePaths = [
   'src/entrypoints/test',
-  'src/shared/icons/icon-gallery.html',
-  'src/shared/styles/tokens.css',
-  'src/shared/styles/tokens.json',
+  'tests/data-test',
+  'tests/integration/.cache',
+  'tests/popup-dictionary-browser-test.html',
+  'docs/mockups',
+  'docs/ideas',
+  'docs/intent',
+  'docs/plan',
+  'docs/reviews',
+  'docs/specs/design/UC',
+  'docs/specs/design/ferrence-for-design-ux_ui/reference-ui_ux_system.md',
+  'tasks',
 ];
 
-const excludedExtensions = ['.test.ts', '.spec.ts', '.test.tsx', '.spec.tsx'];
+const excludedExtensions = [];
 
 function shouldInclude(relativePath) {
   if (excludedExtensions.some(ext => relativePath.endsWith(ext))) return false;
@@ -22,17 +31,17 @@ function shouldInclude(relativePath) {
   return true;
 }
 
-function collectSrcFiles(dir, files = []) {
+function collectFiles(dir, extensions, files = []) {
   if (!fs.existsSync(dir)) return files;
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const ent of entries) {
     const full = path.join(dir, ent.name);
     const rel = path.relative(ROOT, full).replace(/\\/g, '/');
     if (ent.isDirectory()) {
-      collectSrcFiles(full, files);
+      collectFiles(full, extensions, files);
     } else if (ent.isFile()) {
       const ext = path.extname(ent.name);
-      if (['.css', '.ts', '.tsx', '.js', '.jsx'].includes(ext) && shouldInclude(rel)) {
+      if (extensions.includes(ext) && shouldInclude(rel)) {
         files.push({ full, relative: rel });
       }
     }
@@ -40,21 +49,41 @@ function collectSrcFiles(dir, files = []) {
   return files;
 }
 
-const files = collectSrcFiles(SRC);
+const srcFiles = collectFiles(SRC, ['.css', '.ts', '.tsx', '.js', '.jsx', '.html', '.json']);
+const testFiles = collectFiles(path.join(ROOT, 'tests/unit'), ['.ts', '.tsx', '.js', '.jsx'])
+  .concat(collectFiles(path.join(ROOT, 'tests/integration'), ['.ts', '.tsx', '.js', '.jsx']));
+const docsFiles = collectFiles(path.join(ROOT, 'docs/adr'), ['.md'])
+  .concat(collectFiles(path.join(ROOT, 'docs/specs'), ['.md']));
+
+const files = [...srcFiles, ...testFiles, ...docsFiles];
 const findings = [];
 
 function add(file, lineNo, category, message, line, fix = null) {
   findings.push({ file, lineNo, category, message, line: line.trim(), fix });
 }
 
-function isInsideStringLiteral(line, start, end) {
-  // Treat matches inside '...' / "..." / `...` string literals as false positives
-  // (e.g. contrast-pair labels like 'White / Primary').
-  const stringRe = /(['"`])(?:(?!\1|\\).|\\.)*\1/g;
+function getEnclosingStringLiteral(line, start, end) {
+  // Detect matches inside '...' / "..." / `...` string literals and return the
+  // raw content so callers can decide whether the string is CSS or plain text.
+  const stringRe = /(['"`])((?:(?!\1|\\).|\\.)*?)\1/g;
   for (const m of line.matchAll(stringRe)) {
-    if (m.index < start && m.index + m[0].length > end) return true;
+    if (m.index < start && m.index + m[0].length > end) {
+      return { quote: m[1], content: m[2] };
+    }
   }
-  return false;
+  return null;
+}
+
+function isInsideStringLiteral(line, start, end) {
+  return !!getEnclosingStringLiteral(line, start, end);
+}
+
+const CSS_STRING_RE = /\b(color|background|border|padding|margin|width|height|font-size|font-family|line-height|letter-spacing|box-shadow|text-shadow|border-radius|opacity|z-index|gap|display|scroll|stroke|fill|--[a-zA-Z0-9-]+)\s*:/;
+
+function isInsideNonCssStringLiteral(line, start, end) {
+  const enc = getEnclosingStringLiteral(line, start, end);
+  if (!enc) return false;
+  return !CSS_STRING_RE.test(enc.content);
 }
 
 function stripComments(line, ext) {
@@ -123,10 +152,18 @@ function processFile({ full, relative }) {
   const lines = content.split(/\r?\n/);
   const insideAtRule = ext === '.css' ? computeInsideAtRule(lines) : [];
 
+  // The generated CSS artifact and canonical JSON source are the SSOT themselves;
+  // do not flag their raw values. A separate drift check verifies they stay in sync.
+  if (relative === 'src/shared/styles/tokens.css' || relative === 'src/shared/styles/tokens.json') {
+    return;
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const lineNo = i + 1;
     const original = lines[i];
     if (!original.trim()) continue;
+    // Manual opt-out for intentional literal values (tests, fixtures, demos).
+    if (original.includes('/* audit-ignore */')) continue;
     // strip // line comments (TS/JS only)
     const line = ext === '.css' ? original : original.replace(/\/\/.*$/g, '');
     if (!line.trim()) continue;
@@ -136,11 +173,11 @@ function processFile({ full, relative }) {
     for (const m of pxMatches) {
       const val = m[1];
       // Skip 0px in box-shadow/clip-path offset contexts? We'll flag but suggest 0
-      if (line.includes('/* audit-ignore */')) continue;
       // Ignore media/container query breakpoints and matchMedia strings where px is required.
       if (insideAtRule[i]) continue;
       if (/@(?:media|container)\b/i.test(line)) continue;
       if (/matchMedia\s*\(/.test(line)) continue;
+      if (isInsideNonCssStringLiteral(original, m.index, m.index + m[0].length)) continue;
       const key = `${parseFloat(val)}px`;
       const fix = PX_TOKEN_MAP[key] || null;
       add(relative, lineNo, 'hardcoded-px', `Hardcoded ${m[0]} value`, original, fix);
@@ -174,8 +211,9 @@ function processFile({ full, relative }) {
     // hex colors (valid CSS lengths: 3,4,6,8)
     const hexMatches = line.matchAll(/#[0-9a-fA-F]{3}\b|#[0-9a-fA-F]{4}\b|#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{8}\b/g);
     for (const m of hexMatches) {
-      // Skip if part of a string that looks like an ID (e.g. #13654 with 5 digits not matched, but #7734 4 digits matched)
-      // We'll report all and let manual review
+      // Skip hex values inside plain text strings (test IDs, SRT numbers, test data)
+      // but audit hex inside CSS strings/style blocks.
+      if (isInsideNonCssStringLiteral(original, m.index, m.index + m[0].length)) continue;
       add(relative, lineNo, 'hardcoded-color', `Hardcoded hex color ${m[0]}`, original, 'var(--color-*)');
     }
     // named colors: word not part of CSS property/identifier (exclude white-space, whiteSpace, black-*, etc.)
@@ -198,6 +236,7 @@ function processFile({ full, relative }) {
       const inner = m[1];
       if (/\bvar\s*\(/i.test(inner)) continue;
       if (/\$\{/.test(inner)) continue;
+      if (isInsideNonCssStringLiteral(original, m.index, m.index + m[0].length)) continue;
       add(relative, lineNo, 'hardcoded-color', `Hardcoded color ${m[0]}`, original, 'rgba(var(--*-rgb), alpha)');
     }
 
@@ -260,6 +299,15 @@ function processFile({ full, relative }) {
         }
       }
     }
+    if (/\btext-shadow\s*:/i.test(line)) {
+      const ts = line.match(/text-shadow\s*:\s*([^;{]+)/i);
+      if (ts) {
+        const val = ts[1].trim();
+        if (val.toLowerCase() !== 'none' && !val.includes('var(--shadow-text') && !val.includes('var(--shadow-sm')) {
+          add(relative, lineNo, 'hardcoded-text-shadow', `Hardcoded text-shadow: ${val}`, original, 'var(--shadow-textSoft) or var(--shadow-textCinema)');
+        }
+      }
+    }
     if (/\bbackdrop-filter\s*:/i.test(line)) {
       const bf = line.match(/backdrop-filter\s*:\s*([^;{]+)/i);
       if (bf && !bf[1].includes('var(--blur')) {
@@ -298,6 +346,41 @@ function processFile({ full, relative }) {
       add(relative, lineNo, 'ssot-other', `Use --color-surface-hover for hover instead of --color-accent`, original, 'var(--color-surface-hover)');
     }
   }
+}
+
+// Verify generated tokens.css stays in sync with canonical tokens.json.
+const tokensCssPath = path.join(ROOT, 'src/shared/styles/tokens.css');
+const tokensJsonPath = path.join(ROOT, 'src/shared/styles/tokens.json');
+const tokensCssBefore = fs.readFileSync(tokensCssPath, 'utf8');
+try {
+  execSync('node scripts/generate-tokens.js', { cwd: ROOT, stdio: 'pipe' });
+} catch (err) {
+  console.error('Token generation failed:', err.stderr?.toString() || err.message);
+  process.exit(1);
+}
+const tokensCssAfter = fs.readFileSync(tokensCssPath, 'utf8');
+if (tokensCssBefore !== tokensCssAfter) {
+  findings.push({
+    file: 'src/shared/styles/tokens.css',
+    lineNo: 1,
+    category: 'token-drift',
+    message: 'tokens.css was out of sync with tokens.json and has been regenerated',
+    line: 'tokens.css',
+    fix: 'run node scripts/generate-tokens.js after editing tokens.json',
+  });
+}
+
+try {
+  JSON.parse(fs.readFileSync(tokensJsonPath, 'utf8'));
+} catch (err) {
+  findings.push({
+    file: 'src/shared/styles/tokens.json',
+    lineNo: 1,
+    category: 'token-json',
+    message: 'tokens.json is not valid JSON',
+    line: String(err.message),
+    fix: 'fix JSON syntax',
+  });
 }
 
 for (const f of files) processFile(f);

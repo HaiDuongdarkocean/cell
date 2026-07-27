@@ -100,7 +100,7 @@ Line two`;
     const content = `WEBVTT
 
 00:00:01.000 --> 00:00:05.000
-<i>Italic</i> <b>bold</b> <c.yellow>tagged</c> {\\an8}plain`;
+<i>Italic</i> <b>bold</b> <c.warn>tagged</c> {\\an8}plain`;
     const result = parseVtt(content);
     expect(result.cues).toHaveLength(1);
     expect(result.cues[0].text).toBe('Italic bold tagged plain');

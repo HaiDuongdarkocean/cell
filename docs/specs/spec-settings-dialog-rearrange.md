@@ -19,7 +19,7 @@
 **Current**: Auto select toggle + language multiselect stacked, no visual hierarchy.
 **Required**: Language multiselect indented dưới Auto select toggle (child visual hierarchy).
 
-- CSS class `.childField`: `margin-left: var(--spacing-lg); padding-left: var(--spacing-md); border-left: 2px solid var(--color-border-subtle);`
+- CSS class `.childField`: `margin-left: var(--space-lg); padding-left: var(--space-md); border-left: 2px solid var(--color-border-subtle);`
 - Apply cho language multiselect field khi `settings.autoSelectEnabled === true`
 - Conditional render giữ nguyên (chỉ hiện khi toggle ON)
 
@@ -63,7 +63,7 @@
 **Current**: 5 rows dọc, mỗi row 1 char input.
 **Required**: 2-column grid, pair related actions.
 
-- CSS class `.shortcutGrid`: `display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);`
+- CSS class `.shortcutGrid`: `display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);`
 - 5 fields trong grid:
   - Row 1: Previous cue | Next cue (navigation pair)
   - Row 2: Replay cue | Toggle overlay (action pair)
