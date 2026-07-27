@@ -11,14 +11,15 @@
 // - uses fallback:true for typed/selected-text searches
 // - cancels in-flight lookups on new search / unmount via LOOKUP_CANCEL
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import type { LookupResult, LookupRequest, PopupTab, WordStatus } from '../types';
+import type { LookupResult, LookupRequest, PopupTab, WordStatus, DefinitionEntry } from '../types';
 import type { MessageResponse } from '@/entities/message';
 import { nextStatus } from '../services/wordStatusStore';
 import { translateSentence } from '@/features/cardCreator/media/translation';
 import type { PopupCardCreatorPrefill } from './popupDictionaryController';
+import { initDefinitionSelection, getSelectedDefinitions } from './popupContent';
 
 export interface UseDictionaryPanelOptions {
   /** Language code of the dictionary being searched (e.g. 'en', 'zh'). */
@@ -31,6 +32,8 @@ export interface UseDictionaryPanelOptions {
   readonly initialTerm?: string;
   /** Called when the user presses "Send to Card" — receives the built prefill. */
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Called when the user presses "Quick Add" — receives the built prefill. */
+  readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
 }
 
 export interface UseDictionaryPanelReturn {
@@ -68,6 +71,14 @@ export interface UseDictionaryPanelReturn {
   readonly isTranslating: boolean;
   /** Build a prefill from the current result and call onSendToCard. */
   readonly sendToCard: () => void;
+  /** Build a prefill from the current result and call onQuickAdd. */
+  readonly quickAdd: () => void;
+  /** Map of definition id → selected state for the active candidate. */
+  readonly definitionSelection: Map<string, boolean>;
+  /** Toggle a definition's selected state. */
+  readonly toggleDefinition: (id: string, selected: boolean) => void;
+  /** Currently selected definitions for the active candidate (respects defaultSelected). */
+  readonly selectedDefinitions: readonly DefinitionEntry[];
 }
 
 /** Stable ID generator for lookup request ids. */
@@ -78,17 +89,22 @@ function makeRequestId(): string {
   return `dp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-/** Build a card-creator prefill from a lookup result. */
+/** Build a card-creator prefill from a lookup result.
+ *  Uses selected definitions when available; falls back to all definitions. */
 function buildPrefill(
   result: LookupResult,
+  selectedDefinitions: readonly DefinitionEntry[],
   contextSentence: string,
   translation: string,
 ): PopupCardCreatorPrefill {
+  const defs = selectedDefinitions.length > 0
+    ? selectedDefinitions
+    : result.definitions;
   return {
     term: result.term,
     langCode: result.langCode,
     reading: result.reading,
-    definitions: result.definitions.map((d) => ({ pos: d.pos, text: d.text })),
+    definitions: defs.map((d) => ({ pos: d.pos, text: d.text })),
     rawDefinitions: result.rawDefinitions,
     contextSentence,
     translation: translation || undefined,
@@ -102,7 +118,7 @@ function buildPrefill(
 }
 
 export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDictionaryPanelReturn {
-  const { langCode, sourceLang, targetLang, initialTerm, onSendToCard } = options;
+  const { langCode, sourceLang, targetLang, initialTerm, onSendToCard, onQuickAdd } = options;
 
   const [searchTerm, setSearchTerm] = useState(initialTerm ?? '');
   const [currentResult, setCurrentResult] = useState<LookupResult | null>(null);
@@ -114,6 +130,7 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
   const [translation, setTranslation] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
   const [status, setStatus] = useState<WordStatus>('unknown');
+  const [definitionSelection, setDefinitionSelection] = useState<Map<string, boolean>>(new Map());
 
   const requestIdRef = useRef<string | null>(null);
   const latestSearchRef = useRef<string>(initialTerm ?? '');
@@ -131,6 +148,7 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
       setCandidates([]);
       setActiveCandidateIndex(0);
       setStatus('unknown');
+      setDefinitionSelection(new Map());
       return;
     }
     const [winner, ...rest] = results;
@@ -138,9 +156,10 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     setCandidates(rest);
     setActiveCandidateIndex(0);
     setStatus(winner.status);
+    setDefinitionSelection(initDefinitionSelection(winner));
     setTranslation('');
     latestSearchRef.current = searchedTerm;
-  }, []);
+  }, [initDefinitionSelection]);
 
   const search = useCallback((term: string): void => {
     const trimmed = term.trim();
@@ -178,6 +197,7 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
           setCurrentResult(null);
           setCandidates([]);
           setStatus('unknown');
+          setDefinitionSelection(new Map());
         }
       })
       .catch((err: unknown) => {
@@ -188,6 +208,7 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
         setCurrentResult(null);
         setCandidates([]);
         setStatus('unknown');
+        setDefinitionSelection(new Map());
       });
   }, [langCode, cancelInFlight, applyResult]);
 
@@ -198,7 +219,8 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     setActiveCandidateIndex(index);
     setCurrentResult(chosen);
     setStatus(chosen.status);
-  }, [currentResult, candidates]);
+    setDefinitionSelection(initDefinitionSelection(chosen));
+  }, [currentResult, candidates, initDefinitionSelection]);
 
   const cycleStatus = useCallback((): void => {
     const result = currentResult;
@@ -217,11 +239,26 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
       .finally(() => { setIsTranslating(false); });
   }, [searchTerm, sourceLang, targetLang]);
 
+  const selectedDefinitions = useMemo(
+    () => (currentResult ? getSelectedDefinitions(currentResult, definitionSelection) : []),
+    [currentResult, definitionSelection],
+  );
+
+  const toggleDefinition = useCallback((id: string, selected: boolean): void => {
+    setDefinitionSelection((prev) => new Map(prev).set(id, selected));
+  }, []);
+
   const sendToCard = useCallback((): void => {
     if (!currentResult || !onSendToCard) return;
     const contextSentence = latestSearchRef.current;
-    onSendToCard(buildPrefill(currentResult, contextSentence, translation));
-  }, [currentResult, onSendToCard, translation]);
+    onSendToCard(buildPrefill(currentResult, selectedDefinitions, contextSentence, translation));
+  }, [currentResult, selectedDefinitions, onSendToCard, translation]);
+
+  const quickAdd = useCallback((): void => {
+    if (!currentResult || !onQuickAdd) return;
+    const contextSentence = latestSearchRef.current;
+    onQuickAdd(buildPrefill(currentResult, selectedDefinitions, contextSentence, translation));
+  }, [currentResult, selectedDefinitions, onQuickAdd, translation]);
 
   // Initial search when initialTerm is provided. Re-run if the prop changes
   // while the component is mounted (e.g. the panel is opened with a new term).
@@ -255,5 +292,9 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     translate,
     isTranslating,
     sendToCard,
+    quickAdd,
+    definitionSelection,
+    toggleDefinition,
+    selectedDefinitions,
   };
 }
