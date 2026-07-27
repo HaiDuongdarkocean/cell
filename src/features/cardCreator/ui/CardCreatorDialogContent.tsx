@@ -82,12 +82,27 @@ export function CardCreatorDialogContent({
   // "loading" state on the trigger.
   const showNoRecentAlert = loadStatus === 'ready' && recentNoteId === null;
 
-  const queueToggle = hasQueue ? (
+  const headerSettings = isPanel ? (
+    <Button
+      variant="ghost"
+      size="sm"
+      disabled
+      aria-label="Card Creator settings coming soon"
+      title="Card Creator settings coming soon"
+      data-testid="cc-settings"
+    >
+      <Icon name="settings" />
+    </Button>
+  ) : undefined;
+
+  const headerQueue = isPanel ? (
     <Button
       variant="ghost"
       size="sm"
       onClick={toggleQueueSidebar}
-      aria-label={queueSidebarOpen ? 'Hide queue' : 'Show queue'}
+      disabled={!hasQueue}
+      aria-label={hasQueue ? (queueSidebarOpen ? 'Hide card queue' : 'Show card queue') : 'Card queue is empty'}
+      title={hasQueue ? (queueSidebarOpen ? 'Hide card queue' : 'Show card queue') : 'Card queue is empty'}
       data-testid="cc-queue-toggle"
     >
       <Icon name="panelRight" />
@@ -371,8 +386,9 @@ export function CardCreatorDialogContent({
     return (
       <div className={styles['cc-dialog--panel']} data-testid="card-creator-content">
         <div className={styles['cc-dialog__panel-header']}>
-          <span className={styles['cc-dialog__panel-title']}>Card Creator</span>
-          {queueToggle}
+          {headerSettings}
+          <span className={styles['cc-dialog__panel-title']}>CARD CREATOR</span>
+          {headerQueue}
         </div>
         <div className={styles['cc-dialog__panel-content']}>
           {body}

@@ -34,7 +34,7 @@ export function Icon({
     <span
       aria-hidden="true"
       className={[styles.wrap, className].filter(Boolean).join(' ')}
-      style={{ display: 'inline-flex', width: size, height: size, ...style }}
+      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: size, height: size, ...style }}
       dangerouslySetInnerHTML={{ __html: entry.svg }}
     />
   );

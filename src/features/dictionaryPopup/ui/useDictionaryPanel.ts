@@ -30,6 +30,7 @@ import type { MessageResponse } from '@/entities/message';
 import { nextStatus } from '../services/wordStatusStore';
 import { translateSentence } from '@/features/cardCreator/media/translation';
 import type { PopupCardCreatorPrefill } from './popupDictionaryController';
+import { buildPrefill } from './buildCandidatePrefill';
 import { initDefinitionSelection, getSelectedDefinitions } from './popupContent';
 
 export interface UseDictionaryPanelOptions {
@@ -130,47 +131,6 @@ function makeRequestId(): string {
     return crypto.randomUUID();
   }
   return `dp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-/** Build a card-creator prefill from a lookup result.
- *  Uses selected definitions, audio, and images when available. */
-function buildPrefill(
-  result: LookupResult,
-  selectedDefinitions: readonly DefinitionEntry[],
-  contextSentence: string,
-  translation: string,
-  audioItems: readonly AudioItem[],
-  audioSelection: Map<string, boolean>,
-  imageItems: readonly ImageItem[],
-  imageSelection: Map<string, boolean>,
-): PopupCardCreatorPrefill {
-  const defs = selectedDefinitions.length > 0
-    ? selectedDefinitions
-    : result.definitions;
-
-  const selectedAudios = audioItems.filter((item) => audioSelection.get(item.id) ?? item.defaultSelected);
-  const wordAudioUrls = selectedAudios
-    .filter((item) => item.kind === 'word' && item.url)
-    .map((item) => item.url!);
-  const sentenceAudioUrls = selectedAudios
-    .filter((item) => item.kind === 'sentence' && item.url)
-    .map((item) => item.url!);
-
-  const selectedImages = imageItems.filter((item) => imageSelection.get(item.id) ?? item.defaultSelected);
-  const imageUrls = selectedImages.map((item) => item.src);
-
-  return {
-    term: result.term,
-    langCode: result.langCode,
-    reading: result.reading,
-    definitions: defs.map((d) => ({ pos: d.pos, text: d.text })),
-    rawDefinitions: result.rawDefinitions,
-    contextSentence,
-    translation: translation || undefined,
-    wordAudioUrls,
-    sentenceAudioUrls,
-    imageUrls,
-  };
 }
 
 export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDictionaryPanelReturn {

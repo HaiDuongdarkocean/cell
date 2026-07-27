@@ -138,6 +138,9 @@
 /* Placeholders for JSX-only class references that have no popup-specific styles. */
 .cellHeaderSend, .cellHeaderQuickAdd {
   /* relies on global .icon-btn/.btn classes */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cellLabel {
@@ -682,6 +685,11 @@
   background: var(--color-surface-hover);
 }
 
+.cellTranslateBlock--selected {
+  background: var(--color-primary-subtle);
+  border-color: var(--color-primary);
+}
+
 .cellTranslateText {
   flex: 1;
   min-width: 0;
@@ -716,6 +724,15 @@
 
 .cellTranslateCheck--checked {
   display: flex;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.cellTranslateBlock--selected .cellTranslateCheck {
+  display: flex;
+}
+
+.cellTranslateBlock--selected .cellTranslateCheck--checked {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
@@ -833,7 +850,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 0 var(--space-2) var(--touch-target);
+  padding: var(--space-2) var(--space-2) var(--touch-target);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  margin-top: var(--space-2);
 }
 
 .cellCandidatesChipsScroll {
@@ -997,6 +1016,29 @@
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
 }
+}
+
+.candidateList {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  gap: var(--space-3);
+  padding: 0 var(--space-2) var(--space-4);
+}
+
+.candidate {
+  flex-shrink: 0;
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+  scroll-margin-top: var(--space-2);
+}
+
+.candidate:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 
 @container (max-width: 479px) {
@@ -1165,13 +1207,22 @@
   gap: var(--space-1);
   padding: var(--space-1);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
-  border: var(--border-width-hairline) solid var(--color-border);
+  background: transparent;
+  border: var(--border-width-hairline) solid transparent;
   margin: 0 var(--space-2) var(--space-2);
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.cellAudioItem:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border);
 }
 
 .cellAudioPlay {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cellAudioLabel {
@@ -1265,7 +1316,7 @@
 
 .cellImageCard--selected {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px var(--color-primary);
+  box-shadow: 0 0 0 1.2px var(--color-primary);
 }
 
 .cellImageThumb {
