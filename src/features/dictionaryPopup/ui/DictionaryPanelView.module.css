@@ -297,36 +297,6 @@
   padding: var(--space-1) 0;
 }
 
-.cellCandidate {
-  padding: var(--space-2);
-  border-bottom: var(--border-width-hairline) solid var(--color-border);
-}
-
-.cellCandidate:last-child {
-  border-bottom: none;
-}
-
-.cellCandidateHeader {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-1);
-  margin-bottom: var(--space-1);
-  padding: 0 var(--space-2);
-}
-
-.cellCandidateTerm {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-  margin: 0;
-}
-
-.cellCandidateReading {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  font-style: italic;
-}
-
 .dictionaryEmpty {
   display: flex;
   flex: 1 1 auto;
