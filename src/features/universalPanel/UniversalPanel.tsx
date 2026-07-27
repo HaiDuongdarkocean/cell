@@ -1,4 +1,4 @@
-import { useRef, type ReactElement, type ReactNode, type KeyboardEvent } from 'react';
+import { useRef, useState, useEffect, type ReactElement, type ReactNode, type KeyboardEvent } from 'react';
 import { IconButton } from '@/shared/ui/IconButton';
 import { useFocusTrap } from '@/shared/ui/useFocusTrap';
 import { Icon } from '@/shared/icons/Icon';
@@ -40,7 +40,17 @@ export function UniversalPanel({
   settingsPanel,
 }: UniversalPanelProps): ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [isClosing, setIsClosing] = useState(false);
+
   useFocusTrap(panelRef, isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsClosing(false);
+    } else if (!isClosing) {
+      setIsClosing(true);
+    }
+  }, [isOpen]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
     if (e.key === 'Escape') {
@@ -57,7 +67,9 @@ export function UniversalPanel({
     e.stopPropagation();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen && !isClosing) return null;
+
+  const panelClass = `${styles.panel} ${isOpen ? styles.open : styles.close}`.trim();
 
   return (
     <div
@@ -68,12 +80,17 @@ export function UniversalPanel({
     >
       <div
         ref={panelRef}
-        className={styles.panel}
+        className={panelClass}
         role="dialog"
         aria-modal="true"
         aria-label="Universal panel"
         onClick={handlePanelClick}
         onKeyDown={handleKeyDown}
+        onAnimationEnd={() => {
+          if (isClosing) {
+            setIsClosing(false);
+          }
+        }}
         data-testid="universal-panel"
       >
         <nav

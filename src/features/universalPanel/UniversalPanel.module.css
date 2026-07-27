@@ -1,22 +1,33 @@
 .overlay {
   position: absolute;
   inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--dialog-overlay-bg);
   animation: fade-in var(--duration-fast) var(--ease-out);
 }
 
 .panel {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  width: 100%;
+  position: relative;
+  width: 94%;
+  height: 94%;
   max-width: calc(var(--space-5) * 64);
+  display: flex;
   background: var(--color-background);
   color: var(--color-text);
-  border-left: var(--border-width-hairline) solid var(--color-border);
-  animation: slide-in-right var(--duration-normal) var(--ease-out);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-dialog);
+  box-shadow: var(--shadow-modal);
+  overflow: hidden;
+}
+
+.open {
+  animation: scale-in var(--duration-normal) var(--ease-out);
+}
+
+.close {
+  animation: scale-out var(--duration-normal) var(--ease-out);
 }
 
 .tabBar {
@@ -55,12 +66,9 @@
 
 @media (max-width: 768px) {
   .panel {
-    left: 0;
     max-width: none;
-    border-left: none;
-    border-top: var(--border-width-hairline) solid var(--color-border);
+    border-radius: var(--radius-md);
     flex-direction: column-reverse;
-    animation: slide-in-up var(--duration-normal) var(--ease-out);
   }
 
   .tabBar {
@@ -93,14 +101,26 @@
   to { opacity: 1; }
 }
 
-@keyframes slide-in-right {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-@keyframes slide-in-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
