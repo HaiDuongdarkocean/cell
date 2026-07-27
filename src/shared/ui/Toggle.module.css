@@ -1,7 +1,7 @@
 .toggle {
-  width: var(--space-8);
-  min-width: var(--touch-target);
-  height: var(--space-4-5);
+  width: calc(var(--touch-target) * 1.8);
+  min-width: calc(var(--touch-target) * 1.8);
+  height: var(--touch-target);
   min-height: var(--touch-target);
   border-radius: var(--radius-full);
   background: var(--color-border);
@@ -34,16 +34,24 @@
   position: absolute;
   top: 50%;
   left: var(--space-0-5);
-  width: var(--space-3-5);
-  height: var(--space-3-5);
+  width: calc(var(--touch-target) - 2 * var(--space-0-5));
+  height: calc(var(--touch-target) - 2 * var(--space-0-5));
   border-radius: var(--radius-full);
   background: var(--color-text-inverse);
-  transform: translateY(-50%) translateX(0);
+  /* transform-box: border-box — host pages may reset transform-box to view-box
+     (SVG default), which makes translateY(%) resolve against the SVG viewport
+     instead of the element's border-box, collapsing the thumb off-center. */
+  transform-box: border-box;
+  transform: translateY(-50%);
   transition: transform var(--transition);
 }
 
 .toggle[aria-pressed="true"] .thumb {
-  transform: translateY(-50%) translateX(calc(var(--touch-target) - var(--space-3-5) - 2 * var(--space-0-5)));
+  /* translate(X, -50%) — single function, minifier-safe (no space between
+     functions to strip). X = track width - thumb width - 2×left offset;
+     track width = touch-target * 1.8 and thumb width = touch-target - 2*offset,
+     so X = touch-target * 0.8. */
+  transform: translate(calc(var(--touch-target) * 0.8), -50%);
 }
 
 .toggle:disabled {
