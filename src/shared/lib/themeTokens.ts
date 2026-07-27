@@ -60,7 +60,7 @@ ${componentTokens}
 }
 
 @keyframes subtitle-toast-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  from { opacity: 0; transform: translateX(-50%) translateY(var(--space-2)); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
