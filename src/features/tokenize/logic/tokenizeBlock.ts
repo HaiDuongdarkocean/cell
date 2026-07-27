@@ -29,11 +29,14 @@ const SUBTITLE_NATIVE_CLASS = 'native';
 
 /** Extension UI host selectors — text inside these must NOT be tokenized.
  *  Light-DOM hosts (#cell-settings-dialog-host, #cell-card-creator-host,
- *  .js-cell-popup-host) contain React-rendered text that TreeWalker can reach.
- *  Shadow-DOM hosts (.js-cell-orbital-badge-host, .js-cell-token-badge-host)
- *  are included for safety even though TreeWalker doesn't cross shadow boundaries. */
+ *  .js-cell-popup-host, #cell-universal-panel-host) contain React-rendered text
+ *  that TreeWalker can reach. Shadow-DOM hosts (.js-cell-orbital-badge-host,
+ *  .js-cell-token-badge-host) are included for safety even though TreeWalker
+ *  doesn't cross shadow boundaries.
+ *  Sub-trees marked `data-allow-tokenize` are whitelisted (e.g. card creator
+ *  preview inside the universal panel). */
 const EXTENSION_UI_HOST_SELECTORS =
-  '#cell-settings-dialog-host, #cell-card-creator-host, .js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host';
+  '#cell-settings-dialog-host, #cell-card-creator-host, #cell-universal-panel-host, .js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host';
 
 // 'link' is intentionally NOT forbidden: <a href> is already implicit link and
 // is tokenized (see test). Many sites (Facebook, Twitter) add explicit
@@ -60,9 +63,14 @@ function isNativeSubtitleLine(element: Element): boolean {
   return element.classList.contains(SUBTITLE_LINE_CLASS) && element.classList.contains(SUBTITLE_NATIVE_CLASS);
 }
 
+const ALLOW_TOKENIZE_SELECTOR = '[data-allow-tokenize]';
+
 function isForbiddenElement(element: Element): boolean {
   if (FORBIDDEN_TAGS.has(element.tagName)) return true;
   if (isNativeSubtitleLine(element)) return true;
+  if (element.closest(ALLOW_TOKENIZE_SELECTOR)) {
+    return false;
+  }
   if (element.closest(EXTENSION_UI_HOST_SELECTORS)) return true;
   const role = element.getAttribute('role');
   if (role && FORBIDDEN_ROLE_ATTRS.includes(role)) return true;
