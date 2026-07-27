@@ -509,7 +509,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .offset-value:focus {
   z-index: calc(var(--z-dropdown) - 997);
-  box-shadow: inset 0 0 0 var(--space-0-5) var(--color-primary);
+  box-shadow: var(--shadow-focus-primary);
   background: var(--color-background);
 }
 

@@ -55,7 +55,7 @@ describe('ViewportTracker', () => {
   });
 
   it('calls onEnter when an element becomes visible', () => {
-    const tracker = new ViewportTracker({ rootMargin: '200% 0px' });
+    const tracker = new ViewportTracker({ rootMargin: '200% 0' });
     const el = document.createElement('p');
     const onEnter = jest.fn();
     const onExit = jest.fn();

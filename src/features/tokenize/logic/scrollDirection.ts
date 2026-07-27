@@ -87,7 +87,7 @@ export function resolveScrollPredictMargin(
   }
 
   return {
-    rootMargin: `${Math.round(topPx)}px 0px ${Math.round(bottomPx)}px 0px`,
+    rootMargin: `${Math.round(topPx)}px 0 ${Math.round(bottomPx)}px 0`,
     direction,
   };
 }

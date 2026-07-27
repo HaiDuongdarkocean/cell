@@ -20,7 +20,7 @@ export class ViewportTracker {
   private readonly handlers = new WeakMap<Element, Set<ViewportTrackerHandlers>>();
   private readonly state = new WeakMap<Element, boolean>();
 
-  constructor({ rootMargin = '0px', threshold = 0, root = null }: ViewportTrackerOptions = {}) {
+  constructor({ rootMargin = '0', threshold = 0, root = null }: ViewportTrackerOptions = {}) {
     if (typeof IntersectionObserver === 'undefined') {
       this.observer = null;
       return;
