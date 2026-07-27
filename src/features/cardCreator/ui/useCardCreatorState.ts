@@ -262,12 +262,13 @@ export function useCardCreatorState(
     const initialImages = ctx.initialMedia?.filter((f) => f.kind === 'image') ?? [];
     const initialAudios = ctx.initialMedia?.filter((f) => f.kind === 'audio') ?? [];
     const prefill = ctx.prefill;
-    // Initialize queue from context. N ≥ 2 → sidebar open by default.
+    // Initialize queue from context. N ≥ 1 uses the first item as prefill;
+    // the sidebar is only shown when N ≥ 2.
     const ctxQueue = ctx.queue;
-    if (ctxQueue && ctxQueue.length >= 2) {
+    if (ctxQueue && ctxQueue.length >= 1) {
       setQueueItems(ctxQueue);
       setQueueActiveIndex(0);
-      setQueueSidebarOpen(true);
+      setQueueSidebarOpen(ctxQueue.length >= 2);
       // Use first queue item as prefill (overrides cue/prefill).
       const firstItem = ctxQueue[0]!;
       setDraft({
@@ -289,7 +290,7 @@ export function useCardCreatorState(
         mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? settings.mediaUpdateMode,
       });
     } else {
-      // No queue or N=1 → normal flow.
+      // No queue → normal flow.
       setQueueItems([]);
       setQueueActiveIndex(-1);
       setQueueSidebarOpen(false);
