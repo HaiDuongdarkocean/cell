@@ -14,6 +14,14 @@ html, body {
   font-size: var(--font-size-base);
 }
 
+/* Center a lone Icon/SVG inside any <button>.
+   Low specificity (:where) so component/module styles can override. */
+:where(button:has(> span:only-child svg), button:has(> svg:only-child)) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Sidepanel uses dark surface by default (subtitle reader on dark video backdrop) */
 body {
   background-color: var(--color-background);
