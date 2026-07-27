@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Spinner } from '@/shared/ui/Spinner';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { CardCreatorDialogContent } from '@/features/cardCreator/ui/CardCreatorDialogContent';
@@ -87,6 +87,17 @@ function CardCreatorPanelCore({
 
   const initialAction = context?.initialAction;
   const state = useCardCreatorState(settings, openContext, initialAction);
+
+  // Quick Add from the dictionary header: auto-submit the prefilled card as soon
+  // as the form data is loaded. This mirrors the popup dictionary Quick Add
+  // behavior (bypass dialog, add note directly).
+  const quickAddContextRef = useRef<DictionaryPanelPrefill | null>(null);
+  useEffect(() => {
+    if (initialAction !== 'quick-add' || !context || context === quickAddContextRef.current) return;
+    if (state.loadStatus === 'idle' || state.submitting) return;
+    quickAddContextRef.current = context;
+    void state.submit('add');
+  }, [initialAction, context, state.loadStatus, state.submitting, state.submit]);
 
   // The Cancel button is part of the shared CardCreatorDialogContent. In a
   // right-side panel there is no dialog to close; pressing it intentionally
