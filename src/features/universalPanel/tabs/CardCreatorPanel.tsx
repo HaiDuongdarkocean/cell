@@ -88,7 +88,7 @@ function CardCreatorPanelCore({
   return (
     <div className={styles.cardCreatorPanel} data-testid="card-creator-panel">
       <div className={styles.scrollArea}>
-        <CardCreatorDialogContent state={state} variant="desktop" onCancel={() => {}} />
+        <CardCreatorDialogContent state={state} variant="desktop" onCancel={() => {}} className={styles.panelBody} />
       </div>
     </div>
   );
