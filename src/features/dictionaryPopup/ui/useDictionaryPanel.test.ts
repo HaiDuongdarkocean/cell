@@ -162,4 +162,116 @@ describe('useDictionaryPanel', () => {
     act(() => { result.current.setActiveTab(null); });
     expect(result.current.activeTab).toBeNull();
   });
+
+  it('initializes definition selection from defaultSelected and toggles it', async () => {
+    const winner = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: [], source: 'test', defaultSelected: true },
+        { id: 'd2', pos: 'v', text: 'to greet', examples: [], source: 'test', defaultSelected: false },
+      ],
+    });
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [winner] });
+
+    const { result } = renderHook(() => useDictionaryPanel({ langCode: 'en', sourceLang: 'en', targetLang: 'vi' }));
+
+    act(() => { result.current.search('hello'); });
+    await waitFor(() => expect(result.current.currentResult?.term).toBe('hello'));
+
+    expect(result.current.definitionSelection.get('d1')).toBe(true);
+    expect(result.current.definitionSelection.get('d2')).toBe(false);
+    expect(result.current.selectedDefinitions).toHaveLength(1);
+    expect(result.current.selectedDefinitions[0].id).toBe('d1');
+
+    act(() => { result.current.toggleDefinition('d2', true); });
+    expect(result.current.definitionSelection.get('d2')).toBe(true);
+    expect(result.current.selectedDefinitions).toHaveLength(2);
+  });
+
+  it('resets definition selection when switching candidates', async () => {
+    const winner = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: [], source: 'test', defaultSelected: true },
+      ],
+    });
+    const candidate = makeResult('hell', {
+      definitions: [
+        { id: 'c1', pos: 'n', text: 'place', examples: [], source: 'test', defaultSelected: false },
+      ],
+    });
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [winner, candidate] });
+
+    const { result } = renderHook(() => useDictionaryPanel({ langCode: 'en', sourceLang: 'en', targetLang: 'vi' }));
+
+    act(() => { result.current.search('hello'); });
+    await waitFor(() => expect(result.current.currentResult?.term).toBe('hello'));
+
+    act(() => { result.current.setActiveCandidate(1); });
+    expect(result.current.currentResult?.term).toBe('hell');
+    expect(result.current.definitionSelection.has('d1')).toBe(false);
+    expect(result.current.definitionSelection.get('c1')).toBe(false);
+    expect(result.current.selectedDefinitions).toHaveLength(0);
+  });
+
+  it('uses selected definitions in sendToCard prefill and falls back to all when none selected', async () => {
+    const winner = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: [], source: 'test', defaultSelected: true },
+        { id: 'd2', pos: 'v', text: 'to greet', examples: [], source: 'test', defaultSelected: false },
+      ],
+    });
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [winner] });
+
+    const onSendToCard = jest.fn();
+    const { result } = renderHook(() => useDictionaryPanel({
+      langCode: 'en', sourceLang: 'en', targetLang: 'vi', onSendToCard,
+    }));
+
+    act(() => { result.current.search('hello'); });
+    await waitFor(() => expect(result.current.currentResult?.term).toBe('hello'));
+
+    act(() => { result.current.sendToCard(); });
+    let prefill = onSendToCard.mock.calls[0][0] as PopupCardCreatorPrefill;
+    expect(prefill.definitions).toEqual([{ pos: 'n', text: 'greeting' }]);
+
+    act(() => { result.current.toggleDefinition('d1', false); });
+    act(() => { result.current.toggleDefinition('d2', true); });
+    act(() => { result.current.sendToCard(); });
+    prefill = onSendToCard.mock.calls[1][0] as PopupCardCreatorPrefill;
+    expect(prefill.definitions).toEqual([{ pos: 'v', text: 'to greet' }]);
+
+    act(() => { result.current.toggleDefinition('d2', false); });
+    act(() => { result.current.sendToCard(); });
+    prefill = onSendToCard.mock.calls[2][0] as PopupCardCreatorPrefill;
+    expect(prefill.definitions).toEqual([
+      { pos: 'n', text: 'greeting' },
+      { pos: 'v', text: 'to greet' },
+    ]);
+  });
+
+  it('calls onQuickAdd with prefill and is no-op when absent', async () => {
+    const winner = makeResult('hello', {
+      definitions: [
+        { id: 'd1', pos: 'n', text: 'greeting', examples: [], source: 'test', defaultSelected: true },
+      ],
+    });
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [winner] });
+
+    const onQuickAdd = jest.fn();
+    const { result } = renderHook(() => useDictionaryPanel({
+      langCode: 'en', sourceLang: 'en', targetLang: 'vi', onQuickAdd,
+    }));
+
+    act(() => { result.current.search('hello'); });
+    await waitFor(() => expect(result.current.currentResult?.term).toBe('hello'));
+
+    act(() => { result.current.quickAdd(); });
+    const prefill = onQuickAdd.mock.calls[0][0] as PopupCardCreatorPrefill;
+    expect(prefill.term).toBe('hello');
+    expect(prefill.definitions).toEqual([{ pos: 'n', text: 'greeting' }]);
+
+    const { result: noOpResult } = renderHook(() => useDictionaryPanel({
+      langCode: 'en', sourceLang: 'en', targetLang: 'vi',
+    }));
+    expect(() => act(() => { noOpResult.current.quickAdd(); })).not.toThrow();
+  });
 });
