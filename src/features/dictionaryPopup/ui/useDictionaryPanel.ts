@@ -171,9 +171,11 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
   const { langCode, sourceLang, targetLang, initialTerm, onSendToCard, onQuickAdd } = options;
 
   const [searchTerm, setSearchTerm] = useState(initialTerm ?? '');
-  const [currentResult, setCurrentResult] = useState<LookupResult | null>(null);
-  const [candidates, setCandidates] = useState<readonly LookupResult[]>([]);
+  const [results, setResults] = useState<readonly LookupResult[]>([]);
   const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
+
+  const currentResult = results[activeCandidateIndex] ?? null;
+  const candidates = useMemo(() => results.filter((_, i) => i !== activeCandidateIndex), [results, activeCandidateIndex]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<PopupTab | null>(null);
@@ -201,10 +203,9 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     void sendMessage({ type: MESSAGE_TYPES.LOOKUP_CANCEL, payload: { requestId: id } });
   }, []);
 
-  const applyResult = useCallback((results: LookupResult[], searchedTerm: string): void => {
-    if (results.length === 0) {
-      setCurrentResult(null);
-      setCandidates([]);
+  const applyResult = useCallback((lookupResults: LookupResult[], searchedTerm: string): void => {
+    if (lookupResults.length === 0) {
+      setResults([]);
       setActiveCandidateIndex(0);
       setStatus('unknown');
       setDefinitionSelection(new Map());
@@ -220,10 +221,9 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
       setImageSelection(new Map());
       return;
     }
-    const [winner, ...rest] = results;
-    setCurrentResult(winner);
-    setCandidates(rest);
+    setResults(lookupResults);
     setActiveCandidateIndex(0);
+    const winner = lookupResults[0];
     setStatus(winner.status);
     setDefinitionSelection(initDefinitionSelection(winner));
     setTranslation('');
@@ -272,8 +272,8 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
           applyResult(response.data, trimmed);
         } else {
           setError(response?.error ?? 'Lookup failed');
-          setCurrentResult(null);
-          setCandidates([]);
+          setResults([]);
+          setActiveCandidateIndex(0);
           setStatus('unknown');
           setDefinitionSelection(new Map());
           setTranslation('');
@@ -293,8 +293,8 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
         requestIdRef.current = null;
         setIsLoading(false);
         setError(err instanceof Error ? err.message : String(err));
-        setCurrentResult(null);
-        setCandidates([]);
+        setResults([]);
+        setActiveCandidateIndex(0);
         setStatus('unknown');
         setDefinitionSelection(new Map());
         setTranslation('');
@@ -311,11 +311,9 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
   }, [langCode, cancelInFlight, applyResult]);
 
   const setActiveCandidate = useCallback((index: number): void => {
-    const all = [currentResult, ...candidates].filter(Boolean);
-    if (index < 0 || index >= all.length) return;
-    const chosen = all[index]!;
+    if (index < 0 || index >= results.length) return;
+    const chosen = results[index]!;
     setActiveCandidateIndex(index);
-    setCurrentResult(chosen);
     setStatus(chosen.status);
     setDefinitionSelection(initDefinitionSelection(chosen));
     setTranslation('');
@@ -328,16 +326,16 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     setImageLoading(false);
     setImageError(null);
     setImageSelection(new Map());
-  }, [currentResult, candidates]);
+  }, [results]);
 
   const cycleStatus = useCallback((): void => {
     const result = currentResult;
     if (!result) return;
     const newStatus = nextStatus(status);
     setStatus(newStatus);
-    setCurrentResult({ ...result, status: newStatus });
+    setResults((prev) => prev.map((r, i) => (i === activeCandidateIndex ? { ...r, status: newStatus } : r)));
     void sendMessage({ type: MESSAGE_TYPES.WORD_STATUS_SET, payload: { term: result.term, langCode: result.langCode, status: newStatus } });
-  }, [currentResult, status]);
+  }, [currentResult, status, activeCandidateIndex]);
 
   const translate = useCallback((): void => {
     const text = currentResult?.term.trim() || searchTerm.trim();
