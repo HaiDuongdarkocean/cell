@@ -28,6 +28,8 @@ interface CardCreatorDialogContentProps {
   variant: 'desktop' | 'mobile';
   onCancel: () => void;
   className?: string;
+  /** Render in the integrated universal panel instead of a standalone dialog. */
+  layout?: 'dialog' | 'panel';
 }
 
 export function CardCreatorDialogContent({
@@ -35,6 +37,7 @@ export function CardCreatorDialogContent({
   variant,
   onCancel,
   className,
+  layout = 'dialog',
 }: CardCreatorDialogContentProps): ReactElement {
   const {
     draft,
@@ -48,6 +51,7 @@ export function CardCreatorDialogContent({
     capturingMedia,
     queueItems,
     queueSidebarOpen,
+    toggleQueueSidebar,
     updateField,
     updateMapping,
     changeNoteType,
@@ -63,9 +67,10 @@ export function CardCreatorDialogContent({
 
   const hasQueue = queueItems.length >= 2;
 
+  const isPanel = layout === 'panel';
   const containerClass = [
-    styles['cc-dialog__body'],
-    variant === 'mobile' && styles['cc-dialog--mobile'],
+    isPanel ? styles['cc-dialog__body--panel'] : styles['cc-dialog__body'],
+    !isPanel && variant === 'mobile' && styles['cc-dialog--mobile'],
     className,
   ].filter(Boolean).join(' ');
 
@@ -77,8 +82,19 @@ export function CardCreatorDialogContent({
   // "loading" state on the trigger.
   const showNoRecentAlert = loadStatus === 'ready' && recentNoteId === null;
 
-  return (
-    <div className={hasQueue ? styles['cc-dialog__with-queue'] : undefined} data-testid="card-creator-content">
+  const queueToggle = hasQueue ? (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={toggleQueueSidebar}
+      aria-label={queueSidebarOpen ? 'Hide queue' : 'Show queue'}
+      data-testid="cc-queue-toggle"
+    >
+      <Icon name="panelRight" />
+    </Button>
+  ) : undefined;
+
+  const body = (
     <div className={containerClass}>
       {/* Alert: no recent card */}
       {showNoRecentAlert && (
@@ -349,7 +365,27 @@ export function CardCreatorDialogContent({
         </div>
       </div>
     </div>
-    {hasQueue && queueSidebarOpen && <QueueSidebar state={state} />}
+  );
+
+  if (isPanel) {
+    return (
+      <div className={styles['cc-dialog--panel']} data-testid="card-creator-content">
+        <div className={styles['cc-dialog__panel-header']}>
+          <span className={styles['cc-dialog__panel-title']}>Card Creator</span>
+          {queueToggle}
+        </div>
+        <div className={styles['cc-dialog__panel-content']}>
+          {body}
+          {hasQueue && queueSidebarOpen && <QueueSidebar state={state} />}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={hasQueue ? styles['cc-dialog__with-queue'] : undefined} data-testid="card-creator-content">
+      {body}
+      {hasQueue && queueSidebarOpen && <QueueSidebar state={state} />}
     </div>
   );
 }
