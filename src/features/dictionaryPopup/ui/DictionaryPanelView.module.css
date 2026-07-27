@@ -30,10 +30,6 @@
   min-width: 0;
 }
 
-.searchButton {
-  flex: 0 0 auto;
-}
-
 .loading, .error {
   display: flex;
   align-items: center;
@@ -706,7 +702,8 @@
 
 .cellCandidates {
   flex: 0 0 auto;
-  background: var(--color-surface);
+  background: transparent;
+  padding-bottom: var(--touch-target);
 }
 
 .cellCandidatesChips {
@@ -735,6 +732,16 @@
   text-overflow: ellipsis;
   border-radius: var(--radius-full);
   white-space: nowrap;
+  /* Keep chips transparent in every state; the active chip is identified by color + underline only. */
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+.cellChip:global(.btn--primary) {
+  color: var(--color-primary) !important;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: var(--space-0-5);
 }
 
 @container (min-width: 380px) and (max-width: 479px) {
