@@ -3,6 +3,7 @@ import { useDictionaryPanel } from './useDictionaryPanel';
 import { SearchField } from '@/shared/ui/SearchField';
 import { Button } from '@/shared/ui/Button';
 import { Spinner } from '@/shared/ui/Spinner';
+import { Skeleton } from '@/shared/ui/Skeleton';
 import { Icon } from '@/shared/icons/Icon';
 import { rankToBand } from '@/shared/lib/frequencyBand';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
@@ -10,7 +11,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import { nextStatus } from '../services/wordStatusStore';
 import type { PopupCardCreatorPrefill } from './popupDictionaryController';
-import type { LookupResult, DefinitionEntry, PopupTab, ExternalDictLink } from '../types';
+import type { LookupResult, DefinitionEntry, PopupTab, ExternalDictLink, AudioItem, ImageItem } from '../types';
 import styles from './DictionaryPanelView.module.css';
 import componentsCss from '@/shared/styles/components.css?raw';
 
@@ -144,6 +145,16 @@ export function DictionaryPanelView({
   const handleTranslate = useCallback((): void => {
     panel.translate();
   }, [panel]);
+
+  // Lazy-load media panels when a tab is opened and data is still empty.
+  useEffect(() => {
+    if (panel.activeTab === 'audio' && panel.audioItems.length === 0 && !panel.audioLoading) {
+      panel.fetchAudio();
+    }
+    if (panel.activeTab === 'image' && panel.imageItems.length === 0 && !panel.imageLoading) {
+      panel.fetchImages();
+    }
+  }, [panel.activeTab, panel.audioItems.length, panel.audioLoading, panel.fetchAudio, panel.imageItems.length, panel.imageLoading, panel.fetchImages]);
 
   // Inject shared .btn / .icon-btn classes so popup-style markup can reuse
   // the same global class names without duplication. Idempotent across mounts.
@@ -325,14 +336,33 @@ export function DictionaryPanelView({
             })}
           </div>
 
-          {panel.activeTab === 'audio' && <AudioPanel loading={audioLoading} onPlay={handlePlayTerm} />}
-          {panel.activeTab === 'image' && <ImagePanel term={panel.currentResult.term} />}
+          {panel.activeTab === 'audio' && (
+            <AudioPanel
+              items={panel.audioItems}
+              loading={panel.audioLoading}
+              error={panel.audioError}
+              selection={panel.audioSelection}
+              onToggle={panel.toggleAudio}
+              onTts={handlePlayTerm}
+            />
+          )}
+          {panel.activeTab === 'image' && (
+            <ImagePanel
+              items={panel.imageItems}
+              loading={panel.imageLoading}
+              error={panel.imageError}
+              selection={panel.imageSelection}
+              onToggle={panel.toggleImage}
+              term={panel.currentResult.term}
+            />
+          )}
           {panel.activeTab === 'translate' && (
             <TranslatePanel
               term={panel.currentResult.term}
               sentence={panel.searchTerm}
               targetLang={targetLang}
               translation={panel.translation}
+              error={panel.translationError}
               loading={panel.isTranslating}
               onTranslate={handleTranslate}
             />
@@ -430,47 +460,223 @@ function DefinitionItem({
   );
 }
 
+function AudioSkeleton(): React.JSX.Element {
+  return (
+    <div className={styles.cellAudioSkeleton} aria-hidden="true">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className={styles.cellAudioSkeletonRow}>
+          <Skeleton width="var(--touch-target-mobile)" height="var(--touch-target-mobile)" shape="circle" className={styles.cellAudioSkeletonPlay} />
+          <div className={styles.cellAudioSkeletonLabel}>
+            <Skeleton width="60%" height="calc(var(--space-5) + var(--border-width-hairline))" />
+            <Skeleton width="40%" height="var(--space-4-5)" />
+          </div>
+          <Skeleton width="var(--space-4)" height="var(--space-4)" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function AudioPanel({
+  items,
   loading,
-  onPlay,
+  error,
+  selection,
+  onToggle,
+  onTts,
 }: {
+  readonly items: readonly AudioItem[];
   readonly loading: boolean;
-  readonly onPlay: () => void;
+  readonly error: string | null;
+  readonly selection: Map<string, boolean>;
+  readonly onToggle: (id: string, selected: boolean) => void;
+  readonly onTts: () => void;
 }): React.JSX.Element {
+  if (loading) {
+    return (
+      <div className={styles.cellAudio} data-testid="dictionary-audio-panel">
+        <AudioSkeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.cellAudio} data-testid="dictionary-audio-panel">
+        <div className={styles.cellAudioError}>{error}</div>
+        <div className={styles.cellAudioEmpty}>
+          <span className={styles.cellAudioEmptyIcon}><Icon name="audioWave" size={24} /></span>
+          <span className={styles.cellAudioEmptyTitle}>No audio available</span>
+          <Button variant="outline" size="sm" onClick={onTts} leadingIcon={<Icon name="play" size={16} />}>
+            Use system TTS
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className={styles.cellAudio} data-testid="dictionary-audio-panel">
+        <div className={styles.cellAudioEmpty}>
+          <span className={styles.cellAudioEmptyIcon}><Icon name="audioWave" size={24} /></span>
+          <span className={styles.cellAudioEmptyTitle}>No audio available</span>
+          <Button variant="outline" size="sm" onClick={onTts} leadingIcon={<Icon name="play" size={16} />}>
+            Use system TTS
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.cellAudio} data-testid="dictionary-audio-panel">
-      <div className={styles.cellAudioEmpty}>
-        <span className={styles.cellAudioEmptyIcon}><Icon name="audioWave" size={24} /></span>
-        <span className={styles.cellAudioEmptyTitle}>No audio available</span>
-        <Button
-          variant="outline"
-          size="sm"
-          loading={loading}
-          onClick={onPlay}
-          leadingIcon={<Icon name="play" size={16} />}
-        >
-          Use system TTS
-        </Button>
+      {items.map((item) => {
+        const selected = selection.get(item.id) ?? item.defaultSelected;
+        const parts = item.label.split(' · ');
+        return (
+          <div key={item.id} className={styles.cellAudioItem}>
+            <button
+              type="button"
+              className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
+              aria-label={`Play ${item.label}`}
+              onClick={(): void => {
+                if (!item.url) return;
+                const audio = new Audio(item.url);
+                void audio.play().catch(() => { /* best-effort */ });
+              }}
+            >
+              <Icon name="play" size={16} />
+            </button>
+            <button
+              type="button"
+              className={styles.cellAudioLabel}
+              aria-pressed={selected}
+              onClick={(): void => onToggle(item.id, !selected)}
+            >
+              <span className={styles.cellAudioLabelName}>{parts[0] ?? item.label}</span>
+              {parts.length > 1 && (
+                <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
+              )}
+            </button>
+            <span className={`${styles.cellAudioCheck} ${selected ? styles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
+              <Icon name="check" size={16} />
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ImageSkeleton(): React.JSX.Element {
+  return (
+    <div className={styles.cellImageSkeleton} aria-hidden="true">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <Skeleton key={i} width="84px" height="84px" shape="rounded" className={styles.cellImageSkeletonCard} />
+      ))}
+    </div>
+  );
+}
+
+function ImagePanel({
+  items,
+  loading,
+  error,
+  selection,
+  onToggle,
+  term,
+}: {
+  readonly items: readonly ImageItem[];
+  readonly loading: boolean;
+  readonly error: string | null;
+  readonly selection: Map<string, boolean>;
+  readonly onToggle: (id: string, selected: boolean) => void;
+  readonly term: string;
+}): React.JSX.Element {
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setFailedIds(new Set());
+  }, [items]);
+
+  const visibleItems = items.filter((item) => !failedIds.has(item.id));
+
+  if (loading) {
+    return (
+      <div className={styles.cellImage} data-testid="dictionary-image-panel">
+        <ImageSkeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.cellImage} data-testid="dictionary-image-panel">
+        <div className={styles.cellImageError}>{error}</div>
+      </div>
+    );
+  }
+
+  if (visibleItems.length === 0) {
+    return (
+      <div className={styles.cellImage} data-testid="dictionary-image-panel">
+        <div className={styles.cellImageEmpty}>
+          <span className={styles.cellImageEmptyIcon}><Icon name="image" size={24} /></span>
+          <span className={styles.cellImageEmptyTitle}>No images</span>
+          <a
+            href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(term)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.cellImageEmptyAction}
+          >
+            Search Google Images →
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.cellImage} data-testid="dictionary-image-panel">
+      <div className={styles.cellImageStrip}>
+        {visibleItems.map((item) => {
+          const selected = selection.get(item.id) ?? item.defaultSelected;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`${styles.cellImageCard} ${selected ? styles['cellImageCard--selected'] : ''}`}
+              role="checkbox"
+              aria-checked={selected}
+              onClick={(): void => onToggle(item.id, !selected)}
+            >
+              <img
+                src={item.src}
+                alt={item.alt}
+                className={styles.cellImageThumb}
+                onError={(): void => setFailedIds((prev) => new Set(prev).add(item.id))}
+              />
+              <span className={styles.cellImageCheck} aria-hidden="true">
+                <Icon name="check" size={16} />
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function ImagePanel({ term }: { readonly term: string }): React.JSX.Element {
-  const query = encodeURIComponent(term);
+function TranslateSkeleton(): React.JSX.Element {
   return (
-    <div className={styles.cellImage} data-testid="dictionary-image-panel">
-      <div className={styles.cellImageEmpty}>
-        <span className={styles.cellImageEmptyIcon}><Icon name="image" size={24} /></span>
-        <span className={styles.cellImageEmptyTitle}>No images</span>
-        <a
-          href={`https://www.google.com/search?tbm=isch&q=${query}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.cellImageEmptyAction}
-        >
-          Search Google Images →
-        </a>
+    <div className={styles.cellTranslateSkeleton} aria-hidden="true">
+      <div className={styles.cellTranslateSkeletonBlock}>
+        <div className={styles.cellTranslateSkeletonText}>
+          <Skeleton width="100%" height="calc(var(--space-5) + var(--border-width-hairline))" className={styles.cellTranslateSkeletonLine} />
+          <Skeleton width="80%" height="var(--space-4-5)" className={styles.cellTranslateSkeletonLine} />
+        </div>
+        <Skeleton width="var(--space-4)" height="var(--space-4)" />
       </div>
     </div>
   );
@@ -481,6 +687,7 @@ function TranslatePanel({
   sentence,
   targetLang,
   translation,
+  error,
   loading,
   onTranslate,
 }: {
@@ -488,12 +695,36 @@ function TranslatePanel({
   readonly sentence: string;
   readonly targetLang: string;
   readonly translation: string;
+  readonly error: string | null;
   readonly loading: boolean;
   readonly onTranslate: () => void;
 }): React.JSX.Element {
-  return (
-    <div className={styles.cellTranslate} data-testid="dictionary-translate-panel">
-      {translation ? (
+  if (loading && !translation) {
+    return (
+      <div className={styles.cellTranslate} data-testid="dictionary-translate-panel">
+        <TranslateSkeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.cellTranslate} data-testid="dictionary-translate-panel">
+        <div className={styles.cellTranslateError}>{error}</div>
+        <div className={styles.cellTranslateEmpty}>
+          <span className={styles.cellTranslateEmptyIcon}><Icon name="languages" size={24} /></span>
+          <span className={styles.cellTranslateEmptyTitle}>No translation</span>
+          <Button variant="outline" size="sm" onClick={onTranslate}>
+            Translate to {targetLang}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (translation) {
+    return (
+      <div className={styles.cellTranslate} data-testid="dictionary-translate-panel">
         <div className={styles.cellTranslateBlock}>
           <div className={styles.cellTranslateText}>
             <div className={styles.cellTranslateTarget}>{translation}</div>
@@ -503,15 +734,19 @@ function TranslatePanel({
             <Icon name="check" size={16} />
           </span>
         </div>
-      ) : (
-        <div className={styles.cellTranslateEmpty}>
-          <span className={styles.cellTranslateEmptyIcon}><Icon name="languages" size={24} /></span>
-          <span className={styles.cellTranslateEmptyTitle}>No translation</span>
-          <Button variant="outline" size="sm" loading={loading} onClick={onTranslate}>
-            Translate to {targetLang}
-          </Button>
-        </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.cellTranslate} data-testid="dictionary-translate-panel">
+      <div className={styles.cellTranslateEmpty}>
+        <span className={styles.cellTranslateEmptyIcon}><Icon name="languages" size={24} /></span>
+        <span className={styles.cellTranslateEmptyTitle}>No translation</span>
+        <Button variant="outline" size="sm" loading={loading} onClick={onTranslate}>
+          Translate to {targetLang}
+        </Button>
+      </div>
     </div>
   );
 }

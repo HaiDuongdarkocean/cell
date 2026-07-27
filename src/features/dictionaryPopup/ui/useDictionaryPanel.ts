@@ -14,7 +14,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import type { LookupResult, LookupRequest, PopupTab, WordStatus, DefinitionEntry } from '../types';
+import type {
+  LookupResult,
+  LookupRequest,
+  PopupTab,
+  WordStatus,
+  DefinitionEntry,
+  AudioItem,
+  ImageItem,
+  FetchCommunityAudioResponse,
+  FetchImagesResponse,
+} from '../types';
 import type { MessageResponse } from '@/entities/message';
 import { nextStatus } from '../services/wordStatusStore';
 import { translateSentence } from '@/features/cardCreator/media/translation';
@@ -69,6 +79,32 @@ export interface UseDictionaryPanelReturn {
   readonly translate: () => void;
   /** True while translation is in progress. */
   readonly isTranslating: boolean;
+  /** Error from the last translation attempt, or null. */
+  readonly translationError: string | null;
+  /** Audio items for the active candidate. */
+  readonly audioItems: readonly AudioItem[];
+  /** True while fetching audio items. */
+  readonly audioLoading: boolean;
+  /** Error from the last audio fetch, or null. */
+  readonly audioError: string | null;
+  /** Map of audio item id → selected state. */
+  readonly audioSelection: Map<string, boolean>;
+  /** Toggle an audio item's selected state. */
+  readonly toggleAudio: (id: string, selected: boolean) => void;
+  /** Fetch audio items for the active candidate. */
+  readonly fetchAudio: () => void;
+  /** Image items for the active candidate. */
+  readonly imageItems: readonly ImageItem[];
+  /** True while fetching image items. */
+  readonly imageLoading: boolean;
+  /** Error from the last image fetch, or null. */
+  readonly imageError: string | null;
+  /** Map of image id → selected state. */
+  readonly imageSelection: Map<string, boolean>;
+  /** Toggle an image's selected state. */
+  readonly toggleImage: (id: string, selected: boolean) => void;
+  /** Fetch image items for the active candidate. */
+  readonly fetchImages: () => void;
   /** Build a prefill from the current result and call onSendToCard. */
   readonly sendToCard: () => void;
   /** Build a prefill from the current result and call onQuickAdd. */
@@ -129,6 +165,15 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
   const [activeTab, setActiveTab] = useState<PopupTab | null>(null);
   const [translation, setTranslation] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
+  const [translationError, setTranslationError] = useState<string | null>(null);
+  const [audioItems, setAudioItems] = useState<readonly AudioItem[]>([]);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [audioSelection, setAudioSelection] = useState<Map<string, boolean>>(new Map());
+  const [imageItems, setImageItems] = useState<readonly ImageItem[]>([]);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageSelection, setImageSelection] = useState<Map<string, boolean>>(new Map());
   const [status, setStatus] = useState<WordStatus>('unknown');
   const [definitionSelection, setDefinitionSelection] = useState<Map<string, boolean>>(new Map());
 
@@ -149,6 +194,16 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
       setActiveCandidateIndex(0);
       setStatus('unknown');
       setDefinitionSelection(new Map());
+      setTranslation('');
+      setTranslationError(null);
+      setAudioItems([]);
+      setAudioLoading(false);
+      setAudioError(null);
+      setAudioSelection(new Map());
+      setImageItems([]);
+      setImageLoading(false);
+      setImageError(null);
+      setImageSelection(new Map());
       return;
     }
     const [winner, ...rest] = results;
@@ -158,6 +213,15 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     setStatus(winner.status);
     setDefinitionSelection(initDefinitionSelection(winner));
     setTranslation('');
+    setTranslationError(null);
+    setAudioItems([]);
+    setAudioLoading(false);
+    setAudioError(null);
+    setAudioSelection(new Map());
+    setImageItems([]);
+    setImageLoading(false);
+    setImageError(null);
+    setImageSelection(new Map());
     latestSearchRef.current = searchedTerm;
   }, []);
 
@@ -198,6 +262,16 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
           setCandidates([]);
           setStatus('unknown');
           setDefinitionSelection(new Map());
+          setTranslation('');
+          setTranslationError(null);
+          setAudioItems([]);
+          setAudioLoading(false);
+          setAudioError(null);
+          setAudioSelection(new Map());
+          setImageItems([]);
+          setImageLoading(false);
+          setImageError(null);
+          setImageSelection(new Map());
         }
       })
       .catch((err: unknown) => {
@@ -209,6 +283,16 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
         setCandidates([]);
         setStatus('unknown');
         setDefinitionSelection(new Map());
+        setTranslation('');
+        setTranslationError(null);
+        setAudioItems([]);
+        setAudioLoading(false);
+        setAudioError(null);
+        setAudioSelection(new Map());
+        setImageItems([]);
+        setImageLoading(false);
+        setImageError(null);
+        setImageSelection(new Map());
       });
   }, [langCode, cancelInFlight, applyResult]);
 
@@ -220,6 +304,16 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     setCurrentResult(chosen);
     setStatus(chosen.status);
     setDefinitionSelection(initDefinitionSelection(chosen));
+    setTranslation('');
+    setTranslationError(null);
+    setAudioItems([]);
+    setAudioLoading(false);
+    setAudioError(null);
+    setAudioSelection(new Map());
+    setImageItems([]);
+    setImageLoading(false);
+    setImageError(null);
+    setImageSelection(new Map());
   }, [currentResult, candidates]);
 
   const cycleStatus = useCallback((): void => {
@@ -232,12 +326,71 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
   }, [currentResult, status]);
 
   const translate = useCallback((): void => {
-    if (!searchTerm.trim()) return;
+    const text = currentResult?.term.trim() || searchTerm.trim();
+    if (!text) return;
     setIsTranslating(true);
-    translateSentence(searchTerm, sourceLang, targetLang)
-      .then((text) => { setTranslation(text); })
+    setTranslationError(null);
+    translateSentence(text, sourceLang, targetLang)
+      .then((res) => {
+        setTranslation(res);
+        if (!res) setTranslationError('Translation failed. Please try again.');
+      })
+      .catch((err: unknown) => {
+        setTranslation('');
+        setTranslationError(err instanceof Error ? err.message : String(err));
+      })
       .finally(() => { setIsTranslating(false); });
-  }, [searchTerm, sourceLang, targetLang]);
+  }, [currentResult, searchTerm, sourceLang, targetLang]);
+
+  const fetchAudio = useCallback((): void => {
+    const result = currentResult;
+    if (!result) return;
+    setAudioLoading(true);
+    setAudioError(null);
+    void sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
+      type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
+      payload: { tabId: 0, term: result.term, langCode: result.langCode, kind: 'word' },
+    })
+      .then((response) => {
+        if (response?.success && response.data?.items) {
+          setAudioItems(response.data.items);
+          setAudioSelection(new Map(response.data.items.map((item) => [item.id, item.defaultSelected])));
+        } else {
+          setAudioError(response?.error ?? 'Audio fetch failed');
+        }
+      })
+      .catch((err: unknown) => { setAudioError(err instanceof Error ? err.message : String(err)); })
+      .finally(() => { setAudioLoading(false); });
+  }, [currentResult]);
+
+  const fetchImages = useCallback((): void => {
+    const result = currentResult;
+    if (!result) return;
+    setImageLoading(true);
+    setImageError(null);
+    void sendMessage<MessageResponse<FetchImagesResponse>>({
+      type: MESSAGE_TYPES.FETCH_IMAGES,
+      payload: { tabId: 0, term: result.term, langCode: result.langCode },
+    })
+      .then((response) => {
+        if (response?.success && response.data?.items) {
+          setImageItems(response.data.items);
+          setImageSelection(new Map(response.data.items.map((item) => [item.id, item.defaultSelected])));
+        } else {
+          setImageError(response?.error ?? 'Image fetch failed');
+        }
+      })
+      .catch((err: unknown) => { setImageError(err instanceof Error ? err.message : String(err)); })
+      .finally(() => { setImageLoading(false); });
+  }, [currentResult]);
+
+  const toggleAudio = useCallback((id: string, selected: boolean): void => {
+    setAudioSelection((prev) => new Map(prev).set(id, selected));
+  }, []);
+
+  const toggleImage = useCallback((id: string, selected: boolean): void => {
+    setImageSelection((prev) => new Map(prev).set(id, selected));
+  }, []);
 
   const selectedDefinitions = useMemo(
     () => (currentResult ? getSelectedDefinitions(currentResult, definitionSelection) : []),
@@ -291,6 +444,19 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     translation,
     translate,
     isTranslating,
+    translationError,
+    audioItems,
+    audioLoading,
+    audioError,
+    audioSelection,
+    toggleAudio,
+    fetchAudio,
+    imageItems,
+    imageLoading,
+    imageError,
+    imageSelection,
+    toggleImage,
+    fetchImages,
     sendToCard,
     quickAdd,
     definitionSelection,
