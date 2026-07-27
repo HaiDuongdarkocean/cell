@@ -118,10 +118,10 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   let isUnmounted = false;
   let currentTab: UniversalPanelTab = 'dictionary';
 
-  // Prefill pushed from an external popup dictionary via sendToCard().
-  // The prefill persists while the panel is open so the right pane survives
-  // tab switches; the one-shot search term is cleared after the first open.
-  let pendingPrefill: DictionaryPanelPrefill | null = null;
+  // Card creator context pushed from popup or subtitle cluster via sendToCard().
+  // It persists while the panel is open so the right pane survives tab switches;
+  // the one-shot search term is cleared after the first open.
+  let pendingCardCreatorContext: DictionaryPanelPrefill | null = null;
   let pendingSearchTerm: string | null = null;
 
   function clearPendingOneShots(): void {
@@ -137,7 +137,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       clearPendingOneShots();
     },
     onClose: () => {
-      pendingPrefill = null;
+      pendingCardCreatorContext = null;
       clearPendingOneShots();
       options.onClose?.();
       render();
@@ -146,9 +146,9 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       currentTab = tab;
       render();
     },
-    onSendToCard: (prefill) => {
-      pendingPrefill = prefill;
-      pendingSearchTerm = prefill.term;
+    onSendToCard: (context) => {
+      pendingCardCreatorContext = context;
+      pendingSearchTerm = context.term ?? null;
     },
   });
 
@@ -191,7 +191,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       targetLang: dictionaryTargetLang,
       initialTerm: pendingSearchTerm ?? options.dictionary?.initialTerm,
       isOpen: open,
-      prefill: pendingPrefill,
+      prefill: pendingCardCreatorContext,
     }) as ReactElement;
 
   const settingsPanel = createElement(

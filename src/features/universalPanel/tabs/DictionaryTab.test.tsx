@@ -16,10 +16,10 @@ jest.mock('@/features/cardCreator/media/translation', () => ({
 }));
 
 jest.mock('./CardCreatorPanel', () => ({
-  CardCreatorPanel: (props: { sourceLang: string; targetLang: string; prefill?: PopupCardCreatorPrefill | null }) => (
+  CardCreatorPanel: (props: { sourceLang: string; targetLang: string; context?: { term?: string } | null }) => (
     <div data-testid="card-creator-panel" data-source-lang={props.sourceLang} data-target-lang={props.targetLang}>
-      {props.prefill ? (
-        <div data-testid="card-creator-prefill">{props.prefill.term}</div>
+      {props.context?.term ? (
+        <div data-testid="card-creator-prefill">{props.context.term}</div>
       ) : (
         <div>No card selected</div>
       )}
@@ -71,8 +71,8 @@ describe('DictionaryTab', () => {
     expect(panel).toHaveAttribute('data-target-lang', 'vi');
   });
 
-  it('renders the external prefill in the right pane', async () => {
-    const prefill: PopupCardCreatorPrefill = {
+  it('renders the external card-creator context in the right pane', async () => {
+    const context: PopupCardCreatorPrefill = {
       term: 'external',
       langCode: 'en',
       reading: '',
@@ -84,7 +84,7 @@ describe('DictionaryTab', () => {
       imageUrls: [],
     };
 
-    render(<DictionaryTab langCode="en" sourceLang="en" targetLang="vi" prefill={prefill} />);
+    render(<DictionaryTab langCode="en" sourceLang="en" targetLang="vi" prefill={context} />);
 
     await waitFor(() => expect(screen.getByTestId('card-creator-prefill')).toHaveTextContent('external'));
   });
@@ -101,7 +101,7 @@ describe('DictionaryTab', () => {
     }));
   });
 
-  it('updates the right pane with prefill when Send to Card is pressed', async () => {
+  it('updates the right pane with context when Send to Card is pressed', async () => {
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult('hello')] });
 
     render(<DictionaryTab langCode="en" sourceLang="en" targetLang="vi" initialTerm="hello" />);
