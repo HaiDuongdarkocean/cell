@@ -104,12 +104,18 @@ export interface UseDictionaryPanelReturn {
   readonly imageSelection: Map<string, boolean>;
   /** Toggle an image's selected state. */
   readonly toggleImage: (id: string, selected: boolean) => void;
+  /** Remove a broken image from the active candidate's image list. */
+  readonly removeImageItem: (id: string) => void;
   /** Fetch image items for the active candidate. */
   readonly fetchImages: () => void;
   /** Build a prefill from the current result and call onSendToCard. */
   readonly sendToCard: () => void;
   /** Build a prefill from the current result and call onQuickAdd. */
   readonly quickAdd: () => void;
+  /** Build a prefill from a candidate and call onSendToCard. */
+  readonly sendCandidateToCard: (index: number) => void;
+  /** Build a prefill from a candidate and call onQuickAdd. */
+  readonly quickAddCandidate: (index: number) => void;
   /** Map of definition id → selected state for the active candidate. */
   readonly definitionSelection: Map<string, boolean>;
   /** Toggle a definition's selected state. */
@@ -433,6 +439,15 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     setImageSelection((prev) => new Map(prev).set(id, selected));
   }, []);
 
+  const removeImageItem = useCallback((id: string): void => {
+    setImageItems((prev) => prev.filter((item) => item.id !== id));
+    setImageSelection((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
   const selectedDefinitions = useMemo(
     () => (currentResult ? getSelectedDefinitions(currentResult, definitionSelection) : []),
     [currentResult, definitionSelection],
@@ -453,6 +468,33 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     const contextSentence = latestSearchRef.current;
     onQuickAdd(buildPrefill(currentResult, selectedDefinitions, contextSentence, translation, audioItems, audioSelection, imageItems, imageSelection));
   }, [currentResult, selectedDefinitions, onQuickAdd, translation, audioItems, audioSelection, imageItems, imageSelection]);
+
+  const buildCandidatePrefill = useCallback((index: number): PopupCardCreatorPrefill | null => {
+    const allCandidates = [currentResult, ...candidates].filter((candidate): candidate is LookupResult => candidate !== null);
+    const candidate = allCandidates[index];
+    if (!candidate) return null;
+    const isActive = index === activeCandidateIndex;
+    return buildPrefill(
+      candidate,
+      isActive ? selectedDefinitions : candidate.definitions.filter((definition) => definition.defaultSelected),
+      latestSearchRef.current,
+      isActive ? translation : '',
+      isActive ? audioItems : [],
+      isActive ? audioSelection : new Map(),
+      isActive ? imageItems : [],
+      isActive ? imageSelection : new Map(),
+    );
+  }, [activeCandidateIndex, audioItems, audioSelection, candidates, currentResult, imageItems, imageSelection, selectedDefinitions, translation]);
+
+  const sendCandidateToCard = useCallback((index: number): void => {
+    const prefill = buildCandidatePrefill(index);
+    if (prefill && onSendToCard) onSendToCard(prefill);
+  }, [buildCandidatePrefill, onSendToCard]);
+
+  const quickAddCandidate = useCallback((index: number): void => {
+    const prefill = buildCandidatePrefill(index);
+    if (prefill && onQuickAdd) onQuickAdd(prefill);
+  }, [buildCandidatePrefill, onQuickAdd]);
 
   // Initial search when initialTerm is provided. Re-run if the prop changes
   // while the component is mounted (e.g. the panel is opened with a new term).
@@ -497,9 +539,12 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     imageError,
     imageSelection,
     toggleImage,
+    removeImageItem,
     fetchImages,
     sendToCard,
     quickAdd,
+    sendCandidateToCard,
+    quickAddCandidate,
     definitionSelection,
     toggleDefinition,
     selectedDefinitions,

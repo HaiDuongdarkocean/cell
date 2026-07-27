@@ -251,12 +251,6 @@ export function DictionaryPanelView({
 
       {searchHistory.length > 0 && (
         <section className={styles.searchHistory} aria-label="Recent searches" data-testid="dictionary-search-history">
-          <div className={styles.searchHistoryHeader}>
-            <span className={styles.searchHistoryTitle}>Recent searches</span>
-            <button type="button" className={styles.searchHistoryClear} onClick={handleClearHistory}>
-              Clear
-            </button>
-          </div>
           <ul className={styles.searchHistoryList}>
             {searchHistory.map((term) => (
               <li key={term} className={styles.searchHistoryItem}>
@@ -277,11 +271,21 @@ export function DictionaryPanelView({
                   title={`Remove ${term}`}
                   onClick={() => handleRemoveHistory(term)}
                 >
-                  <Icon name="x" size={14} />
+                  <Icon name="x" size={10} />
                 </button>
               </li>
             ))}
           </ul>
+          <button
+            type="button"
+            className={`icon-btn icon-btn--xs ${styles.searchHistoryClear}`}
+            aria-label="Clear recent searches"
+            title="Clear recent searches"
+            onClick={handleClearHistory}
+            data-testid="dictionary-search-history-clear"
+          >
+            <Icon name="trash" size={16} />
+          </button>
         </section>
       )}
 
@@ -432,6 +436,7 @@ export function DictionaryPanelView({
               error={panel.imageError}
               selection={panel.imageSelection}
               onToggle={panel.toggleImage}
+              onImageError={panel.removeImageItem}
               term={panel.currentResult.term}
             />
           )}
@@ -697,6 +702,7 @@ function ImagePanel({
   error,
   selection,
   onToggle,
+  onImageError,
   term,
 }: {
   readonly items: readonly ImageItem[];
@@ -704,16 +710,9 @@ function ImagePanel({
   readonly error: string | null;
   readonly selection: Map<string, boolean>;
   readonly onToggle: (id: string, selected: boolean) => void;
+  readonly onImageError: (id: string) => void;
   readonly term: string;
 }): React.JSX.Element {
-  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    setFailedIds(new Set());
-  }, [items]);
-
-  const visibleItems = items.filter((item) => !failedIds.has(item.id));
-
   if (loading) {
     return (
       <div className={styles.cellImage} data-testid="dictionary-image-panel">
@@ -730,7 +729,7 @@ function ImagePanel({
     );
   }
 
-  if (visibleItems.length === 0) {
+  if (items.length === 0) {
     return (
       <div className={styles.cellImage} data-testid="dictionary-image-panel">
         <div className={styles.cellImageEmpty}>
@@ -752,7 +751,7 @@ function ImagePanel({
   return (
     <div className={styles.cellImage} data-testid="dictionary-image-panel">
       <div className={styles.cellImageStrip}>
-        {visibleItems.map((item) => {
+        {items.map((item) => {
           const selected = selection.get(item.id) ?? item.defaultSelected;
           return (
             <button
@@ -767,7 +766,7 @@ function ImagePanel({
                 src={item.src}
                 alt={item.alt}
                 className={styles.cellImageThumb}
-                onError={(): void => setFailedIds((prev) => new Set(prev).add(item.id))}
+                onError={(): void => onImageError(item.id)}
               />
               <span className={styles.cellImageCheck} aria-hidden="true">
                 <Icon name="check" size={16} />
