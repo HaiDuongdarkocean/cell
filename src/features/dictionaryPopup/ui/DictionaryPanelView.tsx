@@ -492,6 +492,17 @@ function AudioPanel({
   readonly onToggle: (id: string, selected: boolean) => void;
   readonly onTts: () => void;
 }): React.JSX.Element {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className={styles.cellAudio} data-testid="dictionary-audio-panel">
@@ -539,10 +550,18 @@ function AudioPanel({
             <button
               type="button"
               className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
-              aria-label={`Play ${item.label}`}
+              aria-label={item.state === 'error' || !item.url ? `Audio unavailable for ${item.label}` : `Play ${item.label}`}
+              disabled={item.state === 'error' || !item.url}
               onClick={(): void => {
                 if (!item.url) return;
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                  audioRef.current = null;
+                }
                 const audio = new Audio(item.url);
+                audioRef.current = audio;
+                audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
+                audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
                 void audio.play().catch(() => { /* best-effort */ });
               }}
             >
@@ -731,7 +750,7 @@ function TranslatePanel({
             <div className={styles.cellTranslateNative}>{sentence || term}</div>
           </div>
           <span className={`${styles.cellTranslateCheck} ${styles['cellTranslateCheck--checked']}`}>
-            <Icon name="check" size={16} />
+            {loading ? <Spinner size="sm" /> : <Icon name="check" size={16} />}
           </span>
         </div>
       </div>
