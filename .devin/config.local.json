@@ -6,7 +6,7 @@
         "-y",
         "chrome-devtools-mcp@latest",
         "--categoryExtensions",
-        "--user-data-dir=C:\\Users\\The0cean\\.cache\\chrome-devtools-mcp\\extension-profile",
+        "--isolated",
         "--chromeArg=--enable-unsafe-extension-debugging",
         "--allow-unrestricted-paths"
       ]

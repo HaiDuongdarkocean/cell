@@ -1,7 +1,7 @@
 # Cell — Tiện ích Chrome tải video + phụ đề
 
 > Nguồn sự thật chung cho Windsurf / Devin / Claude. Đọc đầu mỗi phiên.
-> Workflow (LOOP, ponytail, quality gates): 24 skill trong `.agents/skills/`.
+> Workflow (LOOP, ponytail, quality gates): các skill trong `.agents/skills/`.
 
 ## personas sử dụng
 

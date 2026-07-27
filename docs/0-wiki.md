@@ -69,7 +69,7 @@ docs/           # Tài liệu dự án
 │   └── 057-popup-smooth-transitions.md # ADR-057: CSS transitions for dictionary popup show/hide, position moves, size changes, and content swaps
 │   └── 058-predictive-viewport-tokenize.md # ADR-058: VDLT-Predict — direction-aware overscan + prepare-ahead + cold-start viewport-first bind
 │   └── 059-tokenize-gold-performance.md # ADR-059: < 500 ms viewport + scroll, 500 MB RAM — rAF scheduler, PRIORITY_PREPARE, 0.5-viewport overscan, version race guard
-│   └── 061-orbital-settings-dialog.md # ADR-061: orbital badge integrates SettingsDialog (React mount) — thay vanilla panel bằng mountSettingsDialog, tokenize thành 1 section
+│   └── 061-orbital-settings-dialog.md # ADR-061: orbital badge integrates SettingsDialog (React mount) — thay vanilla panel bằng mountSettingsDialog; tokenize controls sau này moved lên universal panel header (xem UniversalPanelHeader.tsx)
 │   └── 062-settings-panel-responsive-redesign.md # ADR-062: Settings dialog responsive redesign + strict 14/12px type scale
 │   └── 063-system-wide-type-scale-14-12.md # ADR-063: System-wide 14/12px type scale (SSOT)
 │   └── 064-hardcoded-px-to-tokens.md # ADR-064: Hardcoded px → design tokens (Slice 2)
@@ -81,6 +81,7 @@ docs/           # Tài liệu dự án
 │   └── 070-focus-visible-standardization.md # ADR-070: Focus-visible standardization
 │   └── 071-motion-standardization-and-reduced-motion.md # ADR-071: Motion standardization and reduced motion support
 │   └── 072-component-reuse-card-dialog-atoms.md # ADR-072: Media cards and SettingsDialog reuse Card/Dialog shared atoms
+│   └── 073-self-evolving-skills.md    # ADR-073: Self-evolving agent skills — files live in self-evolution/ folder, write-skill asks before enabling
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup
 │   ├── overlay-appearance-settings.md
