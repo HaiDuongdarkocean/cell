@@ -1318,6 +1318,12 @@
   gap: var(--space-1);
   padding: var(--space-2);
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cellImageSkeleton::-webkit-scrollbar {
+  display: none;
 }
 
 .cellImageSkeletonCard {
@@ -1330,6 +1336,12 @@
   gap: var(--space-1);
   padding: var(--space-2);
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cellImageStrip::-webkit-scrollbar {
+  display: none;
 }
 
 .cellImageCard {
