@@ -159,7 +159,7 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     setDefinitionSelection(initDefinitionSelection(winner));
     setTranslation('');
     latestSearchRef.current = searchedTerm;
-  }, [initDefinitionSelection]);
+  }, []);
 
   const search = useCallback((term: string): void => {
     const trimmed = term.trim();
@@ -220,7 +220,7 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     setCurrentResult(chosen);
     setStatus(chosen.status);
     setDefinitionSelection(initDefinitionSelection(chosen));
-  }, [currentResult, candidates, initDefinitionSelection]);
+  }, [currentResult, candidates]);
 
   const cycleStatus = useCallback((): void => {
     const result = currentResult;
