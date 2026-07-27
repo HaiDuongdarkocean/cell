@@ -11,7 +11,7 @@
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tracking-wide);
 }
 
 .previewBox {
@@ -21,7 +21,7 @@
   text-align: center;
   color: var(--overlay-text);
   font-size: var(--font-size-base);
-  line-height: 1.4;
+  line-height: var(--leading-snug);
   overflow: hidden;
   word-break: break-word;
   min-height: var(--space-12); /* layout constraint — closest token */

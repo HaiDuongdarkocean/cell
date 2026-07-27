@@ -33,7 +33,7 @@
 .kbdSingle {
   text-transform: uppercase;
   text-align: center;
-  line-height: 1.4;
+  line-height: var(--leading-snug);
 }
 
 /* Combo: modifier chip — subtle bg */

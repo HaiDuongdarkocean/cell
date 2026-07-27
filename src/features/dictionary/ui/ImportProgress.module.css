@@ -29,7 +29,7 @@
   color: var(--color-text-secondary);
   white-space: nowrap;
   font-family: var(--font-family);
-  letter-spacing: 0.015em;
+  letter-spacing: var(--tracking-normal);
 }
 
 .error {
