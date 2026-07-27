@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { DictionaryPanelView } from '@/features/dictionaryPopup/ui/DictionaryPanelView';
 import type { PopupCardCreatorPrefill } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import type { DictionaryPanelPrefill } from '@/features/universalPanel/types';
 import { CardCreatorPanel } from './CardCreatorPanel';
 import styles from './DictionaryTab.module.css';
 
@@ -15,8 +16,10 @@ export interface DictionaryTabProps {
   readonly initialTerm?: string;
   /** Whether the containing panel is currently open — controls search-input auto-focus. */
   readonly isOpen?: boolean;
-  /** Optional prefill pushed from an external popup dictionary. */
-  readonly prefill?: PopupCardCreatorPrefill | null;
+  /** Optional prefill/context pushed from an external popup or subtitle cluster. */
+  readonly prefill?: DictionaryPanelPrefill | null;
+  /** Called when the user presses "Quick Add" in the dictionary header. */
+  readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
 }
 
 export function DictionaryTab({
@@ -26,15 +29,16 @@ export function DictionaryTab({
   initialTerm,
   isOpen,
   prefill: externalPrefill,
+  onQuickAdd,
 }: DictionaryTabProps): React.JSX.Element {
-  const [prefill, setPrefill] = useState<PopupCardCreatorPrefill | null>(externalPrefill ?? null);
+  const [prefill, setPrefill] = useState<DictionaryPanelPrefill | null>(externalPrefill ?? null);
 
   useEffect(() => {
     setPrefill(externalPrefill ?? null);
   }, [externalPrefill]);
 
   const handlePanelSendToCard = useCallback((next: PopupCardCreatorPrefill): void => {
-    setPrefill(next);
+    setPrefill(next as DictionaryPanelPrefill);
   }, []);
 
   return (
@@ -47,10 +51,11 @@ export function DictionaryTab({
           initialTerm={initialTerm}
           isOpen={isOpen}
           onSendToCard={handlePanelSendToCard}
+          onQuickAdd={onQuickAdd}
         />
       </div>
       <div className={styles.rightPane}>
-        <CardCreatorPanel sourceLang={sourceLang} targetLang={targetLang} prefill={prefill} />
+        <CardCreatorPanel sourceLang={sourceLang} targetLang={targetLang} context={prefill} />
       </div>
     </div>
   );

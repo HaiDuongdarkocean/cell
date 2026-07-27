@@ -50,11 +50,12 @@ describe('CardCreatorPanel', () => {
     expect(mockUseCardCreatorState).toHaveBeenCalledWith(
       expect.objectContaining({ ankiConnectUrl: DEFAULT_SETTINGS.cardCreator.ankiConnectUrl }),
       expect.objectContaining({ sourceLang: 'en', targetLang: 'vi' }),
+      undefined,
     );
   });
 
-  it('maps prefill into the openContext for useCardCreatorState', async () => {
-    const prefill = {
+  it('maps context into the openContext for useCardCreatorState', async () => {
+    const context = {
       term: 'hello',
       langCode: 'en',
       reading: 'həˈloʊ',
@@ -65,28 +66,28 @@ describe('CardCreatorPanel', () => {
       wordAudioUrls: ['https://example.com/word.mp3'],
       sentenceAudioUrls: ['https://example.com/sentence.mp3'],
       imageUrls: ['https://example.com/img.png'],
-    } satisfies CardCreatorPanelProps['prefill'];
+    } satisfies CardCreatorPanelProps['context'];
 
-    render(<CardCreatorPanel sourceLang="en" targetLang="vi" prefill={prefill} />);
+    render(<CardCreatorPanel sourceLang="en" targetLang="vi" context={context} />);
 
     await waitFor(() => expect(screen.getByTestId('card-creator-content')).toBeInTheDocument());
-    const [, openContext] = mockUseCardCreatorState.mock.calls[0]! as [unknown, { sourceLang: string; targetLang: string; prefill: Record<string, unknown> }];
+    const [, openContext] = mockUseCardCreatorState.mock.calls[0]! as [unknown, { sourceLang: string; targetLang: string; prefill?: Record<string, unknown> }];
     expect(openContext.sourceLang).toBe('en');
     expect(openContext.targetLang).toBe('vi');
-    expect(openContext.prefill.targetWord).toBe('hello');
-    expect(openContext.prefill.definitions).toBe('• exclamation used as a greeting');
-    expect(openContext.prefill.sentence).toBe('Hello, world.');
-    expect(openContext.prefill.sentenceTranslation).toBe('xin chào');
-    expect(openContext.prefill.wordAudioUrls).toEqual(['https://example.com/word.mp3']);
-    expect(openContext.prefill.sentenceAudioUrls).toEqual(['https://example.com/sentence.mp3']);
-    expect(openContext.prefill.imageUrls).toEqual(['https://example.com/img.png']);
+    expect(openContext.prefill?.targetWord).toBe('hello');
+    expect(openContext.prefill?.definitions).toBe('• exclamation used as a greeting');
+    expect(openContext.prefill?.sentence).toBe('Hello, world.');
+    expect(openContext.prefill?.sentenceTranslation).toBe('xin chào');
+    expect(openContext.prefill?.wordAudioUrls).toEqual(['https://example.com/word.mp3']);
+    expect(openContext.prefill?.sentenceAudioUrls).toEqual(['https://example.com/sentence.mp3']);
+    expect(openContext.prefill?.imageUrls).toEqual(['https://example.com/img.png']);
   });
 
-  it('handles null/undefined prefill gracefully', async () => {
-    render(<CardCreatorPanel sourceLang="en" targetLang="vi" prefill={null} />);
+  it('handles null/undefined context gracefully', async () => {
+    render(<CardCreatorPanel sourceLang="en" targetLang="vi" context={null} />);
 
     await waitFor(() => expect(screen.getByTestId('card-creator-content')).toBeInTheDocument());
-    const [, openContext] = mockUseCardCreatorState.mock.calls[0]! as [unknown, { sourceLang: string; targetLang: string; prefill: Record<string, unknown> | undefined }];
+    const [, openContext] = mockUseCardCreatorState.mock.calls[0]! as [unknown, { sourceLang: string; targetLang: string; prefill?: Record<string, unknown> | undefined }];
     expect(openContext.sourceLang).toBe('en');
     expect(openContext.targetLang).toBe('vi');
     expect(openContext.prefill).toBeUndefined();

@@ -8,7 +8,7 @@ import type { Settings } from '@/entities/media';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from '@/shared/config/config';
-import type { PopupCardCreatorPrefill } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import type { DictionaryPanelPrefill } from '@/features/universalPanel/types';
 import { formatDefinitions } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import styles from './CardCreatorPanel.module.css';
 
@@ -17,29 +17,33 @@ export interface CardCreatorPanelProps {
   readonly sourceLang: string;
   /** User's native language for translation. */
   readonly targetLang: string;
-  /** Prefill data produced by the left dictionary panel. */
-  readonly prefill?: PopupCardCreatorPrefill | null;
+  /** Card-creator context pushed from an external popup or subtitle cluster. */
+  readonly context?: DictionaryPanelPrefill | null;
 }
 
 function buildOpenContext(
   sourceLang: string,
   targetLang: string,
-  prefill: PopupCardCreatorPrefill | null | undefined,
+  context: DictionaryPanelPrefill | null | undefined,
 ): OpenContext {
   return {
-    sourceLang,
+    video: context?.video,
+    cue: context?.cue,
+    sourceLang: context?.langCode ?? sourceLang,
     targetLang,
-    prefill: prefill
+    initialMedia: context?.initialMedia,
+    prefill: context
       ? {
-          targetWord: prefill.term,
-          definitions: formatDefinitions(prefill.definitions),
-          sentence: prefill.contextSentence,
-          sentenceTranslation: prefill.translation,
-          wordAudioUrls: prefill.wordAudioUrls,
-          sentenceAudioUrls: prefill.sentenceAudioUrls,
-          imageUrls: prefill.imageUrls,
+          targetWord: context.term,
+          definitions: formatDefinitions(context.definitions),
+          sentence: context.contextSentence,
+          sentenceTranslation: context.translation,
+          wordAudioUrls: context.wordAudioUrls,
+          sentenceAudioUrls: context.sentenceAudioUrls,
+          imageUrls: context.imageUrls,
         }
       : undefined,
+    queue: context?.queue,
   };
 }
 
@@ -66,21 +70,23 @@ interface CardCreatorPanelCoreProps {
   readonly sourceLang: string;
   /** Target language. */
   readonly targetLang: string;
-  readonly prefill?: PopupCardCreatorPrefill | null;
+  /** Card-creator context. */
+  readonly context?: DictionaryPanelPrefill | null;
 }
 
 function CardCreatorPanelCore({
   settings,
   sourceLang,
   targetLang,
-  prefill,
+  context,
 }: CardCreatorPanelCoreProps): React.JSX.Element {
   const openContext = useMemo(
-    () => buildOpenContext(sourceLang, targetLang, prefill),
-    [sourceLang, targetLang, prefill],
+    () => buildOpenContext(sourceLang, targetLang, context),
+    [sourceLang, targetLang, context],
   );
 
-  const state = useCardCreatorState(settings, openContext);
+  const initialAction = context?.initialAction;
+  const state = useCardCreatorState(settings, openContext, initialAction);
 
   // The Cancel button is part of the shared CardCreatorDialogContent. In a
   // right-side panel there is no dialog to close; pressing it intentionally
@@ -88,7 +94,13 @@ function CardCreatorPanelCore({
   return (
     <div className={styles.cardCreatorPanel} data-testid="card-creator-panel">
       <div className={styles.scrollArea}>
-        <CardCreatorDialogContent state={state} variant="desktop" onCancel={() => {}} className={styles.panelBody} />
+        <CardCreatorDialogContent
+          state={state}
+          variant="desktop"
+          onCancel={() => {}}
+          className={styles.panelBody}
+          layout="panel"
+        />
       </div>
     </div>
   );
@@ -104,7 +116,7 @@ function CardCreatorPanelCore({
 export function CardCreatorPanel({
   sourceLang,
   targetLang,
-  prefill,
+  context,
 }: CardCreatorPanelProps): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null);
 
@@ -145,7 +157,7 @@ export function CardCreatorPanel({
       settings={settings.cardCreator ?? DEFAULT_SETTINGS.cardCreator}
       sourceLang={sourceLang}
       targetLang={targetLang}
-      prefill={prefill}
+      context={context}
     />
   );
 }
