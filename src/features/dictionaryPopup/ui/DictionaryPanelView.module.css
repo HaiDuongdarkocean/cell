@@ -30,6 +30,95 @@
   min-width: 0;
 }
 
+.searchHistory {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.searchHistoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.searchHistoryTitle {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.searchHistoryClear,
+.searchHistoryTerm,
+.searchHistoryRemove {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.searchHistoryClear {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  background: transparent;
+  font-size: var(--font-size-xs);
+}
+
+.searchHistoryClear:hover,
+.searchHistoryRemove:hover {
+  background: var(--color-surface-hover);
+}
+
+.searchHistoryList {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+  scrollbar-width: none;
+}
+
+.searchHistoryList::-webkit-scrollbar {
+  display: none;
+}
+
+.searchHistoryItem {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.searchHistoryTerm {
+  max-width: 12rem;
+  padding: var(--space-1) var(--space-2);
+  overflow: hidden;
+  color: var(--color-text);
+  background: transparent;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchHistoryTerm:hover {
+  background: var(--color-surface-hover);
+}
+
+.searchHistoryRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-mobile);
+  height: var(--touch-target-mobile);
+  padding: 0;
+  color: var(--color-text-muted);
+  background: transparent;
+}
+
 .loading, .error {
   display: flex;
   align-items: center;
@@ -297,6 +386,81 @@
   padding: var(--space-1) 0;
 }
 
+.cellCandidate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: var(--border-width-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.cellCandidateHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.cellCandidateSelect {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  flex: 1;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  border: 0;
+  color: var(--color-text);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cellCandidateSelect:hover {
+  background: var(--color-surface-hover);
+}
+
+.cellCandidateTerm {
+  overflow: hidden;
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cellCandidateReading {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.cellCandidateActions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-1);
+}
+
+.cellCandidateDefinitions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.cellCandidateDefinition {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.cellCandidatePos {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
 .dictionaryEmpty {
   display: flex;
   flex: 1 1 auto;
@@ -370,21 +534,11 @@
   border-radius: var(--radius-sm);
   border: var(--space-0-5) solid var(--color-primary);
   background: transparent;
+  color: var(--color-primary);
   display: none;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-.cellDefCheckTick {
-  display: none;
-}
-
-.cellDefCheckTick svg {
-  width: var(--space-3-5);
-  height: var(--space-3-5);
-  display: block;
-  color: inherit;
 }
 
 .cellDefItem:hover .cellDefCheckDot {
@@ -405,10 +559,6 @@
   display: flex;
   background: var(--color-primary);
   border-color: var(--color-primary);
-}
-
-.cellDefCheck--checked .cellDefCheckTick, .cellDefItem:hover .cellDefCheck--checked .cellDefCheckTick {
-  display: inline-block;
   color: var(--color-text-inverse);
 }
 
