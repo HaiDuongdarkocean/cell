@@ -1,11 +1,13 @@
 ---
 name: debugging-and-error-recovery
-description: Guides systematic root-cause debugging using Socratic questioning. Use when tests fail, builds break, behavior doesn't match expectations, or you encounter any unexpected error. Use when you need a systematic approach to finding and fixing the root cause rather than guessing.
+description: Guides systematic root-cause debugging using Socratic questioning when tests fail, builds break, runtime behavior mismatches expectations, or an unexpected error appears, and not for quick fixes or feature requests without a reproducible failure.
 ---
 
 # Debugging and Error Recovery
 
-## Methodology
+## Overview
+
+**Debug by evidence, Socratic questioning, and falsification before fix.**
 
 This skill runs on three principles:
 
@@ -15,10 +17,7 @@ This skill runs on three principles:
 
 The goal is not to make the symptom disappear. It is to understand the failure well enough that the fix is obvious and stays fixed. A fix that only works on one path is a delayed bug.
 
-## skill kèm theo
-
-1. ALWAYS apply `caveman ultra` mode from step 1 - 7.
-2. ALWAYS apply `ponytail` rules from step 1 - 7.
+Use `caveman` mode when the user asks for terse output and `ponytail` rules to avoid unnecessary code.
 
 ## What This Skill Stores
 
@@ -46,6 +45,12 @@ Code fixes belong in `learning-and-apply` atoms. Symptoms belong in the evidence
 - You feel confident about a cause before gathering enough evidence.
 - A browser extension breaks a host page.
 - A feature works on first load but breaks on reload / restore / navigation.
+
+**When NOT to use:**
+
+- The request is a feature design or product decision, not a failure.
+- No reproducible symptom or error output exists.
+- The fix is already known and only implementation is needed.
 
 ## The Debug Loop
 
@@ -313,6 +318,31 @@ Forbidden unless justified with evidence:
 - Treating DOM text as user-visible behavior.
 - Calling the same probe multiple times instead of capturing all needed evidence in one pass.
 
+## Testing & Validation
+
+Before declaring this skill complete on a debugging task, run this matrix:
+
+### Triggering tests
+
+- [ ] Skill activates on a direct request: "Debug this failing test."
+- [ ] Skill activates on a natural request: "Why is the popup not showing?"
+- [ ] Skill stays dormant for feature requests: "Add a new button to the popup."
+- [ ] Skill stays dormant for pure implementation: "Refactor this function."
+
+### Functional tests
+
+- [ ] Run the debug loop end-to-end on a real failing test.
+- [ ] Run the debug loop on a real UI bug and verify visual checks.
+- [ ] Run the debug loop on a real browser extension bug.
+- [ ] The final fix is smaller than the symptom description.
+
+### Edge cases
+
+- [ ] User provides no reproduction steps — skill invokes `/interview-me` or asks one focused question.
+- [ ] User claims certainty before evidence — skill pauses and requests the evidence board.
+- [ ] Bug is flaky — skill captures environment state before retrying.
+- [ ] Regression test fails without the fix and passes with it.
+
 ## Verification Checklist
 
 After any fix:
@@ -330,52 +360,33 @@ After any fix:
 - [ ] Temporary instrumentation removed unless permanent.
 - [ ] Fix explained without jargon.
 
-## How This Skill Evolves
+## Self-Evolution
 
-This skill has a **hard line budget of 500 lines**. It does not grow by appending. It grows by replacing.
+**Purpose:** Improve the skill from real debugging outcomes.
 
-### Rules for skill maintenance
+**Actions:**
 
-1. **Line budget is absolute.** Before adding anything, count the current lines. If adding would exceed 500, remove old content first.
-2. **Replace, do not append.** New methodology replaces outdated methodology. New diagnostic patterns replace weaker ones.
-3. **Only add verified patterns.** A pattern must have solved a real bug. Abstract lessons are not allowed.
+- `self-evolution/README.md` is a human-readable design report; the agent does not load it.
+- After every run, append one line to `self-evolution/RUNBOOK.md`.
+- If the user asks for self-improvement or if `self-evolution/workflow.md` trigger conditions are met, run the self-correction loop.
+- Read `self-evolution/workflow.md`, `self-evolution/mutation_prompts.md`, and `self-evolution/test_cases.md` before generating a candidate edit.
+- Generate candidate mutations only from `self-evolution/mutation_prompts.md`.
+- Score each candidate against `self-evolution/test_cases.md` and recent `self-evolution/RUNBOOK.md` failures.
+- Archive the current `SKILL.md` to `self-evolution/archive/` before overwriting and run regression tests immediately after.
+
+**Guard:** Self-correction is bounded by archive, regression tests, cooldown, core sections, and the 500-line budget; restore the archived version if a candidate causes regression.
+
+## Skill Maintenance Rules
+
+This skill has a **hard line budget of 500 lines** and grows by replacing, not appending:
+
+1. **Line budget is absolute.** Before adding anything, remove old content if the total would exceed 500.
+2. **Replace, do not append.** New methodology replaces outdated methodology; new diagnostic patterns replace weaker ones.
+3. **Only add verified patterns.** A pattern must have solved a real bug.
 4. **Prefer tables over prose.** If a new insight cannot be a table row or checklist item, it is not ready.
-5. **Prune annually.** If a section has not been used in six months, remove it.
-6. **Code fixes go to `learning-and-apply`.** This skill never stores code techniques.
-7. **Update the Maintenance Log.** Every replacement gets a row: date, what changed, which bug verified it.
-
-### Decision flow for adding knowledge
-
-```
-Does it help diagnose a class of bugs?
-├── No → Reject.
-└── Yes → Has it solved a real bug?
-    ├── No → Reject.
-    └── Yes → Can it replace an older/weaker entry?
-        ├── Yes → Replace.
-        └── No → Will the file exceed 500 lines?
-            ├── Yes → Remove the weakest existing entry, then add.
-            └── No → Add.
-```
-
-### Good vs bad skill updates
-
-| Update | Verdict | Reason |
-|---|---|---|
-| Add "trace six desync points" | ✅ Good | Methodological pattern, reusable. |
-| Add "test second word of phrase" | ✅ Good | Diagnostic pattern, verified on `learning` bug. |
-| Add "use `getTokenStatus` fallback" | ❌ Bad | Code technique, belongs in `learning-and-apply`. |
-| Add "code is messy" | ❌ Bad | Opinion, no contract. |
-| Keep an unused section because it might help later | ❌ Bad | Skill rots by accumulation. Delete it. |
-
-## Maintenance Log
-
-| Date | Change | Verified by |
-|---|---|---|
-| 2026-07-22 | Add DOM-vs-visible and probe batching patterns | `learning` popup candidate verification |
-| 2026-07-22 | Add repeat-action anti-pattern and first-vs-second failure pattern | `learning` popup candidates disappear on repeat |
-
-Add a row only for verified replacements or additions. Empty rows forbidden. Code fixes forbidden here.
+5. **Prune annually.** Remove sections unused for six months.
+6. **Code fixes go to `learning-and-apply`.** This skill stores only methodology and diagnostic patterns.
+7. **Update `self-evolution/RUNBOOK.md`** for every verified replacement.
 
 ## Timeboxing
 
