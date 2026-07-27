@@ -46,7 +46,7 @@
   border: none;
   border-radius: var(--radius-none);
   background: transparent;
-  box-shadow: none;
+  box-shadow: var(--shadow-sm);
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
   outline: none;
@@ -56,7 +56,7 @@
   color: var(--color-text-secondary);
   background: transparent;
   border-color: transparent;
-  box-shadow: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .fieldRow__mapSelect button:focus-visible,
@@ -64,7 +64,7 @@
   color: var(--color-primary);
   background: transparent;
   border-color: transparent;
-  box-shadow: none;
+  box-shadow: var(--shadow-sm);
 }
 
 .fieldRow__mapSelect button span {

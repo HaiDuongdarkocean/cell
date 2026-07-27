@@ -79,7 +79,7 @@
 }
 
 .closeIcon svg {
-  stroke-width: calc(var(--space-0-5) * 0.75);
+  stroke-width: calc(var(--stroke-width-xs) * 0.75);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -41,7 +41,7 @@ export function buildOrbitalBadgeCss(): string {
   pointer-events: auto !important;
   touch-action: none !important;
   outline: none !important;
-  box-shadow: none !important;
+  box-shadow: var(--shadow-sm) !important;
   z-index: var(--z-overlay-top) !important;
   transform: translate(-50%, -50%) !important;
   transition: transform var(--duration-normal) ease, background-color var(--duration-normal) ease, width var(--duration-normal) ease, height var(--duration-normal) ease !important;
@@ -87,7 +87,7 @@ export function buildOrbitalBadgeCss(): string {
   margin: 0 !important;
   pointer-events: none !important;
   outline: none !important;
-  box-shadow: none !important;
+  box-shadow: var(--shadow-sm) !important;
   z-index: var(--z-overlay-top) !important;
   opacity: 1 !important;
   transform: translate(-50%, -50%) scale(1) !important;

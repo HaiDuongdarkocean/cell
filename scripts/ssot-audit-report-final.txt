@@ -1,0 +1,69 @@
+
+=== hardcoded-box-shadow (9) ===
+src/features/cardCreator/ui/MediaList.module.css:74: Box-shadow uses raw lengths with tokenized parts: 0 0 0 var(--space-0-5) var(--color-border-focus) | fix: use --shadow-* token or tokenize all raw values
+src/features/cardCreator/ui/MediaList.module.css:235: Box-shadow uses raw lengths with tokenized parts: 0 0 0 var(--space-0-5) var(--color-border-focus) | fix: use --shadow-* token or tokenize all raw values
+src/features/dictionaryPopup/ui/popupDictionary.css:555: Box-shadow uses raw lengths with tokenized parts: 0 0 0 var(--space-0-5) var(--color-background) | fix: use --shadow-* token or tokenize all raw values
+src/features/subtitle/ui/subtitleBlockCss.ts:477: Box-shadow uses raw lengths with tokenized parts: inset 0 0 0 var(--space-0-5) var(--color-primary) | fix: use --shadow-* token or tokenize all raw values
+src/features/tokenize/ui/tokenSpanCss.ts:131: Box-shadow uses raw lengths with tokenized parts: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important | fix: use --shadow-* token or tokenize all raw values
+src/features/tokenize/ui/tokenSpanCss.ts:136: Box-shadow uses raw lengths with tokenized parts: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important | fix: use --shadow-* token or tokenize all raw values
+src/features/tokenize/ui/tokenSpanCss.ts:141: Box-shadow uses raw lengths with tokenized parts: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important | fix: use --shadow-* token or tokenize all raw values
+src/features/tokenize/ui/tokenSpanCss.ts:146: Box-shadow uses raw lengths with tokenized parts: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important | fix: use --shadow-* token or tokenize all raw values
+src/features/tokenize/ui/tokenSpanCss.ts:151: Box-shadow uses raw lengths with tokenized parts: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important | fix: use --shadow-* token or tokenize all raw values
+
+=== hardcoded-color (6) ===
+src/features/theme/logic/contrastValidator.ts:65: Hardcoded named color White | fix: var(--overlay-text)
+src/shared/lib/tokens.ts:106: Hardcoded color rgba(colors.primary, mode === 'dark' ? 0.15 : 0.1) | fix: rgba(var(--*-rgb), alpha)
+src/shared/lib/tokens.ts:130: Hardcoded color rgba(colors.success, mode === 'dark' ? 0.15 : 0.1) | fix: rgba(var(--*-rgb), alpha)
+src/shared/lib/tokens.ts:131: Hardcoded color rgba(colors.warning, mode === 'dark' ? 0.15 : 0.1) | fix: rgba(var(--*-rgb), alpha)
+src/shared/lib/tokens.ts:132: Hardcoded color rgba(colors.error, mode === 'dark' ? 0.15 : 0.1) | fix: rgba(var(--*-rgb), alpha)
+src/shared/lib/tokens.ts:135: Hardcoded color rgba(colors.primary, 0.1) | fix: rgba(var(--*-rgb), alpha)
+
+=== hardcoded-duration-reduced-motion (3) ===
+src/features/subtitle/ui/subtitleBlockCss.ts:1064: Reduced-motion hack duration 0.01ms !important | fix: keep (accessibility exception)
+src/shared/ui/BottomSheet.module.css:90: Reduced-motion hack duration 0.01ms !important | fix: keep (accessibility exception)
+src/shared/ui/Dialog.module.css:117: Reduced-motion hack duration 0.01ms !important | fix: keep (accessibility exception)
+
+=== hardcoded-font-family (2) ===
+src/shared/config/config.ts:107: Hardcoded fontFamily: var(--font-family, sans-serif) | fix: fontFamily: 'var(--font-family, sans-serif)'
+src/shared/config/config.ts:121: Hardcoded fontFamily: var(--font-family, sans-serif) | fix: fontFamily: 'var(--font-family, sans-serif)'
+
+=== hardcoded-px (13) ===
+src/features/cardCreator/ui/mountCardCreatorDialog.ts:173: Hardcoded 768px value | fix: null
+src/features/dictionaryPopup/ui/popupDictionary.css:1390: Hardcoded 380px value | fix: null
+src/features/dictionaryPopup/ui/popupDictionary.css:1390: Hardcoded 479px value | fix: null
+src/features/dictionaryPopup/ui/popupDictionary.css:1424: Hardcoded 480px value | fix: null
+src/features/dictionaryPopup/ui/popupDictionary.css:1547: Hardcoded 479px value | fix: null
+src/features/dictionaryPopup/ui/popupDictionary.css:1583: Hardcoded 480px value | fix: null
+src/features/dictionaryPopup/ui/popupDictionary.css:1583: Hardcoded 767px value | fix: null
+src/features/dictionaryPopup/ui/popupDictionary.css:1609: Hardcoded 768px value | fix: null
+src/features/tokenize/controller/webTokenizeController.ts:52: Hardcoded 0px value | fix: 0
+src/features/tokenize/controller/webTokenizeController.ts:52: Hardcoded 0px value | fix: 0
+src/features/tokenize/logic/scrollDirection.ts:81: Hardcoded 0px value | fix: 0
+src/features/tokenize/logic/scrollDirection.ts:81: Hardcoded 0px value | fix: 0
+src/features/tokenize/logic/viewportTracker.ts:23: Hardcoded 0px value | fix: 0
+
+=== media-query-breakpoint (21) ===
+src/entrypoints/popup/App.redesigned.module.css:136: Hardcoded 400px value | fix: null
+src/entrypoints/popup/App.redesigned.module.css:153: Hardcoded 500px value | fix: null
+src/entrypoints/popup/components/layout/Header.module.css:56: Hardcoded 400px value | fix: null
+src/entrypoints/popup/components/media/SubtitleCard.module.css:235: Hardcoded 400px value | fix: null
+src/entrypoints/popup/components/media/VideoCard.module.css:345: Hardcoded 400px value | fix: null
+src/entrypoints/popup/components/SelectionBar.module.css:46: Hardcoded 400px value | fix: null
+src/entrypoints/sidepanel/App.module.css:40: Hardcoded 350px value | fix: null
+src/entrypoints/sidepanel/components/CueList.module.css:45: Hardcoded 350px value | fix: null
+src/features/settings/ui/SettingsDialog.module.css:164: Hardcoded 479px value | fix: null
+src/features/settings/ui/SettingsDialog.module.css:185: Hardcoded 480px value | fix: null
+src/features/settings/ui/SettingsDialog.module.css:244: Hardcoded 480px value | fix: null
+src/features/settings/ui/SettingsDialog.module.css:272: Hardcoded 768px value | fix: null
+src/features/settings/ui/SettingsDialog.module.css:318: Hardcoded 1024px value | fix: null
+src/features/settings/ui/SettingsDialog.module.css:326: Hardcoded 1280px value | fix: null
+src/features/settings/ui/SubtitleStylePanel.module.css:28: Hardcoded 520px value | fix: null
+src/features/settings/ui/SubtitleStylePanel.module.css:39: Hardcoded 768px value | fix: null
+src/features/settings/ui/SubtitleStylePanel.module.css:57: Hardcoded 480px value | fix: null
+src/features/subtitle/ui/subtitleBlockCss.ts:288: Hardcoded 767px value | fix: null
+src/features/tts/ui/TtsVoiceManagerPanel.module.css:252: Hardcoded 767px value | fix: null
+src/features/universalPanel/tabs/DictionaryTab.module.css:24: Hardcoded 768px value | fix: null
+src/features/universalPanel/UniversalPanel.module.css:56: Hardcoded 768px value | fix: null
+
+Total files scanned: 457
+Total findings: 54

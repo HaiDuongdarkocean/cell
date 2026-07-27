@@ -97,7 +97,7 @@ export function wrapTokenSpans(
     span.setAttribute(DATA_START, String(token.start));
     span.setAttribute(DATA_END, String(token.end));
     span.style.cursor = 'pointer';
-    span.style.borderRadius = 'var(--radius-xs, 2px)';
+    span.style.borderRadius = 'var(--radius-xs)';
     textSpan.appendChild(span);
     tokenSpans.push(span);
 

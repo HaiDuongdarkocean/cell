@@ -148,7 +148,7 @@ export function renderAudioPanel(
       const row = document.createElement('div');
       row.className = 'cell-audio__skeleton-row';
       // Play button — circle, matches .icon-btn--sm touch target (44px)
-      row.appendChild(createSkeleton('var(--touch-target-mobile, 44px)', 'var(--touch-target-mobile, 44px)', 'circle', 'cell-audio__skeleton-play'));
+      row.appendChild(createSkeleton('var(--touch-target-mobile)', 'var(--touch-target-mobile)', 'circle', 'cell-audio__skeleton-play'));
       // Label — 2 lines matching rendered heights: name 21px + meta 18px
       const labelWrap = document.createElement('div');
       labelWrap.className = 'cell-audio__skeleton-label';
@@ -156,7 +156,7 @@ export function renderAudioPanel(
       labelWrap.appendChild(createSkeleton('40%', 'var(--space-4-5)', 'rect', 'cell-audio__skeleton-label-meta'));
       row.appendChild(labelWrap);
       // Checkbox — square 16px, matches .cell-audio__check
-      row.appendChild(createSkeleton('var(--space-4, 16px)', 'var(--space-4, 16px)', 'rect', 'cell-audio__skeleton-check'));
+      row.appendChild(createSkeleton('var(--space-4)', 'var(--space-4)', 'rect', 'cell-audio__skeleton-check'));
       skeleton.appendChild(row);
     }
     panel.appendChild(skeleton);
@@ -435,7 +435,7 @@ export function renderTranslatePanel(
       text.appendChild(line);
     }
     block.appendChild(text);
-    block.appendChild(createSkeleton('var(--space-4, 16px)', 'var(--space-4, 16px)', 'rect', 'cell-translate__skeleton-check'));
+    block.appendChild(createSkeleton('var(--space-4)', 'var(--space-4)', 'rect', 'cell-translate__skeleton-check'));
     skeleton.appendChild(block);
     panel.appendChild(skeleton);
     container.appendChild(panel);
