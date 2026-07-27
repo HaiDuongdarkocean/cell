@@ -386,81 +386,6 @@
   padding: var(--space-1) 0;
 }
 
-.cellCandidate {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2);
-  border: var(--border-width-hairline) solid var(--color-border-subtle);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-}
-
-.cellCandidateHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.cellCandidateSelect {
-  display: flex;
-  align-items: baseline;
-  min-width: 0;
-  flex: 1;
-  gap: var(--space-2);
-  padding: var(--space-1);
-  border: 0;
-  color: var(--color-text);
-  background: transparent;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.cellCandidateSelect:hover {
-  background: var(--color-surface-hover);
-}
-
-.cellCandidateTerm {
-  overflow: hidden;
-  font-weight: var(--font-weight-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cellCandidateReading {
-  flex-shrink: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-}
-
-.cellCandidateActions {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--space-1);
-}
-
-.cellCandidateDefinitions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: 0 var(--space-1);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.cellCandidateDefinition {
-  display: flex;
-  gap: var(--space-1);
-}
-
-.cellCandidatePos {
-  flex: 0 0 auto;
-  color: var(--color-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
 .dictionaryEmpty {
   display: flex;
   flex: 1 1 auto;
@@ -907,17 +832,11 @@
   color: var(--color-text-muted);
 }
 
-.cellCandidates {
-  flex: 0 0 auto;
-  background: transparent;
-  padding-bottom: var(--touch-target);
-}
-
 .cellCandidatesChips {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-2) var(--touch-target);
 }
 
 .cellCandidatesChipsScroll {
