@@ -79,17 +79,48 @@ export function DictionaryPanelView({
 
   const [audioLoading, setAudioLoading] = useState(false);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userTypedRef = useRef(false);
+
+  const { searchTerm, setSearchTerm, search } = panel;
+
+  const handleSearchChange = useCallback((value: string): void => {
+    userTypedRef.current = true;
+    setSearchTerm(value);
+  }, [setSearchTerm]);
 
   const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      panel.search(panel.searchTerm);
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+      userTypedRef.current = false;
+      const trimmed = searchTerm.trim();
+      if (trimmed) {
+        search(trimmed);
+      }
     }
-  }, [panel]);
+  }, [search, searchTerm]);
 
-  const handleSearchButton = useCallback((): void => {
-    panel.search(panel.searchTerm);
-  }, [panel]);
+  useEffect(() => {
+    if (!userTypedRef.current) return;
+    const trimmed = searchTerm.trim();
+    if (!trimmed) return;
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      userTypedRef.current = false;
+      search(trimmed);
+    }, 350);
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchTerm, search]);
 
   const handlePlayTerm = useCallback((): void => {
     if (!panel.currentResult) return;
@@ -158,23 +189,13 @@ export function DictionaryPanelView({
         <SearchField
           id={SEARCH_INPUT_ID}
           data-testid="dictionary-search-input"
-          value={panel.searchTerm}
-          onChange={panel.setSearchTerm}
+          value={searchTerm}
+          onChange={handleSearchChange}
           onKeyDown={handleSearchKeyDown}
-          placeholder="Type a word and press Enter"
+          placeholder="Type a word"
           disabled={panel.isLoading}
           className={styles.searchField}
         />
-        <Button
-          variant="primary"
-          size="md"
-          loading={panel.isLoading}
-          onClick={handleSearchButton}
-          leadingIcon={<Icon name="search" size={16} />}
-          className={styles.searchButton}
-        >
-          Search
-        </Button>
       </div>
 
       {panel.isLoading && !panel.currentResult && (
@@ -281,45 +302,6 @@ export function DictionaryPanelView({
             </div>
           </header>
 
-          {panel.candidates.length > 0 && (
-            <div className={styles.cellCandidates} role="list" aria-label="Dictionary candidates">
-              <div className={styles.cellCandidatesChips}>
-                <div className={styles.cellCandidatesChipsScroll} role="list">
-                  {[panel.currentResult, ...panel.candidates].map((c, idx) => (
-                    <button
-                      key={`${c.term}-${idx}`}
-                      type="button"
-                      className={`btn ${idx === panel.activeCandidateIndex ? 'btn--primary' : 'btn--outline'} ${styles.cellChip}`}
-                      aria-current={idx === panel.activeCandidateIndex ? 'true' : undefined}
-                      onClick={() => panel.setActiveCandidate(idx)}
-                      data-testid={`dictionary-candidate-${idx}`}
-                    >
-                      {c.term}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <section className={styles.cellDef} aria-label="Definitions" data-testid="dictionary-definitions">
-            {panel.currentResult.definitions.length === 0 ? (
-              <div className={styles.cellDefEmpty}>
-                <Icon name="info" size={24} />
-                <span>No definitions found. Import a dictionary in Settings → Resources.</span>
-              </div>
-            ) : (
-              panel.currentResult.definitions.map((def) => (
-                <DefinitionItem
-                  key={def.id}
-                  definition={def}
-                  selected={panel.definitionSelection.get(def.id) ?? def.defaultSelected}
-                  onToggle={panel.toggleDefinition}
-                />
-              ))
-            )}
-          </section>
-
           <div className={styles.cellToolbar} role="tablist" aria-label="Dictionary materials">
             {TABS.map((tab) => {
               const active = panel.activeTab === tab.key;
@@ -356,6 +338,45 @@ export function DictionaryPanelView({
             />
           )}
           {panel.activeTab === 'links' && <LinksPanel links={links} />}
+
+          <section className={styles.cellDef} aria-label="Definitions" data-testid="dictionary-definitions">
+            {panel.currentResult.definitions.length === 0 ? (
+              <div className={styles.cellDefEmpty}>
+                <Icon name="info" size={24} />
+                <span>No definitions found. Import a dictionary in Settings → Resources.</span>
+              </div>
+            ) : (
+              panel.currentResult.definitions.map((def) => (
+                <DefinitionItem
+                  key={def.id}
+                  definition={def}
+                  selected={panel.definitionSelection.get(def.id) ?? def.defaultSelected}
+                  onToggle={panel.toggleDefinition}
+                />
+              ))
+            )}
+          </section>
+
+          {panel.candidates.length > 0 && (
+            <div className={styles.cellCandidates} role="list" aria-label="Dictionary candidates">
+              <div className={styles.cellCandidatesChips}>
+                <div className={styles.cellCandidatesChipsScroll} role="list">
+                  {[panel.currentResult, ...panel.candidates].map((c, idx) => (
+                    <button
+                      key={`${c.term}-${idx}`}
+                      type="button"
+                      className={`btn ${idx === panel.activeCandidateIndex ? 'btn--primary' : 'btn--outline'} ${styles.cellChip}`}
+                      aria-current={idx === panel.activeCandidateIndex ? 'true' : undefined}
+                      onClick={() => panel.setActiveCandidate(idx)}
+                      data-testid={`dictionary-candidate-${idx}`}
+                    >
+                      {c.term}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -373,11 +394,11 @@ function DefinitionItem({
 }): React.JSX.Element {
   const checked = selected ?? definition.defaultSelected;
   return (
-    <label
+    <div
       className={styles.cellDefItem}
       data-testid="dictionary-definition"
     >
-      <span className={`${styles.cellDefCheck} ${checked ? styles['cellDefCheck--checked'] : ''}`}>
+      <label className={`${styles.cellDefCheck} ${checked ? styles['cellDefCheck--checked'] : ''}`}>
         <input
           type="checkbox"
           className={styles.cellDefCheckInput}
@@ -392,19 +413,20 @@ function DefinitionItem({
         <span className={styles.cellDefCheckTick} aria-hidden="true">
           <Icon name="check" size={14} />
         </span>
-      </span>
-      <span className={styles.cellDefText}>
-        {definition.pos && <span className={styles.cellDefPos}>{definition.pos}</span>}
-        {' '}{definition.text}
-      </span>
-      {definition.examples.length > 0 && (
-        <div className={styles.cellDefExamples}>
-          {definition.examples.map((ex, i) => (
-            <div key={i}>• {ex}</div>
-          ))}
-        </div>
-      )}
-    </label>
+      </label>
+      <div className={styles.cellDefText}>
+        <span>
+          {definition.pos ? `${definition.pos} ${definition.text}` : definition.text}
+        </span>
+        {definition.examples.length > 0 && (
+          <div className={styles.cellDefExamples}>
+            {definition.examples.map((ex, i) => (
+              <div key={i}>• {ex}</div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
