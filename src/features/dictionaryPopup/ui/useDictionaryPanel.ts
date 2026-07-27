@@ -126,16 +126,32 @@ function makeRequestId(): string {
 }
 
 /** Build a card-creator prefill from a lookup result.
- *  Uses selected definitions when available; falls back to all definitions. */
+ *  Uses selected definitions, audio, and images when available. */
 function buildPrefill(
   result: LookupResult,
   selectedDefinitions: readonly DefinitionEntry[],
   contextSentence: string,
   translation: string,
+  audioItems: readonly AudioItem[],
+  audioSelection: Map<string, boolean>,
+  imageItems: readonly ImageItem[],
+  imageSelection: Map<string, boolean>,
 ): PopupCardCreatorPrefill {
   const defs = selectedDefinitions.length > 0
     ? selectedDefinitions
     : result.definitions;
+
+  const selectedAudios = audioItems.filter((item) => audioSelection.get(item.id) ?? item.defaultSelected);
+  const wordAudioUrls = selectedAudios
+    .filter((item) => item.kind === 'word' && item.url)
+    .map((item) => item.url!);
+  const sentenceAudioUrls = selectedAudios
+    .filter((item) => item.kind === 'sentence' && item.url)
+    .map((item) => item.url!);
+
+  const selectedImages = imageItems.filter((item) => imageSelection.get(item.id) ?? item.defaultSelected);
+  const imageUrls = selectedImages.map((item) => item.src);
+
   return {
     term: result.term,
     langCode: result.langCode,
@@ -144,12 +160,9 @@ function buildPrefill(
     rawDefinitions: result.rawDefinitions,
     contextSentence,
     translation: translation || undefined,
-    // Phase 3 placeholder: audio/image selection is not yet implemented in the
-    // universal panel. The full popup controller (popupDictionaryController)
-    // handles media selection and will be wired in a later phase.
-    wordAudioUrls: [],
-    sentenceAudioUrls: [],
-    imageUrls: [],
+    wordAudioUrls,
+    sentenceAudioUrls,
+    imageUrls,
   };
 }
 
@@ -404,14 +417,14 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
   const sendToCard = useCallback((): void => {
     if (!currentResult || !onSendToCard) return;
     const contextSentence = latestSearchRef.current;
-    onSendToCard(buildPrefill(currentResult, selectedDefinitions, contextSentence, translation));
-  }, [currentResult, selectedDefinitions, onSendToCard, translation]);
+    onSendToCard(buildPrefill(currentResult, selectedDefinitions, contextSentence, translation, audioItems, audioSelection, imageItems, imageSelection));
+  }, [currentResult, selectedDefinitions, onSendToCard, translation, audioItems, audioSelection, imageItems, imageSelection]);
 
   const quickAdd = useCallback((): void => {
     if (!currentResult || !onQuickAdd) return;
     const contextSentence = latestSearchRef.current;
-    onQuickAdd(buildPrefill(currentResult, selectedDefinitions, contextSentence, translation));
-  }, [currentResult, selectedDefinitions, onQuickAdd, translation]);
+    onQuickAdd(buildPrefill(currentResult, selectedDefinitions, contextSentence, translation, audioItems, audioSelection, imageItems, imageSelection));
+  }, [currentResult, selectedDefinitions, onQuickAdd, translation, audioItems, audioSelection, imageItems, imageSelection]);
 
   // Initial search when initialTerm is provided. Re-run if the prop changes
   // while the component is mounted (e.g. the panel is opened with a new term).
