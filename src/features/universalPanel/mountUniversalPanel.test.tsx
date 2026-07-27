@@ -93,6 +93,16 @@ describe('mountUniversalPanel', () => {
     act(() => { controller.unmount(); });
   });
 
+  it('switches to Settings tab when the Settings tab button is clicked', async () => {
+    await act(async () => { await controller.open('dictionary'); });
+    await waitFor(() => expect(screen.getByTestId('dictionary-panel')).toBeInTheDocument());
+
+    await act(async () => { fireEvent.click(screen.getByTestId('universal-panel-tab-settings')); });
+
+    await waitFor(() => expect(screen.getByTestId('universal-panel-content-settings')).toBeInTheDocument());
+    expect(controller.isOpen()).toBe(true);
+  });
+
   it('renders the universal panel and wires SettingsTab onOpenDictionary to switch to the Dictionary tab', async () => {
     await act(async () => { await controller.open('settings'); });
 

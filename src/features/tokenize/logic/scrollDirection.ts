@@ -87,7 +87,10 @@ export function resolveScrollPredictMargin(
   }
 
   return {
-    rootMargin: `${Math.round(topPx)}px 0 ${Math.round(bottomPx)}px 0`,
+    // Use explicit `0px` units — Chromium's IntersectionObserver rejects a bare
+    // `0` token in some builds, which would produce 'NaNpx 0 NaNpx 0' when the
+    // input height is undefined and break tokenize initialization.
+    rootMargin: `${Math.round(topPx)}px 0px ${Math.round(bottomPx)}px 0px`,
     direction,
   };
 }
