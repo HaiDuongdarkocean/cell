@@ -1,8 +1,28 @@
 // webTextDictionaryController tests — spec §2: top-level popup + lookup wiring.
 
 import { describe, expect, it, beforeAll, beforeEach, jest } from '@jest/globals';
+import { waitFor } from '@testing-library/react';
 
 jest.mock('@/shared/lib/chrome-apis/runtime');
+jest.mock('@/features/cardCreator/media/screenshot', () => ({
+  captureScreenshot: jest.fn(() => Promise.resolve({
+    kind: 'image',
+    filename: 'screenshot.png',
+    mimeType: 'image/png',
+    data: new ArrayBuffer(0),
+  })),
+}));
+jest.mock('@/features/cardCreator/media/sentenceAudio', () => ({
+  captureSentenceAudio: jest.fn(() => Promise.resolve({
+    ok: true,
+    file: {
+      kind: 'audio',
+      filename: 'sentence.webm',
+      mimeType: 'audio/webm',
+      data: new ArrayBuffer(0),
+    },
+  })),
+}));
 
 import { createWebTextDictionaryController } from './webTextDictionaryController';
 import type { WebTextDictionaryControllerDeps } from './webTextDictionaryController';
@@ -727,7 +747,8 @@ describe('createWebTextDictionaryController', () => {
     const sendBtn = popupHost.shadowRoot!.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
     sendBtn.click();
 
-    expect(panelController.sendToCard).toHaveBeenCalledTimes(1);
+    // Media is fetched asynchronously before routing to the integrated panel.
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
     const prefill = panelController.sendToCard.mock.calls[0]![0];
     expect(prefill.term).toBe('take off');
     expect(prefill.contextSentence).toBe('Take off your shoes.');
@@ -735,6 +756,54 @@ describe('createWebTextDictionaryController', () => {
     // Popup should remain visible.
     const popupEl = popupHost.shadowRoot?.querySelector('.js-cell-popup') as HTMLDivElement;
     expect(popupEl?.classList.contains('cell-popup--visible')).toBe(true);
+
+    ctrl.destroy();
+  });
+
+  it('Send to Card from subtitle video includes captured screenshot and sentence audio', async () => {
+    const panelController = makePanelController();
+    const mockVideo = {
+      videoWidth: 1920,
+      readyState: 2,
+      currentTime: 0.5,
+      play: jest.fn(),
+      pause: jest.fn(),
+    } as unknown as HTMLVideoElement;
+    const ctrl = createWebTextDictionaryController(makeDeps({
+      panelController,
+      hasVideo: true,
+      video: mockVideo,
+      getTargetCues: () => [{ index: 1, start: 0, end: 1000, text: 'Take off your shoes.' }],
+    }));
+    const result = makeResult();
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [result] } as unknown as never);
+    mockSendMessage.mockResolvedValue({ success: true } as unknown as never);
+
+    const line = document.createElement('div');
+    line.className = 'subtitle-line';
+    const token = document.createElement('span');
+    token.className = 'js-cell-token';
+    token.textContent = 'Take off your shoes.';
+    line.appendChild(token);
+    document.body.appendChild(line);
+    const range = document.createRange();
+    range.selectNodeContents(token.firstChild as Text);
+
+    ctrl.handleLookup(makeRequest(), 'req-video-send', new DOMRect(0, 0, 0, 0), range);
+    await new Promise((r) => setTimeout(r, 0));
+
+    const popupHost = document.querySelector('.js-cell-popup-host')!;
+    const sendBtn = popupHost.shadowRoot!.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
+    sendBtn.click();
+
+    await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
+    const prefill = panelController.sendToCard.mock.calls[0]![0];
+    expect(prefill.term).toBe('take off');
+    expect(prefill.contextSentence).toBe('Take off your shoes.');
+    expect(prefill.video).toBe(mockVideo);
+    expect(prefill.initialMedia).toHaveLength(2);
+    expect((prefill.initialMedia ?? []).map((f: { kind: string }) => f.kind)).toEqual(['image', 'audio']);
+    expect(prefill.cue).toMatchObject({ start: 0, end: 1000, targetText: 'Take off your shoes.' });
 
     ctrl.destroy();
   });
