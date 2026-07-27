@@ -467,68 +467,21 @@ export function DictionaryPanelView({
           </section>
 
           {panel.candidates.length > 0 && (
-            <div className={styles.cellCandidates} role="list" aria-label="Dictionary candidates">
-              <div className={styles.cellCandidatesChips}>
-                <div className={styles.cellCandidatesChipsScroll} role="list">
-                  {[panel.currentResult, ...panel.candidates].map((c, idx) => (
-                    <button
-                      key={`${c.term}-${idx}`}
-                      type="button"
-                      className={`btn ${idx === panel.activeCandidateIndex ? 'btn--primary' : 'btn--outline'} ${styles.cellChip}`}
-                      aria-current={idx === panel.activeCandidateIndex ? 'true' : undefined}
-                      onClick={() => panel.setActiveCandidate(idx)}
-                      data-testid={`dictionary-candidate-${idx}`}
-                    >
-                      {c.term}
-                    </button>
-                  ))}
-                </div>
+            <div className={styles.cellCandidatesChips}>
+              <div className={styles.cellCandidatesChipsScroll}>
+                {[panel.currentResult, ...panel.candidates].map((c, idx) => (
+                  <button
+                    key={`${c.term}-${idx}`}
+                    type="button"
+                    className={`btn ${idx === panel.activeCandidateIndex ? 'btn--primary' : 'btn--outline'} ${styles.cellChip}`}
+                    aria-current={idx === panel.activeCandidateIndex ? 'true' : undefined}
+                    onClick={() => panel.setActiveCandidate(idx)}
+                    data-testid={`dictionary-candidate-${idx}`}
+                  >
+                    {c.term}
+                  </button>
+                ))}
               </div>
-              {panel.candidates.map((candidate, candidateOffset) => {
-                const candidateIndex = candidateOffset + 1;
-                return (
-                  <section key={`${candidate.term}-${candidateIndex}`} className={styles.cellCandidate} role="listitem" data-testid={`dictionary-candidate-section-${candidateIndex}`}>
-                    <div className={styles.cellCandidateHeader}>
-                      <button type="button" className={styles.cellCandidateSelect} onClick={() => panel.setActiveCandidate(candidateIndex)}>
-                        <span className={styles.cellCandidateTerm}>{candidate.term}</span>
-                        {candidate.reading && <span className={styles.cellCandidateReading}>{formatReading(candidate.reading, candidate.readingKind)}</span>}
-                      </button>
-                      <div className={styles.cellCandidateActions}>
-                        <button
-                          type="button"
-                          className="icon-btn icon-btn--sm icon-btn--outlined"
-                          aria-label={`Send ${candidate.term} to Card Creator`}
-                          title="Send to Card Creator"
-                          onClick={() => panel.sendCandidateToCard(candidateIndex)}
-                          data-testid={`dictionary-candidate-send-${candidateIndex}`}
-                        >
-                          <Icon name="pencil" size={18} />
-                        </button>
-                        {onQuickAdd && (
-                          <button
-                            type="button"
-                            className="icon-btn icon-btn--sm icon-btn--filled"
-                            aria-label={`Quick Add ${candidate.term} to Anki`}
-                            title="Quick Add to Anki"
-                            onClick={() => panel.quickAddCandidate(candidateIndex)}
-                            data-testid={`dictionary-candidate-quick-add-${candidateIndex}`}
-                          >
-                            <Icon name="zap" size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <div className={styles.cellCandidateDefinitions}>
-                      {candidate.definitions.slice(0, 3).map((definition) => (
-                        <div key={definition.id} className={styles.cellCandidateDefinition}>
-                          {definition.pos && <span className={styles.cellCandidatePos}>{definition.pos}</span>}
-                          <span>{definition.text}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                );
-              })}
             </div>
           )}
         </>
