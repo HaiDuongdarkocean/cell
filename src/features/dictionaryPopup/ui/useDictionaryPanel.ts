@@ -24,6 +24,7 @@ import type {
   ImageItem,
   FetchCommunityAudioResponse,
   FetchImagesResponse,
+  TtsFetchAudioResponse,
 } from '../types';
 import type { MessageResponse } from '@/entities/message';
 import { nextStatus } from '../services/wordStatusStore';
@@ -360,20 +361,47 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     if (!result) return;
     setAudioLoading(true);
     setAudioError(null);
-    void sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
-      type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
-      payload: { tabId: 0, term: result.term, langCode: result.langCode, kind: 'word' },
-    })
-      .then((response) => {
-        if (response?.success && response.data?.items) {
-          setAudioItems(response.data.items);
-          setAudioSelection(new Map(response.data.items.map((item) => [item.id, item.defaultSelected])));
-        } else {
-          setAudioError(response?.error ?? 'Audio fetch failed');
+    void (async (): Promise<void> => {
+      try {
+        const [communityRes, ttsRes] = await Promise.all([
+          sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
+            type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
+            payload: { tabId: 0, term: result.term, langCode: result.langCode, kind: 'word' },
+          }),
+          sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+            type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+            payload: { tabId: 0, text: result.term, langCode: result.langCode },
+          }),
+        ]);
+
+        const items: AudioItem[] = [];
+        if (communityRes?.success && communityRes.data?.items) {
+          items.push(...communityRes.data.items);
         }
-      })
-      .catch((err: unknown) => { setAudioError(err instanceof Error ? err.message : String(err)); })
-      .finally(() => { setAudioLoading(false); });
+
+        if (ttsRes?.success && ttsRes.data?.url) {
+          items.push({
+            id: `tts-sentence-${result.term}`,
+            kind: 'sentence',
+            source: 'system-tts',
+            label: 'System TTS · Sentence',
+            state: 'idle',
+            url: ttsRes.data.url,
+            defaultSelected: false,
+          });
+        }
+
+        if (items.length === 0) {
+          setAudioError(communityRes?.error ?? 'Audio fetch failed');
+        }
+        setAudioItems(items);
+        setAudioSelection(new Map(items.map((item) => [item.id, item.defaultSelected])));
+      } catch (err: unknown) {
+        setAudioError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setAudioLoading(false);
+      }
+    })();
   }, [currentResult]);
 
   const fetchImages = useCallback((): void => {
