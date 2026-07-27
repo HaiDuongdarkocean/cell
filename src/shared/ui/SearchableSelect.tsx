@@ -57,7 +57,7 @@ export function SearchableSelect({
   id,
   dataTestId,
   placeholder = 'Search...',
-  maxHeight = 220,
+  maxHeight,
   disabled = false,
   menuAlign = 'left',
 }: SearchableSelectProps): ReactElement {
@@ -163,7 +163,7 @@ export function SearchableSelect({
         <div
           className={`${styles.menu} ${menuAlign === 'right' ? styles.menuAlignRight : styles.menuAlignLeft}`}
           role="listbox"
-          style={{ maxHeight }}
+          style={maxHeight !== undefined ? { '--searchable-select-max-height': `${maxHeight}px` } as React.CSSProperties : undefined}
         >
           {/* Search input */}
           <div className={styles.searchWrap}>

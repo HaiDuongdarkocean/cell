@@ -57,7 +57,7 @@ export function Select({
   error,
   onChange,
   className,
-  menuMaxHeight = 220,
+  menuMaxHeight,
   menuAlign = 'left',
   'data-testid': dataTestId,
 }: SelectProps): React.JSX.Element {
@@ -234,7 +234,7 @@ export function Select({
           className={`${styles.menu} ${menuAlign === 'right' ? styles.menuAlignRight : styles.menuAlignLeft}`}
           role="listbox"
           aria-activedescendant={highlightedIndex >= 0 ? `select-option-${options[highlightedIndex]?.value}` : undefined}
-          style={{ maxHeight: menuMaxHeight }}
+          style={menuMaxHeight !== undefined ? { '--select-menu-max-height': `${menuMaxHeight}px` } as React.CSSProperties : undefined}
           onKeyDown={handleMenuKeyDown}
         >
           {options.map((opt, index) => (
