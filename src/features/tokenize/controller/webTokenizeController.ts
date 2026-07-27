@@ -49,7 +49,7 @@ const CACHE_CAPACITY = resolveCacheCapacity();
 function resolveViewportRootMargin(): string {
   const vh = window.innerHeight;
   const margin = Math.round(vh);
-  return `${margin}px 0px ${margin}px 0px`;
+  return `${margin}px 0 ${margin}px 0`;
 }
 const MUTATION_DEBOUNCE_MS = 300;
 const PENDING_MUTATION_LIMIT = 1000;

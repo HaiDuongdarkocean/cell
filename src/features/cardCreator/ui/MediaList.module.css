@@ -76,7 +76,7 @@
 }
 
 .cc-media__thumb--drag-over {
-  box-shadow: 0 0 0 var(--space-0-5) var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
 }
 
 .cc-media__img {
@@ -239,7 +239,7 @@
 }
 
 .cc-media__row--drag-over {
-  box-shadow: 0 0 0 var(--space-0-5) var(--color-border-focus);
+  box-shadow: var(--shadow-focus);
 }
 
 .cc-media__play {

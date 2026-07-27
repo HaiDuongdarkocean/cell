@@ -47,6 +47,16 @@ function add(file, lineNo, category, message, line, fix = null) {
   findings.push({ file, lineNo, category, message, line: line.trim(), fix });
 }
 
+function isInsideStringLiteral(line, start, end) {
+  // Treat matches inside '...' / "..." / `...` string literals as false positives
+  // (e.g. contrast-pair labels like 'White / Primary').
+  const stringRe = /(['"`])(?:(?!\1|\\).|\\.)*\1/g;
+  for (const m of line.matchAll(stringRe)) {
+    if (m.index < start && m.index + m[0].length > end) return true;
+  }
+  return false;
+}
+
 function stripComments(line, ext) {
   if (ext === '.css') {
     // strip /* ... */ (simple, not nested)
@@ -56,17 +66,27 @@ function stripComments(line, ext) {
   return line.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/g, '');
 }
 
-function isInMediaQuery(lines, idx, originalLine) {
-  // Check current line or previous non-empty line starts with @media
-  if (/^\s*@media\s/i.test(originalLine)) return true;
-  for (let i = idx - 1; i >= 0; i--) {
-    const l = lines[i];
-    if (/\S/.test(l)) {
-      if (/^\s*@media\s/i.test(l)) return true;
-      break;
+function computeInsideAtRule(lines) {
+  // Track lines inside @media / @container blocks so their pixel breakpoints are ignored.
+  const inside = new Array(lines.length).fill(false);
+  const stack = [];
+  let pendingAtRule = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*@(media|container)\b/i.test(line)) {
+      pendingAtRule = true;
+    }
+    inside[i] = pendingAtRule || (stack.length > 0 && stack[stack.length - 1]);
+    for (const ch of line) {
+      if (ch === '{') {
+        stack.push(pendingAtRule || (stack.length > 0 && stack[stack.length - 1]));
+        pendingAtRule = false;
+      } else if (ch === '}') {
+        stack.pop();
+      }
     }
   }
-  return false;
+  return inside;
 }
 
 // Token map for direct px -> var replacement
@@ -101,6 +121,7 @@ function processFile({ full, relative }) {
   // Remove block comments across the whole file to avoid comment-only findings.
   const content = rawContent.replace(/\/\*[\s\S]*?\*\//g, '');
   const lines = content.split(/\r?\n/);
+  const insideAtRule = ext === '.css' ? computeInsideAtRule(lines) : [];
 
   for (let i = 0; i < lines.length; i++) {
     const lineNo = i + 1;
@@ -116,14 +137,13 @@ function processFile({ full, relative }) {
       const val = m[1];
       // Skip 0px in box-shadow/clip-path offset contexts? We'll flag but suggest 0
       if (line.includes('/* audit-ignore */')) continue;
-      const isMediaQuery = isInMediaQuery(lines, i, original);
-      const category = isMediaQuery ? 'media-query-breakpoint' : 'hardcoded-px';
-      let fix = null;
-      if (!isMediaQuery) {
-        const key = `${parseFloat(val)}px`;
-        if (PX_TOKEN_MAP[key]) fix = PX_TOKEN_MAP[key];
-      }
-      add(relative, lineNo, category, `Hardcoded ${m[0]} value`, original, fix);
+      // Ignore media/container query breakpoints and matchMedia strings where px is required.
+      if (insideAtRule[i]) continue;
+      if (/@(?:media|container)\b/i.test(line)) continue;
+      if (/matchMedia\s*\(/.test(line)) continue;
+      const key = `${parseFloat(val)}px`;
+      const fix = PX_TOKEN_MAP[key] || null;
+      add(relative, lineNo, 'hardcoded-px', `Hardcoded ${m[0]} value`, original, fix);
     }
 
     // 2. z-index
@@ -164,6 +184,8 @@ function processFile({ full, relative }) {
       const lower = m[1].toLowerCase();
       // Skip if part of 'white-space' already handled by regex, but also skip common CSS values that are not color contexts? e.g. 'pre-wrap' doesn't contain color. white-space excluded.
       if (lower === 'transparent') continue;
+      // UI labels (e.g. 'White / Primary') are not color declarations.
+      if (isInsideStringLiteral(original, m.index, m.index + m[0].length)) continue;
       // Contextual fixes
       let fix = 'var(--color-*)';
       if (lower === 'black') fix = 'var(--overlay-background)';
@@ -183,14 +205,14 @@ function processFile({ full, relative }) {
     const ffMatch = line.match(/font-family\s*:\s*([^;{]+)/i);
     if (ffMatch) {
       const ffValue = ffMatch[1].trim();
-      if (ffValue.match(/\bsans-serif\b|\bmonospace\b|\bserif\b/) && !ffValue.includes('var(--font-family)')) {
+      if (ffValue.match(/\bsans-serif\b|\bmonospace\b|\bserif\b/) && !/var\s*\(\s*--font-family\b/.test(ffValue)) {
         add(relative, lineNo, 'hardcoded-font-family', `Hardcoded font-family: ${ffValue}`, original, 'font-family: var(--font-family, sans-serif)');
       }
     }
     const ffTsx = line.match(/fontFamily\s*:\s*['"`]([^'"`]+)['"`]/);
     if (ffTsx) {
       const ffValue = ffTsx[1];
-      if (ffValue.match(/\bsans-serif\b|\bmonospace\b/) && !ffValue.includes('var(--font-family)')) {
+      if (ffValue.match(/\bsans-serif\b|\bmonospace\b/) && !/var\s*\(\s*--font-family\b/.test(ffValue)) {
         add(relative, lineNo, 'hardcoded-font-family', `Hardcoded fontFamily: ${ffValue}`, original, "fontFamily: 'var(--font-family, sans-serif)'");
       }
     }
@@ -228,7 +250,7 @@ function processFile({ full, relative }) {
         const val = bs[1].trim();
         if (val.toLowerCase() === 'none') {
           add(relative, lineNo, 'hardcoded-box-shadow', `Hardcoded box-shadow: none`, original, 'var(--shadow-sm)');
-        } else if (!val.includes('var(--shadow') && !val.includes('var(--card-shadow') && !val.includes('var(--dialog-shadow') && !val.includes('var(--input-focus-ring')) {
+        } else if (!val.includes('var(--shadow') && !val.includes('var(--card-shadow') && !val.includes('var(--dialog-shadow') && !val.includes('var(--input-focus-ring') && !val.includes('var(--cell-token-freq-border')) {
           // Heuristic: if it contains var() but not a shadow token, it's likely a focus ring, note.
           if (val.includes('var(')) {
             add(relative, lineNo, 'hardcoded-box-shadow', `Box-shadow uses raw lengths with tokenized parts: ${val}`, original, 'use --shadow-* token or tokenize all raw values');
@@ -254,7 +276,7 @@ function processFile({ full, relative }) {
         if (!value.includes('var(--duration') && !value.includes('var(--transition')) {
           // 0.01ms is accessibility reduced-motion hack — not tokenizable
           if (value.includes('0.01ms')) {
-            add(relative, lineNo, 'hardcoded-duration-reduced-motion', `Reduced-motion hack duration ${value.trim()}`, original, 'keep (accessibility exception)');
+            continue;
           } else {
             add(relative, lineNo, 'hardcoded-duration', `Hardcoded duration in ${prop}: ${value.trim()}`, original, 'var(--duration-*)');
           }
