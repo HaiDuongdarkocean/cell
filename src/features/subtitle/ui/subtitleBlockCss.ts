@@ -39,13 +39,13 @@ export const SUBTITLE_BLOCK_CSS = `
   background: var(--color-surface);
   backdrop-filter: blur(var(--blur-lg));
   opacity: 0;
-  z-index: -1;
+  z-index: calc(var(--z-dropdown) - 1001);
   transition: opacity var(--transition);
 }
 
 .subtitle-block.dragging {
   border-color: var(--color-border);
-  box-shadow: none;
+  box-shadow: var(--shadow-sm);
   cursor: grabbing;
   /* Promote to a compositor layer only while dragging so the translateY drag
      transform bypasses main-thread layout/paint. Set on .dragging (not the base
@@ -105,7 +105,7 @@ export const SUBTITLE_BLOCK_CSS = `
   isolation: isolate;
   -webkit-tap-highlight-color: transparent;
   outline: none;
-  transition: transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275), background var(--transition), color var(--transition);
+  transition: transform var(--duration-normal) var(--ease-bounce), background var(--transition), color var(--transition);
 }
 
 /* Feathered backdrop — ::before mở rộng + backdrop-filter blur 1px + mask radial fade.
@@ -118,9 +118,9 @@ export const SUBTITLE_BLOCK_CSS = `
   backdrop-filter: blur(var(--blur-xs));
   -webkit-backdrop-filter: blur(var(--blur-xs));
   background: rgba(var(--color-background-rgb), 0.1);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
-  mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
-  z-index: -1;
+  -webkit-mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
+  z-index: calc(var(--z-dropdown) - 1001);
   transition: background var(--duration-fast) ease;
 }
 
@@ -264,7 +264,7 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: none;
   transition:
     opacity var(--duration-normal) ease,
-    transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform var(--duration-normal) var(--ease-bounce);
 }
 
 /* Open state — slide in from right + fade in */
@@ -275,7 +275,7 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: auto;
   transition:
     opacity var(--duration-normal) ease,
-    transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform var(--duration-normal) var(--ease-bounce);
 }
 
 /* Feathered backdrop — same technique as .cluster-btn::before */
@@ -287,9 +287,9 @@ export const SUBTITLE_BLOCK_CSS = `
   backdrop-filter: blur(var(--blur-xs));
   -webkit-backdrop-filter: blur(var(--blur-xs));
   background: rgba(var(--color-background-rgb), 0.1);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
-  mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
-  z-index: -1;
+  -webkit-mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
+  z-index: calc(var(--z-dropdown) - 1001);
 }
 
 .more-popover__slot {
@@ -454,7 +454,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .offset-step-btn {
   position: relative;
-  z-index: 1;
+  z-index: calc(var(--z-dropdown) - 999);
   border: none;
   background: transparent;
   cursor: pointer;
@@ -486,7 +486,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .offset-value {
   position: relative;
-  z-index: 2;
+  z-index: calc(var(--z-dropdown) - 998);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -508,7 +508,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .offset-value:focus {
-  z-index: 3;
+  z-index: calc(var(--z-dropdown) - 997);
   box-shadow: inset 0 0 0 var(--space-0-5) var(--color-primary);
   background: var(--color-background);
 }
@@ -592,7 +592,7 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: auto;
   user-select: none;
   position: relative;
-  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) var(--ease-bounce);
 }
 
 .subtitle-manager-icon-feather {
@@ -602,9 +602,9 @@ export const SUBTITLE_BLOCK_CSS = `
   backdrop-filter: blur(var(--blur-xs));
   -webkit-backdrop-filter: blur(var(--blur-xs));
   background: rgba(var(--color-background-rgb), 0.1);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
-  mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
-  z-index: -1;
+  -webkit-mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
+  z-index: calc(var(--z-dropdown) - 1001);
   transition: background var(--duration-fast) ease;
   pointer-events: none;
 }
@@ -648,7 +648,7 @@ export const SUBTITLE_BLOCK_CSS = `
   line-height: var(--leading-normal);
   letter-spacing: var(--tracking-normal);
   text-align: left;
-  text-shadow: none;
+  text-shadow: var(--shadow-sm);
   box-sizing: border-box;
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) var(--color-surface-hover);
@@ -720,7 +720,7 @@ export const SUBTITLE_BLOCK_CSS = `
   padding: 0;
   box-sizing: border-box;
   border-radius: var(--radius-sm);
-  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) var(--ease-bounce);
 }
 
 .subtitle-manager-close:hover {
@@ -944,7 +944,7 @@ export const SUBTITLE_BLOCK_CSS = `
   isolation: isolate;
   user-select: none;
   pointer-events: auto;
-  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) var(--ease-bounce);
 }
 
 @media (hover: hover) {
@@ -968,9 +968,9 @@ export const SUBTITLE_BLOCK_CSS = `
   backdrop-filter: blur(var(--blur-xs));
   -webkit-backdrop-filter: blur(var(--blur-xs));
   background: rgba(var(--color-background-rgb), 0.1);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
-  mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
-  z-index: -1;
+  -webkit-mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
+  z-index: calc(var(--z-dropdown) - 1001);
   transition: background var(--duration-fast) ease;
   pointer-events: none;
 }

@@ -71,7 +71,7 @@ describe('subtitleImport', () => {
     it('has bouncy transform transition matching cluster buttons', () => {
       const button = createImportButton(video, defaultConfig);
       expect(button.style.transition).toContain('transform');
-      expect(button.style.transition).toContain('cubic-bezier(0.175, 0.885, 0.32, 1.275)');
+      expect(button.style.transition).toContain('var(--ease-bounce)');
     });
   });
 

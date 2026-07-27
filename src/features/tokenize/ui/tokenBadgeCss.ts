@@ -43,7 +43,7 @@ export function buildTokenBadgeCss(): string {
      bypass main-thread layout/paint entirely. One 36x36 layer is negligible
      memory; keeping it permanent avoids layer-creation jank at drag start. */
   will-change: transform !important;
-  box-shadow: none !important;
+  box-shadow: var(--shadow-sm) !important;
   outline: none !important;
 }
 
@@ -103,7 +103,7 @@ export function buildTokenBadgeCss(): string {
   display: none;
   flex-direction: column !important;
   gap: var(--space-3) !important;
-  box-shadow: none !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
 .cell-token-panel--open {

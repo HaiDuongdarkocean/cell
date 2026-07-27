@@ -76,7 +76,7 @@ export function assignImportRole(
   return { target, native, ignored };
 }
 
-const UPLOAD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:65% !important;height:65% !important;display:block;fill:none !important;opacity:1 !important;filter:none !important"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="17" x2="12" y2="11"/><polyline points="9 14 12 11 15 14"/></svg>`;
+const UPLOAD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="var(--stroke-width-md)" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:65% !important;height:65% !important;display:block;fill:none !important;opacity:1 !important;filter:none !important"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="17" x2="12" y2="11"/><polyline points="9 14 12 11 15 14"/></svg>`;
 
 /**
  * Create icon-only import button for the top-left toolbar (ADR-015 UI v4).
@@ -131,9 +131,9 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     backdrop-filter: blur(var(--blur-xs));
     -webkit-backdrop-filter: blur(var(--blur-xs));
     background: rgba(var(--color-background-rgb), 0.1);
-    -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
-    mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
-    z-index: -1;
+    -webkit-mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
+    mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
+    z-index: calc(var(--z-dropdown) - 1001);
     pointer-events: none;
   `;
   label.appendChild(labelFeather);
@@ -148,7 +148,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
       label.style.transition = 'none';
       labelFeather.style.transition = 'none';
     } else {
-      label.style.transition = 'background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      label.style.transition = 'background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) var(--ease-bounce)';
       labelFeather.style.transition = 'background var(--duration-fast) ease';
     }
   };

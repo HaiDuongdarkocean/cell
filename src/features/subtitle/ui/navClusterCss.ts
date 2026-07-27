@@ -25,13 +25,13 @@ export const NAV_CLUSTER_CSS = `
   pointer-events: auto;
   /* ADR-018 D5-rev: drag is via grip tab only — cluster body = default cursor */
   cursor: default;
-  box-shadow: none;
+  box-shadow: var(--shadow-sm);
   /* ADR-024: position values represent the *center* of the cluster, not the
      top-left corner. translate(-50%, -50%) makes left/top the anchor point. */
   transform: translate(-50%, -50%);
 }
 .nav-cluster.dragging {
-  box-shadow: none;
+  box-shadow: var(--shadow-sm);
   transform: translate(-50%, -50%) scale(1.03);
 }
 /* Background layer with opacity so controls can change opacity without affecting
@@ -44,7 +44,7 @@ export const NAV_CLUSTER_CSS = `
   background: var(--color-surface);
   backdrop-filter: blur(var(--blur-lg));
   opacity: var(--nav-cluster-bg-opacity, 0.7);
-  z-index: -1;
+  z-index: calc(var(--z-dropdown) - 1001);
 }
 .nav-cluster[aria-grabbed="true"] {
   cursor: grabbing !important;
@@ -127,7 +127,7 @@ export const NAV_CLUSTER_CSS = `
   line-height: var(--leading-none);
   opacity: var(--nav-cluster-btn-opacity, 0.9);
   -webkit-tap-highlight-color: transparent;
-  transition: transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
+  transition: transform var(--duration-normal) var(--ease-bounce), border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 .nav-cluster-btn .nav-cluster-icon {
   width: var(--nav-cluster-icon-size-ratio);
@@ -184,7 +184,7 @@ export const NAV_CLUSTER_CSS = `
   cursor: grabbing;
 }
 .nav-cluster.collapsed.mirror-right {
-  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+  border-radius: var(--radius-none) var(--radius-full) var(--radius-full) 0;
   transform: translate(-50%, -50%) scaleX(-1);
 }
 .nav-cluster.collapsed .nav-cluster-grip {

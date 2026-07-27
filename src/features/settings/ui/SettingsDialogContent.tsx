@@ -152,7 +152,7 @@ export function SettingsDialogContent({ settings, onChange, tokenizeState, onTog
           }
         });
       },
-      { root: mainCol, rootMargin: '-10% 0px -70% 0px', threshold: 0 },
+      { root: mainCol, rootMargin: '-10% 0 -70% 0', threshold: 0 },
     );
     Object.values(sectionRefs.current).forEach((el) => {
       if (el) observer.observe(el);

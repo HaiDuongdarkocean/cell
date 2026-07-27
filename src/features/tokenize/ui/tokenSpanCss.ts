@@ -87,7 +87,7 @@ ${buildVariables()}
   border: none !important;
   border-radius: var(--radius-xs) !important;
   outline: none !important;
-  box-shadow: none !important;
+  box-shadow: var(--shadow-sm) !important;
   background: transparent !important;
   color: inherit !important;
   font: inherit !important;
@@ -205,7 +205,7 @@ ${buildVariables()}
 .js-cell-token.js-cell-token--status-known.js-cell-token--popup-open,
 .js-cell-token.js-cell-token--status-ignore:hover,
 .js-cell-token.js-cell-token--status-ignore.js-cell-token--popup-open {
-  text-shadow: none !important;
+  text-shadow: var(--shadow-sm) !important;
 }
 
 /* known/ignore hide frequency and status by default; hover reveals status when
@@ -220,8 +220,8 @@ ${buildVariables()}
 }
 .js-cell-token.js-cell-token--status-known:not(:hover):not(.js-cell-token--popup-open),
 .js-cell-token.js-cell-token--status-ignore:not(:hover):not(.js-cell-token--popup-open) {
-  box-shadow: none !important;
-  text-shadow: none !important;
+  box-shadow: var(--shadow-sm) !important;
+  text-shadow: var(--shadow-sm) !important;
 }
 
 /* Ignore is rendered the same as known: no frequency, no status by default,
@@ -229,8 +229,8 @@ ${buildVariables()}
 
 /* Global layer toggles (applied per token) */
 .js-cell-token.js-cell-token--status-off {
-  box-shadow: none !important;
-  text-shadow: none !important;
+  box-shadow: var(--shadow-sm) !important;
+  text-shadow: var(--shadow-sm) !important;
 }
 .js-cell-token.js-cell-token--frequency-off {
   --cell-token-guard: currentColor;
