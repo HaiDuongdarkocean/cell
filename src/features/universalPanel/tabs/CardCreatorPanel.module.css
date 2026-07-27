@@ -14,6 +14,10 @@
   overflow-y: auto;
 }
 
+.scrollArea .panelBody {
+  padding: var(--space-4);
+}
+
 /* Loading / empty state vertical centering */
 .cardCreatorPanel > [data-testid='empty-state'] {
   justify-content: center;

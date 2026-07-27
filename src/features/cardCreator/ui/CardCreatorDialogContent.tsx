@@ -27,12 +27,14 @@ interface CardCreatorDialogContentProps {
   state: ReturnType<typeof useCardCreatorState>;
   variant: 'desktop' | 'mobile';
   onCancel: () => void;
+  className?: string;
 }
 
 export function CardCreatorDialogContent({
   state,
   variant,
   onCancel,
+  className,
 }: CardCreatorDialogContentProps): ReactElement {
   const {
     draft,
@@ -61,10 +63,11 @@ export function CardCreatorDialogContent({
 
   const hasQueue = queueItems.length >= 2;
 
-  const containerClass =
-    variant === 'mobile'
-      ? `${styles['cc-dialog--mobile']} ${styles['cc-dialog__body']}`
-      : styles['cc-dialog__body'];
+  const containerClass = [
+    styles['cc-dialog__body'],
+    variant === 'mobile' && styles['cc-dialog--mobile'],
+    className,
+  ].filter(Boolean).join(' ');
 
   // Dropdowns (Note type, Deck) are always enabled — no disable/opacity
   // flash. Options populate instantly when the prefetched AnkiConnect data
