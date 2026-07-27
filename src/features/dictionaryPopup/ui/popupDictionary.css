@@ -587,7 +587,7 @@
   font-weight: var(--font-weight-semibold);
   pointer-events: none;
   box-shadow: 0 0 0 var(--space-0-5) var(--color-background);
-  z-index: 1;
+  z-index: var(--z-dropdown);
 }
 
 /* === Block: cell-audio === */
