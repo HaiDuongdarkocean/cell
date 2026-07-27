@@ -143,7 +143,7 @@ docs/           # Tài liệu dự án
 │   ├── spec-predictive-viewport-tokenize.md # VDLT-Predict: 0 plain in viewport, direction overscan, cold-start
 │   └── spec-badge-pointer-dictionary-trigger.md # Orbital badge + moon pointer lookup trigger for mobile/tablet/fullscreen
 │   └── universal-orbital-panel.md # Universal orbital panel PRD: Dictionary + Settings tabs, integrated lookup + card creator
-│   └── spec-dictionary-tab-copy-popup-visual.md # Dictionary tab: copy floating popup visual exactly (header, checkboxes, toolbar, container queries)
+│   └── spec-dictionary-tab-copy-popup-visual.md # Approved fidelity spec: search debounce/single clear, header→toolbar→definitions order, block definition rows, transparent final candidate strip, responsive visual verification
 ├── plan/                              # Feasibility & scope (G1) — "should we build it"
 │   ├── chrome-extension-video-downloader.md
 │   ├── parallel-hls-conversion-scaling.md
