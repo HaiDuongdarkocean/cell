@@ -176,7 +176,7 @@ export const NAV_CLUSTER_CSS = `
   width: var(--nav-cluster-collapse-size, var(--nav-cluster-btn-size, var(--space-12)));
   height: var(--nav-cluster-collapse-size, var(--nav-cluster-btn-size, var(--space-12)));
   overflow: hidden;
-  border-radius: 50% 0 0 50%;
+  border-radius: var(--radius-full) 0 0 var(--radius-full);
   /* ADR-018 D5-rev: collapsed circle = drag handle (no buttons inside) */
   cursor: grab;
 }
@@ -184,7 +184,7 @@ export const NAV_CLUSTER_CSS = `
   cursor: grabbing;
 }
 .nav-cluster.collapsed.mirror-right {
-  border-radius: 0 50% 50% 0;
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
   transform: translate(-50%, -50%) scaleX(-1);
 }
 .nav-cluster.collapsed .nav-cluster-grip {

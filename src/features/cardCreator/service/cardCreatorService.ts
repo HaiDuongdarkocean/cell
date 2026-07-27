@@ -329,7 +329,7 @@ export async function ensureDefaultModel(url: string): Promise<Result<void>> {
         Back: '{{FrontSide}}<hr id=answer>{{SentenceTranslation}}<br>{{Definitions}}<br>{{Image}}<br>{{WordAudio}}<br>{{Note}}<br>{{MoreExample}}',
       },
     ],
-    css: '.card { font-family: sans-serif; font-size: var(--font-size-base, 14px); text-align: center; color: var(--color-text, black); background-color: var(--color-background, white); }',
+    css: '.card { font-family: var(--font-family, sans-serif); font-size: var(--font-size-base, 14px); text-align: center; color: var(--color-text, black); background-color: var(--color-background, white); }',
   });
   if (!r.ok) return r;
 
