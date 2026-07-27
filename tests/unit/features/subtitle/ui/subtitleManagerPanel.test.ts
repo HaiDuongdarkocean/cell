@@ -1,12 +1,14 @@
 import { createSubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel';
 import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitleManagerPanel';
+import { DEFAULT_LIGHT_TOKENS, formatStaticTokens, formatComponentTokens } from '@/shared/lib/tokens';
 
-// Inject minimal theme tokens so var(--color-*) resolve in tests
+// Inject full default token set so var(--*) resolve in tests.
 beforeAll(() => {
   const style = document.createElement('style');
-  style.textContent = `
-    .test-theme-root { --color-primary: #2563eb; --color-warning: #f59e0b; --color-background: #ffffff; --color-surface: #f8fafc; --color-surface-hover: #f1f5f9; --color-text: #0f172a; --color-text-secondary: #475569; --color-text-muted: #94a3b8; --color-border: #e2e8f0; --color-border-subtle: #f1f5f9; --font-size-xs: 12px; --font-size-sm: 13px; --font-size-base: 14px; --space-1: 4px; --space-2: 8px; --space-3: 12px; --radius-pill: 8px; --radius-card: 12px; --shadow-md: none; }
-  `;
+  const colorTokens = Object.entries(DEFAULT_LIGHT_TOKENS)
+    .map(([name, value]) => `${name}: ${value};`)
+    .join(' ');
+  style.textContent = `.test-theme-root { ${formatStaticTokens().replace(/\n/g, ' ')} ${formatComponentTokens().replace(/\n/g, ' ')} ${colorTokens} }`;
   document.head.appendChild(style);
 });
 

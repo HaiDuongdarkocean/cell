@@ -37,9 +37,9 @@ Use existing CSS custom properties from `themeTokens.ts`. Map mockup tokens to t
 | `--font-size-xs` | `--font-size-xs` (12px) | Meta, count, labels |
 | `--font-size-sm` | `--font-size-sm` (13px) | Names, panel title |
 | `--font-size-base` | `--font-size-base` (14px) | Base |
-| `--spacing-xs` | `--spacing-xs` (4px) | Gaps |
-| `--spacing-sm` | `--spacing-sm` (8px) | Toolbar gaps, section padding |
-| `--spacing-md` | `--spacing-md` (12px) | Item padding |
+| `--space-xs` | `--space-xs` (4px) | Gaps |
+| `--space-sm` | `--space-sm` (8px) | Toolbar gaps, section padding |
+| `--space-md` | `--space-md` (12px) | Item padding |
 | `--radius-sm` | `--radius-sm` (6px) | Format badge, radio |
 | `--radius-md` | `--radius-md` (8px) | Toolbar buttons, panel |
 | `--shadow-md` | `--shadow-md` | Panel shadow |

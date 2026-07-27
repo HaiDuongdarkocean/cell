@@ -1046,7 +1046,7 @@ export const SUBTITLE_BLOCK_CSS = `
   user-select: none;
   font-size: var(--font-size-base);
   color: rgba(var(--overlay-text-rgb), 0.95);
-  text-shadow: 0 calc(var(--space-0-5) / 2) var(--space-1) rgba(var(--overlay-background-rgb), 0.8);
+  text-shadow: var(--shadow-textSoft) rgba(var(--overlay-background-rgb), 0.8);
   font-family: var(--font-family);
 }
 

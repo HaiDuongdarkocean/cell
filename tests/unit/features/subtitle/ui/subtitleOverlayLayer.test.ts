@@ -135,8 +135,8 @@ describe('applyStyle', () => {
   it('sets fontFamily via sanitizeFontFamily', () => {
     const container = document.createElement('div');
     const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
-    applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, fontFamily: 'Noto Sans JP, sans-serif' }, overlay);
-    expect(overlay.style.fontFamily).toBe('Noto Sans JP, sans-serif');
+    applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, fontFamily: 'var(--font-family, sans-serif)' }, overlay);
+    expect(overlay.style.fontFamily).toBe('var(--font-family, sans-serif)');
   });
 
   it('sets textAlign', () => {
