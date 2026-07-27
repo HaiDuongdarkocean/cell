@@ -81,11 +81,11 @@ The popup header is rendered by `renderHeader` in `popupContent.ts` (lines 38–
 
 The popup candidate selector is `renderCandidateChips` in `popupContent.ts` (lines 306–334), styled at `popupDictionary.css` `.cell-candidates` / `.cell-chip` (lines 1185–1265).
 
-- Container: `.cell-candidates` — `flex: 0 0 auto; background: var(--color-surface);` (lines 1186–1189).
-- Chips wrapper: `.cell-candidates__chips` — `display: flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-2);` (lines 1191–1196). At ≥480px: `gap: var(--space-2); padding: var(--space-2) var(--space-3);` (lines 1580–1582).
-- Scroll strip: `.cell-candidates__chips-scroll` — `flex: 1 1 auto; display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; min-width: 0;` (lines 1198–1207). Hide webkit scrollbar (`::-webkit-scrollbar { display: none; }`).
-- Chip: `.cell-chip` extends `.btn` + `.btn--primary` if active or `.btn--outline` if inactive. It has `flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; border-radius: var(--radius-full); white-space: nowrap;` (lines 1209–1218). The active chip gets `aria-current="true"`. Clicking a chip calls `panel.setActiveCandidate(idx)`.
-- The integrated panel currently renders candidates in a wrapping flex of `Button` components (`DictionaryPanelView.tsx` lines 220–234, `.candidates` lines 132–136). This must become a single horizontal scroll strip with the same chip styling.
+- Container: `.cell-candidates` — final normal-flow block; no overlay or sticky positioning. Integrated copy uses transparent background so candidate references do not compete with definitions.
+- Chips wrapper: `.cell-candidates__chips` — `display: flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-2);`; at ≥480px use the popup spacing tiers. Add bottom padding at least equal to one rendered chip height.
+- Scroll strip: `.cell-candidates__chips-scroll` — `flex: 1 1 auto; display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; min-width: 0;`; hide webkit scrollbar (`::-webkit-scrollbar { display: none; }`).
+- Chip: render only candidate name, with transparent background, no filled active/inactive treatment, `flex-shrink: 0`, ellipsis for overflow, and the popup's pill geometry. Active chip gets `aria-current="true"`, `color: var(--color-primary)`, and a 2px underline. Clicking a chip calls `panel.setActiveCandidate(idx)`.
+- The integrated panel currently renders candidates in a wrapping flex of `Button` components (`DictionaryPanelView.tsx` lines 220–234, `.candidates` lines 132–136). Replace it with one horizontal final strip.
 
 ### 3.3 Definitions (checkboxes, POS, examples)
 
@@ -191,7 +191,7 @@ The popup has **no footer**. Its two primary actions (`Send to Card` and `Quick 
 
 Reorganize the render output so it matches the popup's DOM order and class names:
 
-1. **Search row** — keep the existing `SearchField` + `Button` search row, but give it its own wrapper class so the rest of the panel is not padded by `.dictionaryPanel`.
+1. **Search row** — keep one `SearchField` only; remove the adjacent Search `Button`, suppress the native search clear affordance so exactly one clear X remains, and trigger lookup after 350ms idle. Enter remains immediate lookup.
 2. **Loading / error / empty states** — keep, but style them compactly (spinner/empty-state inside the panel, not a giant card).
 3. **Active entry** (`.cell-active-entry` equivalent):
    - `.cell-header` (2 rows, actions included).
@@ -289,10 +289,10 @@ The following table maps the popup's BEM classes to the target module classes an
 | `.cell-toolbar__tab` | `.cell-toolbar__tab` | `position: relative; flex-shrink: 0; border-radius: var(--radius-full);` plus `.btn` + `.btn--primary` or `.btn--ghost` (lines 561–565). |
 | `.cell-toolbar__label` + `.cell-label` | `.cell-toolbar__label` / `.cell-label` | `.cell-label` → `display: none; font-size: var(--font-size-xs);` (lines 51–54). At ≥480px `.cell-label { display: inline; }` (line 1483). At <480px `.btn:has(.cell-label)` becomes circle (lines 1610–1616). |
 | `.cell-toolbar__badge` | `.cell-toolbar__badge` | `position: absolute; top: calc(-1 * var(--space-0-5)); right: calc(-1 * var(--space-0-5)); min-width: var(--space-3); aspect-ratio: 1; padding: 0 var(--space-0-5); border-radius: var(--radius-full); background: var(--color-primary); color: var(--color-text-inverse); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); box-shadow: var(--shadow-focus-bg); z-index: var(--z-dropdown);` (lines 571–589). |
-| `.cell-candidates` | `.cell-candidates` | `flex: 0 0 auto; background: var(--color-surface);` (lines 1186–1189). |
-| `.cell-candidates__chips` | `.cell-candidates__chips` | `display: flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-2);` (lines 1191–1196). At ≥480px `gap: var(--space-2); padding: var(--space-2) var(--space-3);` (lines 1580–1582). |
-| `.cell-candidates__chips-scroll` | `.cell-candidates__chips-scroll` | `flex: 1 1 auto; display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; min-width: 0;` (lines 1198–1207). Hide webkit scrollbar. |
-| `.cell-chip` | `.cell-chip` | `flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; border-radius: var(--radius-full); white-space: nowrap;` plus `.btn` + `.btn--primary`/`.btn--outline` (lines 1209–1218). |
+| `.cell-candidates` | `.cell-candidates` | Final normal-flow block; `flex: 0 0 auto; background: transparent;` plus bottom padding ≥ one chip height. |
+| `.cell-candidates__chips` | `.cell-candidates__chips` | `display: flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-2);`; at ≥480px use popup spacing tiers. |
+| `.cell-candidates__chips-scroll` | `.cell-candidates__chips-scroll` | `flex: 1 1 auto; display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; min-width: 0;` and hidden webkit scrollbar. |
+| `.cell-chip` | `.cell-chip` | Candidate name only; transparent background; `flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; border-radius: var(--radius-full); white-space: nowrap;`; active = primary text + 2px underline, no filled state. |
 
 ### 5.5 Tab content panels
 
@@ -436,15 +436,20 @@ If `Quick Add` should be wired by the parent, add an optional prop:
 - [ ] Header has exactly two rows: Row 1 = word + reading + audio buttons + action icons; Row 2 = status pill + split frequency badge.
 - [ ] The status pill is a `<button>` with `min-width: 6em`, `height: var(--space-5)`, and the four status background/foreground colors from `popupDictionary.css` lines 328–346.
 - [ ] Frequency badge is a split pill with `.cell-header__frequency-source` and `.cell-header__frequency-rank`, colored per `core/common/general/advanced/rare` bands using `color-token-freq-*` tokens.
+- [ ] Definitions use the popup's block DOM structure: one block `.cell-def__item`/`cellDefItem` row per definition, with a separate checkbox gutter and block text wrapper; no inline outer `<label>` that allows definitions to flow into each other.
 - [ ] Definitions render with a left checkbox gutter. Unchecked = dot; hovered = empty checkbox border; checked = primary-filled checkbox with white tick.
-- [ ] Each definition displays `pos` + `text` in one span, examples prefixed with `•` and no separate POS badge.
-- [ ] Candidate chips are in a horizontally scrolling strip (`overflow-x: auto`, hidden scrollbar) with `.btn--primary` active and `.btn--outline` inactive.
-- [ ] Toolbar has four icon buttons (`audioWave`, `image`, `languages`, `link`) with hidden labels below 480px and pill labels at/above 480px.
+- [ ] Each definition displays `pos` + `text` as one visual line/block matching popup typography, examples prefixed with `•`, and no separate POS badge.
+- [ ] Candidate chips render in a horizontally scrolling strip at the end of the dictionary content (`overflow-x: auto`, hidden scrollbar), never inside or between definition rows.
+- [ ] Candidate chips use transparent background in every state and render only the candidate name; active state uses `--color-primary` text plus a 2px underline, with no filled background.
+- [ ] The candidate strip reserves at least one complete chip height below its final item so the last candidate can scroll fully into view without being covered or clipped.
+- [ ] Toolbar has four icon buttons (`audioWave`, `image`, `languages`, `link`) directly below the header and before definitions, with hidden labels below 480px and pill labels at/above 480px.
 - [ ] Active tab content panel styling matches the popup: audio sub-tabs and rows, image horizontal strip, translate block, links chips.
 - [ ] `useDictionaryPanel` initializes `definitionSelection` from `defaultSelected`, exposes `toggleDefinition`, and `sendToCard`/`quickAdd` use selected definitions (fallback to all if none).
 - [ ] `DictionaryPanelView.module.css` uses `container-type: inline-size` and replicates the popup's `@container` tiers (compact, narrow 380–479, default ≥480, wide ≥768).
+- [ ] Search is one `SearchField` only: no adjacent Search button, no native browser search clear plus custom clear duplication, and one visible clear X.
+- [ ] Typing triggers one debounced lookup after 350ms of inactivity; Enter triggers immediate lookup; empty/whitespace input does not dispatch lookup.
 - [ ] `npm run typecheck`, `npm run test:unit`, and `npm run build` all pass.
-- [ ] Manual DevTools side-by-side comparison shows the integrated panel identical to the floating popup at 320px, 375px, 414px, 480px, 640px, and 768px+ effective widths.
+- [ ] Manual DevTools side-by-side comparison shows the integrated panel identical to the floating popup at 320px, 375px, 414px, 480px, 640px, and 768px+ effective widths, including populated definitions and the final candidate visibility edge case.
 
 ## 12. Boundaries / out of scope
 
@@ -454,13 +459,14 @@ If `Quick Add` should be wired by the parent, add an optional prop:
 - Do **not** add new npm dependencies.
 - Do **not** add multi-candidate stacked active entries unless the existing `candidates` array is expanded later; the integrated panel should match the popup's single active entry + candidate chips pattern.
 - Full audio/image/translate data fetching is in scope **visually** (empty/skeleton/loaded states), but if backend handlers are missing, the panels may remain in their empty/skeleton states. The wire-up to `FETCH_COMMUNITY_AUDIO`, `FETCH_IMAGES`, `TRANSLATE`, and `TTS_FETCH_AUDIO` can be a follow-up if not already available.
-- The search input row is panel-specific and not part of the popup; keep it, but style it to sit above the popup-clone content without breaking the container query.
+- The search input row is panel-specific and sits above the popup-clone content. It has one visible clear X, no adjacent Search button, and uses a 350ms idle debounce.
 
-## 13. Open questions
+## 13. Resolved decisions
 
-1. **Quick Add wiring**: Should the integrated panel's `Quick Add` icon call `props.onQuickAdd(prefill)` (parent handles settings + `quickAddNote`), or should `useDictionaryPanel` send `MESSAGE_TYPES.QUICK_ADD` directly? The popup uses a callback wired by the content script; the panel should probably mirror that callback pattern.
-2. **Definition selection persistence across candidate switches**: Should switching candidates reset `definitionSelection` to the new candidate's `defaultSelected` (popup behavior for per-candidate state), or should selection be shared across all candidates in the panel?
-3. **`.btn`/`.icon-btn` source**: Should `DictionaryPanelView.tsx` import `src/shared/styles/components.css` globally so the popup's `.btn`/`.icon-btn` classes work verbatim, or should the styles be duplicated/composed inside the CSS module? Importing the global file is the closest match to the popup but adds a global CSS import to the React surface.
-4. **Search row placement**: Should the search row be visually merged into the popup header (e.g. as a top toolbar) or kept as a separate block above the popup-clone content?
-5. **Tab panel data**: Should audio/image/translate panels fetch live data in this PR (reusing the popup controller's message types and logic), or should they render static empty/skeleton states that match the popup visually and be wired later?
-6. **Touch affordance for definition checkboxes**: The popup shows a dot until hover or check. On touch devices with no hover, the dot is the only affordance. Should the integrated panel keep this exact behavior or always show the empty checkbox on coarse pointers?
+1. **Fidelity target**: The popup's rendered DOM hierarchy and computed visual states are the source of truth. “100% copy” includes layout order, spacing, typography, colors, controls, hover/focus/selected states, responsive tiers, loading, empty, error, and populated definition states.
+2. **Search**: Keep one search field as the integrated-panel-only affordance. Remove the adjacent Search button. Disable the native `type="search"` clear affordance or otherwise ensure only one visible X remains. Lookup after 350ms idle; Enter remains an immediate submit path.
+3. **Dictionary order**: `Header → Toolbar/material slot → Definitions → Candidate strip`. Candidate strip is the final normal-flow block.
+4. **Definitions**: Reproduce popup block structure, including one independent row per definition. Do not use an inline outer label or inline text wrapper that causes definitions to merge horizontally.
+5. **Candidates**: Candidate strip is a low-emphasis reference control. Transparent background; candidate name only; active text uses primary color plus 2px underline; reserve bottom space equal to at least one chip height.
+6. **Universal shell boundary**: UniversalPanel shell, Dictionary/Settings navigation, right Card Creator pane, backdrop, and close behavior remain integrated-panel behavior. They are not part of the floating popup visual clone.
+7. **Verification**: Runtime verification must use Chrome DevTools with populated data, screenshots, bounding rectangles, computed styles, and the final-candidate scroll case. Source inspection alone is insufficient.
