@@ -57,3 +57,8 @@
 .both {
   resize: both;
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .textarea { transition: none; animation: none; }
+}

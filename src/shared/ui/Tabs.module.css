@@ -38,3 +38,8 @@
 .content {
   padding: var(--space-4) 0;
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger { transition: none; animation: none; }
+}

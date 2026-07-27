@@ -63,3 +63,8 @@
   font-size: var(--font-size-xs);
   color: var(--input-error-fg);
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .input { transition: none; animation: none; }
+}

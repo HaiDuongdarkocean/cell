@@ -107,3 +107,9 @@
 
 .btn--sm { height: var(--button-height-sm); padding: var(--button-padding-sm-y) var(--button-padding-sm-x); font-size: var(--button-font-size-sm); }
 .btn--lg { height: var(--button-height-lg); padding: var(--button-padding-lg-y) var(--button-padding-lg-x); font-size: var(--button-font-size-lg); }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn { transition: none; animation: none; }
+  .btn { transition: none; animation: none; }
+}

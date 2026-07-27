@@ -47,3 +47,8 @@
   color: var(--color-text-secondary);
   line-height: var(--leading-normal);
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; animation: none; }
+}

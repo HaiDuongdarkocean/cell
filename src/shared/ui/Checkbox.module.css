@@ -19,8 +19,8 @@
 .input {
   position: absolute;
   opacity: 0;
-  width: 1px;
-  height: 1px;
+  width: var(--border-width-hairline);
+  height: var(--border-width-hairline);
   margin: 0;
   pointer-events: none;
 }
@@ -102,4 +102,9 @@
 
 .error .helper {
   color: var(--color-error);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .box { transition: none; animation: none; }
 }

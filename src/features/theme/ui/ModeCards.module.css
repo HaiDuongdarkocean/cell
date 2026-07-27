@@ -12,20 +12,10 @@
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-3);
-  border: var(--space-0-5) solid var(--color-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-surface);
+  border-width: var(--space-0-5);
+  --card-radius: var(--radius-pill);
   cursor: pointer;
-  transition: border-color var(--transition-normal) ease, background var(--transition-normal) ease;
-}
-
-.card:hover {
-  background: var(--color-surface-hover);
-}
-
-.card.selected {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
+  text-align: center;
 }
 
 .icon {
@@ -42,4 +32,10 @@
 .card:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
 }

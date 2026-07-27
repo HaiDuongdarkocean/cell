@@ -27,3 +27,8 @@
   border-color: var(--color-primary);
   background: var(--color-primary-subtle);
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; animation: none; }
+}

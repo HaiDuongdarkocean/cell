@@ -40,10 +40,7 @@
 
 .card {
   padding: var(--space-3);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-pill);
-  background: var(--color-background);
-  color: var(--color-text);
+  --card-radius: var(--radius-pill);
 }
 
 .input {

@@ -4,7 +4,7 @@
 // form+input, dropzone, toast (success/error). Tất cả dùng var(--color-*) nên
 // auto-update khi themeManager.applyTheme đổi CSS vars.
 
-import { Button } from '@/shared/ui/Button';
+import { Button, Card } from '@/shared/ui';
 import styles from './ThemePreview.module.css';
 
 export function ThemePreview(): React.JSX.Element {
@@ -32,7 +32,7 @@ export function ThemePreview(): React.JSX.Element {
 
       <div className={styles.section}>
         <div className={styles.sectionLabel}>Card</div>
-        <div className={styles.card}>Card content — surface with border</div>
+        <Card className={styles.card}>Card content — surface with border</Card>
       </div>
 
       <div className={styles.section}>
