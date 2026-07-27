@@ -88,6 +88,7 @@ export function DictionaryPanelView({
   const [searchHistory, setSearchHistory] = useState<readonly string[]>([]);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSearchFocusRef = useRef(false);
   const userTypedRef = useRef(false);
 
   const { searchTerm, setSearchTerm, search } = panel;
@@ -127,6 +128,7 @@ export function DictionaryPanelView({
 
   const handleSearchChange = useCallback((value: string): void => {
     userTypedRef.current = true;
+    pendingSearchFocusRef.current = true;
     setSearchTerm(value);
   }, [setSearchTerm]);
 
@@ -138,6 +140,7 @@ export function DictionaryPanelView({
         searchDebounceRef.current = null;
       }
       userTypedRef.current = false;
+      pendingSearchFocusRef.current = true;
       const trimmed = searchTerm.trim();
       if (trimmed) {
         search(trimmed);
@@ -152,16 +155,27 @@ export function DictionaryPanelView({
     if (searchDebounceRef.current) {
       clearTimeout(searchDebounceRef.current);
     }
+    pendingSearchFocusRef.current = true;
     searchDebounceRef.current = setTimeout(() => {
       userTypedRef.current = false;
       search(trimmed);
-    }, 350);
+    }, 500);
     return () => {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
       }
     };
   }, [searchTerm, search]);
+
+  useEffect(() => {
+    if (panel.isLoading || !panel.currentResult || !pendingSearchFocusRef.current) return;
+    pendingSearchFocusRef.current = false;
+    const input = document.getElementById(SEARCH_INPUT_ID) as HTMLInputElement | null;
+    if (!input) return;
+    input.focus();
+    const end = input.value.length;
+    input.setSelectionRange(end, end);
+  }, [panel.isLoading, panel.currentResult]);
 
   const handlePlayTerm = useCallback((): void => {
     if (!panel.currentResult) return;
