@@ -1035,6 +1035,12 @@
   padding: var(--space-2);
 }
 
+.cellAudioSkeletonSubtabs {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-0-5) 0 var(--space-1);
+}
+
 .cellAudioSkeletonRow {
   display: flex;
   align-items: center;
