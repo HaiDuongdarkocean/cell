@@ -63,6 +63,7 @@ import type {
   CardCreatorResponseData,
 } from '@/entities/message';
 import type { MediaUpdateMode } from '@/entities/settings';
+import tokensJson from '@/shared/styles/tokens.json';
 
 /** Ok or error result — never throws. */
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
@@ -329,7 +330,7 @@ export async function ensureDefaultModel(url: string): Promise<Result<void>> {
         Back: '{{FrontSide}}<hr id=answer>{{SentenceTranslation}}<br>{{Definitions}}<br>{{Image}}<br>{{WordAudio}}<br>{{Note}}<br>{{MoreExample}}',
       },
     ],
-    css: '.card { font-family: var(--font-family, sans-serif); font-size: var(--font-size-base, 14px); text-align: center; color: var(--color-text, black); background-color: var(--color-background, white); }',
+    css: `.card { font-family: var(--font-family, ${tokensJson.static.font.family}); font-size: var(--font-size-base, ${tokensJson.static.font.sizes.base}); text-align: center; color: var(--color-text, ${tokensJson.core.light.text}); background-color: var(--color-background, ${tokensJson.core.light.background}); }`,
   });
   if (!r.ok) return r;
 

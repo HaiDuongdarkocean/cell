@@ -10,7 +10,7 @@
   -webkit-appearance: none;
   appearance: none;
   background: var(--color-border);
-  border-radius: var(--space-0-5);
+  border-radius: var(--radius-xs);
   cursor: pointer;
   margin: 0;
 }

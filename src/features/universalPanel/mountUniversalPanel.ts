@@ -37,11 +37,11 @@ export interface UniversalPanelMountOptions {
 }
 
 const PANEL_HOST_ID = 'cell-universal-panel-host';
-const HOST_Z_INDEX = '2147483646';
+const HOST_Z_INDEX = 'var(--z-overlay-secondary)';
 
 /**
  * Create a fixed full-viewport host for the universal panel.
- * The host sits below the orbital badge z-index (2147483647) per ADR-065.
+ * The host sits below the orbital badge z-index (var(--z-overlay-top)) per ADR-065.
  */
 function createHost(): HTMLElement {
   const host = document.createElement('div');

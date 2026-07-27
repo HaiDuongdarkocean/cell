@@ -22,7 +22,7 @@ import {
 import type { UniversalPanelController } from '@/features/universalPanel/types';
 
 const HOST_CLASS = 'js-cell-orbital-badge-host';
-const BADGE_Z_INDEX = '2147483647';
+const BADGE_Z_INDEX = 'var(--z-overlay-top)';
 const DRAG_THRESHOLD_PX = 4;
 const DEFAULT_BADGE_SIZE_PX = 36;
 const DEFAULT_POINTER_SCALE = 0.25;
