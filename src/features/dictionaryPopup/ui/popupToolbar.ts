@@ -140,8 +140,8 @@ export function renderAudioPanel(
     // Height 18px matches rendered subtab text (10px font + uppercase + line-height)
     const subtabs = document.createElement('div');
     subtabs.className = 'cell-audio__skeleton-subtabs';
-    subtabs.appendChild(createSkeleton('60px', '18px', 'rect', 'cell-audio__skeleton-subtab'));
-    subtabs.appendChild(createSkeleton('79px', '18px', 'rect', 'cell-audio__skeleton-subtab'));
+    subtabs.appendChild(createSkeleton('calc(var(--space-5) * 3)', 'var(--space-4-5)', 'rect', 'cell-audio__skeleton-subtab'));
+    subtabs.appendChild(createSkeleton('calc(var(--space-5) * 4 - var(--border-width-hairline))', 'var(--space-4-5)', 'rect', 'cell-audio__skeleton-subtab'));
     skeleton.appendChild(subtabs);
     // 1 item row — matches minimum typical audio content (1 item), no gap between rows
     for (let i = 0; i < 1; i += 1) {
@@ -152,8 +152,8 @@ export function renderAudioPanel(
       // Label — 2 lines matching rendered heights: name 21px + meta 18px
       const labelWrap = document.createElement('div');
       labelWrap.className = 'cell-audio__skeleton-label';
-      labelWrap.appendChild(createSkeleton('60%', '21px', 'rect', 'cell-audio__skeleton-label-name'));
-      labelWrap.appendChild(createSkeleton('40%', '18px', 'rect', 'cell-audio__skeleton-label-meta'));
+      labelWrap.appendChild(createSkeleton('60%', 'calc(var(--space-5) + var(--border-width-hairline))', 'rect', 'cell-audio__skeleton-label-name'));
+      labelWrap.appendChild(createSkeleton('40%', 'var(--space-4-5)', 'rect', 'cell-audio__skeleton-label-meta'));
       row.appendChild(labelWrap);
       // Checkbox — square 16px, matches .cell-audio__check
       row.appendChild(createSkeleton('var(--space-4, 16px)', 'var(--space-4, 16px)', 'rect', 'cell-audio__skeleton-check'));
@@ -423,14 +423,14 @@ export function renderTranslatePanel(
     // Native section — 1 line matching minimum block content.
     const nativeWidths = ['100%'];
     for (const w of nativeWidths) {
-      const line = createSkeleton(w, '21px', 'rect');
+      const line = createSkeleton(w, 'calc(var(--space-5) + var(--border-width-hairline))', 'rect');
       line.className = 'cell-translate__skeleton-line cell-translate__skeleton-line--native';
       text.appendChild(line);
     }
     // Target section — 1 line matching minimum block content.
     const targetWidths = ['100%'];
     for (const w of targetWidths) {
-      const line = createSkeleton(w, '18px', 'rect');
+      const line = createSkeleton(w, 'var(--space-4-5)', 'rect');
       line.className = 'cell-translate__skeleton-line cell-translate__skeleton-line--target';
       text.appendChild(line);
     }

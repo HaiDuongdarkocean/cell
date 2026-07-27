@@ -78,12 +78,6 @@
   color: var(--color-text);
 }
 
-.labelText {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
 .valueBadge {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);

@@ -56,11 +56,11 @@ export function HintIcon({
         const popoverHeight = popoverRect.height;
         const popoverWidth = popoverRect.width;
 
-        let classes = '';
+        const nextClasses: string[] = [];
 
         // Vertical: check if popover would overflow top edge
         if (btnRect.top < popoverHeight + padding) {
-          classes += ' flip-top';
+          nextClasses.push(styles['flip-top']);
         }
 
         // Horizontal: check alignment based on available space
@@ -68,12 +68,12 @@ export function HintIcon({
         const spaceRight = viewportWidth - btnRect.right;
 
         if (spaceLeft < popoverWidth / 2 && spaceRight < popoverWidth / 2) {
-          classes += ' align-center';
+          nextClasses.push(styles['align-center']);
         } else if (spaceLeft < popoverWidth) {
-          classes += ' align-right';
+          nextClasses.push(styles['align-right']);
         }
 
-        setPositionClass(classes.trim());
+        setPositionClass(nextClasses.join(' '));
       });
 
       return () => cancelAnimationFrame(rafId);

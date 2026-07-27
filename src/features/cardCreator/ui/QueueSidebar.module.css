@@ -159,41 +159,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* === Mobile: pills row (horizontal scroll) === */
-.cc-queue--mobile {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-1);
-  border-left: none;
-  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  min-width: 0;
-  max-width: none;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-.cc-queue--mobile .cc-queue__header {
-  flex-shrink: 0;
-  padding: 0 var(--space-1);
-}
-
-.cc-queue--mobile .cc-queue__list {
-  flex-direction: row;
-  gap: var(--space-1);
-  overflow-x: auto;
-}
-
-.cc-queue--mobile .cc-queue__item {
-  flex-shrink: 0;
-}
-
-.cc-queue--mobile .cc-queue__item-delete {
-  opacity: 1;
-  width: var(--space-4);
-  height: var(--space-4);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .cc-queue__undo {
     animation: none;
