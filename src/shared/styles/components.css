@@ -5,6 +5,15 @@
    Token source: tokens.css (--color-*, --radius-*, --space-*)
    ============================================================ */
 
+/* === Base button reset — center a lone Icon/SVG inside any <button> ===
+   Low specificity (:where) so component/module styles can override.
+   Targets icon-only buttons where the only child is an Icon wrapper span or a raw svg. */
+:where(button:has(> span:only-child svg), button:has(> svg:only-child)) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* === Icon Button — src/shared/ui/IconButton.tsx ===
    Base: 40×40, radius full, no border, no bg, surface-hover fill.
    Variants: --outlined (hairline border), --filled (primary bg).
