@@ -162,11 +162,11 @@
 }
 
 .cc-media__icon--image svg {
-  stroke-width: 1.25;
+  stroke-width: var(--stroke-width-sm);
 }
 
 .cc-media__icon--audio svg {
-  stroke-width: 1.5;
+  stroke-width: var(--stroke-width-md);
 }
 
 /* === Image preview overlay (design-system §3.5 Dialog overlay pattern) === */

@@ -39,7 +39,7 @@
 }
 
 .downloadIcon svg {
-  stroke-width: 2.5;
+  stroke-width: var(--stroke-width-xl);
 }
 
 /* === Responsive — narrow popup === */

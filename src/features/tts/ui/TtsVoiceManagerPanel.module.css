@@ -36,10 +36,8 @@
 
 /* === Card === */
 .card {
-  background: var(--color-card);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-2xl);
   overflow: hidden;
+  --card-radius: var(--radius-2xl);
 }
 
 .card__header {

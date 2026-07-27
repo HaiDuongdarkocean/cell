@@ -35,7 +35,7 @@
 
 /* === Divider — group separator (settings-dialog-rearrange) === */
 .divider {
-  height: 1px;
+  height: var(--border-width-hairline);
   background: var(--color-border-subtle);
   margin: var(--space-1) 0;
 }

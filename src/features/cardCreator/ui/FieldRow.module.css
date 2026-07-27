@@ -175,10 +175,16 @@
 
 .fieldInput__clear:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
-  outline-offset: 1px;
+  outline-offset: var(--space-0-5);
 }
 
 .fieldInput__clear svg {
   width: var(--space-4);
   height: var(--space-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fieldInput {
+    transition: none;
+  }
 }

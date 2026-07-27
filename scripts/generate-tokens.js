@@ -80,6 +80,11 @@ function flattenStaticTokens(staticObj) {
     push(`border-width-${key}`, value);
   }
 
+  // strokeWidth
+  for (const [key, value] of Object.entries(staticObj.strokeWidth)) {
+    push(`stroke-width-${key}`, value);
+  }
+
   // blur
   for (const [key, value] of Object.entries(staticObj.blur)) {
     push(`blur-${key}`, value);

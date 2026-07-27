@@ -17,7 +17,7 @@
 }
 
 .emptyIcon svg {
-  stroke-width: 1.5;
+  stroke-width: var(--stroke-width-md);
 }
 
 /* Scanning state: pulsing icon */

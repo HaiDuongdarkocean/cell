@@ -3,16 +3,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-card);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-dialog);
-  transition: background-color var(--duration-fast) var(--ease-in-out);
   min-height: var(--touch-target-mobile);
-}
-
-.card:hover {
-  background: var(--color-surface-hover);
+  --card-padding: var(--space-3) var(--space-4);
+  --card-radius: var(--radius-dialog);
 }
 
 .info {

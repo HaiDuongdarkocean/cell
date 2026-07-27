@@ -140,7 +140,7 @@
 
 /* === Divider between selected and unselected === */
 .divider {
-  height: 1px;
+  height: var(--border-width-hairline);
   margin: var(--space-1-5) var(--space-2-5);
   background: var(--color-border-subtle);
   list-style: none;
