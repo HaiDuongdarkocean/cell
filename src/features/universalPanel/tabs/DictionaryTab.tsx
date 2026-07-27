@@ -41,6 +41,10 @@ export function DictionaryTab({
     setPrefill(next as DictionaryPanelPrefill);
   }, []);
 
+  const handlePanelQuickAdd = useCallback((next: PopupCardCreatorPrefill): void => {
+    setPrefill({ ...next, initialAction: 'quick-add' } as DictionaryPanelPrefill);
+  }, []);
+
   return (
     <div className={styles.dictionaryTab} data-testid="dictionary-tab">
       <div className={styles.leftPane}>
@@ -51,7 +55,7 @@ export function DictionaryTab({
           initialTerm={initialTerm}
           isOpen={isOpen}
           onSendToCard={handlePanelSendToCard}
-          onQuickAdd={onQuickAdd}
+          onQuickAdd={onQuickAdd ?? handlePanelQuickAdd}
         />
       </div>
       <div className={styles.rightPane}>
