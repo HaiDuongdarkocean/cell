@@ -60,8 +60,8 @@ export interface UseCandidateReturn {
   readonly translate: () => void;
   readonly playTerm: () => void;
   readonly playSentence: () => void;
-  readonly sendToCard: () => void;
-  readonly quickAdd: () => void;
+  readonly sendToCard: () => Promise<void>;
+  readonly quickAdd: () => Promise<void>;
 }
 
 export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
@@ -145,87 +145,96 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     });
   }, []);
 
-  const fetchAudio = useCallback((): void => {
+  const fetchAudio = useCallback(async (): Promise<readonly AudioItem[]> => {
+    if (audioItems.length > 0) return audioItems;
     setAudioLoading(true);
     setAudioError(null);
-    void (async (): Promise<void> => {
-      try {
-        const [communityRes, ttsRes] = await Promise.all([
-          sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
-            type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
-            payload: { tabId: 0, term: candidate.term, langCode: candidate.langCode, kind: 'word' },
-          }),
-          sendMessage<MessageResponse<TtsFetchAudioResponse>>({
-            type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-            payload: { tabId: 0, text: candidate.term, langCode: candidate.langCode },
-          }),
-        ]);
+    try {
+      const [communityRes, ttsRes] = await Promise.all([
+        sendMessage<MessageResponse<FetchCommunityAudioResponse>>({
+          type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
+          payload: { tabId: 0, term: candidate.term, langCode: candidate.langCode, kind: 'word' },
+        }),
+        sendMessage<MessageResponse<TtsFetchAudioResponse>>({
+          type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
+          payload: { tabId: 0, text: candidate.term, langCode: candidate.langCode },
+        }),
+      ]);
 
-        const items: AudioItem[] = [];
-        if (communityRes?.success && communityRes.data?.items) {
-          items.push(...communityRes.data.items);
-        }
-
-        if (ttsRes?.success && ttsRes.data?.url) {
-          items.push({
-            id: `tts-sentence-${candidate.term}`,
-            kind: 'sentence',
-            source: 'system-tts',
-            label: 'System TTS · Sentence',
-            state: 'idle',
-            url: ttsRes.data.url,
-            defaultSelected: false,
-          });
-        }
-
-        if (items.length === 0) {
-          setAudioError(communityRes?.error ?? 'Audio fetch failed');
-        }
-        setAudioItems(items);
-        setAudioSelection(new Map(items.map((item) => [item.id, item.defaultSelected])));
-      } catch (err: unknown) {
-        setAudioError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setAudioLoading(false);
+      const items: AudioItem[] = [];
+      if (communityRes?.success && communityRes.data?.items) {
+        items.push(...communityRes.data.items);
       }
-    })();
-  }, [candidate.langCode, candidate.term]);
 
-  const fetchImages = useCallback((): void => {
+      if (ttsRes?.success && ttsRes.data?.url) {
+        items.push({
+          id: `tts-sentence-${candidate.term}`,
+          kind: 'sentence',
+          source: 'system-tts',
+          label: 'System TTS · Sentence',
+          state: 'idle',
+          url: ttsRes.data.url,
+          defaultSelected: false,
+        });
+      }
+
+      if (items.length === 0) {
+        setAudioError(communityRes?.error ?? 'Audio fetch failed');
+      }
+      setAudioItems(items);
+      setAudioSelection(new Map(items.map((item) => [item.id, item.defaultSelected])));
+      return items;
+    } catch (err: unknown) {
+      setAudioError(err instanceof Error ? err.message : String(err));
+      return [];
+    } finally {
+      setAudioLoading(false);
+    }
+  }, [audioItems, candidate.langCode, candidate.term]);
+
+  const fetchImages = useCallback(async (): Promise<readonly ImageItem[]> => {
+    if (imageItems.length > 0) return imageItems;
     setImageLoading(true);
     setImageError(null);
-    void sendMessage<MessageResponse<FetchImagesResponse>>({
-      type: MESSAGE_TYPES.FETCH_IMAGES,
-      payload: { tabId: 0, term: candidate.term, langCode: candidate.langCode },
-    })
-      .then((response) => {
-        if (response?.success && response.data?.items) {
-          setImageItems(response.data.items);
-          setImageSelection(new Map(response.data.items.map((item) => [item.id, item.defaultSelected])));
-        } else {
-          setImageError(response?.error ?? 'Image fetch failed');
-        }
-      })
-      .catch((err: unknown) => { setImageError(err instanceof Error ? err.message : String(err)); })
-      .finally(() => { setImageLoading(false); });
-  }, [candidate.langCode, candidate.term]);
+    try {
+      const response = await sendMessage<MessageResponse<FetchImagesResponse>>({
+        type: MESSAGE_TYPES.FETCH_IMAGES,
+        payload: { tabId: 0, term: candidate.term, langCode: candidate.langCode },
+      });
+      if (response?.success && response.data?.items) {
+        setImageItems(response.data.items);
+        setImageSelection(new Map(response.data.items.map((item) => [item.id, item.defaultSelected])));
+        return response.data.items;
+      }
+      setImageError(response?.error ?? 'Image fetch failed');
+      return [];
+    } catch (err: unknown) {
+      setImageError(err instanceof Error ? err.message : String(err));
+      return [];
+    } finally {
+      setImageLoading(false);
+    }
+  }, [imageItems, candidate.langCode, candidate.term]);
 
-  const translate = useCallback((): void => {
+  const translate = useCallback(async (): Promise<string> => {
     const text = contextSentence.trim() || candidate.term.trim();
-    if (!text) return;
+    if (!text) return translation;
+    if (translation) return translation;
     setIsTranslating(true);
     setTranslationError(null);
-    translateSentence(text, sourceLang, targetLang)
-      .then((res) => {
-        setTranslation(res);
-        if (!res) setTranslationError('Translation failed. Please try again.');
-      })
-      .catch((err: unknown) => {
-        setTranslation('');
-        setTranslationError(err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => { setIsTranslating(false); });
-  }, [candidate.term, contextSentence, sourceLang, targetLang]);
+    try {
+      const res = await translateSentence(text, sourceLang, targetLang);
+      setTranslation(res);
+      if (!res) setTranslationError('Translation failed. Please try again.');
+      return res;
+    } catch (err: unknown) {
+      setTranslation('');
+      setTranslationError(err instanceof Error ? err.message : String(err));
+      return '';
+    } finally {
+      setIsTranslating(false);
+    }
+  }, [candidate.term, contextSentence, sourceLang, targetLang, translation]);
 
   const toggleTranslation = useCallback((): void => {
     setTranslationSelected((prev) => !prev);
@@ -249,34 +258,73 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
 
   useEffect(() => {
     if (activeTab === 'audio' && audioItems.length === 0 && !audioLoading) {
-      fetchAudio();
+      void fetchAudio();
     }
     if (activeTab === 'image' && imageItems.length === 0 && !imageLoading) {
-      fetchImages();
+      void fetchImages();
     }
   }, [activeTab, audioItems.length, audioLoading, fetchAudio, imageItems.length, imageLoading, fetchImages]);
 
-  const prefill = useMemo(
-    () => buildPrefill(
-      candidate,
-      selectedDefinitions,
-      contextSentence,
-      translation,
-      audioItems,
-      audioSelection,
-      imageItems,
-      imageSelection,
-    ),
-    [candidate, selectedDefinitions, contextSentence, translation, audioItems, audioSelection, imageItems, imageSelection],
-  );
+  const buildPrefillFromState = useCallback((
+    currentAudioItems: readonly AudioItem[] = audioItems,
+    currentAudioSelection: Map<string, boolean> = audioSelection,
+    currentImageItems: readonly ImageItem[] = imageItems,
+    currentImageSelection: Map<string, boolean> = imageSelection,
+    currentTranslation: string = translation,
+  ): PopupCardCreatorPrefill => buildPrefill(
+    candidate,
+    selectedDefinitions,
+    contextSentence,
+    currentTranslation,
+    currentAudioItems,
+    currentAudioSelection,
+    currentImageItems,
+    currentImageSelection,
+  ), [candidate, selectedDefinitions, contextSentence, audioItems, audioSelection, imageItems, imageSelection, translation]);
 
-  const sendToCard = useCallback((): void => {
-    if (onSendToCard) onSendToCard(prefill);
-  }, [onSendToCard, prefill]);
+  const sendToCard = useCallback(async (): Promise<void> => {
+    if (!onSendToCard) return;
+    const [loadedAudioItems, loadedImageItems, loadedTranslation] = await Promise.all([
+      fetchAudio(),
+      fetchImages(),
+      translate(),
+    ]);
+    const currentAudioSelection = loadedAudioItems === audioItems
+      ? audioSelection
+      : new Map(loadedAudioItems.map((item) => [item.id, item.defaultSelected]));
+    const currentImageSelection = loadedImageItems === imageItems
+      ? imageSelection
+      : new Map(loadedImageItems.map((item) => [item.id, item.defaultSelected]));
+    onSendToCard(buildPrefillFromState(
+      loadedAudioItems,
+      currentAudioSelection,
+      loadedImageItems,
+      currentImageSelection,
+      loadedTranslation,
+    ));
+  }, [onSendToCard, fetchAudio, fetchImages, translate, buildPrefillFromState, audioItems, audioSelection, imageItems, imageSelection]);
 
-  const quickAdd = useCallback((): void => {
-    if (onQuickAdd) onQuickAdd(prefill);
-  }, [onQuickAdd, prefill]);
+  const quickAdd = useCallback(async (): Promise<void> => {
+    if (!onQuickAdd) return;
+    const [loadedAudioItems, loadedImageItems, loadedTranslation] = await Promise.all([
+      fetchAudio(),
+      fetchImages(),
+      translate(),
+    ]);
+    const currentAudioSelection = loadedAudioItems === audioItems
+      ? audioSelection
+      : new Map(loadedAudioItems.map((item) => [item.id, item.defaultSelected]));
+    const currentImageSelection = loadedImageItems === imageItems
+      ? imageSelection
+      : new Map(loadedImageItems.map((item) => [item.id, item.defaultSelected]));
+    onQuickAdd(buildPrefillFromState(
+      loadedAudioItems,
+      currentAudioSelection,
+      loadedImageItems,
+      currentImageSelection,
+      loadedTranslation,
+    ));
+  }, [onQuickAdd, fetchAudio, fetchImages, translate, buildPrefillFromState, audioItems, audioSelection, imageItems, imageSelection]);
 
   return {
     status,

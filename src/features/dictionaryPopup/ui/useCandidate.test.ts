@@ -189,15 +189,47 @@ describe('useCandidate', () => {
       onSendToCard,
     }));
 
-    act(() => { result.current.translate(); });
+    await act(async () => { await result.current.translate(); });
 
     await waitFor(() => expect(result.current.translation).toBe('xin chào'));
 
-    act(() => { result.current.sendToCard(); });
+    await act(async () => { await result.current.sendToCard(); });
 
     expect(onSendToCard).toHaveBeenCalledWith(expect.objectContaining({
       term: 'hello',
       translation: 'xin chào',
+    }));
+  });
+
+  it('sendToCard auto-fetches audio, image, and translation without opening tabs', async () => {
+    const candidate = makeResult('hello');
+    const onSendToCard = jest.fn<(prefill: PopupCardCreatorPrefill) => void>();
+
+    const { result } = renderHook(() => useCandidate({
+      candidate,
+      contextSentence: 'hello world',
+      sourceLang: 'en',
+      targetLang: 'vi',
+      onSendToCard,
+    }));
+
+    await act(async () => { await result.current.sendToCard(); });
+
+    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      type: MESSAGE_TYPES.FETCH_COMMUNITY_AUDIO,
+    }));
+    expect(mockSendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      type: MESSAGE_TYPES.FETCH_IMAGES,
+    }));
+    expect(mockTranslateSentence).toHaveBeenCalledWith('hello world', 'en', 'vi');
+
+    expect(onSendToCard).toHaveBeenCalledWith(expect.objectContaining({
+      term: 'hello',
+      contextSentence: 'hello world',
+      translation: 'xin chào',
+      wordAudioUrls: ['https://audio/1'],
+      sentenceAudioUrls: ['https://audio/tts'],
+      imageUrls: ['https://example.com/i1.jpg'],
     }));
   });
 
@@ -227,7 +259,7 @@ describe('useCandidate', () => {
     expect(result.current.selectedImageCount).toBe(1);
   });
 
-  it('quickAdd builds prefill with selected definitions', () => {
+  it('quickAdd builds prefill with selected definitions', async () => {
     const candidate = makeResult('hello', {
       definitions: [
         { id: 'd1', pos: 'n', text: 'greeting', examples: [], source: 'test', defaultSelected: true },
@@ -243,7 +275,7 @@ describe('useCandidate', () => {
       onQuickAdd,
     }));
 
-    act(() => { result.current.quickAdd(); });
+    await act(async () => { await result.current.quickAdd(); });
 
     expect(onQuickAdd).toHaveBeenCalledWith(expect.objectContaining({
       term: 'hello',

@@ -20,15 +20,20 @@ export function buildPrefill(
     : result.definitions;
 
   const selectedAudios = audioItems.filter((item) => audioSelection.get(item.id) ?? item.defaultSelected);
-  const wordAudioUrls = selectedAudios
-    .filter((item) => item.kind === 'word' && item.url)
-    .map((item) => item.url!);
-  const sentenceAudioUrls = selectedAudios
-    .filter((item) => item.kind === 'sentence' && item.url)
-    .map((item) => item.url!);
+  const selectedWordAudios = selectedAudios.filter((item) => item.kind === 'word' && item.url);
+  const wordAudios = selectedWordAudios.length > 0
+    ? selectedWordAudios
+    : audioItems.filter((item) => item.kind === 'word' && item.url).slice(0, 1);
+  const selectedSentenceAudios = selectedAudios.filter((item) => item.kind === 'sentence' && item.url);
+  const sentenceAudios = selectedSentenceAudios.length > 0
+    ? selectedSentenceAudios
+    : audioItems.filter((item) => item.kind === 'sentence' && item.url).slice(0, 1);
+  const wordAudioUrls = wordAudios.map((item) => item.url!);
+  const sentenceAudioUrls = sentenceAudios.map((item) => item.url!);
 
   const selectedImages = imageItems.filter((item) => imageSelection.get(item.id) ?? item.defaultSelected);
-  const imageUrls = selectedImages.map((item) => item.src);
+  const fallbackImages = selectedImages.length > 0 ? selectedImages : imageItems.slice(0, 1);
+  const imageUrls = fallbackImages.map((item) => item.src);
 
   return {
     term: result.term,
