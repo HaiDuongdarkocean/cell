@@ -15,6 +15,8 @@ export function PreviewBlock({ targetWord, sentence, dataId }: PreviewBlockProps
       aria-label="Preview"
       role="region"
       data-testid={dataId}
+      data-allow-tokenize
+      data-allow-lookup
     >
       <div className={styles['cc-preview__target']}>{targetWord}</div>
       <div className={styles['cc-preview__sentence']}>{highlightedSentence}</div>

@@ -372,7 +372,7 @@ export function DictionaryPanelView({
           )}
           {panel.activeTab === 'links' && <LinksPanel links={links} />}
 
-          <section className={styles.cellDef} aria-label="Definitions" data-testid="dictionary-definitions">
+          <section className={styles.cellDef} aria-label="Definitions" data-testid="dictionary-definitions" data-allow-lookup>
             {panel.currentResult.definitions.length === 0 ? (
               <div className={styles.cellDefEmpty}>
                 <Icon name="info" size={24} />

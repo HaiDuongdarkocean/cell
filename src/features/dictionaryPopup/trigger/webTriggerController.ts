@@ -35,12 +35,28 @@ const MAX_SELECTION_LENGTH = 100;
  *  Kept in sync with EXTENSION_UI_HOST_SELECTORS in tokenizeBlock.ts. */
 const UI_HOST_SELECTORS =
   '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
+  '#cell-settings-dialog-host, #cell-card-creator-host, #cell-universal-panel-host';
+
+/** Only hosts whose pointer-events should be disabled when resolving a caret.
+ *  The universal panel is excluded because it contains allowed lookup text
+ *  (dictionary definitions and card creator preview). */
+const POINTER_EVENT_HOST_SELECTORS =
+  '.js-cell-popup-host, .js-cell-orbital-badge-host, .js-cell-token-badge-host, ' +
   '#cell-settings-dialog-host, #cell-card-creator-host';
+
+const ALLOW_LOOKUP_SELECTOR = '[data-allow-lookup]';
+
+function isInsideBlockedHostForLookup(element: Element | null): boolean {
+  if (!element) return false;
+  const host = element.closest(UI_HOST_SELECTORS);
+  if (!host) return false;
+  return !element.closest(ALLOW_LOOKUP_SELECTOR);
+}
 
 /** Temporarily disable pointer-events on our own floating UI (host + its shadow children)
  *  so caretRangeFromPoint can resolve the page text underneath instead of the popup/pointer. */
 function withUiHostsPointerEventsDisabled<T>(fn: () => T): T {
-  const hosts = Array.from(document.querySelectorAll(UI_HOST_SELECTORS)) as HTMLElement[];
+  const hosts = Array.from(document.querySelectorAll(POINTER_EVENT_HOST_SELECTORS)) as HTMLElement[];
   interface NodePointerStyle { element: HTMLElement; original: string; }
   const nodes: NodePointerStyle[] = [];
 
@@ -65,11 +81,12 @@ function withUiHostsPointerEventsDisabled<T>(fn: () => T): T {
   }
 }
 
-/** Check whether a range is inside our own popup/orbital badge host. */
-function rangeInUiHost(range: Range): boolean {
+/** Check whether a range is inside a UI host but NOT inside an allowed
+ *  lookup subtree (dictionary definitions or card creator preview). */
+function rangeBlockedForLookup(range: Range): boolean {
   const node = range.commonAncestorContainer;
   const el = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
-  return el ? el.closest(UI_HOST_SELECTORS) !== null : false;
+  return isInsideBlockedHostForLookup(el);
 }
 
 /**
@@ -248,8 +265,9 @@ export class WebTriggerController {
     }
 
     const target = e.target as HTMLElement | null;
-    if (target?.closest(UI_HOST_SELECTORS)) {
-      // Click inside extension UI (popup, badge, settings, card creator).
+    if (isInsideBlockedHostForLookup(target)) {
+      // Click inside blocked extension UI (popup, badge, settings, card creator,
+      // or universal panel areas outside allowed lookup zones).
       // All clicks inside these hosts are consumed by the UI itself —
       // never fall through to lookup host page text behind the popup.
       return;
@@ -271,6 +289,10 @@ export class WebTriggerController {
       const request = buildSelectionLookupRequest(selection!);
       if (!request) return;
       const range = selection!.getRangeAt(0);
+      if (rangeBlockedForLookup(range)) {
+        this.resetHover();
+        return;
+      }
       const rect = getLineAwareAnchorRect(range);
       this.dispatchLookup(request, rect, range);
       return;
@@ -287,7 +309,7 @@ export class WebTriggerController {
     const resolved = resolveWordAtPoint(e.clientX, e.clientY, {
       getCaretRange: (cx, cy) => withUiHostsPointerEventsDisabled(() => defaultGetCaretRange(cx, cy)),
     });
-    if (!resolved || rangeInUiHost(resolved.range)) {
+    if (!resolved || rangeBlockedForLookup(resolved.range)) {
       this.resetHover();
       return;
     }
@@ -318,8 +340,9 @@ export class WebTriggerController {
     }
     const target = e.target as HTMLElement | null;
     if (!target) return;
-    // Skip our own UI — don't dismiss while the user is interacting with it.
-    if (target.closest(UI_HOST_SELECTORS)) {
+    // Skip blocked extension UI zones; allowed lookup zones (dictionary
+    // definitions, card creator preview) keep hover processing active.
+    if (isInsideBlockedHostForLookup(target)) {
       this.cancelPendingHover();
       return;
     }
@@ -395,7 +418,7 @@ export class WebTriggerController {
     const resolved = resolveWordAtPoint(x, y, {
       getCaretRange: (cx, cy) => withUiHostsPointerEventsDisabled(() => defaultGetCaretRange(cx, cy)),
     });
-    if (!resolved || rangeInUiHost(resolved.range)) {
+    if (!resolved || rangeBlockedForLookup(resolved.range)) {
       this.resetHover();
       return;
     }
