@@ -203,3 +203,10 @@
   color: var(--color-text-muted);
   font-size: var(--font-size-base);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .chevron {
+    transition: none;
+  }
+}

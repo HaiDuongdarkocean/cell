@@ -372,7 +372,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-selector-item--active {
   background: rgba(var(--overlay-text-rgb), 0.15);
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
 }
 
 .subtitle-selector-item:hover:not(.subtitle-selector-item--active) {
@@ -646,7 +646,7 @@ export const SUBTITLE_BLOCK_CSS = `
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-normal);
   line-height: var(--leading-normal);
-  letter-spacing: normal;
+  letter-spacing: var(--tracking-normal);
   text-align: left;
   text-shadow: none;
   box-sizing: border-box;

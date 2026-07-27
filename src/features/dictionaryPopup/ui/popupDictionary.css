@@ -687,7 +687,7 @@
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 1px; /* hairline gap — not on spacing scale */
+  gap: var(--space-0-5);
 }
 
 .cell-audio__label-name {
@@ -964,7 +964,7 @@
   flex: 1 1 auto;
   /* Keep panel at least as tall as the skeleton so real content never
      shrinks below it — prevents layout shift when skeleton → content. */
-  min-height: calc(var(--space-1) * 2 + 1px * 2 + calc(var(--space-5) + var(--space-0-5)) + var(--space-0-5) + var(--space-4-5) + var(--space-0-5));
+  min-height: calc(var(--space-1) * 2 + calc(var(--border-width-hairline) * 2) + calc(var(--space-5) + var(--space-0-5)) + var(--space-0-5) + var(--space-4-5) + var(--space-0-5));
   overflow-y: auto;
 }
 
@@ -1340,7 +1340,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1px; /* hairline gap — matches .cell-audio__label */
+  gap: var(--space-0-5);
   min-width: 0;
 }
 

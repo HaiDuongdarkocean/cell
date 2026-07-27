@@ -174,3 +174,10 @@
   cursor: not-allowed;
   opacity: 0.5;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .chevron {
+    transition: none;
+  }
+}

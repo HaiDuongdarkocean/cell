@@ -42,3 +42,9 @@
   font-size: var(--font-size-xs);
   margin-top: var(--space-2);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}

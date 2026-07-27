@@ -52,7 +52,7 @@ export function buildTokenBadgeCss(): string {
   height: var(--iconbutton-icon-sm) !important;
   fill: none !important;
   stroke: currentColor !important;
-  stroke-width: 2 !important;
+  stroke-width: var(--stroke-width-lg)!important;
 }
 
 /* Collapsed state — the FAB center sits on a viewport edge so the viewport

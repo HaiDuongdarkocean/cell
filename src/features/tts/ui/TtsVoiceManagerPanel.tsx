@@ -8,7 +8,7 @@
 //     settings.tts.savedVoices: {voiceName, lang, order}[] (checked only).
 
 import { useState, useEffect, useCallback, useMemo, useRef, type ReactElement, type DragEvent } from 'react';
-import { Button, IconButton } from '@/shared/ui';
+import { Button, Card, IconButton } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { createTtsEngine, type TtsVoiceInfo } from '@/features/dictionaryPopup/services/ttsEngineService';
 import type { TtsSettings, TtsVoiceRow } from '@/entities/settings/types';
@@ -261,7 +261,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
       {statusMsg && <div className={styles.status} role="status">{statusMsg}</div>}
 
       {/* === Card 1: TTS Settings === */}
-      <section className={styles.card}>
+      <Card className={styles.card}>
         <header className={styles.card__header}>
           <h2 className={styles.card__title}>Text-to-Speech (TTS)</h2>
         </header>
@@ -357,10 +357,10 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
             </Button>
           </div>
         </div>
-      </section>
+      </Card>
 
       {/* === Card 2: TTS Tester === */}
-      <section className={`${styles.card} ${styles.ttsTester}`}>
+      <Card className={`${styles.card} ${styles.ttsTester}`}>
         <header className={styles.card__header}>
           <h2 className={styles.card__title}>TTS Tester</h2>
         </header>
@@ -466,7 +466,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
             </div>
           </div>
         </div>
-      </section>
+      </Card>
     </div>
   );
 }

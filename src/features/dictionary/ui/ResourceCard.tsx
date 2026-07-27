@@ -1,7 +1,7 @@
 // ResourceCard — list item with name, wordCount, format, delete button (spec F11).
 
 import { type ReactElement } from 'react';
-import { Button } from '@/shared/ui';
+import { Button, Card } from '@/shared/ui';
 import type { ResourceInfo } from '@/entities/dictionary';
 import styles from './ResourceCard.module.css';
 
@@ -12,7 +12,7 @@ interface ResourceCardProps {
 
 export function ResourceCard({ resource, onDelete }: ResourceCardProps): ReactElement {
   return (
-    <div className={styles.card} data-testid={`resource-card-${resource.id}`}>
+    <Card className={styles.card} data-testid={`resource-card-${resource.id}`}>
       <div className={styles.info}>
         <span className={styles.name}>{resource.name}</span>
         <span className={styles.meta}>
@@ -29,7 +29,7 @@ export function ResourceCard({ resource, onDelete }: ResourceCardProps): ReactEl
       >
         Xóa
       </Button>
-    </div>
+    </Card>
   );
 }
 

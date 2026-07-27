@@ -63,7 +63,7 @@
 
 /* === Divider — group separator within section body === */
 .divider {
-  height: 1px;
+  height: var(--border-width-hairline);
   background: var(--color-border-subtle);
   margin: var(--space-1) 0;
 }
@@ -87,8 +87,8 @@
 .valueBadge {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  font-weight: var(--font-weight-regular);
-  padding: 1px var(--space-1-5);
+  font-weight: var(--font-weight-normal);
+  padding: var(--space-0-5) var(--space-1-5);
   border-radius: var(--radius-sm);
 }
 
