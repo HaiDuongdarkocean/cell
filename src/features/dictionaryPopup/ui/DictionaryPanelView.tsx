@@ -493,6 +493,7 @@ function AudioPanel({
   readonly onTts: () => void;
 }): React.JSX.Element {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
 
   useEffect(() => {
     return () => {
@@ -526,64 +527,78 @@ function AudioPanel({
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <div className={styles.cellAudio} data-testid="dictionary-audio-panel">
+  const filteredItems = items.filter((item) => item.kind === activeGroup).slice(0, 3);
+  const groupLabel = activeGroup === 'word' ? 'word' : 'sentence';
+
+  return (
+    <div className={styles.cellAudio} data-testid="dictionary-audio-panel">
+      <div className={styles.cellAudioSubtabs} role="tablist" aria-label="Audio groups">
+        {(['word', 'sentence'] as const).map((group) => (
+          <button
+            key={group}
+            type="button"
+            role="tab"
+            aria-selected={activeGroup === group}
+            className={`${styles.cellAudioSubtab} ${activeGroup === group ? styles['cellAudioSubtab--active'] : ''}`}
+            onClick={(): void => setActiveGroup(group)}
+          >
+            Play {group}
+          </button>
+        ))}
+      </div>
+
+      {filteredItems.length === 0 ? (
         <div className={styles.cellAudioEmpty}>
           <span className={styles.cellAudioEmptyIcon}><Icon name="audioWave" size={24} /></span>
-          <span className={styles.cellAudioEmptyTitle}>No audio available</span>
+          <span className={styles.cellAudioEmptyTitle}>No {groupLabel} audio available</span>
           <Button variant="outline" size="sm" onClick={onTts} leadingIcon={<Icon name="play" size={16} />}>
             Use system TTS
           </Button>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.cellAudio} data-testid="dictionary-audio-panel">
-      {items.map((item) => {
-        const selected = selection.get(item.id) ?? item.defaultSelected;
-        const parts = item.label.split(' · ');
-        return (
-          <div key={item.id} className={styles.cellAudioItem}>
-            <button
-              type="button"
-              className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
-              aria-label={item.state === 'error' || !item.url ? `Audio unavailable for ${item.label}` : `Play ${item.label}`}
-              disabled={item.state === 'error' || !item.url}
-              onClick={(): void => {
-                if (!item.url) return;
-                if (audioRef.current) {
-                  audioRef.current.pause();
-                  audioRef.current = null;
-                }
-                const audio = new Audio(item.url);
-                audioRef.current = audio;
-                audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
-                audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
-                void audio.play().catch(() => { /* best-effort */ });
-              }}
-            >
-              <Icon name="play" size={16} />
-            </button>
-            <button
-              type="button"
-              className={styles.cellAudioLabel}
-              aria-pressed={selected}
-              onClick={(): void => onToggle(item.id, !selected)}
-            >
-              <span className={styles.cellAudioLabelName}>{parts[0] ?? item.label}</span>
-              {parts.length > 1 && (
-                <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
-              )}
-            </button>
-            <span className={`${styles.cellAudioCheck} ${selected ? styles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
-              <Icon name="check" size={16} />
-            </span>
-          </div>
-        );
-      })}
+      ) : (
+        filteredItems.map((item) => {
+          const selected = selection.get(item.id) ?? item.defaultSelected;
+          const parts = item.label.split(' · ');
+          return (
+            <div key={item.id} className={styles.cellAudioItem}>
+              <button
+                type="button"
+                className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
+                aria-label={item.state === 'error' || !item.url ? `Audio unavailable for ${item.label}` : `Play ${item.label}`}
+                disabled={item.state === 'error' || !item.url}
+                onClick={(): void => {
+                  if (!item.url) return;
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current = null;
+                  }
+                  const audio = new Audio(item.url);
+                  audioRef.current = audio;
+                  audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
+                  audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
+                  void audio.play().catch(() => { /* best-effort */ });
+                }}
+              >
+                <Icon name="play" size={16} />
+              </button>
+              <button
+                type="button"
+                className={styles.cellAudioLabel}
+                aria-pressed={selected}
+                onClick={(): void => onToggle(item.id, !selected)}
+              >
+                <span className={styles.cellAudioLabelName}>{parts[0] ?? item.label}</span>
+                {parts.length > 1 && (
+                  <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
+                )}
+              </button>
+              <span className={`${styles.cellAudioCheck} ${selected ? styles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
+                <Icon name="check" size={16} />
+              </span>
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }
