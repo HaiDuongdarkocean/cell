@@ -5,8 +5,8 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  /* 75rem ≈ 1200px at the default 16px root; keeps the settings body from
-     stretching unnaturally inside the 1280px universal panel. */
-  max-width: 75rem;
+  /* Keeps the settings body from stretching unnaturally inside the
+     1280px universal panel. */
+  max-width: calc(var(--space-5) * 60);
   overflow: hidden;
 }

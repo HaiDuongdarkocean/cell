@@ -42,7 +42,7 @@ export function MultiSelect({
   selectedValues,
   onChange,
   placeholder = 'Search languages...',
-  maxHeight = 220,
+  maxHeight,
 }: MultiSelectProps): ReactElement {
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -132,7 +132,11 @@ export function MultiSelect({
       </div>
 
       {/* Options list */}
-      <ul className={styles.list} role="listbox" style={{ '--list-max-height': `${maxHeight}px` } as React.CSSProperties}>
+      <ul
+        className={styles.list}
+        role="listbox"
+        style={maxHeight !== undefined ? { '--list-max-height': `${maxHeight}px` } as React.CSSProperties : undefined}
+      >
         {sorted.selected.length > 0 && (
           <>
             <li className={styles.sectionHeader} role="presentation">

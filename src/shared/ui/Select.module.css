@@ -82,6 +82,7 @@
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-dialog);
   z-index: 10;
+  max-height: min(var(--select-menu-max-height, calc(var(--space-5) * 11)), 50vh);
   overflow-y: auto;
   /* Design-system scrollbar (same as Dialog and SearchableSelect). */
   scrollbar-width: thin;
