@@ -10,6 +10,12 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import { nextStatus } from '../services/wordStatusStore';
+import {
+  addSearchHistoryTerm,
+  loadSearchHistory,
+  persistSearchHistory,
+  removeSearchHistoryTerm,
+} from '@/features/universalPanel/searchHistory';
 import type { PopupCardCreatorPrefill } from './popupDictionaryController';
 import type { LookupResult, DefinitionEntry, PopupTab, ExternalDictLink, AudioItem, ImageItem } from '../types';
 import styles from './DictionaryPanelView.module.css';
@@ -79,11 +85,45 @@ export function DictionaryPanelView({
   });
 
   const [audioLoading, setAudioLoading] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<readonly string[]>([]);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userTypedRef = useRef(false);
 
   const { searchTerm, setSearchTerm, search } = panel;
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadSearchHistory().then((history) => {
+      if (!cancelled && history.length > 0) setSearchHistory(history);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const term = panel.currentResult?.term;
+    if (!term || panel.isLoading) return;
+    setSearchHistory((previous) => {
+      const next = addSearchHistoryTerm(previous, term);
+      if (next.length !== previous.length || next.some((entry, index) => entry !== previous[index])) {
+        void persistSearchHistory(next);
+      }
+      return next;
+    });
+  }, [panel.currentResult?.term, panel.isLoading]);
+
+  const handleRemoveHistory = useCallback((term: string): void => {
+    setSearchHistory((previous) => {
+      const next = removeSearchHistoryTerm(previous, term);
+      void persistSearchHistory(next);
+      return next;
+    });
+  }, []);
+
+  const handleClearHistory = useCallback((): void => {
+    setSearchHistory([]);
+    void persistSearchHistory([]);
+  }, []);
 
   const handleSearchChange = useCallback((value: string): void => {
     userTypedRef.current = true;
@@ -208,6 +248,42 @@ export function DictionaryPanelView({
           className={styles.searchField}
         />
       </div>
+
+      {searchHistory.length > 0 && (
+        <section className={styles.searchHistory} aria-label="Recent searches" data-testid="dictionary-search-history">
+          <div className={styles.searchHistoryHeader}>
+            <span className={styles.searchHistoryTitle}>Recent searches</span>
+            <button type="button" className={styles.searchHistoryClear} onClick={handleClearHistory}>
+              Clear
+            </button>
+          </div>
+          <ul className={styles.searchHistoryList}>
+            {searchHistory.map((term) => (
+              <li key={term} className={styles.searchHistoryItem}>
+                <button
+                  type="button"
+                  className={styles.searchHistoryTerm}
+                  onClick={() => {
+                    setSearchTerm(term);
+                    search(term);
+                  }}
+                >
+                  {term}
+                </button>
+                <button
+                  type="button"
+                  className={styles.searchHistoryRemove}
+                  aria-label={`Remove ${term} from recent searches`}
+                  title={`Remove ${term}`}
+                  onClick={() => handleRemoveHistory(term)}
+                >
+                  <Icon name="x" size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {panel.isLoading && !panel.currentResult && (
         <div className={styles.loading} data-testid="dictionary-loading">
@@ -408,6 +484,51 @@ export function DictionaryPanelView({
                   ))}
                 </div>
               </div>
+              {panel.candidates.map((candidate, candidateOffset) => {
+                const candidateIndex = candidateOffset + 1;
+                return (
+                  <section key={`${candidate.term}-${candidateIndex}`} className={styles.cellCandidate} role="listitem" data-testid={`dictionary-candidate-section-${candidateIndex}`}>
+                    <div className={styles.cellCandidateHeader}>
+                      <button type="button" className={styles.cellCandidateSelect} onClick={() => panel.setActiveCandidate(candidateIndex)}>
+                        <span className={styles.cellCandidateTerm}>{candidate.term}</span>
+                        {candidate.reading && <span className={styles.cellCandidateReading}>{formatReading(candidate.reading, candidate.readingKind)}</span>}
+                      </button>
+                      <div className={styles.cellCandidateActions}>
+                        <button
+                          type="button"
+                          className="icon-btn icon-btn--sm icon-btn--outlined"
+                          aria-label={`Send ${candidate.term} to Card Creator`}
+                          title="Send to Card Creator"
+                          onClick={() => panel.sendCandidateToCard(candidateIndex)}
+                          data-testid={`dictionary-candidate-send-${candidateIndex}`}
+                        >
+                          <Icon name="pencil" size={18} />
+                        </button>
+                        {onQuickAdd && (
+                          <button
+                            type="button"
+                            className="icon-btn icon-btn--sm icon-btn--filled"
+                            aria-label={`Quick Add ${candidate.term} to Anki`}
+                            title="Quick Add to Anki"
+                            onClick={() => panel.quickAddCandidate(candidateIndex)}
+                            data-testid={`dictionary-candidate-quick-add-${candidateIndex}`}
+                          >
+                            <Icon name="zap" size={18} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className={styles.cellCandidateDefinitions}>
+                      {candidate.definitions.slice(0, 3).map((definition) => (
+                        <div key={definition.id} className={styles.cellCandidateDefinition}>
+                          {definition.pos && <span className={styles.cellCandidatePos}>{definition.pos}</span>}
+                          <span>{definition.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           )}
         </>
@@ -441,9 +562,6 @@ function DefinitionItem({
         />
         <span className={styles.cellDefCheckDot} aria-hidden="true" />
         <span className={styles.cellDefCheckBox} aria-hidden="true">
-          <Icon name="check" size={14} />
-        </span>
-        <span className={styles.cellDefCheckTick} aria-hidden="true">
           <Icon name="check" size={14} />
         </span>
       </label>
