@@ -48,7 +48,7 @@ export function buildOrbitalBadgeCss(): string {
   border: none !important;
   padding: 0 !important;
   margin: 0 !important;
-  border-radius: 50% !important;
+  border-radius: var(--radius-full) !important;
   background: var(--color-primary) !important;
   color: var(--color-primary-foreground) !important;
   cursor: grab !important;
@@ -94,7 +94,7 @@ export function buildOrbitalBadgeCss(): string {
   width: var(--pointer-size, calc(var(--badge-size, var(--space-9)) * 0.25)) !important;
   height: var(--pointer-size, calc(var(--badge-size, var(--space-9)) * 0.25)) !important;
   box-sizing: border-box !important;
-  border-radius: 50% !important;
+  border-radius: var(--radius-full) !important;
   background: var(--color-text-inverse) !important;
   border: var(--space-0-5) solid var(--color-primary) !important;
   padding: 0 !important;

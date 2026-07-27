@@ -828,7 +828,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-manager-radio {
   width: var(--space-3-5);
   height: var(--space-3-5);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   border: var(--space-0-5) solid var(--color-text-muted);
   background: transparent;
   flex-shrink: 0;
@@ -850,7 +850,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-manager-radio-dot {
   width: var(--space-1);
   height: var(--space-1);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: var(--color-text-inverse, white);
 }
 
