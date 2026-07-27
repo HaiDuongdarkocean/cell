@@ -94,7 +94,7 @@ describe('resolveScrollPredictMargin', () => {
       lastScrollY: 500,
       viewportHeight: 800,
     });
-    expect(result.rootMargin).toMatch(/^\d+px 0 \d+px 0$/);
+    expect(result.rootMargin).toMatch(/^\d+px 0px \d+px 0px$/);
   });
 
   it('uses custom aheadScreens multiplier', () => {
@@ -115,8 +115,8 @@ describe('resolveScrollPredictMargin', () => {
     const none = resolveScrollPredictMargin({ scrollY: 500, lastScrollY: 500, viewportHeight: 800 });
     for (const r of [down, up, none]) {
       const parts = r.rootMargin.split(' ');
-      expect(parts[1]).toBe('0');
-      expect(parts[3]).toBe('0');
+      expect(parts[1]).toBe('0px');
+      expect(parts[3]).toBe('0px');
     }
   });
 });

@@ -49,7 +49,9 @@ const CACHE_CAPACITY = resolveCacheCapacity();
 function resolveViewportRootMargin(): string {
   const vh = window.innerHeight;
   const margin = Math.round(vh);
-  return `${margin}px 0 ${margin}px 0`;
+  // Use explicit `0px` units — some Chromium builds reject a bare `0` token
+  // in an IntersectionObserver rootMargin string.
+  return `${margin}px 0px ${margin}px 0px`;
 }
 const MUTATION_DEBOUNCE_MS = 300;
 const PENDING_MUTATION_LIMIT = 1000;
