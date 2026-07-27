@@ -265,6 +265,16 @@ export function DictionaryPanelView({
 
       {searchHistory.length > 0 && (
         <section className={styles.searchHistory} aria-label="Recent searches" data-testid="dictionary-search-history">
+          <button
+            type="button"
+            className={`icon-btn icon-btn--xs ${styles.searchHistoryClear}`}
+            aria-label="Clear recent searches"
+            title="Clear recent searches"
+            onClick={handleClearHistory}
+            data-testid="dictionary-search-history-clear"
+          >
+            <Icon name="trash" size={16} />
+          </button>
           <ul className={styles.searchHistoryList}>
             {searchHistory.map((term) => (
               <li key={term} className={styles.searchHistoryItem}>
@@ -290,16 +300,6 @@ export function DictionaryPanelView({
               </li>
             ))}
           </ul>
-          <button
-            type="button"
-            className={`icon-btn icon-btn--xs ${styles.searchHistoryClear}`}
-            aria-label="Clear recent searches"
-            title="Clear recent searches"
-            onClick={handleClearHistory}
-            data-testid="dictionary-search-history-clear"
-          >
-            <Icon name="trash" size={16} />
-          </button>
         </section>
       )}
 
@@ -523,8 +523,12 @@ function DefinitionItem({
     <div
       className={styles.cellDefItem}
       data-testid="dictionary-definition"
+      onClick={() => onToggle(definition.id, !checked)}
     >
-      <label className={`${styles.cellDefCheck} ${checked ? styles['cellDefCheck--checked'] : ''}`}>
+      <label
+        className={`${styles.cellDefCheck} ${checked ? styles['cellDefCheck--checked'] : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <input
           type="checkbox"
           className={styles.cellDefCheckInput}

@@ -32,24 +32,12 @@
 
 .searchHistory {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.searchHistoryHeader {
-  display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  min-width: 0;
 }
 
-.searchHistoryTitle {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-}
-
-.searchHistoryClear,
 .searchHistoryTerm,
 .searchHistoryRemove {
   border: 0;
@@ -58,16 +46,12 @@
 }
 
 .searchHistoryClear {
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-pill);
+  flex-shrink: 0;
   color: var(--color-text-muted);
-  background: transparent;
-  font-size: var(--font-size-xs);
 }
 
-.searchHistoryClear:hover,
-.searchHistoryRemove:hover {
-  background: var(--color-surface-hover);
+.searchHistoryClear:hover {
+  color: var(--color-error);
 }
 
 .searchHistoryList {
@@ -78,6 +62,7 @@
   overflow-x: auto;
   list-style: none;
   scrollbar-width: none;
+  min-width: 0;
 }
 
 .searchHistoryList::-webkit-scrollbar {
@@ -88,6 +73,8 @@
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
+  gap: var(--space-1);
+  padding: var(--space-0-5) var(--space-1) var(--space-0-5) var(--space-2);
   overflow: hidden;
   border: var(--border-width-hairline) solid var(--color-border-subtle);
   border-radius: var(--radius-pill);
@@ -96,7 +83,7 @@
 
 .searchHistoryTerm {
   max-width: 12rem;
-  padding: var(--space-1) var(--space-2);
+  padding: 0;
   overflow: hidden;
   color: var(--color-text);
   background: transparent;
@@ -105,18 +92,27 @@
 }
 
 .searchHistoryTerm:hover {
-  background: var(--color-surface-hover);
+  color: var(--color-primary);
 }
 
+/* Remove button styled as a small badge: circular pill with subtle fill,
+   sitting at the right edge of the history chip. */
 .searchHistoryRemove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--touch-target-mobile);
-  height: var(--touch-target-mobile);
+  width: 1.125rem;
+  height: 1.125rem;
   padding: 0;
-  color: var(--color-text-muted);
-  background: transparent;
+  border-radius: var(--radius-full);
+  color: var(--color-text-inverse);
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+.searchHistoryRemove:hover {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
 }
 
 .loading, .error {
@@ -424,6 +420,7 @@
 .cellDefItem {
   position: relative;
   border-radius: var(--radius-card);
+  cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-in-out);
 }
 
