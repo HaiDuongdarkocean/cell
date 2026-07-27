@@ -463,12 +463,16 @@ function DefinitionItem({
 function AudioSkeleton(): React.JSX.Element {
   return (
     <div className={styles.cellAudioSkeleton} aria-hidden="true">
+      <div className={styles.cellAudioSkeletonSubtabs}>
+        <Skeleton width="72px" height="var(--space-4-5)" />
+        <Skeleton width="96px" height="var(--space-4-5)" />
+      </div>
       {[0, 1, 2].map((i) => (
         <div key={i} className={styles.cellAudioSkeletonRow}>
           <Skeleton width="var(--touch-target-mobile)" height="var(--touch-target-mobile)" shape="circle" className={styles.cellAudioSkeletonPlay} />
           <div className={styles.cellAudioSkeletonLabel}>
-            <Skeleton width="60%" height="calc(var(--space-5) + var(--border-width-hairline))" />
-            <Skeleton width="40%" height="var(--space-4-5)" />
+            <Skeleton width="100%" height="calc(var(--space-5) + var(--border-width-hairline))" />
+            <Skeleton width="100%" height="var(--space-4-5)" />
           </div>
           <Skeleton width="var(--space-4)" height="var(--space-4)" />
         </div>
