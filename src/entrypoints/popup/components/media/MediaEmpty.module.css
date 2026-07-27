@@ -46,6 +46,6 @@
 .hint {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
-  line-height: 1.6;
+  line-height: var(--leading-normal);
   white-space: pre-line;
 }

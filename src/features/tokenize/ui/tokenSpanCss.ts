@@ -85,7 +85,7 @@ ${buildVariables()}
   word-break: normal !important;
   cursor: pointer !important;
   border: none !important;
-  border-radius: 0.15em !important;
+  border-radius: var(--radius-xs) !important;
   outline: none !important;
   box-shadow: none !important;
   background: transparent !important;

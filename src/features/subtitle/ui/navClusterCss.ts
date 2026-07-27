@@ -42,7 +42,7 @@ export const NAV_CLUSTER_CSS = `
   inset: 0;
   border-radius: var(--radius-pill);
   background: var(--color-surface);
-  backdrop-filter: blur(var(--space-2));
+  backdrop-filter: blur(var(--blur-lg));
   opacity: var(--nav-cluster-bg-opacity, 0.7);
   z-index: -1;
 }
@@ -65,7 +65,7 @@ export const NAV_CLUSTER_CSS = `
   cursor: grab;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
-  z-index: 11;
+  z-index: var(--z-sticky);
 }
 .nav-cluster-grip::before {
   content: '';
@@ -124,7 +124,7 @@ export const NAV_CLUSTER_CSS = `
   color: var(--color-text);
   cursor: pointer !important;
   padding: 0;
-  line-height: 1;
+  line-height: var(--leading-none);
   opacity: var(--nav-cluster-btn-opacity, 0.9);
   -webkit-tap-highlight-color: transparent;
   transition: transform var(--duration-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;

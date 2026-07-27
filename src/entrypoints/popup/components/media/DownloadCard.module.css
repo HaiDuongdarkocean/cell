@@ -89,7 +89,7 @@
   padding: var(--space-1) var(--space-2);
   background: var(--color-error-subtle);
   border-radius: var(--radius-sm);
-  line-height: 1.4;
+  line-height: var(--leading-snug);
 }
 
 /* === Two-phase progress === */

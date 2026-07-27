@@ -10,7 +10,7 @@
   padding: var(--space-2-5) var(--space-4);
   background: var(--color-surface);
   border-top: var(--border-width-hairline) solid var(--color-border);
-  z-index: 100;
+  z-index: var(--z-sticky);
   animation: slideUp var(--duration-normal) ease;
 }
 

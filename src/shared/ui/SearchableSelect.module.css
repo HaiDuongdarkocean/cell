@@ -82,7 +82,7 @@
   background: var(--color-background);
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-dialog);
-  z-index: 10;
+  z-index: var(--z-dropdown);
   max-height: min(var(--searchable-select-max-height, calc(var(--space-5) * 11)), 50vh);
   overflow: hidden;
 }

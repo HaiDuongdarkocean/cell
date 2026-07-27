@@ -37,7 +37,7 @@ export const SUBTITLE_BLOCK_CSS = `
   inset: 0;
   border-radius: var(--radius-pill);
   background: var(--color-surface);
-  backdrop-filter: blur(var(--space-2));
+  backdrop-filter: blur(var(--blur-lg));
   opacity: 0;
   z-index: -1;
   transition: opacity var(--transition);
@@ -115,8 +115,8 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   inset: calc(var(--space-0-5) * -1);
   border-radius: var(--radius-full);
-  backdrop-filter: blur(1px);
-  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(var(--blur-xs));
+  -webkit-backdrop-filter: blur(var(--blur-xs));
   background: rgba(var(--color-background-rgb), 0.1);
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
@@ -284,8 +284,8 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   inset: calc(var(--space-0-5) * -1);
   border-radius: var(--radius-full);
-  backdrop-filter: blur(1px);
-  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(var(--blur-xs));
+  -webkit-backdrop-filter: blur(var(--blur-xs));
   background: rgba(var(--color-background-rgb), 0.1);
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
@@ -381,7 +381,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-selector-asr-badge {
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
   padding: calc(var(--space-0-5) / 2) var(--space-1-5);
@@ -427,9 +427,9 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .offset-header-label {
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
   flex: 1;
   color: var(--color-text-muted);
 }
@@ -599,8 +599,8 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   inset: calc(var(--space-0-5) * -1);
   border-radius: var(--radius-full);
-  backdrop-filter: blur(1px);
-  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(var(--blur-xs));
+  -webkit-backdrop-filter: blur(var(--blur-xs));
   background: rgba(var(--color-background-rgb), 0.1);
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
@@ -644,8 +644,8 @@ export const SUBTITLE_BLOCK_CSS = `
   padding: var(--space-1);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
-  font-weight: 400;
-  line-height: 1.5;
+  font-weight: var(--font-weight-normal);
+  line-height: var(--leading-normal);
   letter-spacing: normal;
   text-align: left;
   text-shadow: none;
@@ -668,7 +668,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-manager-panel button {
   margin: 0;
   font-family: inherit;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
 }
 
 .subtitle-manager-panel::-webkit-scrollbar {
@@ -703,7 +703,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-manager-title {
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
 }
 
@@ -747,7 +747,7 @@ export const SUBTITLE_BLOCK_CSS = `
   background: transparent;
   color: var(--color-text);
   font: inherit;
-  line-height: 1.5;
+  line-height: var(--leading-normal);
   text-align: left;
   box-sizing: border-box;
   transition: background var(--duration-fast) ease;
@@ -771,9 +771,9 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-manager-section-label {
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
   flex: 1;
 }
 
@@ -864,7 +864,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-manager-item-name {
   font-size: var(--font-size-base);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
@@ -883,9 +883,9 @@ export const SUBTITLE_BLOCK_CSS = `
   padding: calc(var(--space-0-5) / 2) var(--space-1-5);
   border-radius: var(--radius-sm);
   background: var(--color-surface-hover);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-xs);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-wide);
 }
 
 .subtitle-manager-asr-badge {
@@ -893,14 +893,14 @@ export const SUBTITLE_BLOCK_CSS = `
   border-radius: var(--radius-sm);
   background: rgba(var(--color-warning-rgb), 0.15);
   color: var(--color-warning);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-xs);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-wide);
 }
 
 .subtitle-manager-imported-badge {
   color: var(--color-success);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .subtitle-manager-translated-badge {
@@ -908,13 +908,13 @@ export const SUBTITLE_BLOCK_CSS = `
   border-radius: var(--radius-sm);
   background: rgba(var(--color-warning-rgb), 0.15);
   color: var(--color-warning);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-xs);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-wide);
 }
 
 .subtitle-manager-role-indicator {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .subtitle-manager-role-indicator--target {
@@ -965,8 +965,8 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   inset: calc(var(--space-0-5) * -1);
   border-radius: var(--radius-full);
-  backdrop-filter: blur(1px);
-  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(var(--blur-xs));
+  -webkit-backdrop-filter: blur(var(--blur-xs));
   background: rgba(var(--color-background-rgb), 0.1);
   -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
@@ -1069,7 +1069,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border-radius: var(--radius-pill);
   padding: var(--space-2) var(--space-3);
   font-size: var(--font-size-base);
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
   font-family: var(--font-family);
   box-shadow: var(--shadow-md, none);
   display: flex;

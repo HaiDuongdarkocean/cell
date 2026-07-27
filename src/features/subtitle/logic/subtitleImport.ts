@@ -129,8 +129,8 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
     position: absolute;
     inset: calc(var(--space-0-5) * -0.75);
     border-radius: var(--radius-full);
-    backdrop-filter: blur(1px);
-    -webkit-backdrop-filter: blur(1px);
+    backdrop-filter: blur(var(--blur-xs));
+    -webkit-backdrop-filter: blur(var(--blur-xs));
     background: rgba(var(--color-background-rgb), 0.1);
     -webkit-mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
     mask-image: radial-gradient(ellipse at center, black 55%, transparent 100%);
