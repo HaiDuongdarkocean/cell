@@ -421,12 +421,13 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
 
     // Build queue: find unknown/tracking words in the current subtitle line,
-    // look up each in the dictionary. N ≥ 2 → sidebar opens. N = 1 → no queue.
+    // look up each in the dictionary. The full queue is sent to the integrated
+    // panel; `useCardCreatorState` shows the sidebar when N ≥ 2 and pre-fills
+    // the first item even when N = 1.
     const targetText = ctx.cue?.targetText ?? '';
     const queue = await buildSubtitleQueue(targetText, sourceLang);
-    const queueArg = queue.length >= 2 ? queue : undefined;
 
-    sharedWebTextCtrl.openCardCreator({ ...ctx, initialMedia, queue: queueArg }, initialAction);
+    sharedWebTextCtrl.sendToCard({ ...ctx, initialMedia, queue }, initialAction);
   }
 
   /** Batch quick-add: find all unknown/tracking words in the current subtitle

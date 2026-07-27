@@ -38,7 +38,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { MessageResponse } from '@/entities/message/types';
 
-import type { UniversalPanelMountController } from '@/features/universalPanel';
+import type { UniversalPanelMountController, DictionaryPanelPrefill } from '@/features/universalPanel';
 import { mountCardCreatorDialog, type CardCreatorMountController, type CardCreatorOpenContext } from '@/features/cardCreator/ui/mountCardCreatorDialog';
 import { captureScreenshot } from '@/features/cardCreator/media/screenshot';
 import { captureSentenceAudio } from '@/features/cardCreator/media/sentenceAudio';
@@ -129,6 +129,9 @@ export interface WebTextDictionaryController {
   readonly updateCardCreatorSettings: (settings: CardCreatorSettings) => void;
   /** Open the Card Creator dialog with the given context + optional action. */
   readonly openCardCreator: (context: CardCreatorOpenContext, action?: 'quick-add' | 'quick-update' | 'edit-card') => void;
+  /** Send the context to the integrated Card Creator in the universal panel.
+   *  Falls back to the standalone dialog when no panel controller is available. */
+  readonly sendToCard: (context: CardCreatorOpenContext, action?: 'quick-add' | 'quick-update' | 'edit-card') => void;
   /** Whether the Card Creator dialog is currently open. */
   readonly isCardCreatorOpen: () => boolean;
 }
@@ -789,8 +792,55 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     cardCreatorMount.open(context, action);
   }
 
+  function sendToCard(
+    context: CardCreatorOpenContext,
+    action?: 'quick-add' | 'quick-update' | 'edit-card',
+  ): void {
+    if (!deps.panelController) {
+      openCardCreator(context, action);
+      return;
+    }
+
+    const firstQueueItem = context.queue?.[0];
+    const sentence = context.prefill?.sentence ?? context.cue?.targetText ?? '';
+    const translation = context.prefill?.sentenceTranslation ?? context.cue?.nativeText ?? '';
+    const definitionsText =
+      firstQueueItem?.definitions ?? context.prefill?.definitions ?? '';
+    const term =
+      context.prefill?.targetWord ??
+      firstQueueItem?.term ??
+      context.cue?.targetText ??
+      '';
+
+    const prefill: DictionaryPanelPrefill = {
+      term,
+      langCode: context.sourceLang,
+      reading: '',
+      definitions: definitionsText
+        ? definitionsText.split('\n').filter((line) => line.trim()).map((text) => ({ text: text.trim() }))
+        : [],
+      rawDefinitions: definitionsText
+        ? definitionsText.split('\n').filter((line) => line.trim())
+        : [],
+      contextSentence: sentence,
+      translation,
+      wordAudioUrls: context.prefill?.wordAudioUrls ?? [],
+      sentenceAudioUrls: context.prefill?.sentenceAudioUrls ?? [],
+      imageUrls: context.prefill?.imageUrls ?? [],
+      video: context.video,
+      cue: context.cue,
+      initialMedia: context.initialMedia,
+      queue: context.queue,
+      initialAction: action,
+    };
+
+    deps.panelController.sendToCard(prefill).catch((err: unknown) => {
+      console.warn('[web-text-dict] sendToCard failed:', err);
+    });
+  }
+
   function isCardCreatorOpen(): boolean {
-    return cardCreatorMount?.isOpen() ?? false;
+    return (cardCreatorMount?.isOpen() ?? false) || (deps.panelController?.isOpen() ?? false);
   }
 
   async function openStandaloneCardCreator(
@@ -1276,6 +1326,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     syncStatus,
     updateCardCreatorSettings,
     openCardCreator,
+    sendToCard,
     isCardCreatorOpen,
   };
 }
