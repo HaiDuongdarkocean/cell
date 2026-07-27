@@ -41,4 +41,17 @@ describe('formatDefinitions', () => {
     ]);
     expect(result).toBe('• noun first sense\n\n• noun third sense');
   });
+
+  it('strips leading bullets already present in source text', () => {
+    const result = formatDefinitions([
+      { pos: 'noun', text: '• an important job' },
+      { pos: 'noun', text: ' •  another sense' },
+      { pos: 'noun', text: '• • (noun) a group of people' },
+    ]);
+    expect(result).toBe(
+      '• noun an important job\n\n' +
+      '• noun another sense\n\n' +
+      '• noun (noun) a group of people',
+    );
+  });
 });
