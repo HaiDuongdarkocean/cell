@@ -224,9 +224,12 @@ export function DictionaryPanelView({
       )}
 
       {!panel.isLoading && !panel.error && !panel.currentResult && (
-        <div className={styles.cellDefEmpty} data-testid="dictionary-empty">
-          <Icon name="bookOpen" size={24} />
-          <span>Type a word above and press Enter to look it up.</span>
+        <div className={styles.dictionaryEmpty} role="status" data-testid="dictionary-empty">
+          <div className={styles.dictionaryEmptyIcon} aria-hidden="true">
+            <Icon name="bookOpen" size={28} />
+          </div>
+          <div className={styles.dictionaryEmptyTitle}>Ready when you are</div>
+          <div className={styles.dictionaryEmptyDescription}>Search for a word to explore its meaning.</div>
         </div>
       )}
 
