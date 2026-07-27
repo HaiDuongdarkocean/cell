@@ -5,7 +5,6 @@
   align-items: center;
   justify-content: center;
   background: var(--dialog-overlay-bg);
-  animation: fade-in var(--duration-fast) var(--ease-out);
 }
 
 .panel {
@@ -18,16 +17,16 @@
   color: var(--color-text);
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-dialog);
-  box-shadow: var(--shadow-modal);
   overflow: hidden;
+  will-change: transform, opacity;
 }
 
 .open {
-  animation: scale-in var(--duration-normal) var(--ease-out);
+  animation: scale-in var(--duration-slow) var(--ease-in-out) both;
 }
 
 .close {
-  animation: scale-out var(--duration-normal) var(--ease-out);
+  animation: scale-out var(--duration-slow) var(--ease-in-out) both;
 }
 
 .tabBar {
@@ -96,15 +95,10 @@
   }
 }
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
 @keyframes scale-in {
   from {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.98);
   }
   to {
     opacity: 1;
@@ -119,7 +113,7 @@
   }
   to {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.98);
   }
 }
 
