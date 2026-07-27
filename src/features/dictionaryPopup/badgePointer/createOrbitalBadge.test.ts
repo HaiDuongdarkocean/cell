@@ -112,7 +112,7 @@ describe('createOrbitalBadge', () => {
 
     const { host, badge: btn, pointer } = getBadgeAndPointer();
     expect(host).not.toBeNull();
-    expect(host.style.zIndex).toBe('2147483647');
+    expect(host.style.zIndex).toBe('var(--z-overlay-top)');
     expect(btn).not.toBeNull();
     expect(pointer).not.toBeNull();
     expect(pointer.getAttribute('aria-hidden')).toBe('true');

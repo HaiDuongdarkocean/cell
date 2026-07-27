@@ -48,7 +48,7 @@ export function mountSettingsDialog(
   const host = document.createElement('div');
   host.id = 'cell-settings-dialog-host';
   host.style.cssText =
-    'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;z-index:2147483645;pointer-events:none;overflow:hidden;transform:none;';
+    'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;z-index:var(--z-overlay-settings);pointer-events:none;overflow:hidden;transform:none;';
   document.body.appendChild(host);
 
   // Fullscreen support — same as mountCardCreatorDialog (ADR-026).

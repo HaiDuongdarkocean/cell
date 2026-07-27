@@ -82,7 +82,7 @@ const WORD_CONFIG: HighlightConfig = {
   background-color: ${lightSubtle} !important;
   border-radius: ${radiusXs} !important;
   pointer-events: none !important;
-  z-index: 2147483646 !important;
+  z-index: var(--z-overlay-secondary) !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
@@ -142,7 +142,7 @@ const SENTENCE_CONFIG: HighlightConfig = {
   background-color: ${lightSubtle} !important;
   border-radius: ${radiusXs} !important;
   pointer-events: none !important;
-  z-index: 2147483646 !important;
+  z-index: var(--z-overlay-secondary) !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;

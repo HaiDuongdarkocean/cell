@@ -11,7 +11,7 @@ import {
 } from '@/features/dictionaryPopup/badgePointer/badgeCollapse';
 
 const HOST_CLASS = 'js-cell-token-badge-host';
-const BADGE_Z_INDEX = '2147483646';
+const BADGE_Z_INDEX = 'var(--z-overlay-secondary)';
 const FAB_SIZE = 36;
 /** Gap (px) between the FAB and the orbital badge when both sit on the right
  *  edge at their default positions. Orbital is at vh/2; FAB is at

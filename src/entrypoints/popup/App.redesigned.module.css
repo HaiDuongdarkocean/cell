@@ -35,7 +35,7 @@
   padding: 0;
   background: transparent;
   border-bottom: var(--border-width-hairline) solid var(--color-border);
-  border-radius: 0;
+  border-radius: var(--radius-none);
   gap: 0;
   flex-shrink: 0;
 }
@@ -46,7 +46,7 @@
   flex: 1;
   padding: var(--space-2-5) var(--space-3);
   border: none;
-  border-radius: 0;
+  border-radius: var(--radius-none);
   background: transparent;
   color: var(--color-text-muted);
   font-size: var(--font-size-base);
@@ -139,7 +139,7 @@
 @media (max-width: 400px) {
   .popup {
     width: 100%;
-    border-radius: 0;
+    border-radius: var(--radius-none);
   }
 
   .tabContent {

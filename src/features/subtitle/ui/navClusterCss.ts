@@ -18,7 +18,7 @@ export const NAV_CLUSTER_CSS = `
   border-radius: var(--radius-pill);
   background: transparent;
   border: var(--border-width-hairline) solid var(--color-border);
-  z-index: var(--nav-cluster-z-index, 1000001);
+  z-index: var(--nav-cluster-z-index);
   font-family: var(--font-family);
   user-select: none;
   transition: transform var(--duration-fast) ease, opacity var(--duration-fast) ease;

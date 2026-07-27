@@ -11,21 +11,7 @@ export const ORBITAL_BADGE_STYLE_ID = 'cell-orbital-badge-style';
 export function buildOrbitalBadgeCss(): string {
   return `
 :host {
-  font-family: var(--font-family, sans-serif);
-}
-
-/* Zero-size host that still establishes the top-most stacking context. */
-.cell-orbital-badge-host {
-  position: fixed !important;
-  left: 0 !important;
-  top: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
-  z-index: 2147483647 !important;
-  pointer-events: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: none !important;
+  font-family: var(--font-family);
 }
 
 /* Inner container that holds both badge and pointer. We set data-theme here. */
@@ -56,7 +42,7 @@ export function buildOrbitalBadgeCss(): string {
   touch-action: none !important;
   outline: none !important;
   box-shadow: none !important;
-  z-index: 2147483647 !important;
+  z-index: var(--z-overlay-top) !important;
   transform: translate(-50%, -50%) !important;
   transition: transform var(--duration-normal) ease, background-color var(--duration-normal) ease, width var(--duration-normal) ease, height var(--duration-normal) ease !important;
   /* will-change promotes the badge to its own compositor layer so repositioning
@@ -102,7 +88,7 @@ export function buildOrbitalBadgeCss(): string {
   pointer-events: none !important;
   outline: none !important;
   box-shadow: none !important;
-  z-index: 2147483647 !important;
+  z-index: var(--z-overlay-top) !important;
   opacity: 1 !important;
   transform: translate(-50%, -50%) scale(1) !important;
   transition: opacity var(--duration-normal) ease, transform var(--duration-normal) ease;

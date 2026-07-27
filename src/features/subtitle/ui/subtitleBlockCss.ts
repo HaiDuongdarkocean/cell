@@ -9,7 +9,7 @@ export const SUBTITLE_BLOCK_CSS = `
      getBoundingClientRect() on scroll/resize/fullscreen. In fullscreen mode,
      the controller switches to position:absolute inside the fullscreen element.
      z-index tier: above YouTube overlays (<1000000), below settings dialog
-     (2147483645) and dictionary popup (2147483647) so those float above. */
+     (var(--z-overlay-settings)) and dictionary popup (var(--z-overlay-top)) so those float above. */
   position: fixed;
   /* left, top, width set by controller syncPosition() — no CSS defaults. */
   transform: translateY(-50%);
@@ -23,7 +23,7 @@ export const SUBTITLE_BLOCK_CSS = `
      block can extend beyond its bounds without being clipped. The ::before
      backdrop is clipped by its own border-radius + inset:0, not by overflow. */
   overflow: visible;
-  z-index: 2147483640;
+  z-index: var(--z-overlay-video);
   pointer-events: auto;
   user-select: none;
   cursor: grab;
@@ -249,7 +249,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   right: 100%;
   bottom: 0;
-  z-index: 2147483641;
+  z-index: var(--z-overlay-video-popover);
   display: flex;
   flex-direction: row;
   gap: var(--space-1);
@@ -330,7 +330,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   top: var(--space-2);
   right: var(--space-2);
-  z-index: 2147483641;
+  z-index: var(--z-overlay-video-popover);
   width: var(--space-7);
   height: var(--space-7);
   padding: 0;
@@ -349,7 +349,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   top: var(--touch-target-desktop);
   right: var(--space-2);
-  z-index: 2147483641;
+  z-index: var(--z-overlay-video-popover);
   max-height: calc(var(--space-5) * 10);
   overflow-y: auto;
   background: rgba(var(--overlay-background-rgb), 0.85);
@@ -385,7 +385,7 @@ export const SUBTITLE_BLOCK_CSS = `
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
   padding: calc(var(--space-0-5) / 2) var(--space-1-5);
-  border-radius: var(--space-1);
+  border-radius: var(--radius-2xs);
   background: rgba(var(--overlay-text-rgb), 0.18);
   color: rgba(var(--overlay-text-rgb), 0.85);
   margin-left: var(--space-1);
@@ -632,7 +632,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   top: var(--touch-target-mobile);
   left: var(--space-2);
-  z-index: 2147483641;
+  z-index: var(--z-overlay-video-popover);
   width: calc(var(--space-5) * 16);
   max-height: calc(var(--space-5) * 18);
   overflow-y: auto;
@@ -851,7 +851,7 @@ export const SUBTITLE_BLOCK_CSS = `
   width: var(--space-1);
   height: var(--space-1);
   border-radius: var(--radius-full);
-  background: var(--color-text-inverse, white);
+  background: var(--color-text-inverse);
 }
 
 .subtitle-manager-item-text {
@@ -981,7 +981,7 @@ export const SUBTITLE_BLOCK_CSS = `
   position: absolute;
   top: var(--space-2);
   left: var(--space-2);
-  z-index: 2147483641;
+  z-index: var(--z-overlay-video-popover);
   font-size: var(--font-size-xs);
   padding: var(--space-0-5) var(--space-1);
   background-color: rgba(var(--overlay-background-rgb), 0.7);
@@ -1012,11 +1012,11 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-overlay[data-role="target"] {
-  z-index: 999999;
+  z-index: var(--z-subtitle-target);
 }
 
 .subtitle-overlay[data-role="native"] {
-  z-index: 999998;
+  z-index: var(--z-subtitle-native);
 }
 
 .subtitle-overlay-text {
@@ -1037,11 +1037,11 @@ export const SUBTITLE_BLOCK_CSS = `
   height: 100%;
   background-color: rgba(var(--subtitle-drag-hint-rgb), 0.2);
   border: var(--space-1) dashed rgba(var(--subtitle-drag-hint-rgb), 0.8);
-  border-radius: var(--space-2);
+  border-radius: var(--radius-md);
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 999998;
+  z-index: var(--z-subtitle-native);
   pointer-events: none;
   user-select: none;
   font-size: var(--font-size-base);
@@ -1061,7 +1061,7 @@ export const SUBTITLE_BLOCK_CSS = `
   bottom: var(--subtitle-toast-bottom);
   left: 50%;
   transform: translateX(-50%);
-  z-index: 2147483641;
+  z-index: var(--z-overlay-video-popover);
   background: var(--color-background);
   color: var(--color-text);
   border: var(--border-width-hairline) solid var(--color-border);

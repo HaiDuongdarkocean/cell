@@ -33,7 +33,7 @@ export function buildTokenBadgeCss(): string {
   padding: 0 !important;
   margin: 0 !important;
   cursor: pointer !important;
-  z-index: 2147483646 !important;
+  z-index: var(--z-overlay-secondary) !important;
   /* touch-action:none prevents the browser from hijacking the touch gesture
      for page scroll/zoom during drag, which fires pointercancel and aborts/
      jitters the drag on touch screens. Tap (click) still fires — touch-action
@@ -99,7 +99,7 @@ export function buildTokenBadgeCss(): string {
   border: var(--border-width-hairline) solid var(--color-border) !important;
   border-radius: var(--radius-card) !important;
   padding: var(--space-4) !important;
-  z-index: 2147483646 !important;
+  z-index: var(--z-overlay-secondary) !important;
   display: none;
   flex-direction: column !important;
   gap: var(--space-3) !important;

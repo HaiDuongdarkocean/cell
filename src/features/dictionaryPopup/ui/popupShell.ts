@@ -26,7 +26,7 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 // └─────────────────────────────────┘
 //                          [resize] ↘
 
-const POPUP_Z_INDEX = '2147483647'; // max int — above everything
+const POPUP_Z_INDEX = 'var(--z-overlay-top)'; // top content-script overlay
 
 /** Layout constants — extracted from hardcoded px values (Phase 1 SSOT). */
 const POPUP_MARGIN_PX = 8; // equals --space-2
