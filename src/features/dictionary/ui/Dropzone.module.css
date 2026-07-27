@@ -40,3 +40,8 @@
 .input {
   display: none;
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .dropzone { transition: none; animation: none; }
+}

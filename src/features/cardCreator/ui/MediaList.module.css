@@ -337,3 +337,17 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-media { transition: none; animation: none; }
+  .cc-media__empty { transition: none; animation: none; }
+  .cc-media__thumb { transition: none; animation: none; }
+  .cc-media__thumb-remove { transition: none; animation: none; }
+  .cc-media__gallery-add { transition: none; animation: none; }
+  .cc-media__preview-close { transition: none; animation: none; }
+  .cc-media__row { transition: none; animation: none; }
+  .cc-media__play { transition: none; animation: none; }
+  .cc-media__row-remove { transition: none; animation: none; }
+  .cc-media__list-add { transition: none; animation: none; }
+}

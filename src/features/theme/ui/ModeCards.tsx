@@ -3,6 +3,7 @@
 // a11y: role="radiogroup", mỗi card role="radio", keyboard arrow nav.
 
 import type { KeyboardEvent } from 'react';
+import { Card } from '@/shared/ui';
 import type { ThemeMode } from '@/entities/theme';
 import styles from './ModeCards.module.css';
 
@@ -36,9 +37,10 @@ export function ModeCards({ value, onChange }: ModeCardsProps): React.JSX.Elemen
       {MODES.map((m) => {
         const selected = m.mode === value;
         return (
-          <div
+          <Card
             key={m.mode}
-            className={`${styles.card} ${selected ? styles.selected : ''}`}
+            variant={selected ? 'selected' : 'interactive'}
+            className={styles.card}
             role="radio"
             aria-checked={selected}
             tabIndex={selected ? 0 : -1}
@@ -48,7 +50,7 @@ export function ModeCards({ value, onChange }: ModeCardsProps): React.JSX.Elemen
           >
             <span className={styles.icon} aria-hidden="true">{m.icon}</span>
             <span className={styles.label}>{m.label}</span>
-          </div>
+          </Card>
         );
       })}
     </div>

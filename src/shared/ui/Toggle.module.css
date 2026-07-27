@@ -58,3 +58,9 @@
 .toggle[aria-pressed="true"]:disabled:hover {
   background: var(--color-primary);
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle { transition: none; animation: none; }
+  .thumb { transition: none; animation: none; }
+}

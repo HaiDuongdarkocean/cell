@@ -62,3 +62,8 @@
   outline: var(--space-0-5) solid var(--color-border-focus);
   outline-offset: var(--space-0-5);
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .iconBtn { transition: none; animation: none; }
+}
