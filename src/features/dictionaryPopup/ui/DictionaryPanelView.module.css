@@ -297,6 +297,46 @@
   padding: var(--space-1) 0;
 }
 
+.dictionaryEmpty {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.dictionaryEmptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--space-6) + var(--space-2));
+  height: calc(var(--space-6) + var(--space-2));
+  margin-bottom: var(--space-1);
+  color: var(--color-text-subtle);
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.dictionaryEmptyTitle {
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-normal);
+}
+
+.dictionaryEmptyDescription {
+  max-width: 28ch;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
 .cellDefItem {
   position: relative;
   border-radius: var(--radius-card);
