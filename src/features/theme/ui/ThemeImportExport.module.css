@@ -14,31 +14,6 @@
   margin-bottom: var(--space-2);
 }
 
-.textarea {
-  width: 100%;
-  min-height: var(--space-20);
-  padding: var(--space-2);
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-family: monospace;
-  font-size: var(--font-size-xs);
-  resize: vertical;
-}
-
-.error {
-  color: var(--color-error);
-  font-size: var(--font-size-xs);
-  margin-top: var(--space-1);
-}
-
-.success {
-  color: var(--color-success);
-  font-size: var(--font-size-xs);
-  margin-top: var(--space-1);
-}
-
 .label {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);

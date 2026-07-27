@@ -144,7 +144,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hintBtn,
   .hintText {
+    transition: none;
     animation: none;
   }
 }

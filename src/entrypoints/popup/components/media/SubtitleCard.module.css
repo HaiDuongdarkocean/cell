@@ -13,17 +13,6 @@
   border-color: var(--color-border);
 }
 
-/* Selected state */
-.selected {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
-}
-
-.selected:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-subtle);
-}
-
 /* Downloading state */
 .downloading {
   opacity: 0.5;
@@ -230,9 +219,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .card,
+  .expandChevron,
+  .copyBtn,
+  .copyBtn svg,
+  .urlText,
   .downloadingIndicator svg,
   .urlPanel,
-  .statusPill {
+  .copiedBadge {
+    transition: none;
     animation: none;
   }
 }

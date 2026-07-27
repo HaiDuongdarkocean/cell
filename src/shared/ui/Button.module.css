@@ -171,7 +171,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .button,
   .spinner {
+    transition: none;
     animation: none;
   }
 }

@@ -129,7 +129,7 @@ describe('applyStyle', () => {
       },
       overlay,
     );
-    expect(overlay.style.textShadow).toBe('2px 2px 4px #333');
+    expect(overlay.style.textShadow).toBe('var(--shadow-text-cinema) #333');
   });
 
   it('sets fontFamily via sanitizeFontFamily', () => {

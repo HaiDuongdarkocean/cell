@@ -80,7 +80,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .searchWrap,
+  .searchIcon,
+  .option,
+  .toggleSwitch,
+  .toggleKnob,
   .badge {
+    transition: none;
     animation: none;
   }
 }

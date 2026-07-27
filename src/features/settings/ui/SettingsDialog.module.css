@@ -334,8 +334,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebarItem,
-  .tokenChip {
+  .sidebarItem {
     transition: none;
   }
 }

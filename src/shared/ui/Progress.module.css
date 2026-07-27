@@ -24,7 +24,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .bar,
   .indeterminate .bar {
+    transition: none;
     animation: none;
   }
 }
