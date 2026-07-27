@@ -286,6 +286,8 @@ export const STORAGE_KEYS = {
   ORBITAL_BADGE_POSITION: 'orbitalBadgePosition',
   /** Last active universal orbital panel tab per session ('dictionary' | 'settings'). */
   UNIVERSAL_PANEL_TAB: 'universalPanelTab',
+  /** Recent dictionary search terms for the universal panel session. */
+  DICTIONARY_SEARCH_HISTORY: 'dictionarySearchHistory',
 } as const;
 
 // === Popup Dimensions ===

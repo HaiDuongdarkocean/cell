@@ -40,6 +40,7 @@ export function UniversalPanel({
   settingsPanel,
 }: UniversalPanelProps): ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
+  const wasOpenRef = useRef(isOpen);
   const [isClosing, setIsClosing] = useState(false);
 
   useFocusTrap(panelRef, isOpen);
@@ -47,9 +48,10 @@ export function UniversalPanel({
   useEffect(() => {
     if (isOpen) {
       setIsClosing(false);
-    } else if (!isClosing) {
+    } else if (wasOpenRef.current) {
       setIsClosing(true);
     }
+    wasOpenRef.current = isOpen;
   }, [isOpen]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {

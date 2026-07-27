@@ -1,33 +1,72 @@
-# Implementation Plan: Dictionary Tab Visual Fidelity
+# Implementation Plan: Independent Candidate List in Dictionary Panel
 
 ## Overview
+Refactor the dictionary panel so every lookup candidate is rendered as an independent, vertically scrollable card. Each card keeps its own tab state, definition selection, audio/image/translation data, and action buttons. The chip bar becomes a jump-link navigation that scrolls to a candidate instead of replacing the active result. This removes the cross-candidate tab contamination and the need to click a chip before seeing another candidate.
 
-Finish the approved `spec-dictionary-tab-copy-popup-visual.md` for the integrated `DictionaryPanelView` inside `UniversalPanel`. The spec interview is complete; this phase concentrates on the remaining search/definition/candidate/toolbar layout gaps reported by the user.
+## Current state
+- `useDictionaryPanel.ts` stores one `currentResult`, a `candidates` array, and a single set of tab/media/selection state.
+- `DictionaryPanelView.tsx` renders one header, one tab toolbar, one set of tab panels, and one definitions list for `currentResult`. Candidate chips below switch `currentResult`.
+- `LookupResult` has no stable `id`; candidates are identified by index in the lookup result list (`[currentResult, ...candidates]`).
 
 ## Architecture decisions
+1. **Per-candidate state with `useCandidate` hook.** A new `useCandidate(candidate, contextSentence, sourceLang, targetLang, onSendToCard, onQuickAdd)` hook encapsulates all candidate-local state (`activeTab`, `definitionSelection`, `status`, `audioItems`, `imageItems`, `translation`, etc.) and lazy fetchers. Each `CandidateView` mounts its own `useCandidate`, so tab and selection state never leak between candidates.
+2. **`CandidateView` component.** Extract the existing single-candidate body (header, toolbar, tab panels, definitions, actions) into a self-contained component. `DictionaryPanelView` maps the result list to `<CandidateView … />`.
+3. **Chips become jump links.** The chip bar stays but `onClick` scrolls the selected candidate into view and updates a local highlight index. It no longer swaps `currentResult` or resets global state.
+4. **Lazy media remains.** Audio, image, and translation fetchers live inside `useCandidate` and only run when the candidate's own tab is opened.
+5. **Selection badges on tab buttons.** Each candidate's tab toolbar shows a numeric badge on the audio/image/definitions tabs indicating how many items are currently selected (`selectedDefinitions.length`, selected audio count, selected image count). Badges are small counters positioned at the top-right of the tab button and update immediately as the user toggles items. Translate and links tabs do not carry item selection, so they do not show a badge.
+6. **Shared `buildPrefill` moved to a pure helper.** `buildPrefill` and its dependencies are moved/extracted so both `useDictionaryPanel` and `useCandidate` can build card-creator prefills without duplication.
+6. **Keep `useDictionaryPanel` search API stable in this slice.** The hook continues to own search, history updates, and result list. Per-candidate fields in its return object will become unused by `DictionaryPanelView`; dead-state cleanup is deferred to a follow-up task to avoid breaking existing unit tests until the new UI is verified.
 
-- Keep `useDictionaryPanel.ts` as-is — it already exposes `definitionSelection`, `toggleDefinition`, `selectedDefinitions`, `quickAdd`, and `sendToCard`.
-- Keep the global `.btn`/`.icon-btn` style injection already in `DictionaryPanelView.tsx`.
-- Change the search row to a single `SearchField` with a single clear X, 350 ms trailing debounce, and instant Enter lookup; remove the explicit Search button.
-- Port the popup's `renderDefinitions` DOM exactly: `<div class="cell-def__item">` > `<label class="cell-def__check">` + hidden checkbox + `<div class="cell-def__text">` wrapping combined `pos text` + examples.
-- Reorder the active entry to `header → toolbar → tab panels → definitions → candidates`.
-- Candidate chips get a transparent background in every state; active chip uses primary text + 2 px underline, no filled background.
+## Dependency graph
+```
+shared buildPrefill helper
+        |
+        +--> useCandidate hook
+                |
+                +--> CandidateView component
+                        |
+                        +--> DictionaryPanelView candidate list mapping
 
-## Slices
+useDictionaryPanel (search result list only)
+        |
+        +--> DictionaryPanelView (search, history, chips, scroll orchestration)
+```
 
-1. **Search**: hide native WebKit cancel button in `SearchField.module.css`; remove Search button and add debounce in `DictionaryPanelView.tsx`.
-2. **Definition DOM**: rewrite `DefinitionItem` to popup's block structure.
-3. **Layout order**: move `cellToolbar` and tab panels above `cellDef`; move `cellCandidates` below `cellDef`.
-4. **Candidate styling**: override `.cellChip` and `.cellCandidates` for transparent background + active underline, and reserve bottom scroll padding.
-5. **Verification**: `npm run typecheck`, `npm run test:unit`, `npm run build`, Chrome DevTools comparison, subagent review.
+## Task list
 
-## Files touched
+### Phase 1: Foundation
+- [ ] Task 1: Extract/share `buildPrefill` and media fetch helpers for single candidate.
+- [ ] Task 2: Create `useCandidate` hook with per-candidate state and lazy actions.
 
-- `src/features/dictionaryPopup/ui/DictionaryPanelView.tsx`
-- `src/features/dictionaryPopup/ui/DictionaryPanelView.module.css`
-- `src/shared/ui/SearchField.module.css`
+### Checkpoint: Foundation
+- [ ] `npm run typecheck` passes
+- [ ] New `useCandidate` unit tests pass
+- [ ] `useDictionaryPanel` still compiles and its existing tests pass
 
-## Risks
+### Phase 2: Core UI refactor
+- [ ] Task 3: Create `CandidateView` component from the existing single-candidate panel body.
+- [ ] Task 4: Refactor `DictionaryPanelView` to render `CandidateView` for every result and turn chips into jump links.
+- [ ] Task 5: Adjust `DictionaryPanelView.module.css` for candidate list spacing, scroll containers, and sticky chip affordance.
 
-- Reordering JSX may break existing `DictionaryTab` render tests; tests must be updated or verified after layout changes.
-- Container `overflow-y: auto` + `.cellDef { overflow-y: auto }` already creates a nested scroller; leave untouched unless verification shows a problem, to avoid scope creep.
+### Checkpoint: Core UI
+- [ ] `npm run test:unit` passes
+- [ ] `npm run build` passes
+- [ ] Manual Chrome check: multiple candidates visible, each tab independent, chip scroll works
+
+### Phase 3: Cleanup and verification
+- [ ] Task 6: Remove/update `useDictionaryPanel` per-candidate dead state and its unit tests.
+- [ ] Task 7: Update architecture docs/function index if new files are introduced.
+- [ ] Task 8: Final typecheck, unit tests, production build, and real-browser verification.
+
+## Risks and mitigations
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| `useDictionaryPanel` unit tests break when API changes | Medium | Keep API stable in the first slice; only `DictionaryPanelView` stops consuming per-candidate fields. Clean tests after UI is verified. |
+| Candidate list becomes long on mobile | Medium | Use vertical scroll; candidate cards stack naturally. Do not virtualize in MVP. |
+| Media fetched for many candidates simultaneously | Medium | Keep lazy fetch inside `useCandidate`; only the candidate whose tab is opened fetches. |
+| Duplicate keys if two candidates have the same `term` | Low | Use `index` in the lookup result list as the stable key and for scroll `id`. |
+| Status cycle in `CandidateView` may conflict with `useDictionaryPanel` global status | Low | `CandidateView` calls `cycleWordStatus` and holds local `status` state initialized from the candidate. `useDictionaryPanel` global status becomes unused. |
+
+## Open questions
+- Should the chip active highlight track scroll position via `IntersectionObserver` or only reflect the last clicked chip?
+- Does the context sentence for each candidate stay as the searched term, or should it be candidate-specific?

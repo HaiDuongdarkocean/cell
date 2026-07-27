@@ -248,6 +248,35 @@ describe('useDictionaryPanel', () => {
     ]);
   });
 
+  it('builds candidate actions from the requested candidate at click time', async () => {
+    const winner = makeResult('hello', {
+      definitions: [{ id: 'd1', pos: 'n', text: 'greeting', examples: [], source: 'test', defaultSelected: true }],
+    });
+    const candidate = makeResult('hi', {
+      reading: 'haɪ',
+      readingKind: 'ipa',
+      definitions: [{ id: 'd2', pos: 'interj', text: 'an informal greeting', examples: [], source: 'test', defaultSelected: true }],
+    });
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [winner, candidate] });
+
+    const onSendToCard = jest.fn();
+    const onQuickAdd = jest.fn();
+    const { result } = renderHook(() => useDictionaryPanel({
+      langCode: 'en', sourceLang: 'en', targetLang: 'vi', onSendToCard, onQuickAdd,
+    }));
+
+    act(() => { result.current.search('hello'); });
+    await waitFor(() => expect(result.current.currentResult?.term).toBe('hello'));
+
+    act(() => { result.current.sendCandidateToCard(1); });
+    act(() => { result.current.quickAddCandidate(1); });
+
+    expect((onSendToCard.mock.calls[0][0] as PopupCardCreatorPrefill).term).toBe('hi');
+    expect((onSendToCard.mock.calls[0][0] as PopupCardCreatorPrefill).definitions).toEqual([{ pos: 'interj', text: 'an informal greeting' }]);
+    expect((onQuickAdd.mock.calls[0][0] as PopupCardCreatorPrefill).term).toBe('hi');
+    expect(result.current.currentResult?.term).toBe('hello');
+  });
+
   it('calls onQuickAdd with prefill and is no-op when absent', async () => {
     const winner = makeResult('hello', {
       definitions: [

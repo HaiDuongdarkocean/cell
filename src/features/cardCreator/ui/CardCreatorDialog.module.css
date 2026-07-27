@@ -37,18 +37,27 @@
 }
 
 .cc-dialog__panel-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   flex-shrink: 0;
   padding: var(--space-2) var(--space-4);
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
-  background: var(--color-card);
+}
+
+.cc-dialog__panel-header > :first-child {
+  justify-self: start;
+}
+
+.cc-dialog__panel-header > :last-child {
+  justify-self: end;
 }
 
 .cc-dialog__panel-title {
+  grid-column: 2;
+  text-align: center;
   font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text);
 }
 

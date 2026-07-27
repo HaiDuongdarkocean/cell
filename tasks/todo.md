@@ -1,32 +1,45 @@
-# Dictionary Tab Visual Fidelity — Implementation Checklist
+# Task Checklist: Independent Candidate List in Dictionary Panel
 
-## Slice 1: Search
-- [ ] Add `::-webkit-search-cancel-button { display: none; }` to `SearchField.module.css`.
-- [ ] Remove `Button` import and explicit Search button from `DictionaryPanelView.tsx`.
-- [ ] Add 350 ms debounced search on `searchTerm` change; Enter clears timer and searches immediately.
-- [ ] Update placeholder from "Type a word and press Enter" to something neutral if changed.
+- [ ] T1 — Extract/share `buildPrefill` and per-candidate media fetch helpers.
+  - AC: `buildPrefill` can be imported by both `useDictionaryPanel` and a new `useCandidate` hook without code duplication.
+  - Depends on: none.
 
-## Slice 2: Layout order
-- [ ] Move `cellToolbar` JSX to directly after `<header>` and before tab panels.
-- [ ] Render tab panels (`AudioPanel`, `ImagePanel`, `TranslatePanel`, `LinksPanel`) between toolbar and `cellDef`.
-- [ ] Move `cellCandidates` JSX to after `cellDef`.
+- [ ] T2 — Create `useCandidate` hook with per-candidate state and lazy actions.
+  - AC: own `activeTab`, `definitionSelection`, `status`, `translation`, `audioItems`, `imageItems`; lazy fetch on tab open; builds prefill; calls `onSendToCard`/`onQuickAdd`.
+  - Depends on: T1.
 
-## Slice 3: Definition rows
-- [ ] Change `DefinitionItem` outer element from `<label>` to `<div>`.
-- [ ] Wrap checkbox/input/dot/box/tick in a `<label className={styles.cellDefCheck}>`.
-- [ ] Use `<div className={styles.cellDefText}>` for the text wrap.
-- [ ] Combine `pos` and `text` into a single child `<span>`.
-- [ ] Keep examples as `<div className={styles.cellDefExamples}>` with `•` prefix.
+- [ ] T3 — Add unit tests for `useCandidate`.
+  - AC: toggles tab, selects definitions, fetches audio/image lazily, cycles status, builds prefill.
+  - Depends on: T2.
 
-## Slice 4: Candidate strip
-- [ ] Set `.cellCandidates` background to transparent.
-- [ ] Override `.cellChip` background/border to transparent.
-- [ ] Active `.cellChip` (`.btn--primary`) uses `color: var(--color-primary)` + `text-decoration: underline` (2 px).
-- [ ] Add `padding-bottom` to `.cellCandidates` equal to one chip height for final-item visibility.
+- [ ] T4 — Create `CandidateView` component from existing single-candidate panel body.
+  - AC: renders header, toolbar, definitions, tab panels, and actions using `useCandidate`.
+  - Depends on: T2/T3.
 
-## Slice 5: Verify
-- [ ] `npm run typecheck` passes.
-- [ ] `npm run test:unit` passes (update tests if layout changed).
-- [ ] `npm run build` passes.
-- [ ] Chrome DevTools visual comparison against floating popup.
-- [ ] Subagent review confirms remaining discrepancies.
+- [ ] T5 — Refactor `DictionaryPanelView` to map all candidates to `CandidateView`.
+  - AC: all candidates visible in a scrollable list; chips remain but jump-scroll to candidate; no global tab state.
+  - Depends on: T4.
+
+- [ ] T6 — Adjust `DictionaryPanelView.module.css` for candidate list layout and tab selection badges.
+  - AC: candidate cards separated, scroll container works, chip bar affordance retained, tab buttons can host a numeric badge top-right.
+  - Depends on: T5.
+
+- [ ] T6b — Add selected-item count badges to candidate tab buttons.
+  - AC: definitions/audio/image tabs show selected count on top-right when > 0; updates on toggle; translate/links have no badge.
+  - Depends on: T4/T5.
+
+- [ ] T7 — Cleanup `useDictionaryPanel` per-candidate dead state and update its tests.
+  - AC: `useDictionaryPanel` focuses on search and result list; tests match new behavior OR dead state is removed in a follow-up.
+  - Depends on: T5.
+
+- [ ] T8 — Update architecture docs/function index for new files.
+  - AC: `docs/2-architechture-system.md` lists `useCandidate`/`CandidateView` if they are new public modules.
+  - Depends on: T4/T5.
+
+- [ ] T9 — Run quality gates and real-browser verification.
+  - Commands: `npm run typecheck`, `npm run test:unit`, `npm run build`, `npx vite build --mode development`.
+  - Browser: Chrome DevTools, desktop + narrow viewport, multiple candidates, tab independence, chip jump.
+  - Depends on: T6/T8.
+
+- [ ] T10 — Refine against plan AC and fix evidence-backed gaps only.
+  - Depends on: T9.
