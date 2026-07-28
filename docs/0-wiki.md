@@ -82,6 +82,7 @@ docs/           # Tài liệu dự án
 │   └── 071-motion-standardization-and-reduced-motion.md # ADR-071: Motion standardization and reduced motion support
 │   └── 072-component-reuse-card-dialog-atoms.md # ADR-072: Media cards and SettingsDialog reuse Card/Dialog shared atoms
 │   └── 073-self-evolving-skills.md    # ADR-073: Self-evolving agent skills — files live in self-evolution/ folder, write-skill asks before enabling
+│   └── 074-design-system-showcase.md  # ADR-074: Auto-generated design system showcase HTML (tokens + icons + components + UniversalPanel)
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup
 │   ├── overlay-appearance-settings.md
@@ -212,6 +213,7 @@ docs/           # Tài liệu dự án
 │   ├── persist-config-clear-content.md            # Card Creator autosave: persist selections + tags, clear field content on close
 │   ├── language-unique-signature-words.md         # Unique signature words cho 27 ngôn ngữ Latin (improve frequency detection accuracy)
 │   └── skill-output-routing.md                    # Skill output routing (filled artifacts → project docs/, not skill dir)
+│   └── design-system.md                             # Socratic Q&A + best practice for design systems (Bloom-based)
 ├── test-reports/                      # MCP browser test reports — "does it work in real browser"
 │   ├── 2026-06-26-subtitle-sidebar-shortcuts-mcp.md
 │   ├── 2026-06-27-subtitle-panel-docking-mcp.md
@@ -228,7 +230,9 @@ docs/           # Tài liệu dự án
 │   └── design-system-inventory-2026-07-02-nav-cluster.md # Design system inventory nav cluster (G3: 0 inconsist baseline, 10 new tokens, NavClusterButton atom, 3-layer enforcement)
 │   └── nav-cluster-frontend-design.md # Frontend UI engineering nav cluster (G3 build HOW: DOM tree, state machines, ARIA toolbar, responsive touch target, perf, anti-AI-aesthetic)
 │   └── review-youtube-subtitle-detection.md # Spec review: YouTube subtitle detection (APPROVED_WITH_CONDITIONS → revised → APPROVED, Opus 4.8, 3 CRITICAL + 4 HIGH resolved)
-├── (design-system/ đã xóa — codebase là nguồn duy nhất: src/shared/styles/tokens.json + src/shared/ui/)
+├── design-system/                     # Auto-generated design system showcase (hook from npm run build)
+│   ├── design-system-showcase.html    # Visual single source of truth — tokens, icons, components, panels
+│   └── assets/                        # Bundled CSS/JS for the showcase
 ├── shortcut-for-tw/                    # Cheatsheet phím tắt Devin Terminal workflow
 │   └── cheatsheet.md                   # Win+Shift+Q launcher + WT pane nav/swap/resize + workflow giao việc
 ├── mockups/                           # HTML mockups (design-driven-development output, G0.5)
@@ -241,6 +245,7 @@ docs/           # Tài liệu dự án
 │   ├── tokenize-on-media-prototype.html # Floating badge manager prototype: Shadow DOM, design-system tokens + icons, 7 IA groups, full Settings mock data, host-page tokenization (inline-block token + status float absolute không nhảy dòng, status underline 2px, không viền outline hover/active, không hiển thị IPA trên token, frequency bg+text; known/ignore ẩn phân tích), desktop shortcuts 1/2/3/4 + multi-select, draggable FAB, desktop anchored dialog with FAB collapse button, văn bản dài multi-line test, responsive + focus trap + host-CSS isolation, verified edge-devtools
 │   └── popup-dictionary/              # Modular interactive prototype (index.html + tokens/base/popup/creator.css + fixtures/icons/dropdown/popup/creator/app.js; Gate 2 contract: docs/specs/design/UI-UX-Contract-popup-dictionary.md; 4-icon toolbar single-select + 5-status + edit-mode config; verified edge-devtools)
 ├── intent/
+│   ├── design-system-showcase.md      # Design System Showcase HTML intent (interview-me output, confirmed)
 │   └── intent-card-creator.md         # Card Creator intent (interview-me output, confirmed)
 ├── specs/
 │   └── spec-card-creator.md           # Card Creator spec (PRD) — AnkiConnect + dialog + media extraction
