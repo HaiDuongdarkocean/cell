@@ -9,6 +9,7 @@
     "dev": "vite",
     "prebuild": "node scripts/generate-tokens.js",
     "build": "vite build",
+    "design-system": "npx http-server docs/design-system -p 8123 -o /design-system-showcase.html",
     "preview": "vite preview",
     "test": "jest --passWithNoTests",
     "test:unit": "jest --selectProjects unit --passWithNoTests",

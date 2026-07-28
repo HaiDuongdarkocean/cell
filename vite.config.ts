@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import { crx } from '@crxjs/vite-plugin';
 import { resolve } from 'node:path';
-import { copyFileSync, mkdirSync, existsSync } from 'node:fs';
+import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import manifest from './public/manifest.json' with { type: 'json' };
 
 /**
@@ -17,6 +17,67 @@ const SEED_ASSET_FILES: readonly string[] = [
   'en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
   'en/frequency_list/standard.json',
 ] as const;
+
+function copyDirSync(src: string, dest: string) {
+  if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
+  for (const entry of readdirSync(src)) {
+    const srcPath = resolve(src, entry);
+    const destPath = resolve(dest, entry);
+    const stat = statSync(srcPath);
+    if (stat.isDirectory()) {
+      copyDirSync(srcPath, destPath);
+    } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+function designSystemShowcase(): Plugin {
+  return {
+    name: 'design-system-showcase',
+    apply: 'build',
+    closeBundle() {
+      const distHtml = resolve(__dirname, 'dist', 'src', 'entrypoints', 'design-system-showcase', 'index.html');
+      const distAssets = resolve(__dirname, 'dist', 'assets');
+      const destDir = resolve(__dirname, 'docs', 'design-system');
+      if (!existsSync(distHtml)) {
+        console.warn('[design-system-showcase] dist/src/entrypoints/design-system-showcase/index.html not found');
+        return;
+      }
+      if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
+
+      const html = readFileSync(distHtml, 'utf8');
+      const usedAssets = new Set<string>();
+
+      const fixedHtml = html
+        .replace(/\.\.\/\.\.\/assets\//g, 'assets/')
+        .replace(/src="\/assets\/([^"]+)"/g, (_m, name) => {
+          usedAssets.add(name);
+          return `src="assets/${name}"`;
+        })
+        .replace(/href="\/assets\/([^"]+)"/g, (_m, name) => {
+          usedAssets.add(name);
+          return `href="assets/${name}"`;
+        })
+        .replace(/<link rel="modulepreload"[^>]*>\n?/g, '');
+
+      writeFileSync(resolve(destDir, 'design-system-showcase.html'), fixedHtml);
+
+      const destAssetsDir = resolve(destDir, 'assets');
+      if (existsSync(destAssetsDir)) rmSync(destAssetsDir, { recursive: true, force: true });
+      if (existsSync(distAssets) && usedAssets.size > 0) {
+        mkdirSync(destAssetsDir, { recursive: true });
+        for (const name of usedAssets) {
+          const src = resolve(distAssets, name);
+          const dest = resolve(destAssetsDir, name);
+          if (existsSync(src)) copyFileSync(src, dest);
+        }
+        console.log(`[design-system-showcase] Copied ${usedAssets.size} assets to docs/design-system/assets`);
+      }
+      console.log('[design-system-showcase] Copied showcase to docs/design-system/design-system-showcase.html');
+    },
+  };
+}
 
 function autoSeedAssets(mode: string): Plugin {
   // Production builds should not ship test seed files (~42.7MB).
@@ -49,7 +110,7 @@ function autoSeedAssets(mode: string): Plugin {
 }
 
 export default defineConfig(({ mode }) => ({
-  plugins: [crx({ manifest }), autoSeedAssets(mode)],
+  plugins: [crx({ manifest }), autoSeedAssets(mode), designSystemShowcase()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -61,6 +122,7 @@ export default defineConfig(({ mode }) => ({
         offscreen: resolve(__dirname, 'src/entrypoints/offscreen/ffmpeg.html'),
         sidepanel: resolve(__dirname, 'src/entrypoints/sidepanel/index.html'),
         cardCreatorTest: resolve(__dirname, 'src/entrypoints/test/cardCreatorTest.html'),
+        designSystemShowcase: resolve(__dirname, 'src/entrypoints/design-system-showcase/index.html'),
       },
       output: {
         manualChunks(id) {
