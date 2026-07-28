@@ -20,6 +20,26 @@
       ::-webkit-scrollbar-thumb:hover { background: var(--color-scrollbar-thumb-hover); }
       html { scrollbar-width: thin; scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track); }
     </style>
+    <script>
+      // Minimal chrome.storage mock so settings/theme panels can render outside the extension.
+      if (!window.chrome) window.chrome = {};
+      if (!window.chrome.storage) {
+        const makeArea = () => ({
+          get: () => Promise.resolve({}),
+          set: () => Promise.resolve(),
+          remove: () => Promise.resolve(),
+        });
+        const listeners = new Set();
+        window.chrome.storage = {
+          local: makeArea(),
+          session: makeArea(),
+          onChanged: {
+            addListener: (cb) => listeners.add(cb),
+            removeListener: (cb) => listeners.delete(cb),
+          },
+        };
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

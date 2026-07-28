@@ -31,11 +31,26 @@ import { Icon } from '@/shared/icons/Icon';
 import { ICON_CATALOG } from '@/shared/icons';
 import tokens from '@/shared/styles/tokens.json';
 import { UniversalPanel } from '@/features/universalPanel/UniversalPanel';
+import { SettingsDialog } from '@/features/settings/ui/SettingsDialog';
+import { SettingsDialogContent } from '@/features/settings/ui/SettingsDialogContent';
+import { ColorCustomization } from '@/features/theme/ui/ColorCustomization';
+import { ModeCards } from '@/features/theme/ui/ModeCards';
+import { ContrastBadges } from '@/features/theme/ui/ContrastBadges';
+import { ThemePreview } from '@/features/theme/ui/ThemePreview';
+import { ThemeImportExport } from '@/features/theme/ui/ThemeImportExport';
+import { SubtitleStylePanel } from '@/features/settings/ui/SubtitleStylePanel';
+import { validateTheme } from '@/features/theme/logic/contrastValidator';
+import { DEFAULT_THEME_CONFIG } from '@/features/theme/logic/themeConfig';
+import { DEFAULT_SETTINGS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
+import type { Settings } from '@/entities/settings';
+import type { OverlayStyleConfig } from '@/entities/subtitle';
+import type { ThemeConfig, ThemeMode } from '@/entities/theme';
+import { resolveMode } from '@/features/theme/logic/themeManager';
 import styles from './App.module.css';
 
-type ThemeMode = 'light' | 'dark';
+type ShowcaseMode = 'light' | 'dark';
 
-function ThemeToggle({ mode, onToggle }: { mode: ThemeMode; onToggle: () => void }) {
+function ThemeToggle({ mode, onToggle }: { mode: ShowcaseMode; onToggle: () => void }) {
   return (
     <button
       type="button"
@@ -68,7 +83,7 @@ function getContrastColor(hex: string) {
   return luminance > 0.5 ? '#0f172a' : '#ffffff';
 }
 
-function TokenSwatches({ mode }: { mode: ThemeMode }) {
+function TokenSwatches({ mode }: { mode: ShowcaseMode }) {
   const core = mode === 'dark' ? tokens.core.dark : tokens.core.light;
   return (
     <div className={styles.tokenGrid}>
@@ -388,8 +403,96 @@ function UniversalPanelPreview() {
   );
 }
 
+function SettingsAndThemeShowcase() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
+  const [themeConfig, setThemeConfig] = useState<ThemeConfig>(DEFAULT_THEME_CONFIG);
+  const [targetStyle, setTargetStyle] = useState<OverlayStyleConfig>(DEFAULT_OVERLAY_STYLE_TARGET);
+  const [nativeStyle, setNativeStyle] = useState<OverlayStyleConfig>(DEFAULT_OVERLAY_STYLE_NATIVE);
+
+  const resolved = resolveMode(themeMode);
+  const contrast = validateTheme(themeConfig.customColors[resolved]);
+
+  return (
+    <div className={styles.componentStack}>
+      <div className={styles.componentGroup}>
+        <h3>Settings Dialog</h3>
+        <Button onClick={() => setSettingsOpen(true)}>Open Settings</Button>
+        <SettingsDialog
+          isOpen={settingsOpen}
+          settings={settings}
+          onChange={setSettings}
+          onClose={() => setSettingsOpen(false)}
+        />
+      </div>
+
+      <div className={styles.componentGroup}>
+        <h3>Settings Content (inline)</h3>
+        <div className={styles.settingsContent}>
+          <SettingsDialogContent settings={settings} onChange={setSettings} />
+        </div>
+      </div>
+
+      <div className={styles.componentGroup}>
+        <h3>Theme Mode</h3>
+        <ModeCards value={themeMode} onChange={setThemeMode} />
+      </div>
+
+      <div className={styles.componentGroup}>
+        <h3>Color Customization</h3>
+        <ColorCustomization
+          config={themeConfig}
+          onColorChange={(mode, token, hex) => {
+            setThemeConfig((prev) => ({
+              ...prev,
+              customColors: {
+                ...prev.customColors,
+                [mode]: { ...prev.customColors[mode], [token]: hex },
+              },
+            }));
+          }}
+        />
+        <ContrastBadges result={contrast} />
+      </div>
+
+      <div className={styles.componentGroup}>
+        <h3>Theme Preview</h3>
+        <ThemePreview />
+      </div>
+
+      <div className={styles.componentGroup}>
+        <h3>Theme Import / Export</h3>
+        <ThemeImportExport config={themeConfig} onApply={setThemeConfig} />
+      </div>
+
+      <div className={styles.componentGroup}>
+        <h3>Subtitle Style — Target</h3>
+        <SubtitleStylePanel
+          role="target"
+          style={targetStyle}
+          onChange={(partial) => setTargetStyle((s: OverlayStyleConfig) => ({ ...s, ...partial }))}
+          onReset={() => setTargetStyle(DEFAULT_OVERLAY_STYLE_TARGET)}
+          defaultStyle={DEFAULT_OVERLAY_STYLE_TARGET}
+        />
+      </div>
+
+      <div className={styles.componentGroup}>
+        <h3>Subtitle Style — Native</h3>
+        <SubtitleStylePanel
+          role="native"
+          style={nativeStyle}
+          onChange={(partial) => setNativeStyle((s: OverlayStyleConfig) => ({ ...s, ...partial }))}
+          onReset={() => setNativeStyle(DEFAULT_OVERLAY_STYLE_NATIVE)}
+          defaultStyle={DEFAULT_OVERLAY_STYLE_NATIVE}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function App() {
-  const [mode, setMode] = useState<ThemeMode>('light');
+  const [mode, setMode] = useState<ShowcaseMode>('light');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mode);
@@ -430,6 +533,10 @@ export function App() {
 
         <Section title="Universal Panel">
           <UniversalPanelPreview />
+        </Section>
+
+        <Section title="Settings + Theme">
+          <SettingsAndThemeShowcase />
         </Section>
       </main>
     </div>
