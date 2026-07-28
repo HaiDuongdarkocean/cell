@@ -20,11 +20,33 @@
       ::-webkit-scrollbar-thumb:hover { background: var(--color-scrollbar-thumb-hover); }
       html { scrollbar-width: thin; scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track); }
     </style>
-    <script type="module" crossorigin src="assets/designSystemShowcase-CkAAxbmX.js"></script>
-                                        <link rel="stylesheet" crossorigin href="assets/IconButton-vxHwUS80.css">
+    <script>
+      // Minimal chrome.storage mock so settings/theme panels can render outside the extension.
+      if (!window.chrome) window.chrome = {};
+      if (!window.chrome.storage) {
+        const makeArea = () => ({
+          get: () => Promise.resolve({}),
+          set: () => Promise.resolve(),
+          remove: () => Promise.resolve(),
+        });
+        const listeners = new Set();
+        window.chrome.storage = {
+          local: makeArea(),
+          session: makeArea(),
+          onChanged: {
+            addListener: (cb) => listeners.add(cb),
+            removeListener: (cb) => listeners.delete(cb),
+          },
+        };
+      }
+    </script>
+    <script type="module" crossorigin src="assets/designSystemShowcase-D1-Cro93.js"></script>
+                                                                    <link rel="stylesheet" crossorigin href="assets/IconButton-vxHwUS80.css">
     <link rel="stylesheet" crossorigin href="assets/ui-Csu9OFEF.css">
-    <link rel="stylesheet" crossorigin href="assets/UniversalPanel-LGF8JGzV.css">
-    <link rel="stylesheet" crossorigin href="assets/designSystemShowcase-DBMd-1U8.css">
+    <link rel="stylesheet" crossorigin href="assets/CardCreatorSettingsPanel-CjCeE68e.css">
+    <link rel="stylesheet" crossorigin href="assets/SettingsDialog-DEu7c2oD.css">
+    <link rel="stylesheet" crossorigin href="assets/SettingsDialogContent-LGF8JGzV.css">
+    <link rel="stylesheet" crossorigin href="assets/designSystemShowcase-ClerDetC.css">
     <link rel="stylesheet" crossorigin href="assets/tokens-06uunIdb.css">
   </head>
   <body>

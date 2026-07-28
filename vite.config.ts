@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import { crx } from '@crxjs/vite-plugin';
 import { resolve } from 'node:path';
-import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdirSync, existsSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import manifest from './public/manifest.json' with { type: 'json' };
 
 /**
@@ -17,20 +17,6 @@ const SEED_ASSET_FILES: readonly string[] = [
   'en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
   'en/frequency_list/standard.json',
 ] as const;
-
-function copyDirSync(src: string, dest: string) {
-  if (!existsSync(dest)) mkdirSync(dest, { recursive: true });
-  for (const entry of readdirSync(src)) {
-    const srcPath = resolve(src, entry);
-    const destPath = resolve(dest, entry);
-    const stat = statSync(srcPath);
-    if (stat.isDirectory()) {
-      copyDirSync(srcPath, destPath);
-    } else {
-      copyFileSync(srcPath, destPath);
-    }
-  }
-}
 
 function designSystemShowcase(): Plugin {
   return {
