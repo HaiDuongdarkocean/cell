@@ -3,7 +3,7 @@ import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
+import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, USE_LEGACY_SUBTITLE } from '@/shared/config/config';
 import {
   parseAndDetectFiles,
   assignImportRole,
@@ -225,6 +225,12 @@ async function loadTargetNativeLangs(): Promise<{ targetLang: string; nativeLang
 }
 
 export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryController): () => void {
+  // T046: legacy vanilla subtitle overlay was removed; the React shadow-root UI is the only path.
+  if (USE_LEGACY_SUBTITLE) {
+    console.warn('[contentScriptController] USE_LEGACY_SUBTITLE=true but the legacy subtitle overlay has been removed; falling back to no overlay.');
+    return () => {};
+  }
+
   // ADR-008 D2: overlay UI neo vào video container — không cần F0, không cần
   // videoWrapper, không cần docking. Panel đã chuyển sang Chrome Side Panel.
   // G8: walk-up để xử lý sites có video.parentElement height=0 (YouTube pattern).
