@@ -279,8 +279,6 @@ export const STORAGE_KEYS = {
   THEME_CONFIG: 'themeConfig',
   /** Tokenize on Media per-origin/URL enable state. */
   TOKENIZE_SETTINGS: 'tokenizeSettings',
-  /** Tokenize badge FAB position { left, top } in viewport px (survives reload). */
-  TOKEN_BADGE_POSITION: 'tokenBadgePosition',
   /** Orbital badge collapsed position { edge, tangential } — edge: 'left'|'right'|'top'|'bottom',
    *  tangential: px along that edge (survives reload). */
   ORBITAL_BADGE_POSITION: 'orbitalBadgePosition',

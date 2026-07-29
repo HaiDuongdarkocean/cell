@@ -796,16 +796,16 @@
     - `rg '#[0-9a-fA-F]{3,8}' src/features/tokenize/ui/tokenSpanCss.ts`
     - Manual: token span colors
 
-- [ ] **T077 — Delete `tokenBadge.ts` and `tokenBadgeCss.ts`**
+- [x] **T077 — Delete `tokenBadge.ts` and `tokenBadgeCss.ts`**
   - **Phase:** 5 | **Lane:** F/Q | **Scope:** S | **Depends on:** T075, T076
-  - **Files:** `src/features/tokenize/ui/tokenBadge.ts`, `src/features/tokenize/ui/tokenBadgeCss.ts`, `src/entrypoints/content/*`
+  - **Files:** `src/features/tokenize/ui/tokenBadge.ts`, `src/features/tokenize/ui/tokenBadgeCss.ts`, `src/shared/config/config.ts`
   - **AC:**
     - Old files removed.
     - Callers use `mountTokenizeFab`.
-    - `USE_LEGACY_TOKENIZE=false`.
+    - `TOKEN_BADGE_POSITION` storage key removed from `config.ts`.
   - **Verification:**
-    - `npm run test:unit`
-    - `npm run build`
+    - `npm run test:unit` ✓
+    - `npm run build` ✓
     - Manual: 3 sites
 
 - [ ] **T078 — Refactor card creator components to be mount-agnostic**
