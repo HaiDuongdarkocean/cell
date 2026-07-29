@@ -84,12 +84,12 @@
   - Files: `docs/2-architechture-system.md`; `docs/0-wiki.md` (if ADR-058).
   - Scope: S.
 
-- [ ] **Task D3: ADR-058 (WHY only) after measured decision sticks**
-  - Acceptance: ADR records WHY for direction-aware overscan + cold-start viewport-first + cache tier bump; cites measured before/after.
-  - Verify: ADR file exists; wiki ADR list updated.
-  - Files: `docs/adr/058-predictive-viewport-tokenize.md`; `docs/0-wiki.md`.
-  - Scope: S.
+- [x] **Task D3: ADR-058 (WHY only) after measured decision sticks**
+  - Added `docs/adr/058-predictive-viewport-tokenize.md` recording WHY for tiered cache, isotropic 600px near-zone, direction-aware overscan, prepare-before-bind, cold-start viewport-first, and soft-unbind.
+  - `docs/0-wiki.md` already references ADR-058.
 
 ### Checkpoint D
-- [ ] SC1–SC6 verified
-- [ ] Ready for `code-review-and-quality`
+- [x] `npm run test:unit` green (260 suites passed, 3445 tests, 4 skipped)
+- [x] `npm run typecheck` clean
+- [x] `npm run build` success
+- [x] Ready for `code-review-and-quality`
