@@ -667,7 +667,7 @@
     - `npm run test:unit -- DictionaryTab`
     - Manual: UniversalPanel Dictionary tab
 
-- [ ] **T065 — Create `PopupDictionary.tsx` shell**
+- [x] **T065 — Create `PopupDictionary.tsx` shell**
   - **Phase:** 4c | **Lane:** E | **Scope:** M | **Depends on:** T064
   - **Files:** `src/features/dictionaryPopup/ui/PopupDictionary.tsx`, `src/features/dictionaryPopup/ui/PopupDictionary.module.css`, `src/features/dictionaryPopup/ui/PopupDictionary.test.tsx`
   - **AC:**
@@ -677,7 +677,7 @@
     - `npm run test:unit -- PopupDictionary`
     - `npm run build`
 
-- [ ] **T066 — Reuse popup position / resize / sheet logic**
+- [x] **T066 — Reuse popup position / resize / sheet logic**
   - **Phase:** 4c | **Lane:** E | **Scope:** M | **Depends on:** T065
   - **Files:** `src/features/dictionaryPopup/ui/popupShell.ts`, `src/features/dictionaryPopup/ui/popupDictionary.css`, `src/features/dictionaryPopup/ui/PopupDictionary.tsx`, `src/features/dictionaryPopup/ui/usePopupPosition.ts`, `src/features/dictionaryPopup/ui/wordHighlight.ts`
   - **AC:**

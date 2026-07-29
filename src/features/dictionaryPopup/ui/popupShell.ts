@@ -26,25 +26,25 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 // └─────────────────────────────────┘
 //                          [resize] ↘
 
-const POPUP_Z_INDEX = 'var(--z-overlay-top)'; // top content-script overlay
+export const POPUP_Z_INDEX = 'var(--z-overlay-top)'; // top content-script overlay
 
 /** Layout constants — extracted from hardcoded px values (Phase 1 SSOT). */
-const POPUP_MARGIN_PX = 8; // equals --space-2
-const POPUP_POINTER_GAP_PX = 4; // equals --space-1
+export const POPUP_MARGIN_PX = 8; // equals --space-2
+export const POPUP_POINTER_GAP_PX = 4; // equals --space-1
 const POPUP_POINTER_DIRECTION_THRESHOLD_PX = 4; // px
-const POPUP_DEFAULT_POINTER_RADIUS_PX = 6; // px
-const POPUP_MIN_WIDTH_PX = 320;
-const POPUP_MIN_HEIGHT_PX = 200;
-const POPUP_DEFAULT_HEIGHT_PX = 300;
-const POPUP_MAX_HEIGHT_RATIO = 0.7;
-const POPUP_SHEET_BREAKPOINT_PX = 768; // must stay in sync with CSS media queries
-const SHEET_SNAP_THRESHOLD_PX = 40;
-const SHEET_DISMISS_THRESHOLD_PX = 100;
+export const POPUP_DEFAULT_POINTER_RADIUS_PX = 6; // px
+export const POPUP_MIN_WIDTH_PX = 320;
+export const POPUP_MIN_HEIGHT_PX = 200;
+export const POPUP_DEFAULT_HEIGHT_PX = 300;
+export const POPUP_MAX_HEIGHT_RATIO = 0.7;
+export const POPUP_SHEET_BREAKPOINT_PX = 768; // must stay in sync with CSS media queries
+export const SHEET_SNAP_THRESHOLD_PX = 40;
+export const SHEET_DISMISS_THRESHOLD_PX = 100;
 const TOAST_DISPLAY_MS = 3000;
 const TOAST_CLEANUP_MS = 400;
 
 /** Sheet snap tiers as fraction of viewport height (high → low). */
-const SHEET_TIERS = [1.0, 0.75, 0.5, 0.25];
+export const SHEET_TIERS = [1.0, 0.75, 0.5, 0.25];
 
 
 
@@ -110,7 +110,7 @@ export function clampPopupSize(size: PopupSize, viewportWidth: number, viewportH
 }
 
 /** Final clamp to keep the popup inside the viewport. */
-function finalizePosition(
+export function finalizePosition(
   left: number,
   top: number,
   popupWidth: number,
