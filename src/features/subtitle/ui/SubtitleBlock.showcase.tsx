@@ -1,10 +1,10 @@
 import { SubtitleBlock } from './SubtitleBlock';
-import { useMockCues } from '@/entrypoints/design-system-showcase/mockProviders';
+import { mockTargetCues, mockNativeCues } from '@/entrypoints/design-system-showcase/mockCues';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
-  const cues = useMockCues();
+  const cues = { targetCues: mockTargetCues, nativeCues: mockNativeCues, targetActiveIndex: 1, nativeActiveIndex: 1 };
 
   return (
     <div

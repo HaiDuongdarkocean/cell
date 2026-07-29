@@ -40,8 +40,19 @@ export function MockCuesProvider({ children }: { readonly children: ReactNode })
 
 export function useMockCues(): MockCuesValue {
   const ctx = useContext(MockCuesContext);
-  if (!ctx) throw new Error('useMockCues must be used within MockCuesProvider');
-  return ctx;
+  return ctx ?? useMockCuesValue();
+}
+
+function useMockCuesValue(): MockCuesValue {
+  return useMemo(
+    () => ({
+      targetCues: mockTargetCues,
+      nativeCues: mockNativeCues,
+      targetActiveIndex: 1,
+      nativeActiveIndex: 1,
+    }),
+    [],
+  );
 }
 
 /** Dictionary snapshot supplied by {@link MockDictionaryProvider}. */
@@ -58,8 +69,7 @@ export function MockDictionaryProvider({ children }: { readonly children: ReactN
 
 export function useMockDictionary(): MockDictionaryValue {
   const ctx = useContext(MockDictionaryContext);
-  if (!ctx) throw new Error('useMockDictionary must be used within MockDictionaryProvider');
-  return ctx;
+  return ctx ?? { lookupResult: MOCK_LOOKUP_RESULT };
 }
 
 const SILENT_WAV_BASE64 = 'UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
@@ -263,8 +273,8 @@ export function MockCardCreatorProvider({ children }: { readonly children: React
 
 export function useMockCardCreator(): CardCreatorState {
   const ctx = useContext(MockCardCreatorContext);
-  if (!ctx) throw new Error('useMockCardCreator must be used within MockCardCreatorProvider');
-  return ctx;
+  const fallback = useMockCardCreatorState();
+  return ctx ?? fallback;
 }
 
 /** Combined mock provider for the design-system showcase. */
