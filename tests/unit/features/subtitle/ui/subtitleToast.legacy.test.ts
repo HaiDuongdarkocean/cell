@@ -1,4 +1,4 @@
-import { createDebouncedToast } from '@/features/subtitle/ui/subtitleToast';
+import { createDebouncedToast } from '@/features/subtitle/ui/subtitleToast.legacy';
 import { showToast } from '@/features/subtitle/ui/subtitleUI';
 import type { ToastOptions } from '@/features/subtitle/ui/subtitleUI';
 

@@ -1,6 +1,6 @@
 import { mountSubtitle } from './mountSubtitle';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { NavClusterSettings } from '@/entities/media';
+
 
 const baseStyle: OverlayStyleConfig = {
   fontSize: 24,
@@ -15,13 +15,6 @@ const baseStyle: OverlayStyleConfig = {
   visible: true,
 };
 
-const clusterSettings: NavClusterSettings = {
-  enabled: true,
-  buttonSize: 32,
-  textOpacity: 1,
-  bgOpacity: 0.8,
-};
-
 const noop = () => undefined;
 
 describe('mountSubtitle', () => {
@@ -33,7 +26,6 @@ describe('mountSubtitle', () => {
       container,
       targetStyle: baseStyle,
       nativeStyle: baseStyle,
-      clusterSettings,
       collapsed: false,
       hasSubtitle: true,
       isPlaying: true,
