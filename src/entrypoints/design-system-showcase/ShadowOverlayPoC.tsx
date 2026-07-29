@@ -13,6 +13,7 @@ export function ShadowOverlayPoC(): React.JSX.Element {
 
     const { unmount } = mountReactShadow(
       <div
+        data-theme="light"
         style={{
           position: 'fixed',
           inset: 0,

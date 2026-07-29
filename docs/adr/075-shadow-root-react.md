@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — Phase 1a CSS injection PoC validated (`?inline` works for CSS module in shadow root). Phase 1b infrastructure and Phase 1c fixed overlay PoC still pending.
+Accepted — Phase 1a CSS injection PoC validated (`?inline` works for CSS module in shadow root). Phase 1b infrastructure (`mountReactShadow`, `injectShadowCss`, `ShadowThemeProvider`, theme propagation to inner container, `reparentOnFullscreen`) completed. Phase 1c real-page verification still pending.
 
 **Supersedes:** ADR-038 (Popup Dictionary Shadow DOM + Vanilla DOM)
 **Related:** ADR-022, ADR-024, ADR-025, ADR-031, ADR-038, ADR-061, ADR-065, ADR-071
@@ -71,17 +71,19 @@ CSS must be injected into the shadow root. After Phase 1a PoC we validated:
 - **Option B / C (Constructable StyleSheets / single bundle):** Not needed for the PoC; `?inline` is sufficient per component.
 
 Implementation:
-- `tokens.css?raw` is the base token layer. Generated `tokens.css` keeps static tokens on `:root` and default color tokens on `:root`; the static `@media (pointer: coarse)` block also stays on `:root`. When the file is injected into a shadow root we replace `:root` with `:host` so the variables apply to the shadow host.
+- `tokens.css?raw` is the base token layer. Generated `tokens.css` keeps static tokens on `:root` and color + component tokens on `[data-theme="light"]` and `[data-theme="dark"]`. The static `@media (pointer: coarse)` block also stays on `:root`. When the file is injected into a shadow root we replace `:root` with `:host` so the static variables apply to the shadow host; `[data-theme]` selectors are left unchanged so they match the inner container.
 - `components.css?raw` is the legacy global utility layer (to be removed after migration).
 - Each feature component imports its own `*.module.css?inline` and appends it to the shadow `<style>` element.
-- `tokens.css` `:root` selector is replaced with `:host` before injection.
+- `tokens.css` `:root` selector is replaced with `:host` before injection; `[data-theme]` selectors are not transformed because `data-theme` is set on the inner container by `ShadowThemeProvider`.
 
 ### 3. Theme
 
 `ShadowThemeProvider` wraps `ThemeProvider` with a `container` prop:
 - `ThemeProvider.container` defaults to `document.documentElement` for popup/sidepanel.
-- In content-script, `ShadowThemeProvider` passes the shadow host as `container`.
+- In content-script, `ShadowThemeProvider` passes the inner `rootEl` (the React render target inside the shadow root) as `container`.
 - `applyTheme(mode, config, target)` sets CSS vars and `data-theme` on the target.
+
+This works because `injectShadowCss` rewrites `tokens.css` `:root` to `:host` but leaves `[data-theme]` selectors unchanged. `data-theme` is set on the inner container, so the `[data-theme]` selectors match and component tokens re-resolve against the active palette.
 
 Content-script does **not** boot a separate `themeStore`; it reuses `themeTokens.ts` injection and syncs `data-theme` on the shadow host.
 

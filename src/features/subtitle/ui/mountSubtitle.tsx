@@ -3,8 +3,6 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 
 import { SubtitlePanels, type SubtitlePanelsRef, type ManagerState, type OffsetState } from './SubtitlePanels';
 import type { ToastVariant } from './SubtitleToast';
-import tokensCss from '@/shared/styles/tokens.css?raw';
-import componentsCss from '@/shared/styles/components.css?inline';
 import subtitleBlockCss from './SubtitleBlock.module.css?inline';
 import navClusterCss from './NavCluster.module.css?inline';
 import subtitleManagerCss from './SubtitleManagerPanel.module.css?inline';
@@ -131,8 +129,6 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       layer: 2,
       position: 'absolute',
       css: [
-        tokensCss,
-        componentsCss,
         subtitleBlockCss,
         navClusterCss,
         subtitleManagerCss,

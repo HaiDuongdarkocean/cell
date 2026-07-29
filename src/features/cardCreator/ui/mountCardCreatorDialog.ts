@@ -131,7 +131,7 @@ export function mountCardCreatorDialog(
     mount.root.render(
       createElement(
         ShadowThemeProvider,
-        { host: mount.host, children: createElement(Component, commonProps as never) },
+        { container: mount.rootEl, children: createElement(Component, commonProps as never) },
       ) as ReactElement,
     );
   }

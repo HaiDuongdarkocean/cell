@@ -17,6 +17,7 @@ function mountShadowButton(host: HTMLElement): () => void {
   shadow.appendChild(style);
 
   const rootEl = document.createElement('div');
+  rootEl.setAttribute('data-theme', 'light');
   shadow.appendChild(rootEl);
 
   const root = createRoot(rootEl);
