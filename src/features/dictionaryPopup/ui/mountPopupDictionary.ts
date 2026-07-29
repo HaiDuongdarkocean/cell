@@ -4,7 +4,7 @@ import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider
 import { PopupDictionary } from './PopupDictionary';
 import { getMountParent } from './popupGeometry';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
-import type { PopupCardCreatorPrefill, WordStatus } from '@/features/dictionaryPopup/types';
+import type { LookupResult, PopupCardCreatorPrefill, WordStatus } from '@/features/dictionaryPopup/types';
 
 import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?inline';
@@ -36,12 +36,26 @@ export interface MountPopupDictionaryOptions {
   readonly targetLang: string;
   /** Initial term shown in the search input. */
   readonly initialTerm?: string;
+  /** Context sentence for Card Creator prefill. */
+  readonly contextSentence?: string;
+  /** Cursor offset inside `contextSentence` for phrase detection. */
+  readonly cursorOffset?: number;
+  /** Pre-fetched winner result. When provided the popup does not search. */
+  readonly initialResult?: LookupResult;
+  /** Pre-fetched additional candidates. */
+  readonly initialCandidates?: readonly LookupResult[];
+  /** Local token-status fallback for the winner. */
+  readonly getTokenStatus?: (term: string) => WordStatus | undefined;
+  /** Force a loading state while the parent controller is fetching. */
+  readonly isLoading?: boolean;
   /** Initial popover size (width + maxHeight). */
   readonly initialSize?: Partial<PopupSize>;
   /** Initial sheet height in px. */
   readonly initialSheetHeight?: number;
   /** Called when the popup is closed. */
   readonly onClose?: () => void;
+  /** Called when a new result arrives. */
+  readonly onResult?: (winner: LookupResult, candidates: readonly LookupResult[], contextSentence: string) => void;
   /** Called when the popup size or sheet height changes. */
   readonly onSizeChange?: (size: PopupSize, sheetHeight: number) => void;
   /** Called when the user chooses to send a prefill to the card creator. */
@@ -57,6 +71,14 @@ export interface MountPopupDictionaryOptions {
 export interface PopupDictionaryMountController {
   /** Unmount the popup and remove the shadow host. */
   readonly destroy: () => void;
+  /** Show or hide the forced loading state. */
+  readonly setLoading: (isLoading: boolean) => void;
+  /** Feed a new winner + candidates into the popup. */
+  readonly setResult: (result: LookupResult, candidates?: readonly LookupResult[]) => void;
+  /** Update the active result's status from an external source (e.g. keyboard shortcut). */
+  readonly setStatus: (term: string, status: WordStatus) => void;
+  /** Update mutable options (sourceLang, targetLang, size, sheetHeight) without re-mounting. */
+  readonly setOptions: (options: Partial<Pick<MountPopupDictionaryOptions, 'sourceLang' | 'targetLang' | 'initialSize' | 'initialSheetHeight'>>) => void;
 }
 
 function isInsideHost(host: HTMLElement, e: PointerEvent): boolean {
@@ -66,28 +88,16 @@ function isInsideHost(host: HTMLElement, e: PointerEvent): boolean {
   });
 }
 
-function buildProps(
-  options: MountPopupDictionaryOptions,
-  onClose: () => void,
-): React.ComponentProps<typeof PopupDictionary> {
-  return {
-    anchor: options.anchor,
-    pointer: options.pointer,
-    lineRect: options.lineRect,
-    langCode: options.langCode,
-    sourceLang: options.sourceLang,
-    targetLang: options.targetLang,
-    initialTerm: options.initialTerm,
-    initialSize: options.initialSize,
-    initialSheetHeight: options.initialSheetHeight,
-    onClose,
-    onSizeChange: options.onSizeChange,
-    onSendToCard: options.onSendToCard,
-    onQuickAdd: options.onQuickAdd,
-    onStatusChange: options.onStatusChange,
-    onCandidateChange: options.onCandidateChange,
-  };
-}
+type CurrentOptions = MountPopupDictionaryOptions & {
+  /** Forced loading state controlled by setLoading. */
+  isLoading: boolean;
+  /** Result controlled by setResult. */
+  initialResult?: LookupResult;
+  /** Candidates controlled by setResult. */
+  initialCandidates?: readonly LookupResult[];
+  /** Status controlled by setStatus. */
+  syncStatus?: { readonly term: string; readonly status: WordStatus };
+};
 
 /**
  * Mount the popup dictionary as a React tree inside a Shadow DOM host.
@@ -96,42 +106,84 @@ function buildProps(
  * - Positions the host below the orbital badge with `z-index: var(--z-overlay-settings)`.
  * - Closes on click/tap outside the popup (excluding the orbital badge).
  * - Moves the host to/from `document.fullscreenElement` as fullscreen changes.
+ * - The returned controller can feed new results / loading / status / options
+ *   into the mounted React tree without destroying it.
  */
 export function mountPopupDictionary(options: MountPopupDictionaryOptions): PopupDictionaryMountController {
-  let destroy = (): void => {};
+  let destroyed = false;
 
-  const close = (): void => {
-    destroy();
-    options.onClose?.();
+  const current: CurrentOptions = {
+    ...options,
+    isLoading: options.isLoading ?? false,
   };
 
-  const mount = mountReactShadow(createElement(PopupDictionary, buildProps(options, close)), {
-    parent: getMountParent(),
-    position: 'fixed',
-    css: [
-      tokensCss,
-      componentsCss,
-      popupDictionaryCss,
-      dictionaryPanelViewCss,
-      searchFieldCss,
-      inputCss,
-      iconButtonCss,
-      buttonCss,
-      spinnerCss,
-      skeletonCss,
-      iconCss,
-    ],
+  const close = (): void => {
+    if (destroyed) return;
+    destroyed = true;
+    options.onClose?.();
+    cleanup();
+  };
+
+  const buildProps = (): React.ComponentProps<typeof PopupDictionary> => ({
+    anchor: current.anchor,
+    pointer: current.pointer,
+    lineRect: current.lineRect,
+    langCode: current.langCode,
+    sourceLang: current.sourceLang,
+    targetLang: current.targetLang,
+    initialTerm: current.initialTerm,
+    contextSentence: current.contextSentence,
+    cursorOffset: current.cursorOffset,
+    initialResult: current.initialResult,
+    initialCandidates: current.initialCandidates,
+    getTokenStatus: current.getTokenStatus,
+    isLoading: current.isLoading,
+    initialSize: current.initialSize,
+    initialSheetHeight: current.initialSheetHeight,
+    onClose: close,
+    onResult: current.onResult,
+    onSizeChange: current.onSizeChange,
+    onSendToCard: current.onSendToCard,
+    onQuickAdd: current.onQuickAdd,
+    onStatusChange: current.onStatusChange,
+    onCandidateChange: current.onCandidateChange,
+    syncStatus: current.syncStatus,
   });
+
+  const render = (): void => {
+    if (destroyed) return;
+    mount.root.render(
+      createElement(ShadowThemeProvider, { host: mount.host, children: createElement(PopupDictionary, buildProps()) }),
+    );
+  };
+
+  const mount = mountReactShadow(
+    createElement(PopupDictionary, buildProps()),
+    {
+      parent: getMountParent(),
+      position: 'fixed',
+      css: [
+        tokensCss,
+        componentsCss,
+        popupDictionaryCss,
+        dictionaryPanelViewCss,
+        searchFieldCss,
+        inputCss,
+        iconButtonCss,
+        buttonCss,
+        spinnerCss,
+        skeletonCss,
+        iconCss,
+      ],
+    },
+  );
+
+  // Re-render after mount with the actual host so ShadowThemeProvider can set
+  // the theme container.
+  render();
 
   mount.host.classList.add('js-cell-popup-host');
   mount.host.style.zIndex = POPUP_Z_INDEX;
-
-  mount.root.render(
-    createElement(
-      ShadowThemeProvider,
-      { host: mount.host, children: createElement(PopupDictionary, buildProps(options, close)) },
-    ),
-  );
 
   const onDocumentPointerDown = (e: PointerEvent): void => {
     if (isInsideHost(mount.host, e)) return;
@@ -155,12 +207,32 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     document.fullscreenElement.appendChild(mount.host);
   }
 
-  destroy = (): void => {
+  const cleanup = (): void => {
     document.removeEventListener('pointerdown', onDocumentPointerDown, true);
     document.removeEventListener('fullscreenchange', onFullscreenChange);
     document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
     mount.unmount();
   };
 
-  return { destroy };
+  return {
+    destroy: cleanup,
+    setLoading: (isLoading) => {
+      current.isLoading = isLoading;
+      render();
+    },
+    setResult: (result, candidates = []) => {
+      current.isLoading = false;
+      current.initialResult = result;
+      current.initialCandidates = candidates;
+      render();
+    },
+    setStatus: (term, status) => {
+      current.syncStatus = { term, status };
+      render();
+    },
+    setOptions: (updates) => {
+      Object.assign(current, updates);
+      render();
+    },
+  };
 }

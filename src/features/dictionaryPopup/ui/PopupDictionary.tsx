@@ -4,7 +4,7 @@ import { DictionaryPanelView } from './DictionaryPanelView';
 import styles from './PopupDictionary.module.css';
 import { usePopupPosition } from './usePopupPosition';
 import type { PopupAnchor, PopupPointerHint, PopupLineRect, PopupSize } from './usePopupPosition';
-import type { WordStatus, PopupCardCreatorPrefill } from '../types';
+import type { LookupResult, WordStatus, PopupCardCreatorPrefill } from '../types';
 
 export interface PopupDictionaryProps {
   readonly langCode: string;
@@ -14,14 +14,23 @@ export interface PopupDictionaryProps {
   readonly pointer?: PopupPointerHint;
   readonly lineRect?: PopupLineRect | null;
   readonly initialTerm?: string;
+  readonly contextSentence?: string;
+  readonly cursorOffset?: number;
+  readonly initialResult?: LookupResult;
+  readonly initialCandidates?: readonly LookupResult[];
+  readonly getTokenStatus?: (term: string) => WordStatus | undefined;
+  readonly isLoading?: boolean;
   readonly initialSize?: Partial<PopupSize>;
   readonly initialSheetHeight?: number;
   readonly onClose: () => void;
+  readonly onResult?: (winner: LookupResult, candidates: readonly LookupResult[], contextSentence: string) => void;
   readonly onSizeChange?: (size: PopupSize, sheetHeight: number) => void;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   readonly onCandidateChange?: (term: string) => void;
+  /** Optional external status sync (e.g. keyboard shortcut). */
+  readonly syncStatus?: { readonly term: string; readonly status: WordStatus };
   readonly style?: React.CSSProperties;
 }
 
@@ -33,14 +42,22 @@ export function PopupDictionary({
   pointer,
   lineRect,
   initialTerm,
+  contextSentence,
+  cursorOffset,
+  initialResult,
+  initialCandidates,
+  getTokenStatus,
+  isLoading,
   initialSize,
   initialSheetHeight,
   onClose,
+  onResult,
   onSizeChange,
   onSendToCard,
   onQuickAdd,
   onStatusChange,
   onCandidateChange,
+  syncStatus,
   style: incomingStyle,
 }: PopupDictionaryProps): React.JSX.Element {
   const { style, isSheet, popupRef, onPointerDownHeader, onPointerDownResize, onPointerDownSheet, onPointerDownContent } = usePopupPosition({
@@ -107,10 +124,18 @@ export function PopupDictionary({
           sourceLang={sourceLang}
           targetLang={targetLang}
           initialTerm={initialTerm}
+          contextSentence={contextSentence}
+          cursorOffset={cursorOffset}
+          initialResult={initialResult}
+          initialCandidates={initialCandidates}
+          getTokenStatus={getTokenStatus}
+          isLoading={isLoading}
+          onResult={onResult}
           onSendToCard={onSendToCard}
           onQuickAdd={onQuickAdd}
           onStatusChange={onStatusChange}
           onCandidateChange={onCandidateChange}
+          syncStatus={syncStatus}
           isOpen
         />
       </div>

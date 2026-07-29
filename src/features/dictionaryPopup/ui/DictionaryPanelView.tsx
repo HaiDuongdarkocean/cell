@@ -21,6 +21,13 @@ interface DictionaryPanelViewProps {
   readonly sourceLang: string;
   readonly targetLang: string;
   readonly initialTerm?: string;
+  readonly contextSentence?: string;
+  readonly cursorOffset?: number;
+  readonly initialResult?: LookupResult;
+  readonly initialCandidates?: readonly LookupResult[];
+  readonly getTokenStatus?: (term: string) => WordStatus | undefined;
+  readonly isLoading?: boolean;
+  readonly onResult?: (winner: LookupResult, candidates: readonly LookupResult[], contextSentence: string) => void;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user cycles a candidate's word status. */
@@ -29,6 +36,8 @@ interface DictionaryPanelViewProps {
   readonly onCandidateChange?: (term: string) => void;
   /** True when this view is inside an open panel — used for auto-focus after animation. */
   readonly isOpen?: boolean;
+  /** Optional external status sync (e.g. keyboard shortcut). */
+  readonly syncStatus?: { readonly term: string; readonly status: WordStatus };
 }
 
 export function DictionaryPanelView({
@@ -36,17 +45,33 @@ export function DictionaryPanelView({
   sourceLang,
   targetLang,
   initialTerm,
+  contextSentence,
+  cursorOffset,
+  initialResult,
+  initialCandidates,
+  getTokenStatus,
+  isLoading: isLoadingProp,
+  onResult,
   onSendToCard,
   onQuickAdd,
   onStatusChange,
   onCandidateChange,
   isOpen = true,
+  syncStatus,
 }: DictionaryPanelViewProps): React.JSX.Element {
   const panel = useDictionaryPanel({
     langCode,
     sourceLang,
     targetLang,
     initialTerm,
+    contextSentence,
+    cursorOffset,
+    initialResult,
+    initialCandidates,
+    getTokenStatus,
+    onResult,
+    isLoading: isLoadingProp,
+    syncStatus,
     onSendToCard,
     onQuickAdd,
   });
@@ -283,7 +308,7 @@ export function DictionaryPanelView({
                 key={`${candidate.term}-${idx}`}
                 candidate={candidate}
                 index={idx}
-                contextSentence={searchTerm}
+                contextSentence={panel.contextSentence}
                 sourceLang={sourceLang}
                 targetLang={targetLang}
                 onSendToCard={onSendToCard}
