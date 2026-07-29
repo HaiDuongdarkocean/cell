@@ -269,3 +269,44 @@ export interface QuickAddResponse {
   readonly error?: string;
   readonly fieldErrors?: readonly QuickAddFieldError[];
 }
+
+// === Popup controller / Card Creator prefill contracts ===
+//
+// These types are shared between the legacy popupDictionaryController and the
+// React `PopupDictionary` path. Keeping them in this pure type module lets us
+// delete the legacy UI files without breaking downstream consumers.
+
+/** Pre-fill data extracted from the popup dictionary for the Card Creator.
+ *  Built from the lookup result + selections + context sentence + translation.
+ *  Word audio, sentence audio and image are treated as mandatory: at least one
+ *  of each is always included (selected first, then fallback to first available). */
+export interface PopupCardCreatorPrefill {
+  readonly term: string;
+  readonly langCode: string;
+  readonly reading: string;
+  readonly definitions: readonly { readonly pos?: string; readonly text: string }[];
+  /** Raw definition strings from DB (with <br> + N. markers intact). */
+  readonly rawDefinitions: readonly string[];
+  readonly contextSentence: string;
+  readonly translation?: string;
+  readonly wordAudioUrls?: readonly string[];
+  readonly sentenceAudioUrls?: readonly string[];
+  readonly imageUrls?: readonly string[];
+}
+
+export type PopupCardCreatorAction = 'quick-add' | 'edit-card';
+
+/** Result returned by the onCardCreatorAction callback. */
+export interface OnCardCreatorActionResult {
+  /** If true, the popup stays open after the action (e.g. when sending to the
+   *  universal panel, the popup stays open until the user explicitly closes it). */
+  readonly stayOpen?: boolean;
+}
+
+export type OnCardCreatorAction = (
+  action: PopupCardCreatorAction,
+  prefill: PopupCardCreatorPrefill,
+) => OnCardCreatorActionResult | void;
+
+/** Callback to Quick Add directly (bypass dialog). Wired by content script. */
+export type OnQuickAddDirect = (prefill: PopupCardCreatorPrefill) => void;

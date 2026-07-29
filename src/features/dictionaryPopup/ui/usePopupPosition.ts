@@ -17,7 +17,7 @@ import {
   type PopupPointerHint,
   type PopupPosition,
   type PopupSize,
-} from './popupShell';
+} from './popupGeometry';
 
 export type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupPosition, PopupSize };
 

@@ -3,8 +3,8 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { DictionaryPanelView } from './DictionaryPanelView';
 import styles from './PopupDictionary.module.css';
 import { usePopupPosition } from './usePopupPosition';
-import type { PopupCardCreatorPrefill } from './popupDictionaryController';
 import type { PopupAnchor, PopupPointerHint, PopupLineRect, PopupSize } from './usePopupPosition';
+import type { WordStatus, PopupCardCreatorPrefill } from '../types';
 
 export interface PopupDictionaryProps {
   readonly langCode: string;
@@ -20,6 +20,8 @@ export interface PopupDictionaryProps {
   readonly onSizeChange?: (size: PopupSize, sheetHeight: number) => void;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
+  readonly onCandidateChange?: (term: string) => void;
   readonly style?: React.CSSProperties;
 }
 
@@ -37,6 +39,8 @@ export function PopupDictionary({
   onSizeChange,
   onSendToCard,
   onQuickAdd,
+  onStatusChange,
+  onCandidateChange,
   style: incomingStyle,
 }: PopupDictionaryProps): React.JSX.Element {
   const { style, isSheet, popupRef, onPointerDownHeader, onPointerDownResize, onPointerDownSheet, onPointerDownContent } = usePopupPosition({
@@ -105,6 +109,8 @@ export function PopupDictionary({
           initialTerm={initialTerm}
           onSendToCard={onSendToCard}
           onQuickAdd={onQuickAdd}
+          onStatusChange={onStatusChange}
+          onCandidateChange={onCandidateChange}
           isOpen
         />
       </div>
