@@ -764,7 +764,7 @@
     - `npm run test:unit -- TokenizeFab`
     - Manual: showcase
 
-- [ ] **T074 — Create `useTokenize` hook**
+- [x] **T074 — Create `useTokenize` hook**
   - **Phase:** 5 | **Lane:** F | **Scope:** S | **Depends on:** T073
   - **Files:** `src/features/tokenize/ui/useTokenize.ts`, `src/features/tokenize/ui/useTokenize.test.ts`
   - **AC:**
