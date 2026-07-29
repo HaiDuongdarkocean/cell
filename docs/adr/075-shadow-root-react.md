@@ -171,8 +171,8 @@ Captured after Phase 1b (mount helpers, theme, focus, overlay PoC) and design-sy
 | Main content-script JS (`dist/assets/content-script.ts-*.js`) | ~244 kB / 62.32 kB gzip | ~0 kB — helpers not wired into content bundle yet |
 | Content-script CSS (`dist/assets/content-script-*.css`) | 28 kB / 4.39 kB gzip | ~0 kB — CSS not duplicated into shadow yet |
 | Shadow CSS budget (per host) | ~tokens.css (20.48 kB raw / 3.54 kB gzip) + per-component modules | ≤ 50 kB target |
-| Fixed overlay PoC | GO — host `position: fixed; inset: 0` covers full viewport and fullscreen in design-system test | — |
-| YouTube/Netflix/GeeksforGeeks manual | Pending — requires extension-loaded real page (T033) | — |
+| Fixed overlay PoC | GO — host `position: fixed; inset: 0` covers full viewport in design-system showcase; `documentElement.requestFullscreen()` keeps overlay visible. Real-page video fullscreen verification deferred to T033 because YouTube playback is blocked in the isolated MCP profile. | — |
+| YouTube/Netflix/GeeksforGeeks manual | GeeksforGeeks: GO — shadow Popup Dictionary opens, dark theme, CSS isolation, click-outside works. YouTube: extension content script mounts Nav Cluster UI; video playback blocked in isolated profile, full overlay/fullscreen pending. Netflix: pending login. (T033) | — |
 
 ## References
 
