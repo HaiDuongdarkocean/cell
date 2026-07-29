@@ -11,7 +11,8 @@ import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider
 import { SettingsDialog } from './SettingsDialog';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
-import { STORAGE_KEYS } from '@/shared/config/config';
+import { STORAGE_KEYS, USE_LEGACY_SETTINGS } from '@/shared/config/config';
+import { mountSettingsDialogLegacy } from './mountSettingsDialogLegacy';
 import type { Settings } from '@/entities/media';
 
 import cardCreatorSettingsPanelCss from '@/features/settings/ui/CardCreatorSettingsPanel.module.css?inline';
@@ -159,6 +160,10 @@ const SHADOW_CSS = [
 export function mountSettingsDialog(
   options: SettingsDialogMountOptions,
 ): SettingsDialogMountController {
+  if (USE_LEGACY_SETTINGS) {
+    return mountSettingsDialogLegacy(options);
+  }
+
   const mount = mountReactShadow(createElement('div'), {
     parent: document.body,
     position: 'fixed',
