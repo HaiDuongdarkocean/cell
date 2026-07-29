@@ -773,7 +773,7 @@
   - **Verification:**
     - `npm run test:unit -- useTokenize`
 
-- [ ] **T075 — Mount `TokenizeFab` in shadow root**
+- [x] **T075 — Mount `TokenizeFab` in shadow root**
   - **Phase:** 5 | **Lane:** F | **Scope:** M | **Depends on:** T024, T073
   - **Files:** `src/features/tokenize/ui/mountTokenizeFab.ts`, `src/features/tokenize/ui/TokenizeFab.tsx`, `src/entrypoints/content/*`
   - **AC:**
