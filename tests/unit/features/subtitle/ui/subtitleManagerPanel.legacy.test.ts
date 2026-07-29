@@ -1,5 +1,5 @@
-import { createSubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel';
-import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitleManagerPanel';
+import { createSubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel.legacy';
+import type { SubtitlePanelItem } from '@/features/subtitle/ui/subtitleManagerPanel.legacy';
 import { DEFAULT_LIGHT_TOKENS, formatStaticTokens, formatComponentTokens } from '@/shared/lib/tokens';
 
 // Inject full default token set so var(--*) resolve in tests.
