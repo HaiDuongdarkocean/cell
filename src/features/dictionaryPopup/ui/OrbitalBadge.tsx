@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
 import { useOrbitalPointer } from '@/features/dictionaryPopup/badgePointer/useOrbitalPointer';
@@ -8,6 +8,21 @@ import { useOrbitalGesture } from '@/features/dictionaryPopup/badgePointer/useOr
 import { loadOrbitalBadgePosition, saveOrbitalBadgePosition, type OrbitalBadgePosition } from '@/stores/orbitalBadgeStore';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import styles from './OrbitalBadge.module.css';
+
+export interface OrbitalBadgeState {
+  expanded: boolean;
+  preset: PointerPreset;
+  center: Point;
+}
+
+export interface OrbitalBadgeHandle {
+  /** Programmatically update the pointer preset. */
+  setPreset: (preset: PointerPreset) => void;
+  /** Programmatically expand or collapse the badge. */
+  setExpanded: (expanded: boolean) => void;
+  /** Read the current badge state. */
+  getState: () => OrbitalBadgeState;
+}
 
 export interface OrbitalBadgeProps {
   /** Initial badge center. Defaults to right edge center. */
@@ -26,6 +41,10 @@ export interface OrbitalBadgeProps {
   onPresetChange?: (preset: PointerPreset) => void;
   /** Called when the pointer tip settles after drag/expand. */
   onTipReady?: (tip: Point, preset: PointerPreset, badgeCenter: Point) => void;
+  /** Called while the pointer tip changes (hover/drag settle). */
+  onTipHover?: (tip: Point, preset: PointerPreset, badgeCenter: Point) => void;
+  /** Called on every pointer move while the badge is expanded. */
+  onTipMoving?: (tip: Point, preset: PointerPreset, badgeCenter: Point) => void;
   /** Called when the badge is single-clicked/tapped. */
   onClick?: () => void;
 }
@@ -42,7 +61,7 @@ function resolveViewport(viewport?: ViewportRect): ViewportRect {
   return viewport ?? { width: getClientWidth(), height: getClientHeight() };
 }
 
-export function OrbitalBadge({
+export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(function OrbitalBadge({
   initialCenter,
   badgeSize = 44,
   pointerSize = 12,
@@ -52,7 +71,7 @@ export function OrbitalBadge({
   onPresetChange,
   onTipReady,
   onClick,
-}: OrbitalBadgeProps): React.JSX.Element {
+}, ref): React.JSX.Element {
   const resolvedViewport = resolveViewport(viewport);
   const defaultCenter = { x: resolvedViewport.width - badgeSize / 2, y: resolvedViewport.height / 2 };
 
@@ -91,6 +110,12 @@ export function OrbitalBadge({
     badgeSize,
     viewport: activeViewport,
   });
+
+  useImperativeHandle(ref, () => ({
+    setPreset: (next) => setPreset(next),
+    setExpanded: (next) => setExpanded(next),
+    getState: () => ({ expanded, preset, center: activeCenter }),
+  }), [expanded, preset, activeCenter]);
 
   useEffect(() => {
     if (expanded) {
@@ -164,7 +189,7 @@ export function OrbitalBadge({
 
   return (
     <div
-      className={[styles.host, expanded ? styles.expanded : styles.collapsed].filter(Boolean).join(' ')}
+      className={[styles.host, 'js-cell-orbital-badge', expanded ? styles.expanded : styles.collapsed].filter(Boolean).join(' ')}
       style={{
         left: displayedCenter.x,
         top: displayedCenter.y,
@@ -204,4 +229,4 @@ export function OrbitalBadge({
       )}
     </div>
   );
-}
+});

@@ -1,7 +1,7 @@
 // webTextDictionaryController tests — spec §2: top-level popup + lookup wiring.
 
 import { describe, expect, it, beforeAll, beforeEach, jest } from '@jest/globals';
-import { waitFor } from '@testing-library/react';
+import { waitFor, act } from '@testing-library/react';
 
 jest.mock('@/shared/lib/chrome-apis/runtime');
 jest.mock('@/features/cardCreator/media/screenshot', () => ({
@@ -477,35 +477,39 @@ describe('createWebTextDictionaryController', () => {
     ctrl.destroy();
   });
 
-  it('updateSettings creates orbital badge when enabled', () => {
+  it('updateSettings creates orbital badge when enabled', async () => {
     const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
     const settings = {
       dictionaryPopup: makePopupSettings({ enabled: true }),
       cardCreator: makeCardCreatorSettings(),
       subtitleOverlayNativeLanguage: 'vi',
     };
-    ctrl.updateSettings(settings);
+    await act(async () => { ctrl.updateSettings(settings); });
     const host = document.querySelector('.js-cell-orbital-badge-host');
     expect(host).not.toBeNull();
-    const badge = host && (host as HTMLElement).shadowRoot?.querySelector('.js-cell-orbital-badge');
-    expect(badge).not.toBeNull();
+    await waitFor(() => {
+      const badge = host && (host as HTMLElement).shadowRoot?.querySelector('.js-cell-orbital-badge');
+      expect(badge).not.toBeNull();
+    });
     ctrl.destroy();
   });
 
-  it('repeated updateSettings does not recreate the badge', () => {
+  it('repeated updateSettings does not recreate the badge', async () => {
     const ctrl = createWebTextDictionaryController(makeDeps({ dictionaryPopupSettings: makePopupSettings({ enabled: false }) }));
     const settings = {
       dictionaryPopup: makePopupSettings({ enabled: true }),
       cardCreator: makeCardCreatorSettings(),
       subtitleOverlayNativeLanguage: 'vi',
     };
-    ctrl.updateSettings(settings);
+    await act(async () => { ctrl.updateSettings(settings); });
     const host1 = document.querySelector('.js-cell-orbital-badge-host');
     expect(host1).not.toBeNull();
 
-    ctrl.updateSettings({
-      ...settings,
-      dictionaryPopup: makePopupSettings({ enabled: true, badgePointerTrigger: { position: 'top', size: 36, pointerScale: 0.25 } }),
+    await act(async () => {
+      ctrl.updateSettings({
+        ...settings,
+        dictionaryPopup: makePopupSettings({ enabled: true, badgePointerTrigger: { position: 'top', size: 36, pointerScale: 0.25 } }),
+      });
     });
 
     const hosts = document.querySelectorAll('.js-cell-orbital-badge-host');

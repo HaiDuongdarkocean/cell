@@ -1,37 +1,25 @@
 // useDictionaryPanel — React state hook for the universal panel's dictionary left pane.
 //
-// Sends LOOKUP_REQUEST to the background service worker because IndexedDB is
-// origin-isolated: content scripts on web pages cannot access the extension's
-// dictionary database. The background handler runs lookupOrchestratorMulti and
-// returns the LookupResult[] list.
-//
-// Spec acceptance:
-// - accepts langCode, sourceLang, targetLang, initialTerm, onSendToCard(prefill)
-// - exposes search(term), currentResult, isLoading, error, activeTab, setActiveTab, sendToCard()
-// - uses fallback:true for typed/selected-text searches
-// - cancels in-flight lookups on new search / unmount via LOOKUP_CANCEL
+// Composes useDictionaryLookup (search + results + definitions) with
+// dictionary toolbar concerns: translate, audio, image, card-creator actions.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type {
   LookupResult,
-  LookupRequest,
   PopupTab,
-  WordStatus,
-  DefinitionEntry,
   AudioItem,
   ImageItem,
   FetchCommunityAudioResponse,
   FetchImagesResponse,
   TtsFetchAudioResponse,
 } from '../types';
-import type { MessageResponse } from '@/entities/message';
-import { nextStatus } from '../services/wordStatusStore';
-import { translateSentence } from '@/features/cardCreator/media/translation';
+import type { MessageResponse } from '@/entities/message/types';
 import type { PopupCardCreatorPrefill } from './popupDictionaryController';
 import { buildPrefill } from './buildCandidatePrefill';
-import { initDefinitionSelection, getSelectedDefinitions } from './popupContent';
+import { translateSentence } from '@/features/cardCreator/media/translation';
+import { useDictionaryLookup } from '../logic/useDictionaryLookup';
 
 export interface UseDictionaryPanelOptions {
   /** Language code of the dictionary being searched (e.g. 'en', 'zh'). */
@@ -72,7 +60,7 @@ export interface UseDictionaryPanelReturn {
   /** Open or close a dictionary tab. */
   readonly setActiveTab: (tab: PopupTab | null) => void;
   /** Current word status (mirrors currentResult.status). */
-  readonly status: WordStatus;
+  readonly status: import('../types').WordStatus;
   /** Cycle the word status to the next value and persist via background. */
   readonly cycleStatus: () => void;
   /** Translation result from the translate tab, or empty. */
@@ -93,8 +81,6 @@ export interface UseDictionaryPanelReturn {
   readonly audioSelection: Map<string, boolean>;
   /** Toggle an audio item's selected state. */
   readonly toggleAudio: (id: string, selected: boolean) => void;
-  /** Fetch audio items for the active candidate. */
-  readonly fetchAudio: () => void;
   /** Image items for the active candidate. */
   readonly imageItems: readonly ImageItem[];
   /** True while fetching image items. */
@@ -107,6 +93,8 @@ export interface UseDictionaryPanelReturn {
   readonly toggleImage: (id: string, selected: boolean) => void;
   /** Remove a broken image from the active candidate's image list. */
   readonly removeImageItem: (id: string) => void;
+  /** Fetch audio items for the active candidate. */
+  readonly fetchAudio: () => void;
   /** Fetch image items for the active candidate. */
   readonly fetchImages: () => void;
   /** Build a prefill from the current result and call onSendToCard. */
@@ -122,26 +110,14 @@ export interface UseDictionaryPanelReturn {
   /** Toggle a definition's selected state. */
   readonly toggleDefinition: (id: string, selected: boolean) => void;
   /** Currently selected definitions for the active candidate (respects defaultSelected). */
-  readonly selectedDefinitions: readonly DefinitionEntry[];
-}
-
-/** Stable ID generator for lookup request ids. */
-function makeRequestId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `dp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  readonly selectedDefinitions: readonly import('../types').DefinitionEntry[];
 }
 
 export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDictionaryPanelReturn {
   const { langCode, sourceLang, targetLang, initialTerm, onSendToCard, onQuickAdd } = options;
 
-  const [searchTerm, setSearchTerm] = useState(initialTerm ?? '');
-  const [currentResult, setCurrentResult] = useState<LookupResult | null>(null);
-  const [candidates, setCandidates] = useState<readonly LookupResult[]>([]);
-  const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const lookup = useDictionaryLookup({ langCode, sourceLang, targetLang, initialTerm });
+
   const [activeTab, setActiveTab] = useState<PopupTab | null>(null);
   const [translation, setTranslation] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
@@ -154,159 +130,11 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [imageSelection, setImageSelection] = useState<Map<string, boolean>>(new Map());
-  const [status, setStatus] = useState<WordStatus>('unknown');
-  const [definitionSelection, setDefinitionSelection] = useState<Map<string, boolean>>(new Map());
 
-  const requestIdRef = useRef<string | null>(null);
-  const latestSearchRef = useRef<string>(initialTerm ?? '');
-
-  const cancelInFlight = useCallback((): void => {
-    const id = requestIdRef.current;
-    if (!id) return;
-    requestIdRef.current = null;
-    void sendMessage({ type: MESSAGE_TYPES.LOOKUP_CANCEL, payload: { requestId: id } });
-  }, []);
-
-  const applyResult = useCallback((results: LookupResult[], searchedTerm: string): void => {
-    if (results.length === 0) {
-      setCurrentResult(null);
-      setCandidates([]);
-      setActiveCandidateIndex(0);
-      setStatus('unknown');
-      setDefinitionSelection(new Map());
-      setTranslation('');
-      setTranslationError(null);
-      setAudioItems([]);
-      setAudioLoading(false);
-      setAudioError(null);
-      setAudioSelection(new Map());
-      setImageItems([]);
-      setImageLoading(false);
-      setImageError(null);
-      setImageSelection(new Map());
-      return;
-    }
-    const [winner, ...rest] = results;
-    setCurrentResult(winner);
-    setCandidates(rest);
-    setActiveCandidateIndex(0);
-    setStatus(winner.status);
-    setDefinitionSelection(initDefinitionSelection(winner));
-    setTranslation('');
-    setTranslationError(null);
-    setAudioItems([]);
-    setAudioLoading(false);
-    setAudioError(null);
-    setAudioSelection(new Map());
-    setImageItems([]);
-    setImageLoading(false);
-    setImageError(null);
-    setImageSelection(new Map());
-    latestSearchRef.current = searchedTerm;
-  }, []);
-
-  const search = useCallback((term: string): void => {
-    const trimmed = term.trim();
-    if (!trimmed) return;
-
-    cancelInFlight();
-    setSearchTerm(trimmed);
-    setIsLoading(true);
-    setError(null);
-    setActiveTab(null);
-
-    const requestId = makeRequestId();
-    requestIdRef.current = requestId;
-
-    const request: LookupRequest = {
-      term: trimmed,
-      langCode,
-      contextSentence: trimmed,
-      cursorOffset: 0,
-      fallback: true,
-    };
-
-    void sendMessage<MessageResponse<LookupResult[]>>({
-      type: MESSAGE_TYPES.LOOKUP_REQUEST,
-      payload: { requestId, request },
-    })
-      .then((response) => {
-        if (requestIdRef.current !== requestId) return; // stale
-        requestIdRef.current = null;
-        setIsLoading(false);
-        if (response?.success && response.data) {
-          applyResult(response.data, trimmed);
-        } else {
-          setError(response?.error ?? 'Lookup failed');
-          setCurrentResult(null);
-          setCandidates([]);
-          setStatus('unknown');
-          setDefinitionSelection(new Map());
-          setTranslation('');
-          setTranslationError(null);
-          setAudioItems([]);
-          setAudioLoading(false);
-          setAudioError(null);
-          setAudioSelection(new Map());
-          setImageItems([]);
-          setImageLoading(false);
-          setImageError(null);
-          setImageSelection(new Map());
-        }
-      })
-      .catch((err: unknown) => {
-        if (requestIdRef.current !== requestId) return;
-        requestIdRef.current = null;
-        setIsLoading(false);
-        setError(err instanceof Error ? err.message : String(err));
-        setCurrentResult(null);
-        setCandidates([]);
-        setStatus('unknown');
-        setDefinitionSelection(new Map());
-        setTranslation('');
-        setTranslationError(null);
-        setAudioItems([]);
-        setAudioLoading(false);
-        setAudioError(null);
-        setAudioSelection(new Map());
-        setImageItems([]);
-        setImageLoading(false);
-        setImageError(null);
-        setImageSelection(new Map());
-      });
-  }, [langCode, cancelInFlight, applyResult]);
-
-  const setActiveCandidate = useCallback((index: number): void => {
-    const all = [currentResult, ...candidates].filter(Boolean);
-    if (index < 0 || index >= all.length) return;
-    const chosen = all[index]!;
-    setActiveCandidateIndex(index);
-    setCurrentResult(chosen);
-    setStatus(chosen.status);
-    setDefinitionSelection(initDefinitionSelection(chosen));
-    setTranslation('');
-    setTranslationError(null);
-    setAudioItems([]);
-    setAudioLoading(false);
-    setAudioError(null);
-    setAudioSelection(new Map());
-    setImageItems([]);
-    setImageLoading(false);
-    setImageError(null);
-    setImageSelection(new Map());
-  }, [currentResult, candidates]);
-
-  const cycleStatus = useCallback((): void => {
-    const result = currentResult;
-    if (!result) return;
-    const newStatus = nextStatus(status);
-    setStatus(newStatus);
-    setCurrentResult({ ...result, status: newStatus });
-    void sendMessage({ type: MESSAGE_TYPES.WORD_STATUS_SET, payload: { term: result.term, langCode: result.langCode, status: newStatus } });
-  }, [currentResult, status]);
+  const { currentResult, activeCandidateIndex, candidates, selectedDefinitions, latestSearchedTerm } = lookup;
 
   const translate = useCallback((): void => {
-    const text = currentResult?.term.trim() || searchTerm.trim();
+    const text = currentResult?.term.trim() || lookup.searchTerm.trim();
     if (!text) return;
     setIsTranslating(true);
     setTranslationError(null);
@@ -320,7 +148,7 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
         setTranslationError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => { setIsTranslating(false); });
-  }, [currentResult, searchTerm, sourceLang, targetLang]);
+  }, [currentResult, lookup.searchTerm, sourceLang, targetLang]);
 
   const fetchAudio = useCallback((): void => {
     const result = currentResult;
@@ -408,26 +236,19 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     });
   }, []);
 
-  const selectedDefinitions = useMemo(
-    () => (currentResult ? getSelectedDefinitions(currentResult, definitionSelection) : []),
-    [currentResult, definitionSelection],
-  );
-
-  const toggleDefinition = useCallback((id: string, selected: boolean): void => {
-    setDefinitionSelection((prev) => new Map(prev).set(id, selected));
-  }, []);
-
-  const sendToCard = useCallback((): void => {
-    if (!currentResult || !onSendToCard) return;
-    const contextSentence = latestSearchRef.current;
-    onSendToCard(buildPrefill(currentResult, selectedDefinitions, contextSentence, translation, audioItems, audioSelection, imageItems, imageSelection));
-  }, [currentResult, selectedDefinitions, onSendToCard, translation, audioItems, audioSelection, imageItems, imageSelection]);
-
-  const quickAdd = useCallback((): void => {
-    if (!currentResult || !onQuickAdd) return;
-    const contextSentence = latestSearchRef.current;
-    onQuickAdd(buildPrefill(currentResult, selectedDefinitions, contextSentence, translation, audioItems, audioSelection, imageItems, imageSelection));
-  }, [currentResult, selectedDefinitions, onQuickAdd, translation, audioItems, audioSelection, imageItems, imageSelection]);
+  const buildActivePrefill = useCallback((): PopupCardCreatorPrefill | null => {
+    if (!currentResult) return null;
+    return buildPrefill(
+      currentResult,
+      selectedDefinitions,
+      latestSearchedTerm,
+      translation,
+      audioItems,
+      audioSelection,
+      imageItems,
+      imageSelection,
+    );
+  }, [currentResult, selectedDefinitions, latestSearchedTerm, translation, audioItems, audioSelection, imageItems, imageSelection]);
 
   const buildCandidatePrefill = useCallback((index: number): PopupCardCreatorPrefill | null => {
     const allCandidates = [currentResult, ...candidates].filter((candidate): candidate is LookupResult => candidate !== null);
@@ -437,14 +258,24 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     return buildPrefill(
       candidate,
       isActive ? selectedDefinitions : candidate.definitions.filter((definition) => definition.defaultSelected),
-      latestSearchRef.current,
+      latestSearchedTerm,
       isActive ? translation : '',
       isActive ? audioItems : [],
       isActive ? audioSelection : new Map(),
       isActive ? imageItems : [],
       isActive ? imageSelection : new Map(),
     );
-  }, [activeCandidateIndex, audioItems, audioSelection, candidates, currentResult, imageItems, imageSelection, selectedDefinitions, translation]);
+  }, [activeCandidateIndex, audioItems, audioSelection, candidates, currentResult, imageItems, imageSelection, selectedDefinitions, translation, latestSearchedTerm]);
+
+  const sendToCard = useCallback((): void => {
+    const prefill = buildActivePrefill();
+    if (prefill && onSendToCard) onSendToCard(prefill);
+  }, [buildActivePrefill, onSendToCard]);
+
+  const quickAdd = useCallback((): void => {
+    const prefill = buildActivePrefill();
+    if (prefill && onQuickAdd) onQuickAdd(prefill);
+  }, [buildActivePrefill, onQuickAdd]);
 
   const sendCandidateToCard = useCallback((index: number): void => {
     const prefill = buildCandidatePrefill(index);
@@ -456,34 +287,42 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     if (prefill && onQuickAdd) onQuickAdd(prefill);
   }, [buildCandidatePrefill, onQuickAdd]);
 
-  // Initial search when initialTerm is provided. Re-run if the prop changes
-  // while the component is mounted (e.g. the panel is opened with a new term).
+  // Clear subordinate tab data when the active candidate changes or a new
+  // search starts, so stale audio/image/translation don't persist across results.
   useEffect(() => {
-    if (initialTerm?.trim()) {
-      search(initialTerm.trim());
-    }
-    return () => { cancelInFlight(); };
-    // search/cancelInFlight are stable callbacks; only react to initialTerm changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTerm]);
+    setTranslation('');
+    setTranslationError(null);
+    setAudioItems([]);
+    setAudioLoading(false);
+    setAudioError(null);
+    setAudioSelection(new Map());
+    setImageItems([]);
+    setImageLoading(false);
+    setImageError(null);
+    setImageSelection(new Map());
+  }, [currentResult]);
 
-  // The initial-search effect cleanup already cancels in-flight lookups on
-  // unmount and on initialTerm changes, so no separate unmount effect is needed.
+  // Reset active tab when search starts so the UI doesn't show a stale tab.
+  useEffect(() => {
+    if (lookup.isLoading) {
+      setActiveTab(null);
+    }
+  }, [lookup.isLoading]);
 
   return {
-    searchTerm,
-    setSearchTerm,
-    search,
+    searchTerm: lookup.searchTerm,
+    setSearchTerm: lookup.setSearchTerm,
+    search: lookup.search,
     currentResult,
     candidates,
     activeCandidateIndex,
-    setActiveCandidate,
-    isLoading,
-    error,
+    setActiveCandidate: lookup.setActiveCandidate,
+    isLoading: lookup.isLoading,
+    error: lookup.error,
     activeTab,
     setActiveTab,
-    status,
-    cycleStatus,
+    status: lookup.status,
+    cycleStatus: lookup.cycleStatus,
     translation,
     translate,
     isTranslating,
@@ -493,20 +332,20 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     audioError,
     audioSelection,
     toggleAudio,
-    fetchAudio,
     imageItems,
     imageLoading,
     imageError,
     imageSelection,
     toggleImage,
     removeImageItem,
+    fetchAudio,
     fetchImages,
     sendToCard,
     quickAdd,
     sendCandidateToCard,
     quickAddCandidate,
-    definitionSelection,
-    toggleDefinition,
+    definitionSelection: lookup.definitionSelection,
+    toggleDefinition: lookup.toggleDefinition,
     selectedDefinitions,
   };
 }

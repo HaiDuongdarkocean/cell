@@ -21,6 +21,7 @@ export interface MountShadowOptions {
 export interface ShadowMount {
   host: HTMLElement;
   shadow: ShadowRoot;
+  root: ReturnType<typeof createRoot>;
   unmount: () => void;
 }
 
@@ -61,6 +62,7 @@ export function mountReactShadow(
   return {
     host,
     shadow,
+    root,
     unmount: () => {
       cleanupCss();
       root.unmount();

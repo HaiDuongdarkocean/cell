@@ -8,7 +8,7 @@
  * firing lower-count actions on touch screens where each tap fires a click
  * event instantly.
  *
- * Tap mapping (see createOrbitalBadge for the actions bound to each):
+ * Tap mapping (see OrbitalBadge for the actions bound to each):
  * - 1 tap: onSingleTap (open settings panel — open-only, never toggles)
  * - 2 taps: onDoubleTap (cycle vertical presets)
  * - 3 taps: onTripleTap (cycle horizontal presets)

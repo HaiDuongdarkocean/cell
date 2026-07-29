@@ -33,7 +33,8 @@ import {
 } from '@/features/dictionaryPopup/sentence/sentenceModule';
 import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
 import { createWordHighlight, createSentenceHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
-import { createOrbitalBadge, type OrbitalBadge, type PointerPreset } from '@/features/dictionaryPopup/badgePointer';
+import { type PointerPreset } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
+import { mountOrbitalBadge, type OrbitalBadgeMountController } from '@/features/dictionaryPopup/ui/mountOrbitalBadge';
 
 import { sendMessage } from '@/shared/lib/chrome-apis';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
@@ -339,7 +340,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   let webTrigger: WebTriggerController | null = null;
   let currentAttachedMode: TriggerMode | null = null;
-  let orbitalBadge: OrbitalBadge | null = null;
+  let orbitalBadge: OrbitalBadgeMountController | null = null;
   let orbitalHoverTrigger: WebTriggerController | null = null;
   let orbitalBadgeSize: number | null = null;
   let orbitalBadgeScale: number | null = null;
@@ -1348,13 +1349,12 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       orbitalBadge.setPreset(trigger.position);
     } else {
       orbitalBadge?.destroy();
-      orbitalBadge = createOrbitalBadge({
+      orbitalBadge = mountOrbitalBadge({
         badgeSize: trigger.size,
         pointerScale: trigger.pointerScale,
         initialPreset: trigger.position,
-        onPresetChange: (preset) => { persistBadgePointerPreset(preset); },
+        onPresetChange: (preset: PointerPreset) => { persistBadgePointerPreset(preset); },
         onTipReady: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
-        onTipHover: (tip, _preset, badgeCenter) => { orbitalHoverTrigger?.processPoint(tip.x, tip.y, badgeCenter, trigger.size / 2, (trigger.size * (trigger.pointerScale ?? 0.25)) / 2); },
         panelController: deps.panelController,
       });
       orbitalBadgeSize = trigger.size;
