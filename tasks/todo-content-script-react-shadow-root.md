@@ -942,23 +942,27 @@
     - `npm run build` ✓
     - Manual: open from orbital badge pending T033
 
-- [ ] **T086 — Add `USE_LEGACY_SETTINGS` flag**
+- [x] **T086 — Add `USE_LEGACY_SETTINGS` flag**
   - **Phase:** 7 | **Lane:** H | **Scope:** S | **Depends on:** T085
-  - **Files:** `src/features/settings/ui/mountSettingsDialog.ts`
+  - **Files:** `src/features/settings/ui/mountSettingsDialog.ts`, `src/features/settings/ui/mountSettingsDialogLegacy.ts`
   - **AC:**
     - `false` uses new mount.
     - `true` keeps previous light-DOM path.
   - **Verification:**
-    - `npm run build`
+    - `npm run typecheck` ✓
+    - `npm run build` ✓
 
-- [ ] **T087 — Verify settings save/load and theme**
+- [x] **T087 — Verify settings save/load and theme**
   - **Phase:** 7 | **Lane:** Q | **Scope:** S | **Depends on:** T085
   - **Files:** none
   - **AC:**
     - All sections render and persist.
     - Theme toggle updates host.
   - **Verification:**
-    - Manual: change settings on YouTube, reload, verify
+    - `npm run test:unit -- settings` ✓
+    - `npm run build` ✓
+    - Manual: design-system Settings dialog opens with all sections and dark theme ✓
+    - Manual: change settings on YouTube, reload, verify — pending T033
 
 - [ ] **T088 — Update `mountUniversalPanel` for chosen mechanism + `USE_LEGACY_UNIVERSAL_PANEL` flag**
   - **Phase:** 8 | **Lane:** H | **Scope:** M | **Depends on:** T031, T024, T071, T075, T082, T085
