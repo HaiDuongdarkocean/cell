@@ -11,7 +11,7 @@ import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type { LookupResult, LookupRequest, WordStatus, DefinitionEntry } from '../types';
 import type { MessageResponse } from '@/entities/message';
 import { nextStatus } from '../services/wordStatusStore';
-import { initDefinitionSelection, getSelectedDefinitions } from '../ui/popupContent';
+import { initDefinitionSelection, getSelectedDefinitions } from './definitionSelection';
 
 export interface UseDictionaryLookupOptions {
   /** Language code of the dictionary being searched (e.g. 'en', 'zh'). */
@@ -30,6 +30,8 @@ export interface UseDictionaryLookupOptions {
   readonly initialResult?: LookupResult;
   /** Optional pre-fetched additional candidates to display alongside the winner. */
   readonly initialCandidates?: readonly LookupResult[];
+  /** Force a loading state (e.g. while a parent controller is fetching the first result). */
+  readonly isLoading?: boolean;
   /** Optional local token-status fallback for the winner. */
   readonly getTokenStatus?: (term: string) => WordStatus | undefined;
   /** Optional callback when a new result arrives (winner + candidates). */
@@ -101,6 +103,7 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
     cursorOffset: initialCursorOffset = 0,
     initialResult,
     initialCandidates = [],
+    isLoading: isLoadingProp = false,
     getTokenStatus,
     onResult,
     syncStatus,
@@ -110,7 +113,7 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
   const [currentResult, setCurrentResult] = useState<LookupResult | null>(initialResult ?? null);
   const [candidates, setCandidates] = useState<readonly LookupResult[]>(initialCandidates);
   const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(isLoadingProp);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<WordStatus>(initialResult?.status ?? 'unknown');
   const [definitionSelection, setDefinitionSelection] = useState<Map<string, boolean>>(() =>
@@ -244,6 +247,7 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
   // initial term. This lets a content-script controller feed results and
   // candidates into the same mounted component instead of re-mounting.
   useEffect(() => {
+    if (isLoadingProp) return;
     if (initialResult) {
       applyResult([initialResult, ...initialCandidates], initialResult.term, initialContextSentence);
       return;
@@ -255,7 +259,7 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
     // Only react to meaningful external seed changes, not to every new object
     // identity on re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialResult?.term, initialCandidates.length, initialTerm, initialContextSentence, search, applyResult]);
+  }, [isLoadingProp, initialResult?.term, initialCandidates.length, initialTerm, initialContextSentence, search, applyResult]);
 
   // Sync an externally-driven status (e.g. keyboard shortcut) to the active
   // result without persisting — the external source already owns persistence.
@@ -265,6 +269,14 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
     setCurrentResult({ ...currentResult, status: syncStatus.status });
     setStatus(syncStatus.status);
   }, [syncStatus, currentResult]);
+
+  // Sync externally forced loading state (e.g. a parent controller is fetching the first result).
+  const isLoadingPropPrev = useRef(isLoadingProp);
+  useEffect(() => {
+    if (isLoadingPropPrev.current === isLoadingProp) return;
+    isLoadingPropPrev.current = isLoadingProp;
+    setIsLoading(isLoadingProp);
+  }, [isLoadingProp]);
 
   return {
     searchTerm,

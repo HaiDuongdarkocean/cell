@@ -10,7 +10,7 @@ import {
   removeSearchHistoryTerm,
 } from '@/features/universalPanel/searchHistory';
 import { CandidateView } from './CandidateView';
-import type { LookupResult, WordStatus, PopupCardCreatorPrefill } from '../types';
+import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab } from '../types';
 import styles from './DictionaryPanelView.module.css';
 import componentsCss from '@/shared/styles/components.css?raw';
 
@@ -34,6 +34,8 @@ interface DictionaryPanelViewProps {
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called when the user switches to a different candidate (chip click). */
   readonly onCandidateChange?: (term: string) => void;
+  /** Default media tab to open when the result first appears. */
+  readonly defaultActiveTab?: PopupTab | null;
   /** True when this view is inside an open panel — used for auto-focus after animation. */
   readonly isOpen?: boolean;
   /** Optional external status sync (e.g. keyboard shortcut). */
@@ -56,6 +58,7 @@ export function DictionaryPanelView({
   onQuickAdd,
   onStatusChange,
   onCandidateChange,
+  defaultActiveTab,
   isOpen = true,
   syncStatus,
 }: DictionaryPanelViewProps): React.JSX.Element {
@@ -69,6 +72,7 @@ export function DictionaryPanelView({
     initialResult,
     initialCandidates,
     getTokenStatus,
+    defaultActiveTab,
     onResult,
     isLoading: isLoadingProp,
     syncStatus,
@@ -314,6 +318,7 @@ export function DictionaryPanelView({
                 onSendToCard={onSendToCard}
                 onQuickAdd={onQuickAdd}
                 onStatusChange={onStatusChange}
+                defaultActiveTab={defaultActiveTab}
               />
             ))}
           </div>

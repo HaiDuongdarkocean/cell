@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 import { useDictionaryLookup } from '../logic/useDictionaryLookup';
 import { useDictionaryToolbar } from '../logic/useDictionaryToolbar';
 import { buildPrefill } from './buildCandidatePrefill';
-import type { LookupResult, WordStatus, PopupCardCreatorPrefill } from '../types';
+import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab } from '../types';
 
 export interface UseDictionaryPanelOptions {
   /** Language code of the dictionary being searched (e.g. 'en', 'zh'). */
@@ -28,6 +28,8 @@ export interface UseDictionaryPanelOptions {
   readonly initialCandidates?: readonly LookupResult[];
   /** Optional local token-status fallback for the winner. */
   readonly getTokenStatus?: (term: string) => WordStatus | undefined;
+  /** Default media tab to open when the result first appears. */
+  readonly defaultActiveTab?: PopupTab | null;
   /** Called when a new result arrives. */
   readonly onResult?: (winner: LookupResult, candidates: readonly LookupResult[], contextSentence: string) => void;
   /** Force a loading state (e.g. while a parent controller is fetching the first result). */
@@ -130,6 +132,7 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     initialResult,
     initialCandidates,
     getTokenStatus,
+    defaultActiveTab,
     onResult,
     isLoading: isLoadingProp,
     syncStatus,
@@ -146,6 +149,7 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     cursorOffset,
     initialResult,
     initialCandidates,
+    isLoading: isLoadingProp,
     getTokenStatus,
     onResult,
     syncStatus,
@@ -155,6 +159,7 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     contextSentence: lookup.contextSentence,
     sourceLang,
     targetLang,
+    defaultActiveTab,
   });
 
   const { currentResult, activeCandidateIndex, candidates, selectedDefinitions, contextSentence: lookupContext } = lookup;

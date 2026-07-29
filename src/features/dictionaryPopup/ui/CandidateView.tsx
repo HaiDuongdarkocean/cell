@@ -8,7 +8,7 @@ import { TranslatePanel } from './TranslatePanel';
 import { LinksPanel } from './LinksPanel';
 import { DictionaryToolbar } from './DictionaryToolbar';
 import styles from './DictionaryPanelView.module.css';
-import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill } from '../types';
+import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill, PopupTab } from '../types';
 
 function formatReading(reading: string, readingKind: LookupResult['readingKind']): string {
   if (!reading) return '';
@@ -27,6 +27,8 @@ export interface CandidateViewProps {
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
+  /** Default media tab to open when this candidate first appears. */
+  readonly defaultActiveTab?: PopupTab | null;
 }
 
 export function CandidateView({
@@ -38,6 +40,7 @@ export function CandidateView({
   onSendToCard,
   onQuickAdd,
   onStatusChange,
+  defaultActiveTab,
 }: CandidateViewProps): React.JSX.Element {
   const panel = useCandidate({
     candidate,
@@ -47,6 +50,7 @@ export function CandidateView({
     onSendToCard,
     onQuickAdd,
     onStatusChange,
+    defaultActiveTab,
   });
 
   const frequencyBand = candidate.frequency ? rankToBand(candidate.frequency.rank) : 'none';

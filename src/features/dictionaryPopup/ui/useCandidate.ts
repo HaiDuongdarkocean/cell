@@ -3,7 +3,7 @@ import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
 import { nextStatus } from '../services/wordStatusStore';
 import { setWordStatus } from '../services/wordStatusClient';
-import { initDefinitionSelection, getSelectedDefinitions } from './popupContent';
+import { initDefinitionSelection, getSelectedDefinitions } from '../logic/definitionSelection';
 import { buildPrefill } from './buildCandidatePrefill';
 import { useDictionaryToolbar } from '../logic/useDictionaryToolbar';
 import type {
@@ -16,7 +16,7 @@ import type {
   ExternalDictLink,
   PopupCardCreatorPrefill,
 } from '../types';
-import type { DefinitionSelection } from './popupContent';
+import type { DefinitionSelection } from '../logic/definitionSelection';
 
 export interface UseCandidateOptions {
   readonly candidate: LookupResult;
@@ -27,6 +27,8 @@ export interface UseCandidateOptions {
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user cycles the word status inside this candidate. */
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
+  /** Default media tab to open when this candidate first appears. */
+  readonly defaultActiveTab?: PopupTab | null;
 }
 
 export interface UseCandidateReturn {
@@ -67,7 +69,7 @@ export interface UseCandidateReturn {
 }
 
 export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
-  const { candidate, contextSentence, sourceLang, targetLang, onSendToCard, onQuickAdd, onStatusChange } = options;
+  const { candidate, contextSentence, sourceLang, targetLang, onSendToCard, onQuickAdd, onStatusChange, defaultActiveTab } = options;
 
   const [status, setStatus] = useState<WordStatus>(candidate.status);
   const [definitionSelection, setDefinitionSelection] = useState<DefinitionSelection>(() => initDefinitionSelection(candidate));
@@ -77,6 +79,7 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     contextSentence,
     sourceLang,
     targetLang,
+    defaultActiveTab,
   });
 
   const selectedDefinitions = useMemo(
