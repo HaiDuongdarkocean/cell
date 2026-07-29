@@ -160,6 +160,25 @@ function TypographyScale() {
   );
 }
 
+function RadiusScale() {
+  const radius = tokens.static.radius;
+  return (
+    <div className={styles.tokenGrid}>
+      {(Object.keys(radius) as Array<keyof typeof radius>).map((key) => (
+        <div key={String(key)} className={styles.tokenSwatch}>
+          <div
+            className={styles.swatchColor}
+            style={{ background: 'var(--color-primary-subtle)', borderRadius: radius[key] }}
+          >
+            {String(key)}
+          </div>
+          <code className={styles.swatchValue}>{radius[key]}</code>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function IconGrid() {
   const iconNames = Object.keys(ICON_CATALOG) as Array<keyof typeof ICON_CATALOG>;
   return (
@@ -589,6 +608,10 @@ export function App() {
 
         <Section title="Typography">
           <TypographyScale />
+        </Section>
+
+        <Section title="Radius Scale">
+          <RadiusScale />
         </Section>
 
         <Section title="Icons">

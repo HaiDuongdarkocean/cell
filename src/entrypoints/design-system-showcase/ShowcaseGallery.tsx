@@ -1,5 +1,6 @@
 import { useMemo, type ReactElement } from 'react';
 import { discoverShowcases, groupShowcases } from './autoDiscovery';
+import { MockProviders } from './mockProviders';
 import appStyles from './App.module.css';
 import styles from './ShowcaseGallery.module.css';
 
@@ -18,7 +19,9 @@ export function ShowcaseGallery(): ReactElement | null {
               <div className={styles.card} key={showcase.id}>
                 <h3 className={styles.cardTitle}>{showcase.meta.title}</h3>
                 <div className={styles.cardBody}>
-                  <showcase.Component />
+                  <MockProviders>
+                    <showcase.Component />
+                  </MockProviders>
                 </div>
               </div>
             ))}

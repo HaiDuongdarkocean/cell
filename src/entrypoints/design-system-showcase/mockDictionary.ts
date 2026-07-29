@@ -126,11 +126,7 @@ async function mockSendMessage(message: unknown): Promise<unknown> {
       return { success: true };
 
     default:
-      // Delegate unknown messages to the real runtime if it exists.
-      if (typeof chrome !== 'undefined' && chrome.runtime) {
-        return chrome.runtime.sendMessage(message);
-      }
-      return { success: false, error: 'No runtime available' };
+      return { success: false, error: 'Unknown message type' };
   }
 }
 
