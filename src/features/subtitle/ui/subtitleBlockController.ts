@@ -8,6 +8,7 @@ import {
   DEFAULT_NAV_CLUSTER_SETTINGS,
 } from '@/shared/config/config';
 import { buildTextShadow, hexToRgba, sanitizeFontFamily } from './subtitleUI';
+import { dispatchCuesUpdated } from '@/features/subtitle/events';
 import { NAV_CLUSTER_ICONS, type NavClusterIconName } from './navClusterIcons';
 import { prevSentence, nextSentence, seekBy, findActiveCueIndex } from './navClusterActions';
 import { seekVideo, isNetflixPage } from './netflixPlayback';
@@ -77,6 +78,15 @@ export class SubtitleBlockController {
   private dpTriggerController: SubtitleTriggerController | null = null;
   /** Tokenize-on-media controller for active cue (T14). */
   private tokenizeController: SubtitleTokenizeController | null = null;
+
+  private emitCuesUpdated(): void {
+    dispatchCuesUpdated(document, {
+      targetCues: this.targetCues,
+      nativeCues: this.nativeCues,
+      targetActiveIndex: this.lastTargetIndex,
+      nativeActiveIndex: this.lastNativeIndex,
+    });
+  }
 
   constructor(
     private readonly video: HTMLVideoElement,
@@ -346,6 +356,7 @@ export class SubtitleBlockController {
       this.lastTargetIndex = targetIndex;
       this.lastNativeIndex = nativeIndex;
       this.render();
+      this.emitCuesUpdated();
       return;
     }
 
@@ -355,6 +366,7 @@ export class SubtitleBlockController {
     this.lastTargetIndex = targetIndex;
     this.lastNativeIndex = -1;
     this.render();
+    this.emitCuesUpdated();
   };
 
   private wireDrag(): void {
@@ -611,6 +623,7 @@ export class SubtitleBlockController {
     this.applyClusterLayout();
     this.onTimeUpdate();
     this.render();
+    this.emitCuesUpdated();
   }
 
   loadBilingualCues(targetCues: SrtCue[], nativeCues: SrtCue[]): void {
@@ -626,6 +639,7 @@ export class SubtitleBlockController {
     this.tokenizeController?.setCues(this.targetCues, this.nativeCues);
     this.applyClusterLayout();
     this.onTimeUpdate();
+    this.emitCuesUpdated();
   }
 
   /** ADR-026: Get current target cues (for Card Creator context). */
@@ -664,6 +678,7 @@ export class SubtitleBlockController {
     this.tokenizeController?.setCues(this.targetCues, this.nativeCues);
     this.applyClusterLayout();
     this.render();
+    this.emitCuesUpdated();
   }
 
   destroy(): void {

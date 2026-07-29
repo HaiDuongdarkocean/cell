@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import type { BilingualCue } from '@/entities/media/types';
+import type { SrtCue } from '@/entities/media/types';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { useCuesStore } from '@/stores/cuesStore';
 import { buildTextShadow, hexToRgba, sanitizeFontFamily } from './subtitleUI';
@@ -10,12 +10,14 @@ interface SubtitleBlockProps {
   nativeStyle: OverlayStyleConfig;
 }
 
-const selectCues = (state: { cues: BilingualCue[] }): BilingualCue[] => state.cues;
-const selectActiveIndex = (state: { activeIndex: number }): number => state.activeIndex;
+const selectTargetCues = (state: { targetCues: SrtCue[] }): SrtCue[] => state.targetCues;
+const selectNativeCues = (state: { nativeCues: SrtCue[] }): SrtCue[] => state.nativeCues;
+const selectTargetActiveIndex = (state: { targetActiveIndex: number }): number => state.targetActiveIndex;
+const selectNativeActiveIndex = (state: { nativeActiveIndex: number }): number => state.nativeActiveIndex;
 
 function buildLayerStyle(config: OverlayStyleConfig): React.CSSProperties {
   return {
-    display: config.visible ? 'flex' : 'none',
+    display: config.visible ? 'block' : 'none',
     fontSize: `${config.fontSize}px`,
     color: config.textColor,
     backgroundColor: hexToRgba(config.backgroundColor, config.backgroundOpacity),
@@ -28,20 +30,24 @@ function buildLayerStyle(config: OverlayStyleConfig): React.CSSProperties {
 }
 
 function SubtitleBlockInner({ targetStyle, nativeStyle }: SubtitleBlockProps): React.JSX.Element | null {
-  const cues = useCuesStore(selectCues);
-  const activeIndex = useCuesStore(selectActiveIndex);
-  const cue = cues[activeIndex];
+  const targetCues = useCuesStore(selectTargetCues);
+  const nativeCues = useCuesStore(selectNativeCues);
+  const targetActiveIndex = useCuesStore(selectTargetActiveIndex);
+  const nativeActiveIndex = useCuesStore(selectNativeActiveIndex);
 
-  if (!cue) return null;
+  const targetCue = targetCues[targetActiveIndex];
+  const nativeCue = nativeCues[nativeActiveIndex];
+
+  if (!targetCue && !nativeCue) return null;
 
   return (
     <div className={styles.block} data-testid="subtitle-block">
       <div className={styles.layer} data-role="target" style={buildLayerStyle(targetStyle)}>
-        <span className={styles.text}>{cue.targetText}</span>
+        <span className={styles.text}>{targetStyle.visible ? targetCue?.text ?? '' : ''}</span>
       </div>
-      {nativeStyle.visible && cue.nativeText && (
+      {nativeStyle.visible && nativeCue && (
         <div className={styles.layer} data-role="native" style={buildLayerStyle(nativeStyle)}>
-          <span className={styles.text}>{cue.nativeText}</span>
+          <span className={styles.text}>{nativeCue.text}</span>
         </div>
       )}
     </div>

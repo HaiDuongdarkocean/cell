@@ -1,12 +1,16 @@
-import type { BilingualCue } from '@/entities/media/types';
+import type { SrtCue } from '@/entities/media/types';
 
 export const CELL_CUES_UPDATED = 'cell:cues:updated' as const;
 
 export interface CuesUpdatedDetail {
-  /** Bilingual cues (target + native) for the active video. */
-  cues: BilingualCue[];
-  /** Index of the cue currently active by playback time. */
-  activeIndex: number;
+  /** Target language cues for the active video. */
+  targetCues: SrtCue[];
+  /** Native language cues for the active video. */
+  nativeCues: SrtCue[];
+  /** Index of the active target cue by playback time. */
+  targetActiveIndex: number;
+  /** Index of the active native cue by playback time. */
+  nativeActiveIndex: number;
   /** Optional subtitle track identifier. */
   trackId?: string;
 }
