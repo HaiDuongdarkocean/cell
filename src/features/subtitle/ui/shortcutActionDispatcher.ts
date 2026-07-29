@@ -1,4 +1,4 @@
-import { seekToCue } from './subtitlePanel';
+import { seekToCue } from './netflixPlayback';
 import type { BilingualCue } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 

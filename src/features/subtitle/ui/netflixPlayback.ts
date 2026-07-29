@@ -62,6 +62,20 @@ export function pauseVideo(video: HTMLVideoElement): void {
 }
 
 /**
+ * Seek video so the overlay DISPLAYS the given cue (ADR-019 sync).
+ * Overlay shows cue C when video.currentTime = (C.start - offsetMs) / 1000,
+ * because findCurrentLine searches at effective = currentTime + offsetMs.
+ * Default offsetMs=0 → raw cue.start/1000 (backward compatible).
+ * @param video - Target video element
+ * @param cue - Cue to seek to (uses cue.start in milliseconds → seconds)
+ * @param offsetMs - Subtitle offset in ms (default 0). Seek target shifts by -offsetMs.
+ */
+export function seekToCue(video: HTMLVideoElement, cue: { start: number }, offsetMs: number = 0): void {
+  // ADR-030: route through seekVideo to avoid Netflix M7375.
+  seekVideo(video, (cue.start - offsetMs) / 1000);
+}
+
+/**
  * ADR-031: Netflix UI z-index fix — move Cell UI elements to `.watch-video`
  * (parent of Netflix's active/inactive wrappers) + set z-index max.
  *

@@ -11,7 +11,6 @@ import { dispatchCuesUpdated, type CuesUpdatedDetail } from '@/features/subtitle
 import { prevSentence, nextSentence, seekBy, findActiveCueIndex } from './navClusterActions';
 import { seekVideo } from './netflixPlayback';
 import type { TriggerMode } from '@/features/dictionaryPopup/types';
-import type { NavClusterIconName } from './navClusterIcons';
 
 export interface SubtitleCueEngineUpdate {
   readonly blockSettings?: Partial<SubtitleBlockSettings>;
@@ -19,6 +18,12 @@ export interface SubtitleCueEngineUpdate {
   readonly nativeStyle?: OverlayStyleConfig;
   readonly clusterSettings?: Partial<NavClusterSettings>;
 }
+
+/** Card-creator actions emitted by the overlay tools. */
+export type CardCreatorAction = 'quick-update' | 'edit-card' | 'update-current';
+
+/** Legacy nav cluster icon names — kept for cue-engine state mapping. */
+export type NavClusterIconName = 'prev' | 'next' | 'repeat' | 'repeatA' | 'repeatB' | 'repeatCancel' | 'rewind' | 'forward' | 'play' | 'pause';
 
 /** Callbacks the engine fires when state changes. */
 export interface SubtitleCueEngineCallbacks {

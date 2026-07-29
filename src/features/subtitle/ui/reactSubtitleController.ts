@@ -7,9 +7,7 @@ import {
   DEFAULT_NAV_CLUSTER_SETTINGS,
 } from '@/shared/config/config';
 import { mountSubtitle, type MountSubtitleResult, type ManagerState, type OffsetState } from './mountSubtitle';
-import { SubtitleCueEngine, type SubtitleCueEngineUpdate } from './subtitleCueEngine';
-import type { CardCreatorAction } from './subtitleBlockController';
-import type { SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
+import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/features/dictionaryPopup/types';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';

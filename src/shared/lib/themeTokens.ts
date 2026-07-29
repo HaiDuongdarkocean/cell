@@ -23,7 +23,6 @@ import {
   formatComponentTokens,
   formatStaticTokens,
 } from '@/shared/lib/tokens';
-import { NAV_CLUSTER_CSS } from '@/features/subtitle/ui/navClusterCss';
 import navClusterModuleCss from '@/features/subtitle/ui/NavCluster.module.css?inline';
 import type { ThemeMode, ThemeConfig, ResolvedMode } from '@/entities/theme';
 
@@ -77,7 +76,6 @@ ${componentTokens}
   .subtitle-toast { animation: none; }
 }
 
-${NAV_CLUSTER_CSS}
 ${navClusterModuleCss}
 `;
 }
