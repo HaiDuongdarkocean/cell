@@ -28,9 +28,9 @@ Add an optional **Orbital Dictionary Pointer** (internally `badgePointerTrigger`
 ### D2 — Preset selection
 
 - The pointer keeps the user-selected preset when the badge expands or after a drag; it does **not** auto-rotate toward the viewport center.
-- **Double-tap** on the expanded badge cycles vertical presets: `top` → `bottom` → `center` → `top`.
-- **Triple-tap** cycles horizontal presets: `left` → `right` → `center` → `left`.
-- When the badge collapses against an edge, the local preset is set to point inward from that edge (e.g. right edge → `left`, top edge → `bottom`) without persisting, so the next expansion is ready to read content. The user-selected preset is persisted to `chrome.storage.local` via `UPDATE_SETTINGS` only when the user explicitly double/triple taps.
+- **Double-tap** on the expanded badge cycles the pointer preset forward through `center → right → top → left → bottom → center`.
+- **Triple-tap** cycles the pointer preset backward through the same order.
+- When the badge collapses against an edge, the local preset is set to point inward from that edge (e.g. right edge → `left`, top edge → `bottom`) without persisting, so the next expansion is ready to read content. The user-selected preset is persisted to `chrome.storage.local` via `orbitalBadgeStore` when the user explicitly double/triple taps or drags.
 
 ### D3 — Lookup resolution
 
@@ -47,24 +47,23 @@ Add an optional **Orbital Dictionary Pointer** (internally `badgePointerTrigger`
 
 ### D5 — Settings integration
 
-- `triggerMode` gains a new value: `'orbital'`. It is mutually exclusive with click/hover modes; only one trigger mode can be active at a time.
-- `DictionaryPopupSettings` gains `badgePointerTrigger: { position: PointerPreset; size: number; pointerScale: number }` (no `enabled` field — the mode itself controls activation).
-- Settings schema version stays **16**. Migration v15→v16 converts any older `badgePointerTrigger.enabled: true` into `triggerMode: 'orbital'` and drops the `enabled` field.
-- The Options page adds `'Orbital badge'` to the existing trigger-mode dropdown. Selecting it reveals the pointer-position select and badge-size input in `DictionaryPopupSettingsPanel`.
+- The orbital badge is **always active when the dictionary popup is enabled**. It is not a separate `triggerMode`; instead it complements the existing click/hover triggers on devices where text selection is awkward.
+- `DictionaryPopupSettings` keeps `badgePointerTrigger: { position: PointerPreset; size: number; pointerScale: number }` (no `enabled` field — the badge mounts whenever `dictionaryPopup.enabled` is true).
+- Settings schema version advanced to **17** and then **18**; the v16→v17 migration removed the temporary `'orbital'` `triggerMode` value (migrating any stored `'orbital'` back to `'click'`) and made the badge always-on.
+- The Options page shows the pointer-position select and badge-size input in `DictionaryPopupSettingsPanel` whenever the dictionary popup is enabled.
 
 ### D6 — Architecture
 
-- Implementation lives in `src/features/dictionaryPopup/badgePointer/`.
-- `createOrbitalBadge` is a self-contained vanilla DOM component with a Shadow DOM host.
-- `WebTextDictionaryController` owns the badge lifecycle: creates/destroys it from `updateSettings` and `destroy`, routes `onTipReady` to `handleLookup`, and persists preset changes.
-- Tests cover geometry (`pointerPosition`), gestures (`gestureDetector`), badge lifecycle (`createOrbitalBadge`), tip resolution (`resolveWordAtTip`), and settings migration.
+- Implementation lives in `src/features/dictionaryPopup/badgePointer/` (geometry/gesture helpers) and `src/features/dictionaryPopup/ui/OrbitalBadge.tsx` (React component).
+- `OrbitalBadge` is a React component rendered into a Shadow DOM host by `mountOrbitalBadge.ts`. It uses `useOrbitalPointer`, `useOrbitalSnap`, and `useOrbitalGesture`.
+- `WebTextDictionaryController` owns the badge lifecycle: creates/destroys it from `syncOrbitalBadge`/`updateSettings` and `destroy`, routes `onTipReady` to `handleLookup`, and persists preset changes via `orbitalBadgeStore`.
 
 ### D7 — Popup repositioning and pointer-aware placement
 
 - `WebTriggerController` temporarily disables `pointer-events` on `.js-cell-popup-host` and `.js-cell-orbital-badge-host` (and recursively on their Shadow DOM children) while calling `caretRangeFromPoint` so the popup or pointer itself never blocks the next lookup.
 - `WebTriggerController` forwards the pointer tip, optional badge center, badge radius, and pointer radius to `onLookup`; `WebTextDictionaryController` passes this hint through `showPopup` to `PopupShell`.
 - `PopupShell.computePopupPosition` scores all four sides (below, above, right, left) with the pointer hint. The preferred side is the direction the pointer is coming from (away from the badge). Each candidate is clamped to the viewport and scored by clamp distance and by whether it would cover the pointer tip (treated as a circle with `pointerRadius`), the badge circle (`badgeRadius`), or the lookup token; the lowest score wins. This keeps the popup from obscuring the badge, pointer, or looked-up text even when screen space is tight.
-- `createOrbitalBadge` fires `onTipMoving` on every pointer move while the badge is expanded. `WebTextDictionaryController` uses it to hide the popup when the moving pointer or badge would overlap the visible popup, keeping the target line readable while the user drags the pointer to a new word.
+- `OrbitalBadge` fires `onTipMoving` on every pointer move while the badge is expanded. `WebTextDictionaryController` uses it to hide the popup when the moving pointer or badge would overlap the visible popup, keeping the target line readable while the user drags the pointer to a new word.
 - When the badge is collapsed against an edge it temporarily uses an inward-pointing preset (`left` for a right-edge collapse, etc.). The user-selected preset is stored separately and is restored when the badge expands again, so dragging the badge out always resumes the user's chosen pointer direction.
 - `WebTriggerController` remembers the last looked-up word occurrence. It re-dispatches the lookup (so the popup can reposition) when the same term appears at a different offset or pointer location, but skips duplicates when the cursor stays on the exact same word with only a tiny movement.
 - The popup CSS transitions on `left`/`top` so repositioning between lookup targets animates smoothly.
