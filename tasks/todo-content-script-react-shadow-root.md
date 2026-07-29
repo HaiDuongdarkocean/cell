@@ -1017,16 +1017,17 @@
     - Manual: design-system Universal Panel preview opens and switches tabs ✓
     - Manual: YouTube/Netflix fullscreen, switch tabs, open card creator — pending T033
 
-- [ ] **T092 — Build auto-discovery scanner**
+- [x] **T092 — Build auto-discovery scanner**
   - **Phase:** 9 | **Lane:** I | **Scope:** M | **Depends on:** T018
-  - **Files:** `src/entrypoints/design-system-showcase/autoDiscovery.ts`, `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/main.tsx`
+  - **Files:** `src/entrypoints/design-system-showcase/autoDiscovery.ts`, `src/entrypoints/design-system-showcase/ShowcaseGallery.tsx`, `src/entrypoints/design-system-showcase/App.tsx`, `src/shared/ui/Button.showcase.tsx`
   - **AC:**
     - `import.meta.glob` scans `*.showcase.tsx`.
     - Discovered modules rendered in groups.
-    - Default preview for components without `.showcase.tsx`.
+    - Default preview for components without `.showcase.tsx` (deferred to T093-T096).
   - **Verification:**
-    - `npm run build`
-    - Manual: add `.showcase.tsx`, rebuild, appears
+    - `npm run typecheck` (pending)
+    - `npm run build` (pending)
+    - Manual: add `.showcase.tsx`, rebuild, appears (sample: `Button.showcase.tsx`)
 
 - [ ] **T093 — Create `.showcase.tsx` for shared UI (action & input)**
   - **Phase:** 9 | **Lane:** I | **Scope:** M | **Depends on:** T092
