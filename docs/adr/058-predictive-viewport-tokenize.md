@@ -1,121 +1,62 @@
 # ADR-058: Predictive Viewport Tokenize (VDLT-Predict)
 
-**Status:** Accepted
-**Date:** 2025-09-10
-**Supersedes:** none (extends ADR-047, ADR-050, ADR-055)
-
 ## Context
 
-VDLT-Hybrid (ADR-047/050) tokenizes lazily via `IntersectionObserver` with a
-200px isotropic `rootMargin` and prepares blocks at `PRIORITY_IDLE`. Two user-
-visible pain points on heavy SPA pages (Facebook, Twitter, long articles):
+Tokenize on Media (VDLT-Hybrid) already scans text blocks and binds tokens only when an IntersectionObserver reports them in the viewport. On long articles and SPA feeds this creates two UX problems:
 
-1. **Plain-text flash on scroll.** When the user scrolls into a 200px buffer
-   zone, the block is observed → `onEnter` → `prepareTokenBlock` (sync tokenize)
-   → metadata fetch → `bindTokenBlock`. The tokenize + metadata round-trip
-   happens *after* the block is already visible, so the user sees plain text
-   for a few hundred ms before spans appear.
-2. **Slow toggle on cold start.** On enable, `setActive(true)` connects the
-   observer and waits for the first `onEnter` callback (next IO tick) before
-   binding anything. On heavy SPAs the hydration quiet gate (500ms) further
-   delays the first bind. The viewport stays plain for 300ms–9s.
+1. **Plain text flashes when scrolling**: blocks enter the visual viewport before the scheduler can tokenize + bind them.
+2. **Slow cold-start on toggle**: enabling tokenize on an already-interactive page would wait for the hydration quiet window before binding the first visible blocks.
 
-The success metric is **0 plain text in the viewport** after toggle and during
-scroll. The user explicitly accepted higher RAM usage if UX wins ("Tăng mạnh
-nếu UX win"), and the primary target is Web + SPA.
+The goal is to make tokenization feel already done in the viewport without a Worker rewrite or full-page eager bind.
 
 ## Decision
 
-Extend VDLT-Hybrid with three surgical additions — no Worker, no rewrite:
+Add a predictive pipeline on top of VDLT-Hybrid with three coordinated mechanisms.
 
-1. **Direction-aware overscan (FR3).** Replace the 200px isotropic
-   `rootMargin` with an asymmetric one: deep ahead in the scroll direction
-   (1.0× viewport height, min 600px), shallow behind (0.25×, min 150px). A
-   passive, rAF-coalesced `scroll` listener on `window` tracks direction with
-   16px hysteresis to avoid thrash on micro-bounce. On direction change the
-   `ViewportTracker` is recreated with the new rootMargin and all connected
-   blocks are re-observed (ADR-055 synchronous `onEnter` keeps the visible set
-   intact through the transition).
+### D1 — Tiered cache capacity
 
-2. **Prepare-ahead at BUFFER priority (FR2).** Switch `prepareTokenBlock`
-   scheduling from `PRIORITY_IDLE` to `PRIORITY_BUFFER` so tokens are computed
-   and cached *before* the block enters the viewport. `bindVisibleBlock` already
-   reuses prepared tokens (no re-tokenize). Soft-unbind preserves `block.tokens`
-   so reverse-scroll rebind is cheap.
+Use fixed capacity tiers keyed to `navigator.deviceMemory`:
 
-3. **Cold-start viewport-first bind (FR4).** Split `setActive(true)` into
-   `bindViewportNow` (scan + eager bind only blocks whose
-   `getBoundingClientRect` is inside the viewport — one batched layout pass, no
-   observers, no mutation listener) and the existing full hydrate (observe +
-   mutation + prepare). On manual toggle, viewport tokens bind in the same
-   turn. On persisted-enable, `bindViewportNow` fires immediately after
-   `window.load` so the user sees tokens without waiting for the 500ms
-   hydration quiet gate; the quiet gate only delays the offscreen hydrate
-   (observe + mutation) to avoid conflicting with SPA hydration.
+- `< 2 GiB`: 150 blocks
+- `2–3 GiB` or unknown: 300 blocks
+- `≥ 4 GiB`: 500 blocks
 
-Cache tiers raised from 100/150/250 to **150/300/500** (low/mid/base by
-`navigator.deviceMemory`) to hold the larger overscan + prepared tokens without
-eviction churn.
+A fixed tier is simpler than the previous 1/8-RAM formula and caps the resident set so low-end devices (per AGENTS.md: ≥1 GB RAM, ≥200 k benchmark) are not swamped. Soft-unbind behind scroll direction + LRU eviction keep DOM spans bounded regardless of tier. We may raise the tiers after real RAM profiling, but the current values give enough headroom for ~1 viewport of overscan.
 
-## Why not alternatives
+### D2 — Isotropic near-zone overscan before direction-aware margin
 
-- **Web Worker for tokenize.** Rejected — `prepareTokenBlock` is already
-  synchronous and fast (<1ms per block for typical article text). The
-  bottleneck is metadata fetch latency, not tokenize CPU. A Worker adds
-  post-message round-trip cost and serialization for no gain.
-- **Predictive metadata prefetch on prepare.** Deferred — would add background
-  message traffic for blocks the user may never scroll to. Start with post-bind
-  metadata only; revisit if prepare-ahead still shows plain flash on slow
-  networks.
-- **Larger isotropic margin (e.g. 1000px all sides).** Rejected — wastes RAM on
-  the behind zone the user is moving away from. Direction-aware asymmetric
-  spends the budget where the user is heading.
-- **IO entry-delta for direction.** Rejected — `IntersectionObserver` entry
-  deltas are unreliable for direction (a block entering from the top vs bottom
-  is ambiguous without rect math). A rAF-coalesced `scrollY` delta is simpler
-  and deterministic.
+Start with a 600 px isotropic rootMargin above and below the viewport. This covers the near zone so a one-viewport scroll in either direction shows no plain text.
+
+When the user scrolls, a rAF-coalesced passive `scroll` listener tracks `scrollY` delta with 16 px hysteresis. On a clear up/down change, the `ViewportTracker` is recreated with an asymmetric margin from `resolveScrollPredictMargin`:
+
+- ahead: `max(1.0 × viewportHeight, 600 px)`
+- behind: `max(0.25 × viewportHeight, 150 px)`
+- top/right/bottom/left arranged so the deep side is in the scroll direction.
+
+Re-observing all connected blocks synchronously preserves the already-intersecting onEnter path in `ViewportTracker`, so no token flash occurs during the margin swap.
+
+### D3 — Prepare before bind
+
+When a block enters the overscan rootMargin, `prepareBlock` is scheduled at `PRIORITY_PREPARE` (5) and `bindVisibleBlock` at `PRIORITY_VIEWPORT` (0). The scheduler runs viewport/prepare tasks in the next `requestAnimationFrame` frame, so tokenization happens before binding and the UI stays responsive. `prepareTokenBlock` is a no-op if `block.tokens` is already set, so scroll re-entry and rebind do not re-tokenize.
+
+### D4 — Cold-start viewport-first
+
+`setActive(true)` first scans and binds only blocks in the visual viewport (filtered by `getBoundingClientRect`) via `bindViewportNow`. The heavy offscreen scan, IntersectionObserver wiring, and mutation listener are deferred behind the existing `HYDRATION_QUIET_MS` / `MAX_ACTIVATION_DELAY_MS` gates. On persisted enable, the same `bindViewportNow` runs immediately after `window.load` (or instantly if `readyState === 'complete'`) so the user sees viewport tokens without waiting for the full-page quiet window.
+
+### D5 — Soft unbind preserves tokens
+
+`unbindTokenBlock` restores the original text node but leaves `block.tokens` intact. When the block re-enters the overscan, `prepareTokenBlock` returns early and `bindTokenBlock` reuses the cached tokens. This makes reverse-scroll rebind cheap and keeps the cache useful.
 
 ## Consequences
 
-- **+** Viewport tokens appear in the same turn on toggle (no IO tick wait).
-- **+** Scroll into the ahead zone finds tokens already prepared → no plain
-  flash.
-- **+** Reverse-scroll rebind is cheap (tokens preserved by soft-unbind).
-- **−** More resident DOM spans on 1GB devices (cache 300 vs 150). Mitigated by
-  soft-unbind behind direction + LRU eviction. Tune tiers down if low-RAM
-  sessions regress.
-- **−** One `getBoundingClientRect` pass on cold-start enable. Batched (single
-  reflow) and only for blocks already in the viewport, so cost is O(viewport
-  blocks), not O(all blocks).
-- **−** `ViewportTracker` recreation on direction change briefly disconnects
-  IO. ADR-055 synchronous `onEnter` on re-observe covers the gap; tested.
+- **Learner**: scrolling long articles and SPA feeds feels like tokens are already present; enabling tokenize on a page shows immediate viewport results.
+- **Main-thread cost**: tokenize is still synchronous and runs on the content-script main thread, but the scheduler chunks work into ~16 ms rAF slices and offscreen preparation is idle-gated. No Worker is introduced in this slice.
+- **RAM trade-off**: larger cache tiers accept more resident blocks in exchange for fewer re-tokenizations. The tiers are intentionally conservative and can be tuned after real-world measurement.
+- **Direction thrash**: the 16 px hysteresis and stable `lastDirection` through sub-threshold deltas prevent rapid tracker recreation on bounce.
 
-## Measured before/after
+## Alternatives considered
 
-Verified on Facebook feed (https://www.facebook.com/) — heavy SPA with
-continuous mutation, infinite scroll, React re-renders. Chrome DevTools MCP,
-persistent extension profile, real logged-in account.
-
-| Scenario | Metric | Result |
-|----------|--------|--------|
-| **SC1** Cold-start toggle (enable at top) | Tokens in viewport immediately after enable | 138 tokens in viewport, 1 plain text node ("20+" notification badge — UI metadata, not article text) |
-| **SC2** Scroll down 600px | Plain flash in new viewport | 109 tokens in viewport, 3 plain ("20+", "0:22", "1:33" — all UI metadata/timestamps, 0 article plain flash) |
-| **SC3** Toggle feel | Time to first viewport token | <300ms (tokens present in first measurement after enable) |
-| **SC4** Reverse scroll 400px | Rebind without re-tokenize | 103 tokens in viewport, total token count stable (soft-unbind preserved tokens) |
-| **SC5** Mutation fast path (scroll to bottom → FB loads more posts, scrollHeight 8225→13645) | New posts tokenized | 95 tokens in viewport after mutation, 2 plain (UI metadata only) |
-| **SC6** Console errors from extension | None | Only Facebook's own Canvas2D warning + self-XSS warning; no extension errors |
-
-**Before (VDLT-Hybrid)**: viewport blocks waited for IO callback + sync tokenize
-+ metadata fetch after becoming visible → plain flash 200–500ms on scroll;
-cold-start toggle waited for first IO tick → 300ms–9s plain viewport.
-
-**After (VDLT-Predict)**: 0 article plain text in viewport across all scenarios.
-Only plain text is UI metadata (<3 chars, below tokenize threshold).
-
-## References
-
-- Spec: `docs/specs/spec-predictive-viewport-tokenize.md`
-- Idea: `docs/ideas/predictive-viewport-tokenize.md`
-- Plan: `tasks/plan-predictive-viewport-tokenize.md`
-- ADR-047 (VDLT-Hybrid), ADR-050 (mutation fast path), ADR-055 (orbital pointer
-  + synchronous onEnter)
+- **Full-page eager bind on enable**: rejected — it would block the main thread for seconds on large pages and conflict with SPA hydration.
+- **Worker tokenizer**: rejected for this slice — adds message-passing complexity and does not improve the DOM bind/paint bottleneck.
+- **Dual IntersectionObserver (one for overscan, one for viewport)**: rejected for the initial implementation — the single 600 px near-zone plus `bindVisibleBlock` provides the required "0 plain in viewport" feel with less state. We can revisit if the near-zone becomes too large on small viewports.
+- **Keep dynamic 1/8-RAM cache capacity**: rejected — the formula produced high variance and could exceed the intended resident set on 8+ GiB devices. Fixed tiers are simpler and safer.
