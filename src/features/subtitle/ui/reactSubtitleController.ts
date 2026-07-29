@@ -8,6 +8,7 @@ import {
 } from '@/shared/config/config';
 import { mountSubtitle, type MountSubtitleResult, type ManagerState, type OffsetState } from './mountSubtitle';
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate } from './subtitleCueEngine';
+import type { CardCreatorAction } from './subtitleBlockController';
 import type { SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/features/dictionaryPopup/types';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
@@ -32,6 +33,8 @@ export class ReactSubtitleController {
   private readonly video: HTMLVideoElement;
   private readonly url: string;
   private readonly onGenerateNative: () => void;
+  private readonly onCardCreatorAction: (action: CardCreatorAction) => void;
+  private readonly onUpdateCurrentCard: () => void;
   private offsetMs = 0;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private hasSubtitle = false;
@@ -49,6 +52,8 @@ export class ReactSubtitleController {
   public onManagerSelect?: (role: 'target' | 'native', index: number) => void;
   /** Called when the user imports a subtitle file. */
   public onImportFiles?: (role: 'target' | 'native', files: FileList) => void;
+  /** Called when the user toggles the Chrome side panel. */
+  public onToggleSidePanel?: () => void;
 
   constructor(
     video: HTMLVideoElement,
@@ -57,10 +62,14 @@ export class ReactSubtitleController {
     targetStyle: OverlayStyleConfig = DEFAULT_OVERLAY_STYLE_TARGET,
     nativeStyle: OverlayStyleConfig = DEFAULT_OVERLAY_STYLE_NATIVE,
     clusterSettings: NavClusterSettings = DEFAULT_NAV_CLUSTER_SETTINGS,
+    onCardCreatorAction: (action: CardCreatorAction) => void = () => undefined,
+    onUpdateCurrentCard: () => void = () => undefined,
     onGenerateNative: () => void = () => undefined,
   ) {
     this.video = video;
     this.url = window.location?.href ?? '';
+    this.onCardCreatorAction = onCardCreatorAction;
+    this.onUpdateCurrentCard = onUpdateCurrentCard;
     this.onGenerateNative = onGenerateNative;
 
     this.loadPersistedOffset();
@@ -102,6 +111,12 @@ export class ReactSubtitleController {
       onForward: () => this.engine.handleForward(),
       onPlayPause: () => this.engine.handlePlayPause(),
       onToggleCollapsed: () => this.handleToggleCollapsed(),
+      onQuickAdd: () => this.onCardCreatorAction('quick-update'),
+      onEditCard: () => this.onCardCreatorAction('edit-card'),
+      onUpdateCurrentCard: () => this.onUpdateCurrentCard(),
+      onGenerateNative: () => this.onGenerateNative(),
+      onToggleSidePanel: () => this.onToggleSidePanel?.(),
+      onToggleManager: () => this.openManager(),
     });
   }
 
