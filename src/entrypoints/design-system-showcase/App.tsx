@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ChangeEvent, type ReactNode } from 'react';
 import {
   Accordion,
   Alert,
@@ -46,12 +46,19 @@ import type { Settings } from '@/entities/settings';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { ThemeConfig, ThemeMode } from '@/entities/theme';
 import { resolveMode } from '@/features/theme/logic/themeManager';
+import { PopupDictionary } from '@/features/dictionaryPopup/ui/PopupDictionary';
+import type { PopupAnchor } from '@/features/dictionaryPopup/ui/usePopupPosition';
+import { installMockDictionarySendMessage } from './mockDictionary';
 import { ShadowButtonPoC } from './ShadowButtonPoC';
 import { ShadowOverlayPoC } from './ShadowOverlayPoC';
 import { NavClusterPreview } from './NavClusterPreview';
 import { SubtitleBlockPreview } from './SubtitleBlockPreview';
 import { OrbitalBadgePreview } from './OrbitalBadgePreview';
 import styles from './App.module.css';
+
+// Enable mock runtime messages for the design-system showcase so the popup
+// dictionary can render with mock data and functional media tabs.
+installMockDictionarySendMessage();
 
 type ShowcaseMode = 'light' | 'dark';
 
@@ -496,6 +503,49 @@ function SettingsAndThemeShowcase() {
   );
 }
 
+function PopupDictionaryPreview() {
+  const markerRef = useRef<HTMLDivElement | null>(null);
+  const [anchor, setAnchor] = useState<PopupAnchor | null>(null);
+  const [isOpen, setIsOpen] = useState(true);
+
+  useEffect(() => {
+    if (!markerRef.current) return;
+    const rect = markerRef.current.getBoundingClientRect();
+    setAnchor({
+      top: rect.top,
+      left: rect.left,
+      right: rect.right,
+      bottom: rect.bottom,
+    });
+  }, []);
+
+  return (
+    <div className={styles.popupDictionaryPreview}>
+      <div ref={markerRef} className={styles.popupDictionaryAnchor}>
+        serendipity
+      </div>
+      {isOpen && anchor && (
+        <PopupDictionary
+          langCode="en"
+          sourceLang="en"
+          targetLang="vi"
+          anchor={anchor}
+          initialTerm="serendipity"
+          initialSize={{ width: 560, maxHeight: 480 }}
+          onClose={() => setIsOpen(false)}
+          onSendToCard={(prefill) => { console.log('[PopupDictionary] Send to Card:', prefill.term); }}
+          onQuickAdd={(prefill) => { console.log('[PopupDictionary] Quick Add:', prefill.term); }}
+        />
+      )}
+      {!isOpen && (
+        <div className={styles.popupDictionaryReopen}>
+          <Button onClick={() => setIsOpen(true)}>Open Popup Dictionary</Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function App() {
   const [mode, setMode] = useState<ShowcaseMode>('light');
 
@@ -550,6 +600,10 @@ export function App() {
 
         <Section title="Orbital Badge">
           <OrbitalBadgePreview />
+        </Section>
+
+        <Section title="Popup Dictionary">
+          <PopupDictionaryPreview />
         </Section>
 
         <Section title="Components">

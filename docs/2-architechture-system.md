@@ -20,7 +20,8 @@ src/
 │   ├── offscreen/      #   Offscreen document (OPFS, workers, fetch proxy M15)
 │   ├── popup/          #   Popup UI (React)
 │   ├── sidepanel/      #   Side panel UI (React)
-│   └── options/        #   Options page (React) — ADR-023: ResourcesPanel + ThemePanel + settings tabs
+│   ├── options/        #   Options page (React) — ADR-023: ResourcesPanel + ThemePanel + settings tabs
+│   └── design-system-showcase/  #   Design system showcase page — App.tsx + preview components + mock data for offline component demos
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection
 │   ├── whitelist/      #   Auto-download whitelist
@@ -432,6 +433,7 @@ tests/
 |------|-----------|-----------------|--------------------------|
 | `entities/message/schema.ts` | `zod` | background handlers (`download`, `mediaDetection`, `settings`, `youtubeDetection`, `cardCreator`) | Zod schemas for MV3 message payloads — runtime validation at trust boundaries |
 | `shared/lib/fetchWithTimeout.ts` | — | `background/handlers/translate.ts`, `features/dictionaryPopup/services/communityAudioService.ts`, `features/dictionaryPopup/services/quickAddHandler.ts`, `entrypoints/offscreen/ffmpegRunner.ts` | AbortController-based fetch wrapper with timeout — prevents hung network requests in SW/offscreen |
+| `shared/lib/chrome-apis/runtime.ts` | `chrome` | broad MV3 messaging | Thin `chrome.runtime.sendMessage` wrapper; supports optional dev override via `globalThis.__cellSendMessage` (used by design-system showcase mocks) |
 | `shared/config/featureFlags.ts` | — | `features/dictionaryPopup/ui/mountPopupDictionary.ts` | Compile-time feature flags; `USE_LEGACY_POPUP_DICTIONARY` toggles React vs legacy `PopupShell` popup path |
 
 ### Content layer
@@ -523,7 +525,7 @@ tests/
 || `features/universalPanel/mountUniversalPanel.ts` | UniversalPanel, UniversalPanelController, themeTokens, chrome-apis, config, settingsStore, TokenizePanelState | content-script.ts | Mount fixed host + React root + theme sync + fullscreen reparenting; subscribes tokenize state at mount level and forwards to UniversalPanel header (ADR-061); handles `controller.sendToCard` by storing a persistent `pendingPrefill` and a one-shot `pendingSearchTerm`, then rendering `DictionaryTab` with `initialTerm` + `prefill`; returns controller |
 || `features/universalPanel/tabs/SettingsTab.tsx` | SettingsDialogContent, settingsStore, chrome-apis, config, entities/media | mountUniversalPanel | Loads/saves settings, syncs via `chrome.storage.onChanged`, auto-focuses first non-sidebar control (tokenize bridge removed — moved to universal header) |
 || `features/universalPanel/tabs/SettingsTab.module.css` | tokens | SettingsTab | Constrains settings body to `max-width: 75rem` so it is not stretched by the 1280px panel; flex layout with single scrollbar |
-|| `features/universalPanel/tabs/DictionaryTab.tsx` | DictionaryPanelView, CardCreatorPanel, dictionaryPopup types | mountUniversalPanel | Two-pane layout (left dictionary / right card creator); accepts external `initialTerm` + `prefill` props, syncs `prefill` into local state, and passes `sourceLang`/`targetLang` to `CardCreatorPanel` |
+|| `features/universalPanel/tabs/DictionaryTab.tsx` | DictionaryPanelView, CardCreatorPanel, dictionaryPopup types | mountUniversalPanel | Two-pane layout (left dictionary / right card creator); reuses `DictionaryPanelView` as the popup core; accepts external `initialTerm` + `prefill` props, syncs `prefill` into local state, and passes `sourceLang`/`targetLang` to `CardCreatorPanel` |
 || `features/universalPanel/tabs/DictionaryTab.module.css` | tokens | DictionaryTab | Two-pane flex; mobile stack |
 || `features/universalPanel/tabs/CardCreatorPanel.tsx` | settingsStore, chrome-apis, config, CardCreatorDialogContent, useCardCreatorState, webTextDictionaryController/formatDefinitions | DictionaryTab | Loads Card Creator settings; builds `OpenContext` from prefill; renders `CardCreatorDialogContent` directly inside the panel with `className` for panel padding |
 || `features/universalPanel/tabs/CardCreatorPanel.module.css` | tokens | CardCreatorPanel | Right pane flex layout: full height, overflow scrolling, subtle left border; `.panelBody` applies `padding: var(--space-4)` to the integrated card-creator body |
@@ -531,7 +533,7 @@ tests/
 || `features/universalPanel/UniversalPanelController.test.ts` | createUniversalPanelController, testing-library | — | Unit tests: open/close/switchTab, sendToCard, session persistence, unmount/rapid-call edge cases |
 || `features/universalPanel/tabs/SettingsTab.test.tsx` | SettingsTab, mocks for SettingsDialogContent/settingsStore/chrome-apis | — | Unit tests: load/save/sync, initial focus (tokenize bridge + onOpenDictionary removed — moved to universal header) |
 || `features/universalPanel/mountUniversalPanel.test.tsx` | mountUniversalPanel, UniversalPanelController, mocks for SettingsDialogContent/settingsStore/chrome-apis | — | Integration test: tab switch, sendToCard prefill + one-shot term clear, prefill survives tab switches |
-|| `features/universalPanel/tabs/DictionaryTab.test.tsx` | DictionaryTab, mocks for runtime sendMessage/translation/CardCreatorPanel | — | Unit tests: left/right panes, initial search, Send to Card prefill, status cycle, all 4 media tabs |
+|| `features/universalPanel/tabs/DictionaryTab.test.tsx` | DictionaryTab, mocks for runtime sendMessage/translation/CardCreatorPanel | — | Unit tests: left/right panes, initial search, Send to Card prefill, Quick Add prefill, status cycle, all 4 media tabs |
 || `features/universalPanel/tabs/CardCreatorPanel.test.tsx` | CardCreatorPanel, mocks for settingsStore/chrome-apis/useCardCreatorState/CardCreatorDialogContent | — | Unit tests: settings load, prefill mapping, storage change re-sync |
 || `features/dictionaryPopup/logic/useDictionaryLookup.ts` | runtime, messages, wordStatusStore, popupContent | useDictionaryPanel, PopupDictionary | Headless hook: LOOKUP_REQUEST/LOOKUP_CANCEL, search/loading/error, currentResult/candidates, status cycle, definition selection |
 || `features/dictionaryPopup/logic/useDictionaryToolbar.ts` | runtime, messages, translation, settingsStore | useCandidate, useDictionaryPanel | Headless hook: active tab, lazy audio/image/translate fetch, selection maps/counts, external dict links; reused by useCandidate and useDictionaryPanel |
@@ -553,6 +555,7 @@ tests/
 || `features/dictionaryPopup/ui/CandidateView.tsx` | shared/ui, icons, rankToBand, config, useCandidate, AudioPanel, ImagePanel, TranslatePanel, LinksPanel, DictionaryToolbar, DictionaryPanelView.module.css | DictionaryPanelView | React card: candidate header, DictionaryToolbar, lazy media panels, definitions; uses useCandidate (per-candidate hook) |
 || `features/dictionaryPopup/ui/CandidateView.test.tsx` | CandidateView, mocks for sendMessage/translateSentence | — | Unit tests: header, status cycle, audio/image/translate/links panels, selection badges, sendToCard, quickAdd |
 || `features/dictionaryPopup/ui/buildCandidatePrefill.ts` | types, popupDictionaryController | useCandidate, useDictionaryPanel | Pure function: build PopupCardCreatorPrefill from candidate + selections |
+|| `features/dictionaryPopup/ui/buildCandidatePrefill.test.ts` | buildPrefill, types | — | Unit tests: definition selection, audio/image selection carry-over, fallback to first item per kind |
 || `features/dictionaryPopup/controller/webTextDictionaryController.test.ts` | createWebTextDictionaryController, popupDictionaryController mocks, sendMessage mocks, screenshot/sentenceAudio mocks | — | Unit tests: lookup, popup show/hide, Send to Card routing to universal panel vs standalone dialog, subtitle video Send to Card captures screenshot + sentence audio, highlight |
 || `features/dictionaryPopup/ui/popupDictionaryController.test.ts` | popupDictionaryController helpers, mocks | — | Unit tests: showPopup, candidate switching, stayOpen behavior for Send to Card, footer callbacks |
 ||| `features/dictionaryPopup/ui/usePopupPosition.ts` | popupShell (constants, types, computePopupPosition, clampPopupSize, finalizePosition), React | PopupDictionary | React hook: viewport-aware position, drag, resize, and bottom-sheet logic reused from popupShell pure helpers |
@@ -1162,6 +1165,8 @@ downloader.downloadM3u8Streaming(playlist)
 | `NavCluster` | `features/subtitle/ui/NavCluster.tsx` | (props) → JSX | mountSubtitle, design-system showcase | React nav cluster with prev/repeat/next, rewind/play/forward, collapse and no-sub states |
 | `mountSubtitle` | `features/subtitle/ui/mountSubtitle.tsx` | (options) → { unmount } | content-script entrypoints | Mounts shared shadow host on video container; renders `SubtitleBlock` + `NavCluster`; injects tokens + module CSS |
 | `ShadowOverlayPoC` | `entrypoints/design-system-showcase/ShadowOverlayPoC.tsx` | () → JSX | design-system showcase | PoC fixed shadow host (`position: fixed; inset: 0`) covering viewport and surviving fullscreen |
+| `PopupDictionaryPreview` | `entrypoints/design-system-showcase/App.tsx` | () → JSX | design-system showcase | Previews `PopupDictionary` with mock `LookupResult` and functional audio/image/translate/links tabs |
+| `mockDictionary` | `entrypoints/design-system-showcase/mockDictionary.ts` | `installMockDictionarySendMessage()` + mock data | `App.tsx` | Installs a global `sendMessage` override for the showcase so `PopupDictionary` runs offline |
 | `SubtitleBlockPreview` | `entrypoints/design-system-showcase/SubtitleBlockPreview.tsx` | () → JSX | design-system showcase | Previews `SubtitleBlock` with mock target/native cues; sets `useCuesStore` |
 | `NavClusterPreview` | `entrypoints/design-system-showcase/NavClusterPreview.tsx` | () → JSX | design-system showcase | Previews `NavCluster` with interactive state toggles |
 

@@ -709,7 +709,7 @@
   - **Verification:**
     - `npm run build`
 
-- [ ] **T070 — Unify `DictionaryTab` with `DictionaryCore`**
+- [x] **T070 — Unify `DictionaryTab` with `DictionaryCore`**
   - **Phase:** 4d | **Lane:** E/H | **Scope:** M | **Depends on:** T064, T067
   - **Files:** `src/features/universalPanel/tabs/DictionaryTab.tsx`, `src/features/dictionaryPopup/ui/DictionaryPanelView.tsx`
   - **AC:**
@@ -720,7 +720,7 @@
     - `npm run test:unit -- DictionaryTab`
     - `npm run build`
 
-- [ ] **T071 — Verify quick-add / send-to-card flow**
+- [x] **T071 — Verify quick-add / send-to-card flow**
   - **Phase:** 4d | **Lane:** E/G | **Scope:** S | **Depends on:** T070
   - **Files:** `src/features/dictionaryPopup/ui/buildCandidatePrefill.ts`, `src/features/universalPanel/tabs/DictionaryTab.tsx`
   - **AC:**
@@ -743,7 +743,7 @@
     - `npm run build`
     - Manual: 3 sites full lookup + quick-add
 
-- [ ] **T072 — Add popup dictionary to design-system-showcase**
+- [x] **T072 — Add popup dictionary to design-system-showcase**
   - **Phase:** 4d | **Lane:** I | **Scope:** S | **Depends on:** T065
   - **Files:** `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/mockDictionary.ts`
   - **AC:**

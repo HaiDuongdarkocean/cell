@@ -9,6 +9,10 @@
 export function sendMessage<T = unknown>(
   message: unknown,
 ): Promise<T> {
+  const override = (typeof globalThis !== 'undefined' && (globalThis as { __cellSendMessage?: (m: unknown) => Promise<unknown> }).__cellSendMessage);
+  if (override) {
+    return override(message) as Promise<T>;
+  }
   return chrome.runtime.sendMessage(message) as Promise<T>;
 }
 
