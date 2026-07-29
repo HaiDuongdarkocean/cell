@@ -1,18 +1,19 @@
 /**
  * mountCardCreatorDialog — mounts the Card Creator React dialog into a fixed
- * overlay host appended to `document.body`.
+ * overlay host.
  *
- * The host is a full-viewport `position: fixed` element with a very high z-index
- * so the Card Creator dialog floats above the page like the mockup, instead of
- * being injected into the page flow.
- *
- * The host does NOT use Shadow DOM: the dialog overlay already has
- * `position: fixed` and the CSS variables are inherited from the page theme
- * (ADR-022). A Shadow DOM host would create a new stacking context and trap the
- * fixed overlay, causing the dialog to render inline as seen in the bug report.
+ * Two mount paths:
+ * - Default (`USE_LEGACY_CARD_CREATOR = false`): open shadow root via
+ *   `mountReactShadow`, full-viewport `position: fixed` host, shadow CSS
+ *   isolation, `ShadowThemeProvider` theme, and automatic fullscreen
+ *   re-parenting.
+ * - Legacy (`USE_LEGACY_CARD_CREATOR = true`): previous light-DOM host on
+ *   `document.body` with manual style reset and `themeTokens` sync.
  */
-import { createRoot, type Root } from 'react-dom/client';
 import { createElement, type ReactElement } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { CardCreatorDialog } from './CardCreatorDialog';
 import { CardCreatorBottomSheet } from './CardCreatorBottomSheet';
 import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
@@ -23,6 +24,18 @@ import type {
   CardCreatorOpenContext,
 } from '../types';
 
+import cardCreatorDialogCss from './CardCreatorDialog.module.css?inline';
+import queueSidebarCss from './QueueSidebar.module.css?inline';
+import mediaListCss from './MediaList.module.css?inline';
+import previewBlockCss from './PreviewBlock.module.css?inline';
+import fieldRowCss from './FieldRow.module.css?inline';
+import dialogCss from '@/shared/ui/Dialog.module.css?inline';
+import bottomSheetCss from '@/shared/ui/BottomSheet.module.css?inline';
+import buttonCss from '@/shared/ui/Button.module.css?inline';
+import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
+import selectCss from '@/shared/ui/Select.module.css?inline';
+import iconCss from '@/shared/icons/Icon.module.css?inline';
+
 export type {
   CardCreatorAction,
   CardCreatorOpenContext,
@@ -30,13 +43,8 @@ export type {
   CardCreatorQueueItem,
 } from '../types';
 
-
-
-
-
-
-
-
+/** Toggle to keep the pre-shadow light-DOM mount. Default `false` = shadow. */
+export const USE_LEGACY_CARD_CREATOR = false;
 
 /** Controller returned by mountCardCreatorDialog. */
 export interface CardCreatorMountController {
@@ -57,52 +65,135 @@ export interface CardCreatorMountController {
   unmount: () => void;
 }
 
-/**
- * Mount the Card Creator dialog into a fixed full-viewport host on
- * document.body. Returns a controller to open/close + update settings.
- *
- * @param initialSettings - Card Creator settings (URL, defaults).
- * @param themeSource - Element whose `data-theme` attribute is the source of
- *   truth for light/dark mode (usually the video container). The host syncs
- *   its `data-theme` from this element via MutationObserver so the dialog
- *   follows the user's theme preference in realtime.
- */
 export function mountCardCreatorDialog(
   initialSettings: CardCreatorSettings,
   themeSource?: HTMLElement,
 ): CardCreatorMountController {
-  // Create a full-viewport fixed host so the dialog floats above the page.
-  // ADR-026:
-  // - `inset:0` + `width/height:auto` fills the fixed viewport padding box
-  //   instead of top/left + 100vw/100vh, which avoids scrollbar-width quirks.
-  // - `box-sizing:border-box` prevents ancestor padding/borders from shrinking
-  //   the host.
-  // - Explicit reset (`all:initial` is not usable because it resets display/
-  //   position) for font/line-height/color/background/border so sites like
-  //   YouTube with aggressive global CSS cannot inherit unintended styles.
-  // - `isolation:isolate` creates a new stacking context, keeping z-index
-  //   predictable.
+  if (USE_LEGACY_CARD_CREATOR) {
+    return mountCardCreatorDialogLegacy(initialSettings, themeSource);
+  }
+  return mountCardCreatorDialogShadow(initialSettings);
+}
+
+/* ============================ Shadow DOM path ============================ */
+
+const SHADOW_CSS = [
+  cardCreatorDialogCss,
+  queueSidebarCss,
+  mediaListCss,
+  previewBlockCss,
+  fieldRowCss,
+  dialogCss,
+  bottomSheetCss,
+  buttonCss,
+  iconButtonCss,
+  selectCss,
+  iconCss,
+];
+
+function mountCardCreatorDialogShadow(
+  initialSettings: CardCreatorSettings,
+): CardCreatorMountController {
+  const mount = mountReactShadow(createElement('div'), {
+    parent: document.body,
+    position: 'fixed',
+    layer: 4,
+    reparentOnFullscreen: true,
+    css: SHADOW_CSS,
+  });
+
+  mount.host.id = 'cell-card-creator-host';
+  mount.host.className = 'js-cell-card-creator-host';
+  mount.host.style.cssText =
+    'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;overflow:hidden;transform:none;pointer-events:none;';
+
+  let open = false;
+  let context: CardCreatorOpenContext | null = null;
+  let settings = initialSettings;
+  let initialAction: CardCreatorAction | undefined;
+
+  let addMediaCb: ((kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[]) => void) | null = null;
+  let updateTextCb: ((key: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample', value: string) => void) | null = null;
+
+  const registerAddMedia = (cb: typeof addMediaCb): void => { addMediaCb = cb; };
+  const registerUpdateText = (cb: typeof updateTextCb): void => { updateTextCb = cb; };
+
+  const isMobile = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 768px)').matches;
+  };
+
+  function handleOpenChange(next: boolean): void {
+    open = next;
+    if (!next) {
+      context = null;
+      initialAction = undefined;
+      addMediaCb = null;
+      updateTextCb = null;
+    }
+    render();
+  }
+
+  function render(): void {
+    mount.host.style.pointerEvents = open ? 'auto' : 'none';
+    const Component = isMobile() ? CardCreatorBottomSheet : CardCreatorDialog;
+    const commonProps = {
+      open,
+      onOpenChange: handleOpenChange,
+      settings,
+      openContext: context,
+      initialAction,
+      registerAddMedia,
+      registerUpdateText,
+    };
+    mount.root.render(
+      createElement(
+        ShadowThemeProvider,
+        { host: mount.host, children: createElement(Component, commonProps as never) },
+      ) as ReactElement,
+    );
+  }
+
+  render();
+
+  return {
+    open: (ctx: CardCreatorOpenContext, action?: CardCreatorAction) => {
+      context = ctx;
+      initialAction = action;
+      open = true;
+      render();
+    },
+    close: () => {
+      open = false;
+      context = null;
+      initialAction = undefined;
+      render();
+    },
+    isOpen: () => open,
+    updateSettings: (next: CardCreatorSettings) => {
+      settings = next;
+      render();
+    },
+    addMediaFiles: (kind, files) => { addMediaCb?.(kind, files); },
+    updateTextField: (key, value) => { updateTextCb?.(key, value); },
+    unmount: () => {
+      mount.unmount();
+    },
+  };
+}
+
+/* ============================ Legacy light-DOM path ============================ */
+
+function mountCardCreatorDialogLegacy(
+  initialSettings: CardCreatorSettings,
+  themeSource?: HTMLElement,
+): CardCreatorMountController {
   const host = document.createElement('div');
   host.id = 'cell-card-creator-host';
   host.style.cssText =
     'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;z-index:var(--z-overlay-secondary);pointer-events:none;overflow:hidden;transform:none;';
   document.body.appendChild(host);
 
-  // ADR-026: Fullscreen support. When the video element enters fullscreen,
-  // the browser renders only the fullscreen element + its descendants —
-  // `position:fixed` elements in `document.body` are NOT shown. To keep the
-  // Card Creator dialog visible in fullscreen, we move the host into the
-  // fullscreen element on `fullscreenchange`. When exiting fullscreen, we
-  // move it back to `document.body`. The host keeps `position:fixed` so it
-  // still overlays the fullscreen content correctly.
-  //
-  // ADR-026: Theme tokens (`<style id="subtitle-theme-tokens">`) are injected
-  // into `document.head` by `injectThemeTokens`. In fullscreen, the browser
-  // creates a top-layer rendering context — `<head>` styles do NOT apply
-  // inside the fullscreen element. So when we move the host into fullscreen,
-  // we move the original theme `<style>` into the fullscreen element. On exit,
-  // we move it back to `document.head`. Moving (not cloning) keeps selectors
-  // like `:root` and `[data-theme="dark"]` intact and avoids duplicate-id issues.
   const moveThemeStyleInto = (parent: Element): void => {
     const style = document.getElementById(THEME_STYLE_ID);
     if (style && style.parentElement !== parent) {
@@ -126,32 +217,15 @@ export function mountCardCreatorDialog(
     }
   };
   document.addEventListener('fullscreenchange', onFullscreenChange);
-  // Also listen webkit-prefixed events for Safari/older browsers.
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
-  // ADR-022: ensure the global theme-tokens <style> exists in document.head.
-  // On subtitle pages, contentScriptController already called injectThemeTokens
-  // (which injects this style). On plain text-reading pages (e.g. a dictionary
-  // lookup on an article with no video), it was never called → the
-  // [data-theme="dark"] { --color-* } rules are absent → the dialog's
-  // var(--color-background) etc. don't resolve → transparent background.
-  // Inject with a detached throwaway container: we only need the global <style>
-  // (with the user's custom palette + realtime storage updates); the host's
-  // data-theme is synced separately below. The throwaway never enters the DOM,
-  // so the host page is unaffected.
   let tokenStyleCleanup: (() => void) | null = null;
   if (!document.getElementById(THEME_STYLE_ID)) {
     const throwaway = document.createElement('div');
     tokenStyleCleanup = injectThemeTokens(throwaway);
   }
 
-  // ADR-022: sync data-theme from the video container so CSS variables
-  // (--color-background, --color-text, etc.) resolve correctly for light/dark.
-  // Without this, the host inherits document.body's theme (none) and the
-  // dialog renders with unstyled/default colors.
-  const themeCleanup = themeSource
-    ? syncElementTheme(host, themeSource)
-    : null;
+  const themeCleanup = themeSource ? syncElementTheme(host, themeSource) : null;
 
   const rootEl = document.createElement('div');
   rootEl.style.cssText =
@@ -164,12 +238,9 @@ export function mountCardCreatorDialog(
   let initialAction: CardCreatorAction | undefined;
   let root: Root | null = createRoot(rootEl);
 
-  // Callbacks registered by the React component — let the controller push
-  // media + text updates into the open dialog without re-rendering from scratch.
   let addMediaCb: ((kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[]) => void) | null = null;
   let updateTextCb: ((key: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample', value: string) => void) | null = null;
 
-  /** Determine whether to render the bottom sheet variant based on viewport width. */
   const isMobile = (): boolean => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(max-width: 768px)').matches;
@@ -177,11 +248,6 @@ export function mountCardCreatorDialog(
 
   const render = (): void => {
     if (!root) return;
-    // ADR-026: sync rootEl pointer-events with the open state. When closed,
-    // the dialog is unmounted but the host still occupies the full viewport
-    // (position:fixed; 100vw x 100vh). If rootEl keeps pointer-events:auto,
-    // it blocks all clicks on the page underneath. Toggle to 'none' when
-    // closed so the host becomes click-through except when the dialog is open.
     rootEl.style.pointerEvents = open ? 'auto' : 'none';
     const commonProps = {
       open,
@@ -202,7 +268,7 @@ export function mountCardCreatorDialog(
       registerUpdateText: (cb: typeof updateTextCb) => { updateTextCb = cb; },
     };
     root.render(
-      createElement(isMobile() ? CardCreatorBottomSheet : CardCreatorDialog, commonProps) as ReactElement,
+      createElement(isMobile() ? CardCreatorBottomSheet : CardCreatorDialog, commonProps as never) as ReactElement,
     );
   };
 
@@ -210,12 +276,6 @@ export function mountCardCreatorDialog(
 
   return {
     open: (ctx: CardCreatorOpenContext, action?: CardCreatorAction) => {
-      // ADR-026: if the page is already in fullscreen when the dialog opens,
-      // move the host into the fullscreen element (the fullscreenchange
-      // listener only fires on transitions — if the user was already in
-      // fullscreen before clicking Card Creator, the host was appended to
-      // document.body on mount and would be invisible). Also move the theme
-      // `<style>` into the fullscreen element so CSS variables resolve.
       const fsEl = document.fullscreenElement;
       if (fsEl && fsEl !== host.parentElement) {
         fsEl.appendChild(host);

@@ -35,4 +35,30 @@ describe('mountReactShadow', () => {
     expect(host.style.position).toBe('absolute');
     await act(async () => unmount());
   });
+
+  it('re-parents the host to the fullscreen element and back', async () => {
+    const Component = () => createElement('span');
+    const { host, unmount } = mountReactShadow(createElement(Component), {
+      reparentOnFullscreen: true,
+    });
+    await act(async () => {});
+    expect(host.parentElement).toBe(document.body);
+
+    const fsContainer = document.createElement('div');
+    document.body.appendChild(fsContainer);
+    (document as unknown as { fullscreenElement: HTMLElement }).fullscreenElement = fsContainer;
+    document.dispatchEvent(new Event('fullscreenchange'));
+
+    await act(async () => {});
+    expect(host.parentElement).toBe(fsContainer);
+
+    (document as unknown as { fullscreenElement: HTMLElement | null }).fullscreenElement = null;
+    document.dispatchEvent(new Event('fullscreenchange'));
+
+    await act(async () => {});
+    expect(host.parentElement).toBe(document.body);
+
+    fsContainer.remove();
+    await act(async () => unmount());
+  });
 });

@@ -16,6 +16,12 @@ export interface MountShadowOptions {
   position?: ShadowPosition;
   /** Extra CSS strings (e.g. `*.module.css?inline`) injected after tokens. */
   css?: string[];
+  /**
+   * Move the host into `document.fullscreenElement` when the page enters
+   * fullscreen, and back to `parent` on exit. This keeps the overlay visible
+   * on YouTube/Netflix-style video fullscreen.
+   */
+  reparentOnFullscreen?: boolean;
 }
 
 export interface ShadowMount {
@@ -40,6 +46,7 @@ export function mountReactShadow(
     layer = 0,
     position = 'fixed',
     css = [],
+    reparentOnFullscreen = false,
   } = options;
 
   const host = document.createElement('div');
@@ -59,14 +66,46 @@ export function mountReactShadow(
   const root = createRoot(rootEl);
   root.render(component);
 
+  const removeFullscreenListeners = reparentOnFullscreen
+    ? attachFullscreenReparenting(host, parent)
+    : null;
+
   return {
     host,
     shadow,
     root,
     unmount: () => {
+      removeFullscreenListeners?.();
       cleanupCss();
       root.unmount();
       host.remove();
     },
+  };
+}
+
+function attachFullscreenReparenting(
+  host: HTMLElement,
+  parent: HTMLElement,
+): () => void {
+  const onFullscreenChange = (): void => {
+    const fsEl = document.fullscreenElement;
+    if (fsEl && fsEl !== host.parentElement) {
+      fsEl.appendChild(host);
+    } else if (!fsEl && host.parentElement !== parent) {
+      parent.appendChild(host);
+    }
+  };
+
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+  // If already in fullscreen when mount is called, move the host now.
+  if (document.fullscreenElement && document.fullscreenElement !== host.parentElement) {
+    document.fullscreenElement.appendChild(host);
+  }
+
+  return () => {
+    document.removeEventListener('fullscreenchange', onFullscreenChange);
+    document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
   };
 }

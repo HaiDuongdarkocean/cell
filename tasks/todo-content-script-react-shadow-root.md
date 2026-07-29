@@ -857,7 +857,7 @@
     - `npx vite build --mode development` ✓
     - Manual: showcase
 
-- [ ] **T082 — Mount card creator with chosen mechanism + `USE_LEGACY_CARD_CREATOR` flag**
+- [x] **T082 — Mount card creator with chosen mechanism + `USE_LEGACY_CARD_CREATOR` flag**
   - **Phase:** 6c | **Lane:** G | **Scope:** M | **Depends on:** T031, T081
   - **Files:** `src/features/cardCreator/ui/mountCardCreatorDialog.ts`, `src/shared/lib/shadowRoot/mountReactShadow.ts`
   - **AC:**
@@ -865,9 +865,12 @@
     - `USE_LEGACY_CARD_CREATOR` flag added, default `false`.
     - Fullscreen re-parenting preserved.
   - **Verification:**
-    - `npm run build`
-    - Toggle `USE_LEGACY_CARD_CREATOR`, both paths compile
-    - Manual: YouTube full viewport, no CSS leak
+    - `npm run typecheck` ✓
+    - `npm run test:unit` ✓
+    - `npm run build` ✓
+    - `npx vite build --mode development` ✓
+    - Toggle `USE_LEGACY_CARD_CREATOR` — typecheck/build verified with `false`; legacy branch is dead code checked by TS.
+    - Manual: YouTube full viewport, no CSS leak (pending real-page check)
 
 - [ ] **T083 — Delete old vanilla card creator code**
   - **Phase:** 6c | **Lane:** G/Q | **Scope:** M | **Depends on:** T082
