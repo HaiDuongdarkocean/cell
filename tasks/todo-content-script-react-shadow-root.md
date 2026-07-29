@@ -753,7 +753,7 @@
     - `npm run build`
     - Manual: showcase popup preview
 
-- [ ] **T073 — Create `TokenizeFab.tsx`**
+- [x] **T073 — Create `TokenizeFab.tsx`**
   - **Phase:** 5 | **Lane:** F | **Scope:** M | **Depends on:** T024, T046
   - **Files:** `src/features/tokenize/ui/TokenizeFab.tsx`, `src/features/tokenize/ui/TokenizeFab.module.css`, `src/features/tokenize/ui/TokenizeFab.test.tsx`
   - **AC:**
