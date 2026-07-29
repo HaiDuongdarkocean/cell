@@ -29,6 +29,7 @@ import {
 } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { ICON_CATALOG } from '@/shared/icons';
+import { ShowcaseGallery } from './ShowcaseGallery';
 import tokens from '@/shared/styles/tokens.json';
 import { UniversalPanel } from '@/features/universalPanel/UniversalPanel';
 import { SettingsDialog } from '@/features/settings/ui/SettingsDialog';
@@ -637,6 +638,8 @@ export function App() {
         <Section title="Settings + Theme">
           <SettingsAndThemeShowcase />
         </Section>
+
+        <ShowcaseGallery />
       </main>
     </div>
   );
