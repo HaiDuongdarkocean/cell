@@ -5,9 +5,17 @@ import { useCuesStore } from '@/stores/cuesStore';
 import { buildTextShadow, hexToRgba, sanitizeFontFamily } from './subtitleUI';
 import styles from './SubtitleBlock.module.css';
 
+interface SubtitleBlockCues {
+  targetCues: SrtCue[];
+  nativeCues: SrtCue[];
+  targetActiveIndex: number;
+  nativeActiveIndex: number;
+}
+
 interface SubtitleBlockProps {
   targetStyle: OverlayStyleConfig;
   nativeStyle: OverlayStyleConfig;
+  cues?: SubtitleBlockCues;
 }
 
 const selectTargetCues = (state: { targetCues: SrtCue[] }): SrtCue[] => state.targetCues;
@@ -29,11 +37,16 @@ function buildLayerStyle(config: OverlayStyleConfig): React.CSSProperties {
   };
 }
 
-function SubtitleBlockInner({ targetStyle, nativeStyle }: SubtitleBlockProps): React.JSX.Element | null {
-  const targetCues = useCuesStore(selectTargetCues);
-  const nativeCues = useCuesStore(selectNativeCues);
-  const targetActiveIndex = useCuesStore(selectTargetActiveIndex);
-  const nativeActiveIndex = useCuesStore(selectNativeActiveIndex);
+function SubtitleBlockInner({ targetStyle, nativeStyle, cues }: SubtitleBlockProps): React.JSX.Element | null {
+  const storeTargetCues = useCuesStore(selectTargetCues);
+  const storeNativeCues = useCuesStore(selectNativeCues);
+  const storeTargetActiveIndex = useCuesStore(selectTargetActiveIndex);
+  const storeNativeActiveIndex = useCuesStore(selectNativeActiveIndex);
+
+  const targetCues = cues?.targetCues ?? storeTargetCues;
+  const nativeCues = cues?.nativeCues ?? storeNativeCues;
+  const targetActiveIndex = cues?.targetActiveIndex ?? storeTargetActiveIndex;
+  const nativeActiveIndex = cues?.nativeActiveIndex ?? storeNativeActiveIndex;
 
   const targetCue = targetCues[targetActiveIndex];
   const nativeCue = nativeCues[nativeActiveIndex];

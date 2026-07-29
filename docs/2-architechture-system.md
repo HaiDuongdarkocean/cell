@@ -1161,6 +1161,15 @@ downloader.downloadM3u8Streaming(playlist)
 
 ---
 
+## Design-system showcase index
+
+| Symbol | Path | Signature | Used by | Description |
+|--------|------|-----------|---------|-------------|
+| `autoDiscovery` | `entrypoints/design-system-showcase/autoDiscovery.ts` | `discoverShowcases()` -> `DiscoveredShowcase[]` | `ShowcaseGallery` | Auto-discovers `*.showcase.tsx` in `shared/ui/` and `features/*/ui/` via `import.meta.glob` |
+| `ShowcaseGallery` | `entrypoints/design-system-showcase/ShowcaseGallery.tsx` | `() -> JSX` | `App.tsx` | Renders discovered showcases grouped by `showcaseMeta.group`, wrapped in `MockProviders` |
+| `MockProviders` | `entrypoints/design-system-showcase/mockProviders.tsx` | `(children) -> JSX` | `ShowcaseGallery` | Provides mock cues, dictionary result, and card creator draft via context |
+| `*.showcase.tsx` | `shared/ui/` and `features/*/ui/` | `Showcase` + `showcaseMeta` | `ShowcaseGallery` | Per-component design-system examples auto-rendered by the gallery |
+
 ## Update protocol
 
 **Khi nào update file này:**
