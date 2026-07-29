@@ -104,3 +104,5 @@ dist.zip
 # Local-only scratch directories (UI prototypes, dev seeds copied to root).
 /prototype/
 /seed/
+/tmp
+
