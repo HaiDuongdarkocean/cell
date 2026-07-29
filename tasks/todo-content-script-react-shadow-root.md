@@ -928,7 +928,7 @@
     - Manual: design-system Card Creator preview shows queue, media, fields, and export controls ✓
     - Manual: full card creator flow on YouTube pending T033
 
-- [ ] **T085 — Update `mountSettingsDialog` for chosen mechanism**
+- [x] **T085 — Update `mountSettingsDialog` for chosen mechanism**
   - **Phase:** 7 | **Lane:** H | **Scope:** M | **Depends on:** T031, T024
   - **Files:** `src/features/settings/ui/mountSettingsDialog.ts`, `src/shared/lib/shadowRoot/mountReactShadow.ts`, `src/features/settings/ui/SettingsDialog.tsx`
   - **AC:**
@@ -936,8 +936,11 @@
     - Reuses `SettingsDialog`.
     - Theme/save/load work.
   - **Verification:**
-    - `npm run test:unit -- mountSettingsDialog`
-    - Manual: open from orbital badge
+    - `npm run typecheck` ✓
+    - `npm run test:unit -- settings` ✓
+    - `npm run test:unit` (full) ✓
+    - `npm run build` ✓
+    - Manual: open from orbital badge pending T033
 
 - [ ] **T086 — Add `USE_LEGACY_SETTINGS` flag**
   - **Phase:** 7 | **Lane:** H | **Scope:** S | **Depends on:** T085
