@@ -8,6 +8,9 @@ import { createWebTextDictionaryController } from '@/features/dictionaryPopup/co
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import { createWebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
 import type { WebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
+import { mountTokenizeFab } from '@/features/tokenize/ui/mountTokenizeFab';
+import type { TokenizeFabMount } from '@/features/tokenize/ui/mountTokenizeFab';
+import type { TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import { mountUniversalPanel, type UniversalPanelMountController } from '@/features/universalPanel';
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 
@@ -215,6 +218,7 @@ let currentVideo: HTMLVideoElement | null = null;
 // Shared with subtitle overlay controller for token lookup + highlight.
 let webTextCtrl: WebTextDictionaryController | null = null;
 let webTokenizeCtrl: WebTokenizeController | null = null;
+let tokenizeFabMount: TokenizeFabMount | null = null;
 /** ADR-061: Pending tokenize subscribers — collected before
  *  webTokenizeCtrl is initialized (initTokenize is async and may complete
  *  after mountSettingsDialog subscribes). Flushed when webTokenizeCtrl is
@@ -309,6 +313,27 @@ async function initWebTextDictionary(): Promise<void> {
   }
 }
 
+function createTokenizeStoreAdapter(ctrl: WebTokenizeController): TokenizeStateStore {
+  return {
+    getState: () => ctrl.getState(),
+    setEnabled: (enabled) => {
+      if (ctrl.getState().enabled !== enabled) ctrl.toggleEnabled();
+    },
+    setShowStatus: (show) => {
+      if (ctrl.getState().showStatus !== show) ctrl.toggleShowStatus();
+    },
+    setShowFrequency: (show) => {
+      if (ctrl.getState().showFrequency !== show) ctrl.toggleShowFrequency();
+    },
+    setHoveredTerm: () => {},
+    toggleSelectedTerm: () => {},
+    addSelectedTerm: () => {},
+    removeSelectedTerm: () => {},
+    clearSelection: () => {},
+    subscribe: (cb) => ctrl.subscribe(cb),
+  };
+}
+
 async function initTokenize(): Promise<void> {
   try {
     if (webTokenizeCtrl) return;
@@ -350,6 +375,14 @@ async function initTokenize(): Promise<void> {
       });
     }
     pendingTokenizeSubs = [];
+
+    // ADR-075: mount the React TokenizeFab in a shadow root below the orbital badge.
+    tokenizeFabMount = mountTokenizeFab({
+      store: createTokenizeStoreAdapter(webTokenizeCtrl),
+      onOpenDictionary: () => {
+        ensureUniversalPanelMount().open('dictionary');
+      },
+    });
   } catch (err) {
     // Storage may be unavailable in some test/sandbox contexts — safe fallback.
     console.warn('[content-script] initTokenize failed', err);
@@ -585,6 +618,8 @@ function cleanupContentScript(): void {
     webTextCtrl = null;
     webTokenizeCtrl?.destroy();
     webTokenizeCtrl = null;
+    tokenizeFabMount?.destroy();
+    tokenizeFabMount = null;
     universalPanelMount?.unmount?.();
     universalPanelMount = null;
     pendingTokenizeSubs = [];
