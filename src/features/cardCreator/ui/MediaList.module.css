@@ -71,6 +71,11 @@
   transition: opacity var(--duration-fast) var(--ease-in-out);
 }
 
+.cc-media__thumb:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
 .cc-media__thumb--dragging {
   opacity: 0.4;
 }
@@ -336,6 +341,11 @@
 .cc-media__list-add:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.cc-media__list-add:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 

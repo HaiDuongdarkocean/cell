@@ -9,6 +9,7 @@
  * BEM block: .cc-queue
  */
 import type { ReactElement } from 'react';
+import { useRef, useCallback } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import type { CardCreatorQueueItem, Toast } from '../types';
 import styles from './QueueSidebar.module.css';
@@ -39,16 +40,64 @@ export function QueueSidebar({
   toasts,
   onDismissToast,
 }: QueueSidebarProps): ReactElement {
+  const asideRef = useRef<HTMLElement>(null);
+
+  const focusAt = useCallback((elements: Element[], index: number): void => {
+    if (index >= 0 && index < elements.length) {
+      (elements[index] as HTMLElement).focus();
+    }
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLElement>): void => {
+      if (!asideRef.current) return;
+      const focusable = Array.from(asideRef.current.querySelectorAll('button, [tabindex="0"]'));
+      const active = document.activeElement;
+      const currentIndex = active ? focusable.indexOf(active) : -1;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        focusAt(focusable, currentIndex + 1);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        focusAt(focusable, currentIndex - 1);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        focusAt(focusable, 0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        focusAt(focusable, focusable.length - 1);
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        const listItem = active?.closest('li');
+        const rawIndex = listItem?.getAttribute('data-index');
+        if (rawIndex != null) {
+          e.preventDefault();
+          const index = Number(rawIndex);
+          if (!Number.isNaN(index)) {
+            onDeleteQueueItem(index);
+          }
+        }
+      }
+    },
+    [focusAt, onDeleteQueueItem],
+  );
+
   if (queueItems.length === 0) return <></>;
 
   return (
-    <aside className={styles['cc-queue']} data-testid="cc-queue-sidebar">
+    <aside
+      ref={asideRef}
+      className={styles['cc-queue']}
+      aria-label="Card creator queue"
+      onKeyDown={handleKeyDown}
+      data-testid="cc-queue-sidebar"
+    >
       <div className={styles['cc-queue__header']}>
         <span className={styles['cc-queue__title']}>
           Queue ({queueActiveIndex + 1}/{queueItems.length})
         </span>
       </div>
-      <ul className={styles['cc-queue__list']}>
+      <ul className={styles['cc-queue__list']} aria-label="Queue items">
         {queueItems.map((item, i) => (
           <QueueItemRow
             key={`${item.term}-${i}`}
@@ -79,6 +128,7 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
   return (
     <li
       className={`${styles['cc-queue__item']} ${isActive ? styles['cc-queue__item--active'] : ''}`}
+      data-index={index}
       data-testid={`cc-queue-item-${index}`}
     >
       <button
@@ -124,6 +174,7 @@ function UndoButton({ onUndo, toasts, onDismissToast }: UndoButtonProps): ReactE
         onUndo();
         onDismissToast(lastToast.id);
       }}
+      aria-label="Undo last deletion"
       data-testid="cc-queue-undo"
     >
       <Icon name="rotateCcw" className={styles['cc-queue__undo-icon']} />

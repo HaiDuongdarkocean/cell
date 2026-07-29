@@ -65,11 +65,19 @@
   padding: var(--space-1) var(--space-2);
   background: none;
   border: none;
+  border-radius: var(--radius-pill);
   cursor: pointer;
   text-align: left;
   min-width: 0;
   color: var(--color-text);
   font-size: var(--font-size-base);
+}
+
+.cc-queue__item-btn:focus-visible,
+.cc-queue__item-delete:focus-visible,
+.cc-queue__undo:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
 }
 
 .cc-queue__item-term {

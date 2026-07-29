@@ -296,8 +296,36 @@ function ImageGallery({
 
   const draggable = onReorder !== undefined;
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    const focusable = Array.from(e.currentTarget.querySelectorAll('button, [tabindex="0"]'));
+    const active = document.activeElement;
+    const currentIndex = active ? focusable.indexOf(active) : -1;
+
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const next = focusable[currentIndex + 1] as HTMLElement | undefined;
+      next?.focus();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prev = focusable[currentIndex - 1] as HTMLElement | undefined;
+      prev?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      (focusable[0] as HTMLElement | undefined)?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      (focusable[focusable.length - 1] as HTMLElement | undefined)?.focus();
+    }
+  };
+
   return (
-    <div className={styles['cc-media__gallery']} role="list" onDrop={handleGalleryDrop}>
+    <div
+      className={styles['cc-media__gallery']}
+      role="list"
+      aria-label={addLabel}
+      onKeyDown={handleKeyDown}
+      onDrop={handleGalleryDrop}
+    >
       {files.map((file, index) => (
         <ImageThumb
           key={`${file.filename}-${index}`}
@@ -397,8 +425,36 @@ function AudioList({
 
   const draggable = onReorder !== undefined;
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>): void => {
+    const focusable = Array.from(e.currentTarget.querySelectorAll('button, [tabindex="0"]'));
+    const active = document.activeElement;
+    const currentIndex = active ? focusable.indexOf(active) : -1;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = focusable[currentIndex + 1] as HTMLElement | undefined;
+      next?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = focusable[currentIndex - 1] as HTMLElement | undefined;
+      prev?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      (focusable[0] as HTMLElement | undefined)?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      (focusable[focusable.length - 1] as HTMLElement | undefined)?.focus();
+    }
+  };
+
   return (
-    <div className={styles['cc-media__list']} role="list" onDrop={handleListDrop}>
+    <div
+      className={styles['cc-media__list']}
+      role="list"
+      aria-label={addLabel}
+      onKeyDown={handleKeyDown}
+      onDrop={handleListDrop}
+    >
       {files.length === 0 && (
         <EmptyDropzone
           kind="audio"
