@@ -17,63 +17,26 @@ import { CardCreatorDialog } from './CardCreatorDialog';
 import { CardCreatorBottomSheet } from './CardCreatorBottomSheet';
 import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import type { CardCreatorSettings } from '@/entities/settings';
-import type { BilingualCue } from '@/entities/media';
 import type { MediaFile } from '../media/mediaFile';
+import type {
+  CardCreatorAction,
+  CardCreatorOpenContext,
+} from '../types';
 
-/** Card Creator action (mirrors subtitleBlockController + popup dictionary).
- *  'quick-add' = popup dictionary Quick Add (hardcoded as Add mode for now),
- *  'quick-update' = subtitle cluster quick-update (focus Update button),
- *  'edit-card' = subtitle cluster edit-card (neutral). */
-type CardCreatorAction = 'quick-add' | 'quick-update' | 'edit-card';
+export type {
+  CardCreatorAction,
+  CardCreatorOpenContext,
+  CardCreatorPrefill,
+  CardCreatorQueueItem,
+} from '../types';
 
-/** Pre-fill data from the popup dictionary (term + definitions + translation + media URLs).
- *  When present, useCardCreatorState uses these instead of empty strings. */
-export interface CardCreatorPrefill {
-  readonly targetWord?: string;
-  readonly definitions?: string;
-  readonly sentenceTranslation?: string;
-  readonly sentence?: string;
-  /** Word audio URLs (Forvo/TTS) selected in the popup — fetched + stored as MediaFile. */
-  readonly wordAudioUrls?: readonly string[];
-  /** Sentence audio URLs (Forvo/TTS) selected in the popup — fetched + stored as MediaFile. */
-  readonly sentenceAudioUrls?: readonly string[];
-  /** Image URLs (Google Images) selected in the popup — fetched + stored as MediaFile. */
-  readonly imageUrls?: readonly string[];
-}
 
-/** A single item in the Send to Card queue (I+N review flow).
- *  Each item represents one unknown/tracking word from the current subtitle
- *  line, with its dictionary definitions pre-looked-up. Media (screenshot +
- *  sentence audio) is shared across all items — captured once before the
- *  dialog opens. */
-export interface CardCreatorQueueItem {
-  readonly term: string;
-  readonly definitions: string;
-  readonly status: 'unknown' | 'tracking';
-}
 
-/** Context for opening the dialog (video + cue + languages).
- *  video + cue are optional — when absent (popup dictionary text-reading case),
- *  media capture (screenshot/audio) is skipped and prefill provides text fields. */
-export interface CardCreatorOpenContext {
-  readonly video?: HTMLVideoElement;
-  readonly cue?: BilingualCue;
-  readonly sourceLang: string;
-  readonly targetLang: string;
-  /** ADR-026: media captured BEFORE the dialog opens (screenshot of the
-   * current frame + sentence audio for the current cue). Capturing before
-   * opening ensures the screenshot reflects the frame the user saw when they
-   * clicked, and audio capture can seek/play the video without the dialog
-   * overlay interfering. */
-  readonly initialMedia?: readonly MediaFile[];
-  /** Popup dictionary pre-fill (term + definitions + translation).
-   *  When present, overrides the empty defaults for these draft fields. */
-  readonly prefill?: CardCreatorPrefill;
-  /** Send to Card queue (I+N review flow). When present with ≥2 items, the
-   *  dialog opens with a right sidebar listing all items. N=1 → no sidebar.
-   *  Each item is pre-looked-up in the dictionary. Media is shared. */
-  readonly queue?: readonly CardCreatorQueueItem[];
-}
+
+
+
+
+
 
 /** Controller returned by mountCardCreatorDialog. */
 export interface CardCreatorMountController {

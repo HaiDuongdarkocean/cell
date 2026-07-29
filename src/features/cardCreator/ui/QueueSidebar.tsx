@@ -10,23 +10,35 @@
  */
 import type { ReactElement } from 'react';
 import { Icon } from '@/shared/icons/Icon';
-import type { CardCreatorQueueItem } from './mountCardCreatorDialog';
-import type { useCardCreatorState } from './useCardCreatorState';
+import type { CardCreatorQueueItem, Toast } from '../types';
 import styles from './QueueSidebar.module.css';
 
 interface QueueSidebarProps {
-  state: ReturnType<typeof useCardCreatorState>;
+  /** Queue items (I+N review flow). */
+  queueItems: readonly CardCreatorQueueItem[];
+  /** Active queue item index. */
+  queueActiveIndex: number;
+  /** Select a queue item by index (switches prefill). */
+  onSelectQueueItem: (index: number) => void;
+  /** Delete a queue item by index. Shows undo toast for 3s. */
+  onDeleteQueueItem: (index: number) => void;
+  /** Undo the last queue item deletion (within 3s window). */
+  onUndoDeleteQueueItem: () => void;
+  /** Active toasts (used to detect a recent delete for the undo button). */
+  toasts: readonly Toast[];
+  /** Dismiss a toast by id. */
+  onDismissToast: (id: number) => void;
 }
 
-export function QueueSidebar({ state }: QueueSidebarProps): ReactElement {
-  const {
-    queueItems,
-    queueActiveIndex,
-    deleteQueueItem,
-    undoDeleteQueueItem,
-    selectQueueItem,
-  } = state;
-
+export function QueueSidebar({
+  queueItems,
+  queueActiveIndex,
+  onSelectQueueItem,
+  onDeleteQueueItem,
+  onUndoDeleteQueueItem,
+  toasts,
+  onDismissToast,
+}: QueueSidebarProps): ReactElement {
   if (queueItems.length === 0) return <></>;
 
   return (
@@ -43,14 +55,14 @@ export function QueueSidebar({ state }: QueueSidebarProps): ReactElement {
             item={item}
             index={i}
             isActive={i === queueActiveIndex}
-            onSelect={() => selectQueueItem(i)}
-            onDelete={() => deleteQueueItem(i)}
+            onSelect={() => onSelectQueueItem(i)}
+            onDelete={() => onDeleteQueueItem(i)}
           />
         ))}
       </ul>
       {/* Undo button — shown when there's a pending undo (3s window).
           Uses the last warning toast as a proxy for "just deleted". */}
-      <UndoButton onUndo={undoDeleteQueueItem} toasts={state.toasts} dismissToast={state.dismissToast} />
+      <UndoButton onUndo={onUndoDeleteQueueItem} toasts={toasts} onDismissToast={onDismissToast} />
     </aside>
   );
 }
@@ -96,13 +108,13 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
 
 interface UndoButtonProps {
   onUndo: () => void;
-  toasts: readonly { id: number; kind: string; message: string }[];
-  dismissToast: (id: number) => void;
+  toasts: readonly Toast[];
+  onDismissToast: (id: number) => void;
 }
 
 /** Shows an undo button when the latest toast is a warning containing "Removed".
  *  Clicking it calls onUndo + dismisses the toast. */
-function UndoButton({ onUndo, toasts, dismissToast }: UndoButtonProps): ReactElement | null {
+function UndoButton({ onUndo, toasts, onDismissToast }: UndoButtonProps): ReactElement | null {
   const lastToast = toasts[toasts.length - 1];
   if (!lastToast || lastToast.kind !== 'warning' || !lastToast.message.includes('Removed')) return null;
   return (
@@ -110,7 +122,7 @@ function UndoButton({ onUndo, toasts, dismissToast }: UndoButtonProps): ReactEle
       className={styles['cc-queue__undo']}
       onClick={() => {
         onUndo();
-        dismissToast(lastToast.id);
+        onDismissToast(lastToast.id);
       }}
       data-testid="cc-queue-undo"
     >

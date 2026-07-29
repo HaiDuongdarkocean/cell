@@ -808,16 +808,19 @@
     - `npm run build` ✓
     - Manual: 3 sites
 
-- [ ] **T078 — Refactor card creator components to be mount-agnostic**
+- [x] **T078 — Refactor card creator components to be mount-agnostic**
   - **Phase:** 6a | **Lane:** G | **Scope:** M | **Depends on:** T071
-  - **Files:** `src/features/cardCreator/ui/CardCreatorDialog.tsx`, `src/features/cardCreator/ui/CardCreatorBottomSheet.tsx`, `src/features/cardCreator/ui/QueueSidebar.tsx`
+  - **Files:** `src/features/cardCreator/ui/CardCreatorDialog.tsx`, `src/features/cardCreator/ui/CardCreatorBottomSheet.tsx`, `src/features/cardCreator/ui/QueueSidebar.tsx`, `src/features/cardCreator/types.ts`
   - **AC:**
     - Components receive open/settings/queue/callbacks via props.
-    - No mount host assumptions.
+    - `CardCreatorDialog`/`CardCreatorBottomSheet` use shared `CardCreatorOpenContext` type.
+    - `QueueSidebar` receives queue + callbacks as explicit props (no `useCardCreatorState` return type).
+    - `QueueSidebar`/`CardCreatorDialog`/`CardCreatorBottomSheet` import shared types from `features/cardCreator/types.ts`, not from `mountCardCreatorDialog`.
     - No `chrome.runtime` in presentation.
   - **Verification:**
-    - `npm run test:unit -- CardCreatorDialog`
-    - `npm run typecheck`
+    - `npm run test:unit` ✓
+    - `npm run typecheck` ✓
+    - `npm run build` ✓
 
 - [ ] **T079 — Create `cardCreatorStore.ts`**
   - **Phase:** 6a | **Lane:** G | **Scope:** M | **Depends on:** T078

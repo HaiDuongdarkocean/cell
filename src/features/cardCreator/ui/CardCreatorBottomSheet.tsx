@@ -10,9 +10,10 @@ import type { ReactElement } from 'react';
 import { useEffect } from 'react';
 import { BottomSheet } from '@/shared/ui/BottomSheet';
 import type { CardCreatorSettings } from '@/entities/settings';
+import type { CardCreatorOpenContext } from '../types';
 import type { MediaFile } from '../media/mediaFile';
 import { CardCreatorDialogContent } from './CardCreatorDialogContent';
-import { useCardCreatorState, type OpenContext } from './useCardCreatorState';
+import { useCardCreatorState } from './useCardCreatorState';
 import { clearAnkiConnectPrefetch } from '../service/cardCreatorPrefetch';
 
 interface CardCreatorBottomSheetProps {
@@ -23,7 +24,7 @@ interface CardCreatorBottomSheetProps {
   /** Card Creator settings (URL, defaults). */
   settings: CardCreatorSettings;
   /** Context for media extraction (video + cue + languages + pre-captured media). */
-  openContext: OpenContext | null;
+  openContext: CardCreatorOpenContext | null;
   /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' pre-selects Update, 'edit-card' is neutral). */
   initialAction?: 'quick-add' | 'quick-update' | 'edit-card';
   /** Register a callback to push media files into the open dialog (background fetch). */
@@ -41,7 +42,7 @@ export function CardCreatorBottomSheet({
   registerAddMedia,
   registerUpdateText,
 }: CardCreatorBottomSheetProps): ReactElement | null {
-  const ctx: OpenContext | null = open ? openContext : null;
+  const ctx: CardCreatorOpenContext | null = open ? openContext : null;
   const state = useCardCreatorState(settings, ctx, initialAction);
 
   useEffect(() => {

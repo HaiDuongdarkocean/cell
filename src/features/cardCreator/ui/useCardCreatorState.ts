@@ -11,7 +11,6 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CardCreatorSettings } from '@/entities/settings';
-import type { BilingualCue } from '@/entities/media';
 import {
   listModelFields,
   findRecentNote,
@@ -32,49 +31,17 @@ import { fetchMediaFile, type MediaFile, type MediaKind } from '../media/mediaFi
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
 import { translateSentence } from '../media/translation';
-import type { CardCreatorQueueItem } from './mountCardCreatorDialog';
+import type {
+  CardCreatorAction,
+  CardCreatorOpenContext,
+  CardCreatorQueueItem,
+  Toast,
+} from '../types';
 
-/** Toast notification. */
-export interface Toast {
-  readonly id: number;
-  readonly kind: 'success' | 'error' | 'warning';
-  readonly message: string;
-}
+export type OpenContext = CardCreatorOpenContext;
 
 /** Connection + data loading state. */
 export type LoadStatus = 'idle' | 'loading' | 'destination-ready' | 'ready' | 'error';
-
-/** Result of opening the dialog. */
-export interface OpenContext {
-  /** The video element to capture media from (optional — popup dictionary
-   *  text-reading case has no video). */
-  video?: HTMLVideoElement;
-  /** The current subtitle cue (for sentence text + audio timing). Optional —
-   *  when absent, prefill.sentence provides the sentence text. */
-  cue?: BilingualCue;
-  /** Source language code (e.g. 'en'). */
-  sourceLang: string;
-  /** Target/native language code (e.g. 'vi'). */
-  targetLang: string;
-  /** ADR-026: media captured BEFORE the dialog opens (screenshot + sentence
-   * audio). When present, the draft is initialized with these files instead
-   * of empty media arrays. */
-  initialMedia?: readonly MediaFile[];
-  /** Popup dictionary pre-fill (term + definitions + translation + media URLs).
-   *  When present, overrides the empty defaults for these draft fields. */
-  prefill?: {
-    readonly targetWord?: string;
-    readonly definitions?: string;
-    readonly sentenceTranslation?: string;
-    readonly sentence?: string;
-    readonly wordAudioUrls?: readonly string[];
-    readonly sentenceAudioUrls?: readonly string[];
-    readonly imageUrls?: readonly string[];
-  };
-  /** Send to Card queue (I+N review flow). When present with ≥2 items, the
-   *  dialog opens with a right sidebar. N=1 → no sidebar. */
-  queue?: readonly CardCreatorQueueItem[];
-}
 
 /** Hook return type. */
 export interface CardCreatorState {
@@ -101,7 +68,7 @@ export interface CardCreatorState {
   /** Whether a media capture is in progress (disables add buttons). */
   capturingMedia: boolean;
   /** Initial action hint ('quick-add' = popup Quick Add, 'quick-update' = focus Update button, 'edit-card' = neutral). */
-  initialAction?: 'quick-add' | 'quick-update' | 'edit-card';
+  initialAction?: CardCreatorAction;
   /** Queue items (I+N review flow). Empty when no queue (N=1 or popup path). */
   queueItems: readonly CardCreatorQueueItem[];
   /** Active queue item index. -1 when no queue. */
@@ -153,7 +120,7 @@ let toastIdCounter = 0;
 export function useCardCreatorState(
   settings: CardCreatorSettings,
   openContext: OpenContext | null,
-  initialAction?: 'quick-add' | 'quick-update' | 'edit-card',
+  initialAction?: CardCreatorAction,
 ): CardCreatorState {
   const [draft, setDraft] = useState<CardDraft>(() =>
     createEmptyDraft(settings.defaultNoteType, settings.defaultDeck),

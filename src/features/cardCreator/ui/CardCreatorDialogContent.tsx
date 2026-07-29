@@ -50,8 +50,14 @@ export function CardCreatorDialogContent({
     submitting,
     capturingMedia,
     queueItems,
+    queueActiveIndex,
     queueSidebarOpen,
     toggleQueueSidebar,
+    selectQueueItem,
+    deleteQueueItem,
+    undoDeleteQueueItem,
+    toasts,
+    dismissToast,
     updateField,
     updateMapping,
     changeNoteType,
@@ -392,7 +398,17 @@ export function CardCreatorDialogContent({
         </div>
         <div className={styles['cc-dialog__panel-content']}>
           {body}
-          {hasQueue && queueSidebarOpen && <QueueSidebar state={state} />}
+          {hasQueue && queueSidebarOpen && (
+            <QueueSidebar
+              queueItems={queueItems}
+              queueActiveIndex={queueActiveIndex}
+              onSelectQueueItem={selectQueueItem}
+              onDeleteQueueItem={deleteQueueItem}
+              onUndoDeleteQueueItem={undoDeleteQueueItem}
+              toasts={toasts}
+              onDismissToast={dismissToast}
+            />
+          )}
         </div>
       </div>
     );
@@ -401,7 +417,17 @@ export function CardCreatorDialogContent({
   return (
     <div className={hasQueue ? styles['cc-dialog__with-queue'] : undefined} data-testid="card-creator-content">
       {body}
-      {hasQueue && queueSidebarOpen && <QueueSidebar state={state} />}
+      {hasQueue && queueSidebarOpen && (
+        <QueueSidebar
+          queueItems={queueItems}
+          queueActiveIndex={queueActiveIndex}
+          onSelectQueueItem={selectQueueItem}
+          onDeleteQueueItem={deleteQueueItem}
+          onUndoDeleteQueueItem={undoDeleteQueueItem}
+          toasts={toasts}
+          onDismissToast={dismissToast}
+        />
+      )}
     </div>
   );
 }
