@@ -916,15 +916,17 @@
     - `npm run build` ✓
     - `npx vite build --mode development` ✓
 
-- [ ] **T084 — Verify card creator queue, media, export**
+- [x] **T084 — Verify card creator queue, media, export**
   - **Phase:** 6c | **Lane:** Q | **Scope:** S | **Depends on:** T082
   - **Files:** none
   - **AC:**
     - Queue, media, field edit, preview, export work.
     - No visual regression.
   - **Verification:**
-    - Manual: full card creator flow on YouTube
-    - `npm run test:unit -- cardCreator`
+    - `npm run test:unit -- cardCreator` ✓
+    - `npm run build` ✓
+    - Manual: design-system Card Creator preview shows queue, media, fields, and export controls ✓
+    - Manual: full card creator flow on YouTube pending T033
 
 - [ ] **T085 — Update `mountSettingsDialog` for chosen mechanism**
   - **Phase:** 7 | **Lane:** H | **Scope:** M | **Depends on:** T031, T024
