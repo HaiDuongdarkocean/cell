@@ -49,5 +49,5 @@
 
 .warning {
   background: var(--color-warning);
-  color: var(--color-foreground);
+  color: var(--color-text-primary);
 }

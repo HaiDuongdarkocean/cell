@@ -30,7 +30,7 @@
   border: var(--border-width-hairline) dashed var(--color-border);
   border-radius: var(--radius-pill);
   background: transparent;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-base);
   font-family: inherit;
   cursor: pointer;
@@ -133,7 +133,7 @@
   border: var(--border-width-hairline) dashed var(--color-border);
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: border-color var(--duration-fast) var(--ease-in-out),
               color var(--duration-fast) var(--ease-in-out);
@@ -248,7 +248,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
   border-radius: var(--radius-sm);
   background: var(--color-surface-hover);
@@ -285,7 +285,7 @@
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: var(--radius-full);
   font-size: var(--space-3-5);

@@ -3,6 +3,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { UniversalPanel } from './UniversalPanel';
 import { createUniversalPanelController } from './UniversalPanelController';
 import type { UniversalPanelTab } from './types';
+import type { TokenizePanelState } from '@/features/tokenize/types';
+
+const TOKENIZE_OFF: TokenizePanelState = { enabled: false, showStatus: false, showFrequency: false };
+const TOKENIZE_ON: TokenizePanelState = { enabled: true, showStatus: true, showFrequency: true };
 
 describe('UniversalPanel component', () => {
   const dictionaryPanel = <div data-testid="dict-content">Dictionary Content</div>;
@@ -19,6 +23,8 @@ describe('UniversalPanel component', () => {
         activeTab="dictionary"
         onTabChange={jest.fn()}
         onClose={jest.fn()}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
       />,
@@ -33,6 +39,8 @@ describe('UniversalPanel component', () => {
         activeTab="dictionary"
         onTabChange={jest.fn()}
         onClose={jest.fn()}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
       />,
@@ -50,6 +58,8 @@ describe('UniversalPanel component', () => {
         activeTab="dictionary"
         onTabChange={onTabChange}
         onClose={jest.fn()}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
       />,
@@ -66,6 +76,8 @@ describe('UniversalPanel component', () => {
         activeTab="dictionary"
         onTabChange={jest.fn()}
         onClose={onClose}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
       />,
@@ -82,6 +94,8 @@ describe('UniversalPanel component', () => {
         activeTab="dictionary"
         onTabChange={jest.fn()}
         onClose={onClose}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
       />,
@@ -98,12 +112,88 @@ describe('UniversalPanel component', () => {
         activeTab="dictionary"
         onTabChange={jest.fn()}
         onClose={onClose}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
         dictionaryPanel={dictionaryPanel}
         settingsPanel={settingsPanel}
       />,
     );
     fireEvent.keyDown(screen.getByTestId('universal-panel'), { key: 'Escape' });
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('renders the universal header with 3 tokenize toggles + close button', () => {
+    render(
+      <UniversalPanel
+        isOpen
+        activeTab="dictionary"
+        onTabChange={jest.fn()}
+        onClose={jest.fn()}
+        tokenizeState={TOKENIZE_ON}
+        onToggleTokenize={jest.fn()}
+        dictionaryPanel={dictionaryPanel}
+        settingsPanel={settingsPanel}
+      />,
+    );
+    expect(screen.getByTestId('universal-panel-header')).toBeInTheDocument();
+    expect(screen.getByTestId('universal-panel-header-toggle-enabled')).toBeInTheDocument();
+    expect(screen.getByTestId('universal-panel-header-toggle-showStatus')).toBeInTheDocument();
+    expect(screen.getByTestId('universal-panel-header-toggle-showFrequency')).toBeInTheDocument();
+    expect(screen.getByTestId('universal-panel-close')).toBeInTheDocument();
+  });
+
+  it('disables Status + Frequency toggles when tokenize is off', () => {
+    render(
+      <UniversalPanel
+        isOpen
+        activeTab="dictionary"
+        onTabChange={jest.fn()}
+        onClose={jest.fn()}
+        tokenizeState={TOKENIZE_OFF}
+        onToggleTokenize={jest.fn()}
+        dictionaryPanel={dictionaryPanel}
+        settingsPanel={settingsPanel}
+      />,
+    );
+    expect(screen.getByTestId('universal-panel-header-toggle-enabled')).not.toBeDisabled();
+    expect(screen.getByTestId('universal-panel-header-toggle-showStatus')).toBeDisabled();
+    expect(screen.getByTestId('universal-panel-header-toggle-showFrequency')).toBeDisabled();
+  });
+
+  it('enables Status + Frequency toggles when tokenize is on', () => {
+    render(
+      <UniversalPanel
+        isOpen
+        activeTab="dictionary"
+        onTabChange={jest.fn()}
+        onClose={jest.fn()}
+        tokenizeState={TOKENIZE_ON}
+        onToggleTokenize={jest.fn()}
+        dictionaryPanel={dictionaryPanel}
+        settingsPanel={settingsPanel}
+      />,
+    );
+    expect(screen.getByTestId('universal-panel-header-toggle-enabled')).not.toBeDisabled();
+    expect(screen.getByTestId('universal-panel-header-toggle-showStatus')).not.toBeDisabled();
+    expect(screen.getByTestId('universal-panel-header-toggle-showFrequency')).not.toBeDisabled();
+  });
+
+  it('calls onToggleTokenize with the clicked key', () => {
+    const onToggleTokenize = jest.fn();
+    render(
+      <UniversalPanel
+        isOpen
+        activeTab="dictionary"
+        onTabChange={jest.fn()}
+        onClose={jest.fn()}
+        tokenizeState={TOKENIZE_ON}
+        onToggleTokenize={onToggleTokenize}
+        dictionaryPanel={dictionaryPanel}
+        settingsPanel={settingsPanel}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('universal-panel-header-toggle-enabled'));
+    expect(onToggleTokenize).toHaveBeenCalledWith('enabled');
   });
 });
 

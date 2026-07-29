@@ -68,11 +68,11 @@ describe('createOverlayLayer', () => {
     expect(overlay.style.display).toBe('none');
   });
 
-  it('G7: applyStyle re-applies line-height with !important (host CSS guard)', () => {
+  it('G7: applyStyle re-applies line-height token with !important (host CSS guard)', () => {
     const container = document.createElement('div');
     const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
     // applyStyle is called by createOverlayLayer, so line-height should be set
-    expect(overlay.style.getPropertyValue('line-height')).toBe('1.4');
+    expect(overlay.style.getPropertyValue('line-height')).toBe('var(--subtitle-line-height, var(--leading-snug))');
     expect(overlay.style.getPropertyPriority('line-height')).toBe('important');
   });
 
@@ -162,13 +162,13 @@ describe('applyStyle', () => {
     expect(overlay.style.display).toBe('none');
   });
 
-  it('G7: applyStyle re-applies line-height with !important even after host override', () => {
+  it('G7: applyStyle re-applies line-height token with !important even after host override', () => {
     const container = document.createElement('div');
     const { overlay } = createOverlayLayer('target', DEFAULT_OVERLAY_STYLE_TARGET, container);
     // Simulate a hostile host CSS override (e.g. line-height: 0.5 !important).
     overlay.style.setProperty('line-height', '0.5', 'important');
     applyStyle({ ...DEFAULT_OVERLAY_STYLE_TARGET, fontSize: 32 }, overlay);
-    expect(overlay.style.getPropertyValue('line-height')).toBe('1.4');
+    expect(overlay.style.getPropertyValue('line-height')).toBe('var(--subtitle-line-height, var(--leading-snug))');
     expect(overlay.style.getPropertyPriority('line-height')).toBe('important');
   });
 });

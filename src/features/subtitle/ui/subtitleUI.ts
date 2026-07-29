@@ -34,25 +34,26 @@ export function sanitizeFontFamily(raw: string): string {
 /**
  * Convert hex color + alpha to rgba string.
  * Supports 3-digit and 6-digit hex (with or without leading #).
- * Falls back to rgba(0,0,0,alpha) for invalid hex.
+ * Falls back to a token-based overlay background color for invalid hex.
  * Pure — no DOM access.
  */
 export function hexToRgba(hex: string, alpha: number): string {
   const normalized = hex.replace('#', '').trim();
+  const pct = Math.round(alpha * 100);
+  const fallback = `color-mix(in srgb, var(--color-overlay-background) ${pct}%, transparent)`;
+  if (normalized.length !== 3 && normalized.length !== 6) return fallback;
   let r = 0, g = 0, b = 0;
   if (normalized.length === 3) {
     r = parseInt(normalized[0] + normalized[0], 16);
     g = parseInt(normalized[1] + normalized[1], 16);
     b = parseInt(normalized[2] + normalized[2], 16);
-  } else if (normalized.length === 6) {
+  } else {
     r = parseInt(normalized.slice(0, 2), 16);
     g = parseInt(normalized.slice(2, 4), 16);
     b = parseInt(normalized.slice(4, 6), 16);
   }
-  // NaN guard — fallback to 0
-  if (Number.isNaN(r)) r = 0;
-  if (Number.isNaN(g)) g = 0;
-  if (Number.isNaN(b)) b = 0;
+  // NaN guard — fallback to token-based overlay color
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return fallback;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
@@ -119,7 +120,7 @@ export function applyStyle(config: OverlayStyleConfig, overlay: HTMLDivElement):
   // G7: re-apply line-height guard whenever style is refreshed; host CSS may
   // have overridden it via !important or high-specificity selectors.
   // Inline style with !important wins over any CSS class rule.
-  overlay.style.setProperty('line-height', '1.4', 'important');
+  overlay.style.setProperty('line-height', 'var(--subtitle-line-height, var(--leading-snug))', 'important');
   // Only hide when visible=false. When visible=true, do NOT force display:block —
   // display is managed by timeupdate (updateOverlayText/hideOverlay) based on
   // current cue. Forcing block here shows drag handle with no subtitle (bug fix).

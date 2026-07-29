@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Universal Panel Demo — Meta/Facebook Design System</title>
+  <style>
+    /* ===== ASTRYX / META TOKENS ===== */
+    :root,
+    [data-theme="light"] {
+      --color-accent: #262626;
+      --color-accent-muted: #f1f1f1;
+      --color-on-accent: #ffffff;
+      --color-neutral: rgba(0, 0, 0, 0.06);
+      --color-background-surface: #ffffff;
+      --color-background-body: #f1f1f1;
+      --color-background-muted: #f1f1f1;
+      --color-background-card: #ffffff;
+      --color-background-popover: #ffffff;
+      --color-background-inverted: #0A1317;
+      --color-overlay: rgba(0, 0, 0, 0.5);
+      --color-overlay-hover: rgba(0, 0, 0, 0.05);
+      --color-overlay-pressed: rgba(0, 0, 0, 0.1);
+      --color-text-primary: #171717;
+      --color-text-secondary: #737373;
+      --color-text-disabled: #a3a3a3;
+      --color-text-accent: #262626;
+      --color-on-dark: #ffffff;
+      --color-on-light: #171717;
+      --color-icon-primary: #171717;
+      --color-icon-secondary: #737373;
+      --color-icon-disabled: #a3a3a3;
+      --color-icon-accent: #262626;
+      --color-border: rgba(0, 0, 0, 0.08);
+      --color-border-emphasized: #d4d4d4;
+      --color-skeleton: #ebebeb;
+      --color-track: #CCD3DB;
+      --color-shadow: rgba(0, 0, 0, 0.1);
+      --color-success: #007004;
+      --color-success-muted: #c5e5c0;
+      --color-on-success: #ffffff;
+      --color-error: #a50c25;
+      --color-error-muted: #facecb;
+      --color-on-error: #ffffff;
+      --color-warning: #745b00;
+      --color-warning-muted: #f8da9d;
+      --color-on-warning: #171717;
+
+      --spacing-0: 0px;
+      --spacing-0-5: 2px;
+      --spacing-1: 4px;
+      --spacing-1-5: 6px;
+      --spacing-2: 8px;
+      --spacing-3: 12px;
+      --spacing-4: 16px;
+      --spacing-5: 20px;
+      --spacing-6: 24px;
+      --spacing-7: 28px;
+      --spacing-8: 32px;
+      --spacing-9: 36px;
+      --spacing-10: 40px;
+      --spacing-11: 44px;
+      --spacing-12: 48px;
+
+      --size-element-sm: 28px;
+      --size-element-md: 32px;
+      --size-element-lg: 36px;
+      --border-width: 1px;
+
+      --radius-none: 0px;
+      --radius-inner: 8px;
+      --radius-element: 12px;
+      --radius-container: 16px;
+      --radius-page: 32px;
+      --radius-chat: 28px;
+      --radius-full: 9999px;
+
+      --shadow-low: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-med: 0 4px 6px -1px rgba(0,0,0,0.08);
+      --shadow-high: 0 10px 15px -3px rgba(0,0,0,0.1);
+
+      --duration-fast-min: 130ms;
+      --duration-fast: 175ms;
+      --duration-fast-max: 230ms;
+      --duration-medium-min: 310ms;
+      --duration-medium: 410ms;
+      --duration-medium-max: 550ms;
+      --duration-slow-min: 730ms;
+      --duration-slow: 975ms;
+      --duration-slow-max: 1300ms;
+      --ease-standard: cubic-bezier(0.24, 1, 0.4, 1);
+
+      --font-family-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-family-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-family-code: 'SF Mono', ui-monospace, Menlo, monospace;
+
+      --font-size-xs: 0.625rem;
+      --font-size-sm: 0.75rem;
+      --font-size-base: 0.875rem;
+      --font-size-lg: 1.0625rem;
+      --font-size-xl: 1.25rem;
+
+      --font-weight-normal: 400;
+      --font-weight-medium: 500;
+      --font-weight-semibold: 600;
+      --font-weight-bold: 700;
+    }
+
+    [data-theme="dark"] {
+      --color-accent: #ebebeb;
+      --color-accent-muted: #262626;
+      --color-on-accent: #171717;
+      --color-neutral: rgba(255, 255, 255, 0.1);
+      --color-background-surface: #262626;
+      --color-background-body: #1b1b1b;
+      --color-background-muted: #1b1b1b;
+      --color-background-card: #1b1b1b;
+      --color-background-popover: #1b1b1b;
+      --color-overlay: rgba(0, 0, 0, 0.8);
+      --color-overlay-hover: rgba(255, 255, 255, 0.05);
+      --color-overlay-pressed: rgba(255, 255, 255, 0.1);
+      --color-text-primary: #fafafa;
+      --color-text-secondary: #a3a3a3;
+      --color-text-disabled: #525252;
+      --color-text-accent: #ebebeb;
+      --color-icon-primary: #fafafa;
+      --color-icon-secondary: #a3a3a3;
+      --color-icon-disabled: #525252;
+      --color-icon-accent: #ebebeb;
+      --color-border: rgba(255, 255, 255, 0.1);
+      --color-border-emphasized: #525252;
+      --color-skeleton: #525252;
+      --color-track: #5A5E66;
+      --color-shadow: rgba(0, 0, 0, 0.3);
+      --color-success: #9fe59b;
+      --color-success-muted: rgba(132, 201, 128, 0.24);
+      --color-on-success: #171717;
+      --color-error: #ffc6c1;
+      --color-error-muted: rgba(255, 158, 151, 0.24);
+      --color-on-error: #171717;
+      --color-warning: #fdcf4f;
+      --color-warning-muted: rgba(222, 180, 51, 0.24);
+      --color-on-warning: #171717;
+      --shadow-low: 0 1px 2px rgba(0,0,0,0.2);
+      --shadow-med: 0 4px 6px -1px rgba(0,0,0,0.3);
+      --shadow-high: 0 10px 15px -3px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: var(--font-family-body);
+      font-size: var(--font-size-base);
+      line-height: 1.5;
+      background: var(--color-background-body);
+      color: var(--color-text-primary);
+    }
+
+    /* ===== APP / VIDEO STAGE ===== */
+    .app { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+    .video-stage {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 40%, #334155 0%, #0f172a 60%, #020617 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      gap: var(--spacing-4);
+    }
+    .play-button {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      display: grid;
+      place-items: center;
+      font-size: 32px;
+      cursor: pointer;
+      border: 2px solid rgba(255,255,255,0.2);
+      transition: transform var(--duration-fast) var(--ease-standard);
+    }
+    .play-button:hover { transform: scale(1.05); background: rgba(255,255,255,0.2); }
+    .video-hint { font-size: var(--font-size-sm); color: rgba(255,255,255,0.7); }
+
+    /* ===== FEASIBILITY CARD ===== */
+    .feasibility-card {
+      position: fixed;
+      top: var(--spacing-4);
+      left: var(--spacing-4);
+      width: min(360px, calc(100% - var(--spacing-8)));
+      max-height: 260px;
+      background: var(--color-background-surface);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--radius-container);
+      box-shadow: var(--shadow-med);
+      padding: var(--spacing-4);
+      z-index: 1000;
+      overflow: auto;
+      transition: max-height var(--duration-fast) var(--ease-standard);
+    }
+    .feasibility-card.collapsed { max-height: 48px; overflow: hidden; }
+    .feasibility-card h3 { margin: 0 0 var(--spacing-2); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+    .feasibility-card ul { margin: 0; padding-left: var(--spacing-4); font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+    .feasibility-card li { margin-bottom: var(--spacing-1); }
+    .feasibility-card button {
+      position: absolute;
+      top: var(--spacing-2);
+      right: var(--spacing-2);
+      background: transparent;
+      border: none;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      font-size: var(--font-size-xs);
+    }
+
+    .top-controls {
+      position: fixed;
+      top: var(--spacing-4);
+      right: var(--spacing-4);
+      display: flex;
+      gap: var(--spacing-2);
+      z-index: 1000;
+    }
+    .theme-toggle {
+      padding: var(--spacing-1-5) var(--spacing-3);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--radius-element);
+      background: var(--color-background-surface);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+    }
+
+    /* ===== ORBITAL BADGE ===== */
+    .orbital-badge {
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 96px;
+      border: none;
+      border-radius: var(--radius-container) 0 0 var(--radius-container);
+      background: var(--color-accent);
+      color: var(--color-on-accent);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-2);
+      cursor: pointer;
+      z-index: 2147483647;
+      box-shadow: var(--shadow-med);
+      transition: width var(--duration-fast) var(--ease-standard);
+    }
+    .orbital-badge:hover { width: 44px; }
+    .orbital-badge svg { width: 20px; height: 20px; }
+
+    /* ===== BACKDROP ===== */
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      background: var(--color-overlay);
+      z-index: 2147483645;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--duration-medium) var(--ease-standard);
+    }
+    .backdrop.open { opacity: 1; pointer-events: auto; }
+
+    /* ===== UNIVERSAL PANEL ===== */
+    .universal-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 100%;
+      max-width: 1280px;
+      background: var(--color-background-surface);
+      color: var(--color-text-primary);
+      z-index: 2147483646;
+      display: flex;
+      box-shadow: var(--shadow-high);
+      transform: translateX(100%);
+      transition: transform var(--duration-medium) var(--ease-standard);
+      overflow: hidden;
+    }
+    .universal-panel.open { transform: translateX(0); }
+
+    .tab-bar {
+      flex: 0 0 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-2);
+      padding: var(--spacing-3) var(--spacing-2);
+      background: var(--color-background-muted);
+      border-right: var(--border-width) solid var(--color-border);
+      overflow-y: auto;
+    }
+
+    .tab-button {
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: var(--radius-element);
+      background: transparent;
+      color: var(--color-icon-secondary);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+    }
+    .tab-button:hover { background: var(--color-overlay-hover); color: var(--color-icon-primary); }
+    .tab-button.active { background: var(--color-accent-muted); color: var(--color-icon-accent); }
+    .tab-button svg { width: 22px; height: 22px; }
+
+    .panel-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-3);
+      padding: var(--spacing-3) var(--spacing-4);
+      border-bottom: var(--border-width) solid var(--color-border);
+      background: var(--color-background-muted);
+    }
+
+    .toggle-cluster { display: flex; align-items: center; gap: var(--spacing-4); }
+    .toggle-field {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-1-5);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      user-select: none;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      border-radius: var(--radius-full);
+      background: var(--color-track);
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-standard);
+      flex-shrink: 0;
+    }
+    .toggle-switch.on { background: var(--color-accent); }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform var(--duration-fast) var(--ease-standard);
+      box-shadow: var(--shadow-low);
+    }
+    .toggle-switch.on::after { transform: translateX(18px); }
+    .toggle-switch.disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .icon-btn {
+      width: var(--size-element-md);
+      height: var(--size-element-md);
+      border: none;
+      border-radius: var(--radius-full);
+      background: transparent;
+      color: var(--color-icon-primary);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-standard);
+    }
+    .icon-btn:hover { background: var(--color-overlay-hover); }
+    .icon-btn svg { width: 18px; height: 18px; }
+
+    .panel-content { flex: 1; min-width: 0; min-height: 0; position: relative; }
+
+    /* ===== DICTIONARY TAB ===== */
+    .dictionary-tab {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+    .dictionary-pane {
+      flex: 1 1 50%;
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .dictionary-left { border-right: var(--border-width) solid var(--color-border); }
+    .dictionary-search {
+      padding: var(--spacing-4);
+      border-bottom: var(--border-width) solid var(--color-border);
+    }
+    .input {
+      width: 100%;
+      height: var(--size-element-md);
+      padding: 0 var(--spacing-3);
+      border: var(--border-width) solid var(--color-border-emphasized);
+      border-radius: var(--radius-element);
+      background: var(--color-background-surface);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-base);
+      transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+      box-shadow: none;
+    }
+    .input::placeholder { color: var(--color-text-secondary); }
+    .input:hover:not(:focus) { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-border-emphasized) 30%, transparent); }
+    .input:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: inset 0 0 0 2px var(--color-accent-muted);
+    }
+
+    .dictionary-scroll { flex: 1; overflow-y: auto; padding: var(--spacing-4); }
+    .dictionary-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      gap: var(--spacing-2);
+      text-align: center;
+    }
+    .dictionary-empty svg { width: 48px; height: 48px; color: var(--color-icon-secondary); }
+
+    .candidate-card {
+      background: var(--color-background-card);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--radius-container);
+      padding: var(--spacing-4);
+      box-shadow: var(--shadow-low);
+    }
+    .candidate-header { display: flex; align-items: baseline; gap: var(--spacing-2); margin-bottom: var(--spacing-2); }
+    .candidate-term { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); }
+    .candidate-pos { font-size: var(--font-size-xs); color: var(--color-text-secondary); text-transform: uppercase; font-weight: var(--font-weight-medium); }
+    .candidate-ipa { font-family: var(--font-family-code); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+    .candidate-meaning { color: var(--color-text-primary); margin-bottom: var(--spacing-3); }
+    .candidate-context { color: var(--color-text-secondary); font-size: var(--font-size-sm); font-style: italic; margin-bottom: var(--spacing-3); padding: var(--spacing-2); background: var(--color-background-muted); border-radius: var(--radius-inner); }
+    .candidate-toolbar { display: flex; gap: var(--spacing-2); flex-wrap: wrap; margin-bottom: var(--spacing-3); }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-1);
+      height: 28px;
+      padding: 0 var(--spacing-2);
+      border-radius: var(--radius-full);
+      border: var(--border-width) solid var(--color-border);
+      background: var(--color-background-muted);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+      cursor: pointer;
+    }
+    .chip:hover { background: var(--color-overlay-hover); color: var(--color-text-primary); }
+    .chip svg { width: 14px; height: 14px; }
+    .chip-row { display: flex; gap: var(--spacing-2); flex-wrap: wrap; }
+
+    .candidate-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: var(--spacing-3);
+      border-top: var(--border-width) solid var(--color-border);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: var(--size-element-md);
+      padding: 0 var(--spacing-4);
+      border-radius: var(--radius-full);
+      border: var(--border-width) solid transparent;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      cursor: pointer;
+      transition: transform var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--color-accent); color: var(--color-on-accent); }
+    .btn-secondary { background: var(--color-neutral); color: var(--color-text-primary); }
+    .btn-outline { background: transparent; color: var(--color-text-primary); border-color: var(--color-border-emphasized); }
+    .btn-ghost { background: transparent; color: var(--color-text-primary); }
+    .btn-ghost:hover { background: var(--color-overlay-hover); }
+    .btn-sm { height: var(--size-element-sm); padding: 0 var(--spacing-3); font-size: var(--font-size-xs); }
+    .btn svg { width: 16px; height: 16px; margin-right: var(--spacing-1); }
+
+    .right-pane { padding: var(--spacing-4); display: flex; flex-direction: column; gap: var(--spacing-4); }
+    .card-creator-placeholder {
+      flex: 1;
+      border: 2px dashed var(--color-border-emphasized);
+      border-radius: var(--radius-container);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      text-align: center;
+      padding: var(--spacing-6);
+      gap: var(--spacing-2);
+    }
+    .card-creator-placeholder svg { width: 48px; height: 48px; color: var(--color-icon-secondary); }
+
+    .card-form { display: flex; flex-direction: column; gap: var(--spacing-3); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-3); }
+    .form-label { font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-secondary); margin-bottom: var(--spacing-1); display: block; }
+    .form-input { composes: input; }
+    .form-textarea { min-height: 72px; padding: var(--spacing-2); resize: vertical; }
+
+    /* ===== SETTINGS TAB ===== */
+    .settings-tab {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    .settings-sidebar {
+      flex: 0 0 180px;
+      border-right: var(--border-width) solid var(--color-border);
+      padding: var(--spacing-3);
+      background: var(--color-background-muted);
+      overflow-y: auto;
+    }
+    .settings-sidebar-label {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--spacing-2);
+      font-weight: var(--font-weight-medium);
+    }
+    .settings-nav-item {
+      width: 100%;
+      text-align: left;
+      padding: var(--spacing-2) var(--spacing-3);
+      border: none;
+      border-radius: var(--radius-element);
+      background: transparent;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+    }
+    .settings-nav-item:hover { background: var(--color-overlay-hover); color: var(--color-text-primary); }
+    .settings-nav-item.active { background: var(--color-accent-muted); color: var(--color-text-accent); font-weight: var(--font-weight-medium); }
+
+    .settings-main {
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+      padding: var(--spacing-5);
+      max-width: 960px;
+    }
+    .settings-section {
+      background: var(--color-background-card);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--radius-container);
+      padding: var(--spacing-4);
+      margin-bottom: var(--spacing-4);
+      box-shadow: var(--shadow-low);
+    }
+    .settings-section-title { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); margin: 0 0 var(--spacing-1); }
+    .settings-section-desc { font-size: var(--font-size-sm); color: var(--color-text-secondary); margin: 0 0 var(--spacing-4); }
+    .settings-field { margin-bottom: var(--spacing-4); }
+    .settings-field:last-child { margin-bottom: 0; }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--spacing-3);
+    }
+    .settings-label { font-size: var(--font-size-sm); color: var(--color-text-primary); }
+    .settings-label-hint { font-size: var(--font-size-xs); color: var(--color-text-secondary); display: block; margin-top: var(--spacing-0-5); }
+    .settings-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-3); }
+    .divider { height: 1px; background: var(--color-border); margin: var(--spacing-3) 0; }
+
+    .select {
+      height: var(--size-element-md);
+      padding: 0 var(--spacing-3);
+      border: var(--border-width) solid var(--color-border-emphasized);
+      border-radius: var(--radius-element);
+      background: var(--color-background-surface);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-sm);
+    }
+
+    .slider-row { display: flex; align-items: center; gap: var(--spacing-3); }
+    .slider { flex: 1; accent-color: var(--color-accent); }
+
+    .shortcut-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 80px;
+      height: var(--size-element-md);
+      padding: 0 var(--spacing-3);
+      border: var(--border-width) solid var(--color-border-emphasized);
+      border-radius: var(--radius-element);
+      background: var(--color-background-surface);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+      font-family: var(--font-family-code);
+    }
+
+    [hidden] { display: none !important; }
+
+    /* ===== MOBILE ===== */
+    @media (max-width: 768px) {
+      .universal-panel { max-width: none; flex-direction: column-reverse; transform: translateY(100%); }
+      .universal-panel.open { transform: translateY(0); }
+      .tab-bar {
+        flex-direction: row;
+        border-right: none;
+        border-top: var(--border-width) solid var(--color-border);
+        justify-content: space-around;
+        padding: var(--spacing-2) 0;
+        flex: 0 0 auto;
+      }
+      .panel-body { flex: 1; min-height: 0; }
+      .panel-header { padding: var(--spacing-2) var(--spacing-3); }
+      .toggle-label { display: none; }
+      .toggle-cluster { gap: var(--spacing-2); }
+      .dictionary-tab { flex-direction: column; overflow-y: auto; }
+      .dictionary-left { border-right: none; border-bottom: var(--border-width) solid var(--color-border); }
+      .dictionary-pane { flex: 1 1 auto; }
+      .settings-tab { flex-direction: column; }
+      .settings-sidebar { display: none; }
+      .settings-main { max-width: none; padding: var(--spacing-3); }
+      .form-row, .settings-pair { grid-template-columns: 1fr; }
+      .feasibility-card { width: calc(100% - var(--spacing-8)); top: var(--spacing-3); left: var(--spacing-3); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="video-stage">
+      <button class="play-button" aria-label="Play video">▶</button>
+      <div class="video-hint">Fake video player — click the right-edge orbital badge to open Universal Panel</div>
+    </div>
+
+    <div class="top-controls">
+      <button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
+    </div>
+
+    <div class="feasibility-card" id="feasibilityCard">
+      <h3>Feasibility — Meta/Facebook DS → Universal Panel</h3>
+      <button onclick="toggleNotes()">Collapse</button>
+      <ul>
+        <li><strong>Architecture:</strong> Current <code>UniversalPanel.tsx</code> already has right-edge fixed panel, tab bar, header toggles, and React mount pattern. Feasibility is <strong>high</strong>.</li>
+        <li><strong>Token migration:</strong> Need to replace Cell tokens (<code>--space-*</code>, <code>--color-background</code>) with Meta/Astryx semantic tokens (<code>--spacing-*</code>, <code>--color-background-surface</code>).</li>
+        <li><strong>Components:</strong> Reuse existing <code>@/shared/ui</code> atoms (Button, IconButton, Toggle, Input, Select) but restyle to 4px grid, 12px/16px radius, accent focus rings.</li>
+        <li><strong>Dictionary tab:</strong> Phase 1 wraps existing vanilla popup dictionary into the left pane. Phase 2 rewrites as React. Card Creator renders in right pane via <code>useCardCreatorState</code>.</li>
+        <li><strong>Settings tab:</strong> Reuse <code>SettingsDialogContent</code> inside the panel body with a max-width cap (≤960px) so it does not stretch.</li>
+        <li><strong>Mobile:</strong> Switch to bottom-sheet / full-screen with bottom tab bar. Card creator becomes stacked or bottom sheet.</li>
+        <li><strong>Risks:</strong> Fullscreen video reparenting, z-index stacking, content-script theme injection, and dictionary vanilla→React handoff require careful integration testing.</li>
+      </ul>
+    </div>
+
+    <button class="orbital-badge" onclick="openPanel()" aria-label="Open universal panel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+    </button>
+
+    <div class="backdrop" id="backdrop" onclick="closePanel()"></div>
+
+    <div class="universal-panel" id="panel" role="dialog" aria-modal="true" aria-label="Universal panel">
+      <nav class="tab-bar" aria-label="Panel tabs">
+        <button class="tab-button active" id="tab-dictionary" onclick="switchTab('dictionary')" aria-label="Dictionary" title="Dictionary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </button>
+        <button class="tab-button" id="tab-settings" onclick="switchTab('settings')" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </nav>
+
+      <div class="panel-body">
+        <header class="panel-header">
+          <div class="toggle-cluster">
+            <label class="toggle-field">
+              <span class="toggle-label">Status</span>
+              <div class="toggle-switch on" id="toggle-status" onclick="toggleSwitch('status')"></div>
+            </label>
+            <label class="toggle-field">
+              <span class="toggle-label">Frequency</span>
+              <div class="toggle-switch on" id="toggle-frequency" onclick="toggleSwitch('frequency')"></div>
+            </label>
+            <label class="toggle-field">
+              <span class="toggle-label">Tokenize</span>
+              <div class="toggle-switch on" id="toggle-tokenize" onclick="toggleSwitch('tokenize')"></div>
+            </label>
+          </div>
+          <button class="icon-btn" onclick="closePanel()" aria-label="Close panel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </header>
+
+        <div class="panel-content">
+          <!-- DICTIONARY TAB -->
+          <div class="dictionary-tab" id="dictionary-tab">
+            <div class="dictionary-pane dictionary-left">
+              <div class="dictionary-search">
+                <input class="input" id="dict-search" type="text" placeholder="Type a word and press Enter" value="serendipity" onkeydown="handleSearchKey(event)">
+              </div>
+              <div class="dictionary-scroll" id="dictionary-result">
+                <!-- Candidate result injected by JS -->
+              </div>
+            </div>
+
+            <div class="dictionary-pane right-pane">
+              <div class="candidate-card card-form">
+                <h4 style="margin: 0 0 var(--spacing-2); font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold);">Card Creator</h4>
+                <div class="form-row">
+                  <div>
+                    <label class="form-label">Front</label>
+                    <input class="input" value="serendipity">
+                  </div>
+                  <div>
+                    <label class="form-label">Back</label>
+                    <input class="input" value="the occurrence of events by chance in a happy or beneficial way">
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label">Context sentence</label>
+                  <textarea class="input form-textarea">They found each other by pure serendipity.</textarea>
+                </div>
+                <div>
+                  <label class="form-label">Deck</label>
+                  <select class="select" style="width: 100%;">
+                    <option>Default</option>
+                    <option>Watching</option>
+                    <option>Vocabulary</option>
+                  </select>
+                </div>
+                <div class="chip-row">
+                  <span class="chip">📷 Screenshot</span>
+                  <span class="chip">🔊 Audio</span>
+                </div>
+                <div style="display: flex; gap: var(--spacing-2); margin-top: auto;">
+                  <button class="btn btn-secondary" style="flex: 1;">Reset</button>
+                  <button class="btn btn-primary" style="flex: 1;">Add to Anki</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SETTINGS TAB -->
+          <div class="settings-tab" id="settings-tab" hidden>
+            <nav class="settings-sidebar" aria-label="Settings sections">
+              <div class="settings-sidebar-label">Sections</div>
+              <button class="settings-nav-item active" data-section="media" onclick="scrollToSection('media')">Media</button>
+              <button class="settings-nav-item" data-section="block" onclick="scrollToSection('block')">Block</button>
+              <button class="settings-nav-item" data-section="target" onclick="scrollToSection('target')">Target</button>
+              <button class="settings-nav-item" data-section="cluster" onclick="scrollToSection('cluster')">Cluster</button>
+              <button class="settings-nav-item" data-section="shortcuts" onclick="scrollToSection('shortcuts')">Shortcuts</button>
+              <button class="settings-nav-item" data-section="theme" onclick="scrollToSection('theme')">Theme</button>
+            </nav>
+
+            <div class="settings-main" id="settings-main">
+              <section class="settings-section" id="section-media" data-section="media">
+                <h4 class="settings-section-title">Media Selection</h4>
+                <p class="settings-section-desc">Configure how media is automatically selected.</p>
+                <div class="settings-field">
+                  <div class="settings-row">
+                    <span class="settings-label">Auto select media</span>
+                    <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+                  </div>
+                </div>
+                <div class="settings-pair">
+                  <div class="settings-field">
+                    <label class="form-label">Target language</label>
+                    <select class="select" style="width: 100%;">
+                      <option>English</option>
+                      <option>Japanese</option>
+                      <option>Spanish</option>
+                    </select>
+                  </div>
+                  <div class="settings-field">
+                    <label class="form-label">Native language</label>
+                    <select class="select" style="width: 100%;">
+                      <option>Vietnamese</option>
+                      <option>English</option>
+                      <option>Chinese</option>
+                    </select>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings-section" id="section-block" data-section="block">
+                <h4 class="settings-section-title">Subtitle Block</h4>
+                <p class="settings-section-desc">Position, scale, and auto-load behavior for the unified subtitle block.</p>
+                <div class="settings-field">
+                  <div class="settings-row">
+                    <span class="settings-label">Overlay auto-load</span>
+                    <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+                  </div>
+                </div>
+                <div class="settings-field">
+                  <div class="settings-row">
+                    <span class="settings-label">Auto-translate when native missing</span>
+                    <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+                  </div>
+                </div>
+                <div class="divider"></div>
+                <div class="settings-field">
+                  <label class="form-label">Block scale</label>
+                  <div class="slider-row">
+                    <input class="slider" type="range" min="50" max="150" value="100">
+                    <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); min-width: 40px; text-align: right;">100%</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings-section" id="section-target" data-section="target">
+                <h4 class="settings-section-title">Target Subtitle</h4>
+                <p class="settings-section-desc">Appearance for the target subtitle layer.</p>
+                <div class="settings-field">
+                  <label class="form-label">Font size</label>
+                  <div class="slider-row">
+                    <input class="slider" type="range" min="12" max="32" value="20">
+                    <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); min-width: 40px; text-align: right;">20px</span>
+                  </div>
+                </div>
+                <div class="settings-pair">
+                  <div class="settings-field">
+                    <label class="form-label">Text color</label>
+                    <input class="input" value="#ffffff" style="font-family: var(--font-family-code);">
+                  </div>
+                  <div class="settings-field">
+                    <label class="form-label">Background opacity</label>
+                    <div class="slider-row">
+                      <input class="slider" type="range" min="0" max="100" value="80">
+                      <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); min-width: 40px; text-align: right;">80%</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings-section" id="section-cluster" data-section="cluster">
+                <h4 class="settings-section-title">Navigation Cluster</h4>
+                <p class="settings-section-desc">Floating prev/repeat/next controls and seek shortcuts.</p>
+                <div class="settings-field">
+                  <div class="settings-row">
+                    <span class="settings-label">Show navigation cluster</span>
+                    <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+                  </div>
+                </div>
+                <div class="settings-field">
+                  <label class="form-label">Button size</label>
+                  <div class="slider-row">
+                    <input class="slider" type="range" min="24" max="64" value="40">
+                    <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); min-width: 40px; text-align: right;">40px</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings-section" id="section-shortcuts" data-section="shortcuts">
+                <h4 class="settings-section-title">Shortcuts</h4>
+                <p class="settings-section-desc">Keyboard shortcuts for common actions.</p>
+                <div class="settings-field">
+                  <div class="settings-row">
+                    <span class="settings-label">Previous cue</span>
+                    <span class="shortcut-box">Shift + ←</span>
+                  </div>
+                </div>
+                <div class="settings-field">
+                  <div class="settings-row">
+                    <span class="settings-label">Next cue</span>
+                    <span class="shortcut-box">Shift + →</span>
+                  </div>
+                </div>
+                <div class="settings-field">
+                  <div class="settings-row">
+                    <span class="settings-label">Toggle panel</span>
+                    <span class="shortcut-box">Ctrl + D</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings-section" id="section-theme" data-section="theme">
+                <h4 class="settings-section-title">Theme</h4>
+                <p class="settings-section-desc">Appearance and color mode.</p>
+                <div class="settings-field">
+                  <div class="settings-row">
+                    <span class="settings-label">Mode</span>
+                    <select class="select">
+                      <option>System</option>
+                      <option>Light</option>
+                      <option>Dark</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="settings-field">
+                  <div class="settings-row">
+                    <span class="settings-label">Accent color</span>
+                    <input class="input" value="#262626" style="font-family: var(--font-family-code);">
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const panel = document.getElementById('panel');
+    const backdrop = document.getElementById('backdrop');
+    const dictionaryTab = document.getElementById('dictionary-tab');
+    const settingsTab = document.getElementById('settings-tab');
+    const tabDictionary = document.getElementById('tab-dictionary');
+    const tabSettings = document.getElementById('tab-settings');
+    const dictResult = document.getElementById('dictionary-result');
+    const card = document.getElementById('feasibilityCard');
+
+    const CANDIDATE_HTML = `
+      <div class="candidate-card">
+        <div class="candidate-header">
+          <span class="candidate-term">serendipity</span>
+          <span class="candidate-pos">noun</span>
+        </div>
+        <div class="candidate-ipa">/ˌser.ənˈdɪp.ə.ti/</div>
+        <div class="candidate-meaning">The occurrence of events by chance in a happy or beneficial way.</div>
+        <div class="candidate-context">They found each other by pure serendipity.</div>
+        <div class="candidate-toolbar">
+          <span class="chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            Audio
+          </span>
+          <span class="chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            Image
+          </span>
+          <span class="chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            Links
+          </span>
+        </div>
+        <div class="chip-row" style="margin-bottom: var(--spacing-3);">
+          <span class="chip" style="background: var(--color-success-muted); color: var(--color-success); border-color: transparent;">common</span>
+          <span class="chip" style="background: var(--color-warning-muted); color: var(--color-warning); border-color: transparent;">academic</span>
+        </div>
+        <div class="candidate-footer">
+          <button class="btn btn-ghost btn-sm" onclick="showEmpty()">Clear</button>
+          <button class="btn btn-primary" onclick="sendToCard()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+            Send to Card
+          </button>
+        </div>
+      </div>
+    `;
+
+    const EMPTY_HTML = `
+      <div class="dictionary-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <div style="font-weight: var(--font-weight-semibold);">Ready when you are</div>
+        <div>Search for a word to explore its meaning.</div>
+      </div>
+    `;
+
+    dictResult.innerHTML = CANDIDATE_HTML;
+
+    function openPanel() {
+      panel.classList.add('open');
+      backdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => document.getElementById('dict-search').focus(), 300);
+    }
+
+    function closePanel() {
+      panel.classList.remove('open');
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function switchTab(tab) {
+      if (tab === 'dictionary') {
+        dictionaryTab.hidden = false;
+        settingsTab.hidden = true;
+        tabDictionary.classList.add('active');
+        tabSettings.classList.remove('active');
+        setTimeout(() => document.getElementById('dict-search').focus(), 50);
+      } else {
+        dictionaryTab.hidden = true;
+        settingsTab.hidden = false;
+        tabDictionary.classList.remove('active');
+        tabSettings.classList.add('active');
+      }
+    }
+
+    function toggleSwitch(id) {
+      const el = document.getElementById('toggle-' + id);
+      el.classList.toggle('on');
+      if (id === 'tokenize') {
+        const status = document.getElementById('toggle-status');
+        const freq = document.getElementById('toggle-frequency');
+        const on = el.classList.contains('on');
+        status.classList.toggle('disabled', !on);
+        freq.classList.toggle('disabled', !on);
+      }
+    }
+
+    function handleSearchKey(e) {
+      if (e.key === 'Enter') {
+        const v = e.target.value.trim();
+        dictResult.innerHTML = v ? CANDIDATE_HTML : EMPTY_HTML;
+      }
+    }
+
+    function showEmpty() {
+      document.getElementById('dict-search').value = '';
+      dictResult.innerHTML = EMPTY_HTML;
+    }
+
+    function sendToCard() {
+      alert('Sent to Card Creator — in the real app, this populates the right pane.');
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme') || 'light';
+      html.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    }
+
+    function toggleNotes() {
+      card.classList.toggle('collapsed');
+    }
+
+    function scrollToSection(id) {
+      const target = document.getElementById('section-' + id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelectorAll('.settings-nav-item').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.section === id);
+      });
+    }
+
+    // Keyboard: Escape closes
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && panel.classList.contains('open')) {
+        closePanel();
+      }
+    });
+  </script>
+</body>
+</html>

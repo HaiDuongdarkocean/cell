@@ -98,7 +98,7 @@
   align-items: center;
   justify-content: space-between;
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   margin-top: var(--space-0-5);
 }
 
@@ -152,8 +152,8 @@
 .progressFill.converting { background: var(--color-primary); }
 .progressFill.done { background: var(--color-success); }
 .progressFill.error { background: var(--color-error); }
-.progressFill.paused { background: var(--color-text-muted); }
-.progressFill.queued { background: var(--color-text-muted); }
+.progressFill.paused { background: var(--color-text-secondary); }
+.progressFill.queued { background: var(--color-text-secondary); }
 
 /* === Progress label (single-phase fallback) === */
 .progressLabel {
@@ -161,7 +161,7 @@
   align-items: center;
   justify-content: space-between;
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   text-transform: capitalize;
 }
 
@@ -177,7 +177,7 @@
   align-items: center;
   gap: var(--space-1-5);
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   padding: var(--space-1) 0;
 }
 
@@ -188,7 +188,7 @@
   gap: var(--space-2);
   flex-wrap: wrap;
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   margin-top: var(--space-0-5);
 }
 

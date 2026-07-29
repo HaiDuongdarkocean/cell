@@ -94,14 +94,14 @@
 .formatTag,
 .qualityTag {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .meta {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
@@ -203,7 +203,7 @@
 }
 
 .qualitySize {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-regular);
 }
@@ -241,7 +241,7 @@
   justify-content: center;
   width: var(--space-8);
   height: var(--space-8);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .downloadingIndicator svg {
@@ -288,7 +288,7 @@
 .copyBtn svg {
   width: var(--space-3-5);
   height: var(--space-3-5);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
   transition: color var(--transition);
 }

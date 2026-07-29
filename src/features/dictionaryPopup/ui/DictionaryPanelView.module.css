@@ -47,7 +47,7 @@
 
 .searchHistoryClear {
   flex-shrink: 0;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .searchHistoryClear:hover {
@@ -126,7 +126,7 @@
 }
 
 .loading {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   background: var(--color-surface);
 }
 
@@ -195,7 +195,7 @@
 
 .cellHeaderIpa {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   flex-shrink: 0;
   line-height: calc(var(--touch-target-mobile) * 0.4);
@@ -295,7 +295,7 @@
 
 .cellHeaderStatus--ignore {
   background: var(--color-surface-hover);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cellHeaderFrequency {
@@ -380,7 +380,7 @@
 }
 
 .cellDefEmpty {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-style: italic;
   padding: var(--space-1) 0;
 }
@@ -395,7 +395,7 @@
   gap: var(--space-1);
   padding: var(--space-6) var(--space-4);
   text-align: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .dictionaryEmptyIcon {
@@ -415,7 +415,7 @@
 
 .dictionaryEmptyDescription {
   max-width: 28ch;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
 }
@@ -506,13 +506,13 @@
 
 .cellDefPos {
   font-style: italic;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cellDefExamples {
   margin-top: var(--space-0-5);
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cellToolbar {
@@ -571,7 +571,7 @@
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-bottom: var(--space-0-5) solid transparent;
   padding-bottom: var(--space-0-5);
@@ -596,14 +596,14 @@
   gap: var(--space-2);
   padding: var(--space-4) var(--space-2);
   text-align: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 
 .cellAudioEmptyIcon {
   width: var(--iconbutton-size-sm);
   height: var(--iconbutton-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cellAudioEmptyIcon svg {
@@ -630,7 +630,7 @@
   justify-content: center;
   gap: var(--space-1);
   padding: var(--space-2);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 
@@ -700,7 +700,7 @@
 
 .cellTranslateTarget {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cellTranslateNative {
@@ -762,14 +762,14 @@
   gap: var(--space-1);
   padding: var(--space-4) var(--space-2);
   text-align: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 
 .cellTranslateEmptyIcon {
   width: var(--iconbutton-size-sm);
   height: var(--iconbutton-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cellTranslateEmptyIcon svg {
@@ -799,14 +799,14 @@
   width: 100%;
   padding: var(--space-4) var(--space-2);
   text-align: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 
 .cellLinksEmptyIcon {
   width: var(--iconbutton-size-sm);
   height: var(--iconbutton-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cellLinksEmptyIcon svg {
@@ -843,7 +843,7 @@
   width: var(--space-3-5);
   height: var(--space-3-5);
   flex-shrink: 0;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cellCandidatesChips {
@@ -1250,7 +1250,7 @@
 
 .cellAudioLabelMeta {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cellAudioCheck {
@@ -1262,7 +1262,7 @@
   justify-content: center;
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   opacity: 0;
 }
 

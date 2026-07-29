@@ -6,9 +6,13 @@ import type { Config } from 'jest';
  * so we factor them into a constant and spread it into each project.
  */
 const moduleNameMapper = {
-  // Mock Vite ?raw imports — must be BEFORE @/ alias so ?raw suffixes don't
+  // Mock Vite ?raw CSS imports — returns empty CSS string for tests.
+  '\\.css\\?raw$': '<rootDir>/tests/cssRawMock.ts',
+  // Mock Vite ?raw SVG imports — must be BEFORE @/ alias so ?raw suffixes don't
   // get resolved as real files. Returns placeholder string for tests.
   '\\?raw$': '<rootDir>/tests/rawMock.ts',
+  // Mock Vite ?inline CSS imports — returns placeholder string for tests.
+  '\\?inline$': '<rootDir>/tests/inlineCssMock.ts',
   // Mock Vite ?worker imports — returns a no-op Worker class for tests
   '\\?worker$': '<rootDir>/tests/workerMock.ts',
   '^@/(.*)$': '<rootDir>/src/$1',

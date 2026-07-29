@@ -15,7 +15,6 @@
 import { createRoot, type Root } from 'react-dom/client';
 import { createElement, type ReactElement } from 'react';
 import { SettingsDialog } from './SettingsDialog';
-import type { TokenizePanelState } from './TokenizeSettingsPanel';
 import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
@@ -23,14 +22,6 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 import type { Settings } from '@/entities/media';
 
 export interface SettingsDialogMountOptions {
-  /** Tokenize state + callbacks. When provided, a Tokenize section appears
-   *  at the top of the settings sidebar. */
-  readonly tokenize?: {
-    readonly getState: () => TokenizePanelState;
-    readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
-    readonly onOpenDictionary: () => void;
-    readonly subscribe: (cb: (state: TokenizePanelState) => void) => () => void;
-  };
   /** Called when the dialog closes (badge click-outside / Escape / close btn). */
   readonly onClose: () => void;
 }
@@ -103,7 +94,6 @@ export function mountSettingsDialog(
 
   let open = false;
   let settings: Settings | null = null;
-  let tokenizeState: TokenizePanelState | null = options.tokenize?.getState() ?? null;
   let root: Root | null = createRoot(rootEl);
 
   // Load settings asynchronously + listen for external changes.
@@ -119,12 +109,6 @@ export function mountSettingsDialog(
     }
   };
   onStorageChanged(onStorageChange);
-
-  // Subscribe to tokenize state changes.
-  const tokenizeUnsub = options.tokenize?.subscribe((s) => {
-    tokenizeState = s;
-    render();
-  }) ?? null;
 
   const render = (): void => {
     if (!root || !settings) return;
@@ -143,9 +127,6 @@ export function mountSettingsDialog(
           render();
           options.onClose();
         },
-        tokenizeState: tokenizeState ?? undefined,
-        onToggleTokenize: options.tokenize?.onToggle,
-        onOpenDictionary: options.tokenize?.onOpenDictionary,
       }) as ReactElement,
     );
   };
@@ -172,7 +153,6 @@ export function mountSettingsDialog(
       document.removeEventListener('fullscreenchange', onFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
       removeOnStorageChangedListener(onStorageChange);
-      tokenizeUnsub?.();
       restoreThemeStyleToHead();
       themeSyncCleanup?.();
       tokenStyleCleanup?.();

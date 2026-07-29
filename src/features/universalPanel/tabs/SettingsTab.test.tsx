@@ -1,7 +1,6 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { Settings } from '@/entities/media';
-import type { TokenizePanelState } from '@/features/settings/ui/TokenizeSettingsPanel';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 import { SettingsTab } from './SettingsTab';
 
@@ -9,20 +8,11 @@ import { SettingsTab } from './SettingsTab';
 interface MockSettingsDialogContentProps {
   settings?: Settings;
   onChange?: (settings: Settings) => void;
-  tokenizeState?: TokenizePanelState;
-  onToggleTokenize?: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
-  onOpenDictionary?: () => void;
   className?: string;
 }
 
 jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
-  SettingsDialogContent: ({
-    settings,
-    onChange,
-    tokenizeState,
-    onToggleTokenize,
-    onOpenDictionary,
-  }: MockSettingsDialogContentProps) => (
+  SettingsDialogContent: ({ settings, onChange }: MockSettingsDialogContentProps) => (
     <div data-testid="settings-dialog-content">
       <nav>
         <button type="button" data-testid="settings-sidebar-button">Sidebar</button>
@@ -34,26 +24,6 @@ jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
       >
         First control
       </button>
-      <button
-        type="button"
-        data-testid="settings-open-dictionary"
-        onClick={onOpenDictionary}
-      >
-        Open Dictionary
-      </button>
-      {tokenizeState && (
-        <>
-          <div data-testid="settings-tokenize-state">tokenize-on</div>
-          <button
-            type="button"
-            data-testid="settings-toggle-tokenize"
-            onClick={() => onToggleTokenize?.('showStatus')}
-          >
-            Toggle tokenize
-          </button>
-        </>
-      )}
-      {!tokenizeState && <div data-testid="settings-tokenize-state">tokenize-off</div>}
     </div>
   ),
 }));
@@ -76,8 +46,6 @@ const mockSaveSettings = jest.mocked(saveSettings);
 const mockOnStorageChanged = jest.mocked(onStorageChanged);
 
 describe('SettingsTab', () => {
-  const tokenizeState: TokenizePanelState = { enabled: true, showStatus: true, showFrequency: false };
-
   beforeEach(() => {
     jest.clearAllMocks();
     mockLoadSettings.mockResolvedValue(DEFAULT_SETTINGS);
@@ -114,38 +82,6 @@ describe('SettingsTab', () => {
     listener({ settings: { newValue: {}, oldValue: {} } }, 'local');
 
     await waitFor(() => expect(mockLoadSettings).toHaveBeenCalledTimes(2));
-  });
-
-  it('bridges tokenize state to SettingsDialogContent and handles toggles', async () => {
-    const unsubscribe = jest.fn();
-    const tokenize = {
-      getState: jest.fn(() => tokenizeState),
-      onToggle: jest.fn(),
-      subscribe: jest.fn((cb: (state: TokenizePanelState) => void) => {
-        cb(tokenizeState);
-        return unsubscribe;
-      }),
-    };
-
-    const { unmount } = render(<SettingsTab tokenize={tokenize} />);
-    await waitFor(() => expect(screen.getByTestId('settings-tokenize-state').textContent).toBe('tokenize-on'));
-
-    fireEvent.click(screen.getByTestId('settings-toggle-tokenize'));
-    expect(tokenize.onToggle).toHaveBeenCalledWith('showStatus');
-    expect(tokenize.getState).toHaveBeenCalled();
-    expect(tokenize.subscribe).toHaveBeenCalled();
-
-    unmount();
-    expect(unsubscribe).toHaveBeenCalled();
-  });
-
-  it('calls onOpenDictionary prop from SettingsDialogContent', async () => {
-    const onOpenDictionary = jest.fn();
-    render(<SettingsTab onOpenDictionary={onOpenDictionary} />);
-    await waitFor(() => screen.getByTestId('settings-dialog-content'));
-
-    fireEvent.click(screen.getByTestId('settings-open-dictionary'));
-    expect(onOpenDictionary).toHaveBeenCalled();
   });
 
   it('moves initial focus to the first non-sidebar settings control', async () => {

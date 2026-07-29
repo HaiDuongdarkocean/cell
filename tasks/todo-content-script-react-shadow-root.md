@@ -1,0 +1,1043 @@
+# Task Checklist: Content-script React + Shadow Root (SSOT)
+
+> Companion to `tasks/plan-content-script-react-shadow-root.md`. Each item must be S or M (3–5 files max), have AC, verification, dependencies, files, scope, and a parallel-lane grouping.
+
+- [ ] **T001 — Add semantic token layer + backwards aliases to `tokens.json`**
+  - **Phase:** 0a | **Lane:** A | **Scope:** S | **Depends on:** None
+  - **Files:** `src/shared/styles/tokens.json`
+  - **AC:**
+    - Primitive, derived, component layers separated.
+    - New semantic tokens follow `STANDARD.md`.
+    - Backwards aliases for old token names.
+    - Semantic radius and composite typography tokens added.
+  - **Verification:**
+    - `node scripts/generate-tokens.js`
+    - `rg "color-foreground|color-text-muted|color-card|color-popover" src/shared/styles/tokens.json`
+    - Manual: inspect `tokens.css`
+
+- [ ] **T002 — Update `scripts/generate-tokens.js` for alias resolution and composite typography**
+  - **Phase:** 0a | **Lane:** A | **Scope:** M | **Depends on:** T001
+  - **Files:** `scripts/generate-tokens.js`, `src/shared/lib/tokens.ts`, `src/shared/styles/tokens.css` (gen)
+  - **AC:**
+    - Alias values resolve to referenced token.
+    - Composite typography emits full CSS declarations.
+    - `tokens.ts` runtime map includes new tokens.
+  - **Verification:**
+    - `node scripts/generate-tokens.js`
+    - `npm run typecheck`
+    - Inspect generated `tokens.css`
+
+- [ ] **T003 — Refactor `src/shared/lib/tokens.ts` to read derived tokens from `tokens.json`**
+  - **Phase:** 0a | **Lane:** A | **Scope:** M | **Depends on:** T002
+  - **Files:** `src/shared/lib/tokens.ts`, `src/shared/styles/tokens.json`, `src/shared/lib/themeTokens.ts`
+  - **AC:**
+    - `deriveColorTokens` / `getColorTokens` consume derived from JSON.
+    - Theme injection still produces identical CSS.
+    - No runtime errors.
+  - **Verification:**
+    - `npm run test:unit` (tokens)
+    - `npm run build`
+    - Diff `tokens.css`
+
+- [x] **T004 — Move nav-cluster CSS strings into tokens / module CSS**
+  - **Phase:** 0a | **Lane:** A | **Scope:** M | **Depends on:** T001
+  - **Files:** `src/features/subtitle/ui/navClusterCss.ts`, `src/shared/lib/themeTokens.ts`, `src/shared/styles/tokens.json`, `src/features/subtitle/ui/NavCluster.module.css`
+  - **AC:**
+    - `NAV_CLUSTER_CSS` string removed/reduced.
+    - All colors/spacing/radius/z-index via tokens.
+    - Nav cluster renders in showcase.
+  - **Verification:**
+    - `rg 'NAV_CLUSTER_CSS' src/`
+    - `npm run build`
+    - Manual: showcase nav cluster
+
+- [x] **T005 — Move subtitle block / toast CSS strings into tokens / module CSS**
+  - **Phase:** 0a | **Lane:** A | **Scope:** M | **Depends on:** T001
+  - **Files:** `src/features/subtitle/ui/subtitleBlockCss.ts`, `src/features/subtitle/ui/subtitleUI.ts`, `src/shared/styles/tokens.json`, `src/features/subtitle/ui/SubtitleBlock.module.css`, `src/features/subtitle/ui/SubtitleToast.module.css`
+  - **AC:**
+    - Hardcoded CSS replaced by token refs or module CSS.
+    - Overlay/drag-hint tokens use semantic values.
+  - **Verification:**
+    - `rg '#[0-9a-fA-F]{3,8}' src/features/subtitle/ui/`
+    - `npm run typecheck`
+    - Manual: YouTube subtitle overlay
+
+- [x] **T006 — Move orbital badge CSS into tokens / module CSS**
+  - **Phase:** 0a | **Lane:** A | **Scope:** S | **Depends on:** T001
+  - **Files:** `src/features/dictionaryPopup/badgePointer/orbitalBadgeCss.ts`, `src/shared/styles/tokens.json`, `src/features/dictionaryPopup/ui/OrbitalBadge.module.css`
+  - **AC:**
+    - `orbitalBadgeCss.ts` values moved to tokens/module.
+    - No raw colors/spacing outside tokens.
+  - **Verification:**
+    - `rg '#[0-9a-fA-F]{3,8}' src/features/dictionaryPopup/badgePointer/`
+    - `npm run build`
+
+- [x] **T007 — Move tokenize badge / span CSS into tokens / module CSS**
+  - **Phase:** 0a | **Lane:** A | **Scope:** M | **Depends on:** T001
+  - **Files:** `src/features/tokenize/ui/tokenBadgeCss.ts`, `src/features/tokenize/ui/tokenSpanCss.ts`, `src/shared/styles/tokens.json`, `src/features/tokenize/ui/TokenizeFab.module.css`
+  - **AC:**
+    - Token color/spacing via token variables.
+    - Frequency tier colors use status-muted tokens.
+    - Token spans still wrap host text.
+  - **Verification:**
+    - `rg '#[0-9a-fA-F]{3,8}' src/features/tokenize/ui/`
+    - `npm run test:unit` (tokenize)
+    - Manual: token span colors
+
+- [x] **T008 — Move popup dictionary CSS into tokens / module CSS**
+  - **Phase:** 0a | **Lane:** A | **Scope:** M | **Depends on:** T001
+  - **Files:** `src/features/dictionaryPopup/ui/popupDictionary.css`, `src/shared/styles/tokens.json`, `src/features/dictionaryPopup/ui/PopupDictionary.module.css`
+  - **AC:**
+    - `popupDictionary.css` raw values replaced by tokens.
+    - No hardcoded colors/spacing/z-index outside `tokens.json`.
+    - Legacy popup still works.
+  - **Verification:**
+    - `rg '#[0-9a-fA-F]{3,8}' src/features/dictionaryPopup/ui/*.css`
+    - `npm run build`
+
+- [x] **T009 — Regenerate tokens and baseline build**
+  - **Phase:** 0a | **Lane:** A | **Scope:** S | **Depends on:** T002–T008
+  - **Files:** `src/shared/styles/tokens.css` (gen), `src/shared/styles/tokens.ts` (gen)
+  - **AC:**
+    - `tokens.css` and `tokens.ts` generated.
+    - `typecheck` and `build` pass.
+    - Existing UI renders.
+  - **Verification:**
+    - `node scripts/generate-tokens.js && npm run typecheck && npm run build`
+    - Manual: toggle light/dark in showcase
+
+- [x] **T010 — Replace `--color-foreground` callers with `--color-text-primary`**
+  - **Phase:** 0b | **Lane:** A | **Scope:** M | **Depends on:** T009
+  - **Files:** `src/shared/ui/*.module.css`, `src/features/**/*.module.css`, `src/features/**/*.tsx`, `src/entrypoints/**/*.tsx`, `src/shared/lib/tokens.ts`
+  - **AC:**
+    - Zero `var(--color-foreground)` outside tokens/generated.
+  - **Verification:**
+    - `rg "var\(--color-foreground\)" src/ --type css --type ts --type tsx -v tokens.json -v tokens.css`
+    - `npm run typecheck && npm run build`
+
+- [ ] **T011 — Replace `--color-text-muted` callers with `--color-text-secondary`**
+  - **Phase:** 0b | **Lane:** A | **Scope:** M | **Depends on:** T009
+  - **Files:** `src/shared/ui/*.module.css`, `src/features/**/*.module.css`, `src/features/**/*.tsx`, `src/entrypoints/**/*.tsx`, `src/shared/lib/tokens.ts`
+  - **AC:**
+    - Zero `var(--color-text-muted)` outside tokens/generated.
+  - **Verification:**
+    - `rg "var\(--color-text-muted\)" src/ ...`
+    - `npm run build`
+
+- [ ] **T012 — Replace `--color-card` callers with `--color-surface-card`**
+  - **Phase:** 0b | **Lane:** A | **Scope:** M | **Depends on:** T009
+  - **Files:** `src/shared/ui/*.module.css`, `src/features/**/*.module.css`, `src/features/**/*.tsx`, `src/entrypoints/**/*.tsx`, `src/shared/lib/tokens.ts`
+  - **AC:**
+    - Zero `var(--color-card)` outside tokens/generated.
+  - **Verification:**
+    - `rg "var\(--color-card\)" src/ ...`
+    - `npm run build`
+
+- [ ] **T013 — Replace `--color-popover` callers with `--color-surface-popover`**
+  - **Phase:** 0b | **Lane:** A | **Scope:** M | **Depends on:** T009
+  - **Files:** `src/shared/ui/*.module.css`, `src/features/**/*.module.css`, `src/features/**/*.tsx`, `src/entrypoints/**/*.tsx`, `src/shared/lib/tokens.ts`
+  - **AC:**
+    - Zero `var(--color-popover)` outside tokens/generated.
+  - **Verification:**
+    - `rg "var\(--color-popover\)" src/ ...`
+    - `npm run build`
+
+- [ ] **T014 — Audit raw px / hardcoded values and build**
+  - **Phase:** 0b | **Lane:** A/Q | **Scope:** M | **Depends on:** T010–T013
+  - **Files:** all `*.module.css`, `*.tsx` (audit fixes)
+  - **AC:**
+    - Zero hardcoded colors outside `tokens.css` + `SubtitlePreview`.
+    - Zero `color-accent` hover.
+    - Zero raw `px` in `src/shared/ui/` outside `var(...)` or `0px`.
+  - **Verification:**
+    - `rg '#[0-9a-fA-F]{3,8}' src/ --type css -v tokens.css -v SubtitlePreview`
+    - `rg 'color-accent' src/ --type css | rg hover`
+    - `rg 'px' src/shared/ui/ --type css -v "var\(" -v "0px"`
+    - `npm run typecheck && npm run build`
+
+- [ ] **T015 — Confirm zero old token names and tag pre-alias-removal commit**
+  - **Phase:** 0c | **Lane:** A/Q | **Scope:** S | **Depends on:** T014
+  - **Files:** `git` (tag only)
+  - **AC:**
+    - `rg` for old token names returns 0 outside tokens/generated.
+    - `pre-token-alias-removal` tag exists.
+  - **Verification:**
+    - `rg "--color-foreground|--color-text-muted|--color-card|--color-popover" src/ --type css --type ts --type tsx -v tokens.json -v tokens.css`
+    - `git tag pre-token-alias-removal`
+
+- [ ] **T016 — Remove aliases and alias-generation logic**
+  - **Phase:** 0c | **Lane:** A | **Scope:** M | **Depends on:** T015
+  - **Files:** `src/shared/styles/tokens.json`, `scripts/generate-tokens.js`, `src/shared/styles/tokens.css` (gen), `src/shared/styles/tokens.ts` (gen)
+  - **AC:**
+    - Old token names removed from `tokens.json`.
+    - Alias code removed from generator.
+    - `tokens.css` contains no aliases.
+  - **Verification:**
+    - `node scripts/generate-tokens.js`
+    - `rg "--color-foreground|--color-text-muted|--color-card|--color-popover" src/shared/styles/tokens.css`
+    - `npm run typecheck`
+
+- [ ] **T017 — Capture baseline bundle / RAM metrics**
+  - **Phase:** 0c | **Lane:** Q | **Scope:** M | **Depends on:** T016
+  - **Files:** `docs/adr/075-shadow-root-react.md`
+  - **AC:**
+    - `dist/content/` and `docs/design-system` sizes recorded.
+    - YouTube 10 min idle RAM baseline recorded.
+    - Metrics in ADR-075.
+  - **Verification:**
+    - `npm run build` and `npx vite build --mode development`
+    - `ls -lh dist/content/`, `du -sh docs/design-system`
+    - Chrome DevTools Memory
+
+- [ ] **T018 — Verify all entrypoints after token cleanup**
+  - **Phase:** 0c | **Lane:** Q | **Scope:** S | **Depends on:** T016, T017
+  - **Files:** none
+  - **AC:**
+    - `npm run build` and `npx vite build --mode development` pass.
+    - Showcase, popup, sidepanel, options render.
+  - **Verification:**
+    - `npm run typecheck && npm run build && npx vite build --mode development`
+    - Manual: load each entrypoint, toggle light/dark
+
+- [ ] **T019 — Formalize `ShadowButtonPoC` as design-system page**
+  - **Phase:** 1a | **Lane:** B | **Scope:** S | **Depends on:** T018
+  - **Files:** `src/entrypoints/design-system-showcase/ShadowButtonPoC.tsx`, `src/entrypoints/design-system-showcase/App.tsx`, `docs/adr/075-shadow-root-react.md`
+  - **AC:**
+    - Shadow Button renders despite hostile host CSS.
+    - Button keeps Cell styling.
+  - **Verification:**
+    - `npm run dev` or `npx http-server docs/design-system -p 8123`
+    - Manual: inspect Shadow Button PoC
+
+- [ ] **T020 — Prototype `src/shared/lib/shadowRoot/mountReactShadow.ts`**
+  - **Phase:** 1a | **Lane:** B | **Scope:** S | **Depends on:** T019
+  - **Files:** `src/shared/lib/shadowRoot/mountReactShadow.ts`
+  - **AC:**
+    - Creates shadow root and React root.
+    - Returns `unmount()` removing host.
+  - **Verification:**
+    - `npm run test:unit -- mountReactShadow`
+    - `npm run typecheck`
+
+- [ ] **T021 — Prototype `src/shared/lib/shadowRoot/injectShadowCss.ts`**
+  - **Phase:** 1a | **Lane:** B | **Scope:** S | **Depends on:** T019
+  - **Files:** `src/shared/lib/shadowRoot/injectShadowCss.ts`
+  - **AC:**
+    - Injects `tokens.css?raw` and `components.css?raw`.
+    - Replaces `:root` → `:host`.
+    - Returns cleanup.
+  - **Verification:**
+    - `npm run test:unit -- injectShadowCss`
+
+- [ ] **T022 — Add Jest moduleNameMapper for `?inline` CSS imports**
+  - **Phase:** 1a | **Lane:** B/Q | **Scope:** S | **Depends on:** T019
+  - **Files:** `jest.config.ts`, `tests/inlineMock.ts`
+  - **AC:**
+    - `\?inline$` mapped before `^@/(.*)$`.
+    - `?inline` returns plain CSS string in tests.
+  - **Verification:**
+    - `npm run test:unit` with a `?inline` component
+    - `npm run typecheck`
+
+- [ ] **T023 — Document CSS injection decision in ADR-075**
+  - **Phase:** 1a | **Lane:** B | **Scope:** S | **Depends on:** T021, T022
+  - **Files:** `docs/adr/075-shadow-root-react.md`
+  - **AC:**
+    - ADR explains `?inline` choice.
+    - Notes limitations and budget.
+  - **Verification:**
+    - Review ADR-075
+
+- [ ] **T024 — Implement `mountReactShadow.ts`**
+  - **Phase:** 1b | **Lane:** B | **Scope:** M | **Depends on:** T020–T023
+  - **Files:** `src/shared/lib/shadowRoot/mountReactShadow.ts`, `src/shared/lib/shadowRoot/mountReactShadow.test.ts`
+  - **AC:**
+    - Generic helper with host, layer, position.
+    - Creates shadow, injects CSS, renders React, returns unmount.
+    - Multiple hosts ordered by layer.
+  - **Verification:**
+    - `npm run test:unit -- mountReactShadow`
+    - `npm run typecheck`
+
+- [ ] **T025 — Implement `injectShadowCss.ts` with per-component CSS**
+  - **Phase:** 1b | **Lane:** B | **Scope:** M | **Depends on:** T021, T022
+  - **Files:** `src/shared/lib/shadowRoot/injectShadowCss.ts`, `src/shared/lib/shadowRoot/injectShadowCss.test.ts`
+  - **AC:**
+    - Injects tokens, components, and `*.module.css?inline`.
+    - Idempotent re-injection.
+    - Returns cleanup.
+  - **Verification:**
+    - `npm run test:unit -- injectShadowCss`
+
+- [ ] **T027 — Refactor `themeManager.ts` `applyTheme` to accept a target element**
+  - **Phase:** 1b | **Lane:** B | **Scope:** S | **Depends on:** T018
+  - **Files:** `src/features/theme/logic/themeManager.ts`, `src/features/theme/logic/themeManager.test.ts`
+  - **AC:**
+    - `applyTheme(mode, config, target = document.documentElement)`.
+    - Existing callers still work.
+  - **Verification:**
+    - `npm run test:unit -- themeManager`
+    - `npm run build`
+
+- [ ] **T026 — Implement `ShadowThemeProvider.tsx`**
+  - **Phase:** 1b | **Lane:** B | **Scope:** M | **Depends on:** T024, T027
+  - **Files:** `src/shared/lib/shadowRoot/ShadowThemeProvider.tsx`, `src/features/theme/ui/ThemeProvider.tsx`, `src/features/theme/logic/themeManager.ts`
+  - **AC:**
+    - Wraps `ThemeProvider` with `container` prop.
+    - Content-script reuses `themeTokens.ts` and syncs `data-theme`.
+  - **Verification:**
+    - `npm run test:unit -- ShadowThemeProvider`
+
+- [ ] **T028 — Create `cuesStore.ts`**
+  - **Phase:** 1b | **Lane:** B/C | **Scope:** S | **Depends on:** T018
+  - **Files:** `src/stores/cuesStore.ts`, `src/stores/cuesStore.test.ts`
+  - **AC:**
+    - Zustand store with target/native cues and active index.
+    - Subtitle components subscribe to slices.
+  - **Verification:**
+    - `npm run test:unit -- cuesStore`
+    - `npm run typecheck`
+
+- [ ] **T029 — Create `useShadowFocusTrap.ts`**
+  - **Phase:** 1b | **Lane:** B | **Scope:** S | **Depends on:** T024
+  - **Files:** `src/shared/lib/shadowRoot/useShadowFocusTrap.ts`, `src/shared/lib/shadowRoot/useShadowFocusTrap.test.ts`
+  - **AC:**
+    - Uses `panel.getRootNode().activeElement`.
+    - Cycles focus inside shadow.
+  - **Verification:**
+    - `npm run test:unit -- useShadowFocusTrap`
+
+- [ ] **T030 — Define z-index and shadow host ordering contract**
+  - **Phase:** 1b | **Lane:** B | **Scope:** S | **Depends on:** T024
+  - **Files:** `src/shared/lib/shadowRoot/mountReactShadow.ts`, `docs/adr/075-shadow-root-react.md`, `src/shared/styles/tokens.json`
+  - **AC:**
+    - Documented stacking order.
+    - `mountReactShadow` accepts `layer`/`zIndex`.
+    - No hardcoded z-index.
+  - **Verification:**
+    - Review ADR-075
+    - `rg 'z-index:' src/ --type css | rg -v 'var(--z-' | rg -v tokens`
+
+- [ ] **T031 — PoC fixed overlay inside Shadow DOM**
+  - **Phase:** 1b | **Lane:** B/G/H | **Scope:** M | **Depends on:** T024, T026
+  - **Files:** `src/entrypoints/design-system-showcase/ShadowOverlayPoC.tsx`, `src/entrypoints/design-system-showcase/App.tsx`, `docs/adr/075-shadow-root-react.md`
+  - **AC:**
+    - Dialog/Card in shadow host with `position: fixed; inset: 0`.
+    - YouTube fullscreen: full viewport, not trapped.
+    - GO/NO-GO recorded.
+  - **Verification:**
+    - `npm run build`
+    - Chrome DevTools MCP: YouTube fullscreen
+    - Update ADR if NO-GO
+
+- [ ] **T032 — Update `tokens.css` / `tokens.ts` generation for `:host`**
+  - **Phase:** 1b | **Lane:** A/B | **Scope:** S | **Depends on:** T002, T021
+  - **Files:** `scripts/generate-tokens.js`, `src/shared/styles/tokens.css` (gen)
+  - **AC:**
+    - Generated CSS works with `:root` → `:host` replacement.
+    - Static block on `:root`; color on `[data-theme]`.
+  - **Verification:**
+    - `node scripts/generate-tokens.js`
+    - `rg ':root' src/shared/styles/tokens.css`
+
+- [ ] **T033 — Verify shadow mount on real pages**
+  - **Phase:** 1c | **Lane:** Q | **Scope:** M | **Depends on:** T024–T032
+  - **Files:** none
+  - **AC:**
+    - CSS isolation on YouTube/Netflix/GeeksforGeeks.
+    - Light/dark toggle, focus, hover, click-outside work.
+  - **Verification:**
+    - Manual on 3 sites
+
+- [ ] **T034 — Measure bundle / RAM after Phase 1**
+  - **Phase:** 1c | **Lane:** Q | **Scope:** S | **Depends on:** T033
+  - **Files:** `docs/adr/075-shadow-root-react.md`
+  - **AC:**
+    - Content bundle delta ≤ baseline + 300KB.
+    - Shadow CSS ≤ 50KB.
+    - RAM within budget.
+  - **Verification:**
+    - `du -sh dist/content/`
+    - Chrome DevTools Memory
+    - Update ADR
+
+- [ ] **T035 — Define `cell:cues:updated` event types**
+  - **Phase:** 2a | **Lane:** C | **Scope:** S | **Depends on:** T028
+  - **Files:** `src/features/subtitle/events.ts`
+  - **AC:**
+    - Event type and `CustomEvent` detail defined.
+    - Detail carries target, native, activeIndex.
+  - **Verification:**
+    - `npm run test:unit -- events`
+    - `npm run typecheck`
+
+- [ ] **T036 — Create `SubtitleBlock.tsx`**
+  - **Phase:** 2a | **Lane:** C | **Scope:** M | **Depends on:** T028, T035
+  - **Files:** `src/features/subtitle/ui/SubtitleBlock.tsx`, `src/features/subtitle/ui/SubtitleBlock.module.css`, `src/features/subtitle/ui/SubtitleBlock.test.tsx`
+  - **AC:**
+    - Renders target/native cues from `cuesStore`.
+    - Applies `OverlayStyleConfig`.
+    - `React.memo` + selectors.
+  - **Verification:**
+    - `npm run test:unit -- SubtitleBlock`
+    - `npm run build`
+    - Manual: showcase preview
+
+- [ ] **T037 — Create `NavCluster.tsx`**
+  - **Phase:** 2a | **Lane:** C | **Scope:** M | **Depends on:** T028, T035
+  - **Files:** `src/features/subtitle/ui/NavCluster.tsx`, `src/features/subtitle/ui/NavCluster.module.css`, `src/features/subtitle/ui/NavCluster.test.tsx`
+  - **AC:**
+    - Renders prev/next/replay/repeat/toggle.
+    - Collapse/edge drag.
+    - Icons from `ICON_CATALOG`.
+  - **Verification:**
+    - `npm run test:unit -- NavCluster`
+    - Manual: showcase
+
+- [ ] **T038 — Refactor content-script controllers to dispatch cue events**
+  - **Phase:** 2a | **Lane:** C | **Scope:** M | **Depends on:** T035
+  - **Files:** `src/features/subtitle/ui/contentScriptController.ts`, `src/features/subtitle/ui/subtitleBlockController.ts`, `src/entrypoints/content/subtitle/*`
+  - **AC:**
+    - Controllers dispatch `cell:cues:updated`.
+    - `cuesStore` listens.
+    - Business logic untouched.
+  - **Verification:**
+    - `npm run test:unit` for affected controllers
+    - `npm run build`
+
+- [ ] **T039 — Mount `SubtitleBlock` + `NavCluster` into a shared shadow root**
+  - **Phase:** 2a | **Lane:** C | **Scope:** M | **Depends on:** T024, T036, T037, T038
+  - **Files:** `src/features/subtitle/ui/mountSubtitle.ts`, `src/entrypoints/content/subtitle/*`, `src/shared/lib/shadowRoot/mountReactShadow.ts`
+  - **AC:**
+    - Single shadow host on video element.
+    - `pointer-events: none` host, `auto` controls.
+    - Shared CSS injection.
+  - **Verification:**
+    - `npm run test:unit -- mountSubtitle`
+    - Manual: YouTube/Netflix
+
+- [ ] **T040 — Apply `OverlayStyleConfig` from settings**
+  - **Phase:** 2a | **Lane:** C | **Scope:** S | **Depends on:** T036, T039
+  - **Files:** `src/features/subtitle/ui/SubtitleBlock.tsx`, `src/features/settings/ui/SubtitleStylePanel.tsx`
+  - **AC:**
+    - Config passed as props.
+    - Live updates from settings.
+    - No hardcoded overlay colors.
+  - **Verification:**
+    - `npm run test:unit`
+    - Manual: change settings on YouTube
+
+- [ ] **T041 — Add subtitle components to design-system-showcase**
+  - **Phase:** 2a | **Lane:** I | **Scope:** S | **Depends on:** T036, T037
+  - **Files:** `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/mockCues.ts`
+  - **AC:**
+    - Subtitle and nav previews with mock cues.
+    - Same components in all contexts.
+  - **Verification:**
+    - `npm run build`
+    - Manual: showcase
+
+- [ ] **T042 — Create `SubtitleManagerPanel.tsx`**
+  - **Phase:** 2b | **Lane:** C | **Scope:** M | **Depends on:** T039
+  - **Files:** `src/features/subtitle/ui/SubtitleManagerPanel.tsx`, `src/features/subtitle/ui/SubtitleManagerPanel.module.css`, `src/features/subtitle/ui/SubtitleManagerPanel.test.tsx`
+  - **AC:**
+    - Select/load/import, naming, offset entry.
+    - Uses shared `Button`/`Input`/`Select`.
+  - **Verification:**
+    - `npm run test:unit -- SubtitleManagerPanel`
+    - Manual: YouTube import
+
+- [ ] **T043 — Create `SubtitleOffsetPanel.tsx`**
+  - **Phase:** 2b | **Lane:** C | **Scope:** M | **Depends on:** T039
+  - **Files:** `src/features/subtitle/ui/SubtitleOffsetPanel.tsx`, `src/features/subtitle/ui/SubtitleOffsetPanel.module.css`, `src/features/subtitle/ui/offsetController.ts`
+  - **AC:**
+    - Offset slider with live preview.
+    - Updates cues/offset events.
+  - **Verification:**
+    - `npm run test:unit -- SubtitleOffsetPanel`
+    - Manual: Netflix offset
+
+- [ ] **T044 — Create `SubtitleToast.tsx` and `SubtitleHint.tsx`**
+  - **Phase:** 2b | **Lane:** C | **Scope:** M | **Depends on:** T039
+  - **Files:** `src/features/subtitle/ui/SubtitleToast.tsx`, `src/features/subtitle/ui/SubtitleHint.tsx`, `src/features/subtitle/ui/SubtitleToast.module.css`
+  - **AC:**
+    - Toast, drag hint, error hint in shared shadow.
+    - Respects `prefers-reduced-motion`.
+  - **Verification:**
+    - `npm run test:unit -- SubtitleToast`
+    - Manual: trigger on YouTube
+
+- [ ] **T045 — Mount subtitle panels in the shared shadow root**
+  - **Phase:** 2b | **Lane:** C | **Scope:** M | **Depends on:** T042, T043, T044
+  - **Files:** `src/features/subtitle/ui/mountSubtitle.ts`, `src/features/subtitle/ui/subtitlePanel.ts`
+  - **AC:**
+    - All panels in same shadow host.
+    - Visibility by state.
+    - Cleanup removes DOM.
+  - **Verification:**
+    - `npm run test:unit -- mountSubtitle`
+    - Manual: open panels
+
+- [ ] **T046 — Add `USE_LEGACY_SUBTITLE` flag and delete vanilla subtitle files**
+  - **Phase:** 2b | **Lane:** C/Q | **Scope:** M | **Depends on:** T045
+  - **Files:** `src/features/subtitle/ui/mountSubtitle.ts`, `src/features/subtitle/ui/subtitleBlockDom.ts`, `src/features/subtitle/ui/subtitleManagerPanel.ts`, `src/features/subtitle/ui/subtitleOffsetPanel.ts`, `src/features/subtitle/ui/subtitleToast.ts`
+  - **AC:**
+    - `USE_LEGACY_SUBTITLE=false` default.
+    - Old files deleted after verification.
+  - **Verification:**
+    - `npm run test:unit`
+    - `npm run build`
+    - Manual: 3 sites
+
+- [ ] **T047 — Refactor `pointerPosition.ts` into `useOrbitalPointer`**
+  - **Phase:** 3a | **Lane:** D | **Scope:** M | **Depends on:** T034
+  - **Files:** `src/features/dictionaryPopup/badgePointer/useOrbitalPointer.ts`, `src/features/dictionaryPopup/badgePointer/pointerPosition.ts`, `src/features/dictionaryPopup/badgePointer/useOrbitalPointer.test.ts`
+  - **AC:**
+    - Hook returns center, tip, preset.
+    - Pure logic; matches current outputs.
+  - **Verification:**
+    - `npm run test:unit -- useOrbitalPointer`
+
+- [ ] **T048 — Refactor `badgeCollapse.ts` into `useOrbitalSnap`**
+  - **Phase:** 3a | **Lane:** D | **Scope:** M | **Depends on:** T034
+  - **Files:** `src/features/dictionaryPopup/badgePointer/useOrbitalSnap.ts`, `src/features/dictionaryPopup/badgePointer/badgeCollapse.ts`, `src/features/dictionaryPopup/badgePointer/useOrbitalSnap.test.ts`
+  - **AC:**
+    - Hook returns edge, collapsed center, expanded position.
+    - Pure; matches current behavior.
+  - **Verification:**
+    - `npm run test:unit -- useOrbitalSnap`
+
+- [ ] **T049 — Refactor `gestureDetector.ts` into `useOrbitalGesture`**
+  - **Phase:** 3a | **Lane:** D | **Scope:** M | **Depends on:** T034
+  - **Files:** `src/features/dictionaryPopup/badgePointer/useOrbitalGesture.ts`, `src/features/dictionaryPopup/badgePointer/gestureDetector.ts`, `src/features/dictionaryPopup/badgePointer/useOrbitalGesture.test.ts`
+  - **AC:**
+    - Hook handles drag, expand, double/triple tap.
+    - Testable without real pointer events.
+  - **Verification:**
+    - `npm run test:unit -- useOrbitalGesture`
+    - `npm run typecheck`
+
+- [ ] **T050 — Create `OrbitalBadge.tsx`**
+  - **Phase:** 3b | **Lane:** D | **Scope:** M | **Depends on:** T047, T048, T049
+  - **Files:** `src/features/dictionaryPopup/ui/OrbitalBadge.tsx`, `src/features/dictionaryPopup/ui/OrbitalBadge.module.css`, `src/features/dictionaryPopup/ui/OrbitalBadge.test.tsx`
+  - **AC:**
+    - Half-moon/circle badge with `Icon`/`IconButton`.
+    - Drag/expand/collapse/edge-snap/single-click.
+    - ARIA attributes.
+  - **Verification:**
+    - `npm run test:unit -- OrbitalBadge`
+    - Manual: showcase
+
+- [ ] **T051 — Add orbital badge position persistence**
+  - **Phase:** 3b | **Lane:** D | **Scope:** S | **Depends on:** T050
+  - **Files:** `src/stores/orbitalBadgeStore.ts`, `src/features/dictionaryPopup/ui/OrbitalBadge.tsx`
+  - **AC:**
+    - Store persists preset and edge via `chrome.storage.local`.
+    - Badge restores position across reloads.
+  - **Verification:**
+    - `npm run test:unit -- orbitalBadgeStore`
+    - Manual: drag, reload, verify
+
+- [ ] **T052 — Add orbital badge to design-system-showcase**
+  - **Phase:** 3b | **Lane:** I | **Scope:** S | **Depends on:** T050
+  - **Files:** `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/mockOrbital.ts`
+  - **AC:**
+    - `OrbitalBadge` preview with mock controls.
+    - Light/dark mode.
+  - **Verification:**
+    - `npm run build`
+    - Manual: showcase
+
+- [ ] **T053 — Mount `OrbitalBadge` in shadow root with fullscreen re-parenting**
+  - **Phase:** 3c | **Lane:** D | **Scope:** M | **Depends on:** T024, T050
+  - **Files:** `src/features/dictionaryPopup/ui/mountOrbitalBadge.ts`, `src/features/dictionaryPopup/ui/OrbitalBadge.tsx`
+  - **AC:**
+    - `mountReactShadow` on `document.body` with top z-index.
+    - Fullscreen re-parent.
+    - Click-outside via `composedPath()`.
+    - `USE_LEGACY_ORBITAL` flag added, default `false`.
+  - **Verification:**
+    - `npm run test:unit -- mountOrbitalBadge`
+    - Toggle `USE_LEGACY_ORBITAL`, both paths compile
+    - Manual: YouTube fullscreen
+
+- [ ] **T054 — Delete old orbital badge vanilla files**
+  - **Phase:** 3c | **Lane:** D/Q | **Scope:** M | **Depends on:** T053
+  - **Files:** `src/features/dictionaryPopup/badgePointer/createOrbitalBadge.ts`, `src/features/dictionaryPopup/badgePointer/orbitalBadgeCss.ts`, `src/entrypoints/content/*`
+  - **AC:**
+    - Old files deleted after T053 verified.
+    - Callers use `mountOrbitalBadge`.
+    - `USE_LEGACY_ORBITAL` flag removed.
+  - **Verification:**
+    - `npm run test:unit`
+    - `npm run build`
+    - Manual: 3 sites
+
+- [ ] **T055 — Create `useDictionaryLookup` headless hook**
+  - **Phase:** 4a | **Lane:** E | **Scope:** M | **Depends on:** T054
+  - **Files:** `src/features/dictionaryPopup/logic/useDictionaryLookup.ts`, `src/features/dictionaryPopup/ui/useDictionaryPanel.ts`, `src/features/dictionaryPopup/ui/popupDictionaryController.ts`
+  - **AC:**
+    - Encapsulates search, loading, error, results.
+    - No DOM dependency.
+    - Reused by panel and popup.
+  - **Verification:**
+    - `npm run test:unit -- useDictionaryLookup`
+    - `npm run typecheck`
+
+- [ ] **T056 — Create `useDictionaryToolbar` headless hook**
+  - **Phase:** 4a | **Lane:** E | **Scope:** M | **Depends on:** T054
+  - **Files:** `src/features/dictionaryPopup/logic/useDictionaryToolbar.ts`, `src/features/dictionaryPopup/ui/useDictionaryPanel.ts`, `src/features/dictionaryPopup/ui/useCandidate.ts`
+  - **AC:**
+    - Manages 4 tabs and selection counts.
+    - No DOM dependency.
+  - **Verification:**
+    - `npm run test:unit -- useDictionaryToolbar`
+
+- [ ] **T057 — Refactor `CandidateView` to pure presentation**
+  - **Phase:** 4a | **Lane:** E | **Scope:** M | **Depends on:** T055, T056
+  - **Files:** `src/features/dictionaryPopup/ui/CandidateView.tsx`, `src/features/dictionaryPopup/ui/CandidateView.test.tsx`
+  - **AC:**
+    - Receives state via props/per-candidate hook.
+    - 4 tab panels moved to standalone components.
+  - **Verification:**
+    - `npm run test:unit -- CandidateView`
+
+- [ ] **T058 — Refactor `DictionaryPanelView` to pure presentation**
+  - **Phase:** 4a | **Lane:** E | **Scope:** M | **Depends on:** T057
+  - **Files:** `src/features/dictionaryPopup/ui/DictionaryPanelView.tsx`, `src/features/dictionaryPopup/ui/DictionaryPanelView.test.tsx`
+  - **AC:**
+    - Uses `useDictionaryLookup` + `useDictionaryToolbar`.
+    - Chips jump-scroll; no global tab state.
+  - **Verification:**
+    - `npm run test:unit -- DictionaryPanelView`
+
+- [ ] **T059 — Create `AudioPanel.tsx`**
+  - **Phase:** 4b | **Lane:** E | **Scope:** S | **Depends on:** T058
+  - **Files:** `src/features/dictionaryPopup/ui/AudioPanel.tsx`, `src/features/dictionaryPopup/ui/AudioPanel.test.tsx`
+  - **AC:**
+    - Renders word/sentence audio, TTS fallback, selection.
+    - Uses `Button`, `Icon`, `Skeleton`.
+  - **Verification:**
+    - `npm run test:unit -- AudioPanel`
+
+- [ ] **T060 — Create `ImagePanel.tsx`**
+  - **Phase:** 4b | **Lane:** E | **Scope:** S | **Depends on:** T058
+  - **Files:** `src/features/dictionaryPopup/ui/ImagePanel.tsx`, `src/features/dictionaryPopup/ui/ImagePanel.test.tsx`
+  - **AC:**
+    - Renders image strip, selected state, fallback link.
+    - Handles image error.
+  - **Verification:**
+    - `npm run test:unit -- ImagePanel`
+
+- [ ] **T061 — Create `TranslatePanel.tsx`**
+  - **Phase:** 4b | **Lane:** E | **Scope:** S | **Depends on:** T058
+  - **Files:** `src/features/dictionaryPopup/ui/TranslatePanel.tsx`, `src/features/dictionaryPopup/ui/TranslatePanel.test.tsx`
+  - **AC:**
+    - Shows term, sentence, translation, loading, error.
+    - Toggle selection, trigger translate.
+  - **Verification:**
+    - `npm run test:unit -- TranslatePanel`
+
+- [ ] **T062 — Create `LinksPanel.tsx`**
+  - **Phase:** 4b | **Lane:** E | **Scope:** S | **Depends on:** T058
+  - **Files:** `src/features/dictionaryPopup/ui/LinksPanel.tsx`, `src/features/dictionaryPopup/ui/LinksPanel.test.tsx`
+  - **AC:**
+    - Renders external dictionary links.
+    - Safe link opening.
+  - **Verification:**
+    - `npm run test:unit -- LinksPanel`
+
+- [ ] **T063 — Create `DictionaryToolbar.tsx`**
+  - **Phase:** 4b | **Lane:** E | **Scope:** M | **Depends on:** T059–T062
+  - **Files:** `src/features/dictionaryPopup/ui/DictionaryToolbar.tsx`, `src/features/dictionaryPopup/ui/DictionaryToolbar.module.css`, `src/features/dictionaryPopup/ui/DictionaryToolbar.test.tsx`
+  - **AC:**
+    - 4 tab buttons with icons and count badges.
+    - Uses `useDictionaryToolbar`.
+  - **Verification:**
+    - `npm run test:unit -- DictionaryToolbar`
+    - Manual: toggle tabs, see badges
+
+- [ ] **T064 — Wire `DictionaryToolbar` into `DictionaryTab`**
+  - **Phase:** 4b | **Lane:** E/H | **Scope:** M | **Depends on:** T063
+  - **Files:** `src/features/universalPanel/tabs/DictionaryTab.tsx`, `src/features/universalPanel/tabs/DictionaryTab.test.tsx`
+  - **AC:**
+    - `DictionaryTab` has full 4-tab toolbar.
+    - Data binds correctly.
+  - **Verification:**
+    - `npm run test:unit -- DictionaryTab`
+    - Manual: UniversalPanel Dictionary tab
+
+- [ ] **T065 — Create `PopupDictionary.tsx` shell**
+  - **Phase:** 4c | **Lane:** E | **Scope:** M | **Depends on:** T064
+  - **Files:** `src/features/dictionaryPopup/ui/PopupDictionary.tsx`, `src/features/dictionaryPopup/ui/PopupDictionary.module.css`, `src/features/dictionaryPopup/ui/PopupDictionary.test.tsx`
+  - **AC:**
+    - Composes `DictionaryCore` + `DictionaryToolbar` + shell.
+    - Works in shadow root.
+  - **Verification:**
+    - `npm run test:unit -- PopupDictionary`
+    - `npm run build`
+
+- [ ] **T066 — Reuse popup position / resize / sheet logic**
+  - **Phase:** 4c | **Lane:** E | **Scope:** M | **Depends on:** T065
+  - **Files:** `src/features/dictionaryPopup/ui/popupShell.ts`, `src/features/dictionaryPopup/ui/popupDictionary.css`, `src/features/dictionaryPopup/ui/PopupDictionary.tsx`, `src/features/dictionaryPopup/ui/usePopupPosition.ts`, `src/features/dictionaryPopup/ui/wordHighlight.ts`
+  - **AC:**
+    - `computePopupPosition`, resize, sheet, clamp extracted.
+    - Auto-avoids viewport and orbital pointer.
+    - `wordHighlight.ts` overlay remains in light DOM; only state binding refactors to coordinate with `PopupDictionary`.
+  - **Verification:**
+    - `npm run test:unit -- usePopupPosition`
+    - Manual: drag/resize on YouTube
+    - Confirm `wordHighlight.ts` still injects into host light DOM
+
+- [ ] **T067 — Mount `PopupDictionary` under orbital pointer tip**
+  - **Phase:** 4c | **Lane:** E | **Scope:** M | **Depends on:** T053, T065
+  - **Files:** `src/features/dictionaryPopup/ui/mountPopupDictionary.ts`, `src/features/dictionaryPopup/ui/PopupDictionary.tsx`, `src/features/dictionaryPopup/ui/OrbitalBadge.tsx`
+  - **AC:**
+    - Uses `mountReactShadow` below orbital z-index.
+    - Receives tip/center for positioning.
+    - Click-outside closes popup.
+  - **Verification:**
+    - `npm run test:unit -- mountPopupDictionary`
+    - Manual: orbital tip lookup
+
+- [ ] **T068 — Add `USE_LEGACY_POPUP_DICTIONARY` feature flag**
+  - **Phase:** 4c | **Lane:** E/Q | **Scope:** S | **Depends on:** T067
+  - **Files:** `src/features/dictionaryPopup/ui/mountPopupDictionary.ts`
+  - **AC:**
+    - `false` uses new React popup.
+    - `true` keeps old path.
+  - **Verification:**
+    - `npm run build`
+
+- [ ] **T070 — Unify `DictionaryTab` with `DictionaryCore`**
+  - **Phase:** 4d | **Lane:** E/H | **Scope:** M | **Depends on:** T064, T067
+  - **Files:** `src/features/universalPanel/tabs/DictionaryTab.tsx`, `src/features/dictionaryPopup/ui/DictionaryPanelView.tsx`
+  - **AC:**
+    - `DictionaryTab` uses same `DictionaryCore` as popup.
+    - Keeps 2-pane layout.
+    - No duplicate lookup logic.
+  - **Verification:**
+    - `npm run test:unit -- DictionaryTab`
+    - `npm run build`
+
+- [ ] **T071 — Verify quick-add / send-to-card flow**
+  - **Phase:** 4d | **Lane:** E/G | **Scope:** S | **Depends on:** T070
+  - **Files:** `src/features/dictionaryPopup/ui/buildCandidatePrefill.ts`, `src/features/universalPanel/tabs/DictionaryTab.tsx`
+  - **AC:**
+    - Quick Add builds prefill and sends to card creator.
+    - Send-to-Card in `DictionaryTab` builds same prefill.
+    - Media selections carry over.
+  - **Verification:**
+    - `npm run test:unit -- buildCandidatePrefill`
+    - Manual: popup quick-add and panel send-to-card
+
+- [ ] **T069 — Delete old popup vanilla files after parity**
+  - **Phase:** 4c/4d | **Lane:** E/Q | **Scope:** M | **Depends on:** T068, T071
+  - **Files:** `src/features/dictionaryPopup/ui/popupShell.ts`, `src/features/dictionaryPopup/ui/popupToolbar.ts`, `src/features/dictionaryPopup/ui/popupContent.ts`, `src/features/dictionaryPopup/ui/popupDictionary.css`
+  - **AC:**
+    - Old files deleted only after quick-add/send-to-card parity verified.
+    - Only `PopupDictionary` path remains.
+    - `USE_LEGACY_POPUP_DICTIONARY` flag removed.
+  - **Verification:**
+    - `npm run test:unit`
+    - `npm run build`
+    - Manual: 3 sites full lookup + quick-add
+
+- [ ] **T072 — Add popup dictionary to design-system-showcase**
+  - **Phase:** 4d | **Lane:** I | **Scope:** S | **Depends on:** T065
+  - **Files:** `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/mockDictionary.ts`
+  - **AC:**
+    - `PopupDictionary` preview with mock results.
+    - 4 tabs functional.
+  - **Verification:**
+    - `npm run build`
+    - Manual: showcase popup preview
+
+- [ ] **T073 — Create `TokenizeFab.tsx`**
+  - **Phase:** 5 | **Lane:** F | **Scope:** M | **Depends on:** T024, T046
+  - **Files:** `src/features/tokenize/ui/TokenizeFab.tsx`, `src/features/tokenize/ui/TokenizeFab.module.css`, `src/features/tokenize/ui/TokenizeFab.test.tsx`
+  - **AC:**
+    - Toggle enabled/status/frequency.
+    - Edge position; avoid orbital overlap.
+    - Uses `Button`, `Icon`, `Toggle`.
+  - **Verification:**
+    - `npm run test:unit -- TokenizeFab`
+    - Manual: showcase
+
+- [ ] **T074 — Create `useTokenize` hook**
+  - **Phase:** 5 | **Lane:** F | **Scope:** S | **Depends on:** T073
+  - **Files:** `src/features/tokenize/ui/useTokenize.ts`, `src/features/tokenize/ui/useTokenize.test.ts`
+  - **AC:**
+    - Encapsulates tokenize state/callbacks.
+    - Reused by `TokenizeFab` and panel header.
+  - **Verification:**
+    - `npm run test:unit -- useTokenize`
+
+- [ ] **T075 — Mount `TokenizeFab` in shadow root**
+  - **Phase:** 5 | **Lane:** F | **Scope:** M | **Depends on:** T024, T073
+  - **Files:** `src/features/tokenize/ui/mountTokenizeFab.ts`, `src/features/tokenize/ui/TokenizeFab.tsx`, `src/entrypoints/content/*`
+  - **AC:**
+    - `mountReactShadow` on `document.body` below orbital.
+    - Bridges `tokenizeStateStore`.
+    - Fullscreen re-parenting.
+  - **Verification:**
+    - `npm run test:unit -- mountTokenizeFab`
+    - Manual: YouTube FAB toggle
+
+- [ ] **T076 — Clean `tokenSpanCss.ts` hardcoded tokens**
+  - **Phase:** 5 | **Lane:** F | **Scope:** S | **Depends on:** T001
+  - **Files:** `src/features/tokenize/ui/tokenSpanCss.ts`, `src/shared/styles/tokens.json`
+  - **AC:**
+    - Tier/status colors use token variables.
+    - No raw colors.
+    - Spans still wrap host text.
+  - **Verification:**
+    - `rg '#[0-9a-fA-F]{3,8}' src/features/tokenize/ui/tokenSpanCss.ts`
+    - Manual: token span colors
+
+- [ ] **T077 — Delete `tokenBadge.ts` and `tokenBadgeCss.ts`**
+  - **Phase:** 5 | **Lane:** F/Q | **Scope:** S | **Depends on:** T075, T076
+  - **Files:** `src/features/tokenize/ui/tokenBadge.ts`, `src/features/tokenize/ui/tokenBadgeCss.ts`, `src/entrypoints/content/*`
+  - **AC:**
+    - Old files removed.
+    - Callers use `mountTokenizeFab`.
+    - `USE_LEGACY_TOKENIZE=false`.
+  - **Verification:**
+    - `npm run test:unit`
+    - `npm run build`
+    - Manual: 3 sites
+
+- [ ] **T078 — Refactor card creator components to be mount-agnostic**
+  - **Phase:** 6a | **Lane:** G | **Scope:** M | **Depends on:** T071
+  - **Files:** `src/features/cardCreator/ui/CardCreatorDialog.tsx`, `src/features/cardCreator/ui/CardCreatorBottomSheet.tsx`, `src/features/cardCreator/ui/QueueSidebar.tsx`
+  - **AC:**
+    - Components receive open/settings/queue/callbacks via props.
+    - No mount host assumptions.
+    - No `chrome.runtime` in presentation.
+  - **Verification:**
+    - `npm run test:unit -- CardCreatorDialog`
+    - `npm run typecheck`
+
+- [ ] **T079 — Create `cardCreatorStore.ts`**
+  - **Phase:** 6a | **Lane:** G | **Scope:** M | **Depends on:** T078
+  - **Files:** `src/stores/cardCreatorStore.ts`, `src/features/cardCreator/ui/useCardCreatorState.ts`, `src/features/cardCreator/ui/CardCreatorDialog.tsx`
+  - **AC:**
+    - Zustand store owns draft, decks, note types, fields, queue, toasts.
+    - `useCardCreatorState` thins to store consumer.
+  - **Verification:**
+    - `npm run test:unit -- cardCreatorStore`
+
+- [ ] **T080 — Add a11y and keyboard navigation to card creator**
+  - **Phase:** 6a | **Lane:** G | **Scope:** S | **Depends on:** T078
+  - **Files:** `src/features/cardCreator/ui/QueueSidebar.tsx`, `src/features/cardCreator/ui/MediaList.tsx`
+  - **AC:**
+    - Queue and media list have `aria-label` and arrow-key nav.
+    - Focus visible.
+  - **Verification:**
+    - `npm run test:unit`
+    - Manual: keyboard nav in showcase
+
+- [ ] **T081 — Add card creator preview to design-system-showcase**
+  - **Phase:** 6b | **Lane:** I | **Scope:** M | **Depends on:** T079
+  - **Files:** `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/mockProviders.tsx`
+  - **AC:**
+    - Opens with mock queue and media.
+    - No real `chrome.runtime`/Anki calls.
+  - **Verification:**
+    - `npm run build`
+    - Manual: showcase
+
+- [ ] **T082 — Mount card creator with chosen mechanism + `USE_LEGACY_CARD_CREATOR` flag**
+  - **Phase:** 6c | **Lane:** G | **Scope:** M | **Depends on:** T031, T081
+  - **Files:** `src/features/cardCreator/ui/mountCardCreatorDialog.ts`, `src/shared/lib/shadowRoot/mountReactShadow.ts`
+  - **AC:**
+    - Shadow if fixed overlay GO; else light DOM + `cell-` reset.
+    - `USE_LEGACY_CARD_CREATOR` flag added, default `false`.
+    - Fullscreen re-parenting preserved.
+  - **Verification:**
+    - `npm run build`
+    - Toggle `USE_LEGACY_CARD_CREATOR`, both paths compile
+    - Manual: YouTube full viewport, no CSS leak
+
+- [ ] **T083 — Delete old vanilla card creator code**
+  - **Phase:** 6c | **Lane:** G/Q | **Scope:** M | **Depends on:** T082
+  - **Files:** Batch cleanup of legacy non-React card creator files identified during T078–T081; representative: `src/features/cardCreator/ui/legacy*` / `src/features/cardCreator/ui/mountCardCreator*.ts` (exact list TBD before execution)
+  - **AC:**
+    - No vanilla card creator files.
+    - `USE_LEGACY_CARD_CREATOR` flag removed.
+  - **Verification:**
+    - `npm run test:unit`
+    - `npm run build`
+
+- [ ] **T084 — Verify card creator queue, media, export**
+  - **Phase:** 6c | **Lane:** Q | **Scope:** S | **Depends on:** T082
+  - **Files:** none
+  - **AC:**
+    - Queue, media, field edit, preview, export work.
+    - No visual regression.
+  - **Verification:**
+    - Manual: full card creator flow on YouTube
+    - `npm run test:unit -- cardCreator`
+
+- [ ] **T085 — Update `mountSettingsDialog` for chosen mechanism**
+  - **Phase:** 7 | **Lane:** H | **Scope:** M | **Depends on:** T031, T024
+  - **Files:** `src/features/settings/ui/mountSettingsDialog.ts`, `src/shared/lib/shadowRoot/mountReactShadow.ts`, `src/features/settings/ui/SettingsDialog.tsx`
+  - **AC:**
+    - Shadow if GO; else light DOM + `cell-` reset.
+    - Reuses `SettingsDialog`.
+    - Theme/save/load work.
+  - **Verification:**
+    - `npm run test:unit -- mountSettingsDialog`
+    - Manual: open from orbital badge
+
+- [ ] **T086 — Add `USE_LEGACY_SETTINGS` flag**
+  - **Phase:** 7 | **Lane:** H | **Scope:** S | **Depends on:** T085
+  - **Files:** `src/features/settings/ui/mountSettingsDialog.ts`
+  - **AC:**
+    - `false` uses new mount.
+    - `true` keeps previous light-DOM path.
+  - **Verification:**
+    - `npm run build`
+
+- [ ] **T087 — Verify settings save/load and theme**
+  - **Phase:** 7 | **Lane:** Q | **Scope:** S | **Depends on:** T085
+  - **Files:** none
+  - **AC:**
+    - All sections render and persist.
+    - Theme toggle updates host.
+  - **Verification:**
+    - Manual: change settings on YouTube, reload, verify
+
+- [ ] **T088 — Update `mountUniversalPanel` for chosen mechanism + `USE_LEGACY_UNIVERSAL_PANEL` flag**
+  - **Phase:** 8 | **Lane:** H | **Scope:** M | **Depends on:** T031, T024, T071, T075, T082, T085
+  - **Files:** `src/features/universalPanel/mountUniversalPanel.ts`, `src/features/universalPanel/UniversalPanel.tsx`, `src/shared/lib/shadowRoot/ShadowThemeProvider.tsx`
+  - **AC:**
+    - Shadow if GO; else light DOM + `cell-` reset.
+    - `USE_LEGACY_UNIVERSAL_PANEL` flag added, default `false`.
+    - Fixed full-viewport host + `pointer-events: none`.
+    - Fullscreen re-parenting.
+  - **Verification:**
+    - `npm run test:unit -- mountUniversalPanel`
+    - Toggle `USE_LEGACY_UNIVERSAL_PANEL`, both paths compile
+    - `npm run build`
+
+- [ ] **T089 — Update `getHosts()` and click-outside to `composedPath()`**
+  - **Phase:** 8 | **Lane:** H | **Scope:** S | **Depends on:** T088
+  - **Files:** `src/features/universalPanel/mountUniversalPanel.ts`, `src/features/universalPanel/UniversalPanelController.ts`
+  - **AC:**
+    - Click-outside uses `composedPath()` for shadow.
+    - Light-DOM fallback uses `event.target`.
+    - Panel closes on outside click.
+  - **Verification:**
+    - `npm run test:unit -- UniversalPanelController`
+    - Manual: click outside
+
+- [ ] **T090 — Replace `injectThemeTokens` / `syncElementTheme` in shadow mounts**
+  - **Phase:** 8 | **Lane:** H/B | **Scope:** M | **Depends on:** T088
+  - **Files:** `src/features/universalPanel/mountUniversalPanel.ts`, `src/features/cardCreator/ui/mountCardCreatorDialog.ts`, `src/features/settings/ui/mountSettingsDialog.ts`, `src/shared/lib/themeTokens.ts`
+  - **AC:**
+    - Shadow mounts use `ShadowThemeProvider` + `injectShadowCss`.
+    - Light-DOM fallback keeps `themeTokens.ts`.
+    - Only delete when no callers.
+  - **Verification:**
+    - `npm run build`
+    - Manual: light/dark in panel and card creator
+
+- [ ] **T091 — Verify UniversalPanel tabs and fullscreen**
+  - **Phase:** 8 | **Lane:** Q | **Scope:** M | **Depends on:** T088, T089, T090
+  - **Files:** none
+  - **AC:**
+    - Dictionary/settings/card creator/tokenize toggle work.
+    - Fullscreen video: panel visible.
+    - No CSS leak or retarget bugs.
+  - **Verification:**
+    - Manual: YouTube/Netflix fullscreen, switch tabs, open card creator
+    - `npm run test:unit -- universalPanel`
+
+- [ ] **T092 — Build auto-discovery scanner**
+  - **Phase:** 9 | **Lane:** I | **Scope:** M | **Depends on:** T018
+  - **Files:** `src/entrypoints/design-system-showcase/autoDiscovery.ts`, `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/main.tsx`
+  - **AC:**
+    - `import.meta.glob` scans `*.showcase.tsx`.
+    - Discovered modules rendered in groups.
+    - Default preview for components without `.showcase.tsx`.
+  - **Verification:**
+    - `npm run build`
+    - Manual: add `.showcase.tsx`, rebuild, appears
+
+- [ ] **T093 — Create `.showcase.tsx` for shared UI (action & input)**
+  - **Phase:** 9 | **Lane:** I | **Scope:** M | **Depends on:** T092
+  - **Files:** `src/shared/ui/Button.showcase.tsx`, `src/shared/ui/IconButton.showcase.tsx`, `src/shared/ui/Input.showcase.tsx`, `src/shared/ui/Select.showcase.tsx`, `src/shared/ui/Toggle.showcase.tsx`
+  - **AC:**
+    - Each exports `Showcase` and `showcaseMeta`.
+    - Auto-discovered.
+  - **Verification:**
+    - `npm run build`
+    - Manual: showcase action/input group
+
+- [ ] **T094 — Create `.showcase.tsx` for shared UI (feedback & data)**
+  - **Phase:** 9 | **Lane:** I | **Scope:** M | **Depends on:** T092
+  - **Files:** `src/shared/ui/Alert.showcase.tsx`, `src/shared/ui/Badge.showcase.tsx`, `src/shared/ui/Card.showcase.tsx`, `src/shared/ui/Skeleton.showcase.tsx`, `src/shared/ui/EmptyState.showcase.tsx`
+  - **AC:**
+    - Feedback and data-display showcases exist.
+    - Rendered by auto-discovery.
+  - **Verification:**
+    - `npm run build`
+    - Manual: showcase feedback/data group
+
+- [ ] **T095 — Create `.showcase.tsx` for overlay & navigation components**
+  - **Phase:** 9 | **Lane:** I | **Scope:** M | **Depends on:** T092
+  - **Files:** `src/shared/ui/Dialog.showcase.tsx`, `src/shared/ui/Drawer.showcase.tsx`, `src/shared/ui/Tabs.showcase.tsx`, `src/shared/ui/Tooltip.showcase.tsx`, `src/shared/ui/NavItem.showcase.tsx`
+  - **AC:**
+    - Overlay/nav composed examples.
+    - No `PortalContainerContext` unless needed.
+  - **Verification:**
+    - `npm run build`
+    - Manual: showcase overlay/nav group
+
+- [ ] **T096 — Create `.showcase.tsx` for feature components**
+  - **Phase:** 9 | **Lane:** I | **Scope:** M | **Depends on:** T036, T050, T073, T065, T078
+  - **Files:** `src/features/subtitle/ui/SubtitleBlock.showcase.tsx`, `src/features/dictionaryPopup/ui/OrbitalBadge.showcase.tsx`, `src/features/tokenize/ui/TokenizeFab.showcase.tsx`, `src/features/dictionaryPopup/ui/PopupDictionary.showcase.tsx`, `src/features/cardCreator/ui/CardCreatorDialog.showcase.tsx`
+  - **AC:**
+    - Feature component showcases with mock data.
+    - No real `chrome.runtime` calls.
+  - **Verification:**
+    - `npm run build`
+    - Manual: showcase feature group
+
+- [ ] **T097 — Create `MockProviders` for data-dependent showcases**
+  - **Phase:** 9 | **Lane:** I | **Scope:** M | **Depends on:** T092
+  - **Files:** `src/entrypoints/design-system-showcase/mockProviders.tsx`, `src/entrypoints/design-system-showcase/App.tsx`
+  - **AC:**
+    - Providers for cues, dictionary, card creator.
+    - Components consume mocks.
+    - No `chrome.runtime`.
+  - **Verification:**
+    - `npm run test:unit -- mockProviders`
+    - `npm run build`
+
+- [ ] **T098 — Auto-scan icon grid and token swatches**
+  - **Phase:** 9 | **Lane:** I | **Scope:** S | **Depends on:** T092
+  - **Files:** `src/entrypoints/design-system-showcase/autoDiscovery.ts`, `src/entrypoints/design-system-showcase/App.tsx`
+  - **AC:**
+    - `ICON_CATALOG` grid auto-rendered.
+    - Token swatches (color, spacing, radius, typography) auto-rendered.
+  - **Verification:**
+    - `npm run build`
+    - Manual: add icon/token, rebuild, updates
+
+- [ ] **T099 — Final system verification**
+  - **Phase:** 9 | **Lane:** Q | **Scope:** M | **Depends on:** T091–T098
+  - **Files:** none
+  - **AC:**
+    - `typecheck`, `test:unit`, `build`, `npx vite build --mode development` pass.
+    - Manual tests on YouTube/Netflix/GeeksforGeeks.
+    - Coverage ≥ 80%, bundle/RAM within budget.
+  - **Verification:**
+    - `npm run typecheck && npm run test:unit && npm run build && npx vite build --mode development`
+    - Chrome DevTools MCP on 3 sites
+    - Bundle analyzer / DevTools Memory
+
+---
+
+> **Verification gating (every task):** `npm run typecheck` passes; new unit tests pass; `npm run build` passes; manual check on at least one content-script test page; no new hardcoded colors/spacing/z-index outside `tokens.json`.

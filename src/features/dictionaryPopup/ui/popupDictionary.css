@@ -141,7 +141,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   opacity: 0.35;
   transition: opacity var(--duration-fast) var(--ease-in-out);
 }
@@ -185,7 +185,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0;
+  gap: var(--space-0);
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -209,7 +209,7 @@
 
 .cell-header__ipa {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   white-space: nowrap;
   flex-shrink: 0;
   line-height: calc(var(--touch-target-mobile) * 0.4);
@@ -245,7 +245,7 @@
   height: calc(var(--touch-target-mobile) * 0.4);
   min-width: calc(var(--touch-target-mobile) * 0.4);
   min-height: calc(var(--touch-target-mobile) * 0.4);
-  padding: 0;
+  padding: var(--space-0);
   gap: var(--space-0-5);
 }
 
@@ -306,7 +306,7 @@
    * doesn't thò thụt (jitter) when cycling between statuses of different lengths. */
   min-width: 6em;
   height: var(--space-5);
-  padding: 0 var(--space-2);
+  padding: var(--space-0) var(--space-2);
   border-radius: var(--radius-full);
   font-family: var(--font-family);
   font-size: var(--font-size-xs);
@@ -342,7 +342,7 @@
 
 .cell-header__status--ignore {
   background: var(--color-surface-hover);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cell-header__frequency {
@@ -421,14 +421,14 @@
 
 /* === Block: cell-def (definitions) — inside active entry, flex:1 === */
 .cell-def {
-  padding: 0 var(--space-2);
+  padding: var(--space-0) var(--space-2);
   flex: 1;
   min-height: 0;
   overflow-y: auto;
 }
 
 .cell-def__empty {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-style: italic;
   padding: var(--space-1) 0;
 }
@@ -537,20 +537,20 @@
 
 .cell-def__pos {
   font-style: italic;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cell-def__examples {
   margin-top: var(--space-0-5);
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 /* === Block: cell-toolbar === */
 .cell-toolbar {
   display: flex;
   gap: var(--space-0-5);
-  padding: 0 var(--space-2);
+  padding: var(--space-0) var(--space-2);
   align-items: center;
 }
 
@@ -577,7 +577,7 @@
   justify-content: center;
   min-width: var(--space-3);
   aspect-ratio: 1;
-  padding: 0 var(--space-0-5);
+  padding: var(--space-0) var(--space-0-5);
   border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-text-inverse);
@@ -590,7 +590,7 @@
 
 /* === Block: cell-audio === */
 .cell-audio {
-  padding: 0 var(--space-2);
+  padding: var(--space-0) var(--space-2);
   overflow-y: auto;
   flex: 1 1 auto;
   /* min-height matches skeleton: subtabs (24px) + 1 row (52px) = 76px.
@@ -607,13 +607,13 @@
 .cell-audio__subtab {
   background: none;
   border: none;
-  padding: 0;
+  padding: var(--space-0);
   font: inherit;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-bottom: var(--space-0-5) solid transparent;
   padding-bottom: var(--space-0-5);
@@ -698,7 +698,7 @@
 
 .cell-audio__label-meta {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -749,14 +749,14 @@
   gap: var(--space-2);
   padding: var(--space-4) var(--space-2);
   text-align: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 
 .cell-audio__empty-icon {
   width: var(--iconbutton-size-sm);
   height: var(--iconbutton-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cell-audio__empty-icon svg {
@@ -786,7 +786,7 @@
    images. Custom DS-styled scrollbar. Bounce on click (same elastic easing
    as audio play/pause button: var(--ease-spring)). */
 .cell-image {
-  padding: 0;
+  padding: var(--space-0);
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -821,7 +821,7 @@
   border-radius: var(--radius-full);
 }
 .cell-image__strip::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: var(--color-text-secondary);
 }
 
 /* Image card — fixed width so 8 cards fill the strip, no padding around
@@ -834,8 +834,8 @@
   width: calc((100% - var(--space-1) * 7) / 8);
   min-width: var(--space-20);
   aspect-ratio: 1 / 1;
-  padding: 0;
-  background: var(--color-card);
+  padding: var(--space-0);
+  background: var(--color-surface-card);
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -910,7 +910,7 @@
   justify-content: center;
   gap: var(--space-1);
   padding: var(--space-2);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 
@@ -930,7 +930,7 @@
   white-space: nowrap;
   background: none;
   border: none;
-  padding: 0;
+  padding: var(--space-0);
   height: auto;
   min-height: 0;
   min-width: 0;
@@ -958,7 +958,7 @@
 
 /* === Block: cell-translate === */
 .cell-translate {
-  padding: 0 var(--space-2);
+  padding: var(--space-0) var(--space-2);
   flex: 1 1 auto;
   /* Keep panel at least as tall as the skeleton so real content never
      shrinks below it — prevents layout shift when skeleton → content. */
@@ -1004,7 +1004,7 @@
 
 .cell-translate__target {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cell-translate__native {
@@ -1059,14 +1059,14 @@
   gap: var(--space-1);
   padding: var(--space-4) var(--space-2);
   text-align: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 
 .cell-translate__empty-icon {
   width: var(--iconbutton-size-sm);
   height: var(--iconbutton-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cell-translate__empty-icon svg {
@@ -1099,14 +1099,14 @@
   width: 100%;
   padding: var(--space-4) var(--space-2);
   text-align: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 
 .cell-links__empty-icon {
   width: var(--iconbutton-size-sm);
   height: var(--iconbutton-size-sm);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .cell-links__empty-icon svg {
@@ -1143,7 +1143,7 @@
   width: var(--space-3-5);
   height: var(--space-3-5);
   flex-shrink: 0;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 /* === Block: cell-active-entry (multi-candidate stacked layout) === */
@@ -1192,7 +1192,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  padding: 0 var(--space-2);
+  padding: var(--space-0) var(--space-2);
 }
 
 .cell-candidates__chips-scroll {
@@ -1221,7 +1221,7 @@
 .cell-candidates__list {
   display: flex;
   flex-direction: column;
-  padding: 0 var(--space-3) var(--space-2);
+  padding: var(--space-0) var(--space-3) var(--space-2);
   gap: var(--space-1);
 }
 
@@ -1260,7 +1260,7 @@
 .cell-candidates__list-reading {
   flex-shrink: 0;
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
@@ -1308,7 +1308,7 @@
 .cell-audio__skeleton {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: var(--space-0);
 }
 
 .cell-audio__skeleton-subtabs {
@@ -1458,10 +1458,10 @@
     font-size: var(--font-size-base);
   }
   .cell-toolbar {
-    padding: 0 var(--space-2-5);
+    padding: var(--space-0) var(--space-2-5);
   }
   .cell-def {
-    padding: 0 var(--space-2-5);
+    padding: var(--space-0) var(--space-2-5);
   }
   .cell-audio__item {
     gap: var(--space-2);
@@ -1499,7 +1499,7 @@
     gap: var(--space-2);
   }
   .cell-header__main {
-    gap: 0 var(--space-2);
+    gap: var(--space-0) var(--space-2);
   }
   .cell-header__second {
     gap: var(--space-2);
@@ -1508,11 +1508,11 @@
     gap: var(--space-2);
   }
   .cell-toolbar {
-    padding: 0 var(--space-3);
+    padding: var(--space-0) var(--space-3);
     gap: var(--space-1);
   }
   .cell-def {
-    padding: 0 var(--space-3);
+    padding: var(--space-0) var(--space-3);
   }
   .cell-def__text {
     padding: var(--space-2) 0 var(--space-2) calc(var(--space-7) + var(--space-1-5));
@@ -1521,7 +1521,7 @@
     margin-top: var(--space-1);
   }
   .cell-audio {
-    padding: 0 var(--space-3);
+    padding: var(--space-0) var(--space-3);
   }
   .cell-audio__item {
     gap: var(--space-2-5);
@@ -1610,10 +1610,10 @@
 @container (max-width: 479px) {
   .btn:has(.cell-label) {
     border-radius: var(--radius-full);
-    padding: 0;
+    padding: var(--space-0);
     width: var(--touch-target-mobile);
     height: var(--touch-target-mobile);
-    gap: 0;
+    gap: var(--space-0);
   }
   /* Badge on circle button — nudge to top-right edge of the circle. */
   .btn:has(.cell-label) .cell-toolbar__badge {
@@ -1637,7 +1637,7 @@
   .cell-header__status {
     height: var(--space-6);
     font-size: var(--font-size-xs);
-    padding: 0 var(--space-2-5);
+    padding: var(--space-0) var(--space-2-5);
   }
   .btn {
     min-height: var(--touch-target-mobile);
@@ -1663,7 +1663,7 @@
   .cell-header__status {
     height: var(--space-6);
     font-size: var(--font-size-xs);
-    padding: 0 var(--space-2-5);
+    padding: var(--space-0) var(--space-2-5);
   }
   .btn {
     min-height: var(--touch-target-mobile);

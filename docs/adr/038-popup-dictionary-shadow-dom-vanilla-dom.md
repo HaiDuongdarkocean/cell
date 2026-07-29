@@ -1,8 +1,9 @@
 # ADR-038: Popup Dictionary Shadow DOM + Vanilla DOM
 
-> **Status**: Accepted
+> **Status**: Superseded by ADR-075
 > **Date**: 2026-01-28
 > **Supersedes**: —
+> **Superseded by**: ADR-075 (Content-script UI rendered by React inside Shadow DOM)
 > **Related**: ADR-037 (English phrase match), spec-popup-dictionary.md
 
 ## Context

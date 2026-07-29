@@ -1,7 +1,6 @@
 import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { Settings } from '@/entities/media';
-import type { TokenizePanelState } from '@/features/settings/ui/TokenizeSettingsPanel';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 
 // Mock the heavy settings UI so the mount integration test stays focused on
@@ -9,18 +8,11 @@ import { DEFAULT_SETTINGS } from '@/shared/config/config';
 interface MockSettingsDialogContentProps {
   settings?: Settings;
   onChange?: (settings: Settings) => void;
-  tokenizeState?: TokenizePanelState;
-  onToggleTokenize?: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
-  onOpenDictionary?: () => void;
   className?: string;
 }
 
 jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
-  SettingsDialogContent: ({
-    settings,
-    onChange,
-    onOpenDictionary,
-  }: MockSettingsDialogContentProps) => (
+  SettingsDialogContent: ({ settings, onChange }: MockSettingsDialogContentProps) => (
     <div data-testid="settings-dialog-content">
       <button
         type="button"
@@ -28,13 +20,6 @@ jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
         onClick={() => onChange?.(settings as Settings)}
       >
         First control
-      </button>
-      <button
-        type="button"
-        data-testid="settings-open-dictionary"
-        onClick={onOpenDictionary}
-      >
-        Open Dictionary
       </button>
     </div>
   ),
@@ -101,21 +86,6 @@ describe('mountUniversalPanel', () => {
 
     await waitFor(() => expect(screen.getByTestId('universal-panel-content-settings')).toBeInTheDocument());
     expect(controller.isOpen()).toBe(true);
-  });
-
-  it('renders the universal panel and wires SettingsTab onOpenDictionary to switch to the Dictionary tab', async () => {
-    await act(async () => { await controller.open('settings'); });
-
-    await waitFor(() => expect(screen.getByTestId('settings-open-dictionary')).toBeInTheDocument());
-    expect(screen.getByTestId('universal-panel')).toBeInTheDocument();
-    expect(screen.getByTestId('universal-panel-content-settings')).toBeInTheDocument();
-
-    await act(async () => { fireEvent.click(screen.getByTestId('settings-open-dictionary')); });
-
-    await waitFor(() => expect(screen.getByTestId('universal-panel-content-dictionary')).toBeInTheDocument());
-    expect(screen.getByTestId('dictionary-tab')).toBeInTheDocument();
-    expect(screen.getByTestId('dictionary-panel')).toBeInTheDocument();
-    expect(screen.queryByTestId('universal-panel-content-settings')).not.toBeInTheDocument();
   });
 
   it('sendToCard opens the dictionary tab with initialTerm and prefill, then clears the one-shot term', async () => {

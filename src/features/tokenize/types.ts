@@ -74,6 +74,14 @@ export interface TokenizeState extends TokenizeDisplayOptions {
   readonly hoveredTerm: string | undefined;
 }
 
+/** Tokenize runtime state surfaced to UI toggles (universal panel header).
+ *  Mirrors the subset of {@link TokenizeState} that the header binds to. */
+export interface TokenizePanelState {
+  readonly enabled: boolean;
+  readonly showStatus: boolean;
+  readonly showFrequency: boolean;
+}
+
 export interface TokenizeController {
   readonly enable: () => void;
   readonly disable: () => void;

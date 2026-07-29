@@ -100,7 +100,7 @@ export const SUBTITLE_BLOCK_CSS = `
   background: rgba(var(--color-surface-rgb), var(--sb-bg-opacity, 0.2));
   color: rgba(var(--color-text-rgb), var(--sb-text-opacity, 1));
   cursor: pointer;
-  padding: 0;
+  padding: var(--space-0);
   position: relative;
   isolation: isolate;
   -webkit-tap-highlight-color: transparent;
@@ -117,7 +117,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border-radius: var(--radius-full);
   backdrop-filter: blur(var(--blur-xs));
   -webkit-backdrop-filter: blur(var(--blur-xs));
-  background: rgba(var(--color-background-rgb), 0.1);
+  background: color-mix(in srgb, var(--color-background) 10%, transparent);
   -webkit-mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
   z-index: calc(var(--z-dropdown) - 1001);
@@ -133,7 +133,7 @@ export const SUBTITLE_BLOCK_CSS = `
   }
 
   .cluster-btn:hover::before {
-    background: rgba(var(--color-background-rgb), 0.25);
+    background: color-mix(in srgb, var(--color-background) 25%, transparent);
   }
 }
 
@@ -286,7 +286,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border-radius: var(--radius-full);
   backdrop-filter: blur(var(--blur-xs));
   -webkit-backdrop-filter: blur(var(--blur-xs));
-  background: rgba(var(--color-background-rgb), 0.1);
+  background: color-mix(in srgb, var(--color-background) 10%, transparent);
   -webkit-mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
   z-index: calc(var(--z-dropdown) - 1001);
@@ -333,10 +333,10 @@ export const SUBTITLE_BLOCK_CSS = `
   z-index: var(--z-overlay-video-popover);
   width: var(--space-7);
   height: var(--space-7);
-  padding: 0;
-  border: var(--border-width-hairline) solid rgba(var(--overlay-text-rgb), 0.3);
+  padding: var(--space-0);
+  border: var(--border-width-hairline) solid color-mix(in srgb, var(--overlay-text) 30%, transparent);
   border-radius: var(--radius-2xs);
-  background: rgba(var(--overlay-background-rgb), 0.6);
+  background: color-mix(in srgb, var(--overlay-background) 60%, transparent);
   color: var(--overlay-text);
   cursor: pointer;
   display: flex;
@@ -352,9 +352,9 @@ export const SUBTITLE_BLOCK_CSS = `
   z-index: var(--z-overlay-video-popover);
   max-height: calc(var(--space-5) * 10);
   overflow-y: auto;
-  background: rgba(var(--overlay-background-rgb), 0.85);
+  background: color-mix(in srgb, var(--overlay-background) 85%, transparent);
   color: var(--overlay-text);
-  border: var(--border-width-hairline) solid rgba(var(--overlay-text-rgb), 0.2);
+  border: var(--border-width-hairline) solid color-mix(in srgb, var(--overlay-text) 20%, transparent);
   border-radius: var(--radius-sm);
   padding: var(--space-1);
   min-width: calc(var(--space-5) * 9);
@@ -371,12 +371,12 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-selector-item--active {
-  background: rgba(var(--overlay-text-rgb), 0.15);
+  background: color-mix(in srgb, var(--overlay-text) 15%, transparent);
   font-weight: var(--font-weight-bold);
 }
 
 .subtitle-selector-item:hover:not(.subtitle-selector-item--active) {
-  background: rgba(var(--overlay-text-rgb), 0.1);
+  background: color-mix(in srgb, var(--overlay-text) 10%, transparent);
 }
 
 .subtitle-selector-asr-badge {
@@ -386,8 +386,8 @@ export const SUBTITLE_BLOCK_CSS = `
   letter-spacing: var(--tracking-wide);
   padding: calc(var(--space-0-5) / 2) var(--space-1-5);
   border-radius: var(--radius-2xs);
-  background: rgba(var(--overlay-text-rgb), 0.18);
-  color: rgba(var(--overlay-text-rgb), 0.85);
+  background: color-mix(in srgb, var(--overlay-text) 18%, transparent);
+  color: color-mix(in srgb, var(--overlay-text) 85%, transparent);
   margin-left: var(--space-1);
 }
 
@@ -421,7 +421,7 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .offset-header-chevron {
   display: inline-flex;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   transition: transform var(--duration-fast) ease;
 }
 
@@ -431,7 +431,7 @@ export const SUBTITLE_BLOCK_CSS = `
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
   flex: 1;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .offset-body {
@@ -490,7 +490,7 @@ export const SUBTITLE_BLOCK_CSS = `
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(var(--color-primary-rgb), 0.1);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   color: var(--color-primary);
   font-family: var(--font-family);
   font-size: var(--font-size-base);
@@ -514,18 +514,18 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .offset-value--zero {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   background: var(--color-surface-hover);
 }
 
 .offset-value--positive {
   color: var(--color-success);
-  background: rgba(var(--color-primary-rgb), 0.1);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .offset-value--negative {
   color: var(--color-info);
-  background: rgba(var(--color-primary-rgb), 0.1);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .offset-reset-btn {
@@ -548,7 +548,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .offset-reset-btn:hover:not(:disabled) {
-  background: rgba(var(--color-error-rgb), 0.08);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
   color: var(--color-error);
   border-color: var(--color-error);
 }
@@ -560,7 +560,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .offset-disabled-hint {
   padding: var(--space-2) 0 0;
   text-align: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
   display: none;
 }
@@ -586,7 +586,7 @@ export const SUBTITLE_BLOCK_CSS = `
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: var(--space-0);
   box-sizing: border-box;
   isolation: isolate;
   pointer-events: auto;
@@ -601,7 +601,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border-radius: var(--radius-full);
   backdrop-filter: blur(var(--blur-xs));
   -webkit-backdrop-filter: blur(var(--blur-xs));
-  background: rgba(var(--color-background-rgb), 0.1);
+  background: color-mix(in srgb, var(--color-background) 10%, transparent);
   -webkit-mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
   z-index: calc(var(--z-dropdown) - 1001);
@@ -619,7 +619,7 @@ export const SUBTITLE_BLOCK_CSS = `
   }
 
   .subtitle-manager-icon:hover:not(.subtitle-manager-icon--active) .subtitle-manager-icon-feather {
-    background: rgba(var(--color-background-rgb), 0.25);
+    background: color-mix(in srgb, var(--color-background) 25%, transparent);
   }
 }
 
@@ -666,7 +666,7 @@ export const SUBTITLE_BLOCK_CSS = `
 }
 
 .subtitle-manager-panel button {
-  margin: 0;
+  margin: var(--space-0);
   font-family: inherit;
   line-height: var(--leading-normal);
 }
@@ -695,7 +695,7 @@ export const SUBTITLE_BLOCK_CSS = `
   align-items: center;
   justify-content: space-between;
   min-height: var(--touch-target-desktop);
-  margin: 0;
+  margin: var(--space-0);
   padding: var(--space-2) var(--space-3);
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   box-sizing: border-box;
@@ -712,12 +712,12 @@ export const SUBTITLE_BLOCK_CSS = `
   height: var(--space-5);
   border: none;
   background: transparent;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: var(--space-0);
   box-sizing: border-box;
   border-radius: var(--radius-sm);
   transition: background var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-normal) var(--ease-bounce);
@@ -742,7 +742,7 @@ export const SUBTITLE_BLOCK_CSS = `
   user-select: none;
   width: 100%;
   min-height: var(--touch-target-desktop);
-  margin: 0;
+  margin: var(--space-0);
   border: none;
   background: transparent;
   color: var(--color-text);
@@ -764,8 +764,8 @@ export const SUBTITLE_BLOCK_CSS = `
   flex: 0 0 var(--space-4);
   width: var(--space-4);
   height: var(--space-4);
-  margin: 0;
-  color: var(--color-text-muted);
+  margin: var(--space-0);
+  color: var(--color-text-secondary);
   transition: transform var(--duration-fast) ease;
 }
 
@@ -787,11 +787,11 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-manager-section-count {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .subtitle-manager-section-body {
-  padding: 0 var(--space-1);
+  padding: var(--space-0) var(--space-1);
   display: block;
 }
 
@@ -822,14 +822,14 @@ export const SUBTITLE_BLOCK_CSS = `
 
 .subtitle-manager-item--active.subtitle-manager-item--native {
   border-color: var(--color-warning);
-  background: rgba(var(--color-warning-rgb), 0.1);
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
 }
 
 .subtitle-manager-radio {
   width: var(--space-3-5);
   height: var(--space-3-5);
   border-radius: var(--radius-full);
-  border: var(--space-0-5) solid var(--color-text-muted);
+  border: var(--space-0-5) solid var(--color-text-secondary);
   background: transparent;
   flex-shrink: 0;
   display: flex;
@@ -876,7 +876,7 @@ export const SUBTITLE_BLOCK_CSS = `
   gap: var(--space-2);
   align-items: center;
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .subtitle-manager-format-badge {
@@ -891,7 +891,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-manager-asr-badge {
   padding: calc(var(--space-0-5) / 2) var(--space-1-5);
   border-radius: var(--radius-sm);
-  background: rgba(var(--color-warning-rgb), 0.15);
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
   color: var(--color-warning);
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-xs);
@@ -906,7 +906,7 @@ export const SUBTITLE_BLOCK_CSS = `
 .subtitle-manager-translated-badge {
   padding: calc(var(--space-0-5) / 2) var(--space-1-5);
   border-radius: var(--radius-sm);
-  background: rgba(var(--color-warning-rgb), 0.15);
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
   color: var(--color-warning);
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-xs);
@@ -939,7 +939,7 @@ export const SUBTITLE_BLOCK_CSS = `
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: var(--space-0);
   box-sizing: border-box;
   isolation: isolate;
   user-select: none;
@@ -953,7 +953,7 @@ export const SUBTITLE_BLOCK_CSS = `
   }
 
   .panel-toggle:hover .panel-toggle-feather {
-    background: rgba(var(--color-background-rgb), 0.25);
+    background: color-mix(in srgb, var(--color-background) 25%, transparent);
   }
 }
 
@@ -967,7 +967,7 @@ export const SUBTITLE_BLOCK_CSS = `
   border-radius: var(--radius-full);
   backdrop-filter: blur(var(--blur-xs));
   -webkit-backdrop-filter: blur(var(--blur-xs));
-  background: rgba(var(--color-background-rgb), 0.1);
+  background: color-mix(in srgb, var(--color-background) 10%, transparent);
   -webkit-mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
   mask-image: radial-gradient(ellipse at center, var(--overlay-background) 55%, transparent 100%);
   z-index: calc(var(--z-dropdown) - 1001);
@@ -984,8 +984,8 @@ export const SUBTITLE_BLOCK_CSS = `
   z-index: var(--z-overlay-video-popover);
   font-size: var(--font-size-xs);
   padding: var(--space-0-5) var(--space-1);
-  background-color: rgba(var(--overlay-background-rgb), 0.7);
-  color: rgba(var(--overlay-text-rgb), 0.95);
+  background-color: color-mix(in srgb, var(--overlay-background) 70%, transparent);
+  color: color-mix(in srgb, var(--overlay-text) 95%, transparent);
   border: none;
   border-radius: var(--radius-2xs);
   display: none;
@@ -1035,8 +1035,8 @@ export const SUBTITLE_BLOCK_CSS = `
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(var(--subtitle-drag-hint-rgb), 0.2);
-  border: var(--space-1) dashed rgba(var(--subtitle-drag-hint-rgb), 0.8);
+  background-color: color-mix(in srgb, var(--subtitle-drag-hint) 20%, transparent);
+  border: var(--space-1) dashed color-mix(in srgb, var(--subtitle-drag-hint) 80%, transparent);
   border-radius: var(--radius-md);
   display: none;
   align-items: center;
@@ -1045,8 +1045,8 @@ export const SUBTITLE_BLOCK_CSS = `
   pointer-events: none;
   user-select: none;
   font-size: var(--font-size-base);
-  color: rgba(var(--overlay-text-rgb), 0.95);
-  text-shadow: var(--shadow-textSoft) rgba(var(--overlay-background-rgb), 0.8);
+  color: color-mix(in srgb, var(--overlay-text) 95%, transparent);
+  text-shadow: var(--shadow-textSoft) color-mix(in srgb, var(--overlay-background) 80%, transparent);
   font-family: var(--font-family);
 }
 

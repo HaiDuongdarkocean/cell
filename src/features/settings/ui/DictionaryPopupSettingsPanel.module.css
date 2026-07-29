@@ -44,7 +44,7 @@
 
 .hint {
   display: block;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   margin-top: var(--space-1);
   font-size: var(--font-size-xs);
 }

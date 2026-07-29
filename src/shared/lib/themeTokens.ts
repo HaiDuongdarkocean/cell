@@ -24,6 +24,7 @@ import {
   formatStaticTokens,
 } from '@/shared/lib/tokens';
 import { NAV_CLUSTER_CSS } from '@/features/subtitle/ui/navClusterCss';
+import navClusterModuleCss from '@/features/subtitle/ui/NavCluster.module.css?inline';
 import type { ThemeMode, ThemeConfig, ResolvedMode } from '@/entities/theme';
 
 /** ID of the injected `<style>` element holding theme tokens. Exported so
@@ -49,6 +50,14 @@ function buildStyleContent(config: ThemeConfig): string {
 ${staticTokens}
 }
 
+/* Semantic touch target — adapts to primary pointer type.
+   Mirrors scripts/generate-tokens.js output for tokens.css; the flat
+   tokens.json model cannot express @media aliases, so inject here. */
+:root { --touch-target: var(--touch-target-desktop); }
+@media (pointer: coarse) {
+  :root { --touch-target: var(--touch-target-mobile); }
+}
+
 [data-theme="light"] {
 ${lightTokens}
 ${componentTokens}
@@ -69,6 +78,7 @@ ${componentTokens}
 }
 
 ${NAV_CLUSTER_CSS}
+${navClusterModuleCss}
 `;
 }
 

@@ -18,7 +18,7 @@
 }
 
 .toggle:hover {
-  background: var(--color-text-muted);
+  background: var(--color-text-secondary);
 }
 
 .toggle[aria-pressed="true"]:hover {

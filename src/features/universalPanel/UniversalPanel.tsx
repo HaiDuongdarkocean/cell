@@ -2,6 +2,8 @@ import { useRef, useState, useEffect, type ReactElement, type ReactNode, type Ke
 import { IconButton } from '@/shared/ui/IconButton';
 import { useFocusTrap } from '@/shared/ui/useFocusTrap';
 import { Icon } from '@/shared/icons/Icon';
+import { UniversalPanelHeader } from './UniversalPanelHeader';
+import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab } from './types';
 import styles from './UniversalPanel.module.css';
 
@@ -14,6 +16,10 @@ export interface UniversalPanelProps {
   readonly onTabChange: (tab: UniversalPanelTab) => void;
   /** Called when the panel should close (backdrop click, X, Escape). */
   readonly onClose: () => void;
+  /** Tokenize state for the universal header (ADR-061). */
+  readonly tokenizeState: TokenizePanelState;
+  /** Toggle one of the tokenize keys from the universal header. */
+  readonly onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
   /** Content for the Dictionary tab. */
   readonly dictionaryPanel: ReactNode;
   /** Content for the Settings tab. */
@@ -36,6 +42,8 @@ export function UniversalPanel({
   activeTab,
   onTabChange,
   onClose,
+  tokenizeState,
+  onToggleTokenize,
   dictionaryPanel,
   settingsPanel,
 }: UniversalPanelProps): ReactElement | null {
@@ -118,19 +126,16 @@ export function UniversalPanel({
           </div>
         </nav>
 
-        <IconButton
-          size="sm"
-          variant="ghost"
-          aria-label="Close panel"
-          className={styles.closeButton}
-          onClick={onClose}
-          data-testid="universal-panel-close"
-        >
-          <Icon name="x" size={20} />
-        </IconButton>
+        <div className={styles.body}>
+          <UniversalPanelHeader
+            tokenizeState={tokenizeState}
+            onToggleTokenize={onToggleTokenize}
+            onClose={onClose}
+          />
 
-        <div className={styles.content} data-testid={`universal-panel-content-${activeTab}`}>
-          {activeTab === 'dictionary' ? dictionaryPanel : settingsPanel}
+          <div className={styles.content} data-testid={`universal-panel-content-${activeTab}`}>
+            {activeTab === 'dictionary' ? dictionaryPanel : settingsPanel}
+          </div>
         </div>
       </div>
     </div>

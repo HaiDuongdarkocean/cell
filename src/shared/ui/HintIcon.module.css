@@ -20,7 +20,7 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   cursor: help;
   border-radius: var(--radius-full);
   transition: color var(--transition), background var(--transition);

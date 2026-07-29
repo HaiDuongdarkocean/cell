@@ -1,7 +1,7 @@
 ---
 name: spec-reviewer
 description: Orchestrates child spec reviewers then synthesizes a final review report. Use when asked to review a spec document.
-model: glm-5-2
+model: claude-opus-5-medium
 max-nesting: 2
 allowed-tools:
   - read
@@ -13,7 +13,7 @@ allowed-tools:
 
 Spec-review orchestrator. Input: đường dẫn spec. Hai phase.
 
-Phase 1 — Spawn child subagents song song (`is_background: true`): `spec-reviewer-glm`. Task cho mỗi child:
+Phase 1 — Spawn child subagents song song (`is_background: true`): `spec-reviewer-swe`. Task cho mỗi child:
 
 ```
 Review spec tại <path>. làm theo skill /spec-review-stakeholder. Đọc spec kỹ, report findings, cite sections. Independent review only.

@@ -4,7 +4,7 @@
   flex-wrap: wrap;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background: var(--color-card);
+  background: var(--color-surface-card);
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-dialog);
 }
