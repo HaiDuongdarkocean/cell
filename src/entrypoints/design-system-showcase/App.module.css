@@ -267,3 +267,15 @@
      inside the showcase section instead of anchoring to the viewport. */
   transform: translate(0);
 }
+
+.cardCreatorPreview {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 640px;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--color-surface-card);
+}
