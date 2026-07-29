@@ -7,8 +7,7 @@ import { useCallback } from 'react';
 import { useDictionaryLookup } from '../logic/useDictionaryLookup';
 import { useDictionaryToolbar } from '../logic/useDictionaryToolbar';
 import { buildPrefill } from './buildCandidatePrefill';
-import type { LookupResult } from '../types';
-import type { PopupCardCreatorPrefill } from './popupDictionaryController';
+import type { LookupResult, WordStatus, PopupCardCreatorPrefill } from '../types';
 
 export interface UseDictionaryPanelOptions {
   /** Language code of the dictionary being searched (e.g. 'en', 'zh'). */
@@ -19,6 +18,22 @@ export interface UseDictionaryPanelOptions {
   readonly targetLang: string;
   /** Optional term to search on first mount. */
   readonly initialTerm?: string;
+  /** Context sentence for the term (used for Card Creator prefill). */
+  readonly contextSentence?: string;
+  /** Optional cursor offset inside `contextSentence` for phrase detection. */
+  readonly cursorOffset?: number;
+  /** Optional pre-fetched winner result. When provided, no initial lookup is performed. */
+  readonly initialResult?: LookupResult;
+  /** Optional pre-fetched additional candidates. */
+  readonly initialCandidates?: readonly LookupResult[];
+  /** Optional local token-status fallback for the winner. */
+  readonly getTokenStatus?: (term: string) => WordStatus | undefined;
+  /** Called when a new result arrives. */
+  readonly onResult?: (winner: LookupResult, candidates: readonly LookupResult[], contextSentence: string) => void;
+  /** Force a loading state (e.g. while a parent controller is fetching the first result). */
+  readonly isLoading?: boolean;
+  /** Optional external status sync (e.g. keyboard shortcut). */
+  readonly syncStatus?: { readonly term: string; readonly status: WordStatus };
   /** Called when the user presses "Send to Card" — receives the built prefill. */
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user presses "Quick Add" — receives the built prefill. */
@@ -32,6 +47,8 @@ export interface UseDictionaryPanelReturn {
   readonly setSearchTerm: (term: string) => void;
   /** Submit a dictionary lookup for the given term. */
   readonly search: (term: string) => void;
+  /** Context sentence for the current lookup (used for Card Creator prefill). */
+  readonly contextSentence: string;
   /** Winner result from the last lookup, or null before any search. */
   readonly currentResult: LookupResult | null;
   /** Additional candidates returned by lookupOrchestratorMulti (phrase matches, surface token, lemmas). */
@@ -103,31 +120,58 @@ export interface UseDictionaryPanelReturn {
 }
 
 export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDictionaryPanelReturn {
-  const { langCode, sourceLang, targetLang, initialTerm, onSendToCard, onQuickAdd } = options;
+  const {
+    langCode,
+    sourceLang,
+    targetLang,
+    initialTerm,
+    contextSentence,
+    cursorOffset,
+    initialResult,
+    initialCandidates,
+    getTokenStatus,
+    onResult,
+    isLoading: isLoadingProp,
+    syncStatus,
+    onSendToCard,
+    onQuickAdd,
+  } = options;
 
-  const lookup = useDictionaryLookup({ langCode, sourceLang, targetLang, initialTerm });
+  const lookup = useDictionaryLookup({
+    langCode,
+    sourceLang,
+    targetLang,
+    initialTerm,
+    contextSentence,
+    cursorOffset,
+    initialResult,
+    initialCandidates,
+    getTokenStatus,
+    onResult,
+    syncStatus,
+  });
   const toolbar = useDictionaryToolbar({
     result: lookup.currentResult,
-    contextSentence: lookup.latestSearchedTerm,
+    contextSentence: lookup.contextSentence,
     sourceLang,
     targetLang,
   });
 
-  const { currentResult, activeCandidateIndex, candidates, selectedDefinitions, latestSearchedTerm } = lookup;
+  const { currentResult, activeCandidateIndex, candidates, selectedDefinitions, contextSentence: lookupContext } = lookup;
 
   const buildActivePrefill = useCallback((): PopupCardCreatorPrefill | null => {
     if (!currentResult) return null;
     return buildPrefill(
       currentResult,
       selectedDefinitions,
-      latestSearchedTerm,
+      lookupContext,
       toolbar.translation,
       toolbar.audioItems,
       toolbar.audioSelection,
       toolbar.imageItems,
       toolbar.imageSelection,
     );
-  }, [currentResult, selectedDefinitions, latestSearchedTerm, toolbar.translation, toolbar.audioItems, toolbar.audioSelection, toolbar.imageItems, toolbar.imageSelection]);
+  }, [currentResult, selectedDefinitions, lookupContext, toolbar.translation, toolbar.audioItems, toolbar.audioSelection, toolbar.imageItems, toolbar.imageSelection]);
 
   const buildCandidatePrefill = useCallback((index: number): PopupCardCreatorPrefill | null => {
     const allCandidates = [currentResult, ...candidates].filter((candidate): candidate is LookupResult => candidate !== null);
@@ -137,14 +181,14 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
     return buildPrefill(
       candidate,
       isActive ? selectedDefinitions : candidate.definitions.filter((definition) => definition.defaultSelected),
-      latestSearchedTerm,
+      lookupContext,
       isActive ? toolbar.translation : '',
       isActive ? toolbar.audioItems : [],
       isActive ? toolbar.audioSelection : new Map(),
       isActive ? toolbar.imageItems : [],
       isActive ? toolbar.imageSelection : new Map(),
     );
-  }, [activeCandidateIndex, toolbar.audioItems, toolbar.audioSelection, toolbar.imageItems, toolbar.imageSelection, toolbar.translation, candidates, currentResult, selectedDefinitions, latestSearchedTerm]);
+  }, [activeCandidateIndex, toolbar.audioItems, toolbar.audioSelection, toolbar.imageItems, toolbar.imageSelection, toolbar.translation, candidates, currentResult, selectedDefinitions, lookupContext]);
 
   const sendToCard = useCallback((): void => {
     const prefill = buildActivePrefill();
@@ -172,12 +216,13 @@ export function useDictionaryPanel(options: UseDictionaryPanelOptions): UseDicti
   return {
     searchTerm: lookup.searchTerm,
     setSearchTerm: lookup.setSearchTerm,
-    search: lookup.search,
+    search: (term: string) => lookup.search(term, term),
+    contextSentence: lookupContext,
     currentResult,
     candidates,
     activeCandidateIndex,
     setActiveCandidate: lookup.setActiveCandidate,
-    isLoading: lookup.isLoading,
+    isLoading: isLoadingProp ?? lookup.isLoading,
     error: lookup.error,
     activeTab: toolbar.activeTab,
     setActiveTab: toolbar.setActiveTab,

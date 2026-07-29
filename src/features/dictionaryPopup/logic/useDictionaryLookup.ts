@@ -22,6 +22,20 @@ export interface UseDictionaryLookupOptions {
   readonly targetLang: string;
   /** Optional term to search on first mount or when it changes. */
   readonly initialTerm?: string;
+  /** Optional context sentence for the initial term (used for Card Creator prefill). */
+  readonly contextSentence?: string;
+  /** Optional cursor offset inside `contextSentence` for phrase detection. */
+  readonly cursorOffset?: number;
+  /** Optional pre-fetched winner result. When provided, no initial lookup is performed. */
+  readonly initialResult?: LookupResult;
+  /** Optional pre-fetched additional candidates to display alongside the winner. */
+  readonly initialCandidates?: readonly LookupResult[];
+  /** Optional local token-status fallback for the winner. */
+  readonly getTokenStatus?: (term: string) => WordStatus | undefined;
+  /** Optional callback when a new result arrives (winner + candidates). */
+  readonly onResult?: (winner: LookupResult, candidates: readonly LookupResult[], contextSentence: string) => void;
+  /** Optional external status sync (e.g. keyboard shortcut). */
+  readonly syncStatus?: { readonly term: string; readonly status: WordStatus };
 }
 
 export interface UseDictionaryLookupReturn {
@@ -30,9 +44,11 @@ export interface UseDictionaryLookupReturn {
   /** Update the search input text without submitting a lookup. */
   readonly setSearchTerm: (term: string) => void;
   /** Submit a dictionary lookup for the given term. */
-  readonly search: (term: string) => void;
+  readonly search: (term: string, contextSentence?: string, cursorOffset?: number) => void;
   /** The exact term used in the last successful lookup. */
   readonly latestSearchedTerm: string;
+  /** Context sentence for the current lookup (used for Card Creator prefill). */
+  readonly contextSentence: string;
   /** Winner result from the last lookup, or null before any search. */
   readonly currentResult: LookupResult | null;
   /** Additional candidates returned by lookupOrchestratorMulti. */
@@ -69,20 +85,41 @@ function makeRequestId(): string {
   return `dp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDictionaryLookupReturn {
-  const { langCode, initialTerm } = options;
+/** Apply a local token status fallback to a result if its status is unknown. */
+function applyLocalStatusFallback(result: LookupResult, getTokenStatus?: (term: string) => WordStatus | undefined): LookupResult {
+  if (result.status !== 'unknown') return result;
+  const localStatus = getTokenStatus?.(result.term);
+  if (!localStatus || localStatus === 'unknown') return result;
+  return { ...result, status: localStatus };
+}
 
-  const [searchTerm, setSearchTerm] = useState(initialTerm ?? '');
-  const [currentResult, setCurrentResult] = useState<LookupResult | null>(null);
-  const [candidates, setCandidates] = useState<readonly LookupResult[]>([]);
+export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDictionaryLookupReturn {
+  const {
+    langCode,
+    initialTerm,
+    contextSentence: initialContextSentence = '',
+    cursorOffset: initialCursorOffset = 0,
+    initialResult,
+    initialCandidates = [],
+    getTokenStatus,
+    onResult,
+    syncStatus,
+  } = options;
+
+  const [searchTerm, setSearchTerm] = useState(initialResult?.term ?? initialTerm ?? '');
+  const [currentResult, setCurrentResult] = useState<LookupResult | null>(initialResult ?? null);
+  const [candidates, setCandidates] = useState<readonly LookupResult[]>(initialCandidates);
   const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<WordStatus>('unknown');
-  const [definitionSelection, setDefinitionSelection] = useState<Map<string, boolean>>(new Map());
+  const [status, setStatus] = useState<WordStatus>(initialResult?.status ?? 'unknown');
+  const [definitionSelection, setDefinitionSelection] = useState<Map<string, boolean>>(() =>
+    initialResult ? initDefinitionSelection(initialResult) : new Map()
+  );
+  const [contextSentence, setContextSentence] = useState<string>(initialContextSentence);
 
   const requestIdRef = useRef<string | null>(null);
-  const latestSearchRef = useRef<string>(initialTerm ?? '');
+  const latestSearchRef = useRef<string>(initialResult?.term ?? initialTerm ?? '');
 
   const resetResultState = useCallback((): void => {
     setCurrentResult(null);
@@ -98,21 +135,26 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
     setSearchTerm(initialTerm ?? '');
     setIsLoading(false);
     setError(null);
-  }, [initialTerm, resetResultState]);
+    setContextSentence(initialContextSentence);
+  }, [initialTerm, initialContextSentence, resetResultState]);
 
-  const applyResult = useCallback((results: readonly LookupResult[], searchedTerm: string): void => {
+  const applyResult = useCallback((results: readonly LookupResult[], searchedTerm: string, ctxSentence: string): void => {
     if (results.length === 0) {
       resetResultState();
       return;
     }
     const [winner, ...rest] = results;
-    setCurrentResult(winner);
-    setCandidates(rest);
+    const finalWinner = applyLocalStatusFallback(winner, getTokenStatus);
+    const finalResults = finalWinner === winner ? results : [finalWinner, ...rest];
+    setCurrentResult(finalWinner);
+    setCandidates(finalResults.slice(1));
     setActiveCandidateIndex(0);
-    setStatus(winner.status);
-    setDefinitionSelection(initDefinitionSelection(winner));
+    setStatus(finalWinner.status);
+    setDefinitionSelection(initDefinitionSelection(finalWinner));
+    setContextSentence(ctxSentence);
     latestSearchRef.current = searchedTerm;
-  }, [resetResultState]);
+    onResult?.(finalWinner, finalResults.slice(1), ctxSentence);
+  }, [resetResultState, getTokenStatus, onResult]);
 
   function cancelInFlight(): void {
     const id = requestIdRef.current;
@@ -121,7 +163,7 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
     void sendMessage({ type: MESSAGE_TYPES.LOOKUP_CANCEL, payload: { requestId: id } });
   }
 
-  const search = useCallback((term: string): void => {
+  const search = useCallback((term: string, ctxSentence?: string, offset?: number): void => {
     const trimmed = term.trim();
     if (!trimmed) return;
 
@@ -133,11 +175,14 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
     const requestId = makeRequestId();
     requestIdRef.current = requestId;
 
+    const sentence = (ctxSentence?.trim() || trimmed).slice(0, 500);
+    const off = offset ?? 0;
+
     const request: LookupRequest = {
       term: trimmed,
       langCode,
-      contextSentence: trimmed,
-      cursorOffset: 0,
+      contextSentence: sentence,
+      cursorOffset: off,
       fallback: true,
     };
 
@@ -150,7 +195,7 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
         requestIdRef.current = null;
         setIsLoading(false);
         if (response?.success && response.data) {
-          applyResult(response.data, trimmed);
+          applyResult(response.data, trimmed, sentence);
         } else {
           setError(response?.error ?? 'Lookup failed');
           resetResultState();
@@ -195,22 +240,38 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
 
   const latestSearchedTerm = latestSearchRef.current;
 
-  // Initial search when initialTerm is provided. Re-run if the prop changes
-  // while the component is mounted.
+  // Re-apply when the caller supplies a new pre-fetched result or changes the
+  // initial term. This lets a content-script controller feed results and
+  // candidates into the same mounted component instead of re-mounting.
   useEffect(() => {
+    if (initialResult) {
+      applyResult([initialResult, ...initialCandidates], initialResult.term, initialContextSentence);
+      return;
+    }
     if (initialTerm?.trim()) {
-      search(initialTerm.trim());
+      search(initialTerm.trim(), initialContextSentence, initialCursorOffset);
     }
     return () => { cancelInFlight(); };
-    // search is a stable callback; only react to initialTerm changes.
+    // Only react to meaningful external seed changes, not to every new object
+    // identity on re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTerm]);
+  }, [initialResult?.term, initialCandidates.length, initialTerm, initialContextSentence, search, applyResult]);
+
+  // Sync an externally-driven status (e.g. keyboard shortcut) to the active
+  // result without persisting — the external source already owns persistence.
+  useEffect(() => {
+    if (!syncStatus || !currentResult) return;
+    if (syncStatus.term.toLowerCase() !== currentResult.term.toLowerCase()) return;
+    setCurrentResult({ ...currentResult, status: syncStatus.status });
+    setStatus(syncStatus.status);
+  }, [syncStatus, currentResult]);
 
   return {
     searchTerm,
     setSearchTerm,
     search,
     latestSearchedTerm,
+    contextSentence,
     currentResult,
     candidates,
     activeCandidateIndex,
