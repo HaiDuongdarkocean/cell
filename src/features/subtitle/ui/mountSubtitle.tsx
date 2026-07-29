@@ -1,7 +1,8 @@
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 
-import { SubtitlePanels, type SubtitlePanelsRef } from './SubtitlePanels';
+import { SubtitlePanels, type SubtitlePanelsRef, type ManagerState, type OffsetState } from './SubtitlePanels';
+import type { ToastVariant } from './SubtitleToast';
 import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?inline';
 import subtitleBlockCss from './SubtitleBlock.module.css?inline';
@@ -13,8 +14,11 @@ import subtitleHintCss from './SubtitleHint.module.css?inline';
 import subtitlePanelsCss from './SubtitlePanels.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
+import { ICON_CATALOG } from '@/shared/icons';
 
-export type { SubtitlePanelsRef } from './SubtitlePanels';
+export type { SubtitlePanelsRef, ManagerState, OffsetState } from './SubtitlePanels';
+
+type IconCatalogKey = keyof typeof ICON_CATALOG;
 
 export interface MountSubtitleOptions {
   container: HTMLElement;
@@ -25,6 +29,11 @@ export interface MountSubtitleOptions {
   hasSubtitle: boolean;
   isPlaying: boolean;
   repeatActive: boolean;
+  repeatIcon?: IconCatalogKey;
+  repeatLabel?: string;
+  manager?: ManagerState;
+  offset?: OffsetState;
+  generateNativeEnabled?: boolean;
   onPrev: () => void;
   onNext: () => void;
   onRepeat: () => void;
@@ -36,10 +45,19 @@ export interface MountSubtitleOptions {
 
 export interface MountSubtitleResult {
   unmount: () => void;
+  setStyles: (targetStyle: OverlayStyleConfig, nativeStyle: OverlayStyleConfig) => void;
+  setHasSubtitle: (has: boolean) => void;
+  setIsPlaying: (playing: boolean) => void;
+  setRepeatActive: (active: boolean) => void;
+  setRepeatIcon: (icon: IconCatalogKey, label?: string) => void;
+  setManager: (manager: ManagerState) => void;
+  setOffset: (offset: OffsetState) => void;
   setManagerOpen: (open: boolean) => void;
   setOffsetOpen: (open: boolean) => void;
   setHintOpen: (open: boolean) => void;
-  addToast: (message: string, variant?: 'success' | 'error' | 'warning' | 'info') => void;
+  setGenerateNativeEnabled: (enabled: boolean) => void;
+  setCollapsed: (collapsed: boolean) => void;
+  addToast: (message: string, variant?: ToastVariant) => void;
   clearToasts: () => void;
 }
 
@@ -52,6 +70,11 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     hasSubtitle,
     isPlaying,
     repeatActive,
+    repeatIcon,
+    repeatLabel,
+    manager,
+    offset,
+    generateNativeEnabled,
     onPrev,
     onNext,
     onRepeat,
@@ -72,6 +95,11 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       hasSubtitle={hasSubtitle}
       isPlaying={isPlaying}
       repeatActive={repeatActive}
+      repeatIcon={repeatIcon}
+      repeatLabel={repeatLabel}
+      manager={manager}
+      offset={offset}
+      generateNativeEnabled={generateNativeEnabled}
       onPrev={onPrev}
       onNext={onNext}
       onRepeat={onRepeat}
@@ -102,9 +130,18 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
 
   return {
     unmount,
+    setStyles: (t, n) => controllerRef?.setStyles(t, n),
+    setHasSubtitle: (has) => controllerRef?.setHasSubtitle(has),
+    setIsPlaying: (playing) => controllerRef?.setIsPlaying(playing),
+    setRepeatActive: (active) => controllerRef?.setRepeatActive(active),
+    setRepeatIcon: (icon, label) => controllerRef?.setRepeatIcon(icon, label),
+    setManager: (m) => controllerRef?.setManager(m),
+    setOffset: (o) => controllerRef?.setOffset(o),
     setManagerOpen: (open) => controllerRef?.setManagerOpen(open),
     setOffsetOpen: (open) => controllerRef?.setOffsetOpen(open),
     setHintOpen: (open) => controllerRef?.setHintOpen(open),
+    setGenerateNativeEnabled: (enabled) => controllerRef?.setGenerateNativeEnabled(enabled),
+    setCollapsed: (collapsed) => controllerRef?.setCollapsed(collapsed),
     addToast: (message, variant) => controllerRef?.addToast(message, variant),
     clearToasts: () => controllerRef?.clearToasts(),
   };

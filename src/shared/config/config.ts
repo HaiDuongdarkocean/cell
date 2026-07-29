@@ -19,6 +19,15 @@ export const DEFAULT_SELECTED_SUBTITLE_LANGUAGES: string[] = ['all'];
 
 export const DEFAULT_AUTO_SELECT_ENABLED = false;
 
+/**
+ * Kill-switch for the legacy vanilla subtitle UI.
+ *
+ * `true` keeps the existing `SubtitleBlockController` + legacy DOM path.
+ * `false` routes through the new React `SubtitlePanels` / `ReactSubtitleController`.
+ * Default is `false` once the React migration is verified.
+ */
+export const USE_LEGACY_SUBTITLE = false;
+
 export const MAX_RETRY = 3;
 export const SEGMENT_TIMEOUT_MS = 30_000; // 30 seconds per segment
 export const DETECTION_TIMEOUT_MS = 30_000; // 30 seconds to wait for media detection

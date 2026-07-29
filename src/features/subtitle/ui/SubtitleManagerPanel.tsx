@@ -17,6 +17,7 @@ export interface SubtitleManagerPanelProps {
   onImport?: (role: 'target' | 'native') => void;
   onGenerateNative?: () => void;
   onOffsetChange?: (role: 'target' | 'native', offsetMs: number) => void;
+  generateNativeDisabled?: boolean;
 }
 
 interface SectionState {
@@ -197,6 +198,7 @@ export function SubtitleManagerPanel({
   onImport,
   onGenerateNative,
   onOffsetChange,
+  generateNativeDisabled,
 }: SubtitleManagerPanelProps): React.JSX.Element {
   const [targetState, setTargetState] = useState<SectionState>({
     expanded: true,
@@ -250,6 +252,7 @@ export function SubtitleManagerPanel({
             variant="secondary"
             onClick={onGenerateNative}
             data-testid="manager-generate-native"
+            disabled={generateNativeDisabled}
           >
             Generate native
           </Button>

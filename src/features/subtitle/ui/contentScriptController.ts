@@ -4,7 +4,7 @@ import { isoCodeToLabel } from '@/features/detection/logic/languageDetector';
 import { injectThemeTokens } from '@/shared/lib/themeTokens';
 import tokensJson from '@/shared/styles/tokens.json';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
+import { DEFAULT_KEYBOARD_SHORTCUTS, DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE, DEFAULT_SUBTITLE_BLOCK_SETTINGS, DEFAULT_NAV_CLUSTER_SETTINGS, DEFAULT_SETTINGS, DEFAULT_CARD_CREATOR_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, USE_LEGACY_SUBTITLE } from '@/shared/config/config';
 import {
   parseAndDetectFiles,
   assignImportRole,
@@ -31,6 +31,7 @@ import {
   toggleOverlayState,
 } from '@/features/subtitle';
 import { SubtitleBlockController, type SubtitleBlockControllerUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleBlockController';
+import { ReactSubtitleController } from '@/features/subtitle/ui/reactSubtitleController';
 import { OffsetController } from '@/features/subtitle/ui/offsetController';
 import { loadTokenizeSettings, isTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
@@ -258,7 +259,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   let settingsLoaded = false;
   let currentSettings: Settings | null = null;
   // ADR-019: offset controller (subtitle time offset)
-  let offsetController: OffsetController | null = null;
+  let offsetController: OffsetController | ReactSubtitleController | null = null;
   // Shared web-text dictionary controller (owned by top-level content-script).
   const sharedWebTextCtrl = webTextCtrl;
   // Track the latest target/native cues for the block controller and side panel.
@@ -297,26 +298,36 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     activeGenerateRunId = -1;
   }
 
-  const blockController = new SubtitleBlockController(
-    video,
-    container,
-    blockSettings,
-    targetStyle,
-    nativeStyle,
-    clusterSettings,
-    () => offsetController?.getOffsetMs() ?? 0,
-    (partial) => {
-      if (!settingsLoaded) return;
-      blockSettings = { ...blockSettings, ...partial };
-      void saveSettings({ subtitleBlockSettings: blockSettings } as Partial<Settings>);
-    },
-    // ADR-026: Card Creator entry buttons (quick update + edit) + q/e keyboard.
-    (action) => { handleCardCreatorAction(action); },
-    // ADR-027: Update current card — open dialog focused on Update button.
-    () => { void handleCardCreatorAction('update-current'); },
-    // Generate native subtitle button/shortcut.
-    () => { void handleGenerateNative(); },
-  );
+  const blockController = USE_LEGACY_SUBTITLE
+    ? new SubtitleBlockController(
+        video,
+        container,
+        blockSettings,
+        targetStyle,
+        nativeStyle,
+        clusterSettings,
+        () => offsetController?.getOffsetMs() ?? 0,
+        (partial) => {
+          if (!settingsLoaded) return;
+          blockSettings = { ...blockSettings, ...partial };
+          void saveSettings({ subtitleBlockSettings: blockSettings } as Partial<Settings>);
+        },
+        // ADR-026: Card Creator entry buttons (quick update + edit) + q/e keyboard.
+        (action) => { handleCardCreatorAction(action); },
+        // ADR-027: Update current card — open dialog focused on Update button.
+        () => { void handleCardCreatorAction('update-current'); },
+        // Generate native subtitle button/shortcut.
+        () => { void handleGenerateNative(); },
+      )
+    : new ReactSubtitleController(
+        video,
+        container,
+        blockSettings,
+        targetStyle,
+        nativeStyle,
+        clusterSettings,
+        () => { void handleGenerateNative(); },
+      );
 
   /** Enable/disable subtitle tokenize based on current settings and tokenize settings. */
   async function syncSubtitleTokenize(tokenizeSettings?: TokenizeSettings): Promise<void> {
@@ -723,55 +734,58 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     await syncSubtitleTokenize();
 
     // ADR-015 UI v4 / ADR-027: create import button + manager panel.
-    // ADR-027: No toolbar — import button goes into more-popover slot,
-    // manager icon goes into secondary column slot. Both via attachOverflowButtons.
-    const importButton = createImportButton(container, DEFAULT_OVERLAY_CONFIG);
-    managerPanel = createSubtitleManagerPanel(container, {
-      onSelect: (role, index) => { void onManagerSelect(role, index); },
-    });
-
-    // ADR-027: Attach overflow buttons (panel-toggle, import-button, manager-icon)
-    // into the subtitle block's right column slots.
-    blockController.attachOverflowButtons({
-      panelToggle: toggleBtn ?? undefined,
-      importButton,
-      managerIcon: managerPanel.icon,
-    });
-
-    // ADR-019: init offset controller — offset section nested trong manager panel.
-    // Load settings snapshot (for persisted offset per-URL).
-    let offsetSnapshot: { subtitleOffset?: Record<string, number> } = {};
-    try {
-      const settings = await loadSettings();
-      offsetSnapshot = { subtitleOffset: settings.subtitleOffset ?? {} };
-    } catch {
-      // ponytail: storage might not be available in test contexts — fallback empty
-    }
-    offsetController = new OffsetController(
-      video,
-      container,
-      window.location.href,
-      offsetSnapshot,
-      managerPanel.panel,
-    );
-    offsetController.init();
-    // ADR-025: offset provider already wired in SubtitleBlockController constructor.
-
-    // Wire file picker (import button) → processImportedFiles. Must run AFTER
-    // managerPanel creation because the import button is created inside the
-    // controller/panel (async). Wiring at top-level would query a non-existent
-    // button and silently skip — bug: import button did nothing while drag-drop
-    // worked (drag-drop wires on `container` which already exists).
-    const importButtonEl = importButton;
-    const fileInput = importButtonEl.querySelector('input[type="file"]') as HTMLInputElement | null;
-    if (fileInput) {
-      fileInput.addEventListener('change', async () => {
-        const files = Array.from(fileInput.files ?? []);
-        if (files.length === 0) return;
-        await processImportedFiles(files, container);
-        fileInput.value = ''; // reset so same file can be re-selected
+    // React path: manager/offset live inside the React SubtitlePanels; legacy
+    // path keeps the vanilla manager/offset panels.
+    if (USE_LEGACY_SUBTITLE) {
+      const importButton = createImportButton(container, DEFAULT_OVERLAY_CONFIG);
+      managerPanel = createSubtitleManagerPanel(container, {
+        onSelect: (role, index) => { void onManagerSelect(role, index); },
       });
+
+      // ADR-027: Attach overflow buttons (panel-toggle, import-button, manager-icon)
+      // into the subtitle block's right column slots.
+      blockController.attachOverflowButtons({
+        panelToggle: toggleBtn ?? undefined,
+        importButton,
+        managerIcon: managerPanel.icon,
+      });
+
+      // ADR-019: init offset controller — offset section nested trong manager panel.
+      // Load settings snapshot (for persisted offset per-URL).
+      let offsetSnapshot: { subtitleOffset?: Record<string, number> } = {};
+      try {
+        const settings = await loadSettings();
+        offsetSnapshot = { subtitleOffset: settings.subtitleOffset ?? {} };
+      } catch {
+        // ponytail: storage might not be available in test contexts — fallback empty
+      }
+      offsetController = new OffsetController(
+        video,
+        container,
+        window.location.href,
+        offsetSnapshot,
+        managerPanel.panel,
+      );
+      offsetController.init();
+
+      // Wire file picker (import button) → processImportedFiles.
+      const fileInput = importButton.querySelector('input[type="file"]') as HTMLInputElement | null;
+      if (fileInput) {
+        fileInput.addEventListener('change', async () => {
+          const files = Array.from(fileInput.files ?? []);
+          if (files.length === 0) return;
+          await processImportedFiles(files, container);
+          fileInput.value = '';
+        });
+      }
+    } else if (blockController instanceof ReactSubtitleController) {
+      // React path: reuse the controller for offset and wire manager callbacks.
+      offsetController = blockController;
+      offsetController.init();
+      blockController.onManagerSelect = (role, index) => { void onManagerSelect(role, index); };
+      blockController.onImportFiles = (_role, files) => { void processImportedFiles(Array.from(files), container); };
     }
+    // ADR-025: offset provider already wired in SubtitleBlockController constructor.
 
     // ADR-013 D3 + ADR-025: listen chrome.storage.onChanged → update block controller realtime
     onStorageChanged((changes, area) => {
@@ -919,6 +933,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   let nativeMatches: readonly SubtitleForOverlayResult[] = [];
   // ADR-015 T11: unified Subtitle Manager Panel (replaces V1 dropdowns long-term)
   let managerPanel: SubtitleManagerPanel | null = null;
+  const isReactMode = !USE_LEGACY_SUBTITLE;
   // ADR-015 T10: imported subtitle items per role (for panel display + select)
   let importedTargetItems: SubtitlePanelItem[] = [];
   let importedNativeItems: SubtitlePanelItem[] = [];
@@ -983,6 +998,10 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
 
   const refreshPanel = (role: 'target' | 'native'): void => {
     const { items, activeIndex } = mergedPanelItems(role);
+    if (isReactMode && blockController instanceof ReactSubtitleController) {
+      blockController.updateManagerItems(role, items, activeIndex);
+      return;
+    }
     if (role === 'target') managerPanel?.updateTarget(items, activeIndex);
     else managerPanel?.updateNative(items, activeIndex);
   };
@@ -1011,7 +1030,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
   // Create toggle button (overlay) — click → open Side Panel.
   // ADR-027: Button is appended to the subtitle block's more-popover slot
   // via attachOverflowButtons (no longer top-right of video).
-  toggleBtn = createToggleButton();
+  if (USE_LEGACY_SUBTITLE) {
+    toggleBtn = createToggleButton();
+  }
 
   // Toggle Side Panel open/close (ADR-008 D1). Shared by button click + 't'
   // keyboard shortcut. sidePanelOpen tracks best-effort state (see ceiling
@@ -1032,7 +1053,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     }
   }
 
-  toggleBtn.addEventListener('click', toggleSidePanel);
+  if (USE_LEGACY_SUBTITLE && toggleBtn) {
+    toggleBtn.addEventListener('click', toggleSidePanel);
+  }
 
   // Manager panel is created asynchronously inside loadOverlayStyles().then()
   // so it can reuse the import button created by SubtitleOverlayController.
@@ -1804,9 +1827,13 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     // ADR-027: toggleBtn + importButton are now children of the subtitle block
     // (via attachOverflowButtons) — removed when blockController.destroy()
     // removes the block DOM. No separate removal needed.
-    managerPanel?.destroy();
-    offsetController?.destroy();
-    blockController?.destroy();
+    if (USE_LEGACY_SUBTITLE) {
+      managerPanel?.destroy();
+      offsetController?.destroy();
+      blockController?.destroy();
+    } else {
+      offsetController?.destroy();
+    }
   };
 }
 
