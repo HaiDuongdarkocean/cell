@@ -25,6 +25,9 @@ export const USE_LEGACY_SUBTITLE = false;
 /** Feature flag: run the legacy light-DOM settings dialog instead of the React shadow-root UI. */
 export const USE_LEGACY_SETTINGS = false;
 
+/** Feature flag: run the legacy light-DOM universal panel instead of the React shadow-root UI. */
+export const USE_LEGACY_UNIVERSAL_PANEL = false;
+
 export const MAX_RETRY = 3;
 export const SEGMENT_TIMEOUT_MS = 30_000; // 30 seconds per segment
 export const DETECTION_TIMEOUT_MS = 30_000; // 30 seconds to wait for media detection
