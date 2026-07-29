@@ -49,6 +49,7 @@ import { resolveMode } from '@/features/theme/logic/themeManager';
 import { ShadowButtonPoC } from './ShadowButtonPoC';
 import { ShadowOverlayPoC } from './ShadowOverlayPoC';
 import { NavClusterPreview } from './NavClusterPreview';
+import { SubtitleBlockPreview } from './SubtitleBlockPreview';
 import styles from './App.module.css';
 
 type ShowcaseMode = 'light' | 'dark';
@@ -540,6 +541,10 @@ export function App() {
 
         <Section title="Nav Cluster">
           <NavClusterPreview />
+        </Section>
+
+        <Section title="Subtitle Block">
+          <SubtitleBlockPreview />
         </Section>
 
         <Section title="Components">
