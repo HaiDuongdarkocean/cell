@@ -358,7 +358,7 @@
     - Chrome DevTools MCP: YouTube — extension content script mounts Nav Cluster UI into shadow root; video playback blocked in isolated profile, so full overlay/fullscreen test pending.
     - Netflix: needs login; pending.
 
-- [ ] **T034 — Measure bundle / RAM after Phase 1**
+- [~] **T034 — Measure bundle / RAM after Phase 1**
   - **Phase:** 1c | **Lane:** Q | **Scope:** S | **Depends on:** T033
   - **Files:** `docs/adr/075-shadow-root-react.md`
   - **AC:**
@@ -366,9 +366,12 @@
     - Shadow CSS ≤ 50KB.
     - RAM within budget.
   - **Verification:**
-    - `du -sh dist/content/`
-    - Chrome DevTools Memory
-    - Update ADR
+    - `npm run build` produces:
+      - `dist/assets/content-script.ts-*.js`: 146.32 kB raw / 40.13 kB gzip (down ~98 kB raw vs baseline)
+      - `dist/assets/content-script-*.css`: 8.05 kB raw / 1.82 kB gzip (down ~20 kB vs baseline)
+      - `dist/assets/tokens-*.css`: 20.50 kB raw / 3.53 kB gzip
+    - Shadow CSS budget per host: tokens (20.50 kB) + per-component `?inline` modules ≤ 50 kB target ✓
+    - Chrome DevTools Memory on GeeksforGeeks (popup open): used JS heap ~83 MB / total ~92 MB via `performance.memory`. 10-min idle measurement still needed for accurate baseline.
 
 - [ ] **T035 — Define `cell:cues:updated` event types**
   - **Phase:** 2a | **Lane:** C | **Scope:** S | **Depends on:** T028
