@@ -1,5 +1,5 @@
-import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, beforeEach, afterEach, beforeAll } from '@jest/globals';
+import { act, fireEvent, waitFor } from '@testing-library/react';
 import type { Settings } from '@/entities/media';
 import { DEFAULT_SETTINGS } from '@/shared/config/config';
 
@@ -59,6 +59,27 @@ import type { UniversalPanelMountController } from './UniversalPanelController';
 const mockLoadSettings = jest.mocked(loadSettings);
 const mockGetSessionStorage = jest.mocked(getSessionStorage);
 
+beforeAll(() => {
+  window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })) as unknown as typeof window.matchMedia;
+});
+
+function getByTestId(testId: string): HTMLElement {
+  const host = document.getElementById('cell-universal-panel-host');
+  const root = host?.shadowRoot ?? host;
+  const element = root?.querySelector(`[data-testid="${testId}"]`) as HTMLElement | null;
+  if (!element) throw new Error(`Unable to find element by: [data-testid="${testId}"]`);
+  return element;
+}
+
 describe('mountUniversalPanel', () => {
   let controller: UniversalPanelMountController;
 
@@ -80,11 +101,11 @@ describe('mountUniversalPanel', () => {
 
   it('switches to Settings tab when the Settings tab button is clicked', async () => {
     await act(async () => { await controller.open('dictionary'); });
-    await waitFor(() => expect(screen.getByTestId('dictionary-panel')).toBeInTheDocument());
+    await waitFor(() => expect(getByTestId('dictionary-panel')).toBeTruthy());
 
-    await act(async () => { fireEvent.click(screen.getByTestId('universal-panel-tab-settings')); });
+    await act(async () => { fireEvent.click(getByTestId('universal-panel-tab-settings')); });
 
-    await waitFor(() => expect(screen.getByTestId('universal-panel-content-settings')).toBeInTheDocument());
+    await waitFor(() => expect(getByTestId('universal-panel-content-settings')).toBeTruthy());
     expect(controller.isOpen()).toBe(true);
   });
 
@@ -103,8 +124,8 @@ describe('mountUniversalPanel', () => {
 
     await act(async () => { await controller.sendToCard(prefill); });
 
-    await waitFor(() => expect(screen.getByTestId('universal-panel')).toBeInTheDocument());
-    const tab = screen.getByTestId('dictionary-tab');
+    await waitFor(() => expect(getByTestId('universal-panel')).toBeTruthy());
+    const tab = getByTestId('dictionary-tab');
     expect(tab).toHaveAttribute('data-initial-term', 'hello');
     expect(tab).toHaveAttribute('data-prefill-term', 'hello');
 
@@ -113,7 +134,7 @@ describe('mountUniversalPanel', () => {
     await act(async () => { await controller.close(); });
     await act(async () => { await controller.open('dictionary'); });
 
-    const reopenedTab = screen.getByTestId('dictionary-tab');
+    const reopenedTab = getByTestId('dictionary-tab');
     expect(reopenedTab).toHaveAttribute('data-initial-term', '');
     expect(reopenedTab).toHaveAttribute('data-prefill-term', '');
   });
@@ -132,14 +153,14 @@ describe('mountUniversalPanel', () => {
     };
 
     await act(async () => { await controller.sendToCard(prefill); });
-    await waitFor(() => expect(screen.getByTestId('dictionary-tab')).toBeInTheDocument());
-    expect(screen.getByTestId('dictionary-tab')).toHaveAttribute('data-prefill-term', 'hello');
+    await waitFor(() => expect(getByTestId('dictionary-tab')).toBeTruthy());
+    expect(getByTestId('dictionary-tab')).toHaveAttribute('data-prefill-term', 'hello');
 
     await act(async () => { await controller.switchTab('settings'); });
-    await waitFor(() => expect(screen.getByTestId('settings-dialog-content')).toBeInTheDocument());
+    await waitFor(() => expect(getByTestId('settings-dialog-content')).toBeTruthy());
 
     await act(async () => { await controller.switchTab('dictionary'); });
-    await waitFor(() => expect(screen.getByTestId('dictionary-tab')).toBeInTheDocument());
-    expect(screen.getByTestId('dictionary-tab')).toHaveAttribute('data-prefill-term', 'hello');
+    await waitFor(() => expect(getByTestId('dictionary-tab')).toBeTruthy());
+    expect(getByTestId('dictionary-tab')).toHaveAttribute('data-prefill-term', 'hello');
   });
 });

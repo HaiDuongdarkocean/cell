@@ -964,18 +964,19 @@
     - Manual: design-system Settings dialog opens with all sections and dark theme ✓
     - Manual: change settings on YouTube, reload, verify — pending T033
 
-- [ ] **T088 — Update `mountUniversalPanel` for chosen mechanism + `USE_LEGACY_UNIVERSAL_PANEL` flag**
+- [x] **T088 — Update `mountUniversalPanel` for chosen mechanism + `USE_LEGACY_UNIVERSAL_PANEL` flag**
   - **Phase:** 8 | **Lane:** H | **Scope:** M | **Depends on:** T031, T024, T071, T075, T082, T085
-  - **Files:** `src/features/universalPanel/mountUniversalPanel.ts`, `src/features/universalPanel/UniversalPanel.tsx`, `src/shared/lib/shadowRoot/ShadowThemeProvider.tsx`
+  - **Files:** `src/features/universalPanel/mountUniversalPanel.ts`, `src/features/universalPanel/mountUniversalPanelLegacy.ts`, `src/features/universalPanel/mountUniversalPanel.test.tsx`, `src/shared/config/config.ts`, `src/shared/lib/shadowRoot/ShadowThemeProvider.tsx`
   - **AC:**
     - Shadow if GO; else light DOM + `cell-` reset.
     - `USE_LEGACY_UNIVERSAL_PANEL` flag added, default `false`.
     - Fixed full-viewport host + `pointer-events: none`.
     - Fullscreen re-parenting.
   - **Verification:**
-    - `npm run test:unit -- mountUniversalPanel`
-    - Toggle `USE_LEGACY_UNIVERSAL_PANEL`, both paths compile
-    - `npm run build`
+    - `npm run typecheck` ✓
+    - `npm run test:unit -- universalPanel` ✓ (46 passed, updated mount test to query shadow DOM and polyfill `window.matchMedia`)
+    - `npm run build` ✓
+    - Toggle `USE_LEGACY_UNIVERSAL_PANEL` in `src/shared/config/config.ts`, both shadow and legacy paths compile and pass tests
 
 - [ ] **T089 — Update `getHosts()` and click-outside to `composedPath()`**
   - **Phase:** 8 | **Lane:** H | **Scope:** S | **Depends on:** T088

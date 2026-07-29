@@ -1,23 +1,102 @@
 /**
  * mountUniversalPanel — mounts the UniversalPanel React shell into a fixed
- * full-viewport host on document.body.
+ * full-viewport shadow host on document.body.
  *
- * Follows the same mount pattern as mountSettingsDialog / mountCardCreatorDialog
- * (ADR-022/026): fixed host, createRoot, theme token injection, fullscreen
- * re-parenting, and a returned imperative controller.
+ * Uses `mountReactShadow` for CSS isolation, token/component CSS injection,
+ * `ShadowThemeProvider` for theme, and automatic fullscreen re-parenting.
+ * Falls back to the legacy light-DOM createRoot path via USE_LEGACY_UNIVERSAL_PANEL.
  */
-import { createRoot, type Root } from 'react-dom/client';
 import { createElement, type ReactElement } from 'react';
+import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { UniversalPanel } from './UniversalPanel';
 import { SettingsTab } from './tabs/SettingsTab';
 import { DictionaryTab } from './tabs/DictionaryTab';
 import { createUniversalPanelController, type UniversalPanelMountController } from './UniversalPanelController';
-import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
-import { STORAGE_KEYS } from '@/shared/config/config';
+import { STORAGE_KEYS, USE_LEGACY_UNIVERSAL_PANEL } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import { mountUniversalPanelLegacy } from './mountUniversalPanelLegacy';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
+
+import universalPanelCss from './UniversalPanel.module.css?inline';
+import universalPanelHeaderCss from './UniversalPanelHeader.module.css?inline';
+import cardCreatorPanelCss from './tabs/CardCreatorPanel.module.css?inline';
+import dictionaryTabCss from './tabs/DictionaryTab.module.css?inline';
+import settingsTabCss from './tabs/SettingsTab.module.css?inline';
+
+import popupDictionaryCss from '@/features/dictionaryPopup/ui/PopupDictionary.module.css?inline';
+import dictionaryPanelViewCss from '@/features/dictionaryPopup/ui/DictionaryPanelView.module.css?inline';
+import orbitalBadgeCss from '@/features/dictionaryPopup/ui/OrbitalBadge.module.css?inline';
+
+import cardCreatorDialogCss from '@/features/cardCreator/ui/CardCreatorDialog.module.css?inline';
+import queueSidebarCss from '@/features/cardCreator/ui/QueueSidebar.module.css?inline';
+import mediaListCss from '@/features/cardCreator/ui/MediaList.module.css?inline';
+import previewBlockCss from '@/features/cardCreator/ui/PreviewBlock.module.css?inline';
+import fieldRowCss from '@/features/cardCreator/ui/FieldRow.module.css?inline';
+
+import cardCreatorSettingsPanelCss from '@/features/settings/ui/CardCreatorSettingsPanel.module.css?inline';
+import dictionaryPopupSettingsPanelCss from '@/features/settings/ui/DictionaryPopupSettingsPanel.module.css?inline';
+import multiSelectCss from '@/features/settings/ui/MultiSelect.module.css?inline';
+import navClusterSettingsPanelCss from '@/features/settings/ui/NavClusterSettingsPanel.module.css?inline';
+import settingsDialogCss from '@/features/settings/ui/SettingsDialog.module.css?inline';
+import subtitleBlockSettingsPanelCss from '@/features/settings/ui/SubtitleBlockSettingsPanel.module.css?inline';
+import subtitlePreviewCss from '@/features/settings/ui/SubtitlePreview.module.css?inline';
+import subtitleStylePanelCss from '@/features/settings/ui/SubtitleStylePanel.module.css?inline';
+
+import colorCustomizationCss from '@/features/theme/ui/ColorCustomization.module.css?inline';
+import contrastBadgesCss from '@/features/theme/ui/ContrastBadges.module.css?inline';
+import modeCardsCss from '@/features/theme/ui/ModeCards.module.css?inline';
+import themeImportExportCss from '@/features/theme/ui/ThemeImportExport.module.css?inline';
+import themePanelCss from '@/features/theme/ui/ThemePanel.module.css?inline';
+import themePreviewCss from '@/features/theme/ui/ThemePreview.module.css?inline';
+
+import ttsVoiceManagerPanelCss from '@/features/tts/ui/TtsVoiceManagerPanel.module.css?inline';
+
+import dropzoneCss from '@/features/dictionary/ui/Dropzone.module.css?inline';
+import importProgressCss from '@/features/dictionary/ui/ImportProgress.module.css?inline';
+import resourceCardCss from '@/features/dictionary/ui/ResourceCard.module.css?inline';
+import resourcesPanelCss from '@/features/dictionary/ui/ResourcesPanel.module.css?inline';
+
+import iconCss from '@/shared/icons/Icon.module.css?inline';
+
+import accordionCss from '@/shared/ui/Accordion.module.css?inline';
+import alertCss from '@/shared/ui/Alert.module.css?inline';
+import badgeCss from '@/shared/ui/Badge.module.css?inline';
+import bottomSheetCss from '@/shared/ui/BottomSheet.module.css?inline';
+import buttonCss from '@/shared/ui/Button.module.css?inline';
+import cardCss from '@/shared/ui/Card.module.css?inline';
+import checkboxCss from '@/shared/ui/Checkbox.module.css?inline';
+import checkboxGroupCss from '@/shared/ui/CheckboxGroup.module.css?inline';
+import dialogCss from '@/shared/ui/Dialog.module.css?inline';
+import drawerCss from '@/shared/ui/Drawer.module.css?inline';
+import emptyStateCss from '@/shared/ui/EmptyState.module.css?inline';
+import errorBoundaryCss from '@/shared/ui/ErrorBoundary.module.css?inline';
+import formGroupCss from '@/shared/ui/FormGroup.module.css?inline';
+import headerCss from '@/shared/ui/Header.module.css?inline';
+import hintIconCss from '@/shared/ui/HintIcon.module.css?inline';
+import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
+import inputCss from '@/shared/ui/Input.module.css?inline';
+import inputFieldCss from '@/shared/ui/InputField.module.css?inline';
+import labelCss from '@/shared/ui/Label.module.css?inline';
+import listItemCss from '@/shared/ui/ListItem.module.css?inline';
+import navItemCss from '@/shared/ui/NavItem.module.css?inline';
+import progressCss from '@/shared/ui/Progress.module.css?inline';
+import radioCss from '@/shared/ui/Radio.module.css?inline';
+import radioGroupCss from '@/shared/ui/RadioGroup.module.css?inline';
+import searchFieldCss from '@/shared/ui/SearchField.module.css?inline';
+import searchableSelectCss from '@/shared/ui/SearchableSelect.module.css?inline';
+import selectCss from '@/shared/ui/Select.module.css?inline';
+import shortcutInputCss from '@/shared/ui/ShortcutInput.module.css?inline';
+import sidebarCss from '@/shared/ui/Sidebar.module.css?inline';
+import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
+import sliderCss from '@/shared/ui/Slider.module.css?inline';
+import spinnerCss from '@/shared/ui/Spinner.module.css?inline';
+import tabsCss from '@/shared/ui/Tabs.module.css?inline';
+import textareaCss from '@/shared/ui/Textarea.module.css?inline';
+import toggleCss from '@/shared/ui/Toggle.module.css?inline';
+import tooltipCss from '@/shared/ui/Tooltip.module.css?inline';
 
 export interface UniversalPanelMountOptions {
   /** Tokenize state + callbacks forwarded to the Settings tab. */
@@ -37,22 +116,88 @@ export interface UniversalPanelMountOptions {
 }
 
 const PANEL_HOST_ID = 'cell-universal-panel-host';
+const HOST_CLASS_NAME = 'js-cell-universal-panel-host';
 const HOST_Z_INDEX = 'var(--z-overlay-secondary)';
 
-/**
- * Create a fixed full-viewport host for the universal panel.
- * The host sits below the orbital badge z-index (var(--z-overlay-top)) per ADR-065.
- */
-function createHost(): HTMLElement {
-  const host = document.createElement('div');
-  host.id = PANEL_HOST_ID;
-  host.style.cssText =
-    'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;z-index:' +
-    HOST_Z_INDEX +
-    ';pointer-events:none;overflow:hidden;transform:none;';
-  document.body.appendChild(host);
-  return host;
-}
+const SHADOW_CSS = [
+  universalPanelCss,
+  universalPanelHeaderCss,
+  cardCreatorPanelCss,
+  dictionaryTabCss,
+  settingsTabCss,
+
+  popupDictionaryCss,
+  dictionaryPanelViewCss,
+  orbitalBadgeCss,
+
+  cardCreatorDialogCss,
+  queueSidebarCss,
+  mediaListCss,
+  previewBlockCss,
+  fieldRowCss,
+
+  cardCreatorSettingsPanelCss,
+  dictionaryPopupSettingsPanelCss,
+  multiSelectCss,
+  navClusterSettingsPanelCss,
+  settingsDialogCss,
+  subtitleBlockSettingsPanelCss,
+  subtitlePreviewCss,
+  subtitleStylePanelCss,
+
+  colorCustomizationCss,
+  contrastBadgesCss,
+  modeCardsCss,
+  themeImportExportCss,
+  themePanelCss,
+  themePreviewCss,
+
+  ttsVoiceManagerPanelCss,
+
+  dropzoneCss,
+  importProgressCss,
+  resourceCardCss,
+  resourcesPanelCss,
+
+  iconCss,
+
+  accordionCss,
+  alertCss,
+  badgeCss,
+  bottomSheetCss,
+  buttonCss,
+  cardCss,
+  checkboxCss,
+  checkboxGroupCss,
+  dialogCss,
+  drawerCss,
+  emptyStateCss,
+  errorBoundaryCss,
+  formGroupCss,
+  headerCss,
+  hintIconCss,
+  iconButtonCss,
+  inputCss,
+  inputFieldCss,
+  labelCss,
+  listItemCss,
+  navItemCss,
+  progressCss,
+  radioCss,
+  radioGroupCss,
+  searchFieldCss,
+  searchableSelectCss,
+  selectCss,
+  shortcutInputCss,
+  sidebarCss,
+  skeletonCss,
+  sliderCss,
+  spinnerCss,
+  tabsCss,
+  textareaCss,
+  toggleCss,
+  tooltipCss,
+];
 
 async function restorePersistedTab(): Promise<UniversalPanelTab | null> {
   try {
@@ -75,46 +220,25 @@ function persistTab(tab: UniversalPanelTab): Promise<void> {
  * open/close/switch-tab/unmount it.
  */
 export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): UniversalPanelMountController {
-  const host = createHost();
-
-  // Fullscreen support: move the host + theme style into the fullscreen element
-  // when the browser enters fullscreen, so the panel remains visible over the
-  // video player (ADR-026).
-  const moveThemeStyleInto = (parent: Element): void => {
-    const style = document.getElementById(THEME_STYLE_ID);
-    if (style && style.parentElement !== parent) parent.appendChild(style);
-  };
-  const restoreThemeStyleToHead = (): void => {
-    const style = document.getElementById(THEME_STYLE_ID);
-    if (style && style.parentElement !== document.head) document.head.appendChild(style);
-  };
-  const onFullscreenChange = (): void => {
-    const fsEl = document.fullscreenElement;
-    if (fsEl && fsEl !== host.parentElement) {
-      fsEl.appendChild(host);
-      moveThemeStyleInto(fsEl);
-    } else if (!fsEl && host.parentElement !== document.body) {
-      document.body.appendChild(host);
-      restoreThemeStyleToHead();
-    }
-  };
-  document.addEventListener('fullscreenchange', onFullscreenChange);
-  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-  // Ensure global theme tokens exist and sync data-theme from document.body.
-  let tokenStyleCleanup: (() => void) | null = null;
-  if (!document.getElementById(THEME_STYLE_ID)) {
-    const throwaway = document.createElement('div');
-    tokenStyleCleanup = injectThemeTokens(throwaway);
+  if (USE_LEGACY_UNIVERSAL_PANEL) {
+    return mountUniversalPanelLegacy(options);
   }
-  const themeSyncCleanup = syncElementTheme(host, document.body);
 
-  const rootEl = document.createElement('div');
-  rootEl.style.cssText =
-    'width:100%;height:100%;pointer-events:none;margin:0;padding:0;border:none;background:transparent;color:currentColor;font-size:var(--font-size-base);line-height:normal;';
-  host.appendChild(rootEl);
+  const mount = mountReactShadow(createElement('div'), {
+    parent: document.body,
+    position: 'fixed',
+    layer: 3,
+    reparentOnFullscreen: true,
+    css: SHADOW_CSS,
+  });
 
-  let root: Root | null = createRoot(rootEl);
+  mount.host.id = PANEL_HOST_ID;
+  mount.host.className = HOST_CLASS_NAME;
+  mount.host.style.cssText =
+    'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;z-index:' +
+    HOST_Z_INDEX +
+    ';pointer-events:none;overflow:hidden;transform:none;';
+
   let isUnmounted = false;
   let currentTab: UniversalPanelTab = 'dictionary';
 
@@ -154,21 +278,12 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
 
   const mountController: UniversalPanelMountController = {
     ...controller,
-    getHosts: () => [host],
+    getHosts: () => [mount.host],
     unmount: () => {
       isUnmounted = true;
       controllerUnmount();
       tokenizeUnsubscribe?.();
-      if (root) {
-        root.unmount();
-        root = null;
-      }
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
-      restoreThemeStyleToHead();
-      themeSyncCleanup?.();
-      tokenStyleCleanup?.();
-      host.remove();
+      mount.unmount();
     },
   };
 
@@ -211,24 +326,30 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
   }) ?? null;
 
   const render = (): void => {
-    if (isUnmounted || !root) return;
+    if (isUnmounted) return;
     const open = mountController.isOpen();
-    rootEl.style.pointerEvents = open ? 'auto' : 'none';
-    root.render(
-      createElement(UniversalPanel, {
-        isOpen: open,
-        activeTab: currentTab,
-        onTabChange: (tab: UniversalPanelTab) => {
-          void controller.switchTab(tab);
+    mount.host.style.pointerEvents = open ? 'auto' : 'none';
+    mount.root.render(
+      createElement(
+        ShadowThemeProvider,
+        {
+          container: mount.rootEl,
+          children: createElement(UniversalPanel, {
+            isOpen: open,
+            activeTab: currentTab,
+            onTabChange: (tab: UniversalPanelTab) => {
+              void controller.switchTab(tab);
+            },
+            onClose: () => controller.close(),
+            tokenizeState,
+            onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency') => {
+              options.panel?.onToggle(key);
+            },
+            dictionaryPanel: renderDictionaryPanel(open),
+            settingsPanel,
+          }) as ReactElement,
         },
-        onClose: () => controller.close(),
-        tokenizeState,
-        onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency') => {
-          options.panel?.onToggle(key);
-        },
-        dictionaryPanel: renderDictionaryPanel(open),
-        settingsPanel,
-      }) as ReactElement,
+      ) as ReactElement,
     );
   };
 
