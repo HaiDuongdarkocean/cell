@@ -65,6 +65,11 @@ src/
 │   │   ├── shadowRoot/   # ADR-075: Shadow DOM React mounting helpers — mountReactShadow, injectShadowCss, ShadowThemeProvider, useShadowFocusTrap
 │   │   ├── tokens.ts     # Design-token runtime helpers (SSOT: shared/styles/tokens.json); exports defaults + getColorTokens/buildColorTokenCSS/formatStaticTokens/formatComponentTokens
 │   │   └── frequencyBand.ts  # SSOT: rank → TokenFrequencyBand (core/common/general/advanced/rare/none); used by tokenize + dictionaryPopup
+│   ├── config/         #   Cross-feature constants and registries
+│   │   ├── config.ts   # Canonical config keys and STORAGE_KEYS
+│   │   ├── featureFlags.ts  # Compile-time feature flags (e.g. USE_LEGACY_POPUP_DICTIONARY)
+│   │   ├── languageRegistry.ts  # Language codes, names, and icon mapping
+│   │   └── urls.ts     # External service URLs
 │   ├── styles/         #   Global design-system styles
 │   │   ├── tokens.json   # Canonical design-token source (core/derived/static/component tokens)
 │   │   ├── tokens.css    # Generated from tokens.json; imported by popup/sidepanel/options + Shadow DOM popup
@@ -427,6 +432,7 @@ tests/
 |------|-----------|-----------------|--------------------------|
 | `entities/message/schema.ts` | `zod` | background handlers (`download`, `mediaDetection`, `settings`, `youtubeDetection`, `cardCreator`) | Zod schemas for MV3 message payloads — runtime validation at trust boundaries |
 | `shared/lib/fetchWithTimeout.ts` | — | `background/handlers/translate.ts`, `features/dictionaryPopup/services/communityAudioService.ts`, `features/dictionaryPopup/services/quickAddHandler.ts`, `entrypoints/offscreen/ffmpegRunner.ts` | AbortController-based fetch wrapper with timeout — prevents hung network requests in SW/offscreen |
+| `shared/config/featureFlags.ts` | — | `features/dictionaryPopup/ui/mountPopupDictionary.ts` | Compile-time feature flags; `USE_LEGACY_POPUP_DICTIONARY` toggles React vs legacy `PopupShell` popup path |
 
 ### Content layer
 
@@ -554,6 +560,8 @@ tests/
 || `features/dictionaryPopup/ui/PopupDictionary.tsx` | shared/ui, icons, DictionaryPanelView, usePopupPosition, PopupDictionary.module.css | mountPopupDictionary | React popup shell: dialog wrapper with drag header, close, resize handle, sheet handle, and DictionaryPanelView content; uses usePopupPosition for position/size/sheet logic |
 || `features/dictionaryPopup/ui/PopupDictionary.test.tsx` | PopupDictionary, mock for DictionaryPanelView | — | Unit tests: dialog shell, close callback, props passed to DictionaryPanelView, inline style, anchor-derived position, sheet mode, drag header |
 || `features/dictionaryPopup/ui/PopupDictionary.module.css` | tokens | PopupDictionary | Popup shell layout, header, content, resize handle, sheet handle, isSheet bottom-sheet styles |
+|| `features/dictionaryPopup/ui/mountPopupDictionary.ts` | mountReactShadow, ShadowThemeProvider, PopupDictionary, popupShell.getMountParent, per-component inline CSS modules | webTextDictionaryController (T070) | Mount PopupDictionary into shadow root, click-outside via composedPath, z-index below orbital, fullscreen-aware |
+|| `features/dictionaryPopup/ui/mountPopupDictionary.test.ts` | mountPopupDictionary, mock for PopupDictionary | — | Unit tests: shadow host, click-outside close, ignore orbital badge, destroy |
 || `features/dictionaryPopup/ui/DictionaryPanelView.tsx` | shared/ui, useDictionaryPanel, searchHistory, CandidateView | DictionaryTab, PopupDictionary | React view: search input, bounded history, candidate chip bar with jump-scroll, scrollable CandidateView list (no global tab state) |
 || `features/dictionaryPopup/ui/DictionaryPanelView.test.tsx` | DictionaryPanelView, mocks for sendMessage/translateSentence/CandidateView | — | Unit tests: loading, error, empty, search, history, chip jump-scroll |
 || `features/dictionaryPopup/ui/DictionaryPanelView.module.css` | tokens | DictionaryPanelView, CandidateView | Panel layout, candidate list, header, definitions, tabs, footer styles |

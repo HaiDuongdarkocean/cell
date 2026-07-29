@@ -93,7 +93,7 @@ export interface PopupSize {
  * use its parent instead.
  * ponytail ceiling: if <video> has no wrapper parent, popup won't show in fullscreen.
  */
-function getMountParent(): HTMLElement {
+export function getMountParent(): HTMLElement {
   const fsElement = document.fullscreenElement as HTMLElement | null;
   if (!fsElement) return document.body;
   if (fsElement.tagName === 'VIDEO') {
