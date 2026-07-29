@@ -309,6 +309,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
           POPUP_MIN_HEIGHT_PX,
           Math.min(session.startHeight - dy, vh - POPUP_MARGIN_PX),
         );
+        sheetHeightRef.current = next;
         setSheetHeight(next);
       } else {
         const vw = getClientWidth();
@@ -322,6 +323,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
           vw,
           vh,
         );
+        sizeRef.current = next;
         setSize(next);
         const pos = computeAndClampPosition(next, dragOffsetRef.current, vw, vh);
         setPosition(pos);
@@ -341,6 +343,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
           POPUP_MIN_HEIGHT_PX,
           Math.min(session.startHeight - dy, vh - POPUP_MARGIN_PX),
         );
+        sheetHeightRef.current = next;
         setSheetHeight(next);
         setTransform(undefined);
         setTransition(undefined);
@@ -396,6 +399,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         const sheet = vw < POPUP_SHEET_BREAKPOINT_PX;
         setIsSheet(sheet);
         const nextSize = clampPopupSize(sizeRef.current, vw, vh);
+        sizeRef.current = nextSize;
         setSize(nextSize);
 
         if (sheet) {
@@ -403,6 +407,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
             POPUP_MIN_HEIGHT_PX,
             Math.min(sheetHeightRef.current, vh - POPUP_MARGIN_PX),
           );
+          sheetHeightRef.current = next;
           setSheetHeight(next);
         } else {
           const pos = computeAndClampPosition(nextSize, dragOffsetRef.current, vw, vh);
@@ -421,6 +426,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     setIsSheet(sheet);
 
     const nextSize = clampPopupSize(sizeRef.current, vw, vh);
+    sizeRef.current = nextSize;
     setSize(nextSize);
     dragOffsetRef.current = { left: 0, top: 0 };
     setTransform(undefined);
@@ -431,6 +437,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         POPUP_MIN_HEIGHT_PX,
         Math.min(sheetHeightRef.current, vh - POPUP_MARGIN_PX),
       );
+      sheetHeightRef.current = next;
       setSheetHeight(next);
     } else {
       const pos = computeAndClampPosition(nextSize, { left: 0, top: 0 }, vw, vh);
