@@ -113,6 +113,18 @@ describe('DictionaryTab', () => {
     await waitFor(() => expect(screen.getByTestId('card-creator-prefill')).toHaveTextContent('hello'));
   });
 
+  it('updates the right pane with context when Quick Add is pressed', async () => {
+    mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult('hello')] });
+
+    render(<DictionaryTab langCode="en" sourceLang="en" targetLang="vi" initialTerm="hello" />);
+
+    await waitFor(() => expect(screen.getByTestId('dictionary-term')).toHaveTextContent('hello'));
+
+    fireEvent.click(screen.getByTestId('dictionary-quick-add'));
+
+    await waitFor(() => expect(screen.getByTestId('card-creator-prefill')).toHaveTextContent('hello'));
+  });
+
   it('cycles status and reflects in the footer badge', async () => {
     mockSendMessage.mockResolvedValueOnce({ success: true, data: [makeResult('hello')] });
     mockSendMessage.mockResolvedValueOnce({ success: true });

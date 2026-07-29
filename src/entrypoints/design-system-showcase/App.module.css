@@ -236,3 +236,25 @@
   border-radius: var(--radius-card);
   background: var(--color-surface-card);
 }
+
+.popupDictionaryPreview {
+  position: relative;
+  min-height: 520px;
+}
+
+.popupDictionaryAnchor {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+  cursor: default;
+}
+
+.popupDictionaryReopen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
