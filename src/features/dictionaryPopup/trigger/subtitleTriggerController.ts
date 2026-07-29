@@ -314,7 +314,7 @@ export class SubtitleTriggerController {
     // If the cursor is moving to another token, the popup host, or the orbital
     // badge, do NOT clear. Otherwise schedule a clear so empty space dismisses
     // the popup immediately (next tick) while still allowing token-to-token.
-    const rt = e.relatedTarget as Element | null;
+    const rt = e.relatedTarget instanceof Element ? e.relatedTarget : null;
     const movingToValidTarget = rt !== null && rt.closest('.js-cell-token, .js-cell-popup-host, [data-cell-orbital-badge]') !== null;
     if (movingToValidTarget) return;
 

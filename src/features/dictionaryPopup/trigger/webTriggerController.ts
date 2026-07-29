@@ -264,7 +264,7 @@ export class WebTriggerController {
       return;
     }
 
-    const target = e.target as HTMLElement | null;
+    const target = e.target instanceof Element ? e.target : null;
     if (isInsideBlockedHostForLookup(target)) {
       // Click inside blocked extension UI (popup, badge, settings, card creator,
       // or universal panel areas outside allowed lookup zones).
@@ -338,7 +338,7 @@ export class WebTriggerController {
       this.resetHover();
       return;
     }
-    const target = e.target as HTMLElement | null;
+    const target = e.target instanceof Element ? e.target : null;
     if (!target) return;
     // Skip blocked extension UI zones; allowed lookup zones (dictionary
     // definitions, card creator preview) keep hover processing active.
