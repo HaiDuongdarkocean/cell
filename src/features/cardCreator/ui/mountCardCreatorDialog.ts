@@ -1,22 +1,15 @@
 /**
  * mountCardCreatorDialog — mounts the Card Creator React dialog into a fixed
- * overlay host.
+ * overlay host inside an open Shadow DOM root.
  *
- * Two mount paths:
- * - Default (`USE_LEGACY_CARD_CREATOR = false`): open shadow root via
- *   `mountReactShadow`, full-viewport `position: fixed` host, shadow CSS
- *   isolation, `ShadowThemeProvider` theme, and automatic fullscreen
- *   re-parenting.
- * - Legacy (`USE_LEGACY_CARD_CREATOR = true`): previous light-DOM host on
- *   `document.body` with manual style reset and `themeTokens` sync.
+ * Uses `mountReactShadow` to get CSS isolation, token/component CSS injection,
+ * `ShadowThemeProvider` for theme, and automatic fullscreen re-parenting.
  */
 import { createElement, type ReactElement } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { CardCreatorDialog } from './CardCreatorDialog';
 import { CardCreatorBottomSheet } from './CardCreatorBottomSheet';
-import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import type { CardCreatorSettings } from '@/entities/settings';
 import type { MediaFile } from '../media/mediaFile';
 import type {
@@ -43,9 +36,6 @@ export type {
   CardCreatorQueueItem,
 } from '../types';
 
-/** Toggle to keep the pre-shadow light-DOM mount. Default `false` = shadow. */
-export const USE_LEGACY_CARD_CREATOR = false;
-
 /** Controller returned by mountCardCreatorDialog. */
 export interface CardCreatorMountController {
   /** Open the dialog with the given context + optional initial action hint. */
@@ -65,18 +55,6 @@ export interface CardCreatorMountController {
   unmount: () => void;
 }
 
-export function mountCardCreatorDialog(
-  initialSettings: CardCreatorSettings,
-  themeSource?: HTMLElement,
-): CardCreatorMountController {
-  if (USE_LEGACY_CARD_CREATOR) {
-    return mountCardCreatorDialogLegacy(initialSettings, themeSource);
-  }
-  return mountCardCreatorDialogShadow(initialSettings);
-}
-
-/* ============================ Shadow DOM path ============================ */
-
 const SHADOW_CSS = [
   cardCreatorDialogCss,
   queueSidebarCss,
@@ -91,7 +69,11 @@ const SHADOW_CSS = [
   iconCss,
 ];
 
-function mountCardCreatorDialogShadow(
+/**
+ * Mount the Card Creator dialog into a fixed full-viewport shadow host.
+ * Returns a controller to open/close + update settings.
+ */
+export function mountCardCreatorDialog(
   initialSettings: CardCreatorSettings,
 ): CardCreatorMountController {
   const mount = mountReactShadow(createElement('div'), {
@@ -178,138 +160,6 @@ function mountCardCreatorDialogShadow(
     updateTextField: (key, value) => { updateTextCb?.(key, value); },
     unmount: () => {
       mount.unmount();
-    },
-  };
-}
-
-/* ============================ Legacy light-DOM path ============================ */
-
-function mountCardCreatorDialogLegacy(
-  initialSettings: CardCreatorSettings,
-  themeSource?: HTMLElement,
-): CardCreatorMountController {
-  const host = document.createElement('div');
-  host.id = 'cell-card-creator-host';
-  host.style.cssText =
-    'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;z-index:var(--z-overlay-secondary);pointer-events:none;overflow:hidden;transform:none;';
-  document.body.appendChild(host);
-
-  const moveThemeStyleInto = (parent: Element): void => {
-    const style = document.getElementById(THEME_STYLE_ID);
-    if (style && style.parentElement !== parent) {
-      parent.appendChild(style);
-    }
-  };
-  const restoreThemeStyleToHead = (): void => {
-    const style = document.getElementById(THEME_STYLE_ID);
-    if (style && style.parentElement !== document.head) {
-      document.head.appendChild(style);
-    }
-  };
-  const onFullscreenChange = (): void => {
-    const fsEl = document.fullscreenElement;
-    if (fsEl && fsEl !== host.parentElement) {
-      fsEl.appendChild(host);
-      moveThemeStyleInto(fsEl);
-    } else if (!fsEl && host.parentElement !== document.body) {
-      document.body.appendChild(host);
-      restoreThemeStyleToHead();
-    }
-  };
-  document.addEventListener('fullscreenchange', onFullscreenChange);
-  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-  let tokenStyleCleanup: (() => void) | null = null;
-  if (!document.getElementById(THEME_STYLE_ID)) {
-    const throwaway = document.createElement('div');
-    tokenStyleCleanup = injectThemeTokens(throwaway);
-  }
-
-  const themeCleanup = themeSource ? syncElementTheme(host, themeSource) : null;
-
-  const rootEl = document.createElement('div');
-  rootEl.style.cssText =
-    'width:100%;height:100%;pointer-events:none;margin:0;padding:0;border:none;background:transparent;color:currentColor;font-size:var(--font-size-base);line-height:normal;';
-  host.appendChild(rootEl);
-
-  let open = false;
-  let context: CardCreatorOpenContext | null = null;
-  let settings = initialSettings;
-  let initialAction: CardCreatorAction | undefined;
-  let root: Root | null = createRoot(rootEl);
-
-  let addMediaCb: ((kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[]) => void) | null = null;
-  let updateTextCb: ((key: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample', value: string) => void) | null = null;
-
-  const isMobile = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(max-width: 768px)').matches;
-  };
-
-  const render = (): void => {
-    if (!root) return;
-    rootEl.style.pointerEvents = open ? 'auto' : 'none';
-    const commonProps = {
-      open,
-      onOpenChange: (next: boolean) => {
-        open = next;
-        if (!next) {
-          context = null;
-          initialAction = undefined;
-          addMediaCb = null;
-          updateTextCb = null;
-        }
-        render();
-      },
-      settings,
-      openContext: context,
-      initialAction,
-      registerAddMedia: (cb: typeof addMediaCb) => { addMediaCb = cb; },
-      registerUpdateText: (cb: typeof updateTextCb) => { updateTextCb = cb; },
-    };
-    root.render(
-      createElement(isMobile() ? CardCreatorBottomSheet : CardCreatorDialog, commonProps as never) as ReactElement,
-    );
-  };
-
-  render();
-
-  return {
-    open: (ctx: CardCreatorOpenContext, action?: CardCreatorAction) => {
-      const fsEl = document.fullscreenElement;
-      if (fsEl && fsEl !== host.parentElement) {
-        fsEl.appendChild(host);
-        moveThemeStyleInto(fsEl);
-      }
-      context = ctx;
-      initialAction = action;
-      open = true;
-      render();
-    },
-    close: () => {
-      open = false;
-      context = null;
-      initialAction = undefined;
-      render();
-    },
-    isOpen: () => open,
-    updateSettings: (next: CardCreatorSettings) => {
-      settings = next;
-      render();
-    },
-    addMediaFiles: (kind, files) => { addMediaCb?.(kind, files); },
-    updateTextField: (key, value) => { updateTextCb?.(key, value); },
-    unmount: () => {
-      if (root) {
-        root.unmount();
-        root = null;
-      }
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
-      restoreThemeStyleToHead();
-      themeCleanup?.();
-      tokenStyleCleanup?.();
-      host.remove();
     },
   };
 }
