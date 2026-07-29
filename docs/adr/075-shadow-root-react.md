@@ -168,11 +168,12 @@ Captured after Phase 1b (mount helpers, theme, focus, overlay PoC) and design-sy
 
 | Metric | Value | Delta |
 |---|---|---|
-| Main content-script JS (`dist/assets/content-script.ts-*.js`) | ~244 kB / 62.32 kB gzip | ~0 kB — helpers not wired into content bundle yet |
-| Content-script CSS (`dist/assets/content-script-*.css`) | 28 kB / 4.39 kB gzip | ~0 kB — CSS not duplicated into shadow yet |
-| Shadow CSS budget (per host) | ~tokens.css (20.48 kB raw / 3.54 kB gzip) + per-component modules | ≤ 50 kB target |
+| Main content-script JS (`dist/assets/content-script.ts-*.js`) | 146.32 kB / 40.13 kB gzip | ~−98 kB raw / ~−22 kB gzip vs baseline; mount helpers and React split into shared chunks |
+| Content-script CSS (`dist/assets/content-script-*.css`) | 8.05 kB / 1.82 kB gzip (only one active `content-script-*.css` remains) | ~−20 kB vs baseline; per-component styles now injected as `?inline` strings inside shadow roots |
+| Shadow CSS budget (per host) | `tokens.css` 20.50 kB / 3.53 kB gzip + per-component `*.module.css?inline` modules | ≤ 50 kB target (met) |
 | Fixed overlay PoC | GO — host `position: fixed; inset: 0` covers full viewport in design-system showcase; `documentElement.requestFullscreen()` keeps overlay visible. Real-page video fullscreen verification deferred to T033 because YouTube playback is blocked in the isolated MCP profile. | — |
 | YouTube/Netflix/GeeksforGeeks manual | GeeksforGeeks: GO — shadow Popup Dictionary opens, dark theme, CSS isolation, click-outside works. YouTube: extension content script mounts Nav Cluster UI; video playback blocked in isolated profile, full overlay/fullscreen pending. Netflix: pending login. (T033) | — |
+| Phase 1 page JS heap (GeeksforGeeks, popup open) | ~83 MB used / 92 MB total (via `performance.memory`) | Baseline TBD — needs 10-min idle run |
 
 ## References
 
