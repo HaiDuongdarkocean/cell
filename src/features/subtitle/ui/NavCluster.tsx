@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Icon } from '@/shared/icons/Icon';
+import { ICON_CATALOG } from '@/shared/icons';
 import { IconButton } from '@/shared/ui';
 import styles from './NavCluster.module.css';
 
@@ -12,6 +13,10 @@ interface NavClusterProps {
   isPlaying?: boolean;
   /** Repeat AB-loop mode state. */
   repeatActive?: boolean;
+  /** Repeat button icon name (key in ICON_CATALOG). */
+  repeatIcon?: keyof typeof ICON_CATALOG;
+  /** Repeat button ARIA label. */
+  repeatLabel?: string;
   /** Called when the user toggles collapse/expand. */
   onToggleCollapsed: () => void;
   /** Called when the user requests the previous sentence. */
@@ -35,6 +40,8 @@ function NavClusterInner({
   hasSubtitle,
   isPlaying = false,
   repeatActive = false,
+  repeatIcon = 'navRepeat',
+  repeatLabel = 'Repeat current sentence',
   onToggleCollapsed,
   onPrev,
   onNext,
@@ -75,12 +82,12 @@ function NavClusterInner({
           <Icon name="navPrev" size={20} />
         </IconButton>
         <IconButton
-          aria-label={repeatActive ? 'Cancel repeat' : 'Repeat current sentence'}
+          aria-label={repeatActive ? 'Cancel repeat' : repeatLabel}
           data-testid="nav-repeat"
           onClick={onRepeat}
           active={repeatActive}
         >
-          <Icon name={repeatActive ? 'navRepeatCancel' : 'navRepeat'} size={20} />
+          <Icon name={repeatIcon} size={20} />
         </IconButton>
         <IconButton aria-label="Next sentence" data-testid="nav-next" onClick={onNext}>
           <Icon name="navNext" size={20} />
