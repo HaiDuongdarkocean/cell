@@ -689,7 +689,7 @@
     - Manual: drag/resize on YouTube
     - Confirm `wordHighlight.ts` still injects into host light DOM
 
-- [ ] **T067 — Mount `PopupDictionary` under orbital pointer tip**
+- [x] **T067 — Mount `PopupDictionary` under orbital pointer tip**
   - **Phase:** 4c | **Lane:** E | **Scope:** M | **Depends on:** T053, T065
   - **Files:** `src/features/dictionaryPopup/ui/mountPopupDictionary.ts`, `src/features/dictionaryPopup/ui/PopupDictionary.tsx`, `src/features/dictionaryPopup/ui/OrbitalBadge.tsx`
   - **AC:**
@@ -700,7 +700,7 @@
     - `npm run test:unit -- mountPopupDictionary`
     - Manual: orbital tip lookup
 
-- [ ] **T068 — Add `USE_LEGACY_POPUP_DICTIONARY` feature flag**
+- [x] **T068 — Add `USE_LEGACY_POPUP_DICTIONARY` feature flag**
   - **Phase:** 4c | **Lane:** E/Q | **Scope:** S | **Depends on:** T067
   - **Files:** `src/features/dictionaryPopup/ui/mountPopupDictionary.ts`
   - **AC:**
