@@ -822,33 +822,39 @@
     - `npm run typecheck` ✓
     - `npm run build` ✓
 
-- [ ] **T079 — Create `cardCreatorStore.ts`**
+- [x] **T079 — Create `cardCreatorStore.ts`**
   - **Phase:** 6a | **Lane:** G | **Scope:** M | **Depends on:** T078
-  - **Files:** `src/stores/cardCreatorStore.ts`, `src/features/cardCreator/ui/useCardCreatorState.ts`, `src/features/cardCreator/ui/CardCreatorDialog.tsx`
+  - **Files:** `src/stores/cardCreatorStore.ts`, `src/stores/cardCreatorStore.test.ts`, `src/features/cardCreator/ui/useCardCreatorState.ts`
   - **AC:**
     - Zustand store owns draft, decks, note types, fields, queue, toasts.
     - `useCardCreatorState` thins to store consumer.
+    - `CardCreatorDialog.tsx` unchanged.
   - **Verification:**
-    - `npm run test:unit -- cardCreatorStore`
+    - `npm run typecheck` ✓
+    - `npm run test:unit -- cardCreatorStore` ✓
+    - `npm run test:unit` ✓
+    - `npm run build` ✓
 
-- [ ] **T080 — Add a11y and keyboard navigation to card creator**
+- [x] **T080 — Add a11y and keyboard navigation to card creator**
   - **Phase:** 6a | **Lane:** G | **Scope:** S | **Depends on:** T078
-  - **Files:** `src/features/cardCreator/ui/QueueSidebar.tsx`, `src/features/cardCreator/ui/MediaList.tsx`
+  - **Files:** `src/features/cardCreator/ui/QueueSidebar.tsx`, `src/features/cardCreator/ui/MediaList.tsx`, `src/features/cardCreator/ui/QueueSidebar.module.css`, `src/features/cardCreator/ui/MediaList.module.css`
   - **AC:**
     - Queue and media list have `aria-label` and arrow-key nav.
     - Focus visible.
   - **Verification:**
-    - `npm run test:unit`
-    - Manual: keyboard nav in showcase
+    - `npm run test:unit` ✓
+    - Manual: keyboard nav in showcase (build-ready)
 
-- [ ] **T081 — Add card creator preview to design-system-showcase**
+- [x] **T081 — Add card creator preview to design-system-showcase**
   - **Phase:** 6b | **Lane:** I | **Scope:** M | **Depends on:** T079
-  - **Files:** `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/mockProviders.tsx`
+  - **Files:** `src/entrypoints/design-system-showcase/CardCreatorPreview.tsx`, `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/App.module.css`
   - **AC:**
     - Opens with mock queue and media.
-    - No real `chrome.runtime`/Anki calls.
+    - No real `chrome.runtime`/Anki calls (self-contained mock `CardCreatorState`).
   - **Verification:**
-    - `npm run build`
+    - `npm run typecheck` ✓
+    - `npm run build` ✓
+    - `npx vite build --mode development` ✓
     - Manual: showcase
 
 - [ ] **T082 — Mount card creator with chosen mechanism + `USE_LEGACY_CARD_CREATOR` flag**
