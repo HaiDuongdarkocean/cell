@@ -19,6 +19,9 @@ export const DEFAULT_SELECTED_SUBTITLE_LANGUAGES: string[] = ['all'];
 
 export const DEFAULT_AUTO_SELECT_ENABLED = false;
 
+/** Feature flag: run the legacy vanilla subtitle overlay instead of the React shadow-root UI. */
+export const USE_LEGACY_SUBTITLE = false;
+
 export const MAX_RETRY = 3;
 export const SEGMENT_TIMEOUT_MS = 30_000; // 30 seconds per segment
 export const DETECTION_TIMEOUT_MS = 30_000; // 30 seconds to wait for media detection

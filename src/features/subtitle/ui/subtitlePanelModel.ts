@@ -1,8 +1,7 @@
 /**
  * Shared subtitle panel model types and pure helpers.
  *
- * Extracted from the legacy `subtitleManagerPanel.legacy.ts` so the React
- * SubtitleManagerPanel can consume them without pulling in the vanilla DOM API.
+ * Used by the React `SubtitleManagerPanel` to avoid pulling in the DOM API.
  */
 
 export interface SubtitlePanelItem {

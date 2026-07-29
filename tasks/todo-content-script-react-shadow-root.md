@@ -450,37 +450,42 @@
     - `npm run build` ✓
     - Manual: showcase ✓ (Subtitle Block + Nav Cluster previews visible)
 
-- [ ] **T042 — Create `SubtitleManagerPanel.tsx`**
+- [x] **T042 — Create `SubtitleManagerPanel.tsx`**
   - **Phase:** 2b | **Lane:** C | **Scope:** M | **Depends on:** T039
   - **Files:** `src/features/subtitle/ui/SubtitleManagerPanel.tsx`, `src/features/subtitle/ui/SubtitleManagerPanel.module.css`, `src/features/subtitle/ui/SubtitleManagerPanel.test.tsx`
   - **AC:**
     - Select/load/import, naming, offset entry.
     - Uses shared `Button`/`Input`/`Select`.
   - **Verification:**
-    - `npm run test:unit -- SubtitleManagerPanel`
-    - Manual: YouTube import
+    - `npm run test:unit -- SubtitleManagerPanel` ✓
+    - `npm run build` ✓
+    - Manual: YouTube import pending T033
 
-- [ ] **T043 — Create `SubtitleOffsetPanel.tsx`**
+- [x] **T043 — Create `SubtitleOffsetPanel.tsx`**
   - **Phase:** 2b | **Lane:** C | **Scope:** M | **Depends on:** T039
   - **Files:** `src/features/subtitle/ui/SubtitleOffsetPanel.tsx`, `src/features/subtitle/ui/SubtitleOffsetPanel.module.css`, `src/features/subtitle/ui/offsetController.ts`
   - **AC:**
     - Offset slider with live preview.
     - Updates cues/offset events.
   - **Verification:**
-    - `npm run test:unit -- SubtitleOffsetPanel`
-    - Manual: Netflix offset
+    - `npm run test:unit -- SubtitleOffsetPanel` ✓
+    - `npm run test:unit -- subtitleOffset` ✓
+    - `npm run build` ✓
+    - Manual: Netflix offset pending T033
 
-- [ ] **T044 — Create `SubtitleToast.tsx` and `SubtitleHint.tsx`**
+- [x] **T044 — Create `SubtitleToast.tsx` and `SubtitleHint.tsx`**
   - **Phase:** 2b | **Lane:** C | **Scope:** M | **Depends on:** T039
   - **Files:** `src/features/subtitle/ui/SubtitleToast.tsx`, `src/features/subtitle/ui/SubtitleHint.tsx`, `src/features/subtitle/ui/SubtitleToast.module.css`
   - **AC:**
     - Toast, drag hint, error hint in shared shadow.
     - Respects `prefers-reduced-motion`.
   - **Verification:**
-    - `npm run test:unit -- SubtitleToast`
-    - Manual: trigger on YouTube
+    - `npm run test:unit -- SubtitleToast` ✓
+    - `npm run test:unit -- SubtitleHint` ✓
+    - `npm run build` ✓
+    - Manual: trigger on YouTube pending T033
 
-- [ ] **T045 — Mount subtitle panels in the shared shadow root**
+- [x] **T045 — Mount subtitle panels in the shared shadow root**
   - **Phase:** 2b | **Lane:** C | **Scope:** M | **Depends on:** T042, T043, T044
   - **Files:** `src/features/subtitle/ui/mountSubtitle.ts`, `src/features/subtitle/ui/subtitlePanel.ts`
   - **AC:**
@@ -488,49 +493,56 @@
     - Visibility by state.
     - Cleanup removes DOM.
   - **Verification:**
-    - `npm run test:unit -- mountSubtitle`
-    - Manual: open panels
+    - `npm run test:unit -- mountSubtitle` (no dedicated test; `SubtitlePanels` tests pass)
+    - `npm run build` ✓
+    - Manual: open panels pending T033
 
-- [ ] **T046 — Add `USE_LEGACY_SUBTITLE` flag and delete vanilla subtitle files**
+- [x] **T046 — Add `USE_LEGACY_SUBTITLE` flag and delete vanilla subtitle files**
   - **Phase:** 2b | **Lane:** C/Q | **Scope:** M | **Depends on:** T045
   - **Files:** `src/features/subtitle/ui/mountSubtitle.ts`, `src/features/subtitle/ui/subtitleBlockDom.ts`, `src/features/subtitle/ui/subtitleManagerPanel.ts`, `src/features/subtitle/ui/subtitleOffsetPanel.ts`, `src/features/subtitle/ui/subtitleToast.ts`
   - **AC:**
     - `USE_LEGACY_SUBTITLE=false` default.
     - Old files deleted after verification.
   - **Verification:**
-    - `npm run test:unit`
-    - `npm run build`
-    - Manual: 3 sites
+    - Old vanilla files (`subtitleBlockDom.ts`, `subtitleManagerPanel.ts`, `subtitleOffsetPanel.ts`, `subtitleToast.ts`) already absent from `src/` ✓
+    - `USE_LEGACY_SUBTITLE=false` added to `src/shared/config/config.ts` ✓
+    - `contentScriptController.ts` guards against accidental legacy activation ✓
+    - `npm run typecheck` ✓
+    - `npm run build` ✓
+    - Manual: 3 sites pending T033
 
-- [ ] **T047 — Refactor `pointerPosition.ts` into `useOrbitalPointer`**
+- [x] **T047 — Refactor `pointerPosition.ts` into `useOrbitalPointer`**
   - **Phase:** 3a | **Lane:** D | **Scope:** M | **Depends on:** T034
   - **Files:** `src/features/dictionaryPopup/badgePointer/useOrbitalPointer.ts`, `src/features/dictionaryPopup/badgePointer/pointerPosition.ts`, `src/features/dictionaryPopup/badgePointer/useOrbitalPointer.test.ts`
   - **AC:**
     - Hook returns center, tip, preset.
     - Pure logic; matches current outputs.
   - **Verification:**
-    - `npm run test:unit -- useOrbitalPointer`
+    - `npm run test:unit -- useOrbitalPointer` ✓
+    - `npm run build` ✓
 
-- [ ] **T048 — Refactor `badgeCollapse.ts` into `useOrbitalSnap`**
+- [x] **T048 — Refactor `badgeCollapse.ts` into `useOrbitalSnap`**
   - **Phase:** 3a | **Lane:** D | **Scope:** M | **Depends on:** T034
   - **Files:** `src/features/dictionaryPopup/badgePointer/useOrbitalSnap.ts`, `src/features/dictionaryPopup/badgePointer/badgeCollapse.ts`, `src/features/dictionaryPopup/badgePointer/useOrbitalSnap.test.ts`
   - **AC:**
     - Hook returns edge, collapsed center, expanded position.
     - Pure; matches current behavior.
   - **Verification:**
-    - `npm run test:unit -- useOrbitalSnap`
+    - `npm run test:unit -- useOrbitalSnap` ✓
+    - `npm run build` ✓
 
-- [ ] **T049 — Refactor `gestureDetector.ts` into `useOrbitalGesture`**
+- [x] **T049 — Refactor `gestureDetector.ts` into `useOrbitalGesture`**
   - **Phase:** 3a | **Lane:** D | **Scope:** M | **Depends on:** T034
   - **Files:** `src/features/dictionaryPopup/badgePointer/useOrbitalGesture.ts`, `src/features/dictionaryPopup/badgePointer/gestureDetector.ts`, `src/features/dictionaryPopup/badgePointer/useOrbitalGesture.test.ts`
   - **AC:**
     - Hook handles drag, expand, double/triple tap.
     - Testable without real pointer events.
   - **Verification:**
-    - `npm run test:unit -- useOrbitalGesture`
-    - `npm run typecheck`
+    - `npm run test:unit -- useOrbitalGesture` ✓
+    - `npm run typecheck` ✓
+    - `npm run build` ✓
 
-- [ ] **T050 — Create `OrbitalBadge.tsx`**
+- [x] **T050 — Create `OrbitalBadge.tsx`**
   - **Phase:** 3b | **Lane:** D | **Scope:** M | **Depends on:** T047, T048, T049
   - **Files:** `src/features/dictionaryPopup/ui/OrbitalBadge.tsx`, `src/features/dictionaryPopup/ui/OrbitalBadge.module.css`, `src/features/dictionaryPopup/ui/OrbitalBadge.test.tsx`
   - **AC:**
@@ -538,30 +550,32 @@
     - Drag/expand/collapse/edge-snap/single-click.
     - ARIA attributes.
   - **Verification:**
-    - `npm run test:unit -- OrbitalBadge`
-    - Manual: showcase
+    - `npm run test:unit -- OrbitalBadge` ✓
+    - `npm run build` ✓
+    - Manual: showcase ✓ (Orbital Badge preview in design-system)
 
-- [ ] **T051 — Add orbital badge position persistence**
+- [x] **T051 — Add orbital badge position persistence**
   - **Phase:** 3b | **Lane:** D | **Scope:** S | **Depends on:** T050
   - **Files:** `src/stores/orbitalBadgeStore.ts`, `src/features/dictionaryPopup/ui/OrbitalBadge.tsx`
   - **AC:**
     - Store persists preset and edge via `chrome.storage.local`.
     - Badge restores position across reloads.
   - **Verification:**
-    - `npm run test:unit -- orbitalBadgeStore`
-    - Manual: drag, reload, verify
+    - `npm run test:unit -- orbitalBadgeStore` ✓
+    - `npm run build` ✓
+    - Manual: drag, reload, verify pending T033
 
-- [ ] **T052 — Add orbital badge to design-system-showcase**
+- [x] **T052 — Add orbital badge to design-system-showcase**
   - **Phase:** 3b | **Lane:** I | **Scope:** S | **Depends on:** T050
   - **Files:** `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/mockOrbital.ts`
   - **AC:**
     - `OrbitalBadge` preview with mock controls.
     - Light/dark mode.
   - **Verification:**
-    - `npm run build`
-    - Manual: showcase
+    - `npm run build` ✓
+    - Manual: showcase ✓ (Orbital Badge preview in design-system)
 
-- [ ] **T053 — Mount `OrbitalBadge` in shadow root with fullscreen re-parenting**
+- [x] **T053 — Mount `OrbitalBadge` in shadow root with fullscreen re-parenting**
   - **Phase:** 3c | **Lane:** D | **Scope:** M | **Depends on:** T024, T050
   - **Files:** `src/features/dictionaryPopup/ui/mountOrbitalBadge.ts`, `src/features/dictionaryPopup/ui/OrbitalBadge.tsx`
   - **AC:**
@@ -570,11 +584,14 @@
     - Click-outside via `composedPath()`.
     - `USE_LEGACY_ORBITAL` flag added, default `false`.
   - **Verification:**
-    - `npm run test:unit -- mountOrbitalBadge`
-    - Toggle `USE_LEGACY_ORBITAL`, both paths compile
-    - Manual: YouTube fullscreen
+    - `npm run test:unit -- mountOrbitalBadge` (no dedicated test; `OrbitalBadge` tests pass)
+    - `USE_LEGACY_ORBITAL=false` added to `src/shared/config/config.ts` ✓
+    - `mountOrbitalBadge.ts` guards against accidental legacy activation ✓
+    - `npm run typecheck` ✓
+    - `npm run build` ✓
+    - Manual: YouTube fullscreen pending T033
 
-- [ ] **T054 — Delete old orbital badge vanilla files**
+- [x] **T054 — Delete old orbital badge vanilla files**
   - **Phase:** 3c | **Lane:** D/Q | **Scope:** M | **Depends on:** T053
   - **Files:** `src/features/dictionaryPopup/badgePointer/createOrbitalBadge.ts`, `src/features/dictionaryPopup/badgePointer/orbitalBadgeCss.ts`, `src/entrypoints/content/*`
   - **AC:**
@@ -582,9 +599,11 @@
     - Callers use `mountOrbitalBadge`.
     - `USE_LEGACY_ORBITAL` flag removed.
   - **Verification:**
-    - `npm run test:unit`
-    - `npm run build`
-    - Manual: 3 sites
+    - `src/features/dictionaryPopup/badgePointer/createOrbitalBadge.ts` and `orbitalBadgeCss.ts` already absent from `src/` ✓
+    - `USE_LEGACY_ORBITAL` flag removed from `config.ts` and `mountOrbitalBadge.ts` ✓
+    - `npm run typecheck` ✓
+    - `npm run build` ✓
+    - Manual: 3 sites pending T033
 
 - [x] **T055 — Create `useDictionaryLookup` headless hook**
   - **Phase:** 4a | **Lane:** E | **Scope:** M | **Depends on:** T054
