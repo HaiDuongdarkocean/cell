@@ -2,7 +2,7 @@
 
 > Companion to `tasks/plan-content-script-react-shadow-root.md`. Each item must be S or M (3–5 files max), have AC, verification, dependencies, files, scope, and a parallel-lane grouping.
 
-- [ ] **T001 — Add semantic token layer + backwards aliases to `tokens.json`**
+- [x] **T001 — Add semantic token layer + backwards aliases to `tokens.json`**
   - **Phase:** 0a | **Lane:** A | **Scope:** S | **Depends on:** None
   - **Files:** `src/shared/styles/tokens.json`
   - **AC:**
@@ -15,7 +15,7 @@
     - `rg "color-foreground|color-text-muted|color-card|color-popover" src/shared/styles/tokens.json`
     - Manual: inspect `tokens.css`
 
-- [ ] **T002 — Update `scripts/generate-tokens.js` for alias resolution and composite typography**
+- [x] **T002 — Update `scripts/generate-tokens.js` for alias resolution and composite typography**
   - **Phase:** 0a | **Lane:** A | **Scope:** M | **Depends on:** T001
   - **Files:** `scripts/generate-tokens.js`, `src/shared/lib/tokens.ts`, `src/shared/styles/tokens.css` (gen)
   - **AC:**
@@ -27,7 +27,7 @@
     - `npm run typecheck`
     - Inspect generated `tokens.css`
 
-- [ ] **T003 — Refactor `src/shared/lib/tokens.ts` to read derived tokens from `tokens.json`**
+- [x] **T003 — Refactor `src/shared/lib/tokens.ts` to read derived tokens from `tokens.json`**
   - **Phase:** 0a | **Lane:** A | **Scope:** M | **Depends on:** T002
   - **Files:** `src/shared/lib/tokens.ts`, `src/shared/styles/tokens.json`, `src/shared/lib/themeTokens.ts`
   - **AC:**
@@ -115,7 +115,7 @@
     - `rg "var\(--color-foreground\)" src/ --type css --type ts --type tsx -v tokens.json -v tokens.css`
     - `npm run typecheck && npm run build`
 
-- [ ] **T011 — Replace `--color-text-muted` callers with `--color-text-secondary`**
+- [x] **T011 — Replace `--color-text-muted` callers with `--color-text-secondary`**
   - **Phase:** 0b | **Lane:** A | **Scope:** M | **Depends on:** T009
   - **Files:** `src/shared/ui/*.module.css`, `src/features/**/*.module.css`, `src/features/**/*.tsx`, `src/entrypoints/**/*.tsx`, `src/shared/lib/tokens.ts`
   - **AC:**
@@ -124,7 +124,7 @@
     - `rg "var\(--color-text-muted\)" src/ ...`
     - `npm run build`
 
-- [ ] **T012 — Replace `--color-card` callers with `--color-surface-card`**
+- [x] **T012 — Replace `--color-card` callers with `--color-surface-card`**
   - **Phase:** 0b | **Lane:** A | **Scope:** M | **Depends on:** T009
   - **Files:** `src/shared/ui/*.module.css`, `src/features/**/*.module.css`, `src/features/**/*.tsx`, `src/entrypoints/**/*.tsx`, `src/shared/lib/tokens.ts`
   - **AC:**
@@ -133,7 +133,7 @@
     - `rg "var\(--color-card\)" src/ ...`
     - `npm run build`
 
-- [ ] **T013 — Replace `--color-popover` callers with `--color-surface-popover`**
+- [x] **T013 — Replace `--color-popover` callers with `--color-surface-popover`**
   - **Phase:** 0b | **Lane:** A | **Scope:** M | **Depends on:** T009
   - **Files:** `src/shared/ui/*.module.css`, `src/features/**/*.module.css`, `src/features/**/*.tsx`, `src/entrypoints/**/*.tsx`, `src/shared/lib/tokens.ts`
   - **AC:**
@@ -142,7 +142,7 @@
     - `rg "var\(--color-popover\)" src/ ...`
     - `npm run build`
 
-- [ ] **T014 — Audit raw px / hardcoded values and build**
+- [x] **T014 — Audit raw px / hardcoded values and build**
   - **Phase:** 0b | **Lane:** A/Q | **Scope:** M | **Depends on:** T010–T013
   - **Files:** all `*.module.css`, `*.tsx` (audit fixes)
   - **AC:**
@@ -155,7 +155,7 @@
     - `rg 'px' src/shared/ui/ --type css -v "var\(" -v "0px"`
     - `npm run typecheck && npm run build`
 
-- [ ] **T015 — Confirm zero old token names and tag pre-alias-removal commit**
+- [x] **T015 — Confirm zero old token names and tag pre-alias-removal commit**
   - **Phase:** 0c | **Lane:** A/Q | **Scope:** S | **Depends on:** T014
   - **Files:** `git` (tag only)
   - **AC:**
@@ -165,7 +165,7 @@
     - `rg "--color-foreground|--color-text-muted|--color-card|--color-popover" src/ --type css --type ts --type tsx -v tokens.json -v tokens.css`
     - `git tag pre-token-alias-removal`
 
-- [ ] **T016 — Remove aliases and alias-generation logic**
+- [x] **T016 — Remove aliases and alias-generation logic**
   - **Phase:** 0c | **Lane:** A | **Scope:** M | **Depends on:** T015
   - **Files:** `src/shared/styles/tokens.json`, `scripts/generate-tokens.js`, `src/shared/styles/tokens.css` (gen), `src/shared/styles/tokens.ts` (gen)
   - **AC:**
@@ -177,7 +177,7 @@
     - `rg "--color-foreground|--color-text-muted|--color-card|--color-popover" src/shared/styles/tokens.css`
     - `npm run typecheck`
 
-- [ ] **T017 — Capture baseline bundle / RAM metrics**
+- [x] **T017 — Capture baseline bundle / RAM metrics**
   - **Phase:** 0c | **Lane:** Q | **Scope:** M | **Depends on:** T016
   - **Files:** `docs/adr/075-shadow-root-react.md`
   - **AC:**
@@ -189,7 +189,7 @@
     - `ls -lh dist/content/`, `du -sh docs/design-system`
     - Chrome DevTools Memory
 
-- [ ] **T018 — Verify all entrypoints after token cleanup**
+- [x] **T018 — Verify all entrypoints after token cleanup**
   - **Phase:** 0c | **Lane:** Q | **Scope:** S | **Depends on:** T016, T017
   - **Files:** none
   - **AC:**
@@ -199,7 +199,7 @@
     - `npm run typecheck && npm run build && npx vite build --mode development`
     - Manual: load each entrypoint, toggle light/dark
 
-- [ ] **T019 — Formalize `ShadowButtonPoC` as design-system page**
+- [x] **T019 — Formalize `ShadowButtonPoC` as design-system page**
   - **Phase:** 1a | **Lane:** B | **Scope:** S | **Depends on:** T018
   - **Files:** `src/entrypoints/design-system-showcase/ShadowButtonPoC.tsx`, `src/entrypoints/design-system-showcase/App.tsx`, `docs/adr/075-shadow-root-react.md`
   - **AC:**
@@ -209,7 +209,7 @@
     - `npm run dev` or `npx http-server docs/design-system -p 8123`
     - Manual: inspect Shadow Button PoC
 
-- [ ] **T020 — Prototype `src/shared/lib/shadowRoot/mountReactShadow.ts`**
+- [x] **T020 — Prototype `src/shared/lib/shadowRoot/mountReactShadow.ts`**
   - **Phase:** 1a | **Lane:** B | **Scope:** S | **Depends on:** T019
   - **Files:** `src/shared/lib/shadowRoot/mountReactShadow.ts`
   - **AC:**
@@ -219,7 +219,7 @@
     - `npm run test:unit -- mountReactShadow`
     - `npm run typecheck`
 
-- [ ] **T021 — Prototype `src/shared/lib/shadowRoot/injectShadowCss.ts`**
+- [x] **T021 — Prototype `src/shared/lib/shadowRoot/injectShadowCss.ts`**
   - **Phase:** 1a | **Lane:** B | **Scope:** S | **Depends on:** T019
   - **Files:** `src/shared/lib/shadowRoot/injectShadowCss.ts`
   - **AC:**
@@ -229,7 +229,7 @@
   - **Verification:**
     - `npm run test:unit -- injectShadowCss`
 
-- [ ] **T022 — Add Jest moduleNameMapper for `?inline` CSS imports**
+- [x] **T022 — Add Jest moduleNameMapper for `?inline` CSS imports**
   - **Phase:** 1a | **Lane:** B/Q | **Scope:** S | **Depends on:** T019
   - **Files:** `jest.config.ts`, `tests/inlineMock.ts`
   - **AC:**
@@ -239,7 +239,7 @@
     - `npm run test:unit` with a `?inline` component
     - `npm run typecheck`
 
-- [ ] **T023 — Document CSS injection decision in ADR-075**
+- [x] **T023 — Document CSS injection decision in ADR-075**
   - **Phase:** 1a | **Lane:** B | **Scope:** S | **Depends on:** T021, T022
   - **Files:** `docs/adr/075-shadow-root-react.md`
   - **AC:**
@@ -248,7 +248,7 @@
   - **Verification:**
     - Review ADR-075
 
-- [ ] **T024 — Implement `mountReactShadow.ts`**
+- [x] **T024 — Implement `mountReactShadow.ts`**
   - **Phase:** 1b | **Lane:** B | **Scope:** M | **Depends on:** T020–T023
   - **Files:** `src/shared/lib/shadowRoot/mountReactShadow.ts`, `src/shared/lib/shadowRoot/mountReactShadow.test.ts`
   - **AC:**
@@ -259,7 +259,7 @@
     - `npm run test:unit -- mountReactShadow`
     - `npm run typecheck`
 
-- [ ] **T025 — Implement `injectShadowCss.ts` with per-component CSS**
+- [x] **T025 — Implement `injectShadowCss.ts` with per-component CSS**
   - **Phase:** 1b | **Lane:** B | **Scope:** M | **Depends on:** T021, T022
   - **Files:** `src/shared/lib/shadowRoot/injectShadowCss.ts`, `src/shared/lib/shadowRoot/injectShadowCss.test.ts`
   - **AC:**
@@ -269,7 +269,7 @@
   - **Verification:**
     - `npm run test:unit -- injectShadowCss`
 
-- [ ] **T027 — Refactor `themeManager.ts` `applyTheme` to accept a target element**
+- [x] **T027 — Refactor `themeManager.ts` `applyTheme` to accept a target element**
   - **Phase:** 1b | **Lane:** B | **Scope:** S | **Depends on:** T018
   - **Files:** `src/features/theme/logic/themeManager.ts`, `src/features/theme/logic/themeManager.test.ts`
   - **AC:**
@@ -279,7 +279,7 @@
     - `npm run test:unit -- themeManager`
     - `npm run build`
 
-- [ ] **T026 — Implement `ShadowThemeProvider.tsx`**
+- [x] **T026 — Implement `ShadowThemeProvider.tsx`**
   - **Phase:** 1b | **Lane:** B | **Scope:** M | **Depends on:** T024, T027
   - **Files:** `src/shared/lib/shadowRoot/ShadowThemeProvider.tsx`, `src/features/theme/ui/ThemeProvider.tsx`, `src/features/theme/logic/themeManager.ts`
   - **AC:**
@@ -288,7 +288,7 @@
   - **Verification:**
     - `npm run test:unit -- ShadowThemeProvider`
 
-- [ ] **T028 — Create `cuesStore.ts`**
+- [x] **T028 — Create `cuesStore.ts`**
   - **Phase:** 1b | **Lane:** B/C | **Scope:** S | **Depends on:** T018
   - **Files:** `src/stores/cuesStore.ts`, `src/stores/cuesStore.test.ts`
   - **AC:**
@@ -298,7 +298,7 @@
     - `npm run test:unit -- cuesStore`
     - `npm run typecheck`
 
-- [ ] **T029 — Create `useShadowFocusTrap.ts`**
+- [x] **T029 — Create `useShadowFocusTrap.ts`**
   - **Phase:** 1b | **Lane:** B | **Scope:** S | **Depends on:** T024
   - **Files:** `src/shared/lib/shadowRoot/useShadowFocusTrap.ts`, `src/shared/lib/shadowRoot/useShadowFocusTrap.test.ts`
   - **AC:**
@@ -307,7 +307,7 @@
   - **Verification:**
     - `npm run test:unit -- useShadowFocusTrap`
 
-- [ ] **T030 — Define z-index and shadow host ordering contract**
+- [x] **T030 — Define z-index and shadow host ordering contract**
   - **Phase:** 1b | **Lane:** B | **Scope:** S | **Depends on:** T024
   - **Files:** `src/shared/lib/shadowRoot/mountReactShadow.ts`, `docs/adr/075-shadow-root-react.md`, `src/shared/styles/tokens.json`
   - **AC:**
