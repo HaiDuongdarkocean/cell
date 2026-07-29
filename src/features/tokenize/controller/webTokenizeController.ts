@@ -21,37 +21,34 @@ import { extractTermsFromSelection } from '@/features/tokenize/utils/selectionTe
 import type { TokenBlock, TokenizeController } from '@/features/tokenize/types';
 
 const DEFAULT_LANG = 'en';
-// ponytail: cache capacity is derived from a 500MB tokenize budget and the
-// device's reported total RAM (navigator.deviceMemory in approximate GiB).
-// We reserve at most 1/8 of total RAM for tokenize resident blocks, capped at
-// 500MB. Per-block cost is estimated at 500KB worst-case (maxLength 2000 chars,
-// ~1000 DOM nodes when bound). Tune BYTES_PER_BLOCK_ESTIMATE after real RAM
-// profiling; the ceiling is intentionally conservative to avoid jank on low-end
-// devices. Soft-unbind behind scroll direction (Phase B) + LRU eviction keep
-// resident DOM spans bounded.
-const MEMORY_BUDGET_BYTES = 500 * 1024 * 1024; // 500 MB hard ceiling
-const BYTES_PER_BLOCK_ESTIMATE = 500 * 1024; // 500 KB worst-case per bound block
-const MIN_CACHE_CAPACITY = 150;
+// ponytail: cache capacity is tiered by reported device RAM so low-end devices
+// (<2 GiB) keep a small resident set and higher-end devices keep a larger one.
+// Per-block cost is estimated at 500KB worst-case (maxLength 2000 chars,
+// ~1000 DOM nodes when bound). Soft-unbind behind scroll direction (Phase B) +
+// LRU eviction keep resident DOM spans bounded.
+const LOW_MEMORY_CACHE_CAPACITY = 150; // ~1 GiB devices
+const MID_MEMORY_CACHE_CAPACITY = 300; // 2–3 GiB devices, or unknown
+const BASE_CACHE_CAPACITY = 500;       // ≥4 GiB devices
 function resolveCacheCapacity(): number {
   const mem = (globalThis.navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-  const totalBytes = typeof mem === 'number' && mem > 0 ? mem * 1024 * 1024 * 1024 : 0;
-  // Use 1/8 of reported RAM, but never exceed the 500MB tokenize budget.
-  const budgetBytes = totalBytes > 0 ? Math.min(MEMORY_BUDGET_BYTES, totalBytes / 8) : MEMORY_BUDGET_BYTES;
-  const byBudget = Math.floor(budgetBytes / BYTES_PER_BLOCK_ESTIMATE);
-  return Math.max(MIN_CACHE_CAPACITY, byBudget);
+  if (typeof mem !== 'number' || mem <= 0) {
+    return MID_MEMORY_CACHE_CAPACITY;
+  }
+  if (mem < 2) return LOW_MEMORY_CACHE_CAPACITY;
+  if (mem < 4) return MID_MEMORY_CACHE_CAPACITY;
+  return BASE_CACHE_CAPACITY;
 }
 const CACHE_CAPACITY = resolveCacheCapacity();
-// Phase A uses isotropic 1-viewport overscan (above + below). This guarantees
+// Phase A uses an isotropic large near-zone (above + below). This guarantees
 // the viewport immediately above and below the current view is already parsed
 // and bound, so a one-viewport scroll in either direction shows no plain text.
-// The resident set is ~3 viewports, which is still within the 500MB RAM budget
-// because soft-unbind behind the scroll direction (Phase B) reclaims spans.
+// In Phase B the tracker is recreated with an asymmetric margin from
+// resolveScrollPredictMargin; this constant is the initial / no-direction value.
+const BASE_OVERSCAN_ROOT_MARGIN_PX = 600;
 function resolveViewportRootMargin(): string {
-  const vh = window.innerHeight;
-  const margin = Math.round(vh);
   // Use explicit `0px` units — some Chromium builds reject a bare `0` token
   // in an IntersectionObserver rootMargin string.
-  return `${margin}px 0px ${margin}px 0px`;
+  return `${BASE_OVERSCAN_ROOT_MARGIN_PX}px 0px ${BASE_OVERSCAN_ROOT_MARGIN_PX}px 0px`;
 }
 const MUTATION_DEBOUNCE_MS = 300;
 const PENDING_MUTATION_LIMIT = 1000;

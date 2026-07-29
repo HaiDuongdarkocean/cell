@@ -1,81 +1,95 @@
-# Todo: Orbital Badge Dictionary Trigger
+# Todo: Predictive Viewport Tokenize (VDLT-Predict)
 
-> Nguồn sự thật gốc: `tasks/todo-badge-pointer-dictionary-trigger.md`.
-> Triển khai thực tế đã chuyển từ factory `createOrbitalBadge` sang React component `OrbitalBadge` + `mountOrbitalBadge` với hooks `useOrbitalPointer` / `useOrbitalSnap` / `useOrbitalGesture`. Các task dưới đây được đánh dấu theo trạng thái thực tế của codebase.
+> Nguồn sự thật gốc: `tasks/plan-predictive-viewport-tokenize.md` + `docs/specs/spec-predictive-viewport-tokenize.md`.
+> Orbital Badge Dictionary Trigger milestone: đã xong final checkpoint trừ việc tạo/push PR (chờ anh approve).
 
-## Phase 1: Settings foundation
+## Phase A — Baseline overscan + prepare≠bind + cache bump
 
-- [x] T1 — Extend `DictionaryPopupSettings` type, default config, and migration
-  - `DictionaryPopupSettings` has `badgePointerTrigger`.
-  - `DEFAULT_DICTIONARY_POPUP_SETTINGS` configured.
-  - Migration v15 → v16 in `settingsStore.ts`.
-  - `CURRENT_SCHEMA_VERSION` now 18.
+- [~] **Task A1: Raise cache capacity tiers + extract overscan constants**
+  - Acceptance: `LOW_MEMORY_CACHE_CAPACITY`/`MID_MEMORY_CACHE_CAPACITY`/`BASE_CACHE_CAPACITY` raised per spec table (150/300/500); `VIEWPORT_ROOT_MARGIN` replaced by named near-zone constant (start isotropic large, e.g. `600px` all sides) ready for direction swap in Phase B.
+  - Verify: `npm run test:unit -- --testPathPattern=tokenizeCache` green; `npm run typecheck`; existing controller tests still green.
+  - Files: `src/features/tokenize/controller/webTokenizeController.ts` (constants only).
+  - Scope: S.
 
-- [x] T2 — Add UI preset select + size slider to `DictionaryPopupSettingsPanel`
-  - `DictionaryPopupSettingsPanel.tsx` renders pointer position select + size slider.
-  - Note: implementation merged "always on" (badge mounts whenever popup enabled) instead of a separate enable toggle.
+- [ ] **Task A2: Schedule BUFFER prepare for overscan-zone blocks; bind reuses prepared tokens**
+  - Acceptance: blocks entering the expanded rootMargin but not yet visible schedule `prepareBlock` at `PRIORITY_BUFFER`; `bindVisibleBlock` does not re-tokenize when `block.tokens` already set (verify + add test); viewport bind stays `PRIORITY_VIEWPORT`.
+  - Verify: new unit test — prepare sets `tokens`, bind uses them, no double tokenize; `npm run test:unit -- --testPathPattern=tokenize`; `npm run build`.
+  - Files: `src/features/tokenize/controller/webTokenizeController.ts`; `src/features/tokenize/controller/webTokenizeController.test.ts`.
+  - Scope: M.
 
-### Checkpoint: Foundation
+- [ ] **Task A3: Soft-unbind preserves tokens — guard test**
+  - Acceptance: after `unbindTokenBlock`, `block.tokens` is still populated and `block.isBound === false`; rebind does not re-tokenize. Add explicit test if none exists.
+  - Verify: `npm run test:unit -- --testPathPattern=tokenSpanRenderer|tokenize`.
+  - Files: `src/features/tokenize/ui/tokenSpanRenderer.test.ts` (test only; no src change unless regression found).
+  - Scope: S.
 
-- [x] `npx tsc --noEmit` clean
-- [x] `npm run test:unit` pass
-- [x] Settings panel renders without errors
+### Checkpoint A
+- [ ] `npm run test:unit -- --testPathPattern=tokenize` green
+- [ ] `npm run typecheck` + `npm run build` green
+- [ ] Manual (DevTools MCP): long English article, scroll 1–2 screens — plain flash count vs baseline
 
-## Phase 2: Core orbital badge
+## Phase B — Direction-aware overscan + soft unbind behind
 
-- [x] T3 — Pure geometry + gesture modules
-  - `pointerPosition.ts`, `pointerPosition.test.ts`, `gestureDetector.ts`, `gestureDetector.test.ts` exist and pass.
+- [ ] **Task B1: Pure `resolveScrollPredictMargin` helper + unit tests**
+  - Acceptance: pure function returns `{ rootMargin, direction }`; deep ahead / shallow behind; hysteresis ≥16px; min floors (minAhead 600px, minBehind 150px); `none` direction returns isotropic large margin; rootMargin string valid CSS.
+  - Verify: new `scrollDirection.test.ts` covers up/down/none/bounce/min-floor; `npm run test:unit -- --testPathPattern=scrollDirection`.
+  - Files: `src/features/tokenize/logic/scrollDirection.ts` (NEW); `src/features/tokenize/logic/scrollDirection.test.ts` (NEW).
+  - Scope: S.
 
-- [x] T4 — Shadow DOM CSS for the badge
-  - `OrbitalBadge.module.css` mounted via `?inline` in `mountOrbitalBadge.ts`.
-  - Uses tokens, `z-index` mapped to `--z-overlay-top`.
+- [ ] **Task B2: rAF-coalesced scroll direction tracker in controller**
+  - Acceptance: passive `scroll` listener on `window` updates `lastScrollY`/`scrollY` via `requestAnimationFrame` coalescing; no sync layout read beyond `scrollY`; listener added on `setActive(true)`, removed on disable/destroy.
+  - Verify: unit test (jsdom) — scroll event updates direction state; destroy removes listener; `npm run test:unit -- --testPathPattern=tokenize`.
+  - Files: `src/features/tokenize/controller/webTokenizeController.ts`; `src/features/tokenize/controller/webTokenizeController.test.ts`.
+  - Scope: M.
 
-- [x] T5 — Badge mount/controller
-  - `mountOrbitalBadge.ts` creates shadow-root host, renders `OrbitalBadge`, handles drag/expand/tap, fullscreen reparent, destroy.
-  - `OrbitalBadge.tsx` uses `useOrbitalPointer`, `useOrbitalSnap`, `useOrbitalGesture`, position persistence via `orbitalBadgeStore`.
+- [ ] **Task B3: Recreate `ViewportTracker` with asymmetric margin on direction change; re-observe blocks**
+  - Acceptance: when direction changes (up↔down↔none), controller recreates `ViewportTracker` with `resolveScrollPredictMargin` output, re-observes all connected `blocks`, preserves `visibleElements` semantics (ADR-055 onEnter fires synchronously for already-intersecting); no token flash on direction flip.
+  - Verify: unit test — flip direction → tracker recreated, blocks re-observed, visible set intact; `npm run test:unit -- --testPathPattern=tokenize`; `npm run build`.
+  - Files: `src/features/tokenize/controller/webTokenizeController.ts`; `src/features/tokenize/controller/webTokenizeController.test.ts`.
+  - Scope: M.
 
-### Checkpoint: Core badge
+### Checkpoint B
+- [ ] Unit: margin helper + direction tracker + tracker recreation green
+- [ ] Manual: scroll down → ahead zone visibly deeper; reverse → rebind cheap (no re-tokenize)
 
-- [x] `npm run test:unit` pass
-- [ ] Manual drag/expand/tap works in a minimal HTML test page — cần verify T9
+## Phase C — Cold-start viewport-first
 
-## Phase 3: Lookup + fullscreen wiring
+- [ ] **Task C1: Split activate into viewport-bind-now + offscreen-hydrate**
+  - Acceptance: `setActive(true)` scans blocks, immediately binds blocks intersecting visual viewport (+ small near margin) via `queueMicrotask`/`rAF`, then schedules offscreen prepare/observe via scheduler. Does NOT wait `HYDRATION_QUIET_MS` before first viewport bind.
+  - Verify: unit test — activate with in-viewport blocks → bound within one microtask without quiet timer; `npm run test:unit -- --testPathPattern=tokenize`.
+  - Files: `src/features/tokenize/controller/webTokenizeController.ts`; `src/features/tokenize/controller/webTokenizeController.test.ts`.
+  - Scope: M.
 
-- [x] T6 — Pointer tip text resolution
-  - `resolveWordAtTip.ts` implemented, dùng `resolveWordAtPoint`.
-  - `WebTriggerController.processPoint` được `mountOrbitalBadge.onTipReady` gọi để trigger lookup.
+- [ ] **Task C2: Persisted-enable path binds viewport before hydration quiet window**
+  - Acceptance: `initialEnabled` path still waits `window.load` for safety, but binds viewport blocks immediately after load (or immediately if `readyState === 'complete'`); `HYDRATION_QUIET_MS` + `MAX_ACTIVATION_DELAY_MS` cap only the offscreen bulk scan.
+  - Verify: unit test — `readyState === 'complete'` → viewport bind fires without quiet wait; `npm run test:unit -- --testPathPattern=tokenize`; `npm run build`.
+  - Files: `src/features/tokenize/controller/webTokenizeController.ts`; `src/features/tokenize/controller/webTokenizeController.test.ts`.
+  - Scope: M.
 
-- [x] T7 — Wire badge into `content-script.ts` and fullscreen lifecycle
-  - `createWebTextDictionaryController.syncOrbitalBadge` mounts/destroys badge theo settings.
-  - `mountOrbitalBadge` lắng nghe `fullscreenchange` / `webkitfullscreenchange` và reparent host.
+### Checkpoint C
+- [ ] Unit: cold-start path green
+- [ ] Manual (DevTools MCP): toggle on interactive page → viewport tokens <300ms; SPA feed mutation path still no multi-second plain flash
 
-### Checkpoint: Lookup integration
+## Phase D — Verify + docs
 
-- [ ] Manual test on a text article (Apple HIG / National Geographic)
-- [ ] Manual test in fullscreen YouTube/Netflix subtitle
-- [x] `npx tsc --noEmit` clean
-- [x] `npm run test:unit` pass
+- [ ] **Task D1: Non-regression sweep**
+  - Acceptance: mutation microtask fast path (ADR-050), cache eviction end-to-end, viewportTracker already-intersecting (ADR-055), characterData/removedNodes — all tests green; no new console errors.
+  - Verify: `npm run test:unit` (full suite); `npm run typecheck`; `npm run build`; manual SPA smoke.
+  - Files: tests only (fix if regression).
+  - Scope: S.
 
-## Phase 4: Docs + verification
+- [ ] **Task D2: Update architecture docs**
+  - Acceptance: `docs/2-architechture-system.md` tokenize section reflects prepare-ahead + direction margin + cold-start; `docs/0-wiki.md` ADR list updated if ADR-058 added.
+  - Verify: `ls docs/adr/058*` if shipped; grep tokenize section current.
+  - Files: `docs/2-architechture-system.md`; `docs/0-wiki.md` (if ADR-058).
+  - Scope: S.
 
-- [x] T8 — Write ADR and update architecture docs
-  - `docs/adr/055-orbital-dictionary-pointer.md` exists.
-  - `docs/2-architechture-system.md` updated.
+- [ ] **Task D3: ADR-058 (WHY only) after measured decision sticks**
+  - Acceptance: ADR records WHY for direction-aware overscan + cold-start viewport-first + cache tier bump; cites measured before/after.
+  - Verify: ADR file exists; wiki ADR list updated.
+  - Files: `docs/adr/058-predictive-viewport-tokenize.md`; `docs/0-wiki.md`.
+  - Scope: S.
 
-- [ ] **T9: Final verification** ← đang làm
-  - [x] `npx tsc --noEmit` clean.
-  - [x] `npm run test:unit` pass.
-  - [x] `npm run build` success.
-  - [x] `npx vite build --mode development` success.
-  - [x] Manual design-system showcase passes (drag, preset change, tap) — fixed design-system `MockProviders`/`MockCues` runtime error; verified in real browser via DevTools MCP: single tap click +1, double tap cycles `center→right`, triple tap cycles `right→center`, drag snaps to `left`.
-  - [~] Manual test passes on text article and fullscreen video — design-system Popup Dictionary renders correctly; real web-page/fullscreen integration blocked by test Chrome profile not injecting content script (service worker unresponsive); đã verify qua unit test `webTextDictionaryController.test.ts`.
-
-## Final Checkpoint
-
-- [x] Reconcile success criteria / ADR with v17 always-on implementation
-  - Updated `docs/adr/055-orbital-dictionary-pointer.md` D2/D5/D6 to match React implementation and always-on design.
-  - Updated `docs/specs/spec-badge-pointer-dictionary-trigger.md` project structure, code style, testing strategy, boundaries, success criteria.
-- [~] PR ready with clean commit message and diff review
-  - Branch `feat/orbital-settings-dialog` is clean, 4 new commits since last session with descriptive messages.
-  - `git diff --stat master..HEAD` shows 528 files changed; em recommend review/tách PR theo feature slice (orbital, design-system, dictionary panel, tokenize, subtitle, universal panel) trước khi push.
-  - Cần anh bảo push / tạo PR trên `master`.
+### Checkpoint D
+- [ ] SC1–SC6 verified
+- [ ] Ready for `code-review-and-quality`
