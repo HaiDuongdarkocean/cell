@@ -18,15 +18,14 @@ import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
-import type { OrbitalBadgePanelState } from '@/features/dictionaryPopup/badgePointer/createOrbitalBadge';
 
 export interface UniversalPanelMountOptions {
   /** Tokenize state + callbacks forwarded to the Settings tab. */
   readonly panel?: {
-    readonly getState: () => OrbitalBadgePanelState;
+    readonly getState: () => TokenizePanelState;
     readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
     readonly onOpenDictionary: () => void;
-    readonly subscribe: (cb: (state: OrbitalBadgePanelState) => void) => () => void;
+    readonly subscribe: (cb: (state: TokenizePanelState) => void) => () => void;
   };
   /** Dictionary tab configuration. */
   readonly dictionary?: {

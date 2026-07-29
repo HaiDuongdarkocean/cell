@@ -5,7 +5,7 @@
  * so the viewport clips half of it → visible half-moon. Dragging inward expands
  * it back to a full circle. Releasing near an edge snaps + collapses it there.
  *
- * Extracted from createOrbitalBadge.ts so both badges share one implementation
+ * Shared by the token FAB and the React OrbitalBadge component.
  * (SSOT). The helpers are pure functions over a viewport rect — no DOM reads.
  */
 
