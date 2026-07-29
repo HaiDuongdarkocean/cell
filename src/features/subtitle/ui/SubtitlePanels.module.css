@@ -1,0 +1,53 @@
+.root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 10%;
+}
+
+.blockLayer {
+  width: 100%;
+  pointer-events: none;
+}
+
+.navLayer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.panelLayer {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  pointer-events: auto;
+  z-index: 1;
+}
+
+.offsetRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.toastLayer {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hintLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  z-index: 3;
+}
