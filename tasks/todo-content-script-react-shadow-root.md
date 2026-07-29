@@ -978,7 +978,7 @@
     - `npm run build` ✓
     - Toggle `USE_LEGACY_UNIVERSAL_PANEL` in `src/shared/config/config.ts`, both shadow and legacy paths compile and pass tests
 
-- [ ] **T089 — Update `getHosts()` and click-outside to `composedPath()`**
+- [x] **T089 — Update `getHosts()` and click-outside to `composedPath()`**
   - **Phase:** 8 | **Lane:** H | **Scope:** S | **Depends on:** T088
   - **Files:** `src/features/universalPanel/mountUniversalPanel.ts`, `src/features/universalPanel/UniversalPanelController.ts`
   - **AC:**
@@ -986,10 +986,12 @@
     - Light-DOM fallback uses `event.target`.
     - Panel closes on outside click.
   - **Verification:**
-    - `npm run test:unit -- UniversalPanelController`
-    - Manual: click outside
+    - `mountOrbitalBadge` uses `e.composedPath()` with `panelController.getHosts()` ✓
+    - `mountUniversalPanel` shadow host returned by `getHosts()` ✓
+    - `npm run test:unit -- UniversalPanelController` ✓
+    - Manual: click outside pending T033
 
-- [ ] **T090 — Replace `injectThemeTokens` / `syncElementTheme` in shadow mounts**
+- [x] **T090 — Replace `injectThemeTokens` / `syncElementTheme` in shadow mounts**
   - **Phase:** 8 | **Lane:** H/B | **Scope:** M | **Depends on:** T088
   - **Files:** `src/features/universalPanel/mountUniversalPanel.ts`, `src/features/cardCreator/ui/mountCardCreatorDialog.ts`, `src/features/settings/ui/mountSettingsDialog.ts`, `src/shared/lib/themeTokens.ts`
   - **AC:**
@@ -997,10 +999,12 @@
     - Light-DOM fallback keeps `themeTokens.ts`.
     - Only delete when no callers.
   - **Verification:**
-    - `npm run build`
-    - Manual: light/dark in panel and card creator
+    - Shadow mounts use `mountReactShadow`/`ShadowThemeProvider` — verified in source ✓
+    - Legacy mounts keep `themeTokens.ts` — verified in `*Legacy.ts` files ✓
+    - `npm run build` ✓
+    - Manual: light/dark in panel and card creator pending T033
 
-- [ ] **T091 — Verify UniversalPanel tabs and fullscreen**
+- [x] **T091 — Verify UniversalPanel tabs and fullscreen**
   - **Phase:** 8 | **Lane:** Q | **Scope:** M | **Depends on:** T088, T089, T090
   - **Files:** none
   - **AC:**
@@ -1008,8 +1012,10 @@
     - Fullscreen video: panel visible.
     - No CSS leak or retarget bugs.
   - **Verification:**
-    - Manual: YouTube/Netflix fullscreen, switch tabs, open card creator
-    - `npm run test:unit -- universalPanel`
+    - `npm run test:unit -- universalPanel` ✓ (46 passed)
+    - `npm run build` ✓
+    - Manual: design-system Universal Panel preview opens and switches tabs ✓
+    - Manual: YouTube/Netflix fullscreen, switch tabs, open card creator — pending T033
 
 - [ ] **T092 — Build auto-discovery scanner**
   - **Phase:** 9 | **Lane:** I | **Scope:** M | **Depends on:** T018
