@@ -48,12 +48,15 @@ export interface UseCandidateReturn {
   readonly toggleImage: (id: string, selected: boolean) => void;
   readonly removeImageItem: (id: string) => void;
   readonly selectedImageCount: number;
+  readonly links: readonly import('../types').ExternalDictLink[];
+  readonly selectedLinkCount: number;
   readonly translation: string;
   readonly isTranslating: boolean;
   readonly translationError: string | null;
   readonly translationSelected: boolean;
   readonly toggleTranslation: () => void;
   readonly translate: () => Promise<string>;
+  readonly selectedTranslationCount: number;
   readonly playTerm: () => void;
   readonly playSentence: () => void;
   readonly sendToCard: () => Promise<void>;
@@ -178,12 +181,15 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     toggleImage: toolbar.toggleImage,
     removeImageItem: toolbar.removeImageItem,
     selectedImageCount: toolbar.selectedImageCount,
+    links: toolbar.links,
+    selectedLinkCount: toolbar.selectedLinkCount,
     translation: toolbar.translation,
     isTranslating: toolbar.isTranslating,
     translationError: toolbar.translationError,
     translationSelected: toolbar.translationSelected,
     toggleTranslation: toolbar.toggleTranslation,
     translate: toolbar.translate,
+    selectedTranslationCount: toolbar.selectedTranslationCount,
     playTerm,
     playSentence,
     sendToCard,
