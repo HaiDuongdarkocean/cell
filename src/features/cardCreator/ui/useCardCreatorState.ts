@@ -8,9 +8,14 @@
  *  - Draft autosave (debounced 500ms) + restore on reopen.
  *  - Add/Update actions with media upload + field mapping.
  *  - Toast feedback (success/error).
+ *
+ * State is owned by the global useCardCreatorStore Zustand store; this hook
+ * keeps the async + UI-coupled logic and exposes the same CardCreatorState
+ * shape to consumers.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { CardCreatorSettings } from '@/entities/settings';
+import { useCardCreatorStore, type LoadStatus } from '@/stores/cardCreatorStore';
 import {
   listModelFields,
   findRecentNote,
@@ -22,11 +27,7 @@ import {
 import { buildAnkiFields } from '../service/buildAnkiFields';
 import { prefetchAnkiConnectData } from '../service/cardCreatorPrefetch';
 import { autoMapFields } from '../service/fieldMapping';
-import {
-  createEmptyDraft,
-  DraftAutosaver,
-  type CardDraft,
-} from '../state/cardDraft';
+import { DraftAutosaver, type CardDraft } from '../state/cardDraft';
 import { fetchMediaFile, type MediaFile, type MediaKind } from '../media/mediaFile';
 import { captureScreenshot } from '../media/screenshot';
 import { captureSentenceAudio } from '../media/sentenceAudio';
@@ -40,8 +41,8 @@ import type {
 
 export type OpenContext = CardCreatorOpenContext;
 
-/** Connection + data loading state. */
-export type LoadStatus = 'idle' | 'loading' | 'destination-ready' | 'ready' | 'error';
+/** Re-export LoadStatus from the store (single source of truth). */
+export type { LoadStatus } from '@/stores/cardCreatorStore';
 
 /** Hook return type. */
 export interface CardCreatorState {
@@ -115,62 +116,50 @@ export interface CardCreatorState {
   dismissToast: (id: number) => void;
 }
 
-let toastIdCounter = 0;
-
 export function useCardCreatorState(
   settings: CardCreatorSettings,
   openContext: OpenContext | null,
   initialAction?: CardCreatorAction,
 ): CardCreatorState {
-  const [draft, setDraft] = useState<CardDraft>(() =>
-    createEmptyDraft(settings.defaultNoteType, settings.defaultDeck),
-  );
-  const [decks, setDecks] = useState<readonly string[]>([]);
-  const [noteTypes, setNoteTypes] = useState<readonly string[]>([]);
-  const [availableFields, setAvailableFields] = useState<readonly string[]>([]);
-  const [recentNoteId, setRecentNoteId] = useState<number | null>(null);
-  const [recentNoteInfo, setRecentNoteInfo] = useState<{ fields: Record<string, string>; tags: string[] } | null>(null);
-  const [loadStatus, setLoadStatus] = useState<LoadStatus>('idle');
-  const [loadError, setLoadError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [capturingMedia, setCapturingMedia] = useState(false);
-  const [toasts, setToasts] = useState<readonly Toast[]>([]);
+  const {
+    ankiConnectUrl,
+    defaultNoteType,
+    defaultDeck,
+    defaultTags,
+    mediaUpdateMode: defaultMediaUpdateMode,
+  } = settings;
 
-  // Queue state (I+N review flow).
-  const [queueItems, setQueueItems] = useState<readonly CardCreatorQueueItem[]>([]);
-  const [queueActiveIndex, setQueueActiveIndex] = useState(-1);
-  const [queueSidebarOpen, setQueueSidebarOpen] = useState(false);
-  // Undo buffer for deleted queue items: { item, index, timer }.
-  const undoBufferRef = useRef<{ item: CardCreatorQueueItem; index: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const draft = useCardCreatorStore((s) => s.draft);
+  const decks = useCardCreatorStore((s) => s.decks);
+  const noteTypes = useCardCreatorStore((s) => s.noteTypes);
+  const availableFields = useCardCreatorStore((s) => s.availableFields);
+  const recentNoteId = useCardCreatorStore((s) => s.recentNoteId);
+  const recentNoteInfo = useCardCreatorStore((s) => s.recentNoteInfo);
+  const loadStatus = useCardCreatorStore((s) => s.loadStatus);
+  const loadError = useCardCreatorStore((s) => s.loadError);
+  const submitting = useCardCreatorStore((s) => s.submitting);
+  const capturingMedia = useCardCreatorStore((s) => s.capturingMedia);
+  const toasts = useCardCreatorStore((s) => s.toasts);
+  const queueItems = useCardCreatorStore((s) => s.queueItems);
+  const queueActiveIndex = useCardCreatorStore((s) => s.queueActiveIndex);
+  const queueSidebarOpen = useCardCreatorStore((s) => s.queueSidebarOpen);
+  const storeInitialAction = useCardCreatorStore((s) => s.initialAction);
 
-  // Track toast auto-dismiss timers so we can clear them on unmount
-  // (react-timeout-cleanup: setTimeout in component must be cleared on unmount).
-  const toastTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  // Queue actions are owned by the store; pass them through unchanged.
+  const selectQueueItem = useCardCreatorStore((s) => s.selectQueueItem);
+  const deleteQueueItem = useCardCreatorStore((s) => s.deleteQueueItem);
+  const undoDeleteQueueItem = useCardCreatorStore((s) => s.undoDeleteQueueItem);
+  const toggleQueueSidebar = useCardCreatorStore((s) => s.toggleQueueSidebar);
+  const dismissToast = useCardCreatorStore((s) => s.dismissToast);
 
   const autosaverRef = useRef(new DraftAutosaver());
   const openContextRef = useRef<OpenContext | null>(openContext);
   openContextRef.current = openContext;
-  // Keep a ref to the current draft so async callbacks (e.g. changeNoteType)
-  // can read the latest deck without re-creating the callback on every draft
-  // change.
-  const draftRef = useRef(draft);
-  draftRef.current = draft;
 
-  /** Push a toast. */
-  const pushToast = useCallback((kind: Toast['kind'], message: string) => {
-    const id = ++toastIdCounter;
-    setToasts((prev) => [...prev, { id, kind, message }]);
-    // Auto-dismiss after 4s. Track timer for unmount cleanup.
-    const timer = setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-      toastTimersRef.current.delete(timer);
-    }, 4000);
-    toastTimersRef.current.add(timer);
-  }, []);
-
-  const dismissToast = useCallback((id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+  // Sync the prop-level initialAction into the store.
+  useEffect(() => {
+    useCardCreatorStore.getState().setInitialAction(initialAction);
+  }, [initialAction]);
 
   /** Re-check whether a recent note exists for the given deck + note type.
    *  ADR-026: called on initial load AND on note type change — the recent note
@@ -182,22 +171,22 @@ export function useCardCreatorState(
    *  closure — see persist-config-clear-content principle). */
   const refreshRecentNote = useCallback(
     async (deck: string, noteType: string): Promise<{ id: number | null; info: { fields: Record<string, string>; tags: string[] } | null }> => {
-      const url = settings.ankiConnectUrl;
-      const recentR = await findRecentNote(url, deck, noteType);
+      const recentR = await findRecentNote(ankiConnectUrl, deck, noteType);
       let recentId: number | null = null;
       let recentInfo: { fields: Record<string, string>; tags: string[] } | null = null;
       if (recentR.ok && recentR.value !== null) {
         recentId = recentR.value;
-        const infoR = await getNoteInfo(url, recentR.value);
+        const infoR = await getNoteInfo(ankiConnectUrl, recentR.value);
         if (infoR.ok && infoR.value) {
           recentInfo = { fields: infoR.value.fields, tags: infoR.value.tags };
         }
       }
-      setRecentNoteId(recentId);
-      setRecentNoteInfo(recentInfo);
+      const store = useCardCreatorStore.getState();
+      store.setRecentNoteId(recentId);
+      store.setRecentNoteInfo(recentInfo);
       return { id: recentId, info: recentInfo };
     },
-    [settings.ankiConnectUrl],
+    [ankiConnectUrl],
   );
 
   /** Load AnkiConnect data (decks, models, fields, recent note).
@@ -219,8 +208,9 @@ export function useCardCreatorState(
   const loadData = useCallback(async (restoredDraft: CardDraft | null) => {
     const ctx = openContextRef.current;
     if (!ctx) return;
-    setLoadStatus('loading');
-    setLoadError('');
+    const store = useCardCreatorStore.getState();
+    store.setLoadStatus('loading');
+    store.setLoadError('');
 
     // Immediately set draft with cue/prefill data + restored config + defaults
     // so the form renders right away (sentence text, media, tags visible while
@@ -233,14 +223,14 @@ export function useCardCreatorState(
     // the sidebar is only shown when N ≥ 2.
     const ctxQueue = ctx.queue;
     if (ctxQueue && ctxQueue.length >= 1) {
-      setQueueItems(ctxQueue);
-      setQueueActiveIndex(0);
-      setQueueSidebarOpen(ctxQueue.length >= 2);
+      store.setQueueItems(ctxQueue);
+      store.setQueueActiveIndex(0);
+      store.setQueueSidebarOpen(ctxQueue.length >= 2);
       // Use first queue item as prefill (overrides cue/prefill).
       const firstItem = ctxQueue[0]!;
-      setDraft({
-        noteType: restoredDraft?.noteType ?? settings.defaultNoteType,
-        deck: restoredDraft?.deck ?? settings.defaultDeck,
+      store.setDraft({
+        noteType: restoredDraft?.noteType ?? defaultNoteType,
+        deck: restoredDraft?.deck ?? defaultDeck,
         fields: {
           targetWord: firstItem.term,
           sentence: ctx.cue?.targetText ?? prefill?.sentence ?? '',
@@ -253,32 +243,32 @@ export function useCardCreatorState(
           moreExample: '',
         },
         fieldMapping: restoredDraft?.fieldMapping ?? {},
-        tags: restoredDraft?.tags ?? settings.defaultTags,
-        mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? settings.mediaUpdateMode,
+        tags: restoredDraft?.tags ?? defaultTags,
+        mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? defaultMediaUpdateMode,
       });
     } else {
       // No queue → normal flow.
-      setQueueItems([]);
-      setQueueActiveIndex(-1);
-      setQueueSidebarOpen(false);
-    setDraft({
-      noteType: restoredDraft?.noteType ?? settings.defaultNoteType,
-      deck: restoredDraft?.deck ?? settings.defaultDeck,
-      fields: {
-        targetWord: prefill?.targetWord ?? '',
-        sentence: prefill?.sentence ?? ctx.cue?.targetText ?? '',
-        sentenceTranslation: prefill?.sentenceTranslation ?? ctx.cue?.nativeText ?? '',
-        definitions: prefill?.definitions ?? '',
-        images: initialImages,
-        sentenceAudios: initialAudios,
-        wordAudios: [],
-        note: '',
-        moreExample: '',
-      },
-      fieldMapping: restoredDraft?.fieldMapping ?? {},
-      tags: restoredDraft?.tags ?? settings.defaultTags,
-      mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? settings.mediaUpdateMode,
-    });
+      store.setQueueItems([]);
+      store.setQueueActiveIndex(-1);
+      store.setQueueSidebarOpen(false);
+      store.setDraft({
+        noteType: restoredDraft?.noteType ?? defaultNoteType,
+        deck: restoredDraft?.deck ?? defaultDeck,
+        fields: {
+          targetWord: prefill?.targetWord ?? '',
+          sentence: prefill?.sentence ?? ctx.cue?.targetText ?? '',
+          sentenceTranslation: prefill?.sentenceTranslation ?? ctx.cue?.nativeText ?? '',
+          definitions: prefill?.definitions ?? '',
+          images: initialImages,
+          sentenceAudios: initialAudios,
+          wordAudios: [],
+          note: '',
+          moreExample: '',
+        },
+        fieldMapping: restoredDraft?.fieldMapping ?? {},
+        tags: restoredDraft?.tags ?? defaultTags,
+        mediaUpdateMode: restoredDraft?.mediaUpdateMode ?? defaultMediaUpdateMode,
+      });
     }
 
     // Fetch prefill media URLs (word audio, sentence audio + images from popup
@@ -297,25 +287,25 @@ export function useCardCreatorState(
           try {
             fetchedWordAudios.push(await fetchMediaFile(audioUrl, 'audio'));
           } catch {
-            pushToast('warning', `Could not fetch word audio: ${audioUrl}`);
+            useCardCreatorStore.getState().pushToast('warning', `Could not fetch word audio: ${audioUrl}`);
           }
         }
         for (const audioUrl of prefill?.sentenceAudioUrls ?? []) {
           try {
             fetchedSentenceAudios.push(await fetchMediaFile(audioUrl, 'audio'));
           } catch {
-            pushToast('warning', `Could not fetch sentence audio: ${audioUrl}`);
+            useCardCreatorStore.getState().pushToast('warning', `Could not fetch sentence audio: ${audioUrl}`);
           }
         }
         for (const imageUrl of prefill?.imageUrls ?? []) {
           try {
             fetchedImages.push(await fetchMediaFile(imageUrl, 'image'));
           } catch {
-            pushToast('warning', `Could not fetch image: ${imageUrl}`);
+            useCardCreatorStore.getState().pushToast('warning', `Could not fetch image: ${imageUrl}`);
           }
         }
         if (fetchedWordAudios.length > 0 || fetchedSentenceAudios.length > 0 || fetchedImages.length > 0) {
-          setDraft((prev) => ({
+          useCardCreatorStore.getState().setDraft((prev) => ({
             ...prev,
             fields: {
               ...prev.fields,
@@ -328,16 +318,15 @@ export function useCardCreatorState(
       })();
     }
 
-    const url = settings.ankiConnectUrl;
     try {
       // Reuse the prefetched decks + models (started on Card Creator button
       // click so the AnkiConnect round-trip overlaps with media capture).
       // Falls back to a fresh prefetch if none in-flight (e.g. dialog opened
       // programmatically without a click). ensureDefaultModel runs inside
       // the prefetch.
-      const { decks: fetchedDecks, models: fetchedModels } = await prefetchAnkiConnectData(url);
-      setDecks(fetchedDecks);
-      setNoteTypes(fetchedModels);
+      const { decks: fetchedDecks, models: fetchedModels } = await prefetchAnkiConnectData(ankiConnectUrl);
+      store.setDecks(fetchedDecks);
+      store.setNoteTypes(fetchedModels);
 
       // Pick note type: restored draft's (if still valid in Anki), else default,
       // else first available. ADR-026: remember user's note type selection.
@@ -345,37 +334,37 @@ export function useCardCreatorState(
       const chosenNoteType =
         fetchedModels.includes(restoredNoteType)
           ? restoredNoteType
-          : fetchedModels.includes(settings.defaultNoteType)
-            ? settings.defaultNoteType
+          : fetchedModels.includes(defaultNoteType)
+            ? defaultNoteType
             : fetchedModels[0] ?? '';
       // Pick deck: same precedence — restored → default → first.
       const restoredDeck = restoredDraft?.deck ?? '';
       const chosenDeck =
         fetchedDecks.includes(restoredDeck)
           ? restoredDeck
-          : fetchedDecks.includes(settings.defaultDeck)
-            ? settings.defaultDeck
+          : fetchedDecks.includes(defaultDeck)
+            ? defaultDeck
             : fetchedDecks[0] ?? '';
 
       // Update draft with AnkiConnect-resolved note type/deck + mark
       // destination-ready so Note type/Deck dropdowns enable immediately.
       // Field content (sentence, media) already set above is preserved.
-      setDraft((prev) => ({
+      store.setDraft((prev) => ({
         ...prev,
         noteType: chosenNoteType,
         deck: chosenDeck,
       }));
-      setLoadStatus('destination-ready');
+      store.setLoadStatus('destination-ready');
 
       // Phase 2: fetch fields + recent note (depend on chosen note type/deck).
       // These run AFTER dropdowns are enabled so the user can interact while
       // these load. Field rows + alerts wait for `ready`.
       let fields: readonly string[] = [];
       if (chosenNoteType) {
-        const fieldsR = await listModelFields(url, chosenNoteType);
+        const fieldsR = await listModelFields(ankiConnectUrl, chosenNoteType);
         if (fieldsR.ok) fields = fieldsR.value;
       }
-      setAvailableFields(fields);
+      store.setAvailableFields(fields);
 
       // Field mapping: reuse restored mapping if note type unchanged (it was
       // mapped for this note type); otherwise auto-map fresh.
@@ -393,24 +382,24 @@ export function useCardCreatorState(
       // hasn't changed note type while we were fetching fields (race guard:
       // changeNoteType sets its own mapping for the new note type; if we
       // override here with the old note type's mapping, fields mismatch).
-      if (draftRef.current.noteType === chosenNoteType) {
-        setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
+      if (useCardCreatorStore.getState().draft.noteType === chosenNoteType) {
+        store.setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
       }
       // Mark ready (enables alerts + autosave). If the user already changed
       // note type/deck, changeNoteType/changeDeck will have set ready too —
       // this is a no-op in that case.
-      setLoadStatus('ready');
+      store.setLoadStatus('ready');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      setLoadError(msg);
-      setLoadStatus('error');
-      pushToast('error', `AnkiConnect: ${msg}`);
+      store.setLoadError(msg);
+      store.setLoadStatus('error');
+      useCardCreatorStore.getState().pushToast('error', `AnkiConnect: ${msg}`);
     }
-  }, [settings, pushToast, refreshRecentNote]);
+  }, [ankiConnectUrl, defaultNoteType, defaultDeck, defaultTags, defaultMediaUpdateMode, refreshRecentNote]);
 
   // Load data when dialog opens. Pass the restored draft to loadData so it can
   // preserve the user's note type/deck/field selections (ADR-026).
-  // Guard with a ref: loadData may get a new reference when `settings` changes,
+  // Guard with a ref: loadData may get a new reference when settings changes,
   // but we only want to load once per openContext (re-loading resets the draft
   // + would clear auto-captured media).
   const loadedForRef = useRef<OpenContext | null>(null);
@@ -420,9 +409,11 @@ export function useCardCreatorState(
     loadedForRef.current = openContext;
     const autosaver = autosaverRef.current;
     autosaver.load().then((restored) => {
+      useCardCreatorStore.getState().reset();
+      useCardCreatorStore.getState().setInitialAction(initialAction);
       void loadData(restored ?? null);
     });
-  }, [openContext, loadData]);
+  }, [openContext, loadData, initialAction]);
 
   // Autosave on draft change (debounced). Save as soon as the user
   // makes any selection — not only when fully 'ready' — so config
@@ -433,30 +424,26 @@ export function useCardCreatorState(
     autosaverRef.current.schedule(draft);
   }, [draft, loadStatus]);
 
-  // Clear all pending toast timers on unmount (react-timeout-cleanup).
-  // Also flush pending autosave so the user's noteType/deck/fieldMapping
-  // selections survive the unmount (dialog close → component unmounts →
-  // state is lost; without flush, the debounced save never fires).
+  // Flush pending autosave on unmount so the user's noteType/deck/fieldMapping
+  // selections survive the unmount. Then reset the store to its initial state
+  // (mirrors the local-state lifetime the hook had before the Zustand move).
   useEffect(() => {
-    const timers = toastTimersRef.current;
     const autosaver = autosaverRef.current;
     return () => {
-      for (const timer of timers) clearTimeout(timer);
-      timers.clear();
       void autosaver.flush();
-      if (undoBufferRef.current) clearTimeout(undoBufferRef.current.timer);
+      useCardCreatorStore.getState().reset();
     };
   }, []);
 
   /** Update draft (triggers autosave via effect). */
   const updateDraft = useCallback((partial: Partial<CardDraft>) => {
-    setDraft((prev) => ({ ...prev, ...partial }));
+    useCardCreatorStore.getState().setDraft((prev) => ({ ...prev, ...partial }));
   }, []);
 
   /** Update a single text field. */
   const updateField = useCallback(
     (key: 'targetWord' | 'sentence' | 'sentenceTranslation' | 'definitions' | 'note' | 'moreExample', value: string) => {
-      setDraft((prev) => ({
+      useCardCreatorStore.getState().setDraft((prev) => ({
         ...prev,
         fields: { ...prev.fields, [key]: value },
       }));
@@ -467,7 +454,7 @@ export function useCardCreatorState(
   /** Update field mapping. */
   const updateMapping = useCallback(
     (sourceKey: keyof CardDraft['fieldMapping'], ankiField: string) => {
-      setDraft((prev) => ({
+      useCardCreatorStore.getState().setDraft((prev) => ({
         ...prev,
         fieldMapping: { ...prev.fieldMapping, [sourceKey]: ankiField },
       }));
@@ -478,97 +465,102 @@ export function useCardCreatorState(
   /** Change note type → re-fetch fields + re-map + re-check recent note. */
   const changeNoteType = useCallback(
     async (noteType: string) => {
-      setDraft((prev) => ({ ...prev, noteType }));
-      const fieldsR = await listModelFields(settings.ankiConnectUrl, noteType);
+      const store = useCardCreatorStore.getState();
+      store.setDraft((prev) => ({ ...prev, noteType }));
+      const fieldsR = await listModelFields(ankiConnectUrl, noteType);
       if (fieldsR.ok) {
-        setAvailableFields(fieldsR.value);
+        store.setAvailableFields(fieldsR.value);
         const mapping = autoMapFields(fieldsR.value);
-        setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
+        store.setDraft((prev) => ({ ...prev, fieldMapping: mapping }));
       }
       // ADR-026: re-check recent note for the new note type — the recent note
       // is scoped to the note type, so switching types must re-query.
-      const deck = draftRef.current.deck;
+      const deck = useCardCreatorStore.getState().draft.deck;
       await refreshRecentNote(deck, noteType);
       // Mark ready so alerts + autosave are active (loadData phase 2 may have
       // been interrupted by this change — ensure we end in a ready state).
-      setLoadStatus('ready');
+      store.setLoadStatus('ready');
     },
-    [settings.ankiConnectUrl, draftRef, refreshRecentNote],
+    [ankiConnectUrl, refreshRecentNote],
   );
 
   /** Change deck → re-check recent note (recent note is scoped to deck). */
   const changeDeck = useCallback(
     async (deck: string) => {
-      setDraft((prev) => ({ ...prev, deck }));
-      const noteType = draftRef.current.noteType;
+      const store = useCardCreatorStore.getState();
+      store.setDraft((prev) => ({ ...prev, deck }));
+      const noteType = useCardCreatorStore.getState().draft.noteType;
       await refreshRecentNote(deck, noteType);
-      setLoadStatus('ready');
+      store.setLoadStatus('ready');
     },
-    [draftRef, refreshRecentNote],
+    [refreshRecentNote],
   );
 
   /** Add a screenshot. */
   const addScreenshot = useCallback(async () => {
     const ctx = openContextRef.current;
     if (!ctx?.video) return;
-    setCapturingMedia(true);
+    const store = useCardCreatorStore.getState();
+    store.setCapturingMedia(true);
     try {
       const file = await captureScreenshot(ctx.video);
-      setDraft((prev) => ({
+      store.setDraft((prev) => ({
         ...prev,
         fields: { ...prev.fields, images: [...prev.fields.images, file] },
       }));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      pushToast('error', `Screenshot failed: ${msg}`);
+      useCardCreatorStore.getState().pushToast('error', `Screenshot failed: ${msg}`);
     } finally {
-      setCapturingMedia(false);
+      store.setCapturingMedia(false);
     }
-  }, [pushToast]);
+  }, []);
 
   /** Add sentence audio for the current cue. */
   const addSentenceAudio = useCallback(async () => {
     const ctx = openContextRef.current;
     if (!ctx?.video || !ctx.cue) return;
-    setCapturingMedia(true);
+    const store = useCardCreatorStore.getState();
+    store.setCapturingMedia(true);
     try {
       const result = await captureSentenceAudio(ctx.video, {
         start: ctx.cue.start,
         end: ctx.cue.end,
       });
       if (result.ok) {
-        setDraft((prev) => ({
+        store.setDraft((prev) => ({
           ...prev,
           fields: { ...prev.fields, sentenceAudios: [...prev.fields.sentenceAudios, result.file] },
         }));
       } else if (result.reason === 'unsupported') {
-        pushToast('warning', 'Audio capture not supported on this browser. Screenshot still works.');
+        store.pushToast('warning', 'Audio capture not supported on this browser. Screenshot still works.');
       } else if (result.reason === 'hidden') {
-        pushToast('warning', 'Tab is hidden — audio capture skipped. Switch to the tab and try again.');
+        store.pushToast('warning', 'Tab is hidden — audio capture skipped. Switch to the tab and try again.');
       } else {
-        pushToast('error', `Audio capture failed: ${result.error ?? 'unknown'}`);
+        store.pushToast('error', `Audio capture failed: ${result.error ?? 'unknown'}`);
       }
     } finally {
-      setCapturingMedia(false);
+      store.setCapturingMedia(false);
     }
-  }, [pushToast]);
+  }, []);
 
   /** Add one or more MediaFiles to the given draft list. */
   const addFiles = useCallback(
     (kind: 'images' | 'sentenceAudios' | 'wordAudios', files: readonly MediaFile[], invalidCount = 0) => {
       if (files.length === 0 && invalidCount === 0) return;
+      const store = useCardCreatorStore.getState();
       if (files.length > 0) {
-        setDraft((prev) => ({
+        store.setDraft((prev) => ({
           ...prev,
           fields: { ...prev.fields, [kind]: [...prev.fields[kind], ...files] },
         }));
       }
       if (invalidCount > 0) {
         const kindLabel = kind === 'images' ? 'images' : 'audio files';
-        pushToast('warning', `Ignored ${invalidCount} unsupported file(s). Drop only ${kindLabel} here.`);
+        store.pushToast('warning', `Ignored ${invalidCount} unsupported file(s). Drop only ${kindLabel} here.`);
       }
     },
-    [pushToast],
+    [],
   );
 
   /** Add a media file from disk via the browser file picker.
@@ -625,7 +617,7 @@ export function useCardCreatorState(
   /** Remove a media file. */
   const removeMedia = useCallback(
     (kind: 'images' | 'sentenceAudios' | 'wordAudios', index: number) => {
-      setDraft((prev) => ({
+      useCardCreatorStore.getState().setDraft((prev) => ({
         ...prev,
         fields: {
           ...prev.fields,
@@ -640,7 +632,7 @@ export function useCardCreatorState(
   const reorderMedia = useCallback(
     (kind: 'images' | 'sentenceAudios' | 'wordAudios', fromIndex: number, toIndex: number) => {
       if (fromIndex === toIndex) return;
-      setDraft((prev) => {
+      useCardCreatorStore.getState().setDraft((prev) => {
         const next = [...prev.fields[kind]];
         const [moved] = next.splice(fromIndex, 1);
         next.splice(toIndex, 0, moved);
@@ -662,7 +654,7 @@ export function useCardCreatorState(
     // Else Google Translate the current sentence (from cue or prefill).
     const sentence = ctx.cue?.targetText ?? ctx.prefill?.sentence ?? '';
     if (!sentence) {
-      pushToast('warning', 'No sentence to translate.');
+      useCardCreatorStore.getState().pushToast('warning', 'No sentence to translate.');
       return;
     }
     const translated = await translateSentence(
@@ -673,47 +665,49 @@ export function useCardCreatorState(
     if (translated) {
       updateField('sentenceTranslation', translated);
     } else {
-      pushToast('warning', 'Translation failed. Fill in the translation manually.');
+      useCardCreatorStore.getState().pushToast('warning', 'Translation failed. Fill in the translation manually.');
     }
-  }, [updateField, pushToast]);
+  }, [updateField]);
 
   /** Build the Anki note fields from the draft (apply mapping + media refs). */
   const buildAnkiFieldsCb = useCallback(
     async (): Promise<Record<string, string>> => {
+      const store = useCardCreatorStore.getState();
       return buildAnkiFields(
-        settings.ankiConnectUrl,
-        draft.fieldMapping,
+        ankiConnectUrl,
+        store.draft.fieldMapping,
         {
-          targetWord: draft.fields.targetWord,
-          sentence: draft.fields.sentence,
-          sentenceTranslation: draft.fields.sentenceTranslation,
-          definitions: draft.fields.definitions,
-          note: draft.fields.note,
-          moreExample: draft.fields.moreExample,
+          targetWord: store.draft.fields.targetWord,
+          sentence: store.draft.fields.sentence,
+          sentenceTranslation: store.draft.fields.sentenceTranslation,
+          definitions: store.draft.fields.definitions,
+          note: store.draft.fields.note,
+          moreExample: store.draft.fields.moreExample,
         },
         {
-          images: draft.fields.images,
-          sentenceAudios: draft.fields.sentenceAudios,
-          wordAudios: draft.fields.wordAudios,
+          images: store.draft.fields.images,
+          sentenceAudios: store.draft.fields.sentenceAudios,
+          wordAudios: store.draft.fields.wordAudios,
         },
-        (msg) => pushToast('error', msg),
+        (msg) => useCardCreatorStore.getState().pushToast('error', msg),
       );
     },
-    [draft, settings.ankiConnectUrl, pushToast],
+    [ankiConnectUrl],
   );
 
   /** Submit: Add or Update. */
   const submit = useCallback(
     async (mode: 'add' | 'update') => {
-      if (submitting) return;
-      setSubmitting(true);
+      const store = useCardCreatorStore.getState();
+      if (store.submitting) return;
+      store.setSubmitting(true);
       try {
-        const url = settings.ankiConnectUrl;
         const fields = await buildAnkiFieldsCb();
+        const draft = store.draft;
         const tags = draft.tags.split(/\s+/).filter(Boolean);
 
         if (mode === 'add') {
-          const r = await addNote(url, {
+          const r = await addNote(ankiConnectUrl, {
             deckName: draft.deck,
             modelName: draft.noteType,
             fields,
@@ -721,24 +715,25 @@ export function useCardCreatorState(
           });
           if (!r.ok) throw new Error(r.error);
           if (r.value === null) {
-            pushToast('warning', 'Card not added — a duplicate may already exist in this deck.');
+            store.pushToast('warning', 'Card not added — a duplicate may already exist in this deck.');
           } else {
-            pushToast('success', `Card added to “${draft.deck}” (#${r.value}).`);
+            store.pushToast('success', `Card added to "${draft.deck}" (#${r.value}).`);
             await autosaverRef.current.clear();
           }
           // Queue auto-next: advance to next item or signal queue exhausted.
+          const { queueItems, queueActiveIndex } = useCardCreatorStore.getState();
           if (queueItems.length > 0 && queueActiveIndex >= 0) {
             const nextIndex = queueActiveIndex + 1;
             if (nextIndex < queueItems.length) {
               const nextItem = queueItems[nextIndex]!;
-              setQueueActiveIndex(nextIndex);
-              setDraft((prev) => ({
+              store.setQueueActiveIndex(nextIndex);
+              store.setDraft((prev) => ({
                 ...prev,
                 fields: { ...prev.fields, targetWord: nextItem.term, definitions: nextItem.definitions },
               }));
             } else {
-              setQueueItems([]);
-              setQueueActiveIndex(-1);
+              store.setQueueItems([]);
+              store.setQueueActiveIndex(-1);
             }
           }
         } else {
@@ -751,7 +746,7 @@ export function useCardCreatorState(
           const fresh = await refreshRecentNote(draft.deck, draft.noteType);
           const updateNoteId = fresh.id;
           if (updateNoteId === null) {
-            pushToast('error', `No card found in “${draft.deck}” to update. Add a new card first.`);
+            store.pushToast('error', `No card found in "${draft.deck}" to update. Add a new card first.`);
             return;
           }
           // For update, we need existing fields to apply append/skip modes.
@@ -771,113 +766,47 @@ export function useCardCreatorState(
             }
           }
           if (Object.keys(updateFields).length === 0) {
-            pushToast('warning', 'Nothing to update — every field is already filled (skip mode).');
+            store.pushToast('warning', 'Nothing to update — every field is already filled (skip mode).');
             return;
           }
-          const r = await updateNote(url, updateNoteId, updateFields, 'overwrite', existing);
+          const r = await updateNote(ankiConnectUrl, updateNoteId, updateFields, 'overwrite', existing);
           if (!r.ok) throw new Error(r.error);
           // Sync tags (desktop only; Android shows warning).
           if (tags.length > 0) {
-            const tagsR = await addNoteTags(url, updateNoteId, tags);
+            const tagsR = await addNoteTags(ankiConnectUrl, updateNoteId, tags);
             if (!tagsR.ok) {
-              pushToast('warning', `Card updated, but tags could not be synced: ${tagsR.error}`);
+              store.pushToast('warning', `Card updated, but tags could not be synced: ${tagsR.error}`);
             }
           }
-          pushToast('success', `Card updated (#${updateNoteId}).`);
+          store.pushToast('success', `Card updated (#${updateNoteId}).`);
           await autosaverRef.current.clear();
           // Queue auto-next (same as Add path).
+          const { queueItems, queueActiveIndex } = useCardCreatorStore.getState();
           if (queueItems.length > 0 && queueActiveIndex >= 0) {
             const nextIndex = queueActiveIndex + 1;
             if (nextIndex < queueItems.length) {
               const nextItem = queueItems[nextIndex]!;
-              setQueueActiveIndex(nextIndex);
-              setDraft((prev) => ({
+              store.setQueueActiveIndex(nextIndex);
+              store.setDraft((prev) => ({
                 ...prev,
                 fields: { ...prev.fields, targetWord: nextItem.term, definitions: nextItem.definitions },
               }));
             } else {
-              setQueueItems([]);
-              setQueueActiveIndex(-1);
+              store.setQueueItems([]);
+              store.setQueueActiveIndex(-1);
             }
           }
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         const action = mode === 'add' ? 'add' : 'update';
-        pushToast('error', `Could not ${action} card — ${msg}. Check AnkiConnect and try again.`);
+        useCardCreatorStore.getState().pushToast('error', `Could not ${action} card — ${msg}. Check AnkiConnect and try again.`);
       } finally {
-        setSubmitting(false);
+        useCardCreatorStore.getState().setSubmitting(false);
       }
     },
-    [submitting, settings.ankiConnectUrl, draft, buildAnkiFieldsCb, refreshRecentNote, pushToast, queueItems, queueActiveIndex],
+    [ankiConnectUrl, buildAnkiFieldsCb, refreshRecentNote],
   );
-
-  /** Select a queue item by index — switches the draft's targetWord +
-   *  definitions to the selected item. Sentence + translation + media stay
-   *  the same (shared across the queue). */
-  const selectQueueItem = useCallback((index: number) => {
-    setQueueItems((items) => {
-      if (index < 0 || index >= items.length) return items;
-      const item = items[index]!;
-      setQueueActiveIndex(index);
-      setDraft((prev) => ({
-        ...prev,
-        fields: {
-          ...prev.fields,
-          targetWord: item.term,
-          definitions: item.definitions,
-        },
-      }));
-      return items;
-    });
-  }, []);
-
-  /** Delete a queue item. Shows an undo toast for 3s. If the deleted item was
-   *  active, auto-advances to the next remaining item. */
-  const deleteQueueItem = useCallback((index: number) => {
-    setQueueItems((items) => {
-      if (index < 0 || index >= items.length) return items;
-      const deleted = items[index]!;
-      const next = items.filter((_, i) => i !== index);
-      if (undoBufferRef.current) clearTimeout(undoBufferRef.current.timer);
-      const timer = setTimeout(() => { undoBufferRef.current = null; }, 3000);
-      undoBufferRef.current = { item: deleted, index, timer };
-      pushToast('warning', `Removed "${deleted.term}" from queue.`);
-      setQueueActiveIndex((prev) => {
-        if (prev === index) return next.length > 0 ? Math.min(index, next.length - 1) : -1;
-        if (prev > index) return prev - 1;
-        return prev;
-      });
-      if (next.length > 0) {
-        const newActive = Math.min(index, next.length - 1);
-        const item = next[newActive]!;
-        setDraft((prev) => ({
-          ...prev,
-          fields: { ...prev.fields, targetWord: item.term, definitions: item.definitions },
-        }));
-      }
-      return next;
-    });
-  }, [pushToast]);
-
-  /** Undo the last queue item deletion (within 3s window). */
-  const undoDeleteQueueItem = useCallback(() => {
-    const buf = undoBufferRef.current;
-    if (!buf) return;
-    clearTimeout(buf.timer);
-    undoBufferRef.current = null;
-    setQueueItems((items) => [...items.slice(0, buf.index), buf.item, ...items.slice(buf.index)]);
-    setQueueActiveIndex(buf.index);
-    setDraft((prev) => ({
-      ...prev,
-      fields: { ...prev.fields, targetWord: buf.item.term, definitions: buf.item.definitions },
-    }));
-  }, []);
-
-  /** Toggle the queue sidebar open/closed. */
-  const toggleQueueSidebar = useCallback(() => {
-    setQueueSidebarOpen((prev) => !prev);
-  }, []);
 
   return {
     draft,
@@ -891,7 +820,7 @@ export function useCardCreatorState(
     submitting,
     capturingMedia,
     toasts,
-    initialAction,
+    initialAction: storeInitialAction,
     queueItems,
     queueActiveIndex,
     queueSidebarOpen,
