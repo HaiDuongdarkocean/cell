@@ -24,11 +24,16 @@ export interface UseOrbitalGestureResult {
 }
 
 export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbitalGestureResult {
+  // Keep a live reference to callbacks so the gesture detector does not use
+  // stale closures from the first render.
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
+
   const detectorRef = useRef(
     createGestureDetector({
-      onSingleTap: options.onSingleTap ?? (() => {}),
-      onDoubleTap: options.onDoubleTap ?? (() => {}),
-      onTripleTap: options.onTripleTap ?? (() => {}),
+      onSingleTap: () => { optionsRef.current.onSingleTap?.(); },
+      onDoubleTap: () => { optionsRef.current.onDoubleTap?.(); },
+      onTripleTap: () => { optionsRef.current.onTripleTap?.(); },
     }),
   );
 
@@ -59,27 +64,27 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
           dragRef.current.dragging = true;
           dragRef.current.hasDragged = true;
           detectorRef.current.reset();
-          options.onDragStart?.();
+          optionsRef.current.onDragStart?.();
         } else {
           return;
         }
       }
 
-      options.onDrag?.(dx, dy);
+      optionsRef.current.onDrag?.(dx, dy);
     },
-    [options],
+    [],
   );
 
   const onPointerUp = useCallback(
     (e: PointerEvent | React.PointerEvent): void => {
       if (dragRef.current.dragging) {
         dragRef.current.dragging = false;
-        options.onDragEnd?.();
+        optionsRef.current.onDragEnd?.();
         return;
       }
       detectorRef.current.onPointerUp(e.timeStamp);
     },
-    [options],
+    [],
   );
 
   const reset = useCallback((): void => {
