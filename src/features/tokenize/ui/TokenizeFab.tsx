@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/shared/ui';
 import { Toggle } from '@/shared/ui/Toggle';
 import { Icon } from '@/shared/icons/Icon';
-import type { TokenizePanelState } from '@/features/tokenize/types';
+import { useTokenize } from './useTokenize';
+import type { TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import styles from './TokenizeFab.module.css';
 
 type TokenizeKey = 'enabled' | 'showStatus' | 'showFrequency';
@@ -20,9 +21,8 @@ const TOGGLE_ITEMS: readonly ToggleItem[] = [
 ];
 
 export interface TokenizeFabProps {
-  readonly state: TokenizePanelState;
-  /** Toggle one of the three tokenize keys. */
-  readonly onToggle: (key: TokenizeKey) => void;
+  /** Optional external tokenize store to sync with. */
+  readonly store?: TokenizeStateStore;
   /** Optional callback to open the dictionary panel. */
   readonly onOpenDictionary?: () => void;
   /** Optional additional class name. */
@@ -36,7 +36,8 @@ export interface TokenizeFabProps {
  * - Clicking the FAB opens a panel with toggles for tokenize, status, and frequency.
  * - Clicking outside the panel closes it.
  */
-export function TokenizeFab({ state, onToggle, onOpenDictionary, className }: TokenizeFabProps): React.JSX.Element {
+export function TokenizeFab({ store, onOpenDictionary, className }: TokenizeFabProps): React.JSX.Element {
+  const { state, onToggle } = useTokenize({ store });
   const [isOpen, setIsOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement | null>(null);
 
