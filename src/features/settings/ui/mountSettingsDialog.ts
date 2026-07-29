@@ -1,25 +1,80 @@
 /**
  * mountSettingsDialog — mounts the SettingsDialog React component into a fixed
- * overlay host appended to `document.body`.
+ * overlay host inside an open Shadow DOM root.
  *
- * Follows the same pattern as mountCardCreatorDialog (ADR-022/026): a
- * full-viewport `position: fixed` host with a high z-index so the dialog
- * floats above the page. The host is NOT inside the orbital badge's Shadow
- * DOM — CSS module styles from SettingsDialog.module.css are injected into
- * `document.head` by Vite and only apply in the light DOM.
- *
- * The orbital badge's single-click handler calls `open()` / `close()` to
- * toggle the dialog inline (visually center-screen, same as the old vanilla
- * panel). Tokenize state + callbacks are bridged from the badge options.
+ * Uses `mountReactShadow` to get CSS isolation, token/component CSS injection,
+ * `ShadowThemeProvider` for theme, and automatic fullscreen re-parenting.
  */
-import { createRoot, type Root } from 'react-dom/client';
 import { createElement, type ReactElement } from 'react';
+import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { SettingsDialog } from './SettingsDialog';
-import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/lib/themeTokens';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { Settings } from '@/entities/media';
+
+import cardCreatorSettingsPanelCss from '@/features/settings/ui/CardCreatorSettingsPanel.module.css?inline';
+import dictionaryPopupSettingsPanelCss from '@/features/settings/ui/DictionaryPopupSettingsPanel.module.css?inline';
+import multiSelectCss from '@/features/settings/ui/MultiSelect.module.css?inline';
+import navClusterSettingsPanelCss from '@/features/settings/ui/NavClusterSettingsPanel.module.css?inline';
+import settingsDialogCss from '@/features/settings/ui/SettingsDialog.module.css?inline';
+import subtitleBlockSettingsPanelCss from '@/features/settings/ui/SubtitleBlockSettingsPanel.module.css?inline';
+import subtitlePreviewCss from '@/features/settings/ui/SubtitlePreview.module.css?inline';
+import subtitleStylePanelCss from '@/features/settings/ui/SubtitleStylePanel.module.css?inline';
+
+import colorCustomizationCss from '@/features/theme/ui/ColorCustomization.module.css?inline';
+import contrastBadgesCss from '@/features/theme/ui/ContrastBadges.module.css?inline';
+import modeCardsCss from '@/features/theme/ui/ModeCards.module.css?inline';
+import themeImportExportCss from '@/features/theme/ui/ThemeImportExport.module.css?inline';
+import themePanelCss from '@/features/theme/ui/ThemePanel.module.css?inline';
+import themePreviewCss from '@/features/theme/ui/ThemePreview.module.css?inline';
+
+import ttsVoiceManagerPanelCss from '@/features/tts/ui/TtsVoiceManagerPanel.module.css?inline';
+
+import dropzoneCss from '@/features/dictionary/ui/Dropzone.module.css?inline';
+import importProgressCss from '@/features/dictionary/ui/ImportProgress.module.css?inline';
+import resourceCardCss from '@/features/dictionary/ui/ResourceCard.module.css?inline';
+import resourcesPanelCss from '@/features/dictionary/ui/ResourcesPanel.module.css?inline';
+
+import iconCss from '@/shared/icons/Icon.module.css?inline';
+
+import accordionCss from '@/shared/ui/Accordion.module.css?inline';
+import alertCss from '@/shared/ui/Alert.module.css?inline';
+import badgeCss from '@/shared/ui/Badge.module.css?inline';
+import bottomSheetCss from '@/shared/ui/BottomSheet.module.css?inline';
+import buttonCss from '@/shared/ui/Button.module.css?inline';
+import cardCss from '@/shared/ui/Card.module.css?inline';
+import checkboxCss from '@/shared/ui/Checkbox.module.css?inline';
+import checkboxGroupCss from '@/shared/ui/CheckboxGroup.module.css?inline';
+import dialogCss from '@/shared/ui/Dialog.module.css?inline';
+import drawerCss from '@/shared/ui/Drawer.module.css?inline';
+import emptyStateCss from '@/shared/ui/EmptyState.module.css?inline';
+import errorBoundaryCss from '@/shared/ui/ErrorBoundary.module.css?inline';
+import formGroupCss from '@/shared/ui/FormGroup.module.css?inline';
+import headerCss from '@/shared/ui/Header.module.css?inline';
+import hintIconCss from '@/shared/ui/HintIcon.module.css?inline';
+import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
+import inputCss from '@/shared/ui/Input.module.css?inline';
+import inputFieldCss from '@/shared/ui/InputField.module.css?inline';
+import labelCss from '@/shared/ui/Label.module.css?inline';
+import listItemCss from '@/shared/ui/ListItem.module.css?inline';
+import navItemCss from '@/shared/ui/NavItem.module.css?inline';
+import progressCss from '@/shared/ui/Progress.module.css?inline';
+import radioCss from '@/shared/ui/Radio.module.css?inline';
+import radioGroupCss from '@/shared/ui/RadioGroup.module.css?inline';
+import searchFieldCss from '@/shared/ui/SearchField.module.css?inline';
+import searchableSelectCss from '@/shared/ui/SearchableSelect.module.css?inline';
+import selectCss from '@/shared/ui/Select.module.css?inline';
+import shortcutInputCss from '@/shared/ui/ShortcutInput.module.css?inline';
+import sidebarCss from '@/shared/ui/Sidebar.module.css?inline';
+import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
+import sliderCss from '@/shared/ui/Slider.module.css?inline';
+import spinnerCss from '@/shared/ui/Spinner.module.css?inline';
+import tabsCss from '@/shared/ui/Tabs.module.css?inline';
+import textareaCss from '@/shared/ui/Textarea.module.css?inline';
+import toggleCss from '@/shared/ui/Toggle.module.css?inline';
+import tooltipCss from '@/shared/ui/Tooltip.module.css?inline';
 
 export interface SettingsDialogMountOptions {
   /** Called when the dialog closes (badge click-outside / Escape / close btn). */
@@ -33,68 +88,92 @@ export interface SettingsDialogMountController {
   unmount: () => void;
 }
 
+const SHADOW_CSS = [
+  cardCreatorSettingsPanelCss,
+  dictionaryPopupSettingsPanelCss,
+  multiSelectCss,
+  navClusterSettingsPanelCss,
+  settingsDialogCss,
+  subtitleBlockSettingsPanelCss,
+  subtitlePreviewCss,
+  subtitleStylePanelCss,
+
+  colorCustomizationCss,
+  contrastBadgesCss,
+  modeCardsCss,
+  themeImportExportCss,
+  themePanelCss,
+  themePreviewCss,
+
+  ttsVoiceManagerPanelCss,
+
+  dropzoneCss,
+  importProgressCss,
+  resourceCardCss,
+  resourcesPanelCss,
+
+  iconCss,
+
+  accordionCss,
+  alertCss,
+  badgeCss,
+  bottomSheetCss,
+  buttonCss,
+  cardCss,
+  checkboxCss,
+  checkboxGroupCss,
+  dialogCss,
+  drawerCss,
+  emptyStateCss,
+  errorBoundaryCss,
+  formGroupCss,
+  headerCss,
+  hintIconCss,
+  iconButtonCss,
+  inputCss,
+  inputFieldCss,
+  labelCss,
+  listItemCss,
+  navItemCss,
+  progressCss,
+  radioCss,
+  radioGroupCss,
+  searchFieldCss,
+  searchableSelectCss,
+  selectCss,
+  shortcutInputCss,
+  sidebarCss,
+  skeletonCss,
+  sliderCss,
+  spinnerCss,
+  tabsCss,
+  textareaCss,
+  toggleCss,
+  tooltipCss,
+];
+
+/**
+ * Mount the Settings dialog into a fixed full-viewport shadow host.
+ * Returns a controller to open/close + unmount.
+ */
 export function mountSettingsDialog(
   options: SettingsDialogMountOptions,
 ): SettingsDialogMountController {
-  const host = document.createElement('div');
-  host.id = 'cell-settings-dialog-host';
-  host.style.cssText =
+  const mount = mountReactShadow(createElement('div'), {
+    parent: document.body,
+    position: 'fixed',
+    layer: 4,
+    reparentOnFullscreen: true,
+    css: SHADOW_CSS,
+  });
+
+  mount.host.id = 'cell-settings-dialog-host';
+  mount.host.className = 'js-cell-settings-dialog-host';
+  mount.host.style.cssText =
     'position:fixed;inset:0;width:auto;height:auto;box-sizing:border-box;margin:0;padding:0;border:none;background:transparent;color:var(--color-text);font-size:var(--font-size-base);line-height:normal;isolation:isolate;z-index:var(--z-overlay-settings);pointer-events:none;overflow:hidden;transform:none;';
-  document.body.appendChild(host);
-
-  // Fullscreen support — same as mountCardCreatorDialog (ADR-026).
-  const moveThemeStyleInto = (parent: Element): void => {
-    const style = document.getElementById(THEME_STYLE_ID);
-    if (style && style.parentElement !== parent) parent.appendChild(style);
-  };
-  const restoreThemeStyleToHead = (): void => {
-    const style = document.getElementById(THEME_STYLE_ID);
-    if (style && style.parentElement !== document.head) document.head.appendChild(style);
-  };
-  const onFullscreenChange = (): void => {
-    const fsEl = document.fullscreenElement;
-    if (fsEl && fsEl !== host.parentElement) {
-      fsEl.appendChild(host);
-      moveThemeStyleInto(fsEl);
-    } else if (!fsEl && host.parentElement !== document.body) {
-      document.body.appendChild(host);
-      restoreThemeStyleToHead();
-    }
-  };
-  document.addEventListener('fullscreenchange', onFullscreenChange);
-  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-  // Ensure theme tokens <style> exists (ADR-022).
-  let tokenStyleCleanup: (() => void) | null = null;
-  if (!document.getElementById(THEME_STYLE_ID)) {
-    const throwaway = document.createElement('div');
-    tokenStyleCleanup = injectThemeTokens(throwaway);
-  }
-
-  // Sync data-theme from document.body (the orbital badge sets data-theme on
-  // its shadow root; for the light-DOM host we read the stored theme mode).
-  const themeSyncCleanup = syncElementTheme(host, document.body);
-
-  // ADR-061: Disable focus outlines + tap highlight + :active color changes
-  // inside the dialog host. User requested no blue focus ring / blue icon
-  // color on touch/click. Scoped to this host only — popup/sidepanel keep
-  // their focus styles for keyboard accessibility.
-  const focusOverride = document.createElement('style');
-  focusOverride.textContent = [
-    `#${host.id} * { -webkit-tap-highlight-color: transparent; }`,
-    `#${host.id} *:focus, #${host.id} *:focus-visible { outline: none !important; }`,
-    `#${host.id} button:active, #${host.id} [role="switch"]:active { color: inherit !important; }`,
-  ].join('\n');
-  host.appendChild(focusOverride);
-
-  const rootEl = document.createElement('div');
-  rootEl.style.cssText =
-    'width:100%;height:100%;pointer-events:none;margin:0;padding:0;border:none;background:transparent;color:currentColor;font-size:var(--font-size-base);line-height:normal;';
-  host.appendChild(rootEl);
 
   let open = false;
   let settings: Settings | null = null;
-  let root: Root | null = createRoot(rootEl);
 
   // Load settings asynchronously + listen for external changes.
   void loadSettings().then((s) => {
@@ -111,23 +190,29 @@ export function mountSettingsDialog(
   onStorageChanged(onStorageChange);
 
   const render = (): void => {
-    if (!root || !settings) return;
-    rootEl.style.pointerEvents = open ? 'auto' : 'none';
-    root.render(
-      createElement(SettingsDialog, {
-        isOpen: open,
-        settings,
-        onChange: (next: Settings) => {
-          settings = next;
-          void saveSettings(next);
-          render();
+    if (!settings) return;
+    mount.host.style.pointerEvents = open ? 'auto' : 'none';
+    mount.root.render(
+      createElement(
+        ShadowThemeProvider,
+        {
+          container: mount.rootEl,
+          children: createElement(SettingsDialog, {
+            isOpen: open,
+            settings,
+            onChange: (next: Settings) => {
+              settings = next;
+              void saveSettings(next);
+              render();
+            },
+            onClose: () => {
+              open = false;
+              render();
+              options.onClose();
+            },
+          }) as ReactElement,
         },
-        onClose: () => {
-          open = false;
-          render();
-          options.onClose();
-        },
-      }) as ReactElement,
+      ) as ReactElement,
     );
   };
 
@@ -135,11 +220,6 @@ export function mountSettingsDialog(
 
   return {
     open: () => {
-      const fsEl = document.fullscreenElement;
-      if (fsEl && fsEl !== host.parentElement) {
-        fsEl.appendChild(host);
-        moveThemeStyleInto(fsEl);
-      }
       open = true;
       render();
     },
@@ -149,14 +229,8 @@ export function mountSettingsDialog(
     },
     isOpen: () => open,
     unmount: () => {
-      if (root) { root.unmount(); root = null; }
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
       removeOnStorageChangedListener(onStorageChange);
-      restoreThemeStyleToHead();
-      themeSyncCleanup?.();
-      tokenStyleCleanup?.();
-      host.remove();
+      mount.unmount();
     },
   };
 }
