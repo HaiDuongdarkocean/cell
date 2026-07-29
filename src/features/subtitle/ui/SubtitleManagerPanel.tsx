@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Button, Input } from '@/shared/ui';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
-import { SubtitlePanelItem, formatBytes, extractLanguageName } from './subtitleManagerPanel.legacy';
+import { SubtitlePanelItem, formatBytes, extractLanguageName } from './subtitlePanelModel';
 import styles from './SubtitleManagerPanel.module.css';
 
 export interface SubtitleManagerPanelProps {
