@@ -93,3 +93,13 @@
 - [x] `npm run typecheck` clean
 - [x] `npm run build` success
 - [x] Ready for `code-review-and-quality`
+
+## Verification (subagent + manual)
+
+- Đã chạy 4 `subagent_explore` song song cho Phase A, B, C, D theo `tasks/plan-verify-predictive-viewport-tokenize.md`.
+- Tổng hợp kết quả:
+  - Phase A: A1 PASS, A2 PARTIAL (thiếu test no-re-tokenize), A3 PASS → đã bổ sung test `prepareTokenBlock` không re-tokenize trong `textTokenizer.test.ts`, chạy lại xanh → A2 PASS.
+  - Phase B: B1/B2/B3 PASS.
+  - Phase C: C1/C2 PASS.
+  - Phase D: D1 NEEDS_MANUAL → em đã chạy `npm run typecheck`, `npm run test:unit -- --testPathPatterns tokenize`, `npm run build` xanh; D2 PASS; D3 PASS.
+- Manual test trên real article/fullscreen vẫn bị block bởi test Chrome profile, nên để `NEEDS_MANUAL`.

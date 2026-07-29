@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { tokenizeTextBlock, resolveTokenMetadata, getSentenceText } from './textTokenizer';
+import { tokenizeTextBlock, resolveTokenMetadata, getSentenceText, prepareTokenBlock } from './textTokenizer';
 import type { Token, TokenBlock } from '@/features/tokenize/types';
 
 describe('tokenizeTextBlock', () => {
@@ -139,5 +139,35 @@ describe('resolveTokenMetadata', () => {
     expect(tokens[0]).toMatchObject({ status: 'known', frequencyBand: 'core' });
     expect(tokens[1]).toMatchObject({ status: 'known', frequencyBand: 'core' });
     expect(tokens[2]).toMatchObject({ status: undefined, frequencyBand: undefined });
+  });
+});
+
+describe('prepareTokenBlock', () => {
+  it('tokenizes when block.tokens is undefined', () => {
+    const block = {
+      id: 'b1',
+      element: document.createElement('p'),
+      sourceNodes: [],
+      originalText: 'Hello world.',
+    } as unknown as TokenBlock;
+    prepareTokenBlock(block, 'en');
+    expect(block.tokens).toHaveLength(2);
+  });
+
+  it('does not re-tokenize when block.tokens is already set', () => {
+    const tokens: Token[] = [
+      { text: 'Hello', term: 'hello', start: 0, end: 5, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none' },
+      { text: 'world', term: 'world', start: 6, end: 11, isSeparator: false, sentenceIndex: 0, status: 'unknown', frequencyBand: 'none' },
+    ];
+    const block = {
+      id: 'b1',
+      element: document.createElement('p'),
+      sourceNodes: [],
+      originalText: 'completely different text',
+      tokens,
+    } as unknown as TokenBlock;
+    prepareTokenBlock(block, 'en');
+    expect(block.tokens).toBe(tokens);
+    expect(block.tokens).toHaveLength(2);
   });
 });
