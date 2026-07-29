@@ -1,7 +1,8 @@
 /** Subtitle UI — overlay, panel, manager, shortcuts, toast, UI helpers. */
 export * from './subtitleOverlay';
 export * from './subtitlePanel';
-export * from './subtitleManagerPanel';
+export * from './subtitleManagerPanel.legacy';
+export { SubtitleManagerPanel } from './SubtitleManagerPanel';
 export * from './subtitleShortcuts';
 export * from './subtitleToast';
 export * from './subtitleUI';

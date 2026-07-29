@@ -51,7 +51,8 @@ import type { OverlayConfig, OverlayStyleConfig } from '@/entities/subtitle';
 import type { BilingualCue, KeyboardShortcut, SrtCue, NavClusterSettings, SubtitleBlockSettings, Settings } from '@/entities/media';
 
 import type { AutoLoadSubtitlesPayload, SubtitleForOverlayResult } from '@/entities/message';
-import type { SubtitlePanelItem, SubtitleManagerPanel, ParsedFile } from '@/features/subtitle';
+import type { SubtitlePanelItem, ParsedFile } from '@/features/subtitle';
+import type { SubtitleManagerPanel } from '@/features/subtitle/ui/subtitleManagerPanel.legacy';
 
 // === Subtitle Overlay Integration ===
 // ponytail: minimal config — defaults sufficient for v1, settings wiring is phase 2
