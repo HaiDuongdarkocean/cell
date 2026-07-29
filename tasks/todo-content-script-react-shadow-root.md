@@ -573,7 +573,7 @@
     - `npm run build`
     - Manual: 3 sites
 
-- [ ] **T055 — Create `useDictionaryLookup` headless hook**
+- [x] **T055 — Create `useDictionaryLookup` headless hook**
   - **Phase:** 4a | **Lane:** E | **Scope:** M | **Depends on:** T054
   - **Files:** `src/features/dictionaryPopup/logic/useDictionaryLookup.ts`, `src/features/dictionaryPopup/ui/useDictionaryPanel.ts`, `src/features/dictionaryPopup/ui/popupDictionaryController.ts`
   - **AC:**
@@ -584,7 +584,7 @@
     - `npm run test:unit -- useDictionaryLookup`
     - `npm run typecheck`
 
-- [ ] **T056 — Create `useDictionaryToolbar` headless hook**
+- [x] **T056 — Create `useDictionaryToolbar` headless hook**
   - **Phase:** 4a | **Lane:** E | **Scope:** M | **Depends on:** T054
   - **Files:** `src/features/dictionaryPopup/logic/useDictionaryToolbar.ts`, `src/features/dictionaryPopup/ui/useDictionaryPanel.ts`, `src/features/dictionaryPopup/ui/useCandidate.ts`
   - **AC:**
@@ -593,7 +593,7 @@
   - **Verification:**
     - `npm run test:unit -- useDictionaryToolbar`
 
-- [ ] **T057 — Refactor `CandidateView` to pure presentation**
+- [x] **T057 — Refactor `CandidateView` to pure presentation**
   - **Phase:** 4a | **Lane:** E | **Scope:** M | **Depends on:** T055, T056
   - **Files:** `src/features/dictionaryPopup/ui/CandidateView.tsx`, `src/features/dictionaryPopup/ui/CandidateView.test.tsx`
   - **AC:**
@@ -602,7 +602,7 @@
   - **Verification:**
     - `npm run test:unit -- CandidateView`
 
-- [ ] **T058 — Refactor `DictionaryPanelView` to pure presentation**
+- [x] **T058 — Refactor `DictionaryPanelView` to pure presentation**
   - **Phase:** 4a | **Lane:** E | **Scope:** M | **Depends on:** T057
   - **Files:** `src/features/dictionaryPopup/ui/DictionaryPanelView.tsx`, `src/features/dictionaryPopup/ui/DictionaryPanelView.test.tsx`
   - **AC:**
@@ -611,7 +611,7 @@
   - **Verification:**
     - `npm run test:unit -- DictionaryPanelView`
 
-- [ ] **T059 — Create `AudioPanel.tsx`**
+- [x] **T059 — Create `AudioPanel.tsx`**
   - **Phase:** 4b | **Lane:** E | **Scope:** S | **Depends on:** T058
   - **Files:** `src/features/dictionaryPopup/ui/AudioPanel.tsx`, `src/features/dictionaryPopup/ui/AudioPanel.test.tsx`
   - **AC:**
@@ -620,7 +620,7 @@
   - **Verification:**
     - `npm run test:unit -- AudioPanel`
 
-- [ ] **T060 — Create `ImagePanel.tsx`**
+- [x] **T060 — Create `ImagePanel.tsx`**
   - **Phase:** 4b | **Lane:** E | **Scope:** S | **Depends on:** T058
   - **Files:** `src/features/dictionaryPopup/ui/ImagePanel.tsx`, `src/features/dictionaryPopup/ui/ImagePanel.test.tsx`
   - **AC:**
@@ -629,7 +629,7 @@
   - **Verification:**
     - `npm run test:unit -- ImagePanel`
 
-- [ ] **T061 — Create `TranslatePanel.tsx`**
+- [x] **T061 — Create `TranslatePanel.tsx`**
   - **Phase:** 4b | **Lane:** E | **Scope:** S | **Depends on:** T058
   - **Files:** `src/features/dictionaryPopup/ui/TranslatePanel.tsx`, `src/features/dictionaryPopup/ui/TranslatePanel.test.tsx`
   - **AC:**
@@ -638,7 +638,7 @@
   - **Verification:**
     - `npm run test:unit -- TranslatePanel`
 
-- [ ] **T062 — Create `LinksPanel.tsx`**
+- [x] **T062 — Create `LinksPanel.tsx`**
   - **Phase:** 4b | **Lane:** E | **Scope:** S | **Depends on:** T058
   - **Files:** `src/features/dictionaryPopup/ui/LinksPanel.tsx`, `src/features/dictionaryPopup/ui/LinksPanel.test.tsx`
   - **AC:**
@@ -647,7 +647,7 @@
   - **Verification:**
     - `npm run test:unit -- LinksPanel`
 
-- [ ] **T063 — Create `DictionaryToolbar.tsx`**
+- [x] **T063 — Create `DictionaryToolbar.tsx`**
   - **Phase:** 4b | **Lane:** E | **Scope:** M | **Depends on:** T059–T062
   - **Files:** `src/features/dictionaryPopup/ui/DictionaryToolbar.tsx`, `src/features/dictionaryPopup/ui/DictionaryToolbar.module.css`, `src/features/dictionaryPopup/ui/DictionaryToolbar.test.tsx`
   - **AC:**
@@ -657,7 +657,7 @@
     - `npm run test:unit -- DictionaryToolbar`
     - Manual: toggle tabs, see badges
 
-- [ ] **T064 — Wire `DictionaryToolbar` into `DictionaryTab`**
+- [x] **T064 — Wire `DictionaryToolbar` into `DictionaryTab`**
   - **Phase:** 4b | **Lane:** E/H | **Scope:** M | **Depends on:** T063
   - **Files:** `src/features/universalPanel/tabs/DictionaryTab.tsx`, `src/features/universalPanel/tabs/DictionaryTab.test.tsx`
   - **AC:**
