@@ -13,6 +13,7 @@ import type {
   WordStatus,
   AudioItem,
   ImageItem,
+  ExternalDictLink,
 } from '../types';
 import type { DefinitionSelection } from './popupContent';
 import type { PopupCardCreatorPrefill } from './popupDictionaryController';
@@ -48,7 +49,7 @@ export interface UseCandidateReturn {
   readonly toggleImage: (id: string, selected: boolean) => void;
   readonly removeImageItem: (id: string) => void;
   readonly selectedImageCount: number;
-  readonly links: readonly import('../types').ExternalDictLink[];
+  readonly links: readonly ExternalDictLink[];
   readonly selectedLinkCount: number;
   readonly translation: string;
   readonly isTranslating: boolean;
