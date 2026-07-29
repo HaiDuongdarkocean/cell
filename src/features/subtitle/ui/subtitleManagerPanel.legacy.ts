@@ -1,20 +1,19 @@
 /**
- * Item displayed in the Subtitle Manager Panel (ADR-015).
- * Can be auto-detected, imported, or machine-translated, target or native.
+ * Legacy vanilla Subtitle Manager Panel (ADR-015 / ADR-027).
+ *
+ * The shared panel item model and pure helpers have moved to
+ * `subtitlePanelModel.ts` so the React manager can use them without pulling
+ * in the legacy DOM builder.
  */
 import { ICON_CATALOG } from '@/shared/icons';
 import { mountToWatchVideo } from './netflixPlayback';
+import {
+  type SubtitlePanelItem,
+  formatBytes,
+  extractLanguageName,
+} from './subtitlePanelModel';
 
-export interface SubtitlePanelItem {
-  readonly id: string;
-  readonly name: string; // Display name (e.g. "English #2" or "my-subtitle")
-  readonly format: string; // srt/vtt/ass
-  readonly size?: number; // bytes
-  readonly source: 'auto' | 'imported' | 'translated';
-  readonly role: 'target' | 'native';
-  readonly index: number; // position within role section
-  readonly isAsr?: boolean; // ADR-020: YouTube auto-generated captions badge
-}
+export { type SubtitlePanelItem } from './subtitlePanelModel';
 
 /**
  * Subtitle Manager Panel API (ADR-015 / ADR-027).
@@ -338,16 +337,4 @@ function createSection(
   section.appendChild(body);
 
   return { header, body, count, label: labelEl, chevron };
-}
-
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-}
-
-export function extractLanguageName(name: string): string {
-  // "English #2" → "English"; "my-subtitle" → ""
-  const match = name.match(/^([A-Za-z\s]+)\s*#/);
-  return match ? match[1].trim() : '';
 }

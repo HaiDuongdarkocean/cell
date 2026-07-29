@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SubtitleManagerPanel } from './SubtitleManagerPanel';
-import type { SubtitlePanelItem } from './subtitleManagerPanel.legacy';
+import type { SubtitlePanelItem } from './subtitlePanelModel';
 
 const targetItems: SubtitlePanelItem[] = [
   { id: 'en-1', name: 'English #1', format: 'srt', source: 'auto', role: 'target', index: 0, size: 1024 },

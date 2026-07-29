@@ -36,8 +36,8 @@ export interface SubtitlePanelsProps {
   onPlayPause: () => void;
   onToggleCollapsed: () => void;
   manager?: {
-    targetItems: import('./subtitleManagerPanel.legacy').SubtitlePanelItem[];
-    nativeItems: import('./subtitleManagerPanel.legacy').SubtitlePanelItem[];
+    targetItems: import('./subtitlePanelModel').SubtitlePanelItem[];
+    nativeItems: import('./subtitlePanelModel').SubtitlePanelItem[];
     targetActiveIndex: number;
     nativeActiveIndex: number;
     onSelect: (role: 'target' | 'native', index: number) => void;
