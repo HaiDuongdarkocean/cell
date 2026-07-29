@@ -72,5 +72,7 @@
 
 ## Final Checkpoint
 
-- [ ] All success criteria in `docs/specs/spec-badge-pointer-dictionary-trigger.md` met.
+- [x] Reconcile success criteria / ADR with v17 always-on implementation
+  - Updated `docs/adr/055-orbital-dictionary-pointer.md` D2/D5/D6 to match React implementation and always-on design.
+  - Updated `docs/specs/spec-badge-pointer-dictionary-trigger.md` project structure, code style, testing strategy, boundaries, success criteria.
 - [ ] PR ready with clean commit message and diff review.
