@@ -7,7 +7,7 @@
 //
 // State: chỉ còn valueMs (number). Không còn mode/lastActionAt.
 
-import { createOffsetSection, type OffsetSectionApi, type OffsetPanelHandlers } from './subtitleOffsetPanel';
+import { createOffsetSection, type OffsetSectionApi, type OffsetPanelHandlers } from './subtitleOffsetPanel.legacy';
 import {
   parseOffsetInput,
   clampOffsetMs,
