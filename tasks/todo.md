@@ -68,7 +68,7 @@
   - [x] `npm run build` success.
   - [x] `npx vite build --mode development` success.
   - [x] Manual design-system showcase passes (drag, preset change, tap) — verified via unit tests; live docs/design-system build has a pre-existing `MockCuesProvider` runtime error unrelated to the badge (the `OrbitalBadge` unit tests now cover single/double/triple tap and preset change).
-  - [ ] Manual test passes on text article and fullscreen video.
+  - [~] Manual test passes on text article and fullscreen video — chưa chạy trong môi trường này vì content script cần extension reload/permission thật; đã verify qua unit test `webTextDictionaryController.test.ts`.
 
 ## Final Checkpoint
 
