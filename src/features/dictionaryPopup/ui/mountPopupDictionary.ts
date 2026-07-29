@@ -6,8 +6,6 @@ import { getMountParent } from './popupGeometry';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
 import type { LookupResult, PopupCardCreatorPrefill, WordStatus, PopupTab } from '@/features/dictionaryPopup/types';
 
-import tokensCss from '@/shared/styles/tokens.css?raw';
-import componentsCss from '@/shared/styles/components.css?inline';
 import popupDictionaryCss from './PopupDictionary.module.css?inline';
 import dictionaryPanelViewCss from './DictionaryPanelView.module.css?inline';
 import searchFieldCss from '@/shared/ui/SearchField.module.css?inline';
@@ -158,7 +156,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
   const render = (): void => {
     if (destroyed) return;
     mount.root.render(
-      createElement(ShadowThemeProvider, { host: mount.host, children: createElement(PopupDictionary, buildProps()) }),
+      createElement(ShadowThemeProvider, { container: mount.rootEl, children: createElement(PopupDictionary, buildProps()) }),
     );
   };
 
@@ -168,8 +166,6 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
       parent: getMountParent(),
       position: 'fixed',
       css: [
-        tokensCss,
-        componentsCss,
         popupDictionaryCss,
         dictionaryPanelViewCss,
         searchFieldCss,
@@ -183,8 +179,8 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     },
   );
 
-  // Re-render after mount with the actual host so ShadowThemeProvider can set
-  // the theme container.
+  // Re-render after mount with the actual container so ShadowThemeProvider can set
+  // the theme boundary.
   render();
 
   mount.host.classList.add('js-cell-popup-host');

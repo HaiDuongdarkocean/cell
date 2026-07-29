@@ -26,6 +26,8 @@ export interface MountShadowOptions {
 
 export interface ShadowMount {
   host: HTMLElement;
+  /** Inner container inside the shadow root where the React tree is rendered. */
+  rootEl: HTMLElement;
   shadow: ShadowRoot;
   root: ReturnType<typeof createRoot>;
   unmount: () => void;
@@ -72,6 +74,7 @@ export function mountReactShadow(
 
   return {
     host,
+    rootEl,
     shadow,
     root,
     unmount: () => {

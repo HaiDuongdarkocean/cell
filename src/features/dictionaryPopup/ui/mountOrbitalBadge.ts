@@ -4,8 +4,6 @@ import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider
 import { OrbitalBadge, type OrbitalBadgeProps, type OrbitalBadgeHandle } from './OrbitalBadge';
 import type { UniversalPanelMountController } from '@/features/universalPanel/UniversalPanelController';
 import type { PointerPreset, Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
-import tokensCss from '@/shared/styles/tokens.css?raw';
-import componentsCss from '@/shared/styles/components.css?inline';
 import orbitalBadgeCss from './OrbitalBadge.module.css?inline';
 
 export interface OrbitalBadgeMountOptions {
@@ -74,12 +72,12 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   const badgeElement = (preset: PointerPreset) =>
     createElement(OrbitalBadge, { ...buildBadge(preset), ref: badgeRef });
 
-  // First mount without ShadowThemeProvider so we can pass the host after
-  // mountReactShadow returns it. We re-render with the provider immediately.
+  // First mount without ShadowThemeProvider so we can pass the inner container
+  // after mountReactShadow returns it. We re-render with the provider immediately.
   const mount = mountReactShadow(badgeElement(initialPreset), {
     parent: document.body,
     position: 'fixed',
-    css: [tokensCss, componentsCss, orbitalBadgeCss],
+    css: [orbitalBadgeCss],
   });
 
   mount.host.classList.add('js-cell-orbital-badge-host');
@@ -88,7 +86,7 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
   mount.root.render(
     createElement(
       ShadowThemeProvider,
-      { host: mount.host, children: badgeElement(initialPreset) },
+      { container: mount.rootEl, children: badgeElement(initialPreset) },
     ),
   );
 

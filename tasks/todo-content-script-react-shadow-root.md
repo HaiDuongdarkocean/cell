@@ -330,15 +330,21 @@
     - Chrome DevTools MCP: YouTube fullscreen
     - Update ADR if NO-GO
 
-- [ ] **T032 — Update `tokens.css` / `tokens.ts` generation for `:host`**
+- [x] **T032 — Update `tokens.css` / `tokens.ts` generation for `:host`**
   - **Phase:** 1b | **Lane:** A/B | **Scope:** S | **Depends on:** T002, T021
-  - **Files:** `scripts/generate-tokens.js`, `src/shared/styles/tokens.css` (gen)
+  - **Files:** `scripts/generate-tokens.js`, `src/shared/styles/tokens.css` (gen), `src/shared/lib/shadowRoot/ShadowThemeProvider.tsx`, `src/shared/lib/shadowRoot/mountReactShadow.ts`, `src/shared/lib/shadowRoot/injectShadowCss.ts`
   - **AC:**
-    - Generated CSS works with `:root` → `:host` replacement.
-    - Static block on `:root`; color on `[data-theme]`.
+    - Generated `tokens.css` has `:root` for static + composite tokens; `[data-theme="light"]` and `[data-theme="dark"]` for color + component tokens.
+    - `injectShadowCss` replaces `:root` → `:host` and leaves `[data-theme]` selectors to match the inner container.
+    - `ShadowThemeProvider` applies `data-theme`/color vars to the inner `rootEl` so `[data-theme]` selectors match inside the shadow root.
+    - No `:root` references remain in the injected string after replacement.
   - **Verification:**
-    - `node scripts/generate-tokens.js`
-    - `rg ':root' src/shared/styles/tokens.css`
+    - `node scripts/generate-tokens.js` ✓
+    - `rg ':root' src/shared/styles/tokens.css` shows only the static `:root` blocks (main + touch target) ✓
+    - `npm run typecheck` ✓
+    - `npm run test:unit` ✓
+    - `npm run build` ✓
+    - `npx vite build --mode development` ✓
 
 - [ ] **T033 — Verify shadow mount on real pages**
   - **Phase:** 1c | **Lane:** Q | **Scope:** M | **Depends on:** T024–T032

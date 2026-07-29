@@ -27,8 +27,8 @@ export interface TokenizeFabMount {
  * Mount the `TokenizeFab` React component into an open shadow root host.
  *
  * - Fixed position on the right viewport edge, below the orbital badge.
- * - Re-renders with `ShadowThemeProvider` so the host `data-theme` follows
- *   the selected theme and tokens resolve inside the shadow boundary.
+ * - Re-renders with `ShadowThemeProvider` so the inner container `data-theme`
+ *   follows the selected theme and tokens resolve inside the shadow boundary.
  * - Re-parents the host onto `document.fullscreenElement` when the page
  *   enters fullscreen, and back to `document.body` on exit, so it survives
  *   Netflix/YouTube fullscreen video.
@@ -50,7 +50,7 @@ export function mountTokenizeFab(options: MountTokenizeFabOptions): TokenizeFabM
   mount.root.render(
     createElement(
       ShadowThemeProvider,
-      { host: mount.host, children: fabElement() },
+      { container: mount.rootEl, children: fabElement() },
     ),
   );
 

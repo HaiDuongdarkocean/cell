@@ -236,12 +236,13 @@ async function main() {
     throw new Error(`WCAG AA contrast failures:\n${contrastFailures.join('\n')}`);
   }
 
-  // componentBlock is duplicated in [data-theme="dark"] because CSS custom
-  // properties resolve at the element where they are DECLARED, not where they
-  // are used. --button-bg: var(--color-primary) in :root freezes to light's
-  // --color-primary. Re-declaring in [data-theme="dark"] forces re-resolution
-  // with dark colors. Critical for Shadow DOM where data-theme is on a
-  // descendant of :root (shadow host), not on :root itself.
+  // Static tokens live on :root / :host. Color + component tokens live inside
+  // a [data-theme] boundary because component tokens reference color vars, and
+  // CSS custom properties resolve at the element where they are DECLARED. When
+  // a shadow root sets data-theme on its inner container, the [data-theme]
+  // selector matches that container and component tokens re-resolve against the
+  // correct palette. This also means [data-theme="light"] is explicit, not just
+  // a fallback for the absence of [data-theme="dark"].
   const css = `/* ============================================================
    Design System — Theme Tokens
    Auto-generated from tokens.json. DO NOT EDIT MANUALLY.
@@ -249,16 +250,19 @@ async function main() {
    ============================================================ */
 
 :root {
-${lightColorBlock}
 ${staticBlock}
 ${compositeBlock}
-${componentBlock}
 }
 
 /* Semantic touch target — adapts to primary pointer type. */
 :root { --touch-target: var(--touch-target-desktop); }
 @media (pointer: coarse) {
   :root { --touch-target: var(--touch-target-mobile); }
+}
+
+[data-theme="light"] {
+${lightColorBlock}
+${componentBlock}
 }
 
 [data-theme="dark"] {

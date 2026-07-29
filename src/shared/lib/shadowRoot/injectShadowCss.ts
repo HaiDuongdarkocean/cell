@@ -12,11 +12,11 @@ const SHADOW_STYLE_MARKER = 'data-cell-shadow-css';
  * Inject the design-token layer, legacy utility layer, and any per-component
  * CSS into a shadow root.
  *
- * `tokens.css` uses `:root` by default; in a shadow root we rewrite it to
- * `:host` so the variables apply to the shadow host instead of the document.
- *
- * The call is idempotent: multiple calls on the same shadow root only update
- * the single `<style>` element instead of appending duplicates.
+ * `tokens.css` uses `:root` for static tokens and `[data-theme]` for color +
+ * component tokens. In a shadow root we rewrite `:root` to `:host` so static
+ * tokens apply to the shadow host. `[data-theme]` selectors are left unchanged
+ * so they match the inner container (set by `ShadowThemeProvider`) and
+ * component tokens resolve against the active palette.
  *
  * Returns a cleanup function that removes the `<style>` element.
  */
