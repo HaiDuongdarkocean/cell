@@ -748,7 +748,8 @@
     - [x] T069.8: Remove `USE_LEGACY_POPUP_DICTIONARY` flag
     - [x] T069.3: Add `onStatusChange` callback through React popup
     - [x] T069.4: Add `onCandidateChange` callback through React popup
-    - [ ] T069.5: Migrate `webTextDictionaryController.ts` to call `mountPopupDictionary`
+    - [x] T069.5a: Add controlled-mode props + stateful `mountPopupDictionary` (setLoading / setResult / setStatus / setOptions)
+    - [ ] T069.5b: Migrate `webTextDictionaryController.ts` to call `mountPopupDictionary`
     - [ ] T069.6: Remove legacy `popupDictState` from controller
     - [ ] T069.7: Delete legacy popup UI files and their tests
     - [ ] T069.9: Update architecture docs
