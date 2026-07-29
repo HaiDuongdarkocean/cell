@@ -1,6 +1,6 @@
 import { findTextBlocks, findTextBlocksInNodes } from '@/features/tokenize/logic/tokenizeBlock';
 import { TokenizeCache } from '@/features/tokenize/logic/tokenizeCache';
-import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
+import { TokenizeScheduler, PRIORITY_VIEWPORT, PRIORITY_PREPARE, PRIORITY_BUFFER } from '@/features/tokenize/logic/tokenizeScheduler';
 import { ViewportTracker } from '@/features/tokenize/logic/viewportTracker';
 import { resolveScrollPredictMargin, type ScrollDirection } from '@/features/tokenize/logic/scrollDirection';
 import { prepareTokenBlock, resolveTokenMetadata, getSentenceText } from '@/features/tokenize/logic/textTokenizer';
@@ -301,13 +301,13 @@ export async function createWebTokenizeController(
         // evicting distant offscreen blocks over the viewport blocks we are
         // actively binding.
         cache.set(block);
+        // Prepare tokens before binding. prepareBlock is a no-op if tokens are
+        // already set, so re-entry from scroll/mutation never re-tokenizes.
+        scheduler.schedule(() => prepareBlock(block), PRIORITY_PREPARE);
         // If the block is already bound (e.g. by eager tryBindVisible during a
         // mutation batch), skip scheduling a no-op bind task to keep the queue
         // short on low-end devices.
         if (stateStore.getState().enabled && !block.isBound) {
-          // bindVisibleBlock calls prepareBlock internally, so one task is
-          // enough; scheduling a separate prepare task causes it to run *after*
-          // bind because PRIORITY_VIEWPORT (0) sorts before PRIORITY_PREPARE (5).
           scheduler.schedule(() => bindVisibleBlock(block), PRIORITY_VIEWPORT);
         }
       },
