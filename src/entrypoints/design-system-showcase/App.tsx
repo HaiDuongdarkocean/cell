@@ -54,6 +54,8 @@ import { ShadowOverlayPoC } from './ShadowOverlayPoC';
 import { NavClusterPreview } from './NavClusterPreview';
 import { SubtitleBlockPreview } from './SubtitleBlockPreview';
 import { OrbitalBadgePreview } from './OrbitalBadgePreview';
+import { TokenizeFab } from '@/features/tokenize/ui/TokenizeFab';
+import type { TokenizePanelState } from '@/features/tokenize/types';
 import styles from './App.module.css';
 
 // Enable mock runtime messages for the design-system showcase so the popup
@@ -546,6 +548,24 @@ function PopupDictionaryPreview() {
   );
 }
 
+function TokenizeFabPreview() {
+  const [state, setState] = useState<TokenizePanelState>({
+    enabled: false,
+    showStatus: false,
+    showFrequency: false,
+  });
+
+  return (
+    <div className={styles.tokenizeFabPreview}>
+      <TokenizeFab
+        state={state}
+        onToggle={(key) => setState((s) => ({ ...s, [key]: !s[key] }))}
+        onOpenDictionary={() => { console.log('[TokenizeFab] Open dictionary'); }}
+      />
+    </div>
+  );
+}
+
 export function App() {
   const [mode, setMode] = useState<ShowcaseMode>('light');
 
@@ -604,6 +624,10 @@ export function App() {
 
         <Section title="Popup Dictionary">
           <PopupDictionaryPreview />
+        </Section>
+
+        <Section title="Tokenize FAB">
+          <TokenizeFabPreview />
         </Section>
 
         <Section title="Components">
