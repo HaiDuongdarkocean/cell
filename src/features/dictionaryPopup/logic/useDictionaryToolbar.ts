@@ -30,6 +30,8 @@ export interface UseDictionaryToolbarOptions {
   readonly sourceLang: string;
   /** Target language for translation. */
   readonly targetLang: string;
+  /** Default media tab to open when the result first appears. */
+  readonly defaultActiveTab?: PopupTab | null;
 }
 
 export interface UseDictionaryToolbarReturn {
@@ -84,9 +86,9 @@ function fillExternalDictLinks(
 }
 
 export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseDictionaryToolbarReturn {
-  const { result, contextSentence, sourceLang, targetLang } = options;
+  const { result, contextSentence, sourceLang, targetLang, defaultActiveTab } = options;
 
-  const [activeTab, setActiveTab] = useState<PopupTab | null>(null);
+  const [activeTab, setActiveTab] = useState<PopupTab | null>(defaultActiveTab ?? null);
   const [audioItems, setAudioItems] = useState<readonly AudioItem[]>([]);
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
@@ -122,9 +124,9 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
 
   // Reset tab + media data when the looked-up result changes.
   useEffect(() => {
-    setActiveTab(null);
+    setActiveTab(defaultActiveTab ?? null);
     resetMediaState();
-  }, [result?.term, result?.langCode, resetMediaState]);
+  }, [result?.term, result?.langCode, defaultActiveTab, resetMediaState]);
 
   const fetchAudio = useCallback((): Promise<readonly AudioItem[]> => {
     if (!result) return Promise.resolve([]);

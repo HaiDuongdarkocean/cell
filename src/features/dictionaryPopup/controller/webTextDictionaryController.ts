@@ -9,21 +9,29 @@
 // - Handles Card Creator / Quick Add actions from the popup.
 
 
-import type { LookupRequest, LookupResult, TriggerMode, WordStatus } from '../types';
-import type { FetchCommunityAudioResponse, FetchImagesResponse, AudioItem, ImageItem, TtsFetchAudioResponse } from '@/features/dictionaryPopup/types';
+import type {
+  LookupRequest,
+  LookupResult,
+  TriggerMode,
+  WordStatus,
+  FetchCommunityAudioResponse,
+  FetchImagesResponse,
+  AudioItem,
+  ImageItem,
+  TtsFetchAudioResponse,
+  PopupCardCreatorPrefill,
+  PopupCardCreatorAction,
+  OnCardCreatorActionResult,
+} from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import type { BilingualCue } from '@/entities/media';
-import type { PopupDictionaryState, PopupCardCreatorPrefill, PopupCardCreatorAction, PopupLineRect, OnCardCreatorActionResult } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import type { PopupLineRect } from '../ui/popupGeometry';
+import type { PopupAnchor, PopupSize } from '../ui/usePopupPosition';
 import {
-  createPopupDictionaryState,
-  showPopup,
-  showPopupLoading,
-  hidePopup,
-  appendCandidate,
-  updatePopupSettings,
-  updateStatus,
-  destroyPopup,
-} from '@/features/dictionaryPopup/ui/popupDictionaryController';
+  mountPopupDictionary,
+  type PopupDictionaryMountController,
+  type MountPopupDictionaryOptions,
+} from '../ui/mountPopupDictionary';
 import { WebTriggerController, type WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import {
   extractSentenceContext,
@@ -244,13 +252,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let video: HTMLVideoElement | undefined = deps.video;
   let getTargetCues: (() => readonly CueRange[]) | undefined = deps.getTargetCues;
 
-  let popupDictState: PopupDictionaryState = createPopupDictionaryState(
-    dpSettings,
-    ccSettings,
-    handlePopupCardCreatorAction,
-    handlePopupQuickAdd,
-    nativeLang,
-  );
+  let popupMount: PopupDictionaryMountController | null = null;
   let popupDictWasPlaying = false;
   const wordHighlight = createWordHighlight();
   const sentenceHighlight = createSentenceHighlight();
@@ -475,13 +477,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     if (popupDismissTimer) return; // already pending
     popupDismissTimer = setTimeout(() => {
       popupDismissTimer = null;
-      popupDictState = hidePopup(popupDictState);
-      wordHighlight.clear();
-      sentenceHighlight.clear();
-      currentHighlightTarget = null;
-      originalHighlightTarget = null;
-      currentPopupTokenId = null;
-      resumeVideoIfNeeded();
+      closePopup();
     }, POPUP_DISMISS_DELAY_MS);
   }
 
@@ -575,12 +571,13 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     getTargetCues = config.getTargetCues;
   }
 
-  function onPopupDismiss(dismissedState: PopupDictionaryState): void {
-    // User intentionally dismissed (Esc / click outside) — cancel any pending
-    // delayed dismiss, cancel any in-flight lookup, and clear immediately.
+  function onPopupDismiss(): void {
+    // User intentionally dismissed (Esc / click outside / close button) —
+    // mountPopupDictionary has already unmounted the React tree by the time
+    // this callback runs, so we only clear local references.
     cancelPendingDismiss();
     cancelInFlightLookup();
-    popupDictState = dismissedState;
+    popupMount = null;
     clearPopupTokenId();
     currentHighlightTarget = null;
     originalHighlightTarget = null;
@@ -590,12 +587,59 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     popupDictWasPlaying = false;
   }
 
+  function closePopup(): void {
+    popupMount?.destroy();
+    popupMount = null;
+    clearPopupTokenId();
+    currentHighlightTarget = null;
+    originalHighlightTarget = null;
+    wordHighlight.clear();
+    sentenceHighlight.clear();
+    resumeVideoIfNeeded();
+    popupDictWasPlaying = false;
+  }
+
+  function handlePopupSizeChange(size: PopupSize, sheetHeight: number): void {
+    const sheetHeightVh = Math.round((sheetHeight / window.innerHeight) * 100);
+    dpSettings = {
+      ...dpSettings,
+      popupWidthPx: size.width,
+      popupMaxHeightPx: size.maxHeight,
+      popupSheetHeightVh: Math.max(20, Math.min(95, sheetHeightVh)),
+    };
+    void sendMessage({
+      type: MESSAGE_TYPES.UPDATE_SETTINGS,
+      payload: {
+        settings: {
+          dictionaryPopup: dpSettings,
+        },
+      },
+    });
+  }
+
+  function handlePopupStatusChange(term: string, langCode: string, status: WordStatus): void {
+    deps.onStatusChange?.(term, langCode, status);
+    const token = currentPopupTokenId ? getTokenById(currentPopupTokenId) : null;
+    if (token) {
+      applyTokenStatus(token, status);
+      token.classList.add(POPUP_OPEN_CLASS);
+    } else if (currentHighlightTarget) {
+      applyTokenStatus(currentHighlightTarget, status);
+    }
+    const key = cacheKeyFor(term, langCode);
+    const cached = lookupCache.get(key);
+    if (cached && cached[0].status !== status) {
+      lookupCache.set(key, [{ ...cached[0], status }, ...cached.slice(1)]);
+    }
+  }
+
   function renderLookupResult(
     result: LookupResult,
     additional: readonly LookupResult[],
     anchorRect: DOMRect,
     request: LookupRequest,
     pointer?: WebTriggerPointer,
+    isResponseUpdate = false,
   ): void {
     pauseVideoIfNeeded();
     // A new lookup is taking over — cancel any pending delayed dismiss.
@@ -605,47 +649,75 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     const lineRect: PopupLineRect | null = currentHighlightTarget
       ? computeLineRect(currentHighlightTarget)
       : null;
-    popupDictState = showPopup(
-      popupDictState,
-      result,
-      {
-        anchor: {
-          top: anchorRect.top,
-          left: anchorRect.left,
-          right: anchorRect.right,
-          bottom: anchorRect.bottom + 4,
-        },
-        pointer: pointer ? { tip: { x: pointer.x, y: pointer.y }, badgeCenter: pointer.badgeCenter, badgeRadius: pointer.badgeRadius, pointerRadius: pointer.pointerRadius } : undefined,
-        lineRect,
-        contextSentence: request.contextSentence,
-        onDismiss: onPopupDismiss,
-        onStatusChange: (term, langCode, status) => {
-          deps.onStatusChange?.(term, langCode, status);
-          // If a visible block was rebound, re-apply the status and the
-          // popup-open pin to the same token so the status bar stays
-          // visible while the popup is still open.
-          const token = currentPopupTokenId ? getTokenById(currentPopupTokenId) : null;
-          if (token) {
-            applyTokenStatus(token, status);
-            token.classList.add(POPUP_OPEN_CLASS);
-          } else if (currentHighlightTarget) {
-            applyTokenStatus(currentHighlightTarget, status);
-          }
-          // Keep the in-memory cache in sync with status changes.
-          const key = cacheKeyFor(term, langCode);
-          const cached = lookupCache.get(key);
-          if (cached && cached[0].status !== status) {
-            lookupCache.set(key, [{ ...cached[0], status }, ...cached.slice(1)]);
-          }
-        },
-        onCandidateChange: (term: string) => {
-          expandHighlightForTerm(term);
-        },
-      },
-    );
-    for (const candidate of additional) {
-      popupDictState = appendCandidate(popupDictState, candidate, request.contextSentence);
+    const anchor: PopupAnchor = {
+      top: anchorRect.top,
+      left: anchorRect.left,
+      right: anchorRect.right,
+      bottom: anchorRect.bottom + 4,
+    };
+    const pointerHint = pointer
+      ? {
+          tip: { x: pointer.x, y: pointer.y },
+          badgeCenter: pointer.badgeCenter,
+          badgeRadius: pointer.badgeRadius,
+          pointerRadius: pointer.pointerRadius,
+        }
+      : undefined;
+
+    if (popupMount && !isResponseUpdate) {
+      // A fresh lookup (cache hit or new term) should re-anchor at the new
+      // target. The React mount is positioned on initial mount, so we destroy
+      // the old host and create a new one below.
+      popupMount.destroy();
+      popupMount = null;
     }
+
+    const perLang = dpSettings.defaultActiveTabPerLang?.[result.langCode];
+    const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
+
+    if (popupMount) {
+      // Cache-miss response arriving for the same mounted loading popup:
+      // feed the result in without destroying.
+      popupMount.setResult(result, additional);
+      popupMount.setOptions({
+        sourceLang: result.langCode,
+        targetLang: nativeLang || 'vi',
+      });
+    } else {
+      const options: MountPopupDictionaryOptions = {
+        anchor,
+        pointer: pointerHint,
+        lineRect,
+        langCode: result.langCode,
+        sourceLang: result.langCode,
+        targetLang: nativeLang || 'vi',
+        initialTerm: request.term,
+        contextSentence: request.contextSentence,
+        cursorOffset: request.cursorOffset,
+        initialResult: result,
+        initialCandidates: additional,
+        getTokenStatus: deps.getTokenStatus,
+        isLoading: false,
+        defaultActiveTab: defaultTab,
+        initialSize: { width: dpSettings.popupWidthPx, maxHeight: dpSettings.popupMaxHeightPx },
+        initialSheetHeight: Math.round(window.innerHeight * ((dpSettings.popupSheetHeightVh ?? 72) / 100)),
+        onClose: onPopupDismiss,
+        onSizeChange: handlePopupSizeChange,
+        onSendToCard: (prefill) => handlePopupCardCreatorAction('edit-card', prefill),
+        onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
+        onStatusChange: handlePopupStatusChange,
+        onCandidateChange: expandHighlightForTerm,
+      };
+      popupMount = mountPopupDictionary(options);
+    }
+
+    // Apply token status + popup-open pin to the looked-up token.
+    const token = currentHighlightTarget ? getTokenElement(currentHighlightTarget) : null;
+    if (token) {
+      setPopupTokenId(token);
+      applyTokenStatus(token, result.status);
+    }
+
     // Expand highlight if the winner is a phrase (e.g. "pick up"). The
     // original highlight covers only the single word the user hovered;
     // this extends it to cover the full matched phrase.
@@ -729,25 +801,66 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       return;
     }
 
-    // Show the popup shell immediately with a skeleton loading state (term +
-    // shimmer lines) so the user gets instant feedback on click/hover — no
-    // waiting for the IDB round-trip. When data arrives, renderLookupResult
-    // replaces the skeleton with real content at the same anchor (no jump).
+    // Mount a React loading shell immediately with the term + context so the
+    // user gets instant feedback on click/hover. When data arrives,
+    // renderLookupResult calls setResult on the same mount.
     const lineRect: PopupLineRect | null = currentHighlightTarget
       ? computeLineRect(currentHighlightTarget)
       : null;
-    popupDictState = showPopupLoading(popupDictState, request.term, {
-      anchor: {
-        top: anchorRect.top,
-        left: anchorRect.left,
-        right: anchorRect.right,
-        bottom: anchorRect.bottom + 4,
-      },
-      pointer: pointer ? { tip: { x: pointer.x, y: pointer.y }, badgeCenter: pointer.badgeCenter, badgeRadius: pointer.badgeRadius, pointerRadius: pointer.pointerRadius } : undefined,
+    const anchor: PopupAnchor = {
+      top: anchorRect.top,
+      left: anchorRect.left,
+      right: anchorRect.right,
+      bottom: anchorRect.bottom + 4,
+    };
+    const pointerHint = pointer
+      ? {
+          tip: { x: pointer.x, y: pointer.y },
+          badgeCenter: pointer.badgeCenter,
+          badgeRadius: pointer.badgeRadius,
+          pointerRadius: pointer.pointerRadius,
+        }
+      : undefined;
+
+    if (popupMount) {
+      popupMount.destroy();
+      popupMount = null;
+    }
+
+    const perLang = dpSettings.defaultActiveTabPerLang?.[request.langCode];
+    const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
+    const options: MountPopupDictionaryOptions = {
+      anchor,
+      pointer: pointerHint,
       lineRect,
+      langCode: request.langCode,
+      sourceLang: request.langCode,
+      targetLang: nativeLang || 'vi',
+      initialTerm: request.term,
       contextSentence: request.contextSentence,
-      onDismiss: onPopupDismiss,
-    });
+      cursorOffset: request.cursorOffset,
+      getTokenStatus: deps.getTokenStatus,
+      isLoading: true,
+      defaultActiveTab: defaultTab,
+      initialSize: { width: dpSettings.popupWidthPx, maxHeight: dpSettings.popupMaxHeightPx },
+      initialSheetHeight: Math.round(window.innerHeight * ((dpSettings.popupSheetHeightVh ?? 72) / 100)),
+      onClose: onPopupDismiss,
+      onSizeChange: handlePopupSizeChange,
+      onSendToCard: (prefill) => handlePopupCardCreatorAction('edit-card', prefill),
+      onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
+      onStatusChange: handlePopupStatusChange,
+      onCandidateChange: expandHighlightForTerm,
+    };
+    popupMount = mountPopupDictionary(options);
+
+    const lookupToken = getTokenElement(highlightTarget);
+    if (lookupToken) {
+      setPopupTokenId(lookupToken);
+      const localStatus = deps.getTokenStatus?.(request.term);
+      if (localStatus && localStatus !== 'unknown') {
+        applyTokenStatus(lookupToken, localStatus);
+      }
+    }
 
     void Promise.resolve(sendMessage({
       type: MESSAGE_TYPES.LOOKUP_REQUEST,
@@ -762,7 +875,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           const finalWinner = applyLocalStatusFallback(winner!, request.term);
           const finalData = finalWinner === winner ? data : [finalWinner, ...rest];
           setCachedResult(request.term, request.langCode, finalData);
-          renderLookupResult(finalWinner, finalWinner === winner ? rest : finalData.slice(1), anchorRect, request, pointer);
+          renderLookupResult(finalWinner, finalWinner === winner ? rest : finalData.slice(1), anchorRect, request, pointer, true);
         } else {
           console.warn('[web-text-dict] lookup failed', error);
         }
@@ -1172,15 +1285,17 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       return { stayOpen: true };
     }
 
-    // Standalone Card Creator dialog fallback.
+    // Standalone Card Creator dialog fallback — hide the popup immediately
+    // and open the dialog in the background.
+    closePopup();
     void openStandaloneCardCreator(action, prefill, fromSubtitle);
     return { stayOpen: false };
   }
 
   async function handlePopupQuickAdd(prefill: PopupCardCreatorPrefill): Promise<void> {
-    // Capture subtitle context BEFORE any await — onPopupDismiss clears
-    // currentHighlightTarget synchronously after this function is called.
+    // Capture subtitle context BEFORE any await / close.
     const fromSubtitle = isLookupFromSubtitle();
+    closePopup();
     const settings = await loadSettingsOrToast(deps.container);
     if (!settings) return;
     const freshCcSettings = settings.cardCreator;
@@ -1303,9 +1418,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   function destroy(): void {
     detach();
     cancelPendingDismiss();
-    popupDictState = destroyPopup(popupDictState);
-    resumeVideoIfNeeded();
-    popupDictWasPlaying = false;
+    closePopup();
     cardCreatorMount?.unmount();
     cardCreatorMount = null;
     wordHighlight.destroy();
@@ -1372,9 +1485,14 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     dpSettings = settings.dictionaryPopup;
     ccSettings = settings.cardCreator;
     nativeLang = settings.subtitleOverlayNativeLanguage ?? nativeLang;
-    popupDictState = updatePopupSettings(popupDictState, dpSettings, nativeLang);
-    popupDictState = { ...popupDictState, cardCreatorSettings: ccSettings };
     cardCreatorMount?.updateSettings(ccSettings);
+    if (popupMount) {
+      popupMount.setOptions({
+        targetLang: nativeLang,
+        initialSize: { width: dpSettings.popupWidthPx, maxHeight: dpSettings.popupMaxHeightPx },
+        initialSheetHeight: Math.round(window.innerHeight * ((dpSettings.popupSheetHeightVh ?? 72) / 100)),
+      });
+    }
     if (dpSettings.enabled) {
       attach(dpSettings.triggerMode);
     } else {
@@ -1384,11 +1502,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   }
 
   function syncStatus(term: string, status: WordStatus): void {
-    const active = popupDictState?.currentResult;
-    if (!active || popupDictState?.shell?.getContainer() == null) return;
-    const activeTerm = active.term;
-    if (activeTerm.toLowerCase() !== term.toLowerCase()) return;
-    popupDictState = updateStatus(popupDictState, status);
+    popupMount?.setStatus(term, status);
   }
 
   return {

@@ -157,7 +157,13 @@ function makePanelController(): jest.Mocked<NonNullable<WebTextDictionaryControl
 }
 
 beforeEach(() => {
-  mockSendMessage.mockReset();
+  mockSendMessage.mockReset().mockImplementation((message) => {
+    const msg = message as { type?: string };
+    if (msg.type === 'WORD_STATUS_SET') {
+      return Promise.resolve({ success: true } as unknown as never);
+    }
+    return Promise.resolve({} as unknown as never);
+  });
   document.body.innerHTML = '';
 });
 
@@ -288,16 +294,14 @@ describe('createWebTextDictionaryController', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    // Popup shell may exist (showPopupLoading creates it immediately for
-    // instant feedback), but it must be hidden after dismiss — the stale
-    // response must not re-show it.
+    // Popup host should be removed after the delayed destroy; no term should
+    // render from the stale response.
     const host = document.querySelector('.js-cell-popup-host');
     if (host && host.shadowRoot) {
-      const popup = host.shadowRoot.querySelector('.cell-popup');
-      expect(popup?.classList.contains('cell-popup--visible')).toBe(false);
+      const popup = host.shadowRoot.querySelector('[data-testid="popup-dictionary"]');
+      expect(popup).toBeNull();
     }
-    // No term rendered from the stale response.
-    const termEl = host && host.shadowRoot ? host.shadowRoot.querySelector('.js-cell-term') : null;
+    const termEl = host && host.shadowRoot ? host.shadowRoot.querySelector('[data-testid="dictionary-term"]') : null;
     expect(termEl?.textContent).not.toBe(result.term);
 
     ctrl.destroy();
@@ -323,10 +327,14 @@ describe('createWebTextDictionaryController', () => {
 
     // Click the status badge inside the popup to cycle unknown → tracking.
     const popupHost = document.querySelector('.js-cell-popup-host') as Element & { shadowRoot?: ShadowRoot };
-    const shadow = popupHost?.shadowRoot ?? document;
-    const statusBadge = shadow.querySelector('.js-cell-status') as HTMLButtonElement | null;
-    expect(statusBadge).not.toBeNull();
-    statusBadge!.click();
+    await waitFor(() => expect(popupHost).not.toBeNull());
+    const shadow = popupHost.shadowRoot!;
+    const statusBadge = await waitFor(() => {
+      const el = shadow.querySelector('[data-testid="dictionary-status-cycle"]') as HTMLButtonElement | null;
+      if (!el) throw new Error('status badge not found');
+      return el;
+    });
+    statusBadge.click();
 
     expect(onStatusChange).toHaveBeenCalledWith('take off', 'en', 'tracking');
     ctrl.destroy();
@@ -586,12 +594,20 @@ describe('createWebTextDictionaryController', () => {
 
     document.caretRangeFromPoint = original;
 
-    const host = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
-    expect(host).not.toBeNull();
-    const shadow = host?.shadowRoot;
-    const activeBtn = shadow?.querySelector('.js-cell-tab.btn--primary');
-    expect(activeBtn?.getAttribute('data-cell-tab')).toBe('image');
-    expect(shadow?.querySelector('.js-cell-panel[data-cell-panel="image"]')).not.toBeNull();
+    const host = await waitFor(() => {
+      const el = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
+      if (!el) throw new Error('popup host not found');
+      return el;
+    });
+    const shadow = host.shadowRoot!;
+    const activeBtn = await waitFor(() => {
+      const el = shadow.querySelector('[data-testid="dictionary-tab-image"].btn--primary');
+      if (!el) throw new Error('image tab not active');
+      return el;
+    });
+    expect(activeBtn).not.toBeNull();
+    expect(activeBtn.getAttribute('data-testid')).toBe('dictionary-tab-image');
+    await waitFor(() => expect(shadow.querySelector('[data-testid="dictionary-image-panel"]')).not.toBeNull());
     ctrl.destroy();
   });
 
@@ -629,12 +645,20 @@ describe('createWebTextDictionaryController', () => {
 
     document.caretRangeFromPoint = original;
 
-    const host = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
-    expect(host).not.toBeNull();
-    const shadow = host?.shadowRoot;
-    const activeBtn = shadow?.querySelector('.js-cell-tab.btn--primary');
-    expect(activeBtn?.getAttribute('data-cell-tab')).toBe('image');
-    expect(shadow?.querySelector('.js-cell-panel[data-cell-panel="image"]')).not.toBeNull();
+    const host = await waitFor(() => {
+      const el = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
+      if (!el) throw new Error('popup host not found');
+      return el;
+    });
+    const shadow = host.shadowRoot!;
+    const activeBtn = await waitFor(() => {
+      const el = shadow.querySelector('[data-testid="dictionary-tab-image"].btn--primary');
+      if (!el) throw new Error('image tab not active');
+      return el;
+    });
+    expect(activeBtn).not.toBeNull();
+    expect(activeBtn.getAttribute('data-testid')).toBe('dictionary-tab-image');
+    await waitFor(() => expect(shadow.querySelector('[data-testid="dictionary-image-panel"]')).not.toBeNull());
     ctrl.destroy();
   });
 
@@ -673,8 +697,8 @@ describe('createWebTextDictionaryController', () => {
     const host = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
     expect(host).not.toBeNull();
     const shadow = host?.shadowRoot;
-    expect(shadow?.querySelector('.js-cell-tab.btn--primary')).toBeNull();
-    expect(shadow?.querySelector('.js-cell-panel')).toBeNull();
+    expect(shadow?.querySelector('[data-testid^="dictionary-tab-"].btn--primary')).toBeNull();
+    expect(shadow?.querySelector('[data-testid="dictionary-image-panel"]')).toBeNull();
     ctrl.destroy();
   });
 
@@ -748,8 +772,12 @@ describe('createWebTextDictionaryController', () => {
     await new Promise((r) => setTimeout(r, 0));
 
     const popupHost = document.querySelector('.js-cell-popup-host')!;
-    const sendBtn = popupHost.shadowRoot!.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
-    sendBtn.click();
+    const sendBtn = await waitFor(() => {
+      const el = popupHost.shadowRoot!.querySelector('[data-testid="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      if (!el) throw new Error('send to card button not found');
+      return el;
+    });
+    await act(async () => { sendBtn.click(); });
 
     // Media is fetched asynchronously before routing to the integrated panel.
     await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
@@ -758,8 +786,8 @@ describe('createWebTextDictionaryController', () => {
     expect(prefill.contextSentence).toBe('Take off your shoes.');
 
     // Popup should remain visible.
-    const popupEl = popupHost.shadowRoot?.querySelector('.js-cell-popup') as HTMLDivElement;
-    expect(popupEl?.classList.contains('cell-popup--visible')).toBe(true);
+    const popupEl = popupHost.shadowRoot?.querySelector('[data-testid="popup-dictionary"]') as HTMLDivElement;
+    expect(popupEl).not.toBeNull();
 
     ctrl.destroy();
   });
@@ -797,8 +825,12 @@ describe('createWebTextDictionaryController', () => {
     await new Promise((r) => setTimeout(r, 0));
 
     const popupHost = document.querySelector('.js-cell-popup-host')!;
-    const sendBtn = popupHost.shadowRoot!.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
-    sendBtn.click();
+    const sendBtn = await waitFor(() => {
+      const el = popupHost.shadowRoot!.querySelector('[data-testid="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      if (!el) throw new Error('send to card button not found');
+      return el;
+    });
+    await act(async () => { sendBtn.click(); });
 
     await waitFor(() => expect(panelController.sendToCard).toHaveBeenCalledTimes(1));
     const prefill = panelController.sendToCard.mock.calls[0]![0];
@@ -826,12 +858,15 @@ describe('createWebTextDictionaryController', () => {
     await new Promise((r) => setTimeout(r, 0));
 
     const popupHost = document.querySelector('.js-cell-popup-host')!;
-    const sendBtn = popupHost.shadowRoot!.querySelector('.js-cell-send-to-creator') as HTMLButtonElement;
-    sendBtn.click();
+    const sendBtn = await waitFor(() => {
+      const el = popupHost.shadowRoot!.querySelector('[data-testid="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      if (!el) throw new Error('send to card button not found');
+      return el;
+    });
+    await act(async () => { sendBtn.click(); });
 
-    // Popup should hide immediately.
-    const popupEl = popupHost.shadowRoot?.querySelector('.js-cell-popup') as HTMLDivElement;
-    expect(popupEl?.classList.contains('cell-popup--visible')).toBe(false);
+    // Popup should hide after the async React send-to-card flow completes.
+    await waitFor(() => expect(popupHost.shadowRoot?.querySelector('[data-testid="popup-dictionary"]')).toBeNull());
 
     ctrl.destroy();
   });

@@ -1,4 +1,4 @@
-import type { PopupCardCreatorPrefill } from '@/features/dictionaryPopup/ui/popupDictionaryController';
+import type { PopupCardCreatorPrefill } from '@/features/dictionaryPopup/types';
 import type { BilingualCue } from '@/entities/media';
 import type { MediaFile } from '@/features/cardCreator/media/mediaFile';
 import type { CardCreatorQueueItem } from '@/features/cardCreator/ui/mountCardCreatorDialog';

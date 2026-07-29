@@ -4,7 +4,7 @@ import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider
 import { PopupDictionary } from './PopupDictionary';
 import { getMountParent } from './popupGeometry';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
-import type { LookupResult, PopupCardCreatorPrefill, WordStatus } from '@/features/dictionaryPopup/types';
+import type { LookupResult, PopupCardCreatorPrefill, WordStatus, PopupTab } from '@/features/dictionaryPopup/types';
 
 import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?inline';
@@ -66,6 +66,8 @@ export interface MountPopupDictionaryOptions {
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   /** Called when the user switches to a different candidate. */
   readonly onCandidateChange?: (term: string) => void;
+  /** Default media tab to open when the result first appears. */
+  readonly defaultActiveTab?: PopupTab | null;
 }
 
 export interface PopupDictionaryMountController {
@@ -97,6 +99,8 @@ type CurrentOptions = MountPopupDictionaryOptions & {
   initialCandidates?: readonly LookupResult[];
   /** Status controlled by setStatus. */
   syncStatus?: { readonly term: string; readonly status: WordStatus };
+  /** Default media tab controlled by the parent. */
+  defaultActiveTab?: PopupTab | null;
 };
 
 /**
@@ -147,6 +151,7 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     onQuickAdd: current.onQuickAdd,
     onStatusChange: current.onStatusChange,
     onCandidateChange: current.onCandidateChange,
+    defaultActiveTab: current.defaultActiveTab,
     syncStatus: current.syncStatus,
   });
 

@@ -4,7 +4,7 @@ import { DictionaryPanelView } from './DictionaryPanelView';
 import styles from './PopupDictionary.module.css';
 import { usePopupPosition } from './usePopupPosition';
 import type { PopupAnchor, PopupPointerHint, PopupLineRect, PopupSize } from './usePopupPosition';
-import type { LookupResult, WordStatus, PopupCardCreatorPrefill } from '../types';
+import type { LookupResult, WordStatus, PopupCardCreatorPrefill, PopupTab } from '../types';
 
 export interface PopupDictionaryProps {
   readonly langCode: string;
@@ -29,6 +29,8 @@ export interface PopupDictionaryProps {
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
   readonly onCandidateChange?: (term: string) => void;
+  /** Default media tab to open when the result first appears. */
+  readonly defaultActiveTab?: PopupTab | null;
   /** Optional external status sync (e.g. keyboard shortcut). */
   readonly syncStatus?: { readonly term: string; readonly status: WordStatus };
   readonly style?: React.CSSProperties;
@@ -57,6 +59,7 @@ export function PopupDictionary({
   onQuickAdd,
   onStatusChange,
   onCandidateChange,
+  defaultActiveTab,
   syncStatus,
   style: incomingStyle,
 }: PopupDictionaryProps): React.JSX.Element {
@@ -135,6 +138,7 @@ export function PopupDictionary({
           onQuickAdd={onQuickAdd}
           onStatusChange={onStatusChange}
           onCandidateChange={onCandidateChange}
+          defaultActiveTab={defaultActiveTab}
           syncStatus={syncStatus}
           isOpen
         />

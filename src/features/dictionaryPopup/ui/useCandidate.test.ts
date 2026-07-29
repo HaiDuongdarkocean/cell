@@ -1,7 +1,6 @@
 import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { renderHook, waitFor, act } from '@testing-library/react';
-import type { LookupResult, AudioItem, ImageItem } from '../types';
-import type { PopupCardCreatorPrefill } from './popupDictionaryController';
+import type { LookupResult, AudioItem, ImageItem, PopupCardCreatorPrefill } from '../types';
 import { useCandidate } from './useCandidate';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { translateSentence } from '@/features/cardCreator/media/translation';

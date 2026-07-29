@@ -4,8 +4,7 @@ import { CandidateView } from './CandidateView';
 import { sendMessage } from '@/shared/lib/chrome-apis/runtime';
 import { translateSentence } from '@/features/cardCreator/media/translation';
 import { MESSAGE_TYPES } from '@/shared/config/messages';
-import type { LookupResult, AudioItem, ImageItem } from '../types';
-import type { PopupCardCreatorPrefill } from './popupDictionaryController';
+import type { LookupResult, AudioItem, ImageItem, PopupCardCreatorPrefill } from '../types';
 
 jest.mock('@/shared/lib/chrome-apis/runtime', () => ({
   sendMessage: jest.fn(),

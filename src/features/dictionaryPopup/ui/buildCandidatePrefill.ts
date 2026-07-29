@@ -1,5 +1,4 @@
-import type { LookupResult, DefinitionEntry, AudioItem, ImageItem } from '../types';
-import type { PopupCardCreatorPrefill } from './popupDictionaryController';
+import type { LookupResult, DefinitionEntry, AudioItem, ImageItem, PopupCardCreatorPrefill } from '../types';
 
 /**
  * Build a card-creator prefill from a candidate and the user's selections.
