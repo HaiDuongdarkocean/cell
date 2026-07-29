@@ -1,10 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Button } from '@/shared/ui/Button';
 import { Spinner } from '@/shared/ui/Spinner';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { rankToBand } from '@/shared/lib/frequencyBand';
-import { DEFAULT_DICTIONARY_POPUP_SETTINGS } from '@/shared/config/config';
 import { nextStatus } from '../services/wordStatusStore';
 import { useCandidate } from './useCandidate';
 import styles from './DictionaryPanelView.module.css';
@@ -26,21 +25,6 @@ function formatReading(reading: string, readingKind: LookupResult['readingKind']
     return `/${reading}/`;
   }
   return reading;
-}
-
-function fillExternalDictLinks(
-  templates: readonly { readonly id: string; readonly name: string; readonly urlTemplate: string; readonly langCodes: readonly string[] }[],
-  term: string,
-  langCode: string,
-): ExternalDictLink[] {
-  const encodedTerm = encodeURIComponent(term);
-  return templates
-    .filter((t) => t.langCodes.length === 0 || t.langCodes.includes(langCode))
-    .map((t) => ({
-      id: t.id,
-      name: t.name,
-      url: t.urlTemplate.replaceAll('{term}', encodedTerm).replaceAll('{lang}', langCode),
-    }));
 }
 
 export interface CandidateViewProps {
@@ -72,10 +56,6 @@ export function CandidateView({
   });
 
   const frequencyBand = candidate.frequency ? rankToBand(candidate.frequency.rank) : 'none';
-  const links = useMemo(
-    () => fillExternalDictLinks(DEFAULT_DICTIONARY_POPUP_SETTINGS.externalDictLinks, candidate.term, candidate.langCode),
-    [candidate.langCode, candidate.term],
-  );
 
   return (
     <article
@@ -167,6 +147,8 @@ export function CandidateView({
           const active = panel.activeTab === tab.key;
           const count = tab.key === 'audio' ? panel.selectedAudioCount
             : tab.key === 'image' ? panel.selectedImageCount
+            : tab.key === 'translate' ? panel.selectedTranslationCount
+            : tab.key === 'links' ? panel.selectedLinkCount
             : 0;
           return (
             <button
@@ -223,7 +205,7 @@ export function CandidateView({
           onTranslate={panel.translate}
         />
       )}
-      {panel.activeTab === 'links' && <LinksPanel links={links} />}
+      {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}
 
       <section className={styles.cellDef} aria-label="Definitions" data-testid="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (
