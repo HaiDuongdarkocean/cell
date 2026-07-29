@@ -3,6 +3,8 @@ export * from './subtitleOverlay';
 export * from './subtitlePanel';
 export * from './subtitleManagerPanel.legacy';
 export { SubtitleManagerPanel } from './SubtitleManagerPanel';
+export * from './subtitleOffsetPanel.legacy';
+export { SubtitleOffsetPanel } from './SubtitleOffsetPanel';
 export * from './subtitleShortcuts';
 export * from './subtitleToast';
 export * from './subtitleUI';

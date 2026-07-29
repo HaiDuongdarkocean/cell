@@ -1,4 +1,4 @@
-import { createOffsetSection } from '@/features/subtitle/ui/subtitleOffsetPanel';
+import { createOffsetSection } from '@/features/subtitle/ui/subtitleOffsetPanel.legacy';
 
 describe('subtitleOffsetSection (V3 — value=input ở giữa pill, reset bottom full-width)', () => {
   let parentPanel: HTMLDivElement;

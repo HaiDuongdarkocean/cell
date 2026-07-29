@@ -1,0 +1,50 @@
+.panel {
+  width: 280px;
+  padding: var(--space-4);
+  background-color: var(--color-surface-popover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-popover);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.value {
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.sliderRow {
+  margin-bottom: var(--space-4);
+}
+
+.steppers {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.steppers > * {
+  flex: 1;
+}
+
+.inputRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.offsetInput {
+  width: 80px;
+}
