@@ -47,6 +47,7 @@ import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { ThemeConfig, ThemeMode } from '@/entities/theme';
 import { resolveMode } from '@/features/theme/logic/themeManager';
 import { ShadowButtonPoC } from './ShadowButtonPoC';
+import { ShadowOverlayPoC } from './ShadowOverlayPoC';
 import { NavClusterPreview } from './NavClusterPreview';
 import styles from './App.module.css';
 
@@ -531,6 +532,10 @@ export function App() {
 
         <Section title="Shadow Button PoC">
           <ShadowButtonPoC />
+        </Section>
+
+        <Section title="Shadow Overlay PoC">
+          <ShadowOverlayPoC />
         </Section>
 
         <Section title="Nav Cluster">

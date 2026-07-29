@@ -160,6 +160,18 @@ Captured after Phase 0c token cleanup, before Phase 1 begins.
 | Total `dist/` | 78 MB (includes sql-wasm.wasm 659.73 kB) |
 | YouTube 10 min idle RAM | TBD — requires manual Chrome DevTools run |
 
+## Phase 1 metrics
+
+Captured after Phase 1b (mount helpers, theme, focus, overlay PoC) and design-system manual test.
+
+| Metric | Value | Delta |
+|---|---|---|
+| Main content-script JS (`dist/assets/content-script.ts-*.js`) | ~244 kB / 62.32 kB gzip | ~0 kB — helpers not wired into content bundle yet |
+| Content-script CSS (`dist/assets/content-script-*.css`) | 28 kB / 4.39 kB gzip | ~0 kB — CSS not duplicated into shadow yet |
+| Shadow CSS budget (per host) | ~tokens.css (20.48 kB raw / 3.54 kB gzip) + per-component modules | ≤ 50 kB target |
+| Fixed overlay PoC | GO — host `position: fixed; inset: 0` covers full viewport and fullscreen in design-system test | — |
+| YouTube/Netflix/GeeksforGeeks manual | Pending — requires extension-loaded real page (T033) | — |
+
 ## References
 
 - Spec: `docs/specs/content-script-react-shadow-root.md`
