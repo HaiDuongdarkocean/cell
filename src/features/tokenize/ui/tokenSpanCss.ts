@@ -24,11 +24,11 @@ const CELL_TOKEN_MAP: Record<string, string> = {
   '--cell-token-freq-rare-bg': '--color-token-freq-rare-bg',
   '--cell-token-freq-rare-fg': '--color-token-freq-rare-fg',
   '--cell-token-freq-border': '--color-token-freq-border',
+  '--cell-token-overlay-text-rgb': '--overlay-text-rgb',
 };
 
-/** Overlay text highlight with a 45% alpha, using the --overlay-text-rgb token.
- *  Falls back to white RGB when the token is not defined. */
-const OVERLAY_TEXT_RGBA = 'rgba(var(--overlay-text-rgb, 255, 255, 255), 0.45)';
+/** Overlay text highlight with a 45% alpha, sourced from `--overlay-text-rgb`. */
+const OVERLAY_TEXT_RGBA = 'rgba(var(--cell-token-overlay-text-rgb), 0.45)';
 
 function buildVariables(): string {
   const lightDecls = Object.entries(CELL_TOKEN_MAP)

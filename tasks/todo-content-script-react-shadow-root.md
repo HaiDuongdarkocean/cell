@@ -784,7 +784,7 @@
     - `npm run test:unit -- mountTokenizeFab`
     - Manual: YouTube FAB toggle
 
-- [ ] **T076 — Clean `tokenSpanCss.ts` hardcoded tokens**
+- [x] **T076 — Clean `tokenSpanCss.ts` hardcoded tokens**
   - **Phase:** 5 | **Lane:** F | **Scope:** S | **Depends on:** T001
   - **Files:** `src/features/tokenize/ui/tokenSpanCss.ts`, `src/shared/styles/tokens.json`
   - **AC:**
