@@ -41,6 +41,12 @@ export interface MountSubtitleOptions {
   onForward: () => void;
   onPlayPause: () => void;
   onToggleCollapsed: () => void;
+  onQuickAdd?: () => void;
+  onEditCard?: () => void;
+  onUpdateCurrentCard?: () => void;
+  onGenerateNative?: () => void;
+  onToggleSidePanel?: () => void;
+  onToggleManager?: () => void;
 }
 
 export interface MountSubtitleResult {
@@ -82,6 +88,12 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     onForward,
     onPlayPause,
     onToggleCollapsed,
+    onQuickAdd,
+    onEditCard,
+    onUpdateCurrentCard,
+    onGenerateNative,
+    onToggleSidePanel,
+    onToggleManager,
   } = options;
 
   let controllerRef: SubtitlePanelsRef | null = null;
@@ -107,6 +119,12 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       onForward={onForward}
       onPlayPause={onPlayPause}
       onToggleCollapsed={onToggleCollapsed}
+      onQuickAdd={onQuickAdd}
+      onEditCard={onEditCard}
+      onUpdateCurrentCard={onUpdateCurrentCard}
+      onGenerateNative={onGenerateNative}
+      onToggleSidePanel={onToggleSidePanel}
+      onToggleManager={onToggleManager}
     />,
     {
       parent: container,

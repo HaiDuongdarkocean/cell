@@ -8,6 +8,8 @@ import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToas
 import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
 import { ICON_CATALOG } from '@/shared/icons';
+import { Icon } from '@/shared/icons/Icon';
+import { IconButton } from '@/shared/ui/IconButton';
 import styles from './SubtitlePanels.module.css';
 
 type IconCatalogKey = keyof typeof ICON_CATALOG;
@@ -77,6 +79,18 @@ export interface SubtitlePanelsProps {
   onForward: () => void;
   onPlayPause: () => void;
   onToggleCollapsed: () => void;
+  /** Quick-add all unknown/tracking words in the current subtitle line. */
+  onQuickAdd?: () => void;
+  /** Open the Card Creator dialog pre-filled for the current line. */
+  onEditCard?: () => void;
+  /** Update the card matching the current subtitle line. */
+  onUpdateCurrentCard?: () => void;
+  /** Generate a native subtitle from the current target cues. */
+  onGenerateNative?: () => void;
+  /** Open/close the Chrome side panel. */
+  onToggleSidePanel?: () => void;
+  /** Open the subtitle manager panel. */
+  onToggleManager?: () => void;
   manager?: ManagerState;
   offset?: OffsetState;
   generateNativeEnabled?: boolean;
@@ -100,6 +114,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       onForward,
       onPlayPause,
       onToggleCollapsed,
+      onQuickAdd,
+      onEditCard,
+      onUpdateCurrentCard,
+      onGenerateNative,
+      onToggleSidePanel,
+      onToggleManager,
       manager: initialManager,
       offset: initialOffset,
       generateNativeEnabled: initialGenerateNativeEnabled = true,
@@ -187,6 +207,78 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onPlayPause={handlePlayPause}
           />
         </div>
+
+        {!collapsed && (
+          <div className={styles.toolsLayer} data-testid="subtitle-tools">
+            {onQuickAdd && (
+              <IconButton
+                aria-label="Quick add card"
+                title="Quick add (Q)"
+                data-testid="quick-add-btn"
+                size="sm"
+                onClick={onQuickAdd}
+              >
+                <Icon name="zap" size={18} />
+              </IconButton>
+            )}
+            {onEditCard && (
+              <IconButton
+                aria-label="Edit card"
+                title="Edit card (E)"
+                data-testid="edit-card-btn"
+                size="sm"
+                onClick={onEditCard}
+              >
+                <Icon name="pencil" size={18} />
+              </IconButton>
+            )}
+            {onUpdateCurrentCard && (
+              <IconButton
+                aria-label="Update current card"
+                title="Update current card (U)"
+                data-testid="update-current-card-btn"
+                size="sm"
+                onClick={onUpdateCurrentCard}
+              >
+                <Icon name="rotateCcw" size={18} />
+              </IconButton>
+            )}
+            {onGenerateNative && (
+              <IconButton
+                aria-label="Generate native subtitle"
+                title="Generate native (G)"
+                data-testid="generate-native-btn"
+                size="sm"
+                onClick={onGenerateNative}
+                disabled={!generateNativeEnabled}
+              >
+                <Icon name="languages" size={18} />
+              </IconButton>
+            )}
+            {onToggleManager && (
+              <IconButton
+                aria-label="Open subtitle manager"
+                title="Open subtitle manager"
+                data-testid="manager-toggle-btn"
+                size="sm"
+                onClick={onToggleManager}
+              >
+                <Icon name="subtitleManager" size={18} />
+              </IconButton>
+            )}
+            {onToggleSidePanel && (
+              <IconButton
+                aria-label="Toggle subtitle side panel"
+                title="Toggle side panel (T)"
+                data-testid="panel-toggle-btn"
+                size="sm"
+                onClick={onToggleSidePanel}
+              >
+                <Icon name="sidePanel" size={18} />
+              </IconButton>
+            )}
+          </div>
+        )}
 
         {managerOpen && manager && (
           <div className={styles.panelLayer} data-testid="subtitle-manager-layer">

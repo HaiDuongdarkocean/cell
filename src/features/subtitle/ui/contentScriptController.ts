@@ -326,6 +326,8 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         targetStyle,
         nativeStyle,
         clusterSettings,
+        (action) => { void handleCardCreatorAction(action); },
+        () => { void handleCardCreatorAction('update-current'); },
         () => { void handleGenerateNative(); },
       );
 
@@ -784,6 +786,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       offsetController.init();
       blockController.onManagerSelect = (role, index) => { void onManagerSelect(role, index); };
       blockController.onImportFiles = (_role, files) => { void processImportedFiles(Array.from(files), container); };
+      blockController.onToggleSidePanel = toggleSidePanel;
     }
     // ADR-025: offset provider already wired in SubtitleBlockController constructor.
 
