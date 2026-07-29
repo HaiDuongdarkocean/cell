@@ -429,7 +429,7 @@
     - `npm run build` ✓
     - Manual: design-system preview ✓; YouTube/Netflix real-page pending T033
 
-- [ ] **T040 — Apply `OverlayStyleConfig` from settings**
+- [x] **T040 — Apply `OverlayStyleConfig` from settings**
   - **Phase:** 2a | **Lane:** C | **Scope:** S | **Depends on:** T036, T039
   - **Files:** `src/features/subtitle/ui/SubtitleBlock.tsx`, `src/features/settings/ui/SubtitleStylePanel.tsx`
   - **AC:**
@@ -437,18 +437,18 @@
     - Live updates from settings.
     - No hardcoded overlay colors.
   - **Verification:**
-    - `npm run test:unit`
-    - Manual: change settings on YouTube
+    - `npm run test:unit` ✓
+    - Manual: design-system preview ✓ (style props live-update); YouTube real-page pending T033
 
-- [ ] **T041 — Add subtitle components to design-system-showcase**
+- [x] **T041 — Add subtitle components to design-system-showcase**
   - **Phase:** 2a | **Lane:** I | **Scope:** S | **Depends on:** T036, T037
   - **Files:** `src/entrypoints/design-system-showcase/App.tsx`, `src/entrypoints/design-system-showcase/mockCues.ts`
   - **AC:**
     - Subtitle and nav previews with mock cues.
     - Same components in all contexts.
   - **Verification:**
-    - `npm run build`
-    - Manual: showcase
+    - `npm run build` ✓
+    - Manual: showcase ✓ (Subtitle Block + Nav Cluster previews visible)
 
 - [ ] **T042 — Create `SubtitleManagerPanel.tsx`**
   - **Phase:** 2b | **Lane:** C | **Scope:** M | **Depends on:** T039
