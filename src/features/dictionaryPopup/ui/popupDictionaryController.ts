@@ -15,7 +15,12 @@
 // status cycle, tab toggle, Quick Add / Send to Card.
 
 import type { MessageResponse } from '@/entities/message/types';
-import type { LookupResult, WordStatus, PopupTab, AudioItem, ImageItem, FetchCommunityAudioResponse, FetchImagesResponse, TabPanelCache } from '../types';
+import type {
+  LookupResult, WordStatus, PopupTab, AudioItem, ImageItem,
+  FetchCommunityAudioResponse, FetchImagesResponse, TabPanelCache,
+  PopupCardCreatorPrefill, PopupCardCreatorAction,
+  OnCardCreatorAction, OnQuickAddDirect,
+} from '../types';
 import type { DictionaryPopupSettings, CardCreatorSettings, TtsVoiceRow } from '@/entities/settings/types';
 import type { TokenWrapState } from '../trigger/subtitleTokenWrap';
 import type { PopupShell, PopupSize } from './popupShell';
@@ -81,47 +86,13 @@ export interface ShowPopupOptions {
   readonly onCandidateChange?: (term: string) => void;
 }
 
-/** Pre-fill data extracted from the popup dictionary for the Card Creator.
- *  Built from the lookup result + selections + context sentence + translation.
- *  Word audio, sentence audio and image are treated as mandatory: at least one
- *  of each is always included (selected first, then fallback to first available). */
-export interface PopupCardCreatorPrefill {
-  readonly term: string;
-  readonly langCode: string;
-  readonly reading: string;
-  readonly definitions: readonly { readonly pos?: string; readonly text: string }[];
-  /** Raw definition strings from DB (with <br> + N. markers intact). */
-  readonly rawDefinitions: readonly string[];
-  readonly contextSentence: string;
-  readonly translation?: string;
-  readonly wordAudioUrls?: readonly string[];
-  readonly sentenceAudioUrls?: readonly string[];
-  readonly imageUrls?: readonly string[];
-}
-
-/** Card Creator action triggered by the popup's Quick Add / Send to Card buttons.
- *  'quick-add' = Quick Add button (hardcoded as Add mode for now),
- *  'edit-card' = Send to Card button (neutral — user picks Add/Update in dialog). */
-export type PopupCardCreatorAction = 'quick-add' | 'edit-card';
-
-/** Result returned by the onCardCreatorAction callback. */
-export interface OnCardCreatorActionResult {
-  /** If true, the popup stays open after the action (e.g. when sending to the
-   *  integrated universal panel). If false/undefined, the popup is dismissed. */
-  readonly stayOpen?: boolean;
-}
-
-/** Callback when the user clicks Quick Add or Send to Card in the popup.
- *  The content script controller opens the Card Creator dialog or integrated
- *  panel pre-filled and returns whether the popup should stay open. */
-export type OnCardCreatorAction = (
-  action: PopupCardCreatorAction,
-  prefill: PopupCardCreatorPrefill,
-) => OnCardCreatorActionResult | void;
-
-/** Callback when the user clicks Quick Add in the popup (bypass dialog).
- *  The content script controller collects media + adds the note directly. */
-export type OnQuickAddDirect = (prefill: PopupCardCreatorPrefill) => void;
+export type {
+  PopupCardCreatorPrefill,
+  PopupCardCreatorAction,
+  OnCardCreatorActionResult,
+  OnCardCreatorAction,
+  OnQuickAddDirect,
+} from '../types';
 
 /** Per-candidate runtime state (for active candidate switching). */
 export interface CandidateState {

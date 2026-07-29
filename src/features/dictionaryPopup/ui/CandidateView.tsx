@@ -8,8 +8,7 @@ import { TranslatePanel } from './TranslatePanel';
 import { LinksPanel } from './LinksPanel';
 import { DictionaryToolbar } from './DictionaryToolbar';
 import styles from './DictionaryPanelView.module.css';
-import type { LookupResult, DefinitionEntry } from '../types';
-import type { PopupCardCreatorPrefill } from './popupDictionaryController';
+import type { LookupResult, DefinitionEntry, WordStatus, PopupCardCreatorPrefill } from '../types';
 
 function formatReading(reading: string, readingKind: LookupResult['readingKind']): string {
   if (!reading) return '';
@@ -27,6 +26,7 @@ export interface CandidateViewProps {
   readonly targetLang: string;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
 }
 
 export function CandidateView({
@@ -37,6 +37,7 @@ export function CandidateView({
   targetLang,
   onSendToCard,
   onQuickAdd,
+  onStatusChange,
 }: CandidateViewProps): React.JSX.Element {
   const panel = useCandidate({
     candidate,
@@ -45,6 +46,7 @@ export function CandidateView({
     targetLang,
     onSendToCard,
     onQuickAdd,
+    onStatusChange,
   });
 
   const frequencyBand = candidate.frequency ? rankToBand(candidate.frequency.rank) : 'none';

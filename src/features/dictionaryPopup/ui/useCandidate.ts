@@ -14,9 +14,9 @@ import type {
   AudioItem,
   ImageItem,
   ExternalDictLink,
+  PopupCardCreatorPrefill,
 } from '../types';
 import type { DefinitionSelection } from './popupContent';
-import type { PopupCardCreatorPrefill } from './popupDictionaryController';
 
 export interface UseCandidateOptions {
   readonly candidate: LookupResult;
@@ -25,6 +25,8 @@ export interface UseCandidateOptions {
   readonly targetLang: string;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Called when the user cycles the word status inside this candidate. */
+  readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
 }
 
 export interface UseCandidateReturn {
@@ -65,7 +67,7 @@ export interface UseCandidateReturn {
 }
 
 export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
-  const { candidate, contextSentence, sourceLang, targetLang, onSendToCard, onQuickAdd } = options;
+  const { candidate, contextSentence, sourceLang, targetLang, onSendToCard, onQuickAdd, onStatusChange } = options;
 
   const [status, setStatus] = useState<WordStatus>(candidate.status);
   const [definitionSelection, setDefinitionSelection] = useState<DefinitionSelection>(() => initDefinitionSelection(candidate));
@@ -88,7 +90,8 @@ export function useCandidate(options: UseCandidateOptions): UseCandidateReturn {
     const newStatus = nextStatus(status);
     setStatus(newStatus);
     void setWordStatus(candidate.langCode, candidate.term, newStatus);
-  }, [candidate.langCode, candidate.term, status]);
+    onStatusChange?.(candidate.term, candidate.langCode, newStatus);
+  }, [candidate.langCode, candidate.term, status, onStatusChange]);
 
   const toggleDefinition = useCallback((id: string, selected: boolean): void => {
     setDefinitionSelection((prev) => new Map(prev).set(id, selected));

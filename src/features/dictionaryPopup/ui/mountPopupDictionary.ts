@@ -1,11 +1,10 @@
 import { createElement } from 'react';
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
-import { USE_LEGACY_POPUP_DICTIONARY } from '@/shared/config/featureFlags';
 import { PopupDictionary } from './PopupDictionary';
-import { clampPopupSize, getMountParent, POPUP_DEFAULT_HEIGHT_PX, POPUP_MARGIN_PX, POPUP_MIN_HEIGHT_PX, PopupShell } from './popupShell';
+import { getMountParent } from './popupGeometry';
 import type { PopupAnchor, PopupLineRect, PopupPointerHint, PopupSize } from './usePopupPosition';
-import type { PopupCardCreatorPrefill } from './popupDictionaryController';
+import type { PopupCardCreatorPrefill, WordStatus } from '@/features/dictionaryPopup/types';
 
 import tokensCss from '@/shared/styles/tokens.css?raw';
 import componentsCss from '@/shared/styles/components.css?inline';
@@ -49,52 +48,15 @@ export interface MountPopupDictionaryOptions {
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   /** Called when the user triggers a quick add. */
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Called when the user cycles a word's status inside the popup. */
+  readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
+  /** Called when the user switches to a different candidate. */
+  readonly onCandidateChange?: (term: string) => void;
 }
 
 export interface PopupDictionaryMountController {
   /** Unmount the popup and remove the shadow host. */
   readonly destroy: () => void;
-}
-
-function getClientWidth(): number {
-  return document.documentElement?.clientWidth ?? window.innerWidth;
-}
-
-function getClientHeight(): number {
-  return document.documentElement?.clientHeight ?? window.innerHeight;
-}
-
-function mountLegacyPopupDictionary(options: MountPopupDictionaryOptions): PopupDictionaryMountController {
-  const vw = getClientWidth();
-  const vh = getClientHeight();
-
-  const size = clampPopupSize(
-    {
-      width: options.initialSize?.width ?? 420,
-      maxHeight: options.initialSize?.maxHeight ?? POPUP_DEFAULT_HEIGHT_PX,
-    },
-    vw,
-    vh,
-  );
-
-  const sheetHeight = Math.max(
-    POPUP_MIN_HEIGHT_PX,
-    Math.min(
-      options.initialSheetHeight ?? POPUP_DEFAULT_HEIGHT_PX,
-      vh - POPUP_MARGIN_PX,
-    ),
-  );
-
-  const onDismiss = (): void => { options.onClose?.(); };
-  const onResizeEnd: (size: PopupSize, sheetHeight: number) => void =
-    options.onSizeChange ?? (() => {});
-
-  const shell = new PopupShell(size, sheetHeight, onDismiss, onResizeEnd);
-  shell.mount();
-  shell.setPosition(options.anchor, options.pointer, options.lineRect ?? null);
-  shell.show();
-
-  return { destroy: () => shell.destroy() };
 }
 
 function isInsideHost(host: HTMLElement, e: PointerEvent): boolean {
@@ -122,6 +84,8 @@ function buildProps(
     onSizeChange: options.onSizeChange,
     onSendToCard: options.onSendToCard,
     onQuickAdd: options.onQuickAdd,
+    onStatusChange: options.onStatusChange,
+    onCandidateChange: options.onCandidateChange,
   };
 }
 
@@ -134,10 +98,6 @@ function buildProps(
  * - Moves the host to/from `document.fullscreenElement` as fullscreen changes.
  */
 export function mountPopupDictionary(options: MountPopupDictionaryOptions): PopupDictionaryMountController {
-  if (USE_LEGACY_POPUP_DICTIONARY) {
-    return mountLegacyPopupDictionary(options);
-  }
-
   let destroy = (): void => {};
 
   const close = (): void => {

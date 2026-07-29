@@ -10,8 +10,7 @@ import {
   removeSearchHistoryTerm,
 } from '@/features/universalPanel/searchHistory';
 import { CandidateView } from './CandidateView';
-import type { PopupCardCreatorPrefill } from './popupDictionaryController';
-import type { LookupResult } from '../types';
+import type { LookupResult, WordStatus, PopupCardCreatorPrefill } from '../types';
 import styles from './DictionaryPanelView.module.css';
 import componentsCss from '@/shared/styles/components.css?raw';
 
@@ -24,6 +23,10 @@ interface DictionaryPanelViewProps {
   readonly initialTerm?: string;
   readonly onSendToCard?: (prefill: PopupCardCreatorPrefill) => void;
   readonly onQuickAdd?: (prefill: PopupCardCreatorPrefill) => void;
+  /** Called when the user cycles a candidate's word status. */
+  readonly onStatusChange?: (term: string, langCode: string, status: WordStatus) => void;
+  /** Called when the user switches to a different candidate (chip click). */
+  readonly onCandidateChange?: (term: string) => void;
   /** True when this view is inside an open panel — used for auto-focus after animation. */
   readonly isOpen?: boolean;
 }
@@ -35,6 +38,8 @@ export function DictionaryPanelView({
   initialTerm,
   onSendToCard,
   onQuickAdd,
+  onStatusChange,
+  onCandidateChange,
   isOpen = true,
 }: DictionaryPanelViewProps): React.JSX.Element {
   const panel = useDictionaryPanel({
@@ -187,7 +192,9 @@ export function DictionaryPanelView({
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, []);
+    const candidate = allCandidates[index];
+    if (candidate) onCandidateChange?.(candidate.term);
+  }, [allCandidates, onCandidateChange]);
 
   return (
     <div className={styles.dictionaryPanel} data-testid="dictionary-panel">
@@ -281,6 +288,7 @@ export function DictionaryPanelView({
                 targetLang={targetLang}
                 onSendToCard={onSendToCard}
                 onQuickAdd={onQuickAdd}
+                onStatusChange={onStatusChange}
               />
             ))}
           </div>
