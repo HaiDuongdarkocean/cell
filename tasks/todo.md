@@ -48,7 +48,10 @@
     - `npm run test:unit` — passed with `--runInBand`: 260 passed, 1 skipped, 3441 tests passed (exit 0). A parallel workers run without `--runInBand` showed two unrelated flaky failures (`webTokenizeController` and `phraseMatchBenchmark`), both passed when rerun in isolation.
     - `npm run build` — passed (exit 0).
     - `npx vite build --mode development` — passed (exit 0); dev seed assets copied to `dist/seed`.
-    - Real-browser verification not performed in this session; requires loading the built extension in Chrome and exercising the dictionary panel on a live page.
+    - Real-browser verification (Chrome DevTools):
+      - Loaded the design-system showcase; the Popup Dictionary renders and switches Audio/Image/Translate/Links tabs correctly.
+      - Smoke-tested the live extension on geeksforgeeks.org; discovered and fixed a content-script `e.closest is not a function` crash when `MouseEvent.target`/`relatedTarget` is a `Text` node (see `webTriggerController.ts` and `subtitleTriggerController.ts`).
+      - Full multi-candidate chip-jump test on a live page requires a known seeded word and a matching text page; deferred to manual QA.
 
 - [x] T10 — Refine against plan AC and fix evidence-backed gaps only.
   - Depends on: T9.
