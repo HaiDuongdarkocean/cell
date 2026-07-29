@@ -908,7 +908,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     action?: 'quick-add' | 'quick-update' | 'edit-card',
   ): void {
     if (!cardCreatorMount) {
-      cardCreatorMount = mountCardCreatorDialog(ccSettings, deps.container);
+      cardCreatorMount = mountCardCreatorDialog(ccSettings);
     } else {
       cardCreatorMount.updateSettings(ccSettings);
     }

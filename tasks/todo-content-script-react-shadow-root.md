@@ -872,15 +872,17 @@
     - Toggle `USE_LEGACY_CARD_CREATOR` — typecheck/build verified with `false`; legacy branch is dead code checked by TS.
     - Manual: YouTube full viewport, no CSS leak (pending real-page check)
 
-- [ ] **T083 — Delete old vanilla card creator code**
+- [x] **T083 — Delete old vanilla card creator code**
   - **Phase:** 6c | **Lane:** G/Q | **Scope:** M | **Depends on:** T082
-  - **Files:** Batch cleanup of legacy non-React card creator files identified during T078–T081; representative: `src/features/cardCreator/ui/legacy*` / `src/features/cardCreator/ui/mountCardCreator*.ts` (exact list TBD before execution)
+  - **Files:** `src/features/cardCreator/ui/mountCardCreatorDialog.ts`, `src/features/dictionaryPopup/controller/webTextDictionaryController.ts`
   - **AC:**
     - No vanilla card creator files.
     - `USE_LEGACY_CARD_CREATOR` flag removed.
   - **Verification:**
-    - `npm run test:unit`
-    - `npm run build`
+    - `npm run typecheck` ✓
+    - `npm run test:unit` ✓
+    - `npm run build` ✓
+    - `npx vite build --mode development` ✓
 
 - [ ] **T084 — Verify card creator queue, media, export**
   - **Phase:** 6c | **Lane:** Q | **Scope:** S | **Depends on:** T082
