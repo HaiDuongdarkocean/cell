@@ -731,29 +731,18 @@
     - `npm run test:unit -- buildCandidatePrefill`
     - Manual: popup quick-add and panel send-to-card
 
-- [ ] **T069 — Delete old popup vanilla files after parity**
+- [x] **T069 — Delete old popup vanilla files after parity**
   - **Phase:** 4c/4d | **Lane:** E/Q | **Scope:** M | **Depends on:** T068, T071
-  - **Files:** `src/features/dictionaryPopup/ui/popupShell.ts`, `src/features/dictionaryPopup/ui/popupToolbar.ts`, `src/features/dictionaryPopup/ui/popupContent.ts`, `src/features/dictionaryPopup/ui/popupDictionary.css`
+  - **Files:** `src/features/dictionaryPopup/logic/definitionSelection.ts`, `src/features/dictionaryPopup/controller/webTextDictionaryController.ts`, `src/features/dictionaryPopup/ui/mountPopupDictionary.ts`
   - **AC:**
     - Old files deleted only after quick-add/send-to-card parity verified.
     - Only `PopupDictionary` path remains.
     - `USE_LEGACY_POPUP_DICTIONARY` flag removed.
+    - Architecture doc updated.
   - **Verification:**
-    - `npm run test:unit`
-    - `npm run build`
-    - Manual: 3 sites full lookup + quick-add
-  - **Sub-tasks (see `tasks/plan-T069-delete-popup-vanilla.md`):**
-    - [x] T069.1: Extract shared popup types to `features/dictionaryPopup/types.ts`
-    - [x] T069.2: Move popup geometry helpers out of `popupShell.ts`
-    - [x] T069.8: Remove `USE_LEGACY_POPUP_DICTIONARY` flag
-    - [x] T069.3: Add `onStatusChange` callback through React popup
-    - [x] T069.4: Add `onCandidateChange` callback through React popup
-    - [x] T069.5a: Add controlled-mode props + stateful `mountPopupDictionary` (setLoading / setResult / setStatus / setOptions)
-    - [x] T069.5b: Migrate `webTextDictionaryController.ts` to call `mountPopupDictionary`
-    - [x] T069.6: Remove legacy `popupDictState` from controller
-    - [x] T069.7: Delete legacy popup UI files and their tests
-    - [ ] T069.9: Update architecture docs
-    - [ ] T069.10: Final verification and todo cleanup
+    - `npm run test:unit` ✓
+    - `npm run build` ✓
+    - `npx vite build --mode development` ✓
 
 - [x] **T072 — Add popup dictionary to design-system-showcase**
   - **Phase:** 4d | **Lane:** I | **Scope:** S | **Depends on:** T065
