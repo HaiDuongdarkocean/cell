@@ -1,0 +1,110 @@
+import { memo } from 'react';
+import { Icon } from '@/shared/icons/Icon';
+import { IconButton } from '@/shared/ui';
+import styles from './NavCluster.module.css';
+
+interface NavClusterProps {
+  /** Whether the cluster is collapsed to a circular drag handle. */
+  collapsed: boolean;
+  /** Whether a subtitle is currently loaded. */
+  hasSubtitle: boolean;
+  /** Whether the video is playing. */
+  isPlaying?: boolean;
+  /** Repeat AB-loop mode state. */
+  repeatActive?: boolean;
+  /** Called when the user toggles collapse/expand. */
+  onToggleCollapsed: () => void;
+  /** Called when the user requests the previous sentence. */
+  onPrev: () => void;
+  /** Called when the user requests the next sentence. */
+  onNext: () => void;
+  /** Called when the user toggles repeat. */
+  onRepeat: () => void;
+  /** Called when the user seeks backward. */
+  onRewind: () => void;
+  /** Called when the user seeks forward. */
+  onForward: () => void;
+  /** Called when the user toggles play/pause. */
+  onPlayPause: () => void;
+  /** Called when the drag grip is engaged. */
+  onDragStart?: () => void;
+}
+
+function NavClusterInner({
+  collapsed,
+  hasSubtitle,
+  isPlaying = false,
+  repeatActive = false,
+  onToggleCollapsed,
+  onPrev,
+  onNext,
+  onRepeat,
+  onRewind,
+  onForward,
+  onPlayPause,
+  onDragStart,
+}: NavClusterProps): React.JSX.Element {
+  const rootClass = [
+    styles.cluster,
+    collapsed ? styles.collapsed : '',
+    hasSubtitle ? '' : styles.noSub,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  if (collapsed) {
+    return (
+      <div className={rootClass} data-testid="nav-cluster" aria-label="Subtitle navigation">
+        <IconButton
+          className={styles.collapsedBtn}
+          aria-label="Expand subtitle navigation"
+          data-testid="nav-expand"
+          onClick={onToggleCollapsed}
+        >
+          <Icon name="navRepeat" size={20} />
+        </IconButton>
+      </div>
+    );
+  }
+
+  return (
+    <div className={rootClass} data-testid="nav-cluster" aria-label="Subtitle navigation">
+      <div className={styles.grip} aria-label="Drag subtitle navigation" onPointerDown={onDragStart} data-testid="nav-grip" />
+      <div className={styles.main}>
+        <IconButton aria-label="Previous sentence" data-testid="nav-prev" onClick={onPrev}>
+          <Icon name="navPrev" size={20} />
+        </IconButton>
+        <IconButton
+          aria-label={repeatActive ? 'Cancel repeat' : 'Repeat current sentence'}
+          data-testid="nav-repeat"
+          onClick={onRepeat}
+          active={repeatActive}
+        >
+          <Icon name={repeatActive ? 'navRepeatCancel' : 'navRepeat'} size={20} />
+        </IconButton>
+        <IconButton aria-label="Next sentence" data-testid="nav-next" onClick={onNext}>
+          <Icon name="navNext" size={20} />
+        </IconButton>
+      </div>
+      <div className={styles.secondary}>
+        <IconButton aria-label="Rewind 5 seconds" data-testid="nav-rewind" onClick={onRewind}>
+          <Icon name="navRewind" size={18} />
+        </IconButton>
+        <IconButton aria-label={isPlaying ? 'Pause video' : 'Play video'} data-testid="nav-play" onClick={onPlayPause}>
+          <Icon name={isPlaying ? 'pause' : 'play'} size={18} />
+        </IconButton>
+        <IconButton aria-label="Forward 10 seconds" data-testid="nav-forward" onClick={onForward}>
+          <Icon name="navForward" size={18} />
+        </IconButton>
+      </div>
+      <div className={styles.gapCover} data-testid="nav-gap-cover" />
+      {hasSubtitle ? null : (
+        <div className={styles.noSub} data-testid="nav-no-sub">
+          <Icon name="flag" size={20} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export const NavCluster = memo(NavClusterInner);

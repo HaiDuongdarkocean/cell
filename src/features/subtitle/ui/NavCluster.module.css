@@ -1,150 +1,123 @@
-/* Nav cluster visual + themable styles (ADR-018 T004).
- * Layout-only rules (positioning, transform, display, flex, cursor, etc.) live in
- * navClusterCss.ts as NAV_CLUSTER_CSS. This module owns color, spacing, radius,
- * z-index, typography, transitions, and visual effects, all via tokens.
- * Selectors are :global() because the nav cluster is rendered by vanilla DOM
- * factories that use these exact class names (nav-cluster, nav-cluster-btn, ...).
- */
-
-:global(.nav-cluster) {
-  gap: var(--space-1);
-  padding: var(--space-1);
-  border-radius: var(--radius-pill);
-  background: transparent;
-  border: var(--border-width-hairline) solid var(--color-border);
-  z-index: var(--nav-cluster-z-index);
-  font-family: var(--font-family);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--duration-fast) ease, opacity var(--duration-fast) ease;
-}
-
-:global(.nav-cluster.dragging) {
-  box-shadow: var(--shadow-sm);
-}
-
-:global(.nav-cluster::before) {
-  content: '';
+.cluster {
   position: absolute;
-  inset: 0;
-  border-radius: var(--radius-pill);
+  display: flex;
+  pointer-events: auto;
+  cursor: default;
+  user-select: none;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.grip {
+  position: absolute;
+  top: calc((var(--space-5) + var(--space-0-5)) * -1);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  width: var(--space-6);
+  height: var(--space-4);
+  border-radius: var(--radius-full);
   background: var(--color-surface);
-  backdrop-filter: blur(var(--blur-lg));
-  opacity: var(--nav-cluster-bg-opacity);
-  z-index: var(--nav-cluster-before-z-index);
+  box-shadow: var(--shadow-md);
 }
 
-:global(.nav-cluster-grip) {
-  width: var(--touch-target-mobile);
-  height: var(--space-6);
-  z-index: var(--z-sticky);
-}
-
-:global(.nav-cluster-grip::before) {
+.grip::after {
   content: '';
-  width: var(--space-7);
-  height: var(--space-1);
+  width: var(--space-4);
+  height: 3px;
   border-radius: var(--radius-full);
   background: var(--color-text-secondary);
-  opacity: var(--nav-cluster-grip-opacity);
-  transition: opacity var(--duration-fast) ease, background var(--duration-fast) ease;
 }
 
-:global(.nav-cluster-grip:hover::before) {
-  opacity: var(--nav-cluster-grip-hover-opacity);
+.main,
+.secondary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
 }
 
-:global(.nav-cluster-grip:focus-visible) {
-  outline: var(--space-0-5) solid var(--color-border-focus);
-  outline-offset: var(--space-0-5);
-  border-radius: var(--radius-sm);
+.main {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-1);
 }
 
-:global(.nav-cluster.dragging .nav-cluster-grip::before) {
-  opacity: var(--nav-cluster-grip-active-opacity);
-  background: var(--color-text);
+.secondary {
+  flex-direction: row;
+  gap: var(--space-2);
+  background: var(--color-surface-card);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-1) var(--space-2);
 }
 
-:global(.nav-cluster-main),
-:global(.nav-cluster-secondary) {
-  gap: var(--space-0-5);
+.gapCover {
+  position: absolute;
+  top: var(--space-1);
+  bottom: var(--space-1);
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  cursor: default !important;
+  width: var(--space-8);
+  z-index: -1;
 }
 
-:global(.nav-cluster-gap-cover) {
-  width: var(--space-1);
+.noSub .main,
+.noSub .secondary,
+.noSub .gapCover,
+.noSub .grip {
+  display: none;
 }
 
-:global(.nav-cluster-btn) {
-  width: var(--nav-cluster-btn-size);
-  height: var(--nav-cluster-btn-size);
-  border: var(--border-width-hairline) solid transparent;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--color-text);
-  padding: var(--space-0);
-  line-height: var(--leading-none);
-  opacity: var(--nav-cluster-btn-opacity);
-  -webkit-tap-highlight-color: transparent;
-  transition: transform var(--duration-normal) var(--ease-bounce), border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
+.noSub .noSub {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-10);
+  height: var(--space-10);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-card);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text-secondary);
 }
 
-:global(.nav-cluster-btn .nav-cluster-icon) {
-  width: var(--nav-cluster-icon-size-ratio);
-  height: var(--nav-cluster-icon-size-ratio);
-  display: block;
-  fill: none !important;
-  background: transparent !important;
+.noSub {
+  display: none;
 }
 
-:global(.nav-cluster-btn .nav-cluster-icon *:not(text)) {
-  fill: none !important;
-  background: transparent !important;
+.collapsed {
+  overflow: hidden;
+  cursor: grab;
+  width: var(--space-10);
+  height: var(--space-10);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-card);
+  box-shadow: var(--shadow-md);
+  align-items: center;
+  justify-content: center;
 }
 
-:global(.nav-cluster-btn:hover) {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border-focus);
-  color: var(--color-text);
+.collapsed .grip,
+.collapsed .main,
+.collapsed .secondary,
+.collapsed .gapCover,
+.collapsed .noSub {
+  display: none;
 }
 
-:global(.nav-cluster-btn:focus-visible) {
-  outline: var(--space-0-5) solid var(--color-border-focus);
-  outline-offset: var(--space-0-5);
-  border-radius: var(--radius-sm);
-}
-
-:global(.nav-cluster-btn:active),
-:global(.nav-cluster-btn--active) {
-  background: var(--color-surface-hover);
-  border-color: var(--color-border-focus);
-  color: var(--color-primary);
-}
-
-:global(.nav-cluster.no-sub .nav-cluster-no-sub) {
-  gap: var(--space-0-5);
-}
-
-:global(.nav-cluster.collapsed) {
-  width: var(--nav-cluster-collapse-size);
-  height: var(--nav-cluster-collapse-size);
-  border-radius: var(--radius-full) var(--radius-none) var(--radius-none) var(--radius-full);
-}
-
-:global(.nav-cluster.collapsed.mirror-right) {
-  border-radius: var(--radius-none) var(--radius-full) var(--radius-full) var(--radius-none);
-}
-
-/* Respect user preference for reduced motion on the nav cluster. */
-@media (prefers-reduced-motion: reduce) {
-  :global(.nav-cluster),
-  :global(.nav-cluster-btn),
-  :global(.nav-cluster-grip::before) {
-    transition: none !important;
-  }
-
-  :global(.nav-cluster.dragging),
-  :global(.nav-cluster-btn:active),
-  :global(.nav-cluster-btn--active),
-  :global(.nav-cluster.collapsed.mirror-right) {
-    transform: none !important;
-  }
+.collapsedBtn {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-full);
 }
