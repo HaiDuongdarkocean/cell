@@ -91,8 +91,8 @@
   width: var(--space-10);
   height: var(--space-1);
   margin: var(--space-2) auto;
-  background: var(--color-text-tertiary, var(--color-text-secondary));
-  border-radius: 999px;
+  background: var(--color-text-secondary);
+  border-radius: var(--radius-full);
   cursor: ns-resize;
   touch-action: none;
 }
