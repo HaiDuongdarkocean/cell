@@ -1,6 +1,4 @@
-import tokensJson from '@/shared/styles/tokens.json';
 import { DEFAULT_LIGHT_TOKENS, DEFAULT_DARK_TOKENS } from '@/shared/lib/tokens';
-import { hexToRgb } from '@/features/theme/logic/colorGenerator';
 
 const TOKEN_STYLE_ID = 'cell-token-span-style';
 
@@ -12,28 +10,25 @@ const CELL_TOKEN_MAP: Record<string, string> = {
   '--cell-token-status-unknown': '--color-error',
   '--cell-token-status-tracking': '--color-warning',
   '--cell-token-status-known': '--color-success',
-  '--cell-token-status-ignore': '--color-text-muted',
-  // Soft Tonal frequency bands: dedicated tokens in tokens.json.
-  // Light mode uses muted pastel backgrounds with dark text.
-  // Dark mode uses a single slate container with soft pastel text
-  // to reduce eye strain and avoid the saturated M3 dark container colors.
-  '--cell-token-freq-core-bg': '--color-token-freq-core-bg',
-  '--cell-token-freq-core-fg': '--color-token-freq-core-fg',
+  '--cell-token-status-ignore': '--color-text-secondary',
+  // Soft Tonal frequency bands: status-muted backgrounds + status foregrounds.
+  // Common and rare keep their dedicated token refs.
+  '--cell-token-freq-core-bg': '--color-success-muted',
+  '--cell-token-freq-core-fg': '--color-success',
   '--cell-token-freq-common-bg': '--color-token-freq-common-bg',
   '--cell-token-freq-common-fg': '--color-token-freq-common-fg',
-  '--cell-token-freq-general-bg': '--color-token-freq-general-bg',
-  '--cell-token-freq-general-fg': '--color-token-freq-general-fg',
-  '--cell-token-freq-advanced-bg': '--color-token-freq-advanced-bg',
-  '--cell-token-freq-advanced-fg': '--color-token-freq-advanced-fg',
+  '--cell-token-freq-general-bg': '--color-warning-muted',
+  '--cell-token-freq-general-fg': '--color-warning',
+  '--cell-token-freq-advanced-bg': '--color-error-muted',
+  '--cell-token-freq-advanced-fg': '--color-error',
   '--cell-token-freq-rare-bg': '--color-token-freq-rare-bg',
   '--cell-token-freq-rare-fg': '--color-token-freq-rare-fg',
   '--cell-token-freq-border': '--color-token-freq-border',
 };
 
-/** Static overlay text token used for the white status-bar highlight. */
-const OVERLAY_TEXT = tokensJson.static.overlay.text;
-const { r: otR, g: otG, b: otB } = hexToRgb(OVERLAY_TEXT);
-const OVERLAY_TEXT_RGBA = `rgba(${otR}, ${otG}, ${otB}, 0.45)`;
+/** Overlay text highlight with a 45% alpha, using the --overlay-text-rgb token.
+ *  Falls back to white RGB when the token is not defined. */
+const OVERLAY_TEXT_RGBA = 'rgba(var(--overlay-text-rgb, 255, 255, 255), 0.45)';
 
 function buildVariables(): string {
   const lightDecls = Object.entries(CELL_TOKEN_MAP)
@@ -172,7 +167,7 @@ ${buildVariables()}
   box-shadow: inset 0 0 0 var(--border-width-hairline) var(--cell-token-freq-border) !important;
 }
 
-/* Status bar: 2px inset underline in the semantic color plus a 2px white
+/* Status bar: 2px inset underline in the semantic color plus a 2px overlay-text
    highlight at the same offset. The highlight lightens the underline when the
    status color matches the pill background (e.g. known on a core green token).
    Double-class specificity so host box-shadow rules don't override. */

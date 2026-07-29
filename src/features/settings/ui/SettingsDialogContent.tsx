@@ -24,7 +24,6 @@ import { SubtitleBlockSettingsPanel } from './SubtitleBlockSettingsPanel';
 import { NavClusterSettingsPanel } from './NavClusterSettingsPanel';
 import { CardCreatorSettingsPanel } from './CardCreatorSettingsPanel';
 import { DictionaryPopupSettingsPanel } from './DictionaryPopupSettingsPanel';
-import { TokenizeSettingsPanel, type TokenizePanelState } from './TokenizeSettingsPanel';
 import { ThemePanel } from '@/features/theme/ui/ThemePanel';
 import { TtsVoiceManagerPanel, DEFAULT_TTS_SETTINGS } from '@/features/tts/ui/TtsVoiceManagerPanel';
 import { ResourcesPanel } from '@/features/dictionary/ui/ResourcesPanel';
@@ -39,9 +38,6 @@ import styles from './SettingsDialog.module.css';
 export interface SettingsDialogContentProps {
   settings: Settings;
   onChange: (settings: Settings) => void;
-  readonly tokenizeState?: TokenizePanelState;
-  readonly onToggleTokenize?: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
-  readonly onOpenDictionary?: () => void;
   className?: string;
 }
 
@@ -97,7 +93,7 @@ const SHORTCUT_ACTION_ORDER: readonly ShortcutAction[] = [
  * includes "None" + BCP 47 variants (zh-hans, zh-hant).
  */
 
-export function SettingsDialogContent({ settings, onChange, tokenizeState, onToggleTokenize, onOpenDictionary, className }: SettingsDialogContentProps): React.JSX.Element {
+export function SettingsDialogContent({ settings, onChange, className }: SettingsDialogContentProps): React.JSX.Element {
   // ADR-013: tab state for Target/Native style panel (kept here so tab switch
   // preserves state — panel unmounts/remounts would lose unsaved slider drag)
 
@@ -213,7 +209,6 @@ export function SettingsDialogContent({ settings, onChange, tokenizeState, onTog
   };
 
   const sidebarItems: { id: string; label: string }[] = [
-    ...(tokenizeState ? [{ id: 'tokenize', label: 'Tokenize' }] : []),
     { id: 'media', label: 'Media' },
     { id: 'block', label: 'Block' },
     { id: 'target', label: 'Target' },
@@ -250,34 +245,7 @@ export function SettingsDialogContent({ settings, onChange, tokenizeState, onTog
           {/* === Main column (cards, scrollable) === */}
           <div className={styles.mainCol} ref={mainColRef}>
 
-            {/* === Card 0: Tokenize (ADR-061 — orbital panel only) === */}
-          {tokenizeState && (
-            <section
-              ref={(el) => { sectionRefs.current.tokenize = el; }}
-              className={styles.section}
-              data-section="tokenize"
-            >
-              <div className={styles.sectionHeader}>
-                <h4 className={styles.sectionTitle}>Tokenize</h4>
-                <Toggle
-                  checked={tokenizeState.enabled}
-                  onChange={() => onToggleTokenize?.('enabled')}
-                  ariaLabel="Toggle tokenize page"
-                  title={`Tokenize page: ${tokenizeState.enabled ? 'ON' : 'OFF'}`}
-                />
-              </div>
-              <p className={styles.sectionDescription}>Tokenize the current page for vocabulary lookup.</p>
-              <div className={styles.sectionBody}>
-                <TokenizeSettingsPanel
-                  state={tokenizeState}
-                  onToggle={(key) => onToggleTokenize?.(key)}
-                  onOpenDictionary={onOpenDictionary}
-                />
-              </div>
-            </section>
-          )}
-
-          {/* === Card 1: Media Selection === */}
+            {/* === Card 1: Media Selection === */}
             <section
               ref={(el) => { sectionRefs.current.media = el; }}
               className={styles.section}

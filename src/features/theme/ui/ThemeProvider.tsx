@@ -17,16 +17,22 @@ import type { ThemeConfig } from '@/entities/theme';
 interface ThemeProviderProps {
   /** Children to wrap. */
   children: ReactNode;
+  /**
+   * Optional DOM element to apply theme tokens + `data-theme` onto.
+   * Defaults to `document.documentElement`.
+   */
+  container?: HTMLElement;
 }
 
 const THEME_TRANSITION_MS = 300;
 
-export function ThemeProvider({ children }: ThemeProviderProps): React.JSX.Element {
+export function ThemeProvider({ children, container }: ThemeProviderProps): React.JSX.Element {
   const mode = useThemeStore((s) => s.mode);
   const config = useThemeStore((s) => s.config);
   const isLoaded = useThemeStore((s) => s.isLoaded);
   const init = useThemeStore((s) => s.init);
   const isFirstApply = useRef(true);
+  const target = container ?? document.documentElement;
 
   // Boot: init store once.
   useEffect(() => {
@@ -38,14 +44,13 @@ export function ThemeProvider({ children }: ThemeProviderProps): React.JSX.Eleme
   // animate smoothly while respecting prefers-reduced-motion.
   useEffect(() => {
     if (!isLoaded) return;
-    const root = document.documentElement;
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (!isFirstApply.current && !prefersReduced) {
-      root.classList.add('theme-transitioning');
+      target.classList.add('theme-transitioning');
     }
 
-    applyTheme(resolveMode(mode), config);
+    applyTheme(resolveMode(mode), config, target);
 
     if (isFirstApply.current) {
       isFirstApply.current = false;
@@ -53,18 +58,18 @@ export function ThemeProvider({ children }: ThemeProviderProps): React.JSX.Eleme
     }
 
     if (prefersReduced) return;
-    const timeout = setTimeout(() => root.classList.remove('theme-transitioning'), THEME_TRANSITION_MS);
+    const timeout = setTimeout(() => target.classList.remove('theme-transitioning'), THEME_TRANSITION_MS);
     return () => clearTimeout(timeout);
-  }, [mode, config, isLoaded]);
+  }, [mode, config, isLoaded, target]);
 
   // System mode listener — re-apply when OS theme changes (only matters if mode='system').
   useEffect(() => {
     if (!isLoaded || mode !== 'system') return;
     const cleanup = registerSystemModeListener((resolved) => {
-      applyTheme(resolved, useThemeStore.getState().config);
+      applyTheme(resolved, useThemeStore.getState().config, target);
     });
     return cleanup;
-  }, [mode, isLoaded]);
+  }, [mode, isLoaded, target]);
 
   // storage.onChanged — sync từ nơi khác (e.g. options page thay đổi, popup phải follow).
   useEffect(() => {

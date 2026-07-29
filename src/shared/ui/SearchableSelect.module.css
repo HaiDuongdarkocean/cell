@@ -29,7 +29,7 @@
 }
 
 .trigger:hover {
-  border-color: var(--color-text-muted);
+  border-color: var(--color-text-secondary);
   background: var(--color-surface-hover);
 }
 
@@ -52,7 +52,7 @@
   width: var(--space-4);
   height: var(--space-4);
   flex-shrink: 0;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   transition: transform var(--transition), color var(--transition);
 }
 
@@ -114,7 +114,7 @@
 .searchIcon {
   width: var(--space-4);
   height: var(--space-4);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
 }
 
@@ -129,7 +129,7 @@
 }
 
 .searchInput::placeholder {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .searchInput:focus-visible {
@@ -200,7 +200,7 @@
 .emptyState {
   padding: var(--space-3);
   text-align: center;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-base);
 }
 

@@ -14,20 +14,23 @@ export function resolveMode(mode: ThemeMode): ResolvedMode {
 }
 
 /**
- * Apply all color tokens (core + derived) onto :root and set data-theme.
+ * Apply all color tokens (core + derived) onto the target element and set data-theme.
  * Uses precomputed default tokens when the palette matches tokens.json, else
  * derives them at runtime. Component tokens in tokens.css resolve these vars.
  */
-export function applyTheme(mode: ResolvedMode, config: ThemeConfig): void {
+export function applyTheme(
+  mode: ResolvedMode,
+  config: ThemeConfig,
+  target: HTMLElement = document.documentElement,
+): void {
   const colors = config.customColors[mode];
-  const root = document.documentElement;
   const tokens = getColorTokens(colors, mode);
 
   for (const [name, value] of Object.entries(tokens)) {
-    root.style.setProperty(name, value);
+    target.style.setProperty(name, value);
   }
 
-  root.setAttribute('data-theme', mode);
+  target.setAttribute('data-theme', mode);
 }
 
 /**

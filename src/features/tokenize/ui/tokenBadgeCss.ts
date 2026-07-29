@@ -14,7 +14,7 @@ export function buildTokenBadgeCss(): string {
   return `
 :host {
   font-family: var(--font-family);
-  color: var(--color-foreground);
+  color: var(--color-text-primary);
 }
 
 /* FAB — floating action button. .btn--primary provides bg/color/hover/active.
@@ -30,8 +30,8 @@ export function buildTokenBadgeCss(): string {
   align-items: center !important;
   justify-content: center !important;
   border-radius: var(--radius-full) !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  padding: var(--space-0) !important;
+  margin: var(--space-0) !important;
   cursor: pointer !important;
   z-index: var(--z-overlay-secondary) !important;
   /* touch-action:none prevents the browser from hijacking the touch gesture
@@ -94,8 +94,8 @@ export function buildTokenBadgeCss(): string {
   max-width: calc(100vw - var(--space-8)) !important;
   /* bottom = FAB height (var(--badge-size)) + gap (var(--space-2)) + base offset (var(--space-4)) */
   bottom: calc(var(--space-4) + var(--badge-size) + var(--space-2)) !important;
-  background: var(--color-popover) !important;
-  color: var(--color-popover-foreground) !important;
+  background: var(--color-surface-popover) !important;
+  color: var(--color-text-primary) !important;
   border: var(--border-width-hairline) solid var(--color-border) !important;
   border-radius: var(--radius-card) !important;
   padding: var(--space-4) !important;
@@ -130,7 +130,7 @@ export function buildTokenBadgeCss(): string {
 }
 
 .cell-token-row__label {
-  color: var(--color-foreground) !important;
+  color: var(--color-text-primary) !important;
 }
 
 /* Toggle block — matches DS Toggle.tsx pattern (button + aria-pressed + thumb).
@@ -145,7 +145,7 @@ export function buildTokenBadgeCss(): string {
   cursor: pointer;
   flex-shrink: 0;
   border: none;
-  padding: 0;
+  padding: var(--space-0);
 }
 
 .cell-toggle[aria-pressed="true"] {
@@ -153,7 +153,7 @@ export function buildTokenBadgeCss(): string {
 }
 
 .cell-toggle:hover {
-  background: var(--color-text-muted);
+  background: var(--color-text-secondary);
 }
 
 .cell-toggle[aria-pressed="true"]:hover {

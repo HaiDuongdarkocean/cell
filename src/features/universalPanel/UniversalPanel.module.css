@@ -54,6 +54,14 @@
   z-index: var(--z-sticky);
 }
 
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .content {
   flex: 1;
   min-width: 0;
@@ -86,6 +94,11 @@
   .closeButton {
     top: var(--space-2);
     right: var(--space-2);
+  }
+
+  .body {
+    flex: 1;
+    min-height: 0;
   }
 
   .content {

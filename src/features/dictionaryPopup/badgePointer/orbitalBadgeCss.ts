@@ -17,10 +17,10 @@ export function buildOrbitalBadgeCss(): string {
 /* Inner container that holds both badge and pointer. We set data-theme here. */
 .cell-orbital-badge-root {
   position: absolute !important;
-  left: 0 !important;
-  top: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
+  left: var(--space-0) !important;
+  top: var(--space-0) !important;
+  width: var(--space-0) !important;
+  height: var(--space-0) !important;
 }
 
 /* The draggable badge. Starts with its center on the right viewport edge so
@@ -32,8 +32,8 @@ export function buildOrbitalBadgeCss(): string {
   height: var(--badge-size, var(--space-9)) !important;
   box-sizing: border-box !important;
   border: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  padding: var(--space-0) !important;
+  margin: var(--space-0) !important;
   border-radius: var(--radius-full) !important;
   background: var(--color-primary) !important;
   color: var(--color-primary-foreground) !important;
@@ -44,10 +44,10 @@ export function buildOrbitalBadgeCss(): string {
   box-shadow: var(--shadow-sm) !important;
   z-index: var(--z-overlay-top) !important;
   transform: translate(-50%, -50%) !important;
-  transition: transform var(--duration-normal) ease, background-color var(--duration-normal) ease, width var(--duration-normal) ease, height var(--duration-normal) ease !important;
+  transition: transform var(--duration-normal) var(--ease-standard), background-color var(--duration-normal) var(--ease-standard), width var(--duration-normal) var(--ease-standard), height var(--duration-normal) var(--ease-standard) !important;
   /* will-change promotes the badge to its own compositor layer so repositioning
      (left/top on a position:fixed element) is cheaper — the layer is moved on
-     the compositor instead of re-laying out the host page. One 36px layer is
+     the compositor instead of re-laying out the host page. One badge-size layer is
      negligible memory. */
   will-change: transform !important;
 }
@@ -83,15 +83,15 @@ export function buildOrbitalBadgeCss(): string {
   border-radius: var(--radius-full) !important;
   background: var(--color-text-inverse) !important;
   border: var(--space-0-5) solid var(--color-primary) !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  padding: var(--space-0) !important;
+  margin: var(--space-0) !important;
   pointer-events: none !important;
   outline: none !important;
   box-shadow: var(--shadow-sm) !important;
   z-index: var(--z-overlay-top) !important;
   opacity: 1 !important;
   transform: translate(-50%, -50%) scale(1) !important;
-  transition: opacity var(--duration-normal) ease, transform var(--duration-normal) ease;
+  transition: opacity var(--duration-normal) var(--ease-standard), transform var(--duration-normal) var(--ease-standard);
 }
 
 .cell-orbital-pointer--hidden {

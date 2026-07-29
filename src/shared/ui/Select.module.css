@@ -59,7 +59,7 @@
   width: var(--space-4);
   height: var(--space-4);
   transform: translateY(-50%);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   pointer-events: none;
   transition: transform var(--duration-fast) var(--ease-in-out);
 }

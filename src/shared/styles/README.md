@@ -1,8 +1,9 @@
 # Design System — Codebase Reference
 
 > Single source of truth for AI agents writing UI code.
+> **Standard (ngôn ngữ chung + naming convention):** `src/shared/styles/STANDARD.md` — đọc đầu tiên.
 > `tokens.json` = token source (sửa ở đây). `tokens.css` = generated artifact. `src/shared/ui/*.module.css` = component patterns.
-> Codebase chính là tài liệu — không có document riêng.
+> Reference: `docs/design-system/daft.md` (Meta/Astryx best practices).
 
 ## Token file
 
@@ -112,6 +113,8 @@ grep -rn 'tokens.css' src/entrypoints/
 
 ## When to read what
 
+- **Bắt đầu session / viết UI mới** → đọc `src/shared/styles/STANDARD.md` (ngôn ngữ chung + naming convention)
 - Adding NEW component (not in inventory above) → đọc `src/shared/ui/` component gần nhất → bắt chước pattern
 - Changing token value → sửa `tokens.json` → chạy `node scripts/generate-tokens.js` → xong
 - Unsure which variant to use → đọc component `.tsx` + `.module.css` trong `src/shared/ui/`
+- Tham khảo best practice → `docs/design-system/daft.md`

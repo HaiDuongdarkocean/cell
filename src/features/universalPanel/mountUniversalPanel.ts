@@ -16,6 +16,7 @@ import { syncElementTheme, injectThemeTokens, THEME_STYLE_ID } from '@/shared/li
 import { getSessionStorage, setSessionStorage } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import { loadSettings } from '@/shared/lib/storage/settingsStore';
+import type { TokenizePanelState } from '@/features/tokenize/types';
 import type { UniversalPanelTab, DictionaryPanelPrefill } from './types';
 import type { OrbitalBadgePanelState } from '@/features/dictionaryPopup/badgePointer/createOrbitalBadge';
 
@@ -158,6 +159,7 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     unmount: () => {
       isUnmounted = true;
       controllerUnmount();
+      tokenizeUnsubscribe?.();
       if (root) {
         root.unmount();
         root = null;
@@ -194,19 +196,20 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       prefill: pendingCardCreatorContext,
     }) as ReactElement;
 
-  const settingsPanel = createElement(
-    SettingsTab,
-    {
-      tokenize: options.panel
-        ? {
-            getState: options.panel.getState,
-            onToggle: options.panel.onToggle,
-            subscribe: options.panel.subscribe,
-          }
-        : undefined,
-      onOpenDictionary: options.panel?.onOpenDictionary ?? (() => { void controller.open('dictionary'); }),
-    },
-  ) as ReactElement;
+  const settingsPanel = createElement(SettingsTab) as ReactElement;
+
+  // ADR-061: tokenize state lives in the universal header (above content),
+  // not in the Settings tab. Subscribe at mount level so header re-renders
+  // on tokenize state changes without re-mounting the panel.
+  let tokenizeState: TokenizePanelState = options.panel?.getState() ?? {
+    enabled: false,
+    showStatus: false,
+    showFrequency: false,
+  };
+  const tokenizeUnsubscribe = options.panel?.subscribe((next) => {
+    tokenizeState = next;
+    render();
+  }) ?? null;
 
   const render = (): void => {
     if (isUnmounted || !root) return;
@@ -220,6 +223,10 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
           void controller.switchTab(tab);
         },
         onClose: () => controller.close(),
+        tokenizeState,
+        onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency') => {
+          options.panel?.onToggle(key);
+        },
         dictionaryPanel: renderDictionaryPanel(open),
         settingsPanel,
       }) as ReactElement,

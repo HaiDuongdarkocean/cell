@@ -29,7 +29,7 @@
 }
 
 .muted {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-base);
   margin: 0;
 }
@@ -195,7 +195,7 @@
 }
 
 .dragHandle {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--space-4);
   cursor: grab;
   user-select: none;
@@ -237,7 +237,7 @@
 
 .voiceLang {
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
 }
 

@@ -35,7 +35,7 @@
   display: none;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   padding: var(--space-1) var(--space-2);
@@ -124,7 +124,7 @@
   margin: 0;
   padding: var(--space-1) var(--space-2);
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   line-height: var(--leading-normal);
   background: var(--color-surface);
 }

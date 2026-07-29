@@ -269,7 +269,7 @@ export function createOrbitalBadge(options: OrbitalBadgeOptions): OrbitalBadge {
     pointer.style.left = `${pointerCenter.x}px`;
     pointer.style.top = `${pointerCenter.y}px`;
     pointer.style.transition = animate
-      ? 'opacity var(--duration-normal) ease, transform var(--duration-normal) ease, left var(--duration-normal) ease, top var(--duration-normal) ease'
+      ? 'opacity var(--duration-normal) var(--ease-standard), transform var(--duration-normal) var(--ease-standard), left var(--duration-normal) var(--ease-standard), top var(--duration-normal) var(--ease-standard)'
       : 'none';
   }
 

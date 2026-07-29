@@ -3,7 +3,7 @@
   padding: var(--space-6);
   max-width: calc(var(--space-5) * 36);
   margin: 0 auto;
-  background: var(--color-card);
+  background: var(--color-surface-card);
   border: var(--border-width-hairline) solid var(--color-border);
   border-radius: var(--radius-2xl);
 }

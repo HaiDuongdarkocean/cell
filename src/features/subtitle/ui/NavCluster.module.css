@@ -1,0 +1,150 @@
+/* Nav cluster visual + themable styles (ADR-018 T004).
+ * Layout-only rules (positioning, transform, display, flex, cursor, etc.) live in
+ * navClusterCss.ts as NAV_CLUSTER_CSS. This module owns color, spacing, radius,
+ * z-index, typography, transitions, and visual effects, all via tokens.
+ * Selectors are :global() because the nav cluster is rendered by vanilla DOM
+ * factories that use these exact class names (nav-cluster, nav-cluster-btn, ...).
+ */
+
+:global(.nav-cluster) {
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: var(--border-width-hairline) solid var(--color-border);
+  z-index: var(--nav-cluster-z-index);
+  font-family: var(--font-family);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--duration-fast) ease, opacity var(--duration-fast) ease;
+}
+
+:global(.nav-cluster.dragging) {
+  box-shadow: var(--shadow-sm);
+}
+
+:global(.nav-cluster::before) {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  backdrop-filter: blur(var(--blur-lg));
+  opacity: var(--nav-cluster-bg-opacity);
+  z-index: var(--nav-cluster-before-z-index);
+}
+
+:global(.nav-cluster-grip) {
+  width: var(--touch-target-mobile);
+  height: var(--space-6);
+  z-index: var(--z-sticky);
+}
+
+:global(.nav-cluster-grip::before) {
+  content: '';
+  width: var(--space-7);
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
+  opacity: var(--nav-cluster-grip-opacity);
+  transition: opacity var(--duration-fast) ease, background var(--duration-fast) ease;
+}
+
+:global(.nav-cluster-grip:hover::before) {
+  opacity: var(--nav-cluster-grip-hover-opacity);
+}
+
+:global(.nav-cluster-grip:focus-visible) {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+  border-radius: var(--radius-sm);
+}
+
+:global(.nav-cluster.dragging .nav-cluster-grip::before) {
+  opacity: var(--nav-cluster-grip-active-opacity);
+  background: var(--color-text);
+}
+
+:global(.nav-cluster-main),
+:global(.nav-cluster-secondary) {
+  gap: var(--space-0-5);
+}
+
+:global(.nav-cluster-gap-cover) {
+  width: var(--space-1);
+}
+
+:global(.nav-cluster-btn) {
+  width: var(--nav-cluster-btn-size);
+  height: var(--nav-cluster-btn-size);
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  padding: var(--space-0);
+  line-height: var(--leading-none);
+  opacity: var(--nav-cluster-btn-opacity);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--duration-normal) var(--ease-bounce), border-color var(--duration-fast) ease, background var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+:global(.nav-cluster-btn .nav-cluster-icon) {
+  width: var(--nav-cluster-icon-size-ratio);
+  height: var(--nav-cluster-icon-size-ratio);
+  display: block;
+  fill: none !important;
+  background: transparent !important;
+}
+
+:global(.nav-cluster-btn .nav-cluster-icon *:not(text)) {
+  fill: none !important;
+  background: transparent !important;
+}
+
+:global(.nav-cluster-btn:hover) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-text);
+}
+
+:global(.nav-cluster-btn:focus-visible) {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+  border-radius: var(--radius-sm);
+}
+
+:global(.nav-cluster-btn:active),
+:global(.nav-cluster-btn--active) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-focus);
+  color: var(--color-primary);
+}
+
+:global(.nav-cluster.no-sub .nav-cluster-no-sub) {
+  gap: var(--space-0-5);
+}
+
+:global(.nav-cluster.collapsed) {
+  width: var(--nav-cluster-collapse-size);
+  height: var(--nav-cluster-collapse-size);
+  border-radius: var(--radius-full) var(--radius-none) var(--radius-none) var(--radius-full);
+}
+
+:global(.nav-cluster.collapsed.mirror-right) {
+  border-radius: var(--radius-none) var(--radius-full) var(--radius-full) var(--radius-none);
+}
+
+/* Respect user preference for reduced motion on the nav cluster. */
+@media (prefers-reduced-motion: reduce) {
+  :global(.nav-cluster),
+  :global(.nav-cluster-btn),
+  :global(.nav-cluster-grip::before) {
+    transition: none !important;
+  }
+
+  :global(.nav-cluster.dragging),
+  :global(.nav-cluster-btn:active),
+  :global(.nav-cluster-btn--active),
+  :global(.nav-cluster.collapsed.mirror-right) {
+    transform: none !important;
+  }
+}

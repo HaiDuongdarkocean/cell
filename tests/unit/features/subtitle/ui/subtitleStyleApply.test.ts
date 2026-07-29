@@ -109,7 +109,7 @@ describe('hexToRgba', () => {
     expect(hexToRgba('#000', 0.3)).toBe('rgba(0, 0, 0, 0.3)');
   });
 
-  it('returns rgba(0,0,0,alpha) for invalid hex (fallback)', () => {
-    expect(hexToRgba('not-a-hex', 0.5)).toBe('rgba(0, 0, 0, 0.5)');
+  it('returns token-based overlay color for invalid hex (fallback)', () => {
+    expect(hexToRgba('not-a-hex', 0.5)).toBe('color-mix(in srgb, var(--color-overlay-background) 50%, transparent)');
   });
 });

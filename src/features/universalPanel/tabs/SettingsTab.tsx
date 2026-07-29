@@ -4,35 +4,20 @@ import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { onStorageChanged, removeOnStorageChangedListener } from '@/shared/lib/chrome-apis';
 import { STORAGE_KEYS } from '@/shared/config/config';
 import type { Settings } from '@/entities/media';
-import type { TokenizePanelState } from '@/features/settings/ui/TokenizeSettingsPanel';
 import styles from './SettingsTab.module.css';
 
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])' as const;
 
-export interface SettingsTabProps {
-  /** Tokenize section state and callbacks (content-script only). */
-  readonly tokenize?: {
-    readonly getState: () => TokenizePanelState;
-    readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
-    readonly subscribe: (cb: (state: TokenizePanelState) => void) => () => void;
-  };
-  /** Called when the Tokenize "Open Dictionary" action should switch tab. */
-  readonly onOpenDictionary?: () => void;
-}
-
 /**
  * SettingsTab — renders the full SettingsDialogContent inside the universal panel.
  *
  * Loads settings from chrome.storage.local, keeps them in sync with external
- * changes, and saves mutations. The tokenize section is shown only when the
- * content-script bridges runtime tokenize state.
+ * changes, and saves mutations. Tokenize controls have moved to the universal
+ * panel header (ADR-061) and are no longer bridged here.
  */
-export function SettingsTab({ tokenize, onOpenDictionary }: SettingsTabProps): React.JSX.Element | null {
+export function SettingsTab(): React.JSX.Element | null {
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [tokenizeState, setTokenizeState] = useState<TokenizePanelState | null>(
-    tokenize?.getState() ?? null,
-  );
   const tabRef = useRef<HTMLDivElement>(null);
   const hasFocusedRef = useRef(false);
 
@@ -56,13 +41,6 @@ export function SettingsTab({ tokenize, onOpenDictionary }: SettingsTabProps): R
     onStorageChanged(handleStorageChange);
     return () => { removeOnStorageChangedListener(handleStorageChange); };
   }, []);
-
-  // Subscribe to tokenize runtime state updates.
-  useEffect(() => {
-    if (!tokenize) return undefined;
-    const unsubscribe = tokenize.subscribe((s) => { setTokenizeState(s); });
-    return () => { unsubscribe(); };
-  }, [tokenize]);
 
   // Move focus into the settings panel once it is rendered. Skip the sidebar
   // navigation and target the first real settings control; fall back to the
@@ -94,9 +72,6 @@ export function SettingsTab({ tokenize, onOpenDictionary }: SettingsTabProps): R
       <SettingsDialogContent
         settings={settings}
         onChange={handleChange}
-        tokenizeState={tokenizeState ?? undefined}
-        onToggleTokenize={tokenize?.onToggle}
-        onOpenDictionary={onOpenDictionary}
       />
     </div>
   );

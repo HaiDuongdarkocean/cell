@@ -205,6 +205,17 @@ function buildColorBlock(core, derived, mode) {
   return lines.join('\n');
 }
 
+function flattenCompositeTokens(composite) {
+  const lines = [];
+  for (const [name, value] of Object.entries(composite)) {
+    lines.push(`  --${name}-font-size: ${value.fontSize};`);
+    lines.push(`  --${name}-font-weight: ${value.fontWeight};`);
+    lines.push(`  --${name}-line-height: ${value.lineHeight};`);
+    lines.push(`  --${name}-letter-spacing: ${value.letterSpacing};`);
+  }
+  return lines.join('\n');
+}
+
 async function main() {
   const tokensPath = join(__dirname, '..', 'src', 'shared', 'styles', 'tokens.json');
   const cssPath = join(__dirname, '..', 'src', 'shared', 'styles', 'tokens.css');
@@ -212,6 +223,7 @@ async function main() {
   const tokens = JSON.parse(await readFile(tokensPath, 'utf8'));
 
   const staticBlock = flattenStaticTokens(tokens.static);
+  const compositeBlock = flattenCompositeTokens(tokens.composite);
   const componentBlock = flattenComponentTokens(tokens.component);
   const lightColorBlock = buildColorBlock(tokens.core.light, tokens.derived.light, 'light');
   const darkColorBlock = buildColorBlock(tokens.core.dark, tokens.derived.dark, 'dark');
@@ -239,6 +251,7 @@ async function main() {
 :root {
 ${lightColorBlock}
 ${staticBlock}
+${compositeBlock}
 ${componentBlock}
 }
 
