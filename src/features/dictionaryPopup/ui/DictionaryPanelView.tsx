@@ -72,12 +72,9 @@ export function DictionaryPanelView({
     initialResult,
     initialCandidates,
     getTokenStatus,
-    defaultActiveTab,
     onResult,
     isLoading: isLoadingProp,
     syncStatus,
-    onSendToCard,
-    onQuickAdd,
   });
 
   const [searchHistory, setSearchHistory] = useState<readonly string[]>([]);

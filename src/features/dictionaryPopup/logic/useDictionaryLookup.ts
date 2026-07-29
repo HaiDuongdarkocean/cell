@@ -266,6 +266,7 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
   useEffect(() => {
     if (!syncStatus || !currentResult) return;
     if (syncStatus.term.toLowerCase() !== currentResult.term.toLowerCase()) return;
+    if (currentResult.status === syncStatus.status) return;
     setCurrentResult({ ...currentResult, status: syncStatus.status });
     setStatus(syncStatus.status);
   }, [syncStatus, currentResult]);
