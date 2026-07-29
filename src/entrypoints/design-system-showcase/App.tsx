@@ -54,6 +54,7 @@ import { ShadowOverlayPoC } from './ShadowOverlayPoC';
 import { NavClusterPreview } from './NavClusterPreview';
 import { SubtitleBlockPreview } from './SubtitleBlockPreview';
 import { OrbitalBadgePreview } from './OrbitalBadgePreview';
+import { CardCreatorPreview } from './CardCreatorPreview';
 import { TokenizeFab } from '@/features/tokenize/ui/TokenizeFab';
 import styles from './App.module.css';
 
@@ -619,6 +620,10 @@ export function App() {
 
         <Section title="Tokenize FAB">
           <TokenizeFabPreview />
+        </Section>
+
+        <Section title="Card Creator">
+          <CardCreatorPreview />
         </Section>
 
         <Section title="Components">
