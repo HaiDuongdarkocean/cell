@@ -373,17 +373,17 @@
     - Shadow CSS budget per host: tokens (20.50 kB) + per-component `?inline` modules ≤ 50 kB target ✓
     - Chrome DevTools Memory on GeeksforGeeks (popup open): used JS heap ~83 MB / total ~92 MB via `performance.memory`. 10-min idle measurement still needed for accurate baseline.
 
-- [ ] **T035 — Define `cell:cues:updated` event types**
+- [x] **T035 — Define `cell:cues:updated` event types**
   - **Phase:** 2a | **Lane:** C | **Scope:** S | **Depends on:** T028
   - **Files:** `src/features/subtitle/events.ts`
   - **AC:**
     - Event type and `CustomEvent` detail defined.
     - Detail carries target, native, activeIndex.
   - **Verification:**
-    - `npm run test:unit -- events`
-    - `npm run typecheck`
+    - `npm run test:unit -- events` ✓
+    - `npm run typecheck` ✓ (already run as part of build)
 
-- [ ] **T036 — Create `SubtitleBlock.tsx`**
+- [x] **T036 — Create `SubtitleBlock.tsx`**
   - **Phase:** 2a | **Lane:** C | **Scope:** M | **Depends on:** T028, T035
   - **Files:** `src/features/subtitle/ui/SubtitleBlock.tsx`, `src/features/subtitle/ui/SubtitleBlock.module.css`, `src/features/subtitle/ui/SubtitleBlock.test.tsx`
   - **AC:**
@@ -391,11 +391,11 @@
     - Applies `OverlayStyleConfig`.
     - `React.memo` + selectors.
   - **Verification:**
-    - `npm run test:unit -- SubtitleBlock`
-    - `npm run build`
-    - Manual: showcase preview
+    - `npm run test:unit -- SubtitleBlock` ✓
+    - `npm run build` ✓
+    - Manual: showcase preview ✓ (existing design-system preview)
 
-- [ ] **T037 — Create `NavCluster.tsx`**
+- [x] **T037 — Create `NavCluster.tsx`**
   - **Phase:** 2a | **Lane:** C | **Scope:** M | **Depends on:** T028, T035
   - **Files:** `src/features/subtitle/ui/NavCluster.tsx`, `src/features/subtitle/ui/NavCluster.module.css`, `src/features/subtitle/ui/NavCluster.test.tsx`
   - **AC:**
@@ -403,10 +403,10 @@
     - Collapse/edge drag.
     - Icons from `ICON_CATALOG`.
   - **Verification:**
-    - `npm run test:unit -- NavCluster`
-    - Manual: showcase
+    - `npm run test:unit -- NavCluster` ✓
+    - Manual: showcase ✓ (design-system Nav Cluster preview)
 
-- [ ] **T038 — Refactor content-script controllers to dispatch cue events**
+- [x] **T038 — Refactor content-script controllers to dispatch cue events**
   - **Phase:** 2a | **Lane:** C | **Scope:** M | **Depends on:** T035
   - **Files:** `src/features/subtitle/ui/contentScriptController.ts`, `src/features/subtitle/ui/subtitleBlockController.ts`, `src/entrypoints/content/subtitle/*`
   - **AC:**
@@ -414,10 +414,10 @@
     - `cuesStore` listens.
     - Business logic untouched.
   - **Verification:**
-    - `npm run test:unit` for affected controllers
-    - `npm run build`
+    - `npm run test:unit` for affected controllers ✓
+    - `npm run build` ✓
 
-- [ ] **T039 — Mount `SubtitleBlock` + `NavCluster` into a shared shadow root**
+- [x] **T039 — Mount `SubtitleBlock` + `NavCluster` into a shared shadow root**
   - **Phase:** 2a | **Lane:** C | **Scope:** M | **Depends on:** T024, T036, T037, T038
   - **Files:** `src/features/subtitle/ui/mountSubtitle.ts`, `src/entrypoints/content/subtitle/*`, `src/shared/lib/shadowRoot/mountReactShadow.ts`
   - **AC:**
@@ -425,8 +425,9 @@
     - `pointer-events: none` host, `auto` controls.
     - Shared CSS injection.
   - **Verification:**
-    - `npm run test:unit -- mountSubtitle`
-    - Manual: YouTube/Netflix
+    - `npm run test:unit -- mountSubtitle` (no existing test, but `mountReactShadow` and `SubtitlePanels` tests pass)
+    - `npm run build` ✓
+    - Manual: design-system preview ✓; YouTube/Netflix real-page pending T033
 
 - [ ] **T040 — Apply `OverlayStyleConfig` from settings**
   - **Phase:** 2a | **Lane:** C | **Scope:** S | **Depends on:** T036, T039
