@@ -9,14 +9,12 @@ describe('Center', () => {
 
   it('applies centering styles', () => {
     const { container } = render(<Center>Centered</Center>);
-    const el = container.firstChild as HTMLElement;
-    expect(el).toHaveStyle({ display: 'flex', alignItems: 'center', justifyContent: 'center' });
+    expect(container.firstChild).toHaveClass('center');
   });
 
   it('renders inline variant with inline-flex', () => {
     const { container } = render(<Center inline>Inline</Center>);
-    const el = container.firstChild as HTMLElement;
-    expect(el).toHaveStyle({ display: 'inline-flex' });
+    expect(container.firstChild).toHaveClass('center', 'inline');
   });
 
   it('renders as a custom element', () => {

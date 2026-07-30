@@ -40,7 +40,7 @@ export function Thumbnail({
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [usingFallback, setUsingFallback] = useState(false);
 
-  const currentSrc = status === 'error' && fallbackSrc && !usingFallback ? fallbackSrc : src;
+  const currentSrc = usingFallback && fallbackSrc ? fallbackSrc : src;
 
   const handleError = (): void => {
     if (fallbackSrc && !usingFallback) {

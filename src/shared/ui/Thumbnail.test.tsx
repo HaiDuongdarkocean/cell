@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Thumbnail } from './Thumbnail';
 
 describe('Thumbnail', () => {
@@ -27,11 +27,11 @@ describe('Thumbnail', () => {
     expect(screen.getByRole('img')).toHaveAttribute('aria-label', 'Broken');
   });
 
-  it('switches to fallbackSrc on error', () => {
+  it('switches to fallbackSrc on error', async () => {
     render(<Thumbnail src="/primary.jpg" alt="Test" fallbackSrc="/fallback.jpg" showSkeleton={false} />);
     const img = screen.getByRole('img');
     fireEvent.error(img);
-    expect(screen.getByRole('img')).toHaveAttribute('src', '/fallback.jpg');
+    await waitFor(() => expect(screen.getByRole('img')).toHaveAttribute('src', '/fallback.jpg'));
   });
 
   it('merges custom className', () => {

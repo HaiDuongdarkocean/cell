@@ -19,6 +19,6 @@ describe('VisuallyHidden', () => {
 
   it('applies the sr-only class', () => {
     const { container } = render(<VisuallyHidden>Hidden</VisuallyHidden>);
-    expect(container.firstChild).toHaveClass(expect.stringMatching(/srOnly|sr-only/));
+    expect(container.firstChild).toHaveClass('srOnly');
   });
 });
