@@ -32,6 +32,7 @@ export interface DiscoveredShowcase {
 const modules = import.meta.glob(
   [
     '/src/shared/ui/*.showcase.tsx',
+    '/src/shared/domain/*/atoms/*.showcase.tsx',
     '/src/features/*/ui/*.showcase.tsx',
   ],
   { eager: true },
@@ -44,6 +45,10 @@ function inferTitle(path: string): string {
 
 function inferGroup(path: string): string {
   if (path.startsWith('/src/shared/ui/')) return 'Shared UI';
+  const domainMatch = /\/src\/shared\/domain\/([^/]+)\/atoms\//.exec(path);
+  if (domainMatch) {
+    return `Domain — ${domainMatch[1].replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^\w/, (c) => c.toUpperCase())}`;
+  }
   const featureMatch = /\/src\/features\/([^/]+)\/ui\//.exec(path);
   if (featureMatch) {
     return featureMatch[1].replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^\w/, (c) => c.toUpperCase());
