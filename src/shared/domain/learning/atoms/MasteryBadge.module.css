@@ -1,0 +1,73 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--badge-padding-y) var(--badge-padding-x);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family);
+  font-size: var(--badge-font-size);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.progress {
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* beginner (0–25) — error (red) tint */
+.beginner {
+  background: var(--color-error-subtle);
+  color: var(--color-error);
+}
+
+/* intermediate (26–50) — warning (amber) tint */
+.intermediate {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+}
+
+/* advanced (51–75) — primary (blue) tint */
+.advanced {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+/* master (76–100) — success (green) tint */
+.master {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+}
+
+/* spinner icon rotation */
+.icon :global(svg) {
+  animation: spin var(--duration-1000) linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon :global(svg) {
+    animation: none;
+  }
+}
