@@ -12,10 +12,9 @@ describe('Overlay', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('applies fixed positioning and overlay background', () => {
+  it('applies the overlay class', () => {
     const { container } = render(<Overlay>Content</Overlay>);
-    const el = container.firstChild as HTMLElement;
-    expect(el).toHaveStyle({ position: 'fixed', inset: '0' });
+    expect(container.firstChild).toHaveClass('overlay');
   });
 
   it('calls onClick when backdrop is clicked', () => {

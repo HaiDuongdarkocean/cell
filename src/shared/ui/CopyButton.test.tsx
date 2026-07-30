@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CopyButton } from './CopyButton';
 
 describe('CopyButton', () => {
@@ -23,10 +23,10 @@ describe('CopyButton', () => {
     expect(screen.getByRole('button', { name: 'Copy code' })).toBeInTheDocument();
   });
 
-  it('copies value to clipboard on click', () => {
+  it('copies value to clipboard on click', async () => {
     render(<CopyButton value="test-value" />);
     fireEvent.click(screen.getByRole('button'));
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('test-value');
+    await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith('test-value'));
   });
 
   it('renders disabled state', () => {

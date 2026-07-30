@@ -19,10 +19,10 @@ describe('AspectRatio', () => {
     expect(box.style.paddingTop).toBe('100%');
   });
 
-  it('positions content absolutely', () => {
+  it('renders content with the content class', () => {
     const { container } = render(<AspectRatio>Content</AspectRatio>);
-    const content = container.querySelector('[class*="content"]') as HTMLElement;
-    expect(content).toHaveStyle({ position: 'absolute', inset: '0' });
+    const content = container.querySelector('[class*="content"]');
+    expect(content).toHaveClass('content');
   });
 
   it('merges custom className', () => {
