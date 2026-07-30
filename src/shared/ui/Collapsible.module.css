@@ -1,0 +1,22 @@
+.collapsible {
+  overflow: hidden;
+  transition: max-height var(--duration-normal) var(--ease-in-out),
+    opacity var(--duration-normal) var(--ease-in-out);
+  max-height: 1000px;
+  opacity: 1;
+}
+
+.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.content {
+  padding: var(--space-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapsible {
+    transition: none;
+  }
+}
