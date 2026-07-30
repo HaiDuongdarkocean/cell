@@ -1,0 +1,39 @@
+.title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  font-family: var(--font-family-heading);
+  color: var(--color-text-primary);
+  line-height: var(--leading-tight);
+}
+
+.word {
+  font-weight: var(--font-weight-semibold);
+}
+
+.phonetic {
+  font-family: var(--font-family-code);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+.level1 {
+  font-size: var(--text-heading-1-font-size);
+  font-weight: var(--text-heading-1-font-weight);
+  line-height: var(--text-heading-1-line-height);
+}
+
+.level2 {
+  font-size: var(--text-heading-2-font-size);
+  font-weight: var(--text-heading-2-font-weight);
+  line-height: var(--text-heading-2-line-height);
+}
+
+.level3 {
+  font-size: var(--text-heading-3-font-size);
+  font-weight: var(--text-heading-3-font-weight);
+  line-height: var(--text-heading-3-line-height);
+}

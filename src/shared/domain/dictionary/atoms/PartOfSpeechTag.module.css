@@ -1,0 +1,53 @@
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--badge-padding-y) var(--badge-padding-x);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family);
+  font-size: var(--badge-font-size);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+}
+
+/* === Tint color coding per part of speech === */
+.noun {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.verb {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+}
+
+.adjective {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+}
+
+.adverb {
+  background: var(--color-error-subtle);
+  color: var(--color-error);
+}
+
+.preposition {
+  background: var(--color-info-subtle);
+  color: var(--color-info);
+}
+
+.conjunction {
+  background: var(--color-token-freq-common-bg);
+  color: var(--color-token-freq-common-fg);
+}
+
+.pronoun {
+  background: var(--color-token-freq-general-bg);
+  color: var(--color-token-freq-general-fg);
+}
+
+.interjection {
+  background: var(--color-token-freq-advanced-bg);
+  color: var(--color-token-freq-advanced-fg);
+}
