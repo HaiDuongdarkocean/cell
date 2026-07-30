@@ -1,0 +1,71 @@
+.captionToggle {
+  width: calc(var(--touch-target) * 1.8);
+  min-width: calc(var(--touch-target) * 1.8);
+  height: var(--touch-target);
+  min-height: var(--touch-target);
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  position: relative;
+  transition: background var(--transition);
+  cursor: pointer;
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
+}
+
+.captionToggle[aria-checked="true"] {
+  background: var(--color-primary);
+}
+
+.captionToggle:hover {
+  background: var(--color-text-secondary);
+}
+
+.captionToggle[aria-checked="true"]:hover {
+  background: var(--color-primary-hover);
+}
+
+.captionToggle:focus-visible {
+  outline: var(--space-0-5) solid var(--color-primary);
+  outline-offset: var(--space-0-5);
+}
+
+.track {
+  position: absolute;
+  inset: 0;
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  left: var(--space-0-5);
+  width: calc(var(--touch-target) - 2 * var(--space-0-5));
+  height: calc(var(--touch-target) - 2 * var(--space-0-5));
+  border-radius: var(--radius-full);
+  background: var(--color-text-inverse);
+  transform-box: border-box;
+  transform: translateY(-50%);
+  transition: transform var(--transition);
+}
+
+.captionToggle[aria-checked="true"] .thumb {
+  transform: translate(calc(var(--touch-target) * 0.8), -50%);
+}
+
+.captionToggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.captionToggle:disabled:hover {
+  background: var(--color-border);
+}
+
+.captionToggle[aria-checked="true"]:disabled:hover {
+  background: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .captionToggle { transition: none; animation: none; }
+  .thumb { transition: none; animation: none; }
+}
