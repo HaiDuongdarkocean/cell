@@ -57,6 +57,7 @@ import { SubtitleBlockPreview } from './SubtitleBlockPreview';
 import { OrbitalBadgePreview } from './OrbitalBadgePreview';
 import { CardCreatorPreview } from './CardCreatorPreview';
 import { TokenizeFab } from '@/features/tokenize/ui/TokenizeFab';
+import { useThemeStore } from '@/stores/themeStore';
 import styles from './App.module.css';
 
 // Enable mock runtime messages for the design-system showcase so the popup
@@ -660,9 +661,11 @@ export function App() {
           <UniversalPanelPreview />
         </Section>
 
-        <Section title="Settings + Theme">
+        {/* Settings + Theme section disabled — uses ThemeProvider which applies inline styles
+            that override CSS token rules. This section tests feature UI, not design system atoms. */}
+        {/* <Section title="Settings + Theme">
           <SettingsAndThemeShowcase />
-        </Section>
+        </Section> */}
 
       </main>
     </div>
