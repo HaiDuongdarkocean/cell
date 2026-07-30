@@ -1,0 +1,4 @@
+.portal {
+  position: relative;
+  z-index: var(--z-popover);
+}
