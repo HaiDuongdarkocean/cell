@@ -1,0 +1,75 @@
+/* === Timeline — domain video atom (atom-design-plan §6.A.2) ===
+   Controlled seek bar with buffered overlay + draggable thumb.
+   Consumes tokens only — no raw hex/radius. */
+
+.timeline {
+  width: 100%;
+  min-height: var(--touch-target);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: var(--space-2) 0;
+  outline: none;
+}
+
+.timeline:focus-visible .track {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.track {
+  position: relative;
+  width: 100%;
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  overflow: visible;
+}
+
+.buffered {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  pointer-events: none;
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  transform: translate(-50%, -50%) scale(1);
+  transition: transform var(--transition);
+  pointer-events: none;
+  border: var(--space-0-5) solid var(--color-background);
+}
+
+.timeline:hover .thumb {
+  transform: translate(-50%, -50%) scale(1.25);
+}
+
+.timeline:active .thumb {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thumb {
+    transition: none;
+  }
+}
