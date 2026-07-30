@@ -47,6 +47,8 @@ function flattenStaticTokens(staticObj) {
 
   // font
   push('font-family', staticObj.font.family);
+  push('font-family-heading', staticObj.font.headingFamily);
+  push('font-family-code', staticObj.font.codeFamily);
   push('font-family-mono', staticObj.font.monoFamily);
   for (const [key, value] of Object.entries(staticObj.font.sizes)) {
     push(`font-size-${key}`, value);

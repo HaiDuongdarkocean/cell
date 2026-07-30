@@ -1,0 +1,31 @@
+.sentence {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-normal);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.text {
+  font-style: italic;
+}
+
+.mark {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-style: normal;
+  font-weight: var(--font-weight-medium);
+  padding: 0 var(--space-0-5);
+  border-radius: var(--radius-2xs);
+}
+
+.translation {
+  font-style: normal;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
