@@ -1,0 +1,87 @@
+.avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-medium);
+  user-select: none;
+}
+
+/* === Shapes === */
+.circle {
+  border-radius: var(--radius-full);
+}
+
+.square {
+  border-radius: var(--radius-md);
+}
+
+/* === Sizes === */
+.xs {
+  width: 24px;
+  height: 24px;
+  font-size: var(--font-size-2xs);
+}
+
+.sm {
+  width: 32px;
+  height: 32px;
+  font-size: var(--font-size-xs);
+}
+
+.md {
+  width: 40px;
+  height: 40px;
+  font-size: var(--font-size-sm);
+}
+
+.lg {
+  width: 56px;
+  height: 56px;
+  font-size: var(--font-size-lg);
+}
+
+/* === Image === */
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* === Fallback === */
+.fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+}
+
+/* === Status dot === */
+.statusDot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  border: var(--border-width-hairline) solid var(--color-background);
+}
+
+.online {
+  background: var(--color-success);
+}
+
+.offline {
+  background: var(--color-text-secondary);
+}
+
+.busy {
+  background: var(--color-error);
+}
