@@ -1,0 +1,22 @@
+.timestamp {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.relative {
+  /* relative uses default styling */
+}
+
+.absolute {
+  /* absolute date uses default styling */
+}
+
+.time {
+  /* time-only uses default styling */
+}
+
+.datetime {
+  /* full datetime uses default styling */
+}
