@@ -14,6 +14,7 @@ export function Showcase(): ReactElement {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
         <Badge size="sm">Small</Badge>
         <Badge size="md">Medium</Badge>
+        <Badge max={99}>{120}</Badge>
       </div>
     </div>
   );
