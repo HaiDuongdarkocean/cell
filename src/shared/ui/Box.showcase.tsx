@@ -34,6 +34,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Box',
+  description: 'Neutral frame-first layout primitive with bg, radius, and elevation variants. Use as a container wrapper.',
   group: 'Layout',
   order: 10,
 };

@@ -27,6 +27,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Avatar',
+  description: 'User avatar with sizes (xs, sm, md, lg), shapes (circle, square), status dot, and fallback. Use for user representation.',
   group: 'Generic Core',
   order: 3,
 };

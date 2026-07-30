@@ -18,6 +18,42 @@
   user-select: none;
 }
 
+/* === Sizes — touch target + grip dot scale === */
+.sm {
+  width: var(--iconbutton-size-xs);
+  height: var(--iconbutton-size-xs);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
+.sm .gripDots {
+  width: var(--iconbutton-icon-xs);
+  height: var(--iconbutton-icon-xs);
+  background-size: var(--space-1-5) var(--space-1-5);
+}
+
+.md {
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
+}
+
+.md .gripDots {
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
+  background-size: var(--space-2) var(--space-2);
+}
+
+.lg {
+  width: var(--space-12);
+  height: var(--space-12);
+}
+
+.lg .gripDots {
+  width: var(--iconbutton-icon-md);
+  height: var(--iconbutton-icon-md);
+  background-size: var(--space-2-5) var(--space-2-5);
+}
+
 .dragHandle:hover {
   background: var(--color-surface-hover);
   color: var(--color-text);
@@ -34,12 +70,14 @@
 
 /* === Grip dots — two columns × three rows (6 dots via radial-gradient) === */
 .gripDots {
-  width: var(--iconbutton-icon-sm);
-  height: var(--iconbutton-icon-sm);
   background-image: radial-gradient(circle, currentColor 1.5px, transparent 1.6px);
-  background-size: var(--space-2) var(--space-2);
   background-position: center;
   background-repeat: repeat;
+}
+
+/* Vertical — rotate the grip 90deg so dots read top-to-bottom */
+.vertical .gripDots {
+  transform: rotate(90deg);
 }
 
 @media (prefers-reduced-motion: reduce) {

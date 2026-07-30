@@ -18,6 +18,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'CopyButton',
+  description: 'Copy-to-clipboard button with copied state announcement. Use for copy actions with feedback.',
   group: 'Extension',
   order: 42,
 };

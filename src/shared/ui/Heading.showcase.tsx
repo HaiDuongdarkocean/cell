@@ -17,6 +17,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Heading',
+  description: 'Semantic heading H1-H6 with Display 1-3 variants and size decoupling. Use for page and section titles.',
   group: 'Display',
   order: 20,
 };

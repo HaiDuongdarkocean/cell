@@ -33,8 +33,8 @@ describe('FieldRow', () => {
         <FieldAutoGrowInput value="" onChange={jest.fn()} />
       </FieldRow>
     );
-    expect(screen.getByRole('button', { name: 'TargetWord' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByRole('button', { name: 'Map Target word to Anki field' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Map Target word to Anki field' }));
     expect(screen.getByRole('option', { name: 'None' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'TargetWord' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Sentence' })).toBeInTheDocument();

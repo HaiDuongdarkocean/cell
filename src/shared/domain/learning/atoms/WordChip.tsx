@@ -8,6 +8,8 @@ export interface WordChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   word: string;
   /** Learning status of the word. Default: unknown. */
   status?: WordStatus;
+  /** Chip size. Default: md. */
+  size?: 'sm' | 'md';
   /** Called when the user clicks the chip to look up the word. */
   onLookup?: (word: string) => void;
 }
@@ -21,12 +23,15 @@ export interface WordChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function WordChip({
   word,
   status = 'unknown',
+  size = 'md',
   onLookup,
   className,
   onClick,
   ...rest
 }: WordChipProps): React.JSX.Element {
-  const cls = [styles.chip, styles[status], className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.chip, styles[size], styles[status], className ?? '']
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <button

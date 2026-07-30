@@ -22,6 +22,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Separator',
+  description: 'Visual separator with orientations (horizontal, vertical) and variants (solid, dashed). Use to divide content sections.',
   group: 'Generic Core',
   order: 4,
 };

@@ -19,6 +19,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Blockquote',
+  description: 'Blockquote with default and bordered variants, citation support. Use for quoting text.',
   group: 'Display',
   order: 23,
 };

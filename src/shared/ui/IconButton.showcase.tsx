@@ -33,6 +33,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'IconButton',
+  description: 'Icon-only button with variants (solid, outline, ghost, transparent, danger) and sizes (xs, sm, md, lg). Use for compact icon actions.',
   group: 'Shared UI — Action',
   order: 11,
 };

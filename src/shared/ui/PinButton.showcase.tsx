@@ -15,6 +15,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'PinButton',
+  description: 'Pin toggle button with pinned/unpinned states and sizes (sm, md, lg). Use for pinning items.',
   group: 'Extension',
   order: 45,
 };

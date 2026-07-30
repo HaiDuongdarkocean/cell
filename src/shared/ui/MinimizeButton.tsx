@@ -2,9 +2,18 @@ import type { ButtonHTMLAttributes } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './MinimizeButton.module.css';
 
+type MinimizeButtonSize = 'sm' | 'md' | 'lg';
+type MinimizeButtonVariant = 'ghost' | 'outline';
+
+const ICON_SIZE: Record<MinimizeButtonSize, number> = { sm: 16, md: 18, lg: 20 };
+
 interface MinimizeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Override the default aria-label. Default: "Minimize". */
   ariaLabel?: string;
+  /** Visual variant: ghost=transparent bg, outline=hairline border only. Default 'ghost'. */
+  variant?: MinimizeButtonVariant;
+  /** Button box size: sm=28px, md=32px, lg=36px. Default 'md'. */
+  size?: MinimizeButtonSize;
 }
 
 /**
@@ -15,10 +24,14 @@ interface MinimizeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  */
 export function MinimizeButton({
   ariaLabel = 'Minimize',
+  variant = 'ghost',
+  size = 'md',
   className,
   ...rest
 }: MinimizeButtonProps): React.JSX.Element {
-  const cls = [styles.minimizeBtn, className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.minimizeBtn, styles[size], styles[variant], className ?? '']
+    .filter(Boolean)
+    .join(' ');
   return (
     <button
       type="button"
@@ -26,7 +39,7 @@ export function MinimizeButton({
       aria-label={ariaLabel}
       {...rest}
     >
-      <Icon name="minimize" size={20} />
+      <Icon name="minimize" size={ICON_SIZE[size]} />
     </button>
   );
 }

@@ -20,6 +20,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'CollapseButton',
+  description: 'Collapse/expand toggle with direction (horizontal, vertical), showLabel, and sizes. Use for collapsible sections.',
   group: 'Extension',
   order: 48,
 };

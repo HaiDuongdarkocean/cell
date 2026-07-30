@@ -9,6 +9,9 @@
 }
 
 /* === MaxWidth presets === */
+/* Intentional layout constants — Container breakpoints are structural constraints
+   on content width, not themeable visual properties. They are deliberately
+   hardcoded pixel values outside the token system (per design-system README §SSOT). */
 .maxWidthSm { max-width: 480px; }
 .maxWidthMd { max-width: 640px; }
 .maxWidthLg { max-width: 800px; }

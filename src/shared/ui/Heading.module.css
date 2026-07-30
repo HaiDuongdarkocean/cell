@@ -25,19 +25,43 @@
 }
 
 .size-4 {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-snug);
+  font-size: var(--text-heading-4-font-size);
+  font-weight: var(--text-heading-4-font-weight);
+  line-height: var(--text-heading-4-line-height);
+  letter-spacing: var(--text-heading-4-letter-spacing);
 }
 
 .size-5 {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-snug);
+  font-size: var(--text-heading-5-font-size);
+  font-weight: var(--text-heading-5-font-weight);
+  line-height: var(--text-heading-5-line-height);
+  letter-spacing: var(--text-heading-5-letter-spacing);
 }
 
 .size-6 {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-snug);
+  font-size: var(--text-heading-6-font-size);
+  font-weight: var(--text-heading-6-font-weight);
+  line-height: var(--text-heading-6-line-height);
+  letter-spacing: var(--text-heading-6-letter-spacing);
+}
+
+.display-1 {
+  font-size: var(--text-display-1-font-size);
+  font-weight: var(--text-display-1-font-weight);
+  line-height: var(--text-display-1-line-height);
+  letter-spacing: var(--text-display-1-letter-spacing);
+}
+
+.display-2 {
+  font-size: var(--text-display-2-font-size);
+  font-weight: var(--text-display-2-font-weight);
+  line-height: var(--text-display-2-line-height);
+  letter-spacing: var(--text-display-2-letter-spacing);
+}
+
+.display-3 {
+  font-size: var(--text-display-3-font-size);
+  font-weight: var(--text-display-3-font-weight);
+  line-height: var(--text-display-3-line-height);
+  letter-spacing: var(--text-display-3-letter-spacing);
 }

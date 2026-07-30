@@ -5,10 +5,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  width: var(--iconbutton-size-md);
-  height: var(--iconbutton-size-md);
+  width: var(--size-element-md);
+  height: var(--size-element-md);
   padding: 0;
   border: none;
   border-radius: var(--iconbutton-radius);
@@ -18,6 +16,11 @@
   flex-shrink: 0;
   transition: background var(--transition), color var(--transition), transform var(--transition);
 }
+
+/* === Sizes — sm=28px, md=32px, lg=36px (--size-element-* tokens) === */
+.sm { width: var(--size-element-sm); height: var(--size-element-sm); }
+.md { width: var(--size-element-md); height: var(--size-element-md); }
+.lg { width: var(--size-element-lg); height: var(--size-element-lg); }
 
 .maximizeBtn:hover {
   background: var(--iconbutton-hover-bg);

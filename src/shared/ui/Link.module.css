@@ -29,30 +29,56 @@
 }
 
 /* === Variants === */
-.default {
+
+/* inline: always underlined, accent color */
+.inline {
+  color: var(--color-text-accent);
+  text-decoration: underline;
+}
+
+.inline:hover {
   color: var(--color-primary);
 }
 
-.default:hover {
-  color: var(--color-primary-hover);
-}
-
-.default:active {
+.inline:active {
   color: var(--color-primary-active);
 }
 
-.subtle {
-  color: var(--color-text-secondary);
+/* standalone: no underline by default, underline on hover */
+.standalone {
+  color: var(--color-text-accent);
+  text-decoration: none;
 }
 
-.subtle:hover {
-  color: var(--color-text-primary);
+.standalone:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
 }
 
+.standalone:active {
+  color: var(--color-primary-active);
+}
+
+/* destructive: error color, underline on hover */
 .destructive {
   color: var(--color-error);
+  text-decoration: none;
 }
 
 .destructive:hover {
   color: var(--color-destructive-hover);
+  text-decoration: underline;
+}
+
+/* === Disabled === */
+.disabled {
+  opacity: var(--opacity-disabled, 0.5);
+  pointer-events: none;
+  cursor: default;
+}
+
+/* === External icon === */
+.externalIcon {
+  flex-shrink: 0;
+  opacity: 0.8;
 }

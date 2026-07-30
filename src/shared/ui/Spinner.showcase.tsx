@@ -23,6 +23,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Spinner',
+  description: 'Loading spinner with sizes (2xs, xs, sm, md, lg, xl) and color variants. Use to indicate loading state.',
   group: 'Shared UI — Feedback',
   order: 30,
 };

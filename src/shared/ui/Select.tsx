@@ -37,6 +37,8 @@ export interface SelectProps {
   menuAlign?: 'left' | 'right';
   /** Optional data-testid for the root element. */
   'data-testid'?: string;
+  /** Accessible label for the trigger button. */
+  'aria-label'?: string;
 }
 
 /**
@@ -60,6 +62,7 @@ export function Select({
   menuMaxHeight,
   menuAlign = 'left',
   'data-testid': dataTestId,
+  'aria-label': ariaLabel,
 }: SelectProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -219,6 +222,7 @@ export function Select({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-invalid={error || undefined}
+        aria-label={ariaLabel}
         onClick={handleTriggerClick}
         onKeyDown={handleTriggerKeyDown}
       >

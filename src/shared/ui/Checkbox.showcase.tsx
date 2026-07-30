@@ -18,6 +18,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Checkbox',
+  description: 'Checkbox with indeterminate state, error state, and sizes. Use for multiple selection in forms.',
   group: 'Shared UI — Input',
   order: 23,
 };

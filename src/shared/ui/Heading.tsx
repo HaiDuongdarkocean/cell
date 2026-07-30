@@ -3,12 +3,15 @@ import styles from './Heading.module.css';
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 type HeadingSize = 1 | 2 | 3 | 4 | 5 | 6;
+type HeadingDisplay = 'display-1' | 'display-2' | 'display-3';
 
 export interface HeadingProps extends HTMLAttributes<HTMLHeadingElement> {
   /** Semantic heading level — controls the tag (h1–h6). Default: 1. */
   level?: HeadingLevel;
-  /** Visual size — decoupled from level. Defaults to `level`. */
+  /** Visual size — decoupled from level. Defaults to `level`. Ignored when `display` is set. */
   size?: HeadingSize;
+  /** Display variant — overrides `size` with a larger display style. */
+  display?: HeadingDisplay;
   /** Heading content. */
   children: ReactNode;
 }
@@ -30,13 +33,18 @@ const TAGS: Record<HeadingLevel, 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'> = {
 export function Heading({
   level = 1,
   size,
+  display,
   children,
   className,
   ...rest
 }: HeadingProps): React.JSX.Element {
   const tag = TAGS[level];
   const visualSize = size ?? level;
-  const cls = [styles.heading, styles[`size-${visualSize}`], className ?? '']
+  const cls = [
+    styles.heading,
+    display ? styles[display] : styles[`size-${visualSize}`],
+    className ?? '',
+  ]
     .filter(Boolean)
     .join(' ');
 

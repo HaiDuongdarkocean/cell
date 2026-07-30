@@ -13,6 +13,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'InfoButton',
+  description: 'Info button with ghost/outline variants and sizes (sm, md, lg). Use for showing help/info.',
   group: 'Extension',
   order: 47,
 };

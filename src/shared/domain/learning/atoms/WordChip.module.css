@@ -31,6 +31,17 @@
   cursor: not-allowed;
 }
 
+/* size variants */
+.sm {
+  padding: var(--space-0-5) var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.md {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
 /* new — primary (blue) tint */
 .new {
   background: var(--color-primary-subtle);
@@ -39,7 +50,7 @@
 }
 
 .new:hover {
-  background: var(--color-accent);
+  background: var(--color-surface-hover);
 }
 
 /* learning — warning (amber) tint */

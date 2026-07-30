@@ -3,15 +3,15 @@ import { Overlay } from './Overlay';
 import { Button } from './Button';
 
 export function Showcase(): ReactElement {
-  const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
-      <Button size="sm" onClick={() => setOpen(true)}>
+      <Button size="sm" onClick={() => setVisible(true)}>
         Show overlay
       </Button>
-      {open && (
-        <Overlay onClick={() => setOpen(false)}>
+      {visible && (
+        <Overlay onClick={() => setVisible(false)}>
           <div
             style={{
               padding: 'var(--space-6)',
@@ -30,6 +30,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Overlay',
+  description: 'Modal overlay with elevation, blur, and enter/exit animations. Use as backdrop for modals and popovers.',
   group: 'Layout',
   order: 18,
 };

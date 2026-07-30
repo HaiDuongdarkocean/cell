@@ -2,9 +2,15 @@ import type { ButtonHTMLAttributes } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './MaximizeButton.module.css';
 
+type MaximizeButtonSize = 'sm' | 'md' | 'lg';
+
+const ICON_SIZE: Record<MaximizeButtonSize, number> = { sm: 16, md: 18, lg: 20 };
+
 interface MaximizeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Controlled maximized state. When true, shows minimize icon (restore). */
   maximized: boolean;
+  /** Button box size: sm=28px, md=32px, lg=36px. Default 'md'. */
+  size?: MaximizeButtonSize;
 }
 
 /**
@@ -16,10 +22,11 @@ interface MaximizeButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  */
 export function MaximizeButton({
   maximized,
+  size = 'md',
   className,
   ...rest
 }: MaximizeButtonProps): React.JSX.Element {
-  const cls = [styles.maximizeBtn, maximized ? styles.maximized : '', className ?? '']
+  const cls = [styles.maximizeBtn, styles[size], maximized ? styles.maximized : '', className ?? '']
     .filter(Boolean)
     .join(' ');
   return (
@@ -30,7 +37,7 @@ export function MaximizeButton({
       aria-label={maximized ? 'Restore' : 'Maximize'}
       {...rest}
     >
-      <Icon name={maximized ? 'minimize' : 'maximize'} size={20} />
+      <Icon name={maximized ? 'minimize' : 'maximize'} size={ICON_SIZE[size]} />
     </button>
   );
 }

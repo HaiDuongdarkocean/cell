@@ -7,9 +7,9 @@ describe('Overlay', () => {
     expect(screen.getByText('Content')).toBeInTheDocument();
   });
 
-  it('renders nothing when closed', () => {
-    const { container } = render(<Overlay open={false}>Content</Overlay>);
-    expect(container.firstChild).toBeNull();
+  it('hides content when not visible', () => {
+    const { container } = render(<Overlay visible={false}>Content</Overlay>);
+    expect(container.firstChild).toHaveClass('hidden');
   });
 
   it('applies the overlay class', () => {

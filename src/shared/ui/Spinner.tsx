@@ -1,7 +1,7 @@
 import type { SVGAttributes } from 'react';
 import styles from './Spinner.module.css';
 
-type SpinnerSize = 'sm' | 'md' | 'lg';
+type SpinnerSize = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 type SpinnerColor = 'primary' | 'secondary' | 'accent' | 'on-accent' | 'current';
 
 export interface SpinnerProps extends Omit<SVGAttributes<SVGSVGElement>, 'size' | 'ref'> {
@@ -9,12 +9,14 @@ export interface SpinnerProps extends Omit<SVGAttributes<SVGSVGElement>, 'size' 
   size?: SpinnerSize;
   /** Color token. Default: primary. */
   color?: SpinnerColor;
+  /** Accessible label announced by screen readers. Default: "Loading". */
+  ariaLabel?: string;
 }
 
 /**
  * Spinner — animated loading indicator.
  */
-export function Spinner({ size = 'md', color = 'primary', className, ...rest }: SpinnerProps): React.JSX.Element {
+export function Spinner({ size = 'md', color = 'primary', ariaLabel = 'Loading', className, ...rest }: SpinnerProps): React.JSX.Element {
   const cls = [styles.spinner, styles[size], styles[color], className ?? ''].filter(Boolean).join(' ');
 
   return (
@@ -27,7 +29,8 @@ export function Spinner({ size = 'md', color = 'primary', className, ...rest }: 
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      aria-hidden="true"
+      role="status"
+      aria-label={ariaLabel}
       {...rest}
     >
       <path d="M21 12a9 9 0 1 1-6.219-8.56" />

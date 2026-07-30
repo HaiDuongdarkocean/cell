@@ -13,6 +13,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'MinimizeButton',
+  description: 'Minimize button with ghost/outline variants and sizes (sm, md, lg). Use for minimizing windows/panels.',
   group: 'Extension',
   order: 49,
 };

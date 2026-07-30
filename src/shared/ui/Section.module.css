@@ -1,16 +1,49 @@
 .section {
   display: block;
   width: 100%;
+  box-sizing: border-box;
 }
 
-.sm {
-  padding-block: var(--space-4);
-}
+/* === Padding (only applied when prop is passed) === */
+.padding0 { padding-block: var(--space-0); }
+.padding0-5 { padding-block: var(--space-0-5); }
+.padding1 { padding-block: var(--space-1); }
+.padding1-5 { padding-block: var(--space-1-5); }
+.padding2 { padding-block: var(--space-2); }
+.padding2-5 { padding-block: var(--space-2-5); }
+.padding3 { padding-block: var(--space-3); }
+.padding3-5 { padding-block: var(--space-3-5); }
+.padding4 { padding-block: var(--space-4); }
+.padding4-5 { padding-block: var(--space-4-5); }
+.padding5 { padding-block: var(--space-5); }
+.padding6 { padding-block: var(--space-6); }
+.padding7 { padding-block: var(--space-7); }
+.padding8 { padding-block: var(--space-8); }
+.padding9 { padding-block: var(--space-9); }
+.padding10 { padding-block: var(--space-10); }
+.padding12 { padding-block: var(--space-12); }
+.padding16 { padding-block: var(--space-16); }
+.padding20 { padding-block: var(--space-20); }
+.padding24 { padding-block: var(--space-24); }
 
-.md {
-  padding-block: var(--space-6);
-}
-
-.lg {
-  padding-block: var(--space-10);
-}
+/* === Gap (only applied when prop is passed) === */
+.gap0 { gap: var(--space-0); }
+.gap0-5 { gap: var(--space-0-5); }
+.gap1 { gap: var(--space-1); }
+.gap1-5 { gap: var(--space-1-5); }
+.gap2 { gap: var(--space-2); }
+.gap2-5 { gap: var(--space-2-5); }
+.gap3 { gap: var(--space-3); }
+.gap3-5 { gap: var(--space-3-5); }
+.gap4 { gap: var(--space-4); }
+.gap4-5 { gap: var(--space-4-5); }
+.gap5 { gap: var(--space-5); }
+.gap6 { gap: var(--space-6); }
+.gap7 { gap: var(--space-7); }
+.gap8 { gap: var(--space-8); }
+.gap9 { gap: var(--space-9); }
+.gap10 { gap: var(--space-10); }
+.gap12 { gap: var(--space-12); }
+.gap16 { gap: var(--space-16); }
+.gap20 { gap: var(--space-20); }
+.gap24 { gap: var(--space-24); }

@@ -29,6 +29,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Icon',
+  description: 'Icon component with sizes (xs, sm, md, lg) and semantic colors. Renders SVG icons from ICON_CATALOG.',
   group: 'Generic Core',
   order: 2,
 };

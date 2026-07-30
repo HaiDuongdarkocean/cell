@@ -1,6 +1,6 @@
 .captionToggle {
-  width: calc(var(--touch-target) * 1.8);
-  min-width: calc(var(--touch-target) * 1.8);
+  width: calc(var(--touch-target) * 1.2);
+  min-width: calc(var(--touch-target) * 1.2);
   height: var(--touch-target);
   min-height: var(--touch-target);
   border-radius: var(--radius-full);
@@ -49,7 +49,7 @@
 }
 
 .captionToggle[aria-checked="true"] .thumb {
-  transform: translate(calc(var(--touch-target) * 0.8), -50%);
+  transform: translate(calc(var(--touch-target) * 0.2), -50%);
 }
 
 .captionToggle:disabled {

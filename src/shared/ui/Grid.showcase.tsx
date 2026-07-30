@@ -69,6 +69,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Grid',
+  description: 'CSS Grid layout primitive with columns, gap, and template props. Use for grid layouts.',
   group: 'Layout',
   order: 12,
 };

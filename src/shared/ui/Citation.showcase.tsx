@@ -12,6 +12,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Citation',
+  description: 'Citation element with plain and linked variants. Use for attributing sources.',
   group: 'Display',
   order: 24,
 };

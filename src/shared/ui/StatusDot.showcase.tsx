@@ -24,6 +24,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'StatusDot',
+  description: 'Status indicator dot with colors (success, warning, error, info, neutral) and pulse animation. Use for status indication.',
   group: 'Display',
   order: 26,
 };

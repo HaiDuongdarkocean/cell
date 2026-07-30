@@ -42,7 +42,8 @@ export function Toggle({
       data-testid={dataTestId}
       name={name}
       className={`${styles.toggle} ${styles[size]}`}
-      aria-pressed={checked}
+      role="switch"
+      aria-checked={checked}
       aria-label={ariaLabel}
       title={title}
       disabled={disabled}

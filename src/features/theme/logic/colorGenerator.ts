@@ -4,15 +4,17 @@
 // themeManager (popup/options/sidepanel :root) + themeTokens.ts (content-script
 // container inject). Derive secondary tokens from 9 core — DRY, no drift.
 
-/** Regex for 6-digit hex (#RRGGBB) or 3-digit (#RGB). Case-insensitive. */
-const HEX_RE = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+/** Regex for 6-digit hex (#RRGGBB), 3-digit (#RGB), or 8-digit hex with alpha (#RRGGBBAA). Case-insensitive. */
+const HEX_RE = /^#?([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 
-/** Parse hex string → {r,g,b} (0-255). Throws on invalid hex. */
+/** Parse hex string → {r,g,b} (0-255). Throws on invalid hex. Ignores alpha channel if present (8-digit hex). */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const match = HEX_RE.exec(hex.trim());
   if (!match) throw new Error(`Invalid hex color: "${hex}"`);
   let h = match[1];
   if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  // 8-digit hex (RRGGBBAA) — extract first 6 chars (RGB), ignore last 2 (alpha)
+  if (h.length === 8) h = h.slice(0, 6);
   return {
     r: parseInt(h.slice(0, 2), 16),
     g: parseInt(h.slice(2, 4), 16),

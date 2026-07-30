@@ -1,10 +1,18 @@
 .dot {
   display: inline-block;
-  width: var(--space-2);
-  height: var(--space-2);
   border-radius: var(--radius-full);
   flex-shrink: 0;
   vertical-align: middle;
+}
+
+.sm {
+  width: var(--space-2);
+  height: var(--space-2);
+}
+
+.md {
+  width: var(--space-2-5);
+  height: var(--space-2-5);
 }
 
 .success {

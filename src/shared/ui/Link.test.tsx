@@ -9,7 +9,7 @@ describe('Link', () => {
   });
 
   it('renders all variants', () => {
-    const variants = ['default', 'subtle', 'destructive'] as const;
+    const variants = ['inline', 'standalone', 'destructive'] as const;
     for (const variant of variants) {
       const { unmount } = render(<Link href="#" variant={variant}>{variant}</Link>);
       expect(screen.getByText(variant)).toBeInTheDocument();

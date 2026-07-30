@@ -3,10 +3,13 @@ import type { HTMLAttributes, KeyboardEvent, PointerEvent as ReactPointerEvent }
 import styles from './ResizeHandle.module.css';
 
 type ResizeDirection = 'horizontal' | 'vertical';
+type ResizeHandleSize = 'sm' | 'md';
 
 interface ResizeHandleProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role' | 'tabIndex' | 'onKeyDown'> {
   /** Orientation of the resize axis. Default 'horizontal'. */
   direction?: ResizeDirection;
+  /** Thickness: sm=thinner hit area, md=current. Default 'md'. */
+  size?: ResizeHandleSize;
   /** Accessible label. Default "Resize". */
   'aria-label'?: string;
   /** Called on pointer down (start of resize drag). */
@@ -25,6 +28,7 @@ interface ResizeHandleProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role' 
  */
 export function ResizeHandle({
   direction = 'horizontal',
+  size = 'md',
   className,
   'aria-label': ariaLabel = 'Resize',
   onKeyDown,
@@ -39,7 +43,7 @@ export function ResizeHandle({
     [onKeyDown],
   );
 
-  const cls = [styles.resizeHandle, styles[direction], className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.resizeHandle, styles[direction], styles[size], className ?? ''].filter(Boolean).join(' ');
 
   return (
     <div
