@@ -1,0 +1,13 @@
+.transition {
+  transition-property: opacity, transform;
+  transition-duration: var(--duration-normal);
+  transition-timing-function: var(--ease-in-out);
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transition {
+    transition: none;
+  }
+}
