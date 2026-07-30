@@ -1,0 +1,79 @@
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-2);
+  background: transparent;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+}
+
+.copyBtn:hover {
+  background: var(--color-surface-hover);
+}
+
+.copyBtn:active {
+  transform: scale(0.97);
+}
+
+.copyBtn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.copyBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+/* === Copied state === */
+.copied {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.copied:hover {
+  background: var(--color-success-subtle);
+}
+
+/* === Icon === */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* === Screen-reader-only live region === */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copyBtn {
+    transition: none;
+  }
+}
