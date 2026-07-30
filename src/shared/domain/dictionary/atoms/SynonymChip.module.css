@@ -1,0 +1,38 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width-hairline) solid var(--color-success);
+  border-radius: var(--radius-pill);
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+}
+
+.chip:hover {
+  background: var(--color-success-muted);
+}
+
+.chip:active {
+  transform: scale(0.98);
+}
+
+.chip:focus-visible {
+  outline: var(--space-0-5) solid var(--color-success);
+  outline-offset: var(--space-0-5);
+}
+
+.chip:disabled {
+  opacity: var(--button-disabled-opacity);
+  pointer-events: none;
+  cursor: not-allowed;
+}

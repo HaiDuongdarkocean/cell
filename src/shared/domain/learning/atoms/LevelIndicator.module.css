@@ -1,0 +1,86 @@
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-0-5) var(--space-2);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family);
+  font-size: var(--badge-font-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+}
+
+.dot {
+  display: inline-block;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* A1 — primary (blue) tint, beginner */
+.A1 {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.A1 .dot {
+  background: var(--color-primary);
+}
+
+/* A2 — primary (blue) tint, elementary */
+.A2 {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.A2 .dot {
+  background: var(--color-primary);
+}
+
+/* B1 — warning (amber) tint, intermediate */
+.B1 {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+}
+
+.B1 .dot {
+  background: var(--color-warning);
+}
+
+/* B2 — warning (amber) tint, upper intermediate */
+.B2 {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+}
+
+.B2 .dot {
+  background: var(--color-warning);
+}
+
+/* C1 — success (green) tint, advanced */
+.C1 {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+}
+
+.C1 .dot {
+  background: var(--color-success);
+}
+
+/* C2 — success (green) tint, mastery */
+.C2 {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+}
+
+.C2 .dot {
+  background: var(--color-success);
+}
