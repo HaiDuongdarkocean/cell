@@ -35,28 +35,24 @@ export function ShadowButtonPoC(): React.JSX.Element {
   useEffect(() => {
     if (!containerRef.current) return undefined;
 
-    // Inject hostile CSS into the main document to test isolation
-    const hostileStyle = document.createElement('style');
-    hostileStyle.textContent = `
-      button, .btn { all: unset !important; background: red !important; color: yellow !important; border: 5px solid red !important; }
-    `;
-    document.head.appendChild(hostileStyle);
-
     const host = document.createElement('div');
     host.id = HOST_ID;
     containerRef.current.appendChild(host);
     const cleanup = mountShadowButton(host);
 
-    return () => {
-      cleanup();
-      hostileStyle.remove();
-    };
+    return cleanup;
   }, []);
 
   return (
     <div>
-      <p>Below is a Button mounted inside a shadow root. The host page injects hostile CSS to override buttons. If the button keeps Cell styling (blue pill, white text), CSS isolation works.</p>
-      <div ref={containerRef} style={{ padding: 24, border: '1px dashed gray' }} />
+      <p>Below is a Button mounted inside a shadow root. The preview reuses the same token and component CSS inside the isolated boundary.</p>
+      <div
+        ref={containerRef}
+        style={{
+          padding: 'var(--space-6)',
+          border: 'var(--border-width-hairline) dashed var(--color-border)',
+        }}
+      />
     </div>
   );
 }

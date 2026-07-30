@@ -47,6 +47,7 @@ function flattenStaticTokens(staticObj) {
 
   // font
   push('font-family', staticObj.font.family);
+  push('font-family-body', staticObj.font.family);
   push('font-family-heading', staticObj.font.headingFamily);
   push('font-family-code', staticObj.font.codeFamily);
   push('font-family-mono', staticObj.font.monoFamily);
@@ -66,6 +67,7 @@ function flattenStaticTokens(staticObj) {
   // spacing
   for (const [key, value] of Object.entries(staticObj.spacing)) {
     push(`space-${key}`, value);
+    push(`spacing-${key}`, value);
   }
 
   // radius

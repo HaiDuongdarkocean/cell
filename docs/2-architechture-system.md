@@ -116,9 +116,16 @@ src/
 │   │   ├── SearchableSelect.tsx + .module.css # Single-select dropdown with embedded search (settings-controls-restyle F5)
 │   │   └── HintIcon.tsx + .module.css      # Info-circle button + floating popover with boundary detection (settings-controls-restyle F6)
 │   ├── utils/          #   fileUtils, timeUtils, urlUtils
-│   └── config/         #   config, messages, urls
+│   ├── config/         #   config, messages, urls
+│   └── domain/         #   Domain atoms grouped by bounded context
+│       ├── video/atoms/       # Playback, timeline, volume, fullscreen, PiP
+│       ├── subtitle/atoms/    # Subtitle text, tracks, language, offset
+│       ├── dictionary/atoms/  # Word, phonetic, definition, pronunciation, source
+│       └── learning/atoms/    # Word status, frequency, CEFR, mastery
 └── types/              # Ambient .d.ts (muxjs, vite-env) — M19: media/message/subtitle.ts deprecated
 ```
+
+**Design-system showcase contract (ADR-074):** `src/entrypoints/design-system-showcase/` renders the auto-discovered atom gallery first, followed by token foundations and surface previews. `autoDiscovery.ts` includes `src/shared/ui/*.showcase.tsx` and `src/shared/domain/*/atoms/*.showcase.tsx`; `ShowcaseGallery` owns group ordering, filtering, sidebar navigation, responsive card grid, and token-based layout. Foundation previews use flat sections; radius is rendered as an independent specimen list rather than nested cards.
 
 **Refactor status**: M0-M13 COMPLETE (FSD migration). M14-M21 COMPLETE (architecture debt refactor, ADR-017):
 - M14: SW god-file split (2203→321 lines, 8 handler files)
