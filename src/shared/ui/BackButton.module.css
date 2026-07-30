@@ -1,0 +1,56 @@
+/* === BackButton atom — navigation back with chevron-left (Extension group) ===
+   Consumes tokens only — no raw hex/radius. Touch target 40px desktop / 44px mobile. */
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  height: var(--iconbutton-size-md);
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--iconbutton-radius);
+  background: var(--iconbutton-bg);
+  color: var(--iconbutton-fg);
+  font-family: var(--font-family);
+  font-size: var(--button-font-size);
+  font-weight: var(--button-font-weight);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+
+.backBtn:hover {
+  background: var(--iconbutton-hover-bg);
+  color: var(--iconbutton-hover-fg);
+}
+
+.backBtn:active {
+  transform: scale(0.96);
+}
+
+.backBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.backBtn:disabled {
+  opacity: var(--button-disabled-opacity);
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backBtn {
+    transition: none;
+    animation: none;
+  }
+}

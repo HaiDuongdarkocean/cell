@@ -1,0 +1,54 @@
+/* === MaximizeButton atom — controlled maximize/restore toggle (Extension group) ===
+   Consumes tokens only — no raw hex/radius. Touch target 40px desktop / 44px mobile. */
+
+.maximizeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
+  padding: 0;
+  border: none;
+  border-radius: var(--iconbutton-radius);
+  background: var(--iconbutton-bg);
+  color: var(--iconbutton-fg);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+
+.maximizeBtn:hover {
+  background: var(--iconbutton-hover-bg);
+  color: var(--iconbutton-hover-fg);
+}
+
+.maximizeBtn:active {
+  transform: scale(0.96);
+}
+
+.maximizeBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.maximizeBtn:disabled {
+  opacity: var(--button-disabled-opacity);
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Maximized (active) state — persistent, no hover change */
+.maximized,
+.maximized:hover {
+  color: var(--iconbutton-active-fg);
+  background: var(--iconbutton-active-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maximizeBtn {
+    transition: none;
+    animation: none;
+  }
+}
