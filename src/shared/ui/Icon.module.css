@@ -1,0 +1,28 @@
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon > span {
+  width: 100%;
+  height: 100%;
+}
+
+/* === Colors === */
+.primary {
+  color: var(--color-icon-primary);
+}
+
+.secondary {
+  color: var(--color-icon-secondary);
+}
+
+.disabled {
+  color: var(--color-icon-disabled);
+}
+
+.inverse {
+  color: var(--color-text-inverse);
+}
