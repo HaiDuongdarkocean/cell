@@ -82,13 +82,16 @@ docs/           # Tài liệu dự án
 │   └── 071-motion-standardization-and-reduced-motion.md # ADR-071: Motion standardization and reduced motion support
 │   └── 072-component-reuse-card-dialog-atoms.md # ADR-072: Media cards and SettingsDialog reuse Card/Dialog shared atoms
 │   └── 073-self-evolving-skills.md    # ADR-073: Self-evolving agent skills — files live in self-evolution/ folder, write-skill asks before enabling
-│   └── 074-design-system-showcase.md  # ADR-074: Auto-generated design system showcase HTML (tokens + icons + components + UniversalPanel)
+│   ├── 074-design-system-showcase.md  # ADR-074: Auto-generated design system showcase HTML (tokens + icons + components + UniversalPanel)
+│   └── 076-showcase-astrxy-foundations-first.md # ADR-076: Astryx foundations-first showcase layout and token alignment
 │   └── 075-shadow-root-react.md       # ADR-075: Content-script UI rendered by React inside Shadow DOM
 ├── design-system/                     # Design system reference docs & assets
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)
 │   ├── daft-reference.html            # Visual reference HTML for daft.md (colors/spacing/typography/components)
 │   ├── universal-panel-demo.html      # Universal Panel (Dictionary + Settings) demo applying Meta/Facebook DS
-│   ├── design-system-showcase.html    # Auto-generated interactive showcase
+│   ├── design-system-showcase.html    # Auto-generated interactive showcase (foundations → atoms → surfaces)
+│   ├── atom-design-plan.md            # 79-atom API/token/variant/state plan
+│   ├── tri-thuc-design-system.md      # Design-system knowledge base and conventions
 │   └── assets/                        # Showcase JS/CSS assets
 ├── ideas/                             # Refined idea one-pagers (idea-refine skill output)
 │   ├── badge-pointer-dictionary-trigger.md # Refined: orbital badge + moon pointer for dictionary lookup

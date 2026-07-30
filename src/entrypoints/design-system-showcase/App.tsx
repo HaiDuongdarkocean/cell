@@ -163,16 +163,16 @@ function TypographyScale() {
 function RadiusScale() {
   const radius = tokens.static.radius;
   return (
-    <div className={styles.tokenGrid}>
+    <div className={styles.radiusScale}>
       {(Object.keys(radius) as Array<keyof typeof radius>).map((key) => (
-        <div key={String(key)} className={styles.tokenSwatch}>
-          <div
-            className={styles.swatchColor}
-            style={{ background: 'var(--color-primary-subtle)', borderRadius: radius[key] }}
-          >
-            {String(key)}
-          </div>
-          <code className={styles.swatchValue}>{radius[key]}</code>
+        <div key={String(key)} className={styles.radiusRow}>
+          <span className={styles.radiusName}>--radius-{String(key)}</span>
+          <span
+            className={styles.radiusSample}
+            style={{ borderRadius: radius[key] }}
+            aria-hidden="true"
+          />
+          <code className={styles.radiusValue}>{radius[key]}</code>
         </div>
       ))}
     </div>
@@ -400,7 +400,7 @@ function ComponentShowcase() {
 }
 
 function UniversalPanelPreview() {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'dictionary' | 'settings'>('dictionary');
   const [tokenize, setTokenize] = useState({ enabled: true, showStatus: true, showFrequency: false });
 
@@ -528,7 +528,7 @@ function SettingsAndThemeShowcase() {
 function PopupDictionaryPreview() {
   const markerRef = useRef<HTMLDivElement | null>(null);
   const [anchor, setAnchor] = useState<PopupAnchor | null>(null);
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (!markerRef.current) return;
@@ -579,7 +579,7 @@ function TokenizeFabPreview() {
 }
 
 export function App() {
-  const [mode, setMode] = useState<ShowcaseMode>('light');
+  const [mode, setMode] = useState<ShowcaseMode>('dark');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mode);
@@ -592,12 +592,14 @@ export function App() {
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>Cell Design System</h1>
-          <p className={styles.subtitle}>Single source of truth for components, tokens, and patterns.</p>
+          <p className={styles.subtitle}>Foundations → primitives → surfaces. Review the system in that order.</p>
         </div>
         <ThemeToggle mode={mode} onToggle={toggleMode} />
       </header>
 
       <main className={styles.main}>
+        <ShowcaseGallery />
+
         <Section title="Color Tokens">
           <TokenSwatches mode={mode} />
         </Section>
@@ -662,7 +664,6 @@ export function App() {
           <SettingsAndThemeShowcase />
         </Section>
 
-        <ShowcaseGallery />
       </main>
     </div>
   );

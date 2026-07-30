@@ -43,7 +43,7 @@ export function Showcase(): ReactElement {
         </Grid>
       </div>
       <div>
-        <span>custom template: "1fr 2fr 1fr"</span>
+        <span>custom template: &quot;1fr 2fr 1fr&quot;</span>
         <Grid columns="1fr 2fr 1fr" gap="2" style={{ marginTop: 4 }}>
           <div style={cellStyle}>1</div>
           <div style={cellStyle}>2</div>
