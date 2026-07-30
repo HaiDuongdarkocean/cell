@@ -579,7 +579,7 @@ function TokenizeFabPreview() {
 }
 
 export function App() {
-  const [mode, setMode] = useState<ShowcaseMode>('dark');
+  const [mode, setMode] = useState<ShowcaseMode>('light');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', mode);
