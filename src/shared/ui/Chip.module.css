@@ -1,0 +1,90 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target);
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.sm {
+  padding: var(--space-0-5) var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.md {
+  padding: var(--space-1) var(--space-2-5);
+  font-size: var(--font-size-base);
+}
+
+/* === Variants === */
+.default {
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.outline {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* === Selected state === */
+.selected {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* === Interactive (button) hover/active === */
+button.chip {
+  cursor: pointer;
+}
+
+button.chip:hover {
+  background: var(--color-surface-hover);
+}
+
+button.chip.selected:hover {
+  background: var(--color-primary-subtle);
+}
+
+button.chip:active {
+  transform: scale(0.97);
+}
+
+button.chip:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+/* === Icons === */
+.leadingIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.leadingIcon svg {
+  width: var(--iconbutton-icon-xs);
+  height: var(--iconbutton-icon-xs);
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip {
+    transition: none;
+  }
+}
