@@ -1,0 +1,28 @@
+.separator {
+  border: none;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* === Orientation === */
+.horizontal {
+  width: 100%;
+  height: 0;
+  border-top: var(--border-width-hairline) solid var(--color-border);
+}
+
+.vertical {
+  height: 100%;
+  width: 0;
+  align-self: stretch;
+  border-left: var(--border-width-hairline) solid var(--color-border);
+}
+
+/* === Variants === */
+.horizontal.dashed {
+  border-top-style: dashed;
+}
+
+.vertical.dashed {
+  border-left-style: dashed;
+}

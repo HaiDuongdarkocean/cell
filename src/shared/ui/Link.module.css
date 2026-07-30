@@ -1,0 +1,58 @@
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.link:focus-visible {
+  outline: var(--space-0-5) solid var(--color-ring);
+  outline-offset: var(--space-0-5);
+  border-radius: var(--radius-2xs);
+}
+
+/* === Sizes === */
+.sm {
+  font-size: var(--font-size-xs);
+}
+
+.md {
+  font-size: var(--font-size-base);
+}
+
+.lg {
+  font-size: var(--font-size-lg);
+}
+
+/* === Variants === */
+.default {
+  color: var(--color-primary);
+}
+
+.default:hover {
+  color: var(--color-primary-hover);
+}
+
+.default:active {
+  color: var(--color-primary-active);
+}
+
+.subtle {
+  color: var(--color-text-secondary);
+}
+
+.subtle:hover {
+  color: var(--color-text-primary);
+}
+
+.destructive {
+  color: var(--color-error);
+}
+
+.destructive:hover {
+  color: var(--color-destructive-hover);
+}
