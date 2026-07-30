@@ -63,6 +63,21 @@ import circleInfoSvg from './svg/circle-info.svg?raw';
 import messageSquareSvg from './svg/message-square.svg?raw';
 import bookOpenSvg from './svg/book-open.svg?raw';
 
+// === Media / window control icons ===
+import externalLinkSvg from './svg/external-link.svg?raw';
+import checkDoubleSvg from './svg/check-double.svg?raw';
+import wrenchSvg from './svg/wrench.svg?raw';
+import microphoneSvg from './svg/microphone.svg?raw';
+import volumeHighSvg from './svg/volume-high.svg?raw';
+import volumeLowSvg from './svg/volume-low.svg?raw';
+import volumeMuteSvg from './svg/volume-mute.svg?raw';
+import captionsSvg from './svg/captions.svg?raw';
+import maximizeSvg from './svg/maximize.svg?raw';
+import minimizeSvg from './svg/minimize.svg?raw';
+import pipSvg from './svg/pip.svg?raw';
+import pinSvg from './svg/pin.svg?raw';
+import pinOffSvg from './svg/pin-off.svg?raw';
+
 // === Nav cluster icons (stroke 1.5 — subtitle overlay convention) ===
 import navPrevSvg from './svg/nav-prev.svg?raw';
 import navNextSvg from './svg/nav-next.svg?raw';
@@ -134,6 +149,19 @@ export { default as generateNativeIcon } from './svg/generate-native.svg?raw';
 export { default as sidePanelIcon } from './svg/side-panel.svg?raw';
 export { default as subtitleManagerIcon } from './svg/subtitle-manager.svg?raw';
 export { default as resetOffsetIcon } from './svg/reset-offset.svg?raw';
+export { default as externalLinkIcon } from './svg/external-link.svg?raw';
+export { default as checkDoubleIcon } from './svg/check-double.svg?raw';
+export { default as wrenchIcon } from './svg/wrench.svg?raw';
+export { default as microphoneIcon } from './svg/microphone.svg?raw';
+export { default as volumeHighIcon } from './svg/volume-high.svg?raw';
+export { default as volumeLowIcon } from './svg/volume-low.svg?raw';
+export { default as volumeMuteIcon } from './svg/volume-mute.svg?raw';
+export { default as captionsIcon } from './svg/captions.svg?raw';
+export { default as maximizeIcon } from './svg/maximize.svg?raw';
+export { default as minimizeIcon } from './svg/minimize.svg?raw';
+export { default as pipIcon } from './svg/pip.svg?raw';
+export { default as pinIcon } from './svg/pin.svg?raw';
+export { default as pinOffIcon } from './svg/pin-off.svg?raw';
 
 /** Semantic icon entry — query by tags to find reuse candidates. */
 export interface IconEntry {
@@ -224,6 +252,21 @@ export const ICON_CATALOG = {
   sidePanel:       { svg: sidePanelSvg,       source: 'custom/subtitle-panel',      tags: ['side','panel','toggle','split','rect'] } as IconEntry,
   subtitleManager: { svg: subtitleManagerSvg, source: 'custom/subtitle-manager',    tags: ['subtitle','manager','list','panel','lines'] } as IconEntry,
   resetOffset:     { svg: resetOffsetSvg,     source: 'custom/subtitle-offset',     tags: ['reset','offset','circular-arrow','hook','undo'] } as IconEntry,
+
+  // === Media / window control ===
+  externalLink: { svg: externalLinkSvg, source: 'lucide/external-link', tags: ['external','link','open','new-tab','outbound'] } as IconEntry,
+  checkDouble:  { svg: checkDoubleSvg,  source: 'lucide/check-check',   tags: ['check','double','done','confirm','verified','all'] } as IconEntry,
+  wrench:       { svg: wrenchSvg,       source: 'lucide/wrench',        tags: ['wrench','settings','config','tool','fix','repair'] } as IconEntry,
+  microphone:   { svg: microphoneSvg,   source: 'lucide/microphone',    tags: ['microphone','voice','audio','record','speak','mic'] } as IconEntry,
+  volumeHigh:   { svg: volumeHighSvg,   source: 'lucide/volume-2',      tags: ['volume','high','loud','sound','audio','speaker'] } as IconEntry,
+  volumeLow:    { svg: volumeLowSvg,    source: 'lucide/volume-1',      tags: ['volume','low','quiet','sound','audio','speaker'] } as IconEntry,
+  volumeMute:   { svg: volumeMuteSvg,   source: 'lucide/volume-x',      tags: ['volume','mute','silent','off','sound','audio','speaker'] } as IconEntry,
+  captions:     { svg: captionsSvg,     source: 'lucide/captions',      tags: ['captions','subtitle','cc','closed-caption','text','accessibility'] } as IconEntry,
+  maximize:     { svg: maximizeSvg,     source: 'lucide/maximize',      tags: ['maximize','expand','fullscreen','enlarge','scale-up'] } as IconEntry,
+  minimize:     { svg: minimizeSvg,     source: 'lucide/minimize',      tags: ['minimize','collapse','shrink','scale-down','reduce'] } as IconEntry,
+  pip:          { svg: pipSvg,          source: 'lucide/pip',           tags: ['pip','picture-in-picture','overlay','mini-player','video'] } as IconEntry,
+  pin:          { svg: pinSvg,          source: 'lucide/pin',           tags: ['pin','attach','anchor','fixed','lock-position'] } as IconEntry,
+  pinOff:       { svg: pinOffSvg,       source: 'lucide/pin-off',       tags: ['pin','off','unpin','detach','release','unlock-position'] } as IconEntry,
 } as const;
 
 /** Find icon entries by tag (fuzzy semantic search). */
