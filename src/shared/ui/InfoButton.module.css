@@ -1,0 +1,47 @@
+/* === InfoButton atom — icon-only info button (Extension group) ===
+   Consumes tokens only — no raw hex/radius. Touch target 40px desktop / 44px mobile. */
+
+.infoBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
+  padding: 0;
+  border: none;
+  border-radius: var(--iconbutton-radius);
+  background: var(--iconbutton-bg);
+  color: var(--iconbutton-fg);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+
+.infoBtn:hover {
+  background: var(--iconbutton-hover-bg);
+  color: var(--iconbutton-hover-fg);
+}
+
+.infoBtn:active {
+  transform: scale(0.96);
+}
+
+.infoBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.infoBtn:disabled {
+  opacity: var(--button-disabled-opacity);
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .infoBtn {
+    transition: none;
+    animation: none;
+  }
+}

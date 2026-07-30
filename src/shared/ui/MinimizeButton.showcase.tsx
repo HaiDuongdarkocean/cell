@@ -1,0 +1,18 @@
+import type { ReactElement } from 'react';
+import { MinimizeButton } from './MinimizeButton';
+
+export function Showcase(): ReactElement {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+      <MinimizeButton />
+      <MinimizeButton ariaLabel="Hide panel" />
+      <MinimizeButton disabled />
+    </div>
+  );
+}
+
+export const showcaseMeta = {
+  title: 'MinimizeButton',
+  group: 'Extension',
+  order: 49,
+};
