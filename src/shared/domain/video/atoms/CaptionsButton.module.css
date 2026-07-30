@@ -1,0 +1,7 @@
+/* === CaptionsButton — Domain Video atom (SA-9 §6.A.6) ===
+   Box/hover/active/focus/disabled handled by generic IconButton.
+   This module reserves a hook for domain-specific overrides (none needed yet). */
+
+.captionsBtn {
+  /* IconButton consumes tokens for all states; no overrides required. */
+}
