@@ -1,0 +1,26 @@
+.timeOffset {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-0-5);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+}
+
+.signPositive {
+  color: var(--color-primary);
+}
+
+.signNegative {
+  color: var(--color-error);
+}
+
+.signZero {
+  color: var(--color-text-secondary);
+}
