@@ -9,6 +9,19 @@
   line-height: var(--leading-normal);
 }
 
+/* === Sizes (spec §2.3) === */
+.sm {
+  font-size: var(--font-size-sm);
+}
+
+.md {
+  font-size: var(--font-size-base);
+}
+
+.lg {
+  font-size: var(--font-size-lg);
+}
+
 .disabled {
   color: var(--label-disabled-color, var(--color-muted-foreground));
   cursor: not-allowed;

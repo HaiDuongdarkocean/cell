@@ -10,6 +10,8 @@ export function Showcase(): ReactElement {
       <Toggle checked={on} onChange={setOn} ariaLabel="Toggle on" title="Enabled toggle" />
       <Toggle checked={off} onChange={setOff} ariaLabel="Toggle off" title="Off toggle" />
       <Toggle checked={off} onChange={setOff} ariaLabel="Disabled toggle" title="Disabled" disabled />
+      <Toggle size="sm" checked={on} onChange={setOn} ariaLabel="Small toggle" title="Small" />
+      <Toggle size="lg" checked={on} onChange={setOn} ariaLabel="Large toggle" title="Large" />
     </div>
   );
 }

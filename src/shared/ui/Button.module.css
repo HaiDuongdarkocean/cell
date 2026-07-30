@@ -183,3 +183,21 @@
   align-items: center;
   min-width: 0;
 }
+
+/* === Full width === */
+.fullWidth {
+  width: 100%;
+}
+
+/* === Elevation (spec §2.1 — shadow when elevation ≠ none) === */
+.elevation_low {
+  box-shadow: var(--shadow-floating);
+}
+
+.elevation_med {
+  box-shadow: var(--shadow-popover);
+}
+
+.elevation_high {
+  box-shadow: var(--shadow-modal);
+}

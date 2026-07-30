@@ -1,8 +1,9 @@
 .toggle {
-  width: calc(var(--touch-target) * 1.8);
-  min-width: calc(var(--touch-target) * 1.8);
-  height: var(--touch-target);
-  min-height: var(--touch-target);
+  /* size-driven via --toggle-h / --toggle-w (set by .sm/.md/.lg) */
+  width: var(--toggle-w);
+  min-width: var(--toggle-w);
+  height: var(--toggle-h);
+  min-height: var(--toggle-h);
   border-radius: var(--radius-full);
   background: var(--color-border);
   position: relative;
@@ -11,6 +12,22 @@
   flex-shrink: 0;
   border: none;
   padding: 0;
+}
+
+/* === Sizes (spec §2.8 — track height × ~1.6-1.8 width) === */
+.sm {
+  --toggle-h: var(--space-8);
+  --toggle-w: calc(var(--space-8) * 1.625);
+}
+
+.md {
+  --toggle-h: var(--touch-target);
+  --toggle-w: calc(var(--touch-target) * 1.8);
+}
+
+.lg {
+  --toggle-h: var(--space-12);
+  --toggle-w: calc(var(--space-12) * 1.625);
 }
 
 .toggle[aria-pressed="true"] {
@@ -34,8 +51,8 @@
   position: absolute;
   top: 50%;
   left: var(--space-0-5);
-  width: calc(var(--touch-target) - 2 * var(--space-0-5));
-  height: calc(var(--touch-target) - 2 * var(--space-0-5));
+  width: calc(var(--toggle-h) - 2 * var(--space-0-5));
+  height: calc(var(--toggle-h) - 2 * var(--space-0-5));
   border-radius: var(--radius-full);
   background: var(--color-text-inverse);
   /* transform-box: border-box — host pages may reset transform-box to view-box
@@ -47,11 +64,9 @@
 }
 
 .toggle[aria-pressed="true"] .thumb {
-  /* translate(X, -50%) — single function, minifier-safe (no space between
-     functions to strip). X = track width - thumb width - 2×left offset;
-     track width = touch-target * 1.8 and thumb width = touch-target - 2*offset,
-     so X = touch-target * 0.8. */
-  transform: translate(calc(var(--touch-target) * 0.8), -50%);
+  /* translate(X, -50%) — X = track width - thumb width - 2×left offset
+     = toggle-w - (toggle-h - 2×offset) - 2×offset = toggle-w - toggle-h. */
+  transform: translate(calc(var(--toggle-w) - var(--toggle-h)), -50%);
 }
 
 .toggle:disabled {

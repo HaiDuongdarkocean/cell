@@ -1,11 +1,18 @@
 import type { HTMLAttributes } from 'react';
 import styles from './Progress.module.css';
 
+type ProgressSize = 'sm' | 'md' | 'lg';
+type ProgressColor = 'accent' | 'success' | 'warning' | 'error';
+
 export interface ProgressProps extends HTMLAttributes<HTMLDivElement> {
   /** Current value. */
   value?: number;
   /** Maximum value. Default: 100. */
   max?: number;
+  /** Bar height (linear). Default: md. */
+  size?: ProgressSize;
+  /** Fill color. Default: accent. */
+  color?: ProgressColor;
   /** Indeterminate animation. */
   indeterminate?: boolean;
 }
@@ -16,6 +23,8 @@ export interface ProgressProps extends HTMLAttributes<HTMLDivElement> {
 export function Progress({
   value = 0,
   max = 100,
+  size = 'md',
+  color = 'accent',
   indeterminate,
   className,
   ...rest
@@ -24,7 +33,7 @@ export function Progress({
 
   return (
     <div
-      className={[styles.root, indeterminate ? styles.indeterminate : '', className ?? ''].filter(Boolean).join(' ')}
+      className={[styles.root, styles[size], styles[color], indeterminate ? styles.indeterminate : '', className ?? ''].filter(Boolean).join(' ')}
       role="progressbar"
       aria-valuenow={indeterminate ? undefined : value}
       aria-valuemin={0}

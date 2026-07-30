@@ -6,12 +6,22 @@
   border-radius: var(--radius-full);
 }
 
+/* === Sizes (spec §3.8) === */
+.sm { height: var(--space-1); }
+.md { height: var(--space-1-5); }
+.lg { height: var(--space-2); }
+
 .bar {
   height: 100%;
   background: var(--color-primary);
   border-radius: var(--radius-full);
   transition: width var(--duration-fast) var(--ease-out);
 }
+
+/* === Colors (spec §3.8) === */
+.success .bar { background: var(--color-success); }
+.warning .bar { background: var(--color-warning); }
+.error .bar { background: var(--color-error); }
 
 .indeterminate .bar {
   width: 40%;

@@ -4,6 +4,7 @@ import styles from './Button.module.css';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'link';
 type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonElevation = 'none' | 'low' | 'med' | 'high';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style. Default: primary. */
@@ -12,6 +13,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize;
   /** Show loading spinner and disable interactions. */
   loading?: boolean;
+  /** Stretch to fill the available width. */
+  fullWidth?: boolean;
+  /** Elevation shadow. Default: none. */
+  elevation?: ButtonElevation;
   /** Icon before the label. */
   leadingIcon?: ReactNode;
   /** Icon after the label. */
@@ -31,6 +36,8 @@ export function Button({
   variant = 'primary',
   size = 'md',
   loading = false,
+  fullWidth = false,
+  elevation = 'none',
   leadingIcon,
   trailingIcon,
   children,
@@ -43,6 +50,8 @@ export function Button({
     styles[variant],
     styles[size],
     loading ? styles.loading : '',
+    fullWidth ? styles.fullWidth : '',
+    elevation !== 'none' ? styles[`elevation_${elevation}`] : '',
     className ?? '',
   ]
     .filter(Boolean)

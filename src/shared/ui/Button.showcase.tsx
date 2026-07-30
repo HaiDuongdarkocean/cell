@@ -14,6 +14,8 @@ export function Showcase(): ReactElement {
       <Button size="lg" variant="primary">Large</Button>
       <Button disabled>Disabled</Button>
       <Button loading>Loading</Button>
+      <Button fullWidth>Full width</Button>
+      <Button elevation="med">Elevated</Button>
     </div>
   );
 }

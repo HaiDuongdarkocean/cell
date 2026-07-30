@@ -23,6 +23,10 @@ export function Showcase(): ReactElement {
       <IconButton variant="danger" active aria-label="Danger active">
         <Icon name="trash" size={20} />
       </IconButton>
+      <IconButton size="lg" aria-label="Large">
+        <Icon name="settings" size={24} />
+      </IconButton>
+      <IconButton loading aria-label="Loading" />
     </div>
   );
 }

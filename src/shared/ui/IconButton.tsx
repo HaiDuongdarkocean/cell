@@ -1,18 +1,22 @@
-import type { ButtonHTMLAttributes, Ref } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './IconButton.module.css';
 
-type IconButtonSize = 'xs' | 'sm' | 'md';
+type IconButtonSize = 'xs' | 'sm' | 'md' | 'lg';
 type IconButtonVariant = 'ghost' | 'danger';
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Size: xs=28, sm=32, md=40. Default 'md'. */
+  /** Size: xs=28, sm=32, md=40, lg=48. Default 'md'. */
   size?: IconButtonSize;
   /** Hover behavior: ghost=surface-hover bg, danger=error-subtle bg + error color. Default 'ghost'. */
   variant?: IconButtonVariant;
   /** Persistent active state (no hover change). variant='ghost'+active → primary; variant='danger'+active → danger. */
   active?: boolean;
+  /** Show a loading spinner and disable interactions. */
+  loading?: boolean;
   /** Ref to the underlying button element. */
   ref?: Ref<HTMLButtonElement>;
+  children?: ReactNode;
 }
 
 /**
@@ -29,8 +33,10 @@ export function IconButton({
   size = 'md',
   variant = 'ghost',
   active = false,
+  loading = false,
   className,
   children,
+  disabled,
   ref,
   ...rest
 }: IconButtonProps): React.JSX.Element {
@@ -41,10 +47,17 @@ export function IconButton({
       ? styles.activeDanger
       : styles.activePrimary
     : '';
-  const cls = `${styles.iconBtn} ${sizeClass} ${variantClass} ${activeClass} ${className ?? ''}`.trim();
+  const cls = `${styles.iconBtn} ${sizeClass} ${variantClass} ${activeClass} ${loading ? styles.loading : ''} ${className ?? ''}`.trim();
   return (
-    <button type="button" ref={ref} className={cls} {...rest}>
-      {children}
+    <button
+      type="button"
+      ref={ref}
+      className={cls}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      {...rest}
+    >
+      {loading ? <Icon name="loader" size={20} className={styles.spinner} /> : children}
     </button>
   );
 }
