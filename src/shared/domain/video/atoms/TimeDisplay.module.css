@@ -1,0 +1,14 @@
+/* === TimeDisplay — domain video atom (atom-design-plan §6.A.3) ===
+   Monospace code font + tabular-nums so digits don't shift.
+   Consumes tokens only — no raw hex/radius. */
+
+.display {
+  font-family: var(--font-family-mono);
+  font-size: var(--button-font-size-sm);
+  font-weight: var(--button-font-weight);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1;
+  user-select: none;
+}

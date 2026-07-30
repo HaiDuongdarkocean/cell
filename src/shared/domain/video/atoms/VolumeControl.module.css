@@ -1,0 +1,104 @@
+/* === VolumeControl — domain video atom (atom-design-plan §6.A.4) ===
+   Mute toggle + horizontal volume slider. Consumes tokens only. */
+
+.container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  flex-shrink: 0;
+}
+
+.muteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+
+.muteBtn:hover {
+  background: var(--color-surface-hover);
+}
+
+.muteBtn:active {
+  transform: scale(0.96);
+}
+
+.muteBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slider {
+  width: var(--space-20);
+  min-height: var(--touch-target);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: var(--space-2) 0;
+  outline: none;
+}
+
+.slider:focus-visible .track {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+.track {
+  position: relative;
+  width: 100%;
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  overflow: visible;
+}
+
+.fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  pointer-events: none;
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  transform: translate(-50%, -50%) scale(1);
+  transition: transform var(--transition);
+  pointer-events: none;
+  border: var(--space-0-5) solid var(--color-background);
+}
+
+.slider:hover .thumb {
+  transform: translate(-50%, -50%) scale(1.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .muteBtn,
+  .thumb {
+    transition: none;
+  }
+}
