@@ -1,0 +1,52 @@
+.dot {
+  display: inline-block;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.success {
+  background: var(--color-success);
+}
+
+.warning {
+  background: var(--color-warning);
+}
+
+.error {
+  background: var(--color-error);
+}
+
+.info {
+  background: var(--color-info);
+}
+
+.neutral {
+  background: var(--color-text-secondary);
+}
+
+.pulse {
+  position: relative;
+}
+
+.pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  background: inherit;
+  animation: statusDotPulse var(--duration-2000) ease-out infinite;
+}
+
+@keyframes statusDotPulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse::after {
+    animation: none;
+  }
+}
