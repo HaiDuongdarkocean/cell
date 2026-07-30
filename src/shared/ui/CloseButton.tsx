@@ -1,0 +1,29 @@
+import type { ButtonHTMLAttributes } from 'react';
+import { Icon } from '@/shared/icons/Icon';
+import styles from './CloseButton.module.css';
+
+interface CloseButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Size: sm=32, md=40. Default 'md'. */
+  size?: 'sm' | 'md';
+}
+
+/**
+ * CloseButton — icon-only button that dismisses a panel, dialog, or card.
+ *
+ * Renders the `x` icon from ICON_CATALOG. `aria-label="Close"` is set by default
+ * and can be overridden via props. Touch target meets 40px (desktop) / 44px (mobile).
+ */
+export function CloseButton({
+  size = 'md',
+  className,
+  'aria-label': ariaLabel = 'Close',
+  ...rest
+}: CloseButtonProps): React.JSX.Element {
+  const cls = [styles.closeBtn, styles[size], className ?? ''].filter(Boolean).join(' ');
+
+  return (
+    <button type="button" className={cls} aria-label={ariaLabel} {...rest}>
+      <Icon name="x" size={16} />
+    </button>
+  );
+}

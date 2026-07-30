@@ -1,0 +1,49 @@
+.dragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  background: transparent;
+  border: none;
+  border-radius: var(--iconbutton-radius);
+  cursor: grab;
+  color: var(--color-text-secondary);
+  transition: background var(--transition), color var(--transition);
+  padding: 0;
+  flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.dragHandle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragHandle:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+/* === Grip dots — two columns × three rows (6 dots via radial-gradient) === */
+.gripDots {
+  width: var(--iconbutton-icon-sm);
+  height: var(--iconbutton-icon-sm);
+  background-image: radial-gradient(circle, currentColor 1.5px, transparent 1.6px);
+  background-size: var(--space-2) var(--space-2);
+  background-position: center;
+  background-repeat: repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dragHandle {
+    transition: none;
+  }
+}

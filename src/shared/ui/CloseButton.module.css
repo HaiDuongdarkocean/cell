@@ -1,0 +1,52 @@
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--iconbutton-radius);
+  cursor: pointer;
+  color: var(--iconbutton-fg);
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.sm {
+  width: var(--iconbutton-size-sm);
+  height: var(--iconbutton-size-sm);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
+.md {
+  width: var(--iconbutton-size-md);
+  height: var(--iconbutton-size-md);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
+.closeBtn:hover {
+  background: var(--iconbutton-hover-bg);
+  color: var(--iconbutton-hover-fg);
+}
+
+.closeBtn:active {
+  transform: scale(0.96);
+}
+
+.closeBtn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.closeBtn:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .closeBtn {
+    transition: none;
+  }
+}
