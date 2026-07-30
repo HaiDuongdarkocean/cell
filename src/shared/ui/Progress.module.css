@@ -2,7 +2,7 @@
   width: 100%;
   height: var(--space-2);
   overflow: hidden;
-  background: var(--color-muted);
+  background: var(--color-track);
   border-radius: var(--radius-full);
 }
 
@@ -13,7 +13,7 @@
 
 .bar {
   height: 100%;
-  background: var(--color-primary);
+  background: var(--color-accent);
   border-radius: var(--radius-full);
   transition: width var(--duration-fast) var(--ease-out);
 }
@@ -28,6 +28,47 @@
   animation: progress-indeterminate var(--duration-1500) ease-in-out infinite;
 }
 
+/* === Circular variant === */
+.circular {
+  width: auto;
+  height: auto;
+  overflow: visible;
+  background: none;
+  border-radius: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circularSvg {
+  display: block;
+}
+
+.sm .circularSvg { width: var(--space-6); height: var(--space-6); }
+.md .circularSvg { width: var(--space-8); height: var(--space-8); }
+.lg .circularSvg { width: var(--space-10); height: var(--space-10); }
+
+.circularTrack {
+  stroke: var(--color-track);
+}
+
+.circularBar {
+  stroke: var(--color-accent);
+  transition: stroke-dashoffset var(--duration-fast) var(--ease-out);
+}
+
+.success .circularBar { stroke: var(--color-success); }
+.warning .circularBar { stroke: var(--color-warning); }
+.error .circularBar { stroke: var(--color-error); }
+
+.indeterminate .circularSvg {
+  animation: progress-circular-spin var(--duration-1000) linear infinite;
+}
+
+@keyframes progress-circular-spin {
+  to { transform: rotate(360deg); }
+}
+
 @keyframes progress-indeterminate {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(250%); }
@@ -35,7 +76,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bar,
-  .indeterminate .bar {
+  .indeterminate .bar,
+  .indeterminate .circularSvg {
     transition: none;
     animation: none;
   }

@@ -14,6 +14,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'BackButton',
+  description: 'Back navigation button with icon-only and icon+label variants, sizes (sm, md, lg). Use for back navigation.',
   group: 'Extension',
   order: 46,
 };

@@ -2,11 +2,17 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './BackButton.module.css';
 
+type BackButtonSize = 'sm' | 'md' | 'lg';
+
+const ICON_SIZE: Record<BackButtonSize, number> = { sm: 16, md: 18, lg: 20 };
+
 interface BackButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Show a "Back" text label next to the chevron. Default: false (icon-only). */
   showLabel?: boolean;
   /** Override the default label text. Default: "Back". */
   label?: string;
+  /** Button box size: sm=28px, md=32px, lg=36px height. Default 'md'. */
+  size?: BackButtonSize;
   /** Optional leading/trailing children — unused, kept for extensibility. */
   children?: ReactNode;
 }
@@ -20,11 +26,12 @@ interface BackButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function BackButton({
   showLabel = false,
   label = 'Back',
+  size = 'md',
   className,
   children,
   ...rest
 }: BackButtonProps): React.JSX.Element {
-  const cls = [styles.backBtn, className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.backBtn, styles[size], className ?? ''].filter(Boolean).join(' ');
   return (
     <button
       type="button"
@@ -32,7 +39,7 @@ export function BackButton({
       aria-label="Go back"
       {...rest}
     >
-      <Icon name="chevronLeft" size={20} />
+      <Icon name="chevronLeft" size={ICON_SIZE[size]} />
       {showLabel && <span className={styles.label}>{label}</span>}
       {children}
     </button>

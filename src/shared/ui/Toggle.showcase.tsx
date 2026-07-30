@@ -18,6 +18,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Toggle',
+  description: 'Switch toggle with sizes (sm, md, lg) and on/off/disabled states. Use for binary on/off preferences.',
   group: 'Shared UI — Input',
   order: 22,
 };

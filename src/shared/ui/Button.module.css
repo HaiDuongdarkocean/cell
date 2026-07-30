@@ -61,7 +61,7 @@
 
 .primary:active {
   background: var(--button-active-bg);
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 /* Secondary */
@@ -76,7 +76,7 @@
 
 .secondary:active {
   background: var(--button-secondary-hover-bg);
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 /* Outline */
@@ -93,7 +93,7 @@
 
 .outline:active {
   background: var(--color-surface-hover);
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 /* Ghost */
@@ -108,7 +108,7 @@
 
 .ghost:active {
   background: var(--color-surface-hover);
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 /* Destructive */
@@ -123,7 +123,7 @@
 
 .destructive:active {
   background: var(--button-destructive-hover-bg);
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 /* Link */

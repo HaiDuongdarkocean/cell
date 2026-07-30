@@ -49,6 +49,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Flex',
+  description: 'Flexbox layout primitive with direction, justify, align, and wrap props. Use for flexible layouts.',
   group: 'Layout',
   order: 11,
 };

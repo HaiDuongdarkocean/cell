@@ -5,10 +5,17 @@
   padding: var(--badge-padding-y) var(--badge-padding-x);
   border-radius: var(--radius-pill);
   font-family: var(--font-family);
-  font-size: var(--badge-font-size);
   font-weight: var(--font-weight-medium);
   line-height: var(--leading-tight);
   white-space: nowrap;
+}
+
+.sm {
+  font-size: var(--font-size-2xs);
+}
+
+.md {
+  font-size: var(--font-size-xs);
 }
 
 /* === Tint color coding per part of speech === */

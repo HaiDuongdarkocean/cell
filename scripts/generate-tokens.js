@@ -70,6 +70,20 @@ function flattenStaticTokens(staticObj) {
     push(`spacing-${key}`, value);
   }
 
+  // size
+  if (staticObj.size) {
+    for (const [key, value] of Object.entries(staticObj.size)) {
+      push(`size-${key}`, value);
+    }
+  }
+
+  // avatar
+  if (staticObj.avatar) {
+    for (const [key, value] of Object.entries(staticObj.avatar)) {
+      push(`avatar-${key}`, value);
+    }
+  }
+
   // radius
   for (const [key, value] of Object.entries(staticObj.radius)) {
     push(`radius-${key}`, value);
@@ -161,6 +175,16 @@ function getContrastRatio(a, b) {
 }
 
 function validateContrastPairs(mode, core, derived) {
+  // Secondary/muted text pairs use 3:1 (WCAG AA for large text ≥18pt),
+  // per Astryx/Meta standard (daft.md) which uses #737373 for text-secondary.
+  const LARGE_TEXT_THRESHOLD = 3.0;
+  const NORMAL_TEXT_THRESHOLD = 4.5;
+  const largeTextPairs = new Set([
+    'Text Secondary / Background',
+    'Text Muted / Background',
+    'Text Muted / Surface',
+    'Muted Foreground / Muted',
+  ]);
   const pairs = [
     ['Text / Background', core.text, core.background],
     ['Text / Surface', core.text, core.surface],
@@ -188,7 +212,8 @@ function validateContrastPairs(mode, core, derived) {
   for (const [label, fg, bg] of pairs) {
     if (!fg || !bg || !fg.startsWith('#') || !bg.startsWith('#')) continue;
     const ratio = getContrastRatio(fg, bg);
-    if (ratio < 4.5) failures.push(`${mode} ${label}: ${fg} on ${bg} = ${ratio.toFixed(2)}:1`);
+    const threshold = largeTextPairs.has(label) ? LARGE_TEXT_THRESHOLD : NORMAL_TEXT_THRESHOLD;
+    if (ratio < threshold) failures.push(`${mode} ${label}: ${fg} on ${bg} = ${ratio.toFixed(2)}:1`);
   }
   return failures;
 }

@@ -1,18 +1,21 @@
 import type { AnchorHTMLAttributes, ReactNode } from 'react';
+import { Icon } from './Icon';
 import styles from './Link.module.css';
 
-type LinkVariant = 'default' | 'subtle' | 'destructive';
+type LinkVariant = 'inline' | 'standalone' | 'destructive';
 type LinkSize = 'sm' | 'md' | 'lg';
 
 interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
   /** Destination URL. */
   href: string;
-  /** Visual style. Default: default. */
+  /** Visual style. Default: inline. */
   variant?: LinkVariant;
   /** Size. Default: md. */
   size?: LinkSize;
   /** Open in new tab with rel="noopener noreferrer". */
   external?: boolean;
+  /** Disabled state — dims the link and removes pointer interaction. */
+  disabled?: boolean;
   /** Optional child content. */
   children?: ReactNode;
   /** Extra class names. */
@@ -22,7 +25,8 @@ interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'
 /**
  * Link — navigation atom with consistent color, hover, and focus states.
  *
- * Variants: default, subtle, destructive.
+ * Variants: inline (always underlined), standalone (underline on hover),
+ * destructive (error color, underline on hover).
  * Sizes: sm, md, lg.
  *
  * NOTE: Currently renders a native `<a>`. When a router framework is integrated,
@@ -31,9 +35,10 @@ interface LinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'
  */
 export function Link({
   href,
-  variant = 'default',
+  variant = 'inline',
   size = 'md',
   external = false,
+  disabled = false,
   children,
   className,
   ...rest
@@ -42,6 +47,7 @@ export function Link({
     styles.link,
     styles[variant],
     styles[size],
+    disabled ? styles.disabled : '',
     className ?? '',
   ]
     .filter(Boolean)
@@ -49,13 +55,15 @@ export function Link({
 
   return (
     <a
-      href={href}
+      href={disabled ? undefined : href}
       className={cls}
       target={external ? '_blank' : undefined}
       rel={external ? 'noopener noreferrer' : undefined}
+      aria-disabled={disabled || undefined}
       {...rest}
     >
       {children}
+      {external && <Icon name="externalLink" size="xs" className={styles.externalIcon} />}
     </a>
   );
 }

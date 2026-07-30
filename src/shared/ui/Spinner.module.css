@@ -4,19 +4,35 @@
   animation: spin var(--duration-1000) linear infinite;
 }
 
+/* === Sizes (mapped to --font-size-* tokens) === */
+.\32xs {
+  width: var(--font-size-2xs);
+  height: var(--font-size-2xs);
+}
+
+.xs {
+  width: var(--font-size-xs);
+  height: var(--font-size-xs);
+}
+
 .sm {
-  width: var(--space-4);
-  height: var(--space-4);
+  width: var(--font-size-sm);
+  height: var(--font-size-sm);
 }
 
 .md {
-  width: var(--space-6);
-  height: var(--space-6);
+  width: var(--font-size-base);
+  height: var(--font-size-base);
 }
 
 .lg {
-  width: var(--space-8);
-  height: var(--space-8);
+  width: var(--font-size-lg);
+  height: var(--font-size-lg);
+}
+
+.xl {
+  width: var(--font-size-xl);
+  height: var(--font-size-xl);
 }
 
 /* === Colors (spec §3.7) === */

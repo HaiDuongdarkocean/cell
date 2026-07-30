@@ -6,6 +6,8 @@ export interface AntonymChipProps extends ButtonHTMLAttributes<HTMLButtonElement
   word: string;
   /** Called when the user clicks the chip to look up the antonym. */
   onLookup?: (word: string) => void;
+  /** Chip size. sm uses smaller padding + --font-size-xs, md uses --font-size-sm. */
+  size?: 'sm' | 'md';
 }
 
 /**
@@ -19,9 +21,10 @@ export function AntonymChip({
   onLookup,
   className,
   onClick,
+  size = 'md',
   ...rest
 }: AntonymChipProps): React.JSX.Element {
-  const cls = [styles.chip, className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.chip, styles[size], className ?? ''].filter(Boolean).join(' ');
 
   return (
     <button

@@ -3,6 +3,10 @@ import type { HTMLAttributes, KeyboardEvent } from 'react';
 import styles from './DragHandle.module.css';
 
 interface DragHandleProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role' | 'tabIndex' | 'onKeyDown'> {
+  /** Orientation of the grip dots. Default 'horizontal' (dots stacked vertically). */
+  orientation?: 'horizontal' | 'vertical';
+  /** Size: sm=28, md=40, lg=48 touch target. Default 'md'. */
+  size?: 'sm' | 'md' | 'lg';
   /** Accessible label for the drag handle. Default "Drag". */
   'aria-label'?: string;
   /** Called when an arrow key is pressed (keyboard reorder). */
@@ -16,6 +20,8 @@ interface DragHandleProps extends Omit<HTMLAttributes<HTMLDivElement>, 'role' | 
  * keyboard arrow-key support. Touch target meets 40px (desktop) / 44px (mobile).
  */
 export function DragHandle({
+  orientation = 'horizontal',
+  size = 'md',
   className,
   'aria-label': ariaLabel = 'Drag',
   onKeyDown,
@@ -28,7 +34,7 @@ export function DragHandle({
     [onKeyDown],
   );
 
-  const cls = [styles.dragHandle, className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.dragHandle, styles[size], styles[orientation], className ?? ''].filter(Boolean).join(' ');
 
   return (
     <div

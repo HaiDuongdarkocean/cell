@@ -14,6 +14,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'DragHandle',
+  description: 'Drag handle with orientation (horizontal, vertical) and sizes (sm, md, lg). Use for draggable items.',
   group: 'Extension',
   order: 43,
 };

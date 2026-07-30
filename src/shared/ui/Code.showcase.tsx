@@ -13,6 +13,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Code',
+  description: 'Inline code display with monospace font. Use for showing code snippets (multi-line uses CodeBlock).',
   group: 'Display',
   order: 25,
 };

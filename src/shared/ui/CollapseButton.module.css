@@ -5,10 +5,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  width: var(--iconbutton-size-md);
-  height: var(--iconbutton-size-md);
+  gap: var(--space-1);
+  width: var(--size-element-md);
+  height: var(--size-element-md);
   padding: 0;
   border: none;
   border-radius: var(--iconbutton-radius);
@@ -17,6 +16,36 @@
   cursor: pointer;
   flex-shrink: 0;
   transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+
+/* === Sizes — sm=28px, md=32px, lg=36px (--size-element-* tokens) === */
+.sm { width: var(--size-element-sm); height: var(--size-element-sm); }
+.md { width: var(--size-element-md); height: var(--size-element-md); }
+.lg { width: var(--size-element-lg); height: var(--size-element-lg); }
+
+/* === Direction — chevron rotation axis === */
+/* vertical (default): chevron rotates up→down (0deg → 180deg) */
+/* horizontal: chevron rotates left→right (−90deg → 90deg) */
+.horizontal svg {
+  transform: rotate(-90deg);
+}
+.horizontal.collapsed svg {
+  transform: rotate(90deg);
+}
+
+/* === Label === */
+.withLabel {
+  width: auto;
+  padding: 0 var(--space-2);
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-family: var(--font-family);
+  font-size: var(--button-font-size);
+  font-weight: var(--button-font-weight);
 }
 
 .collapseBtn:hover {
@@ -39,14 +68,19 @@
   cursor: not-allowed;
 }
 
-/* Chevron rotates 180deg when collapsed */
+/* Chevron rotates 180deg when collapsed (vertical direction) */
 .collapsed svg {
   transform: rotate(180deg);
 }
 
+.collapseBtn svg {
+  transition: transform var(--transition);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .collapseBtn,
-  .collapsed svg {
+  .collapsed svg,
+  .horizontal svg {
     transition: none;
     animation: none;
   }

@@ -1,8 +1,19 @@
 .phonetic {
   font-family: var(--font-family-code);
-  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-regular);
   color: var(--color-text-secondary);
   line-height: var(--leading-normal);
   white-space: nowrap;
+}
+
+.sm {
+  font-size: var(--font-size-sm);
+}
+
+.md {
+  font-size: var(--font-size-base);
+}
+
+.lg {
+  font-size: var(--font-size-lg);
 }

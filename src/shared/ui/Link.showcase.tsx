@@ -2,7 +2,7 @@ import { Link } from './Link';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
-  const variants = ['default', 'subtle', 'destructive'] as const;
+  const variants = ['inline', 'standalone', 'destructive'] as const;
   const sizes = ['sm', 'md', 'lg'] as const;
 
   return (
@@ -26,6 +26,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Link',
+  description: 'Hyperlink with variants (inline, standalone, destructive) and external icon. Use for navigation links.',
   group: 'Generic Core',
   order: 5,
 };

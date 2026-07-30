@@ -1,4 +1,6 @@
 import type { ReactElement } from 'react';
+import { Select } from '@/shared/ui';
+import type { SelectOption } from '@/shared/ui/Select';
 import styles from './LanguageSelector.module.css';
 
 export interface LanguageOption {
@@ -24,9 +26,12 @@ export interface LanguageSelectorProps {
 }
 
 /**
- * LanguageSelector — a native `<select>` dropdown for choosing a subtitle
- * language. Controlled component with `value`/`onChange` and
- * `aria-label="Subtitle language"`.
+ * LanguageSelector — a styled dropdown for choosing a subtitle language.
+ *
+ * Wraps the generic `Select` atom (custom listbox with themed dropdown) so the
+ * option list matches the Astryx design system instead of relying on the
+ * OS-rendered native `<select>` popup. Controlled component with
+ * `value`/`onChange` and `aria-label="Subtitle language"`.
  */
 export function LanguageSelector({
   languages,
@@ -36,21 +41,21 @@ export function LanguageSelector({
   dataTestId,
   disabled,
 }: LanguageSelectorProps): ReactElement {
+  const options: SelectOption[] = languages.map((lang) => ({
+    value: lang.srclang,
+    label: lang.label,
+  }));
+
   return (
-    <select
+    <Select
       id={id}
       data-testid={dataTestId}
       className={styles.languageSelector}
       aria-label="Subtitle language"
+      options={options}
       value={value}
+      onChange={onChange}
       disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      {languages.map((lang) => (
-        <option key={lang.srclang} value={lang.srclang}>
-          {lang.label}
-        </option>
-      ))}
-    </select>
+    />
   );
 }

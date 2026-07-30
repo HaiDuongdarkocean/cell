@@ -8,7 +8,7 @@ const mockLanguages = [
 ];
 
 describe('LanguageSelector', () => {
-  it('renders a select element with aria-label', () => {
+  it('renders a trigger with aria-label', () => {
     render(
       <LanguageSelector
         languages={mockLanguages}
@@ -19,7 +19,7 @@ describe('LanguageSelector', () => {
     expect(screen.getByLabelText('Subtitle language')).toBeInTheDocument();
   });
 
-  it('renders all language options', () => {
+  it('shows the selected language label in the trigger', () => {
     render(
       <LanguageSelector
         languages={mockLanguages}
@@ -28,6 +28,17 @@ describe('LanguageSelector', () => {
       />,
     );
     expect(screen.getByText('English')).toBeInTheDocument();
+  });
+
+  it('renders all language options when opened', () => {
+    render(
+      <LanguageSelector
+        languages={mockLanguages}
+        value="en"
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText('Subtitle language'));
     expect(screen.getByText('Spanish')).toBeInTheDocument();
     expect(screen.getByText('Japanese')).toBeInTheDocument();
   });
@@ -40,8 +51,7 @@ describe('LanguageSelector', () => {
         onChange={() => {}}
       />,
     );
-    const select = screen.getByLabelText('Subtitle language') as HTMLSelectElement;
-    expect(select.value).toBe('es');
+    expect(screen.getByText('Spanish')).toBeInTheDocument();
   });
 
   it('calls onChange with the selected srclang', () => {
@@ -53,8 +63,8 @@ describe('LanguageSelector', () => {
         onChange={onChange}
       />,
     );
-    const select = screen.getByLabelText('Subtitle language');
-    fireEvent.change(select, { target: { value: 'ja' } });
+    fireEvent.click(screen.getByLabelText('Subtitle language'));
+    fireEvent.click(screen.getByText('Japanese'));
     expect(onChange).toHaveBeenCalledWith('ja');
   });
 

@@ -15,6 +15,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Label',
+  description: 'Form label with required indicator and sizes (sm, md, lg). Use to label form controls.',
   group: 'Shared UI — Input',
   order: 21,
 };

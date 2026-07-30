@@ -56,14 +56,14 @@ describe('TokenizeFab', () => {
     fireEvent.click(screen.getByTestId('tokenize-fab-button'));
 
     const enabledToggle = screen.getByTestId('tokenize-fab-toggle-enabled');
-    expect(enabledToggle).toHaveAttribute('aria-pressed', 'false');
+    expect(enabledToggle).toHaveAttribute('aria-checked', 'false');
 
     fireEvent.click(enabledToggle);
-    expect(enabledToggle).toHaveAttribute('aria-pressed', 'true');
+    expect(enabledToggle).toHaveAttribute('aria-checked', 'true');
 
     const statusToggle = screen.getByTestId('tokenize-fab-toggle-showStatus');
     fireEvent.click(statusToggle);
-    expect(statusToggle).toHaveAttribute('aria-pressed', 'true');
+    expect(statusToggle).toHaveAttribute('aria-checked', 'true');
   });
 
   it('disables status and frequency toggles when tokenize is off', () => {

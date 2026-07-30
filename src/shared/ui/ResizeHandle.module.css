@@ -32,6 +32,17 @@
   cursor: row-resize;
 }
 
+/* === Sizes — sm = thinner hit area, md = current (default) === */
+.sm.horizontal {
+  width: var(--space-0-5);
+  min-width: var(--space-0-5);
+}
+
+.sm.vertical {
+  height: var(--space-0-5);
+  min-height: var(--space-0-5);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .resizeHandle {
     transition: none;

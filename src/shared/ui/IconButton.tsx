@@ -3,12 +3,13 @@ import { Icon } from '@/shared/icons/Icon';
 import styles from './IconButton.module.css';
 
 type IconButtonSize = 'xs' | 'sm' | 'md' | 'lg';
-type IconButtonVariant = 'ghost' | 'danger';
+type IconButtonVariant = 'solid' | 'outline' | 'ghost' | 'transparent' | 'danger';
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Size: xs=28, sm=32, md=40, lg=48. Default 'md'. */
   size?: IconButtonSize;
-  /** Hover behavior: ghost=surface-hover bg, danger=error-subtle bg + error color. Default 'ghost'. */
+  /** Visual style: solid=primary fill, outline=hairline border, ghost=surface-hover bg on hover,
+   *  transparent=no bg/border/hover-bg, danger=error-subtle bg + error color on hover. Default 'ghost'. */
   variant?: IconButtonVariant;
   /** Persistent active state (no hover change). variant='ghost'+active → primary; variant='danger'+active → danger. */
   active?: boolean;

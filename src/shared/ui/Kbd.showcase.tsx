@@ -29,6 +29,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Kbd',
+  description: 'Keyboard key display with sizes (sm, md). Use to show keyboard shortcuts.',
   group: 'Utility',
   order: 30,
 };

@@ -12,19 +12,19 @@ describe('Section', () => {
     expect(screen.getByText('Content').tagName).toBe('SECTION');
   });
 
-  it('applies default md size class', () => {
+  it('applies default padding6 class', () => {
     const { container } = render(<Section>Content</Section>);
-    expect(container.firstChild).toHaveClass('md');
+    expect(container.firstChild).toHaveClass('padding6');
   });
 
-  it('applies sm size class', () => {
-    const { container } = render(<Section size="sm">Content</Section>);
-    expect(container.firstChild).toHaveClass('sm');
+  it('applies padding4 class', () => {
+    const { container } = render(<Section padding="4">Content</Section>);
+    expect(container.firstChild).toHaveClass('padding4');
   });
 
-  it('applies lg size class', () => {
-    const { container } = render(<Section size="lg">Content</Section>);
-    expect(container.firstChild).toHaveClass('lg');
+  it('applies padding10 class', () => {
+    const { container } = render(<Section padding="10">Content</Section>);
+    expect(container.firstChild).toHaveClass('padding10');
   });
 
   it('merges custom className', () => {

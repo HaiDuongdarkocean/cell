@@ -21,6 +21,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Timestamp',
+  description: 'Time display with relative, absolute, time, and datetime formats. Use for showing timestamps.',
   group: 'Display',
   order: 22,
 };

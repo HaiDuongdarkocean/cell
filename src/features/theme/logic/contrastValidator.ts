@@ -59,14 +59,14 @@ export interface ValidationResult {
 
 /**
  * Validate 3 critical contrast pairs cho 1 mode palette:
- * 1. text/canvas — body text readability
- * 2. textSecondary/canvas — secondary text readability
- * 3. white/primary — button label trên primary bg
+ * 1. text/canvas — body text readability (AA ≥ 4.5:1)
+ * 2. textSecondary/canvas — secondary text readability (AA Large ≥ 3:1, per daft.md)
+ * 3. white/primary — button label trên primary bg (AA ≥ 4.5:1)
  */
 export function validateTheme(colors: CoreColorTokens): ValidationResult {
   const pairs: PairResult[] = [
     makePair('Text / Canvas', colors.text, colors.background),
-    makePair('Text Secondary / Canvas', colors.textSecondary, colors.background),
+    makePairSecondary('Text Secondary / Canvas', colors.textSecondary, colors.background),
     makePair('White / Primary', tokensJson.core.light.background, colors.primary),
   ];
   return { pairs, allPass: pairs.every((p) => p.rating.pass) };
@@ -75,4 +75,11 @@ export function validateTheme(colors: CoreColorTokens): ValidationResult {
 function makePair(label: string, fg: string, bg: string): PairResult {
   const ratio = getContrastRatio(fg, bg);
   return { label, fg, bg, ratio, rating: getRating(ratio) };
+}
+
+/** Secondary text uses AA Large threshold (≥ 3:1) per daft.md/Astryx spec. */
+function makePairSecondary(label: string, fg: string, bg: string): PairResult {
+  const ratio = getContrastRatio(fg, bg);
+  const pass = meetsAALarge(ratio);
+  return { label, fg, bg, ratio, rating: { level: pass ? 'AA' : 'Fail', ratio, pass } };
 }

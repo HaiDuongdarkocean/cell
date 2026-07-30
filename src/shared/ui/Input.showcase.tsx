@@ -16,6 +16,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Input',
+  description: 'Controlled text input with sizes (sm, md, lg) and error state. Use for form fields and user text entry.',
   group: 'Shared UI — Input',
   order: 20,
 };

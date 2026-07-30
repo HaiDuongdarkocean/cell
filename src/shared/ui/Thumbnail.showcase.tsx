@@ -14,6 +14,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Thumbnail',
+  description: 'Image thumbnail with aspect ratios (1:1, 4:3, 16:9, 3:2), fallback, and skeleton loading. Use for image previews.',
   group: 'Display',
   order: 21,
 };

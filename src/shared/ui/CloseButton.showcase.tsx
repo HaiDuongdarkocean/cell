@@ -18,6 +18,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'CloseButton',
+  description: 'Close button with ghost/solid variants and sizes (sm, md). Use for dismissing dialogs and popovers.',
   group: 'Extension',
   order: 40,
 };

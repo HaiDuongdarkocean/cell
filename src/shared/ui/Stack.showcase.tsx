@@ -70,6 +70,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Stack',
+  description: 'Stack layout primitive (VStack/HStack) with gap and divider. Use for vertical/horizontal stacking.',
   group: 'Layout',
   order: 13,
 };

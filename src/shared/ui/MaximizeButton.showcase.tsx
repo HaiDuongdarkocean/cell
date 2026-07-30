@@ -15,6 +15,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'MaximizeButton',
+  description: 'Maximize/restore toggle button with sizes (sm, md, lg). Use for maximizing windows/panels.',
   group: 'Extension',
   order: 50,
 };

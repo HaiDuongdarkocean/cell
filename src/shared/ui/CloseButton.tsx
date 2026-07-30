@@ -5,6 +5,8 @@ import styles from './CloseButton.module.css';
 interface CloseButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Size: sm=32, md=40. Default 'md'. */
   size?: 'sm' | 'md';
+  /** Visual style: ghost=transparent with surface-hover on hover, solid=filled primary background. Default 'ghost'. */
+  variant?: 'ghost' | 'solid';
 }
 
 /**
@@ -15,11 +17,12 @@ interface CloseButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  */
 export function CloseButton({
   size = 'md',
+  variant = 'ghost',
   className,
   'aria-label': ariaLabel = 'Close',
   ...rest
 }: CloseButtonProps): React.JSX.Element {
-  const cls = [styles.closeBtn, styles[size], className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.closeBtn, styles[size], styles[variant], className ?? ''].filter(Boolean).join(' ');
 
   return (
     <button type="button" className={cls} aria-label={ariaLabel} {...rest}>

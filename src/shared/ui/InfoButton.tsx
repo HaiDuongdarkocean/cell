@@ -2,9 +2,18 @@ import type { ButtonHTMLAttributes } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import styles from './InfoButton.module.css';
 
+type InfoButtonSize = 'sm' | 'md' | 'lg';
+type InfoButtonVariant = 'ghost' | 'outline';
+
+const ICON_SIZE: Record<InfoButtonSize, number> = { sm: 16, md: 18, lg: 20 };
+
 interface InfoButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Override the default aria-label. Default: "More information". */
   ariaLabel?: string;
+  /** Visual variant: ghost=transparent bg, outline=hairline border only. Default 'ghost'. */
+  variant?: InfoButtonVariant;
+  /** Button box size: sm=28px, md=32px, lg=36px. Default 'md'. */
+  size?: InfoButtonSize;
 }
 
 /**
@@ -15,10 +24,14 @@ interface InfoButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  */
 export function InfoButton({
   ariaLabel = 'More information',
+  variant = 'ghost',
+  size = 'md',
   className,
   ...rest
 }: InfoButtonProps): React.JSX.Element {
-  const cls = [styles.infoBtn, className ?? ''].filter(Boolean).join(' ');
+  const cls = [styles.infoBtn, styles[size], styles[variant], className ?? '']
+    .filter(Boolean)
+    .join(' ');
   return (
     <button
       type="button"
@@ -26,7 +39,7 @@ export function InfoButton({
       aria-label={ariaLabel}
       {...rest}
     >
-      <Icon name="info" size={20} />
+      <Icon name="info" size={ICON_SIZE[size]} />
     </button>
   );
 }
