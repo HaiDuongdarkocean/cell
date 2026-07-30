@@ -1,0 +1,22 @@
+.citation {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
+
+.link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.link:hover {
+  text-decoration: underline;
+  color: var(--color-primary);
+}
+
+.link:focus-visible {
+  outline: var(--space-0-5) solid var(--color-border-focus);
+  outline-offset: var(--space-0-5);
+  border-radius: var(--radius-xs);
+}
