@@ -35,6 +35,7 @@ export class ReactSubtitleController {
   private readonly onUpdateCurrentCard: () => void;
   private offsetMs = 0;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
+  private yOffsetPersistTimer: ReturnType<typeof setTimeout> | null = null;
   private hasSubtitle = false;
   private isPlaying = false;
   private repeatActive = false;
@@ -99,6 +100,8 @@ export class ReactSubtitleController {
       repeatActive: false,
       repeatIcon: this.repeatIcon,
       repeatLabel: this.repeatLabel,
+      yOffsetPercent: blockSettings.yOffsetPercent,
+      onDragReposition: (y) => this.handleDragReposition(y),
       manager: this.buildManagerState(),
       offset: this.buildOffsetState(),
       generateNativeEnabled: this.generateNativeEnabled,
@@ -136,6 +139,18 @@ export class ReactSubtitleController {
     this.persistTimer = setTimeout(() => {
       this.persistTimer = null;
       saveSettings({ [OFFSET_SETTINGS_KEY]: { [this.url]: this.offsetMs } } as Partial<Settings>).catch(() => undefined);
+    }, OFFSET_PERSIST_DEBOUNCE_MS);
+  }
+
+  /** ADR-025: drag reposition → update engine block settings + persist yOffsetPercent. */
+  private handleDragReposition(yOffsetPercent: number): void {
+    this.engine.updateBlockSettings({ yOffsetPercent });
+    this.mount.setYOffsetPercent(yOffsetPercent);
+    if (this.yOffsetPersistTimer) clearTimeout(this.yOffsetPersistTimer);
+    this.yOffsetPersistTimer = setTimeout(() => {
+      this.yOffsetPersistTimer = null;
+      const current = this.engine.getBlockSettings();
+      saveSettings({ subtitleBlockSettings: { ...current, yOffsetPercent } } as Partial<Settings>).catch(() => undefined);
     }, OFFSET_PERSIST_DEBOUNCE_MS);
   }
 
@@ -356,6 +371,10 @@ export class ReactSubtitleController {
     if (this.persistTimer) {
       clearTimeout(this.persistTimer);
       this.persistTimer = null;
+    }
+    if (this.yOffsetPersistTimer) {
+      clearTimeout(this.yOffsetPersistTimer);
+      this.yOffsetPersistTimer = null;
     }
     this.mount.unmount();
   }

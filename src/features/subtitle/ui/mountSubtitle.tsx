@@ -29,6 +29,8 @@ export interface MountSubtitleOptions {
   repeatActive: boolean;
   repeatIcon?: IconCatalogKey;
   repeatLabel?: string;
+  yOffsetPercent?: number;
+  onDragReposition?: (yOffsetPercent: number) => void;
   manager?: ManagerState;
   offset?: OffsetState;
   generateNativeEnabled?: boolean;
@@ -61,6 +63,7 @@ export interface MountSubtitleResult {
   setHintOpen: (open: boolean) => void;
   setGenerateNativeEnabled: (enabled: boolean) => void;
   setCollapsed: (collapsed: boolean) => void;
+  setYOffsetPercent: (yOffsetPercent: number) => void;
   addToast: (message: string, variant?: ToastVariant) => void;
   clearToasts: () => void;
 }
@@ -76,6 +79,8 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     repeatActive,
     repeatIcon,
     repeatLabel,
+    yOffsetPercent,
+    onDragReposition,
     manager,
     offset,
     generateNativeEnabled,
@@ -96,7 +101,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
 
   let controllerRef: SubtitlePanelsRef | null = null;
 
-  const { unmount } = mountReactShadow(
+  const { unmount, host } = mountReactShadow(
     <SubtitlePanels
       ref={(r) => { controllerRef = r; }}
       targetStyle={targetStyle}
@@ -107,6 +112,8 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       repeatActive={repeatActive}
       repeatIcon={repeatIcon}
       repeatLabel={repeatLabel}
+      yOffsetPercent={yOffsetPercent ?? 75}
+      onDragReposition={onDragReposition}
       manager={manager}
       offset={offset}
       generateNativeEnabled={generateNativeEnabled}
@@ -128,6 +135,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       parent: container,
       layer: 2,
       position: 'absolute',
+      reparentOnFullscreen: true,
       css: [
         subtitleBlockCss,
         navClusterCss,
@@ -141,6 +149,10 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       ],
     },
   );
+
+  // Host must fill the video container so SubtitlePanels (inset:0) has real dimensions.
+  // Without this, position:absolute + no inset → host collapses to 0×0.
+  host.style.inset = '0';
 
   return {
     unmount,
@@ -156,6 +168,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     setHintOpen: (open) => controllerRef?.setHintOpen(open),
     setGenerateNativeEnabled: (enabled) => controllerRef?.setGenerateNativeEnabled(enabled),
     setCollapsed: (collapsed) => controllerRef?.setCollapsed(collapsed),
+    setYOffsetPercent: (y) => controllerRef?.setYOffsetPercent(y),
     addToast: (message, variant) => controllerRef?.addToast(message, variant),
     clearToasts: () => controllerRef?.clearToasts(),
   };

@@ -1,0 +1,62 @@
+.wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.browserFrame {
+  width: 100%;
+  max-width: 480px;
+  border: var(--border-width-hairline) solid var(--color-border);
+  border-radius: var(--radius-container);
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.browserHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-hover);
+  border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
+}
+
+.browserDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.browserUrl {
+  flex: 1;
+  margin-left: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panelBody {
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+}
+
+.timeControl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-top: var(--border-width-hairline) solid var(--color-border-subtle);
+  background: var(--color-surface-card);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.timeControl input[type='range'] {
+  width: 100%;
+}

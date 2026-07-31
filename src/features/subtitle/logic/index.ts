@@ -7,4 +7,5 @@ export * from './subtitleNaming';
 export * from './subtitleImport';
 export * from './subtitleAutoLoad';
 export * from './subtitleDragDrop';
+export * from './subtitleBlockDrag';
 export * from './subtitleOffset';

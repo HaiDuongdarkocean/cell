@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { MuteButton } from './MuteButton';
 
@@ -25,7 +25,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'MuteButton',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Action',
   group: 'Domain — Video',
   order: 64,

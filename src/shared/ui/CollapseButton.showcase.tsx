@@ -1,4 +1,4 @@
-﻿import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { CollapseButton } from './CollapseButton';
 
 export function Showcase(): ReactElement {
@@ -21,7 +21,7 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'CollapseButton',
   description: 'Collapse/expand toggle with direction (horizontal, vertical), showLabel, and sizes. Use for collapsible sections.',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Action',
   group: 'Extension',
   order: 48,

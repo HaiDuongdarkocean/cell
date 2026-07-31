@@ -1,4 +1,4 @@
-﻿import type { ReactElement } from 'react';
+import type { ReactElement } from 'react';
 import { SkipButton } from './SkipButton';
 
 export function Showcase(): ReactElement {
@@ -19,7 +19,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'SkipButton',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Action',
   group: 'Domain — Video',
   order: 68,

@@ -1,4 +1,4 @@
-﻿import { PronunciationButton } from './PronunciationButton';
+import { PronunciationButton } from './PronunciationButton';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -13,7 +13,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'PronunciationButton',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Content',
   group: 'Domain — Dictionary',
   order: 82,

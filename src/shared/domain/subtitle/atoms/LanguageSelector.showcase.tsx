@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { LanguageSelector } from './LanguageSelector';
 
@@ -39,7 +39,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'LanguageSelector',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Content',
   group: 'Domain — Subtitle',
   order: 72,

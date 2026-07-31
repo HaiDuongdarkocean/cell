@@ -1,4 +1,4 @@
-﻿import { Icon } from '@/shared/icons/Icon';
+import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from './IconButton';
 import type { ReactElement } from 'react';
 
@@ -34,7 +34,7 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'IconButton',
   description: 'Icon-only button with variants (solid, outline, ghost, transparent, danger) and sizes (xs, sm, md, lg). Use for compact icon actions.',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Action',
   group: 'Shared UI — Action',
   order: 11,

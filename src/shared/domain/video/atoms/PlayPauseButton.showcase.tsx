@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { PlayPauseButton } from './PlayPauseButton';
 
@@ -25,7 +25,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'PlayPauseButton',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Action',
   group: 'Domain — Video',
   order: 60,

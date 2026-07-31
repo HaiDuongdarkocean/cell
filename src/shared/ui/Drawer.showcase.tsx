@@ -1,4 +1,4 @@
-﻿import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Drawer } from './Drawer';
 import { Button } from './Button';
 
@@ -30,7 +30,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Drawer',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Overlay',
   group: 'Shared UI — Overlay',
   order: 51,

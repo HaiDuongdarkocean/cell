@@ -97,6 +97,15 @@ function autoSeedAssets(mode: string): Plugin {
 
 export default defineConfig(({ mode }) => ({
   plugins: [crx({ manifest }), autoSeedAssets(mode), designSystemShowcase()],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+    },
+  },
+  server: {
+    port: 5173,
+    strictPort: true,
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

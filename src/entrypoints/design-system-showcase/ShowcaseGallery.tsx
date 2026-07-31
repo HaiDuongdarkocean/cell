@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type ReactElement } from 'react';
 import {
   discoverShowcases,
   groupByLevelThenCategory,
@@ -8,6 +8,7 @@ import {
   type DiscoveredShowcase,
 } from './autoDiscovery';
 import { MockProviders } from './mockProviders';
+import { Icon } from '@/shared/icons/Icon';
 import styles from './ShowcaseGallery.module.css';
 
 const SUPPORTED_LEVELS = LIBRARY_LEVELS.filter((l) => l.supported);
@@ -15,6 +16,22 @@ const SUPPORTED_LEVELS = LIBRARY_LEVELS.filter((l) => l.supported);
 export function ShowcaseGallery(): ReactElement | null {
   const [filter, setFilter] = useState('');
   const [activeLevel, setActiveLevel] = useState<LibraryLevel | null>('foundations');
+  const [fullscreenShowcase, setFullscreenShowcase] = useState<DiscoveredShowcase | null>(null);
+
+  const closeFullscreen = useCallback(() => setFullscreenShowcase(null), []);
+
+  useEffect(() => {
+    if (!fullscreenShowcase) return;
+    const handleKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') closeFullscreen();
+    };
+    document.addEventListener('keydown', handleKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.body.style.overflow = '';
+    };
+  }, [fullscreenShowcase, closeFullscreen]);
 
   const allShowcases = useMemo(() => discoverShowcases(), []);
   const levelCounts = useMemo(() => countByLevel(allShowcases), [allShowcases]);
@@ -28,8 +45,11 @@ export function ShowcaseGallery(): ReactElement | null {
     const result: Record<LibraryLevel, Record<string, DiscoveredShowcase[]>> = {
       foundations: {},
       atoms: {},
+      molecules: {},
+      organisms: {},
+      pages: {},
     };
-    for (const level of ['foundations', 'atoms'] as LibraryLevel[]) {
+    for (const level of ['foundations', 'atoms', 'molecules', 'organisms', 'pages'] as LibraryLevel[]) {
       for (const [cat, items] of Object.entries(grouped[level])) {
         const matched = items.filter(
           (s) =>
@@ -46,7 +66,7 @@ export function ShowcaseGallery(): ReactElement | null {
 
   const visibleCount = useMemo(() => {
     let n = 0;
-    for (const level of ['foundations', 'atoms'] as LibraryLevel[]) {
+    for (const level of ['foundations', 'atoms', 'molecules', 'organisms', 'pages'] as LibraryLevel[]) {
       for (const items of Object.values(filteredGrouped[level])) n += items.length;
     }
     return n;
@@ -137,7 +157,7 @@ export function ShowcaseGallery(): ReactElement | null {
               <section
                 key={level}
                 id={levelId}
-                className={`${styles.levelSection} ${isFoundation ? styles.levelSectionFoundation : styles.levelSectionAtoms}`}
+                className={`${styles.levelSection} ${isFoundation ? styles.levelSectionFoundation : styles.levelSectionGrid}`}
               >
                 <div className={styles.levelHeader}>
                   <span className={styles.levelNumber}>
@@ -152,18 +172,32 @@ export function ShowcaseGallery(): ReactElement | null {
                     <div key={category} id={categoryId} className={styles.categorySection}>
                       <h3 className={styles.categoryTitle}>{category}</h3>
                       <div
-                        className={`${styles.gallery} ${isFoundation ? styles.galleryFoundation : styles.galleryAtoms}`}
+                        className={`${styles.gallery} ${isFoundation ? styles.galleryFoundation : styles.galleryGrid}`}
                       >
-                        {showcases.map((showcase) => (
+                        {showcases.map((showcase) => {
+                          const isPage = level === 'pages';
+                          return (
                           <div
-                            className={`${styles.card} ${isFoundation ? styles.cardFoundation : styles.cardAtom}`}
+                            className={`${styles.card} ${isFoundation ? styles.cardFoundation : isPage ? styles.cardPage : styles.cardGrid}`}
                             key={showcase.id}
                           >
                             <div className={styles.cardHeader}>
                               <h4 className={styles.cardTitle}>{showcase.meta.title}</h4>
-                              {showcase.meta.status && (
-                                <span className={styles.cardStatus}>{showcase.meta.status}</span>
-                              )}
+                              <div className={styles.cardHeaderRight}>
+                                {showcase.meta.status && (
+                                  <span className={styles.cardStatus}>{showcase.meta.status}</span>
+                                )}
+                                {isPage && (
+                                  <button
+                                    type="button"
+                                    className={styles.fullscreenBtn}
+                                    onClick={() => setFullscreenShowcase(showcase)}
+                                    aria-label={`Open ${showcase.meta.title} fullscreen`}
+                                  >
+                                    <Icon name="maximize" size={16} />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             {showcase.meta.description && (
                               <p className={styles.cardDescription}>{showcase.meta.description}</p>
@@ -174,7 +208,8 @@ export function ShowcaseGallery(): ReactElement | null {
                               </MockProviders>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -184,6 +219,30 @@ export function ShowcaseGallery(): ReactElement | null {
           })}
         </div>
       </div>
+
+      {fullscreenShowcase && (
+        <div className={styles.fullscreenOverlay} role="dialog" aria-modal="true" aria-label={fullscreenShowcase.meta.title}>
+          <div className={styles.fullscreenBar}>
+            <div className={styles.fullscreenBarLeft}>
+              <span className={styles.fullscreenCategory}>{fullscreenShowcase.meta.category}</span>
+              <h2 className={styles.fullscreenTitle}>{fullscreenShowcase.meta.title}</h2>
+            </div>
+            <button
+              type="button"
+              className={styles.fullscreenClose}
+              onClick={closeFullscreen}
+              aria-label="Close fullscreen"
+            >
+              <Icon name="x" size={20} />
+            </button>
+          </div>
+          <div className={styles.fullscreenBody}>
+            <MockProviders>
+              <fullscreenShowcase.Component />
+            </MockProviders>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-﻿import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Dialog } from './Dialog';
 import { Button } from './Button';
 
@@ -29,7 +29,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Dialog',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Overlay',
   group: 'Shared UI — Overlay',
   order: 50,
