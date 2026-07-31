@@ -4,6 +4,7 @@ import { MockProviders } from './mockProviders';
 import styles from './ShowcaseGallery.module.css';
 
 const GROUP_ORDER = [
+  'Tokens',
   'Generic Core',
   'Layout',
   'Display',
