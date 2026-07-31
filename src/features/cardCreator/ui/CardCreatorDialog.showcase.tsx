@@ -1,4 +1,4 @@
-﻿import { CardCreatorDialogContent } from './CardCreatorDialogContent';
+import { CardCreatorDialogContent } from './CardCreatorDialogContent';
 import { useMockCardCreator } from '@/entrypoints/design-system-showcase/mockProviders';
 import type { ReactElement } from 'react';
 
@@ -24,7 +24,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Card Creator',
-  level: 'atoms',
+  level: 'organisms',
   category: 'Display',
   group: 'Features',
   order: 104,

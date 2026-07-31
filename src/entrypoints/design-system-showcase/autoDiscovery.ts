@@ -2,12 +2,12 @@ import type { ComponentType } from 'react';
 
 // ─── Library taxonomy ──────────────────────────────────────────────
 
-/** Supported levels in this wave. Higher levels are roadmap-only (disabled). */
-export type LibraryLevel = 'foundations' | 'atoms';
+/** Supported levels in this wave. */
+export type LibraryLevel = 'foundations' | 'atoms' | 'molecules' | 'organisms' | 'pages';
 
 /** Full roadmap including disabled levels. Used for navigation display. */
 export interface LibraryLevelInfo {
-  id: LibraryLevel | 'molecules' | 'organisms' | 'templates' | 'pages';
+  id: LibraryLevel | 'templates';
   label: string;
   supported: boolean;
   order: number;
@@ -16,10 +16,10 @@ export interface LibraryLevelInfo {
 export const LIBRARY_LEVELS: readonly LibraryLevelInfo[] = [
   { id: 'foundations', label: 'Foundations', supported: true, order: 0 },
   { id: 'atoms', label: 'Atoms', supported: true, order: 1 },
-  { id: 'molecules', label: 'Molecules', supported: false, order: 2 },
-  { id: 'organisms', label: 'Organisms', supported: false, order: 3 },
+  { id: 'molecules', label: 'Molecules', supported: true, order: 2 },
+  { id: 'organisms', label: 'Organisms', supported: true, order: 3 },
   { id: 'templates', label: 'Templates', supported: false, order: 4 },
-  { id: 'pages', label: 'Pages', supported: false, order: 5 },
+  { id: 'pages', label: 'Pages', supported: true, order: 5 },
 ] as const;
 
 export type ShowcaseStatus = 'stable' | 'experimental' | 'deprecated';
@@ -75,6 +75,7 @@ const modules = import.meta.glob(
     '/src/shared/ui/*.showcase.tsx',
     '/src/shared/domain/*/atoms/*.showcase.tsx',
     '/src/features/*/ui/*.showcase.tsx',
+    '/src/entrypoints/design-system-showcase/pages/*.showcase.tsx',
   ],
   { eager: true },
 ) as Record<string, ShowcaseModule>;
@@ -119,15 +120,19 @@ export function discoverShowcases(): DiscoveredShowcase[] {
 
 // ─── Grouping helpers ──────────────────────────────────────────────
 
+
 export function groupByLevel(
   showcases: DiscoveredShowcase[],
 ): Record<LibraryLevel, DiscoveredShowcase[]> {
   const groups: Record<LibraryLevel, DiscoveredShowcase[]> = {
     foundations: [],
     atoms: [],
+    molecules: [],
+    organisms: [],
+    pages: [],
   };
   for (const s of showcases) {
-    if (s.meta.level === 'foundations' || s.meta.level === 'atoms') {
+    if (s.meta.level in groups) {
       groups[s.meta.level].push(s);
     }
   }
@@ -151,9 +156,12 @@ export function groupByLevelThenCategory(
   const result: Record<LibraryLevel, Record<string, DiscoveredShowcase[]>> = {
     foundations: {},
     atoms: {},
+    molecules: {},
+    organisms: {},
+    pages: {},
   };
   for (const s of showcases) {
-    if (s.meta.level === 'foundations' || s.meta.level === 'atoms') {
+    if (s.meta.level in result) {
       (result[s.meta.level][s.meta.category] ??= []).push(s);
     }
   }
@@ -162,9 +170,9 @@ export function groupByLevelThenCategory(
 
 /** Count items per level. */
 export function countByLevel(showcases: DiscoveredShowcase[]): Record<LibraryLevel, number> {
-  const counts: Record<LibraryLevel, number> = { foundations: 0, atoms: 0 };
+  const counts: Record<LibraryLevel, number> = { foundations: 0, atoms: 0, molecules: 0, organisms: 0, pages: 0 };
   for (const s of showcases) {
-    if (s.meta.level === 'foundations' || s.meta.level === 'atoms') {
+    if (s.meta.level in counts) {
       counts[s.meta.level]++;
     }
   }

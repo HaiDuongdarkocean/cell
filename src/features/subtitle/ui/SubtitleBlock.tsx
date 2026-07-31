@@ -51,8 +51,8 @@ function SubtitleBlockInner({ targetStyle, nativeStyle, cues }: SubtitleBlockPro
   const targetCue = targetCues[targetActiveIndex];
   const nativeCue = nativeCues[nativeActiveIndex];
 
-  if (!targetCue && !nativeCue) return null;
-
+  // ADR-025: block container luôn render để giữ 3-zone layout shape khi cues rỗng.
+  // Text span rỗng khi không có cue — block vẫn full-width, nav cluster không bị lệch.
   return (
     <div className={styles.block} data-testid="subtitle-block">
       <div className={styles.layer} data-role="target" style={buildLayerStyle(targetStyle)}>

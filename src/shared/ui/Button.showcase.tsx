@@ -1,4 +1,4 @@
-﻿import { Button } from './Button';
+import { Button } from './Button';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -23,7 +23,7 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Button',
   description: 'Interactive button with variants (primary, secondary, outline, ghost, destructive, link) and sizes (sm, md, lg). Use for user actions and form submissions.',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Action',
   group: 'Shared UI — Action',
   order: 10,

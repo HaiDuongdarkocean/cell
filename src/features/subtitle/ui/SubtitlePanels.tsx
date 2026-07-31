@@ -1,4 +1,4 @@
-import { useState, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { useState, useImperativeHandle, forwardRef, useCallback, useRef } from 'react';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
@@ -7,6 +7,7 @@ import { SubtitleOffsetPanel } from './SubtitleOffsetPanel';
 import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToast';
 import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
+import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
 import { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
@@ -61,6 +62,8 @@ export interface SubtitlePanelsRef {
   setGenerateNativeEnabled: (enabled: boolean) => void;
   /** Collapse or expand the nav cluster. */
   setCollapsed: (collapsed: boolean) => void;
+  /** Update the block vertical position (percent 0-95). */
+  setYOffsetPercent: (yOffsetPercent: number) => void;
 }
 
 export interface SubtitlePanelsProps {
@@ -72,6 +75,10 @@ export interface SubtitlePanelsProps {
   repeatActive: boolean;
   repeatIcon?: IconCatalogKey;
   repeatLabel?: string;
+  /** Block vertical position as percent of video height (0-95, center of block). ADR-025. */
+  yOffsetPercent: number;
+  /** Called when user drags the block to a new Y position (percent 0-95, snapped). */
+  onDragReposition?: (yOffsetPercent: number) => void;
   onPrev: () => void;
   onNext: () => void;
   onRepeat: () => void;
@@ -107,6 +114,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       repeatActive: initialRepeatActive,
       repeatIcon: initialRepeatIcon = 'repeat',
       repeatLabel: initialRepeatLabel = 'Repeat current sentence',
+      yOffsetPercent: initialYOffsetPercent = 75,
+      onDragReposition,
       onPrev,
       onNext,
       onRepeat,
@@ -134,6 +143,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [repeatActive, setRepeatActive] = useState(initialRepeatActive);
     const [repeatIcon, setRepeatIcon] = useState<IconCatalogKey>(initialRepeatIcon);
     const [repeatLabel, setRepeatLabel] = useState(initialRepeatLabel);
+    const [yOffsetPercent, setYOffsetPercent] = useState(initialYOffsetPercent);
+    const [dragging, setDragging] = useState(false);
     const [manager, setManager] = useState<ManagerState | undefined>(initialManager);
     const [offset, setOffset] = useState<OffsetState | undefined>(initialOffset);
     const [managerOpen, setManagerOpen] = useState(false);
@@ -171,6 +182,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setRepeatLabel,
         setGenerateNativeEnabled,
         setCollapsed,
+        setYOffsetPercent,
       }),
       [addToast, clearToasts],
     );
@@ -184,12 +196,88 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       onPlayPause();
     }, [onPlayPause]);
 
-    return (
-      <div className={styles.root}>
-        <div className={styles.blockLayer}>
-          <SubtitleBlock targetStyle={targetStyle} nativeStyle={nativeStyle} />
-        </div>
+    // ADR-025: drag-to-reposition theo trục Y. Pointer Events + rAF throttle +
+    // transform (atom ux-drag-transform-willchange-raf). touch-action:none trên .root
+    // (atom ux-touch-action-none-for-pointer-drag). Drag chỉ trên background —
+    // cluster/button/text có pointer-events:auto nên không trigger drag.
+    const rootRef = useRef<HTMLDivElement>(null);
+    const dragState = useRef<{
+      startY: number;
+      startOffset: number;
+      containerHeight: number;
+      rafId: number | null;
+      pendingDelta: number;
+    } | null>(null);
 
+    const handlePointerDown = useCallback(
+      (e: React.PointerEvent<HTMLDivElement>): void => {
+        // Chỉ drag khi nhấn trực tiếp lên root background (không qua child interactive).
+        // Children interactive có pointer-events:auto + e.target !== currentTarget.
+        if (e.target !== e.currentTarget) return;
+        const root = rootRef.current;
+        if (!root) return;
+        const rootNode = root.getRootNode();
+        const host = rootNode instanceof ShadowRoot ? (rootNode.host as HTMLElement) : root.parentElement;
+        const containerHeight = host ? host.getBoundingClientRect().height : 0;
+        if (containerHeight <= 0) return;
+        dragState.current = {
+          startY: e.clientY,
+          startOffset: yOffsetPercent,
+          containerHeight,
+          rafId: null,
+          pendingDelta: 0,
+        };
+        setDragging(true);
+        root.setPointerCapture(e.pointerId);
+      },
+      [yOffsetPercent],
+    );
+
+    const handlePointerMove = useCallback(
+      (e: React.PointerEvent<HTMLDivElement>): void => {
+        const st = dragState.current;
+        if (!st) return;
+        st.pendingDelta = e.clientY - st.startY;
+        if (st.rafId !== null) return;
+        st.rafId = requestAnimationFrame(() => {
+          st.rafId = null;
+          const next = dragDeltaToYOffset(st.startOffset, st.pendingDelta, st.containerHeight);
+          setYOffsetPercent(next);
+        });
+      },
+      [],
+    );
+
+    const handlePointerUp = useCallback(
+      (e: React.PointerEvent<HTMLDivElement>): void => {
+        const st = dragState.current;
+        if (!st) return;
+        if (st.rafId !== null) {
+          cancelAnimationFrame(st.rafId);
+          st.rafId = null;
+        }
+        const finalDelta = e.clientY - st.startY;
+        const next = dragDeltaToYOffset(st.startOffset, finalDelta, st.containerHeight);
+        setYOffsetPercent(next);
+        onDragReposition?.(next);
+        dragState.current = null;
+        setDragging(false);
+        rootRef.current?.releasePointerCapture(e.pointerId);
+      },
+      [onDragReposition],
+    );
+
+    return (
+      <div
+        ref={rootRef}
+        className={`${styles.root}${dragging ? ` ${styles.dragging}` : ''}`}
+        style={{ '--sb-y': yOffsetPercent } as React.CSSProperties}
+        data-testid="subtitle-panels-root"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
         <div className={styles.navLayer}>
           <NavCluster
             collapsed={collapsed}
@@ -206,6 +294,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             onForward={onForward}
             onPlayPause={handlePlayPause}
           />
+        </div>
+
+        <div className={styles.blockLayer}>
+          <SubtitleBlock targetStyle={targetStyle} nativeStyle={nativeStyle} />
         </div>
 
         {!collapsed && (

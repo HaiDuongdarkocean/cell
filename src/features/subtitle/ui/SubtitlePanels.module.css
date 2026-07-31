@@ -1,38 +1,62 @@
 .root {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
+  left: 0;
+  right: 0;
+  top: calc(var(--sb-y, 75) * 1%);
+  transform: translateY(-50%);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: flex-end;
-  padding-bottom: 10%;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  pointer-events: none;
+  touch-action: none;
+  cursor: grab;
+  container-type: inline-size;
 }
 
-.blockLayer {
-  width: 100%;
-  pointer-events: none;
+.root.dragging {
+  will-change: transform;
+  cursor: grabbing;
 }
 
 .navLayer {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.navLayer > * {
   pointer-events: auto;
 }
 
-.toolsLayer {
-  position: absolute;
-  right: var(--space-5);
-  top: 50%;
-  transform: translateY(-50%);
+.blockLayer {
+  flex: 1 1 0;
+  min-width: 0;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
+}
+
+.blockLayer > * {
   pointer-events: auto;
-  z-index: 1;
+}
+
+.toolsLayer {
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+}
+
+.toolsLayer > * {
+  pointer-events: auto;
 }
 
 .panelLayer {
@@ -63,4 +87,10 @@
   inset: 0;
   pointer-events: auto;
   z-index: 3;
+}
+
+@container (max-width: 480px) {
+  .toolsLayer {
+    display: none;
+  }
 }

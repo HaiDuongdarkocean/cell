@@ -1,4 +1,4 @@
-﻿import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Select } from './Select';
 
 const OPTIONS = [
@@ -23,7 +23,7 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Select',
-  level: 'atoms',
+  level: 'molecules',
   category: 'Input',
   group: 'Shared UI — Input',
   order: 21,

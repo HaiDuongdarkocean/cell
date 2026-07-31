@@ -1,10 +1,9 @@
 .cluster {
-  position: absolute;
+  position: relative;
   display: flex;
   pointer-events: auto;
   cursor: default;
   user-select: none;
-  transform: translate(-50%, -50%);
   flex-direction: column;
   align-items: center;
   justify-content: center;
