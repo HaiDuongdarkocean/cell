@@ -10,7 +10,9 @@ export interface ToggleProps {
   onChange: (next: boolean) => void;
   /** Accessibility label for screen readers */
   ariaLabel: string;
-  /** Size. Default: md. */
+  /** Size. Default: sm.
+   *  Ponytail: sm is below the design-system --touch-target (40/44px).
+   *  If coarse-pointer tap issues appear, default to md or add a pointer-coarse override. */
   size?: ToggleSize;
   /** Optional HTML id */
   id?: string;
@@ -28,7 +30,7 @@ export function Toggle({
   checked,
   onChange,
   ariaLabel,
-  size = 'md',
+  size = 'sm',
   id,
   dataTestId,
   title,
