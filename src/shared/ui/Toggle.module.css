@@ -30,7 +30,7 @@
   --toggle-w: calc(var(--space-12) * 1.625);
 }
 
-.toggle[aria-pressed="true"] {
+.toggle[aria-checked="true"] {
   background: var(--color-primary);
 }
 
@@ -38,7 +38,7 @@
   background: var(--color-text-secondary);
 }
 
-.toggle[aria-pressed="true"]:hover {
+.toggle[aria-checked="true"]:hover {
   background: var(--color-primary-hover);
 }
 
@@ -63,7 +63,7 @@
   transition: transform var(--transition);
 }
 
-.toggle[aria-pressed="true"] .thumb {
+.toggle[aria-checked="true"] .thumb {
   /* translate(X, -50%) — X = track width - thumb width - 2×left offset
      = toggle-w - (toggle-h - 2×offset) - 2×offset = toggle-w - toggle-h. */
   transform: translate(calc(var(--toggle-w) - var(--toggle-h)), -50%);
@@ -78,7 +78,7 @@
   background: var(--color-border);
 }
 
-.toggle[aria-pressed="true"]:disabled:hover {
+.toggle[aria-checked="true"]:disabled:hover {
   background: var(--color-primary);
 }
 

@@ -108,7 +108,7 @@ src/
 │   │   ├── Spinner.tsx + .module.css       # Animated loading indicator
 │   │   ├── Tabs.tsx + .module.css          # Compound tab list/trigger/content
 │   │   ├── Textarea.tsx + .module.css      # Multiline input with resize/error/disabled
-│   │   ├── Toggle.tsx + .module.css        # Switch pill; touch-target aware 40/44px (settings-controls-restyle F1)
+│   │   ├── Toggle.tsx + .module.css        # Switch pill; default sm, md/lg override (touch-target via size="md") (settings-controls-restyle F1)
 │   │   ├── Tooltip.tsx + .module.css       # Accessible hover/focus tooltip
 │   │   ├── Accordion.tsx + .module.css     # Collapsible single/multiple sections
 │   │   ├── Slider.tsx + .module.css        # Styled range; touch-target aware 40/44px (settings-controls-restyle F2)
