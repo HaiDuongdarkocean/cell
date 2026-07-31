@@ -7,7 +7,7 @@
   "scripts": {
     "predev": "node scripts/generate-tokens.js",
     "dev": "vite",
-    "prebuild": "node scripts/generate-tokens.js",
+    "prebuild": "node scripts/generate-tokens.js && node scripts/check-icons.js",
     "build": "vite build",
     "design-system": "npx http-server docs/design-system -p 8123 -o /design-system-showcase.html",
     "design-system:dev": "vite --config vite.showcase.config.ts",
@@ -23,7 +23,8 @@
     "test:e2e:headed": "playwright test --headed",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check-icons": "node scripts/check-icons.js"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.7.0",
