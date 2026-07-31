@@ -1,4 +1,4 @@
-﻿import { useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Slider } from './Slider';
 
 export function Showcase(): ReactElement {
@@ -9,6 +9,7 @@ export function Showcase(): ReactElement {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 240 }}>
       <Slider value={size} min={40} max={56} step={1} onChange={setSize} aria-label="Button size" />
       <Slider value={opacity} min={0} max={1} step={0.1} onChange={setOpacity} aria-label="Background opacity" />
+      <Slider value={50} min={0} max={100} step={1} onChange={() => {}} aria-label="Disabled slider" disabled />
     </div>
   );
 }
