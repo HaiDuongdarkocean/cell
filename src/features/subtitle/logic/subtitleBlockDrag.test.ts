@@ -1,4 +1,4 @@
-import { clampYOffset, snapYOffset, dragDeltaToYOffset } from './subtitleBlockDrag';
+import { clampYOffset, snapYOffset, dragDeltaToYOffset, dragEndSnapYOffset } from './subtitleBlockDrag';
 
 describe('subtitleBlockDrag', () => {
   describe('clampYOffset', () => {
@@ -36,12 +36,12 @@ describe('subtitleBlockDrag', () => {
   });
 
   describe('dragDeltaToYOffset', () => {
-    it('converts pixel delta to percent + snaps near 75', () => {
-      // start 50, delta 100px down, container 500px → +20% → 70 → snap to 75 (within ±8)
-      expect(dragDeltaToYOffset(50, 100, 500)).toBe(75);
+    it('converts pixel delta to percent (no snap during drag)', () => {
+      // start 50, delta 100px down, container 500px → +20% → 70 (no snap)
+      expect(dragDeltaToYOffset(50, 100, 500)).toBe(70);
     });
     it('does not snap when far from snap points', () => {
-      // start 50, delta 60px, container 500px → +12% → 62 (not within ±8 of any snap)
+      // start 50, delta 60px, container 500px → +12% → 62
       expect(dragDeltaToYOffset(50, 60, 500)).toBe(62);
     });
     it('clamps to 0', () => {
@@ -53,6 +53,22 @@ describe('subtitleBlockDrag', () => {
     it('returns clamped start when container height <= 0', () => {
       expect(dragDeltaToYOffset(50, 100, 0)).toBe(50);
       expect(dragDeltaToYOffset(50, 100, -1)).toBe(50);
+    });
+  });
+
+  describe('dragEndSnapYOffset', () => {
+    it('snaps to 75 when release near 70', () => {
+      expect(dragEndSnapYOffset(70)).toBe(75);
+    });
+    it('snaps to 25 when release near 20', () => {
+      expect(dragEndSnapYOffset(20)).toBe(25);
+    });
+    it('keeps value when far from snap points', () => {
+      expect(dragEndSnapYOffset(40)).toBe(40);
+    });
+    it('clamps before snapping', () => {
+      // 120 → clamp to 95 → 95 not within ±8 of any snap point → stays 95
+      expect(dragEndSnapYOffset(120)).toBe(95);
     });
   });
 });

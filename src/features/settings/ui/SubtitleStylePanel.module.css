@@ -81,17 +81,31 @@
 
 .slider {
   width: 100%;
-  height: var(--space-1);
-  min-height: var(--touch-target);
+  /* Compact slider: no min-height; track stays var(--space-1) while the
+   * touch area is just large enough for the thumb. Ponytail: below the
+   * design-system --touch-target (40/44px); if tap issues arise, wrap the
+   * slider in a larger hit area or bump height back to --touch-target. */
+  height: var(--space-3-5);
+  padding: calc((var(--space-3-5) - var(--space-1)) / 2) 0;
+  box-sizing: border-box;
   -webkit-appearance: none;
   appearance: none;
-  background: var(--color-border);
-  border-radius: var(--radius-xs);
+  background: transparent;
+  cursor: pointer;
+  border: none;
+  margin: 0;
 }
 
 .slider:focus-visible {
   outline: var(--space-0-5) solid var(--color-primary);
   outline-offset: var(--space-0-5);
+}
+
+.slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: var(--space-1);
+  background: var(--color-border);
+  border-radius: var(--radius-xs);
 }
 
 .slider::-webkit-slider-thumb {
@@ -103,7 +117,14 @@
   background: var(--color-primary);
   cursor: pointer;
   border: var(--space-0-5) solid var(--color-background);
-  margin-top: calc((var(--touch-target) - var(--space-3-5)) / 2);
+  margin-top: calc((var(--space-1) - var(--space-3-5)) / 2);
+}
+
+.slider::-moz-range-track {
+  width: 100%;
+  height: var(--space-1);
+  background: var(--color-border);
+  border-radius: var(--radius-xs);
 }
 
 .slider::-moz-range-thumb {

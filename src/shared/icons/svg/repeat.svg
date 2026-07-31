@@ -1,6 +1,6 @@
 <!-- @license lucide-static - ISC -->
 <!-- Repeat — circular arrow loop. Used by navCluster repeat.
-     Note: navCluster uses stroke 1.5 with custom path; this is Lucide standard stroke 2. -->
+     Note: navCluster uses stroke 1.5 with custom path; this is Lucide standard stroke 1.5. -->
 <svg
   class="lucide lucide-repeat"
   xmlns="http://www.w3.org/2000/svg"
@@ -9,7 +9,7 @@
   viewBox="0 0 24 24"
   fill="none"
   stroke="currentColor"
-  stroke-width="2"
+  stroke-width="1.5"
   stroke-linecap="round"
   stroke-linejoin="round"
 >

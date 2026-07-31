@@ -26,9 +26,11 @@ const selectTargetActiveIndex = (state: { targetActiveIndex: number }): number =
 const selectNativeActiveIndex = (state: { nativeActiveIndex: number }): number => state.nativeActiveIndex;
 
 function buildLayerStyle(config: OverlayStyleConfig): React.CSSProperties {
+  const fs = config.fontSize;
   return {
     display: config.visible ? 'block' : 'none',
-    fontSize: `${config.fontSize}px`,
+    // Auto-scale font: 50%→100% of configured size based on container width (cqw)
+    fontSize: `clamp(${Math.round(fs * 0.5)}px, ${Math.round(fs * 0.1)}cqw, ${fs}px)`,
     color: config.textColor,
     backgroundColor: hexToRgba(config.backgroundColor, config.backgroundOpacity),
     opacity: config.textOpacity,
@@ -62,12 +64,16 @@ function SubtitleBlockInner({ targetStyle, nativeStyle, cues, blockSettings }: S
   };
 
   // ADR-025: block container luôn render để giữ 3-zone layout shape khi cues rỗng.
+  // Layer background chỉ hiện khi có cue → không có subtitle = không có background.
+  const hasTargetCue = targetStyle.visible && targetCue;
+  const hasNativeCue = nativeStyle.visible && nativeCue;
+
   return (
     <div className={styles.block} style={blockStyle} data-testid="subtitle-block">
-      <div className={styles.layer} data-role="target" style={{ ...buildLayerStyle(targetStyle), backgroundColor: hexToRgba(targetStyle.backgroundColor, targetStyle.backgroundOpacity * blockBgOpacity) }}>
-        <span className={styles.text}>{targetStyle.visible ? targetCue?.text ?? '' : ''}</span>
+      <div className={styles.layer} data-role="target" style={{ ...buildLayerStyle(targetStyle), backgroundColor: hasTargetCue ? hexToRgba(targetStyle.backgroundColor, targetStyle.backgroundOpacity * blockBgOpacity) : 'transparent' }}>
+        <span className={styles.text}>{targetCue?.text ?? ''}</span>
       </div>
-      {nativeStyle.visible && nativeCue && (
+      {hasNativeCue && (
         <div className={styles.layer} data-role="native" style={{ ...buildLayerStyle(nativeStyle), backgroundColor: hexToRgba(nativeStyle.backgroundColor, nativeStyle.backgroundOpacity * blockBgOpacity) }}>
           <span className={styles.text}>{nativeCue.text}</span>
         </div>

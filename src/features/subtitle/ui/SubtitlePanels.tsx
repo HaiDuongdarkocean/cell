@@ -286,11 +286,13 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     );
 
     // Cluster settings CSS variables — áp dụng cho cả clusterLeft (NavCluster) + clusterRight
+    // buttonSize uses clamp for auto-responsive scaling (65%→100% based on container width)
     const clusterBtnSize = clusterSettings?.buttonSize ?? 34;
     const clusterTextOpacity = clusterSettings?.textOpacity ?? 1;
     const clusterBgOpacity = clusterSettings?.bgOpacity ?? 0.2;
     const clusterRightStyle: React.CSSProperties = {
-      '--cluster-btn-size': `${clusterBtnSize}px`,
+      '--cluster-btn-size': `clamp(${Math.round(clusterBtnSize * 0.65)}px, ${Math.round(clusterBtnSize * 0.15)}cqw, ${clusterBtnSize}px)`,
+      '--cluster-icon-size': `clamp(${Math.round(clusterBtnSize * 0.35)}px, ${Math.round(clusterBtnSize * 0.082)}cqw, 20px)`,
       '--cluster-text-opacity': String(clusterTextOpacity),
       '--cluster-bg-opacity': String(clusterBgOpacity),
     } as React.CSSProperties;
