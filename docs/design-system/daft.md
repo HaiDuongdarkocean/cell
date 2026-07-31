@@ -186,22 +186,39 @@ Astryx dùng **semantic color tokens**, tự động chuyển light/dark qua `li
 
 Astryx dùng **4px base-unit scale**. Giá trị dưới là pixel.
 
+> **Cell SSOT:** dùng `--space-*` (KHÔNG dùng `--spacing-*` — đã xóa alias trùng lặp). Named aliases (xs/sm/md/lg/xl/2xl/3xl) đã xóa vì trùng giá trị numeric.
+
+#### Half-step (tight internal spacing)
+
 | Token | Giá trị | Token | Giá trị |
 |-------|---------|-------|---------|
-| `--spacing-0` | `0px` | `--spacing-7` | `28px` |
-| `--spacing-0-5` | `2px` | `--spacing-8` | `32px` |
-| `--spacing-1` | `4px` | `--spacing-9` | `36px` |
-| `--spacing-1-5` | `6px` | `--spacing-10` | `40px` |
-| `--spacing-2` | `8px` | `--spacing-11` | `44px` |
-| `--spacing-3` | `12px` | `--spacing-12` | `48px` |
-| `--spacing-4` | `16px` | | |
-| `--spacing-5` | `20px` | | |
-| `--spacing-6` | `24px` | | |
+| `--space-0` | `0` | `--space-2-5` | `10px` |
+| `--space-0-5` | `2px` | `--space-3-5` | `14px` |
+| `--space-1` | `4px` | `--space-4-5` | `18px` |
+| `--space-1-5` | `6px` | | |
+
+#### Core scale (component internal spacing)
+
+| Token | Giá trị | Token | Giá trị |
+|-------|---------|-------|---------|
+| `--space-2` | `8px` | `--space-7` | `28px` |
+| `--space-3` | `12px` | `--space-8` | `32px` |
+| `--space-4` | `16px` | `--space-9` | `36px` |
+| `--space-5` | `20px` | `--space-10` | `40px` |
+| `--space-6` | `24px` | `--space-11` | `44px` |
+| | | `--space-12` | `48px` |
+
+#### Large scale (section/page gaps)
+
+| Token | Giá trị | Token | Giá trị |
+|-------|---------|-------|---------|
+| `--space-14` | `56px` | `--space-20` | `80px` |
+| `--space-16` | `64px` | `--space-24` | `96px` |
 
 **Best practice:**
 
-- Do: dùng gap prop của component khi có; dùng token cho custom layout; dùng step nhỏ (0.5–2) cho tight internal spacing, step lớn (4–8) cho section gaps.
-- Don't: dùng giá trị px tùy tiện ngoài scale; mix token với raw px/rem trong cùng component.
+- Do: dùng gap prop của component khi có; dùng token cho custom layout; dùng half-step (0.5–4.5) cho tight internal spacing, core (4–8) cho component gaps, large (14–24) cho section/page gaps.
+- Don't: dùng giá trị px tùy tiện ngoài scale; mix token với raw px/rem trong cùng component; dùng `--spacing-*` (đã xóa) hoặc named aliases (đã xóa).
 
 ### 3.3. Typography
 
@@ -491,112 +508,6 @@ Astryx có **150+ components** chia theo category:
 | **Reduced motion** | Tôn trọng `prefers-reduced-motion` | Tắt animation khi OS yêu cầu |
 | **Frame-first** | Chọn layout frame trước khi viết content | AppShell/Layout/Panel trước, content sau |
 | **Cards vs rows** | Phân biệt widget container với dense data container | Dense data → rows; widget → cards |
-
----
-
-## 8. Áp dụng vào Cell — Khuyến nghị
-
-### 8.1. Vị trí hiện tại của Cell
-
-Cell đã có:
-- `src/shared/styles/tokens.json` là canonical source.
-- `tokens.css` và `tokens.ts` được generate bằng `scripts/generate-tokens.js`.
-- `src/shared/ui/` component inventory (~25 components).
-- `src/shared/icons/index.ts` (ICON_CATALOG).
-- `src/shared/styles/README.md` là nguồn tham khảo DS hiện tại.
-
-### 8.2. Những điểm có thể học từ Meta/Astryx
-
-1. **Tách rõ 3 lớp token:**
-   - `core` (primitive) → `derived` (semantic) → `component` (component-specific).
-   - Hiện tại Cell đã có 3 lớp này trong `tokens.json`, nhưng có thể mở rộng semantic token theo hướng Astryx (`--color-text-primary`, `--color-background-surface`, `--color-border`).
-
-2. **Chuyển từ color theo tên màu → color theo ngữ nghĩa:**
-   - Thay vì `color: #475569`, dùng `var(--color-text-secondary)`.
-   - Thay vì `background: #f8fafc`, dùng `var(--color-background-surface)`.
-
-3. **Bổ sung token hệ thống:**
-   - `--color-icon-*` (primary/secondary/disabled/accent).
-   - `--color-on-primary`, `--color-on-success`, `--color-on-error`, `--color-on-warning`.
-   - `--color-overlay`, `--color-overlay-hover`, `--color-overlay-pressed`.
-   - `--radius-inner`, `--radius-element`, `--radius-container`, `--radius-page`.
-   - `--duration-fast-min/max`, `--duration-medium-min/max`, `--duration-slow-min/max`.
-   - `--ease-standard` (cubic-bezier cụ thể).
-   - `--shadow-low`, `--shadow-med`, `--shadow-high`.
-
-4. **Typography theo semantic type scale:**
-   - Thay vì `font-size-xs/sm/base/md/lg/xl` chỉ là size, thêm `--text-body`, `--text-label`, `--text-heading-1`, `--text-heading-2`, `--text-supporting`.
-   - Mỗi style bao gồm size + weight + line-height + letter-spacing.
-
-5. **Spacing scale mở rộng:**
-   - Cell hiện có spacing 0–24 + xs–3xl. Có thể chuẩn hóa theo Astryx: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12.
-
-6. **Radius semantic:**
-   - Cell hiện có `none, xs, 2xs, sm, md, pill, card, dialog, 2xl, full`.
-   - Có thể map: `card → radius-container`, `dialog → radius-container`, `pill → radius-full`.
-   - Bổ sung `radius-inner`, `radius-element`, `radius-page`.
-
-7. **Elevation/Shadow:**
-   - Cell hiện set `shadow-sm/md/lg = none`. Có thể tái xem xét nếu cần elevation cho popover/dialog.
-
-8. **Icons:**
-   - Cell đã có `ICON_CATALOG` — nên thêm semantic names tương tự Astryx (`close`, `chevronDown`, `check`, `success`, `warning`, `info`, `search`, `externalLink`, `menu`, `wrench`) thay vì đặt tên theo hình dạng (`x`, `down`, `checkmark`).
-
-### 8.3. Mapping token nhanh từ Meta → Cell
-
-| Meta/Astryx token | Cell token tương đương hiện tại | Ghi chú |
-|-------------------|--------------------------------|---------|
-| `--color-background-surface` | `--color-background` / `--color-card` | Cần tách surface/card |
-| `--color-background-body` | chưa có | Nên thêm |
-| `--color-text-primary` | `--color-foreground` | Có thể rename |
-| `--color-text-secondary` | `--color-text-muted` | Có thể rename |
-| `--color-text-disabled` | chưa có | Thêm |
-| `--color-border` | `--color-border` | Đã có |
-| `--color-accent` | `--color-primary` | Astryx accent là neutral; Cell dùng blue |
-| `--color-on-accent` | `--color-primary-foreground` | Đã có |
-| `--color-success` | `--color-success` | Đã có |
-| `--color-error` | `--color-error` | Đã có |
-| `--color-warning` | `--color-warning` | Đã có |
-| `--color-icon-primary` | chưa có | Thêm |
-| `--color-icon-secondary` | chưa có | Thêm |
-| `--color-overlay` | chưa có | Thêm |
-| `--spacing-4` | `--space-4` | Đã có |
-| `--radius-element` | `--radius-pill` / `--radius-md` | Cần semantic hơn |
-| `--radius-container` | `--radius-card` / `--radius-dialog` | Có thể unify |
-| `--duration-fast` | `--duration-150` | Cell dùng 150ms |
-| `--duration-medium` | `--duration-300` | Cell dùng 300ms |
-| `--ease-standard` | `--ease-in-out` / `--ease-standard` | Có thể thay bằng cubic-bezier cụ thể |
-
-### 8.4. Quy trình áp dụng khuyến nghị
-
-1. **Phase 1 — Token alignment:** bổ sung semantic tokens vào `tokens.json`, regenerate `tokens.css`/`tokens.ts`.
-2. **Phase 2 — Component refactor:** dùng token mới trong `src/shared/ui/*.module.css`, bắt đầu từ Button/Card/Input/Dialog.
-3. **Phase 3 — Layout standards:** viết thêm guidance về frame-first, cards vs rows, responsive contract.
-4. **Phase 4 — Icon registry:** thêm semantic icon names vào `ICON_CATALOG`.
-5. **Phase 5 — Audit:** chạy grep hardcoded color/spacing, đảm bảo 0 hardcoded ngoài `tokens.json` + `SubtitlePreview`.
-
----
-
-## 9. Audit Checklist (trước khi merge)
-
-```bash
-# 1. Hardcoded colors (should be 0 outside tokens.css + SubtitlePreview)
-grep -rn '#[0-9a-fA-F]\{3,8\}' src/ --include="*.css" | grep -v tokens.css | grep -v SubtitlePreview
-
-# 2. Wrong hover token (should be 0)
-grep -rn 'color-accent' src/ --include="*.css" | grep hover
-
-# 3. Missing token import (options/popup/sidepanel must import tokens.css)
-grep -rn 'tokens.css' src/entrypoints/
-
-# 4. Mix raw px with tokens
-grep -rn 'px' src/shared/ui/ --include="*.module.css" | grep -v 'var(' | grep -v '0px'
-
-# 5. Semantic icon naming in ICON_CATALOG
-grep -rn "name: '" src/shared/icons/index.ts | grep -v "semantic"
-```
-
----
 
 ## 10. Liên kết tham khảo nhanh
 
