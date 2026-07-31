@@ -46,17 +46,69 @@
   pointer-events: auto;
 }
 
-.toolsLayer {
+.clusterRight {
   pointer-events: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.clusterRight > * {
+  pointer-events: auto;
+}
+
+.primaryCol {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  flex: 0 0 auto;
+  gap: var(--space-1);
 }
 
-.toolsLayer > * {
+.secondaryCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.toggleWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.extraCol {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateX(var(--space-2));
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-1);
+  background: transparent;
+  border-radius: var(--radius-full);
+  padding: var(--space-1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+}
+
+.extraCol.expanded {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
   pointer-events: auto;
+}
+
+.toggleBtn {
+  transition: transform 150ms ease-out;
+}
+
+.toggleBtn.expanded {
+  transform: rotate(180deg);
 }
 
 .panelLayer {
@@ -90,7 +142,7 @@
 }
 
 @container (max-width: 480px) {
-  .toolsLayer {
+  .clusterRight {
     display: none;
   }
 }
