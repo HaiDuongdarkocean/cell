@@ -1,4 +1,4 @@
-import { CopyButton } from './CopyButton';
+﻿import { CopyButton } from './CopyButton';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -19,6 +19,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'CopyButton',
   description: 'Copy-to-clipboard button with copied state announcement. Use for copy actions with feedback.',
+  level: 'atoms',
+  category: 'Action',
   group: 'Extension',
   order: 42,
 };

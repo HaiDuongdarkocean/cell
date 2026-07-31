@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { Input } from './Input';
 
 export function Showcase(): ReactElement {
@@ -17,6 +17,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Input',
   description: 'Controlled text input with sizes (sm, md, lg) and error state. Use for form fields and user text entry.',
+  level: 'atoms',
+  category: 'Input',
   group: 'Shared UI — Input',
   order: 20,
 };

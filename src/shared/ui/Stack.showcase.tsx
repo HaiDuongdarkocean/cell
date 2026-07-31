@@ -1,4 +1,4 @@
-import { VStack, HStack } from './Stack';
+﻿import { VStack, HStack } from './Stack';
 import type { ReactElement } from 'react';
 
 const itemStyle: React.CSSProperties = {
@@ -71,6 +71,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Stack',
   description: 'Stack layout primitive (VStack/HStack) with gap and divider. Use for vertical/horizontal stacking.',
+  level: 'atoms',
+  category: 'Layout',
   group: 'Layout',
   order: 13,
 };

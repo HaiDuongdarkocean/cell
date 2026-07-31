@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { SubtitleText } from './SubtitleText';
 
 export function Showcase(): ReactElement {
@@ -30,6 +30,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'SubtitleText',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Subtitle',
   order: 70,
 };

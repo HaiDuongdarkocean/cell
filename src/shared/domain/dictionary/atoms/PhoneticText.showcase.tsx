@@ -1,4 +1,4 @@
-import { PhoneticText } from './PhoneticText';
+﻿import { PhoneticText } from './PhoneticText';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -13,6 +13,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'PhoneticText',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Dictionary',
   order: 81,
 };

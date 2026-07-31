@@ -1,4 +1,4 @@
-import { CloseButton } from './CloseButton';
+﻿import { CloseButton } from './CloseButton';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -19,6 +19,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'CloseButton',
   description: 'Close button with ghost/solid variants and sizes (sm, md). Use for dismissing dialogs and popovers.',
+  level: 'atoms',
+  category: 'Action',
   group: 'Extension',
   order: 40,
 };

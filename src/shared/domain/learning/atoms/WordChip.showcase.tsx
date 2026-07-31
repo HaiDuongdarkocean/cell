@@ -1,4 +1,4 @@
-import { WordChip } from './WordChip';
+﻿import { WordChip } from './WordChip';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -26,6 +26,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'WordChip',
+  level: 'atoms',
+  category: 'Feedback',
   group: 'Domain — Learning',
   order: 90,
 };

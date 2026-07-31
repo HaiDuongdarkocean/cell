@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { InfoButton } from './InfoButton';
 
 export function Showcase(): ReactElement {
@@ -14,6 +14,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'InfoButton',
   description: 'Info button with ghost/outline variants and sizes (sm, md, lg). Use for showing help/info.',
+  level: 'atoms',
+  category: 'Action',
   group: 'Extension',
   order: 47,
 };

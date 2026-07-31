@@ -1,4 +1,4 @@
-import { MasteryBadge } from './MasteryBadge';
+﻿import { MasteryBadge } from './MasteryBadge';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -24,6 +24,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'MasteryBadge',
+  level: 'atoms',
+  category: 'Feedback',
   group: 'Domain — Learning',
   order: 93,
 };

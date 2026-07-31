@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { PiPButton } from './PiPButton';
 
@@ -21,6 +21,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'PiPButton',
+  level: 'atoms',
+  category: 'Action',
   group: 'Domain — Video',
   order: 67,
 };

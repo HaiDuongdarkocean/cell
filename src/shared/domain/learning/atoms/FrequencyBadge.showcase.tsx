@@ -1,4 +1,4 @@
-import { FrequencyBadge } from './FrequencyBadge';
+﻿import { FrequencyBadge } from './FrequencyBadge';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -21,6 +21,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'FrequencyBadge',
+  level: 'atoms',
+  category: 'Feedback',
   group: 'Domain — Learning',
   order: 91,
 };

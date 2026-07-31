@@ -1,4 +1,4 @@
-import { AntonymChip } from './AntonymChip';
+﻿import { AntonymChip } from './AntonymChip';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -19,6 +19,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'AntonymChip',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Dictionary',
   order: 88,
 };

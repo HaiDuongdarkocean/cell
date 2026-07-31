@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { MaximizeButton } from './MaximizeButton';
 
 export function Showcase(): ReactElement {
@@ -16,6 +16,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'MaximizeButton',
   description: 'Maximize/restore toggle button with sizes (sm, md, lg). Use for maximizing windows/panels.',
+  level: 'atoms',
+  category: 'Action',
   group: 'Extension',
   order: 50,
 };

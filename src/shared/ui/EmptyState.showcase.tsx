@@ -1,4 +1,4 @@
-import { EmptyState } from './EmptyState';
+﻿import { EmptyState } from './EmptyState';
 import { Button } from './Button';
 import { Icon } from '@/shared/icons/Icon';
 import type { ReactElement } from 'react';
@@ -23,6 +23,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'EmptyState',
+  level: 'atoms',
+  category: 'Display',
   group: 'Shared UI — Data',
   order: 42,
 };

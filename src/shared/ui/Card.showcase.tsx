@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
 
@@ -32,6 +32,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Card',
+  level: 'atoms',
+  category: 'Display',
   group: 'Shared UI — Data',
   order: 40,
 };

@@ -1,4 +1,4 @@
-import { Icon } from './Icon';
+﻿import { Icon } from './Icon';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -30,6 +30,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Icon',
   description: 'Icon component with sizes (xs, sm, md, lg) and semantic colors. Renders SVG icons from ICON_CATALOG.',
+  level: 'atoms',
+  category: 'Content',
   group: 'Generic Core',
   order: 2,
 };

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { TrackLabel } from './TrackLabel';
 
 export function Showcase(): ReactElement {
@@ -20,6 +20,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'TrackLabel',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Subtitle',
   order: 74,
 };

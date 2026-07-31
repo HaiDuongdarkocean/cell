@@ -1,4 +1,4 @@
-import { Text } from './Text';
+﻿import { Text } from './Text';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -27,6 +27,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Text',
   description: 'Text component with variants (body, label, supporting, heading) and colors. Use for general text display.',
+  level: 'atoms',
+  category: 'Content',
   group: 'Generic Core',
   order: 1,
 };

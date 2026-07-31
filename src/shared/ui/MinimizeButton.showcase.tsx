@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { MinimizeButton } from './MinimizeButton';
 
 export function Showcase(): ReactElement {
@@ -14,6 +14,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'MinimizeButton',
   description: 'Minimize button with ghost/outline variants and sizes (sm, md, lg). Use for minimizing windows/panels.',
+  level: 'atoms',
+  category: 'Action',
   group: 'Extension',
   order: 49,
 };

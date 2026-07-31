@@ -1,4 +1,4 @@
-import { Separator } from './Separator';
+﻿import { Separator } from './Separator';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -23,6 +23,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Separator',
   description: 'Visual separator with orientations (horizontal, vertical) and variants (solid, dashed). Use to divide content sections.',
+  level: 'atoms',
+  category: 'Content',
   group: 'Generic Core',
   order: 4,
 };

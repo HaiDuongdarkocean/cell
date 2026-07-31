@@ -1,4 +1,4 @@
-import { Badge } from './Badge';
+﻿import { Badge } from './Badge';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -23,6 +23,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Badge',
   description: 'Badge for count/enumerated states with variants (default, secondary, outline, destructive, success, warning). Use for notifications and status counts.',
+  level: 'atoms',
+  category: 'Feedback',
   group: 'Shared UI — Feedback',
   order: 31,
 };

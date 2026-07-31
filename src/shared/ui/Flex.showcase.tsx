@@ -1,4 +1,4 @@
-import { Flex } from './Flex';
+﻿import { Flex } from './Flex';
 import type { ReactElement } from 'react';
 
 const itemStyle: React.CSSProperties = {
@@ -50,6 +50,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Flex',
   description: 'Flexbox layout primitive with direction, justify, align, and wrap props. Use for flexible layouts.',
+  level: 'atoms',
+  category: 'Layout',
   group: 'Layout',
   order: 11,
 };

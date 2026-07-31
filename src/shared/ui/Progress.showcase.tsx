@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { Progress } from './Progress';
 
 export function Showcase(): ReactElement {
@@ -20,6 +20,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Progress',
   description: 'Progress indicator with linear/circular variants, sizes, and color variants. Use to show task progress.',
+  level: 'atoms',
+  category: 'Feedback',
   group: 'Shared UI — Feedback',
   order: 32,
 };

@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { OrbitalBadge } from './OrbitalBadge';
 import type { Point } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import type { ViewportRect } from '@/features/dictionaryPopup/badgePointer/badgeCollapse';
@@ -47,6 +47,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'OrbitalBadge',
+  level: 'atoms',
+  category: 'Display',
   group: 'Features',
   order: 101,
 };

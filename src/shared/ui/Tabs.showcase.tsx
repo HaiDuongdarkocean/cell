@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { Tabs } from './Tabs';
 
 export function Showcase(): ReactElement {
@@ -26,6 +26,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Tabs',
+  level: 'atoms',
+  category: 'Overlay',
   group: 'Shared UI — Overlay',
   order: 52,
 };

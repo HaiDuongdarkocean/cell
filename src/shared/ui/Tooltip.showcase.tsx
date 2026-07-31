@@ -1,4 +1,4 @@
-import { Tooltip } from './Tooltip';
+﻿import { Tooltip } from './Tooltip';
 import { Button } from './Button';
 import type { ReactElement } from 'react';
 
@@ -23,6 +23,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Tooltip',
+  level: 'atoms',
+  category: 'Overlay',
   group: 'Shared UI — Overlay',
   order: 53,
 };

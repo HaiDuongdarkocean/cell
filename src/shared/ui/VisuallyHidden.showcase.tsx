@@ -1,4 +1,4 @@
-import { VisuallyHidden } from './VisuallyHidden';
+﻿import { VisuallyHidden } from './VisuallyHidden';
 import { Button } from './Button';
 import type { ReactElement } from 'react';
 
@@ -18,6 +18,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'VisuallyHidden',
+  level: 'atoms',
+  category: 'Utility',
   group: 'Utility',
   order: 32,
 };

@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { Toggle } from './Toggle';
 
 export function Showcase(): ReactElement {
@@ -19,6 +19,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Toggle',
   description: 'Switch toggle with sizes (sm, md, lg) and on/off/disabled states. Use for binary on/off preferences.',
+  level: 'atoms',
+  category: 'Input',
   group: 'Shared UI — Input',
   order: 22,
 };

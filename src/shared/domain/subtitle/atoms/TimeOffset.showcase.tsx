@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { TimeOffset } from './TimeOffset';
 
 export function Showcase(): ReactElement {
@@ -27,6 +27,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'TimeOffset',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Subtitle',
   order: 73,
 };

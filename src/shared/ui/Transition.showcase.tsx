@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Transition } from './Transition';
 import { Button } from './Button';
 import type { ReactElement } from 'react';
@@ -29,6 +29,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Transition',
+  level: 'atoms',
+  category: 'Utility',
   group: 'Utility',
   order: 33,
 };

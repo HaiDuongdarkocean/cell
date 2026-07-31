@@ -1,4 +1,4 @@
-import type { ReactElement, CSSProperties } from 'react';
+﻿import type { ReactElement, CSSProperties } from 'react';
 
 interface Swatch {
   token: string;
@@ -237,6 +237,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Color Scale',
   description: 'All --color-* tokens: Core (9), Semantic (~50), Tint (40), Data viz (11), Syntax (14). Swatches with Aa show foreground-on-background contrast.',
+  level: 'foundations',
+  category: 'Color',
   group: 'Tokens',
   order: 2,
 };

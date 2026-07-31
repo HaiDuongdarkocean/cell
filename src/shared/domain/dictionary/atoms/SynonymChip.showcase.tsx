@@ -1,4 +1,4 @@
-import { SynonymChip } from './SynonymChip';
+﻿import { SynonymChip } from './SynonymChip';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -19,6 +19,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'SynonymChip',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Dictionary',
   order: 87,
 };

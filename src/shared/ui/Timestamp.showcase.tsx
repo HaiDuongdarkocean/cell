@@ -1,4 +1,4 @@
-import { Timestamp } from './Timestamp';
+﻿import { Timestamp } from './Timestamp';
 import type { ReactElement } from 'react';
 
 const NOW = Date.now();
@@ -22,6 +22,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Timestamp',
   description: 'Time display with relative, absolute, time, and datetime formats. Use for showing timestamps.',
+  level: 'atoms',
+  category: 'Content',
   group: 'Display',
   order: 22,
 };

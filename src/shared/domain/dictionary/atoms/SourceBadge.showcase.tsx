@@ -1,4 +1,4 @@
-import { SourceBadge } from './SourceBadge';
+﻿import { SourceBadge } from './SourceBadge';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -22,6 +22,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'SourceBadge',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Dictionary',
   order: 86,
 };

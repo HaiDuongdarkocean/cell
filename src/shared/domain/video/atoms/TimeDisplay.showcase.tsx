@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { TimeDisplay } from './TimeDisplay';
 
 export function Showcase(): ReactElement {
@@ -26,6 +26,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'TimeDisplay',
+  level: 'atoms',
+  category: 'Action',
   group: 'Domain — Video',
   order: 62,
 };

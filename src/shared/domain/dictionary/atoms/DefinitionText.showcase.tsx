@@ -1,4 +1,4 @@
-import { DefinitionText } from './DefinitionText';
+﻿import { DefinitionText } from './DefinitionText';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -15,6 +15,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'DefinitionText',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Dictionary',
   order: 84,
 };

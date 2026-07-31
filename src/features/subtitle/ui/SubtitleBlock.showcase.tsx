@@ -1,4 +1,4 @@
-import { SubtitleBlock } from './SubtitleBlock';
+﻿import { SubtitleBlock } from './SubtitleBlock';
 import { mockTargetCues, mockNativeCues } from '@/entrypoints/design-system-showcase/mockCues';
 import { DEFAULT_OVERLAY_STYLE_TARGET, DEFAULT_OVERLAY_STYLE_NATIVE } from '@/shared/config/config';
 import type { ReactElement } from 'react';
@@ -28,6 +28,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'SubtitleBlock',
+  level: 'atoms',
+  category: 'Display',
   group: 'Features',
   order: 100,
 };

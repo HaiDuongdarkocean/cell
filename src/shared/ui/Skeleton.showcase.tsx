@@ -1,4 +1,4 @@
-import { Skeleton } from './Skeleton';
+﻿import { Skeleton } from './Skeleton';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -22,6 +22,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Skeleton',
+  level: 'atoms',
+  category: 'Display',
   group: 'Shared UI — Data',
   order: 41,
 };

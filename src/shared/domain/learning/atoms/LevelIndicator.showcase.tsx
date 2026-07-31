@@ -1,4 +1,4 @@
-import { LevelIndicator } from './LevelIndicator';
+﻿import { LevelIndicator } from './LevelIndicator';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -22,6 +22,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'LevelIndicator',
+  level: 'atoms',
+  category: 'Feedback',
   group: 'Domain — Learning',
   order: 92,
 };

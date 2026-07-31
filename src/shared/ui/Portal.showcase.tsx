@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Portal } from './Portal';
 import { Button } from './Button';
 import type { ReactElement } from 'react';
@@ -31,6 +31,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Portal',
+  level: 'atoms',
+  category: 'Utility',
   group: 'Utility',
   order: 31,
 };

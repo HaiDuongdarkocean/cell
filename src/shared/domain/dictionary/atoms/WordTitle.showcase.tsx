@@ -1,4 +1,4 @@
-import { WordTitle } from './WordTitle';
+﻿import { WordTitle } from './WordTitle';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -13,6 +13,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'WordTitle',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Dictionary',
   order: 80,
 };
