@@ -1,5 +1,6 @@
 import { useState, useImperativeHandle, forwardRef, useCallback, useRef } from 'react';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
+import type { NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { SubtitleManagerPanel } from './SubtitleManagerPanel';
@@ -7,7 +8,7 @@ import { SubtitleOffsetPanel } from './SubtitleOffsetPanel';
 import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToast';
 import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
-import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
+import { dragDeltaToYOffset, dragEndSnapYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
 import { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
@@ -36,6 +37,10 @@ export interface OffsetState {
 export interface SubtitlePanelsRef {
   /** Update target + native overlay styles. */
   setStyles: (targetStyle: OverlayStyleConfig, nativeStyle: OverlayStyleConfig) => void;
+  /** Update nav cluster settings (buttonSize, textOpacity, bgOpacity, enabled). */
+  setClusterSettings: (settings: NavClusterSettings) => void;
+  /** Update subtitle block settings (bgOpacity, globalScale, yOffsetPercent). */
+  setBlockSettings: (settings: SubtitleBlockSettings) => void;
   /** Replace the manager items and callbacks. */
   setManager: (manager: ManagerState) => void;
   /** Replace the offset state and callbacks. */
@@ -75,6 +80,10 @@ export interface SubtitlePanelsProps {
   repeatActive: boolean;
   repeatIcon?: IconCatalogKey;
   repeatLabel?: string;
+  /** Nav cluster settings from extension popup. */
+  clusterSettings?: NavClusterSettings;
+  /** Subtitle block settings from extension popup. */
+  blockSettings?: SubtitleBlockSettings;
   /** Block vertical position as percent of video height (0-95, center of block). ADR-025. */
   yOffsetPercent: number;
   /** Called when user drags the block to a new Y position (percent 0-95, snapped). */
@@ -114,6 +123,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       repeatActive: initialRepeatActive,
       repeatIcon: initialRepeatIcon = 'repeat',
       repeatLabel: initialRepeatLabel = 'Repeat current sentence',
+      clusterSettings: initialClusterSettings,
+      blockSettings: initialBlockSettings,
       yOffsetPercent: initialYOffsetPercent = 75,
       onDragReposition,
       onPrev,
@@ -144,6 +155,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [repeatIcon, setRepeatIcon] = useState<IconCatalogKey>(initialRepeatIcon);
     const [repeatLabel, setRepeatLabel] = useState(initialRepeatLabel);
     const [yOffsetPercent, setYOffsetPercent] = useState(initialYOffsetPercent);
+    const [clusterSettings, setClusterSettingsState] = useState<NavClusterSettings | undefined>(initialClusterSettings);
+    const [blockSettings, setBlockSettingsState] = useState<SubtitleBlockSettings | undefined>(initialBlockSettings);
     const [dragging, setDragging] = useState(false);
     const [manager, setManager] = useState<ManagerState | undefined>(initialManager);
     const [offset, setOffset] = useState<OffsetState | undefined>(initialOffset);
@@ -152,6 +165,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [hintOpen, setHintOpen] = useState(false);
     const [toasts, setToasts] = useState<ToastItem[]>([]);
     const [generateNativeEnabled, setGenerateNativeEnabled] = useState(initialGenerateNativeEnabled);
+    const [toolsExpanded, setToolsExpanded] = useState(false);
 
     const addToast = useCallback((message: string, variant?: ToastVariant): void => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -168,6 +182,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       ref,
       () => ({
         setStyles: (t, n) => { setTargetStyle(t); setNativeStyle(n); },
+        setClusterSettings: (s) => setClusterSettingsState(s),
+        setBlockSettings: (s) => setBlockSettingsState(s),
         setManager: (m) => setManager(m),
         setOffset: (o) => setOffset(o),
         setManagerOpen,
@@ -257,7 +273,9 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           st.rafId = null;
         }
         const finalDelta = e.clientY - st.startY;
-        const next = dragDeltaToYOffset(st.startOffset, finalDelta, st.containerHeight);
+        const rawY = dragDeltaToYOffset(st.startOffset, finalDelta, st.containerHeight);
+        // Snap chỉ khi release → CSS transition tạo animation mượt tới snap point
+        const next = dragEndSnapYOffset(rawY);
         setYOffsetPercent(next);
         onDragReposition?.(next);
         dragState.current = null;
@@ -266,6 +284,16 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       },
       [onDragReposition],
     );
+
+    // Cluster settings CSS variables — áp dụng cho cả clusterLeft (NavCluster) + clusterRight
+    const clusterBtnSize = clusterSettings?.buttonSize ?? 34;
+    const clusterTextOpacity = clusterSettings?.textOpacity ?? 1;
+    const clusterBgOpacity = clusterSettings?.bgOpacity ?? 0.2;
+    const clusterRightStyle: React.CSSProperties = {
+      '--cluster-btn-size': `${clusterBtnSize}px`,
+      '--cluster-text-opacity': String(clusterTextOpacity),
+      '--cluster-bg-opacity': String(clusterBgOpacity),
+    } as React.CSSProperties;
 
     return (
       <div
@@ -286,6 +314,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
             repeatActive={repeatActive}
             repeatIcon={repeatIcon}
             repeatLabel={repeatLabel}
+            clusterSettings={clusterSettings}
             onToggleCollapsed={handleToggleCollapsed}
             onPrev={onPrev}
             onNext={onNext}
@@ -297,78 +326,98 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         </div>
 
         <div className={styles.blockLayer}>
-          <SubtitleBlock targetStyle={targetStyle} nativeStyle={nativeStyle} />
+          <SubtitleBlock targetStyle={targetStyle} nativeStyle={nativeStyle} blockSettings={blockSettings} />
         </div>
 
         {!collapsed && (
-          <div className={styles.toolsLayer} data-testid="subtitle-tools">
-            {onQuickAdd && (
-              <IconButton
-                aria-label="Quick add card"
-                title="Quick add (Q)"
-                data-testid="quick-add-btn"
-                size="sm"
-                onClick={onQuickAdd}
-              >
-                <Icon name="zap" size={18} />
-              </IconButton>
-            )}
-            {onEditCard && (
-              <IconButton
-                aria-label="Edit card"
-                title="Edit card (E)"
-                data-testid="edit-card-btn"
-                size="sm"
-                onClick={onEditCard}
-              >
-                <Icon name="pencil" size={18} />
-              </IconButton>
-            )}
-            {onUpdateCurrentCard && (
-              <IconButton
-                aria-label="Update current card"
-                title="Update current card (U)"
-                data-testid="update-current-card-btn"
-                size="sm"
-                onClick={onUpdateCurrentCard}
-              >
-                <Icon name="rotateCcw" size={18} />
-              </IconButton>
-            )}
-            {onGenerateNative && (
-              <IconButton
-                aria-label="Generate native subtitle"
-                title="Generate native (G)"
-                data-testid="generate-native-btn"
-                size="sm"
-                onClick={onGenerateNative}
-                disabled={!generateNativeEnabled}
-              >
-                <Icon name="languages" size={18} />
-              </IconButton>
-            )}
-            {onToggleManager && (
-              <IconButton
-                aria-label="Open subtitle manager"
-                title="Open subtitle manager"
-                data-testid="manager-toggle-btn"
-                size="sm"
-                onClick={onToggleManager}
-              >
-                <Icon name="subtitleManager" size={18} />
-              </IconButton>
-            )}
-            {onToggleSidePanel && (
-              <IconButton
-                aria-label="Toggle subtitle side panel"
-                title="Toggle side panel (T)"
-                data-testid="panel-toggle-btn"
-                size="sm"
-                onClick={onToggleSidePanel}
-              >
-                <Icon name="sidePanel" size={18} />
-              </IconButton>
-            )}
+          <div className={styles.clusterRight} style={clusterRightStyle} data-testid="nav-cluster-right">
+            <div className={styles.primaryCol}>
+              {onQuickAdd && (
+                <IconButton
+                  aria-label="Quick add card"
+                  title="Quick add (Q)"
+                  data-testid="quick-add-btn"
+                  size="sm"
+                  onClick={onQuickAdd}
+                >
+                  <Icon name="zap" size={18} />
+                </IconButton>
+              )}
+              {onEditCard && (
+                <IconButton
+                  aria-label="Edit card"
+                  title="Edit card (E)"
+                  data-testid="edit-card-btn"
+                  size="sm"
+                  onClick={onEditCard}
+                >
+                  <Icon name="pencil" size={18} />
+                </IconButton>
+              )}
+              <div className={styles.toggleWrap}>
+                <div
+                  className={`${styles.extraCol} ${toolsExpanded ? styles.expanded : ''}`}
+                  data-testid="subtitle-tools-extra"
+                >
+                  {onToggleSidePanel && (
+                    <IconButton
+                      aria-label="Toggle subtitle side panel"
+                      title="Toggle side panel (T)"
+                      data-testid="panel-toggle-btn"
+                      size="sm"
+                      onClick={onToggleSidePanel}
+                    >
+                      <Icon name="sidePanel" size={18} />
+                    </IconButton>
+                  )}
+                </div>
+                <IconButton
+                  aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
+                  title={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
+                  data-testid="tools-toggle-btn"
+                  size="sm"
+                  onClick={() => setToolsExpanded((v) => !v)}
+                >
+                  <Icon name="chevronLeft" size={18} />
+                </IconButton>
+              </div>
+            </div>
+            <div className={styles.secondaryCol}>
+              {onUpdateCurrentCard && (
+                <IconButton
+                  aria-label="Update current card"
+                  title="Update current card (U)"
+                  data-testid="update-current-card-btn"
+                  size="sm"
+                  onClick={onUpdateCurrentCard}
+                >
+                  <Icon name="rotateCcw" size={18} />
+                </IconButton>
+              )}
+              {onGenerateNative && (
+                <IconButton
+                  aria-label="Generate native subtitle"
+                  title="Generate native (G)"
+                  data-testid="generate-native-btn"
+                  size="sm"
+                  onClick={onGenerateNative}
+                  disabled={!generateNativeEnabled}
+                >
+                  <Icon name="languages" size={18} />
+                </IconButton>
+              )}
+              {onToggleManager && (
+                <IconButton
+                  aria-label="Open subtitle manager"
+                  title="Open subtitle manager"
+                  data-testid="manager-toggle-btn"
+                  size="sm"
+                  onClick={onToggleManager}
+                >
+                  <Icon name="subtitleManager" size={18} />
+                </IconButton>
+              )}
+            </div>
           </div>
         )}
 
