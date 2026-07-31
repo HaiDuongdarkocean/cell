@@ -76,6 +76,32 @@ ${componentTokens}
   .subtitle-toast { animation: none; }
 }
 
+/* Drag-drop hint overlay — full-cover video, visible only while dragging.
+   pointer-events:none so it never blocks video controls or the container's
+   drop listener. z-index above subtitle shadow host (z:200) so the hint
+   reads on top. */
+.subtitle-drag-hint {
+  position: absolute;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background-color: var(--color-overlay-backdrop);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  border: 2px dashed var(--subtitle-drag-hint, var(--color-info));
+  border-radius: var(--radius-card);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+.subtitle-drag-hint--visible {
+  opacity: 1;
+}
+
 ${navClusterModuleCss}
 `;
 }

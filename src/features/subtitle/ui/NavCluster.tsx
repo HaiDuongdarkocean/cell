@@ -61,11 +61,13 @@ function NavClusterInner({
     .join(' ');
 
   // Apply cluster settings from extension popup
+  // buttonSize uses clamp for auto-responsive scaling (22px→34px based on container width)
   const buttonSize = clusterSettings?.buttonSize ?? 34;
   const textOpacity = clusterSettings?.textOpacity ?? 1;
   const bgOpacity = clusterSettings?.bgOpacity ?? 0.2;
   const clusterStyle: React.CSSProperties = {
-    '--cluster-btn-size': `${buttonSize}px`,
+    '--cluster-btn-size': `clamp(${Math.round(buttonSize * 0.65)}px, ${Math.round(buttonSize * 0.15)}cqw, ${buttonSize}px)`,
+    '--cluster-icon-size': `clamp(${Math.round(buttonSize * 0.35)}px, ${Math.round(buttonSize * 0.082)}cqw, 20px)`,
     '--cluster-text-opacity': String(textOpacity),
     '--cluster-bg-opacity': String(bgOpacity),
   } as React.CSSProperties;

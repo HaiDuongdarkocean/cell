@@ -4,11 +4,15 @@
 // Do NOT search the web before checking this catalog. Do NOT inline SVG in
 // components — import from here so the catalog stays complete.
 //
-// Convention: Lucide (24×24, stroke 2, currentColor, round caps, ISC license).
-// Exceptions noted in per-icon metadata (e.g. audio-wave = cardCreator extract).
+// Convention: 24×24, stroke 1.5, currentColor, round caps, round joins.
+// - Grid: 24×24px canvas with 2px padding (20×20px live area)
+// - Stroke: 1.5px unified across all icons (minimalist, dense UI)
+// - Caps/Joins: Round for friendly, approachable feel
+// - Color: currentColor (inherits from text color)
+// - Fill: none (outline style) unless explicitly filled (e.g., play icon)
 //
 // Add new icon:
-//   1. Drop .svg into ./svg/ (Lucide convention)
+//   1. Drop .svg into ./svg/ with stroke-width="1.5"
 //   2. Re-export raw string below
 //   3. Add entry to ICON_CATALOG with semantic tags + source
 //   4. Component imports from ICON_CATALOG, not the .svg?raw directly
@@ -78,7 +82,7 @@ import pipSvg from './svg/pip.svg?raw';
 import pinSvg from './svg/pin.svg?raw';
 import pinOffSvg from './svg/pin-off.svg?raw';
 
-// === Nav cluster icons (stroke 1.5 — subtitle overlay convention) ===
+// === Nav cluster icons ===
 import navPrevSvg from './svg/nav-prev.svg?raw';
 import navNextSvg from './svg/nav-next.svg?raw';
 import navRepeatSvg from './svg/nav-repeat.svg?raw';
@@ -88,7 +92,7 @@ import navRepeatCancelSvg from './svg/nav-repeat-cancel.svg?raw';
 import navRewindSvg from './svg/nav-rewind.svg?raw';
 import navForwardSvg from './svg/nav-forward.svg?raw';
 
-// === Subtitle overlay icons (stroke 1.5) ===
+// === Subtitle overlay icons ===
 import generateNativeSvg from './svg/generate-native.svg?raw';
 import sidePanelSvg from './svg/side-panel.svg?raw';
 import subtitleManagerSvg from './svg/subtitle-manager.svg?raw';
@@ -237,7 +241,7 @@ export const ICON_CATALOG = {
   messageSquare: { svg: messageSquareSvg, source: 'lucide/message-square', tags: ['message','sentence','text','speech','bubble','chat','audio-sentence'] } as IconEntry,
   bookOpen:    { svg: bookOpenSvg,    source: 'lucide/book-open',    tags: ['dictionary','book','lexicon'] } as IconEntry,
 
-  // === Nav cluster (stroke 1.5 — subtitle overlay) ===
+  // === Nav cluster ===
   navPrev:         { svg: navPrevSvg,         source: 'svgrepo/round-alt-arrow-left',  tags: ['nav','prev','previous','back','sentence','chevron-left','circle'] } as IconEntry,
   navNext:         { svg: navNextSvg,         source: 'svgrepo/round-alt-arrow-right', tags: ['nav','next','forward','sentence','chevron-right','circle'] } as IconEntry,
   navRepeat:       { svg: navRepeatSvg,       source: 'svgrepo/restart',               tags: ['nav','repeat','loop','cycle','restart','circular-arrow'] } as IconEntry,
@@ -247,7 +251,7 @@ export const ICON_CATALOG = {
   navRewind:       { svg: navRewindSvg,       source: 'svgrepo/rewind-5-seconds-back', tags: ['nav','rewind','back','5','seconds','seek'] } as IconEntry,
   navForward:      { svg: navForwardSvg,      source: 'svgrepo/rewind-10-seconds-forward', tags: ['nav','forward','skip','10','seconds','seek'] } as IconEntry,
 
-  // === Subtitle overlay (stroke 1.5) ===
+  // === Subtitle overlay ===
   generateNative:  { svg: generateNativeSvg,  source: 'custom/subtitle-block',      tags: ['generate','native','translate','exchange','bidirectional','arrows'] } as IconEntry,
   sidePanel:       { svg: sidePanelSvg,       source: 'custom/subtitle-panel',      tags: ['side','panel','toggle','split','rect'] } as IconEntry,
   subtitleManager: { svg: subtitleManagerSvg, source: 'custom/subtitle-manager',    tags: ['subtitle','manager','list','panel','lines'] } as IconEntry,

@@ -1,5 +1,5 @@
 <!-- Nav next — circle + chevron right. Used by navCluster next sentence.
-     Source: svgrepo round-alt-arrow-right. Stroke 1.5 (nav cluster convention). -->
+     Source: svgrepo round-alt-arrow-right. Stroke 1.5. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <circle cx="12" cy="12" r="10" />
   <path d="M10.5 9L13.5 12L10.5 15" />

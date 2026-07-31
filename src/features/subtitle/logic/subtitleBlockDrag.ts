@@ -21,11 +21,12 @@ export function snapYOffset(value: number): number {
 }
 
 /**
- * Convert pixel delta → percent of container height, apply offset, clamp, snap.
+ * Convert pixel delta → percent of container height, apply offset, clamp.
+ * Không snap khi đang kéo → mượt. Snap chỉ áp dụng khi release.
  * @param startOffset - yOffsetPercent lúc bắt đầu drag
  * @param deltaY - pixel delta theo trục Y (pointermove)
  * @param containerHeight - chiều cao container (video) px
- * @returns yOffsetPercent mới (clamped + snapped)
+ * @returns yOffsetPercent mới (chỉ clamped, không snap)
  */
 export function dragDeltaToYOffset(
   startOffset: number,
@@ -34,5 +35,14 @@ export function dragDeltaToYOffset(
 ): number {
   if (containerHeight <= 0) return clampYOffset(startOffset);
   const deltaPercent = (deltaY / containerHeight) * 100;
-  return snapYOffset(clampYOffset(startOffset + deltaPercent));
+  return clampYOffset(startOffset + deltaPercent);
+}
+
+/**
+ * Snap về điểm gần nhất khi release. Dùng cho pointerup.
+ * @param value - yOffsetPercent lúc release
+ * @returns yOffsetPercent đã snap
+ */
+export function dragEndSnapYOffset(value: number): number {
+  return snapYOffset(clampYOffset(value));
 }

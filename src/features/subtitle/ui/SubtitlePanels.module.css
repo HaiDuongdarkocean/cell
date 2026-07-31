@@ -8,8 +8,8 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: 0 var(--space-4);
+  gap: clamp(var(--space-1), 1.5cqw, var(--space-3));
+  padding: 0 clamp(var(--space-1), 2cqw, var(--space-4));
   pointer-events: auto;
   touch-action: none;
   cursor: grab;
@@ -50,7 +50,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: clamp(var(--space-1), 0.8cqw, var(--space-2));
 }
 
 .blockLayer > * {
@@ -65,7 +65,8 @@
   gap: var(--space-1);
   flex: 0 0 auto;
   position: relative;
-  --cluster-btn-size: 34px;
+  --cluster-btn-size: clamp(22px, 5cqw, 34px);
+  --cluster-icon-size: clamp(12px, 2.8cqw, 20px);
   --cluster-text-opacity: 1;
   --cluster-bg-opacity: 0.2;
 }
@@ -78,10 +79,18 @@
 .clusterRight :global([role='button']) {
   width: var(--cluster-btn-size);
   height: var(--cluster-btn-size);
+  min-width: var(--cluster-btn-size);
+  min-height: var(--cluster-btn-size);
   opacity: var(--cluster-text-opacity);
   background: rgba(0, 0, 0, var(--cluster-bg-opacity));
   border: none;
   border-radius: var(--radius-full);
+}
+
+.clusterRight :global(button) :global(span),
+.clusterRight :global([role='button']) :global(span) {
+  width: var(--cluster-icon-size) !important;
+  height: var(--cluster-icon-size) !important;
 }
 
 .clusterRight .primaryCol,
@@ -93,14 +102,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
+  gap: clamp(2px, 0.4cqw, var(--space-1));
 }
 
 .secondaryCol {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
+  gap: clamp(2px, 0.4cqw, var(--space-1));
 }
 
 .toggleWrap {
@@ -164,6 +173,12 @@
 }
 
 @container (max-width: 480px) {
+  .clusterRight .secondaryCol {
+    display: none;
+  }
+}
+
+@container (max-width: 320px) {
   .clusterRight {
     display: none;
   }
