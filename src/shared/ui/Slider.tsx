@@ -24,8 +24,14 @@ interface SliderProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onCha
  * Atom only renders + emits numeric value — snap logic stays in caller
  * (button size 40/48/56 presets per ADR-018 D2).
  *
- * Accessibility: `aria-label` required, focus-visible 2px solid primary +
- * 2px offset. Keyboard: Arrow Up/Down/Left/Right adjusts (native range).
+ * Design-system updates:
+ * - Track uses semantic `--color-track`; filled portion uses `--color-primary`.
+ * - Thumb floats with `--shadow-floating`, scales on hover/active.
+ * - Track + thumb are vertically centered inside `--touch-target` via padding.
+ * - Keyboard: Arrow Up/Down/Left/Right adjusts (native range).
+ *
+ * Accessibility: `aria-label` required; `aria-valuenow` set explicitly;
+ * focus-visible 2px solid primary + 2px offset.
  */
 export function Slider({
   value,
@@ -36,10 +42,19 @@ export function Slider({
   className,
   ...rest
 }: SliderProps): React.JSX.Element {
-  const handleChange = (e: React.SyntheticEvent<HTMLInputElement>): void => {
+  const progress = ((value - min) / (max - min)) * 100;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     onChange(Number(e.currentTarget.value));
   };
+
   const cls = `${styles.slider} ${className ?? ''}`.trim();
+
+  const sliderStyle = {
+    ...(rest.style ?? {}),
+    '--progress': `${progress}%`,
+  } as React.CSSProperties;
+
   return (
     <input
       type="range"
@@ -49,8 +64,11 @@ export function Slider({
       step={step}
       value={value}
       onChange={handleChange}
-      onInput={handleChange}
+      aria-valuenow={value}
+      aria-valuemin={min}
+      aria-valuemax={max}
       {...rest}
+      style={sliderStyle}
     />
   );
 }
