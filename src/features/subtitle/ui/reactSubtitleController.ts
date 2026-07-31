@@ -119,6 +119,11 @@ export class ReactSubtitleController {
       onToggleSidePanel: () => this.onToggleSidePanel?.(),
       onToggleManager: () => this.openManager(),
     });
+
+    // Wire video timeupdate → engine.onTimeUpdate so active cue index tracks
+    // playback. Without this, loadBilingualCues sets index=-1 and the block
+    // stays empty until the next load/offset change.
+    video.addEventListener('timeupdate', () => this.engine.onTimeUpdate());
   }
 
   private loadPersistedOffset(): void {
@@ -201,6 +206,8 @@ export class ReactSubtitleController {
 
   private updateStylesFromEngine(): void {
     this.mount.setStyles(this.engine.getTargetStyle(), this.engine.getNativeStyle());
+    this.mount.setClusterSettings(this.engine.getClusterSettings());
+    this.mount.setBlockSettings(this.engine.getBlockSettings());
   }
 
   private setIsPlaying(playing: boolean): void {
@@ -248,11 +255,13 @@ export class ReactSubtitleController {
       return;
     }
     this.engine.loadCues([...arg]);
+    this.engine.onTimeUpdate();
     this.syncFromEngine();
   }
 
   loadBilingualCues(targetCues: SrtCue[], nativeCues: SrtCue[]): void {
     this.engine.loadBilingualCues(targetCues, nativeCues);
+    this.engine.onTimeUpdate();
     this.syncFromEngine();
   }
 

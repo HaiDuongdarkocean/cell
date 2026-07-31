@@ -7,6 +7,25 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
+  gap: var(--space-1);
+  --cluster-btn-size: 34px;
+  --cluster-text-opacity: 1;
+  --cluster-bg-opacity: 0.2;
+}
+
+.cluster .main,
+.cluster .secondary {
+  background: transparent;
+}
+
+.cluster :global(button),
+.cluster :global([role='button']) {
+  width: var(--cluster-btn-size);
+  height: var(--cluster-btn-size);
+  opacity: var(--cluster-text-opacity);
+  background: rgba(0, 0, 0, var(--cluster-bg-opacity));
+  border: none;
+  border-radius: var(--radius-full);
 }
 
 .main,
@@ -16,9 +35,6 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-}
-
-.main {
 }
 
 .secondary {

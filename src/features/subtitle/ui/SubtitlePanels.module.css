@@ -10,15 +10,26 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: 0 var(--space-4);
-  pointer-events: none;
+  pointer-events: auto;
   touch-action: none;
   cursor: grab;
   container-type: inline-size;
+  z-index: 1;
+  transition: top 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.root > * {
+  pointer-events: none;
+}
+
+.root > * > * {
+  pointer-events: auto;
 }
 
 .root.dragging {
-  will-change: transform;
+  will-change: top;
   cursor: grabbing;
+  transition: none;
 }
 
 .navLayer {
@@ -51,12 +62,31 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  gap: var(--space-1);
   flex: 0 0 auto;
   position: relative;
+  --cluster-btn-size: 34px;
+  --cluster-text-opacity: 1;
+  --cluster-bg-opacity: 0.2;
 }
 
 .clusterRight > * {
   pointer-events: auto;
+}
+
+.clusterRight :global(button),
+.clusterRight :global([role='button']) {
+  width: var(--cluster-btn-size);
+  height: var(--cluster-btn-size);
+  opacity: var(--cluster-text-opacity);
+  background: rgba(0, 0, 0, var(--cluster-bg-opacity));
+  border: none;
+  border-radius: var(--radius-full);
+}
+
+.clusterRight .primaryCol,
+.clusterRight .secondaryCol {
+  background: transparent;
 }
 
 .primaryCol {
@@ -101,14 +131,6 @@
   opacity: 1;
   transform: translateY(-50%) translateX(0);
   pointer-events: auto;
-}
-
-.toggleBtn {
-  transition: transform 150ms ease-out;
-}
-
-.toggleBtn.expanded {
-  transform: rotate(180deg);
 }
 
 .panelLayer {

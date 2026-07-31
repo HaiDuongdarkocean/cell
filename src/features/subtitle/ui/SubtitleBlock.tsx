@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import type { SrtCue } from '@/entities/media/types';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
+import type { SubtitleBlockSettings } from '@/entities/media';
 import { useCuesStore } from '@/stores/cuesStore';
 import { buildTextShadow, hexToRgba, sanitizeFontFamily } from './subtitleUI';
 import styles from './SubtitleBlock.module.css';
@@ -16,6 +17,7 @@ interface SubtitleBlockProps {
   targetStyle: OverlayStyleConfig;
   nativeStyle: OverlayStyleConfig;
   cues?: SubtitleBlockCues;
+  blockSettings?: SubtitleBlockSettings;
 }
 
 const selectTargetCues = (state: { targetCues: SrtCue[] }): SrtCue[] => state.targetCues;
@@ -37,7 +39,7 @@ function buildLayerStyle(config: OverlayStyleConfig): React.CSSProperties {
   };
 }
 
-function SubtitleBlockInner({ targetStyle, nativeStyle, cues }: SubtitleBlockProps): React.JSX.Element | null {
+function SubtitleBlockInner({ targetStyle, nativeStyle, cues, blockSettings }: SubtitleBlockProps): React.JSX.Element | null {
   const storeTargetCues = useCuesStore(selectTargetCues);
   const storeNativeCues = useCuesStore(selectNativeCues);
   const storeTargetActiveIndex = useCuesStore(selectTargetActiveIndex);
@@ -51,15 +53,22 @@ function SubtitleBlockInner({ targetStyle, nativeStyle, cues }: SubtitleBlockPro
   const targetCue = targetCues[targetActiveIndex];
   const nativeCue = nativeCues[nativeActiveIndex];
 
+  // Apply block settings (globalScale, bgOpacity) from extension popup
+  const globalScale = blockSettings?.globalScale ?? 1;
+  const blockBgOpacity = blockSettings?.bgOpacity ?? 0.7;
+  const blockStyle: React.CSSProperties = {
+    transform: `scale(${globalScale})`,
+    transformOrigin: 'center',
+  };
+
   // ADR-025: block container luôn render để giữ 3-zone layout shape khi cues rỗng.
-  // Text span rỗng khi không có cue — block vẫn full-width, nav cluster không bị lệch.
   return (
-    <div className={styles.block} data-testid="subtitle-block">
-      <div className={styles.layer} data-role="target" style={buildLayerStyle(targetStyle)}>
+    <div className={styles.block} style={blockStyle} data-testid="subtitle-block">
+      <div className={styles.layer} data-role="target" style={{ ...buildLayerStyle(targetStyle), backgroundColor: hexToRgba(targetStyle.backgroundColor, targetStyle.backgroundOpacity * blockBgOpacity) }}>
         <span className={styles.text}>{targetStyle.visible ? targetCue?.text ?? '' : ''}</span>
       </div>
       {nativeStyle.visible && nativeCue && (
-        <div className={styles.layer} data-role="native" style={buildLayerStyle(nativeStyle)}>
+        <div className={styles.layer} data-role="native" style={{ ...buildLayerStyle(nativeStyle), backgroundColor: hexToRgba(nativeStyle.backgroundColor, nativeStyle.backgroundOpacity * blockBgOpacity) }}>
           <span className={styles.text}>{nativeCue.text}</span>
         </div>
       )}

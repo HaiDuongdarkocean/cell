@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import type { NavClusterSettings } from '@/entities/media';
 import { Icon } from '@/shared/icons/Icon';
 import { ICON_CATALOG } from '@/shared/icons';
 import { IconButton } from '@/shared/ui';
@@ -17,6 +18,8 @@ interface NavClusterProps {
   repeatIcon?: keyof typeof ICON_CATALOG;
   /** Repeat button ARIA label. */
   repeatLabel?: string;
+  /** Nav cluster settings from extension popup (buttonSize, textOpacity, bgOpacity, enabled). */
+  clusterSettings?: NavClusterSettings;
   /** Called when the user toggles collapse/expand. */
   onToggleCollapsed: () => void;
   /** Called when the user requests the previous sentence. */
@@ -40,6 +43,7 @@ function NavClusterInner({
   repeatActive = false,
   repeatIcon = 'navRepeat',
   repeatLabel = 'Repeat current sentence',
+  clusterSettings,
   onToggleCollapsed,
   onPrev,
   onNext,
@@ -56,9 +60,19 @@ function NavClusterInner({
     .filter(Boolean)
     .join(' ');
 
+  // Apply cluster settings from extension popup
+  const buttonSize = clusterSettings?.buttonSize ?? 34;
+  const textOpacity = clusterSettings?.textOpacity ?? 1;
+  const bgOpacity = clusterSettings?.bgOpacity ?? 0.2;
+  const clusterStyle: React.CSSProperties = {
+    '--cluster-btn-size': `${buttonSize}px`,
+    '--cluster-text-opacity': String(textOpacity),
+    '--cluster-bg-opacity': String(bgOpacity),
+  } as React.CSSProperties;
+
   if (collapsed) {
     return (
-      <div className={rootClass} data-testid="nav-cluster" aria-label="Subtitle navigation">
+      <div className={rootClass} style={clusterStyle} data-testid="nav-cluster" aria-label="Subtitle navigation">
         <IconButton
           className={styles.collapsedBtn}
           aria-label="Expand subtitle navigation"
@@ -72,7 +86,7 @@ function NavClusterInner({
   }
 
   return (
-    <div className={rootClass} data-testid="nav-cluster" aria-label="Subtitle navigation">
+    <div className={rootClass} style={clusterStyle} data-testid="nav-cluster" aria-label="Subtitle navigation">
       <div className={styles.main}>
         <IconButton aria-label="Previous sentence" data-testid="nav-prev" onClick={onPrev}>
           <Icon name="navPrev" size={20} />
