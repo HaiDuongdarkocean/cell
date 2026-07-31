@@ -44,19 +44,11 @@
 }
 
 .main {
-  background: var(--color-surface-card);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-md);
-  padding: var(--space-1);
 }
 
 .secondary {
   flex-direction: column;
   gap: var(--space-1);
-  background: var(--color-surface-card);
-  border-radius: var(--radius-full);
-  box-shadow: var(--shadow-md);
-  padding: var(--space-1);
 }
 
 .gapCover {
