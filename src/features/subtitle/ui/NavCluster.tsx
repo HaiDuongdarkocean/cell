@@ -31,8 +31,6 @@ interface NavClusterProps {
   onForward: () => void;
   /** Called when the user toggles play/pause. */
   onPlayPause: () => void;
-  /** Called when the drag grip is engaged. */
-  onDragStart?: () => void;
 }
 
 function NavClusterInner({
@@ -49,7 +47,6 @@ function NavClusterInner({
   onRewind,
   onForward,
   onPlayPause,
-  onDragStart,
 }: NavClusterProps): React.JSX.Element {
   const rootClass = [
     styles.cluster,
@@ -76,7 +73,6 @@ function NavClusterInner({
 
   return (
     <div className={rootClass} data-testid="nav-cluster" aria-label="Subtitle navigation">
-      <div className={styles.grip} aria-label="Drag subtitle navigation" onPointerDown={onDragStart} data-testid="nav-grip" />
       <div className={styles.main}>
         <IconButton aria-label="Previous sentence" data-testid="nav-prev" onClick={onPrev}>
           <Icon name="navPrev" size={20} />
@@ -104,7 +100,6 @@ function NavClusterInner({
           <Icon name="navForward" size={18} />
         </IconButton>
       </div>
-      <div className={styles.gapCover} data-testid="nav-gap-cover" />
       {hasSubtitle ? null : (
         <div className={styles.noSub} data-testid="nav-no-sub">
           <Icon name="flag" size={20} />
