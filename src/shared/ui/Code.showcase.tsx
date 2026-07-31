@@ -1,4 +1,4 @@
-import { Code } from './Code';
+﻿import { Code } from './Code';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -14,6 +14,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Code',
   description: 'Inline code display with monospace font. Use for showing code snippets (multi-line uses CodeBlock).',
+  level: 'atoms',
+  category: 'Content',
   group: 'Display',
   order: 25,
 };

@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { PinButton } from './PinButton';
 
 export function Showcase(): ReactElement {
@@ -16,6 +16,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'PinButton',
   description: 'Pin toggle button with pinned/unpinned states and sizes (sm, md, lg). Use for pinning items.',
+  level: 'atoms',
+  category: 'Action',
   group: 'Extension',
   order: 45,
 };

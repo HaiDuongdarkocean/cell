@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { Textarea } from './Textarea';
 
 export function Showcase(): ReactElement {
@@ -16,6 +16,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Textarea',
+  level: 'atoms',
+  category: 'Input',
   group: 'Shared UI — Input',
   order: 25,
 };

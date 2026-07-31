@@ -1,4 +1,4 @@
-import { Avatar } from './Avatar';
+﻿import { Avatar } from './Avatar';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -28,6 +28,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Avatar',
   description: 'User avatar with sizes (xs, sm, md, lg), shapes (circle, square), status dot, and fallback. Use for user representation.',
+  level: 'atoms',
+  category: 'Content',
   group: 'Generic Core',
   order: 3,
 };

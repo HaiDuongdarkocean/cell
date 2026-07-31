@@ -1,4 +1,4 @@
-import { PartOfSpeechTag } from './PartOfSpeechTag';
+﻿import { PartOfSpeechTag } from './PartOfSpeechTag';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -15,6 +15,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'PartOfSpeechTag',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Dictionary',
   order: 83,
 };

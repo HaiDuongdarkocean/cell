@@ -1,4 +1,4 @@
-import { ExampleSentence } from './ExampleSentence';
+﻿import { ExampleSentence } from './ExampleSentence';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -16,6 +16,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'ExampleSentence',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Dictionary',
   order: 85,
 };

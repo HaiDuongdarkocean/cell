@@ -1,4 +1,4 @@
-import { Chip } from './Chip';
+﻿import { Chip } from './Chip';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -21,6 +21,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Chip',
   description: 'Removable chip with default/outline variants, selected state, and sizes (sm, md). Use for tags and filters.',
+  level: 'atoms',
+  category: 'Action',
   group: 'Extension',
   order: 41,
 };

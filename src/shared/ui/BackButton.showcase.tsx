@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { BackButton } from './BackButton';
 
 export function Showcase(): ReactElement {
@@ -15,6 +15,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'BackButton',
   description: 'Back navigation button with icon-only and icon+label variants, sizes (sm, md, lg). Use for back navigation.',
+  level: 'atoms',
+  category: 'Action',
   group: 'Extension',
   order: 46,
 };

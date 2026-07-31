@@ -1,4 +1,4 @@
-import { ResizeHandle } from './ResizeHandle';
+﻿import { ResizeHandle } from './ResizeHandle';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -21,6 +21,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'ResizeHandle',
   description: 'Resize handle with horizontal/vertical directions and sizes (sm, md). Use for resizable panels.',
+  level: 'atoms',
+  category: 'Action',
   group: 'Extension',
   order: 44,
 };

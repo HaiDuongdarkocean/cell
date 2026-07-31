@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { Slider } from './Slider';
 
 export function Showcase(): ReactElement {
@@ -15,6 +15,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Slider',
+  level: 'atoms',
+  category: 'Input',
   group: 'Shared UI — Input',
   order: 26,
 };

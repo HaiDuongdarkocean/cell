@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { Checkbox } from './Checkbox';
 
 export function Showcase(): ReactElement {
@@ -19,6 +19,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Checkbox',
   description: 'Checkbox with indeterminate state, error state, and sizes. Use for multiple selection in forms.',
+  level: 'atoms',
+  category: 'Input',
   group: 'Shared UI — Input',
   order: 23,
 };

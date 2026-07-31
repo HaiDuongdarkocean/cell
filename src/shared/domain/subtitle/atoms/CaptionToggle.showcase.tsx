@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { CaptionToggle } from './CaptionToggle';
 
@@ -39,6 +39,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'CaptionToggle',
+  level: 'atoms',
+  category: 'Content',
   group: 'Domain — Subtitle',
   order: 71,
 };

@@ -1,4 +1,4 @@
-import { DragHandle } from './DragHandle';
+﻿import { DragHandle } from './DragHandle';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -15,6 +15,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'DragHandle',
   description: 'Drag handle with orientation (horizontal, vertical) and sizes (sm, md, lg). Use for draggable items.',
+  level: 'atoms',
+  category: 'Action',
   group: 'Extension',
   order: 43,
 };

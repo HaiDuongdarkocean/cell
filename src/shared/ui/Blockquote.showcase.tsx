@@ -1,4 +1,4 @@
-import { Blockquote } from './Blockquote';
+﻿import { Blockquote } from './Blockquote';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -20,6 +20,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Blockquote',
   description: 'Blockquote with default and bordered variants, citation support. Use for quoting text.',
+  level: 'atoms',
+  category: 'Content',
   group: 'Display',
   order: 23,
 };

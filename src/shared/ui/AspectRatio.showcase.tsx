@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { AspectRatio } from './AspectRatio';
 
 export function Showcase(): ReactElement {
@@ -37,6 +37,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'AspectRatio',
   description: 'Aspect ratio container with ratio prop. Use for media with fixed proportions.',
+  level: 'atoms',
+  category: 'Layout',
   group: 'Layout',
   order: 16,
 };

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactElement } from 'react';
+﻿import { useState, useRef, useEffect, type ReactElement } from 'react';
 import { PopupDictionary } from './PopupDictionary';
 import { Button } from '@/shared/ui/Button';
 import type { PopupAnchor } from './usePopupPosition';
@@ -92,6 +92,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'PopupDictionary',
+  level: 'atoms',
+  category: 'Display',
   group: 'Features',
   order: 103,
 };

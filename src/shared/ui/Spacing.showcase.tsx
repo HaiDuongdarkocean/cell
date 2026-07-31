@@ -1,4 +1,4 @@
-import type { ReactElement, CSSProperties } from 'react';
+﻿import type { ReactElement, CSSProperties } from 'react';
 
 interface SpacingItem {
   token: string;
@@ -100,6 +100,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Spacing Scale',
   description: 'All --space-* tokens (4px base-unit scale). Half-step for tight spacing, core for components, large for section/page gaps. SSOT: only --space-* (no --spacing-* alias).',
+  level: 'foundations',
+  category: 'Spacing',
   group: 'Tokens',
   order: 1,
 };

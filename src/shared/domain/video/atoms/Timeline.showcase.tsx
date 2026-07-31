@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { Timeline } from './Timeline';
 
@@ -19,6 +19,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Timeline',
+  level: 'atoms',
+  category: 'Action',
   group: 'Domain — Video',
   order: 61,
 };

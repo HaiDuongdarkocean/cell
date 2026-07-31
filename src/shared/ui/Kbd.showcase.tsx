@@ -1,4 +1,4 @@
-import { Kbd } from './Kbd';
+﻿import { Kbd } from './Kbd';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -30,6 +30,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Kbd',
   description: 'Keyboard key display with sizes (sm, md). Use to show keyboard shortcuts.',
+  level: 'atoms',
+  category: 'Utility',
   group: 'Utility',
   order: 30,
 };

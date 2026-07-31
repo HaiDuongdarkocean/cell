@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import type { ReactElement } from 'react';
 import { VolumeControl } from './VolumeControl';
 
@@ -25,6 +25,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'VolumeControl',
+  level: 'atoms',
+  category: 'Action',
   group: 'Domain — Video',
   order: 63,
 };

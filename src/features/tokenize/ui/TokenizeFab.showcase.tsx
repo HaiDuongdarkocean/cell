@@ -1,4 +1,4 @@
-import { TokenizeFab } from './TokenizeFab';
+﻿import { TokenizeFab } from './TokenizeFab';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -11,6 +11,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'TokenizeFab',
+  level: 'atoms',
+  category: 'Display',
   group: 'Features',
   order: 102,
 };

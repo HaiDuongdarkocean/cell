@@ -1,105 +1,70 @@
-# Todo: Predictive Viewport Tokenize (VDLT-Predict)
+# Todo: Design System Library — Foundations + Atoms
 
-> Nguồn sự thật gốc: `tasks/plan-predictive-viewport-tokenize.md` + `docs/specs/spec-predictive-viewport-tokenize.md`.
-> Orbital Badge Dictionary Trigger milestone: đã xong final checkpoint trừ việc tạo/push PR (chờ anh approve).
+> Spec: `docs/specs/spec-design-system-library-foundations-atoms.md`
+> Plan: `tasks/plan.md`
 
-## Phase A — Baseline overscan + prepare≠bind + cache bump
+## Phase 1 — Contract and discovery
 
-- [~] **Task A1: Raise cache capacity tiers + extract overscan constants**
-  - Acceptance: `LOW_MEMORY_CACHE_CAPACITY`/`MID_MEMORY_CACHE_CAPACITY`/`BASE_CACHE_CAPACITY` raised per spec table (150/300/500); `VIEWPORT_ROOT_MARGIN` replaced by named near-zone constant (start isotropic large, e.g. `600px` all sides) ready for direction swap in Phase B.
-  - Verify: `npm run test:unit -- --testPathPattern=tokenizeCache` green; `npm run typecheck`; existing controller tests still green.
-  - Files: `src/features/tokenize/controller/webTokenizeController.ts` (constants only).
-  - Scope: S.
+- [ ] **Task 1: Define Library metadata contract and normalization**
+  - Acceptance: explicit `level` (`foundations`/`atoms`), `category`, `description`, `status`; no silent level inference.
+  - Verify: discovery tests.
+  - Files: `src/entrypoints/design-system-showcase/autoDiscovery.ts`, tests.
 
-- [ ] **Task A2: Schedule BUFFER prepare for overscan-zone blocks; bind reuses prepared tokens**
-  - Acceptance: blocks entering the expanded rootMargin but not yet visible schedule `prepareBlock` at `PRIORITY_BUFFER`; `bindVisibleBlock` does not re-tokenize when `block.tokens` already set (verify + add test); viewport bind stays `PRIORITY_VIEWPORT`.
-  - Verify: new unit test — prepare sets `tokens`, bind uses them, no double tokenize; `npm run test:unit -- --testPathPattern=tokenize`; `npm run build`.
-  - Files: `src/features/tokenize/controller/webTokenizeController.ts`; `src/features/tokenize/controller/webTokenizeController.test.ts`.
-  - Scope: M.
+- [ ] **Task 2: Migrate Foundation and Atom showcase metadata**
+  - Acceptance: Color/Spacing are Foundations; eligible primitives are Atoms; categories are UI-intent based.
+  - Verify: metadata coverage check + build.
+  - Files: `src/shared/ui/*.showcase.tsx`.
 
-- [ ] **Task A3: Soft-unbind preserves tokens — guard test**
-  - Acceptance: after `unbindTokenBlock`, `block.tokens` is still populated and `block.isBound === false`; rebind does not re-tokenize. Add explicit test if none exists.
-  - Verify: `npm run test:unit -- --testPathPattern=tokenSpanRenderer|tokenize`.
-  - Files: `src/features/tokenize/ui/tokenSpanRenderer.test.ts` (test only; no src change unless regression found).
-  - Scope: S.
+### Checkpoint: Taxonomy
 
-### Checkpoint A
-- [ ] `npm run test:unit -- --testPathPattern=tokenize` green
-- [ ] `npm run typecheck` + `npm run build` green
-- [ ] Manual (DevTools MCP): long English article, scroll 1–2 screens — plain flash count vs baseline
+- [ ] `npm run typecheck`
+- [ ] Discovery/grouping tests
+- [ ] No active item relies only on technical source group
 
-## Phase B — Direction-aware overscan + soft unbind behind
+## Phase 2 — Library shell
 
-- [ ] **Task B1: Pure `resolveScrollPredictMargin` helper + unit tests**
-  - Acceptance: pure function returns `{ rootMargin, direction }`; deep ahead / shallow behind; hysteresis ≥16px; min floors (minAhead 600px, minBehind 150px); `none` direction returns isotropic large margin; rootMargin string valid CSS.
-  - Verify: new `scrollDirection.test.ts` covers up/down/none/bounce/min-floor; `npm run test:unit -- --testPathPattern=scrollDirection`.
-  - Files: `src/features/tokenize/logic/scrollDirection.ts` (NEW); `src/features/tokenize/logic/scrollDirection.test.ts` (NEW).
-  - Scope: S.
+- [ ] **Task 3: Level → category navigation**
+  - Acceptance: Foundations/Atoms active; Molecules/Organisms/Templates/Pages disabled with `Coming later`.
+  - Verify: DOM/component tests.
+  - Files: `ShowcaseGallery.tsx`, discovery helpers, tests.
 
-- [ ] **Task B2: rAF-coalesced scroll direction tracker in controller**
-  - Acceptance: passive `scroll` listener on `window` updates `lastScrollY`/`scrollY` via `requestAnimationFrame` coalescing; no sync layout read beyond `scrollY`; listener added on `setActive(true)`, removed on disable/destroy.
-  - Verify: unit test (jsdom) — scroll event updates direction state; destroy removes listener; `npm run test:unit -- --testPathPattern=tokenize`.
-  - Files: `src/features/tokenize/controller/webTokenizeController.ts`; `src/features/tokenize/controller/webTokenizeController.test.ts`.
-  - Scope: M.
+- [ ] **Task 4: Library copy and search**
+  - Acceptance: title `Design System Library`; search `Search library...`; result copy says items; search matches title/category/level/description.
+  - Verify: tests + browser DOM check.
+  - Files: `App.tsx`, `ShowcaseGallery.tsx`, CSS/tests.
 
-- [ ] **Task B3: Recreate `ViewportTracker` with asymmetric margin on direction change; re-observe blocks**
-  - Acceptance: when direction changes (up↔down↔none), controller recreates `ViewportTracker` with `resolveScrollPredictMargin` output, re-observes all connected `blocks`, preserves `visibleElements` semantics (ADR-055 onEnter fires synchronously for already-intersecting); no token flash on direction flip.
-  - Verify: unit test — flip direction → tracker recreated, blocks re-observed, visible set intact; `npm run test:unit -- --testPathPattern=tokenize`; `npm run build`.
-  - Files: `src/features/tokenize/controller/webTokenizeController.ts`; `src/features/tokenize/controller/webTokenizeController.test.ts`.
-  - Scope: M.
+### Checkpoint: Library shell
 
-### Checkpoint B
-- [ ] Unit: margin helper + direction tracker + tracker recreation green
-- [ ] Manual: scroll down → ahead zone visibly deeper; reverse → rebind cheap (no re-tokenize)
+- [ ] Search works without flattening hierarchy.
+- [ ] Higher levels disabled/non-interactive.
+- [ ] Light/dark preserves hierarchy.
 
-## Phase C — Cold-start viewport-first
+## Phase 3 — Level-specific presentation
 
-- [ ] **Task C1: Split activate into viewport-bind-now + offscreen-hydrate**
-  - Acceptance: `setActive(true)` scans blocks, immediately binds blocks intersecting visual viewport (+ small near margin) via `queueMicrotask`/`rAF`, then schedules offscreen prepare/observe via scheduler. Does NOT wait `HYDRATION_QUIET_MS` before first viewport bind.
-  - Verify: unit test — activate with in-viewport blocks → bound within one microtask without quiet timer; `npm run test:unit -- --testPathPattern=tokenize`.
-  - Files: `src/features/tokenize/controller/webTokenizeController.ts`; `src/features/tokenize/controller/webTokenizeController.test.ts`.
-  - Scope: M.
+- [ ] **Task 5: Foundation specimens**
+  - Acceptance: Color/Spacing use foundation presentation; Foundations appear before Atoms.
+  - Verify: browser check.
+  - Files: gallery + CSS + foundation showcase files if needed.
 
-- [ ] **Task C2: Persisted-enable path binds viewport before hydration quiet window**
-  - Acceptance: `initialEnabled` path still waits `window.load` for safety, but binds viewport blocks immediately after load (or immediately if `readyState === 'complete'`); `HYDRATION_QUIET_MS` + `MAX_ACTIVATION_DELAY_MS` cap only the offscreen bulk scan.
-  - Verify: unit test — `readyState === 'complete'` → viewport bind fires without quiet wait; `npm run test:unit -- --testPathPattern=tokenize`; `npm run build`.
-  - Files: `src/features/tokenize/controller/webTokenizeController.ts`; `src/features/tokenize/controller/webTokenizeController.test.ts`.
-  - Scope: M.
+- [ ] **Task 6: Atom catalog cards**
+  - Acceptance: compact responsive cards with title/category/level/status/preview; no mislabeled uncertain compositions.
+  - Verify: browser at 320/768/1024/1280px.
+  - Files: gallery + CSS + atom showcases if needed.
 
-### Checkpoint C
-- [ ] Unit: cold-start path green
-- [ ] Manual (DevTools MCP): toggle on interactive page → viewport tokens <300ms; SPA feed mutation path still no multi-second plain flash
+### Checkpoint: Visual system
 
-## Phase D — Verify + docs
+- [ ] Foundation and Atom presentation visibly distinct.
+- [ ] Required responsive breakpoints pass.
+- [ ] New UI uses tokens only.
 
-- [ ] **Task D1: Non-regression sweep**
-  - Acceptance: mutation microtask fast path (ADR-050), cache eviction end-to-end, viewportTracker already-intersecting (ADR-055), characterData/removedNodes — all tests green; no new console errors.
-  - Verify: `npm run test:unit` (full suite); `npm run typecheck`; `npm run build`; manual SPA smoke.
-  - Files: tests only (fix if regression).
-  - Scope: S.
+## Phase 4 — Verification and docs
 
-- [ ] **Task D2: Update architecture docs**
-  - Acceptance: `docs/2-architechture-system.md` tokenize section reflects prepare-ahead + direction margin + cold-start; `docs/0-wiki.md` ADR list updated if ADR-058 added.
-  - Verify: `ls docs/adr/058*` if shipped; grep tokenize section current.
-  - Files: `docs/2-architechture-system.md`; `docs/0-wiki.md` (if ADR-058).
-  - Scope: S.
+- [ ] **Task 7: Tests and architecture docs**
+  - Acceptance: discovery/grouping/filter tests; architecture tree/function index updated; wiki index updated if needed.
+  - Verify: `npm run test:unit`, `npm run typecheck`, `npm run build`.
+  - Files: tests, `docs/2-architechture-system.md`, `docs/0-wiki.md`.
 
-- [x] **Task D3: ADR-058 (WHY only) after measured decision sticks**
-  - Added `docs/adr/058-predictive-viewport-tokenize.md` recording WHY for tiered cache, isotropic 600px near-zone, direction-aware overscan, prepare-before-bind, cold-start viewport-first, and soft-unbind.
-  - `docs/0-wiki.md` already references ADR-058.
-
-### Checkpoint D
-- [x] `npm run test:unit` green (260 suites passed, 3445 tests, 4 skipped)
-- [x] `npm run typecheck` clean
-- [x] `npm run build` success
-- [x] Ready for `code-review-and-quality`
-
-## Verification (subagent + manual)
-
-- Đã chạy 4 `subagent_explore` song song cho Phase A, B, C, D theo `tasks/plan-verify-predictive-viewport-tokenize.md`.
-- Tổng hợp kết quả:
-  - Phase A: A1 PASS, A2 PARTIAL (thiếu test no-re-tokenize), A3 PASS → đã bổ sung test `prepareTokenBlock` không re-tokenize trong `textTokenizer.test.ts`, chạy lại xanh → A2 PASS.
-  - Phase B: B1/B2/B3 PASS.
-  - Phase C: C1/C2 PASS.
-  - Phase D: D1 NEEDS_MANUAL → em đã chạy `npm run typecheck`, `npm run test:unit -- --testPathPatterns tokenize`, `npm run build` xanh; D2 PASS; D3 PASS.
-- Manual test trên real article/fullscreen vẫn bị block bởi test Chrome profile, nên để `NEEDS_MANUAL`.
+- [ ] **Task 8: Browser review and final quality pass**
+  - Acceptance: Chrome DevTools confirms taxonomy, copy, disabled roadmap, light/dark, and no new console errors.
+  - Verify: Chrome DevTools MCP + `npm run build`.
+  - Files: fixes discovered during verification only.

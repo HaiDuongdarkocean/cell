@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { Overlay } from './Overlay';
 import { Button } from './Button';
 
@@ -31,6 +31,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Overlay',
   description: 'Modal overlay with elevation, blur, and enter/exit animations. Use as backdrop for modals and popovers.',
+  level: 'atoms',
+  category: 'Layout',
   group: 'Layout',
   order: 18,
 };

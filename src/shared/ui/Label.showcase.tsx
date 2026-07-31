@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { Label } from './Label';
 
 export function Showcase(): ReactElement {
@@ -16,6 +16,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Label',
   description: 'Form label with required indicator and sizes (sm, md, lg). Use to label form controls.',
+  level: 'atoms',
+  category: 'Input',
   group: 'Shared UI — Input',
   order: 21,
 };

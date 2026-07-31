@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { Spinner } from './Spinner';
 
 export function Showcase(): ReactElement {
@@ -24,6 +24,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Spinner',
   description: 'Loading spinner with sizes (2xs, xs, sm, md, lg, xl) and color variants. Use to indicate loading state.',
+  level: 'atoms',
+  category: 'Feedback',
   group: 'Shared UI — Feedback',
   order: 30,
 };

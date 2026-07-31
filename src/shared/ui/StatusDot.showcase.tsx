@@ -1,4 +1,4 @@
-import { StatusDot } from './StatusDot';
+﻿import { StatusDot } from './StatusDot';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -25,6 +25,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'StatusDot',
   description: 'Status indicator dot with colors (success, warning, error, info, neutral) and pulse animation. Use for status indication.',
+  level: 'atoms',
+  category: 'Content',
   group: 'Display',
   order: 26,
 };

@@ -1,4 +1,4 @@
-import { Citation } from './Citation';
+﻿import { Citation } from './Citation';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -13,6 +13,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Citation',
   description: 'Citation element with plain and linked variants. Use for attributing sources.',
+  level: 'atoms',
+  category: 'Content',
   group: 'Display',
   order: 24,
 };

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { Center } from './Center';
 
 export function Showcase(): ReactElement {
@@ -24,6 +24,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'Center',
+  level: 'atoms',
+  category: 'Layout',
   group: 'Layout',
   order: 15,
 };

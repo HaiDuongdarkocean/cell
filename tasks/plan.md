@@ -1,72 +1,121 @@
-# Implementation Plan: Independent Candidate List in Dictionary Panel
+# Implementation Plan: Design System Library — Foundations + Atoms
 
 ## Overview
-Refactor the dictionary panel so every lookup candidate is rendered as an independent, vertically scrollable card. Each card keeps its own tab state, definition selection, audio/image/translation data, and action buttons. The chip bar becomes a jump-link navigation that scrolls to a candidate instead of replacing the active result. This removes the cross-candidate tab contamination and the need to click a chip before seeing another candidate.
 
-## Current state
-- `useDictionaryPanel.ts` stores one `currentResult`, a `candidates` array, and a single set of tab/media/selection state.
-- `DictionaryPanelView.tsx` renders one header, one tab toolbar, one set of tab panels, and one definitions list for `currentResult`. Candidate chips below switch `currentResult`.
-- `LookupResult` has no stable `id`; candidates are identified by index in the lookup result list (`[currentResult, ...candidates]`).
+Đổi trang design-system showcase thành **Design System Library**. Wave này tập trung tuyệt đối vào Foundations (Level 0) và Atoms (Level 1), đồng thời hiển thị Molecules/Organisms/Templates/Pages như roadmap disabled `Coming later`. Không tạo nội dung giả cho các cấp cao hơn.
+
+Nguồn yêu cầu chi tiết: `docs/specs/spec-design-system-library-foundations-atoms.md`.
 
 ## Architecture decisions
-1. **Per-candidate state with `useCandidate` hook.** A new `useCandidate(candidate, contextSentence, sourceLang, targetLang, onSendToCard, onQuickAdd)` hook encapsulates all candidate-local state (`activeTab`, `definitionSelection`, `status`, `audioItems`, `imageItems`, `translation`, etc.) and lazy fetchers. Each `CandidateView` mounts its own `useCandidate`, so tab and selection state never leak between candidates.
-2. **`CandidateView` component.** Extract the existing single-candidate body (header, toolbar, tab panels, definitions, actions) into a self-contained component. `DictionaryPanelView` maps the result list to `<CandidateView … />`.
-3. **Chips become jump links.** The chip bar stays but `onClick` scrolls the selected candidate into view and updates a local highlight index. It no longer swaps `currentResult` or resets global state.
-4. **Lazy media remains.** Audio, image, and translation fetchers live inside `useCandidate` and only run when the candidate's own tab is opened.
-5. **Selection badges on tab buttons.** Each candidate's tab toolbar shows a numeric badge on the audio/image/definitions tabs indicating how many items are currently selected (`selectedDefinitions.length`, selected audio count, selected image count). Badges are small counters positioned at the top-right of the tab button and update immediately as the user toggles items. Translate and links tabs do not carry item selection, so they do not show a badge.
-6. **Shared `buildPrefill` moved to a pure helper.** `buildPrefill` and its dependencies are moved/extracted so both `useDictionaryPanel` and `useCandidate` can build card-creator prefills without duplication.
-6. **Keep `useDictionaryPanel` search API stable in this slice.** The hook continues to own search, history updates, and result list. Per-candidate fields in its return object will become unused by `DictionaryPanelView`; dead-state cleanup is deferred to a follow-up task to avoid breaking existing unit tests until the new UI is verified.
+
+1. `level` + `category` là taxonomy hiển thị chính; technical `group`/source path không còn là primary navigation.
+2. Metadata level phải explicit; không silent infer level từ folder.
+3. Foundations và Atoms có presentation mode khác nhau: foundation specimens vs atom preview cards.
+4. Higher levels là static disabled roadmap entries, không phải discovered showcase content.
+5. Giữ Vite `import.meta.glob` auto-discovery hiện tại, thay contract/grouping thay vì rewrite architecture.
+6. Không tạo Molecule/Organism/Template/Page showcase trong wave này.
 
 ## Dependency graph
-```
-shared buildPrefill helper
-        |
-        +--> useCandidate hook
-                |
-                +--> CandidateView component
-                        |
-                        +--> DictionaryPanelView candidate list mapping
 
-useDictionaryPanel (search result list only)
-        |
-        +--> DictionaryPanelView (search, history, chips, scroll orchestration)
+```text
+ShowcaseMeta level/category contract
+              |
+              +--> discovery normalization + grouping/search helpers
+                            |
+                            +--> library sidebar + roadmap
+                            |
+                            +--> foundation/atom section rendering
+                                          |
+                                          +--> responsive CSS + browser verification
 ```
 
 ## Task list
 
-### Phase 1: Foundation
-- [ ] Task 1: Extract/share `buildPrefill` and media fetch helpers for single candidate.
-- [ ] Task 2: Create `useCandidate` hook with per-candidate state and lazy actions.
+### Phase 1: Contract and discovery
 
-### Checkpoint: Foundation
-- [ ] `npm run typecheck` passes
-- [ ] New `useCandidate` unit tests pass
-- [ ] `useDictionaryPanel` still compiles and its existing tests pass
+- [ ] **Task 1: Define Library metadata contract and normalization**
+  - Acceptance: `ShowcaseMeta` supports explicit `level`, `category`, `description`, `status`; active discovered entries have supported level; no level is silently inferred from source folder.
+  - Verify: unit tests cover valid metadata, missing/invalid metadata behavior, and deterministic ordering.
+  - Files: `src/entrypoints/design-system-showcase/autoDiscovery.ts`, discovery tests.
+  - Scope: M.
 
-### Phase 2: Core UI refactor
-- [ ] Task 3: Create `CandidateView` component from the existing single-candidate panel body.
-- [ ] Task 4: Refactor `DictionaryPanelView` to render `CandidateView` for every result and turn chips into jump links.
-- [ ] Task 5: Adjust `DictionaryPanelView.module.css` for candidate list spacing, scroll containers, and sticky chip affordance.
+- [ ] **Task 2: Migrate Foundation and Atom showcase metadata**
+  - Acceptance: Color/Spacing are `foundations`; eligible primitive showcases are `atoms`; each has UI-intent category; uncertain compositions are not mislabeled.
+  - Verify: script/test reports all active showcase entries have level/category; build passes.
+  - Files: `src/shared/ui/*.showcase.tsx` only for migrated entries.
+  - Scope: M.
 
-### Checkpoint: Core UI
-- [ ] `npm run test:unit` passes
-- [ ] `npm run build` passes
-- [ ] Manual Chrome check: multiple candidates visible, each tab independent, chip scroll works
+### Checkpoint: Taxonomy
 
-### Phase 3: Cleanup and verification
-- [ ] Task 6: Remove/update `useDictionaryPanel` per-candidate dead state and its unit tests.
-- [ ] Task 7: Update architecture docs/function index if new files are introduced.
-- [ ] Task 8: Final typecheck, unit tests, production build, and real-browser verification.
+- [ ] `npm run typecheck` passes.
+- [ ] Discovery/grouping tests pass.
+- [ ] No active entry relies on technical group as its only display taxonomy.
+
+### Phase 2: Library shell and navigation
+
+- [ ] **Task 3: Replace ShowcaseGallery grouping with level → category navigation**
+  - Acceptance: sidebar has Foundations and Atoms active sections, higher levels disabled with `Coming later`; counts are correct; active links scroll to level/category sections.
+  - Verify: component tests or DOM assertions cover active/disabled navigation and counts.
+  - Files: `ShowcaseGallery.tsx`, `autoDiscovery.ts` helpers, related tests.
+  - Scope: M.
+
+- [ ] **Task 4: Update page copy and search semantics**
+  - Acceptance: title says `Design System Library`; subtitle says `Foundations → Atoms`; search says `Search library...`; result/empty copy says items, not atoms/showcase; search matches title/category/level/description.
+  - Verify: unit tests for filtering and browser DOM check for forbidden old copy.
+  - Files: `App.tsx`, `ShowcaseGallery.tsx`, related CSS/tests.
+  - Scope: S.
+
+### Checkpoint: Library shell
+
+- [ ] Search/filter works without losing level hierarchy.
+- [ ] Higher levels are visibly disabled and non-interactive.
+- [ ] Light/dark mode preserves navigation hierarchy.
+
+### Phase 3: Level-specific presentation
+
+- [ ] **Task 5: Create Foundation section presentation**
+  - Acceptance: Foundation previews render as documentation specimens; Color and Spacing remain visually inspectable; foundation cards are not indistinguishable from atom cards.
+  - Verify: browser check confirms swatches/bars and foundation headings appear before atoms.
+  - Files: `ShowcaseGallery.tsx`, `ShowcaseGallery.module.css`, foundation showcase files if needed.
+  - Scope: M.
+
+- [ ] **Task 6: Create Atom catalog presentation**
+  - Acceptance: Atoms render compact responsive cards with title, category, level/status metadata, and preview; uncertain components are excluded or marked for review rather than mislabeled.
+  - Verify: browser check at 320/768/1024/1280px; no overflow or clipped preview.
+  - Files: `ShowcaseGallery.tsx`, `ShowcaseGallery.module.css`, atom showcase files if needed.
+  - Scope: M.
+
+### Checkpoint: Visual system
+
+- [ ] Foundation and Atom visual languages are distinct.
+- [ ] Responsive behavior works at required breakpoints.
+- [ ] No raw colors or spacing values introduced in new library UI.
+
+### Phase 4: Verification and documentation
+
+- [ ] **Task 7: Add/adjust tests and architecture documentation**
+  - Acceptance: discovery/grouping/filter tests cover new contract; architecture tree/function index describes Library files; wiki index references new spec if required.
+  - Verify: `npm run test:unit`, `npm run typecheck`, `npm run build`.
+  - Files: tests, `docs/2-architechture-system.md`, `docs/0-wiki.md`.
+  - Scope: M.
+
+- [ ] **Task 8: Browser review and final quality pass**
+  - Acceptance: Chrome DevTools confirms all success criteria; console has no new errors; light/dark and disabled roadmap work.
+  - Verify: Chrome DevTools MCP + `npm run build`.
+  - Files: fixes only if verification finds regression.
+  - Scope: M.
 
 ## Risks and mitigations
+
 | Risk | Impact | Mitigation |
-|------|--------|------------|
-| `useDictionaryPanel` unit tests break when API changes | Medium | Keep API stable in the first slice; only `DictionaryPanelView` stops consuming per-candidate fields. Clean tests after UI is verified. |
-| Candidate list becomes long on mobile | Medium | Use vertical scroll; candidate cards stack naturally. Do not virtualize in MVP. |
-| Media fetched for many candidates simultaneously | Medium | Keep lazy fetch inside `useCandidate`; only the candidate whose tab is opened fetches. |
-| Duplicate keys if two candidates have the same `term` | Low | Use `index` in the lookup result list as the stable key and for scroll `id`. |
-| Status cycle in `CandidateView` may conflict with `useDictionaryPanel` global status | Low | `CandidateView` calls `cycleWordStatus` and holds local `status` state initialized from the candidate. `useDictionaryPanel` global status becomes unused. |
+|---|---|---|
+| Existing showcases do not expose composition rules | High | Migrate only confirmed Atoms; keep uncertain entries in an explicit review list rather than guessing. |
+| Metadata migration touches many files | Medium | Introduce contract first, migrate in small batches, keep build green at checkpoints. |
+| Foundation previews have different dimensions | Medium | Use level-specific presentation wrappers and avoid forcing one universal card height. |
+| Disabled roadmap appears interactive | Medium | Use `aria-disabled`, non-button presentation or guarded button, clear `Coming later` label and disabled styles. |
+| Current typecheck has pre-existing App unused-symbol errors | Medium | Record baseline before changes; do not attribute unrelated errors to Library work. |
 
 ## Open questions
-- Should the chip active highlight track scroll position via `IntersectionObserver` or only reflect the last clicked chip?
-- Does the context sentence for each candidate stay as the searched term, or should it be candidate-specific?
+
+- Exact final Atom migration list must be confirmed from each component's imports/composition; this is intentionally resolved during Task 2 rather than guessed from filenames.
+- Whether Foundation categories beyond Color/Spacing already have showcase modules or need new specimens is a Task 5 inventory decision, not a reason to create fake content.

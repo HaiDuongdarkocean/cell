@@ -1,4 +1,4 @@
-import { Link } from './Link';
+﻿import { Link } from './Link';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
@@ -27,6 +27,8 @@ export function Showcase(): ReactElement {
 export const showcaseMeta = {
   title: 'Link',
   description: 'Hyperlink with variants (inline, standalone, destructive) and external icon. Use for navigation links.',
+  level: 'atoms',
+  category: 'Content',
   group: 'Generic Core',
   order: 5,
 };

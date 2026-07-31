@@ -1,4 +1,4 @@
-import { NavItem } from './NavItem';
+﻿import { NavItem } from './NavItem';
 import { Icon } from '@/shared/icons/Icon';
 import type { ReactElement } from 'react';
 
@@ -30,6 +30,8 @@ export function Showcase(): ReactElement {
 
 export const showcaseMeta = {
   title: 'NavItem',
+  level: 'atoms',
+  category: 'Navigation',
   group: 'Shared UI — Navigation',
   order: 60,
 };
