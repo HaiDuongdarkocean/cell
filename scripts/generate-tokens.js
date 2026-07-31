@@ -64,10 +64,9 @@ function flattenStaticTokens(staticObj) {
     push(`tracking-${key}`, value);
   }
 
-  // spacing
+  // spacing — SSOT: chỉ generate --space-*, không alias --spacing-* (trùng lặp)
   for (const [key, value] of Object.entries(staticObj.spacing)) {
     push(`space-${key}`, value);
-    push(`spacing-${key}`, value);
   }
 
   // size
