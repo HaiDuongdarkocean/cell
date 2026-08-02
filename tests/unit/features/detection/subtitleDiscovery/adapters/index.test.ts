@@ -129,9 +129,9 @@ describe('Subtitle discovery adapters', () => {
     expect(candidates[0].default).toBe(true);
   });
 
-  it('videasy encrypted adapter decrypts sources-with-title', async () => {
+  it('videasy encrypted adapter decrypts m4uhd source', async () => {
     const adapter = adapters.find((a) => a.id === 'videasy-encrypted')!;
-    const body = fixture('videasy-encrypted.bin');
+    const body = fixture('videasy-m4uhd-encrypted.bin');
     const signal: SubtitleSignal = {
       kind: 'network-response',
       url: 'https://api.speedracelight.com/m4uhd/sources-with-title?title=Silo&mediaType=TV&year=2023&totalSeasons=4&episodeId=1&seasonId=1&tmdbId=125988&imdbId=tt14688458&enc=2&seed=59523314.KnuAYJu6hrSfrh9q8Aa4vT',
@@ -144,12 +144,32 @@ describe('Subtitle discovery adapters', () => {
     expect(candidates[0].status).toBe('ready');
     expect(candidates[0].language).toBe('en');
     expect(candidates[0].format).toBe('srt');
+    expect(candidates[0].provider).toBe('m4uhd');
     expect(candidates[0].url).toContain('api.playhq.net/sub');
+  });
+
+  it('videasy encrypted adapter decrypts cdn source with 67 subtitles', async () => {
+    const adapter = adapters.find((a) => a.id === 'videasy-encrypted')!;
+    const body = fixture('videasy-cdn-encrypted.bin');
+    const signal: SubtitleSignal = {
+      kind: 'network-response',
+      url: 'https://api.speedracelight.com/cdn/sources-with-title?title=Silo&mediaType=tv&year=2023&episodeId=2&seasonId=1&tmdbId=125988&imdbId=tt14688458&enc=2&seed=59523338.yaF0Hex5Jfvd6cttjhxEGy',
+      body,
+      tabId: 1,
+      frameId: 0,
+    };
+    const candidates = await adapter.discover(signal, makeContext({ origin: 'https://player.videasy.to' }), makeEnv());
+    expect(candidates).toHaveLength(67);
+    expect(candidates[0].status).toBe('ready');
+    expect(candidates[0].language).toBe('en');
+    expect(candidates[0].format).toBe('vtt');
+    expect(candidates[0].provider).toBe('cdn');
+    expect(candidates[0].url).toContain('.vtt');
   });
 
   it('videasy encrypted adapter falls back to unresolved on bad seed', async () => {
     const adapter = adapters.find((a) => a.id === 'videasy-encrypted')!;
-    const body = fixture('videasy-encrypted.bin');
+    const body = fixture('videasy-m4uhd-encrypted.bin');
     const signal: SubtitleSignal = {
       kind: 'network-response',
       url: 'https://api.speedracelight.com/cdn/sources-with-title?title=X&enc=2&seed=abc&tmdbId=123',
@@ -160,5 +180,6 @@ describe('Subtitle discovery adapters', () => {
     const candidates = await adapter.discover(signal, makeContext({ origin: 'https://player.videasy.to' }), makeEnv());
     expect(candidates).toHaveLength(1);
     expect(candidates[0].status).toBe('unresolved');
+    expect(candidates[0].provider).toBe('cdn');
   });
 });

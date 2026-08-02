@@ -13,7 +13,7 @@
 |---|---|---|---|
 | shuttletv.su | `https://shuttletv.su/watch/1275779` | cinesrc.st embed (iframe cross-origin) | ⚠️ Player-side verified: **100 API entries**; extension resolver chưa implement |
 | kisskh.co | `https://kisskh.co/Drama/Perfect-Crown/Episode-1?id=11923&ep=207851` | Angular SPA + HLS (same-origin) | ⚠️ Player-side verified: **6 direct SRT**; extension resolver/token replay chưa implement |
-| moviepire.ru | `https://moviepire.ru/watch/125988?s=1&e=1` | videasy.to embed (iframe cross-origin) | ✅ Decoder implemented and unit-tested; **85 direct VTT** delivered from decrypted `sources-with-title` response |
+| moviepire.ru | `https://moviepire.ru/watch/125988?s=1&e=1` | videasy.to embed (iframe cross-origin) | ✅ Decoder implemented and unit-tested; provider-specific: `cdn` 67 VTT (S1E2), `m4uhd` 1 SRT; all `sources-with-title` providers handled |
 | lookmovie2.to | `https://www.lookmovie2.to/shows/play/1704445437-silo-2023#S1-E1-224948` | video.js + plyr (same-origin) | ⚠️ API verified: **111 entries = 87 direct VTT + 24 OpenSubtitles metadata arrays**; extension delivery chưa implement |
 | lunastream.com.cv | `https://lunastream.com.cv/play/tv/113962` | moviesapi.to → ww2.moviesapi.to → flixcdn.cyou (JWPlayer 8, iframe cross-origin) | ⚠️ Player-side verified: iframe hash có **33 direct URLs**; extension cross-frame delivery chưa implement |
 | broodingmovies.com | `https://broodingmovies.com/tv/7essw-lucky/season/1/episode/1` | nextgencloudfabric.com embed (iframe cross-origin, HLS.js custom player) | ⚠️ API verified: **42 direct URLs**; page CORS block, background Referer/Origin replay chưa verify |
@@ -50,7 +50,7 @@ Audit hiện tại mới verify chắc chắn phần (1)/(2) ở nhiều site; (
 | lookmovie2 | `GET /api/v1/security/episode-access?...` | **111 entries**: 87 direct relative VTT; 24 `file` là array metadata OpenSubtitles, chưa phải URL tải trực tiếp. | ❌ 87 có thể normalize; 24 cần resolver riêng |
 | lunastream | `ww2.moviesapi.to` iframe `flixcdn.cyou#...&subs=[JSON]` | **33 entries**, tất cả URL trực tiếp; 31 language entries + English Hi + Greek Hi. Parent có thể đọc thuộc tính `iframe.src`; không cần đọc `contentDocument`. | ❌ Chưa parse/re-inject |
 | broodingmovies | `streamdata.vaplayer.ru/api.php?...` | HTTP 200 JSON `default_subs` **42 entries**, tất cả có URL. Page fetch bị CORS; request cần context header. | ❌ Background Referer/Origin replay chưa verify |
-| moviepire/videasy | encrypted `/cdn/sources-with-title?...&enc=2&seed=...` | Custom decrypt hiện tại trả **85 direct VTT**; HEAD 85/85 OK. Không phải 15 như tài liệu cũ. | ✅ Decoded by extension using seed + tmdbId from captured response URL |
+| moviepire/videasy | encrypted `/<provider>/sources-with-title?...&enc=2&seed=...` | Provider-specific counts (e.g. `cdn` 67 direct VTT, `m4uhd` 1 SRT). Decoder dùng chung cho mọi provider path. | ✅ Decoded by extension using seed + tmdbId from captured response URL; provider extracted from path |
 | noxx | deep `cloudorchestranova.com/prorcp/<token>` | `window.the_subtitles` có **43 `[label]/relative .vtt`**; parse được và HEAD 43/43 OK (`text/vtt`). | ❌ Chưa bridge player state từ deep iframe |
 | myasiantv/kisscloud | HTML `var playerjsSubtitle` | **4 direct WebVTT**: English, Thai 1–3; URL fetch 4/4 HTTP 200 khi có Referer. | ❌ Chưa parse HTML variable + replay Referer |
 | onflix/playembed | iframe m3u8 + VTT requests | Browser phát sinh **2 direct VTT**; nội dung xác nhận một Việt, một Anh. Master HLS trả 1080p playlist; `EXT-X-MEDIA` chưa được kiểm tra. | ⚠️ 2 VTT đã verified; full server/HLS list chưa đủ evidence |
@@ -925,7 +925,7 @@ window.addEventListener('message', function(e) {
 | Iframe URL hash `subs=[JSON]` (lunastream) | lunastream.com.cv → flixcdn.cyou | ❌ **player-side verified (33 direct URLs)** — cần parse iframe `src` + re-inject |
 | vaplayer.ru API + Captions tab (broodingmovies) | broodingmovies.com → nextgencloudfabric.com | ❌ **player-side verified (42 direct URLs)** — cần response/body + header replay |
 | Deep player state + blob URL (noxx.to) | noxx.to → player.unlimitedfiles.xyz → cloudorchestranova.com/prorcp | ❌ **player-side verified (43 direct VTT)** — cần MAIN-world bridge |
-| Encrypted API + obfuscated VTT (videasy) | moviepire.ru/player.videasy.to | ✅ **player-side verified (85 direct VTT)** — decoder ported to extension; seed + tmdbId replay from captured response |
+| Encrypted API + obfuscated VTT (videasy) | moviepire.ru/player.videasy.to | ✅ **player-side verified (e.g. `cdn` 67 direct VTT, `m4uhd` 1 SRT)** — decoder ported to extension; seed + tmdbId replay from captured response; provider extracted from path |
 | video.js `remoteTextTracks()` API (no DOM `<track>`) | lookmovie2.to | ❌ **chưa** — extension chỉ scan DOM `<track>`, không đọc video.js API |
 | JWPlayer 8 `getPlaylist()` API (no DOM `<track>`) | lunastream.com.cv/flixcdn.cyou | ❌ **chưa** — extension không đọc JWPlayer API |
 | OpenSubtitles download URL (no extension) | lunastream.com.cv, lookmovie2.to | ❌ **chưa** — `SUBTITLE_URL_PATTERNS` không match `/file/<id>` |
