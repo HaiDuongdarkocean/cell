@@ -51,9 +51,13 @@ describe('SubtitleBlock', () => {
     expect(screen.queryByText('native 0')).not.toBeInTheDocument();
   });
 
-  it('returns null when no active cue', () => {
+  it('renders block container with empty layers when no active cue', () => {
     setCues([], []);
-    const { container } = render(<SubtitleBlock targetStyle={baseStyle} nativeStyle={baseStyle} />);
-    expect(container.firstChild).toBeNull();
+    render(<SubtitleBlock targetStyle={baseStyle} nativeStyle={baseStyle} />);
+    expect(screen.getByTestId('subtitle-block')).toBeInTheDocument();
+    const targetLayer = screen.getByTestId('subtitle-block').querySelector('[data-role="target"]');
+    const nativeLayer = screen.getByTestId('subtitle-block').querySelector('[data-role="native"]');
+    expect(targetLayer).toBeInTheDocument();
+    expect(nativeLayer).toBeNull();
   });
 });
