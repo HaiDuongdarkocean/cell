@@ -95,21 +95,21 @@ its browser/inventory acceptance criterion fails.
   - Verify: decoder tests, headed Videasy test, `npm run typecheck`, `npm run build`, `subagent_general` Task 9 prompt.
   - Dependencies: T3–T4.
   - Files: encrypted adapter/decoder, fixtures, integration/browser tests.
-  - **Blocker**: decoder algorithm not known; currently returns 1 unresolved placeholder. Needs live network capture or reverse engineering.
+  - **Blocker**: decoder algorithm not known; live `player.videasy.to` did not trigger `sources-with-title` in stealth browser. Needs reverse engineering of Next.js player bundle or a known decoder snippet.
 
-- [ ] **T10A — Onflix server/HLS catalog pre-audit**
+- [x] **T10A — Onflix server/HLS catalog pre-audit**
   - Acceptance: enumerate SN/NC/PA/OP from the page; capture each player/HLS/VTT source; record EXT-X-MEDIA presence; produce a concrete per-server expected count.
   - Verify: headed `cell-profile` audit, sanitized fixture review, `git diff --check`, `subagent_general` Task 10A prompt.
   - Dependencies: T4.
   - Files: `docs/player-support.md`, sanitized Onflix fixtures; no production source without approval.
-  - **Blocker**: server matrix not yet captured live.
+  - **Status**: Live audit 2026-08-03 captured SN server `gota.edgecontent.site` master + 1080p media playlist and `v7.kkphimplayer7.com` master/child. Neither contains `EXT-X-MEDIA:TYPE=SUBTITLES`; subtitles are direct VTT. NC/PA/OP/vip.opstream10.com still unaudited.
 
 - [x] **T10 — HLS and server-variant adapter: onflix**
   - Acceptance: parse `EXT-X-MEDIA`; preserve VTT fallback; use the T10A server/count matrix; replay and deliver every entry per server.
   - Verify: HLS parser fixtures, server matrix, headed Onflix test, `npm run typecheck`, `npm run build`, `subagent_general` Task 10 prompt.
   - Dependencies: T3–T4 and T10A.
   - Files: HLS adapter/parser, fixtures, browser tests/docs.
-  - **Status**: master-playlist `EXT-X-MEDIA` parser implemented; server-variant mapping and live count blocked by T10A.
+  - **Status**: master-playlist `EXT-X-MEDIA` parser implemented; HLS likely not the subtitle delivery path for SN/v7. VTT network capture is the primary path.
 
 ### Checkpoint C — Direct adapters
 
@@ -146,7 +146,8 @@ its browser/inventory acceptance criterion fails.
 
 - [x] Lookmovie's 24 OpenSubtitles metadata arrays have a legitimate direct-file resolver.
   - Decision: currently emitted as `unresolved` candidates (metadata preserved) because OpenSubtitles requires a separate resolver/key. No fabricated URLs.
-- [ ] T10A establishes the complete Onflix server/HLS catalog before T10 can pass.
+- [x] T10A establishes the complete Onflix server/HLS catalog before T10 can pass.
+  - Decision: partial audit done; full matrix requires NC/PA/OP/vip.opstream10.com. SN and v7 do not use HLS subtitles; fallback to `.vtt` network capture is the real path.
 - [ ] T9 establishes the moviepire/videasy XOR/PRNG decoder before E4 can be claimed.
 - [ ] T3A verifies existing MV3 MAIN-world/frame injection behavior in approved target browsers; manifest changes require separate approval.
 - [ ] DNR/offscreen replay works for every required Referer/Origin/token family.
