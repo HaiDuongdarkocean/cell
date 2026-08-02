@@ -127,16 +127,16 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
   const freqState = importStates.FREQUENCY;
 
   return (
-    <div className={styles.panel} data-testid="resources-panel">
+    <div className={styles.panel} data-cell-id="resources-panel">
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Từ điển</h2>
         {dictState.error && (
-          <div className={styles.error} role="alert" data-testid="import-error-dictionary">
+          <div className={styles.error} role="alert" data-cell-id="import-error-dictionary">
             {dictState.error}
           </div>
         )}
         {dictState.success && (
-          <div className={styles.success} role="status" data-testid="import-success-dictionary">
+          <div className={styles.success} role="status" data-cell-id="import-success-dictionary">
             {dictState.success}
           </div>
         )}
@@ -168,12 +168,12 @@ export function ResourcesPanel({ langCode }: ResourcesPanelProps): ReactElement 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Danh sách tần suất</h2>
         {freqState.error && (
-          <div className={styles.error} role="alert" data-testid="import-error-frequency">
+          <div className={styles.error} role="alert" data-cell-id="import-error-frequency">
             {freqState.error}
           </div>
         )}
         {freqState.success && (
-          <div className={styles.success} role="status" data-testid="import-success-frequency">
+          <div className={styles.success} role="status" data-cell-id="import-success-frequency">
             {freqState.success}
           </div>
         )}

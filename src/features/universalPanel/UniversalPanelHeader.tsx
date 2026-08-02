@@ -46,7 +46,7 @@ export function UniversalPanelHeader({
   const tokenizeOff = !tokenizeState.enabled;
 
   return (
-    <header className={styles.header} data-testid="universal-panel-header">
+    <header className={styles.header} data-cell-id="universal-panel-header">
       <div className={styles.toggleCluster} role="group" aria-label="Tokenize controls">
         {TOGGLE_ITEMS.map((item) => {
           const checked = tokenizeState[item.key];
@@ -73,7 +73,7 @@ export function UniversalPanelHeader({
         aria-label="Close panel"
         className={styles.closeButton}
         onClick={onClose}
-        data-testid="universal-panel-close"
+        data-cell-id="universal-panel-close"
       >
         <Icon name="x" size={20} />
       </IconButton>

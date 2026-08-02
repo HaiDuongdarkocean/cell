@@ -45,9 +45,9 @@ describe('subtitleImport', () => {
       expect(input.multiple).toBe(true);
     });
 
-    it('should set data-testid for testing', () => {
+    it('should set data-cell-id for testing', () => {
       const button = createImportButton(video, defaultConfig);
-      expect(button.getAttribute('data-testid')).toBe('subtitle-import-button');
+      expect(button.getAttribute('data-cell-id')).toBe('subtitle-import-button');
     });
 
     it('should be icon button with relative overflow-hidden input container (UI v4 toolbar)', () => {

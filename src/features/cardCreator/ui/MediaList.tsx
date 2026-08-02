@@ -108,7 +108,7 @@ function ImagePreview({ file, onClose }: { file: MediaFile; onClose: () => void 
       role="dialog"
       aria-modal="true"
       aria-label="Image preview"
-      data-testid="media-image-preview"
+      data-cell-id="media-image-preview"
     >
       <button
         type="button"
@@ -145,7 +145,7 @@ function EmptyDropzone({
       onClick={onAdd}
       disabled={addDisabled}
       aria-label={addLabel}
-      data-testid={dataId ? `${dataId}-empty` : undefined}
+      data-cell-id={dataId ? `${dataId}-empty` : undefined}
     >
       <ThumbIcon kind={kind} size={24} />
       <span>{text}</span>
@@ -209,7 +209,7 @@ function ImageThumb({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       data-index={index}
-      data-testid={dataId ? `${dataId}-thumb-${index}` : undefined}
+      data-cell-id={dataId ? `${dataId}-thumb-${index}` : undefined}
     >
       {url && <img className={styles['cc-media__img']} src={url} alt={file.filename} />}
       <button
@@ -220,7 +220,7 @@ function ImageThumb({
           e.stopPropagation();
           onRemove(index);
         }}
-        data-testid={dataId ? `${dataId}-remove-${index}` : undefined}
+        data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
       >
         ×
       </button>
@@ -349,7 +349,7 @@ function ImageGallery({
         onClick={onAdd}
         disabled={addDisabled}
         aria-label={addLabel}
-        data-testid={dataId ? `${dataId}-add` : undefined}
+        data-cell-id={dataId ? `${dataId}-add` : undefined}
       >
         <PlusIcon />
       </button>
@@ -485,7 +485,7 @@ function AudioList({
               className={styles['cc-media__play']}
               onClick={() => onPlay(file)}
               aria-label={`Play ${file.filename}`}
-              data-testid={dataId ? `${dataId}-view-${index}` : undefined}
+              data-cell-id={dataId ? `${dataId}-view-${index}` : undefined}
             >
               <ThumbIcon kind="audio" size={16} />
             </button>
@@ -495,7 +495,7 @@ function AudioList({
               className={styles['cc-media__row-remove']}
               onClick={() => onRemove(index)}
               aria-label={`Remove ${file.filename}`}
-              data-testid={dataId ? `${dataId}-remove-${index}` : undefined}
+              data-cell-id={dataId ? `${dataId}-remove-${index}` : undefined}
             >
               ×
             </button>
@@ -508,7 +508,7 @@ function AudioList({
           className={styles['cc-media__list-add']}
           onClick={onAdd}
           disabled={addDisabled}
-          data-testid={dataId ? `${dataId}-add` : undefined}
+          data-cell-id={dataId ? `${dataId}-add` : undefined}
         >
           + {addLabel}
         </button>
@@ -611,7 +611,7 @@ export function MediaList({
   return (
     <div
       className={zoneClass}
-      data-testid={dataId}
+      data-cell-id={dataId}
       data-kind={kind}
       onDragEnter={onFilesDrop ? handleDragEnter : undefined}
       onDragLeave={onFilesDrop ? handleDragLeave : undefined}

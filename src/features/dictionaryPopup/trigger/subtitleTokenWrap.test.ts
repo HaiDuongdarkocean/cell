@@ -26,7 +26,7 @@ describe('updateOverlayWithTokens', () => {
   beforeEach(() => {
     overlay = document.createElement('div');
     textSpan = document.createElement('span');
-    textSpan.setAttribute('data-testid', 'overlay-target-text');
+    textSpan.setAttribute('data-cell-id', 'overlay-target-text');
     overlay.appendChild(textSpan);
   });
 

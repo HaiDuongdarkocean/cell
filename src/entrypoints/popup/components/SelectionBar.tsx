@@ -12,23 +12,23 @@ export function SelectionBar({ selectionCount, onClear, onDownload }: SelectionB
   if (selectionCount === 0) return null;
 
   return (
-    <div className={styles.selectionBar} data-testid="selection-bar">
+    <div className={styles.selectionBar} data-cell-id="selection-bar">
       <IconButton
         size="sm"
         onClick={onClear}
         aria-label="Clear selection"
-        data-testid="selection-clear-btn"
+        data-cell-id="selection-clear-btn"
       >
         <Icon name="x" size={16} />
       </IconButton>
-      <span className={styles.count} data-testid="selection-count">
+      <span className={styles.count} data-cell-id="selection-count">
         {selectionCount} selected
       </span>
       <Button
         variant="primary"
         size="sm"
         onClick={onDownload}
-        data-testid="selection-download-btn"
+        data-cell-id="selection-download-btn"
         leadingIcon={<Icon name="download" size={14} className={styles.downloadIcon} />}
       >
         Download

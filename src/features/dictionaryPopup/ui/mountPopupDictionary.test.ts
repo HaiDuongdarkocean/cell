@@ -6,7 +6,7 @@ jest.mock('./PopupDictionary', () => ({
   PopupDictionary: function PopupDictionaryMock(props: { anchor: { top: number } }) {
     return React.createElement(
       'div',
-      { 'data-testid': 'popup-dictionary-mock', 'data-anchor-top': props.anchor.top },
+      { 'data-cell-id': 'popup-dictionary-mock', 'data-anchor-top': props.anchor.top },
       'Popup',
     );
   },

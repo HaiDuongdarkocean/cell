@@ -52,7 +52,7 @@ export function Dropzone({ label, accept, disabled, onFiles }: DropzoneProps): R
       role="button"
       tabIndex={0}
       aria-label={label}
-      data-testid="dropzone"
+      data-cell-id="dropzone"
     >
       <p className={styles.label}>{label}</p>
       <input
@@ -62,7 +62,7 @@ export function Dropzone({ label, accept, disabled, onFiles }: DropzoneProps): R
         multiple
         onChange={handleChange}
         className={styles.input}
-        data-testid="dropzone-input"
+        data-cell-id="dropzone-input"
       />
     </div>
   );

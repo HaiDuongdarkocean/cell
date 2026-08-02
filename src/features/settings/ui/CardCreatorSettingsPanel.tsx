@@ -102,7 +102,7 @@ export function CardCreatorSettingsPanel({
           : '';
 
   return (
-    <div className={styles.container} data-testid="card-creator-settings-panel">
+    <div className={styles.container} data-cell-id="card-creator-settings-panel">
       {/* AnkiConnect URL */}
       <div className={styles.field}>
         <label className={styles.fieldLabel} htmlFor="cc-anki-url">
@@ -116,7 +116,7 @@ export function CardCreatorSettingsPanel({
           onChange={handleUrlChange}
           placeholder="http://localhost:8765"
           aria-label="AnkiConnect URL"
-          data-testid="cc-anki-url-input"
+          data-cell-id="cc-anki-url-input"
         />
         <p className={styles.hint}>
           Default: localhost:8765. Change to your PC&apos;s IP address when using Kiwi or Edge on mobile.
@@ -128,7 +128,7 @@ export function CardCreatorSettingsPanel({
         <div
           className={`${styles.statusIndicator} ${indicatorClass}`}
           aria-live="polite"
-          data-testid="cc-connection-status"
+          data-cell-id="cc-connection-status"
         >
           <span className={styles.statusDot} aria-hidden="true" />
           <span className={styles.statusLabel}>{statusLabel(status)}</span>
@@ -142,7 +142,7 @@ export function CardCreatorSettingsPanel({
           onClick={handleTest}
           disabled={status === 'testing'}
           aria-label="Test AnkiConnect connection again"
-          data-testid="cc-test-again-button"
+          data-cell-id="cc-test-again-button"
         >
           {status === 'testing' ? 'Testing…' : 'Test again'}
         </Button>

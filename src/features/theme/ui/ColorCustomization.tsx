@@ -59,11 +59,11 @@ export function ColorCustomization({ config, onColorChange }: ColorCustomization
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   return (
-    <div className={styles.wrapper} data-testid="color-customization">
+    <div className={styles.wrapper} data-cell-id="color-customization">
       <Tabs value={tab} onValueChange={(v) => setTab(v as ResolvedMode)}>
         <Tabs.List>
-          <Tabs.Trigger value="light" data-testid="color-tab-light">☀️ Light</Tabs.Trigger>
-          <Tabs.Trigger value="dark" data-testid="color-tab-dark">🌙 Dark</Tabs.Trigger>
+          <Tabs.Trigger value="light" data-cell-id="color-tab-light">☀️ Light</Tabs.Trigger>
+          <Tabs.Trigger value="dark" data-cell-id="color-tab-dark">🌙 Dark</Tabs.Trigger>
         </Tabs.List>
       </Tabs>
       <div className={styles.grid}>
@@ -75,7 +75,7 @@ export function ColorCustomization({ config, onColorChange }: ColorCustomization
               value={getCurrentColor(key)}
               onChange={(e) => handleChange(key, e.target.value)}
               aria-label={label}
-              data-testid={`color-picker-${key}`}
+              data-cell-id={`color-picker-${key}`}
             />
             <span className={styles.label}>{label}</span>
           </div>

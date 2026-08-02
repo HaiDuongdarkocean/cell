@@ -50,7 +50,7 @@ export function updateOverlayWithTokens(
 ): boolean {
   if (!state.enabled || !text) {
     // Fallback: plain text (current behavior).
-    const span = overlay.querySelector('span[data-testid]') as HTMLSpanElement | null;
+    const span = overlay.querySelector('span[data-cell-id]') as HTMLSpanElement | null;
     if (span) span.textContent = text;
     else overlay.textContent = text;
     overlay.style.display = 'block';
@@ -63,7 +63,7 @@ export function updateOverlayWithTokens(
   }
 
   // Find the text span.
-  const span = overlay.querySelector('span[data-testid]') as HTMLSpanElement | null;
+  const span = overlay.querySelector('span[data-cell-id]') as HTMLSpanElement | null;
   if (!span) {
     overlay.textContent = text;
     overlay.style.display = 'block';

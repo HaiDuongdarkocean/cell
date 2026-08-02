@@ -19,7 +19,7 @@ export function SubtitleBlockSettingsPanel({
   onChange,
 }: SubtitleBlockSettingsPanelProps): ReactElement {
   return (
-    <div className={styles.container} data-testid="subtitle-block-settings-panel">
+    <div className={styles.container} data-cell-id="subtitle-block-settings-panel">
       {/* Position (Y) */}
       <div className={styles.field}>
         <div className={styles.sliderHeader}>
@@ -36,7 +36,7 @@ export function SubtitleBlockSettingsPanel({
           step={1}
           onChange={(v) => onChange({ yOffsetPercent: v })}
           aria-label="Block vertical position"
-          data-testid="block-y-offset"
+          data-cell-id="block-y-offset"
         />
         <p className={styles.hint}>0% = top, 95% = bottom. Drag the block on video also sets this.</p>
       </div>
@@ -57,7 +57,7 @@ export function SubtitleBlockSettingsPanel({
           step={0.1}
           onChange={(v) => onChange({ globalScale: v })}
           aria-label="Global subtitle scale"
-          data-testid="block-global-scale"
+          data-cell-id="block-global-scale"
         />
       </div>
 
@@ -77,7 +77,7 @@ export function SubtitleBlockSettingsPanel({
           step={0.1}
           onChange={(v) => onChange({ bgOpacity: v })}
           aria-label="Block background opacity"
-          data-testid="block-bg-opacity"
+          data-cell-id="block-bg-opacity"
         />
       </div>
     </div>

@@ -59,17 +59,17 @@ export function CandidateView({
     <article
       className={styles.candidate}
       id={`dictionary-candidate-${index}`}
-      data-testid={`dictionary-candidate-${index}`}
+      data-cell-id={`dictionary-candidate-${index}`}
     >
-      <header className={styles.cellHeader} data-testid="dictionary-header">
+      <header className={styles.cellHeader} data-cell-id="dictionary-header">
         <div className={styles.cellHeaderRow}>
           <div className={styles.cellHeaderMain}>
             <div className={styles.cellHeaderWordRow}>
-              <h2 className={styles.cellHeaderWord} data-testid="dictionary-term">{candidate.term}</h2>
+              <h2 className={styles.cellHeaderWord} data-cell-id="dictionary-term">{candidate.term}</h2>
             </div>
             <div className={styles.cellHeaderReading}>
               {candidate.reading && (
-                <span className={styles.cellHeaderIpa} data-testid="dictionary-reading">
+                <span className={styles.cellHeaderIpa} data-cell-id="dictionary-reading">
                   {formatReading(candidate.reading, candidate.readingKind)}
                 </span>
               )}
@@ -80,7 +80,7 @@ export function CandidateView({
                   aria-label="Play word audio"
                   title="Play word audio"
                   onClick={panel.playTerm}
-                  data-testid="dictionary-play-term"
+                  data-cell-id="dictionary-play-term"
                 >
                   <Icon name="audioWave" size={16} />
                 </button>
@@ -103,7 +103,7 @@ export function CandidateView({
               aria-label="Send to Card Creator"
               title="Send to Card Creator"
               onClick={panel.sendToCard}
-              data-testid="dictionary-send-to-card"
+              data-cell-id="dictionary-send-to-card"
             >
               <Icon name="pencil" size={20} />
             </button>
@@ -114,7 +114,7 @@ export function CandidateView({
                 aria-label="Quick Add to Anki"
                 title="Quick Add to Anki"
                 onClick={panel.quickAdd}
-                data-testid="dictionary-quick-add"
+                data-cell-id="dictionary-quick-add"
               >
                 <Icon name="zap" size={20} />
               </button>
@@ -127,12 +127,12 @@ export function CandidateView({
             className={`${styles.cellHeaderStatus} ${styles[`cellHeaderStatus--${panel.status}`]}`}
             onClick={panel.cycleStatus}
             title={`Click to cycle: ${panel.status} → ${nextStatus(panel.status)}`}
-            data-testid="dictionary-status-cycle"
+            data-cell-id="dictionary-status-cycle"
           >
             {panel.status}
           </button>
           {candidate.frequency && (
-            <span className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${frequencyBand}`]}`} data-testid="dictionary-frequency">
+            <span className={`${styles.cellHeaderFrequency} ${styles[`cellHeaderFrequency--${frequencyBand}`]}`} data-cell-id="dictionary-frequency">
               <span className={styles.cellHeaderFrequencySource}>{candidate.frequency.source}</span>
               <span className={styles.cellHeaderFrequencyRank}>{candidate.frequency.rank.toLocaleString()}</span>
             </span>
@@ -187,7 +187,7 @@ export function CandidateView({
       )}
       {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}
 
-      <section className={styles.cellDef} aria-label="Definitions" data-testid="dictionary-definitions" data-allow-lookup>
+      <section className={styles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (
           <div className={styles.cellDefEmpty}>
             <Icon name="info" size={24} />
@@ -221,7 +221,7 @@ function DefinitionItem({
   return (
     <div
       className={styles.cellDefItem}
-      data-testid="dictionary-definition"
+      data-cell-id="dictionary-definition"
       onClick={() => onToggle(definition.id, !checked)}
     >
       <label

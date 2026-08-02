@@ -61,7 +61,7 @@ export function FieldRow({
     ? [{ value: '', label: 'None' }, ...availableFields!.map((f) => ({ value: f, label: f }))]
     : [];
   return (
-    <div className={styles.fieldRow} data-testid={dataId ? `${dataId}-row` : undefined}>
+    <div className={styles.fieldRow} data-cell-id={dataId ? `${dataId}-row` : undefined}>
       <div className={styles.fieldRow__header}>
         <label className={styles.fieldRow__label}>{label}</label>
         {showMap && (
@@ -72,7 +72,7 @@ export function FieldRow({
               options={options}
               onChange={onMapChange}
               aria-label={`Map ${label} to Anki field`}
-              data-testid={dataId ? `${dataId}-map` : undefined}
+              data-cell-id={dataId ? `${dataId}-map` : undefined}
               menuAlign="right"
             />
           </span>
@@ -142,7 +142,7 @@ export function FieldAutoGrowInput({
   const controlClass = [styles.fieldInput__control, className ?? ''].filter(Boolean).join(' ');
 
   return (
-    <div className={styles.fieldInput} data-testid={dataId ? `${dataId}-input` : undefined}>
+    <div className={styles.fieldInput} data-cell-id={dataId ? `${dataId}-input` : undefined}>
       <textarea
         ref={controlRef}
         className={controlClass}

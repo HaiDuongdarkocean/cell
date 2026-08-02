@@ -103,7 +103,7 @@ function CardCreatorPanelCore({
   // right-side panel there is no dialog to close; pressing it intentionally
   // does nothing rather than resetting the form.
   return (
-    <div className={styles.cardCreatorPanel} data-testid="card-creator-panel">
+    <div className={styles.cardCreatorPanel} data-cell-id="card-creator-panel">
       <div className={styles.scrollArea}>
         <CardCreatorDialogContent
           state={state}
@@ -153,7 +153,7 @@ export function CardCreatorPanel({
 
   if (!settings) {
     return (
-      <div className={styles.cardCreatorPanel} data-testid="card-creator-panel">
+      <div className={styles.cardCreatorPanel} data-cell-id="card-creator-panel">
         <EmptyState
           icon={<Spinner size="md" />}
           title="Loading Card Creator"

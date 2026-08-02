@@ -64,11 +64,11 @@ export function SettingsTab(): React.JSX.Element | null {
   }, []);
 
   if (!settings) {
-    return <div className={styles.settingsTab} data-testid="settings-tab-loading">Loading settings…</div>;
+    return <div className={styles.settingsTab} data-cell-id="settings-tab-loading">Loading settings…</div>;
   }
 
   return (
-    <div ref={tabRef} className={styles.settingsTab} data-testid="settings-tab" tabIndex={-1}>
+    <div ref={tabRef} className={styles.settingsTab} data-cell-id="settings-tab" tabIndex={-1}>
       <SettingsDialogContent
         settings={settings}
         onChange={handleChange}

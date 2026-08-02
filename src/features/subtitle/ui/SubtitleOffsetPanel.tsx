@@ -74,10 +74,10 @@ export function SubtitleOffsetPanel({
   };
 
   return (
-    <div className={styles.panel} data-testid="subtitle-offset-panel">
+    <div className={styles.panel} data-cell-id="subtitle-offset-panel">
       <div className={styles.header}>
         <span className={styles.title}>Time offset</span>
-        <span className={styles.value} data-testid="offset-value">
+        <span className={styles.value} data-cell-id="offset-value">
           {String(formatOffsetDisplay(clamped))}
         </span>
       </div>
@@ -90,13 +90,13 @@ export function SubtitleOffsetPanel({
           step={0.5}
           value={clamped / 1000}
           onChange={handleSlider}
-          data-testid="offset-slider"
+          data-cell-id="offset-slider"
         />
       </div>
 
       <div className={styles.steppers}>
         {STEPS.map((step) => (
-          <Button key={step.label} size="sm" variant="outline" onClick={() => adjust(step.value)} data-testid={`offset-step-${step.label}`}>
+          <Button key={step.label} size="sm" variant="outline" onClick={() => adjust(step.value)} data-cell-id={`offset-step-${step.label}`}>
             {step.label}
           </Button>
         ))}
@@ -111,13 +111,13 @@ export function SubtitleOffsetPanel({
           onBlur={handleInputCommit}
           onKeyDown={handleKeyDown}
           aria-label="Time offset in seconds"
-          data-testid="offset-input"
+          data-cell-id="offset-input"
           className={styles.offsetInput}
         />
-        <Button size="sm" variant="primary" onClick={handleInputCommit} data-testid="offset-apply">
+        <Button size="sm" variant="primary" onClick={handleInputCommit} data-cell-id="offset-apply">
           Apply
         </Button>
-        <Button size="sm" variant="ghost" onClick={handleReset} data-testid="offset-reset">
+        <Button size="sm" variant="ghost" onClick={handleReset} data-cell-id="offset-reset">
           Reset
         </Button>
       </div>

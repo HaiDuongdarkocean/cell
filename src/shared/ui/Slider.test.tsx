@@ -38,8 +38,8 @@ describe('Slider atom — settings-controls-restyle spec F2', () => {
     expect(slider.style.getPropertyValue('--progress')).toBe('50%');
   });
 
-  it('forwards data-testid', () => {
-    render(<Slider value={48} min={40} max={56} step={1} onChange={() => {}} aria-label="Test" data-testid="my-slider" />);
+  it('forwards data-cell-id', () => {
+    render(<Slider value={48} min={40} max={56} step={1} onChange={() => {}} aria-label="Test" data-cell-id="my-slider" />);
     expect(screen.getByTestId('my-slider')).toBeInTheDocument();
   });
 

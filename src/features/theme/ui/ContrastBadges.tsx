@@ -12,13 +12,13 @@ interface ContrastBadgesProps {
 
 export function ContrastBadges({ result }: ContrastBadgesProps): React.JSX.Element {
   return (
-    <div className={styles.badges} data-testid="contrast-badges">
+    <div className={styles.badges} data-cell-id="contrast-badges">
       {result.pairs.map((pair) => (
         <span
           key={pair.label}
           className={`${styles.badge} ${pair.rating.level === 'AAA' ? styles.aaa : pair.rating.level === 'AA' ? styles.aa : styles.fail}`}
           title={`${pair.label}: ${pair.ratio.toFixed(2)}:1 (${pair.rating.level})`}
-          data-testid={`contrast-badge-${pair.label}`}
+          data-cell-id={`contrast-badge-${pair.label}`}
         >
           {pair.label}: {pair.rating.level}
           <span className={styles.ratio}>{pair.ratio.toFixed(2)}:1</span>

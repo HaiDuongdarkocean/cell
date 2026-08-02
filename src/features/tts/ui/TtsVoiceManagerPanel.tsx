@@ -256,7 +256,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
   }, [onSave, settings, testerVoices]);
 
   return (
-    <div className={styles.panel} data-testid="tts-voice-manager">
+    <div className={styles.panel} data-cell-id="tts-voice-manager">
       {loadError && <div className={styles.error} role="alert">{loadError}</div>}
       {statusMsg && <div className={styles.status} role="status">{statusMsg}</div>}
 
@@ -273,7 +273,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                 type="checkbox"
                 checked={enabled}
                 onChange={(e) => setEnabled(e.target.checked)}
-                data-testid="tts-enabled"
+                data-cell-id="tts-enabled"
               />
               <span>Read example sentence</span>
             </div>
@@ -285,7 +285,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
               <select
                 value={maxDisplay}
                 onChange={(e) => setMaxDisplay(Number(e.target.value))}
-                data-testid="tts-max-display"
+                data-cell-id="tts-max-display"
               >
                 <option value={1}>1</option>
                 <option value={2}>2</option>
@@ -302,7 +302,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
               ) : voices.length === 0 ? (
                 <p className={styles.muted}>Không có giọng đọc nào.</p>
               ) : (
-                <div className={styles.voiceSelectionList} role="list" data-testid="tts-voice-selection">
+                <div className={styles.voiceSelectionList} role="list" data-cell-id="tts-voice-selection">
                   {voices.map((v) => (
                     <div className={styles.voiceSelectionItem} key={v.voiceName}>
                       <IconButton
@@ -341,7 +341,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
               <select
                 value={autoplayCount}
                 onChange={(e) => setAutoplayCount(Number(e.target.value))}
-                data-testid="tts-autoplay"
+                data-cell-id="tts-autoplay"
               >
                 <option value={0}>0</option>
                 <option value={1}>1</option>
@@ -352,7 +352,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
           </div>
 
           <div className={styles.actions}>
-            <Button variant="primary" onClick={handleSaveSlots} data-testid="tts-save-settings">
+            <Button variant="primary" onClick={handleSaveSlots} data-cell-id="tts-save-settings">
               Save settings
             </Button>
           </div>
@@ -373,7 +373,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                 value={testText}
                 onChange={(e) => setTestText(e.target.value)}
                 placeholder="Type a sentence to test"
-                data-testid="tts-test-text"
+                data-cell-id="tts-test-text"
               />
             </div>
           </div>
@@ -384,7 +384,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
               <select
                 value={countryFilter}
                 onChange={(e) => setCountryFilter(e.target.value)}
-                data-testid="tts-country-filter"
+                data-cell-id="tts-country-filter"
               >
                 <option value="">All countries</option>
                 {countries.map((c) => (
@@ -401,7 +401,7 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                 <Button
                   variant="secondary"
                   onClick={handleDeleteSelection}
-                  data-testid="tts-clear-selection"
+                  data-cell-id="tts-clear-selection"
                 >
                   Delete selection ({selectedCount})
                 </Button>
@@ -410,20 +410,20 @@ export function TtsVoiceManagerPanel({ settings, onSave }: TtsVoiceManagerPanelP
                     variant="primary"
                     onClick={() => void handlePlayAll()}
                     loading={playing}
-                    data-testid="tts-play-all"
+                    data-cell-id="tts-play-all"
                   >
                     Play all audios
                   </Button>
                   <Button
                     variant="secondary"
                     onClick={handleSaveVoiceList}
-                    data-testid="tts-save-voice-list"
+                    data-cell-id="tts-save-voice-list"
                   >
                     Save TTS voice list
                   </Button>
                 </div>
               </div>
-              <div className={styles.voiceList} role="list" data-testid="tts-voice-list">
+              <div className={styles.voiceList} role="list" data-cell-id="tts-voice-list">
                 {filteredTesterVoices.map((row, index) => (
                   <div
                     className={styles.voiceItem}

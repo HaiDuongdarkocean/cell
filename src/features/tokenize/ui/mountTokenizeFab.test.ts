@@ -60,11 +60,11 @@ function createMockStore(initial = { enabled: false, showStatus: false, showFreq
 }
 
 function getFabButton(host: HTMLElement): HTMLElement | null {
-  return (host.shadowRoot as ShadowRoot | null)?.querySelector('[data-testid="tokenize-fab-button"]') as HTMLElement | null;
+  return (host.shadowRoot as ShadowRoot | null)?.querySelector('[data-cell-id="tokenize-fab-button"]') as HTMLElement | null;
 }
 
 function getPanel(host: HTMLElement): HTMLElement | null {
-  return (host.shadowRoot as ShadowRoot | null)?.querySelector('[data-testid="tokenize-fab-panel"]') as HTMLElement | null;
+  return (host.shadowRoot as ShadowRoot | null)?.querySelector('[data-cell-id="tokenize-fab-panel"]') as HTMLElement | null;
 }
 
 describe('mountTokenizeFab', () => {
@@ -117,7 +117,7 @@ describe('mountTokenizeFab', () => {
     act(() => { fireEvent.click(button!); });
 
     const shadow = host.shadowRoot as ShadowRoot;
-    const enabledToggle = shadow.querySelector('[data-testid="tokenize-fab-toggle-enabled"]') as HTMLElement;
+    const enabledToggle = shadow.querySelector('[data-cell-id="tokenize-fab-toggle-enabled"]') as HTMLElement;
     act(() => { fireEvent.click(enabledToggle); });
     expect(store.setEnabled).toHaveBeenCalledWith(true);
 
@@ -134,7 +134,7 @@ describe('mountTokenizeFab', () => {
     const button = getFabButton(host);
     act(() => { fireEvent.click(button!); });
 
-    const dictButton = (host.shadowRoot as ShadowRoot).querySelector('[data-testid="tokenize-fab-dictionary"]') as HTMLElement;
+    const dictButton = (host.shadowRoot as ShadowRoot).querySelector('[data-cell-id="tokenize-fab-dictionary"]') as HTMLElement;
     act(() => { fireEvent.click(dictButton); });
     expect(onOpenDictionary).toHaveBeenCalled();
 

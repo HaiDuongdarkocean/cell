@@ -14,7 +14,7 @@ export function SubtitleHint({
   return (
     <div
       className={styles.hint}
-      data-testid="subtitle-hint"
+      data-cell-id="subtitle-hint"
       onClick={onClick}
       role="button"
       aria-label={title}

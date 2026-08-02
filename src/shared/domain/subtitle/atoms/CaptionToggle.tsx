@@ -10,7 +10,7 @@ export interface CaptionToggleProps {
   trackLabel: string;
   /** Optional HTML id. */
   id?: string;
-  /** Optional data-testid for testing. */
+  /** Optional data-cell-id for testing. */
   dataTestId?: string;
   /** When true, toggle is disabled (not clickable, dimmed). */
   disabled?: boolean;
@@ -36,7 +36,7 @@ export function CaptionToggle({
     <button
       type="button"
       id={id}
-      data-testid={dataTestId}
+      data-cell-id={dataTestId}
       className={styles.captionToggle}
       role="switch"
       aria-checked={enabled}

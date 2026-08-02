@@ -44,7 +44,7 @@ describe('HintIcon', () => {
     expect(screen.getByText('This is a hint')).toBeInTheDocument();
   });
 
-  it('applies data-testid when provided', () => {
+  it('applies data-cell-id when provided', () => {
     render(
       <HintIcon
         hint="This is a hint"
@@ -74,7 +74,7 @@ describe('HintIcon', () => {
           hint="This is a hint"
           ariaLabel="Show hint"
         />
-        <div data-testid="outside">Outside</div>
+        <div data-cell-id="outside">Outside</div>
       </div>
     );
     const button = screen.getByRole('button', { name: 'Show hint' });

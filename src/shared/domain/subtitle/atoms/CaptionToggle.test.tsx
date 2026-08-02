@@ -90,7 +90,7 @@ describe('CaptionToggle', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it('applies data-testid', () => {
+  it('applies data-cell-id', () => {
     render(
       <CaptionToggle
         enabled={false}

@@ -17,7 +17,7 @@ interface ShortcutInputProps {
   /** Accessible label (required — pill has no visible label). */
   'aria-label': string;
   /** Test ID. */
-  'data-testid'?: string;
+  'data-cell-id'?: string;
   /** HTML id for label association. */
   id?: string;
 }
@@ -70,7 +70,7 @@ export function ShortcutInput({
   onChange,
   id,
   'aria-label': ariaLabel,
-  'data-testid': testId,
+  'data-cell-id': testId,
 }: ShortcutInputProps): React.JSX.Element {
   const pillRef = useRef<HTMLDivElement>(null);
 
@@ -104,7 +104,7 @@ export function ShortcutInput({
       className={styles.shortcutPill}
       onKeyDown={handleKeyDown}
       aria-label={ariaLabel}
-      data-testid={testId}
+      data-cell-id={testId}
     >
       {hasCombo ? (
         <>

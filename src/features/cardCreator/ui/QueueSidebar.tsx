@@ -90,7 +90,7 @@ export function QueueSidebar({
       className={styles['cc-queue']}
       aria-label="Card creator queue"
       onKeyDown={handleKeyDown}
-      data-testid="cc-queue-sidebar"
+      data-cell-id="cc-queue-sidebar"
     >
       <div className={styles['cc-queue__header']}>
         <span className={styles['cc-queue__title']}>
@@ -129,7 +129,7 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
     <li
       className={`${styles['cc-queue__item']} ${isActive ? styles['cc-queue__item--active'] : ''}`}
       data-index={index}
-      data-testid={`cc-queue-item-${index}`}
+      data-cell-id={`cc-queue-item-${index}`}
     >
       <button
         className={styles['cc-queue__item-btn']}
@@ -148,7 +148,7 @@ function QueueItemRow({ item, index, isActive, onSelect, onDelete }: QueueItemRo
         className={styles['cc-queue__item-delete']}
         onClick={onDelete}
         aria-label={`Remove ${item.term} from queue`}
-        data-testid={`cc-queue-delete-${index}`}
+        data-cell-id={`cc-queue-delete-${index}`}
       >
         <Icon name="x" className={styles['cc-queue__item-delete-icon']} />
       </button>
@@ -175,7 +175,7 @@ function UndoButton({ onUndo, toasts, onDismissToast }: UndoButtonProps): ReactE
         onDismissToast(lastToast.id);
       }}
       aria-label="Undo last deletion"
-      data-testid="cc-queue-undo"
+      data-cell-id="cc-queue-undo"
     >
       <Icon name="rotateCcw" className={styles['cc-queue__undo-icon']} />
       Undo

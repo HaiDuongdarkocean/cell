@@ -21,8 +21,8 @@ describe('ShortcutInput atom — ADR-021 D7 combo support', () => {
       expect(screen.getByRole('button', { name: 'Next cue' })).toHaveAttribute('aria-label', 'Next cue');
     });
 
-    it('forwards data-testid', () => {
-      render(<ShortcutInput value={{ key: 'a' }} onChange={() => {}} aria-label="Test" data-testid="shortcut-prev-cue" />);
+    it('forwards data-cell-id', () => {
+      render(<ShortcutInput value={{ key: 'a' }} onChange={() => {}} aria-label="Test" data-cell-id="shortcut-prev-cue" />);
       expect(screen.getByTestId('shortcut-prev-cue')).toBeInTheDocument();
     });
 

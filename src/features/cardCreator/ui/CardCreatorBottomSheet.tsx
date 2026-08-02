@@ -70,7 +70,7 @@ export function CardCreatorBottomSheet({
       onOpenChange={handleOpenChange}
       title="Card Creator"
       centerTitle
-      data-testid="card-creator-bottom-sheet"
+      data-cell-id="card-creator-bottom-sheet"
     >
       <CardCreatorDialogContent
         state={state}

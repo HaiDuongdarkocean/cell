@@ -21,6 +21,6 @@
 }
 
 /* Loading / empty state vertical centering */
-.cardCreatorPanel > [data-testid='empty-state'] {
+.cardCreatorPanel > [data-cell-id='empty-state'] {
   justify-content: center;
 }

@@ -10,7 +10,7 @@ export interface SubtitleTextProps {
   fontSize?: string;
   /** Optional HTML id. */
   id?: string;
-  /** Optional data-testid for testing. */
+  /** Optional data-cell-id for testing. */
   dataTestId?: string;
   /** Optional extra class name. */
   className?: string;
@@ -39,7 +39,7 @@ export function SubtitleText({
   return (
     <span
       id={id}
-      data-testid={dataTestId}
+      data-cell-id={dataTestId}
       className={cls}
       style={styleVars}
       role="text"

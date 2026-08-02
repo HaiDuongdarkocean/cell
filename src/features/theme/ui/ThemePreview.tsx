@@ -9,7 +9,7 @@ import styles from './ThemePreview.module.css';
 
 export function ThemePreview(): React.JSX.Element {
   return (
-    <div className={styles.preview} data-testid="theme-preview">
+    <div className={styles.preview} data-cell-id="theme-preview">
       <div className={styles.section}>
         <div className={styles.sectionLabel}>Buttons</div>
         <div className={styles.row}>

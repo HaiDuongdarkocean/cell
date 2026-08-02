@@ -62,13 +62,13 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
           <div
             key={cue.index}
             ref={(el) => { itemRefs.current[i] = el; }}
-            data-testid="cue-item"
+            data-cell-id="cue-item"
             data-cue-index={cue.index}
             data-current={isCurrent ? 'true' : 'false'}
             className={`${styles.cue} ${isCurrent ? styles.cueCurrent : ''}`}
           >
             <span
-              data-testid="cue-timestamp"
+              data-cell-id="cue-timestamp"
               data-cue-index={cue.index}
               onClick={() => onSeek(cue.start)}
               className={styles.timestamp}
@@ -79,11 +79,11 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
                   cue.start; SEEK_TO handler subtracts offset. */}
               {formatTimestamp(cue.start - offsetMs)}
             </span>
-            <div data-testid="cue-target-text" className={styles.targetText}>
+            <div data-cell-id="cue-target-text" className={styles.targetText}>
               {cue.targetText}
             </div>
             {cue.nativeText && (
-              <div data-testid="cue-native-text" className={styles.nativeText}>
+              <div data-cell-id="cue-native-text" className={styles.nativeText}>
                 {cue.nativeText}
               </div>
             )}

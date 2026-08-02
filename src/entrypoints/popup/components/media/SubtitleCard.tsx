@@ -74,7 +74,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
     <Card
       variant={selected ? 'selected' : downloading ? 'default' : 'interactive'}
       className={`${styles.card} ${downloading ? styles.downloading : ''}`}
-      data-testid="subtitle-item"
+      data-cell-id="subtitle-item"
       data-id={subtitle.id}
     >
       {/* === Main row — icon | body | actions === */}
@@ -93,9 +93,9 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
 
         {/* Body */}
         <div className={styles.body}>
-          <div className={styles.title} data-testid="subtitle-title">{displayTitle ?? displayLanguage}</div>
+          <div className={styles.title} data-cell-id="subtitle-title">{displayTitle ?? displayLanguage}</div>
           <div className={styles.tagRow}>
-            <span className={styles.languageTag} data-testid="subtitle-language">{displayLanguage}</span>
+            <span className={styles.languageTag} data-cell-id="subtitle-language">{displayLanguage}</span>
             <span className={styles.meta}>
               {downloading ? 'Downloading…' : `${subtitle.format}${subtitle.size ? ` · ${formatFileSize(subtitle.size)}` : ''}`}
             </span>
@@ -109,7 +109,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
             onClick={handleExpandClick}
             aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
             aria-expanded={urlExpanded}
-            data-testid="subtitle-expand-url-btn"
+            data-cell-id="subtitle-expand-url-btn"
           >
             <Icon
               name="chevronDown"
@@ -127,7 +127,7 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
                 variant="ghost"
                 onClick={handleActionClick}
                 aria-label="Download"
-                data-testid="subtitle-download"
+                data-cell-id="subtitle-download"
               >
                 <Icon name="download" size={16} />
               </IconButton>
@@ -138,18 +138,18 @@ export function SubtitleCard({ subtitle, displayTitle, languageLabel, selected, 
 
       {/* === URL panel — only when expanded === */}
       {urlExpanded && (
-        <div className={styles.urlPanel} data-testid="subtitle-url-row">
+        <div className={styles.urlPanel} data-cell-id="subtitle-url-row">
           <button
             type="button"
             className={styles.copyBtn}
             onClick={handleUrlClick}
-            data-testid="subtitle-url"
+            data-cell-id="subtitle-url"
             title="Click to copy URL"
           >
             <Icon name="copy" size={14} />
             <span className={styles.urlText}>{subtitle.url}</span>
           </button>
-          {copied && <span className={styles.copiedBadge} data-testid="subtitle-copied-toast">Copied</span>}
+          {copied && <span className={styles.copiedBadge} data-cell-id="subtitle-copied-toast">Copied</span>}
         </div>
       )}
     </Card>

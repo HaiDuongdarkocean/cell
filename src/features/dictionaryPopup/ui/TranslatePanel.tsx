@@ -29,7 +29,7 @@ export function TranslatePanel({
 }: TranslatePanelProps): React.JSX.Element {
   if (loading && !translation) {
     return (
-      <div className={styles.cellTranslate} data-testid="dictionary-translate-panel">
+      <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
         <TranslateSkeleton />
       </div>
     );
@@ -37,7 +37,7 @@ export function TranslatePanel({
 
   if (error) {
     return (
-      <div className={styles.cellTranslate} data-testid="dictionary-translate-panel">
+      <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
         <div className={styles.cellTranslateError}>{error}</div>
         <div className={styles.cellTranslateEmpty}>
           <span className={styles.cellTranslateEmptyIcon}><Icon name="languages" size={24} /></span>
@@ -52,7 +52,7 @@ export function TranslatePanel({
 
   if (translation) {
     return (
-      <div className={styles.cellTranslate} data-testid="dictionary-translate-panel">
+      <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
         <div
           className={`${styles.cellTranslateBlock} ${selected ? styles['cellTranslateBlock--selected'] : ''}`}
           onClick={onToggle}
@@ -73,7 +73,7 @@ export function TranslatePanel({
   }
 
   return (
-    <div className={styles.cellTranslate} data-testid="dictionary-translate-panel">
+    <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
       <div className={styles.cellTranslateEmpty}>
         <span className={styles.cellTranslateEmptyIcon}><Icon name="languages" size={24} /></span>
         <span className={styles.cellTranslateEmptyTitle}>No translation</span>

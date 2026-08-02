@@ -47,7 +47,7 @@ describe('PreviewBlock', () => {
     expect(preview).toHaveAttribute('aria-label', 'Preview');
   });
 
-  it('applies data-testid when dataId is provided', () => {
+  it('applies data-cell-id when dataId is provided', () => {
     render(<PreviewBlock targetWord="study" sentence="I like to study." dataId="cc-preview" />);
     expect(screen.getByTestId('cc-preview')).toBeInTheDocument();
   });

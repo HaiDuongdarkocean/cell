@@ -9,7 +9,7 @@ export interface LinksPanelProps {
 
 export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
   return (
-    <div className={styles.cellLinks} data-testid="dictionary-links-panel">
+    <div className={styles.cellLinks} data-cell-id="dictionary-links-panel">
       {links.length === 0 ? (
         <div className={styles.cellLinksEmpty}>
           <span className={styles.cellLinksEmptyIcon}><Icon name="link" size={24} /></span>
@@ -26,7 +26,7 @@ export function LinksPanel({ links }: LinksPanelProps): React.JSX.Element {
             target="_blank"
             rel="noopener noreferrer"
             className={styles.cellLinksItem}
-            data-testid={`dictionary-link-${link.id}`}
+            data-cell-id={`dictionary-link-${link.id}`}
           >
             <Icon name="link" size={16} />
             <span>{link.name}</span>

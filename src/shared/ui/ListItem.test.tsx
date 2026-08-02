@@ -4,7 +4,7 @@ import { ListItem } from './ListItem';
 describe('ListItem', () => {
   it('renders content and leading/trailing', () => {
     render(
-      <ListItem leading={<span data-testid="leading">L</span>} trailing={<span data-testid="trailing">T</span>}>
+      <ListItem leading={<span data-cell-id="leading">L</span>} trailing={<span data-cell-id="trailing">T</span>}>
         Label
       </ListItem>,
     );

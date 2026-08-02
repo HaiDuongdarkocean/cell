@@ -12,7 +12,7 @@ interface ResourceCardProps {
 
 export function ResourceCard({ resource, onDelete }: ResourceCardProps): ReactElement {
   return (
-    <Card className={styles.card} data-testid={`resource-card-${resource.id}`}>
+    <Card className={styles.card} data-cell-id={`resource-card-${resource.id}`}>
       <div className={styles.info}>
         <span className={styles.name}>{resource.name}</span>
         <span className={styles.meta}>
@@ -25,7 +25,7 @@ export function ResourceCard({ resource, onDelete }: ResourceCardProps): ReactEl
         size="sm"
         onClick={onDelete}
         aria-label={`Xóa ${resource.name}`}
-        data-testid={`delete-button-${resource.id}`}
+        data-cell-id={`delete-button-${resource.id}`}
       >
         Xóa
       </Button>
@@ -34,5 +34,5 @@ export function ResourceCard({ resource, onDelete }: ResourceCardProps): ReactEl
 }
 
 export function ResourceCardSkeleton(): ReactElement {
-  return <div className={styles.skeleton} data-testid="resource-card-skeleton" aria-hidden="true" />;
+  return <div className={styles.skeleton} data-cell-id="resource-card-skeleton" aria-hidden="true" />;
 }

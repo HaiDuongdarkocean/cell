@@ -69,7 +69,7 @@ function SubtitleBlockInner({ targetStyle, nativeStyle, cues, blockSettings }: S
   const hasNativeCue = nativeStyle.visible && nativeCue;
 
   return (
-    <div className={styles.block} style={blockStyle} data-testid="subtitle-block">
+    <div className={styles.block} style={blockStyle} data-cell-id="subtitle-block">
       <div className={styles.layer} data-role="target" style={{ ...buildLayerStyle(targetStyle), backgroundColor: hasTargetCue ? hexToRgba(targetStyle.backgroundColor, targetStyle.backgroundOpacity * blockBgOpacity) : 'transparent' }}>
         <span className={styles.text}>{targetCue?.text ?? ''}</span>
       </div>

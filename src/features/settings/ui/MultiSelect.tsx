@@ -10,7 +10,7 @@ export interface MultiSelectOption {
 
 /** Props for the MultiSelect component. */
 export interface MultiSelectProps {
-  /** Test-id prefix used for data-testid attributes on sub-elements. */
+  /** Test-id prefix used for data-cell-id attributes on sub-elements. */
   testId: string;
   /** All available options. */
   options: MultiSelectOption[];
@@ -97,7 +97,7 @@ export function MultiSelect({
       className={`${styles.option} ${isSelected ? styles.optionSelected : ''}`}
       role="option"
       aria-selected={isSelected}
-      data-testid={`${testId}-option-${opt.value}`}
+      data-cell-id={`${testId}-option-${opt.value}`}
       tabIndex={0}
       onClick={() => toggle(opt.value)}
       onKeyDown={(e) => handleOptionKeyDown(e, opt.value)}
@@ -110,7 +110,7 @@ export function MultiSelect({
   );
 
   return (
-    <div className={styles.container} data-testid={testId}>
+    <div className={styles.container} data-cell-id={testId}>
       {/* Search bar */}
       <div className={styles.searchWrap}>
         <Icon name="search" className={styles.searchIcon} />
@@ -125,7 +125,7 @@ export function MultiSelect({
           onKeyDown={handleSearchKeyDown}
         />
         {selectedCount > 0 && (
-          <span className={styles.badge} data-testid={`${testId}-count`}>
+          <span className={styles.badge} data-cell-id={`${testId}-count`}>
             {selectedCount}
           </span>
         )}

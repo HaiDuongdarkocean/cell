@@ -14,7 +14,7 @@ export function PreviewBlock({ targetWord, sentence, dataId }: PreviewBlockProps
       className={styles['cc-preview']}
       aria-label="Preview"
       role="region"
-      data-testid={dataId}
+      data-cell-id={dataId}
       data-allow-tokenize
       data-allow-lookup
     >

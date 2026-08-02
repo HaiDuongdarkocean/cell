@@ -97,13 +97,13 @@ export function ThemeImportExport({ config, onApply }: ThemeImportExportProps): 
   };
 
   return (
-    <div className={styles.wrapper} data-testid="theme-import-export">
+    <div className={styles.wrapper} data-cell-id="theme-import-export">
       <div className={styles.label}>Export / Import</div>
       <div className={styles.row}>
-        <Button variant="secondary" size="sm" onClick={handleExport} data-testid="theme-export">⬇ Export JSON</Button>
-        <Button variant="secondary" size="sm" onClick={() => void handleCopy()} data-testid="theme-copy">📋 Copy</Button>
-        <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} data-testid="theme-import-file">⬆ Import file</Button>
-        <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleFile} className={styles.fileInput} data-testid="theme-file-input" />
+        <Button variant="secondary" size="sm" onClick={handleExport} data-cell-id="theme-export">⬇ Export JSON</Button>
+        <Button variant="secondary" size="sm" onClick={() => void handleCopy()} data-cell-id="theme-copy">📋 Copy</Button>
+        <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} data-cell-id="theme-import-file">⬆ Import file</Button>
+        <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleFile} className={styles.fileInput} data-cell-id="theme-file-input" />
       </div>
       <div className={styles.label}>Or paste JSON:</div>
       <Textarea
@@ -111,13 +111,13 @@ export function ThemeImportExport({ config, onApply }: ThemeImportExportProps): 
         onChange={(e) => { setPasteText(e.target.value); clearMsg(); }}
         placeholder='{"customColors":{"light":{...},"dark":{...}}}'
         rows={4}
-        data-testid="theme-paste-textarea"
+        data-cell-id="theme-paste-textarea"
       />
       <div className={`${styles.row} ${styles.actionRow}`}>
-        <Button variant="primary" size="sm" onClick={handlePasteApply} data-testid="theme-apply-paste">Apply</Button>
+        <Button variant="primary" size="sm" onClick={handlePasteApply} data-cell-id="theme-apply-paste">Apply</Button>
       </div>
-      {error && <Alert variant="error" description={error} data-testid="theme-import-error" />}
-      {success && <Alert variant="success" description={success} data-testid="theme-import-success" />}
+      {error && <Alert variant="error" description={error} data-cell-id="theme-import-error" />}
+      {success && <Alert variant="success" description={success} data-cell-id="theme-import-success" />}
     </div>
   );
 }

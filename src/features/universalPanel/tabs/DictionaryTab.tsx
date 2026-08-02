@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { DictionaryPanelView } from '@/features/dictionaryPopup/ui/DictionaryPanelView';
+import { Dictionary } from '@/features/dictionaryPopup/ui/Dictionary';
 import type { PopupCardCreatorPrefill } from '@/features/dictionaryPopup/types';
 import type { DictionaryPanelPrefill } from '@/features/universalPanel/types';
 import { CardCreatorPanel } from './CardCreatorPanel';
@@ -46,9 +46,10 @@ export function DictionaryTab({
   }, []);
 
   return (
-    <div className={styles.dictionaryTab} data-testid="dictionary-tab">
+    <div className={styles.dictionaryTab} data-cell-id="dictionary-tab">
       <div className={styles.leftPane}>
-        <DictionaryPanelView
+        <Dictionary
+          variant="integrated"
           langCode={langCode}
           sourceLang={sourceLang}
           targetLang={targetLang}

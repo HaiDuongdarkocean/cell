@@ -1,4 +1,5 @@
-import { useState, useImperativeHandle, forwardRef, useCallback, useRef } from 'react';
+import { useState, useImperativeHandle, forwardRef, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
@@ -166,6 +167,22 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [toasts, setToasts] = useState<ToastItem[]>([]);
     const [generateNativeEnabled, setGenerateNativeEnabled] = useState(initialGenerateNativeEnabled);
     const [toolsExpanded, setToolsExpanded] = useState(false);
+    const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+    useEffect(() => {
+      const root = rootRef.current;
+      if (!root) return;
+      const rootNode = root.getRootNode();
+      if (!(rootNode instanceof ShadowRoot)) return;
+      const el = document.createElement('div');
+      el.style.display = 'contents';
+      rootNode.appendChild(el);
+      setPortalTarget(el);
+      return () => {
+        setPortalTarget(null);
+        el.remove();
+      };
+    }, []);
 
     const addToast = useCallback((message: string, variant?: ToastVariant): void => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -302,7 +319,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         ref={rootRef}
         className={`${styles.root}${dragging ? ` ${styles.dragging}` : ''}`}
         style={{ '--sb-y': yOffsetPercent } as React.CSSProperties}
-        data-testid="subtitle-panels-root"
+        data-cell-id="subtitle-panels-root"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -332,13 +349,13 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         </div>
 
         {!collapsed && (
-          <div className={styles.clusterRight} style={clusterRightStyle} data-testid="nav-cluster-right">
+          <div className={styles.clusterRight} style={clusterRightStyle} data-cell-id="nav-cluster-right">
             <div className={styles.primaryCol}>
               {onQuickAdd && (
                 <IconButton
                   aria-label="Quick add card"
                   title="Quick add (Q)"
-                  data-testid="quick-add-btn"
+                  data-cell-id="quick-add-btn"
                   size="sm"
                   onClick={onQuickAdd}
                 >
@@ -349,7 +366,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                 <IconButton
                   aria-label="Edit card"
                   title="Edit card (E)"
-                  data-testid="edit-card-btn"
+                  data-cell-id="edit-card-btn"
                   size="sm"
                   onClick={onEditCard}
                 >
@@ -359,13 +376,13 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
               <div className={styles.toggleWrap}>
                 <div
                   className={`${styles.extraCol} ${toolsExpanded ? styles.expanded : ''}`}
-                  data-testid="subtitle-tools-extra"
+                  data-cell-id="subtitle-tools-extra"
                 >
                   {onToggleSidePanel && (
                     <IconButton
                       aria-label="Toggle subtitle side panel"
                       title="Toggle side panel (T)"
-                      data-testid="panel-toggle-btn"
+                      data-cell-id="panel-toggle-btn"
                       size="sm"
                       onClick={onToggleSidePanel}
                     >
@@ -376,7 +393,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                 <IconButton
                   aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
                   title={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
-                  data-testid="tools-toggle-btn"
+                  data-cell-id="tools-toggle-btn"
                   size="sm"
                   onClick={() => setToolsExpanded((v) => !v)}
                 >
@@ -389,7 +406,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                 <IconButton
                   aria-label="Update current card"
                   title="Update current card (U)"
-                  data-testid="update-current-card-btn"
+                  data-cell-id="update-current-card-btn"
                   size="sm"
                   onClick={onUpdateCurrentCard}
                 >
@@ -400,7 +417,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                 <IconButton
                   aria-label="Generate native subtitle"
                   title="Generate native (G)"
-                  data-testid="generate-native-btn"
+                  data-cell-id="generate-native-btn"
                   size="sm"
                   onClick={onGenerateNative}
                   disabled={!generateNativeEnabled}
@@ -412,7 +429,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                 <IconButton
                   aria-label="Open subtitle manager"
                   title="Open subtitle manager"
-                  data-testid="manager-toggle-btn"
+                  data-cell-id="manager-toggle-btn"
                   size="sm"
                   onClick={onToggleManager}
                 >
@@ -423,8 +440,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           </div>
         )}
 
-        {managerOpen && manager && (
-          <div className={styles.panelLayer} data-testid="subtitle-manager-layer">
+        {managerOpen && manager && portalTarget && createPortal(
+          <div className={styles.panelLayer} data-cell-id="subtitle-manager-layer">
             <SubtitleManagerPanel
               targetItems={manager.targetItems}
               nativeItems={manager.nativeItems}
@@ -437,11 +454,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
               onOffsetChange={manager.onOffsetChange}
               generateNativeDisabled={!generateNativeEnabled}
             />
-          </div>
+          </div>,
+          portalTarget,
         )}
 
         {offsetOpen && offset && (
-          <div className={styles.panelLayer} data-testid="subtitle-offset-layer">
+          <div className={styles.panelLayer} data-cell-id="subtitle-offset-layer">
             <div className={styles.offsetRow}>
               <SubtitleOffsetPanel
                 offsetMs={offset.targetMs}
@@ -460,7 +478,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         </div>
 
         {hintOpen && (
-          <div className={styles.hintLayer} data-testid="subtitle-hint-layer">
+          <div className={styles.hintLayer} data-cell-id="subtitle-hint-layer">
             <SubtitleHint onClick={() => setHintOpen(false)} />
           </div>
         )}

@@ -33,7 +33,7 @@ export function ModeCards({ value, onChange }: ModeCardsProps): React.JSX.Elemen
   };
 
   return (
-    <div className={styles.cards} role="radiogroup" aria-label="Theme mode" data-testid="mode-cards">
+    <div className={styles.cards} role="radiogroup" aria-label="Theme mode" data-cell-id="mode-cards">
       {MODES.map((m) => {
         const selected = m.mode === value;
         return (
@@ -46,7 +46,7 @@ export function ModeCards({ value, onChange }: ModeCardsProps): React.JSX.Elemen
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(m.mode)}
             onKeyDown={handleKeyDown}
-            data-testid={`mode-card-${m.mode}`}
+            data-cell-id={`mode-card-${m.mode}`}
           >
             <span className={styles.icon} aria-hidden="true">{m.icon}</span>
             <span className={styles.label}>{m.label}</span>

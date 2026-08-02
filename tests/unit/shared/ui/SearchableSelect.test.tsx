@@ -157,7 +157,7 @@ describe('SearchableSelect', () => {
     expect(englishOption.querySelector('svg')).toBeInTheDocument();
   });
 
-  it('applies data-testid when provided', () => {
+  it('applies data-cell-id when provided', () => {
     render(
       <SearchableSelect
         options={options}

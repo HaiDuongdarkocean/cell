@@ -32,7 +32,7 @@ describe('Toggle', () => {
     expect(handleChange).toHaveBeenCalledWith(false);
   });
 
-  it('applies data-testid when provided', () => {
+  it('applies data-cell-id when provided', () => {
     render(<Toggle checked={false} onChange={jest.fn()} ariaLabel="Test toggle" dataTestId="test-toggle" />);
     const button = screen.getByTestId('test-toggle');
     expect(button).toBeInTheDocument();
