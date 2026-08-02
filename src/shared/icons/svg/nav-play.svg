@@ -1,7 +1,7 @@
-<!-- Nav play — outline circle + outline triangle. Used by navCluster play/pause video.
-     Matches navPrev/navNext circle (r=10, stroke 1.5) + outline glyph for visual consistency.
-     Source: Adapted from Lucide play icon, wrapped in circle to match nav cluster pattern. -->
+<!-- Nav play — outline circle + filled triangle. Used by navCluster play/pause video.
+     Matches navPrev/navNext circle (r=10, stroke 1.5). Filled glyph for 18px readability on video overlay.
+     Source: Bootstrap play-circle style, adapted to Nucleus convention. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <circle cx="12" cy="12" r="10" />
-  <path d="M9.5 7.5L16.5 12L9.5 16.5Z" />
+  <path d="M9.5 7L17 12L9.5 17Z" fill="currentColor" stroke="none" />
 </svg>
