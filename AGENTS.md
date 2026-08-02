@@ -172,7 +172,7 @@ ALWAYS commit: chỉ commit khi build pass và verify pass dùng skill `git-work
 
 ### khi test bằng mcp
 
-Test bằng mcp chrome-devtools hoặc edge-devtools cài thêm: [ublock extension](tests/data-test/extension-phụ-trợ/uBlock0.chromium) để chặn quảng cáo.
+Test bằng mcp stealth-chrome-devtools (PRIMARY — bypass anti-automation, navigator.webdriver=false), chrome-devtools (fallback — cần performance trace/a11y), hoặc edge-devtools. Cài thêm: [ublock extension](tests/data-test/extension-phụ-trợ/uBlock0.chromium) để chặn quảng cáo.
 
 ### trang web để test
 
@@ -187,3 +187,6 @@ Text
 
 Video
 - https://www.youtube.com/watch?v=YQHsXMglC9A
+
+Video (anti-automation — MUST dùng stealth-chrome-devtools)
+- https://streamduck.site/ (phát hiện DevTools/automation → reload nếu dùng chrome-devtools)
