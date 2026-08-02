@@ -44,6 +44,16 @@ function getSeedFromUrl(url: string): string | undefined {
   }
 }
 
+function getProviderFromUrl(url: string): string | undefined {
+  try {
+    const path = new URL(url).pathname;
+    const match = path.match(/^\/([^/]+)\/sources-with-title/);
+    return match?.[1];
+  } catch {
+    return undefined;
+  }
+}
+
 function getSubtitleFormat(subtitle: { readonly url: string }): SubtitleFormat | null {
   const url = subtitle.url;
   const direct = formatFromUrl(url);
@@ -94,16 +104,17 @@ export function createEncryptedAdapter(profile: EncryptedProfile): SubtitleDisco
         listing = decryptVideasyResponse(body, seed, tmdbId);
       } catch {
         // Preserve as an unresolved handle so the user/panel can see the attempt.
+        const provider = getProviderFromUrl(signal.url) ?? profile.provider;
         return [
           createCandidate(
             {
               label: 'Encrypted videasy listing',
               language: 'unknown',
               source: 'metadata',
-              provider: profile.provider,
+              provider,
               status: 'unresolved',
               metadata: {
-                provider: 'videasy',
+                provider,
                 providerId: `enc:${signal.url}`,
                 language: 'unknown',
                 label: 'Encrypted listing',
@@ -116,6 +127,7 @@ export function createEncryptedAdapter(profile: EncryptedProfile): SubtitleDisco
       }
 
       const baseUrl = signal.url;
+      const provider = getProviderFromUrl(signal.url) ?? profile.provider;
       const candidates: SubtitleCandidate[] = [];
 
       for (const sub of listing.subtitles) {
@@ -133,7 +145,7 @@ export function createEncryptedAdapter(profile: EncryptedProfile): SubtitleDisco
               url,
               source: 'direct',
               baseUrl,
-              provider: profile.provider,
+              provider,
               format: format ?? 'srt',
               default: false,
               forced: false,

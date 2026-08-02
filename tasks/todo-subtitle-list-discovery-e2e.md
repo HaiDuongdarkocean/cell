@@ -95,7 +95,7 @@ its browser/inventory acceptance criterion fails.
   - Verify: decoder tests, headed Videasy test, `npm run typecheck`, `npm run build`, `subagent_general` Task 9 prompt.
   - Dependencies: T3–T4.
   - Files: encrypted adapter/decoder, fixtures, integration/browser tests.
-  - **Status**: decoder ported from player bundle (m4uhd, cdn, vsrc, lamovie, superflix, hdmovie, meine, downloader2 all share the same PRNG). Adapter decrypts captured `sources-with-title` response using seed + tmdbId from URL; unit tests and fixture pass.
+  - **Status**: decoder ported from player bundle (m4uhd, cdn, vsrc, lamovie, superflix, hdmovie, meine, downloader2 all share the same PRNG). Adapter matches all `/<provider>/sources-with-title` endpoints, extracts provider from path, and emits ready candidates per subtitle. Fixtures: `cdn` 67 VTT (S1E2), `m4uhd` 1 SRT. Unit tests pass.
 
 - [x] **T10A — Onflix server/HLS catalog pre-audit**
   - Acceptance: enumerate SN/NC/PA/OP from the page; capture each player/HLS/VTT source; record EXT-X-MEDIA presence; produce a concrete per-server expected count.

@@ -1,6 +1,12 @@
 // Pure decoder tests for the videasy "sources-with-title" payload.
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { decryptVideasyResponse, base64UrlToBytes } from '@/features/detection/subtitleDiscovery/adapters/videasyDecoder';
+
+function fixture(name: string): string {
+  return fs.readFileSync(path.resolve(process.cwd(), 'tests/fixtures/subtitleDiscovery', name), 'utf-8').trim();
+}
 
 describe('videasyDecoder', () => {
   const cipher =
@@ -19,6 +25,15 @@ describe('videasyDecoder', () => {
 
   it('fails with the wrong seed', () => {
     expect(() => decryptVideasyResponse(cipher, 'wrong-seed', 125988)).toThrow(/bad seed/);
+  });
+
+  it('decrypts the real cdn fixture with 67 subtitles', () => {
+    const body = fixture('videasy-cdn-encrypted.bin');
+    const listing = decryptVideasyResponse(body, '59523338.yaF0Hex5Jfvd6cttjhxEGy', 125988);
+    expect(listing.subtitles).toHaveLength(67);
+    expect(listing.sources.length).toBeGreaterThan(0);
+    expect(listing.subtitles[0]!.lang).toBe('English');
+    expect(listing.subtitles[0]!.url).toContain('.vtt');
   });
 
   it('fails with the wrong mediaId', () => {
