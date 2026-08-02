@@ -121,6 +121,25 @@ Stealth MCP requires explicit browser lifecycle management. Every test session f
 
 **Profile selection:** Leave `user_data_dir` UNSET for disposable sessions (auto-cloned from master, auto-deleted on close). Only set it when the user explicitly asks for a persistent named profile.
 
+### Loading Extensions Under Test (IMPORTANT)
+
+Stealth MCP **strips `--load-extension` and `--disable-extensions-except`** from `browser_args` with the warning "real users have extensions" — so passing `--load-extension=C:\path\to\dist` in `browser_args` will NOT load the extension under test. The spawned browser launches clean (or with only profile-inherited extensions), and content-script markers / service workers / `chrome.runtime` will be absent. Verifying extension load via `chrome://extensions` shadow-DOM pierce or `window.fetch.toString()` will confirm the absence.
+
+**To test an extension that must persist across sessions (e.g. Cell video downloader):**
+
+1. **Spawn a persistent profile** via stealth MCP with `user_data_dir=C:\cell-profile` (or any named dir). This creates a profile that is NOT auto-cleaned.
+2. **Ask the user to manually install the extension** into that profile:
+   - Open `chrome://extensions` in the spawned browser
+   - Enable "Developer mode" (top-right toggle)
+   - Click "Load unpacked" → select the `dist/` folder (or a no-spaces copy like `C:\cell-ext`)
+   - Confirm the extension card shows "Enabled"
+3. **Reload the extension after each rebuild**: either ask the user to click "Reload" on the extension card, or (if CDP is available) evaluate `chrome.runtime.reload()` in the service-worker target.
+4. **Verify extension load** before testing: pierce `chrome://extensions` shadow DOM for the extension card, OR check a content-script marker on a known page (e.g. `document.querySelector('#cell-universal-panel-host')` on any page where the content-script runs).
+
+**Why manual install instead of `--load-extension`:** Stealth MCP's arg stripping is by design (anti-detection — real users don't launch with `--load-extension`). Manual install via `chrome://extensions` is the only reliable path under stealth MCP. If `--load-extension` is strictly required (e.g. headless CI), launch Chrome manually with `--remote-debugging-port=9222 --load-extension=C:\cell-ext` and drive it via a CDP WebSocket client (Python `websockets` + `Runtime.evaluate`) — but this bypasses stealth MCP's anti-detection layer.
+
+**Path-with-spaces gotcha:** `--load-extension=C:\Users\Name\My Project\dist` can fail silently on some Chrome versions. Copy `dist/` to a no-spaces path (e.g. `C:\cell-ext`) before loading.
+
 ## Security Boundaries
 
 ### Profile Isolation
