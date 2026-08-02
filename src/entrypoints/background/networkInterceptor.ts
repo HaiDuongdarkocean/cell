@@ -41,6 +41,8 @@ export class NetworkInterceptor {
   private readonly subtitles: Map<string, DetectedSubtitle> = new Map();
   private readonly listeners: Set<MediaDetectedCallback> = new Set();
   private listingListener: ListingDetectedCallback | null = null;
+  private listingMatcher: ((url: string) => boolean) | null = null;
+  private tabClearedListeners: Set<(tabId: number) => void> = new Set();
 
   /** Bound listener reference so it can be removed cleanly in `stop()`. */
   private boundListener:
@@ -113,12 +115,11 @@ export class NetworkInterceptor {
       return;
     }
 
-    // Stremio addon subtitle listing: the URL returns a JSON listing of
-    // subtitle URLs, not a subtitle file. Fire the listing callback (async,
-    // not awaited) so the caller can fetch the JSON, extract `subtitles[].url`,
-    // and re-inject the real subtitle URLs. `detectSubtitle` also rejects
-    // listing URLs (returns null), so no false-positive subtitle is stored.
-    if (isStremioSubtitleListing(details.url) && this.listingListener) {
+    // Stremio addon and generic subtitle listings: the URL returns a JSON
+    // listing of subtitle URLs, not a subtitle file. Fire the listing callback
+    // (async, not awaited) so the caller can fetch/parse and re-inject the
+    // real subtitle URLs. `detectSubtitle` also rejects listing URLs.
+    if (this.listingListener && (isStremioSubtitleListing(details.url) || this.listingMatcher?.(details.url))) {
       this.listingListener(details.url, details.tabId, details.initiator);
     }
 
@@ -248,6 +249,20 @@ export class NetworkInterceptor {
         this.subtitles.delete(id);
       }
     }
+    for (const listener of this.tabClearedListeners) {
+      try {
+        listener(tabId);
+      } catch (err) {
+        console.warn('[networkInterceptor] tab cleared listener failed:', err);
+      }
+    }
+  }
+
+  onTabCleared(callback: (tabId: number) => void): () => void {
+    this.tabClearedListeners.add(callback);
+    return () => {
+      this.tabClearedListeners.delete(callback);
+    };
   }
 
   /**
@@ -284,7 +299,7 @@ export class NetworkInterceptor {
    *
    * Returns the number of newly-added subtitles (0 = all duplicates).
    */
-  addDetectedSubtitles(subtitles: DetectedSubtitle[]): number {
+  addDetectedSubtitles(subtitles: readonly DetectedSubtitle[]): number {
     let added = 0;
     for (const subtitle of subtitles) {
       const existing = this.getSubtitles(subtitle.tabId).find(
@@ -328,6 +343,13 @@ export class NetworkInterceptor {
       if (this.listingListener === callback) {
         this.listingListener = null;
       }
+    };
+  }
+
+  setListingMatcher(matcher: (url: string) => boolean): () => void {
+    this.listingMatcher = matcher;
+    return () => {
+      this.listingMatcher = null;
     };
   }
 

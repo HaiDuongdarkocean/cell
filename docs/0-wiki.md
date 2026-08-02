@@ -9,6 +9,9 @@ docs/           # Tài liệu dự án
 ├── 0-wiki.md                          # File này — mục lục tổng quan
 ├── 1-share-language.md                # Glossary human ↔ system language
 ├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows; overlay button appearance/host-CSS defenses; top-frame guard cho Cloudflare challenge iframe)
+├── player-support.md                  # Live subtitle-list audit — player-side evidence for 9 sites; separates direct/metadata/encrypted entries, auth replay, and extension-delivery gaps; includes generic architecture constraints
+├── specs/
+│   └── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery
 ├── design-system/                     # Design system reference docs & assets
 │   ├── daft.md                        # Meta/Facebook design system reference draft (tokens + components + standards)
 │   ├── daft-reference.html            # Visual reference HTML for daft.md (colors/spacing/typography/components)
@@ -39,6 +42,10 @@ tasks/          # Active plan & task checklist (current sprint)
 ├── plan.md                          # Implementation plan for current feature
 └── todo.md                          # Ordered task checklist with acceptance criteria
 ```
+
+## Lịch sử cập nhật wiki
+
+**2026-07-XX**: Thêm generic subtitle-list discovery (T1-T12 E2E) vào `docs/2-architechture-system.md` và `tasks/todo-subtitle-list-discovery-e2e.md`. Pipeline/protocol adapters: cinesrc, kisskh, lookmovie, broodingmovies, lunastream, MyAsianTV, noxx, onflix HLS; videasy encrypted còn blocker decoder.
 
 ## Lịch sử cleanup tài liệu
 

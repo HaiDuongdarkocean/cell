@@ -3,6 +3,7 @@ import {
   onMessage,
   removeOnMessageListener,
 } from '@/shared/lib/chrome-apis';
+import { MESSAGE_TYPES } from '@/shared/config/messages';
 import type {
   MessageRequest,
   MessageResponse,
@@ -111,6 +112,23 @@ export class MessageBus {
       const payload = request.payload as Record<string, unknown> | undefined;
       if (payload && payload.tabId === undefined) {
         request = { ...request, payload: { ...payload, tabId: sender.tab.id } };
+      }
+    }
+
+    // Subtitle discovery signals from content scripts cannot know their own
+    // tabId/frameId; inject them from the sender so the pipeline dedupes and
+    // stores under the correct tab.
+    if (request.type === MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL && sender.tab?.id !== undefined) {
+      const payload = request.payload as { signal?: { tabId?: number; frameId?: number } } | undefined;
+      if (payload?.signal) {
+        const signal = { ...payload.signal };
+        if (signal.tabId === undefined || signal.tabId === 0) {
+          signal.tabId = sender.tab.id;
+        }
+        if (signal.frameId === undefined || signal.frameId === 0) {
+          signal.frameId = sender.frameId ?? 0;
+        }
+        request = { ...request, payload: { ...payload, signal } };
       }
     }
 

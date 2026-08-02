@@ -19,6 +19,7 @@ import { MessageBus } from './messageBus';
 import { DownloadQueue } from '@/features/download';
 import { Downloader } from '@/features/download';
 import { OffscreenManager } from './offscreenManager';
+import { SubtitleDiscoveryService } from './subtitleDiscoveryService';
 import { cleanupOrphanedDownloads } from '@/shared/lib/storage/opfsStorage';
 import {
   queryTabs,
@@ -75,6 +76,7 @@ import { registerForvoAudioHandlers } from './handlers/forvoAudio';
 import { registerImageSearchHandlers } from './handlers/images';
 import { registerFetchMediaUrlHandlers } from './handlers/fetchMediaUrl';
 import { registerScreenshotHandlers } from './handlers/screenshot';
+import { registerSubtitleDiscoveryHandlers } from './handlers/subtitleDiscovery';
 import { seedDevDataIfEmpty } from '@/features/dictionary/logic/devSeed';
 import { isDevMode } from '@/shared/lib/env/devMode';
 import type { MessageHandler } from '@/entities/message';
@@ -94,6 +96,7 @@ export interface BackgroundServiceOptions {
   readonly downloadQueue?: DownloadQueue;
   readonly downloader?: Downloader;
   readonly offscreenManager?: OffscreenManager;
+  readonly subtitleDiscoveryService?: SubtitleDiscoveryService;
 }
 
 /**
@@ -108,6 +111,7 @@ export class BackgroundService implements BackgroundContext {
   readonly downloadQueue: DownloadQueue;
   readonly downloader: Downloader;
   readonly offscreenManager: OffscreenManager;
+  readonly subtitleDiscoveryService: SubtitleDiscoveryService;
 
   readonly mediaMap: Map<string, DetectedVideo | DetectedSubtitle> = new Map();
   readonly autoDownloadedTabs: Map<number, {
@@ -137,6 +141,9 @@ export class BackgroundService implements BackgroundContext {
     this.downloadQueue = options?.downloadQueue ?? new DownloadQueue();
     this.downloader = options?.downloader ?? new Downloader();
     this.offscreenManager = options?.offscreenManager ?? new OffscreenManager();
+    this.subtitleDiscoveryService =
+      options?.subtitleDiscoveryService ??
+      new SubtitleDiscoveryService(this);
   }
 
   /**
@@ -236,6 +243,7 @@ export class BackgroundService implements BackgroundContext {
     registerImageSearchHandlers(this);
     registerFetchMediaUrlHandlers(this);
     registerScreenshotHandlers(this);
+    registerSubtitleDiscoveryHandlers(this);
   }
 
   /** Type-safe wrapper around messageBus.on. */
@@ -296,6 +304,8 @@ export async function initBackground(): Promise<BackgroundService> {
   }
   backgroundService = new BackgroundService();
   await backgroundService.init();
+  // TEMP DEBUG: expose background state for CDP inspection
+  (globalThis as Record<string, unknown>).__cellBg = backgroundService;
   return backgroundService;
 }
 

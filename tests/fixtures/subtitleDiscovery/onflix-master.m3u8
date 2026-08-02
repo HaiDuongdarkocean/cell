@@ -1,0 +1,6 @@
+#EXTM3U
+#EXT-X-VERSION:4
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="English",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="en",URI="https://example-cdn.onflix/vid/en.vtt"
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="Vietnamese",DEFAULT=NO,AUTOSELECT=NO,LANGUAGE="vi",URI="https://example-cdn.onflix/vid/vi.vtt"
+#EXT-X-STREAM-INF:BANDWIDTH=1000000,SUBTITLES="subs"
+https://example-cdn.onflix/vid/1080p.m3u8
