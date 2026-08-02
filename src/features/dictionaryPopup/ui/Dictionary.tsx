@@ -1,5 +1,4 @@
 import { Icon } from '@/shared/icons/Icon';
-import { IconButton } from '@/shared/ui/IconButton';
 import { DictionaryPanelView } from './DictionaryPanelView';
 import { usePopupPosition } from './usePopupPosition';
 import styles from './PopupDictionary.module.css';
@@ -45,7 +44,6 @@ export function Dictionary(props: DictionaryProps): React.JSX.Element {
       style,
       isSheet,
       popupRef,
-      onPointerDownHeader,
       onPointerDownResize,
       onPointerDownSheet,
       onPointerDownContent,
@@ -76,27 +74,6 @@ export function Dictionary(props: DictionaryProps): React.JSX.Element {
         }}
       >
         <div
-          className={styles.header}
-          data-cell-id="popup-dictionary-header"
-          aria-label="Drag to move"
-          onPointerDown={onPointerDownHeader}
-        >
-          <span className={styles.grip} aria-hidden="true" data-cell-id="popup-dictionary-grip">
-            <Icon name="ellipsisVertical" size={16} />
-          </span>
-          <span className={styles.title}>Dictionary</span>
-          <IconButton
-            size="sm"
-            variant="ghost"
-            aria-label="Close"
-            data-cell-id="popup-dictionary-close"
-            onClick={onClose}
-          >
-            <Icon name="x" size={18} />
-          </IconButton>
-        </div>
-
-        <div
           className={styles.sheetHandle}
           aria-hidden="true"
           data-cell-id="popup-dictionary-sheet-handle"
@@ -108,7 +85,7 @@ export function Dictionary(props: DictionaryProps): React.JSX.Element {
           data-cell-id="popup-dictionary-content"
           onPointerDown={onPointerDownContent}
         >
-          <DictionaryPanelView {...panelProps} isOpen />
+          <DictionaryPanelView {...panelProps} isOpen variant="popup" />
         </div>
 
         <div

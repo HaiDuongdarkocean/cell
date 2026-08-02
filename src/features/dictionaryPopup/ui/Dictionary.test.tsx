@@ -44,10 +44,8 @@ describe('Dictionary', () => {
     );
 
     expect(screen.getByTestId('popup-dictionary')).toBeInTheDocument();
-    expect(screen.getByTestId('popup-dictionary-header')).toBeInTheDocument();
-    expect(screen.getByTestId('popup-dictionary-grip')).toBeInTheDocument();
-    expect(screen.getByTestId('popup-dictionary-close')).toBeInTheDocument();
-    expect(screen.getByTestId('popup-dictionary-content')).toBeInTheDocument();
+    expect(screen.queryByTestId('popup-dictionary-header')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('popup-dictionary-content')).toBeInTheDocument();
     expect(screen.getByTestId('popup-dictionary-resize')).toBeInTheDocument();
     expect(screen.getByTestId('popup-dictionary-sheet-handle')).toBeInTheDocument();
 

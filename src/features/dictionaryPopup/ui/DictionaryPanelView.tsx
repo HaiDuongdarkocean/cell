@@ -40,6 +40,8 @@ interface DictionaryPanelViewProps {
   readonly isOpen?: boolean;
   /** Optional external status sync (e.g. keyboard shortcut). */
   readonly syncStatus?: { readonly term: string; readonly status: WordStatus };
+  /** Render mode: 'popup' is compact (no search row/history), 'integrated' is the full panel. */
+  readonly variant?: 'popup' | 'integrated';
 }
 
 export function DictionaryPanelView({
@@ -61,6 +63,7 @@ export function DictionaryPanelView({
   defaultActiveTab,
   isOpen = true,
   syncStatus,
+  variant = 'integrated',
 }: DictionaryPanelViewProps): React.JSX.Element {
   const panel = useDictionaryPanel({
     langCode,
@@ -224,20 +227,22 @@ export function DictionaryPanelView({
 
   return (
     <div className={styles.dictionaryPanel} data-cell-id="dictionary-panel">
-      <div className={styles.searchRow}>
-        <SearchField
-          id={SEARCH_INPUT_ID}
-          data-cell-id="dictionary-search-input"
-          value={searchTerm}
-          onChange={handleSearchChange}
-          onKeyDown={handleSearchKeyDown}
-          placeholder="Type a word"
-          disabled={panel.isLoading}
-          className={styles.searchField}
-        />
-      </div>
+      {variant !== 'popup' && (
+        <div className={styles.searchRow}>
+          <SearchField
+            id={SEARCH_INPUT_ID}
+            data-cell-id="dictionary-search-input"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Type a word"
+            disabled={panel.isLoading}
+            className={styles.searchField}
+          />
+        </div>
+      )}
 
-      {searchHistory.length > 0 && (
+      {variant !== 'popup' && searchHistory.length > 0 && (
         <section className={styles.searchHistory} aria-label="Recent searches" data-cell-id="dictionary-search-history">
           <button
             type="button"

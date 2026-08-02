@@ -1,5 +1,5 @@
 import { describe, expect, it, jest, beforeAll, beforeEach } from '@jest/globals';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { PopupDictionary } from './PopupDictionary';
 
 jest.mock('./DictionaryPanelView', () => ({
@@ -51,7 +51,7 @@ describe('PopupDictionary', () => {
     );
 
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'Dictionary popup');
-    expect(screen.getByTestId('popup-dictionary-header')).toBeInTheDocument();
+    expect(screen.queryByTestId('popup-dictionary-header')).not.toBeInTheDocument();
     expect(screen.getByTestId('popup-dictionary-content')).toBeInTheDocument();
     expect(screen.getByTestId('popup-dictionary-resize')).toBeInTheDocument();
     expect(screen.getByTestId('popup-dictionary-sheet-handle')).toBeInTheDocument();
@@ -72,22 +72,6 @@ describe('PopupDictionary', () => {
     );
 
     expect(screen.getByTestId('mock-initial')).toHaveTextContent('hello');
-  });
-
-  it('calls onClose when the close button is clicked', () => {
-    const onClose = jest.fn();
-    render(
-      <PopupDictionary
-        langCode="en"
-        sourceLang="en"
-        targetLang="vi"
-        anchor={defaultAnchor}
-        onClose={onClose}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /Close/i }));
-    expect(onClose).toHaveBeenCalled();
   });
 
   it('applies the supplied style to the dialog', () => {
@@ -139,21 +123,4 @@ describe('PopupDictionary', () => {
     expect(dialog).toHaveStyle({ width: '100%' });
   });
 
-  it('sets will-change while dragging the header', () => {
-    render(
-      <PopupDictionary
-        langCode="en"
-        sourceLang="en"
-        targetLang="vi"
-        anchor={defaultAnchor}
-        onClose={jest.fn()}
-      />,
-    );
-
-    const header = screen.getByTestId('popup-dictionary-header');
-    fireEvent.pointerDown(header, { clientX: 0, clientY: 0, pointerId: 1 });
-
-    const dialog = screen.getByRole('dialog');
-    expect(dialog).toHaveStyle({ willChange: 'left, top, width, height' });
-  });
 });
