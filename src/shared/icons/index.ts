@@ -91,6 +91,8 @@ import navRepeatBSvg from './svg/nav-repeat-b.svg?raw';
 import navRepeatCancelSvg from './svg/nav-repeat-cancel.svg?raw';
 import navRewindSvg from './svg/nav-rewind.svg?raw';
 import navForwardSvg from './svg/nav-forward.svg?raw';
+import navPlaySvg from './svg/nav-play.svg?raw';
+import navPauseSvg from './svg/nav-pause.svg?raw';
 
 // === Subtitle overlay icons ===
 import generateNativeSvg from './svg/generate-native.svg?raw';
@@ -149,6 +151,8 @@ export { default as navRepeatBIcon } from './svg/nav-repeat-b.svg?raw';
 export { default as navRepeatCancelIcon } from './svg/nav-repeat-cancel.svg?raw';
 export { default as navRewindIcon } from './svg/nav-rewind.svg?raw';
 export { default as navForwardIcon } from './svg/nav-forward.svg?raw';
+export { default as navPlayIcon } from './svg/nav-play.svg?raw';
+export { default as navPauseIcon } from './svg/nav-pause.svg?raw';
 export { default as generateNativeIcon } from './svg/generate-native.svg?raw';
 export { default as sidePanelIcon } from './svg/side-panel.svg?raw';
 export { default as subtitleManagerIcon } from './svg/subtitle-manager.svg?raw';
@@ -250,6 +254,8 @@ export const ICON_CATALOG = {
   navRepeatCancel: { svg: navRepeatCancelSvg, source: 'custom/nav-cluster',            tags: ['nav','repeat','cancel','stop','loop-stop','x'] } as IconEntry,
   navRewind:       { svg: navRewindSvg,       source: 'svgrepo/rewind-5-seconds-back', tags: ['nav','rewind','back','5','seconds','seek'] } as IconEntry,
   navForward:      { svg: navForwardSvg,      source: 'svgrepo/rewind-10-seconds-forward', tags: ['nav','forward','skip','10','seconds','seek'] } as IconEntry,
+  navPlay:         { svg: navPlaySvg,         source: 'custom/nav-cluster (Bootstrap play-circle)', tags: ['nav','play','start','media','video','resume','circle'] } as IconEntry,
+  navPause:        { svg: navPauseSvg,        source: 'custom/nav-cluster (Bootstrap pause-circle)', tags: ['nav','pause','hold','media','video','circle'] } as IconEntry,
 
   // === Subtitle overlay ===
   generateNative:  { svg: generateNativeSvg,  source: 'custom/subtitle-block',      tags: ['generate','native','translate','exchange','bidirectional','arrows'] } as IconEntry,
