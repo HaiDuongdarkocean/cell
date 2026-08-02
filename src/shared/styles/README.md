@@ -30,7 +30,7 @@ import '@/shared/styles/tokens.css';
 | 1 | Đổi giá trị token | Hardcoded `padding: 16px` trong từng file CSS | Sửa 1 chỗ: `tokens.json` → `"4": "20px"` |
 | 2 | Sinh lại file artifact | Sửa tokens.json rồi quên regenerate | Chạy `node scripts/generate-tokens.js` (hoặc `npm run dev` — tự chạy) |
 | 3 | Dùng trong React (popup/sidepanel/options) | `padding: 16px` — hardcoded, drift | `padding: var(--space-4, 16px)` — tokens.css tự `@import` |
-| 4 | Dùng trong Shadow DOM (dictionary popup) | Copy-paste CSS vào Shadow Root | `import tokensCss from '...?raw'` → đổi `:root`→`:host` → inject `<style>` |
+| 4 | Dùng trong Shadow DOM (dictionary popup) | Copy-paste CSS vào Shadow Root | `import tokensCss from '...?raw'` → đổi `:root`→`:host` → inject `<style>` (ADR-076: font-size tokens dùng `px` tuyệt đối + `:host { font-size: var(--font-size-base) }` reset trong `components.css` để cô lập khỏi host `<html>` font-size) |
 | 5 | Dùng trong content-script (subtitle/nav cluster) | Hardcoded `150ms` trong TS string | `var(--duration-fast, 150ms)` — tokens.ts đọc tokens.json, sinh CSS string |
 | 6 | Dùng component | Tự tạo `<button className={styles.myBtn}>` + custom hover | `import { Button } from '@/shared/ui'` — hover/active đã có sẵn |
 

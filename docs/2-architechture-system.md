@@ -64,7 +64,7 @@ src/
 │   ├── lib/            #   parsers/, storage/, chrome-apis/ (adapters), themeTokens, tokens, frequencyBand, shadowRoot
 │   │   ├── chrome-apis/  # M17: 9 adapters (tabs/runtime/storage/downloads/webRequest/offscreen/sidePanel/action/windows)
 │   │   ├── storage/      # M21: settingsStore.ts (schema versioning + migration)
-│   │   ├── shadowRoot/   # ADR-075: Shadow DOM React mounting helpers — mountReactShadow, injectShadowCss, ShadowThemeProvider, useShadowFocusTrap
+│   │   ├── shadowRoot/   # ADR-075/ADR-076: Shadow DOM React mounting helpers — mountReactShadow, injectShadowCss (ADR-076: :host font-size reset isolates shadow UI from host <html> font-size), ShadowThemeProvider, useShadowFocusTrap
 │   │   ├── tokens.ts     # Design-token runtime helpers (SSOT: shared/styles/tokens.json); exports defaults + getColorTokens/buildColorTokenCSS/formatStaticTokens/formatComponentTokens
 │   │   └── frequencyBand.ts  # SSOT: rank → TokenFrequencyBand (core/common/general/advanced/rare/none); used by tokenize + dictionaryPopup
 │   ├── config/         #   Cross-feature constants and registries
@@ -954,7 +954,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `ThemeProvider` | `features/theme/ui/ThemeProvider.tsx` | children / container → JSX | popup/sidepanel/options main.tsx, ShadowThemeProvider | **ADR-022**: Boot themeStore + applyTheme + system listener + storage.onChanged sync; optional `container` target for Shadow DOM |
 | `ShadowThemeProvider` | `shared/lib/shadowRoot/ShadowThemeProvider.tsx` | container, children → JSX | mountReactShadow | **ADR-075/T032**: ThemeProvider wrapper for shadow roots — applies tokens + `data-theme` to the inner container so `[data-theme]` selectors match inside the shadow boundary |
 | `mountReactShadow` | `shared/lib/shadowRoot/mountReactShadow.ts` | ReactElement, options → {host, rootEl, shadow, root, unmount} | ShadowThemeProvider, card creator, popup, orbital, tokenize, subtitle | **T082/ADR-075/T032**: Generic open-shadow root React mount; injects tokens + per-component CSS; `rootEl` is the inner container; optional `reparentOnFullscreen` keeps overlay visible in video fullscreen |
-| `injectShadowCss` | `shared/lib/shadowRoot/injectShadowCss.ts` | ShadowRoot, {css?} → cleanup | mountReactShadow | **ADR-075/T032**: Injects tokens.css (with `:root` → `:host` rewrite) + components.css + per-module CSS into shadow root; `[data-theme]` selectors match the inner container |
+| `injectShadowCss` | `shared/lib/shadowRoot/injectShadowCss.ts` | ShadowRoot, {css?} → cleanup | mountReactShadow | **ADR-075/T032 + ADR-076**: Injects tokens.css (with `:root` → `:host` rewrite) + components.css (includes `:host { font-size: var(--font-size-base) }` reset — isolates shadow UI from host `<html>` font-size) + per-module CSS into shadow root; `[data-theme]` selectors match the inner container |
 | `useShadowFocusTrap` | `shared/lib/shadowRoot/useShadowFocusTrap.ts` | panelRef → void | shadow panels | **ADR-075**: Focus-trap inside shadow root using `getRootNode().activeElement` |
 | `useCuesStore` | `stores/cuesStore.ts` | Zustand store | subtitle components | **ADR-075**: Bilingual cues + active index; slice subscription |
 | `importFile` | `features/dictionary/logic/importOrchestrator.ts` | (file, resourceType, options) → ImportResult | ResourcesPanel, autoSeed | **ADR-023**: validate → detect → signature → dedupe → create resource → strategy.execute() → finalize; error → rollbackImport |
