@@ -110,7 +110,7 @@ function NavClusterInner({
           <Icon name="navRewind" size={18} />
         </IconButton>
         <IconButton aria-label={isPlaying ? 'Pause video' : 'Play video'} data-testid="nav-play" onClick={onPlayPause}>
-          <Icon name={isPlaying ? 'pause' : 'play'} size={18} />
+          <Icon name={isPlaying ? 'navPause' : 'navPlay'} size={18} />
         </IconButton>
         <IconButton aria-label="Forward 10 seconds" data-testid="nav-forward" onClick={onForward}>
           <Icon name="navForward" size={18} />
