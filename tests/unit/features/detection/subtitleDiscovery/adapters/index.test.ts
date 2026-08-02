@@ -129,10 +129,34 @@ describe('Subtitle discovery adapters', () => {
     expect(candidates[0].default).toBe(true);
   });
 
-  it('videasy encrypted adapter preserves as unresolved', async () => {
+  it('videasy encrypted adapter decrypts sources-with-title', async () => {
     const adapter = adapters.find((a) => a.id === 'videasy-encrypted')!;
     const body = fixture('videasy-encrypted.bin');
-    const signal: SubtitleSignal = { kind: 'network-response', url: 'https://api.speedracelight.com/cdn/sources-with-title?title=X&enc=2&seed=abc', body, tabId: 1, frameId: 0 };
+    const signal: SubtitleSignal = {
+      kind: 'network-response',
+      url: 'https://api.speedracelight.com/m4uhd/sources-with-title?title=Silo&mediaType=TV&year=2023&totalSeasons=4&episodeId=1&seasonId=1&tmdbId=125988&imdbId=tt14688458&enc=2&seed=59523314.KnuAYJu6hrSfrh9q8Aa4vT',
+      body,
+      tabId: 1,
+      frameId: 0,
+    };
+    const candidates = await adapter.discover(signal, makeContext({ origin: 'https://player.videasy.to' }), makeEnv());
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0].status).toBe('ready');
+    expect(candidates[0].language).toBe('en');
+    expect(candidates[0].format).toBe('srt');
+    expect(candidates[0].url).toContain('api.playhq.net/sub');
+  });
+
+  it('videasy encrypted adapter falls back to unresolved on bad seed', async () => {
+    const adapter = adapters.find((a) => a.id === 'videasy-encrypted')!;
+    const body = fixture('videasy-encrypted.bin');
+    const signal: SubtitleSignal = {
+      kind: 'network-response',
+      url: 'https://api.speedracelight.com/cdn/sources-with-title?title=X&enc=2&seed=abc&tmdbId=123',
+      body,
+      tabId: 1,
+      frameId: 0,
+    };
     const candidates = await adapter.discover(signal, makeContext({ origin: 'https://player.videasy.to' }), makeEnv());
     expect(candidates).toHaveLength(1);
     expect(candidates[0].status).toBe('unresolved');
