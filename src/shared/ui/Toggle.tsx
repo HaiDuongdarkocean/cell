@@ -16,7 +16,7 @@ export interface ToggleProps {
   size?: ToggleSize;
   /** Optional HTML id */
   id?: string;
-  /** Optional data-testid for testing */
+  /** Optional data-cell-id for testing */
   dataTestId?: string;
   /** Optional title attribute */
   title?: string;
@@ -41,7 +41,7 @@ export function Toggle({
     <button
       type="button"
       id={id}
-      data-testid={dataTestId}
+      data-cell-id={dataTestId}
       name={name}
       className={`${styles.toggle} ${styles[size]}`}
       role="switch"

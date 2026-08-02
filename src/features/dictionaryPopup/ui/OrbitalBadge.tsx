@@ -198,7 +198,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         marginLeft: -badgeSize / 2,
         marginTop: -badgeSize / 2,
       }}
-      data-testid="orbital-badge"
+      data-cell-id="orbital-badge"
       aria-label="Orbital dictionary badge"
       role="button"
       onPointerDown={gesture.onPointerDown}
@@ -208,7 +208,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       <IconButton
         className={styles.badge}
         aria-label={expanded ? 'Drag to move' : 'Open dictionary'}
-        data-testid="orbital-badge-button"
+        data-cell-id="orbital-badge-button"
       >
         <Icon name={expanded ? 'x' : 'search'} size={18} />
       </IconButton>
@@ -223,7 +223,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
             marginLeft: -pointerSize / 2,
             marginTop: -pointerSize / 2,
           }}
-          data-testid="orbital-pointer"
+          data-cell-id="orbital-pointer"
           aria-hidden="true"
         />
       )}

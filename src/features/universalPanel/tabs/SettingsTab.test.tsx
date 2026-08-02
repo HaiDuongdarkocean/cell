@@ -13,13 +13,13 @@ interface MockSettingsDialogContentProps {
 
 jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
   SettingsDialogContent: ({ settings, onChange }: MockSettingsDialogContentProps) => (
-    <div data-testid="settings-dialog-content">
+    <div data-cell-id="settings-dialog-content">
       <nav>
-        <button type="button" data-testid="settings-sidebar-button">Sidebar</button>
+        <button type="button" data-cell-id="settings-sidebar-button">Sidebar</button>
       </nav>
       <button
         type="button"
-        data-testid="settings-first-control"
+        data-cell-id="settings-first-control"
         onClick={() => onChange?.(settings as Settings)}
       >
         First control

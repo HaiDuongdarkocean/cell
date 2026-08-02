@@ -97,7 +97,7 @@ export function createImportButton(container: HTMLElement, _config: OverlayConfi
   label.setAttribute('tabindex', '0');
   label.setAttribute('aria-label', 'Import subtitle file');
   label.setAttribute('title', 'Import subtitle file');
-  label.setAttribute('data-testid', 'subtitle-import-button');
+  label.setAttribute('data-cell-id', 'subtitle-import-button');
   label.style.cssText = `
     position: relative;
     overflow: hidden;

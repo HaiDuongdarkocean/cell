@@ -19,7 +19,7 @@ export interface BottomSheetProps {
    *  positioning). Default: left-aligned with space-between. */
   centerTitle?: boolean;
   /** Test id for the overlay. */
-  'data-testid'?: string;
+  'data-cell-id'?: string;
 }
 
 /**
@@ -38,7 +38,7 @@ export function BottomSheet({
   children,
   footer,
   centerTitle,
-  'data-testid': dataTestId,
+  'data-cell-id': dataTestId,
 }: BottomSheetProps): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, open);
@@ -65,7 +65,7 @@ export function BottomSheet({
       onClick={handleOverlayClick}
       onKeyDown={handleKeyDown}
       role="presentation"
-      data-testid={dataTestId}
+      data-cell-id={dataTestId}
     >
       <div
         ref={panelRef}

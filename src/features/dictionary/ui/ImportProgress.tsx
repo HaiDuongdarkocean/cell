@@ -14,7 +14,7 @@ interface ImportProgressProps {
 export function ImportProgress({ processed, total, onCancel, error }: ImportProgressProps): ReactElement {
   const pct = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
   return (
-    <div className={styles.progress} data-testid="import-progress">
+    <div className={styles.progress} data-cell-id="import-progress">
       <div className={styles.bar}>
         <div className={styles.fill} style={{ width: `${pct}%` }} />
       </div>

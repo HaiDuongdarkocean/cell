@@ -10,7 +10,7 @@ export interface TimeOffsetProps {
   showSign?: boolean;
   /** Optional HTML id. */
   id?: string;
-  /** Optional data-testid for testing. */
+  /** Optional data-cell-id for testing. */
   dataTestId?: string;
   /** Optional extra class name. */
   className?: string;
@@ -59,7 +59,7 @@ export function TimeOffset({
   return (
     <span
       id={id}
-      data-testid={dataTestId}
+      data-cell-id={dataTestId}
       className={cls}
       role="text"
       aria-label={`Time offset: ${offset} seconds`}

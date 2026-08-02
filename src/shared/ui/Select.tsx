@@ -35,8 +35,8 @@ export interface SelectProps {
    *  Use 'right' when the select sits on the right side of a row so the
    *  menu doesn't overflow the card/container. */
   menuAlign?: 'left' | 'right';
-  /** Optional data-testid for the root element. */
-  'data-testid'?: string;
+  /** Optional data-cell-id for the root element. */
+  'data-cell-id'?: string;
   /** Accessible label for the trigger button. */
   'aria-label'?: string;
 }
@@ -61,7 +61,7 @@ export function Select({
   className,
   menuMaxHeight,
   menuAlign = 'left',
-  'data-testid': dataTestId,
+  'data-cell-id': dataTestId,
   'aria-label': ariaLabel,
 }: SelectProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
@@ -211,7 +211,7 @@ export function Select({
   const triggerLabel = selectedOption ? selectedOption.label : (placeholder ?? '');
 
   return (
-    <div className={rootClass} ref={menuRef} data-testid={dataTestId}>
+    <div className={rootClass} ref={menuRef} data-cell-id={dataTestId}>
       {name && <input type="hidden" name={name} value={value ?? ''} />}
       <button
         ref={triggerRef}

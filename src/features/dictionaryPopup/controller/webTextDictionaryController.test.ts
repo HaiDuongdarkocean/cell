@@ -298,10 +298,10 @@ describe('createWebTextDictionaryController', () => {
     // render from the stale response.
     const host = document.querySelector('.js-cell-popup-host');
     if (host && host.shadowRoot) {
-      const popup = host.shadowRoot.querySelector('[data-testid="popup-dictionary"]');
+      const popup = host.shadowRoot.querySelector('[data-cell-id="popup-dictionary"]');
       expect(popup).toBeNull();
     }
-    const termEl = host && host.shadowRoot ? host.shadowRoot.querySelector('[data-testid="dictionary-term"]') : null;
+    const termEl = host && host.shadowRoot ? host.shadowRoot.querySelector('[data-cell-id="dictionary-term"]') : null;
     expect(termEl?.textContent).not.toBe(result.term);
 
     ctrl.destroy();
@@ -330,7 +330,7 @@ describe('createWebTextDictionaryController', () => {
     await waitFor(() => expect(popupHost).not.toBeNull());
     const shadow = popupHost.shadowRoot!;
     const statusBadge = await waitFor(() => {
-      const el = shadow.querySelector('[data-testid="dictionary-status-cycle"]') as HTMLButtonElement | null;
+      const el = shadow.querySelector('[data-cell-id="dictionary-status-cycle"]') as HTMLButtonElement | null;
       if (!el) throw new Error('status badge not found');
       return el;
     });
@@ -601,13 +601,13 @@ describe('createWebTextDictionaryController', () => {
     });
     const shadow = host.shadowRoot!;
     const activeBtn = await waitFor(() => {
-      const el = shadow.querySelector('[data-testid="dictionary-tab-image"].btn--primary');
+      const el = shadow.querySelector('[data-cell-id="dictionary-tab-image"].btn--primary');
       if (!el) throw new Error('image tab not active');
       return el;
     });
     expect(activeBtn).not.toBeNull();
-    expect(activeBtn.getAttribute('data-testid')).toBe('dictionary-tab-image');
-    await waitFor(() => expect(shadow.querySelector('[data-testid="dictionary-image-panel"]')).not.toBeNull());
+    expect(activeBtn.getAttribute('data-cell-id')).toBe('dictionary-tab-image');
+    await waitFor(() => expect(shadow.querySelector('[data-cell-id="dictionary-image-panel"]')).not.toBeNull());
     ctrl.destroy();
   });
 
@@ -652,13 +652,13 @@ describe('createWebTextDictionaryController', () => {
     });
     const shadow = host.shadowRoot!;
     const activeBtn = await waitFor(() => {
-      const el = shadow.querySelector('[data-testid="dictionary-tab-image"].btn--primary');
+      const el = shadow.querySelector('[data-cell-id="dictionary-tab-image"].btn--primary');
       if (!el) throw new Error('image tab not active');
       return el;
     });
     expect(activeBtn).not.toBeNull();
-    expect(activeBtn.getAttribute('data-testid')).toBe('dictionary-tab-image');
-    await waitFor(() => expect(shadow.querySelector('[data-testid="dictionary-image-panel"]')).not.toBeNull());
+    expect(activeBtn.getAttribute('data-cell-id')).toBe('dictionary-tab-image');
+    await waitFor(() => expect(shadow.querySelector('[data-cell-id="dictionary-image-panel"]')).not.toBeNull());
     ctrl.destroy();
   });
 
@@ -697,8 +697,8 @@ describe('createWebTextDictionaryController', () => {
     const host = document.querySelector('.js-cell-popup-host') as HTMLElement | null;
     expect(host).not.toBeNull();
     const shadow = host?.shadowRoot;
-    expect(shadow?.querySelector('[data-testid^="dictionary-tab-"].btn--primary')).toBeNull();
-    expect(shadow?.querySelector('[data-testid="dictionary-image-panel"]')).toBeNull();
+    expect(shadow?.querySelector('[data-cell-id^="dictionary-tab-"].btn--primary')).toBeNull();
+    expect(shadow?.querySelector('[data-cell-id="dictionary-image-panel"]')).toBeNull();
     ctrl.destroy();
   });
 
@@ -773,7 +773,7 @@ describe('createWebTextDictionaryController', () => {
 
     const popupHost = document.querySelector('.js-cell-popup-host')!;
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-testid="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
@@ -786,7 +786,7 @@ describe('createWebTextDictionaryController', () => {
     expect(prefill.contextSentence).toBe('Take off your shoes.');
 
     // Popup should remain visible.
-    const popupEl = popupHost.shadowRoot?.querySelector('[data-testid="popup-dictionary"]') as HTMLDivElement;
+    const popupEl = popupHost.shadowRoot?.querySelector('[data-cell-id="popup-dictionary"]') as HTMLDivElement;
     expect(popupEl).not.toBeNull();
 
     ctrl.destroy();
@@ -826,7 +826,7 @@ describe('createWebTextDictionaryController', () => {
 
     const popupHost = document.querySelector('.js-cell-popup-host')!;
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-testid="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
@@ -859,14 +859,14 @@ describe('createWebTextDictionaryController', () => {
 
     const popupHost = document.querySelector('.js-cell-popup-host')!;
     const sendBtn = await waitFor(() => {
-      const el = popupHost.shadowRoot!.querySelector('[data-testid="dictionary-send-to-card"]') as HTMLButtonElement | null;
+      const el = popupHost.shadowRoot!.querySelector('[data-cell-id="dictionary-send-to-card"]') as HTMLButtonElement | null;
       if (!el) throw new Error('send to card button not found');
       return el;
     });
     await act(async () => { sendBtn.click(); });
 
     // Popup should hide after the async React send-to-card flow completes.
-    await waitFor(() => expect(popupHost.shadowRoot?.querySelector('[data-testid="popup-dictionary"]')).toBeNull());
+    await waitFor(() => expect(popupHost.shadowRoot?.querySelector('[data-cell-id="popup-dictionary"]')).toBeNull());
 
     ctrl.destroy();
   });

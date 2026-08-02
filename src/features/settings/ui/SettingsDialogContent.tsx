@@ -476,7 +476,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                         <label className={styles.label} htmlFor={`set-shortcut-${action}`}>{SHORTCUT_ACTION_LABELS[action]}</label>
                         <ShortcutInput
                           id={`set-shortcut-${action}`}
-                          data-testid={`shortcut-${action}`}
+                          data-cell-id={`shortcut-${action}`}
                           value={currentValue}
                           onChange={(newShortcut) => {
                             const updated = settings.keyboardShortcuts.map((s) =>
@@ -538,7 +538,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                 {/* === Group 1: Concurrency (settings-dialog-rearrange) === */}
                 <SettingField label="Downloads at once" htmlFor="set-concurrent">
                   <Select
-                    data-testid="concurrent-select"
+                    data-cell-id="concurrent-select"
                     value={String(settings.concurrentDownloads)}
                     options={[1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: String(n) }))}
                     onChange={(val) => update('concurrentDownloads', Number(val))}
@@ -551,7 +551,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                 <div className={styles.pairRow}>
                   <SettingField label="Preferred format" htmlFor="set-format">
                     <Select
-                      data-testid="format-select"
+                      data-cell-id="format-select"
                       value={settings.preferredVideoFormat}
                       options={PREFERRED_FORMAT_OPTIONS.map((f) => ({ value: f, label: PREFERRED_FORMAT_LABELS[f] }))}
                       onChange={(val) => update('preferredVideoFormat', val as 'mp4' | 'm3u8')}
@@ -559,7 +559,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                   </SettingField>
                   <SettingField label="Default quality" htmlFor="set-quality">
                     <Select
-                      data-testid="quality-select"
+                      data-cell-id="quality-select"
                       value={settings.defaultQuality}
                       options={QUALITY_OPTIONS.map((q) => ({ value: q, label: QUALITY_LABELS[q] }))}
                       onChange={(val) => update('defaultQuality', val as VideoQuality)}
@@ -572,7 +572,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                 {/* === Group 3: Conversion === */}
                 <SettingField label="Convert to MP4" htmlFor="set-convert">
                   <Select
-                    data-testid="convert-select"
+                    data-cell-id="convert-select"
                     value={settings.convertToMp4}
                     options={CONVERT_OPTIONS.map((m) => ({ value: m, label: CONVERT_LABELS[m] }))}
                     onChange={(val) => update('convertToMp4', val as ConvertToMp4Mode)}
@@ -589,7 +589,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                     />
                   </label>
                   <Select
-                    data-testid="parallel-select"
+                    data-cell-id="parallel-select"
                     value={settings.parallelConversion}
                     options={PARALLEL_OPTIONS.map((m) => ({ value: m, label: PARALLEL_LABELS[m] }))}
                     onChange={(val) => update('parallelConversion', val as ParallelConversionMode)}
@@ -601,7 +601,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                   <div className={`${styles.field} ${styles.childField}`}>
                     <label className={styles.label} htmlFor="set-workers">Workers</label>
                     <Select
-                      data-testid="workers-select"
+                      data-cell-id="workers-select"
                       value={String(settings.manualWorkerCount)}
                       options={WORKER_OPTIONS.map((n) => ({ value: String(n), label: String(n) }))}
                       onChange={(val) => update('manualWorkerCount', Math.max(MIN_PARALLEL_WORKERS, Math.min(MAX_PARALLEL_WORKERS, Number(val))))}
@@ -614,7 +614,7 @@ export function SettingsDialogContent({ settings, onChange, className }: Setting
                 {/* === Group 4: Filename === */}
                 <SettingField label="Filename source" htmlFor="set-filename-source">
                   <Select
-                    data-testid="filename-source-select"
+                    data-cell-id="filename-source-select"
                     value={settings.filenameSource}
                     options={FILENAME_SOURCE_OPTIONS.map((m) => ({ value: m, label: FILENAME_SOURCE_LABELS[m] }))}
                     onChange={(val) => update('filenameSource', val as FilenameSource)}

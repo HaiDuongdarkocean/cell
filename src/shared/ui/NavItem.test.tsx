@@ -3,7 +3,7 @@ import { NavItem } from './NavItem';
 
 describe('NavItem', () => {
   it('renders icon and label', () => {
-    render(<NavItem icon={<span data-testid="icon">I</span>} label="Home" />);
+    render(<NavItem icon={<span data-cell-id="icon">I</span>} label="Home" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
     expect(screen.getByText('Home')).toBeInTheDocument();
   });

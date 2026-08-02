@@ -26,7 +26,7 @@ describe('Kbd', () => {
   });
 
   it('passes through extra HTML attributes', () => {
-    render(<Kbd data-testid="key">Shift</Kbd>);
+    render(<Kbd data-cell-id="key">Shift</Kbd>);
     expect(screen.getByTestId('key')).toBeInTheDocument();
   });
 });

@@ -24,7 +24,7 @@ export function ImagePanel({
 }: ImagePanelProps): React.JSX.Element {
   if (loading) {
     return (
-      <div className={styles.cellImage} data-testid="dictionary-image-panel">
+      <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
         <ImageSkeleton />
       </div>
     );
@@ -32,7 +32,7 @@ export function ImagePanel({
 
   if (error) {
     return (
-      <div className={styles.cellImage} data-testid="dictionary-image-panel">
+      <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
         <div className={styles.cellImageError}>{error}</div>
       </div>
     );
@@ -40,7 +40,7 @@ export function ImagePanel({
 
   if (items.length === 0) {
     return (
-      <div className={styles.cellImage} data-testid="dictionary-image-panel">
+      <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
         <div className={styles.cellImageEmpty}>
           <span className={styles.cellImageEmptyIcon}><Icon name="image" size={24} /></span>
           <span className={styles.cellImageEmptyTitle}>No images</span>
@@ -58,7 +58,7 @@ export function ImagePanel({
   }
 
   return (
-    <div className={styles.cellImage} data-testid="dictionary-image-panel">
+    <div className={styles.cellImage} data-cell-id="dictionary-image-panel">
       <div className={styles.cellImageStrip}>
         {items.map((item) => {
           const selected = selection.get(item.id) ?? item.defaultSelected;

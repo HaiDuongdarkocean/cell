@@ -176,6 +176,12 @@ Test bằng mcp chrome-devtools hoặc edge-devtools cài thêm: [ublock extensi
 
 ### trang web để test
 
+bước 1: dùng skill /browser-testing-with-devtools
+
+- instal hoặc reload extension
+
+bước 2: vào website
+
 Text
 - https://www.geeksforgeeks.org/machine-learning/machine-learning-algorithms/
 

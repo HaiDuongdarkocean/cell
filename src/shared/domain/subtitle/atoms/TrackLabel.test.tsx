@@ -53,7 +53,7 @@ describe('TrackLabel', () => {
     expect(container.firstChild).toHaveClass('active');
   });
 
-  it('applies data-testid', () => {
+  it('applies data-cell-id', () => {
     render(
       <TrackLabel
         label="English"

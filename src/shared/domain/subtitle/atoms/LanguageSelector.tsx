@@ -19,7 +19,7 @@ export interface LanguageSelectorProps {
   onChange: (srclang: string) => void;
   /** Optional HTML id. */
   id?: string;
-  /** Optional data-testid for testing. */
+  /** Optional data-cell-id for testing. */
   dataTestId?: string;
   /** When true, the select is disabled. */
   disabled?: boolean;
@@ -49,7 +49,7 @@ export function LanguageSelector({
   return (
     <Select
       id={id}
-      data-testid={dataTestId}
+      data-cell-id={dataTestId}
       className={styles.languageSelector}
       aria-label="Subtitle language"
       options={options}

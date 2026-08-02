@@ -40,7 +40,7 @@ export function SubtitlePreview({ style, role }: SubtitlePreviewProps): React.JS
   return (
     <div className={styles.previewWrapper}>
       <span className={styles.previewLabel}>Live Preview</span>
-      <div className={styles.previewBox} style={previewStyle} data-testid={`subtitle-preview-${role}`}>
+      <div className={styles.previewBox} style={previewStyle} data-cell-id={`subtitle-preview-${role}`}>
         {sampleText}
       </div>
     </div>

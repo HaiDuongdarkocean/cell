@@ -5,6 +5,17 @@
    Token source: tokens.css (--color-*, --radius-*, --space-*)
    ============================================================ */
 
+/* === Shadow DOM base reset — isolate font-size from host page ===
+   `rem` resolves against the host page <html>, so a host that sets
+   `html { font-size: 24px }` would leak into every shadow root. Pinning
+   `:host` to the base token (px, absolute) gives every shadow root a
+   stable 14px baseline; descendants using `var(--font-size-*)` override
+   it, descendants that inherit get 14px instead of the host's value.
+   `:host` only matches inside a shadow root, so this never touches
+   extension pages (popup/sidepanel/options) which keep the UA default. */
+:host { font-size: var(--font-size-base); }
+
+
 /* === Base button reset — center a lone Icon/SVG inside any <button> ===
    Low specificity (:where) so component/module styles can override.
    Targets icon-only buttons where the only child is an Icon wrapper span or a raw svg. */

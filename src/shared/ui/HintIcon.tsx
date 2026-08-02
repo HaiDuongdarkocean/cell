@@ -10,7 +10,7 @@ export interface HintIconProps {
   ariaLabel: string;
   /** Optional HTML id. */
   id?: string;
-  /** Optional data-testid for the button. */
+  /** Optional data-cell-id for the button. */
   dataTestId?: string;
 }
 
@@ -120,7 +120,7 @@ export function HintIcon({
       <button
         type="button"
         id={id}
-        data-testid={dataTestId}
+        data-cell-id={dataTestId}
         className={styles.hintBtn}
         aria-expanded={isOpen}
         aria-label={ariaLabel}

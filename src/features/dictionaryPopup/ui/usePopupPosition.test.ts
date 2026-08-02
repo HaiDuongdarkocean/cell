@@ -10,11 +10,11 @@ function TestPopup(props: UsePopupPositionOptions): React.ReactElement {
   const { style, isSheet, popupRef, onPointerDownHeader, onPointerDownResize, onPointerDownSheet, onPointerDownContent } = usePopupPosition(props);
   return React.createElement(
     'div',
-    { ref: popupRef, style, 'data-testid': 'popup-root', 'data-sheet': isSheet ? 'true' : 'false' },
-    React.createElement('div', { 'data-testid': 'popup-header', onPointerDown: onPointerDownHeader }, 'Header'),
-    React.createElement('div', { 'data-testid': 'popup-sheet-handle', onPointerDown: onPointerDownSheet }, 'Handle'),
-    React.createElement('div', { 'data-testid': 'popup-content', onPointerDown: onPointerDownContent }, 'Content'),
-    React.createElement('div', { 'data-testid': 'popup-resize', onPointerDown: onPointerDownResize }, 'Resize'),
+    { ref: popupRef, style, 'data-cell-id': 'popup-root', 'data-sheet': isSheet ? 'true' : 'false' },
+    React.createElement('div', { 'data-cell-id': 'popup-header', onPointerDown: onPointerDownHeader }, 'Header'),
+    React.createElement('div', { 'data-cell-id': 'popup-sheet-handle', onPointerDown: onPointerDownSheet }, 'Handle'),
+    React.createElement('div', { 'data-cell-id': 'popup-content', onPointerDown: onPointerDownContent }, 'Content'),
+    React.createElement('div', { 'data-cell-id': 'popup-resize', onPointerDown: onPointerDownResize }, 'Resize'),
   );
 }
 

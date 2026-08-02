@@ -100,7 +100,7 @@ export function VideoCard({
     <Card
       variant={selected ? 'selected' : downloading ? 'default' : 'interactive'}
       className={`${styles.card} ${downloading ? styles.downloading : ''}`}
-      data-testid="video-card"
+      data-cell-id="video-card"
       data-id={video.id}
     >
       {/* === Main row — icon | body | actions === */}
@@ -119,18 +119,18 @@ export function VideoCard({
 
         {/* Body */}
         <div className={styles.body}>
-          <div className={styles.title} data-testid="video-title">{displayTitle ?? video.title}</div>
+          <div className={styles.title} data-cell-id="video-title">{displayTitle ?? video.title}</div>
           <div className={styles.tagRow}>
-            <span className={styles.formatTag} data-testid="video-format">{video.format}</span>
+            <span className={styles.formatTag} data-cell-id="video-format">{video.format}</span>
             {selectedVariant?.quality && selectedVariant.quality !== 'auto' && (
-              <span className={styles.qualityTag} data-testid="video-quality">{selectedVariant.quality}</span>
+              <span className={styles.qualityTag} data-cell-id="video-quality">{selectedVariant.quality}</span>
             )}
             {downloading ? (
               <span className={styles.meta}>Downloading…</span>
             ) : (
               <>
                 {selectedVariant?.size && (
-                  <span className={styles.meta} data-testid="video-size">
+                  <span className={styles.meta} data-cell-id="video-size">
                     {formatFileSizeOrUnknown(selectedVariant.size)}
                   </span>
                 )}
@@ -180,7 +180,7 @@ export function VideoCard({
             onClick={handleExpandClick}
             aria-label={urlExpanded ? 'Collapse URL' : 'Expand URL'}
             aria-expanded={urlExpanded}
-            data-testid="expand-url-btn"
+            data-cell-id="expand-url-btn"
           >
             <Icon
               name="chevronDown"
@@ -198,7 +198,7 @@ export function VideoCard({
                 variant="ghost"
                 onClick={handleActionClick}
                 aria-label="Download"
-                data-testid="download-button"
+                data-cell-id="download-button"
               >
                 <Icon name="download" size={16} />
               </IconButton>
@@ -209,18 +209,18 @@ export function VideoCard({
 
       {/* === URL panel — only when expanded === */}
       {urlExpanded && (
-        <div className={styles.urlPanel} data-testid="url-row">
+        <div className={styles.urlPanel} data-cell-id="url-row">
           <button
             type="button"
             className={styles.copyBtn}
             onClick={handleUrlClick}
-            data-testid="video-url"
+            data-cell-id="video-url"
             title="Click to copy URL"
           >
             <Icon name="copy" size={14} />
             <span className={styles.urlText}>{video.url}</span>
           </button>
-          {copied && <span className={styles.copiedBadge} data-testid="copied-toast">Copied</span>}
+          {copied && <span className={styles.copiedBadge} data-cell-id="copied-toast">Copied</span>}
         </div>
       )}
     </Card>

@@ -23,7 +23,7 @@ jest.mock('@/features/cardCreator/ui/useCardCreatorState', () => ({
 
 jest.mock('@/features/cardCreator/ui/CardCreatorDialogContent', () => ({
   CardCreatorDialogContent: ({ state, variant }: { state: unknown; variant: string }) => (
-    <div data-testid="card-creator-content" data-variant={variant}>
+    <div data-cell-id="card-creator-content" data-variant={variant}>
       {JSON.stringify(state)}
     </div>
   ),

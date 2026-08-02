@@ -10,7 +10,7 @@ export interface SearchableSelectOption {
 
 /** Props for the SearchableSelect component. */
 export interface SearchableSelectProps {
-  /** Test-id prefix used for data-testid attributes on sub-elements. */
+  /** Test-id prefix used for data-cell-id attributes on sub-elements. */
   testId?: string;
   /** All available options. */
   options: SearchableSelectOption[];
@@ -22,7 +22,7 @@ export interface SearchableSelectProps {
   ariaLabel: string;
   /** Optional HTML id. */
   id?: string;
-  /** Optional data-testid for the trigger button. */
+  /** Optional data-cell-id for the trigger button. */
   dataTestId?: string;
   /** Search input placeholder. Defaults to "Search...". */
   placeholder?: string;
@@ -144,7 +144,7 @@ export function SearchableSelect({
       <button
         type="button"
         id={id}
-        data-testid={dataTestId}
+        data-cell-id={dataTestId}
         className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''} ${disabled ? styles.triggerDisabled : ''}`}
         aria-label={ariaLabel}
         aria-expanded={isOpen}
@@ -192,7 +192,7 @@ export function SearchableSelect({
                   className={`${styles.option} ${opt.value === value ? styles.optionSelected : ''} ${index === highlightedIndex ? styles.optionHighlighted : ''}`}
                   role="option"
                   aria-selected={opt.value === value}
-                  data-testid={`${testId}-option-${opt.value}`}
+                  data-cell-id={`${testId}-option-${opt.value}`}
                   onClick={() => handleSelect(opt.value)}
                   onKeyDown={(e) => handleOptionKeyDown(e, opt.value)}
                 >

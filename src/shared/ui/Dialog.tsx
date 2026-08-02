@@ -25,7 +25,7 @@ interface DialogProps {
    *  positioning). Default: left-aligned with space-between. */
   centerTitle?: boolean;
   /** Test id for the overlay. */
-  'data-testid'?: string;
+  'data-cell-id'?: string;
 }
 
 /**
@@ -43,7 +43,7 @@ export function Dialog({
   showCloseButton,
   headerExtra,
   centerTitle,
-  'data-testid': dataTestId,
+  'data-cell-id': dataTestId,
 }: DialogProps): React.JSX.Element | null {
   const panelRef = useRef<HTMLDivElement>(null);
   useFocusTrap(panelRef, open);
@@ -70,7 +70,7 @@ export function Dialog({
       onClick={handleOverlayClick}
       onKeyDown={handleKeyDown}
       role="presentation"
-      data-testid={dataTestId}
+      data-cell-id={dataTestId}
     >
       <div
         ref={panelRef}

@@ -66,7 +66,7 @@ export function DownloadCard({
           size="xs"
           onClick={() => onResume(download.id)}
           aria-label="Resume"
-          data-testid="resume-btn"
+          data-cell-id="resume-btn"
         >
           <Icon name="play" size={14} />
         </IconButton>,
@@ -78,7 +78,7 @@ export function DownloadCard({
           size="xs"
           onClick={() => onPause(download.id)}
           aria-label="Pause"
-          data-testid="pause-btn"
+          data-cell-id="pause-btn"
         >
           <Icon name="pause" size={14} />
         </IconButton>,
@@ -92,7 +92,7 @@ export function DownloadCard({
         size="xs"
         onClick={() => onRetry(download.id)}
         aria-label="Retry"
-        data-testid="retry-btn"
+        data-cell-id="retry-btn"
       >
         <Icon name="rotateCcw" size={14} />
       </IconButton>,
@@ -106,7 +106,7 @@ export function DownloadCard({
         variant="danger"
         onClick={() => onCancel(download.id)}
         aria-label="Cancel"
-        data-testid="cancel-btn"
+        data-cell-id="cancel-btn"
       >
         <Icon name="x" size={14} />
       </IconButton>,
@@ -119,7 +119,7 @@ export function DownloadCard({
         variant="danger"
         onClick={() => onRemove(download.id)}
         aria-label="Remove"
-        data-testid="remove-btn"
+        data-cell-id="remove-btn"
       >
         <Icon name="trash" size={14} />
       </IconButton>,
@@ -244,7 +244,7 @@ export function DownloadCard({
     <Card
       variant="default"
       className={`${styles.card} ${isError ? styles.error : ''} ${isQueued ? styles.queued : ''}`}
-      data-testid="download-item"
+      data-cell-id="download-item"
     >
       {/* Header */}
       <div className={styles.header}>

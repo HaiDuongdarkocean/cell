@@ -295,7 +295,7 @@ export function AppRedesigned(): React.JSX.Element {
   const selectionCount = selectedIds.size;
 
   return (
-    <div className={styles.popup} data-testid="app-root" data-theme={resolveMode(themeMode)}>
+    <div className={styles.popup} data-cell-id="app-root" data-theme={resolveMode(themeMode)}>
       <Header
         isActive={isActive}
         onToggleExtension={toggle}
@@ -309,8 +309,8 @@ export function AppRedesigned(): React.JSX.Element {
       <main className={styles.content}>
         <Tabs defaultValue="media">
           <Tabs.List className={styles.tabList}>
-            <Tabs.Trigger value="media" data-testid="tab-media" className={styles.tabTrigger}>Media</Tabs.Trigger>
-            <Tabs.Trigger value="downloads" data-testid="tab-downloads" className={styles.tabTrigger}>
+            <Tabs.Trigger value="media" data-cell-id="tab-media" className={styles.tabTrigger}>Media</Tabs.Trigger>
+            <Tabs.Trigger value="downloads" data-cell-id="tab-downloads" className={styles.tabTrigger}>
               Downloads
               {downloads.length > 0 && <span className={styles.tabBadge}>{downloads.length}</span>}
             </Tabs.Trigger>
@@ -319,15 +319,15 @@ export function AppRedesigned(): React.JSX.Element {
           <Tabs.Content value="media" className={styles.tabContent}>
             {hasMedia && (
               <div className={styles.actionsRow}>
-                <Button variant="link" size="sm" onClick={handleSelectAll} data-testid="select-all-btn">
+                <Button variant="link" size="sm" onClick={handleSelectAll} data-cell-id="select-all-btn">
                   {allSelected ? 'Deselect All' : 'Select All'}
                 </Button>
-                <Button variant="link" size="sm" onClick={handleDownload} data-testid="download-button">
+                <Button variant="link" size="sm" onClick={handleDownload} data-cell-id="download-button">
                   {selectionCount > 0 ? `Download (${selectionCount})` : 'Download All'}
                 </Button>
               </div>
             )}
-            <div className={styles.mediaList} role="list" data-testid="media-section">
+            <div className={styles.mediaList} role="list" data-cell-id="media-section">
               {hasMedia ? (
                 <>
                   {videos.map((video) => (
@@ -362,7 +362,7 @@ export function AppRedesigned(): React.JSX.Element {
           </Tabs.Content>
 
           <Tabs.Content value="downloads" className={styles.tabContent}>
-            <div className={styles.downloadsList} role="list" data-testid="downloads-section">
+            <div className={styles.downloadsList} role="list" data-cell-id="downloads-section">
               {downloads.length > 0 ? (
                 downloads.map((download) => (
                   <DownloadCard

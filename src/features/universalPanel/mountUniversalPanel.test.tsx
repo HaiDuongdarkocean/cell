@@ -13,10 +13,10 @@ interface MockSettingsDialogContentProps {
 
 jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
   SettingsDialogContent: ({ settings, onChange }: MockSettingsDialogContentProps) => (
-    <div data-testid="settings-dialog-content">
+    <div data-cell-id="settings-dialog-content">
       <button
         type="button"
-        data-testid="settings-first-control"
+        data-cell-id="settings-first-control"
         onClick={() => onChange?.(settings as Settings)}
       >
         First control
@@ -28,11 +28,11 @@ jest.mock('@/features/settings/ui/SettingsDialogContent', () => ({
 jest.mock('./tabs/DictionaryTab', () => ({
   DictionaryTab: (props: { initialTerm?: string; prefill?: { term?: string } | null }) => (
     <div
-      data-testid="dictionary-tab"
+      data-cell-id="dictionary-tab"
       data-initial-term={props.initialTerm ?? ''}
       data-prefill-term={props.prefill?.term ?? ''}
     >
-      <div data-testid="dictionary-panel">Dictionary panel</div>
+      <div data-cell-id="dictionary-panel">Dictionary panel</div>
     </div>
   ),
 }));
@@ -75,8 +75,8 @@ beforeAll(() => {
 function getByTestId(testId: string): HTMLElement {
   const host = document.getElementById('cell-universal-panel-host');
   const root = host?.shadowRoot ?? host;
-  const element = root?.querySelector(`[data-testid="${testId}"]`) as HTMLElement | null;
-  if (!element) throw new Error(`Unable to find element by: [data-testid="${testId}"]`);
+  const element = root?.querySelector(`[data-cell-id="${testId}"]`) as HTMLElement | null;
+  if (!element) throw new Error(`Unable to find element by: [data-cell-id="${testId}"]`);
   return element;
 }
 

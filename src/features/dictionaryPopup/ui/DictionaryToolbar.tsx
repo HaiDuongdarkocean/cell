@@ -28,7 +28,7 @@ export function DictionaryToolbar({
   counts,
 }: DictionaryToolbarProps): React.JSX.Element {
   return (
-    <div className={styles.cellToolbar} role="tablist" aria-label="Dictionary materials" data-testid="dictionary-toolbar">
+    <div className={styles.cellToolbar} role="tablist" aria-label="Dictionary materials" data-cell-id="dictionary-toolbar">
       {TABS.map((tab) => {
         const active = activeTab === tab.key;
         const count = counts[tab.key] ?? 0;
@@ -43,7 +43,7 @@ export function DictionaryToolbar({
             title={tab.label}
             className={`btn ${active ? 'btn--primary' : 'btn--ghost'} ${styles.cellToolbarTab}`}
             onClick={() => onSelect(tab.key)}
-            data-testid={`dictionary-tab-${tab.key}`}
+            data-cell-id={`dictionary-tab-${tab.key}`}
           >
             <Icon name={tab.icon} size={20} />
             <span className={`${styles.cellToolbarLabel} ${styles.cellLabel}`}>{tab.label}</span>

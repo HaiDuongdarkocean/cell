@@ -54,7 +54,7 @@ afterAll(() => {
 });
 
 function Child(): React.JSX.Element {
-  return <div data-testid="child">Hello</div>;
+  return <div data-cell-id="child">Hello</div>;
 }
 
 describe('ThemeProvider', () => {

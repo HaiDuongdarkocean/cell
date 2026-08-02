@@ -14,7 +14,7 @@ export function DeleteConfirmModal({ resource, onConfirm, onCancel }: DeleteConf
   const footer = (
     <>
       <Button variant="outline" onClick={onCancel}>Hủy bỏ</Button>
-      <Button variant="destructive" onClick={onConfirm} data-testid="confirm-delete">Xóa</Button>
+      <Button variant="destructive" onClick={onConfirm} data-cell-id="confirm-delete">Xóa</Button>
     </>
   );
 
@@ -25,7 +25,7 @@ export function DeleteConfirmModal({ resource, onConfirm, onCancel }: DeleteConf
       title="Xác nhận xóa"
       description={`Xóa "${resource.name}" (${resource.wordCount} mục)? Hành động này không thể hoàn tác.`}
       footer={footer}
-      data-testid="delete-confirm-modal"
+      data-cell-id="delete-confirm-modal"
     />
   );
 }

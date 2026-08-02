@@ -13,7 +13,7 @@ function makeProps(overrides: Partial<NavClusterSettings> = {}) {
 }
 
 describe('NavClusterSettingsPanel (ADR-018 D2, spec §A9)', () => {
-  it('renders panel with data-testid', () => {
+  it('renders panel with data-cell-id', () => {
     render(<NavClusterSettingsPanel {...makeProps()} />);
     expect(screen.getByTestId('nav-cluster-settings-panel')).toBeInTheDocument();
   });

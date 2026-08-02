@@ -30,7 +30,7 @@ export function ThemePanel(): React.JSX.Element {
   const contrastResult = validateTheme(config.customColors[resolved]);
 
   return (
-    <div className={styles.panel} data-testid="theme-panel">
+    <div className={styles.panel} data-cell-id="theme-panel">
       <div className={styles.section}>
         <h2 className={styles.heading}>Mode</h2>
         <ModeCards value={mode} onChange={switchMode} />
@@ -55,14 +55,14 @@ export function ThemePanel(): React.JSX.Element {
       <div className={styles.section}>
         <h2 className={styles.heading}>Reset</h2>
         {!confirmReset ? (
-          <Button variant="destructive" onClick={() => setConfirmReset(true)} data-testid="theme-reset-btn">
+          <Button variant="destructive" onClick={() => setConfirmReset(true)} data-cell-id="theme-reset-btn">
             Reset to defaults
           </Button>
         ) : (
-          <div className={styles.confirmRow} data-testid="theme-reset-confirm">
+          <div className={styles.confirmRow} data-cell-id="theme-reset-confirm">
             <span className={styles.confirmText}>Reset all colors to defaults?</span>
-            <Button variant="destructive" onClick={() => { resetTheme(); setConfirmReset(false); }} data-testid="theme-reset-yes">Yes, reset</Button>
-            <Button variant="secondary" onClick={() => setConfirmReset(false)} data-testid="theme-reset-no">Cancel</Button>
+            <Button variant="destructive" onClick={() => { resetTheme(); setConfirmReset(false); }} data-cell-id="theme-reset-yes">Yes, reset</Button>
+            <Button variant="secondary" onClick={() => setConfirmReset(false)} data-cell-id="theme-reset-no">Cancel</Button>
           </div>
         )}
       </div>

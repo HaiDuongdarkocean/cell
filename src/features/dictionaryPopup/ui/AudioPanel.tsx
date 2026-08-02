@@ -26,7 +26,7 @@ export function AudioPanel({
   const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
 
   return (
-    <div className={styles.cellAudio} data-testid="dictionary-audio-panel">
+    <div className={styles.cellAudio} data-cell-id="dictionary-audio-panel">
       {loading ? (
         <AudioSkeleton />
       ) : error ? (

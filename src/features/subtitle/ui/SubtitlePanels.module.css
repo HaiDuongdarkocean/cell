@@ -143,11 +143,15 @@
 }
 
 .panelLayer {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  box-sizing: border-box;
   pointer-events: auto;
-  z-index: 1;
+  z-index: 2147483647;
 }
 
 .offsetRow {

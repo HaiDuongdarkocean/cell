@@ -53,7 +53,7 @@ export function NavClusterSettingsPanel({
   };
 
   return (
-    <div className={styles.container} data-testid="nav-cluster-settings-panel">
+    <div className={styles.container} data-cell-id="nav-cluster-settings-panel">
       {/* Button size */}
       <div className={styles.field}>
         <div className={styles.sliderHeader}>
@@ -68,7 +68,7 @@ export function NavClusterSettingsPanel({
           step={1}
           onChange={handleButtonSizeChange}
           aria-label="Nav cluster button size"
-          data-testid="nav-cluster-button-size"
+          data-cell-id="nav-cluster-button-size"
         />
       </div>
 
@@ -86,7 +86,7 @@ export function NavClusterSettingsPanel({
           step={0.05}
           onChange={handleTextOpacityChange}
           aria-label="Nav cluster text opacity"
-          data-testid="nav-cluster-text-opacity"
+          data-cell-id="nav-cluster-text-opacity"
         />
       </div>
 
@@ -104,7 +104,7 @@ export function NavClusterSettingsPanel({
           step={0.05}
           onChange={handleBgOpacityChange}
           aria-label="Nav cluster background opacity"
-          data-testid="nav-cluster-bg-opacity"
+          data-cell-id="nav-cluster-bg-opacity"
         />
       </div>
 
@@ -123,7 +123,7 @@ export function NavClusterSettingsPanel({
                 size="sm"
                 onClick={() => handlePreset(preset)}
                 aria-pressed={isActive}
-                data-testid={`nav-cluster-preset-${preset.label.toLowerCase()}`}
+                data-cell-id={`nav-cluster-preset-${preset.label.toLowerCase()}`}
               >
                 {preset.label}
               </Button>

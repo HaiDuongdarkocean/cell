@@ -95,7 +95,7 @@ export function CardCreatorDialogContent({
       disabled
       aria-label="Card Creator settings coming soon"
       title="Card Creator settings coming soon"
-      data-testid="cc-settings"
+      data-cell-id="cc-settings"
     >
       <Icon name="settings" />
     </Button>
@@ -109,7 +109,7 @@ export function CardCreatorDialogContent({
       disabled={!hasQueue}
       aria-label={hasQueue ? (queueSidebarOpen ? 'Hide card queue' : 'Show card queue') : 'Card queue is empty'}
       title={hasQueue ? (queueSidebarOpen ? 'Hide card queue' : 'Show card queue') : 'Card queue is empty'}
-      data-testid="cc-queue-toggle"
+      data-cell-id="cc-queue-toggle"
     >
       <Icon name="panelRight" />
     </Button>
@@ -119,7 +119,7 @@ export function CardCreatorDialogContent({
     <div className={containerClass}>
       {/* Alert: no recent card */}
       {showNoRecentAlert && (
-        <div className={styles['cc-dialog__alert']} role="status" data-testid="cc-alert-no-recent">
+        <div className={styles['cc-dialog__alert']} role="status" data-cell-id="cc-alert-no-recent">
           <Icon name="info" className={styles['cc-dialog__alert-icon']} />
           <span>No existing card found in this deck. Fill in the fields below to create a new card.</span>
         </div>
@@ -129,7 +129,7 @@ export function CardCreatorDialogContent({
         <div
           className={`${styles['cc-dialog__alert']} ${styles['cc-dialog__alert--error']}`}
           role="alert"
-          data-testid="cc-alert-error"
+          data-cell-id="cc-alert-error"
         >
           <Icon name="alertCircle" className={styles['cc-dialog__alert-icon']} />
           <span>Failed to load from AnkiConnect: {loadError}. Check the URL in Settings → Card Creator.</span>
@@ -147,7 +147,7 @@ export function CardCreatorDialogContent({
               options={noteTypes.map((n) => ({ value: n, label: n }))}
               onChange={changeNoteType}
               aria-label="Note type"
-              data-testid="cc-note-type"
+              data-cell-id="cc-note-type"
             />
           </div>
           <div className={styles['cc-dialog__field']}>
@@ -157,7 +157,7 @@ export function CardCreatorDialogContent({
               options={decks.map((d) => ({ value: d, label: d }))}
               onChange={(d) => void changeDeck(d)}
               aria-label="Deck"
-              data-testid="cc-deck"
+              data-cell-id="cc-deck"
             />
           </div>
         </div>
@@ -219,7 +219,7 @@ export function CardCreatorDialogContent({
             aria-label="Sentence translation"
             dataId="cc-sentence-translation"
           />
-          <Button variant="ghost" size="sm" onClick={translateSentenceField} data-testid="cc-translate">
+          <Button variant="ghost" size="sm" onClick={translateSentenceField} data-cell-id="cc-translate">
             Translate
           </Button>
         </FieldRow>
@@ -358,7 +358,7 @@ export function CardCreatorDialogContent({
             ]}
             onChange={(m) => updateDraft({ mediaUpdateMode: m as 'overwrite' | 'append' | 'skip' })}
             aria-label="Update mode"
-            data-testid="cc-update-mode"
+            data-cell-id="cc-update-mode"
           />
         </div>
         <div className={styles['cc-dialog__footer-actions']}>
@@ -370,7 +370,7 @@ export function CardCreatorDialogContent({
             size="sm"
             onClick={() => submit('add')}
             disabled={submitting}
-            data-testid="cc-add"
+            data-cell-id="cc-add"
           >
             Add
           </Button>
@@ -379,7 +379,7 @@ export function CardCreatorDialogContent({
             size="sm"
             onClick={() => submit('update')}
             disabled={submitting || recentNoteId === null}
-            data-testid="cc-update"
+            data-cell-id="cc-update"
           >
             Update
           </Button>
@@ -390,7 +390,7 @@ export function CardCreatorDialogContent({
 
   if (isPanel) {
     return (
-      <div className={styles['cc-dialog--panel']} data-testid="card-creator-content">
+      <div className={styles['cc-dialog--panel']} data-cell-id="card-creator-content">
         <div className={styles['cc-dialog__panel-header']}>
           {headerSettings}
           <span className={styles['cc-dialog__panel-title']}>CARD CREATOR</span>
@@ -415,7 +415,7 @@ export function CardCreatorDialogContent({
   }
 
   return (
-    <div className={hasQueue ? styles['cc-dialog__with-queue'] : undefined} data-testid="card-creator-content">
+    <div className={hasQueue ? styles['cc-dialog__with-queue'] : undefined} data-cell-id="card-creator-content">
       {body}
       {hasQueue && queueSidebarOpen && (
         <QueueSidebar

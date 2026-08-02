@@ -54,7 +54,7 @@ function ItemRow({
   return (
     <button
       type="button"
-      data-testid={`manager-item-${role}-${index}`}
+      data-cell-id={`manager-item-${role}-${index}`}
       role="option"
       aria-selected={active}
       className={[styles.item, active && styles.itemActive].filter(Boolean).join(' ')}
@@ -113,13 +113,13 @@ function SectionPanel({
   };
 
   return (
-    <section className={styles.section} data-role={role} data-testid="manager-section">
+    <section className={styles.section} data-role={role} data-cell-id="manager-section">
       <button
         type="button"
         className={styles.sectionHeader}
         onClick={() => setState({ ...state, expanded: !state.expanded })}
         aria-expanded={state.expanded}
-        data-testid="manager-section-header"
+        data-cell-id="manager-section-header"
         data-role={role}
       >
         <span
@@ -137,7 +137,7 @@ function SectionPanel({
       </button>
 
       {state.expanded && (
-        <div className={styles.sectionBody} data-testid="manager-section-body" data-role={role}>
+        <div className={styles.sectionBody} data-cell-id="manager-section-body" data-role={role}>
           {items.length === 0 ? (
             <div className={styles.empty}>No subtitles available.</div>
           ) : (
@@ -163,7 +163,7 @@ function SectionPanel({
                 onChange={(e) => setState({ ...state, offset: e.target.value })}
                 onBlur={handleOffset}
                 aria-label={`${label} offset in seconds`}
-                data-testid={`manager-offset-input-${role}`}
+                data-cell-id={`manager-offset-input-${role}`}
               />
               <Button size="sm" variant="outline" onClick={handleOffset}>
                 Apply offset
@@ -174,7 +174,7 @@ function SectionPanel({
                 size="sm"
                 variant="ghost"
                 onClick={() => onImport(role)}
-                data-testid={`manager-import-${role}`}
+                data-cell-id={`manager-import-${role}`}
               >
                 Import
               </Button>
@@ -210,13 +210,13 @@ export function SubtitleManagerPanel({
   });
 
   return (
-    <div className={styles.panel} role="dialog" aria-label="Subtitle manager" data-testid="subtitle-manager-panel">
+    <div className={styles.panel} role="dialog" aria-label="Subtitle manager" data-cell-id="subtitle-manager-panel">
       <div className={styles.header}>
         <span className={styles.title}>Subtitle Manager</span>
         <IconButton
           aria-label="Close subtitle manager"
           onClick={onClose}
-          data-testid="subtitle-manager-close"
+          data-cell-id="subtitle-manager-close"
         >
           <Icon name="x" size={16} />
         </IconButton>
@@ -251,7 +251,7 @@ export function SubtitleManagerPanel({
             size="sm"
             variant="secondary"
             onClick={onGenerateNative}
-            data-testid="manager-generate-native"
+            data-cell-id="manager-generate-native"
             disabled={generateNativeDisabled}
           >
             Generate native

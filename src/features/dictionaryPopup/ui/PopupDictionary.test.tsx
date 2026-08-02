@@ -5,9 +5,9 @@ import { PopupDictionary } from './PopupDictionary';
 jest.mock('./DictionaryPanelView', () => ({
   DictionaryPanelView: function DictionaryPanelViewMock(props: Record<string, unknown>) {
     return (
-      <div data-testid="dictionary-panel-mock">
-        <span data-testid="mock-lang">{props.langCode as string}</span>
-        <span data-testid="mock-initial">{(props.initialTerm as string | undefined) ?? ''}</span>
+      <div data-cell-id="dictionary-panel-mock">
+        <span data-cell-id="mock-lang">{props.langCode as string}</span>
+        <span data-cell-id="mock-initial">{(props.initialTerm as string | undefined) ?? ''}</span>
       </div>
     );
   },

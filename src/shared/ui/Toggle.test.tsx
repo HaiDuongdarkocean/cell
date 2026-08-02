@@ -47,7 +47,7 @@ describe('Toggle', () => {
     expect(screen.getByRole('switch')).toHaveAttribute('name', 'notifications');
   });
 
-  it('forwards id and data-testid', () => {
+  it('forwards id and data-cell-id', () => {
     render(<Toggle checked={false} onChange={() => {}} ariaLabel="Test" id="my-toggle" dataTestId="toggle-el" />);
     const toggle = screen.getByRole('switch');
     expect(toggle).toHaveAttribute('id', 'my-toggle');

@@ -1,4 +1,9 @@
 import '@testing-library/jest-dom';
+import { configure } from '@testing-library/dom';
+
+// Use the project's stable `data-cell-id` attribute as the test id selector
+// instead of the default `data-testid`.
+configure({ testIdAttribute: 'data-cell-id' });
 
 // Polyfill structuredClone for jsdom (Node has it, jsdom env doesn't expose).
 // Used by fake-indexeddb for cloning values during IDB operations.

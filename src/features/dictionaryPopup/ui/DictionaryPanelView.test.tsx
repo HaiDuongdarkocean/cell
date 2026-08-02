@@ -20,7 +20,7 @@ jest.mock('./CandidateView', () => ({
       'article',
       {
         id: `dictionary-candidate-${props.index}`,
-        'data-testid': `dictionary-candidate-${props.index}`,
+        'data-cell-id': `dictionary-candidate-${props.index}`,
         'data-candidate-term': props.candidate.term,
       },
       props.candidate.term,

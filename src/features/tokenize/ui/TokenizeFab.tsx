@@ -63,7 +63,7 @@ export function TokenizeFab({ store, onOpenDictionary, className }: TokenizeFabP
     <div
       ref={hostRef}
       className={`${styles.host} ${className ?? ''}`}
-      data-testid="tokenize-fab"
+      data-cell-id="tokenize-fab"
     >
       <Button
         variant="primary"
@@ -71,7 +71,7 @@ export function TokenizeFab({ store, onOpenDictionary, className }: TokenizeFabP
         className={styles.fab}
         aria-label="Tokenize"
         aria-expanded={isOpen}
-        data-testid="tokenize-fab-button"
+        data-cell-id="tokenize-fab-button"
         onClick={handleToggle}
         leadingIcon={<Icon name="settings" size={18} />}
       />
@@ -81,7 +81,7 @@ export function TokenizeFab({ store, onOpenDictionary, className }: TokenizeFabP
           className={styles.panel}
           role="dialog"
           aria-label="Tokenize settings"
-          data-testid="tokenize-fab-panel"
+          data-cell-id="tokenize-fab-panel"
         >
           <div className={styles.panelBody}>
             {TOGGLE_ITEMS.map((item) => {
@@ -109,7 +109,7 @@ export function TokenizeFab({ store, onOpenDictionary, className }: TokenizeFabP
                 variant="outline"
                 size="sm"
                 className={styles.dictButton}
-                data-testid="tokenize-fab-dictionary"
+                data-cell-id="tokenize-fab-dictionary"
                 onClick={onOpenDictionary}
                 leadingIcon={<Icon name="bookOpen" size={16} />}
               >

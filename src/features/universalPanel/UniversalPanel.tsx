@@ -86,7 +86,7 @@ export function UniversalPanel({
       className={styles.overlay}
       onClick={handleBackdropClick}
       role="presentation"
-      data-testid="universal-panel-backdrop"
+      data-cell-id="universal-panel-backdrop"
     >
       <div
         ref={panelRef}
@@ -101,12 +101,12 @@ export function UniversalPanel({
             setIsClosing(false);
           }
         }}
-        data-testid="universal-panel"
+        data-cell-id="universal-panel"
       >
         <nav
           className={styles.tabBar}
           aria-label="Panel tabs"
-          data-testid="universal-panel-tab-bar"
+          data-cell-id="universal-panel-tab-bar"
         >
           <div className={styles.tabGroup}>
             {TABS.map((tab) => (
@@ -118,7 +118,7 @@ export function UniversalPanel({
                 aria-label={tab.label}
                 aria-pressed={activeTab === tab.key}
                 onClick={() => onTabChange(tab.key)}
-                data-testid={`universal-panel-tab-${tab.key}`}
+                data-cell-id={`universal-panel-tab-${tab.key}`}
               >
                 <Icon name={tab.icon} size={20} />
               </IconButton>
@@ -133,7 +133,7 @@ export function UniversalPanel({
             onClose={onClose}
           />
 
-          <div className={styles.content} data-testid={`universal-panel-content-${activeTab}`}>
+          <div className={styles.content} data-cell-id={`universal-panel-content-${activeTab}`}>
             {activeTab === 'dictionary' ? dictionaryPanel : settingsPanel}
           </div>
         </div>

@@ -55,7 +55,7 @@ describe('Button', () => {
 
   it('renders leading and trailing icons', () => {
     render(
-      <Button leadingIcon={<span data-testid="leading">L</span>} trailingIcon={<span data-testid="trailing">T</span>}>
+      <Button leadingIcon={<span data-cell-id="leading">L</span>} trailingIcon={<span data-cell-id="trailing">T</span>}>
         Label
       </Button>,
     );

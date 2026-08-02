@@ -118,7 +118,7 @@ export function DictionaryPopupSettingsPanel({
           max={200}
           step={1}
           aria-label="Orbital badge size"
-          data-testid="dp-badge-pointer-size"
+          data-cell-id="dp-badge-pointer-size"
           onChange={(value) => {
             const base = settings.badgePointerTrigger ?? DEFAULT_BADGE_POINTER_TRIGGER;
             update({

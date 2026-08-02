@@ -223,11 +223,11 @@ export function DictionaryPanelView({
   }, [allCandidates, onCandidateChange]);
 
   return (
-    <div className={styles.dictionaryPanel} data-testid="dictionary-panel">
+    <div className={styles.dictionaryPanel} data-cell-id="dictionary-panel">
       <div className={styles.searchRow}>
         <SearchField
           id={SEARCH_INPUT_ID}
-          data-testid="dictionary-search-input"
+          data-cell-id="dictionary-search-input"
           value={searchTerm}
           onChange={handleSearchChange}
           onKeyDown={handleSearchKeyDown}
@@ -238,14 +238,14 @@ export function DictionaryPanelView({
       </div>
 
       {searchHistory.length > 0 && (
-        <section className={styles.searchHistory} aria-label="Recent searches" data-testid="dictionary-search-history">
+        <section className={styles.searchHistory} aria-label="Recent searches" data-cell-id="dictionary-search-history">
           <button
             type="button"
             className={`icon-btn icon-btn--xs ${styles.searchHistoryClear}`}
             aria-label="Clear recent searches"
             title="Clear recent searches"
             onClick={handleClearHistory}
-            data-testid="dictionary-search-history-clear"
+            data-cell-id="dictionary-search-history-clear"
           >
             <Icon name="trash" size={16} />
           </button>
@@ -278,21 +278,21 @@ export function DictionaryPanelView({
       )}
 
       {panel.isLoading && !panel.currentResult && (
-        <div className={styles.loading} data-testid="dictionary-loading">
+        <div className={styles.loading} data-cell-id="dictionary-loading">
           <Spinner size="md" />
           <span>Looking up {panel.searchTerm}…</span>
         </div>
       )}
 
       {panel.error && (
-        <div className={styles.error} role="alert" data-testid="dictionary-error">
+        <div className={styles.error} role="alert" data-cell-id="dictionary-error">
           <Icon name="alertCircle" size={20} />
           <span>{panel.error}</span>
         </div>
       )}
 
       {!panel.isLoading && !panel.error && !panel.currentResult && (
-        <div className={styles.dictionaryEmpty} role="status" data-testid="dictionary-empty">
+        <div className={styles.dictionaryEmpty} role="status" data-cell-id="dictionary-empty">
           <div className={styles.dictionaryEmptyIcon} aria-hidden="true">
             <Icon name="bookOpen" size={36} />
           </div>
@@ -303,7 +303,7 @@ export function DictionaryPanelView({
 
       {allCandidates.length > 0 && (
         <>
-          <div className={styles.candidateList} data-testid="dictionary-candidate-list">
+          <div className={styles.candidateList} data-cell-id="dictionary-candidate-list">
             {allCandidates.map((candidate, idx) => (
               <CandidateView
                 key={`${candidate.term}-${idx}`}
@@ -330,7 +330,7 @@ export function DictionaryPanelView({
                     className={`btn ${idx === activeChipIndex ? 'btn--primary' : 'btn--outline'} ${styles.cellChip}`}
                     aria-current={idx === activeChipIndex ? 'true' : undefined}
                     onClick={() => handleChipClick(idx)}
-                    data-testid={`dictionary-candidate-chip-${idx}`}
+                    data-cell-id={`dictionary-candidate-chip-${idx}`}
                   >
                     {c.term}
                   </button>

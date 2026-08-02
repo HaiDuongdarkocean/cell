@@ -55,7 +55,7 @@ function TestApp(): React.JSX.Element {
   return (
     <>
       {/* Hidden video for capture context */}
-      <video ref={videoRef} style={{ display: 'none' }} data-testid="mock-video" />
+      <video ref={videoRef} style={{ display: 'none' }} data-cell-id="mock-video" />
 
       {/* Desktop dialog */}
       <CardCreatorDialog

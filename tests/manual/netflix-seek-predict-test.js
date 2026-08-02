@@ -67,7 +67,7 @@
   // Lấy cues từ CueList component props (fiber.memoizedProps.cues).
   // Trả về 934 cues từ TTML parse — khớp với bilingualCues của content script.
   function extractRealCues() {
-    const all = document.querySelectorAll('[data-testid="cue-item"]');
+    const all = document.querySelectorAll('[data-cell-id="cue-item"]');
     if (all.length === 0) {
       console.error('[seek-test] no cue items in DOM. Are you on the Side Panel page?');
       return null;

@@ -9,8 +9,8 @@ const TOKENIZE_OFF: TokenizePanelState = { enabled: false, showStatus: false, sh
 const TOKENIZE_ON: TokenizePanelState = { enabled: true, showStatus: true, showFrequency: true };
 
 describe('UniversalPanel component', () => {
-  const dictionaryPanel = <div data-testid="dict-content">Dictionary Content</div>;
-  const settingsPanel = <div data-testid="settings-content">Settings Content</div>;
+  const dictionaryPanel = <div data-cell-id="dict-content">Dictionary Content</div>;
+  const settingsPanel = <div data-cell-id="settings-content">Settings Content</div>;
 
   beforeEach(() => {
     document.body.innerHTML = '';
