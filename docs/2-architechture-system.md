@@ -1211,7 +1211,7 @@ Mục tiêu: nhận diện danh sách phụ đề từ 9 site families (cinesrc,
 | `content/content-script.ts` | messages, pageScanner, subtitle features | `manifest.json` (ISOLATED) | Relay `__CELL_SUBTITLE_DISCOVERY` từ MAIN-world; scan iframe `src*="subs="` và biến HTML `playerjsSubtitle` |
 | `content/fetchInterceptor.iife.ts` | — | `manifest.json` (MAIN) | Patch `fetch` gửi subtitle URL và response body listing/HLS qua `__CELL_SUBTITLE_DISCOVERY` |
 | `content/subtitleDiscovery-main-world.iife.ts` | — | `manifest.json` (MAIN, document_idle) | Poll các player globals (`the_subtitles`, `playerjsSubtitle`) trong mọi frame |
-| `features/detection/subtitleDiscovery/*` | detection, languageRegistry, message/schema | `background/subtitleDiscoveryService.ts`, `features/detection/index.ts` | Pipeline: signals, schemas, adapters (JSON listing, iframe hash, HTML variable, player state, HLS, encrypted stub), candidate/identity helpers |
+| `features/detection/subtitleDiscovery/*` | detection, languageRegistry, message/schema | `background/subtitleDiscoveryService.ts`, `features/detection/index.ts` | Pipeline: signals, schemas, adapters (JSON listing, iframe hash, HTML variable, player state, HLS, videasy encrypted decoder), candidate/identity helpers |
 
 ### Nguồn tín hiệu (7 loại signal)
 
@@ -1231,11 +1231,11 @@ Mục tiêu: nhận diện danh sách phụ đề từ 9 site families (cinesrc,
 6. `myasiantv-html-variable` — parse `[label]url,…` từ HTML hoặc player-state.
 7. `noxx-player-state` — parse `[label]url` array.
 8. `onflix-hls` — parse `EXT-X-MEDIA:TYPE=SUBTITLES`.
-9. `videasy-encrypted` — stub unresolved (chưa có decoder).
+9. `videasy-encrypted` — decrypt captured `sources-with-title` response using seed + tmdbId from URL, emit ready candidates.
 
 ### Chú ý kỹ thuật
 
 - `resolveRelativeUrl` dùng `new URL(relative, base)`; adapter tự cung cấp `baseUrl` cho từng nguồn.
 - `fetchText` dùng `offscreenFetch` để tránh SW idle eviction (M15); kèm DNR referer rewrite.
 - Bảo mật: content script gửi `signal.origin`, background validate qua Zod; `MessageBus` inject `tabId`/`frameId` từ sender.
-- Giới hạn: videasy chưa decrypt; onflix cần test HLS server-variant thực tế.
+- Giới hạn: onflix cần test HLS server-variant thực tế.

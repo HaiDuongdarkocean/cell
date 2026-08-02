@@ -45,7 +45,7 @@ tasks/          # Active plan & task checklist (current sprint)
 
 ## Lịch sử cập nhật wiki
 
-**2026-07-XX**: Thêm generic subtitle-list discovery (T1-T12 E2E) vào `docs/2-architechture-system.md` và `tasks/todo-subtitle-list-discovery-e2e.md`. Pipeline/protocol adapters: cinesrc, kisskh, lookmovie, broodingmovies, lunastream, MyAsianTV, noxx, onflix HLS; videasy encrypted còn blocker decoder.
+**2026-08-03**: Cập nhật generic subtitle-list discovery (T1-T12 E2E). Pipeline/protocol adapters: cinesrc, kisskh, lookmovie, broodingmovies, lunastream, MyAsianTV, noxx, onflix HLS, videasy encrypted decoder.
 
 ## Lịch sử cleanup tài liệu
 

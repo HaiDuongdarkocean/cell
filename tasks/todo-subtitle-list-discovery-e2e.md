@@ -90,12 +90,12 @@ its browser/inventory acceptance criterion fails.
   - Dependencies: T3–T4.
   - Files: player-state adapter, frame bridge wiring, fixtures/browser tests.
 
-- [ ] **T9 — Encrypted adapter: moviepire/videasy**
+- [x] **T9 — Encrypted adapter: moviepire/videasy**
   - Acceptance: isolated custom XOR/PRNG decoder; deterministic vector/tamper tests; seed replay; live 85/85 background/panel; no secret logging.
   - Verify: decoder tests, headed Videasy test, `npm run typecheck`, `npm run build`, `subagent_general` Task 9 prompt.
   - Dependencies: T3–T4.
   - Files: encrypted adapter/decoder, fixtures, integration/browser tests.
-  - **Blocker**: decoder algorithm not known; live `player.videasy.to` did not trigger `sources-with-title` in stealth browser. Needs reverse engineering of Next.js player bundle or a known decoder snippet.
+  - **Status**: decoder ported from player bundle (m4uhd, cdn, vsrc, lamovie, superflix, hdmovie, meine, downloader2 all share the same PRNG). Adapter decrypts captured `sources-with-title` response using seed + tmdbId from URL; unit tests and fixture pass.
 
 - [x] **T10A — Onflix server/HLS catalog pre-audit**
   - Acceptance: enumerate SN/NC/PA/OP from the page; capture each player/HLS/VTT source; record EXT-X-MEDIA presence; produce a concrete per-server expected count.
@@ -148,6 +148,6 @@ its browser/inventory acceptance criterion fails.
   - Decision: currently emitted as `unresolved` candidates (metadata preserved) because OpenSubtitles requires a separate resolver/key. No fabricated URLs.
 - [x] T10A establishes the complete Onflix server/HLS catalog before T10 can pass.
   - Decision: partial audit done; full matrix requires NC/PA/OP/vip.opstream10.com. SN and v7 do not use HLS subtitles; fallback to `.vtt` network capture is the real path.
-- [ ] T9 establishes the moviepire/videasy XOR/PRNG decoder before E4 can be claimed.
+- [x] T9 establishes the moviepire/videasy XOR/PRNG decoder before E4 can be claimed.
 - [ ] T3A verifies existing MV3 MAIN-world/frame injection behavior in approved target browsers; manifest changes require separate approval.
 - [ ] DNR/offscreen replay works for every required Referer/Origin/token family.
