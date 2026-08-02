@@ -38,6 +38,14 @@
       "match_origin_as_fallback": true
     },
     {
+      "matches": ["<all_urls>"],
+      "js": ["src/entrypoints/content/subtitleDiscovery-main-world.iife.ts"],
+      "run_at": "document_idle",
+      "world": "MAIN",
+      "all_frames": true,
+      "match_origin_as_fallback": true
+    },
+    {
       "matches": ["*://*.youtube.com/*"],
       "js": ["src/entrypoints/content/youtube-main-world.iife.ts"],
       "run_at": "document_start",

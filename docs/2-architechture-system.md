@@ -24,6 +24,7 @@ src/
 │   └── design-system-showcase/  #   Design system showcase page — App.tsx + preview components + mock data for offline component demos
 ├── features/           # Feature domains (screaming — domain name first)
 │   ├── detection/      #   Media/subtitle/script/language detection
+│   │   └── subtitleDiscovery/  # Generic subtitle-list discovery pipeline (T1-T12 E2E): signals, adapters, schema, pipeline, candidate/identity helpers
 │   ├── whitelist/      #   Auto-download whitelist
 │   ├── transmux/       #   TS→fMP4 transmuxing (planning/execution/merging)
 │   ├── subtitle/       #   Subtitle overlay/sync/merge/bilingual (logic/ui/service)
@@ -1193,3 +1194,48 @@ downloader.downloadM3u8Streaming(playlist)
 - Đọc file này → tìm entry cần sửa → edit
 - Không cần rewrite toàn bộ, chỉ edit phần liên quan
 - Giữ format nhất quán (table, code block)
+
+---
+
+## T1-T12 Generic subtitle-list discovery (E2E)
+
+Mục tiêu: nhận diện danh sách phụ đề từ 9 site families (cinesrc, kisskh, lookmovie, broodingmovies, lunastream, MyAsianTV, noxx, moviepire/videasy, onflix) qua một pipeline chung, protocol-oriented, không branch site-specific trong `NetworkInterceptor`.
+
+### Files (cần thêm vào bảng phụ thuộc chính)
+
+| File | Import từ | Được import bở | Mô tả |
+|---|---|---|---|
+| `background/handlers/subtitleDiscovery.ts` | messages, message/schema, subtitleDiscovery, types | `background/index.ts` (registerSubtitleDiscoveryHandlers) | Handler `SUBTITLE_DISCOVERY_SIGNAL`: validate, inject tabId/frameId, gọi `SubtitleDiscoveryService.processSignal` |
+| `background/subtitleDiscoveryService.ts` | subtitleDiscovery, offscreenFetch, declarativeNetRequest, helpers, types | `background/context.ts`, `background/index.ts`, `background/handlers/subtitleDiscovery.ts`, `background/wireEvents.ts` | Service nối pipeline với offscreen fetch, DNR referer rewrite, `networkInterceptor` inventory |
+| `background/networkInterceptor.ts` | videoDetector, subtitleDetector, types | `background/index.ts`, `background/wireEvents.ts` | `onListingDetected` ngoài Stremio còn route các listing URL của generic discovery |
+| `content/content-script.ts` | messages, pageScanner, subtitle features | `manifest.json` (ISOLATED) | Relay `__CELL_SUBTITLE_DISCOVERY` từ MAIN-world; scan iframe `src*="subs="` và biến HTML `playerjsSubtitle` |
+| `content/fetchInterceptor.iife.ts` | — | `manifest.json` (MAIN) | Patch `fetch` gửi subtitle URL và response body listing/HLS qua `__CELL_SUBTITLE_DISCOVERY` |
+| `content/subtitleDiscovery-main-world.iife.ts` | — | `manifest.json` (MAIN, document_idle) | Poll các player globals (`the_subtitles`, `playerjsSubtitle`) trong mọi frame |
+| `features/detection/subtitleDiscovery/*` | detection, languageRegistry, message/schema | `background/subtitleDiscoveryService.ts`, `features/detection/index.ts` | Pipeline: signals, schemas, adapters (JSON listing, iframe hash, HTML variable, player state, HLS, encrypted stub), candidate/identity helpers |
+
+### Nguồn tín hiệu (7 loại signal)
+
+- `network-response`: response body từ `webRequest` hoặc fetch interceptor (JSON listing, HLS, encrypted).
+- `hls-playlist`: master playlist `.m3u8` đã có body (khi cần trigger trực tiếp).
+- `frame-source`: URL iframe chứa hash/query `subs=` (lunastream/moviesapi).
+- `document-html`: HTML chứa biến `playerjsSubtitle` (MyAsianTV/kisscloud fallback).
+- `player-state`: giá trị global từ player (noxx `the_subtitles`, MyAsianTV `playerjsSubtitle`).
+
+### Adapter registry (default)
+
+1. `cinesrc-listing` — JSON array.
+2. `kisskh-listing` — JSON array.
+3. `lookmovie-listing` — JSON object, split `subtitles[]` (string/uple).
+4. `broodingmovies-listing` — JSON object, `default_subs[]`.
+5. `lunastream-iframe-hash` — decode hash `subs=`.
+6. `myasiantv-html-variable` — parse `[label]url,…` từ HTML hoặc player-state.
+7. `noxx-player-state` — parse `[label]url` array.
+8. `onflix-hls` — parse `EXT-X-MEDIA:TYPE=SUBTITLES`.
+9. `videasy-encrypted` — stub unresolved (chưa có decoder).
+
+### Chú ý kỹ thuật
+
+- `resolveRelativeUrl` dùng `new URL(relative, base)`; adapter tự cung cấp `baseUrl` cho từng nguồn.
+- `fetchText` dùng `offscreenFetch` để tránh SW idle eviction (M15); kèm DNR referer rewrite.
+- Bảo mật: content script gửi `signal.origin`, background validate qua Zod; `MessageBus` inject `tabId`/`frameId` từ sender.
+- Giới hạn: videasy chưa decrypt; onflix cần test HLS server-variant thực tế.

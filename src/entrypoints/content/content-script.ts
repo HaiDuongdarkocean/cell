@@ -96,6 +96,23 @@ window.addEventListener('message', (event) => {
       },
     });
   }
+  // === Generic subtitle-list discovery bridge (MAIN-world → background) ===
+  if (data?.type === '__CELL_SUBTITLE_DISCOVERY' && (data as { signal?: unknown }).signal) {
+    const signal = (data as { signal: import('@/features/detection/subtitleDiscovery').SubtitleSignal }).signal;
+    const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    void sendMessage({
+      type: MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL,
+      payload: {
+        nonce,
+        origin: location.origin,
+        signal,
+      },
+    }).catch((e) => console.error('[content-script] SUBTITLE_DISCOVERY_SIGNAL bg error', e));
+    return;
+  }
+
   // === iQIYI MAIN-world bridge (ADR-028) ===
   // iqiyi-main-world.iife.ts reads `window.playerObject.stl` (MAIN world only)
   // and posts subtitle tracks. Relay to background as DETECTED_SUBTITLES with
@@ -186,9 +203,63 @@ function runPageScan(): void {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => runPageScan());
+  document.addEventListener('DOMContentLoaded', () => {
+    runPageScan();
+    runSubtitleDiscoveryScan();
+  });
 } else {
   runPageScan();
+  runSubtitleDiscoveryScan();
+}
+
+function runSubtitleDiscoveryScan(): void {
+  // 1. Iframe hash sources (lunastream/moviesapi → flixcdn.cyou).
+  const iframes = document.querySelectorAll('iframe[src*="subs="]');
+  for (const iframe of iframes) {
+    const frameUrl = iframe.getAttribute('src');
+    if (!frameUrl) continue;
+    const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    void sendMessage({
+      type: MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL,
+      payload: {
+        nonce,
+        origin: location.origin,
+        signal: {
+          kind: 'frame-source',
+          frameUrl,
+          ownerUrl: location.href,
+          tabId: 0,
+          frameId: 0,
+          initiator: location.href,
+        },
+      },
+    });
+  }
+
+  // 2. HTML player variable fallback (MyAsianTV/kisscloud).
+  const html = document.documentElement.outerHTML;
+  if (html.includes('playerjsSubtitle')) {
+    const nonce = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    void sendMessage({
+      type: MESSAGE_TYPES.SUBTITLE_DISCOVERY_SIGNAL,
+      payload: {
+        nonce,
+        origin: location.origin,
+        signal: {
+          kind: 'document-html',
+          url: location.href,
+          html: html.slice(0, 500_000),
+          tabId: 0,
+          frameId: 0,
+          initiator: location.href,
+        },
+      },
+    });
+  }
 }
 
 // Find video element and init overlay (defer until DOM ready, observe SPA late mounts)

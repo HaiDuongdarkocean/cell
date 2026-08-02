@@ -54,3 +54,5 @@ export {
   LANGUAGE_PROFILES,
   type LanguageProfile,
 } from './logic/languageDetector';
+
+export * as subtitleDiscovery from './subtitleDiscovery';

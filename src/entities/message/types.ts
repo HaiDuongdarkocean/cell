@@ -82,7 +82,8 @@ export type MessageType =
   | 'LOOKUP_REQUEST'
   | 'LOOKUP_RESULT'
   | 'LOOKUP_CANCEL'
-  | 'CAPTURE_TAB_SCREENSHOT';
+  | 'CAPTURE_TAB_SCREENSHOT'
+  | 'SUBTITLE_DISCOVERY_SIGNAL';
 
 // === Message Request ===
 

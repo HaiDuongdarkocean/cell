@@ -32,8 +32,8 @@ import {
   maybeAutoDownload,
   pushAutoLoadSubtitles,
   resolveUnknownSubtitleLanguages,
-  resolveStremioSubtitleListing,
 } from './helpers';
+// SubtitleDiscoveryService is exposed on BackgroundContext; see subtitleDiscoveryService.ts.
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -121,11 +121,18 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     },
   );
 
-  // 1b. Stremio addon subtitle listing → fetch JSON → re-inject real subtitle URLs
+  // 1b. Subtitle-list discovery service (Stremio + generic adapters)
+  const subtitleDiscovery = ctx.subtitleDiscoveryService;
+  const unsubListingMatcher = ctx.networkInterceptor.setListingMatcher((url) =>
+    subtitleDiscovery.isListingUrl(url),
+  );
   const unsubListing = ctx.networkInterceptor.onListingDetected(
     (url, tabId, initiator) => {
-      void resolveStremioSubtitleListing(ctx, url, tabId, initiator);
+      void subtitleDiscovery.resolveListing(url, tabId, initiator);
     },
+  );
+  const unsubTabCleared = ctx.networkInterceptor.onTabCleared((tabId) =>
+    subtitleDiscovery.clearTab(tabId),
   );
 
   // 2. Download queue progress → broadcast + persist
@@ -302,7 +309,7 @@ export function wireEvents(ctx: BackgroundContext): Array<() => void> {
     }
   });
 
-  unsubscribers.push(unsubMedia, unsubListing, unsubProgress);
+  unsubscribers.push(unsubMedia, unsubListingMatcher, unsubListing, unsubTabCleared, unsubProgress);
 
   // 8. Tab navigation clear (loading)
   const onTabUpdated = (

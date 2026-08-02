@@ -13,6 +13,7 @@ import type { DownloadQueue } from '@/features/download';
 import type { Downloader } from '@/features/download';
 import type { OffscreenManager } from './offscreenManager';
 import type { MessageHandler } from '@/entities/message';
+import type { SubtitleDiscoveryService } from './subtitleDiscoveryService';
 import type {
   DetectedVideo,
   DetectedSubtitle,
@@ -29,6 +30,7 @@ export interface BackgroundContext {
   readonly downloadQueue: DownloadQueue;
   readonly downloader: Downloader;
   readonly offscreenManager: OffscreenManager;
+  readonly subtitleDiscoveryService: SubtitleDiscoveryService;
 
   // --- mutable shared state ---
   /** Maps a download id to the detected media it was created from. */
