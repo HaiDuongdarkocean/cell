@@ -1,6 +1,29 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { OrbitalBadge } from './OrbitalBadge';
 
+beforeAll(() => {
+  if (typeof PointerEvent === 'undefined') {
+    class MockPointerEvent extends MouseEvent {
+      readonly pointerId: number;
+      constructor(type: string, init: MouseEventInit & { pointerId?: number } = {}) {
+        super(type, init);
+        this.pointerId = init.pointerId ?? 1;
+      }
+    }
+    (globalThis as unknown as { PointerEvent: typeof MouseEvent }).PointerEvent = MockPointerEvent as unknown as typeof PointerEvent;
+  }
+
+  globalThis.requestAnimationFrame = jest.fn((cb: FrameRequestCallback): number => {
+    cb(0);
+    return 0;
+  }) as unknown as typeof requestAnimationFrame;
+});
+
+beforeEach(() => {
+  Object.defineProperty(document.documentElement, 'clientWidth', { value: 1024, configurable: true });
+  Object.defineProperty(document.documentElement, 'clientHeight', { value: 768, configurable: true });
+});
+
 describe('OrbitalBadge', () => {
   it('renders collapsed badge', () => {
     render(<OrbitalBadge persistPosition={false} />);
@@ -64,5 +87,50 @@ describe('OrbitalBadge', () => {
 
     expect(onPresetChange).toHaveBeenCalledWith('center');
     jest.useRealTimers();
+  });
+
+  it('drags from the nearest edge without jumping', () => {
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+
+    // Start dragging the badge leftwards from the right edge.
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 980, clientY: 384 });
+    });
+
+    // The visible badge center starts at x = 1013 (collapsed right edge).
+    // dx = -33 -> dragCenter = 980, top-left = 980 - 22 = 958.
+    expect(badge.style.transform).toContain('translate3d(958px, 362px, 0)');
+  });
+
+  it('snaps back to the nearest edge on pointer up', () => {
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 900, clientY: 384 });
+      fireEvent.pointerUp(badge, { clientX: 900, clientY: 384 });
+    });
+
+    // Snaps back to right edge collapsed center: expanded center 1024 - inset 11 = 1013.
+    expect(badge.style.transform).toContain('translate3d(991px, 362px, 0)');
+  });
+
+  it('repositions when the viewport resizes', () => {
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+
+    // Collapsed right edge in a 1024x768 viewport: expanded center 1024, collapsed 1013.
+    expect(badge.style.transform).toContain('translate3d(991px, 362px, 0)');
+
+    act(() => {
+      Object.defineProperty(document.documentElement, 'clientWidth', { value: 400, configurable: true });
+      fireEvent.resize(window);
+    });
+
+    // Resized to 400 width: collapsed right edge at 400 - 11 = 389, top-left = 389 - 22 = 367.
+    expect(badge.style.transform).toContain('translate3d(367px, 362px, 0)');
   });
 });

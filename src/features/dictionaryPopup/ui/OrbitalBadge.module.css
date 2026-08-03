@@ -5,14 +5,27 @@
   pointer-events: auto;
   touch-action: none;
   user-select: none;
+  will-change: transform;
 }
 
-.collapsed {
+.host.expanded {
+  clip-path: none;
+}
+
+.host.collapsed[data-edge="right"] {
   clip-path: inset(0 50% 0 0);
 }
 
-.expanded {
-  clip-path: none;
+.host.collapsed[data-edge="left"] {
+  clip-path: inset(0 0 0 50%);
+}
+
+.host.collapsed[data-edge="top"] {
+  clip-path: inset(50% 0 0 0);
+}
+
+.host.collapsed[data-edge="bottom"] {
+  clip-path: inset(0 0 50% 0);
 }
 
 .badge {
@@ -29,8 +42,20 @@
   padding: 0;
 }
 
-.collapsed .badge {
+.host.collapsed[data-edge="right"] .badge {
   border-radius: 9999px 0 0 9999px;
+}
+
+.host.collapsed[data-edge="left"] .badge {
+  border-radius: 0 9999px 9999px 0;
+}
+
+.host.collapsed[data-edge="top"] .badge {
+  border-radius: 0 0 9999px 9999px;
+}
+
+.host.collapsed[data-edge="bottom"] .badge {
+  border-radius: 9999px 9999px 0 0;
 }
 
 .pointer {

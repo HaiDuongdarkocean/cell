@@ -106,4 +106,19 @@ describe('useOrbitalGesture', () => {
     expect(onDragStart).toHaveBeenCalled();
     expect(onDrag).toHaveBeenCalled();
   });
+
+  it('calls onDragEnd and does not count as a tap on pointer cancel', () => {
+    const onDragEnd = jest.fn();
+    const onSingleTap = jest.fn();
+    const { result } = renderHook(() => useOrbitalGesture({ onDragEnd, onSingleTap }));
+
+    act(() => {
+      result.current.onPointerDown(makePointerEvent(0, 0, 0));
+      result.current.onPointerMove(makePointerEvent(10, 10, 0));
+      result.current.onPointerCancel(makePointerEvent(10, 10, 0));
+    });
+
+    expect(onDragEnd).toHaveBeenCalled();
+    expect(onSingleTap).not.toHaveBeenCalled();
+  });
 });
