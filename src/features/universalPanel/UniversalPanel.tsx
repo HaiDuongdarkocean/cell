@@ -19,7 +19,7 @@ export interface UniversalPanelProps {
   /** Tokenize state for the universal header (ADR-061). */
   readonly tokenizeState: TokenizePanelState;
   /** Toggle one of the tokenize keys from the universal header. */
-  readonly onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
+  readonly onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => void;
   /** Content for the Dictionary tab. */
   readonly dictionaryPanel: ReactNode;
   /** Content for the Settings tab. */

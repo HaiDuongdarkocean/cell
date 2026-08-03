@@ -19,7 +19,7 @@ export interface UniversalPanelMountOptions {
   /** Tokenize state + callbacks forwarded to the Settings tab. */
   readonly panel?: {
     readonly getState: () => TokenizePanelState;
-    readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
+    readonly onToggle: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => void;
     readonly onOpenDictionary: () => void;
     readonly subscribe: (cb: (state: TokenizePanelState) => void) => () => void;
   };
@@ -200,6 +200,7 @@ export function mountUniversalPanelLegacy(options: UniversalPanelMountOptions = 
     enabled: false,
     showStatus: false,
     showFrequency: false,
+    subtitleEnabled: false,
   };
   const tokenizeUnsubscribe = options.panel?.subscribe((next) => {
     tokenizeState = next;
@@ -219,7 +220,7 @@ export function mountUniversalPanelLegacy(options: UniversalPanelMountOptions = 
         },
         onClose: () => controller.close(),
         tokenizeState,
-        onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency') => {
+        onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => {
           options.panel?.onToggle(key);
         },
         dictionaryPanel: renderDictionaryPanel(open),

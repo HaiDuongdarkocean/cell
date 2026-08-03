@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 
-export type TokenizeKey = 'enabled' | 'showStatus' | 'showFrequency';
+export type TokenizeKey = 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled';
 
 export interface UseTokenizeOptions {
   /** Optional external store to sync with (e.g. `createTokenizeStateStore`). */
@@ -17,7 +17,7 @@ export interface UseTokenizeReturn {
 }
 
 function toPanelState(s: { enabled: boolean; showStatus: boolean; showFrequency: boolean }): TokenizePanelState {
-  return { enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency };
+  return { enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency, subtitleEnabled: false };
 }
 
 /**
@@ -34,7 +34,7 @@ export function useTokenize(options: UseTokenizeOptions = {}): UseTokenizeReturn
     if (store) {
       return toPanelState(store.getState());
     }
-    return { enabled: false, showStatus: false, showFrequency: false };
+    return { enabled: false, showStatus: false, showFrequency: false, subtitleEnabled: false };
   });
 
   useEffect(() => {

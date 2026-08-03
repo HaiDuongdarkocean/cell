@@ -63,6 +63,8 @@ export interface TokenizeSettings {
   readonly origins: Readonly<Record<string, boolean>>;
   /** Map exact URL → enabled state (overrides origin). */
   readonly urls: Readonly<Record<string, boolean>>;
+  /** Map exact URL → subtitle tokenize enabled state (independent from web tokenize). */
+  readonly subtitleUrls: Readonly<Record<string, boolean>>;
 }
 
 export interface TokenizeState extends TokenizeDisplayOptions {
@@ -80,6 +82,7 @@ export interface TokenizePanelState {
   readonly enabled: boolean;
   readonly showStatus: boolean;
   readonly showFrequency: boolean;
+  readonly subtitleEnabled: boolean;
 }
 
 export interface TokenizeController {

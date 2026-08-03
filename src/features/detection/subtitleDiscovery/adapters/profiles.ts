@@ -144,3 +144,35 @@ export const broodingmoviesProfile: JsonListingProfile = {
     };
   },
 };
+
+// Peachify (peachify.top) — multi-server provider. The embed page fetches
+// subtitle listings from eat-peach.sbs servers (e.g. uwu.eat-peach.sbs/subs/,
+// usa.eat-peach.sbs/holly|air|multi/). The response is a JSON object with a
+// `subtitles` array; each entry has `url`, `label`, and optional `langCode`/
+// `lang`/`language`. Some servers return `isEncrypted: true` with `data` —
+// those are handled by the encrypted adapter, not here.
+export const peachifyProfile: JsonListingProfile = {
+  id: 'peachify-listing',
+  priority: 10,
+  urlPattern: /eat-peach\.sbs/i,
+  responseType: 'object-key',
+  objectKey: 'subtitles',
+  extractList: (parsed) => {
+    if (!isRecord(parsed) || !Array.isArray(parsed.subtitles)) return [];
+    return parsed.subtitles;
+  },
+  mapEntry: (entry) => {
+    if (!isRecord(entry)) return null;
+    const url = (entry.url as string) || (entry.file as string) || (entry.src as string);
+    if (!isString(url)) return null;
+    const label = (entry.label as string) || (entry.name as string) || (entry.language as string) || 'Auto';
+    const code = (entry.langCode as string) || (entry.lang as string) || (entry.language as string);
+    return {
+      label,
+      language: isString(code) ? resolveLanguage(code) : languageFromLabel(label),
+      url,
+      source: 'direct',
+      provider: 'peachify',
+    };
+  },
+};

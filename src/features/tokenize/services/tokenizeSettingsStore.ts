@@ -8,6 +8,7 @@ export const DEFAULT_TOKENIZE_SETTINGS: TokenizeSettings = {
   schemaVersion: TOKENIZE_SETTINGS_SCHEMA_VERSION,
   origins: {},
   urls: {},
+  subtitleUrls: {},
 };
 
 function mergeWithDefaults(stored: unknown): TokenizeSettings {
@@ -19,6 +20,7 @@ function mergeWithDefaults(stored: unknown): TokenizeSettings {
     schemaVersion: TOKENIZE_SETTINGS_SCHEMA_VERSION,
     origins: typeof s.origins === 'object' && s.origins !== null ? { ...s.origins } : {},
     urls: typeof s.urls === 'object' && s.urls !== null ? { ...s.urls } : {},
+    subtitleUrls: typeof s.subtitleUrls === 'object' && s.subtitleUrls !== null ? { ...s.subtitleUrls } : {},
   };
 }
 
@@ -68,5 +70,29 @@ export function setTokenizeEnabledForOrigin(
   return {
     ...settings,
     origins: { ...settings.origins, [origin]: enabled },
+  };
+}
+
+/** Check whether subtitle tokenize is enabled for a URL. */
+export function isSubtitleTokenizeEnabledForUrl(settings: TokenizeSettings, url: string): boolean {
+  try {
+    const { href } = new URL(url);
+    if (settings.subtitleUrls[href] !== undefined) return settings.subtitleUrls[href];
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** Return a new settings object with the subtitle URL enable state set. */
+export function setSubtitleTokenizeEnabledForUrl(
+  settings: TokenizeSettings,
+  url: string,
+  enabled: boolean,
+): TokenizeSettings {
+  const { href } = new URL(url);
+  return {
+    ...settings,
+    subtitleUrls: { ...settings.subtitleUrls, [href]: enabled },
   };
 }

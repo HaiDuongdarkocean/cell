@@ -38,8 +38,9 @@ export interface SubtitleTokenizeController extends TokenizeController {
 export interface SubtitleTokenizeControllerOptions {
   /** Language code for status/frequency lookups. */
   readonly langCode: string;
-  /** Retrieve the current target and native line elements from the subtitle overlay. */
-  readonly getLineElements: () => { target: HTMLDivElement | null; native: HTMLDivElement | null };
+  /** Retrieve the current target and native line elements from the subtitle overlay.
+   *  Each element must directly contain a Text node (e.g. a <span> with text content). */
+  readonly getLineElements: () => { target: HTMLElement | null; native: HTMLElement | null };
   /** Called when the user clicks a token to open the Popup Dictionary. */
   readonly onOpenDictionary: (term: string, element: HTMLElement, contextSentence: string) => void;
   /** Number of cues before/after the active cue to keep prepared. */

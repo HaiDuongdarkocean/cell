@@ -6,15 +6,15 @@ import type { TokenizePanelState } from '@/features/tokenize/types';
 import styles from './UniversalPanelHeader.module.css';
 
 export interface UniversalPanelHeaderProps {
-  /** Tokenize runtime state (enabled + showStatus + showFrequency). */
+  /** Tokenize runtime state (enabled + showStatus + showFrequency + subtitleEnabled). */
   readonly tokenizeState: TokenizePanelState;
-  /** Toggle one of the three tokenize keys. */
-  readonly onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency') => void;
+  /** Toggle one of the four tokenize keys. */
+  readonly onToggleTokenize: (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled') => void;
   /** Called when the close button is clicked. */
   readonly onClose: () => void;
 }
 
-type TokenizeKey = 'enabled' | 'showStatus' | 'showFrequency';
+type TokenizeKey = 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled';
 
 interface ToggleItem {
   readonly key: TokenizeKey;
@@ -25,6 +25,7 @@ interface ToggleItem {
 const TOGGLE_ITEMS: readonly ToggleItem[] = [
   { key: 'showStatus', label: 'Status', ariaLabel: 'Toggle status badges' },
   { key: 'showFrequency', label: 'Frequency', ariaLabel: 'Toggle frequency bands' },
+  { key: 'subtitleEnabled', label: 'Subtitle', ariaLabel: 'Toggle subtitle tokenize' },
   { key: 'enabled', label: 'Tokenize', ariaLabel: 'Toggle tokenize page' },
 ];
 
@@ -50,7 +51,9 @@ export function UniversalPanelHeader({
       <div className={styles.toggleCluster} role="group" aria-label="Tokenize controls">
         {TOGGLE_ITEMS.map((item) => {
           const checked = tokenizeState[item.key];
-          const disabled = item.key !== 'enabled' && tokenizeOff;
+          // Subtitle toggle is independent — always interactive.
+          // Status + Frequency are gated by web tokenize.
+          const disabled = item.key !== 'enabled' && item.key !== 'subtitleEnabled' && tokenizeOff;
           return (
             <label key={item.key} className={styles.toggleField}>
               <span className={styles.toggleLabel}>{item.label}</span>

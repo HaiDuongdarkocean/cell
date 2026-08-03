@@ -1,19 +1,19 @@
-﻿import { FrequencyBadge } from './FrequencyBadge';
+import { FrequencyBadge } from './FrequencyBadge';
 import type { ReactElement } from 'react';
 
 export function Showcase(): ReactElement {
-  const levels = ['common', 'frequent', 'rare', 'academic', 'archaic'] as const;
+  const levels = ['core', 'common', 'general', 'advanced', 'rare'] as const;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
         {levels.map((level) => (
-          <FrequencyBadge key={level} level={level} />
+          <FrequencyBadge key={level} level={level} source="COCA" rank={1234} />
         ))}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
         <FrequencyBadge level="common">Common Word</FrequencyBadge>
-        <FrequencyBadge level="archaic">Archaic Term</FrequencyBadge>
+        <FrequencyBadge level="rare">Rare Term</FrequencyBadge>
       </div>
     </div>
   );

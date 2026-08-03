@@ -5,8 +5,8 @@ import { createUniversalPanelController } from './UniversalPanelController';
 import type { UniversalPanelTab } from './types';
 import type { TokenizePanelState } from '@/features/tokenize/types';
 
-const TOKENIZE_OFF: TokenizePanelState = { enabled: false, showStatus: false, showFrequency: false };
-const TOKENIZE_ON: TokenizePanelState = { enabled: true, showStatus: true, showFrequency: true };
+const TOKENIZE_OFF: TokenizePanelState = { enabled: false, showStatus: false, showFrequency: false, subtitleEnabled: false };
+const TOKENIZE_ON: TokenizePanelState = { enabled: true, showStatus: true, showFrequency: true, subtitleEnabled: false };
 
 describe('UniversalPanel component', () => {
   const dictionaryPanel = <div data-cell-id="dict-content">Dictionary Content</div>;
@@ -139,10 +139,11 @@ describe('UniversalPanel component', () => {
     expect(screen.getByTestId('universal-panel-header-toggle-enabled')).toBeInTheDocument();
     expect(screen.getByTestId('universal-panel-header-toggle-showStatus')).toBeInTheDocument();
     expect(screen.getByTestId('universal-panel-header-toggle-showFrequency')).toBeInTheDocument();
+    expect(screen.getByTestId('universal-panel-header-toggle-subtitleEnabled')).toBeInTheDocument();
     expect(screen.getByTestId('universal-panel-close')).toBeInTheDocument();
   });
 
-  it('disables Status + Frequency toggles when tokenize is off', () => {
+  it('disables Status + Frequency toggles when tokenize is off (Subtitle stays independent)', () => {
     render(
       <UniversalPanel
         isOpen
@@ -158,6 +159,8 @@ describe('UniversalPanel component', () => {
     expect(screen.getByTestId('universal-panel-header-toggle-enabled')).not.toBeDisabled();
     expect(screen.getByTestId('universal-panel-header-toggle-showStatus')).toBeDisabled();
     expect(screen.getByTestId('universal-panel-header-toggle-showFrequency')).toBeDisabled();
+    // Subtitle toggle is independent — always interactive even when web tokenize is off.
+    expect(screen.getByTestId('universal-panel-header-toggle-subtitleEnabled')).not.toBeDisabled();
   });
 
   it('enables Status + Frequency toggles when tokenize is on', () => {

@@ -279,23 +279,23 @@
 }
 
 .cellHeaderStatus--unknown {
-  background: var(--color-error-subtle);
-  color: var(--color-error);
+  background: var(--color-token-status-unknown-bg);
+  color: var(--color-token-status-unknown);
 }
 
 .cellHeaderStatus--tracking {
-  background: var(--color-warning-subtle);
-  color: var(--color-warning);
+  background: var(--color-token-status-tracking-bg);
+  color: var(--color-token-status-tracking);
 }
 
 .cellHeaderStatus--known {
-  background: var(--color-success-subtle);
-  color: var(--color-success);
+  background: var(--color-token-status-known-bg);
+  color: var(--color-token-status-known);
 }
 
 .cellHeaderStatus--ignore {
-  background: var(--color-surface-hover);
-  color: var(--color-text-secondary);
+  background: var(--color-token-status-ignore-bg);
+  color: var(--color-token-status-ignore);
 }
 
 .cellHeaderFrequency {
@@ -323,52 +323,52 @@
 }
 
 .cellHeaderFrequency--core .cellHeaderFrequencySource {
+  background: var(--color-token-freq-core-fg);
+  color: var(--color-token-freq-core-bg);
+}
+
+.cellHeaderFrequency--core .cellHeaderFrequencyRank {
   background: var(--color-token-freq-core-bg);
   color: var(--color-token-freq-core-fg);
 }
 
-.cellHeaderFrequency--core .cellHeaderFrequencyRank {
-  background: color-mix(in srgb, var(--color-token-freq-core-fg) 12%, transparent);
-  color: var(--color-token-freq-core-fg);
+.cellHeaderFrequency--common .cellHeaderFrequencySource {
+  background: var(--color-token-freq-common-fg);
+  color: var(--color-token-freq-common-bg);
 }
 
-.cellHeaderFrequency--common .cellHeaderFrequencySource {
+.cellHeaderFrequency--common .cellHeaderFrequencyRank {
   background: var(--color-token-freq-common-bg);
   color: var(--color-token-freq-common-fg);
 }
 
-.cellHeaderFrequency--common .cellHeaderFrequencyRank {
-  background: color-mix(in srgb, var(--color-token-freq-common-fg) 12%, transparent);
-  color: var(--color-token-freq-common-fg);
+.cellHeaderFrequency--general .cellHeaderFrequencySource {
+  background: var(--color-token-freq-general-fg);
+  color: var(--color-token-freq-general-bg);
 }
 
-.cellHeaderFrequency--general .cellHeaderFrequencySource {
+.cellHeaderFrequency--general .cellHeaderFrequencyRank {
   background: var(--color-token-freq-general-bg);
   color: var(--color-token-freq-general-fg);
 }
 
-.cellHeaderFrequency--general .cellHeaderFrequencyRank {
-  background: color-mix(in srgb, var(--color-token-freq-general-fg) 12%, transparent);
-  color: var(--color-token-freq-general-fg);
+.cellHeaderFrequency--advanced .cellHeaderFrequencySource {
+  background: var(--color-token-freq-advanced-fg);
+  color: var(--color-token-freq-advanced-bg);
 }
 
-.cellHeaderFrequency--advanced .cellHeaderFrequencySource {
+.cellHeaderFrequency--advanced .cellHeaderFrequencyRank {
   background: var(--color-token-freq-advanced-bg);
   color: var(--color-token-freq-advanced-fg);
 }
 
-.cellHeaderFrequency--advanced .cellHeaderFrequencyRank {
-  background: color-mix(in srgb, var(--color-token-freq-advanced-fg) 12%, transparent);
-  color: var(--color-token-freq-advanced-fg);
-}
-
 .cellHeaderFrequency--rare .cellHeaderFrequencySource {
-  background: var(--color-token-freq-rare-bg);
-  color: var(--color-token-freq-rare-fg);
+  background: var(--color-token-freq-rare-fg);
+  color: var(--color-token-freq-rare-bg);
 }
 
 .cellHeaderFrequency--rare .cellHeaderFrequencyRank {
-  background: color-mix(in srgb, var(--color-token-freq-rare-fg) 12%, transparent);
+  background: var(--color-token-freq-rare-bg);
   color: var(--color-token-freq-rare-fg);
 }
 

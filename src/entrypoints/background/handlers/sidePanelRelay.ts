@@ -248,10 +248,17 @@ export function registerSidePanelRelayHandlers(ctx: BackgroundContext): void {
     if (tabId === undefined) {
       return { success: false, error: 'Missing tabId in VIDEO_EPISODE_CHANGED payload' };
     }
+    // If PAGE_SCAN_RESULT already processed for this new pageUrl, the old media
+    // was already replaced. Skip the clear so we don't wipe the new episode's
+    // subtitles before auto-load can push them to the new player iframe.
+    if (payload.pageUrl && ctx.networkInterceptor.getLastPageUrl(tabId) === payload.pageUrl) {
+      return { success: true };
+    }
     ctx.networkInterceptor.clearTab(tabId);
     clearSessionMedia(ctx, tabId);
     ctx.lastCuesByTab.delete(tabId);
     ctx.autoDownloadedTabs.delete(tabId);
+    ctx.networkInterceptor.setLastPageUrl(tabId, payload.pageUrl ?? '');
     updateBadgeForTab(ctx, tabId);
     return { success: true };
   });

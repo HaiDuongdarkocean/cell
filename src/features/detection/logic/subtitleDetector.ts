@@ -1,5 +1,5 @@
 import { SUBTITLE_URL_PATTERNS } from '@/shared/config/urls';
-import { isValidIsoCode, toIso6391 } from './languageDetector';
+import { isValidIsoCode, toIso6391, labelToIsoCode } from '@/shared/config/languageRegistry';
 import type {
   DetectedSubtitle,
   NetworkRequest,
@@ -108,6 +108,24 @@ function extractLanguage(url: string): string {
       const primary = candidate.split('-')[0].toLowerCase();
       if (isValidIsoCode(primary)) return toIso6391(primary);
     }
+  }
+
+  // Provider-generated filenames like `English - English [SDH].vtt`
+  // (vidnest.fun) or `Chinese%20-%20Chinese%20Simplified.vtt` encode the
+  // display language directly. Extract the label before the first ` - `
+  // delimiter, strip bracketed suffixes, and map to an ISO code so
+  // `findSubtitlesForOverlay` can match without waiting for a full content
+  // detection fetch.
+  try {
+    const decoded = decodeURIComponent(filenameWithoutExt);
+    const langPart = decoded.split(' - ')[0]?.trim() ?? '';
+    if (langPart) {
+      const normalized = langPart.replace(/\s*\[[^\]]*\]/g, '').trim();
+      const iso = labelToIsoCode(normalized);
+      if (iso) return toIso6391(iso);
+    }
+  } catch {
+    // Invalid percent-encoding — fall through to unknown.
   }
 
   return 'unknown';

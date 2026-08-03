@@ -255,6 +255,28 @@
     },
     {
       "type": "experience",
+      "id": "css-injector-must-resolve-all-referenced-tokens",
+      "title": "Content-script CSS injector phải inject resolved values cho mọi design token nó tham chiếu, không chỉ color tokens",
+      "category": [
+        "css",
+        "rendering"
+      ],
+      "tags": [
+        "custom-property",
+        "var",
+        "content-script",
+        "host-page",
+        "token-injection",
+        "box-shadow",
+        "invalid-declaration",
+        "silent-skip",
+        "design-token",
+        "ssot"
+      ],
+      "trigger": "CSS injected vào host page dùng var(--design-token) nhưng chỉ inject subset tokens (vd chỉ color) → declaration tham chiếu token chưa inject bị drop silent. Symptom: layer A (frequency) hiện, layer B (status bar) không hiện trong cùng CSS injector"
+    },
+    {
+      "type": "experience",
       "id": "css-shadow-dom-token-injection",
       "title": "Rendering boundary → explicit token injection",
       "category": [
