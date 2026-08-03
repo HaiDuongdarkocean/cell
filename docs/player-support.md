@@ -13,7 +13,7 @@
 |---|---|---|---|
 | shuttletv.su | `https://shuttletv.su/watch/1275779` | cinesrc.st embed (iframe cross-origin) | ⚠️ Player-side verified: **100 API entries**; extension resolver chưa implement |
 | kisskh.co | `https://kisskh.co/Drama/Perfect-Crown/Episode-1?id=11923&ep=207851` | Angular SPA + HLS (same-origin) | ⚠️ Player-side verified: **6 direct SRT**; extension resolver/token replay chưa implement |
-| moviepire.ru | `https://moviepire.ru/watch/125988?s=1&e=1` | videasy.to embed (iframe cross-origin) | ✅ Decoder implemented and unit-tested; provider-specific: `cdn` 67 VTT (S1E2), `m4uhd` 1 SRT; all `sources-with-title` providers handled |
+| moviepire.ru | `https://moviepire.ru/watch/125988?s=1&e=1` | videasy.to embed (iframe cross-origin) | ✅ Decoder implemented and unit-tested; provider-specific mapping verified in `cell-profile` (S1E2); all `sources-with-title` providers handled |
 | lookmovie2.to | `https://www.lookmovie2.to/shows/play/1704445437-silo-2023#S1-E1-224948` | video.js + plyr (same-origin) | ⚠️ API verified: **111 entries = 87 direct VTT + 24 OpenSubtitles metadata arrays**; extension delivery chưa implement |
 | lunastream.com.cv | `https://lunastream.com.cv/play/tv/113962` | moviesapi.to → ww2.moviesapi.to → flixcdn.cyou (JWPlayer 8, iframe cross-origin) | ⚠️ Player-side verified: iframe hash có **33 direct URLs**; extension cross-frame delivery chưa implement |
 | broodingmovies.com | `https://broodingmovies.com/tv/7essw-lucky/season/1/episode/1` | nextgencloudfabric.com embed (iframe cross-origin, HLS.js custom player) | ⚠️ API verified: **42 direct URLs**; page CORS block, background Referer/Origin replay chưa verify |
@@ -50,7 +50,7 @@ Audit hiện tại mới verify chắc chắn phần (1)/(2) ở nhiều site; (
 | lookmovie2 | `GET /api/v1/security/episode-access?...` | **111 entries**: 87 direct relative VTT; 24 `file` là array metadata OpenSubtitles, chưa phải URL tải trực tiếp. | ❌ 87 có thể normalize; 24 cần resolver riêng |
 | lunastream | `ww2.moviesapi.to` iframe `flixcdn.cyou#...&subs=[JSON]` | **33 entries**, tất cả URL trực tiếp; 31 language entries + English Hi + Greek Hi. Parent có thể đọc thuộc tính `iframe.src`; không cần đọc `contentDocument`. | ❌ Chưa parse/re-inject |
 | broodingmovies | `streamdata.vaplayer.ru/api.php?...` | HTTP 200 JSON `default_subs` **42 entries**, tất cả có URL. Page fetch bị CORS; request cần context header. | ❌ Background Referer/Origin replay chưa verify |
-| moviepire/videasy | encrypted `/<provider>/sources-with-title?...&enc=2&seed=...` | Provider-specific counts (e.g. `cdn` 67 direct VTT, `m4uhd` 1 SRT). Decoder dùng chung cho mọi provider path. | ✅ Decoded by extension using seed + tmdbId from captured response URL; provider extracted from path |
+| moviepire/videasy | encrypted `/<provider>/sources-with-title?...&enc=2&seed=...` | Provider-specific mapping verified (e.g. `cdn` 67 direct VTT, `m4uhd` 1 SRT, `downloader2` 2, `meine`/`lamovie` 0). Decoder dùng chung cho mọi provider path. | ✅ Decoded by extension using seed + tmdbId from captured response URL; provider extracted from path |
 | noxx | deep `cloudorchestranova.com/prorcp/<token>` | `window.the_subtitles` có **43 `[label]/relative .vtt`**; parse được và HEAD 43/43 OK (`text/vtt`). | ❌ Chưa bridge player state từ deep iframe |
 | myasiantv/kisscloud | HTML `var playerjsSubtitle` | **4 direct WebVTT**: English, Thai 1–3; URL fetch 4/4 HTTP 200 khi có Referer. | ❌ Chưa parse HTML variable + replay Referer |
 | onflix/playembed | iframe m3u8 + VTT requests | Browser phát sinh **2 direct VTT**; nội dung xác nhận một Việt, một Anh. Master HLS trả 1080p playlist; `EXT-X-MEDIA` chưa được kiểm tra. | ⚠️ 2 VTT đã verified; full server/HLS list chưa đủ evidence |
@@ -410,6 +410,24 @@ Player gọi 3 loại request:
    ```
    - `<encoded-path>` = base64-like string (mã hóa, chứa auth token).
    - `<xx>` = tên file 1-2 ký tự, **không theo pattern language** (obfuscated).
+
+### Provider → endpoint mapping (cell-profile click audit)
+
+Click từng server trong UI `aria-label="Select video source"` trên `player.videasy.to/tv/125988/1/2`:
+
+| Server group (UI) | Provider path `/<provider>/sources-with-title` | Audio | Subtitles (S1E2) | Notes |
+|---|---|---|---|---|
+| Yoru | `cdn` | Original | **67 VTT** | Default; 4 sources |
+| Cypher | `downloader2` | Original | 2 SRT/VTT | 2 sources |
+| Breach | `m4uhd` | Original | 1 SRT | 2 sources |
+| Neon | `vsrc` | Original | 0 | HTTP 500 `master_urls not found` |
+| Vyse | `hdmovie` | Original | 0 | HTTP 500 proxy 404 |
+| Killjoy | `meine` | German | 0 | 1 source; query thêm `language=german` |
+| Fade | `hdmovie` | Hindi | 0 | HTTP 500 proxy 404 |
+| Omen | `hdmovie` → fallback `lamovie` | Spanish | 0 | `hdmovie` 500, `lamovie` 200 nhưng 0 subtitle |
+| Raze | `superflix` | Portuguese | 0 | HTTP 500 `Failed to load sources` |
+
+→ Player dùng **9 server group** làm facade; mỗi group gọi 1 provider `api.speedracelight.com/<provider>`. Tất cả đều dùng chung thuật toán XOR/PRNG `enc=2`. Adapter `encrypted.ts` extract provider từ path URL, không cần hardcode mapping.
 
 ### Evidence: click test 5 language → 5 file VTT khác nhau
 
