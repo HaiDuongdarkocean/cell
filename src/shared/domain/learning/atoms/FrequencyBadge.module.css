@@ -1,44 +1,77 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  padding: var(--badge-padding-y) var(--badge-padding-x);
-  border: var(--border-width-hairline) solid var(--color-token-freq-border);
-  border-radius: var(--radius-pill);
+  height: var(--space-5);
+  border-radius: var(--radius-full);
+  overflow: hidden;
   font-family: var(--font-family);
-  font-size: var(--badge-font-size);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--leading-tight);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-none);
   white-space: nowrap;
 }
 
-/* common — blue tint (most frequent everyday words) */
-.common {
-  background: var(--color-token-freq-common-bg);
-  color: var(--color-token-freq-common-fg);
+.source {
+  padding: var(--space-1) var(--space-2-5);
+  font-weight: var(--font-weight-semibold);
 }
 
-/* frequent — green tint (core vocabulary) */
-.frequent {
+.rank {
+  padding: var(--space-1) var(--space-2-5);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* core — green tint (core vocabulary) */
+.core .source {
+  background: var(--color-token-freq-core-fg);
+  color: var(--color-token-freq-core-bg);
+}
+
+.core .rank {
   background: var(--color-token-freq-core-bg);
   color: var(--color-token-freq-core-fg);
 }
 
-/* rare — grey tint (uncommon words) */
-.rare {
-  background: var(--color-token-freq-rare-bg);
-  color: var(--color-token-freq-rare-fg);
+/* common — blue tint (most frequent everyday words) */
+.common .source {
+  background: var(--color-token-freq-common-fg);
+  color: var(--color-token-freq-common-bg);
 }
 
-/* academic — orange tint (academic / formal register) */
-.academic {
+.common .rank {
+  background: var(--color-token-freq-common-bg);
+  color: var(--color-token-freq-common-fg);
+}
+
+/* general — yellow tint (general register) */
+.general .source {
+  background: var(--color-token-freq-general-fg);
+  color: var(--color-token-freq-general-bg);
+}
+
+.general .rank {
+  background: var(--color-token-freq-general-bg);
+  color: var(--color-token-freq-general-fg);
+}
+
+/* advanced — red tint (advanced / formal register) */
+.advanced .source {
+  background: var(--color-token-freq-advanced-fg);
+  color: var(--color-token-freq-advanced-bg);
+}
+
+.advanced .rank {
   background: var(--color-token-freq-advanced-bg);
   color: var(--color-token-freq-advanced-fg);
 }
 
-/* archaic — yellow tint (obsolete / archaic register) */
-.archaic {
-  background: var(--color-token-freq-general-bg);
-  color: var(--color-token-freq-general-fg);
+/* rare — grey tint (uncommon words) */
+.rare .source {
+  background: var(--color-token-freq-rare-fg);
+  color: var(--color-token-freq-rare-bg);
+}
+
+.rare .rank {
+  background: var(--color-token-freq-rare-bg);
+  color: var(--color-token-freq-rare-fg);
 }

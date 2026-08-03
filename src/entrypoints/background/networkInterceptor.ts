@@ -43,6 +43,10 @@ export class NetworkInterceptor {
   private listingListener: ListingDetectedCallback | null = null;
   private listingMatcher: ((url: string) => boolean) | null = null;
   private tabClearedListeners: Set<(tabId: number) => void> = new Set();
+  // Track the last pageUrl that produced media for each tab. Used by
+  // PAGE_SCAN_RESULT and VIDEO_EPISODE_CHANGED to co-operatively clear old
+  // media when a cross-origin player iframe navigates to a new episode.
+  private readonly lastPageUrlByTab: Map<number, string> = new Map();
 
   /** Bound listener reference so it can be removed cleanly in `stop()`. */
   private boundListener:
@@ -239,6 +243,7 @@ export class NetworkInterceptor {
    * Clear all detected media for a tab.
    */
   clearTab(tabId: number): void {
+    this.lastPageUrlByTab.delete(tabId);
     for (const [id, video] of this.videos) {
       if (video.tabId === tabId) {
         this.videos.delete(id);
@@ -256,6 +261,14 @@ export class NetworkInterceptor {
         console.warn('[networkInterceptor] tab cleared listener failed:', err);
       }
     }
+  }
+
+  getLastPageUrl(tabId: number): string | undefined {
+    return this.lastPageUrlByTab.get(tabId);
+  }
+
+  setLastPageUrl(tabId: number, pageUrl: string): void {
+    this.lastPageUrlByTab.set(tabId, pageUrl);
   }
 
   onTabCleared(callback: (tabId: number) => void): () => void {

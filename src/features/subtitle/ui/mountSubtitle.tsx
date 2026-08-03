@@ -13,6 +13,7 @@ import subtitleHintCss from './SubtitleHint.module.css?inline';
 import subtitlePanelsCss from './SubtitlePanels.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
+import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
 import { ICON_CATALOG } from '@/shared/icons';
 
 export type { SubtitlePanelsRef, ManagerState, OffsetState } from './SubtitlePanels';
@@ -52,6 +53,8 @@ export interface MountSubtitleOptions {
 
 export interface MountSubtitleResult {
   unmount: () => void;
+  /** Shadow host element — use `host.shadowRoot` to query subtitle line elements. */
+  readonly host: HTMLElement;
   setStyles: (targetStyle: OverlayStyleConfig, nativeStyle: OverlayStyleConfig) => void;
   setHasSubtitle: (has: boolean) => void;
   setIsPlaying: (playing: boolean) => void;
@@ -149,6 +152,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         subtitlePanelsCss,
         iconCss,
         iconButtonCss,
+        buildTokenSpanCssForShadow(),
       ],
     },
   );
@@ -162,6 +166,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
 
   return {
     unmount,
+    host,
     setStyles: (t, n) => controllerRef?.setStyles(t, n),
     setHasSubtitle: (has) => controllerRef?.setHasSubtitle(has),
     setIsPlaying: (playing) => controllerRef?.setIsPlaying(playing),

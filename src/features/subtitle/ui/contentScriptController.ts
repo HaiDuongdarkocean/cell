@@ -28,7 +28,8 @@ import {
 } from '@/features/subtitle';
 import { ReactSubtitleController } from '@/features/subtitle/ui/reactSubtitleController';
 import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
-import { loadTokenizeSettings, isTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
+import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
+import { createSubtitleTokenizeController, type SubtitleTokenizeController } from '@/features/tokenize/controller/subtitleTokenizeController';
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
 import type { TokenizeSettings } from '@/features/tokenize/types';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
@@ -300,17 +301,60 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     () => { void handleGenerateNative(); },
   );
 
+  // Subtitle tokenize controller — injects token spans into subtitle line elements.
+  // Independent from web tokenize: toggled via `subtitleUrls` in TokenizeSettings.
+  let subtitleTokenizeCtrl: SubtitleTokenizeController | null = null;
+
+  // Hook cue updates → re-render subtitle token spans when active index changes.
+  // Deferred via requestAnimationFrame: React re-renders SubtitleBlock on cue
+  // change (useCuesStore update), which overwrites token spans with plain text.
+  // Waiting one frame ensures the controller injects AFTER React commits.
+  blockController.onCuesUpdated = () => {
+    if (!subtitleTokenizeCtrl) return;
+    const { target, native } = blockController.getActiveIndices();
+    requestAnimationFrame(() => {
+      subtitleTokenizeCtrl?.render(target, native);
+    });
+  };
+
   /** Enable/disable subtitle tokenize based on current settings and tokenize settings. */
   async function syncSubtitleTokenize(tokenizeSettings?: TokenizeSettings): Promise<void> {
     const settings = currentSettings;
     if (!settings?.subtitleOverlayTargetLanguage) {
+      subtitleTokenizeCtrl?.disable();
       blockController.disableTokenize();
       return;
     }
     try {
       const ts = tokenizeSettings ?? (await loadTokenizeSettings());
       const url = window.location.href;
-      if (isTokenizeEnabledForUrl(ts, url)) {
+      const enabled = isSubtitleTokenizeEnabledForUrl(ts, url);
+      if (enabled) {
+        // Create controller lazily — needs blockController ready for getLineElements.
+        if (!subtitleTokenizeCtrl) {
+          subtitleTokenizeCtrl = createSubtitleTokenizeController({
+            langCode: settings.subtitleOverlayTargetLanguage,
+            getLineElements: () => blockController.getLineElements(),
+            onOpenDictionary: (term, element, contextSentence) => {
+              if (!sharedWebTextCtrl) return;
+              const request: LookupRequest = {
+                term,
+                langCode: settings.subtitleOverlayTargetLanguage,
+                contextSentence,
+                cursorOffset: Number(element.getAttribute('data-cell-start') ?? 0),
+              };
+              const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+              sharedWebTextCtrl.handleLookup(request, requestId, element.getBoundingClientRect(), element);
+            },
+          });
+        }
+        subtitleTokenizeCtrl.enable();
+        // Feed current cues + render active line.
+        const targetCues = blockController.getTargetCues();
+        const nativeCues = blockController.getNativeCues();
+        subtitleTokenizeCtrl.setCues(targetCues, nativeCues);
+        const { target: activeTarget, native: activeNative } = blockController.getActiveIndices();
+        subtitleTokenizeCtrl.render(activeTarget, activeNative);
         blockController.enableTokenize({
           langCode: settings.subtitleOverlayTargetLanguage,
           onOpenDictionary: (term, element, contextSentence) => {
@@ -326,6 +370,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
           },
         });
       } else {
+        subtitleTokenizeCtrl?.disable();
         blockController.disableTokenize();
       }
     } catch {
@@ -1309,6 +1354,19 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       }
       lastAutoLoadKey = autoLoadKey;
 
+      // Debug: notify the top frame that this iframe's controller received the
+      // auto-load message. Helps verify broadcast-to-all-frames on moviepire.
+      try {
+        window.parent.postMessage({
+          type: '__CELL_AUTOLOAD_HANDLED',
+          href: location.href,
+          target: payload?.target?.url,
+          native: payload?.native?.url,
+        }, '*');
+      } catch {
+        // cross-origin parent may be unavailable in some embed contexts.
+      }
+
       // SPA navigation: URL changed → clear the previous video's cues before
       // loading the new one. `loadBilingualCues` uses ADR-014 D1 merge semantics
       // (keep old side when new side empty — for same-video incremental re-push),
@@ -1731,6 +1789,7 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
     removeOnMessageListener(onRuntimeMessage);
     removeOnMessageListener(onRuntimeMessage2);
     // ADR-027: React UI is unmounted in ReactSubtitleController.destroy().
+    subtitleTokenizeCtrl?.destroy();
     blockController?.destroy();
   };
 }

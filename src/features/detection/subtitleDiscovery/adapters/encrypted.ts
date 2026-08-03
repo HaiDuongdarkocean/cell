@@ -1,14 +1,19 @@
-// Encrypted-listing subtitle adapter (moviepire/videasy).
+// Encrypted-listing subtitle adapter (moviepire/videasy + peachify).
 //
 // The videasy `sources-with-title` endpoint returns a custom XOR/PRNG-encrypted
 // payload. The content-script fetch bridge captures the response body; this
 // adapter extracts the `seed` and `tmdbId` from the URL, decrypts the payload,
 // and emits one candidate per subtitle entry.
+//
+// The peachify (eat-peach.sbs) endpoint returns AES-GCM encrypted JSON with
+// `{ isEncrypted: true, data: "iv.ciphertext.authTag" }`. A separate decoder
+// handles that format.
 
 import { createCandidate } from '../candidate';
 import { formatFromUrl, resolveLanguage } from '../candidate';
 import type { SubtitleFormat } from '@/entities/subtitle/types';
 import { decryptVideasyResponse } from './videasyDecoder';
+import { decryptPeachifyResponse } from './peachifyDecoder';
 import type {
   SubtitleCandidate,
   SubtitleDiscoveryAdapter,
@@ -22,6 +27,7 @@ export interface EncryptedProfile {
   readonly priority: number;
   readonly urlPattern: RegExp;
   readonly provider: string;
+  readonly decryptor?: 'videasy' | 'peachify';
 }
 
 function getTmdbIdFromUrl(url: string): number | undefined {
@@ -95,67 +101,170 @@ export function createEncryptedAdapter(profile: EncryptedProfile): SubtitleDisco
       const body = signal.body.trim();
       if (!body) return [];
 
-      const tmdbId = getTmdbIdFromUrl(signal.url);
-      const seed = getSeedFromUrl(signal.url);
-      if (!tmdbId || !seed) return [];
+      const decryptor = profile.decryptor ?? 'videasy';
 
-      let listing;
-      try {
-        listing = decryptVideasyResponse(body, seed, tmdbId);
-      } catch {
-        // Preserve as an unresolved handle so the user/panel can see the attempt.
-        const provider = getProviderFromUrl(signal.url) ?? profile.provider;
-        return [
-          createCandidate(
-            {
-              label: 'Encrypted videasy listing',
-              language: 'unknown',
-              source: 'metadata',
-              provider,
-              status: 'unresolved',
-              metadata: {
-                provider,
-                providerId: `enc:${signal.url}`,
-                language: 'unknown',
-                label: 'Encrypted listing',
-                extra: { url: signal.url },
-              },
-            },
-            context,
-          ),
-        ];
+      if (decryptor === 'peachify') {
+        return decryptPeachify(signal, context, profile, body);
       }
 
-      const baseUrl = signal.url;
-      const provider = getProviderFromUrl(signal.url) ?? profile.provider;
-      const candidates: SubtitleCandidate[] = [];
-
-      for (const sub of listing.subtitles) {
-        const url = sub.url;
-        if (!url) continue;
-
-        const lang = resolveLanguage(sub.lang ?? sub.language ?? undefined);
-        const format = getSubtitleFormat({ url });
-
-        candidates.push(
-          createCandidate(
-            {
-              label: lang === 'unknown' ? 'Subtitle' : sub.lang ?? sub.language ?? 'Subtitle',
-              language: lang,
-              url,
-              source: 'direct',
-              baseUrl,
-              provider,
-              format: format ?? 'srt',
-              default: false,
-              forced: false,
-            },
-            context,
-          ),
-        );
-      }
-
-      return candidates;
+      return decryptVideasy(signal, context, profile, body);
     },
   };
+}
+
+async function decryptPeachify(
+  signal: SubtitleSignal,
+  context: SubtitleDiscoveryContext,
+  profile: EncryptedProfile,
+  body: string,
+): Promise<readonly SubtitleCandidate[]> {
+  if (signal.kind !== 'network-response') return [];
+  const signalUrl = signal.url;
+  let parsed: { isEncrypted?: boolean; data?: string; subtitles?: unknown[] };
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return [];
+  }
+
+  // Non-encrypted responses have subtitles directly.
+  if (!parsed.isEncrypted || !parsed.data) {
+    if (!Array.isArray(parsed.subtitles)) return [];
+    return mapPeachifySubtitles(parsed.subtitles, context, profile, signalUrl);
+  }
+
+  let listing;
+  try {
+    listing = await decryptPeachifyResponse(parsed.data);
+  } catch {
+    return [
+      createCandidate(
+        {
+          label: 'Encrypted peachify listing',
+          language: 'unknown',
+          source: 'metadata',
+          provider: profile.provider,
+          status: 'unresolved',
+          metadata: {
+            provider: profile.provider,
+            providerId: `enc:${signalUrl}`,
+            language: 'unknown',
+            label: 'Encrypted listing',
+            extra: { url: signalUrl },
+          },
+        },
+        context,
+      ),
+    ];
+  }
+
+  if (!Array.isArray(listing.subtitles)) return [];
+  return mapPeachifySubtitles(listing.subtitles, context, profile, signalUrl);
+}
+
+function mapPeachifySubtitles(
+  subtitles: readonly unknown[],
+  context: SubtitleDiscoveryContext,
+  profile: EncryptedProfile,
+  baseUrl: string,
+): SubtitleCandidate[] {
+  const candidates: SubtitleCandidate[] = [];
+  for (const entry of subtitles) {
+    if (!entry || typeof entry !== 'object') continue;
+    const e = entry as Record<string, unknown>;
+    const url = (e.url as string) || (e.file as string) || (e.src as string);
+    if (!url || typeof url !== 'string') continue;
+    const label = (e.label as string) || (e.name as string) || (e.language as string) || 'Auto';
+    const code = (e.langCode as string) || (e.lang as string) || (e.language as string);
+    const lang = resolveLanguage(code ?? label);
+    const format = formatFromUrl(url) ?? 'vtt';
+    candidates.push(
+      createCandidate(
+        {
+          label,
+          language: lang,
+          url,
+          source: 'direct',
+          baseUrl,
+          provider: profile.provider,
+          format,
+          default: false,
+          forced: false,
+        },
+        context,
+      ),
+    );
+  }
+  return candidates;
+}
+
+async function decryptVideasy(
+  signal: SubtitleSignal,
+  context: SubtitleDiscoveryContext,
+  profile: EncryptedProfile,
+  body: string,
+): Promise<readonly SubtitleCandidate[]> {
+  if (signal.kind !== 'network-response') return [];
+  const signalUrl = signal.url;
+  const tmdbId = getTmdbIdFromUrl(signalUrl);
+  const seed = getSeedFromUrl(signalUrl);
+  if (!tmdbId || !seed) return [];
+
+  let listing;
+  try {
+    listing = decryptVideasyResponse(body, seed, tmdbId);
+  } catch {
+    // Preserve as an unresolved handle so the user/panel can see the attempt.
+    const provider = getProviderFromUrl(signalUrl) ?? profile.provider;
+    return [
+      createCandidate(
+        {
+          label: 'Encrypted videasy listing',
+          language: 'unknown',
+          source: 'metadata',
+          provider,
+          status: 'unresolved',
+          metadata: {
+            provider,
+            providerId: `enc:${signalUrl}`,
+            language: 'unknown',
+            label: 'Encrypted listing',
+            extra: { url: signalUrl },
+          },
+        },
+        context,
+      ),
+    ];
+  }
+
+  const baseUrl = signalUrl;
+  const provider = getProviderFromUrl(signalUrl) ?? profile.provider;
+  const candidates: SubtitleCandidate[] = [];
+
+  for (const sub of listing.subtitles) {
+    const url = sub.url;
+    if (!url) continue;
+
+    const lang = resolveLanguage(sub.lang ?? sub.language ?? undefined);
+    const format = getSubtitleFormat({ url });
+
+    candidates.push(
+      createCandidate(
+        {
+          label: lang === 'unknown' ? 'Subtitle' : sub.lang ?? sub.language ?? 'Subtitle',
+          language: lang,
+          url,
+          source: 'direct',
+          baseUrl,
+          provider,
+          format: format ?? 'srt',
+          default: false,
+          forced: false,
+        },
+        context,
+      ),
+    );
+  }
+
+  return candidates;
 }

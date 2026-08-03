@@ -34,6 +34,7 @@
     /\/api\/v1\/security\/episode-access/i,
     /streamdata\.vaplayer\.ru\/api\.php/i,
     /sources-with-title/i,
+    /eat-peach\.sbs/i,
     /\.m3u8(?:\?|$)/i,
   ];
 

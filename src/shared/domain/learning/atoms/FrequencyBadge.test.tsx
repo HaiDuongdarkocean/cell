@@ -4,7 +4,7 @@ import { FrequencyBadge } from './FrequencyBadge';
 describe('FrequencyBadge', () => {
   it('renders the level as children by default', () => {
     render(<FrequencyBadge level="common" />);
-    expect(screen.getByText('common')).toBeInTheDocument();
+    expect(screen.getByLabelText('Frequency: common')).toBeInTheDocument();
   });
 
   it('renders custom children when provided', () => {
@@ -19,12 +19,12 @@ describe('FrequencyBadge', () => {
   });
 
   it('has correct aria-label', () => {
-    render(<FrequencyBadge level="academic" />);
-    expect(screen.getByLabelText('Frequency: academic')).toBeInTheDocument();
+    render(<FrequencyBadge level="advanced" />);
+    expect(screen.getByLabelText('Frequency: advanced')).toBeInTheDocument();
   });
 
   it('renders all levels', () => {
-    const levels = ['common', 'frequent', 'rare', 'academic', 'archaic'] as const;
+    const levels = ['core', 'common', 'general', 'advanced', 'rare'] as const;
     for (const level of levels) {
       const { unmount } = render(<FrequencyBadge level={level} />);
       expect(screen.getByLabelText(`Frequency: ${level}`)).toBeInTheDocument();
@@ -35,5 +35,11 @@ describe('FrequencyBadge', () => {
   it('merges custom className', () => {
     const { container } = render(<FrequencyBadge level="common" className="extra" />);
     expect(container.firstChild).toHaveClass('extra');
+  });
+
+  it('renders source and rank', () => {
+    render(<FrequencyBadge level="core" source="COCA" rank={1234} />);
+    expect(screen.getByText('COCA')).toBeInTheDocument();
+    expect(screen.getByText('1,234')).toBeInTheDocument();
   });
 });

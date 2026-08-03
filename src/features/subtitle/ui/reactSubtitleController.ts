@@ -53,6 +53,8 @@ export class ReactSubtitleController {
   public onImportFiles?: (role: 'target' | 'native', files: FileList) => void;
   /** Called when the user toggles the Chrome side panel. */
   public onToggleSidePanel?: () => void;
+  /** Called when active cue indices change (for subtitle tokenize rendering). */
+  public onCuesUpdated?: () => void;
 
   constructor(
     video: HTMLVideoElement,
@@ -202,6 +204,7 @@ export class ReactSubtitleController {
     this.hasSubtitle = this.engine.hasSubtitles();
     this.mount.setHasSubtitle(this.hasSubtitle);
     this.setIsPlaying(!this.video.paused);
+    this.onCuesUpdated?.();
   }
 
   private updateStylesFromEngine(): void {
@@ -349,6 +352,28 @@ export class ReactSubtitleController {
 
   isTokenizeEnabled(): boolean {
     return this.engine.isTokenizeEnabled();
+  }
+
+  /** Shadow host element — for querying subtitle line elements in the shadow DOM. */
+  getHost(): HTMLElement {
+    return this.mount.host;
+  }
+
+  /** Query the shadow DOM for the current target/native line span elements.
+   *  Returns the inner <span> that directly contains the text node, so the
+   *  subtitle tokenize controller can bind token spans into it. */
+  getLineElements(): { target: HTMLElement | null; native: HTMLElement | null } {
+    const root = this.mount.host.shadowRoot;
+    if (!root) return { target: null, native: null };
+    return {
+      target: root.querySelector('[data-role="target"] span'),
+      native: root.querySelector('[data-role="native"] span'),
+    };
+  }
+
+  /** Current active cue indices from the engine. */
+  getActiveIndices(): { target: number; native: number } {
+    return this.engine.getActiveIndices();
   }
 
   enableDictionaryPopup(

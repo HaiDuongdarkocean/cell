@@ -14,6 +14,7 @@ import {
   kisskhProfile,
   lookmovieProfile,
   broodingmoviesProfile,
+  peachifyProfile,
 } from './profiles';
 import type { SubtitleDiscoveryAdapter } from '../types';
 
@@ -57,16 +58,26 @@ export const videasyProfile = {
   provider: 'videasy',
 } as const;
 
+export const peachifyEncryptedProfile = {
+  id: 'peachify-encrypted',
+  priority: 10,
+  urlPattern: /eat-peach\.sbs/i,
+  provider: 'peachify',
+  decryptor: 'peachify',
+} as const;
+
 export function createDefaultAdapters(): SubtitleDiscoveryAdapter[] {
   return [
     createJsonListingAdapter(cinesrcProfile),
     createJsonListingAdapter(kisskhProfile),
     createJsonListingAdapter(lookmovieProfile),
     createJsonListingAdapter(broodingmoviesProfile),
+    createJsonListingAdapter(peachifyProfile),
     createIframeHashAdapter(lunastreamProfile),
     createHtmlVariableAdapter(myasiantvProfile),
     createPlayerStateAdapter(noxxProfile),
     createHlsAdapter(onflixProfile),
     createEncryptedAdapter(videasyProfile),
+    createEncryptedAdapter(peachifyEncryptedProfile),
   ];
 }

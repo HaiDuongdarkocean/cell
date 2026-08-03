@@ -22,5 +22,5 @@
 
 .text {
   white-space: pre-wrap;
-  line-height: var(--line-height-snug);
+  line-height: var(--leading-normal);
 }

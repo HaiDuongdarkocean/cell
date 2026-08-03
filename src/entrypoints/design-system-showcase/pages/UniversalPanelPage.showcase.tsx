@@ -14,6 +14,7 @@ const INITIAL_TOKENIZE: TokenizePanelState = {
   enabled: true,
   showStatus: true,
   showFrequency: false,
+  subtitleEnabled: false,
 };
 
 export function Showcase(): ReactElement {
@@ -21,7 +22,7 @@ export function Showcase(): ReactElement {
   const [activeTab, setActiveTab] = useState<UniversalPanelTab>('dictionary');
   const [tokenizeState, setTokenizeState] = useState<TokenizePanelState>(INITIAL_TOKENIZE);
 
-  const handleToggleTokenize = (key: 'enabled' | 'showStatus' | 'showFrequency'): void => {
+  const handleToggleTokenize = (key: 'enabled' | 'showStatus' | 'showFrequency' | 'subtitleEnabled'): void => {
     setTokenizeState((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
