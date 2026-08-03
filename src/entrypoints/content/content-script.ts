@@ -174,7 +174,15 @@ const scanner = new PageScanner();
 // Page scanning needs DOM ready, but the message listener above registers
 // immediately at document_start (no DOM dependency).
 function runPageScan(): void {
-  if (window.self !== window.top) return;
+  // Scan the top frame and any iframe that actually hosts a <video>.
+  // Cross-origin iframe players (vidnest.fun, anikage.cc, etc.) keep <track>
+  // elements inside the iframe, so scanning only the top frame misses the
+  // entire subtitle list. Background deduplicates by URL, so overlapping scans
+  // across frames are safe. Iframes without a video are skipped to avoid
+  // observing ad/empty frames. ponytail ceiling: a video that appears after
+  // DOMContentLoaded and before 10s may be missed; the findVideoObserver path
+  // already handles overlay injection but does not re-trigger scanning.
+  if (window.self !== window.top && !document.querySelector('video')) return;
   const urls = scanner.scan();
   if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
     void sendMessage({
