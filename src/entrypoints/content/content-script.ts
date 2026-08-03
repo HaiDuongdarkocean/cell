@@ -20,6 +20,32 @@ import type { VideoEpisodeChangedPayload } from '@/entities/message';
 const csInjectTime = performance.now();
 (window as unknown as Record<string, unknown>).__YT_CS_INJECT_TIME = csInjectTime;
 
+// Debug relay: the player iframe lives cross-origin, so its controller cannot
+// set attributes on the top frame. It posts to window.parent; the top frame
+// content script stores the last auto-load / scan signal on documentElement.
+if (window.self === window.top) {
+  window.addEventListener('message', (e) => {
+    // AUTO_LOAD_SUBTITLES is acknowledged by the player iframe and by the
+    // top frame on direct sites. Record every one — it is never the top's
+    // own diagnostic noise.
+    if (e.data?.type === '__CELL_AUTOLOAD_HANDLED') {
+      document.documentElement.setAttribute(
+        'data-cell-autoload-handled',
+        JSON.stringify({ href: e.data.href, target: e.data.target }),
+      );
+    }
+    // PAGE_SCAN debug markers: only record those coming from a player iframe.
+    // The top frame's own runPageScan postMessage should not overwrite data.
+    const isOwnFrame = e.source === window || e.origin === window.location.origin;
+    if (e.data?.type === '__CELL_DEBUG_PAGE_SCAN' && e.data?.pageUrl && !isOwnFrame) {
+      document.documentElement.setAttribute(
+        'data-cell-iframe-scan',
+        JSON.stringify({ pageUrl: e.data.pageUrl, videos: e.data.videoUrls?.length ?? 0, subtitles: e.data.subtitleUrls?.length ?? 0 }),
+      );
+    }
+  });
+}
+
 // ADR-020 race fix: notify the MAIN-world YouTube script that our message
 // listener is registered. CRXJS async dynamic-import loader delays ISOLATED
 // content-script injection past the MAIN-world `__YT_DETECTED_SUBTITLES` post
@@ -179,11 +205,41 @@ function runPageScan(): void {
   // elements inside the iframe, so scanning only the top frame misses the
   // entire subtitle list. Background deduplicates by URL, so overlapping scans
   // across frames are safe. Iframes without a video are skipped to avoid
-  // observing ad/empty frames. ponytail ceiling: a video that appears after
-  // DOMContentLoaded and before 10s may be missed; the findVideoObserver path
-  // already handles overlay injection but does not re-trigger scanning.
+  // observing ad/empty frames.
   if (window.self !== window.top && !document.querySelector('video')) return;
   const urls = scanner.scan();
+  // ponytail: guard is intentionally removed. Players like vidnest/videasy
+  // mount the <video> before the <track> src attributes are set, so the first
+  // DOMContentLoaded scan is often empty. finishVideoInit must be able to
+  // re-scan once tracks appear; the background deduplicates by URL and the
+  // content-script controller deduplicates auto-load payloads.
+  if (pageScanObserverStarted) {
+    const last = scanner.getLastScanned();
+    if (
+      last &&
+      urls.videoUrls.length === last.videoUrls.length &&
+      urls.subtitleUrls.length === last.subtitleUrls.length &&
+      urls.videoUrls.every((u, i) => u === last.videoUrls[i]) &&
+      urls.subtitleUrls.every((u, i) => u === last.subtitleUrls[i])
+    ) {
+      return;
+    }
+  }
+  pageScanObserverStarted = true;
+  // Debug: surface scan results to the top frame so browser tests can verify
+  // the content script is finding media without reading cross-origin iframes.
+  // Iframes use window.parent; top frames use window (self).
+  const debugTarget = window.self === window.top ? window : window.parent;
+  debugTarget.postMessage({
+    type: '__CELL_DEBUG_PAGE_SCAN',
+    pageUrl: window.location.href,
+    videoUrls: urls.videoUrls,
+    subtitleUrls: urls.subtitleUrls,
+  }, '*');
+  document.documentElement.setAttribute(
+    'data-cell-runscan',
+    JSON.stringify({ pageUrl: window.location.href, videos: urls.videoUrls.length, subtitles: urls.subtitleUrls.length }),
+  );
   if (urls.videoUrls.length > 0 || urls.subtitleUrls.length > 0) {
     void sendMessage({
       type: MESSAGE_TYPES.PAGE_SCAN_RESULT,
@@ -279,8 +335,23 @@ function runSubtitleDiscoveryScan(): void {
 // readyState >= 2 HAVE_CURRENT_DATA) ensures the framework render is done, so
 // appended UI persists. Covers both blob-streaming SPAs (kisskh) and direct-MP4
 // sites (themoviebox.org — no framework re-render, readyState>=2 is immediate).
+// Also accept non-empty child <source>/<track> src as a readiness signal: HLS
+// players (hls.js / vidstack) often leave the video element's src attribute empty
+// and set currentSrc only after metadata loads, while the <track> list is already
+// present in the DOM. This lets the overlay register before the background's first
+// AUTO_LOAD_SUBTITLES push, avoiding a lost load-on-start race in cross-origin
+// iframes like moviepire → vidnest.
+function hasRealChildSrc(v: HTMLVideoElement): boolean {
+  return !!v.querySelector('source[src]:not([src=""]), track[src]:not([src=""])');
+}
+
 function isVideoReady(v: HTMLVideoElement): boolean {
-  return (v.src !== '' && v.src.startsWith('blob:')) || v.readyState >= 2;
+  return (
+    (v.src !== '' && v.src.startsWith('blob:')) ||
+    v.currentSrc !== '' ||
+    v.readyState >= 2 ||
+    hasRealChildSrc(v)
+  );
 }
 
 // Track current overlay cleanup so we can tear down before re-init on SPA
@@ -288,10 +359,67 @@ function isVideoReady(v: HTMLVideoElement): boolean {
 // is removed by the framework's re-render, but document/onMessage listeners
 // would otherwise accumulate.
 let currentOverlayCleanup: (() => void) | null = null;
+// Guard: runPageScan is invoked both on DOMContentLoaded and from
+// findAndInitOverlay when a video appears late. The flag prevents duplicate
+// initial PAGE_SCAN_RESULT sends and observer restarts.
+let pageScanObserverStarted = false;
 // Track the video element the overlay is currently attached to, so we only
 // re-init when the <video> element identity actually changes (Angular may
 // mount/unmount the same element multiple times during phase render).
 let currentVideo: HTMLVideoElement | null = null;
+// Track a video element we have seen but is not yet ready (no metadata loaded).
+// Players like vidnest/videasy insert the <video> before the source is resolved,
+// so we wait for loadedmetadata or a readyState poll before init.
+let currentPendingVideo: HTMLVideoElement | null = null;
+let videoReadyPoll: ReturnType<typeof setInterval> | null = null;
+
+function stopVideoReadyPoll(): void {
+  if (videoReadyPoll) {
+    clearInterval(videoReadyPoll);
+    videoReadyPoll = null;
+  }
+}
+
+function finishVideoInit(video: HTMLVideoElement): void {
+  stopVideoReadyPoll();
+  if (video === currentVideo) return;
+  currentPendingVideo = null;
+  currentOverlayCleanup?.();
+  currentVideo = video;
+  currentOverlayCleanup = initContentScriptController(video, ensureWebTextCtrl());
+  runPageScan();
+}
+
+function tryInitVideoWhenReady(video: HTMLVideoElement): void {
+  if (video === currentVideo || video === currentPendingVideo) return;
+  stopVideoReadyPoll();
+  currentPendingVideo = video;
+  if (isVideoReady(video)) {
+    finishVideoInit(video);
+    return;
+  }
+  // Wait for the player to assign a real source / load metadata.
+  // The 'loadedmetadata' event fires when readyState reaches HAVE_METADATA (>=2).
+  const onReady = (): void => {
+    if (document.querySelector('video') === video) {
+      finishVideoInit(video);
+    } else {
+      stopVideoReadyPoll();
+    }
+  };
+  video.addEventListener('loadedmetadata', onReady, { once: true });
+  // Fallback poll for players that set currentSrc without firing loadedmetadata.
+  // ponytail: naive 100ms poll, stop when the 10s findVideoObserver timeout fires.
+  videoReadyPoll = setInterval(() => {
+    if (document.querySelector('video') !== video) {
+      stopVideoReadyPoll();
+      return;
+    }
+    if (isVideoReady(video)) {
+      finishVideoInit(video);
+    }
+  }, 100);
+}
 
 // Top-level web-text dictionary controller (independent of video presence).
 // Shared with subtitle overlay controller for token lookup + highlight.
@@ -476,31 +604,27 @@ function findAndInitOverlay(): void {
   // MutationObserver auto-disconnects after 10s when no video appears, so
   // iframes without a video pay only a short observer cost.
   const video = document.querySelector('video');
-  if (video && isVideoReady(video)) {
-    if (video === currentVideo) return; // already initialized for this element
-    currentOverlayCleanup?.();
-    currentVideo = video;
-    currentOverlayCleanup = initContentScriptController(video, ensureWebTextCtrl());
+  if (video) {
+    tryInitVideoWhenReady(video);
     return;
   }
 
-  // SPA: video may be rendered after DOMContentLoaded, or may exist but not yet
-  // have a real source (Angular two-phase render — see isVideoReady). Observe
-  // body until a ready video appears. attributeFilter:['src'] catches the
-  // phase-2 src assignment (blob: URL) that childList alone would miss.
-  // ponytail: disconnect as soon as a ready video is found to avoid unnecessary
+  // SPA: video may be rendered after DOMContentLoaded. Observe body until a
+  // video appears; then wait for it to become ready before injecting the overlay.
+  // attributeFilter:['src'] catches phase-2 src assignment (blob: URL) that
+  // childList alone would miss.
+  // ponytail: disconnect as soon as a video is found to avoid unnecessary
   // mutation work.
   // AC4.4 early-exit: if no video after 10s, disconnect observer (no video on page).
   findVideoObserver?.disconnect();
+  stopVideoReadyPoll();
   findVideoObserver = new MutationObserver(() => {
     const v = document.querySelector('video');
-    if (v && isVideoReady(v) && v !== currentVideo) {
+    if (v && v !== currentVideo) {
       findVideoObserver?.disconnect();
       findVideoObserver = null;
       clearTimeout(disconnectTimer);
-      currentOverlayCleanup?.();
-      currentVideo = v;
-      currentOverlayCleanup = initContentScriptController(v, ensureWebTextCtrl());
+      tryInitVideoWhenReady(v);
     }
   });
   const root = document.body ?? document.documentElement;
@@ -510,7 +634,10 @@ function findAndInitOverlay(): void {
     attributes: true,
     attributeFilter: ['src'],
   });
-  // AC4.4: auto-disconnect after 10s if no video appears (early-exit optimization)
+  // AC4.4: auto-disconnect after 10s if no video appears (early-exit optimization).
+  // Do NOT stop videoReadyPoll here: a video may have appeared but still be
+  // loading its <track>/<source> src (vidnest/videasy iframe embeds), and we
+  // must keep polling until isVideoReady becomes true.
   const disconnectTimer = setTimeout(() => {
     findVideoObserver?.disconnect();
     findVideoObserver = null;
@@ -557,16 +684,30 @@ let lastSeenVideo: HTMLVideoElement | null = null;
 // quality switch too — we only fire when the URL path differs (ignore query
 // params + blob: revocation noise by comparing pathname, not full href).
 let lastVideoSrc: string | null = null;
+// Track the player iframe (moviepire-style embed). Provider and episode switches
+// replace the <iframe> or change its src; the top frame must clear old media.
+let lastSeenIframe: HTMLIFrameElement | null = null;
+let lastIframeSrc: string | null = null;
+let iframeBaselineReady = false;
+let episodeChangeDebounce: ReturnType<typeof setTimeout> | null = null;
 let videoSrcWatcherInterval: ReturnType<typeof setInterval> | null = null;
 let episodeChangeObserver: MutationObserver | null = null;
 let findVideoObserver: MutationObserver | null = null;
 
-function reportEpisodeChanged(reason: 'replacement' | 'src-change'): void {
-  if (!hasSeenFirstVideo) return; // first video — baseline, not a switch
+function reportEpisodeChanged(
+  reason: 'replacement' | 'src-change' | 'iframe-replacement' | 'iframe-src-change',
+  pageUrl?: string,
+): void {
+  if (!hasSeenFirstVideo) return; // first video/iframe — baseline, not a switch
+  // Debug marker visible in the page so DevTools / E2E can verify the top frame
+  // saw the provider/episode switch.
+  document.documentElement.setAttribute('data-cell-episode-changed', reason);
+  document.documentElement.setAttribute('data-cell-episode-time', String(Date.now()));
   // Tell the background to clear the previous episode's media before the new
   // episode's media is detected.
   const payload: VideoEpisodeChangedPayload = {
     tabId: undefined, // background resolves from sender.tab.id
+    pageUrl,
   };
   // Await the clear before re-scanning. The PageScanner's MutationObserver
   // (registered before this watcher) already fired on the same mutation batch
@@ -606,9 +747,10 @@ function reportEpisodeChanged(reason: 'replacement' | 'src-change'): void {
 
 function reportEpisodeChangedIfReplacement(video: HTMLVideoElement): void {
   if (video === lastSeenVideo) return; // same element, not a replacement
-  reportEpisodeChanged('replacement');
+  const newSrc = video.src || video.currentSrc || null;
+  reportEpisodeChanged('replacement', newSrc ?? undefined);
   lastSeenVideo = video;
-  lastVideoSrc = video.src || video.currentSrc || null;
+  lastVideoSrc = newSrc;
   hasSeenFirstVideo = true;
 }
 
@@ -644,39 +786,100 @@ function initVideoSrcWatcher(): void {
     if (currentSrc !== lastVideoSrc) {
       lastVideoSrc = currentSrc;
       lastSeenVideo = video;
-      reportEpisodeChanged('src-change');
+      reportEpisodeChanged('src-change', currentSrc);
     }
   }, 500);
 }
 
+function isPlayerIframe(el: Element): boolean {
+  // Guard against ad/comment iframes: only iframes inside a player container.
+  // moviepire.ru uses .player; fall back to common player IDs/classes.
+  const container = el.closest('.player, #player, .player-container, [class*="player"], [id*="player"]');
+  return container !== null || /^https?:\/\/.+\/(tv|movie|embed|video)\//.test((el as HTMLIFrameElement).src || '');
+}
+
+function stageIframeEpisodeChange(reason: 'iframe-src-change' | 'iframe-replacement', iframe: HTMLIFrameElement, src: string): void {
+  if (episodeChangeDebounce) clearTimeout(episodeChangeDebounce);
+  lastSeenIframe = iframe;
+  lastIframeSrc = src;
+  // Many SPAs set the player iframe src in multiple steps during initial load.
+  // The first src that stays stable for 500ms becomes the baseline provider;
+  // only later changes are treated as a user-initiated provider/episode switch.
+  if (iframeBaselineReady && src !== '') {
+    // Fire immediately before the new iframe document starts loading, so
+    // VIDEO_EPISODE_CHANGED clears old media before any new PAGE_SCAN_RESULT arrives.
+    reportEpisodeChanged(reason, src);
+  }
+  episodeChangeDebounce = setTimeout(() => {
+    episodeChangeDebounce = null;
+    if (!iframeBaselineReady && src !== '') {
+      iframeBaselineReady = true;
+      hasSeenFirstVideo = true;
+    }
+  }, 500);
+}
+
+function reportEpisodeChangedIfIframeSrc(iframe: HTMLIFrameElement): void {
+  const src = iframe.src || '';
+  if (iframe === lastSeenIframe && src === lastIframeSrc) return; // same src
+  stageIframeEpisodeChange('iframe-src-change', iframe, src);
+}
+
+function reportEpisodeChangedIfIframeReplaced(iframe: HTMLIFrameElement): void {
+  if (!isPlayerIframe(iframe)) return;
+  const src = iframe.src || '';
+  if (iframe === lastSeenIframe && src === lastIframeSrc) return;
+  stageIframeEpisodeChange('iframe-replacement', iframe, src);
+}
+
 function initEpisodeChangeWatcher(): void {
   if (window.self !== window.top) return;
-  // If a <video> is already present at inject time, that's the first one —
-  // baseline it without firing an episode-changed event.
+  // Baseline the first <video> or player iframe at inject time — these are not
+  // considered an episode switch.
   const existing = document.querySelector('video');
   if (existing) {
     hasSeenFirstVideo = true;
     lastSeenVideo = existing;
     lastVideoSrc = existing.src || existing.currentSrc || null;
+  } else {
+    const existingIframe = document.querySelector('.player iframe, #player iframe, iframe[src*="/tv/"], iframe[src*="/movie/"], iframe[src*="/embed/"]') as HTMLIFrameElement | null;
+    // Stage the existing iframe for baseline. If its src changes within the
+    // 500ms debounce, the final stable value becomes the baseline; this avoids
+    // treating initial provider assignment as a user switch.
+    if (existingIframe) {
+      stageIframeEpisodeChange('iframe-src-change', existingIframe, existingIframe.src || '');
+    }
   }
-  // Persistently observe for new <video> elements. A NEW element appearing
-  // after the first one was seen = episode switch (element replacement).
+  // Persistently observe for new <video> elements and player-iframes. A NEW
+  // element appearing after the first one was seen = episode switch.
   if (episodeChangeObserver) episodeChangeObserver.disconnect();
   episodeChangeObserver = new MutationObserver((mutations) => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         if (node.nodeName === 'VIDEO') {
           reportEpisodeChangedIfReplacement(node as HTMLVideoElement);
+        } else if (node.nodeName === 'IFRAME') {
+          reportEpisodeChangedIfIframeReplaced(node as HTMLIFrameElement);
         } else if (node instanceof Element) {
           const v = node.querySelector('video');
           if (v) reportEpisodeChangedIfReplacement(v);
+          const iframe = node.querySelector('iframe');
+          if (iframe && isPlayerIframe(iframe)) reportEpisodeChangedIfIframeReplaced(iframe);
         }
+      }
+      // moviepire switches provider/episode by mutating the existing iframe's
+      // src attribute. Attribute changes do not appear in addedNodes.
+      if (m.type === 'attributes' && m.attributeName === 'src' && m.target.nodeName === 'IFRAME') {
+        const iframe = m.target as HTMLIFrameElement;
+        if (isPlayerIframe(iframe)) reportEpisodeChangedIfIframeSrc(iframe);
       }
     }
   });
   const root = document.body ?? document.documentElement;
-  episodeChangeObserver.observe(root, { childList: true, subtree: true });
-  // Also watch for src changes on the same element (aniwatch sub→dub case).
+  // attributeFilter:['src'] catches iframe provider/episode switches without
+  // polling. Filters in the callback avoid firing on unrelated src changes.
+  episodeChangeObserver.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+  // Also watch for src changes on the same <video> element (aniwatch sub→dub case).
   initVideoSrcWatcher();
 }
 
@@ -685,10 +888,19 @@ function cleanupContentScript(): void {
     currentOverlayCleanup?.();
     currentOverlayCleanup = null;
     currentVideo = null;
+    currentPendingVideo = null;
     findVideoObserver?.disconnect();
     findVideoObserver = null;
+    stopVideoReadyPoll();
     episodeChangeObserver?.disconnect();
     episodeChangeObserver = null;
+    if (episodeChangeDebounce) {
+      clearTimeout(episodeChangeDebounce);
+      episodeChangeDebounce = null;
+    }
+    iframeBaselineReady = false;
+    lastSeenIframe = null;
+    lastIframeSrc = null;
     if (videoSrcWatcherInterval) {
       clearInterval(videoSrcWatcherInterval);
       videoSrcWatcherInterval = null;

@@ -12,7 +12,8 @@ import {
   setSessionStorage,
   queryTabs,
   getTab,
-  sendTabMessage,
+  sendMessageToAllFramesInTab,
+  sendTabMessageToFrame,
   reloadTab,
   setBadgeText,
   setBadgeBackgroundColor,
@@ -445,6 +446,7 @@ export async function pushAutoLoadSubtitles(
   ctx: BackgroundContext,
   tabId: number,
   subtitles: DetectedSubtitle[],
+  frameId?: number,
 ): Promise<void> {
   try {
     const settings = await loadSettings();
@@ -485,10 +487,26 @@ export async function pushAutoLoadSubtitles(
       targetMatches: result.targetMatches,
       nativeMatches: result.nativeMatches,
     };
-    await sendTabMessage(tabId, {
+    // The overlay controller may live in a cross-origin player iframe
+    // (moviepire → vidnest/videasy), not the top frame. Broadcast to every
+    // frame so the one with the active <video> can load the selected cues.
+    // When the originating frame is known (PAGE_SCAN_RESULT / REQUEST_AUTO_LOAD)
+    // also send directly to that frame, because getAllFrames may not yet include
+    // a freshly-navigated cross-origin iframe when the push happens immediately.
+    await sendMessageToAllFramesInTab(tabId, {
       type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
       payload,
     });
+    if (frameId !== undefined) {
+      try {
+        await sendTabMessageToFrame(tabId, frameId, {
+          type: MESSAGE_TYPES.AUTO_LOAD_SUBTITLES,
+          payload,
+        });
+      } catch {
+        // Frame may have already navigated away; broadcast above is the fallback.
+      }
+    }
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.warn(`AUTO_LOAD_SUBTITLES push failed for tab ${tabId}: ${msg}`);

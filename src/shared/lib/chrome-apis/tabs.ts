@@ -23,6 +23,46 @@ export function sendTabMessage<T = unknown>(
   return chrome.tabs.sendMessage(tabId, message) as Promise<T>;
 }
 
+/**
+ * Send a message to a specific frame in a tab. Use when the target content
+ * script is known (e.g. the sender of PAGE_SCAN_RESULT/REQUEST_AUTO_LOAD) and
+ * chrome.webNavigation.getAllFrames may not yet list the new frame after a
+ * cross-origin iframe src change.
+ */
+export function sendTabMessageToFrame<T = unknown>(
+  tabId: number,
+  frameId: number,
+  message: unknown,
+): Promise<T> {
+  return chrome.tabs.sendMessage(tabId, message, { frameId }) as Promise<T>;
+}
+
+/**
+ * Send a message to every frame in a tab. Use when the target content script
+ * may live in a cross-origin player iframe and the top frame does not host the
+ * <video> element. Frames without a matching listener simply ignore the message.
+ */
+export async function sendMessageToAllFramesInTab(
+  tabId: number,
+  message: unknown,
+): Promise<void> {
+  try {
+    const frames = await chrome.webNavigation.getAllFrames({ tabId });
+    if (!frames || frames.length === 0) {
+      await sendTabMessage(tabId, message);
+      return;
+    }
+    await Promise.allSettled(
+      frames.map((frame) =>
+        chrome.tabs.sendMessage(tabId, message, { frameId: frame.frameId }),
+      ),
+    );
+  } catch {
+    // getAllFrames may be unavailable on some contexts; fall back to top frame.
+    await sendTabMessage(tabId, message);
+  }
+}
+
 export function reloadTab(tabId: number): Promise<void> {
   return chrome.tabs.reload(tabId);
 }

@@ -276,6 +276,8 @@ export interface RevokeOpfsBlobUrlPayload {
 
 export interface PageScanResultPayload {
   readonly tabId: number;
+  /** frameId of the sender, injected by the background from chrome.runtime sender. */
+  readonly frameId?: number;
   readonly videoUrls: string[];
   readonly subtitleUrls: string[];
   /**
@@ -315,6 +317,8 @@ export interface AutoLoadSubtitlesPayload {
  * (handles race: background pushed before content-script was ready). */
 export interface RequestAutoLoadSubtitlesPayload {
   readonly tabId: number;
+  /** frameId of the requesting frame, injected by the background. */
+  readonly frameId?: number;
 }
 
 /** Content-script → background: fetch subtitle content (CORS fallback).
@@ -450,6 +454,9 @@ export interface ShortcutActionPayload {
  *  heuristic or an explicit episode-click watcher. */
 export interface VideoEpisodeChangedPayload {
   readonly tabId?: number; // background resolves from sender.tab.id
+  // The URL of the player frame after the switch. Used by the background to
+  // avoid clearing media that a PAGE_SCAN_RESULT already replaced.
+  readonly pageUrl?: string;
 }
 
 /** Content-script → background: a subtitle URL was detected by the main-world

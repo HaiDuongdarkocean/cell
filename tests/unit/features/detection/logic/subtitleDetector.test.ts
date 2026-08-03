@@ -138,6 +138,26 @@ describe('detectSubtitle', () => {
     expect(result?.language).toBe('ar');
   });
 
+  it('extracts language from display-name filename "English - English [SDH].vtt"', () => {
+    const request = makeRequest(
+      'https://example.com/English%20-%20English%20%5BSDH%5D.vtt',
+    );
+    const result = detectSubtitle(request);
+
+    expect(result).not.toBeNull();
+    expect(result?.language).toBe('en');
+  });
+
+  it('extracts language from vidnest English - English [SDH].vtt URL', () => {
+    const request = makeRequest(
+      'https://cache.vdrk.site/v3/tv/125988/1/3/English%20-%20English%20%5BSDH%5D.vtt',
+    );
+    const result = detectSubtitle(request);
+
+    expect(result).not.toBeNull();
+    expect(result?.language).toBe('en');
+  });
+
   it('defaults language to "unknown" when language cannot be detected', () => {
     const request = makeRequest('https://example.com/movie.srt');
     const result = detectSubtitle(request);

@@ -70,6 +70,7 @@ export const GetDetectedMediaPayloadSchema = z.object({
 
 export const PageScanResultPayloadSchema = z.object({
   tabId: z.number().int().optional(),
+  frameId: z.number().int().optional(),
   videoUrls: z.array(z.string()),
   subtitleUrls: z.array(z.string()),
   pageUrl: z.string().min(1),
@@ -89,6 +90,7 @@ export const UpdateSubtitleLanguagePayloadSchema = z.object({
 
 export const RequestAutoLoadSubtitlesPayloadSchema = z.object({
   tabId: z.number().int().optional(),
+  frameId: z.number().int().optional(),
 });
 
 export const FetchSubtitleContentPayloadSchema = z.object({
@@ -168,6 +170,7 @@ export const ShortcutActionPayloadSchema = z.object({
 
 export const VideoEpisodeChangedPayloadSchema = z.object({
   tabId: z.number().int().optional(),
+  pageUrl: z.string().optional(),
 });
 
 // === Detection dispatch payloads ===
