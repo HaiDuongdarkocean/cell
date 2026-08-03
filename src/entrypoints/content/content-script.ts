@@ -852,7 +852,18 @@ function reportEpisodeChangedIfIframeReplaced(iframe: HTMLIFrameElement): void {
 }
 
 function initEpisodeChangeWatcher(): void {
-  if (window.self !== window.top) return;
+  // Skip hidden Cloudflare challenge iframes (1x1) — same guard as
+  // fetchInterceptor.iife.ts. Player iframes (videasy, vidnest) are visible and
+  // must be instrumented so in-player episode switches (e.g. videasy's next-
+  // episode button) are detected.
+  if (window.self !== window.top) {
+    try {
+      if (window.innerWidth <= 10 && window.innerHeight <= 10) return;
+    } catch {
+      return;
+    }
+  }
+  const isTop = window.self === window.top;
   // Baseline the first <video> or player iframe at inject time — these are not
   // considered an episode switch.
   const existing = document.querySelector('video');
@@ -860,7 +871,7 @@ function initEpisodeChangeWatcher(): void {
     hasSeenFirstVideo = true;
     lastSeenVideo = existing;
     lastVideoSrc = existing.src || existing.currentSrc || null;
-  } else {
+  } else if (isTop) {
     const existingIframe = document.querySelector('.player iframe, #player iframe, iframe[src*="/tv/"], iframe[src*="/movie/"], iframe[src*="/embed/"]') as HTMLIFrameElement | null;
     // Stage the existing iframe for baseline. If its src changes within the
     // 500ms debounce, the final stable value becomes the baseline; this avoids
