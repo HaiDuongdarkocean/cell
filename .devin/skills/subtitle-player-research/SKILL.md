@@ -200,7 +200,9 @@ Classify the observed failure precisely:
 - extension root/UI is absent despite detection;
 - content-script overlay is not initialized before the first `AUTO_LOAD_SUBTITLES` push;
 - page scanner misses track/source assignment after `DOMContentLoaded`;
-- `AUTO_LOAD_SUBTITLES` broadcast reaches the wrong frame or a stale iframe.
+- `AUTO_LOAD_SUBTITLES` broadcast reaches the wrong frame or a stale iframe;
+- play-on-demand player creates `<video>` after `findVideoObserver` timeout — overlay never inits;
+- episode watcher is disabled in iframes — in-player episode switches go undetected.
 
 Output an adapter contract:
 
@@ -296,6 +298,80 @@ When the player lives in a cross-origin iframe (e.g. `moviepire` → `vidnest`),
 - If `AUTO_LOAD_SUBTITLES` is broadcast to all frames: a freshly navigated iframe may not yet appear in `getAllFrames`; prefer a direct frameId send plus a broadcast fallback.
 - If the player frame reloads on episode switch: old `SESSION_MEDIA` must be cleared and the new frame must request a re-push.
 
+## Play-on-demand players (lazy video creation)
+
+Some players (videasy, certain React/Next.js players) do not create the `<video>`
+element on page load. The video only appears AFTER the user clicks a play button,
+which can happen well after the `findVideoObserver` 10s timeout. The encrypted
+listing fetch also fires on play, not on iframe load.
+
+**Symptom:** extension inventory shows subtitles (E4) but the overlay never
+initializes — `data-cell-autoload-handled` is stale or absent, no
+`#cell-subtitle-shadow-host` in the player frame.
+
+**Diagnostic micro-flow:**
+
+```text
+1. Navigate to the player URL directly (not via the parent page).
+2. Wait 10s without clicking play. Check: does <video> exist?
+   - No  → the player is play-on-demand. Continue.
+   - Yes → this is a different timing issue; do not apply this flow.
+3. Click the play button. Check: does <video> appear now?
+4. Check: is #cell-subtitle-root present with a shadow root?
+   - No  → findVideoObserver timed out before the click. Root cause confirmed.
+5. Verify fix: after the fix, the overlay should init within 1s of the click.
+```
+
+**Fix pattern (commit bf5082b4):**
+
+When `findVideoObserver` times out without finding a video, install a one-shot
+capture-phase `document.click` listener that re-triggers `findAndInitOverlay()`
+on the next user interaction. The listener removes itself once the overlay
+initializes. This is cheaper than an indefinite MutationObserver and catches
+the common case where a user gesture is required to create the player.
+
+**Known ceiling:** detection is delayed until the first user click. If the
+player auto-plays without a click (rare for play-on-demand players), this
+pattern will not fire. Upgrade path: also listen for `play`/`playing` events
+on a late-attached video via a lightweight periodic re-scan.
+
+## In-player episode switches inside iframes
+
+When a player iframe has its own episode navigation (e.g. videasy's next-episode
+button), the `<video>` element is replaced inside the iframe on switch. The top
+frame's `episodeChangeObserver` cannot see inside a cross-origin iframe, so the
+watcher must run inside the iframe itself.
+
+**Symptom:** clicking the in-player next-episode button changes the video and
+URL, but the overlay stays attached to the old video and subtitles are not
+re-loaded. Clicking the parent page's next-episode button works because the
+top frame's iframe-src watcher fires.
+
+**Diagnostic micro-flow:**
+
+```text
+1. Click the in-player next-episode button (inside the iframe).
+2. Check: does location.href change inside the iframe?
+3. Check: is <video> replaced (different element identity)?
+4. Check: does data-cell-episode-changed appear on the iframe's documentElement?
+   - No  → the iframe's episodeChangeWatcher is not running. Root cause confirmed.
+5. Verify fix: after the fix, episodeChanged=replacement should fire inside the
+   iframe and the overlay should re-init with the new episode's subtitles.
+```
+
+**Fix pattern (commit d8a60028):**
+
+Replace the blanket `if (window.self !== window.top) return` guard in
+`initEpisodeChangeWatcher` with a hidden-iframe-only guard (same 1x1 check as
+`fetchInterceptor.iife.ts`). Visible player iframes are now instrumented. The
+iframe-baseline logic (existing-iframe lookup) is guarded by `isTop` since it
+is only meaningful in the top frame.
+
+**Known ceiling:** hidden iframes other than 1x1 challenge frames are still
+skipped. If a legitimate player runs in a very small iframe (<10x10), it will
+not be instrumented. Upgrade path: check `display:none`/`visibility:hidden`
+instead of pixel dimensions.
+
 ## Anti-patterns
 
 | Bad action | Correct replacement |
@@ -311,6 +387,8 @@ When the player lives in a cross-origin iframe (e.g. `moviepire` → `vidnest`),
 | Treat empty scan at `DOMContentLoaded` as no subtitles | re-scan when `<track>`/`<source>` `src` is assigned later |
 | Broadcast `AUTO_LOAD` to all frames only | target the player frame by `frameId` and keep broadcast as fallback |
 | Assume a navigated cross-origin iframe is immediately reachable | wait for the new frame to register its message listener, then re-push |
+| Assume `<video>` exists on page load | play-on-demand players create it on click; check after interaction |
+| Run episode watcher only in top frame | in-player episode switches inside iframes go undetected; instrument visible player iframes |
 
 ## Verification checklist
 
@@ -328,6 +406,8 @@ When the player lives in a cross-origin iframe (e.g. `moviepire` → `vidnest`),
 - [ ] Subtitle source mutations after `DOMContentLoaded` are observed and re-scanned.
 - [ ] `AUTO_LOAD_SUBTITLES` delivery is verified against the correct frame or frameId.
 - [ ] Episode/provider switch clears old media and the new frame requests a re-push.
+- [ ] Play-on-demand players: `<video>` existence checked after user click, not only on load.
+- [ ] In-player episode switches: watcher verified inside the iframe, not only in the top frame.
 - [ ] No secrets or signed tokens committed to fixtures/logs.
 
 ## Router boomerang
