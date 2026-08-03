@@ -144,10 +144,23 @@ export class PageScanner {
     });
 
     const root = document.body ?? document.documentElement;
+    // childList catches <track>/<source> elements added after DOMContentLoaded;
+    // attributeFilter catches players that mount elements first and then set
+    // src/href later (vidstack/hls.js on vidnest sets track.src after mount).
     this.observer.observe(root, {
       childList: true,
       subtree: true,
+      attributes: true,
+      attributeFilter: ['src', 'href'],
     });
+  }
+
+  /**
+   * Return the last scanned URL set. Useful for callers that need to decide
+   * whether a re-scan is worth sending a new PAGE_SCAN_RESULT.
+   */
+  getLastScanned(): ScannedUrls {
+    return { ...this.lastScanned };
   }
 
   /**

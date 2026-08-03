@@ -10,6 +10,8 @@ import {
   getActiveTabId,
   updateBadgeForTab,
   pushAutoLoadSubtitles,
+  clearSessionMedia,
+  saveSessionMedia,
   buildDetails,
 } from '../helpers';
 import type {
@@ -57,6 +59,20 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
     if (tabId === undefined) {
       return { success: false, error: 'Missing tabId in PAGE_SCAN_RESULT payload' };
     }
+
+    // If the scan comes from a different frame/pageUrl than what we last stored,
+    // the user has navigated to a new episode (or switched provider). Clear the
+    // old tab media before adding the new episode's tracks, otherwise the
+    // sidepanel mixes old/new and auto-load still pushes the previous episode's
+    // subtitle for the new video.
+    const lastPageUrl = ctx.networkInterceptor.getLastPageUrl(tabId);
+    if (payload.pageUrl && lastPageUrl && payload.pageUrl !== lastPageUrl) {
+      ctx.networkInterceptor.clearTab(tabId);
+      clearSessionMedia(ctx, tabId);
+      ctx.lastCuesByTab.delete(tabId);
+      ctx.autoDownloadedTabs.delete(tabId);
+    }
+    ctx.networkInterceptor.setLastPageUrl(tabId, payload.pageUrl);
 
     const existingVideos = ctx.networkInterceptor.getVideos(tabId);
     const existingSubtitles = ctx.networkInterceptor.getSubtitles(tabId);
@@ -133,8 +149,11 @@ export function registerMediaDetectionHandlers(ctx: BackgroundContext): void {
 
     const allSubtitles = ctx.networkInterceptor.getSubtitles(tabId);
     if (allSubtitles.length > 0) {
-      void pushAutoLoadSubtitles(ctx, tabId, allSubtitles);
+      void pushAutoLoadSubtitles(ctx, tabId, allSubtitles, payload.frameId);
     }
+    // Persist the scanned subtitle set so REQUEST_AUTO_LOAD_SUBTITLES can
+    // re-push when the player content script is not ready at the first scan.
+    saveSessionMedia(ctx, tabId, ctx.networkInterceptor.getVideos(tabId), allSubtitles);
 
     return { success: true };
   });
