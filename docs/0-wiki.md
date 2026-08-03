@@ -46,6 +46,7 @@ tasks/          # Active plan & task checklist (current sprint)
 ## Lịch sử cập nhật wiki
 
 **2026-08-03**: Cập nhật generic subtitle-list discovery (T1-T12 E2E). Pipeline/protocol adapters: cinesrc, kisskh, lookmovie, broodingmovies, lunastream, MyAsianTV, noxx, onflix HLS, videasy encrypted decoder.
+**2026-08-03**: `content-script.ts` `PageScanner` chạy trong iframe có `<video>` (moviepire.ru → vidnest.fun `Nest` provider) để bắt `<track>` subtitle URLs.
 
 ## Lịch sử cleanup tài liệu
 
