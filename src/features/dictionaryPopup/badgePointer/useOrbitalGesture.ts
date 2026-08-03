@@ -17,10 +17,40 @@ export interface UseOrbitalGestureResult {
   onPointerUp: (e: PointerEvent | React.PointerEvent) => void;
   /** Attach to onPointerMove on the badge/document while dragging. */
   onPointerMove: (e: PointerEvent | React.PointerEvent) => void;
+  /** Attach to onPointerCancel on the badge. */
+  onPointerCancel: (e: PointerEvent | React.PointerEvent) => void;
   /** Reset any pending tap sequence. */
   reset: () => void;
   /** Clean up timers. */
   destroy: () => void;
+}
+
+interface CaptureRef {
+  target: Element;
+  pointerId: number;
+}
+
+function trySetPointerCapture(target: unknown, pointerId: number): CaptureRef | null {
+  if (!(target instanceof Element) || typeof pointerId !== 'number') return null;
+  const el = target as Element & { setPointerCapture?: (id: number) => void };
+  if (typeof el.setPointerCapture !== 'function') return null;
+  try {
+    el.setPointerCapture(pointerId);
+    return { target: el, pointerId };
+  } catch {
+    return null;
+  }
+}
+
+function tryReleasePointerCapture(capture: CaptureRef | null): void {
+  if (!capture) return;
+  const el = capture.target as Element & { releasePointerCapture?: (id: number) => void };
+  if (typeof el.releasePointerCapture !== 'function') return;
+  try {
+    el.releasePointerCapture(capture.pointerId);
+  } catch {
+    // Ignore: the pointer may have already been released.
+  }
 }
 
 export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbitalGestureResult {
@@ -44,10 +74,21 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
     hasDragged: false,
   });
 
+  const captureRef = useRef<CaptureRef | null>(null);
+
+  const releaseCapture = useCallback((): void => {
+    tryReleasePointerCapture(captureRef.current);
+    captureRef.current = null;
+  }, []);
+
   const onPointerDown = useCallback(
     (e: PointerEvent | React.PointerEvent): void => {
       dragRef.current = { dragging: false, startX: e.clientX, startY: e.clientY, hasDragged: false };
       detectorRef.current.onPointerDown(e.timeStamp);
+      const capture = trySetPointerCapture(e.currentTarget, e.pointerId);
+      if (capture) {
+        captureRef.current = capture;
+      }
     },
     [],
   );
@@ -77,6 +118,9 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
 
   const onPointerUp = useCallback(
     (e: PointerEvent | React.PointerEvent): void => {
+      if (captureRef.current && (typeof e.pointerId !== 'number' || e.pointerId === captureRef.current.pointerId)) {
+        releaseCapture();
+      }
       if (dragRef.current.dragging) {
         dragRef.current.dragging = false;
         optionsRef.current.onDragEnd?.();
@@ -84,18 +128,35 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
       }
       detectorRef.current.onPointerUp(e.timeStamp);
     },
-    [],
+    [releaseCapture],
+  );
+
+  const onPointerCancel = useCallback(
+    (e: PointerEvent | React.PointerEvent): void => {
+      if (captureRef.current && (typeof e.pointerId !== 'number' || e.pointerId === captureRef.current.pointerId)) {
+        releaseCapture();
+      }
+      if (dragRef.current.dragging) {
+        dragRef.current.dragging = false;
+        optionsRef.current.onDragEnd?.();
+        return;
+      }
+      detectorRef.current.reset();
+    },
+    [releaseCapture],
   );
 
   const reset = useCallback((): void => {
     dragRef.current = { dragging: false, startX: 0, startY: 0, hasDragged: false };
     detectorRef.current.reset();
-  }, []);
+    releaseCapture();
+  }, [releaseCapture]);
 
   const destroy = useCallback((): void => {
     dragRef.current = { dragging: false, startX: 0, startY: 0, hasDragged: false };
     detectorRef.current.destroy();
-  }, []);
+    releaseCapture();
+  }, [releaseCapture]);
 
-  return { onPointerDown, onPointerMove, onPointerUp, reset, destroy };
+  return { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, reset, destroy };
 }
