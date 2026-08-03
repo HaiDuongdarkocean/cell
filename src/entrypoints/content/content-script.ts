@@ -638,9 +638,28 @@ function findAndInitOverlay(): void {
   // Do NOT stop videoReadyPoll here: a video may have appeared but still be
   // loading its <track>/<source> src (vidnest/videasy iframe embeds), and we
   // must keep polling until isVideoReady becomes true.
+  //
+  // videasy (moviepire 4K provider) only creates the <video> element AFTER the
+  // user clicks the play button — which can happen well after the 10s observer
+  // window. When the observer times out without finding a video, install a
+  // one-shot click listener so the next user interaction re-triggers the
+  // search. The listener removes itself once the overlay initializes.
   const disconnectTimer = setTimeout(() => {
     findVideoObserver?.disconnect();
     findVideoObserver = null;
+    if (currentVideo || currentPendingVideo) return;
+    const onClickRetry = (): void => {
+      if (currentVideo || currentPendingVideo) {
+        document.removeEventListener('click', onClickRetry, true);
+        return;
+      }
+      const v = document.querySelector('video');
+      if (v && v !== currentVideo) {
+        document.removeEventListener('click', onClickRetry, true);
+        tryInitVideoWhenReady(v);
+      }
+    };
+    document.addEventListener('click', onClickRetry, true);
   }, 10000);
 }
 
