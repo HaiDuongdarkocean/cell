@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Button } from '@/shared/ui/Button';
 import { Spinner } from '@/shared/ui/Spinner';
@@ -27,6 +28,14 @@ export function TranslatePanel({
   onToggle,
   onTranslate,
 }: TranslatePanelProps): React.JSX.Element {
+  // Auto-translate when panel opens with no translation and no error yet
+  useEffect(() => {
+    if (!translation && !error && !loading) {
+      onTranslate();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   if (loading && !translation) {
     return (
       <div className={styles.cellTranslate} data-cell-id="dictionary-translate-panel">
