@@ -464,8 +464,8 @@
 
 /* === Unified checkbox — single SSOT for def/audio/image/translate panels ===
    Shape: 16px square, radius-sm. Color: primary border + transparent (unchecked),
-   primary bg + fixed-white (checked). Behavior: hidden by default, show on hover
-   (unchecked) or checked. Panel-specific layout (position/margin) via scoped rules. */
+   primary bg + fixed-white (checked). Behavior: space always reserved (visibility:hidden),
+   show on hover (unchecked) or checked. No layout shift when checkbox appears. */
 .cellDefCheckBox {
   width: var(--space-4);
   height: var(--space-4);
@@ -473,10 +473,11 @@
   border: var(--border-width-hairline) solid var(--color-primary);
   background: transparent;
   color: var(--color-primary);
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  visibility: hidden;
 }
 
 /* Hover any host → show unchecked checkbox (border + primary icon) */
@@ -484,7 +485,7 @@
 .cellAudioItem:hover .cellDefCheckBox,
 .cellImageCard:hover .cellDefCheckBox,
 .cellTranslateBlock:hover .cellDefCheckBox {
-  display: flex;
+  visibility: visible;
 }
 
 /* Checked state — primary bg + fixed-white checkmark (all panels) */
@@ -492,7 +493,7 @@
 .cellAudioItem .cellDefCheckBox.cellAudioCheck--checked,
 .cellImageCard--selected .cellDefCheckBox,
 .cellTranslateBlock--selected .cellDefCheckBox {
-  display: flex;
+  visibility: visible;
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: var(--color-fixed-white);
