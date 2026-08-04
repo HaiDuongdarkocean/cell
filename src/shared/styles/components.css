@@ -176,7 +176,7 @@
 }
 .icon-btn--outlined:hover {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-fixed-white);
 }
 .icon-btn--outlined:active {
   background: var(--color-primary-active);
