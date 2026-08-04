@@ -226,7 +226,7 @@ export function DictionaryPanelView({
   }, [allCandidates, onCandidateChange]);
 
   return (
-    <div className={styles.dictionaryPanel} data-cell-id="dictionary-panel">
+    <div className={`${styles.dictionaryPanel} ${variant === 'popup' ? styles.popupMode : ''}`} data-cell-id="dictionary-panel">
       {variant !== 'popup' && (
         <div className={styles.searchRow}>
           <SearchField

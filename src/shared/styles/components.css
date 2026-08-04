@@ -15,6 +15,111 @@
    extension pages (popup/sidepanel/options) which keep the UA default. */
 :host { font-size: var(--font-size-base); }
 
+/* === Cross-browser reset for shadow DOM ===
+   Based on Josh Comeau's Modern CSS Reset + Andy Bell's Modern CSS Reset,
+   adapted for Shadow DOM (:host / :host * instead of html / body / *).
+   Neutralises UA default styles so the popup dictionary renders
+   identically in Chrome, Edge, Brave, Firefox, Safari, etc.
+   Scoped to the shadow root — never leaks to host pages.
+
+   Sources:
+   - https://www.joshwcomeau.com/css/custom-css-reset/
+   - https://andy-bell.co.uk/a-more-modern-css-reset/ */
+
+/* 1. Box-sizing: border-box for all elements + pseudo-elements */
+:host *, :host *::before, :host *::after { box-sizing: border-box; }
+
+/* 2. Remove default margin (except dialog — keeps auto-centering) */
+:host *:not(dialog) { margin: 0; }
+
+/* 3. Remove default padding — design concern, not a default */
+:host * { padding: 0; }
+
+/* 4. Line-height + font smoothing (inherited by all descendants) */
+:host { line-height: 1.5; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+
+/* 5. Media defaults — block + max-width to prevent overflow */
+:host img, :host picture, :host video, :host canvas, :host svg, :host iframe {
+  display: block;
+  max-width: 100%;
+}
+
+/* 6. Form controls inherit font + color from parent, reset native chrome */
+:host input, :host button, :host textarea, :host select, :host optgroup, :host option {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  background: transparent;
+  border: none;
+}
+:host button { cursor: pointer; }
+:host fieldset { min-width: 0; border: none; }
+:host legend { padding: 0; }
+
+/* 7. Headings reset — inherit font-size + weight (no UA 2em bold defaults) */
+:host h1, :host h2, :host h3, :host h4, :host h5, :host h6 {
+  font-size: inherit;
+  font-weight: inherit;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+/* 8. Paragraph + text wrapping */
+:host p { overflow-wrap: break-word; text-wrap: pretty; }
+
+/* 9. List reset — remove default bullets/numbers (design concern) */
+:host ul, :host ol, :host menu { list-style: none; }
+:host li { list-style: none; }
+
+/* 10. Table reset — collapse borders, no default spacing */
+:host table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+:host th, :host td { text-align: left; vertical-align: top; }
+
+/* 11. Anchor reset — inherit color, no default underline (design concern) */
+:host a { color: inherit; text-decoration: none; }
+
+/* 12. Quote reset — no default quotes/marks/borders */
+:host blockquote, :host q { quotes: none; }
+:host blockquote::before, :host blockquote::after, :host q::before, :host q::after { content: ''; content: none; }
+
+/* 13. Code / pre — monospace family, inherit size */
+:host pre, :host code, :host kbd, :host samp {
+  font-family: var(--font-family-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: inherit;
+}
+:host pre { white-space: pre-wrap; word-break: break-word; }
+
+/* 14. Horizontal rule — flat, no default shadow */
+:host hr { height: 1px; border: none; background: currentColor; overflow: visible; }
+
+/* 15. Semantic text — keep meaning, normalise weight/size */
+:host b, :host strong { font-weight: bolder; }
+:host i, :host em { font-style: italic; }
+:host small { font-size: 0.875em; }
+:host sub, :host sup { font-size: 0.75em; line-height: 0; position: relative; vertical-align: baseline; }
+:host sub { bottom: -0.25em; }
+:host sup { top: -0.5em; }
+:host mark { background: transparent; color: inherit; }
+
+/* 16. Details / summary — remove default disclosure triangle */
+:host summary { display: block; list-style: none; }
+:host summary::-webkit-details-marker { display: none; }
+
+/* 17. Dialog — keep UA centering, reset inner padding */
+:host dialog { padding: 0; color: inherit; background: transparent; border: none; }
+
+/* 18. Selection — subtle highlight using currentColor */
+:host ::selection { background: color-mix(in srgb, currentColor 20%, transparent); }
+
+/* 19. Placeholder — inherit color with reduced opacity */
+:host ::placeholder { color: inherit; opacity: 0.5; }
+
+/* 20. Root stacking context — isolate from host page z-index wars */
+:host { isolation: isolate; }
+
 
 /* === Base button reset — center a lone Icon/SVG inside any <button> ===
    Low specificity (:where) so component/module styles can override.
