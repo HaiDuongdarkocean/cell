@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
 import { useOrbitalPointer } from '@/features/dictionaryPopup/badgePointer/useOrbitalPointer';
 import { useOrbitalSnap } from '@/features/dictionaryPopup/badgePointer/useOrbitalSnap';
@@ -328,9 +327,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         className={styles.badge}
         aria-label={expanded ? 'Drag to move' : 'Open dictionary'}
         data-cell-id="orbital-badge-button"
-      >
-        <Icon name={expanded ? 'x' : 'search'} size={18} />
-      </IconButton>
+      />
       {(expanded || !isAtEdge) && (
         <div
           className={styles.pointer}
