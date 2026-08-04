@@ -21,7 +21,8 @@ const baseProps = {
   loading: false,
   selection: new Map() as Map<string, boolean>,
   onToggle: jest.fn(),
-  onTts: jest.fn(),
+  onTtsWord: jest.fn(),
+  onTtsSentence: jest.fn(),
   term: 'hello',
   sentence: 'hello world',
 };
@@ -54,20 +55,37 @@ describe('AudioPanel', () => {
     expect(within(panel).getByText('TTS')).toBeInTheDocument();
   });
 
-  it('triggers onTts when clicking play on TTS fallback item', () => {
-    const onTts = jest.fn();
+  it('triggers onTtsWord when clicking play on TTS word fallback item', () => {
+    const onTtsWord = jest.fn();
     render(
       <AudioPanel
         {...baseProps}
         items={[]}
-        onTts={onTts}
+        onTtsWord={onTtsWord}
       />,
     );
 
     const panel = screen.getByTestId('dictionary-audio-panel');
     const playBtn = within(panel).getByRole('button', { name: /Play TTS/i });
     fireEvent.click(playBtn);
-    expect(onTts).toHaveBeenCalled();
+    expect(onTtsWord).toHaveBeenCalled();
+  });
+
+  it('triggers onTtsSentence when clicking play on TTS sentence fallback item', () => {
+    const onTtsSentence = jest.fn();
+    render(
+      <AudioPanel
+        {...baseProps}
+        items={[]}
+        onTtsSentence={onTtsSentence}
+      />,
+    );
+
+    const panel = screen.getByTestId('dictionary-audio-panel');
+    fireEvent.click(within(panel).getByRole('tab', { name: /Play sentence/i }));
+    const playBtn = within(panel).getByRole('button', { name: /Play TTS/i });
+    fireEvent.click(playBtn);
+    expect(onTtsSentence).toHaveBeenCalled();
   });
 
   it('renders word audio items by default and toggles selection', () => {
