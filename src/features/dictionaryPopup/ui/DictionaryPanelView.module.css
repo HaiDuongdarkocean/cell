@@ -535,6 +535,13 @@
   position: relative;
   flex-shrink: 0;
   border-radius: var(--radius-full);
+  /* Icon-only: label is hidden via .cellLabel { display: none }.
+     Circular with touch-target size. If label visibility is re-enabled,
+     add a --labeled modifier to restore .btn padding → pill shape. */
+  width: var(--touch-target-mobile);
+  height: var(--touch-target-mobile);
+  padding: 0;
+  gap: 0;
 }
 
 .cellToolbarLabel {
