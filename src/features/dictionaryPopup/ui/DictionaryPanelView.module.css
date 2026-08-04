@@ -462,29 +462,46 @@
   transition: opacity var(--duration-fast) var(--ease-in-out);
 }
 
-/* === Shared checkbox visual — SSOT for def/audio/image panels === */
+/* === Unified checkbox — single SSOT for def/audio/image/translate panels ===
+   Shape: 16px square, radius-sm. Color: primary border + transparent (unchecked),
+   primary bg + fixed-white (checked). Behavior: hidden by default, show on hover
+   (unchecked) or checked. Panel-specific layout (position/margin) via scoped rules. */
 .cellDefCheckBox {
   width: var(--space-4);
   height: var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--color-primary);
-  color: var(--color-fixed-white);
-  display: flex;
+  border: var(--border-width-hairline) solid var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
+  display: none;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-/* Definition panel: hide by default, show on hover/checked */
-.cellDefItem .cellDefCheckBox { display: none; }
-.cellDefItem:hover .cellDefCheckBox { display: flex; }
-.cellDefCheck--checked .cellDefCheckBox { display: flex; }
-
-.cellDefItem:hover .cellDefCheckDot {
-  display: none;
+/* Hover any host → show unchecked checkbox (border + primary icon) */
+.cellDefItem:hover .cellDefCheckBox,
+.cellAudioItem:hover .cellDefCheckBox,
+.cellImageCard:hover .cellDefCheckBox,
+.cellTranslateBlock:hover .cellDefCheckBox {
+  display: flex;
 }
 
-.cellDefCheck--checked .cellDefCheckDot, .cellDefItem:hover .cellDefCheck--checked .cellDefCheckDot {
+/* Checked state — primary bg + fixed-white checkmark (all panels) */
+.cellDefCheck--checked .cellDefCheckBox,
+.cellAudioItem .cellDefCheckBox.cellAudioCheck--checked,
+.cellImageCard--selected .cellDefCheckBox,
+.cellTranslateBlock--selected .cellDefCheckBox {
+  display: flex;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-fixed-white);
+}
+
+/* Definition panel: hide dot when checkbox is visible */
+.cellDefItem:hover .cellDefCheckDot,
+.cellDefCheck--checked .cellDefCheckDot,
+.cellDefItem:hover .cellDefCheck--checked .cellDefCheckDot {
   display: none;
 }
 
@@ -728,18 +745,9 @@
   color: var(--color-text);
 }
 
-/* Translate panel: display toggle on shared cellDefCheckBox */
+/* Translate panel: margin offset (layout only — visual is unified) */
 .cellTranslateBlock .cellDefCheckBox {
-  display: none;
-  border: var(--space-0-5) solid var(--color-primary);
-  background: transparent;
   margin-top: var(--space-0-5);
-}
-
-.cellTranslateBlock--selected .cellDefCheckBox {
-  display: flex;
-  background: var(--color-primary);
-  border-color: var(--color-primary);
 }
 
 .cellTranslateEmpty {
@@ -991,20 +999,7 @@
   color: var(--color-text-secondary);
 }
 
-/* Audio panel: opacity toggle on shared cellDefCheckBox */
-.cellAudioItem .cellDefCheckBox {
-  opacity: 0;
-  border: var(--border-width-hairline) solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-secondary);
-}
-
-.cellAudioItem .cellDefCheckBox.cellAudioCheck--checked {
-  opacity: 1;
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-fixed-white);
-}
+/* Audio panel: uses unified cellDefCheckBox — no panel-specific overrides needed */
 
 .cellImageSkeleton {
   display: flex;
@@ -1061,17 +1056,11 @@
   object-fit: cover;
 }
 
-/* Image panel: absolute position + circular + opacity toggle on shared cellDefCheckBox */
+/* Image panel: absolute position overlay (layout only — visual is unified) */
 .cellImageCard .cellDefCheckBox {
   position: absolute;
   top: var(--space-0-5);
   right: var(--space-0-5);
-  border-radius: var(--radius-full);
-  opacity: 0;
-}
-
-.cellImageCard--selected .cellDefCheckBox {
-  opacity: 1;
 }
 
 .cellTranslateSkeleton {
