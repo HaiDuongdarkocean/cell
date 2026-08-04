@@ -33,7 +33,7 @@ describe('AudioPanel', () => {
     expect(panel.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
   });
 
-  it('auto-falls back to TTS when no audio items found', () => {
+  it('does not auto-TTS when tab opens with no items', () => {
     const onTts = jest.fn();
     render(
       <AudioPanel
@@ -45,6 +45,24 @@ describe('AudioPanel', () => {
       />,
     );
 
+    expect(onTts).not.toHaveBeenCalled();
+  });
+
+  it('falls back to TTS when clicking a subtab with no items for that group', () => {
+    const onTts = jest.fn();
+    render(
+      <AudioPanel
+        items={[]}
+        loading={false}
+        selection={new Map()}
+        onToggle={jest.fn()}
+        onTts={onTts}
+      />,
+    );
+
+    const panel = screen.getByTestId('dictionary-audio-panel');
+    const sentenceTab = within(panel).getByRole('tab', { name: /Play sentence/i });
+    fireEvent.click(sentenceTab);
     expect(onTts).toHaveBeenCalled();
   });
 
