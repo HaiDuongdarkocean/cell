@@ -10,6 +10,11 @@
   transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Disable transition during active drag — prevents 200ms lag on Edge. */
+.host.dragging {
+  transition: none;
+}
+
 .pointer {
   position: absolute;
   border-radius: 9999px;
