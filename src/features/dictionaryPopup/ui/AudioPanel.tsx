@@ -9,7 +9,8 @@ export interface AudioPanelProps {
   readonly loading: boolean;
   readonly selection: Map<string, boolean>;
   readonly onToggle: (id: string, selected: boolean) => void;
-  readonly onTts: () => void;
+  readonly onTtsWord: () => void;
+  readonly onTtsSentence: () => void;
   readonly term: string;
   readonly sentence: string;
 }
@@ -22,7 +23,8 @@ export function AudioPanel({
   loading,
   selection,
   onToggle,
-  onTts,
+  onTtsWord,
+  onTtsSentence,
   term,
   sentence,
 }: AudioPanelProps): React.JSX.Element {
@@ -80,7 +82,8 @@ export function AudioPanel({
                   aria-label={isTts ? `Play TTS: ${item.label}` : `Play ${item.label}`}
                   onClick={(): void => {
                     if (isTts) {
-                      onTts();
+                      if (activeGroup === 'word') onTtsWord();
+                      else onTtsSentence();
                       return;
                     }
                     if (!item.url) return;

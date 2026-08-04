@@ -159,7 +159,8 @@ export function CandidateView({
             loading={panel.audioLoading}
             selection={panel.audioSelection}
             onToggle={panel.toggleAudio}
-            onTts={panel.playTerm}
+            onTtsWord={panel.playTerm}
+            onTtsSentence={panel.playSentence}
             term={candidate.term}
             sentence={contextSentence}
           />
