@@ -171,7 +171,7 @@
 .cellContent {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .cellHeaderRow {
@@ -431,7 +431,7 @@
 
 .cellDefItem {
   position: relative;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-in-out);
 }
@@ -466,9 +466,8 @@
   width: var(--space-4);
   height: var(--space-4);
   border-radius: var(--radius-sm);
-  border: var(--space-0-5) solid var(--color-primary);
-  background: transparent;
-  color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-text);
   display: none;
   align-items: center;
   justify-content: center;
@@ -481,8 +480,6 @@
 
 .cellDefItem:hover .cellDefCheckBox {
   display: flex;
-  background: transparent;
-  border-color: var(--color-primary);
 }
 
 .cellDefCheck--checked .cellDefCheckDot, .cellDefItem:hover .cellDefCheck--checked .cellDefCheckDot {
@@ -491,9 +488,7 @@
 
 .cellDefCheck--checked .cellDefCheckBox, .cellDefItem:hover .cellDefCheck--checked .cellDefCheckBox {
   display: flex;
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-text);
 }
 
 .cellDefCheckInput {
@@ -526,7 +521,7 @@
 
 .cellToolbar {
   display: flex;
-  gap: var(--space-0-5);
+  gap: var(--space-1);
   padding: 0;
   align-items: center;
 }
@@ -544,9 +539,14 @@
 }
 
 /* Non-active (ghost) tabs get a subtle background so they're visible
-   against the panel surface. Active tabs keep .btn--primary background. */
+   against the panel surface. Active tabs keep .btn--primary background
+   with fixed white icon color (not theme-dependent). */
 .cellToolbarTab[aria-selected="false"] {
   background: var(--color-surface-hover);
+}
+
+.cellToolbarTab[aria-selected="true"] {
+  color: var(--color-fixed-white);
 }
 
 .cellToolbarLabel {
@@ -556,7 +556,7 @@
 .cellToolbarBadge {
   position: absolute;
   top: 0;
-  right: calc(-1 * var(--space-1));
+  right: calc(-1.5 * var(--space-0-5));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -568,7 +568,7 @@
   color: var(--color-text-inverse);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  border: var(--border-width-hairline) solid var(--color-surface);
+  /* border: var(--border-width-hairline) solid var(--color-surface); */
   box-sizing: border-box;
   pointer-events: none;
   z-index: var(--z-dropdown);
@@ -985,7 +985,7 @@
   border-radius: var(--radius-card);
   background: transparent;
   border: var(--border-width-hairline) solid transparent;
-  margin: 0 var(--space-2) var(--space-2);
+  /* margin: 0 var(--space-2) var(--space-2); */
   transition: background var(--transition), border-color var(--transition);
 }
 
@@ -1042,7 +1042,7 @@
   opacity: 1;
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: var(--color-on-primary);
+  color: var(--color-text);
 }
 
 .cellImageSkeleton {
@@ -1084,7 +1084,7 @@
   height: 84px;
   padding: 0;
   border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-md);
   background: var(--color-surface);
   overflow: hidden;
   cursor: pointer;
