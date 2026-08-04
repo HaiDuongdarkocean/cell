@@ -160,6 +160,8 @@ export function CandidateView({
             selection={panel.audioSelection}
             onToggle={panel.toggleAudio}
             onTts={panel.playTerm}
+            term={candidate.term}
+            sentence={contextSentence}
           />
         )}
         {panel.activeTab === 'image' && (

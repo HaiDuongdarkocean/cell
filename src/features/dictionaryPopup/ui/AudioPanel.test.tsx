@@ -17,15 +17,22 @@ function makeAudio(id: string, kind: AudioItem['kind'], label: string, url?: str
 
 const selection = (entries: [string, boolean][]) => new Map(entries);
 
+const baseProps = {
+  loading: false,
+  selection: new Map() as Map<string, boolean>,
+  onToggle: jest.fn(),
+  onTts: jest.fn(),
+  term: 'hello',
+  sentence: 'hello world',
+};
+
 describe('AudioPanel', () => {
   it('renders a skeleton while loading', () => {
     render(
       <AudioPanel
+        {...baseProps}
         items={[]}
         loading
-        selection={new Map()}
-        onToggle={jest.fn()}
-        onTts={jest.fn()}
       />,
     );
 
@@ -33,36 +40,33 @@ describe('AudioPanel', () => {
     expect(panel.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
   });
 
-  it('does not auto-TTS when tab opens with no items', () => {
-    const onTts = jest.fn();
+  it('renders TTS fallback item when no real audio items', () => {
     render(
       <AudioPanel
+        {...baseProps}
         items={[]}
-        loading={false}
-        selection={new Map()}
-        onToggle={jest.fn()}
-        onTts={onTts}
       />,
     );
 
-    expect(onTts).not.toHaveBeenCalled();
+    const panel = screen.getByTestId('dictionary-audio-panel');
+    // TTS item label: "hello · TTS"
+    expect(within(panel).getByText('hello')).toBeInTheDocument();
+    expect(within(panel).getByText('TTS')).toBeInTheDocument();
   });
 
-  it('falls back to TTS when clicking a subtab with no items for that group', () => {
+  it('triggers onTts when clicking play on TTS fallback item', () => {
     const onTts = jest.fn();
     render(
       <AudioPanel
+        {...baseProps}
         items={[]}
-        loading={false}
-        selection={new Map()}
-        onToggle={jest.fn()}
         onTts={onTts}
       />,
     );
 
     const panel = screen.getByTestId('dictionary-audio-panel');
-    const sentenceTab = within(panel).getByRole('tab', { name: /Play sentence/i });
-    fireEvent.click(sentenceTab);
+    const playBtn = within(panel).getByRole('button', { name: /Play TTS/i });
+    fireEvent.click(playBtn);
     expect(onTts).toHaveBeenCalled();
   });
 
@@ -71,19 +75,17 @@ describe('AudioPanel', () => {
     const item = makeAudio('a1', 'word', 'Test · forvo', 'https://audio/1');
     render(
       <AudioPanel
+        {...baseProps}
         items={[item]}
-        loading={false}
         selection={selection([['a1', false]])}
         onToggle={onToggle}
-        onTts={jest.fn()}
       />,
     );
 
     const panel = screen.getByTestId('dictionary-audio-panel');
     expect(within(panel).getByText('Test')).toBeInTheDocument();
 
-    const label = within(panel).getByText('Test');
-    fireEvent.click(label);
+    fireEvent.click(within(panel).getByText('Test'));
     expect(onToggle).toHaveBeenCalledWith('a1', true);
   });
 
@@ -93,19 +95,32 @@ describe('AudioPanel', () => {
 
     render(
       <AudioPanel
+        {...baseProps}
         items={[word, sentence]}
-        loading={false}
-        selection={new Map()}
-        onToggle={jest.fn()}
-        onTts={jest.fn()}
       />,
     );
 
     const panel = screen.getByTestId('dictionary-audio-panel');
-    const sentenceTab = within(panel).getByRole('tab', { name: /Play sentence/i });
-    fireEvent.click(sentenceTab);
+    fireEvent.click(within(panel).getByRole('tab', { name: /Play sentence/i }));
 
     expect(within(panel).getByText('Sentence')).toBeInTheDocument();
     expect(within(panel).queryByText('Word')).not.toBeInTheDocument();
+  });
+
+  it('shows TTS fallback when switching to a group with no items', () => {
+    const word = makeAudio('w1', 'word', 'Word', 'https://audio/w1');
+    render(
+      <AudioPanel
+        {...baseProps}
+        items={[word]}
+      />,
+    );
+
+    const panel = screen.getByTestId('dictionary-audio-panel');
+    fireEvent.click(within(panel).getByRole('tab', { name: /Play sentence/i }));
+
+    // TTS fallback for sentence: "hello world · TTS"
+    expect(within(panel).getByText('hello world')).toBeInTheDocument();
+    expect(within(panel).getByText('TTS')).toBeInTheDocument();
   });
 });

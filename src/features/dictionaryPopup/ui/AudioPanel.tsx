@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import styles from './DictionaryPanelView.module.css';
@@ -10,7 +10,12 @@ export interface AudioPanelProps {
   readonly selection: Map<string, boolean>;
   readonly onToggle: (id: string, selected: boolean) => void;
   readonly onTts: () => void;
+  readonly term: string;
+  readonly sentence: string;
 }
+
+const TTS_WORD_ID = '__tts_word__';
+const TTS_SENTENCE_ID = '__tts_sentence__';
 
 export function AudioPanel({
   items,
@@ -18,32 +23,98 @@ export function AudioPanel({
   selection,
   onToggle,
   onTts,
+  term,
+  sentence,
 }: AudioPanelProps): React.JSX.Element {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
 
-  // Switch group + fallback TTS if no items for that group
-  const handleGroupSwitch = (group: 'word' | 'sentence'): void => {
-    setActiveGroup(group);
-    if (!items.some((item) => item.kind === group)) {
-      onTts();
-    }
-  };
+  // Build display list: real items + TTS fallback item if no real items for group
+  const displayItems = useMemo(() => {
+    const real = items.filter((item) => item.kind === activeGroup).slice(0, 3);
+    if (real.length > 0) return real;
+    // Synthetic TTS item
+    const ttsLabel = activeGroup === 'word' ? `${term} · TTS` : `${sentence || term} · TTS`;
+    const ttsId = activeGroup === 'word' ? TTS_WORD_ID : TTS_SENTENCE_ID;
+    return [{
+      id: ttsId,
+      kind: activeGroup,
+      label: ttsLabel,
+      url: undefined,
+      source: 'tts' as const,
+      state: 'idle' as const,
+      defaultSelected: false,
+    }];
+  }, [items, activeGroup, term, sentence]);
 
   return (
     <div className={styles.cellAudio} data-cell-id="dictionary-audio-panel">
       {loading ? (
         <AudioSkeleton />
       ) : (
-        <AudioPanelContent
-          items={items}
-          selection={selection}
-          onToggle={onToggle}
-          onTts={onTts}
-          activeGroup={activeGroup}
-          setActiveGroup={handleGroupSwitch}
-          audioRef={audioRef}
-        />
+        <>
+          <div className={styles.cellAudioSubtabs} role="tablist" aria-label="Audio groups">
+            {(['word', 'sentence'] as const).map((group) => (
+              <button
+                key={group}
+                type="button"
+                role="tab"
+                aria-selected={activeGroup === group}
+                className={`${styles.cellAudioSubtab} ${activeGroup === group ? styles['cellAudioSubtab--active'] : ''}`}
+                onClick={(): void => setActiveGroup(group)}
+              >
+                Play {group}
+              </button>
+            ))}
+          </div>
+
+          {displayItems.map((item) => {
+            const selected = selection.get(item.id) ?? item.defaultSelected;
+            const parts = item.label.split(' · ');
+            const isTts = item.source === 'tts';
+            return (
+              <div key={item.id} className={styles.cellAudioItem}>
+                <button
+                  type="button"
+                  className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
+                  aria-label={isTts ? `Play TTS: ${item.label}` : `Play ${item.label}`}
+                  onClick={(): void => {
+                    if (isTts) {
+                      onTts();
+                      return;
+                    }
+                    if (!item.url) return;
+                    if (audioRef.current) {
+                      audioRef.current.pause();
+                      audioRef.current = null;
+                    }
+                    const audio = new Audio(item.url);
+                    audioRef.current = audio;
+                    audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
+                    audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
+                    void audio.play().catch(() => { /* best-effort */ });
+                  }}
+                >
+                  <Icon name="audioWave" size={20} />
+                </button>
+                <button
+                  type="button"
+                  className={styles.cellAudioLabel}
+                  aria-pressed={selected}
+                  onClick={(): void => onToggle(item.id, !selected)}
+                >
+                  <span className={styles.cellAudioLabelName}>{parts[0] ?? item.label}</span>
+                  {parts.length > 1 && (
+                    <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
+                  )}
+                </button>
+                <span className={`${styles.cellDefCheckBox} ${selected ? styles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
+                  <Icon name="check" size={16} />
+                </span>
+              </div>
+            );
+          })}
+        </>
       )}
     </div>
   );
@@ -67,88 +138,5 @@ function AudioSkeleton(): React.JSX.Element {
         </div>
       ))}
     </div>
-  );
-}
-
-interface AudioPanelContentProps {
-  readonly items: readonly AudioItem[];
-  readonly selection: Map<string, boolean>;
-  readonly onToggle: (id: string, selected: boolean) => void;
-  readonly onTts: () => void;
-  readonly activeGroup: 'word' | 'sentence';
-  readonly setActiveGroup: (group: 'word' | 'sentence') => void;
-  readonly audioRef: React.MutableRefObject<HTMLAudioElement | null>;
-}
-
-function AudioPanelContent({
-  items,
-  selection,
-  onToggle,
-  activeGroup,
-  setActiveGroup,
-  audioRef,
-}: AudioPanelContentProps): React.JSX.Element {
-  const filteredItems = items.filter((item) => item.kind === activeGroup).slice(0, 3);
-
-  return (
-    <>
-      <div className={styles.cellAudioSubtabs} role="tablist" aria-label="Audio groups">
-        {(['word', 'sentence'] as const).map((group) => (
-          <button
-            key={group}
-            type="button"
-            role="tab"
-            aria-selected={activeGroup === group}
-            className={`${styles.cellAudioSubtab} ${activeGroup === group ? styles['cellAudioSubtab--active'] : ''}`}
-            onClick={(): void => setActiveGroup(group)}
-          >
-            Play {group}
-          </button>
-        ))}
-      </div>
-
-      {filteredItems.map((item) => {
-        const selected = selection.get(item.id) ?? item.defaultSelected;
-        const parts = item.label.split(' · ');
-        return (
-          <div key={item.id} className={styles.cellAudioItem}>
-            <button
-              type="button"
-              className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
-              aria-label={item.state === 'error' || !item.url ? `Audio unavailable for ${item.label}` : `Play ${item.label}`}
-              disabled={item.state === 'error' || !item.url}
-              onClick={(): void => {
-                if (!item.url) return;
-                if (audioRef.current) {
-                  audioRef.current.pause();
-                  audioRef.current = null;
-                }
-                const audio = new Audio(item.url);
-                audioRef.current = audio;
-                audio.addEventListener('ended', () => { audioRef.current = null; }, { once: true });
-                audio.addEventListener('pause', () => { if (audioRef.current === audio) audioRef.current = null; }, { once: true });
-                void audio.play().catch(() => { /* best-effort */ });
-              }}
-            >
-              <Icon name="audioWave" size={20} />
-            </button>
-            <button
-              type="button"
-              className={styles.cellAudioLabel}
-              aria-pressed={selected}
-              onClick={(): void => onToggle(item.id, !selected)}
-            >
-              <span className={styles.cellAudioLabelName}>{parts[0] ?? item.label}</span>
-              {parts.length > 1 && (
-                <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
-              )}
-            </button>
-            <span className={`${styles.cellDefCheckBox} ${selected ? styles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
-              <Icon name="check" size={16} />
-            </span>
-          </div>
-        );
-      })}
-    </>
   );
 }
