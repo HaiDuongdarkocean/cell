@@ -23,7 +23,6 @@ describe('AudioPanel', () => {
       <AudioPanel
         items={[]}
         loading
-        error={null}
         selection={new Map()}
         onToggle={jest.fn()}
         onTts={jest.fn()}
@@ -34,24 +33,18 @@ describe('AudioPanel', () => {
     expect(panel.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
   });
 
-  it('renders an error and a TTS fallback button', () => {
+  it('auto-falls back to TTS when no audio items found', () => {
     const onTts = jest.fn();
     render(
       <AudioPanel
         items={[]}
         loading={false}
-        error="audio failed"
         selection={new Map()}
         onToggle={jest.fn()}
         onTts={onTts}
       />,
     );
 
-    const panel = screen.getByTestId('dictionary-audio-panel');
-    expect(within(panel).getByText('audio failed')).toBeInTheDocument();
-
-    const tts = within(panel).getByRole('button', { name: /Use system TTS/i });
-    fireEvent.click(tts);
     expect(onTts).toHaveBeenCalled();
   });
 
@@ -62,7 +55,6 @@ describe('AudioPanel', () => {
       <AudioPanel
         items={[item]}
         loading={false}
-        error={null}
         selection={selection([['a1', false]])}
         onToggle={onToggle}
         onTts={jest.fn()}
@@ -85,7 +77,6 @@ describe('AudioPanel', () => {
       <AudioPanel
         items={[word, sentence]}
         loading={false}
-        error={null}
         selection={new Map()}
         onToggle={jest.fn()}
         onTts={jest.fn()}
@@ -98,26 +89,5 @@ describe('AudioPanel', () => {
 
     expect(within(panel).getByText('Sentence')).toBeInTheDocument();
     expect(within(panel).queryByText('Word')).not.toBeInTheDocument();
-  });
-
-  it('shows the TTS fallback when the active group has no items', () => {
-    const onTts = jest.fn();
-    render(
-      <AudioPanel
-        items={[]}
-        loading={false}
-        error={null}
-        selection={new Map()}
-        onToggle={jest.fn()}
-        onTts={onTts}
-      />,
-    );
-
-    const panel = screen.getByTestId('dictionary-audio-panel');
-    expect(within(panel).getByText(/No word audio available/i)).toBeInTheDocument();
-
-    const tts = within(panel).getByRole('button', { name: /Use system TTS/i });
-    fireEvent.click(tts);
-    expect(onTts).toHaveBeenCalled();
   });
 });
