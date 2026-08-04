@@ -57,32 +57,14 @@ function getClientHeight(): number {
   return document.documentElement?.clientHeight || window.innerHeight;
 }
 
-/**
- * Detect overlay scrollbar inset (Edge/macOS overlay scrollbars don't reduce
- * clientWidth, so the badge half-moon sits behind them). Returns px to offset
- * the badge inward so it stays visible.
- *
- * Classic scrollbars already reduce clientWidth → inset is 0.
- * Overlay scrollbars: clientWidth === innerWidth but page overflows → assume 15px.
- * No scrollbar: inset is 0.
- */
-function getOverlayScrollbarInset(): { x: number; y: number } {
-  const docEl = document.documentElement;
-  if (!docEl) return { x: 0, y: 0 };
-  const classicX = window.innerWidth - docEl.clientWidth;
-  const classicY = window.innerHeight - docEl.clientHeight;
-  if (classicX > 0 || classicY > 0) return { x: 0, y: 0 };
-  // Overlay scrollbars: clientWidth === innerWidth but page overflows.
-  // Vertical scrollbar sits on the RIGHT → offsets x. Horizontal sits on BOTTOM → offsets y.
-  const hasVerticalScrollbar = docEl.scrollHeight > window.innerHeight;
-  const hasHorizontalScrollbar = docEl.scrollWidth > window.innerWidth;
-  return { x: hasVerticalScrollbar ? 15 : 0, y: hasHorizontalScrollbar ? 15 : 0 };
-}
-
 function resolveViewport(viewport?: ViewportRect): ViewportRect {
   if (viewport) return viewport;
-  const inset = getOverlayScrollbarInset();
-  return { width: getClientWidth() - inset.x, height: getClientHeight() - inset.y };
+  // clientWidth already excludes classic scrollbars. For overlay scrollbars
+  // (clientWidth === innerWidth), the badge center sits at the actual edge —
+  // the right half is clipped by the viewport (half-moon), the visible left
+  // half is inside the content area. Overlay scrollbars are semi-transparent
+  // and auto-hiding, so they never fully hide the badge.
+  return { width: getClientWidth(), height: getClientHeight() };
 }
 
 function inwardPreset(edge: CollapsedEdge): PointerPreset {
