@@ -39,10 +39,12 @@
 :host { line-height: 1.5; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
 
 /* 5. Media defaults — block + max-width to prevent overflow */
-:host img, :host picture, :host video, :host canvas, :host svg, :host iframe {
+:host img, :host picture, :host video, :host canvas, :host svg, :host iframe, :host embed, :host object, :host audio {
   display: block;
   max-width: 100%;
 }
+:host embed, :host iframe, :host object, :host video { height: auto; }
+:host iframe { border: 0; }
 
 /* 6. Form controls inherit font + color from parent, reset native chrome */
 :host input, :host button, :host textarea, :host select, :host optgroup, :host option {
