@@ -67,34 +67,6 @@ export function CandidateView({
             <div className={styles.cellHeaderWordRow}>
               <h2 className={styles.cellHeaderWord} data-cell-id="dictionary-term">{candidate.term}</h2>
             </div>
-            <div className={styles.cellHeaderReading}>
-              {candidate.reading && (
-                <span className={styles.cellHeaderIpa} data-cell-id="dictionary-reading">
-                  {formatReading(candidate.reading, candidate.readingKind)}
-                </span>
-              )}
-              <span className={styles.cellHeaderAudioGroup}>
-                <button
-                  type="button"
-                  className={`icon-btn icon-btn--xs ${styles.cellHeaderAudio}`}
-                  aria-label="Play word audio"
-                  title="Play word audio"
-                  onClick={panel.playTerm}
-                  data-cell-id="dictionary-play-term"
-                >
-                  <Icon name="audioWave" size={16} />
-                </button>
-                <button
-                  type="button"
-                  className={`icon-btn icon-btn--xs ${styles.cellHeaderAudio}`}
-                  aria-label="Play sentence audio"
-                  title="Play sentence audio"
-                  onClick={panel.playSentence}
-                >
-                  <Icon name="messageSquare" size={16} />
-                </button>
-              </span>
-            </div>
           </div>
           <div className={styles.cellHeaderActions}>
             <button
@@ -121,6 +93,37 @@ export function CandidateView({
             )}
           </div>
         </div>
+      </header>
+
+      <div className={styles.cellContent} data-cell-id="dictionary-content">
+        <div className={styles.cellHeaderReading}>
+          {candidate.reading && (
+            <span className={styles.cellHeaderIpa} data-cell-id="dictionary-reading">
+              {formatReading(candidate.reading, candidate.readingKind)}
+            </span>
+          )}
+          <span className={styles.cellHeaderAudioGroup}>
+            <button
+              type="button"
+              className={`icon-btn icon-btn--xs ${styles.cellHeaderAudio}`}
+              aria-label="Play word audio"
+              title="Play word audio"
+              onClick={panel.playTerm}
+              data-cell-id="dictionary-play-term"
+            >
+              <Icon name="audioWave" size={16} />
+            </button>
+            <button
+              type="button"
+              className={`icon-btn icon-btn--xs ${styles.cellHeaderAudio}`}
+              aria-label="Play sentence audio"
+              title="Play sentence audio"
+              onClick={panel.playSentence}
+            >
+              <Icon name="messageSquare" size={16} />
+            </button>
+          </span>
+        </div>
         <div className={styles.cellHeaderSecond}>
           <button
             type="button"
@@ -138,56 +141,55 @@ export function CandidateView({
             </span>
           )}
         </div>
-      </header>
 
-      <DictionaryToolbar
-        activeTab={panel.activeTab}
-        onSelect={(tab) => panel.setActiveTab(panel.activeTab === tab ? null : tab)}
-        counts={{
-          audio: panel.selectedAudioCount,
-          image: panel.selectedImageCount,
-          translate: panel.selectedTranslationCount,
-          links: panel.selectedLinkCount,
-        }}
-      />
+        <DictionaryToolbar
+          activeTab={panel.activeTab}
+          onSelect={(tab) => panel.setActiveTab(panel.activeTab === tab ? null : tab)}
+          counts={{
+            audio: panel.selectedAudioCount,
+            image: panel.selectedImageCount,
+            translate: panel.selectedTranslationCount,
+            links: panel.selectedLinkCount,
+          }}
+        />
 
-      {panel.activeTab === 'audio' && (
-        <AudioPanel
-          items={panel.audioItems}
-          loading={panel.audioLoading}
-          error={panel.audioError}
-          selection={panel.audioSelection}
-          onToggle={panel.toggleAudio}
-          onTts={panel.playTerm}
-        />
-      )}
-      {panel.activeTab === 'image' && (
-        <ImagePanel
-          items={panel.imageItems}
-          loading={panel.imageLoading}
-          error={panel.imageError}
-          selection={panel.imageSelection}
-          onToggle={panel.toggleImage}
-          onImageError={panel.removeImageItem}
-          term={candidate.term}
-        />
-      )}
-      {panel.activeTab === 'translate' && (
-        <TranslatePanel
-          term={candidate.term}
-          sentence={contextSentence}
-          targetLang={targetLang}
-          translation={panel.translation}
-          error={panel.translationError}
-          loading={panel.isTranslating}
-          selected={panel.translationSelected}
-          onToggle={panel.toggleTranslation}
-          onTranslate={panel.translate}
-        />
-      )}
-      {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}
+        {panel.activeTab === 'audio' && (
+          <AudioPanel
+            items={panel.audioItems}
+            loading={panel.audioLoading}
+            error={panel.audioError}
+            selection={panel.audioSelection}
+            onToggle={panel.toggleAudio}
+            onTts={panel.playTerm}
+          />
+        )}
+        {panel.activeTab === 'image' && (
+          <ImagePanel
+            items={panel.imageItems}
+            loading={panel.imageLoading}
+            error={panel.imageError}
+            selection={panel.imageSelection}
+            onToggle={panel.toggleImage}
+            onImageError={panel.removeImageItem}
+            term={candidate.term}
+          />
+        )}
+        {panel.activeTab === 'translate' && (
+          <TranslatePanel
+            term={candidate.term}
+            sentence={contextSentence}
+            targetLang={targetLang}
+            translation={panel.translation}
+            error={panel.translationError}
+            loading={panel.isTranslating}
+            selected={panel.translationSelected}
+            onToggle={panel.toggleTranslation}
+            onTranslate={panel.translate}
+          />
+        )}
+        {panel.activeTab === 'links' && <LinksPanel links={panel.links} />}
 
-      <section className={styles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
+        <section className={styles.cellDef} aria-label="Definitions" data-cell-id="dictionary-definitions" data-allow-lookup>
         {candidate.definitions.length === 0 ? (
           <div className={styles.cellDefEmpty}>
             <Icon name="info" size={24} />
@@ -204,6 +206,7 @@ export function CandidateView({
           ))
         )}
       </section>
+      </div>
     </article>
   );
 }

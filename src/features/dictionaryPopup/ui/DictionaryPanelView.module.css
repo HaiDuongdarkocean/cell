@@ -168,6 +168,13 @@
   gap: var(--space-0-5);
 }
 
+/* Content wrapper: cellHeaderReading + cellHeaderSecond + toolbar + definitions */
+.cellContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 .cellHeaderRow {
   display: flex;
   align-items: start;
