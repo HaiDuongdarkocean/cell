@@ -6,10 +6,34 @@
   touch-action: none;
   user-select: none;
   will-change: transform;
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pointer {
+  position: absolute;
+  border-radius: 9999px;
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: left 200ms cubic-bezier(0.22, 1, 0.36, 1), top 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease;
 }
 
 .host.expanded {
   clip-path: none;
+}
+
+/* When expanded, badge + pointer become translucent so the user can read
+   the text underneath. */
+.host.expanded .badge {
+  background-color: transparent;
+  border-color: rgb(var(--color-primary-rgb) / 0.3);
+  box-shadow: none;
+}
+
+.host.expanded .pointer {
+  opacity: 0.4;
 }
 
 .host.collapsed[data-edge="right"] {
@@ -56,14 +80,4 @@
 
 .host.collapsed[data-edge="bottom"] .badge {
   border-radius: 9999px 9999px 0 0;
-}
-
-.pointer {
-  position: absolute;
-  border-radius: 9999px;
-  background-color: var(--color-primary);
-  color: var(--color-primary-foreground);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
