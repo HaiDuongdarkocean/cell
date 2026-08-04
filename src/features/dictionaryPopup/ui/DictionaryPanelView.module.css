@@ -467,7 +467,7 @@
   height: var(--space-4);
   border-radius: var(--radius-sm);
   background: var(--color-primary);
-  color: var(--color-text);
+  color: var(--color-fixed-white);
   display: none;
   align-items: center;
   justify-content: center;
@@ -488,7 +488,7 @@
 
 .cellDefCheck--checked .cellDefCheckBox, .cellDefItem:hover .cellDefCheck--checked .cellDefCheckBox {
   display: flex;
-  color: var(--color-text);
+  color: var(--color-fixed-white);
 }
 
 .cellDefCheckInput {
