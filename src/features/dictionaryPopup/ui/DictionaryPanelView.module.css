@@ -555,7 +555,7 @@
 
 .cellToolbarBadge {
   position: absolute;
-  top: calc(-1 * var(--space-1));
+  top: 0;
   right: calc(-1 * var(--space-1));
   display: flex;
   align-items: center;
