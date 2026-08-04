@@ -94,12 +94,12 @@ describe('OrbitalBadge', () => {
     const badge = screen.getByTestId('orbital-badge');
 
     act(() => {
-      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerDown(badge, { clientX: 1024, clientY: 384 });
       fireEvent.pointerMove(badge, { clientX: 980, clientY: 384 });
     });
 
-    // The visible badge center starts at x = 1013 (collapsed right edge).
-    // dx = -33 -> dragCenter = 980, top-left = 980 - 22 = 958.
+    // The visible badge center starts at x = 1024 (right edge, flush).
+    // dx = -44 -> dragCenter = 980, top-left = 980 - 22 = 958.
     expect(badge.style.transform).toContain('translate3d(958px, 362px, 0)');
   });
 
@@ -108,14 +108,14 @@ describe('OrbitalBadge', () => {
     const badge = screen.getByTestId('orbital-badge');
 
     act(() => {
-      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerDown(badge, { clientX: 1024, clientY: 384 });
       fireEvent.pointerMove(badge, { clientX: 980, clientY: 384 });
       fireEvent.pointerUp(badge, { clientX: 980, clientY: 384 });
     });
 
     // 980 is within 1.5×badgeSize(66px) of right edge (1024-980=44 ≤ 66) → snaps.
-    // Collapsed right edge: expanded center 1024, collapsed 1013, top-left = 991.
-    expect(badge.style.transform).toContain('translate3d(991px, 362px, 0)');
+    // Collapsed right edge: center 1024 (flush), top-left = 1024 - 22 = 1002.
+    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
   });
 
   it('stays floating when dropped away from edge', () => {
@@ -123,7 +123,7 @@ describe('OrbitalBadge', () => {
     const badge = screen.getByTestId('orbital-badge');
 
     act(() => {
-      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerDown(badge, { clientX: 1024, clientY: 384 });
       fireEvent.pointerMove(badge, { clientX: 500, clientY: 384 });
       fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
     });
@@ -139,7 +139,7 @@ describe('OrbitalBadge', () => {
 
     // Drag to center and release → floating state.
     act(() => {
-      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerDown(badge, { clientX: 1024, clientY: 384 });
       fireEvent.pointerMove(badge, { clientX: 500, clientY: 384 });
       fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
     });
@@ -174,7 +174,7 @@ describe('OrbitalBadge', () => {
 
     // 1. Drag from right edge to center and release → floating state.
     act(() => {
-      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerDown(badge, { clientX: 1024, clientY: 384 });
       fireEvent.pointerMove(badge, { clientX: 500, clientY: 384 });
       fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
     });
@@ -202,7 +202,7 @@ describe('OrbitalBadge', () => {
 
     // Drag to floating position and release.
     act(() => {
-      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerDown(badge, { clientX: 1024, clientY: 384 });
       fireEvent.pointerMove(badge, { clientX: 500, clientY: 384 });
       fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
     });
@@ -217,15 +217,15 @@ describe('OrbitalBadge', () => {
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
 
-    // Collapsed right edge in a 1024x768 viewport.
-    expect(badge.style.transform).toContain('translate3d(991px, 362px, 0)');
+    // Collapsed flush at right edge: center 1024, top-left = 1024 - 22 = 1002.
+    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
 
     act(() => {
       Object.defineProperty(document.documentElement, 'clientWidth', { value: 400, configurable: true });
       fireEvent.resize(window);
     });
 
-    // Resized to 400 width: collapsed right edge at 400 - 11 = 389, top-left = 389 - 22 = 367.
-    expect(badge.style.transform).toContain('translate3d(367px, 362px, 0)');
+    // Resized to 400 width: center 400 (flush), top-left = 400 - 22 = 378.
+    expect(badge.style.transform).toContain('translate3d(378px, 362px, 0)');
   });
 });

@@ -20,6 +20,7 @@ describe('useOrbitalSnap', () => {
     }));
     expect(result.current.edge).toBe('right');
     expect(result.current.expandedCenter.x).toBe(400);
-    expect(result.current.collapsedCenter.x).toBeLessThan(result.current.expandedCenter.x);
+    // collapsedCenter === expandedCenter (flush at edge, true half-moon).
+    expect(result.current.collapsedCenter).toEqual(result.current.expandedCenter);
   });
 });

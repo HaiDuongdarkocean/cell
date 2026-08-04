@@ -54,13 +54,8 @@ export function getEdgeCenter(edge: CollapsedEdge, point: Point, badgeSize: numb
 }
 
 /** Center of the visible half-moon when the badge is collapsed on an edge.
- *  Offset inward by 1/4 of the badge size so the visible half is not clipped. */
-export function getCollapsedCenter(badgeCenter: Point, edge: CollapsedEdge, badgeSize: number): Point {
-  const inset = badgeSize / 4;
-  switch (edge) {
-    case 'left': return { x: badgeCenter.x + inset, y: badgeCenter.y };
-    case 'right': return { x: badgeCenter.x - inset, y: badgeCenter.y };
-    case 'top': return { x: badgeCenter.x, y: badgeCenter.y + inset };
-    case 'bottom': return { x: badgeCenter.x, y: badgeCenter.y - inset };
-  }
+ *  The badge center sits exactly on the edge so the viewport clips the outer
+ *  half → true half-moon flush against the edge. */
+export function getCollapsedCenter(badgeCenter: Point, _edge: CollapsedEdge, _badgeSize: number): Point {
+  return badgeCenter;
 }
