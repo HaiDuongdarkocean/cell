@@ -104,10 +104,9 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
     const path = e.composedPath();
     if (path.includes(mount.host)) return;
 
-    // Collapse the badge when the user clicks outside it.
-    badgeRef.current?.setExpanded(false);
-
     // Close the panel when the user clicks outside both the badge and panel.
+    // The badge itself stays expanded — it only collapses when dragged near an
+    // edge (handleDragEnd) so the user can re-grab it from its floating spot.
     if (panelController?.isOpen() && !isInsidePanel(e)) {
       panelController.close();
     }

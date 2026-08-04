@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { OrbitalBadge, type OrbitalBadgeHandle } from './OrbitalBadge';
-import type { RefObject } from 'react';
+import { OrbitalBadge } from './OrbitalBadge';
 
 beforeAll(() => {
   if (typeof PointerEvent === 'undefined') {
@@ -170,8 +169,7 @@ describe('OrbitalBadge', () => {
   });
 
   it('does not jump to edge when grabbed from floating position', () => {
-    const badgeRef = { current: null } as RefObject<OrbitalBadgeHandle | null>;
-    render(<OrbitalBadge ref={badgeRef} persistPosition={false} />);
+    render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
 
     // 1. Drag from right edge to center and release → floating state.
@@ -183,13 +181,7 @@ describe('OrbitalBadge', () => {
     // Floating at x=500, expanded=true, top-left = 500 - 22 = 478.
     expect(badge.style.transform).toContain('translate3d(478px, 362px, 0)');
 
-    // 2. Simulate external collapse (mountOrbitalBadge calls setExpanded(false)
-    //    when the user clicks outside the badge).
-    act(() => {
-      badgeRef.current?.setExpanded(false);
-    });
-
-    // 3. Grab the badge again from its floating position (x=500).
+    // 2. Grab the badge again from its floating position (x=500).
     // The badge should NOT jump to the nearest edge.
     act(() => {
       fireEvent.pointerDown(badge, { clientX: 500, clientY: 384 });
@@ -200,6 +192,25 @@ describe('OrbitalBadge', () => {
     // Without the fix, dragStart would be 1013 (collapsedCenter at right edge)
     // → dragCenter = 1023 → top-left = 1001 (jumped to edge!).
     expect(badge.style.transform).toContain('translate3d(488px, 362px, 0)');
+  });
+
+  it('stays expanded (X icon) at floating position after external setExpanded(false) is NOT called', () => {
+    // mountOrbitalBadge no longer calls setExpanded(false) on outside click.
+    // The badge only collapses when dragged near an edge (handleDragEnd).
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+
+    // Drag to floating position and release.
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 500, clientY: 384 });
+      fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
+    });
+
+    // Badge should still be expanded (X icon) at floating position.
+    const btn = screen.getByTestId('orbital-badge-button');
+    expect(btn.getAttribute('aria-label')).toBe('Drag to move');
+    expect(badge.style.transform).toContain('translate3d(478px, 362px, 0)');
   });
 
   it('repositions when the viewport resizes', () => {
