@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { OrbitalBadge } from './OrbitalBadge';
+import { OrbitalBadge, type OrbitalBadgeHandle } from './OrbitalBadge';
+import type { RefObject } from 'react';
 
 beforeAll(() => {
   if (typeof PointerEvent === 'undefined') {
@@ -22,6 +23,10 @@ beforeAll(() => {
 beforeEach(() => {
   Object.defineProperty(document.documentElement, 'clientWidth', { value: 1024, configurable: true });
   Object.defineProperty(document.documentElement, 'clientHeight', { value: 768, configurable: true });
+  Object.defineProperty(document.documentElement, 'scrollHeight', { value: 768, configurable: true });
+  Object.defineProperty(document.documentElement, 'scrollWidth', { value: 1024, configurable: true });
+  Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true });
+  Object.defineProperty(window, 'innerHeight', { value: 768, configurable: true });
 });
 
 describe('OrbitalBadge', () => {
@@ -31,30 +36,28 @@ describe('OrbitalBadge', () => {
     expect(screen.getByTestId('orbital-badge-button')).toBeInTheDocument();
   });
 
-  it('calls onClick on pointer up when not dragging', () => {
+  it('calls onClick on single tap when collapsed at edge', () => {
     jest.useFakeTimers();
     const onClick = jest.fn();
     render(<OrbitalBadge persistPosition={false} onClick={onClick} />);
 
+    const badge = screen.getByTestId('orbital-badge');
     act(() => {
-      fireEvent.pointerDown(screen.getByTestId('orbital-badge'), { clientX: 0, clientY: 0 });
-      fireEvent.pointerUp(screen.getByTestId('orbital-badge'), { clientX: 0, clientY: 0 });
+      fireEvent.pointerDown(badge, { clientX: 0, clientY: 0 });
+      fireEvent.pointerUp(badge, { clientX: 0, clientY: 0 });
     });
-    expect(onClick).not.toHaveBeenCalled();
-
-    act(() => {
-      jest.advanceTimersByTime(300);
-    });
-    expect(onClick).toHaveBeenCalled();
+    act(() => { jest.advanceTimersByTime(300); });
+    expect(onClick).toHaveBeenCalledTimes(1);
     jest.useRealTimers();
   });
 
-  it('double tap cycles the pointer preset forward', () => {
+  it('double tap toggles top ↔ center', () => {
     jest.useFakeTimers();
     const onPresetChange = jest.fn();
-    render(<OrbitalBadge persistPosition={false} initialPreset="center" onPresetChange={onPresetChange} />);
+    render(<OrbitalBadge persistPosition={false} initialPreset="top" onPresetChange={onPresetChange} />);
 
     const badge = screen.getByTestId('orbital-badge');
+    // First double-tap: top → center
     act(() => {
       fireEvent.pointerDown(badge, { clientX: 0, clientY: 0, timeStamp: 0 });
       fireEvent.pointerUp(badge, { clientX: 0, clientY: 0, timeStamp: 0 });
@@ -65,15 +68,14 @@ describe('OrbitalBadge', () => {
       fireEvent.pointerUp(badge, { clientX: 0, clientY: 0, timeStamp: 80 });
     });
     act(() => { jest.advanceTimersByTime(300); });
-
-    expect(onPresetChange).toHaveBeenCalledWith('right');
+    expect(onPresetChange).toHaveBeenLastCalledWith('center');
     jest.useRealTimers();
   });
 
-  it('triple tap cycles the pointer preset backward', () => {
+  it('triple tap toggles left ↔ right', () => {
     jest.useFakeTimers();
     const onPresetChange = jest.fn();
-    render(<OrbitalBadge persistPosition={false} initialPreset="right" onPresetChange={onPresetChange} />);
+    render(<OrbitalBadge persistPosition={false} initialPreset="left" onPresetChange={onPresetChange} />);
 
     const badge = screen.getByTestId('orbital-badge');
     [0, 80, 160].forEach((t) => {
@@ -84,8 +86,7 @@ describe('OrbitalBadge', () => {
       if (t < 160) act(() => { jest.advanceTimersByTime(80); });
     });
     act(() => { jest.advanceTimersByTime(50); });
-
-    expect(onPresetChange).toHaveBeenCalledWith('center');
+    expect(onPresetChange).toHaveBeenLastCalledWith('right');
     jest.useRealTimers();
   });
 
@@ -93,7 +94,6 @@ describe('OrbitalBadge', () => {
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
 
-    // Start dragging the badge leftwards from the right edge.
     act(() => {
       fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
       fireEvent.pointerMove(badge, { clientX: 980, clientY: 384 });
@@ -104,25 +104,109 @@ describe('OrbitalBadge', () => {
     expect(badge.style.transform).toContain('translate3d(958px, 362px, 0)');
   });
 
-  it('snaps back to the nearest edge on pointer up', () => {
+  it('snaps to edge when dropped near edge', () => {
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
 
     act(() => {
       fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
-      fireEvent.pointerMove(badge, { clientX: 900, clientY: 384 });
-      fireEvent.pointerUp(badge, { clientX: 900, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 980, clientY: 384 });
+      fireEvent.pointerUp(badge, { clientX: 980, clientY: 384 });
     });
 
-    // Snaps back to right edge collapsed center: expanded center 1024 - inset 11 = 1013.
+    // 980 is within 1.5×badgeSize(66px) of right edge (1024-980=44 ≤ 66) → snaps.
+    // Collapsed right edge: expanded center 1024, collapsed 1013, top-left = 991.
     expect(badge.style.transform).toContain('translate3d(991px, 362px, 0)');
+  });
+
+  it('stays floating when dropped away from edge', () => {
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 500, clientY: 384 });
+      fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
+    });
+
+    // 500 is far from any edge → stays at drop position (clamped).
+    // dragCenter = 500, top-left = 500 - 22 = 478.
+    expect(badge.style.transform).toContain('translate3d(478px, 362px, 0)');
+  });
+
+  it('pointer is visible when floating (not at edge)', () => {
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+
+    // Drag to center and release → floating state.
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 500, clientY: 384 });
+      fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
+    });
+
+    // Pointer should be rendered (visible) when floating.
+    expect(screen.queryByTestId('orbital-pointer')).toBeInTheDocument();
+  });
+
+  it('pointer is hidden when collapsed at edge', () => {
+    render(<OrbitalBadge persistPosition={false} />);
+    // Badge starts collapsed at right edge → no pointer.
+    expect(screen.queryByTestId('orbital-pointer')).not.toBeInTheDocument();
+  });
+
+  it('does not move when hovering (no drag)', () => {
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+    const initialTransform = badge.style.transform;
+
+    // Simulate hover (pointer move without pointer down).
+    act(() => {
+      fireEvent.pointerMove(badge, { clientX: 500, clientY: 500 });
+    });
+
+    // Badge should not have moved.
+    expect(badge.style.transform).toBe(initialTransform);
+  });
+
+  it('does not jump to edge when grabbed from floating position', () => {
+    const badgeRef = { current: null } as RefObject<OrbitalBadgeHandle | null>;
+    render(<OrbitalBadge ref={badgeRef} persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+
+    // 1. Drag from right edge to center and release → floating state.
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 1013, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 500, clientY: 384 });
+      fireEvent.pointerUp(badge, { clientX: 500, clientY: 384 });
+    });
+    // Floating at x=500, expanded=true, top-left = 500 - 22 = 478.
+    expect(badge.style.transform).toContain('translate3d(478px, 362px, 0)');
+
+    // 2. Simulate external collapse (mountOrbitalBadge calls setExpanded(false)
+    //    when the user clicks outside the badge).
+    act(() => {
+      badgeRef.current?.setExpanded(false);
+    });
+
+    // 3. Grab the badge again from its floating position (x=500).
+    // The badge should NOT jump to the nearest edge.
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 500, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 510, clientY: 384 });
+    });
+
+    // dragStart = 500 (floating center), dx = 10 → dragCenter = 510, top-left = 488.
+    // Without the fix, dragStart would be 1013 (collapsedCenter at right edge)
+    // → dragCenter = 1023 → top-left = 1001 (jumped to edge!).
+    expect(badge.style.transform).toContain('translate3d(488px, 362px, 0)');
   });
 
   it('repositions when the viewport resizes', () => {
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
 
-    // Collapsed right edge in a 1024x768 viewport: expanded center 1024, collapsed 1013.
+    // Collapsed right edge in a 1024x768 viewport.
     expect(badge.style.transform).toContain('translate3d(991px, 362px, 0)');
 
     act(() => {
