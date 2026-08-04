@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import styles from './DictionaryPanelView.module.css';
@@ -22,27 +22,26 @@ export function AudioPanel({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [activeGroup, setActiveGroup] = useState<'word' | 'sentence'>('word');
 
-  const hasItems = items.some((item) => item.kind === activeGroup);
-
-  // Auto-fallback to TTS when no audio items found
-  useEffect(() => {
-    if (!loading && !hasItems) {
+  // Switch group + fallback TTS if no items for that group
+  const handleGroupSwitch = (group: 'word' | 'sentence'): void => {
+    setActiveGroup(group);
+    if (!items.some((item) => item.kind === group)) {
       onTts();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, hasItems]);
+  };
 
   return (
     <div className={styles.cellAudio} data-cell-id="dictionary-audio-panel">
-      {loading || !hasItems ? (
+      {loading ? (
         <AudioSkeleton />
       ) : (
         <AudioPanelContent
           items={items}
           selection={selection}
           onToggle={onToggle}
+          onTts={onTts}
           activeGroup={activeGroup}
-          setActiveGroup={setActiveGroup}
+          setActiveGroup={handleGroupSwitch}
           audioRef={audioRef}
         />
       )}
@@ -75,6 +74,7 @@ interface AudioPanelContentProps {
   readonly items: readonly AudioItem[];
   readonly selection: Map<string, boolean>;
   readonly onToggle: (id: string, selected: boolean) => void;
+  readonly onTts: () => void;
   readonly activeGroup: 'word' | 'sentence';
   readonly setActiveGroup: (group: 'word' | 'sentence') => void;
   readonly audioRef: React.MutableRefObject<HTMLAudioElement | null>;
