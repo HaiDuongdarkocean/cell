@@ -543,6 +543,12 @@
   gap: 0;
 }
 
+/* Non-active (ghost) tabs get a subtle background so they're visible
+   against the panel surface. Active tabs keep .btn--primary background. */
+.cellToolbarTab[aria-selected="false"] {
+  background: var(--color-surface-hover);
+}
+
 .cellToolbarLabel {
   /* visibility is controlled by .cellLabel so container queries can hide it on narrow widths */
 }
