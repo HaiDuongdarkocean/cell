@@ -90,6 +90,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   const defaultCenter = { x: resolvedViewport.width - badgeSize / 2, y: resolvedViewport.height / 2 };
 
   const [expanded, setExpanded] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [userPreset, setUserPreset] = useState<PointerPreset>(initialPreset);
   const [center, setCenter] = useState<Point>(initialCenter ?? defaultCenter);
   const [dragCenter, setDragCenter] = useState<Point>(center);
@@ -250,7 +251,8 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
     dragCenterRef.current = start;
     setDragCenter(start);
     setExpanded(true);
-  }, [viewport, badgeSize, setDragCenter, setExpanded]);
+    setDragging(true);
+  }, [viewport, badgeSize, setDragCenter, setExpanded, setDragging]);
 
   const handleDragEnd = useCallback((): void => {
     const vp = resolveViewport(viewport);
@@ -261,6 +263,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
     // If dropped near an edge → snap + collapse (half-moon).
     // If dropped away from edge → stay expanded at drop position (full circle).
     const snapThreshold = badgeSize * 1.5;
+    setDragging(false);
     if (distance <= snapThreshold) {
       const snapped = getEdgeCenter(nearestEdge, current, badgeSize, vp);
       setCenter(snapped);
@@ -279,7 +282,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       // Stay expanded — badge floats at drop position with pointer visible.
       persistRef.current?.({ x: clamped.x, y: clamped.y, edge: nearestEdge, preset: userPreset });
     }
-  }, [badgeSize, viewport, userPreset, setCenter, setDragCenter, setExpanded]);
+  }, [badgeSize, viewport, userPreset, setCenter, setDragCenter, setExpanded, setDragging]);
 
   // Double-tap: toggle between 'top' and 'center'.
   const cyclePreset = useCallback((): void => {
@@ -313,7 +316,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
 
   return (
     <div
-      className={[styles.host, 'js-cell-orbital-badge', expanded ? styles.expanded : styles.collapsed].filter(Boolean).join(' ')}
+      className={[styles.host, 'js-cell-orbital-badge', expanded ? styles.expanded : styles.collapsed, dragging && styles.dragging].filter(Boolean).join(' ')}
       style={{
         left: 0,
         top: 0,
