@@ -194,7 +194,7 @@ describe('OrbitalBadge', () => {
     expect(badge.style.transform).toContain('translate3d(488px, 362px, 0)');
   });
 
-  it('stays expanded (X icon) at floating position after external setExpanded(false) is NOT called', () => {
+  it('stays expanded at floating position after external setExpanded(false) is NOT called', () => {
     // mountOrbitalBadge no longer calls setExpanded(false) on outside click.
     // The badge only collapses when dragged near an edge (handleDragEnd).
     render(<OrbitalBadge persistPosition={false} />);
