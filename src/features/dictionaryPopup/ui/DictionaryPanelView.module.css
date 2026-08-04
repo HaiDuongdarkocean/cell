@@ -736,14 +736,14 @@
 }
 
 .cellTranslateTarget {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-}
-
-.cellTranslateNative {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
+}
+
+.cellTranslateNative {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 /* Translate panel: margin offset (layout only — visual is unified) */
