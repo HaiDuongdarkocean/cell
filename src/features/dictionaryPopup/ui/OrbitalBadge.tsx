@@ -57,8 +57,32 @@ function getClientHeight(): number {
   return document.documentElement?.clientHeight || window.innerHeight;
 }
 
+/**
+ * Detect overlay scrollbar inset (Edge/macOS overlay scrollbars don't reduce
+ * clientWidth, so the badge half-moon sits behind them). Returns px to offset
+ * the badge inward so it stays visible.
+ *
+ * Classic scrollbars already reduce clientWidth → inset is 0.
+ * Overlay scrollbars: clientWidth === innerWidth but page overflows → assume 15px.
+ * No scrollbar: inset is 0.
+ */
+function getOverlayScrollbarInset(): { x: number; y: number } {
+  const docEl = document.documentElement;
+  if (!docEl) return { x: 0, y: 0 };
+  const classicX = window.innerWidth - docEl.clientWidth;
+  const classicY = window.innerHeight - docEl.clientHeight;
+  if (classicX > 0 || classicY > 0) return { x: 0, y: 0 };
+  // Overlay scrollbars: clientWidth === innerWidth but page overflows.
+  // Vertical scrollbar sits on the RIGHT → offsets x. Horizontal sits on BOTTOM → offsets y.
+  const hasVerticalScrollbar = docEl.scrollHeight > window.innerHeight;
+  const hasHorizontalScrollbar = docEl.scrollWidth > window.innerWidth;
+  return { x: hasVerticalScrollbar ? 15 : 0, y: hasHorizontalScrollbar ? 15 : 0 };
+}
+
 function resolveViewport(viewport?: ViewportRect): ViewportRect {
-  return viewport ?? { width: getClientWidth(), height: getClientHeight() };
+  if (viewport) return viewport;
+  const inset = getOverlayScrollbarInset();
+  return { width: getClientWidth() - inset.x, height: getClientHeight() - inset.y };
 }
 
 function inwardPreset(edge: CollapsedEdge): PointerPreset {
@@ -74,7 +98,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   initialCenter,
   badgeSize = 44,
   pointerSize = 12,
-  initialPreset = 'center',
+  initialPreset = 'top',
   viewport,
   persistPosition = true,
   onPresetChange,
@@ -85,7 +109,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   const defaultCenter = { x: resolvedViewport.width - badgeSize / 2, y: resolvedViewport.height / 2 };
 
   const [expanded, setExpanded] = useState(false);
-  const [preset, setPreset] = useState<PointerPreset>(initialPreset);
+  const [userPreset, setUserPreset] = useState<PointerPreset>(initialPreset);
   const [center, setCenter] = useState<Point>(initialCenter ?? defaultCenter);
   const [dragCenter, setDragCenter] = useState<Point>(center);
   const dragStartCenterRef = useRef<Point>(center);
@@ -93,10 +117,12 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   const dragCenterRef = useRef<Point>(dragCenter);
   const expandedCenterRef = useRef<Point>(center);
   const collapsedCenterRef = useRef<Point>(center);
+  const expandedRef = useRef(expanded);
   const onPresetChangeRef = useRef(onPresetChange);
 
   centerRef.current = center;
   dragCenterRef.current = dragCenter;
+  expandedRef.current = expanded;
   onPresetChangeRef.current = onPresetChange;
 
   // Load the persisted position and clamp it to the current viewport. This
@@ -114,23 +140,15 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         const inward = inwardPreset(nearestEdge);
         setCenter(snapped);
         setDragCenter(snapped);
-        setPreset(inward);
+        setUserPreset(inward);
         onPresetChangeRef.current?.(inward);
       })
       .catch(() => {});
     return () => { mounted = false; };
-  }, [persistPosition, badgeSize, viewport, setCenter, setDragCenter, setPreset]);
+  }, [persistPosition, badgeSize, viewport, setCenter, setDragCenter, setUserPreset]);
 
   const activeViewport = resolveViewport(viewport);
   const activeCenter = expanded ? dragCenter : center;
-
-  const { pointerCenter, pointerTip } = useOrbitalPointer({
-    badgeCenter: activeCenter,
-    badgeSize,
-    pointerSize,
-    viewportWidth: activeViewport.width,
-    viewportHeight: activeViewport.height,
-  });
 
   const { edge, collapsedCenter, expandedCenter } = useOrbitalSnap({
     badgeCenter: activeCenter,
@@ -138,20 +156,36 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
     viewport: activeViewport,
   });
 
+  // Check if badge is actually near an edge (not just which edge is nearest).
+  // getNearestEdge always returns an edge — we need the distance to decide
+  // whether to snap (half-moon) or float (full circle) when collapsed.
+  const { distance: edgeDistance } = getNearestEdge(activeCenter, activeViewport);
+  const isAtEdge = edgeDistance <= badgeSize / 2;
+
+  // Collapsed at edge → pointer hidden at center. Floating or expanded → user's preset.
+  const activePreset: PointerPreset = isAtEdge && !expanded ? 'center' : userPreset;
+
+  const { pointerCenter, pointerTip } = useOrbitalPointer({
+    badgeCenter: activeCenter,
+    badgeSize,
+    pointerSize,
+    preset: activePreset,
+  });
+
   expandedCenterRef.current = expandedCenter;
   collapsedCenterRef.current = collapsedCenter;
 
   useImperativeHandle(ref, () => ({
-    setPreset: (next) => setPreset(next),
+    setPreset: (next) => setUserPreset(next),
     setExpanded: (next) => setExpanded(next),
-    getState: () => ({ expanded, preset, center: activeCenter }),
-  }), [expanded, preset, activeCenter]);
+    getState: () => ({ expanded, preset: userPreset, center: activeCenter }),
+  }), [expanded, userPreset, activeCenter]);
 
   useEffect(() => {
     if (expanded) {
-      onTipReady?.(pointerTip, preset, activeCenter);
+      onTipReady?.(pointerTip, userPreset, activeCenter);
     }
-  }, [expanded, pointerTip, preset, activeCenter, onTipReady]);
+  }, [expanded, pointerTip, userPreset, activeCenter, onTipReady]);
 
   const persist = useCallback((position: OrbitalBadgePosition): void => {
     if (!persistPosition) return;
@@ -178,14 +212,12 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         const currentDrag = dragCenterRef.current;
         const { edge: nearestEdge } = getNearestEdge(currentCenter, vp);
         const snapped = getEdgeCenter(nearestEdge, currentCenter, badgeSize, vp);
-        const inward = inwardPreset(nearestEdge);
         const { edge: dragEdge } = getNearestEdge(currentDrag, vp);
         const dragSnapped = getEdgeCenter(dragEdge, currentDrag, badgeSize, vp);
         setCenter(snapped);
         setDragCenter(dragSnapped);
-        setPreset(inward);
-        onPresetChangeRef.current?.(inward);
-        persistRef.current?.({ x: snapped.x, y: snapped.y, edge: nearestEdge, preset: inward });
+        // Keep userPreset on resize — don't override user's pointer position.
+        persistRef.current?.({ x: snapped.x, y: snapped.y, edge: nearestEdge, preset: userPreset });
       });
     };
     window.addEventListener('resize', reposition);
@@ -195,57 +227,92 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       window.removeEventListener('orientationchange', reposition);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [viewport, badgeSize, setCenter, setDragCenter, setPreset, persist]);
+  }, [viewport, badgeSize, userPreset, setCenter, setDragCenter, persist]);
 
   const handleDrag = useCallback(
     (dx: number, dy: number): void => {
-      setDragCenter({
+      const next = {
         x: dragStartCenterRef.current.x + dx,
         y: dragStartCenterRef.current.y + dy,
-      });
+      };
+      // Update ref synchronously so handleDragEnd (same event loop) reads
+      // the live position, not the stale state from the previous render.
+      dragCenterRef.current = next;
+      setDragCenter(next);
     },
     [setDragCenter],
   );
 
   const handleDragStart = useCallback((): void => {
-    const start = collapsedCenterRef.current;
+    // Start drag from the currently displayed position so the badge doesn't
+    // jump to the nearest edge when grabbed while floating away from an edge.
+    // - Already expanded: continue from dragCenter (no state change, no jump).
+    // - Collapsed at edge: start from collapsedCenter (half-moon position).
+    // - Collapsed floating: start from center (the visible floating position).
+    const vp = resolveViewport(viewport);
+    const { distance } = getNearestEdge(centerRef.current, vp);
+    const isAtEdgeNow = distance <= badgeSize / 2;
+    const start = expandedRef.current
+      ? dragCenterRef.current
+      : (isAtEdgeNow ? collapsedCenterRef.current : centerRef.current);
     dragStartCenterRef.current = start;
+    dragCenterRef.current = start;
     setDragCenter(start);
     setExpanded(true);
-  }, [setDragCenter, setExpanded]);
+  }, [viewport, badgeSize, setDragCenter, setExpanded]);
 
   const handleDragEnd = useCallback((): void => {
     const vp = resolveViewport(viewport);
-    const { edge: nearestEdge } = getNearestEdge(dragCenter, vp);
-    const snapped = getEdgeCenter(nearestEdge, dragCenter, badgeSize, vp);
-    setCenter(snapped);
-    setDragCenter(snapped);
-    setExpanded(false);
-    const inward = inwardPreset(nearestEdge);
-    setPreset(inward);
-    onPresetChangeRef.current?.(inward);
-    persistRef.current?.({ x: snapped.x, y: snapped.y, edge: nearestEdge, preset: inward });
-  }, [dragCenter, badgeSize, viewport, setCenter, setDragCenter, setExpanded, setPreset]);
+    // Use dragCenterRef (live ref) not dragCenter (stale closure — state update
+    // from handleDrag may not have been applied yet in the same event loop).
+    const current = dragCenterRef.current;
+    const { edge: nearestEdge, distance } = getNearestEdge(current, vp);
+    // If dropped near an edge → snap + collapse (half-moon).
+    // If dropped away from edge → stay expanded at drop position (full circle).
+    const snapThreshold = badgeSize * 1.5;
+    if (distance <= snapThreshold) {
+      const snapped = getEdgeCenter(nearestEdge, current, badgeSize, vp);
+      setCenter(snapped);
+      setDragCenter(snapped);
+      setExpanded(false);
+      persistRef.current?.({ x: snapped.x, y: snapped.y, edge: nearestEdge, preset: userPreset });
+    } else {
+      // Clamp inside viewport so badge doesn't go off-screen.
+      const half = badgeSize / 2;
+      const clamped = {
+        x: Math.max(half, Math.min(vp.width - half, current.x)),
+        y: Math.max(half, Math.min(vp.height - half, current.y)),
+      };
+      setCenter(clamped);
+      setDragCenter(clamped);
+      // Stay expanded — badge floats at drop position with pointer visible.
+      persistRef.current?.({ x: clamped.x, y: clamped.y, edge: nearestEdge, preset: userPreset });
+    }
+  }, [badgeSize, viewport, userPreset, setCenter, setDragCenter, setExpanded]);
 
+  // Double-tap: toggle between 'top' and 'center'.
   const cyclePreset = useCallback((): void => {
-    const order: PointerPreset[] = ['center', 'right', 'top', 'left', 'bottom'];
-    const next = order[(order.indexOf(preset) + 1) % order.length];
-    setPreset(next);
+    const next: PointerPreset = userPreset === 'top' ? 'center' : 'top';
+    setUserPreset(next);
     onPresetChangeRef.current?.(next);
     persistRef.current?.({ x: activeCenter.x, y: activeCenter.y, edge, preset: next });
-  }, [preset, activeCenter, edge, setPreset]);
+  }, [userPreset, activeCenter, edge, setUserPreset]);
 
+  // Triple-tap: cycle between 'left' and 'right'.
   const reversePreset = useCallback((): void => {
-    const order: PointerPreset[] = ['center', 'right', 'top', 'left', 'bottom'];
-    const idx = order.indexOf(preset);
-    const next = order[(idx - 1 + order.length) % order.length];
-    setPreset(next);
+    const next: PointerPreset = userPreset === 'left' ? 'right' : 'left';
+    setUserPreset(next);
     onPresetChangeRef.current?.(next);
     persistRef.current?.({ x: activeCenter.x, y: activeCenter.y, edge, preset: next });
-  }, [preset, activeCenter, edge, setPreset]);
+  }, [userPreset, activeCenter, edge, setUserPreset]);
+
+  // Single-tap: only open panel when collapsed at edge. When expanded, ignore.
+  const handleSingleTap = useCallback((): void => {
+    if (!expanded) onClick?.();
+  }, [expanded, onClick]);
 
   const gesture = useOrbitalGesture({
-    onSingleTap: onClick,
+    onSingleTap: handleSingleTap,
     onDoubleTap: cyclePreset,
     onTripleTap: reversePreset,
     onDragStart: handleDragStart,
@@ -253,7 +320,8 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
     onDragEnd: handleDragEnd,
   });
 
-  const displayedCenter = expanded ? dragCenter : (edge ? collapsedCenter : center);
+  // Collapsed at edge → half-moon (collapsedCenter). Floating → stay at center.
+  const displayedCenter = expanded ? dragCenter : (isAtEdge ? collapsedCenter : center);
 
   return (
     <div
@@ -265,7 +333,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         height: badgeSize,
         transform: `translate3d(${displayedCenter.x - badgeSize / 2}px, ${displayedCenter.y - badgeSize / 2}px, 0)`,
       }}
-      data-edge={edge}
+      data-edge={isAtEdge ? edge : undefined}
       data-cell-id="orbital-badge"
       aria-label="Orbital dictionary badge"
       role="button"
@@ -281,7 +349,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       >
         <Icon name={expanded ? 'x' : 'search'} size={18} />
       </IconButton>
-      {expanded && (
+      {(expanded || !isAtEdge) && (
         <div
           className={styles.pointer}
           style={{
