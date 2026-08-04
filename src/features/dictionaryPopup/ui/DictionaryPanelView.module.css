@@ -856,16 +856,16 @@
 .cellCandidatesChips {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-2) var(--touch-target);
+  gap: 0;
+  padding: 0;
+  margin: 0;
   border-top: var(--border-width-hairline) solid var(--color-border-subtle);
-  margin-top: var(--space-2);
 }
 
 .cellCandidatesChipsScroll {
   flex: 1 1 auto;
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-0-5);
   overflow-x: auto;
   scrollbar-width: none;
   min-width: 0;
@@ -1020,8 +1020,9 @@
 }
 
 .cellCandidatesChips {
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  gap: 0;
+  padding: 0;
+  margin: 0;
 }
 }
 
@@ -1032,8 +1033,8 @@
   flex-direction: column;
   overflow-y: auto;
   scroll-behavior: smooth;
-  gap: var(--space-3);
-  padding: 0 var(--space-2) var(--space-4);
+  gap: 0;
+  padding: 0;
 }
 
 .candidate {
