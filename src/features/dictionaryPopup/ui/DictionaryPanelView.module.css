@@ -728,49 +728,18 @@
   color: var(--color-text);
 }
 
-.cellTranslateCheck {
-  flex-shrink: 0;
-  width: var(--space-4);
-  height: var(--space-4);
-  border-radius: var(--radius-sm);
+/* Translate panel: display toggle on shared cellDefCheckBox */
+.cellTranslateBlock .cellDefCheckBox {
+  display: none;
   border: var(--space-0-5) solid var(--color-primary);
   background: transparent;
-  display: none;
-  align-items: center;
-  justify-content: center;
   margin-top: var(--space-0-5);
 }
 
-.cellTranslateCheck--checked {
+.cellTranslateBlock--selected .cellDefCheckBox {
   display: flex;
   background: var(--color-primary);
   border-color: var(--color-primary);
-}
-
-.cellTranslateBlock--selected .cellTranslateCheck {
-  display: flex;
-}
-
-.cellTranslateBlock--selected .cellTranslateCheck--checked {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-.cellTranslateCheckTick {
-  width: var(--space-2-5);
-  height: var(--space-2-5);
-  display: none;
-  color: var(--color-text-inverse);
-}
-
-.cellTranslateCheckTick svg {
-  width: var(--space-2-5);
-  height: var(--space-2-5);
-  display: block;
-}
-
-.cellTranslateCheck--checked .cellTranslateCheckTick {
-  display: inline-block;
 }
 
 .cellTranslateEmpty {
@@ -1030,7 +999,7 @@
   color: var(--color-text-secondary);
 }
 
-.cellAudioCheck--checked {
+.cellAudioItem .cellDefCheckBox.cellAudioCheck--checked {
   opacity: 1;
   background: var(--color-primary);
   border-color: var(--color-primary);
@@ -1084,7 +1053,6 @@
 
 .cellImageCard--selected {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 1.2px var(--color-primary);
 }
 
 .cellImageThumb {
