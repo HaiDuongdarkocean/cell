@@ -79,11 +79,28 @@ function isBlockContainer(el: HTMLElement): boolean {
   return BLOCK_TAGS.has(el.tagName);
 }
 
-/** Walk up from a text node to the nearest block-level container. */
+/** Check if an element is an extension-generated wrapper (token span, block
+ *  wrapper, etc.) that should be skipped when finding the real sentence
+ *  container. These wrappers only contain a single word, not a sentence. */
+function isExtensionWrapper(el: HTMLElement): boolean {
+  if (el.classList.contains('js-cell-token')) return true;
+  if (el.hasAttribute('data-cell-block-id')) return true;
+  // Wrapper divs/spans created by token wrapping (inline/flex wrappers
+  // around a single token span — not real page content containers).
+  const child = el.firstElementChild;
+  if (child && child.classList.contains('js-cell-token') && el.childElementCount === 1) return true;
+  return false;
+}
+
+/** Walk up from a text node to the nearest block-level container,
+ *  skipping extension-generated token wrappers. */
 function findBlockContainer(textNode: Text): HTMLElement | null {
   let el: HTMLElement | null = textNode.parentElement;
-  while (el && !isBlockContainer(el)) el = el.parentElement;
-  return el;
+  while (el) {
+    if (isBlockContainer(el) && !isExtensionWrapper(el)) return el;
+    el = el.parentElement;
+  }
+  return null;
 }
 
 /** Compute the UTF-16 offset of a text node within its block's textContent,

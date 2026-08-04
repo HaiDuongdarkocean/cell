@@ -81,12 +81,12 @@ export function AudioPanel({
                   className={`icon-btn icon-btn--sm icon-btn--outlined ${styles.cellAudioPlay}`}
                   aria-label={isTts ? `Play TTS: ${item.label}` : `Play ${item.label}`}
                   onClick={(): void => {
-                    if (isTts) {
+                    (event?.target as HTMLElement)?.setAttribute('data-debug-click', JSON.stringify({isTts, hasUrl: !!item.url, url: item.url?.substring(0,50), activeGroup}));
+                    if (isTts || !item.url) {
                       if (activeGroup === 'word') onTtsWord();
                       else onTtsSentence();
                       return;
                     }
-                    if (!item.url) return;
                     if (audioRef.current) {
                       audioRef.current.pause();
                       audioRef.current = null;
