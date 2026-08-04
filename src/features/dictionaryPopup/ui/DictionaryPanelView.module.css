@@ -288,23 +288,23 @@
 }
 
 .cellHeaderStatus--unknown {
-  background: var(--color-token-status-unknown-bg);
-  color: var(--color-token-status-unknown);
+  background: var(--color-token-status-unknown);
+  color: var(--color-token-status-unknown-bg);
 }
 
 .cellHeaderStatus--tracking {
-  background: var(--color-token-status-tracking-bg);
-  color: var(--color-token-status-tracking);
+  background: var(--color-token-status-tracking);
+  color: var(--color-token-status-tracking-bg);
 }
 
 .cellHeaderStatus--known {
-  background: var(--color-token-status-known-bg);
-  color: var(--color-token-status-known);
+  background: var(--color-token-status-known);
+  color: var(--color-token-status-known-bg);
 }
 
 .cellHeaderStatus--ignore {
-  background: var(--color-token-status-ignore-bg);
-  color: var(--color-token-status-ignore);
+  background: var(--color-token-status-ignore);
+  color: var(--color-token-status-ignore-bg);
 }
 
 .cellHeaderFrequency {
