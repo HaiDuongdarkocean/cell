@@ -183,10 +183,10 @@
   transform: scale(0.96);
 }
 
-/* Filled variant — primary bg, inverse text */
+/* Filled variant — primary bg, fixed white icon (not theme-dependent) */
 .icon-btn--filled {
   background: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-fixed-white);
 }
 .icon-btn--filled:hover { background: var(--color-primary-hover); }
 .icon-btn--filled:active { background: var(--color-primary-active); transform: scale(0.96); }
@@ -222,7 +222,7 @@
 .btn:disabled { opacity: var(--button-disabled-opacity); pointer-events: none; }
 .btn:active { transform: scale(0.98); }
 
-.btn--primary { background: var(--button-bg); color: var(--color-text-inverse); }
+.btn--primary { background: var(--button-bg); color: var(--color-fixed-white); }
 .btn--primary:hover { }
 
 .btn--secondary { background: var(--button-secondary-bg); color: var(--button-secondary-fg); }
