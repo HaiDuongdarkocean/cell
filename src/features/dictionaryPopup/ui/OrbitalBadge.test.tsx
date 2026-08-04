@@ -148,10 +148,10 @@ describe('OrbitalBadge', () => {
     expect(screen.queryByTestId('orbital-pointer')).toBeInTheDocument();
   });
 
-  it('pointer is hidden when collapsed at edge', () => {
+  it('pointer is visible inside half-moon when collapsed at edge', () => {
     render(<OrbitalBadge persistPosition={false} />);
-    // Badge starts collapsed at right edge → no pointer.
-    expect(screen.queryByTestId('orbital-pointer')).not.toBeInTheDocument();
+    // Badge starts collapsed at right edge → pointer visible inside half-moon.
+    expect(screen.queryByTestId('orbital-pointer')).toBeInTheDocument();
   });
 
   it('does not move when hovering (no drag)', () => {
