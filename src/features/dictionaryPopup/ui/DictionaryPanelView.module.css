@@ -19,6 +19,13 @@
   user-select: text;
 }
 
+/* Popup mode: remove outer padding — the popup container (.popup) already
+   has its own padding/border. Extra padding here wastes screen space in
+   the compact popup. */
+.popupMode {
+  padding: 0;
+}
+
 .searchRow {
   display: flex;
   gap: var(--space-2);
