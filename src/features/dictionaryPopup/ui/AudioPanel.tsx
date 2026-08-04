@@ -160,7 +160,7 @@ function AudioPanelContent({
                   <span className={styles.cellAudioLabelMeta}>{parts.slice(1).join(' · ')}</span>
                 )}
               </button>
-              <span className={`${styles.cellAudioCheck} ${selected ? styles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
+              <span className={`${styles.cellDefCheckBox} ${selected ? styles['cellAudioCheck--checked'] : ''}`} aria-hidden="true">
                 <Icon name="check" size={16} />
               </span>
             </div>
