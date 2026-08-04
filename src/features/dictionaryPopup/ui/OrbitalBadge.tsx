@@ -143,14 +143,17 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   const { distance: edgeDistance } = getNearestEdge(activeCenter, activeViewport);
   const isAtEdge = edgeDistance <= badgeSize / 2;
 
-  // Collapsed at edge → pointer hidden at center. Floating or expanded → user's preset.
-  const activePreset: PointerPreset = isAtEdge && !expanded ? 'center' : userPreset;
+  // Collapsed at edge → pointer inside the visible half-moon, pointing inward.
+  // Floating or expanded → pointer outside the badge at user's preset.
+  const collapsedAtEdge = isAtEdge && !expanded;
+  const activePreset: PointerPreset = collapsedAtEdge ? inwardPreset(edge) : userPreset;
 
   const { pointerCenter, pointerTip } = useOrbitalPointer({
     badgeCenter: activeCenter,
     badgeSize,
     pointerSize,
     preset: activePreset,
+    inside: collapsedAtEdge,
   });
 
   expandedCenterRef.current = expandedCenter;
@@ -328,7 +331,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         aria-label={expanded ? 'Drag to move' : 'Open dictionary'}
         data-cell-id="orbital-badge-button"
       />
-      {(expanded || !isAtEdge) && (
+      {(expanded || !isAtEdge || collapsedAtEdge) && (
         <div
           className={styles.pointer}
           style={{

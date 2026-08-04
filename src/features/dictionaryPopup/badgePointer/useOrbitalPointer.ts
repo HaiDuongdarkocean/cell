@@ -4,8 +4,7 @@ import {
   type Point,
   POINTER_EDGE_GAP_PX,
   computePointerOffset,
-  angleToViewportCenter,
-  angleToPreset,
+  computePointerOffsetInside,
   getPresetOffset,
 } from './pointerPosition';
 
@@ -13,13 +12,14 @@ export interface UseOrbitalPointerOptions {
   badgeCenter: Point;
   badgeSize: number;
   pointerSize: number;
-  viewportWidth: number;
-  viewportHeight: number;
+  /** Explicit preset — pointer stays at this fixed position (no auto-angle). */
+  preset: PointerPreset;
   gap?: number;
+  /** Place pointer INSIDE the badge (for collapsed half-moon) instead of outside. */
+  inside?: boolean;
 }
 
 export interface UseOrbitalPointerResult {
-  preset: PointerPreset;
   pointerCenter: Point;
   pointerTip: Point;
 }
@@ -28,19 +28,14 @@ export function useOrbitalPointer({
   badgeCenter,
   badgeSize,
   pointerSize,
-  viewportWidth,
-  viewportHeight,
+  preset,
   gap = POINTER_EDGE_GAP_PX,
+  inside = false,
 }: UseOrbitalPointerOptions): UseOrbitalPointerResult {
   return useMemo(() => {
-    const radius = computePointerOffset(badgeSize, pointerSize, gap);
-    const angle = angleToViewportCenter(
-      badgeCenter.x,
-      badgeCenter.y,
-      viewportWidth,
-      viewportHeight,
-    );
-    const preset = angleToPreset(angle);
+    const radius = inside
+      ? computePointerOffsetInside(badgeSize, pointerSize, gap)
+      : computePointerOffset(badgeSize, pointerSize, gap);
     const offset = getPresetOffset(preset, radius);
     const pointerCenter: Point = {
       x: badgeCenter.x + offset.x,
@@ -52,6 +47,6 @@ export function useOrbitalPointer({
       x: badgeCenter.x + tipOffset.x,
       y: badgeCenter.y + tipOffset.y,
     };
-    return { preset, pointerCenter, pointerTip };
-  }, [badgeCenter, badgeSize, pointerSize, viewportWidth, viewportHeight, gap]);
+    return { pointerCenter, pointerTip };
+  }, [badgeCenter, badgeSize, pointerSize, preset, gap, inside]);
 }
