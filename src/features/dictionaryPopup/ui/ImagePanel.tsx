@@ -77,7 +77,7 @@ export function ImagePanel({
                 className={styles.cellImageThumb}
                 onError={(): void => onImageError(item.id)}
               />
-              <span className={styles.cellImageCheck} aria-hidden="true">
+              <span className={styles.cellDefCheckBox} aria-hidden="true">
                 <Icon name="check" size={16} />
               </span>
             </button>

@@ -462,33 +462,30 @@
   transition: opacity var(--duration-fast) var(--ease-in-out);
 }
 
+/* === Shared checkbox visual — SSOT for def/audio/image panels === */
 .cellDefCheckBox {
   width: var(--space-4);
   height: var(--space-4);
   border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: var(--color-fixed-white);
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
+/* Definition panel: hide by default, show on hover/checked */
+.cellDefItem .cellDefCheckBox { display: none; }
+.cellDefItem:hover .cellDefCheckBox { display: flex; }
+.cellDefCheck--checked .cellDefCheckBox { display: flex; }
+
 .cellDefItem:hover .cellDefCheckDot {
   display: none;
 }
 
-.cellDefItem:hover .cellDefCheckBox {
-  display: flex;
-}
-
 .cellDefCheck--checked .cellDefCheckDot, .cellDefItem:hover .cellDefCheck--checked .cellDefCheckDot {
   display: none;
-}
-
-.cellDefCheck--checked .cellDefCheckBox, .cellDefItem:hover .cellDefCheck--checked .cellDefCheckBox {
-  display: flex;
-  color: var(--color-fixed-white);
 }
 
 .cellDefCheckInput {
@@ -1025,24 +1022,19 @@
   color: var(--color-text-secondary);
 }
 
-.cellAudioCheck {
-  flex: 0 0 auto;
-  width: var(--space-4);
-  height: var(--space-4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: var(--border-width-hairline) solid var(--color-border);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-secondary);
+/* Audio panel: opacity toggle on shared cellDefCheckBox */
+.cellAudioItem .cellDefCheckBox {
   opacity: 0;
+  border: var(--border-width-hairline) solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
 }
 
 .cellAudioCheck--checked {
   opacity: 1;
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: var(--color-text);
+  color: var(--color-fixed-white);
 }
 
 .cellImageSkeleton {
@@ -1101,22 +1093,16 @@
   object-fit: cover;
 }
 
-.cellImageCheck {
+/* Image panel: absolute position + circular + opacity toggle on shared cellDefCheckBox */
+.cellImageCard .cellDefCheckBox {
   position: absolute;
   top: var(--space-0-5);
   right: var(--space-0-5);
-  width: var(--space-4);
-  height: var(--space-4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   border-radius: var(--radius-full);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
   opacity: 0;
 }
 
-.cellImageCard--selected .cellImageCheck {
+.cellImageCard--selected .cellDefCheckBox {
   opacity: 1;
 }
 
