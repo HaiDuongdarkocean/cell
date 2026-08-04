@@ -47,7 +47,7 @@ export function DictionaryToolbar({
           >
             <Icon name={tab.icon} size={20} />
             <span className={`${styles.cellToolbarLabel} ${styles.cellLabel}`}>{tab.label}</span>
-            {count > 0 && <span className={styles.cellToolbarBadge}>{count}</span>}
+            {count > 0 && tab.key !== 'links' && <span className={styles.cellToolbarBadge}>{count}</span>}
           </button>
         );
       })}
