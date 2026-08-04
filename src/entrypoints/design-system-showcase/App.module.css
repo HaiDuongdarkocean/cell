@@ -292,15 +292,6 @@
   min-height: 300px;
 }
 
-.tokenizeFabPreview {
-  position: relative;
-  width: 100%;
-  min-height: 220px;
-  /* Create a containing block for the fixed-position TokenizeFab so it stays
-     inside the showcase section instead of anchoring to the viewport. */
-  transform: translate(0);
-}
-
 .cardCreatorPreview {
   position: relative;
   display: flex;

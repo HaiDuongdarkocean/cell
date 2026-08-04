@@ -29,7 +29,7 @@ import {
 import { ReactSubtitleController } from '@/features/subtitle/ui/reactSubtitleController';
 import { type SubtitleCueEngineUpdate, type CardCreatorAction } from '@/features/subtitle/ui/subtitleCueEngine';
 import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl } from '@/features/tokenize/services/tokenizeSettingsStore';
-import { createSubtitleTokenizeController, type SubtitleTokenizeController } from '@/features/tokenize/controller/subtitleTokenizeController';
+import type { SubtitleTokenizeController } from '@/features/tokenize/controller/subtitleTokenizeController';
 import type { LookupRequest } from '@/features/dictionaryPopup/types';
 import type { TokenizeSettings } from '@/features/tokenize/types';
 import { BackgroundPrefillController } from '@/features/translate/logic/translatePrefill';
@@ -331,7 +331,9 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       const enabled = isSubtitleTokenizeEnabledForUrl(ts, url);
       if (enabled) {
         // Create controller lazily — needs blockController ready for getLineElements.
+        // Dynamic import breaks subtitle→tokenize→dictionaryPopup→subtitle cycle (TDZ).
         if (!subtitleTokenizeCtrl) {
+          const { createSubtitleTokenizeController } = await import('@/features/tokenize/controller/subtitleTokenizeController');
           subtitleTokenizeCtrl = createSubtitleTokenizeController({
             langCode: settings.subtitleOverlayTargetLanguage,
             getLineElements: () => blockController.getLineElements(),

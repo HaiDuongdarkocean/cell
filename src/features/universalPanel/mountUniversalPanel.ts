@@ -321,10 +321,6 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
     showFrequency: false,
     subtitleEnabled: false,
   };
-  const tokenizeUnsubscribe = options.panel?.subscribe((next) => {
-    tokenizeState = next;
-    render();
-  }) ?? null;
 
   const render = (): void => {
     if (isUnmounted) return;
@@ -353,6 +349,14 @@ export function mountUniversalPanel(options: UniversalPanelMountOptions = {}): U
       ) as ReactElement,
     );
   };
+
+  // Subscribe AFTER render is defined — subscribe callback fires synchronously
+  // (cb(buildPanelState()) in content-script.ts), so render must be initialized
+  // first to avoid TDZ (Temporal Dead Zone) ReferenceError.
+  const tokenizeUnsubscribe = options.panel?.subscribe((next) => {
+    tokenizeState = next;
+    render();
+  }) ?? null;
 
   // Initial render (closed; persisted tab loads in background and updates state).
   render();
