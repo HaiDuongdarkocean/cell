@@ -143,13 +143,20 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   const { distance: edgeDistance } = getNearestEdge(activeCenter, activeViewport);
   const isAtEdge = edgeDistance <= badgeSize / 2;
 
+  // Collapsed at edge → half-moon (collapsedCenter). Floating → stay at center.
+  const displayedCenter = expanded ? dragCenter : (isAtEdge ? collapsedCenter : center);
+
   // Collapsed at edge → pointer inside the visible half-moon, pointing inward.
   // Floating or expanded → pointer outside the badge at user's preset.
   const collapsedAtEdge = isAtEdge && !expanded;
   const activePreset: PointerPreset = collapsedAtEdge ? inwardPreset(edge) : userPreset;
 
+  // Compute pointer from displayedCenter (not activeCenter) so the pointer
+  // position matches the actual rendered badge position. When collapsed at
+  // edge, activeCenter (unsapped) and displayedCenter (edge-snapped) differ by
+  // badgeSize/2 — using activeCenter would push the pointer outside the badge.
   const { pointerCenter, pointerTip } = useOrbitalPointer({
-    badgeCenter: activeCenter,
+    badgeCenter: displayedCenter,
     badgeSize,
     pointerSize,
     preset: activePreset,
@@ -303,9 +310,6 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
     onDrag: handleDrag,
     onDragEnd: handleDragEnd,
   });
-
-  // Collapsed at edge → half-moon (collapsedCenter). Floating → stay at center.
-  const displayedCenter = expanded ? dragCenter : (isAtEdge ? collapsedCenter : center);
 
   return (
     <div
