@@ -16,14 +16,18 @@
   font-size: var(--font-size-base);
   color: var(--color-text);
   container-type: inline-size;
+  container-name: panel;
   user-select: text;
 }
 
 /* Popup mode: remove outer padding — the popup container (.popup) already
    has its own padding/border. Extra padding here wastes screen space in
-   the compact popup. */
+   the compact popup.
+   Also opt out of named container "panel" so @container panel (...) queries
+   are false in popup mode → no responsive layout, always base styles. */
 .popupMode {
   padding: 0;
+  container-name: none;
 }
 
 .searchRow {
@@ -152,7 +156,7 @@
 
 .cellLabel {
   display: none;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-xm);
 }
 
 .cellToolbarTab svg {
@@ -199,20 +203,18 @@
 }
 
 .cellHeaderWord {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-xl);
   font-weight: var(--font-weight-semibold);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: calc(var(--touch-target-mobile) * 0.6);
 }
 
 .cellHeaderIpa {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-base);
   color: var(--color-text-secondary);
   white-space: nowrap;
   flex-shrink: 0;
-  line-height: calc(var(--touch-target-mobile) * 0.4);
 }
 
 .cellHeaderReading {
@@ -223,8 +225,6 @@
   flex-shrink: 0;
   flex-basis: 100%;
   min-width: 0;
-  height: calc(var(--touch-target-mobile) * 0.4);
-  line-height: calc(var(--touch-target-mobile) * 0.4);
   overflow: visible;
 }
 
@@ -279,7 +279,7 @@
   padding: 0 var(--space-2);
   border-radius: var(--radius-full);
   font-family: var(--font-family);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-none);
   white-space: nowrap;
@@ -319,7 +319,7 @@
   height: var(--space-5);
   border-radius: var(--radius-full);
   overflow: hidden;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-none);
 }
@@ -900,7 +900,7 @@
   text-underline-offset: var(--space-0-5);
 }
 
-@container (min-width: 380px) and (max-width: 479px) {
+@container panel (min-width: 380px) and (max-width: 479px) {
 
 .cellHeader {
   padding: 0;
@@ -924,7 +924,7 @@
 }
 }
 
-@container (min-width: 480px) {
+@container panel (min-width: 480px) {
 .cellLabel {
   display: inline;
 }
@@ -1056,7 +1056,7 @@
   padding-bottom: 0;
 }
 
-@container (max-width: 479px) {
+@container panel (max-width: 479px) {
 :global(.btn):has(.cellToolbarLabel) {
   border-radius: var(--radius-full);
   padding: 0;
@@ -1096,7 +1096,7 @@
 }
 }
 
-@container (min-width: 480px) and (max-width: 767px) {
+@container panel (min-width: 480px) and (max-width: 767px) {
 :global(.icon-btn--xs), :global(.icon-btn--sm) {
   min-width: var(--touch-target-mobile);
   min-height: var(--touch-target-mobile);
@@ -1119,7 +1119,7 @@
 }
 }
 
-@container (min-width: 768px) {
+@container panel (min-width: 768px) {
 .cellHeaderWord {
   font-size: var(--font-size-base);
   line-height: calc(var(--touch-target-desktop) * 0.6);
