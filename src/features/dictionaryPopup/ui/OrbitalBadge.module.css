@@ -6,6 +6,7 @@
   touch-action: none;
   user-select: none;
   will-change: transform;
+  opacity: 0.7;
   transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -17,23 +18,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: left 200ms cubic-bezier(0.22, 1, 0.36, 1), top 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease;
+  transition: left 200ms cubic-bezier(0.22, 1, 0.36, 1), top 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .host.expanded {
   clip-path: none;
-}
-
-/* When expanded, badge + pointer become translucent so the user can read
-   the text underneath. */
-.host.expanded .badge {
-  background-color: transparent;
-  border-color: rgb(var(--color-primary-rgb) / 0.3);
-  box-shadow: none;
-}
-
-.host.expanded .pointer {
-  opacity: 0.4;
 }
 
 .host.collapsed[data-edge="right"] {

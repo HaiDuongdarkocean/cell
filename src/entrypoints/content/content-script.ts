@@ -8,10 +8,8 @@ import { createWebTextDictionaryController } from '@/features/dictionaryPopup/co
 import type { WebTextDictionaryController } from '@/features/dictionaryPopup/controller/webTextDictionaryController';
 import { createWebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
 import type { WebTokenizeController } from '@/features/tokenize/controller/webTokenizeController';
-import { mountTokenizeFab } from '@/features/tokenize/ui/mountTokenizeFab';
-import type { TokenizeFabMount } from '@/features/tokenize/ui/mountTokenizeFab';
-import type { TokenizeStateStore } from '@/features/tokenize/services/tokenizeStateStore';
 import { mountUniversalPanel, type UniversalPanelMountController } from '@/features/universalPanel';
+import { loadTokenizeSettings, isSubtitleTokenizeEnabledForUrl, setSubtitleTokenizeEnabledForUrl, saveTokenizeSettings } from '@/features/tokenize/services/tokenizeSettingsStore';
 import type { VideoEpisodeChangedPayload } from '@/entities/message';
 
 // ISOLATED content-script marker (verify injection from DevTools — MAIN world
@@ -425,57 +423,92 @@ function tryInitVideoWhenReady(video: HTMLVideoElement): void {
 // Shared with subtitle overlay controller for token lookup + highlight.
 let webTextCtrl: WebTextDictionaryController | null = null;
 let webTokenizeCtrl: WebTokenizeController | null = null;
-let tokenizeFabMount: TokenizeFabMount | null = null;
 /** ADR-061: Pending tokenize subscribers — collected before
  *  webTokenizeCtrl is initialized (initTokenize is async and may complete
  *  after mountSettingsDialog subscribes). Flushed when webTokenizeCtrl is
  *  created. Without this, the orbital badge's SettingsDialog never receives
  *  tokenize state updates → toggles don't visually switch. */
 interface PendingTokenizeSub {
-  cb: (s: { enabled: boolean; showStatus: boolean; showFrequency: boolean }) => void;
+  cb: (s: { enabled: boolean; showStatus: boolean; showFrequency: boolean; subtitleEnabled: boolean }) => void;
   unsubscribe?: () => void;
 }
 let pendingTokenizeSubs: PendingTokenizeSub[] = [];
 
 let universalPanelMount: UniversalPanelMountController | null = null;
 
+// Cached subtitle tokenize enabled state for this URL — read by universal panel.
+let cachedSubtitleEnabled = false;
+
+/** Active panel notify callback — push state updates outside webTokenizeCtrl. */
+let panelNotify: ((s: { enabled: boolean; showStatus: boolean; showFrequency: boolean; subtitleEnabled: boolean }) => void) | null = null;
+
+/** Build a TokenizePanelState snapshot from current webTokenizeCtrl + cachedSubtitleEnabled. */
+function buildPanelState(): { enabled: boolean; showStatus: boolean; showFrequency: boolean; subtitleEnabled: boolean } {
+  const s = webTokenizeCtrl?.getState();
+  return {
+    enabled: s?.enabled ?? false,
+    showStatus: s?.showStatus ?? false,
+    showFrequency: s?.showFrequency ?? false,
+    subtitleEnabled: cachedSubtitleEnabled,
+  };
+}
+
 function ensureUniversalPanelMount(): UniversalPanelMountController {
   if (!universalPanelMount) {
+    // Initialize subtitle tokenize state from storage (async, fires once).
+    void loadTokenizeSettings().then((ts) => {
+      cachedSubtitleEnabled = isSubtitleTokenizeEnabledForUrl(ts, window.location.href);
+      panelNotify?.(buildPanelState());
+    });
+
     universalPanelMount = mountUniversalPanel({
       panel: {
-        getState: () => {
-          const s = webTokenizeCtrl?.getState();
-          return {
-            enabled: s?.enabled ?? false,
-            showStatus: s?.showStatus ?? false,
-            showFrequency: s?.showFrequency ?? false,
-          };
-        },
+        getState: () => buildPanelState(),
         onToggle: (key) => {
           if (key === 'enabled') webTokenizeCtrl?.toggleEnabled();
           else if (key === 'showStatus') webTokenizeCtrl?.toggleShowStatus();
           else if (key === 'showFrequency') webTokenizeCtrl?.toggleShowFrequency();
+          else if (key === 'subtitleEnabled') void toggleSubtitleTokenize();
         },
         onOpenDictionary: () => {
           universalPanelMount?.open('dictionary');
         },
         subscribe: (cb) => {
+          panelNotify = cb;
           if (!webTokenizeCtrl) {
             const item: PendingTokenizeSub = { cb };
             pendingTokenizeSubs.push(item);
+            cb(buildPanelState());
             return () => {
               item.unsubscribe?.();
               pendingTokenizeSubs = pendingTokenizeSubs.filter((i) => i !== item);
+              if (panelNotify === cb) panelNotify = null;
             };
           }
-          return webTokenizeCtrl.subscribe((s) => {
-            cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency });
+          const unsub = webTokenizeCtrl.subscribe((s) => {
+            cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency, subtitleEnabled: cachedSubtitleEnabled });
           });
+          cb(buildPanelState());
+          return () => {
+            unsub();
+            if (panelNotify === cb) panelNotify = null;
+          };
         },
       },
     });
   }
   return universalPanelMount;
+}
+
+/** Toggle subtitle tokenize for this URL — persists to storage + notifies panel. */
+async function toggleSubtitleTokenize(): Promise<void> {
+  const ts = await loadTokenizeSettings();
+  const url = window.location.href;
+  const next = !isSubtitleTokenizeEnabledForUrl(ts, url);
+  const updated = setSubtitleTokenizeEnabledForUrl(ts, url, next);
+  await saveTokenizeSettings(updated);
+  cachedSubtitleEnabled = next;
+  panelNotify?.(buildPanelState());
 }
 
 function ensureWebTextCtrl(): WebTextDictionaryController {
@@ -520,27 +553,6 @@ async function initWebTextDictionary(): Promise<void> {
   }
 }
 
-function createTokenizeStoreAdapter(ctrl: WebTokenizeController): TokenizeStateStore {
-  return {
-    getState: () => ctrl.getState(),
-    setEnabled: (enabled) => {
-      if (ctrl.getState().enabled !== enabled) ctrl.toggleEnabled();
-    },
-    setShowStatus: (show) => {
-      if (ctrl.getState().showStatus !== show) ctrl.toggleShowStatus();
-    },
-    setShowFrequency: (show) => {
-      if (ctrl.getState().showFrequency !== show) ctrl.toggleShowFrequency();
-    },
-    setHoveredTerm: () => {},
-    toggleSelectedTerm: () => {},
-    addSelectedTerm: () => {},
-    removeSelectedTerm: () => {},
-    clearSelection: () => {},
-    subscribe: (cb) => ctrl.subscribe(cb),
-  };
-}
-
 async function initTokenize(): Promise<void> {
   try {
     if (webTokenizeCtrl) return;
@@ -578,18 +590,10 @@ async function initTokenize(): Promise<void> {
     // earlier can correctly tear down the subscription on unmount.
     for (const item of pendingTokenizeSubs) {
       item.unsubscribe = webTokenizeCtrl.subscribe((s) => {
-        item.cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency });
+        item.cb({ enabled: s.enabled, showStatus: s.showStatus, showFrequency: s.showFrequency, subtitleEnabled: cachedSubtitleEnabled });
       });
     }
     pendingTokenizeSubs = [];
-
-    // ADR-075: mount the React TokenizeFab in a shadow root below the orbital badge.
-    tokenizeFabMount = mountTokenizeFab({
-      store: createTokenizeStoreAdapter(webTokenizeCtrl),
-      onOpenDictionary: () => {
-        ensureUniversalPanelMount().open('dictionary');
-      },
-    });
   } catch (err) {
     // Storage may be unavailable in some test/sandbox contexts — safe fallback.
     console.warn('[content-script] initTokenize failed', err);
@@ -939,8 +943,6 @@ function cleanupContentScript(): void {
     webTextCtrl = null;
     webTokenizeCtrl?.destroy();
     webTokenizeCtrl = null;
-    tokenizeFabMount?.destroy();
-    tokenizeFabMount = null;
     universalPanelMount?.unmount?.();
     universalPanelMount = null;
     pendingTokenizeSubs = [];
@@ -950,7 +952,36 @@ function cleanupContentScript(): void {
 }
 
 window.addEventListener('beforeunload', cleanupContentScript);
-window.addEventListener('pagehide', cleanupContentScript);
+// pagehide fires on SPA navigations (bfcache) — only clean up video/overlay,
+// NOT universal panel (it should persist across SPA navs).
+window.addEventListener('pagehide', () => {
+  try {
+    currentOverlayCleanup?.();
+    currentOverlayCleanup = null;
+    currentVideo = null;
+    currentPendingVideo = null;
+    findVideoObserver?.disconnect();
+    findVideoObserver = null;
+    stopVideoReadyPoll();
+    episodeChangeObserver?.disconnect();
+    episodeChangeObserver = null;
+    if (episodeChangeDebounce) {
+      clearTimeout(episodeChangeDebounce);
+      episodeChangeDebounce = null;
+    }
+    iframeBaselineReady = false;
+    lastSeenIframe = null;
+    lastIframeSrc = null;
+    if (videoSrcWatcherInterval) {
+      clearInterval(videoSrcWatcherInterval);
+      videoSrcWatcherInterval = null;
+    }
+    // Keep webTextCtrl, webTokenizeCtrl, universalPanelMount
+    // alive across SPA navigations — they are page-level, not video-level.
+  } catch {
+    // Best-effort cleanup on content-script teardown.
+  }
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initEpisodeChangeWatcher);

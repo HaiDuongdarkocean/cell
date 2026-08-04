@@ -69,6 +69,7 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
 
   const dragRef = useRef({
     dragging: false,
+    pointerDown: false,
     startX: 0,
     startY: 0,
     hasDragged: false,
@@ -83,7 +84,7 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
 
   const onPointerDown = useCallback(
     (e: PointerEvent | React.PointerEvent): void => {
-      dragRef.current = { dragging: false, startX: e.clientX, startY: e.clientY, hasDragged: false };
+      dragRef.current = { dragging: false, pointerDown: true, startX: e.clientX, startY: e.clientY, hasDragged: false };
       detectorRef.current.onPointerDown(e.timeStamp);
       const capture = trySetPointerCapture(e.currentTarget, e.pointerId);
       if (capture) {
@@ -95,7 +96,8 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
 
   const onPointerMove = useCallback(
     (e: PointerEvent | React.PointerEvent): void => {
-      const { startX, startY, dragging } = dragRef.current;
+      const { startX, startY, dragging, pointerDown } = dragRef.current;
+      if (!pointerDown) return;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
 
@@ -123,9 +125,11 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
       }
       if (dragRef.current.dragging) {
         dragRef.current.dragging = false;
+        dragRef.current.pointerDown = false;
         optionsRef.current.onDragEnd?.();
         return;
       }
+      dragRef.current.pointerDown = false;
       detectorRef.current.onPointerUp(e.timeStamp);
     },
     [releaseCapture],
@@ -138,22 +142,24 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
       }
       if (dragRef.current.dragging) {
         dragRef.current.dragging = false;
+        dragRef.current.pointerDown = false;
         optionsRef.current.onDragEnd?.();
         return;
       }
+      dragRef.current.pointerDown = false;
       detectorRef.current.reset();
     },
     [releaseCapture],
   );
 
   const reset = useCallback((): void => {
-    dragRef.current = { dragging: false, startX: 0, startY: 0, hasDragged: false };
+    dragRef.current = { dragging: false, pointerDown: false, startX: 0, startY: 0, hasDragged: false };
     detectorRef.current.reset();
     releaseCapture();
   }, [releaseCapture]);
 
   const destroy = useCallback((): void => {
-    dragRef.current = { dragging: false, startX: 0, startY: 0, hasDragged: false };
+    dragRef.current = { dragging: false, pointerDown: false, startX: 0, startY: 0, hasDragged: false };
     detectorRef.current.destroy();
     releaseCapture();
   }, [releaseCapture]);
