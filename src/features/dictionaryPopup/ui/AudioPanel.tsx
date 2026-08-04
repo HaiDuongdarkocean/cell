@@ -147,7 +147,7 @@ function AudioPanelContent({
                   void audio.play().catch(() => { /* best-effort */ });
                 }}
               >
-                <Icon name="play" size={20} />
+                <Icon name="audioWave" size={20} />
               </button>
               <button
                 type="button"
