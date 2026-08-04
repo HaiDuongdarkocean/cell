@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding: var(--space-3) var(--space-0-5) var(--space-0-5);
+  padding: var(--space-0-5);
   overflow-y: auto;
   font-family: var(--font-family);
   font-size: var(--font-size-base);
@@ -911,6 +911,12 @@
   padding-bottom: var(--space-3);
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   scroll-margin-top: var(--space-2);
+}
+
+/* Articles from the 2nd onward get padding-top to separate from the previous
+   candidate's border. The first candidate has no padding-top (no element above). */
+.candidate + .candidate {
+  padding-top: var(--space-3);
 }
 
 .candidate:last-child {
