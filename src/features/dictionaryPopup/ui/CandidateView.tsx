@@ -157,7 +157,6 @@ export function CandidateView({
           <AudioPanel
             items={panel.audioItems}
             loading={panel.audioLoading}
-            error={panel.audioError}
             selection={panel.audioSelection}
             onToggle={panel.toggleAudio}
             onTts={panel.playTerm}

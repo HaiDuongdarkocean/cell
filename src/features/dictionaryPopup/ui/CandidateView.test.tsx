@@ -245,8 +245,7 @@ describe('CandidateView', () => {
     const translatePanel = await screen.findByTestId('dictionary-translate-panel');
     expect(translatePanel).toBeInTheDocument();
 
-    fireEvent.click(within(translatePanel).getByText('Translate to vi'));
-
+    // Auto-translate fires on mount — no manual button click needed
     await waitFor(() => expect(within(translatePanel).getByText('xin chào')).toBeInTheDocument());
     expect(mockTranslateSentence).toHaveBeenCalledWith('hello world', 'en', 'vi');
 
@@ -275,7 +274,8 @@ describe('CandidateView', () => {
     expect(screen.getByTestId('dictionary-link-cambridge')).toHaveAttribute('href', expect.stringContaining('hello'));
     expect(screen.getByTestId('dictionary-link-wiktionary')).toHaveAttribute('href', expect.stringContaining('hello'));
     expect(screen.getByTestId('dictionary-link-gtranslate')).toHaveAttribute('href', expect.stringContaining('hello'));
-    expect(screen.getByTestId('dictionary-tab-links')).toHaveTextContent('3');
+    // Links tab does not show a badge
+    expect(screen.getByTestId('dictionary-tab-links')).not.toHaveTextContent('3');
   });
 
   it('toggles definitions and updates selected count', () => {

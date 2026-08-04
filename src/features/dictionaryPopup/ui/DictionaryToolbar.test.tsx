@@ -40,6 +40,7 @@ describe('DictionaryToolbar', () => {
     expect(screen.getByTestId('dictionary-tab-audio')).toHaveTextContent('2');
     expect(screen.getByTestId('dictionary-tab-image')).not.toHaveTextContent('0');
     expect(screen.getByTestId('dictionary-tab-translate')).toHaveTextContent('1');
-    expect(screen.getByTestId('dictionary-tab-links')).toHaveTextContent('3');
+    // Links tab does not show a badge
+    expect(screen.getByTestId('dictionary-tab-links')).not.toHaveTextContent('3');
   });
 });
