@@ -17,6 +17,10 @@ export const POPUP_MAX_HEIGHT_RATIO = 0.7;
 export const POPUP_SHEET_BREAKPOINT_PX = 768; // must stay in sync with CSS media queries
 export const SHEET_SNAP_THRESHOLD_PX = 40;
 export const SHEET_DISMISS_THRESHOLD_PX = 100;
+/** Sheet closes when its height drops below this fraction of viewport height. */
+export const SHEET_DISMISS_RATIO = 0.2;
+/** Pointer movement below this many px counts as a click (not a drag). */
+export const SHEET_CLICK_THRESHOLD_PX = 4;
 
 /** Sheet snap tiers as fraction of viewport height (high → low). */
 export const SHEET_TIERS = [1.0, 0.75, 0.5, 0.25];
@@ -345,4 +349,20 @@ export function computePopupPosition(
   }
 
   return { left: best!.left, top: best!.top };
+}
+
+/**
+ * Check whether a popup at the given position would overlap the anchor word.
+ * Used to decide whether desktop positioning failed and sheet mode is needed.
+ */
+export function popupOverlapsAnchor(
+  pos: { left: number; top: number },
+  popupWidth: number,
+  popupHeight: number,
+  anchor: PopupAnchor,
+): boolean {
+  return rectanglesOverlap(
+    pos.left, pos.top, popupWidth, popupHeight,
+    anchor.left, anchor.top, anchor.right - anchor.left, anchor.bottom - anchor.top,
+  );
 }
