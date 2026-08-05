@@ -1,4 +1,6 @@
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
+import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
+import { createElement } from 'react';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import type { NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 
@@ -112,7 +114,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
 
   let controllerRef: SubtitlePanelsRef | null = null;
 
-  const { unmount, host } = mountReactShadow(
+  const buildComponent = (): React.ReactElement => (
     <SubtitlePanels
       ref={(r) => { controllerRef = r; }}
       targetStyle={targetStyle}
@@ -143,7 +145,11 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       onGenerateNative={onGenerateNative}
       onToggleSidePanel={onToggleSidePanel}
       onToggleManager={onToggleManager}
-    />,
+    />
+  );
+
+  const { unmount, host, rootEl, root } = mountReactShadow(
+    buildComponent(),
     {
       parent: container,
       layer: 2,
@@ -163,6 +169,13 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         buildTokenSpanCssForShadow(),
       ],
     },
+  );
+
+  // Re-render with ShadowThemeProvider so data-theme + color tokens resolve
+  // inside the shadow boundary. Without this, [data-theme="dark"] selectors
+  // never match and buttons fall back to light-theme colors (invisible on dark dock).
+  root.render(
+    createElement(ShadowThemeProvider, { container: rootEl, children: buildComponent() }),
   );
 
   // Host fills the video container but lets clicks pass through to player controls.
