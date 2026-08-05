@@ -7,20 +7,24 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: transparent;
+  background: #000;
   z-index: var(--z-overlay-settings);
   pointer-events: none;
   container-type: inline-size;
 }
 
-/* Video stage — transparent, host video (position:fixed, z-index max) shows
-   through. Host controls in the container are covered by the video's opaque
-   black background (set by playerModeHost). */
+/* Video stage — canvas draws host video frames here. */
 .videoStage {
   flex: 0 0 auto;
   width: 100%;
-  background: transparent;
+  background: #000;
   pointer-events: none;
+}
+
+.videoCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* Content other — solid black, blocks host overlays and clicks.

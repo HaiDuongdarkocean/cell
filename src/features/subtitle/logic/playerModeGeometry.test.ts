@@ -90,21 +90,8 @@ describe('playerModeGeometry', () => {
   });
 
   describe('resolvePlayerModeVideoStyles', () => {
-    it('returns fixed video styles with z-index and black background', () => {
-      expect(resolvePlayerModeVideoStyles()).toEqual({
-        position: 'fixed',
-        top: '0',
-        left: '0',
-        width: '100vw',
-        height: 'var(--cell-player-mode-video-height, 30vh)',
-        'max-width': 'none',
-        'max-height': 'none',
-        margin: '0',
-        transform: 'none',
-        'object-fit': 'contain',
-        'z-index': '2147483646',
-        background: '#000',
-      });
+    it('returns empty styles (canvas capture — video not modified)', () => {
+      expect(resolvePlayerModeVideoStyles()).toEqual({});
     });
   });
 

@@ -96,6 +96,7 @@ function PlayerModeOverlayInner({
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const rafRef = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const onResize = (): void => {
@@ -110,6 +111,48 @@ function PlayerModeOverlayInner({
       window.removeEventListener('resize', onResize);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
+  }, []);
+
+  // Canvas capture: draw host video frames onto a canvas in the overlay.
+  // Video stays in host container (no DOM move → no HLS.js disruption).
+  // Overlay bg black covers host completely; canvas shows video on top.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let rafId = 0;
+    const draw = (): void => {
+      const video = document.querySelector('video');
+      if (video && video.readyState >= 2 && video.videoWidth > 0) {
+        const stageW = canvas.clientWidth;
+        const stageH = canvas.clientHeight;
+        if (canvas.width !== stageW || canvas.height !== stageH) {
+          canvas.width = stageW;
+          canvas.height = stageH;
+        }
+        const vAspect = video.videoWidth / video.videoHeight;
+        const sAspect = stageW / stageH;
+        let dw: number, dh: number, dx: number, dy: number;
+        if (vAspect > sAspect) {
+          dw = stageW;
+          dh = stageW / vAspect;
+          dx = 0;
+          dy = (stageH - dh) / 2;
+        } else {
+          dh = stageH;
+          dw = stageH * vAspect;
+          dx = (stageW - dw) / 2;
+          dy = 0;
+        }
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, stageW, stageH);
+        ctx.drawImage(video, dx, dy, dw, dh);
+      }
+      rafId = requestAnimationFrame(draw);
+    };
+    rafId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   const layout = resolvePlayerModeLayout(viewport.w, viewport.h, videoAspectRatio, DOCK_MIN_HEIGHT_PX);
@@ -139,13 +182,16 @@ function PlayerModeOverlayInner({
       role="application"
       aria-label="Player mode"
     >
-      {/* Video stage — transparent, host video (position:fixed) shows through */}
+      {/* Video stage — canvas draws host video frames. Overlay bg black
+          covers host completely; canvas shows video content on top. */}
       <div
         className={styles.videoStage}
         style={{ height: `${layout.videoStageHeight}px` }}
         data-cell-id="player-mode-video-stage"
         aria-hidden="true"
-      />
+      >
+        <canvas ref={canvasRef} className={styles.videoCanvas} />
+      </div>
 
       {/* Content other — empty V1, expansion area for dictionary sheet */}
       <div

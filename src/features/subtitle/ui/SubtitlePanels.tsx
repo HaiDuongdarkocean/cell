@@ -253,10 +253,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const rootRef = useRef<HTMLDivElement>(null);
 
     // Player Mode: reparent #cell-subtitle-root to document.body (escape video
-    // container's stacking context), full-screen, z-index max, black background.
-    // Host player UI is automatically covered. Video stays in its container but
-    // is styled position:fixed + z-index max + bg black by playerModeHost so it
-    // appears above host controls and shows through the transparent videoStage.
+    // container's stacking context), full-screen, z-index max. Overlay bg black
+    // covers host completely; canvas in overlay draws video frames on top.
     const playerModeOriginalParent = useRef<HTMLElement | null>(null);
     useEffect(() => {
       const host = document.querySelector('#cell-subtitle-root');
@@ -265,7 +263,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         host.style.zIndex = '2147483647';
         host.style.position = 'fixed';
         host.style.inset = '0';
-        host.style.background = 'transparent';
         host.style.pointerEvents = 'none';
         if (host.parentElement && host.parentElement !== document.body) {
           playerModeOriginalParent.current = host.parentElement;
@@ -275,7 +272,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         host.style.zIndex = '';
         host.style.position = '';
         host.style.inset = '';
-        host.style.background = '';
         const originalParent = playerModeOriginalParent.current;
         if (originalParent && host.parentElement !== originalParent) {
           originalParent.appendChild(host);
