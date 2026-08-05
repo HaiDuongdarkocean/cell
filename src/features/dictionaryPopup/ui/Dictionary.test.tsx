@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { Dictionary } from './Dictionary';
 
 jest.mock('./usePopupPosition', () => ({
@@ -104,5 +104,39 @@ describe('Dictionary', () => {
     );
 
     expect(screen.getByTestId('dictionary-panel')).toHaveAttribute('data-mock-is-open', 'false');
+  });
+
+  it('closes the popup when Escape is pressed on the popup container', () => {
+    const onClose = jest.fn();
+    render(
+      <Dictionary
+        variant="popup"
+        langCode="en"
+        sourceLang="en"
+        targetLang="vi"
+        anchor={defaultAnchor}
+        onClose={onClose}
+      />,
+    );
+    const popup = screen.getByTestId('popup-dictionary');
+    fireEvent.keyDown(popup, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not close when non-Escape key is pressed', () => {
+    const onClose = jest.fn();
+    render(
+      <Dictionary
+        variant="popup"
+        langCode="en"
+        sourceLang="en"
+        targetLang="vi"
+        anchor={defaultAnchor}
+        onClose={onClose}
+      />,
+    );
+    const popup = screen.getByTestId('popup-dictionary');
+    fireEvent.keyDown(popup, { key: 'Enter' });
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

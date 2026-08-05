@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Icon } from '@/shared/icons/Icon';
 import { DictionaryPanelView } from './DictionaryPanelView';
 import { usePopupPosition } from './usePopupPosition';
@@ -57,6 +58,10 @@ export function Dictionary(props: DictionaryProps): React.JSX.Element {
       onClose,
     });
 
+    useEffect(() => {
+      popupRef.current?.focus();
+    }, [popupRef]);
+
     return (
       <div
         ref={popupRef}
@@ -64,6 +69,7 @@ export function Dictionary(props: DictionaryProps): React.JSX.Element {
         role="dialog"
         aria-modal="true"
         aria-label="Dictionary popup"
+        tabIndex={-1}
         style={{ ...style, ...incomingStyle }}
         data-cell-id="popup-dictionary"
         onKeyDown={(e) => {
