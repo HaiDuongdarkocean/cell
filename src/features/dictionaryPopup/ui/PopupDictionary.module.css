@@ -14,6 +14,12 @@
   pointer-events: auto;
 }
 
+/* tabindex={-1} lets the popup receive focus for Escape keydown, but the
+   default focus outline would draw an unwanted ring around the popup. */
+.popup:focus {
+  outline: none;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -89,15 +95,32 @@
 
 .sheetHandle {
   display: none;
-  width: var(--space-10);
-  height: var(--space-1);
-  margin: var(--space-2) auto;
-  background: var(--color-text-secondary);
-  border-radius: var(--radius-full);
+  flex: 0 0 auto;
+  width: 100%;
+  height: var(--space-8);
+  margin: 0;
+  padding: 0;
+  background: transparent;
   cursor: ns-resize;
   touch-action: none;
+  user-select: none;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+/* Visual grab bar — centered inside the full-width hit zone so the entire
+   .sheetHandle element is the draggable/clickable target, not just the bar. */
+.sheetHandle::before {
+  content: '';
+  display: block;
+  width: var(--space-10);
+  height: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-text-secondary);
 }
 
 .isSheet .sheetHandle {
-  display: block;
+  display: flex;
 }
