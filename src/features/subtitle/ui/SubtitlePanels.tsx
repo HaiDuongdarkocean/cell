@@ -10,6 +10,8 @@ import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToas
 import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
 import { dragDeltaToYOffset, dragEndSnapYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
+import { togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
+import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
@@ -70,6 +72,8 @@ export interface SubtitlePanelsRef {
   setCollapsed: (collapsed: boolean) => void;
   /** Update the block vertical position (percent 0-95). */
   setYOffsetPercent: (yOffsetPercent: number) => void;
+  /** Toggle Player Mode on/off. */
+  setPlayerMode: (active: boolean) => void;
 }
 
 export interface SubtitlePanelsProps {
@@ -111,6 +115,8 @@ export interface SubtitlePanelsProps {
   manager?: ManagerState;
   offset?: OffsetState;
   generateNativeEnabled?: boolean;
+  /** Called when user toggles Player Mode. */
+  onTogglePlayerMode?: () => void;
 }
 
 export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>(
@@ -144,6 +150,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       manager: initialManager,
       offset: initialOffset,
       generateNativeEnabled: initialGenerateNativeEnabled = true,
+      onTogglePlayerMode,
     },
     ref,
   ): React.JSX.Element {
@@ -168,6 +175,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [generateNativeEnabled, setGenerateNativeEnabled] = useState(initialGenerateNativeEnabled);
     const [toolsExpanded, setToolsExpanded] = useState(false);
     const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+    const [playerMode, setPlayerMode] = useState(false);
 
     useEffect(() => {
       const root = rootRef.current;
@@ -216,6 +224,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setGenerateNativeEnabled,
         setCollapsed,
         setYOffsetPercent,
+        setPlayerMode,
       }),
       [addToast, clearToasts],
     );
@@ -228,6 +237,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const handlePlayPause = useCallback((): void => {
       onPlayPause();
     }, [onPlayPause]);
+
+    const handleTogglePlayerMode = useCallback((): void => {
+      setPlayerMode((prev) => {
+        const next = togglePlayerMode(prev);
+        onTogglePlayerMode?.();
+        return next;
+      });
+    }, [onTogglePlayerMode]);
 
     // ADR-025: drag-to-reposition theo trục Y. Pointer Events + rAF throttle +
     // transform (atom ux-drag-transform-willchange-raf). touch-action:none trên .root
@@ -314,6 +331,30 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       '--cluster-bg-opacity': String(clusterBgOpacity),
     } as React.CSSProperties;
 
+    if (playerMode) {
+      return (
+        <PlayerModeOverlay
+          targetStyle={targetStyle}
+          nativeStyle={nativeStyle}
+          hasSubtitle={hasSubtitle}
+          isPlaying={isPlaying}
+          repeatActive={repeatActive}
+          repeatIcon={repeatIcon}
+          repeatLabel={repeatLabel}
+          clusterSettings={clusterSettings}
+          blockSettings={blockSettings}
+          onPrev={onPrev}
+          onNext={onNext}
+          onRepeat={onRepeat}
+          onRewind={onRewind}
+          onForward={onForward}
+          onPlayPause={onPlayPause}
+          onToggleCollapsed={handleToggleCollapsed}
+          onExit={handleTogglePlayerMode}
+        />
+      );
+    }
+
     return (
       <div
         ref={rootRef}
@@ -389,6 +430,18 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                       <Icon name="sidePanel" size={18} />
                     </IconButton>
                   )}
+                  {onGenerateNative && (
+                    <IconButton
+                      aria-label="Generate native subtitle"
+                      title="Generate native (G)"
+                      data-cell-id="generate-native-btn"
+                      size="sm"
+                      onClick={onGenerateNative}
+                      disabled={!generateNativeEnabled}
+                    >
+                      <Icon name="languages" size={18} />
+                    </IconButton>
+                  )}
                 </div>
                 <IconButton
                   aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'}
@@ -413,18 +466,16 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   <Icon name="rotateCcw" size={18} />
                 </IconButton>
               )}
-              {onGenerateNative && (
-                <IconButton
-                  aria-label="Generate native subtitle"
-                  title="Generate native (G)"
-                  data-cell-id="generate-native-btn"
-                  size="sm"
-                  onClick={onGenerateNative}
-                  disabled={!generateNativeEnabled}
-                >
-                  <Icon name="languages" size={18} />
-                </IconButton>
-              )}
+              <IconButton
+                aria-label={playerMode ? 'Exit player mode' : 'Enter player mode'}
+                title={playerMode ? 'Exit player mode' : 'Enter player mode'}
+                data-cell-id="player-mode-btn"
+                size="sm"
+                onClick={handleTogglePlayerMode}
+                active={playerMode}
+              >
+                <Icon name="pip" size={18} />
+              </IconButton>
               {onToggleManager && (
                 <IconButton
                   aria-label="Open subtitle manager"
