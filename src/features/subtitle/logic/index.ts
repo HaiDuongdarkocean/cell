@@ -9,3 +9,4 @@ export * from './subtitleAutoLoad';
 export * from './subtitleDragDrop';
 export * from './subtitleBlockDrag';
 export * from './subtitleOffset';
+export * from './playerModeGeometry';
