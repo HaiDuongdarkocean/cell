@@ -10,7 +10,9 @@ import { mountSubtitle, type MountSubtitleResult, type ManagerState, type Offset
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/features/dictionaryPopup/types';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
+import { resolvePlayerModeLayout, resolveVideoAspectRatio, DOCK_MIN_HEIGHT_PX } from '@/features/subtitle/logic/playerModeGeometry';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
+import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
 import { ICON_CATALOG } from '@/shared/icons';
 
 const OFFSET_SETTINGS_KEY = 'subtitleOffset';
@@ -29,6 +31,8 @@ export class ReactSubtitleController {
   private readonly engine: SubtitleCueEngine;
   private readonly mount: MountSubtitleResult;
   private readonly video: HTMLVideoElement;
+  private readonly container: HTMLElement;
+  private readonly videoAspectRatio: number;
   private readonly url: string;
   private readonly onGenerateNative: () => void;
   private readonly onCardCreatorAction: (action: CardCreatorAction) => void;
@@ -46,6 +50,8 @@ export class ReactSubtitleController {
   private managerTargetActiveIndex = 0;
   private managerNativeActiveIndex = 0;
   private generateNativeEnabled = true;
+  private playerModeHost: PlayerModeHostController | null = null;
+  private playerModeResizeHandler: (() => void) | null = null;
 
   /** Called when the user selects a subtitle track from the manager panel. */
   public onManagerSelect?: (role: 'target' | 'native', index: number) => void;
@@ -68,6 +74,13 @@ export class ReactSubtitleController {
     onGenerateNative: () => void = () => undefined,
   ) {
     this.video = video;
+    this.container = container;
+    const videoRect = video.getBoundingClientRect();
+    this.videoAspectRatio = resolveVideoAspectRatio(
+      video.videoWidth,
+      video.videoHeight,
+      resolveVideoAspectRatio(videoRect.width, videoRect.height),
+    );
     this.url = window.location?.href ?? '';
     this.onCardCreatorAction = onCardCreatorAction;
     this.onUpdateCurrentCard = onUpdateCurrentCard;
@@ -107,6 +120,8 @@ export class ReactSubtitleController {
       manager: this.buildManagerState(),
       offset: this.buildOffsetState(),
       generateNativeEnabled: this.generateNativeEnabled,
+      videoAspectRatio: this.videoAspectRatio,
+      onTogglePlayerMode: (active) => this.handlePlayerModeToggle(active),
       onPrev: () => this.engine.handlePrev(),
       onNext: () => this.engine.handleNext(),
       onRepeat: () => this.handleRepeat(),
@@ -371,6 +386,56 @@ export class ReactSubtitleController {
     };
   }
 
+  private getPlayerModeVideoStageHeight(): number {
+    return resolvePlayerModeLayout(
+      window.innerWidth,
+      window.innerHeight,
+      this.videoAspectRatio,
+      DOCK_MIN_HEIGHT_PX,
+    ).videoStageHeight;
+  }
+
+  private setPlayerModeBounds(videoStageHeight: number): void {
+    const root = document.documentElement;
+    root.dataset.cellPlayerMode = 'true';
+    root.style.setProperty('--cell-player-mode-video-height', `${videoStageHeight}px`);
+    root.style.setProperty('--cell-player-mode-dock-height', `${DOCK_MIN_HEIGHT_PX}px`);
+  }
+
+  private clearPlayerModeBounds(): void {
+    const root = document.documentElement;
+    delete root.dataset.cellPlayerMode;
+    root.style.removeProperty('--cell-player-mode-video-height');
+    root.style.removeProperty('--cell-player-mode-dock-height');
+  }
+
+  private handlePlayerModeToggle(active: boolean): void {
+    if (!active) {
+      if (this.playerModeResizeHandler) {
+        window.removeEventListener('resize', this.playerModeResizeHandler);
+        this.playerModeResizeHandler = null;
+      }
+      this.playerModeHost?.restore();
+      this.playerModeHost = null;
+      this.clearPlayerModeBounds();
+      return;
+    }
+
+    this.playerModeHost?.restore();
+    this.playerModeHost = createPlayerModeHostController(this.video, this.container);
+    const updateLayout = (): void => {
+      const videoStageHeight = this.getPlayerModeVideoStageHeight();
+      this.playerModeHost?.update(videoStageHeight);
+      this.setPlayerModeBounds(videoStageHeight);
+    };
+    updateLayout();
+    const onResize = (): void => {
+      updateLayout();
+    };
+    this.playerModeResizeHandler = onResize;
+    window.addEventListener('resize', onResize);
+  }
+
   /** Current active cue indices from the engine. */
   getActiveIndices(): { target: number; native: number } {
     return this.engine.getActiveIndices();
@@ -402,6 +467,13 @@ export class ReactSubtitleController {
   }
 
   destroy(): void {
+    if (this.playerModeResizeHandler) {
+      window.removeEventListener('resize', this.playerModeResizeHandler);
+      this.playerModeResizeHandler = null;
+    }
+    this.playerModeHost?.restore();
+    this.playerModeHost = null;
+    this.clearPlayerModeBounds();
     if (this.persistTimer) {
       clearTimeout(this.persistTimer);
       this.persistTimer = null;

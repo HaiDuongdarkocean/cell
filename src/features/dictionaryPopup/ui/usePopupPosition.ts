@@ -41,11 +41,24 @@ function getClientHeight(): number {
   return document.documentElement?.clientHeight ?? window.innerHeight;
 }
 
-function getRenderedHeight(popup: HTMLDivElement | null, size: PopupSize): number {
-  if (popup && popup.offsetHeight > 0) {
-    return Math.min(popup.offsetHeight, size.maxHeight);
-  }
-  return Math.min(size.maxHeight, POPUP_DEFAULT_HEIGHT_PX);
+interface PlayerModeBounds {
+  readonly top: number;
+  readonly bottom: number;
+}
+
+function getPlayerModeBounds(): PlayerModeBounds | null {
+  if (document.documentElement?.dataset.cellPlayerMode !== 'true') return null;
+  const rootStyle = getComputedStyle(document.documentElement);
+  const top = Number.parseFloat(rootStyle.getPropertyValue('--cell-player-mode-video-height'));
+  const bottom = Number.parseFloat(rootStyle.getPropertyValue('--cell-player-mode-dock-height'));
+  if (!Number.isFinite(top) || !Number.isFinite(bottom) || top < 0 || bottom < 0) return null;
+  return { top, bottom };
+}
+
+function getSheetAvailableHeight(viewportHeight: number): number {
+  const bounds = getPlayerModeBounds();
+  if (!bounds) return viewportHeight - POPUP_MARGIN_PX;
+  return Math.max(viewportHeight - bounds.top - bounds.bottom, 0);
 }
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
@@ -141,8 +154,10 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     Math.max(
       POPUP_MIN_HEIGHT_PX,
       Math.min(
-        initialSheetHeight ?? POPUP_DEFAULT_HEIGHT_PX,
-        getVh() - POPUP_MARGIN_PX,
+        initialSheetHeight ?? (
+          getPlayerModeBounds() ? getSheetAvailableHeight(getVh()) : POPUP_DEFAULT_HEIGHT_PX
+        ),
+        getSheetAvailableHeight(getVh()),
       ),
     ),
   );
@@ -309,7 +324,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         const dy = clientY - session.startY;
         const next = Math.max(
           POPUP_MIN_HEIGHT_PX,
-          Math.min(session.startHeight - dy, vh - POPUP_MARGIN_PX),
+          Math.min(session.startHeight - dy, getSheetAvailableHeight(vh)),
         );
         sheetHeightRef.current = next;
         setSheetHeight(next);
@@ -342,7 +357,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
       const vh = getClientHeight();
       const next = Math.max(
         POPUP_MIN_HEIGHT_PX,
-        Math.min(session.startHeight - dy, vh - POPUP_MARGIN_PX),
+        Math.min(session.startHeight - dy, getSheetAvailableHeight(vh)),
       );
       sheetHeightRef.current = next;
       setSheetHeight(next);
@@ -403,7 +418,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         if (sheet) {
           const next = Math.max(
             POPUP_MIN_HEIGHT_PX,
-            Math.min(sheetHeightRef.current, vh - POPUP_MARGIN_PX),
+            Math.min(sheetHeightRef.current, getSheetAvailableHeight(vh)),
           );
           sheetHeightRef.current = next;
           setSheetHeight(next);
@@ -433,7 +448,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
       setIsSheet(true);
       const next = Math.max(
         POPUP_MIN_HEIGHT_PX,
-        Math.min(sheetHeightRef.current, vh - POPUP_MARGIN_PX),
+        Math.min(sheetHeightRef.current, getSheetAvailableHeight(vh)),
       );
       sheetHeightRef.current = next;
       setSheetHeight(next);
@@ -446,7 +461,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         setIsSheet(true);
         const next = Math.max(
           POPUP_MIN_HEIGHT_PX,
-          Math.min(sheetHeightRef.current, vh - POPUP_MARGIN_PX),
+          Math.min(sheetHeightRef.current, getSheetAvailableHeight(vh)),
         );
         sheetHeightRef.current = next;
         setSheetHeight(next);
@@ -543,19 +558,21 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     try { target.setPointerCapture(e.pointerId); } catch { /* ignore */ }
   }, [startWillChange]);
 
+  const playerModeBounds = getPlayerModeBounds();
+  const sheetAvailableHeight = getSheetAvailableHeight(getClientHeight());
   const style: CSSProperties = isSheet
     ? {
         position: 'fixed',
         left: 0,
         right: 0,
-        top: 'auto',
-        bottom: 0,
+        top: playerModeBounds?.top ?? 'auto',
+        bottom: playerModeBounds?.bottom ?? 0,
         width: '100%',
         height: Math.max(
           POPUP_MIN_HEIGHT_PX,
-          Math.min(sheetHeight, getClientHeight() - POPUP_MARGIN_PX),
+          Math.min(sheetHeight, sheetAvailableHeight),
         ),
-        maxHeight: getClientHeight() - POPUP_MARGIN_PX,
+        maxHeight: sheetAvailableHeight,
         zIndex: POPUP_Z_INDEX,
         willChange,
         transform,

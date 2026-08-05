@@ -12,8 +12,50 @@ export function togglePlayerMode(active: PlayerModeActive): PlayerModeActive {
   return !active;
 }
 
+/** Resolve video width/height to an aspect ratio with a safe fallback. */
+export function resolveVideoAspectRatio(
+  videoWidth: number,
+  videoHeight: number,
+  fallback = 16 / 9,
+): number {
+  if (Number.isFinite(videoWidth) && Number.isFinite(videoHeight) && videoWidth > 0 && videoHeight > 0) {
+    return videoWidth / videoHeight;
+  }
+  return Number.isFinite(fallback) && fallback > 0 ? fallback : 16 / 9;
+}
+
+/** Inline styles applied temporarily to the host player container. */
+export function resolvePlayerModeHostStyles(videoStageHeight: number): Readonly<Record<string, string>> {
+  const safeHeight = Number.isFinite(videoStageHeight) && videoStageHeight > 0 ? videoStageHeight : 0;
+  return {
+    position: 'fixed',
+    inset: '0 auto auto 0',
+    width: '100vw',
+    height: `${safeHeight}px`,
+    'max-width': 'none',
+    'max-height': 'none',
+    margin: '0',
+    transform: 'none',
+  };
+}
+
+/** Inline styles applied temporarily to the video inside the host container. */
+export function resolvePlayerModeVideoStyles(): Readonly<Record<string, string>> {
+  return {
+    position: 'absolute',
+    inset: '0',
+    width: '100%',
+    height: '100%',
+    'max-width': 'none',
+    'max-height': 'none',
+    margin: '0',
+    transform: 'none',
+    'object-fit': 'contain',
+  };
+}
+
 /** Minimum Player Action Dock height in px (touch targets + 2 rows of controls). */
-export const DOCK_MIN_HEIGHT_PX = 128;
+export const DOCK_MIN_HEIGHT_PX = 160;
 /** Maximum Player Action Dock height as percent of viewport (avoid eating the video). */
 export const DOCK_MAX_HEIGHT_PERCENT = 35;
 

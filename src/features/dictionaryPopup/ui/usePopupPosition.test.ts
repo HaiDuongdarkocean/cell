@@ -39,6 +39,9 @@ beforeAll(() => {
 beforeEach(() => {
   Object.defineProperty(document.documentElement, 'clientWidth', { value: 1024, configurable: true });
   Object.defineProperty(document.documentElement, 'clientHeight', { value: 768, configurable: true });
+  delete document.documentElement.dataset.cellPlayerMode;
+  document.documentElement.style.removeProperty('--cell-player-mode-video-height');
+  document.documentElement.style.removeProperty('--cell-player-mode-dock-height');
 });
 
 describe('usePopupPosition', () => {
@@ -84,17 +87,79 @@ describe('usePopupPosition', () => {
     expect(root).toHaveStyle({ width: '520px' });
   });
 
-  it('switches to a bottom sheet and drags the sheet handle', () => {
+  it('bounds the Player Mode sheet between video and dock', () => {
+    Object.defineProperty(document.documentElement, 'clientWidth', { value: 400, configurable: true });
+    document.documentElement.dataset.cellPlayerMode = 'true';
+    document.documentElement.style.setProperty('--cell-player-mode-video-height', '270px');
+    document.documentElement.style.setProperty('--cell-player-mode-dock-height', '128px');
+
+    render(React.createElement(TestPopup, { anchor: defaultAnchor, onClose: jest.fn() }));
+    const root = screen.getByTestId('popup-root');
+
+    expect(root).toHaveStyle({ top: '270px', bottom: '128px', height: '370px' });
+  });
+
+  it('switches to a bottom sheet and drags the sheet handle 1:1 with height', () => {
     Object.defineProperty(document.documentElement, 'clientWidth', { value: 400, configurable: true });
 
     render(React.createElement(TestPopup, { anchor: defaultAnchor, onClose: jest.fn() }));
     const root = screen.getByTestId('popup-root');
     const handle = screen.getByTestId('popup-sheet-handle');
 
+    // Initial sheet height = POPUP_DEFAULT_HEIGHT_PX (300).
+    expect(root).toHaveStyle({ height: '300px' });
+
+    // Dragging the handle down 100px shrinks the sheet 1:1 (no translate).
     fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
     fireEvent.pointerMove(document, { clientX: 0, clientY: 100, pointerId: 1 });
 
-    expect(root).toHaveStyle({ transform: 'translateY(100px)' });
+    expect(root).toHaveStyle({ height: '200px' });
+  });
+
+  it('closes the sheet when the handle is clicked without dragging', () => {
+    Object.defineProperty(document.documentElement, 'clientWidth', { value: 400, configurable: true });
+    const onClose = jest.fn();
+
+    render(React.createElement(TestPopup, { anchor: defaultAnchor, onClose }));
+    const handle = screen.getByTestId('popup-sheet-handle');
+
+    fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.pointerUp(document, { clientX: 0, clientY: 0, pointerId: 1 });
+
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('closes the sheet when dragged down below 20% of viewport height', () => {
+    Object.defineProperty(document.documentElement, 'clientWidth', { value: 400, configurable: true });
+    Object.defineProperty(document.documentElement, 'clientHeight', { value: 768, configurable: true });
+    const onClose = jest.fn();
+
+    render(React.createElement(TestPopup, { anchor: defaultAnchor, onClose }));
+    const handle = screen.getByTestId('popup-sheet-handle');
+
+    // 20% of 768 = 153.6. Drag down 200px from height 300 → height 100 (< 153.6) → close.
+    fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(document, { clientX: 0, clientY: 200, pointerId: 1 });
+    fireEvent.pointerUp(document, { clientX: 0, clientY: 200, pointerId: 1 });
+
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('keeps the sheet height where the drag stopped (no tier snap)', () => {
+    Object.defineProperty(document.documentElement, 'clientWidth', { value: 400, configurable: true });
+    const onSizeChange = jest.fn();
+
+    render(React.createElement(TestPopup, { anchor: defaultAnchor, onClose: jest.fn(), onSizeChange }));
+    const root = screen.getByTestId('popup-root');
+    const handle = screen.getByTestId('popup-sheet-handle');
+
+    // Drag down 40px → height 260 (not a tier: tiers are 768, 576, 384, 192).
+    fireEvent.pointerDown(handle, { clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.pointerMove(document, { clientX: 0, clientY: 40, pointerId: 1 });
+    fireEvent.pointerUp(document, { clientX: 0, clientY: 40, pointerId: 1 });
+
+    expect(root).toHaveStyle({ height: '260px' });
+    expect(onSizeChange).toHaveBeenCalledWith(expect.objectContaining({}), 260);
   });
 
   it('dismisses the sheet when swiped down beyond the threshold', () => {

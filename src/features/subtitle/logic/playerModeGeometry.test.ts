@@ -3,6 +3,9 @@ import {
   clampDockHeight,
   clampDictionarySheetHeight,
   resolvePlayerModeLayout,
+  resolveVideoAspectRatio,
+  resolvePlayerModeHostStyles,
+  resolvePlayerModeVideoStyles,
   DOCK_MIN_HEIGHT_PX,
   SHEET_MIN_HEIGHT_PX,
 } from './playerModeGeometry';
@@ -37,36 +40,80 @@ describe('playerModeGeometry', () => {
       expect(clampDockHeight(400, 800)).toBe(280);
     });
     it('never lets max fall below min on tiny viewports', () => {
-      // 35% of 200 = 70 < 128 → max becomes 128
-      expect(clampDockHeight(200, 200)).toBe(128);
+      // 35% of 200 = 70 < 160 → max becomes 160
+      expect(clampDockHeight(200, 200)).toBe(160);
     });
   });
 
   describe('clampDictionarySheetHeight', () => {
     it('returns min for NaN inputs', () => {
-      expect(clampDictionarySheetHeight(NaN, 800, 128)).toBe(SHEET_MIN_HEIGHT_PX);
-      expect(clampDictionarySheetHeight(400, NaN, 128)).toBe(SHEET_MIN_HEIGHT_PX);
+      expect(clampDictionarySheetHeight(NaN, 800, 160)).toBe(SHEET_MIN_HEIGHT_PX);
+      expect(clampDictionarySheetHeight(400, NaN, 160)).toBe(SHEET_MIN_HEIGHT_PX);
     });
     it('returns min when viewport <= 0', () => {
-      expect(clampDictionarySheetHeight(400, 0, 128)).toBe(SHEET_MIN_HEIGHT_PX);
+      expect(clampDictionarySheetHeight(400, 0, 160)).toBe(SHEET_MIN_HEIGHT_PX);
     });
     it('clamps below min to min', () => {
-      expect(clampDictionarySheetHeight(50, 800, 128)).toBe(SHEET_MIN_HEIGHT_PX);
+      expect(clampDictionarySheetHeight(50, 800, 160)).toBe(SHEET_MIN_HEIGHT_PX);
     });
     it('clamps above available region (viewport - dock)', () => {
-      // available = 800 - 128 = 672; max = 672
-      expect(clampDictionarySheetHeight(900, 800, 128)).toBe(672);
+      // available = 800 - 160 = 640; max = 640
+      expect(clampDictionarySheetHeight(900, 800, 160)).toBe(640);
     });
     it('treats negative dock as 0', () => {
       // available = 800 - 0 = 800
       expect(clampDictionarySheetHeight(900, 800, -50)).toBe(800);
     });
     it('keeps value within range', () => {
-      expect(clampDictionarySheetHeight(400, 800, 128)).toBe(400);
+      expect(clampDictionarySheetHeight(400, 800, 160)).toBe(400);
     });
     it('never covers the dock on tiny viewports', () => {
-      // viewport 200, dock 128 → available 72 < min 160 → upper bound = 160
-      expect(clampDictionarySheetHeight(180, 200, 128)).toBe(160);
+      // viewport 200, dock 160 → available 72 < min 160 → upper bound = 160
+      expect(clampDictionarySheetHeight(180, 200, 160)).toBe(160);
+    });
+  });
+
+  describe('resolveVideoAspectRatio', () => {
+    it('uses native video dimensions when valid', () => {
+      expect(resolveVideoAspectRatio(1920, 1080)).toBeCloseTo(16 / 9);
+    });
+    it('uses fallback for invalid dimensions', () => {
+      expect(resolveVideoAspectRatio(0, 0)).toBeCloseTo(16 / 9);
+      expect(resolveVideoAspectRatio(1920, 0, 4 / 3)).toBeCloseTo(4 / 3);
+    });
+  });
+
+  describe('resolvePlayerModeHostStyles', () => {
+    it('returns top-aligned viewport host styles', () => {
+      expect(resolvePlayerModeHostStyles(270)).toEqual({
+        position: 'fixed',
+        inset: '0 auto auto 0',
+        width: '100vw',
+        height: '270px',
+        'max-width': 'none',
+        'max-height': 'none',
+        margin: '0',
+        transform: 'none',
+      });
+    });
+    it('normalizes invalid height to zero', () => {
+      expect(resolvePlayerModeHostStyles(NaN).height).toBe('0px');
+    });
+  });
+
+  describe('resolvePlayerModeVideoStyles', () => {
+    it('returns contain-preserving video styles', () => {
+      expect(resolvePlayerModeVideoStyles()).toEqual({
+        position: 'absolute',
+        inset: '0',
+        width: '100%',
+        height: '100%',
+        'max-width': 'none',
+        'max-height': 'none',
+        margin: '0',
+        transform: 'none',
+        'object-fit': 'contain',
+      });
     });
   });
 
