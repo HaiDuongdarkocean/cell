@@ -102,20 +102,6 @@
   min-height: var(--touch-target-mobile, 44px);
 }
 
-/* Dock button visibility: Player Mode dock has a dark surface background.
-   Default iconbutton-fg (text-secondary #a3a3a3) + cluster-bg-opacity 0.2
-   makes buttons nearly invisible on the dark dock. Override to full-opacity
-   white icons + visible background so buttons are clearly visible. */
-.navArea :global(button),
-.actionArea :global(button) {
-  color: var(--color-text) !important;
-  background: rgba(255, 255, 255, 0.12) !important;
-}
-.navArea :global(button):hover,
-.actionArea :global(button):hover {
-  background: rgba(255, 255, 255, 0.2) !important;
-}
-
 /* Subtitle text: readable in dock, prevent overflow on long lines. */
 .subtitleArea :global(.text) {
   max-height: 3em;
