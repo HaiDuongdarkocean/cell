@@ -31,10 +31,12 @@ docs/           # Tài liệu dự án
 src/            # Source code (chi tiết trong 2-architechture-system.md)
 tests/          # Test files (chi tiết trong 2-architechture-system.md)
 .agents/        # Agent skills
-  skills/         # 24 skill addyosmani/agent-skills (Define→Plan→Build→Verify→Review→Ship)
+  skills/         # 25 skill addyosmani/agent-skills (Define→Plan→Build→Verify→Review→Ship)
                  # browser-testing-with-devtools/SKILL.md: có "Reliable install workflow on Devin CLI"
                  #   (copy dist/ → %TEMP%\cell-ext-dist trước khi install_extension,
                  #    vì Devin MCP client negotiate roots nhưng không gửi workspace D:\...\cell)
+                 # testing-extension-browser/: SSOT profile + CDP Extensions.loadUnpacked + script/test-cell-browser.py
+                 #   (Chrome 137+ blocks --load-extension; dùng nodriver + CDP loadUnpacked mỗi session; anti-bot bypass)
   skills-deprecated/  # 4 skill cũ đã deprecate (chrome-extension-mv3-architecture-review, conceptualization, mockup-first, skill-creator)
 .devin/        # Devin config (hooks.v1.json; agents/ đã xóa — thay bằng .agents/skills/)
 .windsurf/      # Windsurf config (rules consolidated vào AGENTS.md — cross-tool source of truth)
@@ -45,6 +47,7 @@ tasks/          # Active plan & task checklist (current sprint)
 
 ## Lịch sử cập nhật wiki
 
+**2026-08-05**: Thêm skill `testing-extension-browser` — 1 workflow duy nhất: nodriver spawn (anti-bot) + CDP `Extensions.loadUnpacked` (Chrome 137+ blocks `--load-extension`) + load 2 ext (Cell + uBlock) + navigate + reload. Script Python `script/test-cell-browser.py` chạy qua `uv run --python 3.11 --with nodriver`.
 **2026-08-03**: Cập nhật generic subtitle-list discovery (T1-T12 E2E). Pipeline/protocol adapters: cinesrc, kisskh, lookmovie, broodingmovies, lunastream, MyAsianTV, noxx, onflix HLS, videasy encrypted decoder.
 **2026-08-03**: `content-script.ts` `PageScanner` chạy trong iframe có `<video>` (moviepire.ru → vidnest.fun `Nest` provider) để bắt `<track>` subtitle URLs.
 
