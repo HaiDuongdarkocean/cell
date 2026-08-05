@@ -26,6 +26,7 @@ import type {
 import type { DictionaryPopupSettings, CardCreatorSettings } from '@/entities/settings/types';
 import type { BilingualCue } from '@/entities/media';
 import type { PopupLineRect } from '../ui/popupGeometry';
+import { POPUP_SHEET_BREAKPOINT_PX } from '../ui/popupGeometry';
 import type { PopupAnchor, PopupSize } from '../ui/usePopupPosition';
 import {
   mountPopupDictionary,
@@ -571,8 +572,15 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     getTargetCues = config.getTargetCues;
   }
 
+  // Sheet mode (mobile/narrow viewport): the popup is a bottom sheet that
+  // stays open across lookups so the user can chain word lookups without the
+  // sheet vanishing on each outside tap. Desktop popup dismisses on outside
+  // click as before.
+  function isSheetMode(): boolean {
+    return window.innerWidth < POPUP_SHEET_BREAKPOINT_PX;
+  }
+
   function onPopupDismiss(): void {
-    // User intentionally dismissed (Esc / click outside / close button) —
     // mountPopupDictionary has already unmounted the React tree by the time
     // this callback runs, so we only clear local references.
     cancelPendingDismiss();
@@ -665,23 +673,31 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       : undefined;
 
     if (popupMount && !isResponseUpdate) {
-      // A fresh lookup (cache hit or new term) should re-anchor at the new
-      // target. The React mount is positioned on initial mount, so we destroy
-      // the old host and create a new one below.
-      popupMount.destroy();
-      popupMount = null;
+      if (isSheetMode()) {
+        // Sheet mode: keep the sheet mounted and feed the new result in — no
+        // flicker, the user can chain lookups without the sheet vanishing.
+        // The shared `if (popupMount)` block below handles setResult/setOptions.
+      } else {
+        // Desktop: a fresh lookup re-anchors at the new target. The React
+        // mount is positioned on initial mount, so destroy + recreate.
+        popupMount.destroy();
+        popupMount = null;
+      }
     }
 
     const perLang = dpSettings.defaultActiveTabPerLang?.[result.langCode];
     const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
 
     if (popupMount) {
-      // Cache-miss response arriving for the same mounted loading popup:
-      // feed the result in without destroying.
+      // Either a cache-miss response for the same loading popup, or the sheet
+      // reuse path above — feed the result in without re-mounting.
       popupMount.setResult(result, additional);
       popupMount.setOptions({
         sourceLang: result.langCode,
         targetLang: nativeLang || 'vi',
+        initialTerm: request.term,
+        contextSentence: request.contextSentence,
+        cursorOffset: request.cursorOffset,
       });
     } else {
       const options: MountPopupDictionaryOptions = {
@@ -707,6 +723,7 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
         onStatusChange: handlePopupStatusChange,
         onCandidateChange: expandHighlightForTerm,
+        dismissOnOutsideClick: !isSheetMode(),
       };
       popupMount = mountPopupDictionary(options);
     }
@@ -822,36 +839,54 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
         }
       : undefined;
 
+    let reusedSheet = false;
     if (popupMount) {
-      popupMount.destroy();
-      popupMount = null;
+      if (isSheetMode()) {
+        // Sheet mode: reuse the mounted sheet — just flip to loading and feed
+        // the new term/context so the user sees the lookup start in-place.
+        popupMount.setLoading(true);
+        popupMount.setOptions({
+          sourceLang: request.langCode,
+          targetLang: nativeLang || 'vi',
+          initialTerm: request.term,
+          contextSentence: request.contextSentence,
+          cursorOffset: request.cursorOffset,
+        });
+        reusedSheet = true;
+      } else {
+        popupMount.destroy();
+        popupMount = null;
+      }
     }
 
-    const perLang = dpSettings.defaultActiveTabPerLang?.[request.langCode];
-    const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
-    const options: MountPopupDictionaryOptions = {
-      anchor,
-      pointer: pointerHint,
-      lineRect,
-      langCode: request.langCode,
-      sourceLang: request.langCode,
-      targetLang: nativeLang || 'vi',
-      initialTerm: request.term,
-      contextSentence: request.contextSentence,
-      cursorOffset: request.cursorOffset,
-      getTokenStatus: deps.getTokenStatus,
-      isLoading: true,
-      defaultActiveTab: defaultTab,
-      initialSize: { width: dpSettings.popupWidthPx, maxHeight: dpSettings.popupMaxHeightPx },
-      initialSheetHeight: Math.round(window.innerHeight * ((dpSettings.popupSheetHeightVh ?? 72) / 100)),
-      onClose: onPopupDismiss,
-      onSizeChange: handlePopupSizeChange,
-      onSendToCard: (prefill) => handlePopupCardCreatorAction('edit-card', prefill),
-      onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
-      onStatusChange: handlePopupStatusChange,
-      onCandidateChange: expandHighlightForTerm,
-    };
-    popupMount = mountPopupDictionary(options);
+    if (!reusedSheet) {
+      const perLang = dpSettings.defaultActiveTabPerLang?.[request.langCode];
+      const defaultTab = perLang !== undefined ? perLang : dpSettings.defaultActiveTab;
+      const options: MountPopupDictionaryOptions = {
+        anchor,
+        pointer: pointerHint,
+        lineRect,
+        langCode: request.langCode,
+        sourceLang: request.langCode,
+        targetLang: nativeLang || 'vi',
+        initialTerm: request.term,
+        contextSentence: request.contextSentence,
+        cursorOffset: request.cursorOffset,
+        getTokenStatus: deps.getTokenStatus,
+        isLoading: true,
+        defaultActiveTab: defaultTab,
+        initialSize: { width: dpSettings.popupWidthPx, maxHeight: dpSettings.popupMaxHeightPx },
+        initialSheetHeight: Math.round(window.innerHeight * ((dpSettings.popupSheetHeightVh ?? 72) / 100)),
+        onClose: onPopupDismiss,
+        onSizeChange: handlePopupSizeChange,
+        onSendToCard: (prefill) => handlePopupCardCreatorAction('edit-card', prefill),
+        onQuickAdd: (prefill) => { void handlePopupQuickAdd(prefill); },
+        onStatusChange: handlePopupStatusChange,
+        onCandidateChange: expandHighlightForTerm,
+        dismissOnOutsideClick: !isSheetMode(),
+      };
+      popupMount = mountPopupDictionary(options);
+    }
 
     const lookupToken = getTokenElement(highlightTarget);
     if (lookupToken) {
@@ -1458,9 +1493,11 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       });
     }
     const sameDimensions = orbitalBadgeSize === trigger.size && orbitalBadgeScale === trigger.pointerScale;
+    console.log('[DEBUG syncOrbitalBadge]', { enabled: dp.enabled, hasBadge: !!orbitalBadge, sameDimensions, size: trigger.size, scale: trigger.pointerScale });
     if (orbitalBadge && sameDimensions) {
       orbitalBadge.setPreset(trigger.position);
     } else {
+      console.log('[DEBUG syncOrbitalBadge] destroying + re-mounting badge');
       orbitalBadge?.destroy();
       orbitalBadge = mountOrbitalBadge({
         badgeSize: trigger.size,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent, RefObject } from 'react';
 import {
   clampPopupSize,
@@ -10,8 +10,10 @@ import {
   POPUP_MIN_WIDTH_PX,
   POPUP_SHEET_BREAKPOINT_PX,
   POPUP_Z_INDEX,
+  popupOverlapsAnchor,
+  SHEET_CLICK_THRESHOLD_PX,
+  SHEET_DISMISS_RATIO,
   SHEET_DISMISS_THRESHOLD_PX,
-  SHEET_TIERS,
   type PopupAnchor,
   type PopupLineRect,
   type PopupPointerHint,
@@ -51,21 +53,6 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
   return !!target.closest('button, a, input, textarea, select, [role="button"]');
 }
 
-function snapSheetToTier(startHeight: number, dy: number, vh: number): number {
-  const targetHeight = startHeight - dy;
-  const tierHeights = SHEET_TIERS.map((t) => Math.round(vh * t));
-  let best = tierHeights[0]!;
-  let minDiff = Infinity;
-  for (const h of tierHeights) {
-    const diff = Math.abs(h - targetHeight);
-    if (diff < minDiff) {
-      minDiff = diff;
-      best = h;
-    }
-  }
-  return Math.max(POPUP_MIN_HEIGHT_PX, Math.min(best, vh - POPUP_MARGIN_PX));
-}
-
 interface DragSession {
   readonly type: 'drag';
   readonly startX: number;
@@ -89,6 +76,7 @@ interface ResizeSession {
 
 interface SheetSession {
   readonly type: 'sheet';
+  readonly startX: number;
   readonly startY: number;
   readonly startHeight: number;
   readonly fromHandle: boolean;
@@ -162,7 +150,9 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     const vw = getVw();
     const vh = getVh();
     const s = buildInitialSize();
-    const h = getRenderedHeight(null, s);
+    // CSS height = min(maxHeight, vh - top - margin) — always maxHeight when
+    // space allows. Position must be computed with maxHeight so the corner
+    // placement matches the rendered height (otherwise popup covers anchor).
     return computePopupPosition(
       anchor.top,
       anchor.left,
@@ -171,7 +161,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
       s.width,
       vw,
       vh,
-      h,
+      s.maxHeight,
       pointer,
       lineRect ?? null,
     );
@@ -202,7 +192,9 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
       vw: number,
       vh: number,
     ): PopupPosition => {
-      const h = getRenderedHeight(popupRef.current, nextSize);
+      // CSS height = min(maxHeight, vh - top - margin) — always maxHeight when
+      // space allows. Position must be computed with maxHeight so the corner
+      // placement matches the rendered height (otherwise popup covers anchor).
       const base = computePopupPosition(
         anchorRef.current.top,
         anchorRef.current.left,
@@ -211,7 +203,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         nextSize.width,
         vw,
         vh,
-        h,
+        nextSize.maxHeight,
         pointerRef.current,
         lineRectRef.current,
       );
@@ -227,7 +219,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     [],
   );
 
-  const endSession = useCallback((_clientX: number, clientY: number) => {
+  const endSession = useCallback((clientX: number, clientY: number) => {
     const session = sessionRef.current;
     if (!session) return;
 
@@ -254,13 +246,23 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     const vh = getClientHeight();
 
     if (session.fromHandle) {
-      if (dy > SHEET_DISMISS_THRESHOLD_PX) {
+      // Click (no meaningful movement) on the handle = close.
+      const dx = clientX - session.startX;
+      if (Math.hypot(dx, dy) <= SHEET_CLICK_THRESHOLD_PX) {
         onCloseRef.current?.();
         return;
       }
-      const next = snapSheetToTier(session.startHeight, dy, vh);
-      setSheetHeight(next);
-      onSizeChangeRef.current?.(sizeRef.current, next);
+      // Drag is 1:1 with height, so the live height is already where the user
+      // stopped. Use the raw (pre-MIN-clamp) projected height for the dismiss
+      // decision — the visual is clamped to MIN so the sheet never vanishes,
+      // but the user's intent (drag past 20% of vh) still triggers close.
+      const rawHeight = session.startHeight - dy;
+      if (rawHeight < vh * SHEET_DISMISS_RATIO) {
+        onCloseRef.current?.();
+        return;
+      }
+      const finalHeight = sheetHeightRef.current;
+      onSizeChangeRef.current?.(sizeRef.current, finalHeight);
       return;
     }
 
@@ -334,20 +336,16 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     // sheet
     const dy = clientY - session.startY;
     if (session.fromHandle) {
-      if (dy > 0) {
-        setTransform(`translateY(${dy}px)`);
-        setTransition('none');
-      } else {
-        const vh = getClientHeight();
-        const next = Math.max(
-          POPUP_MIN_HEIGHT_PX,
-          Math.min(session.startHeight - dy, vh - POPUP_MARGIN_PX),
-        );
-        sheetHeightRef.current = next;
-        setSheetHeight(next);
-        setTransform(undefined);
-        setTransition(undefined);
-      }
+      // 1:1 drag = height. Sheet is anchored at the bottom, so growing/shrinking
+      // height moves the top edge (where the handle sits) with the finger. The
+      // stop position IS the sheet height — no snap, no translate.
+      const vh = getClientHeight();
+      const next = Math.max(
+        POPUP_MIN_HEIGHT_PX,
+        Math.min(session.startHeight - dy, vh - POPUP_MARGIN_PX),
+      );
+      sheetHeightRef.current = next;
+      setSheetHeight(next);
     } else if (dy > 0) {
       setTransform(`translateY(${dy}px)`);
       setTransition('none');
@@ -419,11 +417,10 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     return () => window.removeEventListener('resize', onResize);
   }, [computeAndClampPosition]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const vw = getClientWidth();
     const vh = getClientHeight();
-    const sheet = vw < POPUP_SHEET_BREAKPOINT_PX;
-    setIsSheet(sheet);
+    let sheet = vw < POPUP_SHEET_BREAKPOINT_PX;
 
     const nextSize = clampPopupSize(sizeRef.current, vw, vh);
     sizeRef.current = nextSize;
@@ -433,6 +430,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     setTransition(undefined);
 
     if (sheet) {
+      setIsSheet(true);
       const next = Math.max(
         POPUP_MIN_HEIGHT_PX,
         Math.min(sheetHeightRef.current, vh - POPUP_MARGIN_PX),
@@ -441,7 +439,21 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
       setSheetHeight(next);
     } else {
       const pos = computeAndClampPosition(nextSize, { left: 0, top: 0 }, vw, vh);
-      setPosition(pos);
+      // Fallback: if desktop popup can't avoid covering the anchor word,
+      // the viewport is too cramped for corner placement — switch to sheet.
+      if (popupOverlapsAnchor(pos, nextSize.width, nextSize.maxHeight, anchorRef.current)) {
+        sheet = true;
+        setIsSheet(true);
+        const next = Math.max(
+          POPUP_MIN_HEIGHT_PX,
+          Math.min(sheetHeightRef.current, vh - POPUP_MARGIN_PX),
+        );
+        sheetHeightRef.current = next;
+        setSheetHeight(next);
+      } else {
+        setIsSheet(false);
+        setPosition(pos);
+      }
     }
   }, [
     anchor,
@@ -500,6 +512,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     const target = e.currentTarget;
     sessionRef.current = {
       type: 'sheet',
+      startX: e.clientX,
       startY: e.clientY,
       startHeight: sheetHeightRef.current,
       fromHandle: true,
@@ -519,6 +532,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     const target = e.currentTarget;
     sessionRef.current = {
       type: 'sheet',
+      startX: e.clientX,
       startY: e.clientY,
       startHeight: sheetHeightRef.current,
       fromHandle: false,
