@@ -1,15 +1,22 @@
 """
-test-cell-browser.py — Cell extension testing via nodriver (stealth) + clone from master.
+test-cell-browser.py — Cell extension loader via nodriver (stealth) + clone from master.
 
 Workflow: clone master → spawn nodriver (anti-bot) → CDP loadUnpacked (Cell + uBlock)
-→ navigate → reload → verify → cleanup clone.
+→ close Chrome → MCP spawn_browser reuses profile (extensions auto-load from Preferences).
+
+The script ONLY launches Chrome and loads extensions, then exits. Navigation, page
+reload, and verification are handled by the MCP browser (stealth-chrome-devtools) which
+spawns a new Chrome with the same user_data_dir — extensions auto-load from the profile.
 
 Parallel-safe: each run gets unique clone dir. Auto-cleanup on exit.
 
 Usage:
   uv run --python 3.11 --with nodriver python -u .agents/skills/testing-extension-browser/script/test-cell-browser.py
-  uv run --python 3.11 --with nodriver python -u .agents/skills/testing-extension-browser/script/test-cell-browser.py --url "https://streamduck.site/"
   uv run --python 3.11 --with nodriver python -u .agents/skills/testing-extension-browser/script/test-cell-browser.py --headless --no-ublock
+
+After this script exits, use MCP with the printed Clone path:
+  spawn_browser(user_data_dir="<Clone path>", headless=false, viewport_width=..., viewport_height=...)
+  navigate(url="https://...")
 """
 
 import argparse
@@ -32,8 +39,6 @@ MASTER_PROFILE = SESSION_ROOT / "master"
 SESSIONS_DIR = SESSION_ROOT / "sessions"
 CELL_EXT = r"C:\Users\The0cean\Programming\The0cean ecosystem\cell\dist"
 UBLOCK_EXT = r"C:\Users\The0cean\Programming\The0cean ecosystem\cell\data\extension\uBOLite"
-
-DEFAULT_URL = "https://www.geeksforgeeks.org/machine-learning/machine-learning-algorithms/"
 
 # Files/dirs to copy from master (login + preferences only — exclude regenerable cache)
 KEEP_PATTERNS = {
@@ -119,14 +124,10 @@ async def load_extension(browser: uc.Browser, ext_path: str, name: str) -> str:
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Cell extension test browser (nodriver + clone)")
-    parser.add_argument("--url", default=DEFAULT_URL)
+    parser = argparse.ArgumentParser(description="Cell extension loader (nodriver + clone). Launches Chrome with extensions loaded — MCP handles navigation.")
     parser.add_argument("--headless", action="store_true", help="Run headless (no window)")
     parser.add_argument("--no-ublock", action="store_true", help="Skip loading uBlock")
-    parser.add_argument("--no-reload", action="store_true", help="Skip page reload")
     parser.add_argument("--keep-profile", action="store_true", help="Don't delete clone on exit")
-    parser.add_argument("--exit-after-verify", action="store_true",
-                        help="Close browser + exit after verify (for batch/parallel runs)")
     args = parser.parse_args()
 
     # --- 0. Verify extension paths ---
@@ -170,68 +171,32 @@ async def main() -> None:
             cleanup_clone(clone_dir)
         sys.exit(1)
 
-    # --- 4. Navigate ---
-    print(f"[..] Navigating to: {args.url}", flush=True)
-    tab = await browser.get(args.url)
-    print(f"[OK] Page loaded: {tab.url}", flush=True)
-
-    # --- 5. Reload to trigger content script ---
-    if not args.no_reload:
-        print("[..] Reloading page...", flush=True)
-        try:
-            await tab.reload()
-        except Exception:
-            print("[..] reload() failed, re-navigating...", flush=True)
-            tab = await browser.get(args.url)
-        await asyncio.sleep(3)
-        print("[OK] Page reloaded", flush=True)
-
-    # --- 6. Verify ---
-    try:
-        marker = await tab.evaluate(
-            "document.querySelector('#cell-universal-panel-host') !== null ? 'MARKER_FOUND' : 'NO_MARKER'",
-            return_by_value=True,
-        )
-        val = marker.value if hasattr(marker, "value") else str(marker)
-        print(f"[VERIFY] Marker: {val}", flush=True)
-        if val == "MARKER_FOUND":
-            print("[PASS] Cell extension is running.", flush=True)
-        else:
-            print("[WARN] Marker not found — try manual reload.", flush=True)
-    except Exception as e:
-        print(f"[WARN] Verify failed: {e}", flush=True)
-
+    # --- 4. Close Chrome so MCP can reuse the profile without lock conflict ---
+    # loadUnpacked writes extension to profile Preferences, so a new Chrome
+    # launched by MCP spawn_browser with the same user_data_dir will auto-load
+    # the extension. MCP handles all navigation + page interaction.
     print(flush=True)
     print(f"Clone:  {clone_dir}", flush=True)
     print(f"Cell:   {CELL_EXT}", flush=True)
     if load_ublock:
         print(f"uBlock: {UBLOCK_EXT}", flush=True)
-    print(f"URL:    {args.url}", flush=True)
-
-    # --- 7. Exit or keep open ---
-    if args.exit_after_verify:
-        print("[..] --exit-after-verify: closing browser + cleanup.", flush=True)
-        browser.stop()
-        time.sleep(2)  # sync sleep — let Chrome release file handles
-        if not args.keep_profile:
-            cleanup_clone(clone_dir)
-        print("[OK] Done.", flush=True)
-        return
-
     print(flush=True)
-    print("Browser stays open. Press Ctrl+C to close.", flush=True)
-    try:
-        await asyncio.Event().wait()
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        pass
-    finally:
-        print("\n[..] Closing browser...", flush=True)
-        browser.stop()
-        time.sleep(2)  # sync sleep — event loop may be closing
-        if not args.keep_profile:
-            cleanup_clone(clone_dir)
-        print("[OK] Done.", flush=True)
+    print("[..] Closing Chrome so MCP can reuse the profile...", flush=True)
+    browser.stop()
+    time.sleep(2)
+    print("[OK] Chrome closed. Profile ready for MCP.", flush=True)
+    print(flush=True)
+    print("Next: MCP spawn_browser + navigate.", flush=True)
+    print(f'  spawn_browser(user_data_dir="{clone_dir}", headless=false)', flush=True)
+    print(f'  navigate(url="https://...")', flush=True)
+    print(flush=True)
+    if not args.keep_profile:
+        cleanup_clone(clone_dir)
+    print("[OK] Done.", flush=True)
 
 
 if __name__ == "__main__":
-    uc.loop().run_until_complete(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n[..] Interrupted.", flush=True)

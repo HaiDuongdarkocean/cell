@@ -174,7 +174,7 @@ ALWAYS commit: chỉ commit khi build pass và verify pass dùng skill `git-work
 
 Test bằng mcp stealth-chrome-devtools (PRIMARY — bypass anti-automation, navigator.webdriver=false), chrome-devtools (fallback — cần performance trace/a11y), hoặc edge-devtools. Cài thêm: [uBOLite extension](data/extension/uBOLite) để chặn quảng cáo.
 
-**Mở profile + load extension đúng (SSOT)**: dùng skill `testing-extension-browser` — Chrome 137+ blocks `--load-extension`, stealth MCP không hỗ trợ Extensions CDP domain. Script nodriver: `uv run --python 3.11 --with nodriver python -u .agents\skills\testing-extension-browser\script\test-cell-browser.py --url <url>`. Clone từ master, auto-cleanup, 20+ agent song song.
+**Mở profile + load extension đúng (SSOT)**: dùng skill `testing-extension-browser` — Chrome 137+ blocks `--load-extension`, stealth MCP không hỗ trợ Extensions CDP domain. Script nodriver chỉ launch Chrome + load extension rồi close (không navigate): `uv run --python 3.11 --with nodriver python -u .agents\skills\testing-extension-browser\script\test-cell-browser.py --keep-profile`. Sau đó MCP `spawn_browser(user_data_dir=<clone path>, headless=false)` + `navigate(url=<test url>)` — extension auto-load từ profile Preferences. Clone từ master, auto-cleanup, 20+ agent song song.
 
 ### trang web để test
 
