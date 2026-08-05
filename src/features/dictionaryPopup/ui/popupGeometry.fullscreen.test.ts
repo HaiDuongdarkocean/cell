@@ -61,6 +61,36 @@ describe('computePopupPosition — fullscreen subtitle case', () => {
     expect(pos.top).not.toBe(vh - popupHeight - POPUP_MARGIN_PX); // not clamped 952
   });
 
+  it('ignores a zero-size line rect after highlight DOM mutation', () => {
+    const word = { top: 1036, left: 747, right: 818, bottom: 1061 };
+    const zeroLine = { top: 0, left: 0, right: 0, bottom: 0 };
+    const pos = computePopupPosition(
+      word.top, word.left, word.right, word.bottom,
+      popupWidth, 1406, 1179, popupHeight,
+      { tip: { x: 782, y: 1048 } }, zeroLine,
+    );
+
+    expect([552, 1065]).toContain(pos.top);
+  });
+
+  it('anchors to the clicked word, not the bounding box of its paragraph', () => {
+    const word = { top: 1036, left: 747, right: 818, bottom: 1061 };
+    const paragraphBounds = { top: 977, left: 323, right: 1081, bottom: 1092 };
+    const pos = computePopupPosition(
+      word.top, word.left, word.right, word.bottom,
+      popupWidth, 1406, 1179, popupHeight,
+      { tip: { x: 782, y: 1048 } }, paragraphBounds,
+    );
+
+    // The popup may use any valid word corner, but its top must be based on
+    // the clicked word's line, never on paragraphBounds.top (977).
+    const wordCornerTops = [
+      word.bottom + POPUP_POINTER_GAP_PX,
+      word.top - POPUP_POINTER_GAP_PX - popupHeight,
+    ];
+    expect(wordCornerTops).toContain(pos.top);
+  });
+
   it('result must match a recognizable corner (SE/SW/NE/NW), not arbitrary (608,730)', () => {
     const pos = computePopupPosition(
       anchor.top, anchor.left, anchor.right, anchor.bottom,
