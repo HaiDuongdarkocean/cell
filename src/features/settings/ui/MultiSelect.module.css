@@ -99,7 +99,7 @@
   margin: 0;
   padding: var(--space-1-5);
   scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 
 .list::-webkit-scrollbar {
@@ -111,12 +111,12 @@
 }
 
 .list::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: var(--radius-sm);
+  background: var(--color-scrollbar-thumb);
+  border-radius: var(--radius-full);
 }
 
 .list::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-secondary);
+  background: var(--color-scrollbar-thumb-hover);
 }
 
 /* === Section header === */
