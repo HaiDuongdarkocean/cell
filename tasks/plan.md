@@ -1,53 +1,89 @@
-# Implementation Plan: Subtitle Overlay — 3-Zone Full-Width Block (ADR-025 + spec override)
+# Implementation Plan: Player Mode Prototype
 
-## Overview
+## Objective
 
-Bug: subtitle block hỏng trên themoviebox — layout hiện tại là flex-column stacked (blockLayer + navLayer centered absolute), không phải 3-zone full-width block như ADR-025. SubtitleBlock return null khi cues rỗng → blockLayer height=0 → nav cluster floating sai vị trí. Logic drag/snap/persist không tồn tại (legacy đã xóa commit ada2f71, React UI chưa implement).
+Build a toggleable Player Mode for the Cell subtitle overlay. It must work on every viewport, with the first visual target at 320–480px. The mode is a fixed overlay that keeps the website's native subtitle on the video while moving Cell's `SubtitleBlock` and `NavCluster` into a bottom Player Action Dock. The existing Dictionary popup opens as a resizable sheet above the dock and may cover the video, but must never cover the dock itself.
 
-Fix: implement layout 3-zone `[NavCluster left][SubtitleBlock center][ToolsLayer right]` full-width, drag Y toàn block, snap 25/50/75%, persist yOffsetPercent. Showcase + production dùng cùng `SubtitlePanels` (Reuse).
+## Confirmed product decisions
 
-## Architecture Decisions
+- Toggle button occupies the current `data-cell-id="generate-native-btn"` slot.
+- `generate-native-btn` moves into `tools-toggle-btn` → `.extraCol`.
+- Toggle is available on every viewport and toggles Player Mode on/off.
+- Website/native caption remains on the video.
+- Cell `SubtitleBlock` also renders in the Player Action Dock at the same time.
+- The original `NavCluster` behavior remains available; only its Player Mode layout changes.
+- `content khác` is intentionally empty in V1 and is the sheet's expansion area.
+- Dictionary uses the existing `Dictionary`/popup behavior rather than a duplicate lookup implementation.
+- Dictionary sheet can resize vertically and can cover the video, but reserves the bottom Player Action Dock.
+- No DOM mutation or resizing of the host website video is required; Cell owns only its fixed overlay.
 
-- **Layout 3-zone (spec override ADR-025):** spec anh yêu cầu cluster trái + phải, ADR-025 nói cluster chỉ trái. Theo spec (mới hơn): left=NavCluster (nav), right=ToolsLayer (card actions), center=SubtitleBlock.
-- **Drag Y 1D:** pointerdown trên `.root` background (pointer-events auto, exclude cluster/button/text via pointer-events:none on children except interactive). transform translateY compositor-only + will-change khi .dragging + rAF throttle (atom ux-drag-transform-willchange-raf). touch-action:none (atom ux-touch-action-none-for-pointer-drag). Bake yOffsetPercent lúc pointerup.
-- **Snap:** snap đến 25/50/75% sau drag (nearest). Simple clamp 0-95 + round về snap point.
-- **Persist:** yOffsetPercent → settingsStore subtitleBlockSettings, debounce 300ms (pattern như offset persist).
-- **Collapsed:** container query — khi container width < threshold, NavCluster collapse (behavior hiện có), tools ẩn. Không layout dọc.
-- **Layer:** z-index var(--z-overlay-video) qua mountSubtitle (ADR-031 pattern). reparentOnFullscreen=true.
-- **Cues rỗng:** SubtitleBlock vẫn render block container (không return null) → blockLayer có height → 3-zone layout giữ shape. Hiện text rỗng.
+## Proposed component structure
 
-## Task List
+```text
+PlayerModeOverlay
+├── VideoStage                  # transparent/visual stage over host video
+├── ContentOther                # empty V1 expansion region
+├── DictionarySheet (optional)  # resizable, above dock, above video when expanded
+└── PlayerActionDock
+    ├── SubtitleBlock           # Cell target + native
+    ├── NavCluster              # existing controls, responsive horizontal layout
+    └── ToolActions             # existing low-frequency actions
+```
 
-### Phase 1: Layout 3-zone (CSS + structure)
-- [ ] T1: Rewrite SubtitlePanels.module.css → 3-zone flex row full-width + drag surface + container query collapsed
-- [ ] T2: Rewrite SubtitleBlock.module.css → center zone, min-width:0, không return null khi cues rỗng
-- [ ] T3: SubtitlePanels.tsx — restructure JSX: root > [navLayer][blockLayer][toolsLayer], drag surface
+## Behavior
 
-### Checkpoint 1: Layout đúng shape trên showcase + themoviebox
-- [ ] Build pass, showcase render 3-zone, themoviebox block giữ shape khi cues rỗng
+1. Player Mode off: preserve current subtitle overlay behavior.
+2. Player Mode on: mount a fixed full-viewport layout, keep host video visible above, render Cell subtitle and controls in the dock.
+3. Player Mode button toggles the mode and exposes `aria-pressed`.
+4. Dictionary lookup opens the existing dictionary sheet from the dock; the dock remains visible and interactive.
+5. Dragging the sheet handle changes height within min/max bounds using Pointer Events and `touch-action: none`.
+6. Escape closes Dictionary first; a second Escape exits Player Mode if no modal sheet is open.
+7. Resize/orientation changes preserve mode and clamp sheet height to the current viewport.
+8. `prefers-reduced-motion` disables slide/resize transitions.
+9. No subtitle: preserve current time-mode fallback and render an accessible empty subtitle state.
 
-### Phase 2: Drag + snap + persist
-- [ ] T4: Pure drag logic (subtitleBlockDrag.ts) — clamp + snap + delta→percent, testable
-- [ ] T5: SubtitlePanels.tsx — wire pointer events drag Y, rAF, will-change, touch-action:none
-- [ ] T6: reactSubtitleController — implement yOffsetPercent state + persist debounce, wire to mount
-- [ ] T7: mountSubtitle — pass yOffsetPercent + reparentOnFullscreen=true
+## Layout rules
 
-### Checkpoint 2: Drag hoạt động, persist qua reload
-- [ ] Drag Y trên showcase + themoviebox, reload giữ vị trí
+- Root uses `position: fixed`, `inset: 0`, `100dvh`, and a shared overlay container.
+- Video keeps its intrinsic aspect ratio; the host video is not cropped or resized by Cell.
+- Player Action Dock is fixed/anchored at the bottom and includes safe-area padding.
+- Dictionary sheet is anchored immediately above the dock, with a maximum height that leaves the dock visible.
+- Mobile touch targets use the existing design-system minimums; no hardcoded colors or new button state CSS.
+- Existing icons are reused first (`pip`, `captions`, `panel-bottom-close`, `resize`); no new icon is required for the first prototype.
 
-### Phase 3: Verify + docs
-- [ ] T8: Unit test subtitleBlockDrag.ts (clamp/snap pure)
-- [ ] T9: Browser verify showcase + themoviebox (DevTools), responsive container query
-- [ ] T10: Update docs/2-architechture-system.md + ADR-025 amends
+## Testing strategy
 
-## Risks and Mitigations
+- Pure layout/state helpers: unit tests for mode toggling, sheet-height clamping, and viewport/dock geometry.
+- Component tests: Player Mode button placement, simultaneous website-caption contract (represented by the host layer) + Cell SubtitleBlock, dock persistence while Dictionary is open, and accessible labels/state.
+- Existing subtitle and dictionary tests must remain green.
+- Browser verification: rebuild, launch the extension with `testing-extension-browser`, then inspect at 320px, 480px, tablet, and desktop widths using stealth Chrome DevTools.
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Shadow DOM pointer-events retargeting | Med | atom shadow-dom-retargeting — dùng e.currentTarget, không e.target |
-| Fullscreen reparent break layout | Med | reparentOnFullscreen đã có trong mountReactShadow, test fullscreen |
-| Container query support | Low | Chrome 105+ hỗ trợ, extension target Chrome |
-| Drag conflict với text select | Med | pointer-events:none trên text span, auto trên button, drag chỉ trên background |
+## Commands
 
-## Open Questions
-- Snap points: 25/50/75% hay tự do 0-95? → implement snap 25/50/75 (simple, predictable).
+```bash
+npm run typecheck
+npm run test:unit
+npm run build
+npx vite build --mode development
+```
+
+## Boundaries
+
+- Always: reuse existing `SubtitleBlock`, `NavCluster`, `Dictionary`, `IconButton`, and design tokens; keep host video untouched; preserve keyboard and touch accessibility.
+- Ask first: adding a dependency, changing manifest permissions, changing host video behavior, or changing the dictionary data contract.
+- Never: inline SVG in a component, hardcode token values, hide the dock behind Dictionary, or remove existing subtitle actions.
+
+## Success criteria
+
+- [ ] The Player Mode toggle is present at the old generate-native slot and toggles on every viewport.
+- [ ] Generate-native is still reachable from the expanded tools area.
+- [ ] Host caption and Cell SubtitleBlock can render simultaneously without either being removed by Player Mode.
+- [ ] SubtitleBlock is above NavCluster inside the bottom Player Action Dock.
+- [ ] Dictionary opens above the dock, resizes with touch/mouse, can cover video, and never covers the dock.
+- [ ] All existing NavCluster/tool actions remain reachable and behave unchanged.
+- [ ] Layout works at 320px, 480px, tablet, and desktop widths.
+- [ ] Unit/component tests, production build, development build, and real-browser verification pass.
+
+## Open questions
+
+None for the V1 prototype. The website subtitle is treated as host-owned content; Cell renders its own SubtitleBlock in the dock simultaneously.

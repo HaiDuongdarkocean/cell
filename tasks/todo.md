@@ -1,70 +1,43 @@
-# Todo: Design System Library — Foundations + Atoms
+# Player Mode Prototype Tasks
 
-> Spec: `docs/specs/spec-design-system-library-foundations-atoms.md`
-> Plan: `tasks/plan.md`
+- [ ] Task 1: Define pure Player Mode geometry/state contract
+  - Acceptance: mode toggle state, dock height, viewport bounds, and dictionary sheet clamp are typed/pure and cover 320px/480px edge cases.
+  - Verify: focused unit tests pass; `npm run typecheck`.
+  - Files: subtitle logic/types and tests only.
+  - Dependencies: None.
 
-## Phase 1 — Contract and discovery
+- [ ] Task 2: Build the fixed Player Mode shell and bottom Player Action Dock
+  - Acceptance: VideoStage, empty ContentOther, and PlayerActionDock render only when active; SubtitleBlock is above NavCluster; host caption layer remains independent.
+  - Verify: component tests; `npm run build`.
+  - Files: subtitle UI components/CSS and tests, max 5 files.
+  - Dependencies: Task 1.
 
-- [ ] **Task 1: Define Library metadata contract and normalization**
-  - Acceptance: explicit `level` (`foundations`/`atoms`), `category`, `description`, `status`; no silent level inference.
-  - Verify: discovery tests.
-  - Files: `src/entrypoints/design-system-showcase/autoDiscovery.ts`, tests.
+- [ ] Task 3: Move toolbar actions without losing current functionality
+  - Acceptance: player-mode button uses the old generate-native slot; generate-native remains reachable under tools toggle; all existing callbacks remain wired.
+  - Verify: component tests query each `data-cell-id`; `npm run typecheck` and `npm run build`.
+  - Files: `SubtitlePanels.tsx`, related test/CSS.
+  - Dependencies: Task 2.
 
-- [ ] **Task 2: Migrate Foundation and Atom showcase metadata**
-  - Acceptance: Color/Spacing are Foundations; eligible primitives are Atoms; categories are UI-intent based.
-  - Verify: metadata coverage check + build.
-  - Files: `src/shared/ui/*.showcase.tsx`.
+- [ ] Task 4: Integrate resizable Dictionary sheet above the dock
+  - Acceptance: lookup opens the existing Dictionary behavior; sheet can resize with Pointer Events; min/max clamp leaves PlayerActionDock visible; Escape and close work.
+  - Verify: geometry/component tests; `npm run test:unit`; `npm run build`.
+  - Files: dictionary positioning integration, subtitle shell/CSS, tests.
+  - Dependencies: Task 2.
 
-### Checkpoint: Taxonomy
+- [ ] Task 5: Responsive polish and accessibility
+  - Acceptance: 320px, 480px, tablet, desktop, safe-area, reduced-motion, focus, and no-subtitle states work without overflow or inaccessible controls.
+  - Verify: `npm run typecheck`, `npm run test:unit`, `npm run build`, `npx vite build --mode development`.
+  - Files: relevant CSS/tests only.
+  - Dependencies: Tasks 3–4.
 
-- [ ] `npm run typecheck`
-- [ ] Discovery/grouping tests
-- [ ] No active item relies only on technical source group
+- [ ] Task 6: Real browser prototype verification
+  - Acceptance: extension loads in stealth Chrome; verify Player Mode on/off, simultaneous captions, dictionary resize/coverage, and all actions at required breakpoints.
+  - Verify: `testing-extension-browser` + `browser-testing-with-devtools`; record pass/fail evidence.
+  - Files: no source changes unless a defect is found.
+  - Dependencies: Task 5.
 
-## Phase 2 — Library shell
+## Checkpoints
 
-- [ ] **Task 3: Level → category navigation**
-  - Acceptance: Foundations/Atoms active; Molecules/Organisms/Templates/Pages disabled with `Coming later`.
-  - Verify: DOM/component tests.
-  - Files: `ShowcaseGallery.tsx`, discovery helpers, tests.
-
-- [ ] **Task 4: Library copy and search**
-  - Acceptance: title `Design System Library`; search `Search library...`; result copy says items; search matches title/category/level/description.
-  - Verify: tests + browser DOM check.
-  - Files: `App.tsx`, `ShowcaseGallery.tsx`, CSS/tests.
-
-### Checkpoint: Library shell
-
-- [ ] Search works without flattening hierarchy.
-- [ ] Higher levels disabled/non-interactive.
-- [ ] Light/dark preserves hierarchy.
-
-## Phase 3 — Level-specific presentation
-
-- [ ] **Task 5: Foundation specimens**
-  - Acceptance: Color/Spacing use foundation presentation; Foundations appear before Atoms.
-  - Verify: browser check.
-  - Files: gallery + CSS + foundation showcase files if needed.
-
-- [ ] **Task 6: Atom catalog cards**
-  - Acceptance: compact responsive cards with title/category/level/status/preview; no mislabeled uncertain compositions.
-  - Verify: browser at 320/768/1024/1280px.
-  - Files: gallery + CSS + atom showcases if needed.
-
-### Checkpoint: Visual system
-
-- [ ] Foundation and Atom presentation visibly distinct.
-- [ ] Required responsive breakpoints pass.
-- [ ] New UI uses tokens only.
-
-## Phase 4 — Verification and docs
-
-- [ ] **Task 7: Tests and architecture docs**
-  - Acceptance: discovery/grouping/filter tests; architecture tree/function index updated; wiki index updated if needed.
-  - Verify: `npm run test:unit`, `npm run typecheck`, `npm run build`.
-  - Files: tests, `docs/2-architechture-system.md`, `docs/0-wiki.md`.
-
-- [ ] **Task 8: Browser review and final quality pass**
-  - Acceptance: Chrome DevTools confirms taxonomy, copy, disabled roadmap, light/dark, and no new console errors.
-  - Verify: Chrome DevTools MCP + `npm run build`.
-  - Files: fixes discovered during verification only.
+- After Tasks 1–2: shell renders and tests/build pass.
+- After Tasks 3–4: full core flow works with tools and dictionary.
+- After Tasks 5–6: responsive/accessibility and real-browser verification pass.
