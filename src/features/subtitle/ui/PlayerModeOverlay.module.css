@@ -7,9 +7,9 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--color-background);
+  background: transparent;
   z-index: var(--z-overlay-settings);
-  pointer-events: auto;
+  pointer-events: none;
   container-type: inline-size;
 }
 
@@ -27,50 +27,62 @@
   flex: 1 1 0;
   min-height: 0;
   width: 100%;
-  background: var(--color-background);
+  background: transparent;
+  pointer-events: none;
 }
 
-/* Player Action Dock — fixed at bottom, always visible. */
+/* Player Action Dock — fixed at bottom, always visible.
+   Three regions mirror the original subtitle overlay: NavCluster left,
+   SubtitleBlock center, action cluster right. */
 .dock {
   flex: 0 0 auto;
   width: 100%;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(92px, auto) minmax(0, 1fr) minmax(44px, auto);
+  grid-template-areas: 'nav subtitle actions';
   align-items: center;
-  justify-content: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
+  pointer-events: auto;
   container-type: inline-size;
 }
 
 .subtitleArea {
+  grid-area: subtitle;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 720px;
+  min-width: 0;
   min-height: 2em;
   pointer-events: auto;
 }
 
 .navArea {
+  grid-area: nav;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
+  justify-content: flex-start;
+  width: auto;
   pointer-events: auto;
 }
 
-/* NavCluster in player mode: horizontal layout, no collapse/drag.
-   Override .main and .secondary column layout for mobile-friendly horizontal controls. */
+.actionArea {
+  grid-area: actions;
+  align-self: center;
+  pointer-events: auto !important;
+}
+
+/* Keep NavCluster's two vertical columns, matching the original overlay
+   composition used in the desired Player Mode dock. */
 .navArea [data-cell-id='nav-main'],
 .navArea [data-cell-id='nav-secondary'] {
-  flex-direction: row !important;
-  gap: var(--space-2) !important;
+  flex-direction: column !important;
+  gap: var(--space-1) !important;
 }
 
 /* NavCluster buttons: ensure 44px touch target on mobile. */

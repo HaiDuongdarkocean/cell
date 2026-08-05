@@ -8,7 +8,7 @@
 docs/           # Tài liệu dự án
 ├── 0-wiki.md                          # File này — mục lục tổng quan
 ├── 1-share-language.md                # Glossary human ↔ system language
-├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows; overlay button appearance/host-CSS defenses; top-frame guard cho Cloudflare challenge iframe)
+├── 2-architechture-system.md          # Architecture chi tiết (src/ + tests/ + dependency + function index + data flows; Player Mode transparent/click-through overlay; host-CSS defenses; top-frame guard cho Cloudflare challenge iframe)
 ├── player-support.md                  # Live subtitle-list audit — player-side evidence for 9 sites; separates direct/metadata/encrypted entries, auth replay, and extension-delivery gaps; includes generic architecture constraints
 ├── specs/
 │   └── subtitle-list-discovery-e2e.md  # E4 acceptance criteria for generic subtitle-list discovery

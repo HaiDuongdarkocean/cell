@@ -15,7 +15,7 @@ Build a toggleable Player Mode for the Cell subtitle overlay. It must work on ev
 - `content khác` is intentionally empty in V1 and is the sheet's expansion area.
 - Dictionary uses the existing `Dictionary`/popup behavior rather than a duplicate lookup implementation.
 - Dictionary sheet can resize vertically and can cover the video, but reserves the bottom Player Action Dock.
-- No DOM mutation or resizing of the host website video is required; Cell owns only its fixed overlay.
+- Player Mode may temporarily reposition/resize the detected host player container to the top of the viewport, preserving intrinsic aspect ratio and restoring every captured inline style/value on exit.
 
 ## Proposed component structure
 
@@ -26,8 +26,8 @@ PlayerModeOverlay
 ├── DictionarySheet (optional)  # resizable, above dock, above video when expanded
 └── PlayerActionDock
     ├── SubtitleBlock           # Cell target + native
-    ├── NavCluster              # existing controls, responsive horizontal layout
-    └── ToolActions             # existing low-frequency actions
+    ├── NavCluster              # existing two-column controls, moved into dock
+    └── ToolActions             # existing low-frequency action cluster, preserved in dock
 ```
 
 ## Behavior
@@ -45,7 +45,7 @@ PlayerModeOverlay
 ## Layout rules
 
 - Root uses `position: fixed`, `inset: 0`, `100dvh`, and a shared overlay container.
-- Video keeps its intrinsic aspect ratio; the host video is not cropped or resized by Cell.
+- Video keeps its intrinsic aspect ratio; Player Mode temporarily top-aligns the detected host player/video and restores it exactly when off.
 - Player Action Dock is fixed/anchored at the bottom and includes safe-area padding.
 - Dictionary sheet is anchored immediately above the dock, with a maximum height that leaves the dock visible.
 - Mobile touch targets use the existing design-system minimums; no hardcoded colors or new button state CSS.
@@ -69,8 +69,8 @@ npx vite build --mode development
 
 ## Boundaries
 
-- Always: reuse existing `SubtitleBlock`, `NavCluster`, `Dictionary`, `IconButton`, and design tokens; keep host video untouched; preserve keyboard and touch accessibility.
-- Ask first: adding a dependency, changing manifest permissions, changing host video behavior, or changing the dictionary data contract.
+- Always: reuse existing `SubtitleBlock`, `NavCluster`, `Dictionary`, `IconButton`, and design tokens; preserve keyboard and touch accessibility; restore host styles on exit.
+- Ask first: adding a dependency, changing manifest permissions, changing host video behavior, or changing the dictionary data contract. Host video repositioning is now explicitly approved for Player Mode.
 - Never: inline SVG in a component, hardcode token values, hide the dock behind Dictionary, or remove existing subtitle actions.
 
 ## Success criteria
@@ -78,7 +78,7 @@ npx vite build --mode development
 - [ ] The Player Mode toggle is present at the old generate-native slot and toggles on every viewport.
 - [ ] Generate-native is still reachable from the expanded tools area.
 - [ ] Host caption and Cell SubtitleBlock can render simultaneously without either being removed by Player Mode.
-- [ ] SubtitleBlock is above NavCluster inside the bottom Player Action Dock.
+- [ ] `overlay-player-action` contains SubtitleBlock, the original two-column NavCluster, and the existing action cluster.
 - [ ] Dictionary opens above the dock, resizes with touch/mouse, can cover video, and never covers the dock.
 - [ ] All existing NavCluster/tool actions remain reachable and behave unchanged.
 - [ ] Layout works at 320px, 480px, tablet, and desktop widths.
@@ -86,4 +86,4 @@ npx vite build --mode development
 
 ## Open questions
 
-None for the V1 prototype. The website subtitle is treated as host-owned content; Cell renders its own SubtitleBlock in the dock simultaneously.
+None for the V1 prototype. The website subtitle is treated as host-owned content; Cell renders its own SubtitleBlock in the dock simultaneously. Host player repositioning is explicitly approved and must be reversible.

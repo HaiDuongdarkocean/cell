@@ -2,14 +2,19 @@
 // into a bottom Player Action Dock while keeping the host video visible above.
 // See tasks/plan.md for the layout contract.
 
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import type { NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { IconCatalogKey } from '@/shared/icons';
+import { ICON_CATALOG } from '@/shared/icons';
+import { Icon } from '@/shared/icons/Icon';
+import { IconButton } from '@/shared/ui/IconButton';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX } from '../logic/playerModeGeometry';
 import styles from './PlayerModeOverlay.module.css';
+import panelStyles from './SubtitlePanels.module.css';
+
+type IconCatalogKey = keyof typeof ICON_CATALOG;
 
 export interface PlayerModeOverlayProps {
   /** Subtitle overlay styles from extension popup. */
@@ -29,6 +34,19 @@ export interface PlayerModeOverlayProps {
   clusterSettings?: NavClusterSettings;
   /** Subtitle block settings. */
   blockSettings?: SubtitleBlockSettings;
+  /** Intrinsic video width/height ratio. */
+  videoAspectRatio: number;
+  /** Existing right-side subtitle actions. */
+  onQuickAdd?: () => void;
+  onEditCard?: () => void;
+  onUpdateCurrentCard?: () => void;
+  onGenerateNative?: () => void;
+  onToggleSidePanel?: () => void;
+  onToggleManager?: () => void;
+  generateNativeEnabled: boolean;
+  /** Called when the tools action group expands/collapses. */
+  onToggleTools?: () => void;
+  toolsExpanded: boolean;
   /** Called when user requests previous sentence. */
   onPrev: () => void;
   /** Called when user requests next sentence. */
@@ -57,6 +75,16 @@ function PlayerModeOverlayInner({
   repeatLabel,
   clusterSettings,
   blockSettings,
+  videoAspectRatio,
+  onQuickAdd,
+  onEditCard,
+  onUpdateCurrentCard,
+  onGenerateNative,
+  onToggleSidePanel,
+  onToggleManager,
+  generateNativeEnabled,
+  onToggleTools,
+  toolsExpanded,
   onPrev,
   onNext,
   onRepeat,
@@ -84,23 +112,30 @@ function PlayerModeOverlayInner({
     };
   }, []);
 
-  const layout = resolvePlayerModeLayout(viewport.w, viewport.h, 16 / 9, DOCK_MIN_HEIGHT_PX);
+  const layout = resolvePlayerModeLayout(viewport.w, viewport.h, videoAspectRatio, DOCK_MIN_HEIGHT_PX);
+  const clusterBtnSize = clusterSettings?.buttonSize ?? 34;
+  const clusterRightStyle: React.CSSProperties = {
+    '--cluster-btn-size': `clamp(${Math.round(clusterBtnSize * 0.65)}px, ${Math.round(clusterBtnSize * 0.15)}cqw, ${clusterBtnSize}px)`,
+    '--cluster-icon-size': `clamp(${Math.round(clusterBtnSize * 0.35)}px, ${Math.round(clusterBtnSize * 0.082)}cqw, 20px)`,
+    '--cluster-text-opacity': String(clusterSettings?.textOpacity ?? 1),
+    '--cluster-bg-opacity': String(clusterSettings?.bgOpacity ?? 0.2),
+  } as React.CSSProperties;
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>): void => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onExit();
-      }
-    },
-    [onExit],
-  );
+  useEffect(() => {
+    const onWindowKeyDown = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      onExit();
+    };
+    window.addEventListener('keydown', onWindowKeyDown);
+    return () => window.removeEventListener('keydown', onWindowKeyDown);
+  }, [onExit]);
 
   return (
     <div
       className={styles.overlay}
       data-cell-id="player-mode-overlay"
-      onKeyDown={handleKeyDown}
       role="application"
       aria-label="Player mode"
     >
@@ -125,13 +160,6 @@ function PlayerModeOverlayInner({
         style={{ height: `${layout.dockHeight}px` }}
         data-cell-id="overlay-player-action"
       >
-        <div className={styles.subtitleArea}>
-          <SubtitleBlock
-            targetStyle={targetStyle}
-            nativeStyle={nativeStyle}
-            blockSettings={blockSettings}
-          />
-        </div>
         <div className={styles.navArea}>
           <NavCluster
             collapsed={false}
@@ -149,6 +177,62 @@ function PlayerModeOverlayInner({
             onForward={onForward}
             onPlayPause={onPlayPause}
           />
+        </div>
+        <div className={styles.subtitleArea}>
+          <SubtitleBlock
+            targetStyle={targetStyle}
+            nativeStyle={nativeStyle}
+            blockSettings={blockSettings}
+          />
+        </div>
+        <div className={`${panelStyles.clusterRight} ${styles.actionArea}`} style={clusterRightStyle} data-cell-id="player-mode-actions">
+          <div className={panelStyles.primaryCol}>
+            {onQuickAdd && (
+              <IconButton aria-label="Quick add card" title="Quick add (Q)" data-cell-id="quick-add-btn" size="sm" onClick={onQuickAdd}>
+                <Icon name="zap" size={18} />
+              </IconButton>
+            )}
+            {onEditCard && (
+              <IconButton aria-label="Edit card" title="Edit card (E)" data-cell-id="edit-card-btn" size="sm" onClick={onEditCard}>
+                <Icon name="pencil" size={18} />
+              </IconButton>
+            )}
+            <div className={panelStyles.toggleWrap}>
+              <div
+                className={`${panelStyles.extraCol} ${toolsExpanded ? panelStyles.expanded : ''}`}
+                data-cell-id="subtitle-tools-extra"
+              >
+                {onToggleSidePanel && (
+                  <IconButton aria-label="Toggle subtitle side panel" title="Toggle side panel (T)" data-cell-id="panel-toggle-btn" size="sm" onClick={onToggleSidePanel}>
+                    <Icon name="sidePanel" size={18} />
+                  </IconButton>
+                )}
+                {onGenerateNative && (
+                  <IconButton aria-label="Generate native subtitle" title="Generate native (G)" data-cell-id="generate-native-btn" size="sm" onClick={onGenerateNative} disabled={!generateNativeEnabled}>
+                    <Icon name="languages" size={18} />
+                  </IconButton>
+                )}
+              </div>
+              <IconButton aria-label={toolsExpanded ? 'Collapse tools' : 'Expand tools'} title={toolsExpanded ? 'Collapse tools' : 'Expand tools'} data-cell-id="tools-toggle-btn" size="sm" onClick={onToggleTools}>
+                <Icon name="chevronLeft" size={18} />
+              </IconButton>
+            </div>
+          </div>
+          <div className={panelStyles.secondaryCol}>
+            {onUpdateCurrentCard && (
+              <IconButton aria-label="Update current card" title="Update current card (U)" data-cell-id="update-current-card-btn" size="sm" onClick={onUpdateCurrentCard}>
+                <Icon name="rotateCcw" size={18} />
+              </IconButton>
+            )}
+            <IconButton aria-label="Exit player mode" title="Exit player mode" data-cell-id="player-mode-exit-btn" size="sm" onClick={onExit}>
+              <Icon name="pip" size={18} />
+            </IconButton>
+            {onToggleManager && (
+              <IconButton aria-label="Open subtitle manager" title="Open subtitle manager" data-cell-id="manager-toggle-btn" size="sm" onClick={onToggleManager}>
+                <Icon name="subtitleManager" size={18} />
+              </IconButton>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -72,8 +72,6 @@ export interface SubtitlePanelsRef {
   setCollapsed: (collapsed: boolean) => void;
   /** Update the block vertical position (percent 0-95). */
   setYOffsetPercent: (yOffsetPercent: number) => void;
-  /** Toggle Player Mode on/off. */
-  setPlayerMode: (active: boolean) => void;
 }
 
 export interface SubtitlePanelsProps {
@@ -115,8 +113,10 @@ export interface SubtitlePanelsProps {
   manager?: ManagerState;
   offset?: OffsetState;
   generateNativeEnabled?: boolean;
+  /** Intrinsic video width/height ratio used by Player Mode layout. */
+  videoAspectRatio?: number;
   /** Called when user toggles Player Mode. */
-  onTogglePlayerMode?: () => void;
+  onTogglePlayerMode?: (active: boolean) => void;
 }
 
 export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>(
@@ -150,6 +150,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       manager: initialManager,
       offset: initialOffset,
       generateNativeEnabled: initialGenerateNativeEnabled = true,
+      videoAspectRatio = 16 / 9,
       onTogglePlayerMode,
     },
     ref,
@@ -224,7 +225,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setGenerateNativeEnabled,
         setCollapsed,
         setYOffsetPercent,
-        setPlayerMode,
       }),
       [addToast, clearToasts],
     );
@@ -239,12 +239,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     }, [onPlayPause]);
 
     const handleTogglePlayerMode = useCallback((): void => {
-      setPlayerMode((prev) => {
-        const next = togglePlayerMode(prev);
-        onTogglePlayerMode?.();
-        return next;
-      });
-    }, [onTogglePlayerMode]);
+      setPlayerMode((prev) => togglePlayerMode(prev));
+    }, []);
+
+    useEffect(() => {
+      onTogglePlayerMode?.(playerMode);
+    }, [onTogglePlayerMode, playerMode]);
 
     // ADR-025: drag-to-reposition theo trục Y. Pointer Events + rAF throttle +
     // transform (atom ux-drag-transform-willchange-raf). touch-action:none trên .root
@@ -343,6 +343,16 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           repeatLabel={repeatLabel}
           clusterSettings={clusterSettings}
           blockSettings={blockSettings}
+          videoAspectRatio={videoAspectRatio}
+          onQuickAdd={onQuickAdd}
+          onEditCard={onEditCard}
+          onUpdateCurrentCard={onUpdateCurrentCard}
+          onGenerateNative={onGenerateNative}
+          onToggleSidePanel={onToggleSidePanel}
+          onToggleManager={onToggleManager}
+          generateNativeEnabled={generateNativeEnabled}
+          toolsExpanded={toolsExpanded}
+          onToggleTools={() => setToolsExpanded((value) => !value)}
           onPrev={onPrev}
           onNext={onNext}
           onRepeat={onRepeat}

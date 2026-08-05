@@ -37,6 +37,8 @@ export interface MountSubtitleOptions {
   manager?: ManagerState;
   offset?: OffsetState;
   generateNativeEnabled?: boolean;
+  videoAspectRatio?: number;
+  onTogglePlayerMode?: (active: boolean) => void;
   onPrev: () => void;
   onNext: () => void;
   onRepeat: () => void;
@@ -91,6 +93,8 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     manager,
     offset,
     generateNativeEnabled,
+    videoAspectRatio,
+    onTogglePlayerMode,
     onPrev,
     onNext,
     onRepeat,
@@ -124,6 +128,8 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       manager={manager}
       offset={offset}
       generateNativeEnabled={generateNativeEnabled}
+      videoAspectRatio={videoAspectRatio}
+      onTogglePlayerMode={onTogglePlayerMode}
       onPrev={onPrev}
       onNext={onNext}
       onRepeat={onRepeat}
