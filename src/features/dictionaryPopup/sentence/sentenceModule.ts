@@ -341,7 +341,9 @@ export interface ResolvedWordAtPoint {
 }
 
 /** Default caret resolver: tries caretPositionFromPoint (Firefox) then
- *  caretRangeFromPoint (Chromium). Returns a collapsed Range at the caret. */
+ *  caretRangeFromPoint (Chromium). Returns a collapsed Range at the caret.
+ *  Falls back to shadowRoot.elementFromPoint when the caret lands on a
+ *  shadow host (caretRangeFromPoint does not pierce shadow DOM). */
 export function defaultGetCaretRange(x: number, y: number): Range | null {
   const doc = document as Document & {
     caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
@@ -358,7 +360,64 @@ export function defaultGetCaretRange(x: number, y: number): Range | null {
       } catch { /* offset out of range — fall through */ }
     }
   }
-  return doc.caretRangeFromPoint?.(x, y) ?? null;
+  const range = doc.caretRangeFromPoint?.(x, y) ?? null;
+  if (range?.startContainer.nodeType === Node.TEXT_NODE) return range;
+  // caretRangeFromPoint returned a non-text node (or null) — the click may be
+  // over a shadow host whose text is not pierceable. Walk shadow roots to find
+  // the text node under the point.
+  return resolveShadowTextNode(x, y);
+}
+
+/** Walk open shadow roots under (x, y) to find a text node and return a
+ *  collapsed Range at the character offset closest to the click point.
+ *  Returns null if no text node is found.
+ *  ponytail: O(n) per text node — bounded by subtitle line length (~100 chars).
+ *  Upgrade path: binary search on character offsets if lines exceed ~500 chars. */
+function resolveShadowTextNode(x: number, y: number): Range | null {
+  // Start from the top-level element at the point, then descend into shadow.
+  const stack: Element[] = [document.elementFromPoint(x, y) ?? document.body];
+  while (stack.length > 0) {
+    const el = stack.pop();
+    if (!el?.shadowRoot) continue;
+    const inner = el.shadowRoot.elementFromPoint(x, y);
+    if (!inner) continue;
+    // Find the text node under the inner element and compute the offset
+    // nearest to (x, y) by measuring per-character ranges.
+    const textEl = inner.nodeType === Node.ELEMENT_NODE ? inner : (inner.parentElement ?? null);
+    if (textEl) {
+      const walker = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT);
+      let bestRange: Range | null = null;
+      let bestDist = Infinity;
+      let text: Text | null = null;
+      while ((text = walker.nextNode() as Text | null)) {
+        const len = text.textContent?.length ?? 0;
+        if (len === 0) continue;
+        // Binary search the offset nearest to (x, y) within this text node.
+        for (let i = 0; i < len; i++) {
+          try {
+            const r = document.createRange();
+            r.setStart(text, i);
+            r.setEnd(text, Math.min(i + 1, len));
+            const rect = r.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) continue;
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const dist = (cx - x) ** 2 + (cy - y) ** 2;
+            if (dist < bestDist) {
+              bestDist = dist;
+              bestRange = document.createRange();
+              bestRange.setStart(text, i);
+              bestRange.collapse(true);
+            }
+          } catch { /* ignore out-of-range */ }
+        }
+      }
+      if (bestRange) return bestRange;
+      // Descend deeper into nested shadow roots.
+      if (textEl.shadowRoot) stack.push(textEl);
+    }
+  }
+  return null;
 }
 
 /**
