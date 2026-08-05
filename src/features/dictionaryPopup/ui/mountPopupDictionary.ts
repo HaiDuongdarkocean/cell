@@ -16,7 +16,7 @@ import spinnerCss from '@/shared/ui/Spinner.module.css?inline';
 import skeletonCss from '@/shared/ui/Skeleton.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 
-const POPUP_Z_INDEX = 'var(--z-overlay-settings)';
+const POPUP_Z_INDEX = 'var(--z-overlay-top)';
 const ORBITAL_BADGE_HOST_CLASS = 'js-cell-orbital-badge-host';
 
 export interface MountPopupDictionaryOptions {
@@ -66,6 +66,12 @@ export interface MountPopupDictionaryOptions {
   readonly onCandidateChange?: (term: string) => void;
   /** Default media tab to open when the result first appears. */
   readonly defaultActiveTab?: PopupTab | null;
+  /**
+   * When false, clicking outside the popup does NOT close it — the caller
+   * owns dismissal (used in sheet mode so looking up a new word keeps the
+   * sheet open and just feeds in the new result). Defaults to true.
+   */
+  readonly dismissOnOutsideClick?: boolean;
 }
 
 export interface PopupDictionaryMountController {
@@ -77,8 +83,8 @@ export interface PopupDictionaryMountController {
   readonly setResult: (result: LookupResult, candidates?: readonly LookupResult[]) => void;
   /** Update the active result's status from an external source (e.g. keyboard shortcut). */
   readonly setStatus: (term: string, status: WordStatus) => void;
-  /** Update mutable options (sourceLang, targetLang, size, sheetHeight) without re-mounting. */
-  readonly setOptions: (options: Partial<Pick<MountPopupDictionaryOptions, 'sourceLang' | 'targetLang' | 'initialSize' | 'initialSheetHeight'>>) => void;
+  /** Update mutable options (sourceLang, targetLang, size, sheetHeight, term, context) without re-mounting. */
+  readonly setOptions: (options: Partial<Pick<MountPopupDictionaryOptions, 'sourceLang' | 'targetLang' | 'initialSize' | 'initialSheetHeight' | 'initialTerm' | 'contextSentence' | 'cursorOffset'>>) => void;
 }
 
 function isInsideHost(host: HTMLElement, e: PointerEvent): boolean {
@@ -105,7 +111,7 @@ type CurrentOptions = MountPopupDictionaryOptions & {
  * Mount the popup dictionary as a React tree inside a Shadow DOM host.
  *
  * - Injects all required design-token and per-component CSS modules.
- * - Positions the host below the orbital badge with `z-index: var(--z-overlay-settings)`.
+ * - Positions the host below the orbital badge with `z-index: var(--z-overlay-top)`.
  * - Closes on click/tap outside the popup (excluding the orbital badge).
  * - Moves the host to/from `document.fullscreenElement` as fullscreen changes.
  * - The returned controller can feed new results / loading / status / options
@@ -188,6 +194,10 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
 
   const onDocumentPointerDown = (e: PointerEvent): void => {
     if (isInsideHost(mount.host, e)) return;
+    // Sheet mode keeps the popup open on outside clicks so the user can look
+    // up a new word without the sheet vanishing — the controller feeds the new
+    // result in via setResult/setOptions. Desktop popup still dismisses.
+    if (current.dismissOnOutsideClick === false) return;
     close();
   };
 
@@ -219,6 +229,12 @@ export function mountPopupDictionary(options: MountPopupDictionaryOptions): Popu
     destroy: cleanup,
     setLoading: (isLoading) => {
       current.isLoading = isLoading;
+      // Clear the previous result when entering loading so the popup shows a
+      // skeleton for the new term, not stale data from the previous lookup.
+      if (isLoading) {
+        current.initialResult = undefined;
+        current.initialCandidates = [];
+      }
       render();
     },
     setResult: (result, candidates = []) => {
