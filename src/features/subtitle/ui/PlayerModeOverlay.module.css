@@ -1,0 +1,82 @@
+/* Player Mode overlay — fixed full-viewport layout.
+   Tokens from tokens.css (injected via Shadow DOM host). */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background);
+  z-index: 2147483645;
+  pointer-events: auto;
+  container-type: inline-size;
+}
+
+/* Video stage — transparent, lets host video show through.
+   pointer-events: none so taps reach the host video player. */
+.videoStage {
+  flex: 0 0 auto;
+  width: 100%;
+  background: transparent;
+  pointer-events: none;
+}
+
+/* Content other — empty V1, expansion area for dictionary sheet. */
+.contentOther {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  background: var(--color-background);
+}
+
+/* Player Action Dock — fixed at bottom, always visible. */
+.dock {
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  container-type: inline-size;
+}
+
+.subtitleArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 720px;
+  min-height: 0;
+  pointer-events: auto;
+}
+
+.navArea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  pointer-events: auto;
+}
+
+/* NavCluster in player mode: horizontal layout, no collapse/drag.
+   Override the vertical cluster layout for mobile-friendly horizontal controls. */
+.navArea > * {
+  flex-direction: row !important;
+  gap: var(--space-2) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .dock,
+  .videoStage,
+  .contentOther {
+    transition: none;
+  }
+}
