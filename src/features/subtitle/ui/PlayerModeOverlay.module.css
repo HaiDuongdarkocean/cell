@@ -13,7 +13,7 @@
   container-type: inline-size;
 }
 
-/* Video stage — transparent, lets host video show through.
+/* Video stage — transparent cutout lets host video show through the black overlay.
    pointer-events: none so taps reach the host video player. */
 .videoStage {
   flex: 0 0 auto;
@@ -22,13 +22,14 @@
   pointer-events: none;
 }
 
-/* Content other — empty V1, expansion area for dictionary sheet. */
+/* Content other — solid black, blocks host overlays and clicks.
+   Expansion area for dictionary sheet. */
 .contentOther {
   flex: 1 1 0;
   min-height: 0;
   width: 100%;
-  background: transparent;
-  pointer-events: none;
+  background: #000;
+  pointer-events: auto;
 }
 
 /* Player Action Dock — fixed at bottom, always visible.
@@ -85,9 +86,13 @@
   gap: var(--space-1) !important;
 }
 
-/* NavCluster buttons: ensure 44px touch target on mobile. */
+/* Dock buttons: ensure 44px touch target on mobile — applies to both
+   NavCluster (left) and actionArea (right) so both clusters respect
+   the same system touch-target standard alongside clusterSettings. */
 .navArea :global(button),
-.navArea :global([role='button']) {
+.navArea :global([role='button']),
+.actionArea :global(button),
+.actionArea :global([role='button']) {
   min-width: var(--touch-target-mobile, 44px);
   min-height: var(--touch-target-mobile, 44px);
 }

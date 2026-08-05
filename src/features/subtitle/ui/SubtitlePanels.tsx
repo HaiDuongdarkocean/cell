@@ -251,6 +251,40 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // (atom ux-touch-action-none-for-pointer-drag). Drag chỉ trên background —
     // cluster/button/text có pointer-events:auto nên không trigger drag.
     const rootRef = useRef<HTMLDivElement>(null);
+
+    // Elevate host z-index to max while Player Mode is active so the solid
+    // black overlay sits above all host-player overlays (controls, ads, etc).
+    // Also reparent to document.body to escape the video container's stacking
+    // context — host player controls are siblings of the video container, so
+    // z-index inside it can never cover them.
+    const playerModeOriginalParent = useRef<HTMLElement | null>(null);
+    useEffect(() => {
+      const host = document.querySelector('#cell-subtitle-root');
+      if (!(host instanceof HTMLElement)) return;
+      if (playerMode) {
+        host.dataset.cellPlayerModeZ = host.style.zIndex;
+        host.style.zIndex = '2147483647';
+        host.style.position = 'fixed';
+        host.style.inset = '0';
+        host.style.pointerEvents = 'none';
+        if (host.parentElement && host.parentElement !== document.body) {
+          playerModeOriginalParent.current = host.parentElement;
+          document.body.appendChild(host);
+        }
+      } else {
+        if (host.dataset.cellPlayerModeZ !== undefined) {
+          host.style.zIndex = host.dataset.cellPlayerModeZ;
+          delete host.dataset.cellPlayerModeZ;
+        }
+        host.style.position = 'absolute';
+        const originalParent = playerModeOriginalParent.current;
+        if (originalParent && host.parentElement !== originalParent) {
+          originalParent.appendChild(host);
+        }
+        playerModeOriginalParent.current = null;
+      }
+    }, [playerMode]);
+
     const dragState = useRef<{
       startY: number;
       startOffset: number;
