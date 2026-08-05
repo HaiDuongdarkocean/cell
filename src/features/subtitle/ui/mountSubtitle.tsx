@@ -11,6 +11,7 @@ import subtitleOffsetCss from './SubtitleOffsetPanel.module.css?inline';
 import subtitleToastCss from './SubtitleToast.module.css?inline';
 import subtitleHintCss from './SubtitleHint.module.css?inline';
 import subtitlePanelsCss from './SubtitlePanels.module.css?inline';
+import playerModeOverlayCss from './PlayerModeOverlay.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
@@ -150,6 +151,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         subtitleToastCss,
         subtitleHintCss,
         subtitlePanelsCss,
+        playerModeOverlayCss,
         iconCss,
         iconButtonCss,
         buildTokenSpanCssForShadow(),
