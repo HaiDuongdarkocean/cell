@@ -253,29 +253,26 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const rootRef = useRef<HTMLDivElement>(null);
 
     // Player Mode: reparent #cell-subtitle-root to document.body (escape video
-    // container's stacking context), full-screen, z-index max. Overlay bg black
-    // covers host completely; canvas in overlay draws video frames on top.
-    // Also hide host player container (opacity:0) so no host UI leaks through —
-    // video still decodes frames for canvas capture despite being invisible.
+    // container's stacking context), full-screen, z-index max. A light DOM
+    // backdrop (bg black, z-index max-1) attached to document.body covers ALL
+    // host UI regardless of stacking context or iframe structure — cross-browser,
+    // cross-site, no host class/id queries. Canvas in overlay (z-index max) draws
+    // video frames on top of the backdrop.
+    // When exiting, restore original styles set by mountReactShadow/mountSubtitle
+    // (position:absolute, zIndex:200, inset:0) — clearing them breaks the
+    // stacking context and lets the <video> element cover NavCluster/subtitle.
     const playerModeOriginalParent = useRef<HTMLElement | null>(null);
-    const playerModeHiddenEls = useRef<HTMLElement[]>([]);
+    const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string } | null>(null);
+    const playerModeBackdrop = useRef<HTMLDivElement | null>(null);
     useEffect(() => {
       const host = document.querySelector('#cell-subtitle-root');
       if (!(host instanceof HTMLElement)) return;
-      const video = document.querySelector('video');
-      // Walk up from video to find the player container (not body/html).
-      const findPlayerContainer = (v: Element | null): HTMLElement | null => {
-        let el = v?.parentElement;
-        while (el && el !== document.body && el !== document.documentElement) {
-          const cs = getComputedStyle(el);
-          if (cs.position === 'relative' || cs.position === 'absolute' || cs.position === 'fixed') {
-            return el;
-          }
-          el = el.parentElement;
-        }
-        return v?.parentElement ?? null;
-      };
       if (playerMode) {
+        playerModeSavedStyles.current = {
+          zIndex: host.style.zIndex,
+          position: host.style.position,
+          inset: host.style.inset,
+        };
         host.style.zIndex = '2147483647';
         host.style.position = 'fixed';
         host.style.inset = '0';
@@ -284,28 +281,36 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           playerModeOriginalParent.current = host.parentElement;
           document.body.appendChild(host);
         }
-        // Hide host player container — video still decodes for canvas, but all
-        // host UI (controls, overlays, subtitles) is invisible.
-        const container = findPlayerContainer(video);
-        const hidden: HTMLElement[] = [];
-        if (container && container !== document.body) {
-          (container as HTMLElement).style.setProperty('opacity', '0', 'important');
-          hidden.push(container as HTMLElement);
+        // Light DOM backdrop: fixed full-screen black, z-index just below
+        // cell-subtitle-root. Covers all host UI (controls, captions, gestures)
+        // regardless of where they live in the DOM — no host queries needed.
+        if (!playerModeBackdrop.current) {
+          const backdrop = document.createElement('div');
+          backdrop.style.cssText =
+            'position:fixed;inset:0;width:100vw;height:100vh;background:#000;z-index:2147483646;pointer-events:none;';
+          document.body.appendChild(backdrop);
+          playerModeBackdrop.current = backdrop;
         }
-        playerModeHiddenEls.current = hidden;
       } else {
-        host.style.zIndex = '';
-        host.style.position = '';
-        host.style.inset = '';
+        // Only restore if we previously saved (i.e. exiting Player Mode).
+        // On first mount (playerMode=false, saved=null) don't touch styles —
+        // mountReactShadow/mountSubtitle already set them correctly.
+        const saved = playerModeSavedStyles.current;
+        if (saved) {
+          host.style.zIndex = saved.zIndex;
+          host.style.position = saved.position;
+          host.style.inset = saved.inset;
+          playerModeSavedStyles.current = null;
+        }
         const originalParent = playerModeOriginalParent.current;
         if (originalParent && host.parentElement !== originalParent) {
           originalParent.appendChild(host);
         }
         playerModeOriginalParent.current = null;
-        for (const el of playerModeHiddenEls.current) {
-          el.style.removeProperty('opacity');
+        if (playerModeBackdrop.current) {
+          playerModeBackdrop.current.remove();
+          playerModeBackdrop.current = null;
         }
-        playerModeHiddenEls.current = [];
       }
     }, [playerMode]);
 
