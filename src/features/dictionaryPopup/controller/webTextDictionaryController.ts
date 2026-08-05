@@ -186,43 +186,14 @@ function computeLineRect(target: HighlightTarget): PopupLineRect | null {
     return { top: box.top, left: box.left, right: box.right, bottom: box.bottom };
   }
 
-  // Web text: pick the visual line box closest to the word center.
+  // Web text: keep the line geometry anchored to the selected word. Using
+  // the block's bounding rect here makes later words in a multi-line
+  // paragraph position relative to the paragraph instead of the word.
   const wordRect = typeof target.getBoundingClientRect === 'function'
     ? target.getBoundingClientRect()
     : null;
-  if (!wordRect) return null;
-  const anchorCenterY = (wordRect.top + wordRect.bottom) / 2;
-
-  let el: HTMLElement | null =
-    target.startContainer.nodeType === Node.ELEMENT_NODE
-      ? (target.startContainer as HTMLElement)
-      : target.startContainer.parentElement;
-  while (el && !isBlockContainer(el)) el = el.parentElement;
-  if (!el) {
-    return { top: wordRect.top, left: wordRect.left, right: wordRect.right, bottom: wordRect.bottom };
-  }
-
-  const blockRange = document.createRange();
-  blockRange.selectNodeContents(el);
-  const rects = typeof blockRange.getClientRects === 'function' ? blockRange.getClientRects() : [];
-  if (rects.length === 0) {
-    return { top: wordRect.top, left: wordRect.left, right: wordRect.right, bottom: wordRect.bottom };
-  }
-
-  let best = rects[0];
-  let bestDist = Infinity;
-  for (let i = 0; i < rects.length; i++) {
-    const rc = rects[i];
-    const dist = Math.abs((rc.top + rc.bottom) / 2 - anchorCenterY);
-    if (dist < bestDist) { bestDist = dist; best = rc; }
-  }
-  return { top: best.top, left: best.left, right: best.right, bottom: best.bottom };
-}
-
-function isBlockContainer(el: HTMLElement): boolean {
-  const display = getComputedStyle(el).display;
-  if (display === 'block' || display === 'list-item' || display === 'table-cell') return true;
-  return ['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'TD'].includes(el.tagName);
+  if (!wordRect || wordRect.width <= 0 || wordRect.height <= 0) return null;
+  return { top: wordRect.top, left: wordRect.left, right: wordRect.right, bottom: wordRect.bottom };
 }
 
 const BULLET_PREFIX_RE = /^(?:\s*•\s*)+/;

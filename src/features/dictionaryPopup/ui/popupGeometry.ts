@@ -193,8 +193,21 @@ function rawCornerPosition(
   popupHeight: number,
   line: PopupLineRect | null,
 ): { left: number; top: number } {
-  const belowTop = line ? Math.max(anchor.bottom + POPUP_POINTER_GAP_PX, line.bottom + POPUP_POINTER_GAP_PX) : anchor.bottom + POPUP_POINTER_GAP_PX;
-  const aboveBottom = line ? Math.min(anchor.top - POPUP_POINTER_GAP_PX, line.top - POPUP_POINTER_GAP_PX) : anchor.top - POPUP_POINTER_GAP_PX;
+  // A block/paragraph bounding box is not a visual line. Ignore oversized
+  // line inputs so a word near the end of a paragraph stays anchored to its
+  // own four corners.
+  const anchorHeight = anchor.bottom - anchor.top;
+  const lineHeight = line ? line.bottom - line.top : 0;
+  const isVisualLine = line !== null
+    && lineHeight > 0
+    && lineHeight <= anchorHeight * 2;
+  const effectiveLine = isVisualLine ? line : null;
+  const belowTop = effectiveLine
+    ? Math.max(anchor.bottom + POPUP_POINTER_GAP_PX, effectiveLine.bottom + POPUP_POINTER_GAP_PX)
+    : anchor.bottom + POPUP_POINTER_GAP_PX;
+  const aboveBottom = effectiveLine
+    ? Math.min(anchor.top - POPUP_POINTER_GAP_PX, effectiveLine.top - POPUP_POINTER_GAP_PX)
+    : anchor.top - POPUP_POINTER_GAP_PX;
   switch (name) {
     case 'se': return { left: anchor.right + POPUP_POINTER_GAP_PX, top: belowTop };
     case 'sw': return { left: anchor.left - popupWidth - POPUP_POINTER_GAP_PX, top: belowTop };
