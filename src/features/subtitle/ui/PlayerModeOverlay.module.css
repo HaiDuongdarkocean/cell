@@ -72,6 +72,39 @@
   gap: var(--space-2) !important;
 }
 
+/* NavCluster buttons: ensure 44px touch target on mobile. */
+.navArea :global(button),
+.navArea :global([role='button']) {
+  min-width: var(--touch-target-mobile, 44px);
+  min-height: var(--touch-target-mobile, 44px);
+}
+
+/* Subtitle text: readable in dock, prevent overflow on long lines. */
+.subtitleArea :global(.text) {
+  max-height: 3em;
+  overflow: hidden;
+}
+
+/* No-subtitle state: compact dock without subtitle area. */
+.dock:has(:global([data-cell-id='nav-no-sub'])) .subtitleArea {
+  display: none;
+}
+
+/* Mobile 320–480px: tighter spacing, full-width dock. */
+@container (max-width: 480px) {
+  .dock {
+    padding: var(--space-1) var(--space-2);
+    padding-bottom: max(var(--space-1), env(safe-area-inset-bottom));
+    gap: var(--space-1);
+  }
+  .subtitleArea {
+    max-width: 100%;
+  }
+  .navArea > * {
+    gap: var(--space-1) !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .overlay,
   .dock,
