@@ -53,7 +53,7 @@
   justify-content: center;
   width: 100%;
   max-width: 720px;
-  min-height: 0;
+  min-height: 2em;
   pointer-events: auto;
 }
 
@@ -66,8 +66,9 @@
 }
 
 /* NavCluster in player mode: horizontal layout, no collapse/drag.
-   Override the vertical cluster layout for mobile-friendly horizontal controls. */
-.navArea > * {
+   Override .main and .secondary column layout for mobile-friendly horizontal controls. */
+.navArea [data-cell-id='nav-main'],
+.navArea [data-cell-id='nav-secondary'] {
   flex-direction: row !important;
   gap: var(--space-2) !important;
 }

@@ -89,7 +89,7 @@ function NavClusterInner({
 
   return (
     <div className={rootClass} style={clusterStyle} data-cell-id="nav-cluster" aria-label="Subtitle navigation">
-      <div className={styles.main}>
+      <div className={styles.main} data-cell-id="nav-main">
         <IconButton aria-label="Previous sentence" data-cell-id="nav-prev" onClick={onPrev}>
           <Icon name="navPrev" size={20} />
         </IconButton>
@@ -105,7 +105,7 @@ function NavClusterInner({
           <Icon name="navNext" size={20} />
         </IconButton>
       </div>
-      <div className={styles.secondary}>
+      <div className={styles.secondary} data-cell-id="nav-secondary">
         <IconButton aria-label="Rewind 5 seconds" data-cell-id="nav-rewind" onClick={onRewind}>
           <Icon name="navRewind" size={18} />
         </IconButton>
