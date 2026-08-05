@@ -24,36 +24,30 @@ export function resolveVideoAspectRatio(
   return Number.isFinite(fallback) && fallback > 0 ? fallback : 16 / 9;
 }
 
-/** Inline styles applied temporarily to the host player container. */
-export function resolvePlayerModeHostStyles(videoStageHeight: number): Readonly<Record<string, string>> {
-  const safeHeight = Number.isFinite(videoStageHeight) && videoStageHeight > 0 ? videoStageHeight : 0;
-  return {
-    position: 'fixed',
-    inset: '0 auto auto 0',
-    width: '100vw',
-    height: `${safeHeight}px`,
-    'max-width': 'none',
-    'max-height': 'none',
-    margin: '0',
-    transform: 'none',
-  };
+/** Inline styles applied temporarily to the host player container.
+ *  No-op — container stays in place. Only the video element is styled. */
+export function resolvePlayerModeHostStyles(_videoStageHeight: number): Readonly<Record<string, string>> {
+  return {};
 }
 
-/** Inline styles applied temporarily to the video inside the host container. */
+/** Inline styles applied temporarily to the video inside the host container.
+ *  Video escapes its container via position:fixed, z-index just below
+ *  #cell-subtitle-root so it shows through the transparent videoStage.
+ *  Background black so black-bar areas are opaque (cover host controls). */
 export function resolvePlayerModeVideoStyles(): Readonly<Record<string, string>> {
   return {
-    position: 'absolute',
-    inset: '0',
-    width: '100%',
-    height: '100%',
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    width: '100vw',
+    height: 'var(--cell-player-mode-video-height, 30vh)',
     'max-width': 'none',
     'max-height': 'none',
     margin: '0',
     transform: 'none',
     'object-fit': 'contain',
-    // Cover host player controls that share the video container's stacking
-    // context (e.g. settings, caption, play overlays with z-index 10–20).
-    'z-index': '2147483647',
+    'z-index': '2147483646',
+    background: '#000',
   };
 }
 

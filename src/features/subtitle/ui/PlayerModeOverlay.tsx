@@ -139,7 +139,7 @@ function PlayerModeOverlayInner({
       role="application"
       aria-label="Player mode"
     >
-      {/* Video stage — transparent, lets host video show through */}
+      {/* Video stage — transparent, host video (position:fixed) shows through */}
       <div
         className={styles.videoStage}
         style={{ height: `${layout.videoStageHeight}px` }}
