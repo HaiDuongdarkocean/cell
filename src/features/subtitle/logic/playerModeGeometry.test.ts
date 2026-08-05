@@ -84,36 +84,26 @@ describe('playerModeGeometry', () => {
   });
 
   describe('resolvePlayerModeHostStyles', () => {
-    it('returns top-aligned viewport host styles', () => {
-      expect(resolvePlayerModeHostStyles(270)).toEqual({
-        position: 'fixed',
-        inset: '0 auto auto 0',
-        width: '100vw',
-        height: '270px',
-        'max-width': 'none',
-        'max-height': 'none',
-        margin: '0',
-        transform: 'none',
-      });
-    });
-    it('normalizes invalid height to zero', () => {
-      expect(resolvePlayerModeHostStyles(NaN).height).toBe('0px');
+    it('returns empty styles (container not modified)', () => {
+      expect(resolvePlayerModeHostStyles(270)).toEqual({});
     });
   });
 
   describe('resolvePlayerModeVideoStyles', () => {
-    it('returns contain-preserving video styles', () => {
+    it('returns fixed video styles with z-index and black background', () => {
       expect(resolvePlayerModeVideoStyles()).toEqual({
-        position: 'absolute',
-        inset: '0',
-        width: '100%',
-        height: '100%',
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100vw',
+        height: 'var(--cell-player-mode-video-height, 30vh)',
         'max-width': 'none',
         'max-height': 'none',
         margin: '0',
         transform: 'none',
         'object-fit': 'contain',
-        'z-index': '2147483647',
+        'z-index': '2147483646',
+        background: '#000',
       });
     });
   });

@@ -13,6 +13,7 @@ import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
 import { resolvePlayerModeLayout, resolveVideoAspectRatio, DOCK_MIN_HEIGHT_PX } from '@/features/subtitle/logic/playerModeGeometry';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
+
 import { ICON_CATALOG } from '@/shared/icons';
 
 const OFFSET_SETTINGS_KEY = 'subtitleOffset';
@@ -32,6 +33,7 @@ export class ReactSubtitleController {
   private readonly mount: MountSubtitleResult;
   private readonly video: HTMLVideoElement;
   private readonly container: HTMLElement;
+  private playerModeHost: PlayerModeHostController | null = null;
   private readonly videoAspectRatio: number;
   private readonly url: string;
   private readonly onGenerateNative: () => void;
@@ -50,7 +52,7 @@ export class ReactSubtitleController {
   private managerTargetActiveIndex = 0;
   private managerNativeActiveIndex = 0;
   private generateNativeEnabled = true;
-  private playerModeHost: PlayerModeHostController | null = null;
+
   private playerModeResizeHandler: (() => void) | null = null;
 
   /** Called when the user selects a subtitle track from the manager panel. */

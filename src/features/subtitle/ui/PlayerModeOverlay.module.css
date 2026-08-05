@@ -13,8 +13,9 @@
   container-type: inline-size;
 }
 
-/* Video stage — transparent cutout lets host video show through the black overlay.
-   pointer-events: none so taps reach the host video player. */
+/* Video stage — transparent, host video (position:fixed, z-index max) shows
+   through. Host controls in the container are covered by the video's opaque
+   black background (set by playerModeHost). */
 .videoStage {
   flex: 0 0 auto;
   width: 100%;
