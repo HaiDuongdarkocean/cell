@@ -113,6 +113,7 @@ describe('playerModeGeometry', () => {
         margin: '0',
         transform: 'none',
         'object-fit': 'contain',
+        'z-index': '2147483647',
       });
     });
   });

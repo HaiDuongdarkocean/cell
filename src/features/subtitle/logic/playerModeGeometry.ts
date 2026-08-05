@@ -51,6 +51,9 @@ export function resolvePlayerModeVideoStyles(): Readonly<Record<string, string>>
     margin: '0',
     transform: 'none',
     'object-fit': 'contain',
+    // Cover host player controls that share the video container's stacking
+    // context (e.g. settings, caption, play overlays with z-index 10–20).
+    'z-index': '2147483647',
   };
 }
 
