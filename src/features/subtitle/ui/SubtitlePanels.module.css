@@ -175,15 +175,3 @@
   pointer-events: auto;
   z-index: 3;
 }
-
-@container (max-width: 480px) {
-  .clusterRight .secondaryCol {
-    display: none;
-  }
-}
-
-@container (max-width: 320px) {
-  .clusterRight {
-    display: none;
-  }
-}
