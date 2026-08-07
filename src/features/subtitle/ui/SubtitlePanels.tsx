@@ -9,7 +9,7 @@ import { SubtitleOffsetPanel } from './SubtitleOffsetPanel';
 import { SubtitleToast, type ToastItem, type ToastVariant } from './SubtitleToast';
 import { SubtitleHint } from './SubtitleHint';
 import { SubtitlePanelItem } from './subtitlePanelModel';
-import { dragDeltaToYOffset, dragEndSnapYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
+import { dragDeltaToYOffset } from '@/features/subtitle/logic/subtitleBlockDrag';
 import { togglePlayerMode } from '@/features/subtitle/logic/playerModeGeometry';
 import { PlayerModeOverlay } from './PlayerModeOverlay';
 import { ICON_CATALOG } from '@/shared/icons';
@@ -370,9 +370,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           st.rafId = null;
         }
         const finalDelta = e.clientY - st.startY;
-        const rawY = dragDeltaToYOffset(st.startOffset, finalDelta, st.containerHeight);
-        // Snap chỉ khi release → CSS transition tạo animation mượt tới snap point
-        const next = dragEndSnapYOffset(rawY);
+        // Release ở đâu giữ nguyên đó — chỉ clamp 0-95%, không snap (theo yêu cầu).
+        const next = dragDeltaToYOffset(st.startOffset, finalDelta, st.containerHeight);
         setYOffsetPercent(next);
         onDragReposition?.(next);
         dragState.current = null;
