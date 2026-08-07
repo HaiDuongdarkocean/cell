@@ -358,7 +358,18 @@ export class WebTriggerController {
     // (genuine empty space), dismiss immediately without waiting for the
     // debounce. resolveWordAtPoint only resolves word-char carets, so
     // whitespace/punctuation clicks naturally return null (no lookup).
+    // BUT: this check does NOT disable UI host pointer-events, so when the
+    // popup covers the cursor, caretRangeFromPoint returns null (false
+    // negative). If we already have a hover target, don't reset — just
+    // cancel the pending hover and wait. Resetting here would clear
+    // lastHoveredTerm and cause a re-lookup on the next mousemove that
+    // does resolve (the popup's pointer-events get disabled in
+    // processHoverMove, so it resolves correctly there).
     if (!defaultGetCaretRange(e.clientX, e.clientY)) {
+      if (this.lastHoveredTerm !== null) {
+        this.cancelPendingHover();
+        return;
+      }
       this.resetHover();
       return;
     }
