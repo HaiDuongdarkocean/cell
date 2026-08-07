@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Jest globalSetup for the integration project.
  *
  * Downloads the m3u8 playlist + first N TS segments ONCE per `test:integration`

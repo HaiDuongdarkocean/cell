@@ -1,8 +1,8 @@
 import { mountReactShadow } from '@/shared/lib/shadowRoot/mountReactShadow';
 import { ShadowThemeProvider } from '@/shared/lib/shadowRoot/ShadowThemeProvider';
 import { createElement } from 'react';
+import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 
 import { SubtitlePanels, type SubtitlePanelsRef, type ManagerState, type OffsetState } from './SubtitlePanels';
 import type { ToastVariant } from './SubtitleToast';
@@ -14,6 +14,7 @@ import subtitleToastCss from './SubtitleToast.module.css?inline';
 import subtitleHintCss from './SubtitleHint.module.css?inline';
 import subtitlePanelsCss from './SubtitlePanels.module.css?inline';
 import playerModeOverlayCss from './PlayerModeOverlay.module.css?inline';
+import cueListCss from '@/entrypoints/sidepanel/components/CueList.module.css?inline';
 import iconCss from '@/shared/icons/Icon.module.css?inline';
 import iconButtonCss from '@/shared/ui/IconButton.module.css?inline';
 import { buildTokenSpanCssForShadow } from '@/features/tokenize/ui/tokenSpanCss';
@@ -54,6 +55,14 @@ export interface MountSubtitleOptions {
   onGenerateNative?: () => void;
   onToggleSidePanel?: () => void;
   onToggleManager?: () => void;
+  /** Bilingual cues for CueList in Player Mode. */
+  cues?: BilingualCue[];
+  /** Current video time in ms (for CueList highlight). */
+  currentTimeMs?: number;
+  /** Subtitle offset in ms (ADR-019 sync). */
+  offsetMs?: number;
+  /** Seek video to timeMs when user clicks a cue. */
+  onSeek?: (timeMs: number) => void;
 }
 
 export interface MountSubtitleResult {
@@ -77,6 +86,10 @@ export interface MountSubtitleResult {
   setBlockSettings: (settings: SubtitleBlockSettings) => void;
   addToast: (message: string, variant?: ToastVariant) => void;
   clearToasts: () => void;
+  /** Update bilingual cues for CueList in Player Mode. */
+  setCues: (cues: BilingualCue[]) => void;
+  /** Update current video time (ms) for CueList highlight. */
+  setCurrentTimeMs: (timeMs: number) => void;
 }
 
 export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResult {
@@ -110,6 +123,10 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     onGenerateNative,
     onToggleSidePanel,
     onToggleManager,
+    cues,
+    currentTimeMs,
+    offsetMs,
+    onSeek,
   } = options;
 
   let controllerRef: SubtitlePanelsRef | null = null;
@@ -145,6 +162,10 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
       onGenerateNative={onGenerateNative}
       onToggleSidePanel={onToggleSidePanel}
       onToggleManager={onToggleManager}
+      cues={cues}
+      currentTimeMs={currentTimeMs}
+      offsetMs={offsetMs}
+      onSeek={onSeek}
     />
   );
 
@@ -164,6 +185,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
         subtitleHintCss,
         subtitlePanelsCss,
         playerModeOverlayCss,
+        cueListCss,
         iconCss,
         iconButtonCss,
         buildTokenSpanCssForShadow(),
@@ -205,5 +227,7 @@ export function mountSubtitle(options: MountSubtitleOptions): MountSubtitleResul
     setBlockSettings: (s) => controllerRef?.setBlockSettings(s),
     addToast: (message, variant) => controllerRef?.addToast(message, variant),
     clearToasts: () => controllerRef?.clearToasts(),
+    setCues: (cues) => controllerRef?.setCues(cues),
+    setCurrentTimeMs: (timeMs) => controllerRef?.setCurrentTimeMs(timeMs),
   };
 }

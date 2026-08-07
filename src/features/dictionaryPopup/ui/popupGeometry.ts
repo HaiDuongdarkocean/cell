@@ -14,7 +14,12 @@ export const POPUP_MIN_WIDTH_PX = 320;
 export const POPUP_MIN_HEIGHT_PX = 200;
 export const POPUP_DEFAULT_HEIGHT_PX = 300;
 export const POPUP_MAX_HEIGHT_RATIO = 0.7;
-export const POPUP_SHEET_BREAKPOINT_PX = 768; // must stay in sync with CSS media queries
+export const POPUP_SHEET_BREAKPOINT_PX = 480; // must stay in sync with CSS media queries (mobile < 480)
+
+/** Player Mode active — used for Player Mode-specific bounds, NOT for forcing sheet mode. */
+export function isPlayerModeActive(): boolean {
+  return document.documentElement?.dataset.cellPlayerMode === 'true';
+}
 export const SHEET_SNAP_THRESHOLD_PX = 40;
 export const SHEET_DISMISS_THRESHOLD_PX = 100;
 /** Sheet closes when its height drops below this fraction of viewport height. */

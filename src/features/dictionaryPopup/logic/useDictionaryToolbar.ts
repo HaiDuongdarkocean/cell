@@ -143,7 +143,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
           }),
           sendMessage<MessageResponse<TtsFetchAudioResponse>>({
             type: MESSAGE_TYPES.TTS_FETCH_AUDIO,
-            payload: { tabId: 0, text: result.term, langCode: result.langCode },
+            payload: { tabId: 0, text: contextSentence.trim() || result.term, langCode: result.langCode },
           }),
         ]);
 
@@ -183,7 +183,7 @@ export function useDictionaryToolbar(options: UseDictionaryToolbarOptions): UseD
         if (mountedRef.current) setAudioLoading(false);
       }
     })();
-  }, [audioItems, result]);
+  }, [audioItems, result, contextSentence]);
 
   const fetchImages = useCallback((): Promise<readonly ImageItem[]> => {
     if (!result) return Promise.resolve([]);

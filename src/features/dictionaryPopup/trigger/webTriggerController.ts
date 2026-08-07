@@ -46,6 +46,14 @@ const POINTER_EVENT_HOST_SELECTORS =
 
 const ALLOW_LOOKUP_SELECTOR = '[data-allow-lookup]';
 
+/** Check if any element in the event's composed path matches a selector.
+ *  Uses composedPath() to cross shadow DOM boundaries — e.target is retargeted
+ *  to the shadow host, so target.closest() can't see attributes inside the
+ *  shadow root (e.g. CueList timestamp's data-no-lookup inside PlayerModeOverlay). */
+function pathMatchesSelector(e: MouseEvent, selector: string): boolean {
+  return e.composedPath().some((el) => el instanceof Element && el.matches(selector));
+}
+
 function isInsideBlockedHostForLookup(element: Element | null): boolean {
   if (!element) return false;
   const host = element.closest(UI_HOST_SELECTORS);
@@ -274,6 +282,12 @@ export class WebTriggerController {
     if (target?.closest('.js-cell-token')) {
       return;
     }
+    // Skip elements explicitly marked as non-lookup (e.g. CueList timestamps —
+    // seek-only controls, not dictionary text). Uses composedPath to cross
+    // shadow DOM boundaries (CueList lives inside PlayerModeOverlay shadow root).
+    if (pathMatchesSelector(e, '[data-no-lookup]')) {
+      return;
+    }
 
     // Selection-based lookup (click mode or fallback in hover mode).
     const selection = window.getSelection();
@@ -350,6 +364,12 @@ export class WebTriggerController {
     }
     // Skip subtitle tokens (handled by SubtitleTriggerController via shared controller).
     if (target.closest('.js-cell-token')) {
+      this.cancelPendingHover();
+      return;
+    }
+    // Skip non-lookup elements (e.g. CueList timestamps — seek-only controls).
+    // Uses composedPath to cross shadow DOM boundaries.
+    if (pathMatchesSelector(e, '[data-no-lookup]')) {
       this.cancelPendingHover();
       return;
     }

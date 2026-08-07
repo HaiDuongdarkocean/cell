@@ -2,30 +2,59 @@
 .list {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .cue {
-  padding: var(--space-1) var(--space-2);
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-3);
   border-bottom: var(--border-width-hairline) solid var(--color-border-subtle);
   user-select: text;
   transition: background var(--transition);
 }
 
+.cue:hover {
+  background: var(--color-surface-hover);
+}
+
 .cueCurrent {
+  background: var(--color-primary-subtle);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.cueCurrent:hover {
   background: var(--color-primary-subtle);
 }
 
 .timestamp {
-  display: block;
-  font-size: var(--font-size-xs);
+  flex-shrink: 0;
+  min-width: 3.2em;
+  text-align: right;
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  margin-bottom: var(--space-0-5);
+  line-height: var(--leading-tight);
+  padding: var(--space-2) var(--space-3);
   cursor: pointer;
+  user-select: none;
   transition: color var(--transition);
 }
 
 .timestamp:hover {
   color: var(--color-primary);
+}
+
+.cueCurrent .timestamp {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
 }
 
 .targetText {
@@ -35,16 +64,26 @@
 }
 
 .nativeText {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
   line-height: var(--leading-tight);
   margin-top: var(--space-0-5);
 }
 
-/* === Responsive — narrow sidepanel === */
-@media (max-width: 350px) {
+/* === Responsive — mobile (320–479px, standard breakpoint) === */
+@media (max-width: 479px) {
   .cue {
-    padding: var(--space-1);
+    gap: var(--space-2);
+  }
+
+  .timestamp {
+    min-width: 2.8em;
+    font-size: var(--font-size-xs);
+    padding: var(--space-1-5) var(--space-2);
+  }
+
+  .text {
+    padding: var(--space-1-5) var(--space-1-5) var(--space-1-5) 0;
   }
 
   .targetText {
@@ -52,12 +91,13 @@
   }
 
   .nativeText {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cue {
+  .cue,
+  .timestamp {
     transition: none;
   }
 }

@@ -41,6 +41,17 @@ import {
 import { createChinesePlugin } from '../plugins/chinesePlugin';
 import { createEnglishPlugin } from '../plugins/englishPlugin';
 import { compilePhraseIndex } from '@/features/dictionary/logic/phraseIndexCompiler';
+import { isDevMode } from '@/shared/lib/env/devMode';
+import { saveLookupLog } from '../log/lookupLogStore';
+import type {
+  LookupLogEntry,
+  LogToken,
+  PhraseMatchTrace,
+  MatchTraceData,
+  CandidateMatchTrace,
+  RankedCandidateTrace,
+} from '../log/lookupLogTypes';
+import { tokenizeSentence } from '@/features/dictionary/logic/phraseMatcher';
 
 /** Check if an AbortSignal is aborted. */
 function checkAbort(signal?: AbortSignal): void {
@@ -193,13 +204,18 @@ export async function lookupOrchestratorMulti(
   let detectedPhrase: PhraseMatch | null = null;
   let matchSource: MatchSource = 'dictionary';
   let additionalPhraseMatches: PhraseMatch[] = [];
+  let phraseTraces: MatchTraceData[] | null = null;
 
   if (fallback) {
     // User selected text — use verbatim, no phrase match.
     matchSource = 'fallback';
   } else if (langCode === 'en') {
     // English: run phrase matcher with all phrase indexes (ADR-037).
-    const allMatches = await tryEnglishPhraseMatchAll(langCode, contextSentence, cursorOffset, deps, signal);
+    const collectTrace = isDevMode;
+    const allMatches = await tryEnglishPhraseMatchAll(
+      langCode, contextSentence, cursorOffset, deps, signal,
+      collectTrace ? (traces) => { phraseTraces = traces; } : undefined,
+    );
     if (allMatches.length > 0) {
       detectedPhrase = allMatches[0]!;
       matchSource = 'plugin';
@@ -283,7 +299,17 @@ export async function lookupOrchestratorMulti(
     }
   }
 
-  return [winnerResult, ...additionalResults];
+  const allResults = [winnerResult, ...additionalResults];
+
+  // Dev-only: build + persist lookup log entry for phrase-matching analysis.
+  if (isDevMode) {
+    const entry = buildLookupLogEntry(
+      request, surfaceTerm, phraseTraces, allResults,
+    );
+    void saveLookupLog(entry);
+  }
+
+  return allResults;
 }
 
 /**
@@ -404,6 +430,8 @@ async function tryEnglishPhraseMatchAll(
   cursorOffset: number,
   deps: { readonly phraseIndexes?: ReadonlyMap<number, PhraseIndex> },
   signal?: AbortSignal,
+  /** Dev-only: nhận trace data từ mỗi matchPhraseAll call (per-resource). */
+  traceCollector?: (traces: MatchTraceData[]) => void,
 ): Promise<PhraseMatch[]> {
   let indexes: { resourceId: number; index: PhraseIndex }[];
 
@@ -430,15 +458,23 @@ async function tryEnglishPhraseMatchAll(
   // Sort by resourceId descending (newest import wins).
   indexes.sort((a, b) => b.resourceId - a.resourceId);
 
+  const traces: MatchTraceData[] = [];
   const candidates: { resourceId: number; match: PhraseMatch }[] = [];
   for (const { resourceId, index } of indexes) {
     checkAbort(signal);
     // matchPhraseAll returns ALL matches at cursor (not just winner).
-    const allMatches = matchPhraseAll({ sentence, cursorOffset }, index, resourceId);
+    const allMatches = matchPhraseAll(
+      { sentence, cursorOffset },
+      index,
+      resourceId,
+      traceCollector ? (trace) => traces.push(trace) : undefined,
+    );
     for (const match of allMatches) {
       candidates.push({ resourceId, match });
     }
   }
+
+  if (traceCollector) traceCollector(traces);
 
   if (candidates.length === 0) return [];
 
@@ -460,4 +496,136 @@ async function tryEnglishPhraseMatchAll(
   }
 
   return unique;
+}
+
+// --- Dev-only lookup logging (ADR-037 phrase matching analysis) ---
+
+/** Build a LookupLogEntry from the lookup flow data. Dev-only. */
+function buildLookupLogEntry(
+  request: LookupRequest,
+  surfaceTerm: string,
+  phraseTraces: MatchTraceData[] | null,
+  results: readonly LookupResult[],
+): LookupLogEntry {
+  const tokens = tokenizeSentence(request.contextSentence);
+  const logTokens: LogToken[] = tokens.map((t) => ({
+    text: t.text, raw: t.raw, start: t.start, end: t.end,
+  }));
+  let targetTokenIndex = -1;
+  for (let i = 0; i < tokens.length; i++) {
+    if (request.cursorOffset >= tokens[i]!.start && request.cursorOffset < tokens[i]!.end) {
+      targetTokenIndex = i;
+      break;
+    }
+  }
+
+  const phraseMatch = phraseTraces && phraseTraces.length > 0
+    ? buildPhraseMatchTrace(phraseTraces)
+    : undefined;
+
+  return {
+    id: crypto.randomUUID(),
+    timestamp: Date.now(),
+    request: {
+      term: request.term,
+      langCode: request.langCode,
+      contextSentence: request.contextSentence,
+      cursorOffset: request.cursorOffset,
+      fallback: request.fallback ?? false,
+    },
+    tokens: logTokens,
+    targetTokenIndex,
+    surfaceTerm,
+    phraseMatch,
+    results: results.map((r) => ({
+      term: r.term,
+      detectedPhrase: r.detectedPhrase
+        ? {
+          dictionaryTerm: r.detectedPhrase.dictionaryTerm,
+          surface: r.detectedPhrase.surface,
+          quality: r.detectedPhrase.quality,
+          sourceResourceId: r.detectedPhrase.sourceResourceId,
+        }
+        : null,
+      matchSource: r.matchSource,
+      hasDefinitions: r.definitions.length > 0,
+    })),
+  };
+}
+
+/** Aggregate per-resource MatchTraceData[] into a single PhraseMatchTrace. */
+function buildPhraseMatchTrace(traces: MatchTraceData[]): PhraseMatchTrace {
+  const resourcesScanned = traces.flatMap((t) => t.resourcesScanned);
+  const candidateTemplateIds = [...new Set(traces.flatMap((t) => t.candidateTemplateIds))];
+  const anchorHits: Record<string, number[]> = {};
+  for (const t of traces) {
+    for (const [token, ids] of Object.entries(t.anchorHits)) {
+      (anchorHits[token] ??= []).push(...ids);
+    }
+  }
+  const perCandidate: CandidateMatchTrace[] = traces.flatMap((t) => t.perCandidate);
+
+  // Merge ranked from all resources, re-sort by ranking tuple (quality → fixed
+  // → fixedMatched → spanLen → slot → freq → templateId), assign rank.
+  const allRanked: RankedCandidateTrace[] = traces.flatMap((t) => t.ranked);
+  allRanked.sort((a, b) => {
+    const q = b.rankingTuple.qualityRank - a.rankingTuple.qualityRank;
+    if (q !== 0) return q;
+    const f = b.rankingTuple.fixedTokenCount - a.rankingTuple.fixedTokenCount;
+    if (f !== 0) return f;
+    const fm = b.rankingTuple.fixedMatched - a.rankingTuple.fixedMatched;
+    if (fm !== 0) return fm;
+    const s = b.rankingTuple.spanLen - a.rankingTuple.spanLen;
+    if (s !== 0) return s;
+    const sl = (a.rankingTuple.slotUsed ? 1 : 0) - (b.rankingTuple.slotUsed ? 1 : 0);
+    if (sl !== 0) return sl;
+    const fr = a.rankingTuple.frequencyRank - b.rankingTuple.frequencyRank;
+    if (fr !== 0) return fr;
+    return a.rankingTuple.templateId - b.rankingTuple.templateId;
+  });
+  const ranked = allRanked.map((r, i) => ({ ...r, rank: i }));
+
+  const winner = ranked[0];
+  const runnerUp = ranked[1];
+  const beatRunnerUpBy = winner && runnerUp
+    ? describeRankingDiff(winner.rankingTuple, runnerUp.rankingTuple)
+    : winner ? 'no runner-up — only 1 candidate matched' : 'no match';
+
+  return {
+    resourcesScanned,
+    candidateTemplateIds,
+    anchorHits,
+    perCandidate,
+    ranked,
+    winner: winner
+      ? { dictionaryTerm: winner.dictionaryTerm, surface: winner.surface, resourceId: winner.resourceId, beatRunnerUpBy }
+      : { dictionaryTerm: '', surface: '', resourceId: 0, beatRunnerUpBy: beatRunnerUpBy },
+  };
+}
+
+/** Human-readable: vì sao winner thắng runner-up theo ranking tuple. */
+function describeRankingDiff(
+  winner: RankedCandidateTrace['rankingTuple'],
+  runnerUp: RankedCandidateTrace['rankingTuple'],
+): string {
+  if (winner.qualityRank !== runnerUp.qualityRank) {
+    const names: Record<number, string> = { 4: 'fixed', 3: 'inflected', 2: 'possessive-template', 1: 'slot-template' };
+    return `quality (${names[winner.qualityRank]} > ${names[runnerUp.qualityRank]})`;
+  }
+  if (winner.fixedTokenCount !== runnerUp.fixedTokenCount) {
+    return `fixedTokenCount (${winner.fixedTokenCount} > ${runnerUp.fixedTokenCount})`;
+  }
+  if (winner.fixedMatched !== runnerUp.fixedMatched) {
+    return `fixedMatched (${winner.fixedMatched} > ${runnerUp.fixedMatched})`;
+  }
+  if (winner.spanLen !== runnerUp.spanLen) {
+    return `spanLen (${winner.spanLen} > ${runnerUp.spanLen})`;
+  }
+  if (winner.slotUsed !== runnerUp.slotUsed) {
+    return `slotUsed (winner: ${winner.slotUsed}, runner: ${runnerUp.slotUsed})`;
+  }
+  if (winner.frequencyRank !== runnerUp.frequencyRank) {
+    return `frequencyRank (${winner.frequencyRank} < ${runnerUp.frequencyRank})`;
+  }
+  return `templateId (${winner.templateId} < ${runnerUp.templateId})`;
 }

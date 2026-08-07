@@ -17,6 +17,12 @@
 import type { PhraseNode } from './phraseTemplateParser';
 import type { CompiledTemplate, PhraseIndex } from './phraseIndexCompiler';
 import { englishLemmaCandidates } from '@/features/dictionaryPopup/logic/englishLemma';
+import { serializeNodes } from '@/features/dictionaryPopup/log/serializeNodes';
+import type {
+  MatchTraceData,
+  CandidateMatchTrace,
+  RankedCandidateTrace,
+} from '@/features/dictionaryPopup/log/lookupLogTypes';
 
 // --- Constants (ADR §8.2) ---
 
@@ -551,6 +557,9 @@ export function matchPhraseAll(
   request: PhraseMatchRequest,
   index: PhraseIndex,
   sourceResourceId: number = 0,
+  /** Dev-only: nếu truyền, nhận trace data (candidate states, ranking, anchors).
+   *  No-op khi không truyền — existing callers không bị ảnh hưởng. */
+  traceSink?: (trace: MatchTraceData) => void,
 ): PhraseMatch[] {
   const { sentence, cursorOffset } = request;
 
@@ -574,19 +583,29 @@ export function matchPhraseAll(
   const windowTokens = tokens.slice(windowStart, windowEnd);
 
   const candidateIds = new Set<number>();
+  const anchorHits: Record<string, number[]> = {};
   for (let i = 0; i < windowTokens.length; i++) {
     const token = windowTokens[i]!.text;
     const ids = index.lookupByAnchor(token);
+    if (ids.length > 0) {
+      (anchorHits[token] ??= []).push(...ids);
+    }
     for (const id of ids) candidateIds.add(id);
     for (const lemmaKey of candidateLemmas(token)) {
       if (lemmaKey !== token) {
         const lemmaIds = index.lookupByAnchor(lemmaKey);
+        if (lemmaIds.length > 0) {
+          (anchorHits[lemmaKey] ??= []).push(...lemmaIds);
+        }
         for (const id of lemmaIds) candidateIds.add(id);
       }
     }
   }
 
-  if (candidateIds.size === 0) return [];
+  if (candidateIds.size === 0) {
+    emitTrace(traceSink, index, sourceResourceId, candidateIds, anchorHits, []);
+    return [];
+  }
 
   if (candidateIds.size > MAX_CANDIDATES) {
     const windowTokenSet = new Set<string>();
@@ -613,6 +632,7 @@ export function matchPhraseAll(
   }
 
   const matches: CandidateMatch[] = [];
+  const perCandidateTraces: CandidateMatchTrace[] = [];
   for (const templateId of candidateIds) {
     const template = index.templates[templateId];
     if (!template) continue;
@@ -629,18 +649,87 @@ export function matchPhraseAll(
         const endTokenIndex = state.endTokenIndex;
         if (targetTokenIndex < startTokenIndex || targetTokenIndex >= endTokenIndex) continue;
 
-        // Tighten object-slot templates: require enough fixed literals matched.
-        if (!isValidObjectSlotMatch(template, state)) continue;
-
         const quality = classifyQuality(state);
+        const rankingTuple = {
+          qualityRank: QUALITY_RANK.get(quality)!,
+          fixedTokenCount: template.fixedTokenCount,
+          fixedMatched: state.fixedMatched,
+          spanLen: endTokenIndex - startTokenIndex,
+          slotUsed: state.slotUsed,
+          frequencyRank: template.frequencyRank,
+          templateId,
+        };
+
+        // Tighten object-slot templates: require enough fixed literals matched.
+        if (!isValidObjectSlotMatch(template, state)) {
+          perCandidateTraces.push({
+            templateId,
+            sourceTerm: template.sourceTerm,
+            normalizedTerm: template.normalizedTerm,
+            nodesStructure: serializeNodes(template.nodes),
+            startTokenIndex,
+            endTokenIndex,
+            state: {
+              inflected: state.inflected,
+              possessive: state.possessive,
+              slotUsed: state.slotUsed,
+              fixedMatched: state.fixedMatched,
+            },
+            quality,
+            rejected: `object-slot min literals (need ${MIN_OBJECT_SLOT_FIXED_LITERALS}, got ${state.fixedMatched})`,
+            rankingTuple,
+          });
+          continue;
+        }
+
         matches.push({ template, startTokenIndex, endTokenIndex, state, quality });
+        perCandidateTraces.push({
+          templateId,
+          sourceTerm: template.sourceTerm,
+          normalizedTerm: template.normalizedTerm,
+          nodesStructure: serializeNodes(template.nodes),
+          startTokenIndex,
+          endTokenIndex,
+          state: {
+            inflected: state.inflected,
+            possessive: state.possessive,
+            slotUsed: state.slotUsed,
+            fixedMatched: state.fixedMatched,
+          },
+          quality,
+          rejected: null,
+          rankingTuple,
+        });
       }
     }
   }
 
-  if (matches.length === 0) return [];
+  if (matches.length === 0) {
+    emitTrace(traceSink, index, sourceResourceId, candidateIds, anchorHits, perCandidateTraces);
+    return [];
+  }
 
   matches.sort(compareMatches);
+
+  // Build ranked trace (trước dedup) — mỗi entry là 1 match position.
+  const ranked: RankedCandidateTrace[] = matches.map((m, rank) => ({
+    rank,
+    dictionaryTerm: m.template.sourceTerm,
+    surface: sentence.slice(tokens[m.startTokenIndex]!.start, tokens[m.endTokenIndex - 1]!.end),
+    quality: m.quality,
+    resourceId: sourceResourceId,
+    rankingTuple: {
+      qualityRank: QUALITY_RANK.get(m.quality)!,
+      fixedTokenCount: m.template.fixedTokenCount,
+      fixedMatched: m.state.fixedMatched,
+      spanLen: m.endTokenIndex - m.startTokenIndex,
+      slotUsed: m.state.slotUsed,
+      frequencyRank: m.template.frequencyRank,
+      templateId: m.template.templateId,
+    },
+  }));
+
+  emitTrace(traceSink, index, sourceResourceId, candidateIds, anchorHits, perCandidateTraces, ranked);
 
   // Build PhraseMatch[] + deduplicate by dictionaryTerm.
   const seen = new Set<string>();
@@ -661,6 +750,26 @@ export function matchPhraseAll(
     });
   }
   return result;
+}
+
+/** Build + emit trace data via traceSink (no-op khi traceSink undefined). */
+function emitTrace(
+  traceSink: ((trace: MatchTraceData) => void) | undefined,
+  index: PhraseIndex,
+  sourceResourceId: number,
+  candidateIds: Set<number>,
+  anchorHits: Record<string, number[]>,
+  perCandidate: CandidateMatchTrace[],
+  ranked?: RankedCandidateTrace[],
+): void {
+  if (!traceSink) return;
+  traceSink({
+    resourcesScanned: [{ resourceId: sourceResourceId, termCount: index.termCount }],
+    candidateTemplateIds: [...candidateIds],
+    anchorHits,
+    perCandidate,
+    ranked: ranked ?? [],
+  });
 }
 
 /**

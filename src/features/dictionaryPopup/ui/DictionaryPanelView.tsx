@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDictionaryPanel } from './useDictionaryPanel';
 import { SearchField } from '@/shared/ui/SearchField';
 import { Spinner } from '@/shared/ui/Spinner';
+import { Skeleton } from '@/shared/ui/Skeleton';
 import { Icon } from '@/shared/icons/Icon';
 import {
   addSearchHistoryTerm,
@@ -82,6 +83,7 @@ export function DictionaryPanelView({
 
   const [searchHistory, setSearchHistory] = useState<readonly string[]>([]);
   const [activeChipIndex, setActiveChipIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSearchFocusRef = useRef(false);
@@ -217,16 +219,26 @@ export function DictionaryPanelView({
 
   const handleChipClick = useCallback((index: number): void => {
     setActiveChipIndex(index);
-    const element = document.getElementById(`dictionary-candidate-${index}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Query inside the container's root node so this works in both Shadow DOM
+    // (popup variant — document.getElementById can't cross shadow boundaries)
+    // and the integrated panel (regular document). data-cell-id avoids id
+    // collisions if multiple popups coexist.
+    const el = containerRef.current?.querySelector<HTMLElement>(
+      `[data-cell-id="dictionary-candidate-${index}"]`,
+    );
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     const candidate = allCandidates[index];
-    if (candidate) onCandidateChange?.(candidate.term);
+    if (candidate) {
+      const surface = candidate.detectedPhrase?.surface;
+      const phraseTerm = surface && surface.includes(' ') ? surface : candidate.term;
+      onCandidateChange?.(phraseTerm);
+    }
   }, [allCandidates, onCandidateChange]);
 
   return (
-    <div className={`${styles.dictionaryPanel} ${variant === 'popup' ? styles.popupMode : ''}`} data-cell-id="dictionary-panel">
+    <div ref={containerRef} className={`${styles.dictionaryPanel} ${variant === 'popup' ? styles.popupMode : ''}`} data-cell-id="dictionary-panel">
       {variant !== 'popup' && (
         <div className={styles.searchRow}>
           <SearchField
@@ -283,10 +295,12 @@ export function DictionaryPanelView({
       )}
 
       {panel.isLoading && !panel.currentResult && (
-        <div className={styles.loading} data-cell-id="dictionary-loading">
-          <Spinner size="md" />
-          <span>Looking up {panel.searchTerm}…</span>
-        </div>
+        panel.searchTerm.trim()
+          ? <CandidateSkeleton term={panel.searchTerm.trim()} />
+          : <div className={styles.loading} data-cell-id="dictionary-loading">
+              <Spinner size="md" />
+              <span>Looking up…</span>
+            </div>
       )}
 
       {panel.error && (
@@ -346,5 +360,89 @@ export function DictionaryPanelView({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * CandidateSkeleton — instant-feedback placeholder shown while a lookup is in
+ * flight. Renders the real header with the term so the user sees the word
+ * immediately, plus skeleton blocks mirroring the candidate content layout
+ * (reading, status, frequency, toolbar, definitions). Every dimension
+ * references design tokens via var()/calc() — no hardcoded px — so the
+ * skeleton stays in sync with the real CandidateView if tokens change.
+ */
+function CandidateSkeleton({ term }: { readonly term: string }): React.JSX.Element {
+  // Token-derived sizes — SSOT, no magic numbers.
+  const btnSm = 'var(--iconbutton-size-sm)';       // action buttons + toolbar tabs
+  const btnXs = 'var(--iconbutton-size-xs)';       // audio buttons
+  const checkbox = 'var(--space-4)';               // definition checkbox (16px)
+  const pillH = 'var(--space-5)';                  // status/frequency pill height
+  const statusW = 'calc(6 * var(--font-size-sm))'; // matches .cellHeaderStatus min-width: 6em
+  const freqW = 'calc(10 * var(--font-size-sm))';  // representative frequency width
+  const ipaW = 'calc(7 * var(--font-size-base))';  // representative IPA width
+  const ipaH = 'calc(var(--font-size-base) * var(--leading-normal))';
+  const textH = 'calc(var(--font-size-base) * var(--leading-normal))';
+  const exH = 'calc(var(--font-size-xs) * var(--leading-normal))';
+
+  return (
+    <article className={styles.candidate} data-cell-id="dictionary-candidate-skeleton" aria-busy="true">
+      <header className={styles.cellHeader}>
+        <div className={styles.cellHeaderRow}>
+          <div className={styles.cellHeaderMain}>
+            <div className={styles.cellHeaderWordRow}>
+              <h2 className={styles.cellHeaderWord} data-cell-id="dictionary-term">{term}</h2>
+            </div>
+          </div>
+          <div className={styles.cellHeaderActions}>
+            <Skeleton width={btnSm} height={btnSm} shape="circle" className={styles.skeletonAction} />
+            <Skeleton width={btnSm} height={btnSm} shape="circle" className={styles.skeletonAction} />
+          </div>
+        </div>
+      </header>
+
+      <div className={styles.cellContent} data-cell-id="dictionary-content-skeleton">
+        <div className={styles.cellHeaderReading}>
+          <Skeleton width={ipaW} height={ipaH} shape="rect" />
+          <span className={styles.cellHeaderAudioGroup}>
+            <Skeleton width={btnXs} height={btnXs} shape="circle" />
+            <Skeleton width={btnXs} height={btnXs} shape="circle" />
+          </span>
+        </div>
+
+        <div className={styles.cellHeaderSecond}>
+          <Skeleton width={statusW} height={pillH} shape="rounded" />
+          <Skeleton width={freqW} height={pillH} shape="rounded" />
+        </div>
+
+        <div className={styles.cellToolbar} role="presentation">
+          <Skeleton width={btnSm} height={btnSm} shape="rounded" />
+          <Skeleton width={btnSm} height={btnSm} shape="rounded" />
+          <Skeleton width={btnSm} height={btnSm} shape="rounded" />
+          <Skeleton width={btnSm} height={btnSm} shape="rounded" />
+        </div>
+
+        <section className={styles.cellDef} aria-label="Definitions">
+          <div className={styles.cellDefItem}>
+            <span className={styles.cellDefCheck}>
+              <Skeleton width={checkbox} height={checkbox} shape="rounded" />
+            </span>
+            <div className={styles.cellDefText}>
+              <Skeleton width="90%" height={textH} shape="rounded" />
+              <div className={styles.cellDefExamples}>
+                <Skeleton width="65%" height={exH} shape="rounded" />
+              </div>
+            </div>
+          </div>
+          <div className={styles.cellDefItem}>
+            <span className={styles.cellDefCheck}>
+              <Skeleton width={checkbox} height={checkbox} shape="rounded" />
+            </span>
+            <div className={styles.cellDefText}>
+              <Skeleton width="75%" height={textH} shape="rounded" />
+            </div>
+          </div>
+        </section>
+      </div>
+    </article>
   );
 }

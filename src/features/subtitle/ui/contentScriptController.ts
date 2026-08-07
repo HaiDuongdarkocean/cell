@@ -1065,7 +1065,22 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
       shift: e.shiftKey,
       alt: e.altKey,
     });
-    if (!action) return;
+    if (!action) {
+      // Player Mode: block ALL host keyboard shortcuts (host page is covered by
+      // backdrop, no host interaction should work). Let Escape through so the
+      // overlay's window listener can exit Player Mode / close CueList.
+      if (blockController.isPlayerModeActive && e.key !== 'Escape') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+      return;
+    }
+
+    // Context-aware T: in Player Mode, let PlayerModeOverlay's keydown handle
+    // 't' (toggles CueList). Don't preventDefault/stopImmediatePropagation —
+    // the overlay's window listener needs to receive the event.
+    if (action === 'toggle-panel' && blockController.isPlayerModeActive) return;
+
     // Block YouTube's own shortcuts (e.g. 't' = theater mode) + other
     // same-target listeners so only our action runs.
     e.preventDefault();

@@ -272,12 +272,22 @@ export function useDictionaryLookup(options: UseDictionaryLookupOptions): UseDic
   }, [syncStatus, currentResult]);
 
   // Sync externally forced loading state (e.g. a parent controller is fetching the first result).
+  // When loading starts, clear the old result so the UI can show a skeleton for
+  // the new term instead of stale data from the previous lookup.
   const isLoadingPropPrev = useRef(isLoadingProp);
   useEffect(() => {
     if (isLoadingPropPrev.current === isLoadingProp) return;
     isLoadingPropPrev.current = isLoadingProp;
     setIsLoading(isLoadingProp);
-  }, [isLoadingProp]);
+    if (isLoadingProp) resetResultState();
+  }, [isLoadingProp, resetResultState]);
+
+  // Keep searchTerm in sync with initialTerm so the header shows the new word
+  // immediately when the controller starts a new lookup (sheet-reuse path
+  // calls setOptions with a new initialTerm without re-mounting).
+  useEffect(() => {
+    if (initialTerm) setSearchTerm(initialTerm);
+  }, [initialTerm]);
 
   return {
     searchTerm,

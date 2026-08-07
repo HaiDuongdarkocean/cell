@@ -38,6 +38,7 @@ Task arrives
     │       └── Stakes high / unfamiliar code? ──→ doubt-driven-development
     ├── Writing/running tests? ────────→ test-driven-development
     │   └── Browser-based? ───────────→ browser-testing-with-devtools
+    │       └── Model can't see images? → vision-reader
     ├── Something broke? ──────────────→ debugging-and-error-recovery
     │   └── Root cause found + fix verified? → learning-and-apply (ACCUMULATE) ← extract principle
     ├── Reviewing code? ───────────────→ code-review-and-quality
@@ -192,6 +193,7 @@ Not every task needs every skill. A bug fix might only need: `debugging-and-erro
 | Build | api-and-interface-design | Stable interfaces with clear contracts |
 | Verify | test-driven-development | Failing test first, then make it pass |
 | Verify | browser-testing-with-devtools | Chrome DevTools MCP for runtime verification |
+| Verify | vision-reader | Delegate image reading to a vision subagent when the coding model is blind |
 | Verify | debugging-and-error-recovery | Reproduce → localize → fix → guard |
 | Verify | learning-and-apply (ACCUMULATE) | Extract reusable principle to atom JSON after test pass + root cause understood |
 | Review | code-review-and-quality | Five-axis review with quality gates |

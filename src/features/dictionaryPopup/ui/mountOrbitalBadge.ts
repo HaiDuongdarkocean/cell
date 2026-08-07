@@ -116,6 +116,15 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
 
   const onFullscreenChange = (): void => {
     const fsEl = document.fullscreenElement;
+    const allHosts = document.querySelectorAll('.js-cell-orbital-badge-host');
+    console.log('[DEBUG orbital] fullscreenchange', {
+      fsEl: fsEl?.tagName,
+      fsElId: fsEl?.id,
+      currentParent: mount.host.parentElement?.tagName,
+      hostConnected: mount.host.isConnected,
+      totalHosts: allHosts.length,
+      hostParents: Array.from(allHosts).map(h => h.parentElement?.tagName),
+    });
     if (fsEl && fsEl !== mount.host.parentElement) {
       fsEl.appendChild(mount.host);
     } else if (!fsEl && mount.host.parentElement !== document.body) {
@@ -128,10 +137,12 @@ export function mountOrbitalBadge(options: OrbitalBadgeMountOptions = {}): Orbit
 
   // If already in fullscreen when mount is called, attach to fullscreen element.
   if (document.fullscreenElement && document.fullscreenElement !== mount.host.parentElement) {
+    console.log('[DEBUG orbital] mount while fullscreen, moving host');
     document.fullscreenElement.appendChild(mount.host);
   }
 
   const destroy = (): void => {
+    console.log('[DEBUG orbital] destroy, host connected:', mount.host.isConnected);
     document.removeEventListener('pointerdown', onDocPointerDown, true);
     document.removeEventListener('fullscreenchange', onFullscreenChange);
     document.removeEventListener('webkitfullscreenchange', onFullscreenChange);

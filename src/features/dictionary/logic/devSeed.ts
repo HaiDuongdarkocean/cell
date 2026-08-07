@@ -17,7 +17,7 @@ const SEED_FILES: ReadonlyArray<{
   readonly resourceType: ResourceType;
 }> = [
   { path: 'seed/en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json', resourceType: 'DICTIONARY' },
-  { path: 'seed/en/frequency_list/standard.json', resourceType: 'FREQUENCY' },
+  { path: 'seed/en/frequency/standard.json', resourceType: 'FREQUENCY' },
 ] as const;
 
 /** In-memory lock — prevents concurrent seed runs (e.g. onInstalled + Options mount). */
