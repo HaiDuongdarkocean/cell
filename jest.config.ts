@@ -17,6 +17,8 @@ const moduleNameMapper = {
   '\\?worker$': '<rootDir>/tests/workerMock.ts',
   '^@/(.*)$': '<rootDir>/src/$1',
   '\\.module\\.css$': '<rootDir>/tests/styleMock.ts',
+  // Mock devMode in tests — source uses import.meta.env which is invalid in Jest's CJS
+  '^@/shared/lib/env/devMode$': '<rootDir>/tests/__mocks__/devMode.ts',
   // Mock workerFactory (uses import.meta.url which is invalid in Jest's CJS)
   '@/features/transmux/merging/workerFactory': '<rootDir>/tests/workerMock.ts',
 };
