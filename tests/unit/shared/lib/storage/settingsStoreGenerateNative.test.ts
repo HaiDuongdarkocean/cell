@@ -40,7 +40,7 @@ describe('settingsStore schema v12 migration (generate-native shortcut)', () => 
       expect.arrayContaining([{ action: 'generate-native', key: 'g' }]),
     );
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; keyboardShortcuts: { action: string; key: string }[] };
-    expect(stored.schemaVersion).toBe(18);
+    expect(stored.schemaVersion).toBe(19);
     expect(stored.keyboardShortcuts).toEqual(
       expect.arrayContaining([{ action: 'generate-native', key: 'g' }]),
     );
@@ -68,6 +68,46 @@ describe('settingsStore schema v12 migration (generate-native shortcut)', () => 
   it('DEFAULT_SETTINGS includes generate-native shortcut with key g', () => {
     const generateNative = DEFAULT_SETTINGS.keyboardShortcuts.find((s) => s.action === 'generate-native');
     expect(generateNative).toEqual({ action: 'generate-native', key: 'g' });
+  });
+
+  it('migrates v18 settings to v19 and appends play-pause shortcut', async () => {
+    const v18KeyboardShortcuts = DEFAULT_SETTINGS.keyboardShortcuts.filter((s) => s.action !== 'play-pause');
+    const v18Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 18,
+      keyboardShortcuts: v18KeyboardShortcuts,
+    };
+    storage[STORAGE_KEYS.SETTINGS] = v18Settings;
+
+    const result = await loadSettings();
+
+    expect(result.keyboardShortcuts).toEqual(
+      expect.arrayContaining([{ action: 'play-pause', key: 'pause' }]),
+    );
+    const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; keyboardShortcuts: { action: string; key: string }[] };
+    expect(stored.schemaVersion).toBe(19);
+    const playPauseBindings = stored.keyboardShortcuts.filter((s) => s.action === 'play-pause');
+    expect(playPauseBindings.length).toBe(1);
+    expect(playPauseBindings[0].key).toBe('pause');
+  });
+
+  it('does not duplicate play-pause shortcut if user already has it', async () => {
+    const v18KeyboardShortcuts = [
+      ...DEFAULT_SETTINGS.keyboardShortcuts.filter((s) => s.action !== 'play-pause'),
+      { action: 'play-pause', key: 'space' },
+    ];
+    const v18Settings = {
+      ...DEFAULT_SETTINGS,
+      schemaVersion: 18,
+      keyboardShortcuts: v18KeyboardShortcuts,
+    };
+    storage[STORAGE_KEYS.SETTINGS] = v18Settings;
+
+    const result = await loadSettings();
+
+    const playPauseBindings = result.keyboardShortcuts.filter((s) => s.action === 'play-pause');
+    expect(playPauseBindings.length).toBe(1);
+    expect(playPauseBindings[0].key).toBe('space');
   });
 });
 

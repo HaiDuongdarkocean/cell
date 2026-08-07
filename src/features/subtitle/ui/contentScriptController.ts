@@ -1140,6 +1140,15 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
         }
         break;
       }
+      case 'play-pause': {
+        // ADR-030: route through playVideo/pauseVideo to avoid Netflix M7375.
+        if (video.paused) {
+          playVideo(video).catch(() => { /* autoplay may be blocked */ });
+        } else {
+          pauseVideo(video);
+        }
+        break;
+      }
       // ADR-026: Card Creator entry shortcuts (q quick-update, e edit-card).
       // Guard: dialog open → let dialog handle keys. auto-repeat → no action.
       case 'quick-update':
@@ -1258,6 +1267,15 @@ export function init(video: HTMLVideoElement, webTextCtrl?: WebTextDictionaryCon
             targetStyle = result.targetStyle;
             nativeStyle = result.nativeStyle;
             blockController.updateSettings({ targetStyle, nativeStyle });
+            break;
+          }
+          case 'play-pause': {
+            // ADR-030: route through playVideo/pauseVideo to avoid Netflix M7375.
+            if (video.paused) {
+              playVideo(video).catch(() => { /* autoplay may be blocked */ });
+            } else {
+              pauseVideo(video);
+            }
             break;
           }
         case 'toggle-translate': {

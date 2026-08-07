@@ -30,8 +30,8 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(DEFAULT_SETTINGS.subtitleOffset).toEqual({});
   });
 
-  it('CURRENT_SCHEMA_VERSION is 18 (V18 adds popupSheetHeightVh per-mode size persistence)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(18);
+  it('CURRENT_SCHEMA_VERSION is 19 (V19 adds play-pause shortcut)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(19);
   });
 
   it('migrates v2 settings (no subtitleOffset) to v3 with default {}', async () => {
@@ -47,7 +47,7 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(result.subtitleOffset).toEqual({});
     // Persisted back as v3
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; subtitleOffset: Record<string, number> };
-    expect(stored.schemaVersion).toBe(18);
+    expect(stored.schemaVersion).toBe(19);
     expect(stored.subtitleOffset).toEqual({});
   });
 
@@ -108,10 +108,10 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
     expect(loaded.subtitleOffset).toEqual(offsets);
   });
 
-  it('saveSettings stamps schemaVersion 18', async () => {
+  it('saveSettings stamps schemaVersion 19', async () => {
     await saveSettings({ subtitleOffset: { 'https://x.com': 100 } });
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(18);
+    expect(stored.schemaVersion).toBe(19);
   });
 
   it('v3 settings pass through without re-migration', async () => {
@@ -136,7 +136,7 @@ describe('settingsStore schema v3 migration (ADR-019 subtitleOffset)', () => {
 
     expect(result.subtitleOffset).toEqual({});
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number };
-    expect(stored.schemaVersion).toBe(18);
+    expect(stored.schemaVersion).toBe(19);
   });
 });
 

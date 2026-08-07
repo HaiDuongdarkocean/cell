@@ -227,6 +227,10 @@ export function App() {
             void sendMessage({ type: 'CLOSE_SIDE_PANEL', payload: { tabId: activeTabIdRef.current } });
           }
           break;
+        case 'play-pause':
+          // Play/pause toggle — reuse the same relay as Spacebar.
+          void sendMessage({ type: 'TOGGLE_PLAY' });
+          break;
       }
     };
     window.addEventListener('keydown', onKeyDown);

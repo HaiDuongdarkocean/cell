@@ -15,7 +15,8 @@ export type ShortcutAction =
   | 'toggle-translate'
   | 'generate-native'
   | 'quick-update'
-  | 'edit-card';
+  | 'edit-card'
+  | 'play-pause';
 
 /** A single keyboard shortcut binding: action ↔ key (with optional modifiers for combos). */
 export interface KeyboardShortcut {

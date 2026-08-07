@@ -73,6 +73,7 @@ const SHORTCUT_ACTION_LABELS: Record<ShortcutAction, string> = {
   'prev-cue': 'Previous cue',
   'next-cue': 'Next cue',
   'replay-cue': 'Replay cue',
+  'play-pause': 'Play / pause video',
   'toggle-overlay': 'Toggle overlay',
   'toggle-panel': 'Toggle panel',
   'toggle-translate': 'Toggle auto-translate',
@@ -82,7 +83,7 @@ const SHORTCUT_ACTION_LABELS: Record<ShortcutAction, string> = {
 };
 
 const SHORTCUT_ACTION_ORDER: readonly ShortcutAction[] = [
-  'prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay', 'toggle-panel', 'toggle-translate',
+  'prev-cue', 'next-cue', 'replay-cue', 'play-pause', 'toggle-overlay', 'toggle-panel', 'toggle-translate',
   'generate-native', 'quick-update', 'edit-card',
 ];
 
