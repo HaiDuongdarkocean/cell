@@ -77,13 +77,20 @@ export function UniversalPanel({
     e.stopPropagation();
   };
 
-  if (!isOpen && !isClosing) return null;
+  // Keep mounted through the close animation. Without the wasOpenRef term,
+  // the render where isOpen flips false (isClosing not set yet) returns null,
+  // unmounting the node; the effect then remounts it with .close, flashing
+  // the full panel before it fades.
+  const shouldRender = isOpen || isClosing || wasOpenRef.current;
+
+  if (!shouldRender) return null;
 
   const panelClass = `${styles.panel} ${isOpen ? styles.open : styles.close}`.trim();
+  const overlayClass = isOpen ? styles.overlay : `${styles.overlay} ${styles.overlayClosing}`.trim();
 
   return (
     <div
-      className={styles.overlay}
+      className={overlayClass}
       onClick={handleBackdropClick}
       role="presentation"
       data-cell-id="universal-panel-backdrop"

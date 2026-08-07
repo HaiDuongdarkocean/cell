@@ -22,11 +22,15 @@
 }
 
 .open {
-  animation: scale-in var(--duration-slow) var(--ease-in-out) both;
+  animation: scale-in var(--duration-normal) var(--ease-standard) both;
 }
 
 .close {
-  animation: scale-out var(--duration-slow) var(--ease-in-out) both;
+  animation: scale-out var(--duration-normal) var(--ease-standard) both;
+}
+
+.overlayClosing {
+  animation: overlay-fade-out var(--duration-normal) var(--ease-standard) both;
 }
 
 .tabBar {
@@ -121,17 +125,25 @@
 
 @keyframes scale-out {
   from {
-    opacity: 1;
     transform: scale(1);
   }
   to {
+    transform: scale(0.96);
+  }
+}
+
+@keyframes overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
     opacity: 0;
-    transform: scale(0.98);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .overlay,
+  .overlayClosing,
   .panel {
     animation: none;
   }
