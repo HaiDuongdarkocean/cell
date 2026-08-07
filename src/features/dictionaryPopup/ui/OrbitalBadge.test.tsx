@@ -227,7 +227,7 @@ describe('OrbitalBadge', () => {
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
 
-    // Collapsed flush at right edge: center 1024, top-left = 1024 - 22 = 1002.
+    // Collapsed flush at content edge: center 1024, top-left = 1024 - 22 = 1002.
     expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
 
     act(() => {
@@ -235,7 +235,7 @@ describe('OrbitalBadge', () => {
       fireEvent.resize(window);
     });
 
-    // Resized to 400 width: center 400 (flush), top-left = 400 - 22 = 378.
+    // Resized to 400 width: center 400 (content edge), top-left = 400 - 22 = 378.
     expect(badge.style.transform).toContain('translate3d(378px, 362px, 0)');
   });
 
@@ -243,7 +243,7 @@ describe('OrbitalBadge', () => {
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
 
-    // Collapsed flush at right edge: center 1024, top-left = 1024 - 22 = 1002.
+    // Colllapsed flush at content edge: center 1024, top-left = 1024 - 22 = 1002.
     expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
 
     // Scrollbar appears: clientWidth shrinks from 1024 to 1009 (15px scrollbar).
@@ -253,13 +253,14 @@ describe('OrbitalBadge', () => {
       resizeObserverCb?.();
     });
 
-    // Badge repositioned to new content edge: center 1009, top-left = 1009 - 22 = 987.
+    // Badge repositioned to new content edge (left edge of scrollbar):
+    // center 1009, top-left = 1009 - 22 = 987.
     expect(badge.style.transform).toContain('translate3d(987px, 362px, 0)');
   });
 
   it('repositions to fullscreen viewport when fullscreenchange fires', () => {
     // Normal mode: clientWidth=1024 (with scrollbar), innerWidth=1280 (fullscreen width).
-    // Badge at right edge: center 1024, top-left = 1024 - 22 = 1002.
+    // Badge at content edge: center 1024, top-left = 1024 - 22 = 1002.
     render(<OrbitalBadge persistPosition={false} />);
     const badge = screen.getByTestId('orbital-badge');
     expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
@@ -277,8 +278,8 @@ describe('OrbitalBadge', () => {
     });
 
     // Badge repositioned to fullscreen right edge: center 1280, top-left = 1280 - 22 = 1258.
-    // y preserved from previous position (384), top-left = 384 - 22 = 362.
-    expect(badge.style.transform).toContain('translate3d(1258px, 362px, 0)');
+    // y scales proportionally: 384/768 * 720 = 360, top-left = 360 - 22 = 338.
+    expect(badge.style.transform).toContain('translate3d(1258px, 338px, 0)');
 
     // Exit fullscreen: fullscreenElement cleared, back to clientWidth=1024.
     act(() => {
@@ -288,7 +289,8 @@ describe('OrbitalBadge', () => {
       fireEvent(document, new Event('fullscreenchange'));
     });
 
-    // Badge back to normal right edge: center 1024, top-left = 1024 - 22 = 1002.
+    // Badge back to normal content edge: center 1024. y scales back: 360/720 * 768 = 384.
+    // top-left = 1024-22=1002, 384-22=362.
     expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
   });
 
@@ -303,7 +305,8 @@ describe('OrbitalBadge', () => {
     // Old position (1024, 384) in the new viewport: nearest edge is TOP
     // (distance 384) not RIGHT (distance 1536). Without edge-keeping, the
     // badge would snap to the top edge. With edge-keeping, it stays on the
-    // right edge: center 2560, y preserved 384. Top-left = 2560-22=2538.
+    // right edge. Position scales proportionally: y ratio = 384/768 = 0.5,
+    // new y = 0.5 * 1440 = 720. Top-left = 2560-22=2538, 720-22=698.
     act(() => {
       Object.defineProperty(document, 'fullscreenElement', {
         value: document.createElement('div'),
@@ -316,7 +319,8 @@ describe('OrbitalBadge', () => {
       fireEvent(document, new Event('fullscreenchange'));
     });
 
-    // Badge stays on right edge: center 2560, top-left = 2560 - 22 = 2538.
-    expect(badge.style.transform).toContain('translate3d(2538px, 362px, 0)');
+    // Badge stays on right edge at same relative y (50%): center 2560, y 720.
+    // Top-left = 2560-22=2538, 720-22=698.
+    expect(badge.style.transform).toContain('translate3d(2538px, 698px, 0)');
   });
 });

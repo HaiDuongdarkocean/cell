@@ -67,11 +67,12 @@ function resolveViewport(viewport?: ViewportRect): ViewportRect {
   if (document.fullscreenElement) {
     return { width: window.innerWidth, height: window.innerHeight };
   }
-  // clientWidth already excludes classic scrollbars. For overlay scrollbars
-  // (clientWidth === innerWidth), the badge center sits at the actual edge —
-  // the right half is clipped by the viewport (half-moon), the visible left
-  // half is inside the content area. Overlay scrollbars are semi-transparent
-  // and auto-hiding, so they never fully hide the badge.
+  // clientWidth excludes classic scrollbars. The badge center sits at the
+  // content edge (left edge of the scrollbar). With clip-path: inset(0 50% 0 0),
+  // the visible half-moon is flush with the scrollbar's left edge — "cạnh mép
+  // scrollbar" — not on top of it. The native scrollbar renders on top of
+  // everything, so positioning at innerWidth would hide the badge behind it.
+  // For overlay scrollbars (Mac, clientWidth === innerWidth), no difference.
   return { width: getClientWidth(), height: getClientHeight() };
 }
 
