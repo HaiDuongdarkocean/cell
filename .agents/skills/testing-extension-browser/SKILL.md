@@ -93,6 +93,8 @@ Then: #cell-universal-panel-host shadow children > 2 (popup opened)
 
 **Purpose:** Create a clone profile with Cell + uBlock loaded via CDP `loadUnpacked`. The script ONLY launches Chrome, loads extensions, then exits — it does NOT navigate, reload, or verify. MCP handles all page interaction.
 
+**Always headless:** The nodriver phase runs headless — no visible window, no machine slowdown. It only reloads extensions into the profile. The MCP `spawn_browser` phase (Step 3) is headed (`headless=false`) so the user sees the browser UI for testing.
+
 **Actions:**
 - Clean old clones: `Remove-Item C:\stealth-mcp-browser-sessions\sessions\cell-* -Recurse -Force -ErrorAction SilentlyContinue`
 - Launch:
@@ -101,7 +103,7 @@ Then: #cell-universal-panel-host shadow children > 2 (popup opened)
 uv run --python 3.11 --with nodriver python -u .agents\skills\testing-extension-browser\script\test-cell-browser.py --keep-profile
 ```
 
-**Flags:** `--headless` `--no-ublock` `--keep-profile`
+**Flags:** `--no-ublock` `--keep-profile`
 
 **Guard:** Script prints `[OK] Cell (Video Downloader) loaded` → `[OK] Chrome closed. Profile ready for MCP.` + `Clone: C:\stealth-mcp-browser-sessions\sessions\cell-<uuid>`.
 
