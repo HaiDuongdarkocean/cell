@@ -20,6 +20,16 @@
       "context": "Badge mounted khi page chưa có scrollbar (clientWidth === innerWidth). Sau đó content load → scrollbar xuất hiện → clientWidth giảm, nhưng window 'resize' event không fire (window size không đổi) → badge stuck ở vị trí cũ, bị scrollbar che.",
       "bad": "window.addEventListener('resize', reposition);\nwindow.addEventListener('orientationchange', reposition);\n// scrollbar appearance không trigger 'resize' → badge stuck behind scrollbar",
       "good": "window.addEventListener('resize', reposition);\nwindow.addEventListener('orientationchange', reposition);\n// ResizeObserver detects clientWidth change when scrollbar appears/disappears\n// — no 'resize' event fires because window size is unchanged.\nif (typeof ResizeObserver !== 'undefined') {\n  const ro = new ResizeObserver(() => reposition());\n  ro.observe(document.documentElement);\n  return () => ro.disconnect();\n}"
+    },
+    {
+      "context": "Fullscreen mode: fullscreen element covers entire screen with no scrollbar. clientWidth có thể stale hoặc zeroed khi document hidden behind fullscreen layer. innerWidth/innerHeight matches fullscreen element dimensions.",
+      "bad": "// Luôn dùng clientWidth — trong fullscreen clientWidth có thể stale\nfunction resolveViewport() {\n  return { width: document.documentElement?.clientWidth || window.innerWidth };\n}",
+      "good": "// Fullscreen: innerWidth (no scrollbar, clientWidth may be stale)\n// Normal: clientWidth (excludes scrollbar, badge flush with scrollbar left edge)\nfunction resolveViewport(viewport?: ViewportRect): ViewportRect {\n  if (viewport) return viewport;\n  if (document.fullscreenElement) {\n    return { width: window.innerWidth, height: window.innerHeight };\n  }\n  return {\n    width: document.documentElement?.clientWidth || window.innerWidth,\n    height: document.documentElement?.clientHeight || window.innerHeight\n  };\n}"
+    },
+    {
+      "context": "Tempted to use innerWidth để đặt badge ở browser window edge (outer edge of scrollbar) thay vì content edge — vision verify cho thấy badge bị che hoàn toàn.",
+      "bad": "// innerWidth = 1906 (browser window edge)\n// Native scrollbar (1891→1906) render on top of everything\n// → badge center 1906, visible half 1888→1906, nhưng scrollbar che 1891→1906\n// Vision: 'No half-moon badge appears on the right edge'\nreturn { width: window.innerWidth };",
+      "good": "// clientWidth = 1891 (content edge = scrollbar left edge)\n// Badge center 1891, visible half-moon 1873→1891, flush với scrollbar left edge\n// Vision: 'badge sits NEXT TO scrollbar, flush against scrollbar's left edge'\nreturn { width: document.documentElement?.clientWidth || window.innerWidth };"
     }
   ],
   "applyFor": ["Fixed overlay badges/buttons at viewport edges", "Content-script UI that must stay visible beside scrollbars", "Any position:fixed element anchored to right/bottom viewport edges"]
