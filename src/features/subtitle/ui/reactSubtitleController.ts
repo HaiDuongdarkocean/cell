@@ -110,6 +110,8 @@ export class ReactSubtitleController {
     );
 
     this.isPlaying = !video.paused;
+    video.addEventListener('play', this.onVideoPlay);
+    video.addEventListener('pause', this.onVideoPause);
 
     this.mount = mountSubtitle({
       container,
@@ -246,6 +248,12 @@ export class ReactSubtitleController {
     this.isPlaying = playing;
     this.mount.setIsPlaying(playing);
   }
+
+  // SSOT: video element là nguồn sự thật cho play/pause state. Listener này
+  // bắt mọi nguồn (keyboard shortcut, host UI click, programmatic) → NavCluster
+  // icon luôn sync. Trước đó chỉ engine.handlePlayPause callback mới update.
+  private readonly onVideoPlay = (): void => this.setIsPlaying(true);
+  private readonly onVideoPause = (): void => this.setIsPlaying(false);
 
   private applyGenerateNativeEnabled(enabled: boolean): void {
     this.generateNativeEnabled = enabled;
@@ -506,6 +514,8 @@ export class ReactSubtitleController {
       clearTimeout(this.yOffsetPersistTimer);
       this.yOffsetPersistTimer = null;
     }
+    this.video.removeEventListener('play', this.onVideoPlay);
+    this.video.removeEventListener('pause', this.onVideoPause);
     this.mount.unmount();
   }
 }

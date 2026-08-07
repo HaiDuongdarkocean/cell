@@ -282,7 +282,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // (position:absolute, zIndex:200, inset:0) — clearing them breaks the
     // stacking context and lets the <video> element cover NavCluster/subtitle.
     const playerModeOriginalParent = useRef<HTMLElement | null>(null);
-    const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string } | null>(null);
+    const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string; pointerEvents: string } | null>(null);
     const playerModeBackdrop = useRef<HTMLDivElement | null>(null);
     const playerModeSavedScrollLock = useRef<{ htmlOverflow: string; bodyOverflow: string } | null>(null);
     useEffect(() => {
@@ -293,20 +293,22 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           zIndex: host.style.zIndex,
           position: host.style.position,
           inset: host.style.inset,
+          pointerEvents: host.style.pointerEvents,
         };
         host.style.zIndex = '2147483647';
         host.style.position = 'fixed';
         host.style.inset = '0';
-        host.style.pointerEvents = 'none';
+        host.style.pointerEvents = 'auto';
         if (host.parentElement && host.parentElement !== document.body) {
           playerModeOriginalParent.current = host.parentElement;
           document.body.appendChild(host);
         }
         // Light DOM backdrop: fixed full-screen black, z-index just below
-        // cell-subtitle-root. pointer-events:auto captures all clicks/wheel/touch
+        // cell-subtitle-root. It absorbs any events that fall through the overlay
         // so the host page (controls, captions, gestures) receives nothing.
-        // Overlay's interactive children (dock, contentOther) are above in
-        // z-index and have their own pointer-events:auto, so they still work.
+        // The overlay and its children (dock, contentOther) are above in
+        // z-index and have pointer-events:auto, so they remain interactive
+        // and scrollable.
         if (!playerModeBackdrop.current) {
           const backdrop = document.createElement('div');
           backdrop.style.cssText =
@@ -337,6 +339,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           host.style.zIndex = saved.zIndex;
           host.style.position = saved.position;
           host.style.inset = saved.inset;
+          host.style.pointerEvents = saved.pointerEvents;
           playerModeSavedStyles.current = null;
         }
         const originalParent = playerModeOriginalParent.current;

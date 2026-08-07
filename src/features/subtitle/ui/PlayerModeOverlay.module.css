@@ -9,7 +9,7 @@
   flex-direction: column;
   background: var(--color-overlay-background);
   z-index: var(--z-overlay-settings);
-  pointer-events: none;
+  pointer-events: auto;
   container-type: inline-size;
 }
 

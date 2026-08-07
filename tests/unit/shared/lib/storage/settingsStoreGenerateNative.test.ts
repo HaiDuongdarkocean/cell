@@ -82,13 +82,13 @@ describe('settingsStore schema v12 migration (generate-native shortcut)', () => 
     const result = await loadSettings();
 
     expect(result.keyboardShortcuts).toEqual(
-      expect.arrayContaining([{ action: 'play-pause', key: 'pause' }]),
+      expect.arrayContaining([{ action: 'play-pause', key: ' ' }]),
     );
     const stored = storage[STORAGE_KEYS.SETTINGS] as { schemaVersion: number; keyboardShortcuts: { action: string; key: string }[] };
     expect(stored.schemaVersion).toBe(19);
     const playPauseBindings = stored.keyboardShortcuts.filter((s) => s.action === 'play-pause');
     expect(playPauseBindings.length).toBe(1);
-    expect(playPauseBindings[0].key).toBe('pause');
+    expect(playPauseBindings[0].key).toBe(' ');
   });
 
   it('does not duplicate play-pause shortcut if user already has it', async () => {
