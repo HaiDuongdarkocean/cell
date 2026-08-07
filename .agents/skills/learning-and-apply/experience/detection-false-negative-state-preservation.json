@@ -1,0 +1,21 @@
+{
+  "id": "detection-false-negative-state-preservation",
+  "title": "False-negative detection → preserve state, don't reset",
+  "category": ["ux", "state"],
+  "tags": ["hover", "debounce", "caretRangeFromPoint", "false-negative", "re-lookup-loop", "geometry-gate"],
+  "trigger": "Detection system has false negatives (overlay covers target, nearest-match snapping) and resetting state on those false negatives causes re-trigger loops",
+  "principle": "When a guard can produce false negatives (caret null due to UI overlay, geometry gate fail due to whitespace snap), don't reset state on the false negative — preserve it and only cancel pending work. State should only be cleared when there's a true positive (genuine empty space with no active target). Three guard layers must all preserve state: (1) quick check before debounce, (2) resolve failure after debounce, (3) geometry gate after resolve. Missing any one layer leaves a re-trigger path.",
+  "cases": [
+    {
+      "context": "Hover dictionary popup: user hovers 'machine', popup appears, user moves to whitespace gap then back to 'machine' — popup re-looks up the same word",
+      "bad": "// onMouseMove quick check: caret null → resetHover (clears lastHoveredTerm)\nif (!defaultGetCaretRange(x, y)) { this.resetHover(); return; }\n// processHoverMove geometry gate: isPointOverRange fail → resetHover\nif (!isPointOverRange(x, y, resolved.range)) { this.resetHover(); return; }\n// Same-word guard: term + startContainer + startOffset match BUT pointerDelta > 6px\nconst pointerDelta = Math.hypot(x - lastX, y - lastY);\nif (term === lastTerm && sameContainer && sameOffset && pointerDelta < 6) return;\n// Result: 3 paths clear lastHoveredTerm → next resolve re-looks up → loop",
+      "good": "// onMouseMove quick check: preserve state if we have a target\nif (!defaultGetCaretRange(x, y)) {\n  if (this.lastHoveredTerm !== null) { this.cancelPendingHover(); return; }\n  this.resetHover(); return;\n}\n// processHoverMove geometry gate: preserve state if we have a target\nif (!isPointOverRange(x, y, resolved.range)) {\n  if (this.lastHoveredTerm !== null) { this.cancelPendingHover(); return; }\n  this.resetHover(); return;\n}\n// Same-word guard: term + startContainer + startOffset = same physical word\n// No pointerDelta check — same word occurrence is same word regardless of delta\nif (term === lastTerm && sameContainer && sameOffset) return;"
+    },
+    {
+      "context": "Why pointerDelta < 6px fails: long words like 'reposition' are 60px+ wide. Moving across the word exceeds 6px but it's still the same word occurrence (same text node + same start offset).",
+      "bad": "// Guard requires pointer to barely move — fails on any word wider than 6px\nif (term === lastTerm && sameContainer && sameOffset && pointerDelta < 6) return;\n// 'reposition' is 60px wide → moving across it = 60px delta → guard fails → re-lookup",
+      "good": "// Same physical word = same text node + same start offset. Delta is irrelevant.\nif (term === lastTerm && sameContainer && sameOffset) return;\n// 'reposition' at offset 0-10 in text node A = same word whether pointer is at x=0 or x=60"
+    }
+  ],
+  "applyFor": ["Hover detection with debounce", "Click-to-resolve systems with caretRangeFromPoint", "Any detection system with false negatives (overlay covering target, nearest-match snapping)", "State machines where clearing state on ambiguous input causes re-initialization loops", "Gesture/multi-tap detectors with stability windows"]
+}
