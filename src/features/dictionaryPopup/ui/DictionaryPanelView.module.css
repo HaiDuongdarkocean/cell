@@ -16,13 +16,24 @@
   font-size: var(--font-size-base);
   color: var(--color-text);
   user-select: text;
+  scrollbar-width: none;
+}
+
+.dictionaryPanel::-webkit-scrollbar {
+  display: none;
 }
 
 /* Popup mode: remove outer padding — the popup container (.popup) already
    has its own padding/border. Extra padding here wastes screen space in
-   the compact popup. */
+   the compact popup.
+   overflow: visible overrides the base overflow-y:auto so this panel is NOT
+   a scroll container. The popup's .content is the real scroll container; with
+   the panel out of the way, position:sticky on the chips bar sticks to
+   .content's viewport instead of to a non-scrolling panel (where sticky would
+   be a no-op and the chips would scroll away). */
 .popupMode {
   padding: 0;
+  overflow: visible;
 }
 
 .searchRow {
@@ -386,6 +397,11 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.cellDef::-webkit-scrollbar {
+  display: none;
 }
 
 .cellDefEmpty {
@@ -844,6 +860,8 @@
 }
 
 .cellCandidatesChips {
+  position: sticky;
+  bottom: 0;
   flex-shrink: 0;
   z-index: var(--z-sticky);
   display: flex;
@@ -853,7 +871,10 @@
   margin: 0;
   background: var(--color-surface);
   border-top: var(--border-width-hairline) solid var(--color-border-subtle);
-  box-shadow: 0 calc(-1 * var(--space-0-5)) var(--space-1) calc(-1 * var(--space-0-5)) var(--color-shadow);
+  /* Upward elevation so the candidate list scrolling underneath reads as
+     passing below the bar. No negative spread — the previous negative spread
+     shrank the shadow to nothing. */
+  box-shadow: 0 calc(-1 * var(--space-1)) var(--space-2) var(--color-shadow);
 }
 
 .cellCandidatesChipsScroll {
@@ -896,6 +917,11 @@
   scroll-behavior: smooth;
   gap: 0;
   padding: 0;
+  scrollbar-width: none;
+}
+
+.candidateList::-webkit-scrollbar {
+  display: none;
 }
 
 .candidate {
@@ -1093,6 +1119,11 @@
 
 .cellTranslateSkeletonLine {
   max-width: 100%;
+}
+
+/* CandidateSkeleton — skeleton action buttons in header (icon-btn--sm size) */
+.skeletonAction {
+  flex-shrink: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
