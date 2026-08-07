@@ -109,6 +109,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   const collapsedCenterRef = useRef<Point>(center);
   const edgeRef = useRef<CollapsedEdge | null>(null);
   const dragEdgeRef = useRef<CollapsedEdge | null>(null);
+  const prevViewportRef = useRef<ViewportRect>(resolvedViewport);
   const expandedRef = useRef(expanded);
   const onPresetChangeRef = useRef(onPresetChange);
 
@@ -218,17 +219,28 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         raf = 0;
         const vp = resolveViewport(viewport);
         if (vp.width === 0 || vp.height === 0) return;
+        const prevVp = prevViewportRef.current;
+        prevViewportRef.current = vp;
         const currentCenter = centerRef.current;
         const currentDrag = dragCenterRef.current;
+        // Scale the badge position proportionally to the new viewport so the
+        // badge stays at the same RELATIVE spot (e.g. right edge at 39% height
+        // in normal mode → right edge at 39% height in fullscreen). Without
+        // this, getEdgeCenter keeps the absolute y (384px) — in a taller
+        // fullscreen viewport the badge drifts up relative to the screen.
+        const scalePoint = (p: Point): Point => {
+          if (prevVp.width === 0 || prevVp.height === 0) return p;
+          return { x: (p.x / prevVp.width) * vp.width, y: (p.y / prevVp.height) * vp.height };
+        };
+        const scaledCenter = scalePoint(currentCenter);
+        const scaledDrag = scalePoint(currentDrag);
         // Keep the same edge when viewport changes — don't jump to a different
-        // edge just because the viewport expanded (e.g. fullscreen enter:
-        // position was at right edge of 1891px viewport, new viewport is 2560px
-        // → position 1891 is now closer to top edge, but user expects badge to
-        // stay on right edge). Falls back to nearest edge when floating.
-        const nearestEdge = edgeRef.current ?? getNearestEdge(currentCenter, vp).edge;
-        const snapped = getEdgeCenter(nearestEdge, currentCenter, badgeSize, vp);
-        const dragNearestEdge = dragEdgeRef.current ?? getNearestEdge(currentDrag, vp).edge;
-        const dragSnapped = getEdgeCenter(dragNearestEdge, currentDrag, badgeSize, vp);
+        // edge just because the viewport expanded. Falls back to nearest edge
+        // when floating (edgeRef null).
+        const nearestEdge = edgeRef.current ?? getNearestEdge(scaledCenter, vp).edge;
+        const snapped = getEdgeCenter(nearestEdge, scaledCenter, badgeSize, vp);
+        const dragNearestEdge = dragEdgeRef.current ?? getNearestEdge(scaledDrag, vp).edge;
+        const dragSnapped = getEdgeCenter(dragNearestEdge, scaledDrag, badgeSize, vp);
         setCenter(snapped);
         setDragCenter(dragSnapped);
         // Keep userPreset on resize — don't override user's pointer position.
@@ -377,12 +389,11 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         <div
           className={styles.pointer}
           style={{
-            left: pointerCenter.x - displayedCenter.x + badgeSize / 2,
-            top: pointerCenter.y - displayedCenter.y + badgeSize / 2,
             width: pointerSize,
             height: pointerSize,
             marginLeft: -pointerSize / 2,
             marginTop: -pointerSize / 2,
+            transform: `translate3d(${pointerCenter.x - displayedCenter.x}px, ${pointerCenter.y - displayedCenter.y}px, 0)`,
           }}
           data-cell-id="orbital-pointer"
           aria-hidden="true"

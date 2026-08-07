@@ -7,7 +7,9 @@
   user-select: none;
   will-change: transform;
   opacity: 0.7;
-  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--duration-200) var(--ease-standard),
+              clip-path var(--duration-200) var(--ease-standard),
+              opacity var(--duration-150) var(--ease-in-out);
 }
 
 /* Disable transition during active drag — prevents 200ms lag on Edge. */
@@ -17,13 +19,16 @@
 
 .pointer {
   position: absolute;
+  left: 50%;
+  top: 50%;
   border-radius: 9999px;
   background-color: var(--color-primary);
   color: var(--color-primary-foreground);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: left 200ms cubic-bezier(0.22, 1, 0.36, 1), top 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  transition: transform var(--duration-200) var(--ease-standard);
 }
 
 .host.expanded {
@@ -44,6 +49,13 @@
 
 .host.collapsed[data-edge="bottom"] {
   clip-path: inset(0 0 50% 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .host,
+  .pointer {
+    transition: none;
+  }
 }
 
 .badge {
