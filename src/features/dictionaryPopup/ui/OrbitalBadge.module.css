@@ -87,3 +87,16 @@
 .host.collapsed[data-edge="bottom"] .badge {
   border-radius: 9999px 9999px 0 0;
 }
+
+/* Collapsed at edge: pointer becomes a settings gear icon centered in the
+   badge via flex. Icon size scales with badge size (calc(badgeSize - 2*padding)).
+   Padding from --space-1 (4px) design token. */
+.pointerIcon {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  box-sizing: border-box;
+}

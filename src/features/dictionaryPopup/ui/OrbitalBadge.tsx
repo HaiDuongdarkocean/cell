@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { IconButton } from '@/shared/ui/IconButton';
+import { Icon } from '@/shared/icons/Icon';
 import { useOrbitalPointer } from '@/features/dictionaryPopup/badgePointer/useOrbitalPointer';
 import { useOrbitalSnap } from '@/features/dictionaryPopup/badgePointer/useOrbitalSnap';
 import { getNearestEdge, getEdgeCenter, type ViewportRect, type CollapsedEdge } from '@/features/dictionaryPopup/badgePointer/badgeCollapse';
@@ -387,17 +388,26 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       />
       {(expanded || !isAtEdge || collapsedAtEdge) && (
         <div
-          className={styles.pointer}
+          className={[styles.pointer, collapsedAtEdge ? styles.pointerIcon : ''].filter(Boolean).join(' ')}
           style={{
-            width: pointerSize,
-            height: pointerSize,
-            marginLeft: -pointerSize / 2,
-            marginTop: -pointerSize / 2,
-            transform: `translate3d(${pointerCenter.x - displayedCenter.x}px, ${pointerCenter.y - displayedCenter.y}px, 0)`,
+            width: collapsedAtEdge ? badgeSize : pointerSize,
+            height: collapsedAtEdge ? badgeSize : pointerSize,
+            marginLeft: collapsedAtEdge ? -badgeSize / 2 : -pointerSize / 2,
+            marginTop: collapsedAtEdge ? -badgeSize / 2 : -pointerSize / 2,
+            transform: collapsedAtEdge
+              ? 'translate3d(0, 0, 0)'
+              : `translate3d(${pointerCenter.x - displayedCenter.x}px, ${pointerCenter.y - displayedCenter.y}px, 0)`,
           }}
           data-cell-id="orbital-pointer"
           aria-hidden="true"
-        />
+        >
+          {collapsedAtEdge && (
+            <Icon
+              name="settings"
+              style={{ width: `calc(${badgeSize}px - 2 * var(--space-1))`, height: `calc(${badgeSize}px - 2 * var(--space-1))` }}
+            />
+          )}
+        </div>
       )}
     </div>
   );
