@@ -29,6 +29,7 @@ import atexit
 import os
 import shutil
 import signal
+import subprocess
 import sys
 import time
 import uuid
@@ -134,9 +135,26 @@ async def main() -> None:
     # headed so the user sees the browser UI for testing.
     parser.add_argument("--no-ublock", action="store_true", help="Skip loading uBlock")
     parser.add_argument("--keep-profile", action="store_true", help="Don't delete clone on exit")
+    parser.add_argument("--dev-build", action="store_true", help="Run `npx vite build --mode development` before launch (copies dictionary/frequency seed into dist/seed)")
     args = parser.parse_args()
 
-    # --- 0. Verify extension paths ---
+    # --- 0. Build (optional) and verify extension paths ---
+    project_root = Path(CELL_EXT).parent
+    if args.dev_build:
+        npx = shutil.which("npx") or shutil.which("npx.cmd")
+        if not npx:
+            print("[FAIL] `npx` not found in PATH — cannot run dev build.", flush=True)
+            sys.exit(1)
+        print(f"[..] Running dev build in {project_root} to seed dictionary/frequency assets...", flush=True)
+        result = subprocess.run(
+            [npx, "vite", "build", "--mode", "development"],
+            cwd=project_root,
+            shell=False,
+        )
+        if result.returncode != 0:
+            print("[FAIL] Dev build failed.", flush=True)
+            sys.exit(1)
+        print("[OK] Dev build complete.", flush=True)
     if not Path(CELL_EXT).exists():
         print(f"[FAIL] Cell ext not found at {CELL_EXT} — run 'npm run build' first.", flush=True)
         sys.exit(1)

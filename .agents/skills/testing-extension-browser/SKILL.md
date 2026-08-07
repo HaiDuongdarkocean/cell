@@ -82,10 +82,11 @@ Then: #cell-universal-panel-host shadow children > 2 (popup opened)
 **Purpose:** Ensure `dist/` has the latest code — the script loads from `dist/`, not `src/`.
 
 **Actions:**
-- Run `npx vite build` (or `npm run build`).
-- Confirm `[design-system-showcase]` line appears (build completed).
+- For most tests, run `npx vite build` (or `npm run build`).
+- For tests that need the bundled dictionary/frequency seed (dictionary popup, word status, etc.), run `npx vite build --mode development` instead. Dev mode copies `data/resource/` into `dist/seed/` so the extension auto-seeds without requiring a manual import.
+- Confirm `[design-system-showcase]` or `auto-seed-assets` line appears (build completed).
 
-**Guard:** Build exits 0 + `dist/manifest.json` exists.
+**Guard:** Build exits 0 + `dist/manifest.json` exists (+ `dist/seed/` present when dev build needed).
 
 **Loop back:** Build fails → fix build errors first. Do not launch with a stale build — you will test old code and chase ghosts.
 
