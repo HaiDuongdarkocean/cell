@@ -784,6 +784,82 @@ describe('WebTriggerController', () => {
       document.elementFromPoint = originalElementFromPoint;
       jest.useRealTimers();
     });
+
+    it('hover word → whitespace gap → back to same word does NOT re-lookup', () => {
+      jest.useFakeTimers();
+      const p = document.createElement('p');
+      p.textContent = 'machine learning algorithms';
+      document.body.appendChild(p);
+
+      const textNode = p.firstChild as Text;
+      // "machine" = offset 0-7, "learning" = offset 8-16
+      const machineRange = document.createRange();
+      machineRange.setStart(textNode, 0);
+      machineRange.setEnd(textNode, 7);
+
+      // Mock getClientRects: "machine" is at x=10-70, whitespace at x=70-80,
+      // "learning" at x=80-150. isPointOverRange checks if (x,y) is within
+      // the word's rect. Override the global mock for this test.
+      const originalGetClientRects = Range.prototype.getClientRects;
+      Range.prototype.getClientRects = function(this: Range) {
+        if (this.startOffset === 0 && this.endOffset === 7) {
+          return [new DOMRect(10, 10, 60, 20)] as unknown as DOMRectList; // machine
+        }
+        return [new DOMRect(0, 0, 200, 50)] as unknown as DOMRectList;
+      } as typeof Range.prototype.getClientRects;
+
+      // caretRangeFromPoint: snaps to nearest word char even on whitespace.
+      // At x=75 (whitespace), snaps to "machine" (offset 0).
+      document.caretRangeFromPoint = jest.fn((x: number) => {
+        const range = document.createRange();
+        if (x < 80) {
+          range.setStart(textNode, 0); range.setEnd(textNode, 7); // machine
+        } else {
+          range.setStart(textNode, 8); range.setEnd(textNode, 16); // learning
+        }
+        return range;
+      }) as typeof document.caretRangeFromPoint;
+      document.elementFromPoint = jest.fn(() => null) as typeof document.elementFromPoint;
+
+      let lookupCount = 0;
+      let lastTerm = '';
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover',
+        onLookup: (req) => { lookupCount++; lastTerm = req.term; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      // 1. Hover "machine" at x=40 (within rect 10-70) → lookup fires.
+      const ev1 = new MouseEvent('mousemove', { bubbles: true, clientX: 40, clientY: 15 });
+      Object.defineProperty(ev1, 'target', { value: p });
+      document.dispatchEvent(ev1);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1);
+      expect(lastTerm).toBe('machine');
+
+      // 2. Move to whitespace at x=75 (caret snaps to "machine" but
+      //    isPointOverRange fails — 75 is outside rect 10-70).
+      //    Without the fix: resetHover → clear lastHoveredTerm → onClear.
+      //    With the fix: cancelPendingHover only — popup stays, term kept.
+      const ev2 = new MouseEvent('mousemove', { bubbles: true, clientX: 75, clientY: 15 });
+      Object.defineProperty(ev2, 'target', { value: p });
+      document.dispatchEvent(ev2);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1); // No re-lookup!
+
+      // 3. Move back to "machine" at x=40 → guard matches → no re-lookup.
+      const ev3 = new MouseEvent('mousemove', { bubbles: true, clientX: 40, clientY: 15 });
+      Object.defineProperty(ev3, 'target', { value: p });
+      document.dispatchEvent(ev3);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1); // Still 1 — guard held!
+
+      ctrl.detach();
+      document.body.removeChild(p);
+      Range.prototype.getClientRects = originalGetClientRects;
+      jest.useRealTimers();
+    });
   });
 
   describe('click / modifier fallback', () => {

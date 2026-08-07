@@ -432,13 +432,30 @@ export class WebTriggerController {
       getCaretRange: (cx, cy) => withUiHostsPointerEventsDisabled(() => defaultGetCaretRange(cx, cy)),
     });
     if (!resolved || rangeBlockedForLookup(resolved.range)) {
+      // Pointer left text entirely (or entered a blocked UI zone). If we still
+      // have a hover target, keep the popup visible — the user may move back
+      // to the same word (e.g. crossing a whitespace gap between words).
+      // Only dismiss when there's no active hover target.
+      if (this.lastHoveredTerm !== null) {
+        this.cancelPendingHover();
+        return;
+      }
       this.resetHover();
       return;
     }
     // For hover (non-lenient), gate on geometry so a caret quirk doesn't pop a
     // word the cursor isn't actually over. For a badge tap (lenient), trust the
     // resolution — a tap is intentional, like a click (100% success goal).
+    // BUT: caretRangeFromPoint snaps to the nearest word char even when the
+    // cursor is on whitespace between words. If the geometry gate fails but we
+    // already have a hover target, don't dismiss — the user is likely crossing
+    // a gap and will return to the same (or a nearby) word. Dismissing here
+    // would clear lastHoveredTerm and force a re-lookup on return.
     if (!lenient && !isPointOverRange(x, y, resolved.range)) {
+      if (this.lastHoveredTerm !== null) {
+        this.cancelPendingHover();
+        return;
+      }
       this.resetHover();
       return;
     }
