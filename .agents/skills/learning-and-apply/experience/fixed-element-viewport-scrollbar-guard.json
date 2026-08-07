@@ -4,7 +4,7 @@
   "category": ["css", "ux"],
   "tags": ["fixed", "viewport", "scrollbar", "clientWidth", "innerWidth", "content-edge", "position-fixed", "badge"],
   "trigger": "Phần tử position:fixed đặt ở mép phải dùng window.innerWidth thì bị thanh cuộn dọc che mất một nửa hoặc toàn bộ (đặc biệt khi width/2 < scrollbar width).",
-  "principle": "window.innerWidth bao gồm thanh cuộn, còn document.documentElement.clientWidth là vùng nội dung thực sự. Đặt phần tử fixed ở mép phải nên dùng clientWidth (với fallback innerWidth) để nửa hình tròn hiển thị nằm trong vùn content, không bị thanh cuộn che. Tương tự dùng clientHeight cho mép dưới. Khi thu nhỏ/collapse nên snap lại content edge như một guard.",
+  "principle": "window.innerWidth bao gồm thanh cuộn, còn document.documentElement.clientWidth là vùng nội dung thực sự. Đặt phần tử fixed ở mép phải nên dùng clientWidth (với fallback innerWidth) để nửa hình tròn hiển thị nằm trong vùng content, không bị thanh cuộn che. Tương tự dùng clientHeight cho mép dưới. Khi thu nhỏ/collapse nên snap lại content edge như một guard. QUAN TRỌNG: scrollbar có thể xuất hiện/biến mất SAU khi component đã mount (content load async, SPA navigation) — window 'resize' event KHÔNG fire khi scrollbar xuất hiện (window size không đổi). Phải dùng ResizeObserver trên document.documentElement để phát hiện clientWidth thay đổi và reposition badge về content edge.",
   "cases": [
     {
       "context": "Orbital badge crescent centered at window.innerWidth; on pages with a vertical scrollbar the visible crescent is under the scrollbar or only 1–2 px wide.",
@@ -15,6 +15,11 @@
       "context": "Badge collapsed after being dragged; it may stay in the middle of the page or under the scrollbar.",
       "bad": "setExpanded(false); // leaves badge wherever it was dragged",
       "good": "setExpanded(false);\nif (!expanded) {\n  setBadgeCenter({ x: getClientWidth(), y: getClientHeight() / 2 });\n}"
+    },
+    {
+      "context": "Badge mounted khi page chưa có scrollbar (clientWidth === innerWidth). Sau đó content load → scrollbar xuất hiện → clientWidth giảm, nhưng window 'resize' event không fire (window size không đổi) → badge stuck ở vị trí cũ, bị scrollbar che.",
+      "bad": "window.addEventListener('resize', reposition);\nwindow.addEventListener('orientationchange', reposition);\n// scrollbar appearance không trigger 'resize' → badge stuck behind scrollbar",
+      "good": "window.addEventListener('resize', reposition);\nwindow.addEventListener('orientationchange', reposition);\n// ResizeObserver detects clientWidth change when scrollbar appears/disappears\n// — no 'resize' event fires because window size is unchanged.\nif (typeof ResizeObserver !== 'undefined') {\n  const ro = new ResizeObserver(() => reposition());\n  ro.observe(document.documentElement);\n  return () => ro.disconnect();\n}"
     }
   ],
   "applyFor": ["Fixed overlay badges/buttons at viewport edges", "Content-script UI that must stay visible beside scrollbars", "Any position:fixed element anchored to right/bottom viewport edges"]
