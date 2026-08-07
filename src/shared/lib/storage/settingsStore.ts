@@ -330,13 +330,13 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     merged.dictionaryPopup = { ...defaults, ...(dp ?? {}), popupSheetHeightVh: (dp?.popupSheetHeightVh as number) ?? 72 };
     return merged;
   },
-  // v18 → v19: add play-pause shortcut (default key 'pause'). Additive — existing
+  // v18 → v19: add play-pause shortcut (default key 'space'). Additive — existing
   // users get default binding; customized keyboardShortcuts keep their bindings.
   18: (s) => {
     const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 19 } as Record<string, unknown>;
     const shortcuts = Array.isArray(merged.keyboardShortcuts) ? merged.keyboardShortcuts : [];
     if (!shortcuts.some((sc: { action: string }) => sc.action === 'play-pause')) {
-      merged.keyboardShortcuts = [...shortcuts, { action: 'play-pause', key: 'pause' }];
+      merged.keyboardShortcuts = [...shortcuts, { action: 'play-pause', key: ' ' }];
     }
     return merged;
   },

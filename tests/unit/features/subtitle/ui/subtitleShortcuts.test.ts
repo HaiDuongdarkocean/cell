@@ -35,8 +35,8 @@ describe('handleShortcutKey', () => {
     expect(action).toBe('generate-native');
   });
 
-  it('returns play-pause action when key is "pause"', () => {
-    const action = handleShortcutKey('pause', shortcuts, createDivTarget());
+  it('returns play-pause action when key is " " (spacebar)', () => {
+    const action = handleShortcutKey(' ', shortcuts, createDivTarget());
     expect(action).toBe('play-pause');
   });
 

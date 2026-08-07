@@ -124,8 +124,9 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   // ADR-026: Card Creator entry shortcuts — q quick-update, e edit-card.
   { action: 'quick-update', key: 'q' },
   { action: 'edit-card', key: 'e' },
-  // Play/pause toggle — default key 'pause' (Pause/Break).
-  { action: 'play-pause', key: 'pause' },
+  // Play/pause toggle — default key ' ' (SpaceBar, convention mọi video player).
+  // KeyboardEvent.key cho spacebar = ' ' (space char), không phải 'space'.
+  { action: 'play-pause', key: ' ' },
 ];
 
 // === Default Overlay Style (ADR-013) ===
