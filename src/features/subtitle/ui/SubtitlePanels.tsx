@@ -538,16 +538,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   <Icon name="rotateCcw" size={18} />
                 </IconButton>
               )}
-              <IconButton
-                aria-label={playerMode ? 'Exit player mode' : 'Enter player mode'}
-                title={playerMode ? 'Exit player mode' : 'Enter player mode'}
-                data-cell-id="player-mode-btn"
-                size="sm"
-                onClick={handleTogglePlayerMode}
-                active={playerMode}
-              >
-                <Icon name="pip" size={18} />
-              </IconButton>
               {onToggleManager && (
                 <IconButton
                   aria-label="Open subtitle manager"
@@ -559,6 +549,16 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                   <Icon name="subtitleManager" size={18} />
                 </IconButton>
               )}
+              <IconButton
+                aria-label={playerMode ? 'Exit player mode' : 'Enter player mode'}
+                title={playerMode ? 'Exit player mode' : 'Enter player mode'}
+                data-cell-id="player-mode-btn"
+                size="sm"
+                onClick={handleTogglePlayerMode}
+                active={playerMode}
+              >
+                <Icon name="pip" size={18} />
+              </IconButton>
             </div>
           </div>
         )}
