@@ -313,6 +313,14 @@ export class WebTriggerController {
       this.resetHover();
       return;
     }
+    // Geometry gate: caretRangeFromPoint snaps to the nearest word char even
+    // when the click lands on whitespace/punctuation nearby. Require the click
+    // point to lie within the resolved word's visual rect so only a click
+    // directly on the word triggers lookup — mirrors the hover path's gate.
+    if (!isPointOverRange(e.clientX, e.clientY, resolved.range)) {
+      this.resetHover();
+      return;
+    }
     const request = buildHoverLookupRequestFromContext(resolved.ctx);
     if (!request) {
       this.resetHover();

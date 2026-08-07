@@ -859,6 +859,78 @@ describe('WebTriggerController', () => {
       document.body.removeChild(p);
     });
 
+    it('click near but not on a word does not dispatch lookup (geometry gate)', () => {
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+      const textNode = p.firstChild as Text;
+      // Browser snaps caret to "quick" (offset 4) even though the click is
+      // far from the word's visual rect — simulates caretRangeFromPoint
+      // returning the nearest word char when clicking on whitespace nearby.
+      const mockRange = document.createRange();
+      mockRange.setStart(textNode, 4);
+      mockRange.setEnd(textNode, 4);
+      document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
+
+      // Override getClientRects: word "quick" rect is at (100,100,50,20),
+      // but the click is at (10,10) — clearly not over the word.
+      const savedGetClientRects = Range.prototype.getClientRects;
+      Range.prototype.getClientRects = function () {
+        return [new DOMRect(100, 100, 50, 20)] as unknown as DOMRectList;
+      } as typeof Range.prototype.getClientRects;
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'click',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      const event = new MouseEvent('mouseup', { bubbles: true, clientX: 10, clientY: 10 });
+      Object.defineProperty(event, 'target', { value: p });
+      document.dispatchEvent(event);
+      expect(lookupCount).toBe(0);
+
+      Range.prototype.getClientRects = savedGetClientRects;
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
+    it('click directly on a word rect dispatches lookup (geometry gate passes)', () => {
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+      const textNode = p.firstChild as Text;
+      const mockRange = document.createRange();
+      mockRange.setStart(textNode, 4);
+      mockRange.setEnd(textNode, 4);
+      document.caretRangeFromPoint = jest.fn(() => mockRange) as typeof document.caretRangeFromPoint;
+
+      // Word rect at (40, 5, 50, 20) — click at (50, 10) is inside it.
+      const savedGetClientRects = Range.prototype.getClientRects;
+      Range.prototype.getClientRects = function () {
+        return [new DOMRect(40, 5, 50, 20)] as unknown as DOMRectList;
+      } as typeof Range.prototype.getClientRects;
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'click',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      const event = new MouseEvent('mouseup', { bubbles: true, clientX: 50, clientY: 10 });
+      Object.defineProperty(event, 'target', { value: p });
+      document.dispatchEvent(event);
+      expect(lookupCount).toBe(1);
+
+      Range.prototype.getClientRects = savedGetClientRects;
+      ctrl.detach();
+      document.body.removeChild(p);
+    });
+
     it('click fallback does not dispatch lookup when clicking on the popup or badge host', () => {
       const p = document.createElement('p');
       p.textContent = 'The quick brown fox';
