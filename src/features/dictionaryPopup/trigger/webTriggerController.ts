@@ -180,8 +180,6 @@ export class WebTriggerController {
   private lastHoveredTerm: string | null = null;
   private lastHoveredStartContainer: Node | null = null;
   private lastHoveredStartOffset = -1;
-  private lastHoveredPointerX = NaN;
-  private lastHoveredPointerY = NaN;
 
   constructor(deps: WebTriggerDeps) {
     this.deps = deps;
@@ -211,8 +209,6 @@ export class WebTriggerController {
     this.lastHoveredTerm = null;
     this.lastHoveredStartContainer = null;
     this.lastHoveredStartOffset = -1;
-    this.lastHoveredPointerX = NaN;
-    this.lastHoveredPointerY = NaN;
     this.cancelInFlight();
   }
 
@@ -251,8 +247,6 @@ export class WebTriggerController {
     this.lastHoveredTerm = null;
     this.lastHoveredStartContainer = null;
     this.lastHoveredStartOffset = -1;
-    this.lastHoveredPointerX = NaN;
-    this.lastHoveredPointerY = NaN;
     this.deps.onClear?.();
   }
 
@@ -442,23 +436,23 @@ export class WebTriggerController {
       this.resetHover();
       return;
     }
-    // Skip if we're still over the exact same word occurrence and the pointer
-    // has barely moved (prevents re-triggering while hovering a single word).
-    // Reposition when the same term appears elsewhere so the popup follows the pointer.
-    const pointerDelta = Math.hypot(x - this.lastHoveredPointerX, y - this.lastHoveredPointerY);
+    // Skip if we're still over the exact same word occurrence (same text node +
+    // same start offset = same physical word, not just same term text).
+    // This prevents re-triggering lookup while the pointer moves across a
+    // single word — the previous guard required pointerDelta < 6px, which
+    // failed on long words like "reposition" (60px+ wide) and caused
+    // re-lookup on every mousemove. If term + startContainer + startOffset
+    // all match, it's the same word occurrence — no re-lookup needed.
     if (
       request.term === this.lastHoveredTerm &&
       resolved.range.startContainer === this.lastHoveredStartContainer &&
-      resolved.range.startOffset === this.lastHoveredStartOffset &&
-      pointerDelta < 6
+      resolved.range.startOffset === this.lastHoveredStartOffset
     ) {
       return;
     }
     this.lastHoveredTerm = request.term;
     this.lastHoveredStartContainer = resolved.range.startContainer;
     this.lastHoveredStartOffset = resolved.range.startOffset;
-    this.lastHoveredPointerX = x;
-    this.lastHoveredPointerY = y;
 
     const rect = getLineAwareAnchorRect(resolved.range);
     this.dispatchLookup(request, rect, resolved.range, { x, y, badgeCenter, badgeRadius, pointerRadius });
