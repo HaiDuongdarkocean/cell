@@ -17,6 +17,20 @@
   transition: none;
 }
 
+/* Hover: badge brightens (0.7 → 1.0) — signals interactivity.
+   Press: scale(0.97) — physical press feedback (AUDIT.md §3).
+   Guarded: touch devices fire false hover on tap. */
+@media (hover: hover) and (pointer: fine) {
+  .host.collapsed:hover {
+    opacity: 1;
+  }
+}
+
+.host.collapsed:active {
+  transform: scale(0.97);
+  transition: transform var(--duration-150) var(--ease-standard);
+}
+
 .pointer {
   position: absolute;
   left: 50%;
