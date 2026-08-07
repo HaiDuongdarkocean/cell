@@ -10,9 +10,13 @@ spawns a new Chrome with the same user_data_dir — extensions auto-load from th
 
 Parallel-safe: each run gets unique clone dir. Auto-cleanup on exit.
 
+The nodriver phase is ALWAYS headless — it only reloads extensions into the
+profile, no visible window, no machine slowdown. The MCP spawn_browser phase
+is headed (headless=false) so the user sees the browser UI for testing.
+
 Usage:
   uv run --python 3.11 --with nodriver python -u .agents/skills/testing-extension-browser/script/test-cell-browser.py
-  uv run --python 3.11 --with nodriver python -u .agents/skills/testing-extension-browser/script/test-cell-browser.py --headless --no-ublock
+  uv run --python 3.11 --with nodriver python -u .agents/skills/testing-extension-browser/script/test-cell-browser.py --no-ublock
 
 After this script exits, use MCP with the printed Clone path:
   spawn_browser(user_data_dir="<Clone path>", headless=false, viewport_width=..., viewport_height=...)
@@ -125,7 +129,9 @@ async def load_extension(browser: uc.Browser, ext_path: str, name: str) -> str:
 
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Cell extension loader (nodriver + clone). Launches Chrome with extensions loaded — MCP handles navigation.")
-    parser.add_argument("--headless", action="store_true", help="Run headless (no window)")
+    # Nodriver phase is always headless — it only reloads extensions into the
+    # profile, no visible window, no machine slowdown. MCP spawn_browser is
+    # headed so the user sees the browser UI for testing.
     parser.add_argument("--no-ublock", action="store_true", help="Skip loading uBlock")
     parser.add_argument("--keep-profile", action="store_true", help="Don't delete clone on exit")
     args = parser.parse_args()
@@ -148,11 +154,11 @@ async def main() -> None:
             cleanup_clone(clone_dir)
     atexit.register(_cleanup)
 
-    # --- 2. Spawn browser with clone profile + anti-bot ---
-    print(f"[..] Launching Chrome: profile={clone_dir} headless={args.headless}", flush=True)
+    # --- 2. Spawn browser with clone profile + anti-bot (always headless) ---
+    print(f"[..] Launching Chrome (headless): profile={clone_dir}", flush=True)
     config = uc.Config(
         user_data_dir=str(clone_dir),
-        headless=args.headless,
+        headless=True,
         lang="en-US",
         browser_executable_path=CHROME_EXE,
     )
