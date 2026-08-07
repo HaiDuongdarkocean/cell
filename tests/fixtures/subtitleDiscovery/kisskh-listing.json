@@ -1,8 +1,0 @@
-[
-  { "src": "https://example-cdn.kh/kisskh/en.srt", "label": "English", "land": "en", "default": true },
-  { "src": "https://example-cdn.kh/kisskh/th.srt", "label": "Thai", "land": "th", "default": false },
-  { "src": "https://example-cdn.kh/kisskh/vi.srt", "label": "Vietnamese", "land": "vi", "default": false },
-  { "src": "https://example-cdn.kh/kisskh/ko.srt", "label": "Korean", "land": "ko", "default": false },
-  { "src": "https://example-cdn.kh/kisskh/zh.srt", "label": "Chinese", "land": "zh", "default": false },
-  { "src": "https://example-cdn.kh/kisskh/ja.srt", "label": "Japanese", "land": "ja", "default": false }
-]

@@ -7,17 +7,29 @@
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #000;
+  background: var(--color-overlay-background);
   z-index: var(--z-overlay-settings);
   pointer-events: none;
   container-type: inline-size;
+}
+
+/* Split — wraps video-stage + content. Flex:1 fills space above dock.
+   >480px: row (video left, content right, resizable).
+   <480px: column (video top, content bottom — mobile stack). */
+.split {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
 }
 
 /* Video stage — canvas draws host video frames here. */
 .videoStage {
   flex: 0 0 auto;
   width: 100%;
-  background: #000;
+  background: var(--color-overlay-background);
   pointer-events: none;
 }
 
@@ -27,14 +39,89 @@
   height: 100%;
 }
 
-/* Content other — solid black, blocks host overlays and clicks.
-   Expansion area for dictionary sheet. */
+/* Content other — CueList / dictionary sheet.
+   <480px: fills remaining vertical space. */
 .contentOther {
   flex: 1 1 0;
   min-height: 0;
   width: 100%;
-  background: #000;
+  background: var(--color-surface);
   pointer-events: auto;
+  overflow: hidden;
+}
+
+/* Resize handle — hidden on mobile (<480px), visible on >480px. */
+.resizeHandle {
+  display: none;
+}
+
+/* CueList wrapper — fills contentOther, scrollable. */
+.cueListWrap {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* === Split layout: >480px (desktop/tablet) === */
+@media (min-width: 480px) {
+  .split {
+    flex-direction: row;
+  }
+
+  /* Video stage: fills remaining width (1 - content-pct). */
+  .videoStage {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100% !important; /* override inline height from geometry */
+  }
+
+  /* Resize handle: vertical bar between video and content. */
+  .resizeHandle {
+    display: block;
+    flex: 0 0 auto;
+    width: 6px;
+    height: 100%;
+    background: var(--color-border);
+    cursor: col-resize;
+    pointer-events: auto;
+    touch-action: none;
+    position: relative;
+    z-index: 1;
+    transition: background var(--transition);
+  }
+
+  .resizeHandle:hover,
+  .resizeHandle:active {
+    background: var(--color-primary);
+  }
+
+  /* Visible grip dots on the handle. */
+  .resizeHandle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 24px;
+    background: var(--color-text-secondary);
+    border-radius: var(--radius-full);
+    opacity: 0.5;
+  }
+
+  .resizeHandle:hover::before,
+  .resizeHandle:active::before {
+    opacity: 1;
+  }
+
+  /* Content: fixed width % (default 30%, user-resizable 20-60%). */
+  .contentOther {
+    flex: 0 0 var(--content-pct, 30%);
+    min-width: 200px;
+    max-width: 60%;
+    height: 100% !important; /* override inline height from geometry */
+  }
 }
 
 /* Player Action Dock — fixed at bottom, always visible.
@@ -100,6 +187,17 @@
 .actionArea :global([role='button']) {
   min-width: var(--touch-target-mobile, 44px);
   min-height: var(--touch-target-mobile, 44px);
+}
+
+/* Player Mode icon size: override NavCluster/SubtitlePanels --cluster-icon-size
+   clamp (max 20px) which is too small for 44px touch-target buttons.
+   24px/44px ≈ 55% ratio — matches normal mode's 20px/34px ≈ 59%. */
+.dock .navArea :global(button) :global(span),
+.dock .navArea :global([role='button']) :global(span),
+.dock .actionArea :global(button) :global(span),
+.dock .actionArea :global([role='button']) :global(span) {
+  width: 24px !important;
+  height: 24px !important;
 }
 
 /* Subtitle text: readable in dock, prevent overflow on long lines. */

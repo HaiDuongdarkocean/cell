@@ -11,21 +11,27 @@ interface CueListProps {
   onSeek: (timeMs: number) => void;
 }
 
-function formatTimestamp(ms: number): string {
+// Human-friendly timestamp: drop leading zeros + millisecond noise.
+// < 1h → M:SS (1:28), ≥ 1h → H:MM:SS (1:28:27). YouTube mental model.
+function formatTimestamp(ms: number, hasHours: boolean): string {
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
-  const millis = ms % 1000;
   const pad = (n: number) => n.toString().padStart(2, '0');
-  const msStr = millis > 0 ? `.${String(millis).padStart(3, '0')}` : '';
-  return `${pad(h)}:${pad(m)}:${pad(s)}${msStr}`;
+  return hasHours ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
 export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const highlightedRef = useRef<number | null>(null);
+
+  // ponytail: infer hasHours from last cue end - offset (displayed max). O(1).
+  // Edge case: offset shift could push an earlier cue's display ≥ 1h while last
+  // is < 1h — rare; upgrade path: track max displayed time explicitly.
+  const lastEnd = cues.length > 0 ? cues[cues.length - 1].end : 0;
+  const hasHours = lastEnd - offsetMs >= 3_600_000;
 
   // ADR-019 sync: highlight cue at effective time so the highlighted cue
   // matches the overlay (which finds cues at currentTime + offsetMs).
@@ -70,6 +76,7 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
             <span
               data-cell-id="cue-timestamp"
               data-cue-index={cue.index}
+              data-no-lookup
               onClick={() => onSeek(cue.start)}
               className={styles.timestamp}
             >
@@ -77,16 +84,18 @@ export function CueList({ cues, currentTimeMs, offsetMs = 0, onSeek }: CueListPr
                   list shows the VIDEO time at which this cue will display
                   (matches overlay + highlight). onSeek still sends raw
                   cue.start; SEEK_TO handler subtracts offset. */}
-              {formatTimestamp(cue.start - offsetMs)}
+              {formatTimestamp(cue.start - offsetMs, hasHours)}
             </span>
-            <div data-cell-id="cue-target-text" className={styles.targetText}>
-              {cue.targetText}
-            </div>
-            {cue.nativeText && (
-              <div data-cell-id="cue-native-text" className={styles.nativeText}>
-                {cue.nativeText}
+            <div className={styles.text}>
+              <div data-cell-id="cue-target-text" className={styles.targetText}>
+                {cue.targetText}
               </div>
-            )}
+              {cue.nativeText && (
+                <div data-cell-id="cue-native-text" className={styles.nativeText}>
+                  {cue.nativeText}
+                </div>
+              )}
+            </div>
           </div>
         );
       })}

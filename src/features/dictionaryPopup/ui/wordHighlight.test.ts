@@ -36,7 +36,7 @@ describe('WordHighlight', () => {
     expect(span.classList.contains('js-cell-word-highlight')).toBe(false);
   });
 
-  it('DOM wrap mode: wraps continuous range in <mark>', () => {
+  it('DOM wrap mode: wraps continuous range in <span>', () => {
     const p = document.createElement('p');
     p.textContent = 'The quick brown fox';
     document.body.appendChild(p);
@@ -48,7 +48,7 @@ describe('WordHighlight', () => {
 
     highlight.show(range);
 
-    const mark = document.querySelector('mark.js-cell-word-highlight');
+    const mark = document.querySelector('span.js-cell-word-highlight');
     expect(mark).not.toBeNull();
     expect(mark!.textContent).toBe('quick');
   });
@@ -66,7 +66,7 @@ describe('WordHighlight', () => {
     highlight.show(range);
     highlight.clear();
 
-    expect(document.querySelector('mark.js-cell-word-highlight')).toBeNull();
+    expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
     // Text content should be restored.
     expect(p.textContent).toBe('The quick brown fox');
   });
@@ -99,7 +99,7 @@ describe('WordHighlight', () => {
 
     highlight.show(range2);
 
-    const mark = document.querySelector('mark.js-cell-word-highlight');
+    const mark = document.querySelector('span.js-cell-word-highlight');
     expect(mark).not.toBeNull();
     expect(mark!.textContent).toBe('world');
   });
@@ -125,10 +125,9 @@ describe('WordHighlight', () => {
 
     highlight.show(range);
 
-    // surroundContents should throw → fallback to extractContents or overlay.
-    // If extractContents succeeds, we get a <mark>. If not, we get overlay divs.
+    // surroundContents should throw → fallback to overlay divs.
     // Either way, something should be highlighted.
-    const hasMark = document.querySelector('mark.js-cell-word-highlight');
+    const hasMark = document.querySelector('span.js-cell-word-highlight');
     const hasOverlay = document.querySelector('.js-cell-word-highlight-overlay');
 
     expect(hasMark !== null || hasOverlay !== null).toBe(true);
@@ -184,7 +183,7 @@ describe('WordHighlight', () => {
     highlight.destroy();
 
     expect(document.getElementById('cell-word-highlight-style')).toBeNull();
-    expect(document.querySelector('mark.js-cell-word-highlight')).toBeNull();
+    expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
   });
 
   it('show replaces previous highlight (no accumulation)', () => {
@@ -210,7 +209,7 @@ describe('WordHighlight', () => {
 
     highlight.show(range2);
 
-    const marks = document.querySelectorAll('mark.js-cell-word-highlight');
+    const marks = document.querySelectorAll('span.js-cell-word-highlight');
     expect(marks.length).toBe(1);
     expect(marks[0]!.textContent).toBe('two');
   });

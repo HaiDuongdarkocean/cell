@@ -6,16 +6,17 @@ import manifest from './public/manifest.json' with { type: 'json' };
 
 /**
  * Auto-seed assets — copies the default dictionary + frequency files from
- * `tests/data-test/resource/` into `dist/seed/` during every `vite build`.
+ * `data/resource/` into `dist/seed/` during every `vite build`.
  * Only the 2 files referenced by SEED_FILES in devSeed.ts are copied (~42.7MB)
  * so the extension works out-of-the-box without requiring user import.
  * Extension fetches via `chrome.runtime.getURL('seed/...')` — same origin, no CSP needed.
  *
  * SSOT: the file list below MUST match SEED_FILES in src/features/dictionary/logic/devSeed.ts.
+ * Fallback to `tests/data-test/resource/` for environments that have not migrated to `data/` yet.
  */
 const SEED_ASSET_FILES: readonly string[] = [
   'en/dictionary/CambridgeV1_0_20260121_1628_20260325_1617.json',
-  'en/frequency_list/standard.json',
+  'en/frequency/standard.json',
 ] as const;
 
 function designSystemShowcase(): Plugin {
@@ -70,7 +71,9 @@ function autoSeedAssets(mode: string): Plugin {
   // Dev builds (`npx vite build --mode development`) keep seeds so the
   // extension works out-of-the-box when loaded from `dist/`.
   if (mode !== 'development') return { name: 'auto-seed-assets' };
-  const seedRoot = resolve(__dirname, 'tests', 'data-test', 'resource');
+  const primaryRoot = resolve(__dirname, 'data', 'resource');
+  const fallbackRoot = resolve(__dirname, 'tests', 'data-test', 'resource');
+  const seedRoot = existsSync(primaryRoot) ? primaryRoot : fallbackRoot;
   return {
     name: 'auto-seed-assets',
     apply: 'build',

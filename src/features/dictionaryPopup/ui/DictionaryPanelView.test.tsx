@@ -106,6 +106,31 @@ describe('DictionaryPanelView', () => {
     }));
   });
 
+  it('shows a candidate skeleton with the term in the header while loading', () => {
+    // Force loading state without a result — simulates the instant-feedback
+    // window between popup mount and the lookup response.
+    mockSendMessage.mockImplementation(async () => new Promise(() => {}));
+
+    render(
+      <DictionaryPanelView
+        langCode="en"
+        sourceLang="en"
+        targetLang="vi"
+        initialTerm="serendipity"
+        isLoading
+        isOpen
+      />,
+    );
+
+    const skeleton = screen.getByTestId('dictionary-candidate-skeleton');
+    expect(skeleton).toBeInTheDocument();
+    expect(skeleton).toHaveAttribute('aria-busy', 'true');
+    // Header shows the real term immediately — instant feedback.
+    expect(screen.getByTestId('dictionary-term')).toHaveTextContent('serendipity');
+    // No candidate data yet.
+    expect(screen.queryByTestId('dictionary-candidate-0')).not.toBeInTheDocument();
+  });
+
   it('renders an error when lookup fails', async () => {
     mockSendMessage.mockImplementation(async <T = unknown>(): Promise<T> => ({ success: false, error: 'lookup failed' } as T));
 
@@ -224,5 +249,39 @@ describe('DictionaryPanelView', () => {
 
     await waitFor(() => expect(chip).toHaveAttribute('aria-current', 'true'));
     expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
+  });
+
+  it('scrolls the candidate into view when the panel is mounted inside a Shadow DOM (popup variant)', async () => {
+    // Reproduces the real popup mount: DictionaryPanelView lives inside a
+    // shadow root, so document.getElementById cannot reach candidates.
+    // The fix uses containerRef.querySelector which stays inside the shadow tree.
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const shadow = host.attachShadow({ mode: 'open' });
+
+    render(
+      <DictionaryPanelView
+        langCode="en"
+        sourceLang="en"
+        targetLang="vi"
+        initialTerm="hello"
+        isOpen
+        variant="popup"
+      />,
+      { container: shadow as unknown as HTMLElement },
+    );
+
+    // Candidate elements live inside the shadow root, NOT in document.
+    await waitFor(() => expect(shadow.querySelector('[data-cell-id="dictionary-candidate-0"]')).not.toBeNull());
+    expect(document.getElementById('dictionary-candidate-0')).toBeNull();
+
+    const chip = shadow.querySelector('[data-cell-id="dictionary-candidate-chip-1"]') as HTMLElement;
+    expect(chip).not.toBeNull();
+    fireEvent.click(chip);
+
+    await waitFor(() => expect(chip).toHaveAttribute('aria-current', 'true'));
+    expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
+
+    document.body.removeChild(host);
   });
 });

@@ -4,7 +4,7 @@
 // - Lives in content-script top-level and inside subtitle overlay controller.
 // - Owns one WebTriggerController for web-text (document-level hover/click).
 // - Receives SubtitleTriggerController callbacks for subtitle token lookup.
-// - Owns WordHighlight to mark the target word/token and its sentence.
+// - Owns WordHighlight to mark the target word/token.
 // - Delegates popup rendering to popupDictionaryController.
 // - Handles Card Creator / Quick Add actions from the popup.
 
@@ -35,13 +35,11 @@ import {
 } from '../ui/mountPopupDictionary';
 import { WebTriggerController, type WebTriggerPointer } from '@/features/dictionaryPopup/trigger/webTriggerController';
 import {
-  extractSentenceContext,
   extractWordAtOffset,
-  createSentenceRange,
   WORD_CHAR_RE,
 } from '@/features/dictionaryPopup/sentence/sentenceModule';
 import { nextRequestId } from '@/features/dictionaryPopup/trigger/subtitleTriggerController';
-import { createWordHighlight, createSentenceHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
+import { createWordHighlight, type HighlightTarget } from '@/features/dictionaryPopup/ui/wordHighlight';
 import { type PointerPreset } from '@/features/dictionaryPopup/badgePointer/pointerPosition';
 import { mountOrbitalBadge, type OrbitalBadgeMountController } from '@/features/dictionaryPopup/ui/mountOrbitalBadge';
 
@@ -227,7 +225,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
   let popupMount: PopupDictionaryMountController | null = null;
   let popupDictWasPlaying = false;
   const wordHighlight = createWordHighlight();
-  const sentenceHighlight = createSentenceHighlight();
 
   // Bounded in-memory lookup cache. Key = `${langCode}:${term.toLowerCase()}`.
   // Capacity scales with device memory (low-end: 50, high-end: 250) to avoid
@@ -324,6 +321,10 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
    *  can restore it when switching from a phrase candidate back to a single
    *  word candidate. */
   let originalHighlightTarget: HighlightTarget | null = null;
+  /** Web-text phrase anchor: parent element + word offset before the highlight
+   *  DOM wrap splits the text node. Used to re-expand the full phrase after the
+   *  single-word highlight is rendered. */
+  let highlightAnchor: { parent: Element; wordStart: number } | null = null;
   let currentPopupTokenId: { term: string; start: string; blockId: string } | null = null;
   let currentRequestId: string | null = null;
   let popupDismissTimer: ReturnType<typeof setTimeout> | null = null;
@@ -334,7 +335,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
 
   function clearHighlight(): void {
     wordHighlight.clear();
-    sentenceHighlight.clear();
   }
 
   /** Expand or restore the word highlight to match the given term.
@@ -347,13 +347,21 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
    *  Called after renderLookupResult (winner) and on candidate switch. */
   function expandHighlightForTerm(term: string): void {
     if (!originalHighlightTarget) return;
+
+    // Always clear the current highlight before computing the new range.
+    // The original range is mutated by wordHighlight.show's surroundContents
+    // (the text node gets split and wrapped), so ranges must be recreated from
+    // the highlight anchor after the DOM is restored.
+    wordHighlight.clear();
+
     const isPhrase = term.includes(' ');
     if (!isPhrase) {
-      // Single word — restore original highlight.
-      currentHighlightTarget = originalHighlightTarget;
-      wordHighlight.show(originalHighlightTarget);
+      currentHighlightTarget = (highlightAnchor && createPhraseRangeFromAnchor(highlightAnchor, term))
+        || originalHighlightTarget;
+      wordHighlight.show(currentHighlightTarget);
       return;
     }
+
     // Phrase — try to create a Range covering the full phrase.
     const phraseRange = createPhraseRange(originalHighlightTarget, term);
     if (phraseRange) {
@@ -370,6 +378,9 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
    *  original highlight target (single word). Returns null if the phrase
    *  cannot be found in the DOM near the original word. */
   function createPhraseRange(original: HighlightTarget, phrase: string): Range | null {
+    if (highlightAnchor) {
+      return createPhraseRangeFromAnchor(highlightAnchor, phrase);
+    }
     if (original instanceof Range) {
       return createPhraseRangeFromTextRange(original, phrase);
     }
@@ -410,6 +421,78 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
           return range;
         } catch { return null; }
       }
+    }
+    return null;
+  }
+
+  /** Compute the character offset of `offset` inside `textNode` relative to
+   *  `parent`'s full textContent. Sums text-node siblings that come first. */
+  function computeTextOffset(parent: Element, textNode: Node, offset: number): number {
+    let total = 0;
+    const walker = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode()) !== null) {
+      if (node === textNode) return total + offset;
+      total += node.textContent?.length ?? 0;
+    }
+    return total;
+  }
+
+  /** Web text path after the single-word highlight has been wrapped: the parent
+   *  element still contains the full sentence text, so search it and build a
+   *  Range that may span multiple split Text nodes. */
+  function createPhraseRangeFromAnchor(
+    anchor: { parent: Element; wordStart: number },
+    phrase: string,
+  ): Range | null {
+    const { parent, wordStart } = anchor;
+    const parentText = parent.textContent ?? '';
+    const lowerPhrase = phrase.toLowerCase();
+    const lowerParentText = parentText.toLowerCase();
+
+    let phraseStart = -1;
+    if (lowerParentText.startsWith(lowerPhrase, wordStart)) {
+      phraseStart = wordStart;
+    } else {
+      const maxBack = Math.min(wordStart, phrase.length * 2);
+      for (let back = 1; back <= maxBack; back++) {
+        const start = wordStart - back;
+        if (lowerParentText.startsWith(lowerPhrase, start)) {
+          phraseStart = start;
+          break;
+        }
+      }
+    }
+    if (phraseStart === -1) return null;
+
+    const phraseEnd = phraseStart + phrase.length;
+    const range = document.createRange();
+    const walker = document.createTreeWalker(parent, NodeFilter.SHOW_TEXT);
+    let currentOffset = 0;
+    let startSet = false;
+    let node;
+    while ((node = walker.nextNode()) !== null) {
+      const nodeText = node.textContent ?? '';
+      const nodeLen = nodeText.length;
+      const nodeStart = currentOffset;
+      const nodeEnd = currentOffset + nodeLen;
+      if (!startSet && phraseStart >= nodeStart && phraseStart < nodeEnd) {
+        try {
+          range.setStart(node, phraseStart - nodeStart);
+          startSet = true;
+        } catch {
+          return null;
+        }
+      }
+      if (startSet && phraseEnd > nodeStart && phraseEnd <= nodeEnd) {
+        try {
+          range.setEnd(node, phraseEnd - nodeStart);
+          return range;
+        } catch {
+          return null;
+        }
+      }
+      currentOffset += nodeLen;
     }
     return null;
   }
@@ -560,8 +643,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     clearPopupTokenId();
     currentHighlightTarget = null;
     originalHighlightTarget = null;
+    highlightAnchor = null;
     wordHighlight.clear();
-    sentenceHighlight.clear();
     resumeVideoIfNeeded();
     popupDictWasPlaying = false;
   }
@@ -572,8 +655,8 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     clearPopupTokenId();
     currentHighlightTarget = null;
     originalHighlightTarget = null;
+    highlightAnchor = null;
     wordHighlight.clear();
-    sentenceHighlight.clear();
     resumeVideoIfNeeded();
     popupDictWasPlaying = false;
   }
@@ -706,10 +789,14 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
       applyTokenStatus(token, result.status);
     }
 
-    // Expand highlight if the winner is a phrase (e.g. "pick up"). The
-    // original highlight covers only the single word the user hovered;
-    // this extends it to cover the full matched phrase.
-    expandHighlightForTerm(result.term);
+    // Expand highlight if the winner is a phrase (e.g. "pick up" or the
+    // detectedPhrase surface "machine learning"). The original highlight covers
+    // only the single word the user hovered; this extends it to cover the full
+    // matched phrase. Prefer the detected surface when it is a phrase; otherwise
+    // fall back to the dictionary term (which may be a multi-word headword).
+    const surface = result.detectedPhrase?.surface;
+    const phraseTerm = surface && surface.includes(' ') ? surface : result.term;
+    expandHighlightForTerm(phraseTerm);
     prefetchAdjacentTerms(request);
   }
 
@@ -735,42 +822,20 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     currentRequestId = requestId;
     currentHighlightTarget = highlightTarget;
     originalHighlightTarget = highlightTarget;
-    wordHighlight.show(highlightTarget);
-
-    // Show the sentence containing the looked-up word. For web text the
-    // highlight target is a Range anchored in a Text node. For tokenized page
-    // text the range may be anchored in the token's word element, so we find
-    // the first Text child. Subtitle element targets have no page DOM sentence
-    // to highlight and are skipped.
-    let sentenceTextNode: Text | null = null;
-    let sentenceTextOffset = 0;
-    if (highlightTarget instanceof Range) {
-      if (highlightTarget.startContainer instanceof Text) {
-        sentenceTextNode = highlightTarget.startContainer;
-        sentenceTextOffset = highlightTarget.startOffset;
+    if (highlightTarget instanceof Range && highlightTarget.startContainer instanceof Text) {
+      const parent = highlightTarget.startContainer.parentElement;
+      if (parent) {
+        highlightAnchor = {
+          parent,
+          wordStart: computeTextOffset(parent, highlightTarget.startContainer, highlightTarget.startOffset),
+        };
       } else {
-        const child = highlightTarget.startContainer.childNodes[highlightTarget.startOffset];
-        if (child?.firstChild instanceof Text) {
-          sentenceTextNode = child.firstChild;
-          sentenceTextOffset = 0;
-        }
-      }
-    }
-    if (sentenceTextNode) {
-      const ctx = extractSentenceContext(sentenceTextNode, sentenceTextOffset);
-      if (ctx) {
-        const sentenceRange = createSentenceRange(sentenceTextNode, sentenceTextOffset, ctx);
-        if (sentenceRange) {
-          sentenceHighlight.show(sentenceRange);
-        } else {
-          sentenceHighlight.clear();
-        }
-      } else {
-        sentenceHighlight.clear();
+        highlightAnchor = null;
       }
     } else {
-      sentenceHighlight.clear();
+      highlightAnchor = null;
     }
+    wordHighlight.show(highlightTarget);
 
     const token = getTokenElement(highlightTarget);
     if (token) {
@@ -1428,7 +1493,6 @@ export function createWebTextDictionaryController(deps: WebTextDictionaryControl
     cardCreatorMount?.unmount();
     cardCreatorMount = null;
     wordHighlight.destroy();
-    sentenceHighlight.destroy();
     lookupCache.clear();
   }
 

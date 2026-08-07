@@ -112,4 +112,46 @@ describe('mountPopupDictionary', () => {
 
     badge.remove();
   });
+
+  it('does not close on outside click when dismissOnOutsideClick is false (sheet mode)', () => {
+    const onClose = jest.fn();
+    const controller = mountPopupDictionary({
+      anchor: defaultAnchor,
+      langCode: 'en',
+      sourceLang: 'en',
+      targetLang: 'vi',
+      onClose,
+      dismissOnOutsideClick: false,
+    });
+
+    document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+
+    controller.destroy();
+  });
+
+  it('updates term/context via setOptions without re-mounting', () => {
+    const controller = mountPopupDictionary({
+      anchor: defaultAnchor,
+      langCode: 'en',
+      sourceLang: 'en',
+      targetLang: 'vi',
+      initialTerm: 'hello',
+      contextSentence: 'hello world',
+    });
+
+    // setOptions with new term/context should not throw and should keep host.
+    controller.setOptions({
+      initialTerm: 'world',
+      contextSentence: 'world peace',
+      cursorOffset: 5,
+      sourceLang: 'en',
+      targetLang: 'vi',
+    });
+
+    expect(document.querySelector('.js-cell-popup-host')).not.toBeNull();
+    controller.destroy();
+  });
 });

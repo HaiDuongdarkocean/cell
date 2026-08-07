@@ -2,9 +2,10 @@
 // into a bottom Player Action Dock while keeping the host video visible above.
 // See tasks/plan.md for the layout contract.
 
-import { memo, useEffect, useRef, useState } from 'react';
-import type { NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
+import { memo, useEffect, useRef, useState, useCallback } from 'react';
+import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
+import { CueList } from '@/entrypoints/sidepanel/components/CueList';
 import { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
@@ -63,6 +64,14 @@ export interface PlayerModeOverlayProps {
   onToggleCollapsed: () => void;
   /** Exit Player Mode. */
   onExit: () => void;
+  /** Bilingual cues for CueList display in player-mode-content. */
+  cues?: BilingualCue[];
+  /** Current video time in milliseconds (for CueList highlight). */
+  currentTimeMs?: number;
+  /** Subtitle offset in ms (ADR-019 sync — highlight at currentTime + offset). */
+  offsetMs?: number;
+  /** Seek video to timeMs when user clicks a cue in the list. */
+  onSeek?: (timeMs: number) => void;
 }
 
 function PlayerModeOverlayInner({
@@ -93,10 +102,19 @@ function PlayerModeOverlayInner({
   onPlayPause,
   onToggleCollapsed,
   onExit,
+  cues,
+  currentTimeMs,
+  offsetMs,
+  onSeek,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [cueListOpen, setCueListOpen] = useState(false);
+  // Content panel width % in split layout (>480px). Default 30%. Clamp 20-60%.
+  const [contentPct, setContentPct] = useState(30);
   const rafRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const splitRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef<{ startX: number; startPct: number; splitWidth: number } | null>(null);
 
   useEffect(() => {
     const onResize = (): void => {
@@ -121,6 +139,12 @@ function PlayerModeOverlayInner({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    // SSOT: read --color-overlay-background token once (canvas 2D can't use var()).
+    const overlayEl = canvas.closest('[data-cell-id="player-mode-overlay"]') as HTMLElement | null;
+    const letterboxColor =
+      overlayEl
+        ? getComputedStyle(overlayEl).getPropertyValue('--color-overlay-background').trim() || '#000'
+        : '#000';
     let rafId = 0;
     const draw = (): void => {
       const video = document.querySelector('video');
@@ -145,7 +169,7 @@ function PlayerModeOverlayInner({
           dx = (stageW - dw) / 2;
           dy = 0;
         }
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = letterboxColor;
         ctx.fillRect(0, 0, stageW, stageH);
         ctx.drawImage(video, dx, dy, dw, dh);
       }
@@ -166,14 +190,58 @@ function PlayerModeOverlayInner({
 
   useEffect(() => {
     const onWindowKeyDown = (e: KeyboardEvent): void => {
-      if (e.key !== 'Escape') return;
-      e.preventDefault();
-      e.stopPropagation();
-      onExit();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (cueListOpen) {
+          setCueListOpen(false);
+        } else {
+          onExit();
+        }
+      }
+      // Context-aware T: in Player Mode, toggle CueList instead of Chrome side panel.
+      if (e.key.toLowerCase() === 't' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setCueListOpen((v) => !v);
+      }
     };
     window.addEventListener('keydown', onWindowKeyDown);
     return () => window.removeEventListener('keydown', onWindowKeyDown);
-  }, [onExit]);
+  }, [onExit, cueListOpen]);
+
+  // Resize drag: content panel width % in split layout (>480px).
+  // Drag handle is on the left border of content (between video and content).
+  // K kéo phải → content rộng hơn; kéo trái → content hẹp hơn.
+  const onResizePointerDown = useCallback((e: React.PointerEvent): void => {
+    e.preventDefault();
+    const split = splitRef.current;
+    if (!split) return;
+    dragState.current = {
+      startX: e.clientX,
+      startPct: contentPct,
+      splitWidth: split.getBoundingClientRect().width,
+    };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [contentPct]);
+
+  const onResizePointerMove = useCallback((e: React.PointerEvent): void => {
+    const ds = dragState.current;
+    if (!ds || ds.splitWidth <= 0) return;
+    // Content is on the right. Dragging left (negative delta) → content wider.
+    // deltaPct = -(deltaX / splitWidth) * 100
+    const deltaPx = e.clientX - ds.startX;
+    const deltaPct = -(deltaPx / ds.splitWidth) * 100;
+    const next = Math.min(Math.max(ds.startPct + deltaPct, 20), 60);
+    setContentPct(next);
+  }, []);
+
+  const onResizePointerUp = useCallback((e: React.PointerEvent): void => {
+    dragState.current = null;
+    try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* noop */ }
+  }, []);
 
   return (
     <div
@@ -182,23 +250,49 @@ function PlayerModeOverlayInner({
       role="application"
       aria-label="Player mode"
     >
-      {/* Video stage — canvas draws host video frames. Overlay bg black
-          covers host completely; canvas shows video content on top. */}
-      <div
-        className={styles.videoStage}
-        style={{ height: `${layout.videoStageHeight}px` }}
-        data-cell-id="player-mode-video-stage"
-        aria-hidden="true"
-      >
-        <canvas ref={canvasRef} className={styles.videoCanvas} />
-      </div>
+      {/* Player Mode split — video-stage + content.
+          >480px: row (video left, content right, resizable).
+          <480px: column (video top, content bottom). */}
+      <div className={styles.split} ref={splitRef} data-cell-id="player-mode-split">
+        <div
+          className={styles.videoStage}
+          style={{ height: `${layout.videoStageHeight}px` }}
+          data-cell-id="player-mode-video-stage"
+          aria-hidden="true"
+        >
+          <canvas ref={canvasRef} className={styles.videoCanvas} />
+        </div>
 
-      {/* Content other — empty V1, expansion area for dictionary sheet */}
-      <div
-        className={styles.contentOther}
-        style={{ height: `${layout.contentOtherHeight}px` }}
-        data-cell-id="content-khac"
-      />
+        {/* Resize handle — only visible >480px (CSS controls display). */}
+        <div
+          className={styles.resizeHandle}
+          onPointerDown={onResizePointerDown}
+          onPointerMove={onResizePointerMove}
+          onPointerUp={onResizePointerUp}
+          onPointerCancel={onResizePointerUp}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize subtitle list"
+          tabIndex={0}
+        />
+
+        <div
+          className={styles.contentOther}
+          style={{ '--content-pct': `${contentPct}%` } as React.CSSProperties}
+          data-cell-id="player-mode-content"
+        >
+          {cueListOpen && cues && cues.length > 0 && onSeek && (
+            <div className={styles.cueListWrap}>
+              <CueList
+                cues={cues}
+                currentTimeMs={currentTimeMs ?? 0}
+                offsetMs={offsetMs}
+                onSeek={onSeek}
+              />
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Player Action Dock — fixed at bottom, always visible */}
       <div
@@ -249,7 +343,7 @@ function PlayerModeOverlayInner({
                 data-cell-id="subtitle-tools-extra"
               >
                 {onToggleSidePanel && (
-                  <IconButton aria-label="Toggle subtitle side panel" title="Toggle side panel (T)" data-cell-id="panel-toggle-btn" size="sm" onClick={onToggleSidePanel}>
+                  <IconButton aria-label="Toggle subtitle list" title="Toggle subtitle list (T)" data-cell-id="panel-toggle-btn" size="sm" onClick={() => setCueListOpen((v) => !v)}>
                     <Icon name="sidePanel" size={18} />
                   </IconButton>
                 )}

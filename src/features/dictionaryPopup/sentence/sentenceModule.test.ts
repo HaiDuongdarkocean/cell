@@ -5,7 +5,6 @@ import {
   extractWordAtOffset,
   extractSentenceContext,
   createWordRange,
-  createSentenceRange,
   resolveWordAtPoint,
 } from './sentenceModule';
 
@@ -175,44 +174,6 @@ describe('createWordRange', () => {
     // Pass a bogus offsetInNode that would make nodeStart negative.
     const range = createWordRange(textNode, 100, ctx);
     expect(range).toBeNull();
-  });
-});
-
-describe('createSentenceRange', () => {
-  it('creates a Range covering the full sentence in one text node', () => {
-    const p = document.createElement('p');
-    p.textContent = 'The ocean is vast. The sky is blue.';
-    document.body.appendChild(p);
-    const textNode = p.firstChild as Text;
-    const ctx = extractSentenceContext(textNode, 4)!;
-    const range = createSentenceRange(textNode, 4, ctx);
-    expect(range).not.toBeNull();
-    // sentenceEnd includes the trailing whitespace consumed by the boundary.
-    expect(range!.toString()).toBe('The ocean is vast. ');
-  });
-
-  it('creates a Range spanning multiple inline text nodes', () => {
-    const p = document.createElement('p');
-    p.innerHTML = 'The <b>ocean</b> is vast.';
-    document.body.appendChild(p);
-    const b = p.querySelector('b')!;
-    const textNode = b.firstChild as Text;
-    const ctx = extractSentenceContext(textNode, 2)!;
-    const range = createSentenceRange(textNode, 2, ctx);
-    expect(range).not.toBeNull();
-    expect(range!.toString()).toBe('The ocean is vast.');
-  });
-
-  it('returns null for a mismatched block element', () => {
-    const p = document.createElement('p');
-    p.textContent = 'The ocean is vast.';
-    document.body.appendChild(p);
-    const ctx = extractSentenceContext(p.firstChild as Text, 4)!;
-    // Move text node into a different block.
-    const other = document.createElement('div');
-    other.appendChild(p.firstChild as Text);
-    document.body.appendChild(other);
-    expect(createSentenceRange(other.firstChild as Text, 4, ctx)).toBeNull();
   });
 });
 

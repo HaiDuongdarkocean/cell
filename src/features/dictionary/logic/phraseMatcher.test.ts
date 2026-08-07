@@ -1,8 +1,10 @@
 import {
   matchPhrase,
+  matchPhraseAll,
   tokenizeSentence,
   type PhraseMatchRequest,
 } from '@/features/dictionary/logic/phraseMatcher';
+import type { MatchTraceData } from '@/features/dictionaryPopup/log/lookupLogTypes';
 import {
   compilePhraseIndex,
   type PhraseIndexInput,
@@ -491,6 +493,75 @@ describe('phraseMatcher', () => {
       const index = buildIndex(['kick the bucket']);
       const m = matchPhrase(req('Hello world.', 'hello'), index);
       expect(m).toBeNull();
+    });
+  });
+
+  describe('matchPhraseAll — traceSink (dev logging)', () => {
+    it('emits trace with candidate states + ranking when phrase matches', () => {
+      const index = buildIndex(['carry sth out']);
+      const traces: MatchTraceData[] = [];
+      const matches = matchPhraseAll(
+        req('He carried the plan out carefully.', 'carried'),
+        index, 1,
+        (trace) => traces.push(trace),
+      );
+      expect(matches).toHaveLength(1);
+      expect(traces).toHaveLength(1);
+
+      const trace = traces[0]!;
+      expect(trace.resourcesScanned).toEqual([{ resourceId: 1, termCount: expect.any(Number) }]);
+      expect(trace.candidateTemplateIds.length).toBeGreaterThan(0);
+      expect(trace.perCandidate.length).toBeGreaterThan(0);
+
+      // Winner should be rank 0 in ranked, with surface "carried the plan out".
+      expect(trace.ranked.length).toBeGreaterThan(0);
+      const winner = trace.ranked.find((r) => r.rank === 0);
+      expect(winner).toBeDefined();
+      expect(winner!.dictionaryTerm).toBe('carry sth out');
+      expect(winner!.surface).toBe('carried the plan out');
+      expect(winner!.quality).toBe('slot-template');
+    });
+
+    it('emits trace with empty ranked when no match', () => {
+      const index = buildIndex(['carry sth out']);
+      const traces: MatchTraceData[] = [];
+      const matches = matchPhraseAll(
+        req('She carried the plan.', 'carried'),
+        index, 1,
+        (trace) => traces.push(trace),
+      );
+      expect(matches).toHaveLength(0);
+      // traceSink still called — captures candidate collection even on no-match.
+      expect(traces).toHaveLength(1);
+      expect(traces[0]!.ranked).toHaveLength(0);
+    });
+
+    it('does not call traceSink when undefined (no overhead for prod callers)', () => {
+      const index = buildIndex(['carry sth out']);
+      // No traceSink — should not throw, returns matches normally.
+      const matches = matchPhraseAll(req('He carried the plan out.', 'carried'), index, 1);
+      expect(matches).toHaveLength(1);
+    });
+
+    it('captures nodesStructure in perCandidate for parser bug analysis', () => {
+      // Reproduce the "make someone/yourself/something out" parser bug:
+      // "out" should be shared suffix but parser puts it in the last alt branch.
+      const index = buildIndex(['make someone/yourself/something out']);
+      const traces: MatchTraceData[] = [];
+      matchPhraseAll(
+        req('make predictions without being explicitly programmed', 'make'),
+        index, 1,
+        (trace) => traces.push(trace),
+      );
+      expect(traces).toHaveLength(1);
+      const trace = traces[0]!;
+      // At least one candidate should have nodesStructure containing "alt(".
+      const withAlt = trace.perCandidate.filter((c) => c.nodesStructure.includes('alt('));
+      expect(withAlt.length).toBeGreaterThan(0);
+      // Each perCandidate entry must have a non-empty nodesStructure.
+      for (const c of trace.perCandidate) {
+        expect(c.nodesStructure.length).toBeGreaterThan(0);
+      }
     });
   });
 });

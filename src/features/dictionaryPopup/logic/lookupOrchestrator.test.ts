@@ -15,6 +15,11 @@ import {
 } from '@/features/dictionary/logic/phraseIndexCompiler';
 import { parsePhraseTemplate } from '@/features/dictionary/logic/phraseTemplateParser';
 
+// Mock devMode (import.meta.env not available in Jest CJS) + lookupLogStore
+// (chrome.storage.local persistence — dev-only, mocked to no-op).
+jest.mock('@/shared/lib/env/devMode', () => ({ isDevMode: false }));
+jest.mock('../log/lookupLogStore', () => ({ saveLookupLog: jest.fn() }));
+
 const storageLocalGetMock = jest.fn<Promise<Record<string, unknown>>, [string | string[] | null]>();
 
 beforeAll(() => {

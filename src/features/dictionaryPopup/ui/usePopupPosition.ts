@@ -11,7 +11,6 @@ import {
   POPUP_SHEET_BREAKPOINT_PX,
   POPUP_Z_INDEX,
   popupOverlapsAnchor,
-  isPlayerModeActive,
   SHEET_CLICK_THRESHOLD_PX,
   SHEET_DISMISS_RATIO,
   SHEET_DISMISS_THRESHOLD_PX,
@@ -151,7 +150,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     );
   }, [getVw, getVh, initialSize?.width, initialSize?.maxHeight]);
 
-  const [isSheet, setIsSheet] = useState(() => getVw() < POPUP_SHEET_BREAKPOINT_PX || isPlayerModeActive());
+  const [isSheet, setIsSheet] = useState(() => getVw() < POPUP_SHEET_BREAKPOINT_PX);
   const [size, setSize] = useState<PopupSize>(buildInitialSize);
   const [sheetHeight, setSheetHeight] = useState(() => {
     const bounds = getPlayerModeBounds();
@@ -426,7 +425,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         viewportRafRef.current = null;
         const vw = getClientWidth();
         const vh = getClientHeight();
-        const sheet = vw < POPUP_SHEET_BREAKPOINT_PX || isPlayerModeActive();
+        const sheet = vw < POPUP_SHEET_BREAKPOINT_PX;
         setIsSheet(sheet);
         const nextSize = clampPopupSize(sizeRef.current, vw, vh);
         sizeRef.current = nextSize;
@@ -459,7 +458,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
   useLayoutEffect(() => {
     const vw = getClientWidth();
     const vh = getClientHeight();
-    let sheet = vw < POPUP_SHEET_BREAKPOINT_PX || isPlayerModeActive();
+    let sheet = vw < POPUP_SHEET_BREAKPOINT_PX;
 
     const nextSize = clampPopupSize(sizeRef.current, vw, vh);
     sizeRef.current = nextSize;

@@ -1,8 +1,0 @@
-{
-  "default_subs": [
-    { "code": "en", "lang": "English", "url": "https://example-cdn.vp/brooding/en.vtt", "default": true },
-    { "code": "es", "lang": "Spanish", "url": "https://example-cdn.vp/brooding/es.vtt", "default": false },
-    { "code": "fr", "lang": "French", "url": "https://example-cdn.vp/brooding/fr.vtt", "default": false },
-    { "code": "vi", "lang": "Vietnamese", "url": "https://example-cdn.vp/brooding/vi.vtt", "default": false }
-  ]
-}

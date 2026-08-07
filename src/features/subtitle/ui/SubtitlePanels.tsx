@@ -1,7 +1,7 @@
 import { useState, useImperativeHandle, forwardRef, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
-import type { NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
+import type { NavClusterSettings, SubtitleBlockSettings, BilingualCue } from '@/entities/media';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { SubtitleManagerPanel } from './SubtitleManagerPanel';
@@ -72,6 +72,10 @@ export interface SubtitlePanelsRef {
   setCollapsed: (collapsed: boolean) => void;
   /** Update the block vertical position (percent 0-95). */
   setYOffsetPercent: (yOffsetPercent: number) => void;
+  /** Update bilingual cues for CueList in Player Mode. */
+  setCues: (cues: BilingualCue[]) => void;
+  /** Update current video time (ms) for CueList highlight. */
+  setCurrentTimeMs: (timeMs: number) => void;
 }
 
 export interface SubtitlePanelsProps {
@@ -117,6 +121,14 @@ export interface SubtitlePanelsProps {
   videoAspectRatio?: number;
   /** Called when user toggles Player Mode. */
   onTogglePlayerMode?: (active: boolean) => void;
+  /** Bilingual cues for CueList in Player Mode. */
+  cues?: BilingualCue[];
+  /** Current video time in ms (for CueList highlight). */
+  currentTimeMs?: number;
+  /** Subtitle offset in ms (ADR-019 sync). */
+  offsetMs?: number;
+  /** Seek video to timeMs when user clicks a cue. */
+  onSeek?: (timeMs: number) => void;
 }
 
 export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>(
@@ -152,6 +164,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
       generateNativeEnabled: initialGenerateNativeEnabled = true,
       videoAspectRatio = 16 / 9,
       onTogglePlayerMode,
+      cues: initialCues,
+      currentTimeMs: initialCurrentTimeMs,
+      offsetMs,
+      onSeek,
     },
     ref,
   ): React.JSX.Element {
@@ -177,6 +193,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const [toolsExpanded, setToolsExpanded] = useState(false);
     const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
     const [playerMode, setPlayerMode] = useState(false);
+    const [cues, setCues] = useState<readonly BilingualCue[]>(initialCues ?? []);
+    const [currentTimeMs, setCurrentTimeMs] = useState(initialCurrentTimeMs ?? 0);
 
     useEffect(() => {
       const root = rootRef.current;
@@ -225,6 +243,8 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         setGenerateNativeEnabled,
         setCollapsed,
         setYOffsetPercent,
+        setCues,
+        setCurrentTimeMs,
       }),
       [addToast, clearToasts],
     );
@@ -264,6 +284,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const playerModeOriginalParent = useRef<HTMLElement | null>(null);
     const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string } | null>(null);
     const playerModeBackdrop = useRef<HTMLDivElement | null>(null);
+    const playerModeSavedScrollLock = useRef<{ htmlOverflow: string; bodyOverflow: string } | null>(null);
     useEffect(() => {
       const host = document.querySelector('#cell-subtitle-root');
       if (!(host instanceof HTMLElement)) return;
@@ -282,15 +303,31 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           document.body.appendChild(host);
         }
         // Light DOM backdrop: fixed full-screen black, z-index just below
-        // cell-subtitle-root. Covers all host UI (controls, captions, gestures)
-        // regardless of where they live in the DOM — no host queries needed.
+        // cell-subtitle-root. pointer-events:auto captures all clicks/wheel/touch
+        // so the host page (controls, captions, gestures) receives nothing.
+        // Overlay's interactive children (dock, contentOther) are above in
+        // z-index and have their own pointer-events:auto, so they still work.
         if (!playerModeBackdrop.current) {
           const backdrop = document.createElement('div');
           backdrop.style.cssText =
-            'position:fixed;inset:0;width:100vw;height:100vh;background:#000;z-index:2147483646;pointer-events:none;';
+            'position:fixed;inset:0;width:100vw;height:100vh;background:#000;z-index:2147483646;pointer-events:auto;overscroll-behavior:contain;';
           document.body.appendChild(backdrop);
           playerModeBackdrop.current = backdrop;
         }
+        // Lock document scroll: overflow:hidden on html+body prevents the host
+        // page from scrolling when wheeling over the backdrop (which is
+        // position:fixed and not scrollable — without this lock, wheel scroll
+        // propagates through the backdrop to the document). Fixed-position
+        // elements (overlay, backdrop, popup) and their internal overflow:auto
+        // containers are NOT affected — they scroll independently.
+        const html = document.documentElement;
+        const body = document.body;
+        playerModeSavedScrollLock.current = {
+          htmlOverflow: html.style.overflow,
+          bodyOverflow: body ? body.style.overflow : '',
+        };
+        html.style.overflow = 'hidden';
+        if (body) body.style.overflow = 'hidden';
       } else {
         // Only restore if we previously saved (i.e. exiting Player Mode).
         // On first mount (playerMode=false, saved=null) don't touch styles —
@@ -310,6 +347,12 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
         if (playerModeBackdrop.current) {
           playerModeBackdrop.current.remove();
           playerModeBackdrop.current = null;
+        }
+        const scrollLock = playerModeSavedScrollLock.current;
+        if (scrollLock) {
+          document.documentElement.style.overflow = scrollLock.htmlOverflow;
+          if (document.body) document.body.style.overflow = scrollLock.bodyOverflow;
+          playerModeSavedScrollLock.current = null;
         }
       }
     }, [playerMode]);
@@ -423,6 +466,10 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           onPlayPause={onPlayPause}
           onToggleCollapsed={handleToggleCollapsed}
           onExit={handleTogglePlayerMode}
+          cues={cues as BilingualCue[]}
+          currentTimeMs={currentTimeMs}
+          offsetMs={offsetMs}
+          onSeek={onSeek}
         />
       );
     }

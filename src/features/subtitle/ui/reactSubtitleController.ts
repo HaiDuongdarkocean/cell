@@ -10,6 +10,7 @@ import { mountSubtitle, type MountSubtitleResult, type ManagerState, type Offset
 import { SubtitleCueEngine, type SubtitleCueEngineUpdate, type CardCreatorAction, type SubtitleCueEngineTokenizeOptions } from './subtitleCueEngine';
 import type { TriggerMode, LookupRequest } from '@/features/dictionaryPopup/types';
 import { clampOffsetMs } from '@/features/subtitle/logic/subtitleOffset';
+import { mergeCuesForPanel } from '@/features/subtitle/logic/subtitleMerge';
 import { resolvePlayerModeLayout, resolveVideoAspectRatio, DOCK_MIN_HEIGHT_PX } from '@/features/subtitle/logic/playerModeGeometry';
 import { loadSettings, saveSettings } from '@/shared/lib/storage/settingsStore';
 import { createPlayerModeHostController, type PlayerModeHostController } from './playerModeHost';
@@ -63,6 +64,9 @@ export class ReactSubtitleController {
   public onToggleSidePanel?: () => void;
   /** Called when active cue indices change (for subtitle tokenize rendering). */
   public onCuesUpdated?: () => void;
+
+  /** Whether Player Mode overlay is currently active. */
+  public isPlayerModeActive = false;
 
   constructor(
     video: HTMLVideoElement,
@@ -137,12 +141,20 @@ export class ReactSubtitleController {
       onGenerateNative: () => this.onGenerateNative(),
       onToggleSidePanel: () => this.onToggleSidePanel?.(),
       onToggleManager: () => this.openManager(),
+      cues: [],
+      currentTimeMs: video.currentTime * 1000,
+      offsetMs: this.offsetMs,
+      onSeek: (timeMs: number) => this.handleCueSeek(timeMs),
     });
 
     // Wire video timeupdate → engine.onTimeUpdate so active cue index tracks
     // playback. Without this, loadBilingualCues sets index=-1 and the block
     // stays empty until the next load/offset change.
-    video.addEventListener('timeupdate', () => this.engine.onTimeUpdate());
+    // Also update CueList currentTimeMs for highlight sync in Player Mode.
+    video.addEventListener('timeupdate', () => {
+      this.engine.onTimeUpdate();
+      this.mount.setCurrentTimeMs(video.currentTime * 1000);
+    });
   }
 
   private loadPersistedOffset(): void {
@@ -257,6 +269,12 @@ export class ReactSubtitleController {
     // Drag/collapse persistence is not yet implemented in the React UI.
   }
 
+  /** Seek video to a cue's raw start time (ms). Shifts by -offsetMs so the
+      overlay displays that cue (ADR-019 sync, mirrors SEEK_TO handler). */
+  private handleCueSeek(timeMs: number): void {
+    this.video.currentTime = (timeMs - this.offsetMs) / 1000;
+  }
+
   setOffsetProvider(_provider: () => number): void {
     // The React controller owns the offset provider internally.
   }
@@ -283,11 +301,14 @@ export class ReactSubtitleController {
     this.engine.loadBilingualCues(targetCues, nativeCues);
     this.engine.onTimeUpdate();
     this.syncFromEngine();
+    // Sync CueList in Player Mode with merged bilingual cues.
+    this.mount.setCues(mergeCuesForPanel(targetCues, nativeCues));
   }
 
   clearCues(): void {
     this.engine.clearCues();
     this.syncFromEngine();
+    this.mount.setCues([]);
   }
 
   getTargetCues(): readonly SrtCue[] {
@@ -412,6 +433,7 @@ export class ReactSubtitleController {
   }
 
   private handlePlayerModeToggle(active: boolean): void {
+    this.isPlayerModeActive = active;
     if (!active) {
       if (this.playerModeResizeHandler) {
         window.removeEventListener('resize', this.playerModeResizeHandler);

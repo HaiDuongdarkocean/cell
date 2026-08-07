@@ -230,10 +230,10 @@ describe('createWebTextDictionaryController', () => {
       payload: { requestId: 'req-dismiss' },
     });
     // Popup dismiss is delayed — not cleared yet.
-    expect(document.querySelector('mark.js-cell-word-highlight')).not.toBeNull();
+    expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
     // Flush the 500ms dismiss timer.
     jest.advanceTimersByTime(500);
-    expect(document.querySelector('mark.js-cell-word-highlight')).toBeNull();
+    expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
 
     ctrl.destroy();
     jest.useRealTimers();
@@ -254,7 +254,7 @@ describe('createWebTextDictionaryController', () => {
     // Let the first lookup's result resolve so highlight shows.
     await Promise.resolve();
     await Promise.resolve();
-    expect(document.querySelector('mark.js-cell-word-highlight')).not.toBeNull();
+    expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
 
     ctrl.dismissLookup(); // schedules dismiss in 500ms
 
@@ -266,7 +266,7 @@ describe('createWebTextDictionaryController', () => {
 
     // Flush past the original 500ms — dismiss should NOT have fired.
     jest.advanceTimersByTime(300);
-    expect(document.querySelector('mark.js-cell-word-highlight')).not.toBeNull();
+    expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
 
     ctrl.destroy();
     jest.useRealTimers();
@@ -463,10 +463,10 @@ describe('createWebTextDictionaryController', () => {
     range.selectNodeContents(p.firstChild as Text);
 
     ctrl.showHighlight(range);
-    expect(document.querySelector('mark.js-cell-word-highlight')).not.toBeNull();
+    expect(document.querySelector('span.js-cell-word-highlight')).not.toBeNull();
 
     ctrl.clearHighlight();
-    expect(document.querySelector('mark.js-cell-word-highlight')).toBeNull();
+    expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
 
     ctrl.destroy();
   });
@@ -753,7 +753,7 @@ describe('createWebTextDictionaryController', () => {
 
     ctrl.destroy();
 
-    expect(document.querySelector('mark.js-cell-word-highlight')).toBeNull();
+    expect(document.querySelector('span.js-cell-word-highlight')).toBeNull();
   });
 
   it('Send to Card routes to the integrated panel when panelController is present', async () => {

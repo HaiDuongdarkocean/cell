@@ -26,5 +26,5 @@
 
     "types": ["chrome", "vite/client", "jest"]
   },
-  "include": ["src", "tests", "vite.config.ts", "jest.config.ts"]
+  "include": ["src", "tests", "vite.config.ts", "jest.config.ts", "data/extension-phụ-trợ"]
 }
