@@ -270,14 +270,14 @@ function PlayerModeOverlayInner({
                 <Icon name="rotateCcw" size={18} />
               </IconButton>
             )}
-            <IconButton aria-label="Exit player mode" title="Exit player mode" data-cell-id="player-mode-exit-btn" size="sm" onClick={onExit}>
-              <Icon name="pip" size={18} />
-            </IconButton>
             {onToggleManager && (
               <IconButton aria-label="Open subtitle manager" title="Open subtitle manager" data-cell-id="manager-toggle-btn" size="sm" onClick={onToggleManager}>
                 <Icon name="subtitleManager" size={18} />
               </IconButton>
             )}
+            <IconButton aria-label="Exit player mode" title="Exit player mode" data-cell-id="player-mode-exit-btn" size="sm" onClick={onExit}>
+              <Icon name="pip" size={18} />
+            </IconButton>
           </div>
         </div>
       </div>
