@@ -276,7 +276,7 @@ function PlayerModeOverlayInner({
               </IconButton>
             )}
             <IconButton aria-label="Exit player mode" title="Exit player mode" data-cell-id="player-mode-exit-btn" size="sm" onClick={onExit}>
-              <Icon name="pip" size={18} />
+              <Icon name="minimize" size={18} />
             </IconButton>
           </div>
         </div>
