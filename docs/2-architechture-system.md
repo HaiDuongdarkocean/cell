@@ -869,6 +869,7 @@ downloader.downloadM3u8Streaming(playlist)
 | `tests/unit/popup/MultiSelect.test.tsx` | `popup/components/settings/MultiSelect.tsx` | 14 | Search input, checkbox list, selection toggle, footer |
 | `tests/unit/sidepanel/sidePanelStore.test.ts` | `sidepanel/store/sidePanelStore.ts` | 8 | setCues, setCurrentTime, setPlaying, currentCueIndex (binary search) |
 | `tests/unit/sidepanel/CueList.test.tsx` | `sidepanel/components/CueList.tsx` | 16 | Render cues, **adaptive timestamp format**, onSeek, highlight, auto-scroll, empty nativeText, **boundary overlap (half-open [start,end))**, **scroll behavior (instant)** |
+| `tests/unit/features/subtitle/ui/PlayerModeOverlay.styles.test.ts` | `features/subtitle/ui/PlayerModeOverlay.module.css` | 2 | Player Mode overlay/content pointer-events: auto; CueList wrapper overflow-y: auto + overscroll-behavior: contain (regression guard for player-mode scroll) |
 | `tests/unit/background/autoDownload.test.ts` | `background/autoDownload.ts` | 15 | tryAutoDownload: whitelist miss → no-op, whitelist hit → enqueue, no media → no-op, return value (enqueued ids array), incremental subtitle catch-up with alreadyEnqueuedIds |
 | `tests/unit/background/integration.test.ts` | `background/index.ts` (messageBus handlers) | 100+ | SUBTITLE_CUES_LOADED cache + relay (**ADR-011 v3: relay chỉ khi tabId === activeTabIdForPanel**), REQUEST_SUBTITLE_CUES re-send, VIDEO_TIME_UPDATE/VIDEO_PLAY_STATE relay + drop non-active (ADR-011 v3), VIDEO_EPISODE_CHANGED clear (ADR-010), auto-download, navigation media clear (ADR-009 D3) |
 
