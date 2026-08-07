@@ -130,6 +130,14 @@ export function useOrbitalGesture(options: UseOrbitalGestureOptions): UseOrbital
         return;
       }
       dragRef.current.pointerDown = false;
+      // When no multi-tap handlers (collapsed at edge), fire single-tap
+      // immediately — no 300ms detector delay. This makes the badge feel
+      // instant: tap → panel opens, no waiting for a double-tap that can't come.
+      const opts = optionsRef.current;
+      if (opts.onDoubleTap === undefined && opts.onTripleTap === undefined) {
+        opts.onSingleTap?.();
+        return;
+      }
       detectorRef.current.onPointerUp(e.timeStamp);
     },
     [releaseCapture],

@@ -268,7 +268,7 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
       resizeObserver?.disconnect();
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [viewport, badgeSize, userPreset, setCenter, setDragCenter, persist]);
+  }, [viewport, badgeSize, setCenter, setDragCenter, persist]);
 
   const handleDrag = useCallback(
     (dx: number, dy: number): void => {
@@ -356,8 +356,10 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
 
   const gesture = useOrbitalGesture({
     onSingleTap: handleSingleTap,
-    onDoubleTap: cyclePreset,
-    onTripleTap: reversePreset,
+    // When collapsed at edge: single-tap opens panel (only action).
+    // Double/triple-tap preset cycling only when expanded (floating).
+    onDoubleTap: collapsedAtEdge ? undefined : cyclePreset,
+    onTripleTap: collapsedAtEdge ? undefined : reversePreset,
     onDragStart: handleDragStart,
     onDrag: handleDrag,
     onDragEnd: handleDragEnd,
