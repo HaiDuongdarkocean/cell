@@ -12,8 +12,14 @@ import { IconButton } from '@/shared/ui/IconButton';
 import { SubtitleBlock } from './SubtitleBlock';
 import { NavCluster } from './NavCluster';
 import { resolvePlayerModeLayout, DOCK_MIN_HEIGHT_PX } from '../logic/playerModeGeometry';
+import { getStorage, setStorage } from '@/shared/lib/chrome-apis';
+import { STORAGE_KEYS } from '@/shared/config/config';
 import styles from './PlayerModeOverlay.module.css';
 import panelStyles from './SubtitlePanels.module.css';
+
+const CONTENT_PCT_MIN = 20;
+const CONTENT_PCT_MAX = 60;
+const CONTENT_PCT_DEFAULT = 30;
 
 type IconCatalogKey = keyof typeof ICON_CATALOG;
 
@@ -110,7 +116,9 @@ function PlayerModeOverlayInner({
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [cueListOpen, setCueListOpen] = useState(true);
   // Content panel width % in split layout (>480px). Default 30%. Clamp 20-60%.
-  const [contentPct, setContentPct] = useState(30);
+  // Persisted to chrome.storage.local — survives reload + re-enter Player Mode.
+  const [contentPct, setContentPct] = useState(CONTENT_PCT_DEFAULT);
+  const contentPctLoadedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
@@ -212,6 +220,21 @@ function PlayerModeOverlayInner({
     return () => window.removeEventListener('keydown', onWindowKeyDown);
   }, [onExit, cueListOpen]);
 
+  // Load persisted contentPct on mount (survives reload + re-enter Player Mode).
+  useEffect(() => {
+    let cancelled = false;
+    getStorage<Record<string, number>>(STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT)
+      .then((data) => {
+        const stored = data[STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT];
+        if (cancelled || typeof stored !== 'number' || !Number.isFinite(stored)) return;
+        const clamped = Math.min(Math.max(stored, CONTENT_PCT_MIN), CONTENT_PCT_MAX);
+        contentPctLoadedRef.current = true;
+        setContentPct(clamped);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+
   // Resize drag: content panel width % in split layout (>480px).
   // Drag handle is on the left border of content (between video and content).
   // K kéo phải → content rộng hơn; kéo trái → content hẹp hơn.
@@ -234,13 +257,18 @@ function PlayerModeOverlayInner({
     // deltaPct = -(deltaX / splitWidth) * 100
     const deltaPx = e.clientX - ds.startX;
     const deltaPct = -(deltaPx / ds.splitWidth) * 100;
-    const next = Math.min(Math.max(ds.startPct + deltaPct, 20), 60);
+    const next = Math.min(Math.max(ds.startPct + deltaPct, CONTENT_PCT_MIN), CONTENT_PCT_MAX);
     setContentPct(next);
   }, []);
 
   const onResizePointerUp = useCallback((e: React.PointerEvent): void => {
     dragState.current = null;
     try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    // Persist contentPct so it survives reload + re-enter Player Mode.
+    setContentPct((pct) => {
+      setStorage({ [STORAGE_KEYS.PLAYER_MODE_CONTENT_PCT]: pct }).catch(() => undefined);
+      return pct;
+    });
   }, []);
 
   return (

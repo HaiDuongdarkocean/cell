@@ -298,6 +298,8 @@ export const STORAGE_KEYS = {
   UNIVERSAL_PANEL_TAB: 'universalPanelTab',
   /** Recent dictionary search terms for the universal panel session. */
   DICTIONARY_SEARCH_HISTORY: 'dictionarySearchHistory',
+  /** Player Mode split content width % (20-60). Survives reload + re-enter. */
+  PLAYER_MODE_CONTENT_PCT: 'playerModeContentPct',
 } as const;
 
 // === Popup Dimensions ===
