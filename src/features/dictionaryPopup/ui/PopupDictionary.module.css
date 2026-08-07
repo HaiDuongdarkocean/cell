@@ -12,6 +12,29 @@
   box-shadow: var(--shadow-floating);
   overflow: hidden;
   pointer-events: auto;
+  transition: opacity var(--duration-150) var(--ease-out),
+              transform var(--duration-150) var(--ease-out);
+}
+
+/* Enter animation: popup fades + scales in from 97% — near-imperceptible,
+   just enough to bridge the teleport from nothing to full size.
+   @starting-style fires once on element insertion, then React controls
+   transform/opacity via inline styles. */
+@starting-style {
+  .popup {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  .isSheet {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+/* Sheet uses a longer, eased slide-up from the bottom edge. */
+.isSheet {
+  transition: opacity var(--duration-300) var(--ease-standard),
+              transform var(--duration-300) var(--ease-standard);
 }
 
 /* tabindex={-1} lets the popup receive focus for Escape keydown, but the
@@ -128,4 +151,11 @@
 
 .isSheet .sheetHandle {
   display: flex;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popup,
+  .isSheet {
+    transition: none;
+  }
 }

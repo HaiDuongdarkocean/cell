@@ -11,6 +11,7 @@ import {
   POPUP_SHEET_BREAKPOINT_PX,
   POPUP_Z_INDEX,
   popupOverlapsAnchor,
+  isPlayerModeActive,
   SHEET_CLICK_THRESHOLD_PX,
   SHEET_DISMISS_RATIO,
   SHEET_DISMISS_THRESHOLD_PX,
@@ -58,7 +59,9 @@ function getPlayerModeBounds(): PlayerModeBounds | null {
 function getSheetAvailableHeight(viewportHeight: number): number {
   const bounds = getPlayerModeBounds();
   if (!bounds) return viewportHeight - POPUP_MARGIN_PX;
-  return Math.max(viewportHeight - bounds.top - bounds.bottom, 0);
+  // Player Mode: sheet is anchored above the dock and can grow upward to cover
+  // the video stage. Only the dock is reserved — video can be covered.
+  return Math.max(viewportHeight - bounds.bottom, 0);
 }
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
@@ -148,19 +151,20 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     );
   }, [getVw, getVh, initialSize?.width, initialSize?.maxHeight]);
 
-  const [isSheet, setIsSheet] = useState(() => getVw() < POPUP_SHEET_BREAKPOINT_PX);
+  const [isSheet, setIsSheet] = useState(() => getVw() < POPUP_SHEET_BREAKPOINT_PX || isPlayerModeActive());
   const [size, setSize] = useState<PopupSize>(buildInitialSize);
-  const [sheetHeight, setSheetHeight] = useState(() =>
-    Math.max(
+  const [sheetHeight, setSheetHeight] = useState(() => {
+    const bounds = getPlayerModeBounds();
+    // Player Mode: initial sheet height = middle area (between video and dock).
+    // Max height (when dragged up) = viewport - dock (can cover video).
+    const initial = bounds
+      ? Math.max(POPUP_MIN_HEIGHT_PX, getVh() - bounds.top - bounds.bottom)
+      : (initialSheetHeight ?? POPUP_DEFAULT_HEIGHT_PX);
+    return Math.max(
       POPUP_MIN_HEIGHT_PX,
-      Math.min(
-        initialSheetHeight ?? (
-          getPlayerModeBounds() ? getSheetAvailableHeight(getVh()) : POPUP_DEFAULT_HEIGHT_PX
-        ),
-        getSheetAvailableHeight(getVh()),
-      ),
-    ),
-  );
+      Math.min(initial, getSheetAvailableHeight(getVh())),
+    );
+  });
   const [position, setPosition] = useState<PopupPosition>(() => {
     const vw = getVw();
     const vh = getVh();
@@ -194,6 +198,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
   const lastPointerRef = useRef<{ readonly clientX: number; readonly clientY: number } | null>(null);
   const pointerRafRef = useRef<number | null>(null);
   const viewportRafRef = useRef<number | null>(null);
+  const snapBackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { sizeRef.current = size; }, [size]);
   useEffect(() => { sheetHeightRef.current = sheetHeight; }, [sheetHeight]);
@@ -283,7 +288,19 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
 
     if (dy > SHEET_DISMISS_THRESHOLD_PX) {
       onCloseRef.current?.();
+      return;
     }
+    // Sheet content drag released above dismiss threshold — spring back to
+    // resting position instead of snapping instantly. --ease-spring gives a
+    // subtle overshoot that feels like iOS sheet physics. Mirrors --duration-200.
+    setTransition('transform var(--duration-200) var(--ease-spring)');
+    setTransform('translateY(0)');
+    if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);
+    snapBackTimerRef.current = setTimeout(() => {
+      snapBackTimerRef.current = null;
+      setTransition(undefined);
+      setTransform(undefined);
+    }, 200);
   }, []);
 
   const applyPointerUpdate = useCallback((clientX: number, clientY: number) => {
@@ -409,7 +426,7 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
         viewportRafRef.current = null;
         const vw = getClientWidth();
         const vh = getClientHeight();
-        const sheet = vw < POPUP_SHEET_BREAKPOINT_PX;
+        const sheet = vw < POPUP_SHEET_BREAKPOINT_PX || isPlayerModeActive();
         setIsSheet(sheet);
         const nextSize = clampPopupSize(sizeRef.current, vw, vh);
         sizeRef.current = nextSize;
@@ -432,10 +449,17 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     return () => window.removeEventListener('resize', onResize);
   }, [computeAndClampPosition]);
 
+  // Clear snap-back timer on unmount.
+  useEffect(() => {
+    return () => {
+      if (snapBackTimerRef.current) clearTimeout(snapBackTimerRef.current);
+    };
+  }, []);
+
   useLayoutEffect(() => {
     const vw = getClientWidth();
     const vh = getClientHeight();
-    let sheet = vw < POPUP_SHEET_BREAKPOINT_PX;
+    let sheet = vw < POPUP_SHEET_BREAKPOINT_PX || isPlayerModeActive();
 
     const nextSize = clampPopupSize(sizeRef.current, vw, vh);
     sizeRef.current = nextSize;
@@ -560,12 +584,18 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
 
   const playerModeBounds = getPlayerModeBounds();
   const sheetAvailableHeight = getSheetAvailableHeight(getClientHeight());
+  // Player Mode: sheet anchored above dock, grows upward to cover video.
+  // top = max(0, viewport - dock - sheetHeight) so small sheets sit in the
+  // middle area, tall sheets grow up to cover the video stage (top → 0).
+  const sheetTop = playerModeBounds
+    ? Math.max(0, getClientHeight() - playerModeBounds.bottom - Math.min(sheetHeight, sheetAvailableHeight))
+    : 'auto';
   const style: CSSProperties = isSheet
     ? {
         position: 'fixed',
         left: 0,
         right: 0,
-        top: playerModeBounds?.top ?? 'auto',
+        top: sheetTop,
         bottom: playerModeBounds?.bottom ?? 0,
         width: '100%',
         height: Math.max(
