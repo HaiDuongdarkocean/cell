@@ -1107,6 +1107,14 @@
       "category": ["testing", "state"],
       "tags": ["schema", "migration", "version", "tests", "constants", "settings", "storage"],
       "trigger": "Thay đổi `CURRENT_SCHEMA_VERSION` hoặc thêm migration mới"
+    },
+    {
+      "type": "experience",
+      "id": "detection-false-negative-state-preservation",
+      "title": "False-negative detection → preserve state, don't reset",
+      "category": ["ux", "state"],
+      "tags": ["hover", "debounce", "caretRangeFromPoint", "false-negative", "re-lookup-loop", "geometry-gate"],
+      "trigger": "Detection system has false negatives (overlay covers target, nearest-match snapping) and resetting state on those false negatives causes re-trigger loops"
     }
   ]
 }
