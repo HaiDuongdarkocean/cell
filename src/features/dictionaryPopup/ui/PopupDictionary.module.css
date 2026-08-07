@@ -58,6 +58,11 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--space-3);
+  scrollbar-width: none;
+}
+
+.content::-webkit-scrollbar {
+  display: none;
 }
 
 .resize {
