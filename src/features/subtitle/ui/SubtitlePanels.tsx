@@ -273,18 +273,15 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     const rootRef = useRef<HTMLDivElement>(null);
 
     // Player Mode: reparent #cell-subtitle-root to document.body (escape video
-    // container's stacking context), full-screen, z-index max. A light DOM
-    // backdrop (bg black, z-index max-1) attached to document.body covers ALL
-    // host UI regardless of stacking context or iframe structure — cross-browser,
-    // cross-site, no host class/id queries. Canvas in overlay (z-index max) draws
-    // video frames on top of the backdrop.
-    // When exiting, restore original styles set by mountReactShadow/mountSubtitle
-    // (position:absolute, zIndex:200, inset:0) — clearing them breaks the
-    // stacking context and lets the <video> element cover NavCluster/subtitle.
+    // container's stacking context), full-screen, z-index max. Canvas in overlay
+    // draws video frames on top of the host video.
+    // NOTE: scroll-lock + backdrop + host pointer-events override were removed
+    // because they did not fix cue-list/dictionary scroll reliably. Host page
+    // remains interactive; overlay children keep pointer-events:auto via CSS so
+    // dock/cue-list stay clickable. Revisit when designing a proper isolation
+    // layer (ponytail: known ceiling — host gestures may bleed through).
     const playerModeOriginalParent = useRef<HTMLElement | null>(null);
-    const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string; pointerEvents: string } | null>(null);
-    const playerModeBackdrop = useRef<HTMLDivElement | null>(null);
-    const playerModeSavedScrollLock = useRef<{ htmlOverflow: string; bodyOverflow: string } | null>(null);
+    const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string } | null>(null);
     useEffect(() => {
       const host = document.querySelector('#cell-subtitle-root');
       if (!(host instanceof HTMLElement)) return;
@@ -293,43 +290,14 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           zIndex: host.style.zIndex,
           position: host.style.position,
           inset: host.style.inset,
-          pointerEvents: host.style.pointerEvents,
         };
         host.style.zIndex = '2147483647';
         host.style.position = 'fixed';
         host.style.inset = '0';
-        host.style.pointerEvents = 'auto';
         if (host.parentElement && host.parentElement !== document.body) {
           playerModeOriginalParent.current = host.parentElement;
           document.body.appendChild(host);
         }
-        // Light DOM backdrop: fixed full-screen black, z-index just below
-        // cell-subtitle-root. It absorbs any events that fall through the overlay
-        // so the host page (controls, captions, gestures) receives nothing.
-        // The overlay and its children (dock, contentOther) are above in
-        // z-index and have pointer-events:auto, so they remain interactive
-        // and scrollable.
-        if (!playerModeBackdrop.current) {
-          const backdrop = document.createElement('div');
-          backdrop.style.cssText =
-            'position:fixed;inset:0;width:100vw;height:100vh;background:#000;z-index:2147483646;pointer-events:auto;overscroll-behavior:contain;';
-          document.body.appendChild(backdrop);
-          playerModeBackdrop.current = backdrop;
-        }
-        // Lock document scroll: overflow:hidden on html+body prevents the host
-        // page from scrolling when wheeling over the backdrop (which is
-        // position:fixed and not scrollable — without this lock, wheel scroll
-        // propagates through the backdrop to the document). Fixed-position
-        // elements (overlay, backdrop, popup) and their internal overflow:auto
-        // containers are NOT affected — they scroll independently.
-        const html = document.documentElement;
-        const body = document.body;
-        playerModeSavedScrollLock.current = {
-          htmlOverflow: html.style.overflow,
-          bodyOverflow: body ? body.style.overflow : '',
-        };
-        html.style.overflow = 'hidden';
-        if (body) body.style.overflow = 'hidden';
       } else {
         // Only restore if we previously saved (i.e. exiting Player Mode).
         // On first mount (playerMode=false, saved=null) don't touch styles —
@@ -339,7 +307,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           host.style.zIndex = saved.zIndex;
           host.style.position = saved.position;
           host.style.inset = saved.inset;
-          host.style.pointerEvents = saved.pointerEvents;
           playerModeSavedStyles.current = null;
         }
         const originalParent = playerModeOriginalParent.current;
@@ -347,16 +314,6 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
           originalParent.appendChild(host);
         }
         playerModeOriginalParent.current = null;
-        if (playerModeBackdrop.current) {
-          playerModeBackdrop.current.remove();
-          playerModeBackdrop.current = null;
-        }
-        const scrollLock = playerModeSavedScrollLock.current;
-        if (scrollLock) {
-          document.documentElement.style.overflow = scrollLock.htmlOverflow;
-          if (document.body) document.body.style.overflow = scrollLock.bodyOverflow;
-          playerModeSavedScrollLock.current = null;
-        }
       }
     }, [playerMode]);
 
