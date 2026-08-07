@@ -124,6 +124,8 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   // ADR-026: Card Creator entry shortcuts — q quick-update, e edit-card.
   { action: 'quick-update', key: 'q' },
   { action: 'edit-card', key: 'e' },
+  // Play/pause toggle — default key 'pause' (Pause/Break).
+  { action: 'play-pause', key: 'pause' },
 ];
 
 // === Default Overlay Style (ADR-013) ===

@@ -16,7 +16,7 @@ import { STORAGE_KEYS, DEFAULT_SETTINGS, DEFAULT_DICTIONARY_POPUP_SETTINGS, DEFA
 import type { Settings, NavClusterButtonSize } from '@/entities/settings';
 
 /** Current settings schema version. Bump when Settings shape changes. */
-export const CURRENT_SCHEMA_VERSION = 18;
+export const CURRENT_SCHEMA_VERSION = 19;
 
 /** Settings payload as stored (with schemaVersion). */
 interface StoredSettings extends Settings {
@@ -328,6 +328,16 @@ const migrations: Record<number, (s: Record<string, unknown>) => Record<string, 
     const dp = merged.dictionaryPopup as Record<string, unknown> | undefined;
     const defaults = DEFAULT_DICTIONARY_POPUP_SETTINGS as unknown as Record<string, unknown>;
     merged.dictionaryPopup = { ...defaults, ...(dp ?? {}), popupSheetHeightVh: (dp?.popupSheetHeightVh as number) ?? 72 };
+    return merged;
+  },
+  // v18 → v19: add play-pause shortcut (default key 'pause'). Additive — existing
+  // users get default binding; customized keyboardShortcuts keep their bindings.
+  18: (s) => {
+    const merged = { ...DEFAULT_SETTINGS, ...s, schemaVersion: 19 } as Record<string, unknown>;
+    const shortcuts = Array.isArray(merged.keyboardShortcuts) ? merged.keyboardShortcuts : [];
+    if (!shortcuts.some((sc: { action: string }) => sc.action === 'play-pause')) {
+      merged.keyboardShortcuts = [...shortcuts, { action: 'play-pause', key: 'pause' }];
+    }
     return merged;
   },
 };

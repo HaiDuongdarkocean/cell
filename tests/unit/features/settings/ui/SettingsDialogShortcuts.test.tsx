@@ -22,7 +22,7 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
     expect(screen.getByRole('heading', { name: /keyboard shortcuts/i, level: 4 })).toBeInTheDocument();
   });
 
-  it('renders input field for each shortcut action (6 actions incl. toggle-translate)', () => {
+  it('renders input field for each shortcut action (incl. play-pause)', () => {
     render(
       <SettingsDialog
         isOpen={true}
@@ -31,10 +31,10 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
         onClose={noop}
       />,
     );
-    // 6 actions: prev-cue, next-cue, replay-cue, toggle-overlay, toggle-panel, toggle-translate
     expect(screen.getByTestId('shortcut-prev-cue')).toBeInTheDocument();
     expect(screen.getByTestId('shortcut-next-cue')).toBeInTheDocument();
     expect(screen.getByTestId('shortcut-replay-cue')).toBeInTheDocument();
+    expect(screen.getByTestId('shortcut-play-pause')).toBeInTheDocument();
     expect(screen.getByTestId('shortcut-toggle-overlay')).toBeInTheDocument();
     expect(screen.getByTestId('shortcut-toggle-panel')).toBeInTheDocument();
     expect(screen.getByTestId('shortcut-toggle-translate')).toBeInTheDocument();
@@ -112,6 +112,7 @@ describe('SettingsDialog — Keyboard Shortcuts section', () => {
     expect(screen.getByText(/previous cue/i)).toBeInTheDocument();
     expect(screen.getByText(/next cue/i)).toBeInTheDocument();
     expect(screen.getByText(/replay cue/i)).toBeInTheDocument();
+    expect(screen.getByText(/play \/ pause video/i)).toBeInTheDocument();
     expect(screen.getByText(/toggle overlay/i)).toBeInTheDocument();
     expect(screen.getByText(/toggle panel/i)).toBeInTheDocument();
     expect(screen.getByText(/toggle auto-translate/i)).toBeInTheDocument();

@@ -35,6 +35,11 @@ describe('handleShortcutKey', () => {
     expect(action).toBe('generate-native');
   });
 
+  it('returns play-pause action when key is "pause"', () => {
+    const action = handleShortcutKey('pause', shortcuts, createDivTarget());
+    expect(action).toBe('play-pause');
+  });
+
   it('returns null when key does not match any shortcut', () => {
     const action = handleShortcutKey('x', shortcuts, createDivTarget());
     expect(action).toBeNull();
@@ -75,12 +80,14 @@ describe('handleShortcutKey', () => {
       { action: 'prev-cue', key: 'q' },
       { action: 'next-cue', key: 'e' },
       { action: 'replay-cue', key: 'r' },
+      { action: 'play-pause', key: 'p' },
       { action: 'toggle-overlay', key: 'f' },
       { action: 'toggle-panel', key: 'g' },
     ];
     expect(handleShortcutKey('a', remapped, createDivTarget())).toBeNull();
     expect(handleShortcutKey('q', remapped, createDivTarget())).toBe('prev-cue');
     expect(handleShortcutKey('e', remapped, createDivTarget())).toBe('next-cue');
+    expect(handleShortcutKey('p', remapped, createDivTarget())).toBe('play-pause');
   });
 
   it('returns null when shortcuts array is empty', () => {

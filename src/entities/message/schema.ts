@@ -165,7 +165,7 @@ export const SeekToPayloadSchema = z.object({
 
 export const ShortcutActionPayloadSchema = z.object({
   tabId: z.number().int().optional(),
-  action: z.enum(['prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay']),
+  action: z.enum(['prev-cue', 'next-cue', 'replay-cue', 'toggle-overlay', 'play-pause']),
 });
 
 export const VideoEpisodeChangedPayloadSchema = z.object({

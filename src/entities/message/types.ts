@@ -427,7 +427,7 @@ export interface SeekToPayload {
  *  already has the cue-seeking + overlay logic for these actions. */
 export interface ShortcutActionPayload {
   readonly tabId?: number;
-  readonly action: 'prev-cue' | 'next-cue' | 'replay-cue' | 'toggle-overlay';
+  readonly action: 'prev-cue' | 'next-cue' | 'replay-cue' | 'toggle-overlay' | 'play-pause';
 }
 
 /** Content-script → background: the active `<video>` element was REPLACED by
