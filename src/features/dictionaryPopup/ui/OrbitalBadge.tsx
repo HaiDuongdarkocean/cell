@@ -58,6 +58,14 @@ function getClientHeight(): number {
 
 function resolveViewport(viewport?: ViewportRect): ViewportRect {
   if (viewport) return viewport;
+  // In fullscreen mode, the fullscreen element covers the entire screen with
+  // no scrollbar. window.innerWidth/innerHeight matches the fullscreen
+  // element's dimensions, and position:fixed is relative to the fullscreen
+  // viewport — so use innerWidth/innerHeight (not clientWidth which may be
+  // stale or zeroed when the document is hidden behind the fullscreen layer).
+  if (document.fullscreenElement) {
+    return { width: window.innerWidth, height: window.innerHeight };
+  }
   // clientWidth already excludes classic scrollbars. For overlay scrollbars
   // (clientWidth === innerWidth), the badge center sits at the actual edge —
   // the right half is clipped by the viewport (half-moon), the visible left
@@ -99,6 +107,8 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   const dragCenterRef = useRef<Point>(dragCenter);
   const expandedCenterRef = useRef<Point>(center);
   const collapsedCenterRef = useRef<Point>(center);
+  const edgeRef = useRef<CollapsedEdge | null>(null);
+  const dragEdgeRef = useRef<CollapsedEdge | null>(null);
   const expandedRef = useRef(expanded);
   const onPresetChangeRef = useRef(onPresetChange);
 
@@ -143,6 +153,14 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
   // whether to snap (half-moon) or float (full circle) when collapsed.
   const { distance: edgeDistance } = getNearestEdge(activeCenter, activeViewport);
   const isAtEdge = edgeDistance <= badgeSize / 2;
+
+  // Track the edge the badge is currently snapped to (null when floating).
+  // reposition() uses this to keep the badge on the SAME edge when the viewport
+  // changes (e.g. fullscreen enter: position was at right edge of a 1891px
+  // viewport, new viewport is 2560px — without this, the badge snaps to the
+  // nearest edge of the NEW viewport, which may be a different edge).
+  edgeRef.current = isAtEdge ? edge : null;
+  dragEdgeRef.current = isAtEdge ? edge : null;
 
   // Collapsed at edge → half-moon (collapsedCenter). Floating → stay at center.
   const displayedCenter = expanded ? dragCenter : (isAtEdge ? collapsedCenter : center);
@@ -202,10 +220,15 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
         if (vp.width === 0 || vp.height === 0) return;
         const currentCenter = centerRef.current;
         const currentDrag = dragCenterRef.current;
-        const { edge: nearestEdge } = getNearestEdge(currentCenter, vp);
+        // Keep the same edge when viewport changes — don't jump to a different
+        // edge just because the viewport expanded (e.g. fullscreen enter:
+        // position was at right edge of 1891px viewport, new viewport is 2560px
+        // → position 1891 is now closer to top edge, but user expects badge to
+        // stay on right edge). Falls back to nearest edge when floating.
+        const nearestEdge = edgeRef.current ?? getNearestEdge(currentCenter, vp).edge;
         const snapped = getEdgeCenter(nearestEdge, currentCenter, badgeSize, vp);
-        const { edge: dragEdge } = getNearestEdge(currentDrag, vp);
-        const dragSnapped = getEdgeCenter(dragEdge, currentDrag, badgeSize, vp);
+        const dragNearestEdge = dragEdgeRef.current ?? getNearestEdge(currentDrag, vp).edge;
+        const dragSnapped = getEdgeCenter(dragNearestEdge, currentDrag, badgeSize, vp);
         setCenter(snapped);
         setDragCenter(dragSnapped);
         // Keep userPreset on resize — don't override user's pointer position.
@@ -214,9 +237,21 @@ export const OrbitalBadge = forwardRef<OrbitalBadgeHandle, OrbitalBadgeProps>(fu
     };
     window.addEventListener('resize', reposition);
     window.addEventListener('orientationchange', reposition);
+    document.addEventListener('fullscreenchange', reposition);
+    // ResizeObserver detects scrollbar appearance/disappearance — clientWidth
+    // shrinks when a classic scrollbar appears, but no 'resize' event fires
+    // (window size is unchanged). Without this, the badge stays stuck behind
+    // the scrollbar until the next window resize.
+    let resizeObserver: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => reposition());
+      resizeObserver.observe(document.documentElement);
+    }
     return () => {
       window.removeEventListener('resize', reposition);
       window.removeEventListener('orientationchange', reposition);
+      document.removeEventListener('fullscreenchange', reposition);
+      resizeObserver?.disconnect();
       if (raf) cancelAnimationFrame(raf);
     };
   }, [viewport, badgeSize, userPreset, setCenter, setDragCenter, persist]);

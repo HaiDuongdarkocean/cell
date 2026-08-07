@@ -1,6 +1,11 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { OrbitalBadge } from './OrbitalBadge';
 
+// Controllable ResizeObserver mock — stores the callback so tests can trigger
+// it manually (simulating scrollbar appearance: clientWidth shrinks without a
+// window resize event).
+let resizeObserverCb: (() => void) | undefined;
+
 beforeAll(() => {
   if (typeof PointerEvent === 'undefined') {
     class MockPointerEvent extends MouseEvent {
@@ -17,6 +22,11 @@ beforeAll(() => {
     cb(0);
     return 0;
   }) as unknown as typeof requestAnimationFrame;
+
+  globalThis.ResizeObserver = jest.fn((cb: () => void) => {
+    resizeObserverCb = cb;
+    return { observe: jest.fn(), unobserve: jest.fn(), disconnect: jest.fn() };
+  }) as unknown as typeof ResizeObserver;
 });
 
 beforeEach(() => {
@@ -227,5 +237,86 @@ describe('OrbitalBadge', () => {
 
     // Resized to 400 width: center 400 (flush), top-left = 400 - 22 = 378.
     expect(badge.style.transform).toContain('translate3d(378px, 362px, 0)');
+  });
+
+  it('repositions when scrollbar appears (clientWidth shrinks without resize event)', () => {
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+
+    // Collapsed flush at right edge: center 1024, top-left = 1024 - 22 = 1002.
+    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
+
+    // Scrollbar appears: clientWidth shrinks from 1024 to 1009 (15px scrollbar).
+    // No 'resize' event fires — only ResizeObserver detects the content-box change.
+    act(() => {
+      Object.defineProperty(document.documentElement, 'clientWidth', { value: 1009, configurable: true });
+      resizeObserverCb?.();
+    });
+
+    // Badge repositioned to new content edge: center 1009, top-left = 1009 - 22 = 987.
+    expect(badge.style.transform).toContain('translate3d(987px, 362px, 0)');
+  });
+
+  it('repositions to fullscreen viewport when fullscreenchange fires', () => {
+    // Normal mode: clientWidth=1024 (with scrollbar), innerWidth=1280 (fullscreen width).
+    // Badge at right edge: center 1024, top-left = 1024 - 22 = 1002.
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
+
+    // Enter fullscreen: fullscreenElement set, innerWidth=1280 (no scrollbar in fullscreen).
+    // resolveViewport uses innerWidth/innerHeight in fullscreen mode.
+    act(() => {
+      Object.defineProperty(document, 'fullscreenElement', {
+        value: document.createElement('div'),
+        configurable: true,
+      });
+      Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 720, configurable: true });
+      fireEvent(document, new Event('fullscreenchange'));
+    });
+
+    // Badge repositioned to fullscreen right edge: center 1280, top-left = 1280 - 22 = 1258.
+    // y preserved from previous position (384), top-left = 384 - 22 = 362.
+    expect(badge.style.transform).toContain('translate3d(1258px, 362px, 0)');
+
+    // Exit fullscreen: fullscreenElement cleared, back to clientWidth=1024.
+    act(() => {
+      Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true });
+      Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, configurable: true });
+      fireEvent(document, new Event('fullscreenchange'));
+    });
+
+    // Badge back to normal right edge: center 1024, top-left = 1024 - 22 = 1002.
+    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
+  });
+
+  it('keeps the same edge when fullscreen expands the viewport (not nearest edge)', () => {
+    // Normal mode: clientWidth=1024, clientHeight=768. Badge at right edge:
+    // center 1024, y=384 (middle). Top-left = 1024-22=1002, 384-22=362.
+    render(<OrbitalBadge persistPosition={false} />);
+    const badge = screen.getByTestId('orbital-badge');
+    expect(badge.style.transform).toContain('translate3d(1002px, 362px, 0)');
+
+    // Enter fullscreen with a MUCH larger viewport: 2560x1440.
+    // Old position (1024, 384) in the new viewport: nearest edge is TOP
+    // (distance 384) not RIGHT (distance 1536). Without edge-keeping, the
+    // badge would snap to the top edge. With edge-keeping, it stays on the
+    // right edge: center 2560, y preserved 384. Top-left = 2560-22=2538.
+    act(() => {
+      Object.defineProperty(document, 'fullscreenElement', {
+        value: document.createElement('div'),
+        configurable: true,
+      });
+      Object.defineProperty(window, 'innerWidth', { value: 2560, configurable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 1440, configurable: true });
+      Object.defineProperty(document.documentElement, 'clientWidth', { value: 2560, configurable: true });
+      Object.defineProperty(document.documentElement, 'clientHeight', { value: 1440, configurable: true });
+      fireEvent(document, new Event('fullscreenchange'));
+    });
+
+    // Badge stays on right edge: center 2560, top-left = 2560 - 22 = 2538.
+    expect(badge.style.transform).toContain('translate3d(2538px, 362px, 0)');
   });
 });

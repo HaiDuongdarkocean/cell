@@ -27,6 +27,16 @@ if (typeof HTMLMediaElement !== 'undefined') {
   HTMLMediaElement.prototype.pause = jest.fn();
 }
 
+// Polyfill ResizeObserver for jsdom (used by OrbitalBadge to detect scrollbar
+// appearance). No-op by default; tests that need to trigger it override this.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = jest.fn(() => ({
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
+  })) as unknown as typeof ResizeObserver;
+}
+
 // Polyfill crypto.subtle for jsdom (used by signatureGenerator SHA-256).
 // jsdom doesn't expose crypto.subtle — use Node's webcrypto.
 import nodeCrypto from 'node:crypto';
