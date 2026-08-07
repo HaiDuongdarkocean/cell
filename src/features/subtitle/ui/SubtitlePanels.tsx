@@ -557,7 +557,7 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
                 onClick={handleTogglePlayerMode}
                 active={playerMode}
               >
-                <Icon name="pip" size={18} />
+                <Icon name={playerMode ? 'minimize' : 'maximize'} size={18} />
               </IconButton>
             </div>
           </div>
