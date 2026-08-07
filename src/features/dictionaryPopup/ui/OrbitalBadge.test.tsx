@@ -39,6 +39,7 @@ beforeEach(() => {
 });
 
 describe('OrbitalBadge', () => {
+  afterEach(() => { jest.useRealTimers(); });
   it('renders collapsed badge', () => {
     render(<OrbitalBadge persistPosition={false} />);
     expect(screen.getByTestId('orbital-badge')).toBeInTheDocument();
@@ -60,42 +61,98 @@ describe('OrbitalBadge', () => {
     jest.useRealTimers();
   });
 
-  it('double tap toggles top ↔ center', () => {
+  it('double tap toggles top ↔ center (when expanded/floating)', () => {
     jest.useFakeTimers();
     const onPresetChange = jest.fn();
     render(<OrbitalBadge persistPosition={false} initialPreset="top" onPresetChange={onPresetChange} />);
 
     const badge = screen.getByTestId('orbital-badge');
-    // First double-tap: top → center
+    // Badge starts collapsed at edge — multi-tap disabled.
+    // Drag away from edge to expand (enable multi-tap).
     act(() => {
-      fireEvent.pointerDown(badge, { clientX: 0, clientY: 0, timeStamp: 0 });
-      fireEvent.pointerUp(badge, { clientX: 0, clientY: 0, timeStamp: 0 });
+      fireEvent.pointerDown(badge, { clientX: 512, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 400, clientY: 384 });
+    });
+    act(() => {
+      fireEvent.pointerUp(badge, { clientX: 400, clientY: 384 });
+    });
+
+    // Now expanded/floating — double-tap cycles preset.
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 400, clientY: 384, timeStamp: 0 });
+      fireEvent.pointerUp(badge, { clientX: 400, clientY: 384, timeStamp: 0 });
     });
     act(() => { jest.advanceTimersByTime(80); });
     act(() => {
-      fireEvent.pointerDown(badge, { clientX: 0, clientY: 0, timeStamp: 80 });
-      fireEvent.pointerUp(badge, { clientX: 0, clientY: 0, timeStamp: 80 });
+      fireEvent.pointerDown(badge, { clientX: 400, clientY: 384, timeStamp: 80 });
+      fireEvent.pointerUp(badge, { clientX: 400, clientY: 384, timeStamp: 80 });
     });
     act(() => { jest.advanceTimersByTime(300); });
     expect(onPresetChange).toHaveBeenLastCalledWith('center');
     jest.useRealTimers();
   });
 
-  it('triple tap toggles left ↔ right', () => {
+  it('triple tap toggles left ↔ right (when expanded/floating)', () => {
     jest.useFakeTimers();
     const onPresetChange = jest.fn();
     render(<OrbitalBadge persistPosition={false} initialPreset="left" onPresetChange={onPresetChange} />);
 
     const badge = screen.getByTestId('orbital-badge');
+    // Drag away from edge to expand (enable multi-tap).
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 512, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 400, clientY: 384 });
+    });
+    act(() => {
+      fireEvent.pointerUp(badge, { clientX: 400, clientY: 384 });
+    });
+
+    // Now expanded/floating — triple-tap cycles horizontal preset.
     [0, 80, 160].forEach((t) => {
       act(() => {
-        fireEvent.pointerDown(badge, { clientX: 0, clientY: 0, timeStamp: t });
-        fireEvent.pointerUp(badge, { clientX: 0, clientY: 0, timeStamp: t });
+        fireEvent.pointerDown(badge, { clientX: 400, clientY: 384, timeStamp: t });
+        fireEvent.pointerUp(badge, { clientX: 400, clientY: 384, timeStamp: t });
       });
       if (t < 160) act(() => { jest.advanceTimersByTime(80); });
     });
     act(() => { jest.advanceTimersByTime(50); });
     expect(onPresetChange).toHaveBeenLastCalledWith('right');
+    jest.useRealTimers();
+  });
+
+  it('double-tap when floating does NOT snap badge to edge (stays in place)', () => {
+    jest.useFakeTimers();
+    const onPresetChange = jest.fn();
+    render(<OrbitalBadge persistPosition={false} initialPreset="top" onPresetChange={onPresetChange} />);
+
+    const badge = screen.getByTestId('orbital-badge');
+    // Badge starts collapsed at right edge (center 1024). Drag to x=400.
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 1024, clientY: 384 });
+      fireEvent.pointerMove(badge, { clientX: 400, clientY: 384 });
+    });
+    act(() => {
+      fireEvent.pointerUp(badge, { clientX: 400, clientY: 384 });
+    });
+
+    // Badge floating at x=400 (top-left = 400 - 22 = 378).
+    expect(badge.style.transform).toContain('translate3d(378px, 362px, 0)');
+
+    // Double-tap to cycle preset — badge must NOT move to edge.
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 400, clientY: 384, timeStamp: 0 });
+      fireEvent.pointerUp(badge, { clientX: 400, clientY: 384, timeStamp: 0 });
+    });
+    act(() => { jest.advanceTimersByTime(80); });
+    act(() => {
+      fireEvent.pointerDown(badge, { clientX: 400, clientY: 384, timeStamp: 80 });
+      fireEvent.pointerUp(badge, { clientX: 400, clientY: 384, timeStamp: 80 });
+    });
+    act(() => { jest.advanceTimersByTime(300); });
+
+    expect(onPresetChange).toHaveBeenLastCalledWith('center');
+    // Badge stays at x=400 — NOT snapped to edge (1024).
+    expect(badge.style.transform).toContain('translate3d(378px, 362px, 0)');
     jest.useRealTimers();
   });
 

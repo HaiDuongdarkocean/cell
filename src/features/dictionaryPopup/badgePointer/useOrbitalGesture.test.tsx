@@ -5,10 +5,11 @@ const makePointerEvent = (x = 0, y = 0, timeStamp = 0): PointerEvent =>
   ({ clientX: x, clientY: y, timeStamp } as unknown as PointerEvent);
 
 describe('useOrbitalGesture', () => {
-  it('calls onSingleTap after one tap', () => {
+  it('calls onSingleTap after one tap (with multi-tap handlers → 300ms delay)', () => {
     jest.useFakeTimers();
     const onSingleTap = jest.fn();
-    const { result } = renderHook(() => useOrbitalGesture({ onSingleTap }));
+    const onDoubleTap = jest.fn();
+    const { result } = renderHook(() => useOrbitalGesture({ onSingleTap, onDoubleTap }));
 
     act(() => {
       result.current.onPointerDown(makePointerEvent(0, 0, 0));
@@ -120,5 +121,39 @@ describe('useOrbitalGesture', () => {
 
     expect(onDragEnd).toHaveBeenCalled();
     expect(onSingleTap).not.toHaveBeenCalled();
+  });
+
+  it('fires onSingleTap immediately when no multi-tap handlers (collapsed mode)', () => {
+    jest.useFakeTimers();
+    const onSingleTap = jest.fn();
+    // No onDoubleTap / onTripleTap → instant single-tap (no 300ms delay)
+    const { result } = renderHook(() => useOrbitalGesture({ onSingleTap }));
+
+    act(() => {
+      result.current.onPointerDown(makePointerEvent(0, 0, 0));
+      result.current.onPointerUp(makePointerEvent(0, 0, 0));
+    });
+    // Fires immediately — no timer needed
+    expect(onSingleTap).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
+  });
+
+  it('still uses 300ms detector when onDoubleTap is present (expanded mode)', () => {
+    jest.useFakeTimers();
+    const onSingleTap = jest.fn();
+    const onDoubleTap = jest.fn();
+    const { result } = renderHook(() => useOrbitalGesture({ onSingleTap, onDoubleTap }));
+
+    act(() => {
+      result.current.onPointerDown(makePointerEvent(0, 0, 0));
+      result.current.onPointerUp(makePointerEvent(0, 0, 0));
+    });
+    expect(onSingleTap).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(300);
+    });
+    expect(onSingleTap).toHaveBeenCalled();
+    jest.useRealTimers();
   });
 });
