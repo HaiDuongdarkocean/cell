@@ -730,6 +730,60 @@ describe('WebTriggerController', () => {
       ctrl.detach();
       document.body.removeChild(p);
     });
+
+    it('hover does NOT re-lookup when popup covers cursor (caret null after first lookup)', () => {
+      jest.useFakeTimers();
+      const p = document.createElement('p');
+      p.textContent = 'The quick brown fox';
+      document.body.appendChild(p);
+
+      const textNode = p.firstChild as Text;
+      const mockRange = document.createRange();
+      mockRange.setStart(textNode, 4); // "quick"
+      mockRange.setEnd(textNode, 9);
+
+      // First call: caret resolves (cursor over text). After first lookup,
+      // popup appears and covers the cursor → caret returns null.
+      let caretReturnsNull = false;
+      document.caretRangeFromPoint = jest.fn(() =>
+        caretReturnsNull ? null : mockRange
+      ) as typeof document.caretRangeFromPoint;
+      // jsdom doesn't implement elementFromPoint — mock it so the shadow-root
+      // fallback in defaultGetCaretRange doesn't throw when caret returns null.
+      const originalElementFromPoint = document.elementFromPoint;
+      document.elementFromPoint = jest.fn(() => null) as typeof document.elementFromPoint;
+
+      let lookupCount = 0;
+      const ctrl = new WebTriggerController({
+        triggerMode: 'hover',
+        onLookup: () => { lookupCount++; },
+        onCancel: () => {},
+      });
+      ctrl.attach();
+
+      // First mousemove → debounce → lookup fires (1 lookup).
+      const event1 = new MouseEvent('mousemove', { bubbles: true, clientX: 50, clientY: 10 });
+      Object.defineProperty(event1, 'target', { value: p });
+      document.dispatchEvent(event1);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1);
+
+      // Popup now covers cursor → caret returns null on quick check.
+      // Without the guard fix, resetHover would clear lastHoveredTerm →
+      // next resolve would re-lookup. With the fix, we keep lastHoveredTerm
+      // and just cancel the pending hover.
+      caretReturnsNull = true;
+      const event2 = new MouseEvent('mousemove', { bubbles: true, clientX: 55, clientY: 12 });
+      Object.defineProperty(event2, 'target', { value: p });
+      document.dispatchEvent(event2);
+      jest.advanceTimersByTime(150);
+      expect(lookupCount).toBe(1); // Still 1 — no re-lookup!
+
+      ctrl.detach();
+      document.body.removeChild(p);
+      document.elementFromPoint = originalElementFromPoint;
+      jest.useRealTimers();
+    });
   });
 
   describe('click / modifier fallback', () => {
