@@ -6,7 +6,7 @@ import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
 import type { OverlayStyleConfig } from '@/entities/subtitle';
 import { CueList } from '@/entrypoints/sidepanel/components/CueList';
-import { ICON_CATALOG } from '@/shared/icons';
+import type { ICON_CATALOG } from '@/shared/icons';
 import { Icon } from '@/shared/icons/Icon';
 import { IconButton } from '@/shared/ui/IconButton';
 import { SubtitleBlock } from './SubtitleBlock';
@@ -108,7 +108,7 @@ function PlayerModeOverlayInner({
   onSeek,
 }: PlayerModeOverlayProps): React.JSX.Element {
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
-  const [cueListOpen, setCueListOpen] = useState(false);
+  const [cueListOpen, setCueListOpen] = useState(true);
   // Content panel width % in split layout (>480px). Default 30%. Clamp 20-60%.
   const [contentPct, setContentPct] = useState(30);
   const rafRef = useRef<number | null>(null);
