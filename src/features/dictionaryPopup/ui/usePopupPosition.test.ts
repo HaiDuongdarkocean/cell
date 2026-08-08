@@ -175,4 +175,22 @@ describe('usePopupPosition', () => {
 
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('does not preventDefault on content pointerdown in sheet mode (allows native scroll up)', () => {
+    Object.defineProperty(document.documentElement, 'clientWidth', { value: 400, configurable: true });
+
+    render(React.createElement(TestPopup, { anchor: defaultAnchor, onClose: jest.fn() }));
+    const content = screen.getByTestId('popup-content');
+
+    const event = new PointerEvent('pointerdown', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 0,
+      clientY: 0,
+      pointerId: 1,
+    });
+    content.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+  });
 });

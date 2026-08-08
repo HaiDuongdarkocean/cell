@@ -37,6 +37,18 @@
   overflow: visible;
 }
 
+/* Popup mode: neutralise nested scroll containers (.candidateList, .cellDef)
+   so they don't steal wheel/drag scroll with overscroll-behavior:contain.
+   When content fits exactly (scrollHeight === clientHeight), a nested
+   overflow-y:auto + overscroll-behavior:contain element swallows the wheel
+   event and blocks scroll chaining to .content (the real scroll container).
+   overflow:visible makes them non-scroll-containers → events propagate up. */
+.popupMode .candidateList,
+.popupMode .cellDef {
+  overflow: visible;
+  overscroll-behavior: auto;
+}
+
 .searchRow {
   display: flex;
   gap: var(--space-2);
