@@ -279,23 +279,16 @@ export const SubtitlePanels = forwardRef<SubtitlePanelsRef, SubtitlePanelsProps>
     // to NOT override that by moving cell root to document.body.
     //
     // When NOT fullscreen: fall back to body reparenting (escape video container
-    // stacking context) + canvas capture (overlay bg covers host).
+    // stacking context). PlayerModeOverlay moves host <video> into the video stage.
     //
-    // When fullscreen: keep cell root inside fullscreen element. Overlay bg
-    // transparent so host video shows through. No canvas needed — native video
-    // rendering. Seamless UX: exiting Player Mode does NOT exit host fullscreen.
+    // When fullscreen: keep cell root inside fullscreen element. Host <video>
+    // moves into the video stage (shadow DOM child). Seamless UX: exiting
+    // Player Mode does NOT exit host fullscreen.
     const playerModeOriginalParent = useRef<HTMLElement | null>(null);
     const playerModeSavedStyles = useRef<{ zIndex: string; position: string; inset: string } | null>(null);
     useEffect(() => {
       const host = document.querySelector('#cell-subtitle-root');
       if (!(host instanceof HTMLElement)) return;
-      // Create a VISIBLE marker element to prove the effect ran.
-      // Use body.appendChild so it's visible from MAIN world too.
-      const marker = document.createElement('div');
-      marker.id = 'cell-pm-effect-marker';
-      marker.style.cssText = 'position:fixed;top:0;left:0;z-index:999999;background:red;color:white;padding:4px;font-size:12px;pointer-events:none;';
-      marker.textContent = `PM:${playerMode},FS:${!!document.fullscreenElement},P:${host.parentElement?.tagName}`;
-      document.body.appendChild(marker);
       if (playerMode) {
         playerModeSavedStyles.current = {
           zIndex: host.style.zIndex,

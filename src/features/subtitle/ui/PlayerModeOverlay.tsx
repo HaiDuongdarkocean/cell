@@ -1,6 +1,7 @@
-// Player Mode overlay — fixed full-viewport layout that moves SubtitleBlock + NavCluster
-// into a bottom Player Action Dock while keeping the host video visible above.
-// See tasks/plan.md for the layout contract.
+// Player Mode overlay — fixed full-viewport layout that moves the host <video>
+// element into the video stage (as a real DOM child), with Cell UI controls
+// around it. The video element is reparented from the host player into the
+// shadow DOM video stage on mount, and restored on unmount.
 
 import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import type { BilingualCue, NavClusterSettings, SubtitleBlockSettings } from '@/entities/media';
@@ -120,7 +121,7 @@ function PlayerModeOverlayInner({
   const [contentPct, setContentPct] = useState(CONTENT_PCT_DEFAULT);
   const contentPctLoadedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoStageRef = useRef<HTMLDivElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ startX: number; startPct: number; splitWidth: number } | null>(null);
 
@@ -139,59 +140,45 @@ function PlayerModeOverlayInner({
     };
   }, []);
 
-  // Canvas capture: only needed when NOT fullscreen (overlay bg covers host,
-  // canvas draws video frames). When fullscreen, cell root lives inside
-  // document.fullscreenElement — overlay is transparent, host video shows
-  // through natively (no canvas overhead, native quality).
+  // Reparent host <video> into the video stage (shadow DOM child).
+  // The video element keeps playing across the DOM move — no reload, no
+  // re-buffer. Saved state (parent + nextSibling + styles) is restored on
+  // cleanup so exiting Player Mode puts the video back exactly where it was.
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    // Skip canvas when fullscreen — native video shows through transparent overlay.
-    if (document.fullscreenElement) {
-      canvas.style.display = 'none';
-      return;
-    }
-    canvas.style.display = '';
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    // SSOT: read --color-overlay-background token once (canvas 2D can't use var()).
-    const overlayEl = canvas.closest('[data-cell-id="player-mode-overlay"]') as HTMLElement | null;
-    const letterboxColor =
-      overlayEl
-        ? getComputedStyle(overlayEl).getPropertyValue('--color-overlay-background').trim() || '#000'
-        : '#000';
-    let rafId = 0;
-    const draw = (): void => {
-      const video = document.querySelector('video');
-      if (video && video.readyState >= 2 && video.videoWidth > 0) {
-        const stageW = canvas.clientWidth;
-        const stageH = canvas.clientHeight;
-        if (canvas.width !== stageW || canvas.height !== stageH) {
-          canvas.width = stageW;
-          canvas.height = stageH;
-        }
-        const vAspect = video.videoWidth / video.videoHeight;
-        const sAspect = stageW / stageH;
-        let dw: number, dh: number, dx: number, dy: number;
-        if (vAspect > sAspect) {
-          dw = stageW;
-          dh = stageW / vAspect;
-          dx = 0;
-          dy = (stageH - dh) / 2;
-        } else {
-          dh = stageH;
-          dw = stageH * vAspect;
-          dx = (stageW - dw) / 2;
-          dy = 0;
-        }
-        ctx.fillStyle = letterboxColor;
-        ctx.fillRect(0, 0, stageW, stageH);
-        ctx.drawImage(video, dx, dy, dw, dh);
-      }
-      rafId = requestAnimationFrame(draw);
+    const stage = videoStageRef.current;
+    const video = document.querySelector('video');
+    if (!stage || !(video instanceof HTMLVideoElement)) return;
+    const originalParent = video.parentElement;
+    const originalNextSibling = video.nextSibling;
+    const savedStyle = {
+      position: video.style.position,
+      width: video.style.width,
+      height: video.style.height,
+      objectFit: video.style.objectFit,
+      flex: video.style.flex,
     };
-    rafId = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(rafId);
+    // Move video into the stage and fill it (object-fit:contain = letterbox).
+    stage.appendChild(video);
+    video.style.position = 'absolute';
+    video.style.inset = '0';
+    video.style.width = '100%';
+    video.style.height = '100%';
+    video.style.objectFit = 'contain';
+    return () => {
+      // Restore video to original position + styles.
+      video.style.position = savedStyle.position;
+      video.style.width = savedStyle.width;
+      video.style.height = savedStyle.height;
+      video.style.objectFit = savedStyle.objectFit;
+      video.style.flex = savedStyle.flex;
+      if (originalParent && video.parentElement !== originalParent) {
+        if (originalNextSibling && originalNextSibling.parentElement === originalParent) {
+          originalParent.insertBefore(video, originalNextSibling);
+        } else {
+          originalParent.appendChild(video);
+        }
+      }
+    };
   }, []);
 
   const layout = resolvePlayerModeLayout(viewport.w, viewport.h, videoAspectRatio, DOCK_MIN_HEIGHT_PX);
@@ -294,9 +281,8 @@ function PlayerModeOverlayInner({
           style={{ height: `${layout.videoStageHeight}px` }}
           data-cell-id="player-mode-video-stage"
           aria-hidden="true"
-        >
-          <canvas ref={canvasRef} className={styles.videoCanvas} />
-        </div>
+          ref={videoStageRef}
+        />
 
         {/* Resize handle — only visible >480px (CSS controls display). */}
         <div
