@@ -565,20 +565,23 @@ export function usePopupPosition(options: UsePopupPositionOptions): {
     if (!isSheetRef.current) return;
     if (isInteractiveTarget(e.target)) return;
     if (e.currentTarget.scrollTop > 0) return;
-    e.preventDefault();
+    // Do NOT preventDefault or setPointerCapture here. Doing so kills native
+    // touch scrolling — the user can never scroll content up from the top
+    // because preventDefault blocks the browser's scroll gesture and dy<0
+    // (upward drag) is ignored by applyPointerUpdate. Without preventDefault,
+    // upward drags scroll natively; downward drags at scrollTop=0 can't scroll
+    // (overscroll-behavior:contain) so only our translateY dismiss fires.
     e.stopPropagation();
-    const target = e.currentTarget;
     sessionRef.current = {
       type: 'sheet',
       startX: e.clientX,
       startY: e.clientY,
       startHeight: sheetHeightRef.current,
       fromHandle: false,
-      target,
+      target: e.currentTarget,
       pointerId: e.pointerId,
     };
     startWillChange();
-    try { target.setPointerCapture(e.pointerId); } catch { /* ignore */ }
   }, [startWillChange]);
 
   const playerModeBounds = getPlayerModeBounds();
