@@ -942,6 +942,14 @@
     },
     {
       "type": "experience",
+      "id": "css-nested-scroll-overscroll-contain-blocks-chaining",
+      "title": "Nested scroll container + overscroll-behavior:contain swallows wheel/drag when content fits exactly",
+      "category": ["css", "ux"],
+      "tags": ["overscroll-behavior", "scroll-chaining", "nested-scroll", "wheel-event", "overflow", "popup", "shadow-dom"],
+      "trigger": "Khi có nested scroll containers (parent + child đều overflow-y:auto) và child có overscroll-behavior:contain — wheel/drag scroll không reach parent"
+    },
+    {
+      "type": "experience",
       "id": "message-payload-zod-validation",
       "title": "MV3 message handlers → validate payload with Zod before `as` cast",
       "category": ["messaging"],

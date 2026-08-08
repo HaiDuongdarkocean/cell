@@ -1,0 +1,27 @@
+{
+  "id": "css-nested-scroll-overscroll-contain-blocks-chaining",
+  "title": "Nested scroll container + overscroll-behavior:contain swallows wheel/drag when content fits exactly",
+  "category": ["css", "ux"],
+  "tags": ["overscroll-behavior", "scroll-chaining", "nested-scroll", "wheel-event", "overflow", "popup", "shadow-dom"],
+  "trigger": "Khi có nested scroll containers (parent + child đều overflow-y:auto) và child có overscroll-behavior:contain — wheel/drag scroll không reach parent",
+  "principle": "overscroll-behavior:contain trên child scroll container chặn scroll chaining lên parent. Khi child content fit vừa (scrollHeight === clientHeight), child không scroll được nhưng vẫn nuốt wheel/drag event — parent không bao giờ nhận scroll. Fix: set overflow:visible trên child trong context chỉ có 1 real scroll container (parent), biến child thành non-scroll-container → events propagate lên parent tự nhiên.",
+  "cases": [
+    {
+      "context": "Dictionary popup: .content (overflow-y:auto) là real scroll container. Bên trong có .candidateList và .cellDef cũng overflow-y:auto + overscroll-behavior:contain. Khi candidate content fit vừa, wheel/drag scroll bị nuốt — user không scroll được popup content.",
+      "bad": ".candidateList {\n  overflow-y: auto;\n  overscroll-behavior: contain;\n}\n.cellDef {\n  overflow-y: auto;\n  overscroll-behavior: contain;\n}\n/* Khi scrollHeight === clientHeight, wheel event bị nuốt, .content không scroll */",
+      "good": "/* Popup mode: parent .content là sole scroll container */\n.popupMode .candidateList,\n.popupMode .cellDef {\n  overflow: visible;\n  overscroll-behavior: auto;\n}\n/* overflow:visible → child không phải scroll container → wheel propagate lên .content */"
+    },
+    {
+      "context": "Sheet mode: onPointerDownContent gọi preventDefault() + setPointerCapture() ở scrollTop=0, kill native touch scroll. applyPointerUpdate chỉ xử lý downward drag (dismiss), ignore upward drag → content stuck ở top.",
+      "bad": "const onPointerDownContent = (e) => {\n  if (scrollTop > 0) return;\n  e.preventDefault();        // kills native touch scroll\n  e.stopPropagation();\n  target.setPointerCapture(pointerId);  // captures all pointer events\n  // applyPointerUpdate chỉ xử lý dy > 0 (dismiss), dy < 0 bị ignore\n};",
+      "good": "const onPointerDownContent = (e) => {\n  if (scrollTop > 0) return;\n  // KHÔNG preventDefault — native scroll handles upward drag\n  // KHÔNG setPointerCapture — để browser scroll gesture hoạt động\n  e.stopPropagation();\n  // downward drag ở scrollTop=0 vẫn trigger dismiss qua overscroll-behavior:contain trên .content\n};"
+    }
+  ],
+  "applyFor": [
+    "Popup/modal với nested scrollable sections (candidate list, definition list, tab content)",
+    "Bottom sheet UI với drag-to-dismiss + scrollable content",
+    "Shadow DOM components có multiple overflow-y:auto children",
+    "Any UI nơi 1 parent scroll container là đủ — children không cần scroll riêng",
+    "Touch device scroll: preventDefault trên pointerdown kill native scroll gesture"
+  ]
+}
